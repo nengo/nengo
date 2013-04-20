@@ -182,70 +182,32 @@ class Network(object):
         c = Connection(pre=pre, post=post, transform=transform, filter=filter,
                        function=function, learning_rule=learning_rule)
         self.add(c)
+        return c
 
     def connect_neurons(self, pre, post, weights=None, filter=None, learning_rule=None):
-        """Connect two nodes in the network, while directly specifying the weight matrix
+        """Connect two nodes in the network, directly specifying the weight matrix
 
         *pre* and *post* can be strings giving the names of the nodes,
         or they can be the nodes themselves (Inputs and Ensembles are
-        supported). They can also be actual Origins or Terminations,
-        or any combination of the above. 
-
-        If transform is None, it defaults to the identity matrix.
-        
-        transform must be of size post.dimensions * pre.dimensions.
-
-        If *func* is not None, a new Origin will be created on the
-        pre-synaptic ensemble that will compute the provided function.
-        The name of this origin will be taken from the name of
-        the function.
+        supported).
 
         :param string pre: Name of the node to connect from.
         :param string post: Name of the node to connect to.
-        :param transform:
-            The linear transfom matrix to apply across the connection.
-            If *transform* is T and *pre* represents ``x``,
-            then the connection will cause *post* to represent ``Tx``.
-            Should be an N by M array, where N is the dimensionality
-            of *post* and M is the dimensionality of *pre*.
-        :type transform: array of floats
+        :param weights: The connection weight matrix between the populations.
+        :type weights: An (pre.dimensions x post.dimensions) array of floats
         :param Filter filter: the filter
         :param LearningRule learning_rule: a learning rule to use to update weights
-        :param function func:
-            Function to be computed by this connection.
-            If None, computes ``f(x)=x``.
-            The function takes a single parameter ``x``, which is
-            the current value of the *pre* ensemble, and must return
-            either a float or an array of floats.
-
         """
 
-        # get post Node object from node dictionary
+        # dereference pre- and post- strings if necessary
+        pre = self.get_object(pre)
         post = self.get_object(post)
 
-        # get the origin from the pre Node
-        pre_origin = self.get_origin(pre, func)
-        # get pre Node object from node dictionary
-        pre_name = pre
-        pre = self.get_object(pre)
-
-        # get decoded_output from specified origin
-        pre_output = pre_origin.decoded_output
-        dim_pre = pre_origin.dimensions 
-        
-        # if decoded-decoded connection (case 1)
-        # compute transform if not given, if given make sure shape is correct
-        if transform is None:
-            transform = self.compute_transform(
-                dim_pre=dim_pre,
-                dim_post=post.dimensions,
-                array_size=post.array_size)
-
-        # pass in the pre population decoded output function
-        # to the post population
-        c = Connection(pre=pre, post=post, transform=transform, filter=filter,
-            func=func, learning_rule=learning_rule)
+        # create connection
+        c = Connection(pre=pre, post=post, weights=weights,
+                       filter=filter, learning_rule=learning_rule)
         self.add(c)
+        return c
 
     def get_object(self, name):
         """This is a method for parsing input to return the proper object.
