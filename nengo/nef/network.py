@@ -14,7 +14,7 @@ from . import input
 from . import subnetwork
 
 class Network(object):
-    def __init__(self, name, seed=None, fixed_seed=None, dt=.001):
+    def __init__(self, name, seed=None, fixed_seed=None):
         """Wraps an NEF network with a set of helper functions
         for simplifying the creation of NEF models.
 
@@ -28,8 +28,6 @@ class Network(object):
 
         """
         self.name = name
-        self.dt = dt
-        self.run_time = 0.0    
         self.seed = seed
         self.fixed_seed = fixed_seed
         # all the nodes in the network, indexed by name
@@ -505,112 +503,3 @@ class Network(object):
         self.add(p)
         return p
             
-    def make_theano_tick(self):
-        """Generate the theano function for running the network simulation.
-        
-        :returns: theano function
-        """
-
-        # dictionary for all variables
-        # and the theano description of how to compute them 
-        updates = collections.OrderedDict()
-
-        # for every node in the network
-        for node in self.nodes.values():
-            # if there is some variable to update
-            if hasattr(node, 'update'):
-                # add it to the list of variables to update every time step
-                updates.update(node.update(self.dt))
-
-        # create graph and return optimized update function
-        return theano.function([], [], updates=updates)
-
-    def run(self, time):
-        """Run the simulation.
-
-        If called twice, the simulation will continue for *time*
-        more seconds. Note that the ensembles are simulated at the
-        dt timestep specified when they are created.
-        
-        :param float time: the amount of time (in seconds) to run
-        :param float dt: the timestep of the update
-        """         
-        # if theano graph hasn't been calculated yet, retrieve it
-        if self.theano_tick is None:
-            self.theano_tick = self.make_theano_tick() 
-        for i in range(int(time / self.dt)):
-            # get current time step
-            t = self.run_time + i * self.dt
-
-            # run the non-theano nodes
-            for node in self.tick_nodes:    
-                node.t = t
-                node.theano_tick()
-
-            # run the theano nodes
-            self.theano_tick()    
-
-        # update run_time variable
-        self.run_time += time
-
-    def write_data_to_hdf5(self, filename='data'):
-        """This is a function to call after simulation that writes the 
-        data of all probes to filename using the Neo HDF5 IO module.
-    
-        :param string filename: the name of the file to write out to
-        """
-        import neo
-        from neo import hdf5io
-
-        # get list of probes 
-        probe_list = [self.nodes[node] for node in self.nodes 
-                      if node[:5] == 'Probe']
-
-        # if no probes then just return
-        if len(probe_list) == 0: return
-
-        # open up hdf5 file
-        if not filename.endswith('.hd5'): filename += '.hd5'
-        iom = hdf5io.NeoHdf5IO(filename=filename)
-
-        #TODO: set up to write multiple trials/segments to same block 
-        #      for trials run at different points
-        # create the all encompassing block structure
-        block = neo.Block()
-        # create the segment, representing a trial
-        segment = neo.Segment()
-        # put the segment in the block
-        block.segments.append(segment)
-
-        # create the appropriate Neo structures from the Probes data
-        #TODO: pair any analog signals and spike trains from the same
-        #      population together into a RecordingChannel
-        for probe in probe_list:
-            # decoded signals become AnalogSignals
-            if probe.target_name.endswith('decoded'):
-                segment.analogsignals.append(
-                    neo.AnalogSignal(
-                        probe.get_data() * quantities.dimensionless, 
-                        sampling_period=probe.dt_sample * quantities.s,
-                        target_name=probe.target_name) )
-            # spikes become spike trains
-            elif probe.target_name.endswith('spikes'):
-                # have to change spike train of 0s and 1s to list of times
-                for neuron in probe.get_data().T:
-                    segment.spiketrains.append(
-                        neo.SpikeTrain(
-                            [
-                                t * probe.dt_sample 
-                                for t, val in enumerate(neuron[0]) 
-                                if val > 0
-                            ] * quantities.s,
-                            t_stop=len(probe.data),
-                            target_name=probe.target_name) )
-            else: 
-                print 'Do not know how to write %s to NeoHDF5 file'%probe.target_name
-                assert False
-
-        # write block to file
-        iom.save(block)
-        # close up hdf5 file
-        iom.close()
