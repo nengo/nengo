@@ -28,18 +28,38 @@ class Network(object):
 
         """
         self.name = name
+
+        # metadata and properties
+        self._metadata = {}
+        self._properties = {}
+        
+        # I think the random seed stuff should be part of Model now
         self.seed = seed
         self.fixed_seed = fixed_seed
         self.random = random.Random()
         if seed is not None:
             self.random.seed(seed)
+
         # dictionaries for the objects in the network
         self.Connections = []
         self.Ensembles = []
         self.Networks = []
         self.Nodes = []
         self.Probes = []
-          
+    
+    @property
+    def metadata(self):
+        return self._metadata
+
+    @metadata.setter
+    def metadata(self, value):
+        self._metadata = value
+        
+    @property
+    def properties(self):
+        # Compute statistics here (like neuron count, etc)
+        return self._properties
+    
     def add(self, object):
         """Add an object to the network to the appropriate list.
         
@@ -215,10 +235,11 @@ class Network(object):
         The only thing we need to check for here is a ':',
         indicating an origin.
 
-        :param string name: the name of the desired object
+        :param string name: the name (or a reference to) the desired object
         
         """
-        assert isinstance(name, str)
+        if !isinstance(name, str):
+            return name
 
         # separate into node and origin, if specified
         split = name.split(':')
