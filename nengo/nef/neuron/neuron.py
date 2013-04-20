@@ -60,11 +60,17 @@ class Neuron(object):
         :param int size: number of neurons in this population
 
         """
-        self.output = np.zeros(size).astype('float32'),
+        self.output = np.zeros(size).astype('float32')
 
     @property
-    def size(self):
+    def shape(self):
         return len(self.output)
+
+    def __len__(self):
+        return self.output.size
+
+    def hashable_state(self):
+        return ()
 
 
     def reset(self):
