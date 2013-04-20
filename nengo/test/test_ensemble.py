@@ -1,7 +1,7 @@
 from unittest import TestCase
 from nengo.nef.model import Model
 from nengo.nef.ensemble import Ensemble
-from nengo.nef.lif_neuron import LIFNeuron?
+from nengo.nef.neuron.lif import LIFNeuron
 
 class TestEnsemble(TestCase):
     def setUp(self):
@@ -19,7 +19,13 @@ class TestEnsemble(TestCase):
         assertEqual(self.ens1.radius, 1)
         assertEqual(self.ens1.encoders, None)
 
-    
+
+    def test_advanced(self):
+        self.ens1.rates = [...]
+        self.ens1.intercepts = [...]
+        # And more stuff
+
+  
     def test_run(self):
         data = []
 
@@ -47,3 +53,7 @@ class TestEnsemble(TestCase):
         self.model.run(1, dt = 0.001, output = data)
 
         assert True #MSE(data - ideal) < threshold 
+
+    def test_ensemble(self):
+        # Unit test for ensemble???
+        pass
