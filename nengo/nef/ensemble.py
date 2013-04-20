@@ -123,7 +123,7 @@ class SpikingEnsemble(Base):
     """An ensemble is a collection of neurons representing a vector space.
     """
     
-    def __init__(self, dimensions, neurons,
+    def __init__(self, neurons, dimensions, array_size=_ARRAY_SIZE,
             max_rate=(200, 300), intercept=(-1.0, 1.0),
             radius=1.0,
             encoders=None,
@@ -164,8 +164,10 @@ class SpikingEnsemble(Base):
         if seed is None:
             seed = np.random.randint(1000)
         self.neurons = neurons
+        if len(neurons) % array_size:
+            raise ValueError('array_size must divide population size',
+                    (len(neurons), array_size))
         self.seed = seed
-        self.array_size = array_size
         self.radius = radius
         self.noise = noise
         self.decoder_noise = decoder_noise
