@@ -229,9 +229,9 @@ class Network(object):
         return obj
 
     def make_alias(self, name, target):
+        """ Set up an alias for referencing the target object.
         """
-        """
-        pass
+        self.aliases[name] = target
 
     def make_ensemble(self, name, neurons, dimensions, max_rate_uniform=(50,100),
                       intercept_uniform=(-1,1), radius=1, encoders=None): 
@@ -280,19 +280,6 @@ class Network(object):
         :returns: The Probe object
         
         """
-        i = 0
-        name = None
-
-        # get the signal to record
-        if data_type == 'decoded':
-            target = self.get_origin(target).decoded_output
-
-        elif data_type == 'spikes':
-            target = self.get_object(target)
-            # check to make sure target is an ensemble
-            assert isinstance(target, ensemble.Ensemble)
-            target = target.neurons.output
-
         p = probe.Probe(name=name, target=target, sample_every=sample_every, static=static)
         self.Probes.append(p)
 
