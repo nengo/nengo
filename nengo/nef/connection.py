@@ -52,7 +52,8 @@ class Connection(object):
 
     @property
     def modulatory(self):
-        """ TODO """
+        """Setting \"modulatory\" to True stops the connection from imparting
+        current on the post-population."""
         return self._modulatory
 
     @modulatory.setter
