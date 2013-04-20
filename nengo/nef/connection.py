@@ -23,9 +23,14 @@ class Connection(object):
         
         :param pre: pre-population object
         :param post: post-population object
-        :param transform: vector-space transform matrix (pre.dimension x post.dimension),
-            describing the mapping between the pre-population and post-population dimensions
-        :param function: the function to be computed by the pre-population decoders
+        :param transform: vector-space transform matrix describing the mapping 
+            between the pre-population and post-population dimensions
+        :type transform: a (pre.dimensions x post.dimensions) array of floats
+        :param function: the vector-space function to be computed by the 
+            pre-population decoders
+        :param weights: the connection-weight matrix for connecting pre-neurons
+            to post-neurons directly. Cannot be used with transform or function.
+        :type weights: a (pre.neurons x post.neurons) array of floats
         :param filter: a Filter object describing the post-synaptic filtering
             properties of the connection
         :param learning_rule: a LearningRule object describing the learning
