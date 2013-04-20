@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    try:
+        from ez_setup import use_setuptools
+        use_setuptools()
+        from setuptools import setup
+    except Exception, e:
+        print "Forget setuptools, trying distutils..."
+        from distutils.core import setup
+
 
 description = ("Tools for making neural simulations using the methods "
                + "of the Neural Engineering Framework")
