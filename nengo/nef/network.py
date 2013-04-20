@@ -99,47 +99,8 @@ class Network(object):
 
         """
 
-        if transform is None:
-            # create a matrix of zeros
-            transform = [[0] * dim_pre for i in range(dim_post * array_size)]
-
-            # default index_pre/post lists set up *weight* value
-            # on diagonal of transform
-            
-            # if dim_post * array_size != dim_pre,
-            # then values wrap around when edge hit
-            if index_pre is None:
-                index_pre = range(dim_pre) 
-            elif isinstance(index_pre, int):
-                index_pre = [index_pre] 
-            if index_post is None:
-                index_post = range(dim_post * array_size) 
-            elif isinstance(index_post, int):
-                index_post = [index_post]
-
-            for i in range(max(len(index_pre), len(index_post))):
-                pre = index_pre[i % len(index_pre)]
-                post = index_post[i % len(index_post)]
-                transform[post][pre] = weight
-
-        transform = np.array(transform)
-
-        # reformulate to account for post.array_size
-        if transform.shape == (dim_post * array_size, dim_pre):
-
-            array_transform = [[[0] * dim_pre for i in range(dim_post)]
-                               for j in range(array_size)]
-
-            for i in range(array_size):
-                for j in range(dim_post):
-                    array_transform[i][j] = transform[i * dim_post + j]
-
-            transform = array_transform
-
-        return transform
-        
-    def connect(self, pre, post, transform=None, function=None,
-                filter=None, learning_rule=None):
+    def connect(self, pre, post, transform=None, filter=None, 
+                func=None, learning_rule=None):
         """Connect two nodes in the network.
 
         *pre* and *post* can be strings giving the names of the nodes,
