@@ -10,6 +10,8 @@ from . import probe
 from . import origin
 from . import input
 from . import subnetwork
+from . import connections
+from . import learning_rule
 
 class Network(object):
     def __init__(self, name, seed=None, fixed_seed=None):
@@ -28,21 +30,29 @@ class Network(object):
         self.name = name
         self.seed = seed
         self.fixed_seed = fixed_seed
-        # all the nodes in the network, indexed by name
-        self.nodes = {}
-        # the list of nodes 
         self.random = random.Random()
         if seed is not None:
             self.random.seed(seed)
+        # dictionaries for the objects in the network
+        self.Connections = []
+        self.Ensembles = []
+        self.Networks = []
+        self.Nodes = []
+        self.Probes = []
           
     def add(self, object):
-        """Add an object to the network.
+        """Add an object to the network to the appropriate list.
         
         :param object: the object to add to this network
         :param type: Network, Node, Ensemble, Connection
 
         """
-        self.nodes[node.name] = node
+        if isinstance(object, connection.Connection): self.Connections.append(object)
+        elif isinstance(object, ensemble.Ensemble): self.Ensembles.append(object)
+        elif isinstance(object, network.Network): self.Network.append(object)
+        elif isinstance(object, node.Node): self.Node.append(object)
+        elif isinstance(object, probe.Probe): self.Probes.append(object) 
+        else: raise Exception('Object type not recognized')
 
     def compute_transform(self, dim_pre, dim_post, array_size, weight=1,
                           index_pre=None, index_post=None, transform=None):
