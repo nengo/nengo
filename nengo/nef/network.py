@@ -238,7 +238,7 @@ class Network(object):
         :param string name: the name (or a reference to) the desired object
         
         """
-        if !isinstance(name, str):
+        if not isinstance(name, str):
             return name
 
         # separate into node and origin, if specified
