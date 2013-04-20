@@ -309,25 +309,6 @@ class Network(object):
 
         return obj
 
-    def learn(self, pre, post, error, pstc=0.01, **kwargs):
-        """Add a connection with learning between pre and post,
-        modulated by error. Error can be a Node, or an origin. If no 
-        origin is specified in the format node:origin, then 'X' is used.
-
-        :param Ensemble pre: the pre-synaptic population
-        :param Ensemble post: the post-synaptic population
-        :param Ensemble error: the population that provides the error signal
-        :param list weight_matrix:
-            the initial connection weights with which to start
-
-        """
-        pre_name = pre
-        pre = self.get_object(pre)
-        post = self.get_object(post)
-        error = self.get_origin(error)
-        return post.add_learned_termination(name=pre_name, pre=pre, error=error, 
-            pstc=pstc, **kwargs)
-
     def make_ensemble(self, name, neurons, dimensions, max_rate_uniform=(50,100),
                       intercept_uniform=(-1,1), radius=1, encoders=None): 
         """Create and return an ensemble of neurons.
@@ -366,18 +347,17 @@ class Network(object):
         """
         return self.add(network.Network(name, self))
             
-    def make_probe(self, target, name=None, dt_sample=0.01, 
-                   data_type='decoded', **kwargs):
+    def make_probe(self, target, sample_every=0.01, static=False):
         """Add a probe to measure the given target.
         
         :param target: a variable to record
-        :param name: the name of the probe
-        :param dt_sample: the sampling frequency of the probe
+        :param sample_every: the sampling frequency of the probe
+        :param static: True if this variable should only be sampled once.
         :returns: The Probe object
         
         """
         i = 0
-        target_name = target + '-' + data_type
+        name = None
         while name is None or self.nodes.has_key(name):
             i += 1
             name = ("Probe%d" % i)
@@ -391,11 +371,8 @@ class Network(object):
             # check to make sure target is an ensemble
             assert isinstance(target, ensemble.Ensemble)
             target = target.neurons.output
-            # set the filter to zero
-            kwargs['pstc'] = 0
 
-        p = probe.Probe(name=name, target=target, target_name=target_name, 
-            dt_sample=dt_sample, **kwargs)
+        p = probe.Probe(name=name, target=target, sample_every=sample_every, static=static)
         self.add(p)
         return p
             
