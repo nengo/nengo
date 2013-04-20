@@ -31,20 +31,17 @@ class Network(object):
         # all the nodes in the network, indexed by name
         self.nodes = {}
         # the list of nodes 
-        self.tick_nodes = [] 
         self.random = random.Random()
         if seed is not None:
             self.random.seed(seed)
           
-    def add(self, node):
-        """Add a node to the network.
-
-        Used for inputs, SimpleNodes, and Probes. 
+    def add(self, object):
+        """Add an object to the network.
         
-        :param Node node: the node to add to this network
+        :param object: the object to add to this network
+        :param type: Network, Node, Ensemble, Connection
 
         """
-        self.tick_nodes.append(node)
         self.nodes[node.name] = node
 
     def compute_transform(self, dim_pre, dim_post, array_size, weight=1,
@@ -111,46 +108,26 @@ class Network(object):
 
         return transform
         
-    def connect(self, pre, post, transform=None, weight=1,
-                index_pre=None, index_post=None, pstc=0.01, 
-                func=None):
+    def connect(self, pre, post, transform=None, filter=None, 
+                func=None, learning_rule=None):
         """Connect two nodes in the network.
-        
-        Note: cannot specify (transform) AND any of
-        (weight, index_pre, index_post).
 
         *pre* and *post* can be strings giving the names of the nodes,
         or they can be the nodes themselves (Inputs and Ensembles are
         supported). They can also be actual Origins or Terminations,
         or any combination of the above. 
 
-        If transform is not None, it is used as the transformation matrix
-        for the new termination. You can also use *weight*, *index_pre*,
-        and *index_post* to define a transformation matrix instead.
-        *weight* gives the value, and *index_pre* and *index_post*
-        identify which dimensions to connect.
+        If transform is None, it defaults to the identity matrix.
         
-        transform can be of several sizes:
-        
-        - post.dimensions * pre.dimensions:
-          Specify where decoded signal dimensions project
-        - post.neurons * pre.dimensions:
-          Overwrites post encoders, i.e. inhibitory connections
-        - post.neurons * pre.neurons:
-          Fully specify the connection weight matrix 
+        transform must be of size post.dimensions * pre.dimensions.
 
         If *func* is not None, a new Origin will be created on the
         pre-synaptic ensemble that will compute the provided function.
         The name of this origin will be taken from the name of
-        the function, or *origin_name*, if provided. If an
-        origin with that name already exists, the existing origin
-        will be used rather than creating a new one.
+        the function.
 
         :param string pre: Name of the node to connect from.
         :param string post: Name of the node to connect to.
-        :param float pstc:
-            post-synaptic time constant for the neurotransmitter/receptor
-            on this connection
         :param transform:
             The linear transfom matrix to apply across the connection.
             If *transform* is T and *pre* represents ``x``,
@@ -158,33 +135,14 @@ class Network(object):
             Should be an N by M array, where N is the dimensionality
             of *post* and M is the dimensionality of *pre*.
         :type transform: array of floats
-        :param index_pre:
-            The indexes of the pre-synaptic dimensions to use.
-            Ignored if *transform* is not None.
-            See :func:`nef.Network.compute_transform()`
-        :param float weight:
-            Scaling factor for a transformation defined with
-            *index_pre* and *index_post*.
-            Ignored if *transform* is not None.
-            See :func:`nef.Network.compute_transform()`
-        :type index_pre: List of integers or a single integer
-        :param index_post:
-            The indexes of the post-synaptic dimensions to use.
-            Ignored if *transform* is not None.
-            See :func:`nef.Network.compute_transform()`
-        :type index_post: List of integers or a single integer 
+        :param Filter filter: the filter
+        :param LearningRule learning_rule: a learning rule to use to update weights
         :param function func:
             Function to be computed by this connection.
             If None, computes ``f(x)=x``.
             The function takes a single parameter ``x``, which is
             the current value of the *pre* ensemble, and must return
             either a float or an array of floats.
-        :param string origin_name:
-            Name of the origin to check for / create to compute
-            the given function.
-            Ignored if func is None. If an origin with this name already
-            exists, the existing origin is used
-            instead of creating a new one.
 
         """
 
@@ -200,122 +158,85 @@ class Network(object):
         # get decoded_output from specified origin
         pre_output = pre_origin.decoded_output
         dim_pre = pre_origin.dimensions 
-      
-        if transform is not None: 
-
-            # there are 3 cases
-            # 1) pre = decoded, post = decoded
-            #     - in this case, transform will be 
-            #                       (post.dimensions x pre.origin.dimensions)
-            #     - decoded_input will be (post.array_size x post.dimensions)
-            # 2) pre = decoded, post = encoded
-            #     - in this case, transform will be size 
-            #         (post.array_size x post.neurons x pre.origin.dimensions)
-            #     - encoded_input will be (post.array_size x post.neurons_num)
-            # 3) pre = encoded, post = encoded
-            #     - in this case, transform will be (post.array_size x 
-            #             post.neurons_num x pre.array_size x pre.neurons_num)
-            #     - encoded_input will be (post.array_size x post.neurons_num)
-
-            # make sure contradicting things aren't simultaneously specified
-            assert ((weight == 1) and (index_pre is None)
-                    and (index_post is None))
-
-            transform = np.array(transform)
-            
-            # check to see if post side is an encoded connection, case 2 or 3
-            #TODO: a better check for this
-            if transform.shape[0] != post.dimensions * post.array_size \
-                                                or len(transform.shape) > 2:
-
-                if transform.shape[0] == post.array_size * post.neurons_num:
-                    transform = transform.reshape(
-                                      [post.array_size, post.neurons_num] +\
-                                                list(transform.shape[1:]))
-                
-                if len(transform.shape) == 2: # repeat array_size times
-                    transform = np.tile(transform, (post.array_size, 1, 1))
-                
-                # check for pre side encoded connection (case 3)
-                if len(transform.shape) > 3 or \
-                       transform.shape[2] == pre.array_size * pre.neurons_num:
-                    
-                    if transform.shape[2] == pre.array_size * pre.neurons_num: 
-                        transform = transform.reshape(
-                                        [post.array_size, post.neurons_num,  
-                                              pre.array_size, pre.neurons_num])
-                    assert transform.shape == \
-                            (post.array_size, post.neurons_num, 
-                             pre.array_size, pre.neurons_num)
-                    
-                    # get spiking output from pre population
-                    pre_output = pre.neurons.output 
-
-                    encoded_output = TT.mul( 
-                        TT.reshape(transform, (post.array_size, post.neurons_num, 
-                        pre.array_size, pre.neurons_num)), TT.reshape(pre_output, 
-                        (pre.array_size, pre.neurons_num)) )
-
-                    # sum the contribution from all pre neurons 
-                    # for each post neuron 
-                    encoded_output = TT.sum(encoded_output, axis=3)
-                    # sum the contribution from each of the 
-                    # pre arrays for each post neuron
-                    encoded_output = TT.sum(encoded_output, axis=2)
-                    # reshape to get rid of the extra dimension
-                    encoded_output = TT.reshape(encoded_output, 
-                        (post.array_size, post.neurons_num))
-
-                    # pass in the pre population encoded output function
-                    # to the post population
-                    post.add_termination(name=pre_name, pstc=pstc, 
-                        encoded_input=encoded_output)
-
-                    return
-                                   
-                else: # otherwise we're in case 2
-                    assert transform.shape ==  \
-                               (post.array_size, post.neurons_num, dim_pre)
-                    
-                    # can't specify a function with either side encoded connection
-                    assert func == None 
-    
-                    pre_output = TT.stack([pre_output] * post.neurons_num)
-                    encoded_output = TT.batched_dot( TT.reshape(transform, 
-                        (post.array_size, post.neurons_num, dim_pre)),
-                        TT.reshape(pre_output, (post.neurons_num, dim_pre, 1)) )
-    
-                    # at this point encoded output should be 
-                    # (post.array_size x post.neurons_num x 1)
-                    encoded_output = TT.reshape(encoded_output, 
-                        (post.array_size, post.neurons_num))
-                    # pass in the pre population encoded output function
-                    # to the post population
-                    post.add_termination(name=pre_name, pstc=pstc, 
-                        encoded_input=encoded_output)
-
-                    return
         
         # if decoded-decoded connection (case 1)
         # compute transform if not given, if given make sure shape is correct
-        transform = self.compute_transform(
-            dim_pre=dim_pre,
-            dim_post=post.dimensions,
-            array_size=post.array_size,
-            weight=weight,
-            index_pre=index_pre,
-            index_post=index_post, 
-            transform=transform)
-    
-        # apply transform matrix, directing pre dimensions
-        # to specific post dimensions
-        decoded_output = TT.dot(transform, pre_output)
+        if transform is None:
+            transform = self.compute_transform(
+                dim_pre=dim_pre,
+                dim_post=post.dimensions,
+                array_size=post.array_size)
 
         # pass in the pre population decoded output function
         # to the post population
-        post.add_termination(name=pre_name, pstc=pstc, 
-            decoded_input=decoded_output) 
-    
+        c = Connection(pre=pre, post=post, transform=transform, filter=filter,
+            func=func, learning_rule=learning_rule)
+        self.add(c)
+
+    def connect_neurons(self, pre, post, weights=None, filter=None, learning_rule=None):
+        """Connect two nodes in the network, while directly specifying the weight matrix
+
+        *pre* and *post* can be strings giving the names of the nodes,
+        or they can be the nodes themselves (Inputs and Ensembles are
+        supported). They can also be actual Origins or Terminations,
+        or any combination of the above. 
+
+        If transform is None, it defaults to the identity matrix.
+        
+        transform must be of size post.dimensions * pre.dimensions.
+
+        If *func* is not None, a new Origin will be created on the
+        pre-synaptic ensemble that will compute the provided function.
+        The name of this origin will be taken from the name of
+        the function.
+
+        :param string pre: Name of the node to connect from.
+        :param string post: Name of the node to connect to.
+        :param transform:
+            The linear transfom matrix to apply across the connection.
+            If *transform* is T and *pre* represents ``x``,
+            then the connection will cause *post* to represent ``Tx``.
+            Should be an N by M array, where N is the dimensionality
+            of *post* and M is the dimensionality of *pre*.
+        :type transform: array of floats
+        :param Filter filter: the filter
+        :param LearningRule learning_rule: a learning rule to use to update weights
+        :param function func:
+            Function to be computed by this connection.
+            If None, computes ``f(x)=x``.
+            The function takes a single parameter ``x``, which is
+            the current value of the *pre* ensemble, and must return
+            either a float or an array of floats.
+
+        """
+
+        # get post Node object from node dictionary
+        post = self.get_object(post)
+
+        # get the origin from the pre Node
+        pre_origin = self.get_origin(pre, func)
+        # get pre Node object from node dictionary
+        pre_name = pre
+        pre = self.get_object(pre)
+
+        # get decoded_output from specified origin
+        pre_output = pre_origin.decoded_output
+        dim_pre = pre_origin.dimensions 
+        
+        # if decoded-decoded connection (case 1)
+        # compute transform if not given, if given make sure shape is correct
+        if transform is None:
+            transform = self.compute_transform(
+                dim_pre=dim_pre,
+                dim_post=post.dimensions,
+                array_size=post.array_size)
+
+        # pass in the pre population decoded output function
+        # to the post population
+        c = Connection(pre=pre, post=post, transform=transform, filter=filter,
+            func=func, learning_rule=learning_rule)
+        self.add(c)
+
     def get_object(self, name):
         """This is a method for parsing input to return the proper object.
 
@@ -397,7 +318,8 @@ class Network(object):
         return post.add_learned_termination(name=pre_name, pre=pre, error=error, 
             pstc=pstc, **kwargs)
 
-    def make_ensemble(self, name, neurons, dimensions, max_rate_uniform=(50,100), intercept_uniform=(-1,1), radius=1, encoders=None): 
+    def make_ensemble(self, name, neurons, dimensions, max_rate_uniform=(50,100),
+                      intercept_uniform=(-1,1), radius=1, encoders=None): 
         """Create and return an ensemble of neurons.
 
         :param string name: name of the ensemble (must be unique)
@@ -410,21 +332,21 @@ class Network(object):
         :returns: the newly created ensemble
 
         """
-        e = ensemble.Ensemble(name, neurons, dimensions, max_rate_uniform, intercept_uniform, radius, encoders, self.dt) 
+        e = ensemble.Ensemble(name, neurons=neurons, dimensions=dimensions,
+            max_rate_uniform=max_rate_uniform, intercept_uniform=intercept_uniform,
+            radius=radius, encoders=encoders)
 
         # store created ensemble in node dictionary
-        #if kwargs.get('mode', None) == 'direct':
-        #    self.tick_nodes.append(e)
-        self.nodes[name] = e
+        self.add(e)
         return e
 
-    def make_input(self, *args, **kwargs): 
-        """Create an input and add it to the network."""
-        i = input.Input(*args, **kwargs)
-        self.add(i)
-        return i
+    def make_node(self, name, output): 
+        """Create a Node and add it to the network."""
+        n = node.Node(name, output=output)
+        self.add(n)
+        return n
         
-    def make_subnetwork(self, name):
+    def make_network(self, name):
         """Create a subnetwork.  This has no functional purpose other than
         to help organize the model.  Components within a subnetwork can
         be accessed through a dotted name convention, so an element B inside
@@ -432,7 +354,7 @@ class Network(object):
         
         :param name: the name of the subnetwork to create        
         """
-        return subnetwork.SubNetwork(name, self)
+        return self.add(network.Network(name, self))
             
     def make_probe(self, target, name=None, dt_sample=0.01, 
                    data_type='decoded', **kwargs):
