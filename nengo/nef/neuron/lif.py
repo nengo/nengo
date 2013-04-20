@@ -3,10 +3,9 @@ import numpy as np
 from .neuron import Neuron
 
 class LIFNeuron(Neuron):
-    def __init__(self, neurons, dimensions, tau_rc=0.02, tau_ref=0.002):
+    def __init__(self, tau_rc=0.02, tau_ref=0.002):
         """Constructor for a set of LIF rate neuron.
 
-        :param int size: number of neurons in set
         :param float dt: timestep for neuron update function
         :param float tau_rc: the RC time constant
         :param float tau_ref: refractory period length (s)
@@ -21,11 +20,11 @@ class LIFNeuron(Neuron):
             of the threshold voltage is accumulated
 
         """
-        Neuron.__init__(self, neurons * dimensions)
         self.tau_rc = tau_rc
         self.tau_ref  = tau_ref
-        self.voltage = np.zeros((neurons, dimensions), 'float32')
-        self.refractory_time = np.zeros((neurons, dimensions), 'float32')
+
+    def _alloc(self, size):
+        return LIFPopulation(size, self)
         
     def make_alpha_bias(self, max_rates, intercepts):
         """Compute the alpha and bias needed to get the given max_rate
@@ -42,6 +41,13 @@ class LIFNeuron(Neuron):
         alpha = (1 - x) / (intercepts - 1.0)
         j_bias = 1 - alpha * intercepts
         return alpha, j_bias
+
+
+class LIFPopulation(object):
+    def __init__(self, size, neuron, dtype='float32'):
+        self.voltage = np.zeros(size, dtype)
+        self.refractory_time = np.zeros(size, dtype)
+        self.output = np.zeros(size, dtype)
 
     # TODO: have a reset() function at the ensemble and network level
     #that would actually call this
@@ -96,4 +102,3 @@ class LIFNeuron(Neuron):
         self.voltage[:] = v * (1 - spiked)
         self.refractory_time[:] = new_refractory_time
         self.output[:] = spiked
-

@@ -30,8 +30,8 @@ class Gaussian(object):
 
 class Base(object):
     def __init__(self, dimensions, array_size=_ARRAY_SIZE):
-        self.dimensions = dimensions
-        self.array_size = array_size
+        self.dimensions = int(dimensions)
+        self.array_size = int(array_size)
 
         self.origin = OrderedDict()
 
@@ -100,7 +100,7 @@ class DirectEnsemble(Base):
         elif encoded_input: 
             self.encoded_input[name] = filter.Filter(pstc, 
                 source=encoded_input, 
-                shape=(self.array_size, len(self.neurons)))
+                shape=(self.array_size, self.neurons))
 
     def tick(self):
 
@@ -124,11 +124,11 @@ class SpikingEnsemble(Base):
     """
     
     def __init__(self, neurons, dimensions, array_size=_ARRAY_SIZE,
+            neuron_model=None,
             max_rate=(200, 300), intercept=(-1.0, 1.0),
             radius=1.0,
             encoders=None,
             seed=None,
-            array_size=_ARRAY_SIZE,
             decoder_noise=0.1,
             noise=None,
             ):
@@ -161,16 +161,22 @@ class SpikingEnsemble(Base):
 
         """
         Base.__init__(self, dimensions, array_size)
+        self.neurons = int(neurons)
         if seed is None:
             seed = np.random.randint(1000)
-        self.neurons = neurons
-        if len(neurons) % array_size:
+        if neurons % array_size:
             raise ValueError('array_size must divide population size',
-                    (len(neurons), array_size))
+                    (neurons, array_size))
         self.seed = seed
         self.radius = radius
         self.noise = noise
         self.decoder_noise = decoder_noise
+        if neuron_model is None:
+            self.neuron_model = neuron.lif.LIFNeuron()
+        else:
+            self.neuron_model = neuron_model
+
+        self._population = self.neuron_model._alloc(self.array_size * self.neurons)
 
         # make sure intercept is the right shape
         if isinstance(intercept, (int,float)):
@@ -179,15 +185,16 @@ class SpikingEnsemble(Base):
             intercept.append(1) 
 
         # compute alpha and bias
+        # XXX (specific to neuron model?)
         self.rng = np.random.RandomState(seed=seed)
         self.max_rate = max_rate
         max_rates = self.rng.uniform(
-            size=(self.array_size, len(self.neurons)),
+            size=(self.array_size, self.neurons),
             low=max_rate[0], high=max_rate[1])  
         threshold = self.rng.uniform(
-            size=(self.array_size, len(self.neurons)),
+            size=(self.array_size, self.neurons),
             low=intercept[0], high=intercept[1])
-        alpha, self.bias = self.neurons.make_alpha_bias(max_rates, threshold)
+        alpha, self.bias = self.neuron_model.make_alpha_bias(max_rates, threshold)
 
         # force to 32 bit for consistency / speed
         self.bias = self.bias.astype('float32')
@@ -239,7 +246,7 @@ class SpikingEnsemble(Base):
         elif encoded_input: 
             self.encoded_input[name] = filter.Filter(pstc, 
                 source=encoded_input, 
-                shape=(self.array_size, len(self.neurons)))
+                shape=(self.array_size, self.neurons))
 
     def add_learned_termination(self, name, pre, error, pstc, 
                                 learned_termination_class=hPESTermination,
@@ -264,7 +271,7 @@ class SpikingEnsemble(Base):
         if 'weight_matrix' not in kwargs.keys():
             weight_matrix = np.random.uniform(
                 size=(self.array_size * pre.array_size,
-                      len(self.neurons), len(pre.neurons)),
+                      self.neurons, pre.neurons),
                 low=-.001, high=.001)
             kwargs['weight_matrix'] = weight_matrix
         else:
@@ -276,7 +283,7 @@ class SpikingEnsemble(Base):
             pre=pre, post=self, error=error, **kwargs)
 
         learn_projections = [np.dot(
-            pre.neurons.output[learned_term.pre_index(i)],  
+            pre.population.output[learned_term.pre_index(i)],  
             learned_term.weight_matrix[i % self.array_size]) 
             for i in range(self.array_size * pre.array_size)]
 
@@ -284,10 +291,10 @@ class SpikingEnsemble(Base):
         # going to reshape and sum along the 0 axis
         learn_output = np.sum( 
             np.reshape(learn_projections, 
-            (pre.array_size, self.array_size, len(self.neurons))), axis=0)
-        # reshape to make it (array_size x len(self.neurons))
+            (pre.array_size, self.array_size, self.neurons)), axis=0)
+        # reshape to make it (array_size x self.neurons)
         learn_output = np.reshape(learn_output, 
-            (self.array_size, len(self.neurons)))
+            (self.array_size, self.neurons))
 
         # the input_current from this connection during simulation
         self.add_termination(name=name, pstc=pstc, encoded_input=learn_output)
@@ -325,7 +332,7 @@ class SpikingEnsemble(Base):
         if encoders is None:
             # if no encoders specified, generate randomly
             encoders = self.rng.normal(
-                size=(self.array_size, len(self.neurons), self.dimensions))
+                size=(self.array_size, self.neurons, self.dimensions))
             assert encoders.ndim == 3
         else:
             # if encoders were specified, cast list as array
@@ -333,8 +340,8 @@ class SpikingEnsemble(Base):
             # repeat array until 'encoders' is the same length
             # as number of neurons in population
             encoders = np.tile(encoders,
-                (len(self.neurons) / len(encoders) + 1)
-                               ).T[:len(self.neurons), :self.dimensions]
+                (self.neurons / len(encoders) + 1)
+                               ).T[:self.neurons, :self.dimensions]
             encoders = np.tile(encoders, (self.array_size, 1, 1))
 
             assert encoders.ndim == 3
