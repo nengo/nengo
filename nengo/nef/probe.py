@@ -37,13 +37,7 @@ class Probe(object):
         # create a filter to filter the data
         self.filter = Filter(pstc, source=target)
 
-    def update(self, dt):
-        """
-        :param float dt: the timestep of the update
-        """
-        return self.filter.update(dt)
-
-    def theano_tick(self):
+    def update(self):
         """
         """
         i_samp = int(self.t / self.dt_sample)
