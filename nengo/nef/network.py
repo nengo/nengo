@@ -2,8 +2,6 @@ import random
 import collections
 import quantities
 
-import theano
-from theano import tensor as TT
 import numpy as np
 
 from . import ensemble
@@ -32,27 +30,20 @@ class Network(object):
         self.fixed_seed = fixed_seed
         # all the nodes in the network, indexed by name
         self.nodes = {}
-        # the function call to run the theano portions of the model
-        self.theano_tick = None
-        # the list of nodes that have non-theano code
+        # the list of nodes 
         self.tick_nodes = [] 
         self.random = random.Random()
         if seed is not None:
             self.random.seed(seed)
           
     def add(self, node):
-        """Add an arbitrary non-theano node to the network.
+        """Add a node to the network.
 
-        Used for inputs, SimpleNodes, and Probes. These nodes will be
-        added to the Theano graph if the node has an "update()" function,
-        but will also be triggered explicitly at every tick
-        via the node's `theano_tick()` function.
+        Used for inputs, SimpleNodes, and Probes. 
         
         :param Node node: the node to add to this network
 
         """
-        # remake theano_tick function, in case the node has Theano updates 
-        self.theano_tick = None 
         self.tick_nodes.append(node)
         self.nodes[node.name] = node
 
@@ -196,9 +187,6 @@ class Network(object):
             instead of creating a new one.
 
         """
-        # reset timer in case the model has been run,
-        # as adding a new node requires rebuilding the theano function 
-        self.theano_tick = None  
 
         # get post Node object from node dictionary
         post = self.get_object(post)
@@ -279,7 +267,7 @@ class Network(object):
                         (post.array_size, post.neurons_num))
 
                     # pass in the pre population encoded output function
-                    # to the post population, connecting them for theano
+                    # to the post population
                     post.add_termination(name=pre_name, pstc=pstc, 
                         encoded_input=encoded_output)
 
@@ -302,7 +290,7 @@ class Network(object):
                     encoded_output = TT.reshape(encoded_output, 
                         (post.array_size, post.neurons_num))
                     # pass in the pre population encoded output function
-                    # to the post population, connecting them for theano
+                    # to the post population
                     post.add_termination(name=pre_name, pstc=pstc, 
                         encoded_input=encoded_output)
 
@@ -324,7 +312,7 @@ class Network(object):
         decoded_output = TT.dot(transform, pre_output)
 
         # pass in the pre population decoded output function
-        # to the post population, connecting them for theano
+        # to the post population
         post.add_termination(name=pre_name, pstc=pstc, 
             decoded_input=decoded_output) 
     
@@ -431,8 +419,6 @@ class Network(object):
 
         # just in case the model has been run previously,
         # as adding a new node means we have to rebuild
-        # the theano function
-        self.theano_tick = None
 
         kwargs['dt'] = self.dt
         e = ensemble.Ensemble(*args, **kwargs) 
@@ -443,16 +429,6 @@ class Network(object):
         self.nodes[name] = e
         return e
 
-    def make_array(self, name, neurons, array_size, dimensions=1, **kwargs):
-        """Generate a network array specifically.
-
-        This function is depricated; use for legacy code
-        or non-theano API compatibility.
-        """
-        return self.make(
-            name=name, neurons=neurons, dimensions=dimensions,
-            array_size=array_size, **kwargs)
-    
     def make_input(self, *args, **kwargs): 
         """Create an input and add it to the network."""
         i = input.Input(*args, **kwargs)
@@ -469,12 +445,11 @@ class Network(object):
         """
         return subnetwork.SubNetwork(name, self)
             
-
     def make_probe(self, target, name=None, dt_sample=0.01, 
                    data_type='decoded', **kwargs):
         """Add a probe to measure the given target.
         
-        :param target: a Theano shared variable to record
+        :param target: a variable to record
         :param name: the name of the probe
         :param dt_sample: the sampling frequency of the probe
         :returns: The Probe object
