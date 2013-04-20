@@ -1,5 +1,3 @@
-import theano
-from theano import tensor as TT
 import numpy as np
 
 
@@ -62,16 +60,25 @@ class Neuron(object):
         :param int size: number of neurons in this population
 
         """
-        self.size = size
-        # set up theano internal state variable
-        self.output = theano.shared(np.zeros(size).astype('float32'), 
-                                    name='neuron.output')
+        self.output = np.zeros(size).astype('float32')
+
+    @property
+    def shape(self):
+        return len(self.output)
+
+    def __len__(self):
+        return self.output.size
+
+    def hashable_state(self):
+        return ()
+
 
     def reset(self):
         """Reset the state of the neuron."""
-        self.output.set_value(np.zeros(self.size).astype('float32'))
+        self.output[:] = 0
 
-    def update(self, input_current):
+
+    def step(self, input_current):
         """All neuron subclasses must have an update function.
 
         The update function takes in input_current and returns

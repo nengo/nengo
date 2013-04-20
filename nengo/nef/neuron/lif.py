@@ -1,33 +1,31 @@
 import collections
-
 import numpy as np
-import theano
-from theano import tensor as TT
-
 from .neuron import Neuron
 
 class LIFNeuron(Neuron):
-    def __init__(self, size, tau_rc=0.02, tau_ref=0.002):
+    def __init__(self, tau_rc=0.02, tau_ref=0.002):
         """Constructor for a set of LIF rate neuron.
 
-        :param int size: number of neurons in set
         :param float dt: timestep for neuron update function
         :param float tau_rc: the RC time constant
         :param float tau_ref: refractory period length (s)
 
+        :param int neurons: number of neurons in this population
+        :param int dimensions:
+            number of dimensions in the vector space
+            that these neurons represent
+        :param float tau_ref: length of refractory period
+        :param float tau_rc:
+            RC constant; approximately how long until 2/3
+            of the threshold voltage is accumulated
+
         """
-        Neuron.__init__(self, size)
         self.tau_rc = tau_rc
         self.tau_ref  = tau_ref
-        self.voltage = theano.shared(
-            np.zeros(size).astype('float32'), name='lif.voltage')
-        self.refractory_time = theano.shared(
-            np.zeros(size).astype('float32'), name='lif.refractory_time')
-        
-    #TODO: make this generic so it can be applied to any neuron model
-    # (by running the neurons and finding their response function),
-    # rather than this special-case implementation for LIF        
 
+    def _alloc(self, size):
+        return LIFPopulation(size, self)
+        
     def make_alpha_bias(self, max_rates, intercepts):
         """Compute the alpha and bias needed to get the given max_rate
         and intercept values.
@@ -38,11 +36,18 @@ class LIFNeuron(Neuron):
         :param float array intercepts: x-intercepts of neurons
         
         """
-        x = 1.0 / (1 - TT.exp(
+        x = 1.0 / (1 - np.exp(
                 (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
         alpha = (1 - x) / (intercepts - 1.0)
         j_bias = 1 - alpha * intercepts
         return alpha, j_bias
+
+
+class LIFPopulation(object):
+    def __init__(self, size, neuron, dtype='float32'):
+        self.voltage = np.zeros(size, dtype)
+        self.refractory_time = np.zeros(size, dtype)
+        self.output = np.zeros(size, dtype)
 
     # TODO: have a reset() function at the ensemble and network level
     #that would actually call this
@@ -67,17 +72,17 @@ class LIFNeuron(Neuron):
         dV = dt / self.tau_rc * (J - self.voltage)
 
         # increase the voltage, ignore values below 0
-        v = TT.maximum(self.voltage + dV, 0)  
+        v = np.maximum(self.voltage + dV, 0)  
         
         # handle refractory period        
         post_ref = 1.0 - (self.refractory_time - dt) / dt
 
         # set any post_ref elements < 0 = 0, and > 1 = 1
-        v *= TT.clip(post_ref, 0, 1)
+        v *= np.clip(post_ref, 0, 1)
         
         # determine which neurons spike
         # if v > 1 set spiked = 1, else 0
-        spiked = TT.switch(v > 1, 1.0, 0.0)
+        spiked = np.switch(v > 1, 1.0, 0.0)
         
         # adjust refractory time (neurons that spike get
         # a new refractory time set, all others get it reduced by dt)
@@ -88,15 +93,12 @@ class LIFNeuron(Neuron):
 
         # adjust refractory time (neurons that spike get a new
         # refractory time set, all others get it reduced by dt)
-        new_refractory_time = TT.switch(
+        new_refractory_time = np.switch(
             spiked, spiketime + self.tau_ref, self.refractory_time - dt)
 
         # return an ordered dictionary of internal variables to update
         # (including setting a neuron that spikes to a voltage of 0)
-        # important that it's ordered, due to theano memory optimizations
 
-        return collections.OrderedDict({
-                self.voltage: (v * (1 - spiked)).astype('float32'),
-                self.refractory_time: new_refractory_time.astype('float32'),
-                self.output: spiked.astype('float32'),
-                })
+        self.voltage[:] = v * (1 - spiked)
+        self.refractory_time[:] = new_refractory_time
+        self.output[:] = spiked
