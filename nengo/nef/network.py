@@ -118,8 +118,8 @@ class Network(object):
 
         return transform
         
-    def connect(self, pre, post, transform=None, filter=None, 
-                func=None, learning_rule=None):
+    def connect(self, pre, post, transform=None, function=None,
+                filter=None, learning_rule=None):
         """Connect two nodes in the network.
 
         *pre* and *post* can be strings giving the names of the nodes,
@@ -156,14 +156,14 @@ class Network(object):
 
         """
 
+        # get pre Node object from node dictionary
+        pre = self.get_object(pre)
+
         # get post Node object from node dictionary
         post = self.get_object(post)
 
         # get the origin from the pre Node
-        pre_origin = self.get_origin(pre, func)
-        # get pre Node object from node dictionary
-        pre_name = pre
-        pre = self.get_object(pre)
+        pre_origin = self.get_origin(pre, function)
 
         # get decoded_output from specified origin
         pre_output = pre_origin.decoded_output
@@ -180,7 +180,7 @@ class Network(object):
         # pass in the pre population decoded output function
         # to the post population
         c = Connection(pre=pre, post=post, transform=transform, filter=filter,
-            func=func, learning_rule=learning_rule)
+                       function=function, learning_rule=learning_rule)
         self.add(c)
 
     def connect_neurons(self, pre, post, weights=None, filter=None, learning_rule=None):
