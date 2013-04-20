@@ -74,31 +74,6 @@ class Network(object):
         elif isinstance(object, probe.Probe): self.Probes.append(object) 
         else: raise Exception('Object type not recognized')
 
-    def compute_transform(self, dim_pre, dim_post, array_size, weight=1,
-                          index_pre=None, index_post=None, transform=None):
-        """Helper function used by :func:`nef.Network.connect()` to create
-        the `dim_post` by `dim_pre` transform matrix.
-
-        Values are either 0 or *weight*. *index_pre* and *index_post*
-        are used to determine which values are non-zero, and indicate
-        which dimensions of the pre-synaptic ensemble should be routed
-        to which dimensions of the post-synaptic ensemble.
-
-        :param int dim_pre: first dimension of transform matrix
-        :param int dim_post: second dimension of transform matrix
-        :param int array_size: size of the network array
-        :param float weight: the non-zero value to put into the matrix
-        :param index_pre: the indexes of the pre-synaptic dimensions to use
-        :type index_pre: list of integers or a single integer
-        :param index_post:
-            the indexes of the post-synaptic dimensions to use
-        :type index_post: list of integers or a single integer
-        :returns:
-            a two-dimensional transform matrix performing
-            the requested routing
-
-        """
-
     def connect(self, pre, post, transform=None, filter=None, 
                 func=None, learning_rule=None):
         """Connect two nodes in the network.
@@ -214,7 +189,7 @@ class Network(object):
             node = self.nodes[split[0]]
             return node.origin[split[1]]
        
-    def get_origin(self, name, func=None):
+    def get(self, name, func=None):
         """This method takes in a string and returns the decoded_output function 
         of this object. If no origin is specified in name then 'X' is used.
 
@@ -253,6 +228,11 @@ class Network(object):
 
         return obj
 
+    def make_alias(self, name, target):
+        """
+        """
+        pass
+
     def make_ensemble(self, name, neurons, dimensions, max_rate_uniform=(50,100),
                       intercept_uniform=(-1,1), radius=1, encoders=None): 
         """Create and return an ensemble of neurons.
@@ -281,7 +261,7 @@ class Network(object):
         self.add(n)
         return n
         
-    def make_network(self, name):
+    def make_network(self, name, seed=None):
         """Create a subnetwork.  This has no functional purpose other than
         to help organize the model.  Components within a subnetwork can
         be accessed through a dotted name convention, so an element B inside
@@ -291,7 +271,7 @@ class Network(object):
         """
         return self.add(network.Network(name, self))
             
-    def make_probe(self, target, sample_every=0.01, static=False):
+    def probe(self, target, sample_every=0.01, static=False):
         """Add a probe to measure the given target.
         
         :param target: a variable to record
@@ -302,9 +282,6 @@ class Network(object):
         """
         i = 0
         name = None
-        while name is None or self.nodes.has_key(name):
-            i += 1
-            name = ("Probe%d" % i)
 
         # get the signal to record
         if data_type == 'decoded':
@@ -317,6 +294,11 @@ class Network(object):
             target = target.neurons.output
 
         p = probe.Probe(name=name, target=target, sample_every=sample_every, static=static)
-        self.add(p)
-        return p
-            
+        self.Probes.append(p)
+
+    def remove(self, obj):
+        """Removes an object from the network.
+        
+        :param obj: The object to remove
+        :param type: <nengo string> or Ensemble, Node, Network, Connection
+        """
