@@ -409,37 +409,24 @@ class Network(object):
         return post.add_learned_termination(name=pre_name, pre=pre, error=error, 
             pstc=pstc, **kwargs)
 
-    def make(self, name, *args, **kwargs): 
+    def make_ensemble(self, name, neurons, dimensions, max_rate_uniform=(50,100), intercept_uniform=(-1,1), radius=1, encoders=None): 
         """Create and return an ensemble of neurons.
 
-        Note that all ensembles are actually arrays of length 1.
-        
         :param string name: name of the ensemble (must be unique)
-        :param int seed:
-            Random number seed to use.
-            If this is None and the Network was constructed
-            with a seed parameter, a seed will be randomly generated.
-        :returns: the newly created ensemble      
+        :param int neurons: number of neurons in the ensemble
+        :param int dimensions: number of dimensions the ensemble represents
+        :param tuple max_rate_uniform: distribution of max firing rates of the neurons in the ensemble
+        :param tuple intercept_uniform: distribution of neuron intercepts
+        :param float radius: radius
+        :param list encoders: the encoders
+        :returns: the newly created ensemble
 
         """
-        if 'seed' not in kwargs.keys():
-            if self.fixed_seed is not None:
-                kwargs['seed'] = self.fixed_seed
-            else:
-                # if no seed provided, get one randomly from the rng
-                kwargs['seed'] = self.random.randrange(0x7fffffff)
-
-        # just in case the model has been run previously,
-        # as adding a new node means we have to rebuild
-        # the theano function
-        self.theano_tick = None
-
-        kwargs['dt'] = self.dt
-        e = ensemble.Ensemble(*args, **kwargs) 
+        e = ensemble.Ensemble(name, neurons, dimensions, max_rate_uniform, intercept_uniform, radius, encoders, self.dt) 
 
         # store created ensemble in node dictionary
-        if kwargs.get('mode', None) == 'direct':
-            self.tick_nodes.append(e)
+        #if kwargs.get('mode', None) == 'direct':
+        #    self.tick_nodes.append(e)
         self.nodes[name] = e
         return e
 
