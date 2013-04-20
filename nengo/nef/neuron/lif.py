@@ -1,9 +1,5 @@
 import collections
-
 import numpy as np
-import theano
-from theano import tensor as TT
-
 from .neuron import Neuron
 
 class LIFNeuron(Neuron):
@@ -19,15 +15,9 @@ class LIFNeuron(Neuron):
         Neuron.__init__(self, size)
         self.tau_rc = tau_rc
         self.tau_ref  = tau_ref
-        self.voltage = theano.shared(
-            np.zeros(size).astype('float32'), name='lif.voltage')
-        self.refractory_time = theano.shared(
-            np.zeros(size).astype('float32'), name='lif.refractory_time')
+        self.voltage = np.zeros(size, 'float32')
+        self.refractory_time = np.zeros(size, 'float32')
         
-    #TODO: make this generic so it can be applied to any neuron model
-    # (by running the neurons and finding their response function),
-    # rather than this special-case implementation for LIF        
-
     def make_alpha_bias(self, max_rates, intercepts):
         """Compute the alpha and bias needed to get the given max_rate
         and intercept values.
@@ -38,7 +28,7 @@ class LIFNeuron(Neuron):
         :param float array intercepts: x-intercepts of neurons
         
         """
-        x = 1.0 / (1 - TT.exp(
+        x = 1.0 / (1 - np.exp(
                 (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
         alpha = (1 - x) / (intercepts - 1.0)
         j_bias = 1 - alpha * intercepts
@@ -67,17 +57,17 @@ class LIFNeuron(Neuron):
         dV = dt / self.tau_rc * (J - self.voltage)
 
         # increase the voltage, ignore values below 0
-        v = TT.maximum(self.voltage + dV, 0)  
+        v = np.maximum(self.voltage + dV, 0)  
         
         # handle refractory period        
         post_ref = 1.0 - (self.refractory_time - dt) / dt
 
         # set any post_ref elements < 0 = 0, and > 1 = 1
-        v *= TT.clip(post_ref, 0, 1)
+        v *= np.clip(post_ref, 0, 1)
         
         # determine which neurons spike
         # if v > 1 set spiked = 1, else 0
-        spiked = TT.switch(v > 1, 1.0, 0.0)
+        spiked = np.switch(v > 1, 1.0, 0.0)
         
         # adjust refractory time (neurons that spike get
         # a new refractory time set, all others get it reduced by dt)
@@ -88,15 +78,13 @@ class LIFNeuron(Neuron):
 
         # adjust refractory time (neurons that spike get a new
         # refractory time set, all others get it reduced by dt)
-        new_refractory_time = TT.switch(
+        new_refractory_time = np.switch(
             spiked, spiketime + self.tau_ref, self.refractory_time - dt)
 
         # return an ordered dictionary of internal variables to update
         # (including setting a neuron that spikes to a voltage of 0)
-        # important that it's ordered, due to theano memory optimizations
 
-        return collections.OrderedDict({
-                self.voltage: (v * (1 - spiked)).astype('float32'),
-                self.refractory_time: new_refractory_time.astype('float32'),
-                self.output: spiked.astype('float32'),
-                })
+        self.voltage[:] = v * (1 - spiked)
+        self.refractory_time[:] = new_refractory_time
+        self.output[:] = spiked
+

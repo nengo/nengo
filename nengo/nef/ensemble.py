@@ -1,7 +1,3 @@
-import theano
-#from theano.tensor.shared_randomstreams import RandomStreams
-from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
-from theano import tensor as TT
 import numpy as np
 import collections
 
@@ -17,11 +13,14 @@ class Ensemble:
     
     """
     
-    def __init__(self, neurons, dimensions, dt, tau_ref=0.002, tau_rc=0.02,
-                 max_rate=(200, 300), intercept=(-1.0, 1.0), radius=1.0,
-                 encoders=None, seed=None, neuron_type='lif',
+    def __init__(self, neurons, dimensions, dt,
+                 max_rate=(200, 300), intercept=(-1.0, 1.0),
+                 radius=1.0,
+                 encoders=None, seed=None,
                  array_size=1, eval_points=None, decoder_noise=0.1,
-                 noise_type='uniform', noise=None, mode='spiking'):
+                 noise_type='uniform',
+                 noise=None,
+                 mode='spiking'):
         """Construct an ensemble composed of the specific neuron model,
         with the specified neural parameters.
 
@@ -175,7 +174,7 @@ class Ensemble:
         if decoded_input: 
             if self.mode is not 'direct': 
                 # rescale decoded_input by this neuron's radius
-                source = TT.true_div(decoded_input, self.radius)
+                source = np.true_div(decoded_input, self.radius)
             # ignore radius in direct mode
             else: source = decoded_input
             self.decoded_input[name] = filter.Filter(pstc, 
@@ -220,18 +219,18 @@ class Ensemble:
         learned_term = learned_termination_class(
             pre=pre, post=self, error=error, **kwargs)
 
-        learn_projections = [TT.dot(
+        learn_projections = [np.dot(
             pre.neurons.output[learned_term.pre_index(i)],  
             learned_term.weight_matrix[i % self.array_size]) 
             for i in range(self.array_size * pre.array_size)]
 
         # now want to sum all the output to each of the post ensembles 
         # going to reshape and sum along the 0 axis
-        learn_output = TT.sum( 
-            TT.reshape(learn_projections, 
+        learn_output = np.sum( 
+            np.reshape(learn_projections, 
             (pre.array_size, self.array_size, self.neurons_num)), axis=0)
         # reshape to make it (array_size x neurons_num)
-        learn_output = TT.reshape(learn_output, 
+        learn_output = np.reshape(learn_output, 
             (self.array_size, self.neurons_num))
 
         # the input_current from this connection during simulation
@@ -297,8 +296,8 @@ class Ensemble:
             encoders = np.tile(encoders, (self.array_size, 1, 1))
 
         # normalize encoders across represented dimensions 
-        norm = TT.sum(encoders * encoders, axis=[2], keepdims=True)
-        encoders = encoders / TT.sqrt(norm)        
+        norm = np.sum(encoders * encoders, axis=[2], keepdims=True)
+        encoders = encoders / np.sqrt(norm)        
 
         return theano.function([], encoders)()
 
@@ -356,8 +355,7 @@ class Ensemble:
             if len(self.decoded_input) > 0:
                 # add to input current for each neuron as
                 # represented input signal x preferred direction
-                #TODO: use TT.batched_dot function here instead?
-                J = [J[i] + TT.dot(self.shared_encoders[i], X[i].T)
+                J = [J[i] + np.dot(self.shared_encoders[i], X[i].T)
                      for i in range(self.array_size)]
 
             # if noise has been specified for this neuron,
@@ -395,5 +393,5 @@ class Ensemble:
                 if o.func is None:
                     if len(self.decoded_input) > 0:
                         updates.update(collections.OrderedDict({o.decoded_output: 
-                            TT.flatten(X).astype('float32')}))
+                            np.flatten(X).astype('float32')}))
         return updates
