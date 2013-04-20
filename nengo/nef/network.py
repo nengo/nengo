@@ -28,18 +28,38 @@ class Network(object):
 
         """
         self.name = name
+
+        # metadata and properties
+        self._metadata = {}
+        self._properties = {}
+        
+        # I think the random seed stuff should be part of Model now
         self.seed = seed
         self.fixed_seed = fixed_seed
         self.random = random.Random()
         if seed is not None:
             self.random.seed(seed)
+
         # dictionaries for the objects in the network
         self.Connections = []
         self.Ensembles = []
         self.Networks = []
         self.Nodes = []
         self.Probes = []
-          
+    
+    @property
+    def metadata(self):
+        return self._metadata
+
+    @metadata.setter
+    def metadata(self, value):
+        self._metadata = value
+        
+    @property
+    def properties(self):
+        # Compute statistics here (like neuron count, etc)
+        return self._properties
+    
     def add(self, object):
         """Add an object to the network to the appropriate list.
         
@@ -117,14 +137,14 @@ class Network(object):
 
         """
 
+        # get pre Node object from node dictionary
+        pre = self.get_object(pre)
+
         # get post Node object from node dictionary
         post = self.get_object(post)
 
         # get the origin from the pre Node
-        pre_origin = self.get_origin(pre, func)
-        # get pre Node object from node dictionary
-        pre_name = pre
-        pre = self.get_object(pre)
+        pre_origin = self.get_origin(pre, function)
 
         # get decoded_output from specified origin
         pre_output = pre_origin.decoded_output
@@ -141,72 +161,34 @@ class Network(object):
         # pass in the pre population decoded output function
         # to the post population
         c = Connection(pre=pre, post=post, transform=transform, filter=filter,
-            func=func, learning_rule=learning_rule)
+                       function=function, learning_rule=learning_rule)
         self.add(c)
+        return c
 
     def connect_neurons(self, pre, post, weights=None, filter=None, learning_rule=None):
-        """Connect two nodes in the network, while directly specifying the weight matrix
+        """Connect two nodes in the network, directly specifying the weight matrix
 
         *pre* and *post* can be strings giving the names of the nodes,
         or they can be the nodes themselves (Inputs and Ensembles are
-        supported). They can also be actual Origins or Terminations,
-        or any combination of the above. 
-
-        If transform is None, it defaults to the identity matrix.
-        
-        transform must be of size post.dimensions * pre.dimensions.
-
-        If *func* is not None, a new Origin will be created on the
-        pre-synaptic ensemble that will compute the provided function.
-        The name of this origin will be taken from the name of
-        the function.
+        supported).
 
         :param string pre: Name of the node to connect from.
         :param string post: Name of the node to connect to.
-        :param transform:
-            The linear transfom matrix to apply across the connection.
-            If *transform* is T and *pre* represents ``x``,
-            then the connection will cause *post* to represent ``Tx``.
-            Should be an N by M array, where N is the dimensionality
-            of *post* and M is the dimensionality of *pre*.
-        :type transform: array of floats
+        :param weights: The connection weight matrix between the populations.
+        :type weights: An (pre.dimensions x post.dimensions) array of floats
         :param Filter filter: the filter
         :param LearningRule learning_rule: a learning rule to use to update weights
-        :param function func:
-            Function to be computed by this connection.
-            If None, computes ``f(x)=x``.
-            The function takes a single parameter ``x``, which is
-            the current value of the *pre* ensemble, and must return
-            either a float or an array of floats.
-
         """
 
-        # get post Node object from node dictionary
+        # dereference pre- and post- strings if necessary
+        pre = self.get_object(pre)
         post = self.get_object(post)
 
-        # get the origin from the pre Node
-        pre_origin = self.get_origin(pre, func)
-        # get pre Node object from node dictionary
-        pre_name = pre
-        pre = self.get_object(pre)
-
-        # get decoded_output from specified origin
-        pre_output = pre_origin.decoded_output
-        dim_pre = pre_origin.dimensions 
-        
-        # if decoded-decoded connection (case 1)
-        # compute transform if not given, if given make sure shape is correct
-        if transform is None:
-            transform = self.compute_transform(
-                dim_pre=dim_pre,
-                dim_post=post.dimensions,
-                array_size=post.array_size)
-
-        # pass in the pre population decoded output function
-        # to the post population
-        c = Connection(pre=pre, post=post, transform=transform, filter=filter,
-            func=func, learning_rule=learning_rule)
+        # create connection
+        c = Connection(pre=pre, post=post, weights=weights,
+                       filter=filter, learning_rule=learning_rule)
         self.add(c)
+        return c
 
     def get_object(self, name):
         """This is a method for parsing input to return the proper object.
@@ -214,10 +196,11 @@ class Network(object):
         The only thing we need to check for here is a ':',
         indicating an origin.
 
-        :param string name: the name of the desired object
+        :param string name: the name (or a reference to) the desired object
         
         """
-        assert isinstance(name, str)
+        if !isinstance(name, str):
+            return name
 
         # separate into node and origin, if specified
         split = name.split(':')
@@ -270,25 +253,6 @@ class Network(object):
 
         return obj
 
-    def learn(self, pre, post, error, pstc=0.01, **kwargs):
-        """Add a connection with learning between pre and post,
-        modulated by error. Error can be a Node, or an origin. If no 
-        origin is specified in the format node:origin, then 'X' is used.
-
-        :param Ensemble pre: the pre-synaptic population
-        :param Ensemble post: the post-synaptic population
-        :param Ensemble error: the population that provides the error signal
-        :param list weight_matrix:
-            the initial connection weights with which to start
-
-        """
-        pre_name = pre
-        pre = self.get_object(pre)
-        post = self.get_object(post)
-        error = self.get_origin(error)
-        return post.add_learned_termination(name=pre_name, pre=pre, error=error, 
-            pstc=pstc, **kwargs)
-
     def make_ensemble(self, name, neurons, dimensions, max_rate_uniform=(50,100),
                       intercept_uniform=(-1,1), radius=1, encoders=None): 
         """Create and return an ensemble of neurons.
@@ -327,18 +291,17 @@ class Network(object):
         """
         return self.add(network.Network(name, self))
             
-    def make_probe(self, target, name=None, dt_sample=0.01, 
-                   data_type='decoded', **kwargs):
+    def make_probe(self, target, sample_every=0.01, static=False):
         """Add a probe to measure the given target.
         
         :param target: a variable to record
-        :param name: the name of the probe
-        :param dt_sample: the sampling frequency of the probe
+        :param sample_every: the sampling frequency of the probe
+        :param static: True if this variable should only be sampled once.
         :returns: The Probe object
         
         """
         i = 0
-        target_name = target + '-' + data_type
+        name = None
         while name is None or self.nodes.has_key(name):
             i += 1
             name = ("Probe%d" % i)
@@ -352,11 +315,8 @@ class Network(object):
             # check to make sure target is an ensemble
             assert isinstance(target, ensemble.Ensemble)
             target = target.neurons.output
-            # set the filter to zero
-            kwargs['pstc'] = 0
 
-        p = probe.Probe(name=name, target=target, target_name=target_name, 
-            dt_sample=dt_sample, **kwargs)
+        p = probe.Probe(name=name, target=target, sample_every=sample_every, static=static)
         self.add(p)
         return p
             
