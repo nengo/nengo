@@ -6,11 +6,11 @@ from nengo.connection import gen_transform
 ##
 ## Network diagram:
 ##
-##      [Input A] ---> (A) 
-##                       \ 
-##                       (C)
-##                       /
-##      [Input B] ---> (B)
+##      [Input A] ---> (A) --.
+##                           v
+##                          (C) 
+##                           ^
+##      [Input B] ---> (B) --'
 ##
 ##
 ## Network behaviour:

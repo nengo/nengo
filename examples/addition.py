@@ -5,11 +5,11 @@ from .. import nengo as nengo
 ##
 ## Network diagram:
 ##
-##      [Input A] ---> (A) 
-##                       \
-##                        + ---> (C) 
-##                       /
-##      [Input B] ---> (B)
+##      [Input A] ---> (A) --.
+##                           v
+##                          (C) 
+##                           ^
+##      [Input B] ---> (B) --'
 ##
 ##
 ## Network behaviour:
