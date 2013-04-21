@@ -36,10 +36,13 @@ model.make_ensemble('A', 100, 1, radius = 10)   # Make a population with 100 neu
                                                 #   (default is 1)
 model.make_ensemble('B', 100, 1, radius = 10)   # Make a population with 100 neurons, 
                                                 #   1 dimensions, a radius of 10 
-model.make_ensemble('Combined', 225, 2,         # Make a population with 225 neurons, 
-                    radius = 15)                #   2 dimensions, and set a larger  
+C = model.make_ensemble('C', 225, 2,            # Make a population with 225 neurons, 
+                        radius = 15)            #   2 dimensions, and set a larger  
                                                 #   radius (so 10, 10 input still fits 
                                                 #   within the circle of that radius)
+C.encoders = [[1,1],[1,-1],[-1,1],[-1,-1]]      # Set the encoders of ensembles in the C 
+                                                #   network array such that both A and B inputs
+                                                #   are represented equally in C
 model.make_ensemble('D', 100, 1, radius = 100)  # Make a population with 100 neurons, 
                                                 #   1 dimensions, a radius of 100 (so 
                                                 #   that it can represent the maximum 
@@ -55,10 +58,9 @@ model.connect('B', 'C', transform = gen_transform(index_post = 1))
 
 def product(x):                                 # Define the product function
     return x[0] * x[1]
-
 model.connect('C', 'D', func = product)         # Create the output connection that maps the
-                                                #   2D input to the appropriate 1D function 
-                                                #   'product'
+                                                #   2D input to C the appropriate 1D function 
+                                                #   'product' of D
 
 # Build the model
 model.build()                             

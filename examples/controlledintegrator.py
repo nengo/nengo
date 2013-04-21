@@ -37,10 +37,23 @@ tau = 0.1                                           # Recurrent time constant
 model = nengo.Model('Controlled Integrator')
 
 # Create the model inputs
-model.make_node('Input', {0.2:5, 0.3:0, 0.44:-10,   # Create a controllable input 
-                          0.54:0, 0.8:5, 0.9:0} )   #   function with a default function
-                                                    #   that goes to 5 at time 0.2s, to 0 
-                                                    #   at time 0.3s and so on
+def input_func(t):                                  # Create a function that outputs
+    if t < 0.2:                                     #   5 at time 0.2s, then 0 at time 0.3s,
+        return [0]                                  #   -10 at time 0.44, then 0 at time 0.8,
+    elif t < 0.3:                                   #   5 at time 0.8, then 0 at time 0.9
+        return [5]
+    elif t < 0.44:
+        return [0]
+    elif t < 0.54:
+        return [-10]
+    elif t < 0.8:
+        return [0]
+    elif t < 0.9:
+        return [5]
+    else:
+        return [0]
+model.make_node('Input', input_func)                # Create a controllable input function 
+                                                    #   with the function above
 model.make_node('Control', [1])                     # Create a controllable input function
                                                     #   with a starting value of 1
 
@@ -52,8 +65,7 @@ model.make_ensemble('A', 225, 2,                    # Make a population with 225
 
 # Create the connections within the model
 model.connect('Input', 'A', transform = gen_transform(index_post = 0, weight = tau), 
-              filter = ExponentialPSC(pstc = 0.1))  
-                                                    # Connect all the input signals to the 
+              filter = ExponentialPSC(pstc = 0.1))  # Connect all the input signals to the 
                                                     #   ensemble with the appropriate 1 x 2
                                                     #   mappings, postsynaptic time
                                                     #   constant is 10ms

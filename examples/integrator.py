@@ -32,10 +32,23 @@ tau = 0.1                                           # Recurrent time constant
 model = nengo.Model('Integrator')
 
 # Create the model inputs
-model.make_node('Input', {0.2:5, 0.3:0, 0.44:-10,   # Create a controllable input 
-                          0.54:0, 0.8:5, 0.9:0} )   #   function with a default function
-                                                    #   that goes to 5 at time 0.2s, to 0 
-                                                    #   at time 0.3s and so on
+def input_func(t):                                  # Create a function that outputs
+    if t < 0.2:                                     #   5 at time 0.2s, then 0 at time 0.3s,
+        return [0]                                  #   -10 at time 0.44, then 0 at time 0.8,
+    elif t < 0.3:                                   #   5 at time 0.8, then 0 at time 0.9
+        return [5]
+    elif t < 0.44:
+        return [0]
+    elif t < 0.54:
+        return [-10]
+    elif t < 0.8:
+        return [0]
+    elif t < 0.9:
+        return [5]
+    else:
+        return [0]
+model.make_node('Input', input_func)                # Create a controllable input function 
+                                                    #   with the function above
 
 # Create the neuronal ensembles
 model.make_ensemble('A', 100, 1)                    # Make a population with 100 neurons, 
