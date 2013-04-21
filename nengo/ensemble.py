@@ -128,7 +128,8 @@ class SpikingEnsemble(Base):
     
     def __init__(self, neurons, dimensions, array_size=_ARRAY_SIZE,
             neuron_model=None,
-            max_rate=(200, 300), intercept=(-1.0, 1.0),
+            max_rate=(200, 300),
+            intercept=(-1.0, 1.0),
             radius=1.0,
             encoders=None,
             seed=None,
@@ -164,7 +165,6 @@ class SpikingEnsemble(Base):
 
         """
         Base.__init__(self, dimensions, array_size)
-        self.neurons = int(neurons)
         if seed is None:
             seed = np.random.randint(1000)
         if neurons % array_size:
@@ -175,33 +175,41 @@ class SpikingEnsemble(Base):
         self.noise = noise
         self.decoder_noise = decoder_noise
         if neuron_model is None:
-            self.neuron_model = neuron.lif.LIFNeuron()
+            self.neuron_model = neuron.lif.LIFNeuron(
+                size=array_size * self.neurons)
         else:
             self.neuron_model = neuron_model
+            self.neuron_model.size = array_size * self.neurons
 
-        self._population = self.neuron_model._alloc(self.array_size * self.neurons)
+        self.input_current = Output() # TODO: rename this and stuff.
 
-        # make sure intercept is the right shape
-        if isinstance(intercept, (int,float)):
-            intercept = [intercept, 1]
-        elif len(intercept) == 1:
-            intercept.append(1) 
+        connection = Connection(self.default_output, ...)
 
-        # compute alpha and bias
-        # XXX (specific to neuron model?)
-        self.rng = np.random.RandomState(seed=seed)
+        self.neuron_model.J = self.input_current
+
+        # TODO: make these neuron model attributes
+        self.intercept = intercept
         self.max_rate = max_rate
-        max_rates = self.rng.uniform(
-            size=(self.array_size, self.neurons),
-            low=max_rate[0], high=max_rate[1])  
-        threshold = self.rng.uniform(
-            size=(self.array_size, self.neurons),
-            low=intercept[0], high=intercept[1])
-        alpha, self.bias = self.neuron_model.make_alpha_bias(max_rates, threshold)
 
-        # force to 32 bit for consistency / speed
-        self.bias = self.bias.astype('float32')
-                
+        self.default_output = Output()
+
+    @property
+    def num_neurons
+        self.num_neurons = 
+
+    @property
+    def spikes(self):
+        return self.neuron_model.output
+
+    def build(self, state, dt):
+        state[self.default_output] = np.zeros(
+            (self.array_size, self.dimensions))
+
+        self.neuron_model.max_rate = self.max_rate
+        self.neuron_model.intercept = self.intercept
+
+        self.neuron_model.build(state, dt)
+
         # compute encoders
         self.encoders = self.make_encoders(encoders=encoders)
         # combine encoders and gain for simplification

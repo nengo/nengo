@@ -12,6 +12,7 @@ from . import node
 #from . import subnetwork
 #from . import connections
 #from . import learning_rule
+from ensemble  import Uniform, Gaussian, DirectEnsemble, SpikingEnsemble
 
 class Network(object):
     def __init__(self, name):
@@ -72,9 +73,10 @@ class Network(object):
         """
         if   ensemble.is_ensemble(object): self.Ensembles.append(object)
         elif isinstance(object, Network): self.Network.append(object)
-        elif isinstance(object, node.Node): self.Nodes.append(object)
+        elif node.is_node(object): self.Nodes.append(object)
         elif probe.is_probe(object): self.Probes.append(object) 
-        else: raise Exception('Object type not recognized')
+        else:
+            raise TypeError('Object type not recognized', object)
 
     def connect(self, pre, post, transform=None, filter=None, 
                 func=None, learning_rule=None):
@@ -214,12 +216,12 @@ class Network(object):
                 # set name as the function being calculated
                 origin_name = func.__name__
 
-                #TODO: better analysis to see if we need to build a new origin
-                # (rather than just relying on the name)
-                if origin_name not in obj.origin:
-                    # if an origin for this function hasn't already been created
-                    # create origin with to perform desired func
-                    obj.add_origin(origin_name, func, dt=self.dt)
+            #TODO: better analysis to see if we need to build a new origin
+            # (rather than just relying on the name)
+            if origin_name not in obj.origin:
+                # if an origin for this function hasn't already been created
+                # create origin with to perform desired func
+                obj.add_origin(origin_name, func, dt=self.dt)
 
             obj = obj.origin[origin_name]
 
@@ -235,8 +237,8 @@ class Network(object):
         """
         self.aliases[name] = target
 
-    def make_ensemble(self, name, neurons, dimensions, max_rate_uniform=(50,100),
-                      intercept_uniform=(-1,1), radius=1, encoders=None): 
+    def make_ensemble(self, name, neurons, dimensions, max_rate=(50,100),
+                      intercept=(-1,1), radius=1, encoders=None): 
         """Create and return an ensemble of neurons.
 
         :param string name: name of the ensemble (must be unique)
@@ -249,9 +251,11 @@ class Network(object):
         :returns: the newly created ensemble
 
         """
-        e = ensemble.Ensemble(name, neurons=neurons, dimensions=dimensions,
-            max_rate_uniform=max_rate_uniform, intercept_uniform=intercept_uniform,
-            radius=radius, encoders=encoders)
+        # TODO use name
+        e = SpikingEnsemble(neurons=neurons, dimensions=dimensions,
+                              max_rate=Uniform(*max_rate),
+                              intercept=Uniform(*intercept),
+                              radius=radius, encoders=encoders)
 
         # store created ensemble in node dictionary
         self.add(e)

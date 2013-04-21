@@ -90,8 +90,8 @@ class Model(object):
     def learn(self, pre, post, error, pstc=0.01, **kwargs):
         return self.network.learn(pre, post, error, pstc, **kwargs);
                                   
-    def make(self, name, *args, **kwargs): 
-        return self.network.make(name, *args, **kwargs)
+    def make_ensemble(self, name, *args, **kwargs): 
+        return self.network.make_ensemble(name, *args, **kwargs)
 
     def make_array(self, name, neurons, array_size, dimensions=1, **kwargs):
         return self.network.make_array(name, neurons, array_size, dimensions, **kwargs)

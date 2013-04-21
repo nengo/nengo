@@ -3,7 +3,8 @@ import numpy as np
 from .neuron import Neuron
 
 class LIFNeuron(Neuron):
-    def __init__(self, tau_rc=0.02, tau_ref=0.002):
+    def __init__(self, tau_rc=0.02, tau_ref=0.002,
+                 size=None, max_rate=None, intercept=None, seed=None):
         """Constructor for a set of LIF rate neuron.
 
         :param float dt: timestep for neuron update function
@@ -23,10 +24,23 @@ class LIFNeuron(Neuron):
         self.tau_rc = tau_rc
         self.tau_ref  = tau_ref
 
-    def _alloc(self, size):
-        return LIFPopulation(size, self)
-        
-    def make_alpha_bias(self, max_rates, intercepts):
+        self.size = size
+        self.max_rate = max_rate
+        self.intercept = intercept
+        self.seed = seed
+
+        self.J = None # this is set by the Ensemble
+        self.voltage = Output()
+        self.refractory_time = Output()
+        self.output = Output()
+        self.alpha = Output()
+        self.j_bias = Output()
+
+    @property
+    def default_output(self):
+        return self.spikes
+
+    def make_alpha_bias(self, ):
         """Compute the alpha and bias needed to get the given max_rate
         and intercept values.
         
@@ -36,29 +50,27 @@ class LIFNeuron(Neuron):
         :param float array intercepts: x-intercepts of neurons
         
         """
-        x = 1.0 / (1 - np.exp(
-                (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
-        alpha = (1 - x) / (intercepts - 1.0)
-        j_bias = 1 - alpha * intercepts
         return alpha, j_bias
 
+    def _build(self, state, dt):
+        self.rng = np.random.RandomState(seed=self.seed)
+        self.max_rate = max_rate
+        max_rates = self.rng.uniform(size=self.size,
+            low=max_rate[0], high=max_rate[1])  
+        threshold = self.rng.uniform(self.size,
+            low=intercept.low, high=intercept.high)
+        x = 1.0 / (1 - np.exp(
+                (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
+        state[self.alpha] = (1 - x) / (intercepts - 1.0)
+        state[self.j_bias] = 1 - alpha * intercepts
+        return self._reset(self, state)
 
-class LIFPopulation(object):
-    def __init__(self, size, neuron, dtype='float32'):
-        self.voltage = np.zeros(size, dtype)
-        self.refractory_time = np.zeros(size, dtype)
-        self.output = np.zeros(size, dtype)
+    def _reset(self, state):
+        state[self.voltage] = np.zeros(self.size)
+        state[self.refractory_time] = np.zeros(self.size)
+        state[self.output] = np.zeros(self.size)
 
-    # TODO: have a reset() function at the ensemble and network level
-    #that would actually call this
-    def reset(self):
-        """Resets the state of the neuron."""
-        Neuron.reset(self)
-
-        self.voltage.set_value(np.zeros(self.size).astype('float32'))
-        self.refractory_time.set_value(np.zeros(self.size).astype('float32'))
-
-    def update(self, J, dt):
+    def _step(self, old_state, new_state, dt):
         """Theano update rule that implementing LIF rate neuron type
         Returns dictionary with voltage levels, refractory periods,
         and instantaneous spike raster of neurons.
@@ -68,14 +80,18 @@ class LIFPopulation(object):
         :param float dt: the timestep of the update
         """
 
+        J = old_state[self.J]
+        voltage = old_state[self.voltage]
+        refractory_time = old_state[self.refractory_time]
+
         # Euler's method
-        dV = dt / self.tau_rc * (J - self.voltage)
+        dV = dt / self.tau_rc * (J - voltage)
 
         # increase the voltage, ignore values below 0
-        v = np.maximum(self.voltage + dV, 0)  
+        v = np.maximum(voltage + dV, 0)  
         
         # handle refractory period        
-        post_ref = 1.0 - (self.refractory_time - dt) / dt
+        post_ref = 1.0 - (refractory_time - dt) / dt
 
         # set any post_ref elements < 0 = 0, and > 1 = 1
         v *= np.clip(post_ref, 0, 1)
@@ -94,11 +110,12 @@ class LIFPopulation(object):
         # adjust refractory time (neurons that spike get a new
         # refractory time set, all others get it reduced by dt)
         new_refractory_time = np.switch(
-            spiked, spiketime + self.tau_ref, self.refractory_time - dt)
+            spiked, spiketime + self.tau_ref, refractory_time - dt)
 
         # return an ordered dictionary of internal variables to update
         # (including setting a neuron that spikes to a voltage of 0)
 
-        self.voltage[:] = v * (1 - spiked)
-        self.refractory_time[:] = new_refractory_time
-        self.output[:] = spiked
+        new_state[self.voltage] = v * (1 - spiked)
+        new_state[self.refractory_time] = new_refractory_time
+        new_state[self.output] = spiked
+
