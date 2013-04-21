@@ -45,9 +45,10 @@ model.make_ensemble('A', 200, 2)            # Make a population with 200 neurons
 # Create the connections within the model
 model.connect('Input', 'A')                 # Connect the input population to the oscillator
 
-model.connect('A', 'A',                     # Recurrently connect the population 
-              transform = [[1,1], [-1,1]]   #   with the connection matrix for a 
-              filter = ExponentialPSC(0.1)) #   simple harmonic oscillator mapped 
+model.connect('A', 'A', filter = {'type': 'ExponentialPSC', 'pstc': 0.1},
+              transform = [[1,1], [-1,1]])  # Recurrently connect the population 
+                                            #   with the connection matrix for a 
+                                            #   simple harmonic oscillator mapped 
                                             #   to neurons with the NEF
 
 # Build the model
