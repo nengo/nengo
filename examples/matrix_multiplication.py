@@ -1,5 +1,7 @@
-# Perform matrix multiplication on arbitrary matrices
 from .. import nengo as nengo
+from ..nengo.networks import array
+
+# Perform matrix multiplication on arbitrary matrices
 
 # Create the nengo model
 model = nengo.Model('Matrix Multiplication') 
@@ -7,29 +9,32 @@ model = nengo.Model('Matrix Multiplication')
 # Adjust these values to change the matrix dimensions
 #  Matrix A is D1xD2
 #  Matrix B is D2xD3
-#  result is D1xD3
+#  Result is D1xD3
 D1=1
 D2=2
 D3=2
 
-# values should stay within the range (-radius,radius)
+# Values should stay within the range (-radius, radius)
 radius=1
 
 # Create the model inputs
 model.make_node('Input A', [0]*D1*D2)
 model.make_node('Input B', [0]*D2*D3)
 
-# Create neuronal network arrays for storing inputs
-model.make_array('A', 50, D1*D2, radius=radius)
-model.make_array('B', 50, D2*D3, radius=radius)
+# Create neuronal network arrays 
+array.make(model, 'A', D1*D2, 50, 1, radius=radius)
+array.make(model, 'B', D2*D3, 50, 1, radius=radius)
 
 # the C matrix holds the intermediate product calculations
 #  need to compute D1*D2*D3 products to multiply 2 matrices together
-model.make_array('C',200,D1*D2*D3,dimensions=2,radius=1.5*radius,
-    encoders=[[1,1],[1,-1],[-1,1],[-1,-1]])
-model.make_array('D',50,D1*D3,radius=radius)
+array.make(model, 'C', D1*D2*D3, 200, 2, radius = 1.5 * radius,
+           encoders = [[1,1],[1,-1],[-1,1],[-1,-1]])
+array.make(model, 'D', D1*D3, 50, 1, radius = radius)
 
 # Create the connections within the model
+
+model.connect('Input A', 'A') # Connect the inputs to the neural network arrays
+model.connect('Input B', 'B')
 
 #  determine the transformation matrices to get the correct pairwise
 #  products computed.  This looks a bit like black magic but if
@@ -50,20 +55,12 @@ for i in range(D1):
             transformA[(j+k*D2+i*D2*D3)*2][j+i*D2]=1
             transformB[(j+k*D2+i*D2*D3)*2+1][k+j*D3]=1
 
-model.connect('A','C',transform=transformA)
-model.connect('B','C',transform=transformB)
-
-# connect inputs to them so we can set their value
-model.connect('Input A', 'A')
-model.connect('Input B', 'B')
-
-# now compute the products and do the appropriate summing
+model.connect('A', 'C', transform=transformA) 
+model.connect('B', 'C', transform=transformB)
 
 def product(x):
     return x[0]*x[1]
-# the mapping for this transformation is much easier, since we want to
-# combine D2 pairs of elements (we sum D2 products together)    
-model.connect('C','D',index_post=[i/D2 for i in range(D1*D2*D3)],func=product)
+model.connect('C','D', index_post=[i/D2 for i in range(D1*D2*D3)], func=product)
 
 # Build the model
 model.build()
