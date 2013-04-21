@@ -38,5 +38,8 @@ model.connect('Input B', 'B')
 model.connect('A', 'C')                 # Connect the neuron populations together
 model.connect('B', 'C')
 
+# Build the model
+model.build()
+
 # Run the model
 model.run(1)                            # Run the model for 1 second

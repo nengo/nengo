@@ -43,5 +43,8 @@ model.connect('A', 'C', gen_transform(index_post = 0))
                                         # Connect with the given 1x2D mapping matrix
 model.connect('B', 'C', gen_transform(index_post = 1))
 
+# Build the model
+model.build()
+
 # Run the model
 model.run(1)                            # Run the model for 1 second
