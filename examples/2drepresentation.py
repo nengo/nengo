@@ -1,21 +1,30 @@
-##from pprint import pprint
-
 from .. import nengo as nengo
-from nengo.nef import nef as nef
 
-# Create the network
-model = nef.model.Network('2D Representation')  
+## This example demonstrates how to create a neuronal ensemble that can represent a 
+##   two-dimensional signal.
+##
+## Network diagram:
+##
+##      [Input (2D)] ---> (Neurons) 
+##
+##
+## Network behaviour:
+##   Neurons = Input
+##
 
-# Create a controllable 2-D input with a starting value of (0,0)
-model.make_node('input', [0, 0])
+# Create the nengo model
+model = nengo.Model('2D Representation')
 
-# Create a population with 100 neurons representing 2 dimensions
-model.make_ensemble('neurons', 100, 2)
+# Create the model inputs
+model.make_node('Input', [0, 0])        # A controllable 2-D input with a starting 
+                                        #   value of (0,0)
 
-# Connect the input to the neurons
-model.connect('input','neurons')  
+# Create the neuronal ensembles
+model.make_ensemble('Neurons', 100, 2)  # Create a population with 100 neurons 
+                                        #   representing 2 dimensions
 
-# Run for 1 second
-model.run(1)  
+# Create the connections within the model
+model.connect('Input','Neurons')        # Connect the input to the neuronal population
 
-##pprint(net.network)
+# Run the model
+model.run(1)                            # Run the model for 1 second
