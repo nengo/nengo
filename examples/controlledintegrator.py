@@ -1,6 +1,6 @@
 from .. import nengo as nengo
-from nengo.connection import gen_transfrom
-from nengo.filter import ExponentialPSC
+from ..nengo.connection import gen_transfrom
+from ..nengo.filter import ExponentialPSC
 
 ## This example demonstrates how to create a controlled integrator in neurons.
 ##   The controlled integrator takes two inputs: 

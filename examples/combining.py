@@ -1,5 +1,5 @@
 from .. import nengo as nengo
-from nengo.connection import gen_transform
+from ..nengo.connection import gen_transform
 
 ## This example demonstrates how to create a neuronal ensemble that will combine two 1-D
 ##   inputs into one 2-D representation.

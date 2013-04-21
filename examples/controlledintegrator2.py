@@ -1,6 +1,6 @@
 from .. import nengo as nengo
-from nengo.connection import gen_transfrom
-from nengo.filter import ExponentialPSC
+from ..nengo.connection import gen_transfrom
+from ..nengo.filter import ExponentialPSC
 
 ##   The controlled integrator takes two inputs: 
 ##      Input - the input to the integrator

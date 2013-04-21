@@ -1,6 +1,6 @@
 from .. import nengo as nengo
-from nengo.connection import gen_transfrom
-from nengo.filter import ExponentialPSC
+from ..nengo.connection import gen_transfrom
+from ..nengo.filter import ExponentialPSC
 
 ## This example demonstrates how to create an integrator in neurons.
 ##   The function an integrator implements can be written in the 
