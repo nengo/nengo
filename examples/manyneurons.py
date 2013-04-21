@@ -22,7 +22,7 @@ model.make_node('Input', [-0.45])                   # Create a controllable inpu
 
 # Create the neuronal ensembles
 neurons = model.make_ensemble('Neurons', 100, 1)    # Make a population of 100 neurons, 
-neurons.noise = 1.0                                 #   representing 1 dimensions with random
+neurons.noise = 1                                   #   representing 1 dimensions with random
                                                     #   injected input noise of variance 1
 
 # Create the connections within the model

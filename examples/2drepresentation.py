@@ -5,7 +5,7 @@ from .. import nengo as nengo
 ##
 ## Network diagram:
 ##
-##      [Input (2D)] ---> (Neurons) 
+##      [Input] ---> (Neurons) 
 ##
 ##
 ## Network behaviour:

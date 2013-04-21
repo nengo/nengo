@@ -4,13 +4,16 @@ from .. import nengo as nengo
 ##
 ## Network diagram:
 ##
+##      [Input] ---> (A) ---> (B)
+##
 ##
 ## Network behaviour:
 ##   A = Input
-##   B = A^2
+##   B = A * A
+##
 
 # Create the nengo model
-model=nengo.Model('Squaring')                      
+model = nengo.Model('Squaring')                      
 
 # Create the model inputs
 model.make_node('Input', [0])                       # Create a controllable input function 
@@ -23,9 +26,9 @@ model.make_ensemble('B', 100, 1)                    #   100 neurons and 1 dimens
 # Create the connections within the model
 model.connect('Input', 'A')                         # Connect the input to A
 
-def square(x):
+def square(x):                                      # Define the squaring function
   return x[0] * x[0]
-model.connect('A', 'B', func=square)                # Connect A to B with the 
+model.connect('A', 'B', func = square)              # Connect A to B with the 
                                                     #   squaring function approximated 
                                                     #   in that connection
 

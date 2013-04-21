@@ -2,15 +2,19 @@ from .. import nengo as nengo
 from nengo.connection import gen_transfrom
 from nengo.filter import ExponentialPSC
 
-## This example demonstrates how to create a controlled integrator in neurons
-##   as described in the book "How to build a brain".
 ##   The controlled integrator takes two inputs: 
 ##      Input - the input to the integrator
 ##      Control - the control signal to the integrator
 ##   The function the controlled integrator implements can be written in the 
-##     following control theoretic equation:
+##   following control theoretic equation:
 ##     
-##     a_dot(t) = control(t) * a(t) + tau_feedback * input(t)
+##     a_dot(t) = control(t) * a(t) + B * input(t)
+##
+##   The NEF equivalent equation for this integrator is:
+##
+##     a_dot(t) = control(t) * a(t) + tau * input(t)
+##
+##   where tau is the recurrent time constant.
 ##
 ## Network diagram:
 ##
@@ -22,8 +26,11 @@ from nengo.filter import ExponentialPSC
 ##
 ##
 ## Network behaviour:
-##   A = tau_feedback * Input + Input * Control
+##   A = tau * Input + Input * Control
 ##
+
+# Define model parameters
+tau = 0.1                                           # Recurrent time constant
 
 # Create the nengo model
 model = nengo.Model('Controlled Integrator 2')
@@ -43,8 +50,8 @@ model.make_ensemble('A', 225, 2,                    # Make a population with 225
                                                     #   inputs
 
 # Create the connections within the model
-tau_feedback = 0.1
-model.connect('Input', 'A', transform = [[tau_feedback], [0]], 
+tau = 0.1
+model.connect('Input', 'A', transform = [[tau], [0]], 
               filter = ExponentialPSC(pstc = 0.1))  
                                                     # Connect all the input signals to the 
                                                     #   ensemble with the appropriate 1 x 2

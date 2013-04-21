@@ -3,12 +3,16 @@ from nengo.connection import gen_transfrom
 from nengo.filter import ExponentialPSC
 
 ## This example demonstrates how to create an integrator in neurons.
-##   The controlled integrator takes two inputs: 
-##      Input - the input to the integrator
-##   The function the controlled integrator implements can be written in the 
-##     following control theoretic equation:
+##   The function an integrator implements can be written in the 
+##   following control theoretic equation:
 ##     
-##     a_dot(t) = a(t) + tau_feedback * input(t)
+##     a_dot(t) = A * a(t) + B * input(t)
+##
+##   The NEF equivalent equation for this integrator is:
+##
+##     a_dot(t) = a(t) + tau * input(t)
+##
+##   where tau is the recurrent time constant.
 ##
 ## Network diagram:
 ##
@@ -18,8 +22,11 @@ from nengo.filter import ExponentialPSC
 ##
 ##
 ## Network behaviour:
-##   A = tau_feedback * Input + Input
+##   A = tau * Input + Input
 ##
+
+# Define model parameters
+tau = 0.1                                           # Recurrent time constant
 
 # Create the nengo model
 model = nengo.Model('Integrator')
@@ -35,13 +42,12 @@ model.make_ensemble('A', 100, 1)                    # Make a population with 100
                                                     #  1 dimension
 
 # Create the connections within the model
-tau_feedback = 0.1
-model.connect('Input', 'A', transform = gen_transform(weight = tau_feedback), 
+model.connect('Input', 'A', transform = gen_transform(weight = tau), 
               filter = ExponentialPSC(pstc = 0.1))  
                                                     # Connect the input to the integrator, 
                                                     #   scaling the input by tau_feedback with 
                                                     #   a postsynaptic time constant of 10ms
-model.connect('A', 'A', filter = ExponentialPSC(pstc = tau_feedback))  
+model.connect('A', 'A', filter = ExponentialPSC(pstc = tau))  
                                                     # Connect the population to itself with the 
                                                     #   default weight of 1
 

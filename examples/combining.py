@@ -2,7 +2,7 @@ from .. import nengo as nengo
 from nengo.connection import gen_transform
 
 ## This example demonstrates how to create a neuronal ensemble that will combine two 1-D
-##   inputs into one 2-D representations
+##   inputs into one 2-D representation.
 ##
 ## Network diagram:
 ##
@@ -37,11 +37,12 @@ model.make_ensemble('C', 100, 2,        # Make a population with 100 neurons, 2 
 
 # Create the connections within the model
 model.connect('Input A', 'A')           # Connect the inputs to the appropriate neuron
-                                        #   populations (default connection is identity)
-model.connect('Input B', 'B')
+model.connect('Input B', 'B')           #   populations (default connection is identity)
+
 model.connect('A', 'C', gen_transform(index_post = 0))    
-                                        # Connect with the given 1x2D mapping matrix
+                                        # Connect with A to the first dimension of C
 model.connect('B', 'C', gen_transform(index_post = 1))
+                                        # Connect with B to the second dimension of C
 
 # Build the model
 model.build()
