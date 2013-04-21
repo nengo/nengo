@@ -1,19 +1,21 @@
-import nef.nef_theano as nef
+from .. import nengo as nengo
 
-net=nef.Network('Single Neuron')      # Create the network
+model = nengo.Model('Single Neuron')           # Create the network
 
-net.make_input('input',[-0.45])       # Create a controllable input
-                                      #   with a starting value of -.45
-                                      
-net.make('neuron',neurons=1,dimensions=1,      # Make 1 neuron representing
-    max_rate=(100,100),intercept=(-0.5,-0.5),  #  1 dimension, with a maximum
-    encoders=[[1]],noise=3)                    #  firing rate of 100, with a
-                                               #  tuning curve x-intercept of 
+model.make_node('Input', [-0.45])              # Create a controllable input
+                                               #   with a starting value of -.45
+
+model.make_ensemble('Neuron', 1, 1,            # Make 1 neuron representing
+                    max_rate = (100,100),      #  1 dimension, with a maximum
+                    intercept = (-0.5,-0.5),   #  firing rate of 100, a
+                    encoders = [[1]])          #  tuning curve x-intercept of   
                                                #  -0.5, encoder of 1 (i.e. it
                                                #  responds more to positive
-                                               #  values) and a noise of
-                                               #  variance 3
-    
-net.connect('input','neuron')         # Connect the input to the neuron
+                                               #  values) 
 
-net.run(1) # run for 1 second
+model.noise = 3                                # Set the neural noise to have a
+                                               #  variance of 3
+
+model.connect('input','neuron')                # Connect the input to the neuron
+
+model.run(1)                                   # Run for 1 second
