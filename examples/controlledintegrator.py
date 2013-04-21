@@ -65,17 +65,18 @@ model.make_ensemble('A', 225, 2,                    # Make a population with 225
 
 # Create the connections within the model
 model.connect('Input', 'A', transform = gen_transform(index_post = 0, weight = tau), 
-              filter = ExponentialPSC(pstc = 0.1))  # Connect all the input signals to the 
+              filter = {'type': 'ExponentialPSC', 'pstc': 0.1})  
+                                                    # Connect all the input signals to the 
                                                     #   ensemble with the appropriate 1 x 2
                                                     #   mappings, postsynaptic time
                                                     #   constant is 10ms
 model.connect('Control', 'A', transform = gen_transform(index_post = 1), 
-              filter = ExponentialPSC(pstc = 0.1))
+              filter = {'type': 'ExponentialPSC', 'pstc': 0.1})
 
 def feedback(x):
     return x[0] * x[1]
 model.connect('A', 'A', transform = gen_transform(index_post = 0), func = feedback, 
-              filter = ExponentialPSC(pstc = feedback_pstc))  
+              filter = {'type': 'ExponentialPSC', 'pstc': tau})  
                                                     # Create the recurrent
                                                     #   connection mapping the
                                                     #   1D function 'feedback'

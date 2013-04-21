@@ -27,9 +27,9 @@ from ..nengo.connection import gen_transform
 ##
 
 # Define model parameters
-D1 = 1                                                   #  Matrix A is D1xD2
-D2 = 2                                                   #  Matrix B is D2xD3
-D3 = 2                                                   #  Result   is D1xD3
+D1 = 1                                                   # Matrix A is D1xD2
+D2 = 2                                                   # Matrix B is D2xD3
+D3 = 2                                                   # Result   is D1xD3
 radius = 1                                               # Values should stay within the range 
                                                          #   (-radius, radius)
 
@@ -55,8 +55,8 @@ array.make(model, 'D', D1*D3, 50, 1, radius = radius)    # Create the output pop
                                                          #   the resulting matrix multiplication
 
 # Create the connections within the model
-model.connect('Input A', 'A')                            # Connect the inputs to the appropriate network
-model.connect('Input B', 'B')                            #   arrays
+array.connect(model, 'Input A', 'A')                     # Connect the inputs to the appropriate network
+array.connect(model, 'Input B', 'B')                     #   arrays
 
 transformA = [[0]*(D1*D2) for i in range(D1*D2*D3*2)]    # Determine the transformation matrices to get
 transformB = [[0]*(D2*D3) for i in range(D1*D2*D3*2)]    #  the correct pairwise products computed.  This
@@ -74,13 +74,13 @@ for i in range(D1):                                      #  looks a bit like bla
                                                          #  ensemble.  We add 1 to the B index so it goes into
                                                          #  the second value in the ensemble.  
 
-model.connect('A', 'C', transform = transformA)          # Connect the A and B networks to the C network
-model.connect('B', 'C', transform = transformB)          #   using the transformation matrices specified
+array.connect(model, 'A', 'C', transform = transformA)   # Connect the A and B networks to the C network
+array.connect(model, 'B', 'C', transform = transformB)   #   using the transformation matrices specified
                                                          #   above
 
 def product(x):                                          # Define the product function
     return x[0] * x[1]
-model.connect('C', 'D', transform = gen_transform(index_post = [i/D2 for i in range(D1*D2*D3)]), 
+array.connect(model, 'C', 'D', transform = gen_transform(index_post = [i/D2 for i in range(D1*D2*D3)]), 
               func = product)                            # Create the output connection that calculates
                                                          #   all of the multiplications needed and maps
                                                          #   the result of the multiplications to the

@@ -62,8 +62,9 @@ def controlled_path(x):                         # Define the nonlinear interacti
             x[1] - x[2] * speed * tau * x[0], 
             0]
 
-model.connect('A', 'A', func = controlled_path, # Recurrently connect the population 
-              filter = ExponentialPSC(0.1))     #   with the defined function for controlling
+model.connect('A', 'A', func = controlled_path, filter = {'type': 'ExponentialPSC', 'pstc': tau})
+                                                # Recurrently connect the population 
+                                                #   with the defined function for controlling
                                                 #   the oscillator
 
 # Build the model
