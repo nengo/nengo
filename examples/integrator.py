@@ -56,11 +56,11 @@ model.make_ensemble('A', 100, 1)                    # Make a population with 100
 
 # Create the connections within the model
 model.connect('Input', 'A', transform = gen_transform(weight = tau), 
-              filter = ExponentialPSC(pstc = 0.1))  
+              filter = {'type': 'ExponentialPSC', 'pstc': 0.1})  
                                                     # Connect the input to the integrator, 
                                                     #   scaling the input by tau_feedback with 
                                                     #   a postsynaptic time constant of 10ms
-model.connect('A', 'A', filter = ExponentialPSC(pstc = tau))  
+model.connect('A', 'A', filter = {'type': 'ExponentialPSC', 'pstc': tau})
                                                     # Connect the population to itself with the 
                                                     #   default weight of 1
 
