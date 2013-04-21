@@ -16,6 +16,6 @@ model.make_ensemble('Neuron', 1, 1,            # Make 1 neuron representing
 model.noise = 3                                # Set the neural noise to have a
                                                #  variance of 3
 
-model.connect('input','neuron')                # Connect the input to the neuron
+model.connect('Input','Neuron')                # Connect the input to the neuron
 
 model.run(1)                                   # Run for 1 second
