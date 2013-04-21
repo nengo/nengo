@@ -32,35 +32,20 @@ tau = 0.1                                           # Recurrent time constant
 model = nengo.Model('Integrator')
 
 # Create the model inputs
-def input_func(t):                                  # Create a function that outputs
-    if t < 0.2:                                     #   5 at time 0.2s, then 0 at time 0.3s,
-        return [0]                                  #   -10 at time 0.44, then 0 at time 0.8,
-    elif t < 0.3:                                   #   5 at time 0.8, then 0 at time 0.9
-        return [5]
-    elif t < 0.44:
-        return [0]
-    elif t < 0.54:
-        return [-10]
-    elif t < 0.8:
-        return [0]
-    elif t < 0.9:
-        return [5]
-    else:
-        return [0]
-model.make_node('Input', input_func)                # Create a controllable input function 
-                                                    #   with the function above
+model.make_node('Input', {0.2:5, 0.3:0, 0.44:-10,   # Create a controllable input 
+                          0.54:0, 0.8:5, 0.9:0} )   #   function with a default function
+                                                    #   that goes to 5 at time 0.2s, to 0 
+                                                    #   at time 0.3s and so on
 
 # Create the neuronal ensembles
 model.make_ensemble('A', 100, 1)                    # Make a population with 100 neurons, 
                                                     #  1 dimension
 
 # Create the connections within the model
-model.connect('Input', 'A', transform = gen_transform(weight = tau), 
-              filter = {'type': 'ExponentialPSC', 'pstc': 0.1})  
-                                                    # Connect the input to the integrator, 
-                                                    #   scaling the input by tau_feedback with 
+model.connect('Input', 'A', transform = tau,        # Connect the input to the integrator, 
+              filter = 0.1)                         #   scaling the input by tau_feedback with 
                                                     #   a postsynaptic time constant of 10ms
-model.connect('A', 'A', filter = {'type': 'ExponentialPSC', 'pstc': tau})
+model.connect('A', 'A', filter = tau)
                                                     # Connect the population to itself with the 
                                                     #   default weight of 1
 
