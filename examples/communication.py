@@ -1,14 +1,37 @@
-import nef.nef_theano as nef
+from .. import nengo as nengo
 
-net=nef.Network('Communications Channel') #Create the network object
+## This example demonstrates how to create a neuronal ensemble that behaves like
+## a communication channel (leaves input unchanged)
+##
+## Network diagram:
+##
+##      [Input] ---> (A) ---> (B)
+##
+##
+## Network behaviour:
+##   A = Input
+##   B = A
+##
 
-net.make_input('input',[0.5]) #Create a controllable input function 
-                              #with a starting value of 0.5
-                              
-net.make('A',100,1)   #Make a population with 100 neurons, 1 dimension
-net.make('B',100,1)   #Make a population with 100 neurons, 1 dimension
+# Create the nengo model
+model = nengo.Model('Communications Channel')
 
-net.connect('input','A') #Connect all the relevant objects
-net.connect('A','B')
+# Create the model inputs
+model.make_node('Input', [0.5])         # Create a controllable input function 
+                                        #   with a starting value of 0.5
 
-net.run(1) # run for 1 second
+# Create the neuronal ensembles
+model.make_ensemble('A', 100, 1)        # Make a population with 100 neurons, 1 dimension
+model.make_ensemble('B', 100, 1)        # Make a population with 100 neurons, 1 dimension
+
+# Create the connections within the model
+model.connect('Input','A')              # Connect the input to the first neuronal population
+model.connect('A', 'B')                 # Connect the first neuronal population to the second
+                                        #   neuronal population (this is the communication 
+                                        #   channel)
+
+# Build the model
+model.build()
+
+# Run the model
+model.run(1)                            # Run the model for 1 second

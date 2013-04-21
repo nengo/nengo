@@ -1,19 +1,45 @@
-import nef.nef_theano as nef
+from .. import nengo as nengo
 
-net=nef.Network('Addition') #Create the network object
+## This example demonstrates how to create a neuronal ensemble that can add the values
+##   represented in two preceding populations. 
+##
+## Network diagram:
+##
+##      [Input A] ---> (A) --.
+##                           v
+##                          (C) 
+##                           ^
+##      [Input B] ---> (B) --'
+##
+##
+## Network behaviour:
+##   A = Input_A
+##   B = Input_B
+##   C = A + B
+##
 
-net.make_input('input A',[0])  #Create a controllable input function 
-                               #with a starting value of 0
-net.make_input('input B',[0])  #Create another controllable input 
-                               #function with a starting value of 0
-                               
-net.make('A',100,1) #Make a population with 100 neurons, 1 dimension
-net.make('B',100,1)  #Make a population with 100 neurons, 1 dimension
-net.make('C',100,1) #Make a population with 100 neurons, 1 dimension
+# Create the nengo model
+model = nengo.Model('Addition')  
 
-net.connect('input A','A') #Connect all the relevant objects
-net.connect('input B','B')
-net.connect('A','C')
-net.connect('B','C')
+# Create the model inputs
+model.make_node('Input A',[0])          # Create a controllable input function 
+                                        #   with a starting value of 0
+model.make_node('Input B',[0])          # Create another controllable input 
+                                        #   function with a starting value of 0
 
-net.run(1) # run for 1 second
+# Create the neuronal ensembles
+model.make_ensemble('A', 100, 1)        # Make a population with 100 neurons, 1 dimension
+model.make_ensemble('B', 100, 1)        # Make a population with 100 neurons, 1 dimension
+model.make_ensemble('C', 100, 1)        # Make a population with 100 neurons, 1 dimension
+
+# Create the connections within the model
+model.connect('Input A', 'A')           # Connect the inputs to the revelant populations
+model.connect('Input B', 'B')            
+model.connect('A', 'C')                 # Connect the neuron populations together
+model.connect('B', 'C')
+
+# Build the model
+model.build()
+
+# Run the model
+model.run(1)                            # Run the model for 1 second

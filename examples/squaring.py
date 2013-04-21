@@ -1,15 +1,39 @@
-import nef.nef_theano as nef
+from .. import nengo as nengo
 
-net=nef.Network('Squaring') #Create the network object
+## This example demonstrates computing a nonlinear function (squaring) in neurons.
+##
+## Network diagram:
+##
+##      [Input] ---> (A) ---> (B)
+##
+##
+## Network behaviour:
+##   A = Input
+##   B = A * A
+##
 
-net.make_input('input',[0]) #Create a controllable input function 
-                            #with a starting value of 0
-net.make('A',100,1) #Make a population with 100 neurons, 1 dimension
-net.make('B',100,1) #Make a population with 
-                                                #100 neurons, 1 dimensions
-net.connect('input','A') #Connect the input to A
-net.connect('A','B',func=lambda x: x[0]*x[0]) #Connect A and B with the 
-                                          #defined function approximated 
-                                          #in that connection
+# Create the nengo model
+model = nengo.Model('Squaring')                      
 
-net.run(1) # run for 1 second
+# Create the model inputs
+model.make_node('Input', [0])                       # Create a controllable input function 
+                                                    #   with a starting value of 0
+
+# Create the neuronal ensembles
+model.make_ensemble('A', 100, 1)                    # Make 2 populations each with 
+model.make_ensemble('B', 100, 1)                    #   100 neurons and 1 dimension 
+
+# Create the connections within the model
+model.connect('Input', 'A')                         # Connect the input to A
+
+def square(x):                                      # Define the squaring function
+  return x[0] * x[0]
+model.connect('A', 'B', func = square)              # Connect A to B with the 
+                                                    #   squaring function approximated 
+                                                    #   in that connection
+
+# Build the model
+model.build()
+
+# Run the model
+model.run(1)                                        # Run the model for 1 second
