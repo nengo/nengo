@@ -1,7 +1,8 @@
 from unittest import TestCase
-from nengo.nef.model import Model
-from nengo.nef.ensemble import Ensemble
-from nengo.nef.neuron.lif import LIFNeuron
+from .. import nef as nef
+from nef.model import Model
+from nef.ensemble import Ensemble
+from nef.neuron.lif import LIFNeuron
 
 class TestEnsemble(TestCase):
     def setUp(self):
@@ -21,9 +22,10 @@ class TestEnsemble(TestCase):
 
 
     def test_advanced(self):
-        self.ens1.rates = [...]
-        self.ens1.intercepts = [...]
+        #self.ens1.rates = [...]
+        #self.ens1.intercepts = [...]
         # And more stuff
+        pass
 
   
     def test_run(self):
