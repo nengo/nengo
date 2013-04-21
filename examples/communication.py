@@ -1,14 +1,15 @@
-import nef.nef_theano as nef
+from .. import nengo as nengo
+import nengo.nef as nef
 
-net=nef.Network('Communications Channel') #Create the network object
+model = nef.model.Network('Communications Channel') # Create the network object
 
-net.make_input('input',[0.5]) #Create a controllable input function 
-                              #with a starting value of 0.5
+model.make_node('input', [0.5])  # Create a controllable input function 
+                                 #   with a starting value of 0.5
                               
-net.make('A',100,1)   #Make a population with 100 neurons, 1 dimension
-net.make('B',100,1)   #Make a population with 100 neurons, 1 dimension
+model.make_ensemble('A', 100, 1) # Make a population with 100 neurons, 1 dimension
+model.make_ensemble('B', 100, 1) # Make a population with 100 neurons, 1 dimension
 
-net.connect('input','A') #Connect all the relevant objects
-net.connect('A','B')
+model.connect('input', 'A') # Connect all the relevant objects
+model.connect('A', 'B')
 
-net.run(1) # run for 1 second
+model.run(1) # run for 1 second

@@ -1,17 +1,21 @@
-from pprint import pprint
+##from pprint import pprint
 
-import nengo.nef
+from .. import nengo as nengo
+from nengo.nef import nef as nef
 
-net = nengo.nef.Network('2D Representation')  # Create the network
+# Create the network
+model = nef.model.Network('2D Representation')  
 
 # Create a controllable 2-D input with a starting value of (0,0)
-net.make_input('input', [0, 0])
+model.make_node('input', [0, 0])
 
 # Create a population with 100 neurons representing 2 dimensions
-net.make('neurons',100,2)
+model.make_ensemble('neurons', 100, 2)
 
-net.connect('input','neurons')  # Connect the input to the neurons
+# Connect the input to the neurons
+model.connect('input','neurons')  
 
-net.run(1)  # run for 1 second
+# Run for 1 second
+model.run(1)  
 
-pprint(net.network)
+##pprint(net.network)

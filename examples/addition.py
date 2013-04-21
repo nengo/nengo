@@ -1,19 +1,20 @@
-import nef.nef_theano as nef
+from .. import nengo as nengo
+import nengo.nef as nef
 
-net=nef.Network('Addition') #Create the network object
+model = nef.model.Network('Addition') # Create the network object
 
-net.make_input('input A',[0])  #Create a controllable input function 
-                               #with a starting value of 0
-net.make_input('input B',[0])  #Create another controllable input 
-                               #function with a starting value of 0
+model.make_node('input A',[0])   # Create a controllable input function 
+                                 #   with a starting value of 0
+model.make_node('input B',[0])   # Create another controllable input 
+                                 #   function with a starting value of 0
                                
-net.make('A',100,1) #Make a population with 100 neurons, 1 dimension
-net.make('B',100,1)  #Make a population with 100 neurons, 1 dimension
-net.make('C',100,1) #Make a population with 100 neurons, 1 dimension
+model.make_ensemble('A', 100, 1) # Make a population with 100 neurons, 1 dimension
+model.make_ensemble('B', 100, 1) # Make a population with 100 neurons, 1 dimension
+model.make_ensemble('C', 100, 1) # Make a population with 100 neurons, 1 dimension
 
-net.connect('input A','A') #Connect all the relevant objects
-net.connect('input B','B')
-net.connect('A','C')
-net.connect('B','C')
+model.connect('input A','A')     # Connect all the relevant objects
+model.connect('input B','B')
+model.connect('A','C')
+model.connect('B','C')
 
-net.run(1) # run for 1 second
+model.run(1) # run for 1 second
