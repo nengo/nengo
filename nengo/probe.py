@@ -1,42 +1,43 @@
 import collections
 
 import numpy as np
-import theano
 import collections
 
 import numpy as np
-import theano
-import theano.tensor as TT
 
 from .filter import Filter
 
-class Probe(object):
+def is_probe(obj):
+    return isinstance(obj, ListProbe)
+
+
+class ListProbe(object):
     """A class to record from things (i.e., origins).
 
     """
     buffer_size = 1000
 
-    def __init__(self, name, target, target_name, dt_sample, pstc=0.03):
-        """
-        :param string name:
-        :param target:
-        :type target: 
-        :param string target_name:
-        :param float dt_sample:
-        :param float pstc:
-        """
-        self.name = name
+    def __init__(self, target, sample_every, static):
         self.target = target
-        self.target_name = target_name
-        self.dt_sample = dt_sample
+        self.sample_every = sample_every
+        self.static = static
+        # XXX use sample_every !
+        #self.filter = Filter(pstc, source=target)
 
-        # create array to store the data over many time steps
-        self.data = np.zeros((self.buffer_size,) + target.get_value().shape)
-        self.i = -1 # index of the last sample taken
+    def _build(self, state, dt):
+        #self.filter._build(state, dt)
+        pass
 
-        # create a filter to filter the data
-        self.filter = Filter(pstc, source=target)
+    def _reset(self, *args):
+        self.data = []
+        self.simtime = 0
 
+    def _step(self, state_t, state_tm1, dt):
+        self.data.append(state_t[self.target])
+        self.simtime += dt
+
+
+if 0:
     def update(self):
         """
         """
@@ -58,3 +59,10 @@ class Probe(object):
         """
         """
         return self.data[:self.i+1]
+
+
+        # create array to store the data over many time steps
+        self.data = np.zeros((self.buffer_size,) + target.get_value().shape)
+        self.i = -1 # index of the last sample taken
+
+        # create a filter to filter the data

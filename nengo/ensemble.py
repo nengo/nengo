@@ -14,6 +14,9 @@ from .hPES_termination import hPESTermination
 
 _ARRAY_SIZE = 1
 
+def is_ensemble(obj):
+    return isinstance(obj, Base)
+
 class Uniform(object):
     def __init__(self, low, high):
         self.type = 'uniform'

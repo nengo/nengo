@@ -5,26 +5,21 @@ import quantities
 import numpy as np
 
 from . import ensemble
-from . import simplenode
 from . import probe
 from . import origin
 from . import input
-from . import subnetwork
-from . import connections
-from . import learning_rule
+from . import node
+#from . import subnetwork
+#from . import connections
+#from . import learning_rule
 
 class Network(object):
-    def __init__(self, name, seed=None, fixed_seed=None):
+    def __init__(self, name):
         """Wraps an NEF network with a set of helper functions
         for simplifying the creation of NEF models.
 
         :param string name:
             create and wrap a new Network with the given name.
-        :param int seed:
-            random number seed to use for creating ensembles.
-            This one seed is used only to start the
-            random generation process, so each neural group
-            created will be different.
 
         """
         self.name = name
@@ -33,19 +28,27 @@ class Network(object):
         self._metadata = {}
         self._properties = {}
         
-        # I think the random seed stuff should be part of Model now
-        self.seed = seed
-        self.fixed_seed = fixed_seed
-        self.random = random.Random()
-        if seed is not None:
-            self.random.seed(seed)
-
         # dictionaries for the objects in the network
         self.Connections = []
         self.Ensembles = []
         self.Networks = []
         self.Nodes = []
         self.Probes = []
+
+    @property
+    def all_nodes(self):
+        # XXX make this recursive
+        return self.Nodes
+
+    @property
+    def all_ensembles(self):
+        # XXX make this recursive
+        return self.Ensembles
+
+    @property
+    def all_probes(self):
+        # XXX make this recursive
+        return self.Probes
     
     @property
     def metadata(self):
@@ -67,11 +70,10 @@ class Network(object):
         :param type: Network, Node, Ensemble, Connection
 
         """
-        if isinstance(object, connection.Connection): self.Connections.append(object)
-        elif isinstance(object, ensemble.Ensemble): self.Ensembles.append(object)
-        elif isinstance(object, network.Network): self.Network.append(object)
-        elif isinstance(object, node.Node): self.Node.append(object)
-        elif isinstance(object, probe.Probe): self.Probes.append(object) 
+        if   ensemble.is_ensemble(object): self.Ensembles.append(object)
+        elif isinstance(object, Network): self.Network.append(object)
+        elif isinstance(object, node.Node): self.Nodes.append(object)
+        elif probe.is_probe(object): self.Probes.append(object) 
         else: raise Exception('Object type not recognized')
 
     def connect(self, pre, post, transform=None, filter=None, 
@@ -256,7 +258,17 @@ class Network(object):
         return e
 
     def make_node(self, name, output): 
-        """Create a Node and add it to the network."""
+        """Create a Node and add it to the network.
+
+        Output can be either a function or a np.ndarray.
+        If it's a function, it should return a np.ndarray.
+        It will called like this:
+            output(simtime)
+
+        Any arguments your function needs should be retrieved via a closure or
+        self or something.
+        
+        """
         n = node.Node(name, output=output)
         self.add(n)
         return n
@@ -270,7 +282,7 @@ class Network(object):
         :param name: the name of the subnetwork to create        
         """
         return self.add(network.Network(name, self))
-            
+
     def probe(self, target, sample_every=0.01, static=False):
         """Add a probe to measure the given target.
         
@@ -280,7 +292,9 @@ class Network(object):
         :returns: The Probe object
         
         """
-        p = probe.Probe(name=name, target=target, sample_every=sample_every, static=static)
+        p = probe.ListProbe(target=target,
+                        sample_every=sample_every,
+                        static=static)
         self.Probes.append(p)
 
     def remove(self, obj):
