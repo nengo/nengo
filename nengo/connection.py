@@ -134,7 +134,49 @@ class VectorConnection(Connection):
         pre_in = self.transform*pre_in
         pre_in = self.filter.update(dt, source=pre_in)
         return input
+    
+#    def weights
 
 class NeuronConnection:
-    def __init__(self):
-        pass
+    def __init__(self, pre, post, weights=None, 
+                 filter=Filter(), learning_rule=None):
+        """
+        Create a new connection between two objects. This connection should
+        be added to a common parent of the objects.
+        
+        :param pre: pre-population object
+        :param post: post-population object
+        :param weights: neuron-space connection weight matrix describing the mapping 
+            between the pre-population and post-population neurons
+        :param filter: a Filter object describing the post-synaptic filtering
+            properties of the connection
+        :param learning_rule: a LearningRule object describing the learning
+            rule to use with the population
+        """
+        ### basic parameters, set by network.connect(...)
+        self.pre = pre
+        self.post = post
+        self.weights = weights
+        self.filter = filter
+        self.learning_rule = learning_rule
+
+        ### additional (advanced) parameters
+        self._modulatory = False
+
+    @property
+    def modulatory(self):
+        """Setting \"modulatory\" to True stops the connection from imparting
+        current on the post-population."""
+        return self._modulatory
+
+    @modulatory.setter
+    def modulatory(self, value):
+        self._modulatory = value
+    
+    def get_transformed_pre(self, state, dt):
+        """Returns the transformed, filtered value output from pre."""
+        
+        pre_in = state[self.pre]
+        pre_in = self.weights*pre_in
+        pre_in = self.filter.update(dt, source=pre_in)
+        return input
