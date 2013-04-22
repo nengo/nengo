@@ -19,15 +19,13 @@ setup(
     version="0.1.0",
     author="CNRGlab at UWaterloo",
     author_email="celiasmith@uwaterloo.ca",
-    packages=['nef', 'nef.test', 'nef.nef_theano', 'nef.nef_theano.neuron',
-              'nef.nef_minimal'],
+    packages=['nengo'],
     scripts=[],
-    url="https://github.com/ctn-waterloo/nef-py",
+    url="https://github.com/ctn-waterloo/nengo",
     license="GPLv3",
     description=description,
     long_description=open('README.rst').read(),
     requires=[
-        "theano",
         "numpy (>=1.5.0)",
     ],
 )
