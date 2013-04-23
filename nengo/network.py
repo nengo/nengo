@@ -1,6 +1,6 @@
 import random
 import collections
-import quantities
+#import quantities
 
 import numpy as np
 
@@ -9,10 +9,11 @@ from . import probe
 from . import origin
 from . import input
 from . import node
-#from . import subnetwork
-#from . import connections
-#from . import learning_rule
-from ensemble  import Uniform, Gaussian, DirectEnsemble, SpikingEnsemble
+
+from ensemble import SpikingEnsemble
+from output import Output
+from connection import Connection
+import nengo
 
 class Network(object):
     def __init__(self, name):
@@ -30,26 +31,26 @@ class Network(object):
         self._properties = {}
         
         # dictionaries for the objects in the network
-        self.Connections = []
-        self.Ensembles = []
-        self.Networks = []
-        self.Nodes = []
-        self.Probes = []
+        self.connections = []
+        self.ensembles = []
+        self.networks = []
+        self.nodes = []
+        self.probes = []
 
     @property
     def all_nodes(self):
         # XXX make this recursive
-        return self.Nodes
+        return self.nodes
 
     @property
     def all_ensembles(self):
         # XXX make this recursive
-        return self.Ensembles
+        return self.ensembles
 
     @property
     def all_probes(self):
         # XXX make this recursive
-        return self.Probes
+        return self.probes
     
     @property
     def metadata(self):
@@ -71,21 +72,20 @@ class Network(object):
         :param type: Network, Node, Ensemble, Connection
 
         """
-        if   ensemble.is_ensemble(object): self.Ensembles.append(object)
-        elif isinstance(object, Network): self.Network.append(object)
-        elif node.is_node(object): self.Nodes.append(object)
-        elif probe.is_probe(object): self.Probes.append(object) 
+        if   ensemble.is_ensemble(object): self.ensembles.append(object)
+        elif isinstance(object, Network): self.network.append(object)
+        elif node.is_node(object): self.nodes.append(object)
+        elif probe.is_probe(object): self.probes.append(object) 
         else:
             raise TypeError('Object type not recognized', object)
 
     def connect(self, pre, post, transform=None, filter=None, 
                 func=None, learning_rule=None):
-        """Connect two nodes in the network.
+        """Connect two objects in the network.
 
-        *pre* and *post* can be strings giving the names of the nodes,
-        or they can be the nodes themselves (Inputs and Ensembles are
-        supported). They can also be actual Origins or Terminations,
-        or any combination of the above. 
+        *pre* and *post* can be strings giving the names of the objects,
+        or they can be the objects themselves (Nodes and Ensembles are
+        supported).
 
         If transform is None, it defaults to the identity matrix.
         
@@ -96,8 +96,8 @@ class Network(object):
         The name of this origin will be taken from the name of
         the function.
 
-        :param string pre: Name of the node to connect from.
-        :param string post: Name of the node to connect to.
+        :param pre: Name of the object to connect from, or object itself.
+        :param post: Name of the object to connect to, or the object itself.
         :param transform:
             The linear transfom matrix to apply across the connection.
             If *transform* is T and *pre* represents ``x``,
@@ -105,42 +105,50 @@ class Network(object):
             Should be an N by M array, where N is the dimensionality
             of *post* and M is the dimensionality of *pre*.
         :type transform: array of floats
-        :param Filter filter: the filter
+        :param dict filter: dictionary describing the desired filter
         :param LearningRule learning_rule: a learning rule to use to update weights
         :param function func:
             Function to be computed by this connection.
             If None, computes ``f(x)=x``.
             The function takes a single parameter ``x``, which is
             the current value of the *pre* ensemble, and must return
-            either a float or an array of floats.
+            an array of floats.
 
         """
 
-        # get pre Node object from node dictionary
-        pre = self.get_object(pre)
+        # get pre object from node dictionary
+        if isinstance(pre, ""):
+            pre = self.get(pre)
 
-        # get post Node object from node dictionary
-        post = self.get_object(post)
+        # get post object from node dictionary
+        if isinstance(pre, ""):
+            post = self.get(post)
 
-        # get the origin from the pre Node
-        pre_origin = self.get_origin(pre, function)
+        #use identity function if func not given
+        if func == None:
+            def X(val):
+                return val
+            func = X
 
-        # get decoded_output from specified origin
-        pre_output = pre_origin.decoded_output
-        dim_pre = pre_origin.dimensions 
+        if not isinstance(pre, Output):
+            #add new output to pre with given function
+            o = pre.add_output(func, dimensions=func(pre.neurons.output).shape[0], name=func.__name__)
+        else:
+            o = pre
+
         
-        # if decoded-decoded connection (case 1)
-        # compute transform if not given, if given make sure shape is correct
+        
+        # compute identity transform if no transform given
         if transform is None:
-            transform = self.compute_transform(
+            dim_pre = o.dimensions 
+            transform = nengo.gen_transform(
                 dim_pre=dim_pre,
-                dim_post=post.dimensions,
-                array_size=post.array_size)
+                dim_post=post.dimensions)
 
-        # pass in the pre population decoded output function
-        # to the post population
-        c = Connection(pre=pre, post=post, transform=transform, filter=filter,
-                       function=function, learning_rule=learning_rule)
+        #create connection
+        c = Connection(pre=o, post=post, transform=transform, filter=filter,
+                       function=func, learning_rule=learning_rule)
+        post.add_connection(c)
         self.add(c)
         return c
 
@@ -170,13 +178,17 @@ class Network(object):
         return c
 
     def get_object(self, name):
-        """This is a method for parsing input to return the proper object.
-
-        The only thing we need to check for here is a ':',
-        indicating an origin.
-
-        :param string name: the name (or a reference to) the desired object
+        """Returns the ensemble, node, or network with given name."""
+        search = [x for x in self.nodes+self.ensembles+self.networks if x.name == name]
+        if len(search) > 0:
+            print "Warning, found more than one object with same name"
+        return search[0]
         
+    def get(self, name, func=None):
+        """This method takes in a string and returns the corresponding object.
+
+        :param string name: the name of the object
+        :returns: specified origin
         """
         if not isinstance(name, str):
             return name
@@ -184,51 +196,37 @@ class Network(object):
         # separate into node and origin, if specified
         split = name.split(':')
 
-        if len(split) == 1:
-            # no origin specified
-            return self.nodes[name]
+        target = self.get_object(split[0])
 
-        elif len(split) == 2:
+        if len(split) == 2:
             # origin specified
-            node = self.nodes[split[0]]
-            return node.origin[split[1]]
-       
-    def get(self, name, func=None):
-        """This method takes in a string and returns the decoded_output function 
-        of this object. If no origin is specified in name then 'X' is used.
-
-        :param string name: the name of the object(and optionally :origin) from
-                            which to take decoded_output from
-        :returns: specified origin
-        """
-        obj = self.get_object(name) # get the object referred to by name
-
-        if not isinstance(obj, origin.Origin):
-            # if obj is not an origin, find the origin
-            # the projection originates from
-
-            # take default identity decoded output from obj population
-            origin_name = 'X'
-
-            if func is not None: 
-                # if this connection should compute a function
-
-                # set name as the function being calculated
-                origin_name = func.__name__
-
-            #TODO: better analysis to see if we need to build a new origin
-            # (rather than just relying on the name)
-            if origin_name not in obj.origin:
-                # if an origin for this function hasn't already been created
-                # create origin with to perform desired func
-                obj.add_origin(origin_name, func, dt=self.dt)
-
-            obj = obj.origin[origin_name]
-
-        else:
-            # if obj is an origin, make sure a function wasn't given
-            # can't specify a function for an already created origin
-            assert func == None
+            target = target.outputs[split[1]]
+#        if not isinstance(obj, origin.Origin):
+#            # if obj is not an origin, find the origin
+#            # the projection originates from
+#
+#            # take default identity decoded output from obj population
+#            origin_name = 'X'
+#
+#            if func is not None: 
+#                # if this connection should compute a function
+#
+#                # set name as the function being calculated
+#                origin_name = func.__name__
+#
+#            #TODO: better analysis to see if we need to build a new origin
+#            # (rather than just relying on the name)
+#            if origin_name not in obj.origin:
+#                # if an origin for this function hasn't already been created
+#                # create origin with to perform desired func
+#                obj.add_origin(origin_name, func, dt=self.dt)
+#
+#            obj = obj.origin[origin_name]
+#
+#        else:
+#            # if obj is an origin, make sure a function wasn't given
+#            # can't specify a function for an already created origin
+#            assert func == None
 
         return obj
 

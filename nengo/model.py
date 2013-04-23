@@ -1,6 +1,6 @@
 import random
 import collections
-import quantities
+#import quantities
 import numpy as np
 from simulator import Simulator
 from network import Network

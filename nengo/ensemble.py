@@ -1,7 +1,7 @@
-try:
-    from collections import OrderedDict
-except:
-    from ordereddict import OrderedDict
+#try:
+#    from collections import OrderedDict
+#except:
+#    from ordereddict import OrderedDict
 
 import numpy as np
 
@@ -11,6 +11,7 @@ from . import origin
 from . import cache
 from . import filter
 from .hPES_termination import hPESTermination
+from output import Output
 
 _ARRAY_SIZE = 1
 
@@ -32,101 +33,89 @@ class Gaussian(object):
 
 
 class Base(object):
-    def __init__(self, dimensions, array_size=_ARRAY_SIZE):
+    def __init__(self, dimensions):
         self.dimensions = int(dimensions)
-        self.array_size = int(array_size)
 
-        self.origin = OrderedDict()
-
-        self.decoded_input = OrderedDict()
-
-        # set up a dictionary for encoded_input connections
-        self.encoded_input = {}
-
-        # list of learned terminations on ensemble
-        self.learned_terminations = []
-
-
-class DirectEnsemble(Base):
-
-    def add_origin(self, name, func, dimensions):
-        if func is not None:
-            if 'initial_value' not in kwargs.keys():
-                # [func(np.zeros(self.dimensions)) for i in range(self.array_size)]
-                init = func(np.zeros(self.dimensions))
-                init = np.array([init for i in range(self.array_size)])
-                kwargs['initial_value'] = init.flatten()
-
-        if 'dt' in kwargs.keys():
-            del kwargs['dt']
-
-        self.origin[name] = origin.Origin(func=func, **kwargs) 
-
-    def add_termination(self, name, pstc, decoded_input=None, encoded_input=None):
-        """Accounts for a new termination that takes the given input
-        (a theano object) and filters it with the given pstc.
-
-        Adds its contributions to the set of decoded, encoded,
-        or learn input with the same pstc. Decoded inputs
-        are represented signals, encoded inputs are
-        decoded_output * weight matrix, learn input is
-        activities * weight_matrix.
-
-        Can only have one of decoded OR encoded OR learn input != None.
-
-        :param float pstc: post-synaptic time constant
-        :param decoded_input:
-            theano object representing the decoded output of
-            the pre population multiplied by this termination's
-            transform matrix
-        :param encoded_input:
-            theano object representing the encoded output of
-            the pre population multiplied by a connection weight matrix
-        :param learn_input:
-            theano object representing the learned output of
-            the pre population multiplied by a connection weight matrix
-        
-        """
-        # make sure one and only one of
-        # (decoded_input, encoded_input) is specified
-        if decoded_input is not None: 
-            assert (encoded_input is None)
-        elif encoded_input is not None:
-            assert (decoded_input is None) 
-        else:
-            assert False
-
-        if decoded_input: 
-            self.decoded_input[name] = filter.Filter(pstc, 
-                source=decoded_input, 
-                shape=(self.array_size, self.dimensions))
-        elif encoded_input: 
-            self.encoded_input[name] = filter.Filter(pstc, 
-                source=encoded_input, 
-                shape=(self.array_size, self.neurons))
-
-    def tick(self):
-
-        # set up matrix to store accumulated decoded input
-        X = np.zeros((self.array_size, self.dimensions))
-
-        # updates is an ordered dictionary of theano variables to update
-        for di in self.decoded_input.values(): 
-            # add its values to the total decoded input
-            X += di.value.get_value()
-
-        # if we're calculating a function on the decoded input
-        for o in self.origin.values(): 
-            if o.func is not None:  
-                val = np.float32([o.func(X[i]) for i in range(len(X))])
-                o.decoded_output.set_value(val.flatten())
+#class DirectEnsemble(Base):
+#
+#    def add_origin(self, name, func, dimensions):
+#        if func is not None:
+#            if 'initial_value' not in kwargs.keys():
+#                # [func(np.zeros(self.dimensions)) for i in range(self.array_size)]
+#                init = func(np.zeros(self.dimensions))
+#                init = np.array([init for i in range(self.array_size)])
+#                kwargs['initial_value'] = init.flatten()
+#
+#        if 'dt' in kwargs.keys():
+#            del kwargs['dt']
+#
+#        self.origin[name] = origin.Origin(func=func, **kwargs) 
+#
+#    def add_termination(self, name, pstc, decoded_input=None, encoded_input=None):
+#        """Accounts for a new termination that takes the given input
+#        (a theano object) and filters it with the given pstc.
+#
+#        Adds its contributions to the set of decoded, encoded,
+#        or learn input with the same pstc. Decoded inputs
+#        are represented signals, encoded inputs are
+#        decoded_output * weight matrix, learn input is
+#        activities * weight_matrix.
+#
+#        Can only have one of decoded OR encoded OR learn input != None.
+#
+#        :param float pstc: post-synaptic time constant
+#        :param decoded_input:
+#            theano object representing the decoded output of
+#            the pre population multiplied by this termination's
+#            transform matrix
+#        :param encoded_input:
+#            theano object representing the encoded output of
+#            the pre population multiplied by a connection weight matrix
+#        :param learn_input:
+#            theano object representing the learned output of
+#            the pre population multiplied by a connection weight matrix
+#        
+#        """
+#        # make sure one and only one of
+#        # (decoded_input, encoded_input) is specified
+#        if decoded_input is not None: 
+#            assert (encoded_input is None)
+#        elif encoded_input is not None:
+#            assert (decoded_input is None) 
+#        else:
+#            assert False
+#
+#        if decoded_input: 
+#            self.decoded_input[name] = filter.Filter(pstc, 
+#                source=decoded_input, 
+#                shape=(self.array_size, self.dimensions))
+#        elif encoded_input: 
+#            self.encoded_input[name] = filter.Filter(pstc, 
+#                source=encoded_input, 
+#                shape=(self.array_size, self.neurons))
+#
+#    def tick(self):
+#
+#        # set up matrix to store accumulated decoded input
+#        X = np.zeros((self.array_size, self.dimensions))
+#
+#        # updates is an ordered dictionary of theano variables to update
+#        for di in self.decoded_input.values(): 
+#            # add its values to the total decoded input
+#            X += di.value.get_value()
+#
+#        # if we're calculating a function on the decoded input
+#        for o in self.origin.values(): 
+#            if o.func is not None:  
+#                val = np.float32([o.func(X[i]) for i in range(len(X))])
+#                o.decoded_output.set_value(val.flatten())
 
 
 class SpikingEnsemble(Base):
     """An ensemble is a collection of neurons representing a vector space.
     """
     
-    def __init__(self, neurons, dimensions, array_size=_ARRAY_SIZE,
+    def __init__(self, num_neurons, dimensions,
             neuron_model=None,
             max_rate=(200, 300),
             intercept=(-1.0, 1.0),
@@ -152,7 +141,6 @@ class SpikingEnsemble(Base):
         :param int seed: seed value for random number generator
         :param string neuron_type:
             type of neuron model to use, options = {'lif'}
-        :param int array_size: number of sub-populations for network arrays
         :param float decoder_noise: amount of noise to assume when computing 
             decoder    
         :param string noise_type:
@@ -164,170 +152,52 @@ class SpikingEnsemble(Base):
             sampled at every timestep.
 
         """
-        Base.__init__(self, dimensions, array_size)
+        Base.__init__(self, dimensions)
         if seed is None:
             seed = np.random.randint(1000)
-        if neurons % array_size:
-            raise ValueError('array_size must divide population size',
-                    (neurons, array_size))
         self.seed = seed
         self.radius = radius
         self.noise = noise
         self.decoder_noise = decoder_noise
+        self.encoders = encoders
         if neuron_model is None:
-            self.neuron_model = neuron.lif.LIFNeuron(
-                size=array_size * self.neurons)
+            self.neuron_model = neuron.lif.LIFNeuron(num_neurons)
         else:
             self.neuron_model = neuron_model
-            self.neuron_model.size = array_size * self.neurons
+            self.neuron_model.size = num_neurons
 
-        self.input_current = Output() # TODO: rename this and stuff.
+        self.vector_inputs = []
+        self.neuron_inputs = []
 
-        connection = Connection(self.default_output, ...)
-
-        self.neuron_model.J = self.input_current
-
-        # TODO: make these neuron model attributes
         self.intercept = intercept
         self.max_rate = max_rate
-
-        self.default_output = Output()
-
-    @property
-    def num_neurons
-        self.num_neurons = 
 
     @property
     def spikes(self):
         return self.neuron_model.output
 
     def build(self, state, dt):
-        state[self.default_output] = np.zeros(
-            (self.array_size, self.dimensions))
-
         self.neuron_model.max_rate = self.max_rate
         self.neuron_model.intercept = self.intercept
 
         self.neuron_model.build(state, dt)
 
         # compute encoders
-        self.encoders = self.make_encoders(encoders=encoders)
+        self.encoders = self.make_encoders(encoders=self.encoders)
         # combine encoders and gain for simplification
-        self.encoders = (self.encoders.T * alpha.T).T
+        self.encoders = (self.encoders.T * self.alpha.T).T
 
-    def add_termination(self, name, pstc, decoded_input=None, encoded_input=None):
-        """Accounts for a new termination that takes the given input
-        (a theano object) and filters it with the given pstc.
-
-        Adds its contributions to the set of decoded, encoded,
-        or learn input with the same pstc. Decoded inputs
-        are represented signals, encoded inputs are
-        decoded_output * weight matrix, learn input is
-        activities * weight_matrix.
-
-        Can only have one of decoded OR encoded OR learn input != None.
-
-        :param float pstc: post-synaptic time constant
-        :param decoded_input:
-            theano object representing the decoded output of
-            the pre population multiplied by this termination's
-            transform matrix
-        :param encoded_input:
-            theano object representing the encoded output of
-            the pre population multiplied by a connection weight matrix
-        :param learn_input:
-            theano object representing the learned output of
-            the pre population multiplied by a connection weight matrix
+    def add_connection(self, connection):
+        self.vector_inputs += [connection]
         
-        """
-        # make sure one and only one of
-        # (decoded_input, encoded_input) is specified
-        if decoded_input is not None: 
-            assert (encoded_input is None)
-        elif encoded_input is not None:
-            assert (decoded_input is None) 
-        else:
-            assert False
+    def add_neuron_connection(self, connection):
+        self.neuron_inputs += [connection]
 
-        if decoded_input: 
-            # rescale decoded_input by this neuron's radius
-            self.decoded_input[name] = filter.Filter(pstc, 
-                source=np.true_div(decoded_input, self.radius), 
-                shape=(self.array_size, self.dimensions))
-        elif encoded_input: 
-            self.encoded_input[name] = filter.Filter(pstc, 
-                source=encoded_input, 
-                shape=(self.array_size, self.neurons))
-
-    def add_learned_termination(self, name, pre, error, pstc, 
-                                learned_termination_class=hPESTermination,
-                                **kwargs):
-        """Adds a learned termination to the ensemble.
-
-        Input added to encoded_input, and a learned_termination object
-        is created to keep track of the pre and post
-        (self) spike times, and adjust the weight matrix according
-        to the specified learning rule.
-
-        :param Ensemble pre: the pre-synaptic population
-        :param Ensemble error: the Origin that provides the error signal
-        :param float pstc:
-        :param learned_termination_class:
-        """
-        #TODO: is there ever a case we wouldn't want this?
-        assert error.dimensions == self.dimensions * self.array_size
-
-        # generate an initial weight matrix if none provided,
-        # random numbers between -.001 and .001
-        if 'weight_matrix' not in kwargs.keys():
-            weight_matrix = np.random.uniform(
-                size=(self.array_size * pre.array_size,
-                      self.neurons, pre.neurons),
-                low=-.001, high=.001)
-            kwargs['weight_matrix'] = weight_matrix
-        else:
-            # make sure it's an np.array
-            #TODO: error checking to make sure it's the right size
-            kwargs['weight_matrix'] = np.array(kwargs['weight_matrix']) 
-
-        learned_term = learned_termination_class(
-            pre=pre, post=self, error=error, **kwargs)
-
-        learn_projections = [np.dot(
-            pre.population.output[learned_term.pre_index(i)],  
-            learned_term.weight_matrix[i % self.array_size]) 
-            for i in range(self.array_size * pre.array_size)]
-
-        # now want to sum all the output to each of the post ensembles 
-        # going to reshape and sum along the 0 axis
-        learn_output = np.sum( 
-            np.reshape(learn_projections, 
-            (pre.array_size, self.array_size, self.neurons)), axis=0)
-        # reshape to make it (array_size x self.neurons)
-        learn_output = np.reshape(learn_output, 
-            (self.array_size, self.neurons))
-
-        # the input_current from this connection during simulation
-        self.add_termination(name=name, pstc=pstc, encoded_input=learn_output)
-        self.learned_terminations.append(learned_term)
-        return learned_term
-
-    def add_origin(self, name, func, **kwargs):
-        """Create a new origin to perform a given function
-        on the represented signal.
-
-        :param string name: name of origin
-        :param function func:
-            desired transformation to perform over represented signal
-        :param list eval_points:
-            specific set of points to optimize decoders over for this origin
-        """
-
-        if 'eval_points' not in kwargs.keys():
-            kwargs['eval_points'] = self.eval_points
-        self.origin[name] = ensemble_origin.EnsembleOrigin(
-            ensemble=self, func=func, **kwargs)
-
+    def add_output(self, func, dimensions, name=None):
+        self.outputs += [Output(name)]
+        self.output_funcs += [func]
+        
+        return self.outputs[-1]
 
     def make_encoders(self, encoders=None):
         """Generates a set of encoders.
@@ -363,35 +233,26 @@ class SpikingEnsemble(Base):
 
         return encoders
 
-
-    def tick(self, dt):
-        """Compute the set of theano updates needed for this ensemble.
-
-        Returns a dictionary with new neuron state,
-        termination, and origin values.
+    def tick(self, state, dt):
+        """Computes the new output values for this ensemble and applies
+        learning to any input connections with a learning rule.
 
         :param float dt: the timestep of the update
         """
         
-        ### find the total input current to this population of neurons
-
-        # set up matrix to store accumulated decoded input
-        X = np.zeros((self.array_size, self.dimensions))
-    
+        # find the total input current to this population of neurons
+        
         # apply respective biases to neurons in the population 
         J = np.array(self.bias)
 
-        for ei in self.encoded_input.values():
+        #add in neuron->neuron currents
+        for c in self.neuron_inputs:
             # add its values directly to the input current
-            J += ei.value
-            updates.update(ei.update(dt))
+            J += c.get_post_input(state, dt)
 
-        # only do this if there is decoded_input
-        if len(self.decoded_input) > 0:
-            # add to input current for each neuron as
-            # represented input signal x preferred direction
-            J = [J[i] + np.dot(self.shared_encoders[i], X[i].T)
-                 for i in range(self.array_size)]
+        #add in vector->vector currents
+        for c in self.vector_inputs:
+            J += c.get_post_input(state, dt) * self.encoders
 
         # if noise has been specified for this neuron,
         if self.noise: 
@@ -410,22 +271,24 @@ class SpikingEnsemble(Base):
 
         # pass that total into the neuron model to produce
         # the main theano computation
-        updates.update(self.neurons.update(J, dt))
+        self.neurons.update(J, dt)
     
-        for l in self.learned_terminations:
-            # also update the weight matrices on learned terminations
-            updates.update(l.update(dt))
+        # update the weight matrices on learned terminations
+        for c in self.vector_inputs+self.neuron_inputs:
+            c.learn(dt)
 
-        # and compute the decoded origin decoded_input from the neuron output
-        for o in self.origin.values():
-            updates.update(o.update(dt, updates[self.neurons.output]))
-
-        return updates
-
+        # compute the decoded origin decoded_input from the neuron output
+        new_state = {}
+        for i,o in enumerate(self.outputs):
+            new_state[o] = self.output_funcs[i](self.neurons.output)
+            
+        return new_state
+            
 
 def Ensemble(*args, **kwargs):
     if kwargs.pop('mode', 'spiking') == 'spiking':
         return SpikingEnsemble(*args, **kwargs)
     else:
-        return DirectEnsemble(*args, **kwargs)
+#        return DirectEnsemble(*args, **kwargs)
+        raise NotImplementedError()
 
