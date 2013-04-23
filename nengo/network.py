@@ -8,7 +8,7 @@ from . import node
 
 from ensemble import SpikingEnsemble
 from output import Output
-from connection import Connection
+import connection
 import nengo
 
 class Network():
@@ -142,10 +142,10 @@ class Network():
                 dim_post=post.dimensions)
 
         #create connection
-        c = Connection(pre=o, post=post, transform=transform, filter=filter,
+        c = connection.make_connection(pre=o, post=post, transform=transform, filter=filter,
                        function=func, learning_rule=learning_rule)
         post.add_connection(c)
-        self.add(c)
+        
         return c
 
     def connect_neurons(self, pre, post, weights=None, filter=None, learning_rule=None):
@@ -193,7 +193,7 @@ class Network():
         split = name.split(':')
 
         #recursively get from subnetworks
-        if split[0].contains("/"):
+        if "/" in split[0]:
             subsplit = split[0].split("/")
             target = self.get(subsplit[0]).get("/".join(subsplit[1:]))
         else:

@@ -18,7 +18,7 @@ class Node(object):
             outfunc = lambda : output
         else:
             outfunc = output
-        self.outputs = {Output(dimensions=len(outfunc())):outfunc}
+        self.outputs = {Output(dimensions=len(outfunc()), name="output"):outfunc}
 
     def _build(self, state, dt):
         for output in self.outputs:
