@@ -2,12 +2,8 @@ import random
 import collections
 #import quantities
 
-import numpy as np
-
 from . import ensemble
 from . import probe
-from . import origin
-from . import input
 from . import node
 
 from ensemble import SpikingEnsemble
@@ -15,7 +11,7 @@ from output import Output
 from connection import Connection
 import nengo
 
-class Network(object):
+class Network():
     def __init__(self, name):
         """Wraps an NEF network with a set of helper functions
         for simplifying the creation of NEF models.
@@ -117,11 +113,11 @@ class Network(object):
         """
 
         # get pre object from node dictionary
-        if isinstance(pre, ""):
+        if isinstance(pre, basestring):
             pre = self.get(pre)
 
         # get post object from node dictionary
-        if isinstance(pre, ""):
+        if isinstance(post, basestring):
             post = self.get(post)
 
         #use identity function if func not given
@@ -196,51 +192,33 @@ class Network(object):
         # separate into node and origin, if specified
         split = name.split(':')
 
-        target = self.get_object(split[0])
+        #recursively get from subnetworks
+        if split[0].contains("/"):
+            subsplit = split[0].split("/")
+            target = self.get(subsplit[0]).get("/".join(subsplit[1:]))
+        else:
+            target = self.get_object(split[0])
 
+        # load specific output if given
         if len(split) == 2:
-            # origin specified
-            target = target.outputs[split[1]]
-#        if not isinstance(obj, origin.Origin):
-#            # if obj is not an origin, find the origin
-#            # the projection originates from
-#
-#            # take default identity decoded output from obj population
-#            origin_name = 'X'
-#
-#            if func is not None: 
-#                # if this connection should compute a function
-#
-#                # set name as the function being calculated
-#                origin_name = func.__name__
-#
-#            #TODO: better analysis to see if we need to build a new origin
-#            # (rather than just relying on the name)
-#            if origin_name not in obj.origin:
-#                # if an origin for this function hasn't already been created
-#                # create origin with to perform desired func
-#                obj.add_origin(origin_name, func, dt=self.dt)
-#
-#            obj = obj.origin[origin_name]
-#
-#        else:
-#            # if obj is an origin, make sure a function wasn't given
-#            # can't specify a function for an already created origin
-#            assert func == None
+            target = [x for x in target.outputs if x.name == split[1]]
+            if len(target) > 0:
+                print "Warning, found more than one output with same name"
+            target = target[0]
 
-        return obj
+        return target
 
     def make_alias(self, name, target):
         """ Set up an alias for referencing the target object.
         """
         self.aliases[name] = target
 
-    def make_ensemble(self, name, neurons, dimensions, max_rate=(50,100),
+    def make_ensemble(self, name, num_neurons, dimensions, max_rate=(50,100),
                       intercept=(-1,1), radius=1, encoders=None): 
         """Create and return an ensemble of neurons.
 
         :param string name: name of the ensemble (must be unique)
-        :param int neurons: number of neurons in the ensemble
+        :param int num_neurons: number of neurons in the ensemble
         :param int dimensions: number of dimensions the ensemble represents
         :param tuple max_rate_uniform: distribution of max firing rates of the neurons in the ensemble
         :param tuple intercept_uniform: distribution of neuron intercepts
@@ -250,9 +228,9 @@ class Network(object):
 
         """
         # TODO use name
-        e = SpikingEnsemble(neurons=neurons, dimensions=dimensions,
-                              max_rate=Uniform(*max_rate),
-                              intercept=Uniform(*intercept),
+        e = SpikingEnsemble(name, num_neurons=num_neurons, dimensions=dimensions,
+                              max_rate=max_rate,
+                              intercept=intercept,
                               radius=radius, encoders=encoders)
 
         # store created ensemble in node dictionary
@@ -275,15 +253,14 @@ class Network(object):
         self.add(n)
         return n
         
-    def make_network(self, name, seed=None):
-        """Create a subnetwork.  This has no functional purpose other than
-        to help organize the model.  Components within a subnetwork can
-        be accessed through a dotted name convention, so an element B inside
-        a subnetwork A can be referred to as A.B.       
+    def make_network(self, name):
+        """Create a subnetwork.     
         
         :param name: the name of the subnetwork to create        
         """
-        return self.add(network.Network(name, self))
+        n = Network(name)
+        self.add(n)
+        return n
 
     def probe(self, target, sample_every=0.01, static=False):
         """Add a probe to measure the given target.
@@ -305,4 +282,4 @@ class Network(object):
         :param obj: The object to remove
         :param type: <nengo string> or Ensemble, Node, Network, Connection
         """
-
+        pass

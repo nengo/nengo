@@ -1,16 +1,16 @@
-try:
-    from collections import OrderedDict
-except:
-    from ordereddict import OrderedDict
-
-class SymbolicSignal(object):
-    def __init__(self,
-                 name=None, type=None, shape=None, units=None, dtype=None):
-        slef.name = name
-        self.type = type
-        self.shape = shape
-        self.units = units
-        self.dtype = dtype
+#try:
+#    from collections import OrderedDict
+#except:
+#    from ordereddict import OrderedDict
+#
+#class SymbolicSignal(object):
+#    def __init__(self,
+#                 name=None, type=None, shape=None, units=None, dtype=None):
+#        slef.name = name
+#        self.type = type
+#        self.shape = shape
+#        self.units = units
+#        self.dtype = dtype
 
 
 def dump_probes_to_file(probes, filename):

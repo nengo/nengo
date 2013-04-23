@@ -1,22 +1,12 @@
-#try:
-#    from collections import OrderedDict
-#except:
-#    from ordereddict import OrderedDict
-
 import numpy as np
 
-from . import neuron
-from . import ensemble_origin
-from . import origin
-from . import cache
-from . import filter
-from .hPES_termination import hPESTermination
+import neuron
 from output import Output
 
 _ARRAY_SIZE = 1
 
 def is_ensemble(obj):
-    return isinstance(obj, Base)
+    return isinstance(obj, BaseEnsemble)
 
 class Uniform(object):
     def __init__(self, low, high):
@@ -32,8 +22,9 @@ class Gaussian(object):
         self.high = high
 
 
-class Base(object):
-    def __init__(self, dimensions):
+class BaseEnsemble(object):
+    def __init__(self, name, dimensions):
+        self.name = name
         self.dimensions = int(dimensions)
 
 #class DirectEnsemble(Base):
@@ -111,11 +102,11 @@ class Base(object):
 #                o.decoded_output.set_value(val.flatten())
 
 
-class SpikingEnsemble(Base):
+class SpikingEnsemble(BaseEnsemble):
     """An ensemble is a collection of neurons representing a vector space.
     """
     
-    def __init__(self, num_neurons, dimensions,
+    def __init__(self, name, num_neurons, dimensions,
             neuron_model=None,
             max_rate=(200, 300),
             intercept=(-1.0, 1.0),
@@ -152,7 +143,7 @@ class SpikingEnsemble(Base):
             sampled at every timestep.
 
         """
-        Base.__init__(self, dimensions)
+        BaseEnsemble.__init__(self, name, dimensions)
         if seed is None:
             seed = np.random.randint(1000)
         self.seed = seed
@@ -161,7 +152,7 @@ class SpikingEnsemble(Base):
         self.decoder_noise = decoder_noise
         self.encoders = encoders
         if neuron_model is None:
-            self.neuron_model = neuron.lif.LIFNeuron(num_neurons)
+            self.neuron_model = neuron.lif_rate.LIFRateNeuron(num_neurons)
         else:
             self.neuron_model = neuron_model
             self.neuron_model.size = num_neurons

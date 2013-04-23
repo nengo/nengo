@@ -7,60 +7,50 @@ def is_node(obj):
     return isinstance(obj, (Node, TimeNode))
 
 class Node(object):
-    _default_output_idx = 0
     """
-    A custom-node for feeding a function-of-time into the network.
+    A custom-node for feeding a function into the network.
     """
-
-    @property
-    def default_output(self):
-        return self._outputs[self._default_output_idx]
 
     def __init__(self, name, output=None):
         self.name = name
-        self._outputs = [Output()]
-        self.output = output
+
+        if not callable(output):
+            outfunc = lambda : output
+        else:
+            outfunc = output
+        self.outputs = {Output(dimensions=len(outfunc())):outfunc}
 
     def _build(self, state, dt):
-        for _output in self._outputs:
-            state[output] = self.output
+        for output in self.outputs:
+            state[output] = self.outputs[output]()
 
-    def _reset(self, *args):
-        for output in self._outputs:
-            state_t[output] = self.output
+    def _reset(self, state_t):
+        for output in self.outputs:
+            state_t[output] = self.outputs[output]()
 
     def _step(self, state_t, state_tm1, dt):
-        for output in self._outputs:
-            state_t[output] = self.step()
-
+        for output in self.outputs:
+            state_tm1[output] = self.outputs[output]()
 
 class TimeNode(object):
     """
     A custom-node for feeding a function-of-time into the network.
     """
-    _default_output_idx = 0
-
-    @property
-    def default_output(self):
-        return self._outputs[self._default_output_idx]
-    def __init__(self, name, fn):
+    def __init__(self, name, func):
         self.name = name
-        self._outputs = [Output()]
+        self._outputs = {Output(dimensions=len(func(0.0))):func}
         self.t = 0.0
-        self.fn = fn
 
     def _build(self, state, dt):
         self._reset(state)
 
     def _reset(self, state):
         self.t = 0
-        v0 = self.fn(0)
-        for output in self._outputs:
-            state[output] = v0
+        for output in self.outputs:
+            state[output] = self.outputs[output](self.t)
 
     def _step(self, state_t, state_tm1, dt):
         self.t += dt
-        vt = self.fn(self.t)
-        for output in self._outputs:
-            state_t[output] = vt
+        for output in self.outputs:
+            state_tm1[output] = self.outputs[output](self.t)
 

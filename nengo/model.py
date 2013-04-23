@@ -1,7 +1,3 @@
-import random
-import collections
-#import quantities
-import numpy as np
 from simulator import Simulator
 from network import Network
 
@@ -64,49 +60,13 @@ class Model(object):
         self.simulator.step_time(time, dt, stop_when=stop_when,
                                 dump_probes_fn=output)
 
-                    
-    # Wrappers for Network methods
-    def add(self, node):
-        return self.network.add(node)
-
-    def compute_transform(self, dim_pre, dim_post, array_size, weight=1,
-                          index_pre=None, index_post=None, transform=None):
-        return self.network.compute_transform(
-            dim_pre, dim_post, array_size, weight,
-            index_pre, index_post, transform )
-                
-    def connect(self, pre, post, transform=None, weight=1,
-                index_pre=None, index_post=None, pstc=0.01, 
-                func=None):
-        return self.network.connect(
-            pre, post, transform, weight, index_pre, index_post, pstc, func)
-    
-    def get_object(self, name):
-            return self.network.get_object(name)
-       
-    def get_origin(self, name, func=None):
-        return self.network.get_origin(name, func)
-
-    def learn(self, pre, post, error, pstc=0.01, **kwargs):
-        return self.network.learn(pre, post, error, pstc, **kwargs);
-                                  
-    def make_ensemble(self, name, *args, **kwargs): 
-        return self.network.make_ensemble(name, *args, **kwargs)
-
-    def make_array(self, name, neurons, array_size, dimensions=1, **kwargs):
-        return self.network.make_array(name, neurons, array_size, dimensions, **kwargs)
-    
-    def make_node(self, *args, **kwargs): 
-        """
-        XXX
-        Don't you wish the docs were here?
-        """
-        return self.network.make_node(*args, **kwargs)
+          
+    def __getattr__(self, attr):
+        """Attempt to pass any failed attr calls to the network."""
         
-    def make_subnetwork(self, name):
-        return self.network.make_subnetwork(name)
-            
-    def probe(self, *args, **kwargs):
-        return self.network.probe(*args, **kwargs)
+        try:
+            return getattr(self.network, attr)
+        except AttributeError:
+            raise AttributeError("Model instance has no attribute '" + attr + "'")
 
                                 
