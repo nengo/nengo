@@ -1,7 +1,7 @@
 import numpy as np
 
 def pstc(tau):
-    return {type:"ExponentialPSC", pstc:tau}
+    return dict(type = "ExponentialPSC", pstc = tau)
 
 def gen_transform(dim_pre, dim_post, array_size=1, weight=1,
                           index_pre=None, index_post=None, transform=None):
