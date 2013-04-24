@@ -17,8 +17,9 @@ class Node(object):
         
         if output != None:
             if not callable(output):
+                outval = output
                 def output():
-                    return output
+                    return outval
                 outfunc = output
             else:
                 outfunc = output
