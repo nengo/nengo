@@ -1,4 +1,4 @@
-from nengo
+import nengo
 
 m = nengo.Model("test_connection")
 input = m.make_node("input", [0.5])
