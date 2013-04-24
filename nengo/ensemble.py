@@ -138,6 +138,7 @@ class SpikingEnsemble(BaseEnsemble):
         self.noise = noise
         self.decoder_noise = decoder_noise
         self.encoders = encoders
+        self.eval_points = None
         if neuron_model is None:
             self.neuron_model = neuron.lif_rate.LIFRateNeuron(num_neurons)
         else:
@@ -146,8 +147,13 @@ class SpikingEnsemble(BaseEnsemble):
 
         self.vector_inputs = []
         self.neuron_inputs = []
+
+        # Track the outputs from this ensemble, 
         self.outputs = []
+        # the function they should be computing, 
         self.output_funcs = []
+        # and the decoders that approximate this.
+        self.decoders = []
 
         self.intercept = intercept
         self.max_rate = max_rate
@@ -187,8 +193,10 @@ class SpikingEnsemble(BaseEnsemble):
 
         # compute the decoded origin decoded_input from the neuron output
         for i,o in enumerate(self.outputs):
-            state[o] = self.output_funcs[i](
-                np.zeros((self.neuron_model.size, 1)))    
+            state[o] = np.zeros((self.neuron_model.size, 1))
+            self.decoders += [
+                self.compute_decoders(func=self.output_funcs[i], 
+                dt=dt, eval_points=self.eval_points) ]
 
     def add_connection(self, connection):
         self.vector_inputs += [connection]
@@ -201,7 +209,133 @@ class SpikingEnsemble(BaseEnsemble):
         self.output_funcs += [func]
         
         return self.outputs[-1]
-    
+
+    def compute_decoders(self, func, dt, eval_points=None):     
+        """Compute decoding weights.
+
+        Calculate the scaling values to apply to the output
+        of each of the neurons in the attached population
+        such that the weighted summation of their output
+        generates the desired decoded output.
+
+        Decoder values computed as D = (A'A)^-1 A'X_f
+        where A is the matrix of activity values of each 
+        neuron over sampled X values, and X_f is the vector
+        of desired f(x) values across sampled points.
+
+        :param function func: function to compute with this origin
+        :param float dt: timestep for simulating to get A matrix
+        :param list eval_points:
+            specific set of points to optimize decoders over 
+        """
+
+        if eval_points == None:  
+            # generate sample points from state space randomly
+            # to minimize decoder error over in decoder calculation
+            self.num_samples = 500
+            samples = np.random.normal(
+                size=(self.num_samples, self.dimensions))
+            
+            # normalize magnitude of sampled points to be of unit length
+            norm = np.sum(samples * samples, axis=1, dtype='float') 
+            samples = samples / np.sqrt(norm)
+
+            # generate magnitudes for vectors from uniform distribution
+            scale = (np.random.uniform(size=(self.num_samples,))
+                     ** (1.0 / self.dimensions))
+
+            # scale sample points
+            samples = samples.T * scale 
+
+            eval_points = samples
+
+        else:
+            # otherwise reset num_samples, and 
+            # make sure eval_points is in the right form
+            # (rows are input dimensions, columns different samples)
+            eval_points = np.array(eval_points)
+            if len(eval_points.shape) == 1:
+                eval_points.shape = [1, eval_points.shape[0]]
+            self.num_samples = eval_points.shape[1]
+
+            if eval_points.shape[0] != self.dimensions: 
+                raise Exception("Evaluation points must be of the form: " + 
+                    "[dimensions x num_samples]")
+
+        # compute the target_values at the sampled points 
+        if func is None:
+            # if no function provided, use identity function as default
+            target_values = eval_points 
+        else:
+            # otherwise calculate target_values using provided function
+            
+            # scale all our sample points by ensemble radius,
+            # calculate function value, then scale back to unit length
+
+            # this ensures that we accurately capture the shape of the
+            # function when the radius is > 1 (think for example func=x**2)
+            target_values = \
+                (np.array(
+                    [func(s * self.radius) for s in eval_points.T]
+                    ) / self.radius )
+            if len(target_values.shape) < 2:
+                target_values.shape = target_values.shape[0], 1
+            target_values = target_values.T
+        
+        decoders = np.zeros((self.neuron_model.size, target_values.shape[0]))
+
+        # compute the input current for every neuron and every sample point
+        J = np.dot(self.encoders, eval_points)
+        J += self.neuron_model.j_bias[:, np.newaxis]
+
+        # so in parallel we can calculate the activity
+        # of all of the neurons at each sample point 
+        neurons = self.neuron_model.__class__(
+            size=(self.neuron_model.size, self.num_samples), 
+            tau_rc=self.neuron_model.tau_rc,
+            tau_ref=self.neuron_model.tau_ref)
+
+        # run the neuron model for 1 second,
+        # accumulating spikes to get a spike rate
+        A = neuron.accumulate(J=J, neurons=neurons, dt=dt, time=1.0)
+        # add noise to elements of A
+        # std_dev = max firing rate of population * .1
+        noise = .1 # from Nengo
+        A += noise * np.random.normal(
+            size=(self.neuron_model.size, self.num_samples), 
+            scale=(self.neuron_model.max_rate[1]))
+
+        # compute Gamma and Upsilon
+        G = np.dot(A, A.T) # correlation matrix
+        
+        # eigh for symmetric matrices, returns
+        # evalues w and normalized evectors v
+        w, v = np.linalg.eigh(G)
+
+        dnoise = self.decoder_noise * self.decoder_noise
+
+        # formerly 0.1 * 0.1 * max(w), set threshold
+        limit = dnoise * max(w) 
+        for i in range(len(w)):
+            if w[i] < limit:
+                # if < limit set eval = 0
+                w[i] = 0
+            else:
+                # prep for upcoming Ginv calculation
+                w[i] = 1.0 / w[i]
+        # w[:, np.newaxis] gives transpose of vector,
+        # np.multiply is very fast element-wise multiplication
+        Ginv = np.dot(v, np.multiply(w[:, np.newaxis], v.T)) 
+        
+        cache.set_gamma_inv(index_key, (Ginv, A))
+
+        U = np.dot(A, target_values.T)
+        
+        # compute decoders - least squares method 
+        decoders = np.dot(Ginv, U)
+
+        return decoders
+
     def get(self, name):
         found = [x for x in self.outputs if x.name == name] + \
                 [self for x in self.vector_inputs+self.neuron_inputs if x.post == self.name + ":" + name]
@@ -261,7 +395,9 @@ class SpikingEnsemble(BaseEnsemble):
         #add in vector->vector currents
         for c in self.vector_inputs:
             fuck = c.get_post_input(old_state, dt) 
-            J += np.dot(self.encoders, c.get_post_input(old_state, dt))
+            J += np.dot( self.encoders, 
+                c.get_post_input(old_state, dt)).reshape(
+                (self.neuron_model.size, 1))
 
         # if noise has been specified for this neuron,
         if self.noise: 
@@ -287,7 +423,7 @@ class SpikingEnsemble(BaseEnsemble):
 
         # compute the decoded origin decoded_input from the neuron output
         for i,o in enumerate(self.outputs):
-            new_state[o] = self.output_funcs[i](self.neuron_model.output)    
+            new_state[o] = np.dot(self.neuron_model.output, self.decoders[i])
 
 def Ensemble(*args, **kwargs):
     if kwargs.pop('mode', 'spiking') == 'spiking':

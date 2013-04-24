@@ -187,9 +187,9 @@ class Network():
 
         #use identity function if func not given
         if func == None:
-            def X(val):
+            def output(val):
                 return val
-            func = X
+            func = output
 
         if not isinstance(ensemble, Output):
             #add new output to pre with given function
