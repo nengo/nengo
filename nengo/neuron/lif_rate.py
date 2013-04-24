@@ -34,7 +34,7 @@ class LIFRateNeuron(Neuron):
         self.alpha = (1 - x) / (self.intercepts - 1.0)
         self.j_bias = 1 - self.alpha * self.intercepts
 
-        state[self.output] = np.zeros(self.size)
+        state[self.output] = np.zeros((self.size, 1))
 
         return self.alpha, self.j_bias
 
@@ -43,18 +43,15 @@ class LIFRateNeuron(Neuron):
         
         Returns array with firing rates for current time step.
 
-        :param float array input_current:
-            the input current for the current time step
-        
         """
         # set up denominator of LIF firing rate equation
         rate = self.tau_ref - self.tau_rc * np.log(
-            1 - 1.0 / np.maximum(input_current, 0))
+            1 - 1.0 / np.maximum(J, 0))
         
         # if input current is enough to make neuron spike,
         # calculate firing rate, else return 0
         rate = 1 / rate
-        rate[input_current <= 1] = 0
+        rate[J <= 1] = 0
 
         new_state[self.output] = rate
         return rate

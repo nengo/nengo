@@ -146,6 +146,7 @@ class SpikingEnsemble(BaseEnsemble):
 
         self.vector_inputs = []
         self.neuron_inputs = []
+        self.outputs = []
 
         self.intercept = intercept
         self.max_rate = max_rate
@@ -154,25 +155,25 @@ class SpikingEnsemble(BaseEnsemble):
 
         if self.max_rate['type'].lower() == 'uniform':
             self.neuron_model.max_rates = np.random.uniform(
-                size = self.neuron_model.size,
+                size=(self.neuron_model.size, 1),
                 low=self.max_rate['low'], 
                 high=self.max_rate['high'])
 
         elif self.max_rate['type'].lower() == 'gaussian':
             self.neuron_model.max_rates = np.random.normal(
-                size=self.neuron_model.size,
+                size=(self.neuron_model.size, 1),
                 loc=self.max_rate['mean'], 
                 scale=self.max_rate['variance'])
 
         if self.intercept['type'].lower() == 'uniform':
             self.neuron_model.intercepts = np.random.uniform(
-                size = self.neuron_model.size,
+                size=(self.neuron_model.size, 1),
                 low=self.max_rate['low'], 
                 high=self.max_rate['high'])
 
         elif self.intercept['type'].lower() == 'gaussian':
             self.neuron_model.intercepts = np.random.normal(
-                size=self.neuron_model.size,
+                size=(self.neuron_model.size, 1),
                 loc=self.max_rate['mean'], 
                 scale=self.max_rate['variance'])
 
@@ -212,17 +213,20 @@ class SpikingEnsemble(BaseEnsemble):
                 size=(self.neuron_model.size, self.dimensions))
         else:
             # if encoders were specified, cast list as array
-            encoders = np.array(encoders).T
+            encoders = np.asarray(encoders)
+            if encoders.shape[0] == self.dimensions:
+                encoders = encoders.T
             # repeat array until 'encoders' is the same length
             # as number of neurons in population
             encoders = np.tile(encoders,
                 (self.neuron_model.size / len(encoders) + 1)
-                               ).T[:self.neuron_model.size, :self.dimensions]
+                               )[:self.neuron_model.size, :self.dimensions]
 
         # normalize encoders across represented dimensions 
-        norm = np.sum(encoders * encoders, axis=1)
-        encoders = encoders / np.sqrt(norm)        
-
+        norm = np.sum(encoders * encoders, axis=1).reshape(
+            (self.neuron_model.size, 1))
+        encoders = encoders / np.sqrt(norm) 
+        
         return encoders
 
     def _step(self, old_state, new_state, dt):
@@ -235,7 +239,8 @@ class SpikingEnsemble(BaseEnsemble):
         # find the total input current to this population of neurons
         
         # apply respective biases to neurons in the population 
-        J = np.array(self.neuron_model.j_bias)
+        J = np.zeros((self.neuron_model.size, 1))
+        J += self.neuron_model.j_bias
 
         #add in neuron->neuron currents
         for c in self.neuron_inputs:
@@ -244,6 +249,7 @@ class SpikingEnsemble(BaseEnsemble):
 
         #add in vector->vector currents
         for c in self.vector_inputs:
+            fuck = c.get_post_input(old_state, dt) 
             J += c.get_post_input(old_state, dt) * self.encoders
 
         # if noise has been specified for this neuron,
@@ -262,7 +268,7 @@ class SpikingEnsemble(BaseEnsemble):
                     high=self.noise / np.sqrt(dt))'''
         
         # pass the input current total into the neuron model
-        self.spikes = self.neurons._step(new_state, J, dt)
+        self.spikes = self.neuron_model._step(new_state, J, dt)
     
         # update the weight matrices on learned terminations
         for c in self.vector_inputs+self.neuron_inputs:
@@ -272,119 +278,9 @@ class SpikingEnsemble(BaseEnsemble):
         for i,o in enumerate(self.outputs):
             new_state[o] = self.output_funcs[i](self.neurons.output)
             
-
 def Ensemble(*args, **kwargs):
     if kwargs.pop('mode', 'spiking') == 'spiking':
         return SpikingEnsemble(*args, **kwargs)
     else:
 #        return DirectEnsemble(*args, **kwargs)
         raise NotImplementedError()
-
-
-        self.neuron_model._build(state, dt)
-
-        # compute encoders
-        self.encoders = self.make_encoders(encoders=self.encoders)
-        # combine encoders and gain for simplification
-        self.encoders = (self.encoders.T * self.neuron_model.alpha.T).T
-
-    def add_connection(self, connection):
-        self.vector_inputs += [connection]
-        
-    def add_neuron_connection(self, connection):
-        self.neuron_inputs += [connection]
-
-    def add_output(self, func, dimensions, name=None):
-        self.outputs += [Output(name)]
-        self.output_funcs += [func]
-        
-        return self.outputs[-1]
-
-    def make_encoders(self, encoders=None):
-        """Generates a set of encoders.
-
-        :param int neurons: number of neurons 
-        :param int dimensions: number of dimensions
-        :param theano.tensor.shared_randomstreams snrg:
-            theano random number generator function
-        :param list encoders:
-            set of possible preferred directions of neurons
-
-        """
-        if encoders is None:
-            # if no encoders specified, generate randomly
-            encoders = self.rng.normal(
-                size=(self.array_size, self.neurons, self.dimensions))
-            assert encoders.ndim == 3
-        else:
-            # if encoders were specified, cast list as array
-            encoders = np.array(encoders).T
-            # repeat array until 'encoders' is the same length
-            # as number of neurons in population
-            encoders = np.tile(encoders,
-                (self.neurons / len(encoders) + 1)
-                               ).T[:self.neurons, :self.dimensions]
-            encoders = np.tile(encoders, (self.array_size, 1, 1))
-
-            assert encoders.ndim == 3
-        # normalize encoders across represented dimensions 
-        norm = np.sum(encoders * encoders, axis=2)[:, :, None]
-        encoders = encoders / np.sqrt(norm)        
-
-        return encoders
-
-    def _step(self, old_state, new_state, dt):
-        """Computes the new output values for this ensemble and applies
-        learning to any input connections with a learning rule.
-
-        :param float dt: the timestep of the update
-        """
-        
-        # find the total input current to this population of neurons
-        
-        # apply respective biases to neurons in the population 
-        J = np.array(self.neuron_model.j_bias)
-
-        #add in neuron->neuron currents
-        for c in self.neuron_inputs:
-            # add its values directly to the input current
-            J += c.get_post_input(old_state, dt)
-
-        #add in vector->vector currents
-        for c in self.vector_inputs:
-            J += c.get_post_input(old_state, dt) * self.encoders
-
-        # if noise has been specified for this neuron,
-        if self.noise: 
-            # generate random noise values, one for each input_current element, 
-            # with standard deviation = sqrt(self.noise=std**2)
-            # When simulating white noise, the noise process must be scaled by
-            # sqrt(dt) instead of dt. Hence, we divide the std by sqrt(dt).
-            if self.noise.type == 'gaussian':
-                J += self.rng.normal(
-                    size=self.bias.shape, std=np.sqrt(self.noise/dt))
-            elif self.noise.type == 'uniform':
-                J += self.rng.uniform(
-                    size=self.bias.shape, 
-                    low=-self.noise / np.sqrt(dt), 
-                    high=self.noise / np.sqrt(dt))
-        
-        # pass the input current total into the neuron model
-        self.spikes = self.neurons._step(new_state, J, dt)
-    
-        # update the weight matrices on learned terminations
-        for c in self.vector_inputs+self.neuron_inputs:
-            c.learn(dt)
-
-        # compute the decoded origin decoded_input from the neuron output
-        for i,o in enumerate(self.outputs):
-            new_state[o] = self.output_funcs[i](self.neurons.output)
-            
-
-def Ensemble(*args, **kwargs):
-    if kwargs.pop('mode', 'spiking') == 'spiking':
-        return SpikingEnsemble(*args, **kwargs)
-    else:
-#        return DirectEnsemble(*args, **kwargs)
-        raise NotImplementedError()
-

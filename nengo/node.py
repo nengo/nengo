@@ -58,10 +58,10 @@ class Node(object):
         found = []
         for x in self.inputs:
             if x == name:
-                found += self #inputs are always just referenced via the parent object
+                found += [self] #inputs are always just referenced via the parent object
         for x in self.outputs:
             if x.name == name:
-                found += x #return the Output() object
+                found += [x] #return the Output() object
         return found
         
     def _build(self, state, dt):

@@ -41,12 +41,15 @@ class LIFNeuron(Neuron):
         return self.spikes
 
     def _build(self, state, dt):
+
         self.rng = np.random.RandomState(seed=self.seed)
         self.max_rate = max_rate
+
         max_rates = self.rng.uniform(size=self.size,
             low=max_rate[0], high=max_rate[1])  
         threshold = self.rng.uniform(self.size,
             low=intercept.low, high=intercept.high)
+
         x = 1.0 / (1 - np.exp(
                 (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
         self.alpha = (1 - x) / (intercepts - 1.0)

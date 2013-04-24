@@ -53,8 +53,7 @@ class VectorConnection(Connection):
         self.function = function
         self.filter = filter
         self.learning_rule = learning_rule
-        if transform is None:
-            self.transform = (transform)
+        self.transform = np.array(transform)
 
         ### additional (advanced) parameters
         self._modulatory = False
@@ -77,10 +76,11 @@ class VectorConnection(Connection):
         pre_in = self.transform * pre_in
         if self.filter: 
             pre_in = self.filter.filter(dt, source=pre_in)
-        return input
+        return pre_in
     
     def learn(self, dt):
-        self.learning_rule.update_weights(dt)
+        if self.learning_rule: 
+            self.learning_rule.update_weights(dt)
 
 class NeuronConnection:
     def __init__(self, pre, post, weights, 
@@ -112,7 +112,7 @@ class NeuronConnection:
         pre_in = self.weights*pre_in
         if self.filter: 
             pre_in = self.filter.update(dt, source=pre_in)
-        return input
+        return pre_in
     
     def learn(self, dt):
         self.learning_rule.update_weights(dt)
