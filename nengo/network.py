@@ -195,7 +195,7 @@ class Network():
             subsplit = name.split("/")
             target = self.get(subsplit[0]).get("/".join(subsplit[1:]))
         else:
-            target = self.get_object(name)
+            target = self.get_object(name.split(":")[0])
 
         # separate into node and origin, if specified
         split = name.split(':')
