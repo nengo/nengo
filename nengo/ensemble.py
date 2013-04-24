@@ -195,6 +195,11 @@ class SpikingEnsemble(BaseEnsemble):
         self.output_funcs += [func]
         
         return self.outputs[-1]
+    
+    def get(self, name):
+        found = [x for x in self.outputs if x.name == name] + \
+                [self for x in self.vector_inputs+self.neuron_inputs if x.post == self.name + ":" + name]
+        return found
 
     def make_encoders(self, encoders=None):
         """Generates a set of encoders.
@@ -276,8 +281,7 @@ class SpikingEnsemble(BaseEnsemble):
 
         # compute the decoded origin decoded_input from the neuron output
         for i,o in enumerate(self.outputs):
-            new_state[o] = self.output_funcs[i](self.neurons.output)
-            
+            new_state[o] = self.output_funcs[i](self.neurons.output)    
 def Ensemble(*args, **kwargs):
     if kwargs.pop('mode', 'spiking') == 'spiking':
         return SpikingEnsemble(*args, **kwargs)
