@@ -1,6 +1,6 @@
 import random
 import collections
-#import quantities
+import numpy as np
 
 from . import ensemble
 from . import probe
@@ -75,7 +75,8 @@ class Network():
         else:
             raise TypeError('Object type not recognized', object)
 
-    def connect(self, pre, post, transform=None, filter=nengo.pstc(0.01), 
+    def connect(self, pre, post, transform=None, 
+                filter=nengo.pstc(0.01), 
                 func=None, learning_rule=None):
         """Connect two objects in the network.
 
@@ -112,10 +113,6 @@ class Network():
 
         """
 
-        # get pre object from node dictionary
-        if isinstance(pre, basestring):
-            pre = self.get(pre)
-
         # get post object from node dictionary
         if isinstance(post, basestring):
             postname = post.split("/")[-1]
@@ -123,18 +120,8 @@ class Network():
         else:
             postname = post.name
 
-        #use identity function if func not given
-        if func == None:
-            def X(val):
-                return val
-            func = X
-
-        if not isinstance(pre, Output):
-            #add new output to pre with given function
-            o = pre.add_output(func, dimensions=func(pre.neurons.output).shape[0], name=func.__name__)
-        else:
-            o = pre
-
+        o = self.get_ensemble_output(ensemble=pre, func=func)
+        
         # compute identity transform if no transform given
         if transform is None:
             dim_pre = o.dimensions 
@@ -143,13 +130,16 @@ class Network():
                 dim_post=post.dimensions)
 
         #create connection
-        c = connection.make_connection(pre=o, post=postname, transform=transform, filter=filter,
-                       function=func, learning_rule=learning_rule)
+        c = connection.make_connection(pre=o, post=postname, transform=transform, 
+                        filter=filter, function=func, 
+                        learning_rule=learning_rule)
+
         post.add_connection(c)
         
         return c
 
-    def connect_neurons(self, pre, post, weights=None, filter=None, learning_rule=None):
+    def connect_neurons(self, pre, post, weights=None, 
+                        filter=None, learning_rule=None):
         """Connect two nodes in the network, directly specifying the weight matrix
 
         *pre* and *post* can be strings giving the names of the nodes,
@@ -174,13 +164,6 @@ class Network():
         self.add(c)
         return c
 
-    def get_object(self, name):
-        """Returns the ensemble, node, or network with given name."""
-        search = [x for x in self.nodes+self.ensembles+self.networks if x.name == name]
-        if len(search) > 1:
-            print "Warning, found more than one object with same name"
-        return search[0]
-        
     def get(self, name, func=None):
         """This method takes in a string and returns the corresponding object.
 
@@ -209,6 +192,36 @@ class Network():
 
         return target
 
+    def get_ensemble_output(self, ensemble, func=None):
+        """
+        """
+        # get ensemble object from node dictionary
+        if isinstance(ensemble, basestring):
+            ensemble = self.get(ensemble)
+
+        #use identity function if func not given
+        if func == None:
+            def X(val):
+                return val
+            func = X
+
+        if not isinstance(ensemble, Output):
+            #add new output to pre with given function
+            o = ensemble.add_output(func, 
+                dimensions=func(np.zeros(
+                    ensemble.neuron_model.size)).shape[0], 
+                name=func.__name__)
+        else:
+            o = ensemble 
+        return o
+
+    def get_object(self, name):
+        """Returns the ensemble, node, or network with given name."""
+        search = [x for x in self.nodes+self.ensembles+self.networks if x.name == name]
+        if len(search) > 1:
+            print "Warning, found more than one object with same name"
+        return search[0]
+       
     def make_alias(self, name, target):
         """ Set up an alias for referencing the target object.
         """
@@ -271,10 +284,17 @@ class Network():
         :returns: The Probe object
         
         """
-        p = probe.ListProbe(target=target,
+
+        target = self.get(target)
+        if isinstance(target, SpikingEnsemble):
+            target = self.get_ensemble_output(ensemble=target)
+        
+        p = probe.ListProbe(
+                        target=target,
                         sample_every=sample_every,
                         static=static)
-        self.Probes.append(p)
+
+        self.probes.append(p)
 
     def remove(self, obj):
         """Removes an object from the network.

@@ -3,7 +3,10 @@ import collections
 import numpy as np
 
 def make_filter(parameters):
+
+    parameters = parameters.copy()
     filter_type = parameters.pop('type').lower() 
+
     if filter_type == 'exponentialpstc':
         return ExponentialPSTC(parameters)
 

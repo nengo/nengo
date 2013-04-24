@@ -1,6 +1,5 @@
 
 class Output(object):
-    def __init__(self, name=None, dimensions=None):
-        self.name = name
+    def __init__(self, dimensions, name=None):
         self.dimensions = dimensions
-
+        self.name = name

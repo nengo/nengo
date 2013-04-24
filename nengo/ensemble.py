@@ -147,6 +147,7 @@ class SpikingEnsemble(BaseEnsemble):
         self.vector_inputs = []
         self.neuron_inputs = []
         self.outputs = []
+        self.output_funcs = []
 
         self.intercept = intercept
         self.max_rate = max_rate
@@ -184,6 +185,11 @@ class SpikingEnsemble(BaseEnsemble):
         # combine encoders and gain for simplification
         self.encoders = (self.encoders.T * self.neuron_model.alpha.T).T
 
+        # compute the decoded origin decoded_input from the neuron output
+        for i,o in enumerate(self.outputs):
+            state[o] = self.output_funcs[i](
+                np.zeros((self.neuron_model.size, 1)))    
+
     def add_connection(self, connection):
         self.vector_inputs += [connection]
         
@@ -191,7 +197,7 @@ class SpikingEnsemble(BaseEnsemble):
         self.neuron_inputs += [connection]
 
     def add_output(self, func, dimensions, name=None):
-        self.outputs += [Output(name)]
+        self.outputs += [Output(name=name, dimensions=dimensions)]
         self.output_funcs += [func]
         
         return self.outputs[-1]
@@ -255,7 +261,7 @@ class SpikingEnsemble(BaseEnsemble):
         #add in vector->vector currents
         for c in self.vector_inputs:
             fuck = c.get_post_input(old_state, dt) 
-            J += c.get_post_input(old_state, dt) * self.encoders
+            J += np.dot(self.encoders, c.get_post_input(old_state, dt))
 
         # if noise has been specified for this neuron,
         if self.noise: 
@@ -281,7 +287,8 @@ class SpikingEnsemble(BaseEnsemble):
 
         # compute the decoded origin decoded_input from the neuron output
         for i,o in enumerate(self.outputs):
-            new_state[o] = self.output_funcs[i](self.neurons.output)    
+            new_state[o] = self.output_funcs[i](self.neuron_model.output)    
+
 def Ensemble(*args, **kwargs):
     if kwargs.pop('mode', 'spiking') == 'spiking':
         return SpikingEnsemble(*args, **kwargs)
