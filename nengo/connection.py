@@ -1,3 +1,7 @@
+import numpy as np
+
+from filter import make_filter
+
 def make_connection(pre, post, 
                  transform=None, function=None, weights=None,
                  filter=None, learning_rule=None):
@@ -25,6 +29,8 @@ def make_connection(pre, post,
         raise ValueError(
             "Cannot provide both vector_space arguments (transform and function)" + 
             " and neuron space arguments (weights).")
+
+    if filter: filter = make_filter(filter)
         
     if vector_space:
         return VectorConnection(pre, post, transform, function, filter, learning_rule)
@@ -38,16 +44,17 @@ class Connection():
 class VectorConnection(Connection):
     
     def __init__(self, pre, post, 
-                 transform=None, function=None, 
+                 transform, function=None, 
                  filter=None, learning_rule=None):
         
         ### basic parameters, set by network.connect(...)
         self.pre = pre
         self.post = post
-        self.transform = transform
         self.function = function
         self.filter = filter
         self.learning_rule = learning_rule
+        if transform is None:
+            self.transform = (transform)
 
         ### additional (advanced) parameters
         self._modulatory = False
@@ -63,20 +70,20 @@ class VectorConnection(Connection):
         self._modulatory = value
 
     
-    
     def get_post_input(self, state, dt):
         """Returns the transformed, filtered value output from pre."""
         
         pre_in = state[self.pre]
-        pre_in = self.transform*pre_in
-        pre_in = self.filter.update(dt, source=pre_in)
+        pre_in = self.transform * pre_in
+        if self.filter: 
+            pre_in = self.filter.filter(dt, source=pre_in)
         return input
     
     def learn(self, dt):
         self.learning_rule.update_weights(dt)
 
 class NeuronConnection:
-    def __init__(self, pre, post, weights=None, 
+    def __init__(self, pre, post, weights, 
                  filter=None, learning_rule=None):
         ### basic parameters, set by network.connect(...)
         self.pre = pre
@@ -103,7 +110,8 @@ class NeuronConnection:
         
         pre_in = state[self.pre]
         pre_in = self.weights*pre_in
-        pre_in = self.filter.update(dt, source=pre_in)
+        if self.filter: 
+            pre_in = self.filter.update(dt, source=pre_in)
         return input
     
     def learn(self, dt):

@@ -75,7 +75,7 @@ class Network():
         else:
             raise TypeError('Object type not recognized', object)
 
-    def connect(self, pre, post, transform=None, filter=None, 
+    def connect(self, pre, post, transform=None, filter=nengo.pstc(0.01), 
                 func=None, learning_rule=None):
         """Connect two objects in the network.
 

@@ -2,7 +2,12 @@ import collections
 
 import numpy as np
 
-class Filter:
+def make_filter(parameters):
+    filter_type = parameters.pop('type').lower() 
+    if filter_type == 'exponentialpstc':
+        return ExponentialPSTC(parameters)
+
+class ExponentialPSTCFilter:
     """Filter an arbitrary value"""
 
     def __init__(self, pstc, name=None, source=None, dimension=None):

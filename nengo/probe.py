@@ -5,8 +5,6 @@ import collections
 
 import numpy as np
 
-from .filter import Filter
-
 def is_probe(obj):
     return isinstance(obj, ListProbe)
 
@@ -22,7 +20,6 @@ class ListProbe(object):
         self.sample_every = sample_every
         self.static = static
         # XXX use sample_every !
-        #self.filter = Filter(pstc, source=target)
 
     def _build(self, state, dt):
         #self.filter._build(state, dt)
