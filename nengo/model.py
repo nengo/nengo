@@ -32,7 +32,7 @@ class Model(object):
 
         # set random seed generators
         if seed is None:
-            seed = np.random.randint(1e10)
+            seed = np.random.randint(1e5)
         np.random.seed(seed)
         self.seed = seed
 

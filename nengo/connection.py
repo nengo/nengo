@@ -23,19 +23,17 @@ def make_connection(pre, post,
     :param learning_rule: a LearningRule object describing the learning
         rule to use with the population
     """
-    vector_space = transform is not None or function is not None
-    neuron_space = weights is not None
-    if vector_space and neuron_space:
+    if (transform != None or function != None) and weights != None:
         raise ValueError(
-            "Cannot provide both vector_space arguments (transform and function)" + 
+            "Cannot provide both vector space arguments (transform and function)" + 
             " and neuron space arguments (weights).")
 
-    if filter: filter = make_filter(filter)
+    if filter: 
+        filter = make_filter(filter)
         
-    if vector_space:
+    if weights == None: 
         return VectorConnection(pre, post, transform, function, filter, learning_rule)
-    
-    if neuron_space:
+    else:
         return NeuronConnection(pre, post, weights, filter, learning_rule)
     
 class Connection():
@@ -44,7 +42,7 @@ class Connection():
 class VectorConnection(Connection):
     
     def __init__(self, pre, post, 
-                 transform, function=None, 
+                 transform=None, function=None, 
                  filter=None, learning_rule=None):
         
         ### basic parameters, set by network.connect(...)
@@ -73,7 +71,8 @@ class VectorConnection(Connection):
         """Returns the transformed, filtered value output from pre."""
         
         pre_in = state[self.pre]
-        pre_in = self.transform * pre_in
+        if self.transform:
+            pre_in = self.transform * pre_in
         if self.filter: 
             pre_in = self.filter.filter(dt, source=pre_in)
         return pre_in

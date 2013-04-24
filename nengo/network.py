@@ -1,5 +1,4 @@
-import random
-import collections
+import inspect
 import numpy as np
 
 from . import ensemble
@@ -122,13 +121,6 @@ class Network():
 
         o = self.get_ensemble_output(ensemble=pre, func=func)
         
-        # compute identity transform if no transform given
-        if transform is None:
-            dim_pre = o.dimensions 
-            transform = nengo.gen_transform(
-                dim_pre=dim_pre,
-                dim_post=post.dimensions)
-
         #create connection
         c = connection.make_connection(pre=o, post=postname, transform=transform, 
                         filter=filter, function=func, 
@@ -159,7 +151,7 @@ class Network():
         post = self.get_object(post)
 
         # create connection
-        c = Connection(pre=pre, post=post, weights=weights,
+        c = connection.make_connection(pre=pre, post=post, weights=weights,
                        filter=filter, learning_rule=learning_rule)
         self.add(c)
         return c
@@ -179,16 +171,10 @@ class Network():
             target = self.get(subsplit[0]).get("/".join(subsplit[1:]))
         else:
             target = self.get_object(name.split(":")[0])
-
-        # separate into node and origin, if specified
-        split = name.split(':')
         
         # load specific input/output if given
-        if len(split) == 2:
-            target = target.get(split[1])
-            if len(target) > 1:
-                print "Warning, found more than one input or output with same name"
-            target = target[0]
+        if ":" in name:
+            target = target.get(name)
 
         return target
 
@@ -262,7 +248,16 @@ class Network():
         self or something.
         
         """
-        n = node.Node(name, output=output)
+        if callable(output):
+            func_args = inspect.getargspec(output).args
+            
+            if len(func_args) == 1 and ("t" in func_args or "time" in func_args):
+                n = node.TimeNode(name, output=output)
+            else:
+                n = node.Node(name, output=output)
+                
+        else:
+            n = node.Node(name, output=output)
         self.add(n)
         return n
         

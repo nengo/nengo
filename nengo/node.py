@@ -12,8 +12,8 @@ class Node(object):
         self.name = name
 
         self.outputs = {} #map output objects to output functions
-        self.inputs = {} #map input names to internal variables
-        self.connections = {} #map connections to internal variables
+        self.connections = [] #list of input connections
+        self.inputs = [] #list of variables in this node (for net.connect to connect to)
         
         if output != None:
             if not callable(output):
@@ -25,6 +25,8 @@ class Node(object):
                 outfunc = output
             self.add_output(outfunc)
         
+        self.init()
+        
     def step(self):
         """This is the function subclasses should override to insert arbitrary
         code into Node execution."""
@@ -34,62 +36,60 @@ class Node(object):
         """Override this to define reset behaviour for inserted code."""
         pass
     
-    def add_input(self, name=None):
-        if name == None:
-            name = "input"
-        setattr(self, name, None)
-        inputname = self.name + ":" + name
-        self.inputs[inputname] = getattr(self,name)
+    def init(self):
+        """Override this to define initialization behaviour."""
+        pass
+    
+    def add_input(self, name):
+        self.inputs += [self.name + ":" + name]
         
     def add_connection(self, c):
         if c.post == self:
             #no input specified, so make a new input for this connection
-            self.add_input()
-            c.post = "input"
+            c.post = self.name + ":input"
+            self.add_input("input")
             
-        self.connections[c] = self.inputs[c.post]
+        self.connections += [c]
         
     def add_output(self, func):
-        self.outputs[Output(dimensions=len(func()), name=func.__name__)] = func
+        self.outputs[Output(dimensions=len(func()), name=self.name + ":" + func.__name__)] = func
         
     def get(self, name):
-        """This method should return the object(s) corresponding to name."""
+        found = [self for x in self.inputs if x == name] + [x for x in self.outputs if x.name == name]
+        print name
+        print [x.name for x in self.outputs]
+                
+        if len(found) > 1:
+            print "Warning, found more than one input or output with same name"
         
-        found = []
-        for x in self.inputs:
-            if x == name:
-                found += [self] #inputs are always just referenced via the parent object
-        for x in self.outputs:
-            if x.name == name:
-                found += [x] #return the Output() object
-        return found
-        
+        return found[0]
+
     def _build(self, state, dt):
         for output in self.outputs:
             state[output] = self.outputs[output]()
 
-    def _reset(self, state_t):
+    def _reset(self, state):
         for output in self.outputs:
-            state_t[output] = self.outputs[output]()
+            state[output] = self.outputs[output]()
         
         self.reset()
 
-    def _step(self, state_t, state_tm1, dt):
+    def _step(self, old_state, new_state, dt):
         for c in self.connections:
-            self.inputs[c.post] = c.get_post_input()
+            setattr(self, c.post.split(":")[-1], c.get_post_input(old_state, dt))
         
         self.step()
         
         for output in self.outputs:
-            state_tm1[output] = self.outputs[output]()
+            new_state[output] = self.outputs[output]()
 
 class TimeNode(Node):
     """
     A custom-node for feeding a function-of-time into the network.
     """
-    def __init__(self, name, func):
-        self.name = name
-        self._outputs = {Output(dimensions=len(func(0.0))):func}
+    def __init__(self, name, output):
+        Node.__init__(self, name)
+        self.outputs = {Output(dimensions=len(output(0.0)), name=self.name + ":" + output.__name__):output}
         self.t = 0.0
 
     def _build(self, state, dt):
