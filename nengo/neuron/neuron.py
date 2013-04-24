@@ -1,4 +1,4 @@
-import numpy as np
+from ..output import Output
 
 class Neuron(object):
     """Superclass for neuron models.
@@ -14,7 +14,8 @@ class Neuron(object):
         :param int size: number of neurons in this population
 
         """
-        self.output = np.zeros(size).astype('float32')
+        self.output = Output(dimensions=size)
+        self.size = size
 
     @property
     def shape(self):
@@ -23,9 +24,8 @@ class Neuron(object):
     def __len__(self):
         return self.output.size
 
-    def hashable_state(self):
-        return ()
-
+    """def hashable_state(self):
+        return ()"""
 
     def reset(self):
         """Reset the state of the neuron."""

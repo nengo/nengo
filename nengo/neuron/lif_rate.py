@@ -19,7 +19,7 @@ class LIFRateNeuron(Neuron):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
 
-    def make_alpha_bias(self, max_rates, intercepts):
+    def _build(self, state, dt):
         """Compute the alpha and bias needed to get the given max_rate
         and intercept values.
         
@@ -30,12 +30,15 @@ class LIFRateNeuron(Neuron):
         
         """
         x = 1.0 / (1 - np.exp(
-                (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
-        alpha = (1 - x) / (intercepts - 1.0)
-        j_bias = 1 - alpha * intercepts
-        return alpha, j_bias
+                (self.tau_ref - (1.0 / self.max_rates)) / self.tau_rc))
+        self.alpha = (1 - x) / (self.intercepts - 1.0)
+        self.j_bias = 1 - self.alpha * self.intercepts
 
-    def update(self, input_current):
+        state[self.output] = np.zeros(self.size)
+
+        return self.alpha, self.j_bias
+
+    def _step(self, new_state, J, dt):
         """Update rule that implements LIF rate neuron type.
         
         Returns array with firing rates for current time step.
@@ -52,6 +55,6 @@ class LIFRateNeuron(Neuron):
         # calculate firing rate, else return 0
         rate = 1 / rate
         rate[input_current <= 1] = 0
-#        rate = np.switch(input_current > 1, 1 / rate, 0)
 
+        new_state[self.output] = rate
         return rate

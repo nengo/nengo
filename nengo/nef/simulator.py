@@ -30,7 +30,7 @@ class Simulator(object):
         self.state_t = {}
         self.state_tm1 = {}
 
-    def build(self, dt):
+    def _build(self, dt):
         for node in self.nengo_objects:
             node._build(self.state_t, dt)
 

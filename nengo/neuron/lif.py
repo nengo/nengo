@@ -40,18 +40,6 @@ class LIFNeuron(Neuron):
     def default_output(self):
         return self.spikes
 
-    def make_alpha_bias(self, ):
-        """Compute the alpha and bias needed to get the given max_rate
-        and intercept values.
-        
-        Returns gain (alpha) and offset (j_bias) values of neurons.
-
-        :param float array max_rates: maximum firing rates of neurons
-        :param float array intercepts: x-intercepts of neurons
-        
-        """
-        return alpha, j_bias
-
     def _build(self, state, dt):
         self.rng = np.random.RandomState(seed=self.seed)
         self.max_rate = max_rate
@@ -61,16 +49,14 @@ class LIFNeuron(Neuron):
             low=intercept.low, high=intercept.high)
         x = 1.0 / (1 - np.exp(
                 (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
-        state[self.alpha] = (1 - x) / (intercepts - 1.0)
-        state[self.j_bias] = 1 - alpha * intercepts
+        self.alpha = (1 - x) / (intercepts - 1.0)
+        self.j_bias = 1 - self.alpha * intercepts
         return self._reset(self, state)
 
     def _reset(self, state):
-        state[self.voltage] = np.zeros(self.size)
-        state[self.refractory_time] = np.zeros(self.size)
         state[self.output] = np.zeros(self.size)
 
-    def _step(self, old_state, new_state, dt):
+    def _step(self, new_state, J, dt):
         """Theano update rule that implementing LIF rate neuron type
         Returns dictionary with voltage levels, refractory periods,
         and instantaneous spike raster of neurons.
@@ -79,11 +65,7 @@ class LIFNeuron(Neuron):
             the input current for the current time step
         :param float dt: the timestep of the update
         """
-
-        J = old_state[self.J]
-        voltage = old_state[self.voltage]
-        refractory_time = old_state[self.refractory_time]
-
+    
         # Euler's method
         dV = dt / self.tau_rc * (J - voltage)
 
@@ -115,7 +97,10 @@ class LIFNeuron(Neuron):
         # return an ordered dictionary of internal variables to update
         # (including setting a neuron that spikes to a voltage of 0)
 
-        new_state[self.voltage] = v * (1 - spiked)
-        new_state[self.refractory_time] = new_refractory_time
+        self.voltage = v * (1 - spiked)
+        self.refractory_time = new_refractory_time
+
         new_state[self.output] = spiked
+
+        return spiked
 

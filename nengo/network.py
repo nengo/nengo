@@ -227,10 +227,9 @@ class Network():
         :returns: the newly created ensemble
 
         """
-        # TODO use name
         e = SpikingEnsemble(name, num_neurons=num_neurons, dimensions=dimensions,
-                              max_rate=max_rate,
-                              intercept=intercept,
+                              max_rate=nengo.uniform(max_rate[0], max_rate[1]),
+                              intercept=nengo.uniform(intercept[0], intercept[1]),
                               radius=radius, encoders=encoders)
 
         # store created ensemble in node dictionary

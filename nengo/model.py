@@ -1,6 +1,8 @@
 from simulator import Simulator
 from network import Network
 
+import numpy as np
+
 class Model(object):
     
     def __init__(self, name, seed=None, fixed_seed=None):
@@ -28,14 +30,15 @@ class Model(object):
 
         self.backend_type = ''
 
-    #
-    # Execution methods
-    #
+        # set random seed generators
+        if seed is None:
+            seed = np.random.randint(1e10)
+        np.random.seed(seed)
+        self.seed = seed
 
     def build(self, dt=0.001):
         self.simulator = Simulator(self.network)
-        self.simulator.build(dt)
-
+        self.simulator._build(dt)
     
     def reset(self):
         """ Reset the state of the simulation
@@ -57,6 +60,8 @@ class Model(object):
         :param float dt: the timestep of the update
         
         """
+        
+        self.build(dt)
         self.simulator.step_time(time, dt, stop_when=stop_when,
                                 dump_probes_fn=output)
 
