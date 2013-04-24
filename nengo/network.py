@@ -118,7 +118,10 @@ class Network():
 
         # get post object from node dictionary
         if isinstance(post, basestring):
+            postname = post.split("/")[-1]
             post = self.get(post)
+        else:
+            postname = post.name
 
         #use identity function if func not given
         if func == None:
@@ -132,8 +135,6 @@ class Network():
         else:
             o = pre
 
-        
-        
         # compute identity transform if no transform given
         if transform is None:
             dim_pre = o.dimensions 
@@ -142,7 +143,7 @@ class Network():
                 dim_post=post.dimensions)
 
         #create connection
-        c = connection.make_connection(pre=o, post=post, transform=transform, filter=filter,
+        c = connection.make_connection(pre=o, post=postname, transform=transform, filter=filter,
                        function=func, learning_rule=learning_rule)
         post.add_connection(c)
         
@@ -176,7 +177,7 @@ class Network():
     def get_object(self, name):
         """Returns the ensemble, node, or network with given name."""
         search = [x for x in self.nodes+self.ensembles+self.networks if x.name == name]
-        if len(search) > 0:
+        if len(search) > 1:
             print "Warning, found more than one object with same name"
         return search[0]
         
@@ -189,21 +190,21 @@ class Network():
         if not isinstance(name, str):
             return name
 
-        # separate into node and origin, if specified
-        split = name.split(':')
-
         #recursively get from subnetworks
-        if "/" in split[0]:
-            subsplit = split[0].split("/")
+        if "/" in name:
+            subsplit = name.split("/")
             target = self.get(subsplit[0]).get("/".join(subsplit[1:]))
         else:
-            target = self.get_object(split[0])
+            target = self.get_object(name)
 
-        # load specific output if given
+        # separate into node and origin, if specified
+        split = name.split(':')
+        
+        # load specific input/output if given
         if len(split) == 2:
-            target = [x for x in target.outputs if x.name == split[1]]
-            if len(target) > 0:
-                print "Warning, found more than one output with same name"
+            target = target.get(split[1])
+            if len(target) > 1:
+                print "Warning, found more than one input or output with same name"
             target = target[0]
 
         return target
