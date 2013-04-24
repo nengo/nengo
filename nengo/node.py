@@ -17,7 +17,9 @@ class Node(object):
         
         if output != None:
             if not callable(output):
-                outfunc = lambda : output
+                def output():
+                    return output
+                outfunc = output
             else:
                 outfunc = output
             self.add_output(outfunc)
