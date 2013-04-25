@@ -13,7 +13,7 @@ print filter
 
 m.connect("input:output", pop)
 m.connect('pop','b')
-m.probe('input:output')
+#m.probe('input:output')
 m.build()
 m.run(1)
 

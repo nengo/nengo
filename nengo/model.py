@@ -62,8 +62,7 @@ class Model(object):
         """
         
         self.build(dt)
-        self.simulator.run(time, dt, stop_when=stop_when,
-                                dump_probes_fn=output)
+        self.simulator.run(time, dt, stop_when=stop_when, dump_probes_fn=output)
 
           
     def __getattr__(self, attr):

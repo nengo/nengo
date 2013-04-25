@@ -1,7 +1,7 @@
 from output import Output
 
 def is_node(obj):
-    return isinstance(obj, (Node, TimeNode))
+    return isinstance(obj, Node)
 
 class Node(object):
     """
@@ -55,12 +55,14 @@ class Node(object):
         self.outputs[Output(dimensions=len(func()), name=self.name + ":" + func.__name__)] = func
         
     def get(self, name):
-        found = [self for x in self.inputs if x == name] + [x for x in self.outputs if x.name == name]
+        search = [self for x in self.inputs if x == name] + [x for x in self.outputs if x.name == name]
                 
-        if len(found) > 1:
-            print "Warning, found more than one input or output with same name"
-        
-        return found[0]
+        if len(search) > 1:
+            print "Warning, found more than one object with same name"
+        if len(search) == 0:
+            print name + " not found in node.get"
+            return None
+        return search[0]
 
     def _build(self, state, dt):
         for output in self.outputs:
@@ -109,9 +111,21 @@ class TimeNode(Node):
         for output in self.outputs:
             state_tm1[output] = self.outputs[output](self.t)
             
-class FileNode(Node):
-    def __init__(self, name, output):
-        Node.__init__(self, name)
+#class FileNode(DictNode):
+#    def __init__(self, name, output):
+#        
+#        data = {}
+#        f = open(output, "r")
+#        for line in f:
+#            split = line.split(",")
+#            data[float(split[0])] = [float(x) for x in split[1:]]
+#        f.close() 
+#        
+#        DictNode.__init__(self, name, data)
+#    
+#        
+#    def output(self, time):
+#        pass
         
 class DictNode(TimeNode):
     def __init__(self, name, output):
@@ -121,8 +135,16 @@ class DictNode(TimeNode):
     def output(self, time):
         output_time = 0.0
         for t in self.data:
-            if t < time and time-t < time-self.data[output_time]:
+            if t < time and time-t < time-output_time:
                 output_time = t
             
         return self.data[output_time]
 
+class ValueNode(Node):
+    def __init__(self, name, output):
+        self.val = output
+        Node.__init__(self, name, self.output)
+        
+    def output(self):
+        return self.val
+        

@@ -338,9 +338,14 @@ class SpikingEnsemble(BaseEnsemble):
         return decoders
 
     def get(self, name):
-        found = [x for x in self.outputs if x.name == name] + \
+        search = [x for x in self.outputs if x.name == name] + \
                 [self for x in self.vector_inputs+self.neuron_inputs if x.post == self.name + ":" + name]
-        return found
+        if len(search) > 1:
+            print "Warning, found more than one object with same name"
+        if len(search) == 0:
+            print name + " not found in ensemble.get"
+            return None
+        return search[0]
 
     def make_encoders(self, encoders=None):
         """Generates a set of encoders.

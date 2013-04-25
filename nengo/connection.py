@@ -69,7 +69,7 @@ class VectorConnection(Connection):
     
     def get_post_input(self, state, dt):
         """Returns the transformed, filtered value output from pre."""
-        
+        print self.pre
         pre_in = state[self.pre]
         if self.transform:
             pre_in = self.transform * pre_in

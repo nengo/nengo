@@ -182,11 +182,11 @@ class Network():
             #was specified)
             
             #try to load default output
-            try:
-                o = obj.get(obj.name + ":output")
-            except:
+            o = obj.get(obj.name + ":output")
+            
+            if o is None:
                 #we need to create a new output and add it to the object
-                
+
                 #use identity function if func not given
                 if func == None:
                     def output(val):
@@ -202,8 +202,12 @@ class Network():
     def get_object(self, name):
         """Returns the ensemble, node, or network with given name."""
         search = [x for x in self.nodes+self.ensembles+self.networks if x.name == name]
+        
         if len(search) > 1:
             print "Warning, found more than one object with same name"
+        if len(search) == 0:
+            print name + " not found in network.get_object"
+            return None
         return search[0]
        
     def make_alias(self, name, target):
@@ -252,11 +256,11 @@ class Network():
         elif callable(output):
             func_args = inspect.getargspec(output).args
             
-            print func_args
+            print func_args, len(func_args)
             
             if len(func_args) == 1:
                 n = node.TimeNode(name, output)
-            if len(func_args) == 0:
+            elif len(func_args) == 0:
                 n = node.Node(name, output)
             else:
                 print "make_node only accepts output functions with 0 or 1 arguments"
@@ -265,6 +269,8 @@ class Network():
             pass
         elif isinstance(output, dict):
             n = node.DictNode(name, output)
+        elif isinstance(output, (list)):
+            n = node.ValueNode(name, output)
         self.add(n)
         return n
         
