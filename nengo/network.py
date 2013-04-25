@@ -184,7 +184,7 @@ class Network():
             #try to load default output
             o = obj.get(obj.name + ":output")
             
-            if o is None:
+            if not isinstance(o, Output):
                 #we need to create a new output and add it to the object
 
                 #use identity function if func not given
@@ -194,7 +194,10 @@ class Network():
                     func = output
                 
                 #add new output to pre with given function
+                print 'outputs', obj.outputs
                 o = obj.add_output(func)
+                print 'output created'
+                print 'outputs after', obj.outputs
         else:
             o = obj 
         return o
@@ -267,7 +270,7 @@ class Network():
             n = node.FileNode(name, output)
         elif isinstance(output, dict):
             n = node.DictNode(name, output)
-        elif isinstance(output, (list)):
+        elif isinstance(output, (list, np.ndarray)):
             n = node.ValueNode(name, output)
         self.add(n)
         return n
@@ -294,6 +297,7 @@ class Network():
         target = self.get(target)
         if isinstance(target, SpikingEnsemble):
             target = self.get_object_output(target)
+        print 'target', target
         
         p = probe.ListProbe(
                         target=target,

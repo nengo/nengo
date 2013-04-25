@@ -1,4 +1,4 @@
-#from .lif import LIFNeuron
+from .lif import LIFNeuron
 from .lif_rate import LIFRateNeuron
 
 types = {

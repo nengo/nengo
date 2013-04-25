@@ -61,9 +61,9 @@ class Model(object):
         
         """
         
-        self.build(dt)
         self.simulator.run(time, dt, stop_when=stop_when, dump_probes_fn=output)
 
+        return self.probes
           
     def __getattr__(self, attr):
         """Attempt to pass any failed attr calls to the network."""

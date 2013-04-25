@@ -175,25 +175,23 @@ class SpikingEnsemble(BaseEnsemble):
         if self.intercept['type'].lower() == 'uniform':
             self.neuron_model.intercepts = np.random.uniform(
                 size=(self.neuron_model.size, 1),
-                low=self.max_rate['low'], 
-                high=self.max_rate['high'])
+                low=self.intercept['low'], 
+                high=self.intercept['high'])
 
         elif self.intercept['type'].lower() == 'gaussian':
             self.neuron_model.intercepts = np.random.normal(
                 size=(self.neuron_model.size, 1),
-                loc=self.max_rate['mean'], 
-                scale=self.max_rate['variance'])
+                loc=self.intercept['mean'], 
+                scale=self.intercept['variance'])
 
         self.neuron_model._build(state, dt)
 
         # compute encoders
         self.encoders = self.make_encoders(encoders=self.encoders)
-        # combine encoders and gain for simplification
-        self.encoders = (self.encoders.T * self.neuron_model.alpha.T).T
 
         # compute the decoded origin decoded_input from the neuron output
         for i,o in enumerate(self.outputs):
-            state[o] = np.zeros((self.neuron_model.size, 1))
+            state[o] = np.zeros((1, o.dimensions))
             self.decoders += [
                 self.compute_decoders(func=self.output_funcs[i], 
                 dt=dt, eval_points=self.eval_points) ]
@@ -206,7 +204,7 @@ class SpikingEnsemble(BaseEnsemble):
 
     def add_output(self, func):
         self.outputs += [Output(name=func.__name__, dimensions=func(np.zeros(
-                    self.neuron_model.size)).shape[0])]
+                    self.dimensions)).shape[0])]
         self.output_funcs += [func]
         
         return self.outputs[-1]
@@ -234,11 +232,12 @@ class SpikingEnsemble(BaseEnsemble):
             # generate sample points from state space randomly
             # to minimize decoder error over in decoder calculation
             self.num_samples = 500
-            samples = np.random.normal(
-                size=(self.num_samples, self.dimensions))
-            
+            samples = np.random.uniform(
+                size=(self.num_samples, self.dimensions),
+                low=-1, high=1)
+
             # normalize magnitude of sampled points to be of unit length
-            norm = np.sum(samples * samples, axis=1, dtype='float') 
+            norm = np.sum(samples * samples, axis=1, dtype='float')[:, np.newaxis]
             samples = samples / np.sqrt(norm)
 
             # generate magnitudes for vectors from uniform distribution
@@ -249,6 +248,8 @@ class SpikingEnsemble(BaseEnsemble):
             samples = samples.T * scale 
 
             eval_points = samples
+            eval_points = np.arange(-1,1,.001)[:,None].T
+            self.num_samples = eval_points.shape[1]
 
         else:
             # otherwise reset num_samples, and 
@@ -283,28 +284,36 @@ class SpikingEnsemble(BaseEnsemble):
                 target_values.shape = target_values.shape[0], 1
             target_values = target_values.T
         
-        decoders = np.zeros((self.neuron_model.size, target_values.shape[0]))
-
         # compute the input current for every neuron and every sample point
         J = np.dot(self.encoders, eval_points)
-        J += self.neuron_model.j_bias[:, np.newaxis]
 
-        # so in parallel we can calculate the activity
-        # of all of the neurons at each sample point 
-        neurons = self.neuron_model.__class__(
-            size=(self.neuron_model.size, self.num_samples), 
-            tau_rc=self.neuron_model.tau_rc,
-            tau_ref=self.neuron_model.tau_ref)
+        A = np.zeros((self.neuron_model.size, self.num_samples))
+        for i in range(self.num_samples):
 
-        # run the neuron model for 1 second,
-        # accumulating spikes to get a spike rate
-        A = neuron.accumulate(J=J, neurons=neurons, dt=dt, time=1.0)
+            # simulate neurons for .25 seconds to get startup 
+            # transient out of the way
+            state = {}
+            for t in range(int(.05/dt)): 
+                self.neuron_model._step(state, J[:,i], dt)
+
+            # run the neuron model for 1 second,
+            # accumulating spikes to get a spike rate
+            num_time_samples = int(.1/dt)
+            firing_rates = np.zeros((self.neuron_model.size, num_time_samples))
+            for t in range(num_time_samples): 
+                self.neuron_model._step(state, J[:,i], dt)
+                firing_rates[:,t] = state[self.neuron_model.output]
+
+            # TODO: np.mean instead?
+            A[:,i] = np.sum(firing_rates, axis=1) / num_time_samples
+            self.neuron_model._reset(state)
+
         # add noise to elements of A
         # std_dev = max firing rate of population * .1
-        noise = .1 # from Nengo
+        noise = 0.1 # from Nengo
         A += noise * np.random.normal(
             size=(self.neuron_model.size, self.num_samples), 
-            scale=(self.neuron_model.max_rate[1]))
+            scale=(self.neuron_model.max_rates.max()))
 
         # compute Gamma and Upsilon
         G = np.dot(A, A.T) # correlation matrix
@@ -328,8 +337,6 @@ class SpikingEnsemble(BaseEnsemble):
         # np.multiply is very fast element-wise multiplication
         Ginv = np.dot(v, np.multiply(w[:, np.newaxis], v.T)) 
         
-        cache.set_gamma_inv(index_key, (Ginv, A))
-
         U = np.dot(A, target_values.T)
         
         # compute decoders - least squares method 
@@ -344,7 +351,7 @@ class SpikingEnsemble(BaseEnsemble):
             print "Warning, found more than one object with same name"
         if len(search) == 0:
             print name + " not found in ensemble.get"
-            return None
+            return self
         return search[0]
 
     def make_encoders(self, encoders=None):
@@ -391,7 +398,6 @@ class SpikingEnsemble(BaseEnsemble):
         
         # apply respective biases to neurons in the population 
         J = np.zeros((self.neuron_model.size, 1))
-        J += self.neuron_model.j_bias
 
         #add in neuron->neuron currents
         for c in self.neuron_inputs:
@@ -400,10 +406,9 @@ class SpikingEnsemble(BaseEnsemble):
 
         #add in vector->vector currents
         for c in self.vector_inputs:
-            fuck = c.get_post_input(old_state, dt) 
+            fuck = c.get_post_input(old_state, dt)
             J += np.dot( self.encoders, 
-                c.get_post_input(old_state, dt)).reshape(
-                (self.neuron_model.size, 1))
+                c.get_post_input(old_state, dt))
 
         # if noise has been specified for this neuron,
         if self.noise: 
@@ -412,7 +417,7 @@ class SpikingEnsemble(BaseEnsemble):
             # When simulating white noise, the noise process must be scaled by
             # sqrt(dt) instead of dt. Hence, we divide the std by sqrt(dt).
             if self.noise.type == 'gaussian':
-                J += random.gaussian(
+                J += np.random.normal(
                     size=self.bias.shape, std=np.sqrt(self.noise/dt))
             '''elif self.noise.type == 'uniform':
                 J += random.uniform(
@@ -429,7 +434,7 @@ class SpikingEnsemble(BaseEnsemble):
 
         # compute the decoded origin decoded_input from the neuron output
         for i,o in enumerate(self.outputs):
-            new_state[o] = np.dot(self.neuron_model.output, self.decoders[i])
+            new_state[o] = np.dot(self.spikes, self.decoders[i])
 
 def Ensemble(*args, **kwargs):
     if kwargs.pop('mode', 'spiking') == 'spiking':

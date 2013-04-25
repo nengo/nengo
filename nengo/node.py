@@ -1,5 +1,7 @@
 from output import Output
 
+import numpy as np
+
 def is_node(obj):
     return isinstance(obj, Node)
 
@@ -16,14 +18,7 @@ class Node(object):
         self.inputs = [] #list of variables in this node (for net.connect to connect to)
         
         if output != None:
-            if not callable(output):
-                outval = output
-                def output():
-                    return outval
-                outfunc = output
-            else:
-                outfunc = output
-            self.add_output(outfunc)
+            self.add_output(output)
         
         self.init()
         
@@ -52,7 +47,8 @@ class Node(object):
         self.connections += [c]
         
     def add_output(self, func):
-        self.outputs[Output(dimensions=len(func()), name=self.name + ":" + func.__name__)] = func
+        self.outputs[Output(dimensions=len(func()), 
+            name=self.name + ":" + func.__name__)] = func
         
     def get(self, name):
         search = [self for x in self.inputs if x == name] + [x for x in self.outputs if x.name == name]
@@ -81,7 +77,8 @@ class Node(object):
         self.step()
         
         for output in self.outputs:
-            new_state[output] = self.outputs[output]()
+            new_state[output] = \
+                np.asarray(self.outputs[output]())[:,None]
 
 class TimeNode(Node):
     """
@@ -89,7 +86,8 @@ class TimeNode(Node):
     """
     def __init__(self, name, output):
         Node.__init__(self, name)
-        self.outputs = {Output(dimensions=len(output(0.0)), name=self.name + ":" + output.__name__):output}
+        self.outputs = {Output(dimensions=len(output(0.0)), 
+            name=self.name + ":" + output.__name__):output}
         self.t = 0.0
 
     def _build(self, state, dt):
@@ -109,7 +107,8 @@ class TimeNode(Node):
         self.step()    
         
         for output in self.outputs:
-            state_tm1[output] = self.outputs[output](self.t)
+            state_tm1[output] = \
+                np.asarray(self.outputs[output](self.t))[:,None]
             
 class ValueNode(Node):
     def __init__(self, name, output):
@@ -147,3 +146,8 @@ class FileNode(DictNode):
         
         DictNode.__init__(self, name, data)
         
+        self.val = np.asarray(output)
+        Node.__init__(self, name, self.output)
+        
+    def output(self):
+        return self.val

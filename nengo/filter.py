@@ -43,8 +43,7 @@ class ExponentialPSTCFilter:
         if self.pstc >= dt:
             decay = np.cast(np.exp(-dt / self.pstc), self.value.dtype)
             value_new = decay * self.value + (1 - decay) * source_input
-            return collections.OrderedDict([(self.value, value_new.astype('float32'))])
-        else:
-            ### no filtering (pstc = 0), so just make the value the source
-            return collections.OrderedDict([(self.value, self.source.astype('float32'))])
+            self.value = value_new
+
+        return self.value
 

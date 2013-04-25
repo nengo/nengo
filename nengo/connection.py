@@ -71,9 +71,9 @@ class VectorConnection(Connection):
         """Returns the transformed, filtered value output from pre."""
         pre_in = state[self.pre]
         if self.transform:
-            pre_in = self.transform * pre_in
-        if self.filter: 
-            pre_in = self.filter.filter(dt, source=pre_in)
+            pre_in = np.dot(self.transform, pre_in)
+        '''if self.filter: 
+            pre_in = self.filter.filter(dt, source=pre_in)'''
         return pre_in
     
     def learn(self, dt):
