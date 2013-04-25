@@ -204,8 +204,9 @@ class SpikingEnsemble(BaseEnsemble):
     def add_neuron_connection(self, connection):
         self.neuron_inputs += [connection]
 
-    def add_output(self, func, dimensions, name=None):
-        self.outputs += [Output(name=name, dimensions=dimensions)]
+    def add_output(self, func):
+        self.outputs += [Output(name=func.__name__, dimensions=func(np.zeros(
+                    self.neuron_model.size)).shape[0])]
         self.output_funcs += [func]
         
         return self.outputs[-1]

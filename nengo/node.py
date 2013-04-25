@@ -56,8 +56,6 @@ class Node(object):
         
     def get(self, name):
         found = [self for x in self.inputs if x == name] + [x for x in self.outputs if x.name == name]
-        print name
-        print [x.name for x in self.outputs]
                 
         if len(found) > 1:
             print "Warning, found more than one input or output with same name"
@@ -110,4 +108,21 @@ class TimeNode(Node):
         
         for output in self.outputs:
             state_tm1[output] = self.outputs[output](self.t)
+            
+class FileNode(Node):
+    def __init__(self, name, output):
+        Node.__init__(self, name)
+        
+class DictNode(TimeNode):
+    def __init__(self, name, output):
+        self.data = output
+        TimeNode.__init__(self, name, self.output)
+        
+    def output(self, time):
+        output_time = 0.0
+        for t in self.data:
+            if t < time and time-t < time-self.data[output_time]:
+                output_time = t
+            
+        return self.data[output_time]
 

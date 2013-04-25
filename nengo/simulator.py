@@ -27,26 +27,30 @@ class Simulator(object):
         self.nengo_objects = (
             network.all_nodes + network.all_ensembles + network.all_probes)
 #        print self.nengo_objects
-        self.state_t = {}
-        self.state_tm1 = {}
+        self.old_state = {}
+        self.new_state = {}
 
     def _build(self, dt):
         for node in self.nengo_objects:
-            node._build(self.state_t, dt)
+            node._build(self.old_state, dt)
 
     def reset(self):
         for cc in self.nengo_objects:
-            cc._reset(self.state_t)
+            cc._reset(self.old_state)
 
-    def step_time(self, simtime, dt, stop_when=None, dump_probes_fn=None):
-        if stop_when or dump_probes_fn:
-            raise NotImplementedError()
+    def run(self, simtime, dt, stop_when=None, dump_probes_fn=None):      
         n_steps = int(simtime / dt)
-        state_t = self.state_t
-        state_tm1 = self.state_tm1
+
         for ii in xrange(n_steps):
             for cc in self.nengo_objects:
-                cc._step(state_t, state_tm1, dt)
+                cc._step(self.old_state, self.new_state, dt)
+            
+            self.old_state = self.new_state
+            self.new_state = {}
+            
+            if stop_when and stop_when():
+                break
+                
         if dump_probes_fn:
             return dump_probes_fn(self.network.probes)
 

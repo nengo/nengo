@@ -119,7 +119,7 @@ class Network():
         else:
             postname = post.name
 
-        o = self.get_ensemble_output(ensemble=pre, func=func)
+        o = self.get_object_output(pre, func=func)
         
         #create connection
         c = connection.make_connection(pre=o, post=postname, transform=transform, 
@@ -146,15 +146,7 @@ class Network():
         :param LearningRule learning_rule: a learning rule to use to update weights
         """
 
-        # dereference pre- and post- strings if necessary
-        pre = self.get_object(pre)
-        post = self.get_object(post)
-
-        # create connection
-        c = connection.make_connection(pre=pre, post=post, weights=weights,
-                       filter=filter, learning_rule=learning_rule)
-        self.add(c)
-        return c
+        pass
 
     def get(self, name, func=None):
         """This method takes in a string and returns the corresponding object.
@@ -178,27 +170,33 @@ class Network():
 
         return target
 
-    def get_ensemble_output(self, ensemble, func=None):
+    def get_object_output(self, obj, func=None):
         """
         """
-        # get ensemble object from node dictionary
-        if isinstance(ensemble, basestring):
-            ensemble = self.get(ensemble)
+        # get object from node dictionary
+        if isinstance(obj, basestring):
+            obj = self.get(obj)
 
-        #use identity function if func not given
-        if func == None:
-            def output(val):
-                return val
-            func = output
-
-        if not isinstance(ensemble, Output):
-            #add new output to pre with given function
-            o = ensemble.add_output(func, 
-                dimensions=func(np.zeros(
-                    ensemble.neuron_model.size)).shape[0], 
-                name=func.__name__)
+        if not isinstance(obj, Output):
+            #then the obj is an ensemble or node (i.e. no specific output
+            #was specified)
+            
+            #try to load default output
+            try:
+                o = obj.get(obj.name + ":output")
+            except:
+                #we need to create a new output and add it to the object
+                
+                #use identity function if func not given
+                if func == None:
+                    def output(val):
+                        return val
+                    func = output
+                
+                #add new output to pre with given function
+                o = obj.add_output(func)
         else:
-            o = ensemble 
+            o = obj 
         return o
 
     def get_object(self, name):
@@ -236,28 +234,37 @@ class Network():
         self.add(e)
         return e
 
-    def make_node(self, name, output): 
+    def make_node(self, name, output=None): 
         """Create a Node and add it to the network.
 
         Output can be either a function or a np.ndarray.
         If it's a function, it should return a np.ndarray.
         It will called like this:
-            output(simtime)
+            output() (if it takes no arguments)
+            output(simtime) (if it takes one argument)
 
-        Any arguments your function needs should be retrieved via a closure or
+        Any other arguments your function needs should be retrieved via a closure or
         self or something.
         
         """
-        if callable(output):
+        if output == None:
+            n = node.Node(name)
+        elif callable(output):
             func_args = inspect.getargspec(output).args
             
-            if len(func_args) == 1 and ("t" in func_args or "time" in func_args):
-                n = node.TimeNode(name, output=output)
+            print func_args
+            
+            if len(func_args) == 1:
+                n = node.TimeNode(name, output)
+            if len(func_args) == 0:
+                n = node.Node(name, output)
             else:
-                n = node.Node(name, output=output)
-                
-        else:
-            n = node.Node(name, output=output)
+                print "make_node only accepts output functions with 0 or 1 arguments"
+                return None
+        elif isinstance(output, basestring):
+            pass
+        elif isinstance(output, dict):
+            n = node.DictNode(name, output)
         self.add(n)
         return n
         
@@ -282,7 +289,7 @@ class Network():
 
         target = self.get(target)
         if isinstance(target, SpikingEnsemble):
-            target = self.get_ensemble_output(ensemble=target)
+            target = self.get_object_output(target)
         
         p = probe.ListProbe(
                         target=target,

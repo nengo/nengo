@@ -62,7 +62,7 @@ class Model(object):
         """
         
         self.build(dt)
-        self.simulator.step_time(time, dt, stop_when=stop_when,
+        self.simulator.run(time, dt, stop_when=stop_when,
                                 dump_probes_fn=output)
 
           

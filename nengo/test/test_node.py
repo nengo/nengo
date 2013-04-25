@@ -4,22 +4,21 @@ import math
 class TestNode(nengo.Node):
     def init(self):
         self.add_input("x")
+        self.add_input("y")
     
     def step(self):
-        print self.x
+        print self.x, self.y
         
 m = nengo.Model("test")
 
-def output(t):
-    print t
-    return [math.sin(t)]
+input1 = m.make_node("input1", lambda t : [math.sin(t)])
+input2 = m.make_node("input2", {0:[0.1], 0.05:[0.2], 0.08:[0.3]})
 
-input = m.make_node("input", output)
+test = TestNode("testnode")
+m.add(test)
 
-t = TestNode("testnode")
-m.add(t)
-
-m.connect("input:output", "testnode:x")
+m.connect("input1:<lambda>", "testnode:x")
+m.connect(input2, "testnode:y")
 
 m.run(0.1)
 
