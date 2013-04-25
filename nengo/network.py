@@ -256,8 +256,6 @@ class Network():
         elif callable(output):
             func_args = inspect.getargspec(output).args
             
-            print func_args, len(func_args)
-            
             if len(func_args) == 1:
                 n = node.TimeNode(name, output)
             elif len(func_args) == 0:
@@ -266,7 +264,7 @@ class Network():
                 print "make_node only accepts output functions with 0 or 1 arguments"
                 return None
         elif isinstance(output, basestring):
-            pass
+            n = node.FileNode(name, output)
         elif isinstance(output, dict):
             n = node.DictNode(name, output)
         elif isinstance(output, (list)):

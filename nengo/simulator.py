@@ -26,7 +26,6 @@ class Simulator(object):
         self.network = network
         self.nengo_objects = (
             network.all_nodes + network.all_ensembles + network.all_probes)
-#        print self.nengo_objects
         self.old_state = {}
         self.new_state = {}
 

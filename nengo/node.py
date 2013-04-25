@@ -111,35 +111,6 @@ class TimeNode(Node):
         for output in self.outputs:
             state_tm1[output] = self.outputs[output](self.t)
             
-#class FileNode(DictNode):
-#    def __init__(self, name, output):
-#        
-#        data = {}
-#        f = open(output, "r")
-#        for line in f:
-#            split = line.split(",")
-#            data[float(split[0])] = [float(x) for x in split[1:]]
-#        f.close() 
-#        
-#        DictNode.__init__(self, name, data)
-#    
-#        
-#    def output(self, time):
-#        pass
-        
-class DictNode(TimeNode):
-    def __init__(self, name, output):
-        self.data = output
-        TimeNode.__init__(self, name, self.output)
-        
-    def output(self, time):
-        output_time = 0.0
-        for t in self.data:
-            if t < time and time-t < time-output_time:
-                output_time = t
-            
-        return self.data[output_time]
-
 class ValueNode(Node):
     def __init__(self, name, output):
         self.val = output
@@ -147,4 +118,32 @@ class ValueNode(Node):
         
     def output(self):
         return self.val
+        
+class DictNode(TimeNode):
+    def __init__(self, name, output):
+        self.data = output
+        TimeNode.__init__(self, name, self.output)
+        
+    def output(self, time):
+        output_time = -1
+        for t in self.data:
+            if t <= time and time-t < time-output_time:
+                output_time = t
+            
+        if output_time == -1:
+            return [0.0 for _ in range(len(self.data[self.data.keys()[0]]))]
+        else:
+            return self.data[output_time]
+    
+class FileNode(DictNode):
+    def __init__(self, name, output):
+        
+        data = {}
+        f = open(output, "r")
+        for line in f:
+            split = line.split(",")
+            data[float(split[0])] = [float(x) for x in split[1:]]
+        f.close() 
+        
+        DictNode.__init__(self, name, data)
         
