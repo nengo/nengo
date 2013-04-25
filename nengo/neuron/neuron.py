@@ -17,20 +17,8 @@ class Neuron(object):
         self.output = Output(dimensions=size)
         self.size = size
 
-    @property
-    def shape(self):
-        return len(self.output)
-
     def __len__(self):
         return self.output.size
-
-    """def hashable_state(self):
-        return ()"""
-
-    def reset(self):
-        """Reset the state of the neuron."""
-        self.output[:] = 0
-
 
     def step(self, input_current):
         """All neuron subclasses must have an update function.

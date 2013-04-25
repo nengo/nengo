@@ -34,9 +34,10 @@ class LIFRateNeuron(Neuron):
         self.alpha = (1 - x) / (self.intercepts - 1.0)
         self.j_bias = 1 - self.alpha * self.intercepts
 
-        state[self.output] = np.zeros((self.size, 1))
-
-        return self.alpha, self.j_bias
+        self._reset(state)
+        
+    def _reset(self, state):
+        state[self.output] = np.zeros(self.size)
 
     def _step(self, new_state, J, dt):
         """Update rule that implements LIF rate neuron type.

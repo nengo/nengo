@@ -3,8 +3,7 @@ import numpy as np
 from .neuron import Neuron
 
 class LIFNeuron(Neuron):
-    def __init__(self, tau_rc=0.02, tau_ref=0.002,
-                 size=None, max_rate=None, intercept=None, seed=None):
+    def __init__(self, size, tau_rc=0.02, tau_ref=0.002):
         """Constructor for a set of LIF rate neuron.
 
         :param float dt: timestep for neuron update function
@@ -21,42 +20,21 @@ class LIFNeuron(Neuron):
             of the threshold voltage is accumulated
 
         """
+        Neuron.__init__(self, size)
         self.tau_rc = tau_rc
         self.tau_ref  = tau_ref
 
-        self.size = size
-        self.max_rate = max_rate
-        self.intercept = intercept
-        self.seed = seed
-
-        self.J = None # this is set by the Ensemble
-        self.voltage = Output()
-        self.refractory_time = Output()
-        self.output = Output()
-        self.alpha = Output()
-        self.j_bias = Output()
-
-    @property
-    def default_output(self):
-        return self.spikes
-
     def _build(self, state, dt):
-
-        self.rng = np.random.RandomState(seed=self.seed)
-        self.max_rate = max_rate
-
-        max_rates = self.rng.uniform(size=self.size,
-            low=max_rate[0], high=max_rate[1])  
-        threshold = self.rng.uniform(self.size,
-            low=intercept.low, high=intercept.high)
-
         x = 1.0 / (1 - np.exp(
-                (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
-        self.alpha = (1 - x) / (intercepts - 1.0)
-        self.j_bias = 1 - self.alpha * intercepts
-        return self._reset(self, state)
+                (self.tau_ref - (1.0 / self.max_rates)) / self.tau_rc))
+        self.alpha = (1 - x) / (self.intercepts - 1.0)
+        self.j_bias = 1 - self.alpha * self.intercepts
+        
+        self._reset(state)
 
     def _reset(self, state):
+        self.voltage = np.asarray([0.0 for _ in range(self.size)])
+        self.refractory_time = np.asarray([0.0 for _ in range(self.size)])
         state[self.output] = np.zeros(self.size)
 
     def _step(self, new_state, J, dt):
@@ -70,20 +48,21 @@ class LIFNeuron(Neuron):
         """
     
         # Euler's method
-        dV = dt / self.tau_rc * (J - voltage)
+        dV = dt / self.tau_rc * (J - self.voltage)
 
         # increase the voltage, ignore values below 0
-        v = np.maximum(voltage + dV, 0)  
+        v = np.maximum(self.voltage + dV, 0)  
         
         # handle refractory period        
-        post_ref = 1.0 - (refractory_time - dt) / dt
+        post_ref = 1.0 - (self.refractory_time - dt) / dt
 
         # set any post_ref elements < 0 = 0, and > 1 = 1
         v *= np.clip(post_ref, 0, 1)
         
         # determine which neurons spike
         # if v > 1 set spiked = 1, else 0
-        spiked = np.switch(v > 1, 1.0, 0.0)
+        spiked = np.array([0 for _ in range(len(v))])
+        spiked[v>1] = 1
         
         # adjust refractory time (neurons that spike get
         # a new refractory time set, all others get it reduced by dt)
@@ -94,8 +73,8 @@ class LIFNeuron(Neuron):
 
         # adjust refractory time (neurons that spike get a new
         # refractory time set, all others get it reduced by dt)
-        new_refractory_time = np.switch(
-            spiked, spiketime + self.tau_ref, refractory_time - dt)
+        new_refractory_time = self.refractory_time - dt
+        new_refractory_time[spiked] = spiketime+self.tau_ref
 
         # return an ordered dictionary of internal variables to update
         # (including setting a neuron that spikes to a voltage of 0)
