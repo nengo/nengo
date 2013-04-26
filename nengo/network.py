@@ -119,6 +119,7 @@ class Network():
         else:
             postname = post.name
 
+        # get output of pre object
         o = self.get_object_output(pre, func=func)
         
         #create connection
@@ -173,7 +174,8 @@ class Network():
     def get_object_output(self, obj, func=None):
         """
         """
-        # get object from node dictionary
+        
+        # get parent object if given string
         if isinstance(obj, basestring):
             obj = self.get(obj)
 
@@ -195,8 +197,6 @@ class Network():
                 
                 #add new output to pre with given function
                 o = obj.add_output(func)
-                print 'output created'
-                print 'outputs after', obj.outputs
         else:
             o = obj 
         return o
@@ -253,18 +253,8 @@ class Network():
         self or something.
         
         """
-        if output == None:
-            n = node.Node(name)
-        elif callable(output):
-            func_args = inspect.getargspec(output).args
-            
-            if len(func_args) == 1:
-                n = node.TimeNode(name, output)
-            elif len(func_args) == 0:
-                n = node.Node(name, output)
-            else:
-                print "make_node only accepts output functions with 0 or 1 arguments"
-                return None
+        if output == None or callable(output):
+            n = node.Node(name, output)
         elif isinstance(output, basestring):
             n = node.FileNode(name, output)
         elif isinstance(output, dict):
@@ -296,7 +286,6 @@ class Network():
         target = self.get(target)
         if isinstance(target, SpikingEnsemble):
             target = self.get_object_output(target)
-        print 'target', target
         
         p = probe.ArrayProbe(
                         target=target,

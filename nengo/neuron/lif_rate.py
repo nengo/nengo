@@ -18,6 +18,8 @@ class LIFRateNeuron(Neuron):
         Neuron.__init__(self, size)
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
+        self.max_rates = None
+        self.intercepts = None
 
     def _build(self, state, dt):
         """Compute the alpha and bias needed to get the given max_rate
@@ -37,7 +39,7 @@ class LIFRateNeuron(Neuron):
         self._reset(state)
         
     def _reset(self, state):
-        state[self.output] = np.zeros(self.size)
+        pass
         
     def _step(self, new_state, J, dt):
         """Update rule that implements LIF rate neuron type.
@@ -47,13 +49,11 @@ class LIFRateNeuron(Neuron):
         """
         J = J * self.alpha.T + self.j_bias.T
         # set up denominator of LIF firing rate equation
-        rate = self.tau_ref - self.tau_rc * np.log(
-            1 - 1.0 / np.maximum(J, 0))
+        rate = self.tau_ref - self.tau_rc * np.log(1 - 1.0 / np.maximum(J, 0))
         
         # if input current is enough to make neuron spike,
         # calculate firing rate, else return 0
         rate = 1 / rate
         rate[J <= 1] = 0
 
-        new_state[self.output] = rate
         return rate

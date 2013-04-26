@@ -56,3 +56,11 @@ def pstc(tau):
 
 def uniform(low, high):
     return {'type':'uniform', 'low':low, 'high':high}
+
+def sample_pdf(params, size):
+    if params["type"].lower() == "uniform":
+        return np.random.uniform(size=size, low=params["low"], high=params["high"])
+    elif params["type"].lower() == "gaussian":
+        return np.random.normal(size=size, loc=params["mean"], scale=params["variance"])
+    else:
+        print "Unrecognized pdf type"

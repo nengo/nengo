@@ -1,6 +1,6 @@
 import random
 import numpy as np
-
+import nengo
 import neuron
 from output import Output
 
@@ -159,28 +159,15 @@ class SpikingEnsemble(BaseEnsemble):
         self.max_rate = max_rate
 
     def _build(self, state, dt):
-
-        if self.max_rate['type'].lower() == 'uniform':
-            self.neuron_model.max_rates = np.random.uniform(
-                size=(self.neuron_model.size, 1),
-                low=self.max_rate['low'], 
-                high=self.max_rate['high'])
-        elif self.max_rate['type'].lower() == 'gaussian':
-            self.neuron_model.max_rates = np.random.normal(
-                size=(self.neuron_model.size, 1),
-                loc=self.max_rate['mean'], 
-                scale=self.max_rate['variance'])
-
-        if self.intercept['type'].lower() == 'uniform':
-            self.neuron_model.intercepts = np.random.uniform(
-                size=(self.neuron_model.size, 1),
-                low=self.intercept['low'], 
-                high=self.intercept['high'])
-        elif self.intercept['type'].lower() == 'gaussian':
-            self.neuron_model.intercepts = np.random.normal(
-                size=(self.neuron_model.size, 1),
-                loc=self.intercept['mean'], 
-                scale=self.intercept['variance'])
+        #generate random intercepts and max rates if they have not been
+        #specified directly
+        if self.neuron_model.max_rates is None:
+            self.neuron_model.max_rates = nengo.sample_pdf(self.max_rate, 
+                                                       size=(self.neuron_model.size, 1))
+            
+        if self.neuron_model.intercepts is None:
+            self.neuron_model.intercepts = nengo.sample_pdf(self.intercept, 
+                                                        size=(self.neuron_model.size, 1))
 
         self.neuron_model._build(state, dt)
 
@@ -188,11 +175,17 @@ class SpikingEnsemble(BaseEnsemble):
         self.encoders = self.make_encoders(encoders=self.encoders)
 
         # compute the decoded origin decoded_input from the neuron output
-        for i,o in enumerate(self.outputs):
-            state[o] = np.zeros(o.dimensions)
+        for i in range(len(self.outputs)):
             self.decoders += [
                 self.compute_decoders(func=self.output_funcs[i], 
                 dt=dt, eval_points=self.eval_points) ]
+            
+        self._reset(state)
+            
+    def _reset(self, state):
+        for o in self.outputs:
+            state[o] = np.zeros(o.dimensions)
+        self.neuron_model._reset(state)
 
     def add_connection(self, connection):
         self.vector_inputs += [connection]
@@ -229,7 +222,7 @@ class SpikingEnsemble(BaseEnsemble):
         if eval_points == None:  
             # generate sample points from state space randomly
             # to minimize decoder error over in decoder calculation
-            self.num_samples = 200 ##################################################33should be 500!!!!
+            self.num_samples = 500
             samples = np.random.uniform(
                 size=(self.num_samples, self.dimensions),
                 low=-1, high=1)
@@ -297,8 +290,7 @@ class SpikingEnsemble(BaseEnsemble):
             num_time_samples = int(.1/dt)
             firing_rates = np.zeros((self.neuron_model.size, num_time_samples))
             for t in range(num_time_samples): 
-                self.neuron_model._step(state, J[:,i], dt)
-                firing_rates[:,t] = state[self.neuron_model.output]
+                firing_rates[:,t] = self.neuron_model._step(state, J[:,i], dt)
 
             # TODO: np.mean instead?
             A[:,i] = np.sum(firing_rates, axis=1) / num_time_samples
@@ -402,7 +394,6 @@ class SpikingEnsemble(BaseEnsemble):
 
         #add in vector->vector currents
         for c in self.vector_inputs:
-            fuck = c.get_post_input(old_state, dt)
             J = J + np.dot( self.encoders, 
                 c.get_post_input(old_state, dt))
 

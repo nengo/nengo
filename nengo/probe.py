@@ -17,10 +17,10 @@ class ListProbe(object):
         # XXX use sample_every !
 
     def _build(self, state, dt):
-        self._reset()
+        self._reset(state)
         pass
 
-    def _reset(self):
+    def _reset(self, state):
         self.data = []
         self.simtime = 0
 
@@ -44,10 +44,10 @@ class ArrayProbe(object):
     def _build(self, state, dt):
         """
         """
-        self._reset()
+        self._reset(state)
         pass
 
-    def _reset(self):
+    def _reset(self, state):
         """
         """
         self.simtime = 0.0
@@ -71,8 +71,7 @@ class ArrayProbe(object):
                                          + self.data.shape[1:])])
 
             # record the filtered value
-            self.data[self.i+1:i_samp+1] = \
-                old_state[self.target].flatten()
+            self.data[self.i+1:i_samp+1] = old_state[self.target].flatten()
             self.i = i_samp
         self.simtime += dt
 

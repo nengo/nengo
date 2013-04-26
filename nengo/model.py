@@ -25,7 +25,7 @@ class Model(object):
         """
         self.network = Network(name)
         self.name = name
-
+        self.built = False
         self.time = 0
 
         self.backend_type = ''
@@ -37,8 +37,13 @@ class Model(object):
         self.seed = seed
 
     def build(self, dt=0.001):
-        self.simulator = Simulator(self.network)
-        self.simulator._build(dt)
+        if not self.built:
+            self.simulator = Simulator(self.network)
+            self.simulator._build(dt)
+            self.simulator._reset()
+            self.built = True
+        else:
+            print "Ignoring duplicate build call"
     
     def reset(self):
         """ Reset the state of the simulation
@@ -47,7 +52,7 @@ class Model(object):
             probes in the network and calls thier reset functions
             
         """
-        self.simulator.reset()
+        self.simulator._reset()
 
     def run(self, time, dt=0.001, output=None, stop_when=None):
         """Run the simulation.
@@ -61,9 +66,8 @@ class Model(object):
         
         """
         
-        self.simulator.run(time, dt, stop_when=stop_when, dump_probes_fn=output)
-
-        return self.probes
+        self.build(dt)
+        self.simulator.run(time, dt, stop_when=stop_when)
           
     def __getattr__(self, attr):
         """Attempt to pass any failed attr calls to the network."""

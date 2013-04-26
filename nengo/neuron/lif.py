@@ -26,9 +26,8 @@ class LIFNeuron(Neuron):
         self.tau_ref  = tau_ref
 
         self.size = size
-        self.max_rate = max_rate
-        self.intercept = intercept
-        self.seed = seed
+        self.max_rates = None
+        self.intercepts = None
 
     def _build(self, state, dt):
         x = 1.0 / (1 - np.exp(
@@ -40,11 +39,8 @@ class LIFNeuron(Neuron):
 
     def _reset(self, state):
         # reset internal states
-        self.voltage = np.zeros((size, 1))
-        self.refractory_time = np.zeros((size,1))
-        # set up output reference in state dictionary
-        state[self.output] = np.zeros(self.size)
-        
+        self.voltage = np.zeros((self.size, 1))
+        self.refractory_time = np.zeros((self.size,1))
 
     def _step(self, new_state, J, dt):
         """Theano update rule that implementing LIF rate neuron type
@@ -90,8 +86,6 @@ class LIFNeuron(Neuron):
 
         self.voltage = v * (1 - spiked)
         self.refractory_time = new_refractory_time
-
-        new_state[self.output] = spiked
 
         return spiked
 
