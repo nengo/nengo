@@ -1,6 +1,8 @@
 from output import Output
 import inspect
 import numpy as np
+import math
+import copy
 
 def is_node(obj):
     return isinstance(obj, Node)
@@ -49,11 +51,12 @@ class Node(object):
         self.connections += [c]
         
     def add_output(self, func):
-        
         if func.__name__ == "<lambda>":
             funcname = "output"
         else:
             funcname = func.__name__
+            
+        func = self._fix_function(func)
         
         func_args = inspect.getargspec(func).args
             
@@ -65,7 +68,43 @@ class Node(object):
             self.outputs[o] = func
         else:
             print "Nodes only accepts output functions with 0 or 1 arguments"
+            
+    def _fix_function(self, func):
+        fixed_func = func
+        name = func.__name__
         
+        #check if it's a python or numpy built-in function, and wrap it if so
+        if isinstance(func, (type(math.sin), type(np.sin))):
+            
+            #check how many arguments it takes
+            try:
+                func()
+                fixed_func = lambda : func() #wrap it in a python function
+            except ValueError: #thrown if parameters are wrong in func() call above
+                try:
+                    func(0.0)
+                    fixed_func = lambda t : func(t)
+                except ValueError:
+                    print "Function must accept either 0 or 1 arguments"
+                    return None
+        
+        num_args = len(inspect.getargspec(fixed_func).args)
+                
+        #check if it's returning a float rather than a list
+        fixed_func2 = fixed_func
+        if num_args == 0:
+            result = fixed_func()
+            if isinstance(result, float):
+                fixed_func2 = lambda : [fixed_func()]
+        else:
+            result = fixed_func(0.0)
+            if isinstance(result, float):
+                fixed_func2 = lambda t: [fixed_func(t)]
+        
+        fixed_func2.__name__ = name
+        
+        return fixed_func2
+            
     def get(self, name):
         search = [self for x in self.inputs if x == name] + \
                 [x for x in self.outputs.keys()+self.time_outputs.keys() if x.name == name]
