@@ -1,6 +1,7 @@
 import collections
 import numpy as np
 from .neuron import Neuron
+from ..output import Output
 
 class LIFNeuron(Neuron):
     def __init__(self, size, tau_rc=0.02, tau_ref=0.002):
@@ -24,6 +25,11 @@ class LIFNeuron(Neuron):
         self.tau_rc = tau_rc
         self.tau_ref  = tau_ref
 
+        self.size = size
+        self.max_rate = max_rate
+        self.intercept = intercept
+        self.seed = seed
+
     def _build(self, state, dt):
         x = 1.0 / (1 - np.exp(
                 (self.tau_ref - (1.0 / self.max_rates)) / self.tau_rc))
@@ -33,9 +39,12 @@ class LIFNeuron(Neuron):
         self._reset(state)
 
     def _reset(self, state):
-        self.voltage = np.asarray([0.0 for _ in range(self.size)])
-        self.refractory_time = np.asarray([0.0 for _ in range(self.size)])
+        # reset internal states
+        self.voltage = np.zeros((size, 1))
+        self.refractory_time = np.zeros((size,1))
+        # set up output reference in state dictionary
         state[self.output] = np.zeros(self.size)
+        
 
     def _step(self, new_state, J, dt):
         """Theano update rule that implementing LIF rate neuron type

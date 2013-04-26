@@ -38,13 +38,14 @@ class LIFRateNeuron(Neuron):
         
     def _reset(self, state):
         state[self.output] = np.zeros(self.size)
-
+        
     def _step(self, new_state, J, dt):
         """Update rule that implements LIF rate neuron type.
         
         Returns array with firing rates for current time step.
 
         """
+        J = J * self.alpha.T + self.j_bias.T
         # set up denominator of LIF firing rate equation
         rate = self.tau_ref - self.tau_rc * np.log(
             1 - 1.0 / np.maximum(J, 0))

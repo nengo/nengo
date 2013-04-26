@@ -78,7 +78,7 @@ class Node(object):
         
         for output in self.outputs:
             new_state[output] = \
-                np.asarray(self.outputs[output]())[:,None]
+                np.asarray(self.outputs[output]())
 
 class TimeNode(Node):
     """
@@ -108,7 +108,7 @@ class TimeNode(Node):
         
         for output in self.outputs:
             state_tm1[output] = \
-                np.asarray(self.outputs[output](self.t))[:,None]
+                np.asarray(self.outputs[output](self.t))
             
 class ValueNode(Node):
     def __init__(self, name, output):

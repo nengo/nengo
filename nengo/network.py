@@ -194,7 +194,6 @@ class Network():
                     func = output
                 
                 #add new output to pre with given function
-                print 'outputs', obj.outputs
                 o = obj.add_output(func)
                 print 'output created'
                 print 'outputs after', obj.outputs
@@ -299,7 +298,7 @@ class Network():
             target = self.get_object_output(target)
         print 'target', target
         
-        p = probe.ListProbe(
+        p = probe.ArrayProbe(
                         target=target,
                         sample_every=sample_every,
                         static=static)
