@@ -415,7 +415,6 @@ simulation_stop_now = Var('stop_when')
 
 
 class SimulatorBase(object):
-
     _backends = {}
 
     def __init__(self, network):
@@ -435,10 +434,12 @@ class SimulatorBase(object):
 def Simulator(*args, **kwargs):
     backend = kwargs.pop('backend', 'reference')
     if backend not in SimulatorBase._backends:
-        if backend == 'numpy':
+        if backend == 'reference':
+            import object_api_python
+        elif backend == 'numpy':
             import object_api_numpy
         else:
             raise ValueError('backend "%s" not recognized, did you remember to'
                 ' import the python module that implements that backend?' %
-                backend)
+                backend, SimulatorBase._backends.keys())
     return SimulatorBase._backends[backend](*args, **kwargs)
