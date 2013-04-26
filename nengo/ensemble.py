@@ -140,7 +140,7 @@ class SpikingEnsemble(BaseEnsemble):
         self.encoders = encoders
         self.eval_points = None
         if neuron_model is None:
-            self.neuron_model = neuron.lif_rate.LIFRateNeuron(num_neurons)
+            self.neuron_model = neuron.lif.LIFNeuron(num_neurons)
         else:
             self.neuron_model = neuron_model
             self.neuron_model.size = num_neurons
@@ -239,6 +239,8 @@ class SpikingEnsemble(BaseEnsemble):
             samples = samples.T * scale 
 
             eval_points = samples
+            eval_points = np.arange(-1,1,.01).reshape(1,200)
+            self.num_samples = eval_points.shape[1]
 
         else:
             # otherwise reset num_samples, and 
@@ -282,18 +284,18 @@ class SpikingEnsemble(BaseEnsemble):
             # simulate neurons for .25 seconds to get startup 
             # transient out of the way
             state = {}
-            for t in range(int(.05/dt)): 
+            for t in range(int(.1/dt)): 
                 self.neuron_model._step(state, J[:,i], dt)
 
             # run the neuron model for 1 second,
             # accumulating spikes to get a spike rate
-            num_time_samples = int(.1/dt)
-            firing_rates = np.zeros((self.neuron_model.size, num_time_samples))
+            num_time_samples = int(0.5/dt)
+            firing_rates = np.zeros((self.neuron_model.size, num_time_samples), dtype='float')
             for t in range(num_time_samples): 
                 firing_rates[:,t] = self.neuron_model._step(state, J[:,i], dt)
 
             # TODO: np.mean instead?
-            A[:,i] = np.sum(firing_rates, axis=1) / num_time_samples
+            A[:,i] = np.sum(firing_rates, axis=1) / 0.5
             self.neuron_model._reset(state)
 
         # add noise to elements of A
@@ -414,6 +416,7 @@ class SpikingEnsemble(BaseEnsemble):
         
         # pass the input current total into the neuron model
         self.spikes = self.neuron_model._step(new_state, J, dt)
+        #import pdb; pdb.set_trace()
     
         # update the weight matrices on learned terminations
         for c in self.vector_inputs+self.neuron_inputs:

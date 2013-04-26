@@ -20,6 +20,7 @@ class LIFRateNeuron(Neuron):
         self.tau_ref = tau_ref
         self.max_rates = None
         self.intercepts = None
+        self.spikes = Output(dimensions=size)
 
     def _build(self, state, dt):
         """Compute the alpha and bias needed to get the given max_rate
@@ -55,5 +56,7 @@ class LIFRateNeuron(Neuron):
         # calculate firing rate, else return 0
         rate = 1 / rate
         rate[J <= 1] = 0
+        # store in the state variable
+        new_state[self.spikes] = rate
 
         return rate

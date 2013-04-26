@@ -28,6 +28,7 @@ class LIFNeuron(Neuron):
         self.size = size
         self.max_rates = None
         self.intercepts = None
+        self.spikes = Output(dimensions=size)
 
     def _build(self, state, dt):
         x = 1.0 / (1 - np.exp(
@@ -39,8 +40,8 @@ class LIFNeuron(Neuron):
 
     def _reset(self, state):
         # reset internal states
-        self.voltage = np.zeros((self.size, 1))
-        self.refractory_time = np.zeros((self.size,1))
+        self.voltage = np.zeros(self.size)
+        self.refractory_time = np.zeros(self.size)
 
     def _step(self, new_state, J, dt):
         """Theano update rule that implementing LIF rate neuron type
@@ -51,6 +52,7 @@ class LIFNeuron(Neuron):
             the input current for the current time step
         :param float dt: the timestep of the update
         """
+        J = (J * self.alpha.T + self.j_bias.T).flatten()
     
         # Euler's method
         dV = dt / self.tau_rc * (J - self.voltage)
@@ -66,8 +68,8 @@ class LIFNeuron(Neuron):
         
         # determine which neurons spike
         # if v > 1 set spiked = 1, else 0
-        spiked = np.array([0 for _ in range(len(v))])
-        spiked[v>1] = 1
+        spiked = np.zeros(len(v), dtype='float')
+        spiked[v > 1] = 1.0
         
         # adjust refractory time (neurons that spike get
         # a new refractory time set, all others get it reduced by dt)
@@ -78,14 +80,16 @@ class LIFNeuron(Neuron):
 
         # adjust refractory time (neurons that spike get a new
         # refractory time set, all others get it reduced by dt)
-        new_refractory_time = self.refractory_time - dt
-        new_refractory_time[spiked] = spiketime+self.tau_ref
+        new_refractory_time = np.where(spiked, 
+            spiketime + self.tau_ref, self.refractory_time - dt)
 
         # return an ordered dictionary of internal variables to update
         # (including setting a neuron that spikes to a voltage of 0)
 
         self.voltage = v * (1 - spiked)
         self.refractory_time = new_refractory_time
+        # store in the state variable
+        new_state[self.spikes] = spiked 
 
         return spiked
 
