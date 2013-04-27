@@ -21,8 +21,6 @@ class Simulator(API_PY.Simulator):
     build_registry = {}
     reset_registry = {}
     step_registry = {}
-    probe_registry = {}
-    sample_registry = {}
 
     def __init__(self, network, dt, verbosity=0):
         API_PY.Simulator.__init__(self, network, dt, verbosity)
@@ -89,13 +87,10 @@ class LIFNeurons(ImplBase):
     def step(self, state):
         alpha, j_bias, voltage, refractory_time = [
             state[self.inputs[name]] for name in self._input_names]
-
         try:
             J = j_bias + state[self.inputs['input_current']]
         except KeyError:
             J  = j_bias 
-
-
         tau_rc = self.tau_rc
         tau_ref = self.tau_ref
         dt = state[API.simulation_time] - state[API.simulation_time.delayed()]
@@ -142,19 +137,7 @@ class LIFNeurons(ImplBase):
         state[self.outputs['X']] = new_output
 
 
-@register_impl
-class Connection(ImplBase):
-    @staticmethod
-    def reset(self, state):
-        src = state[self.inputs['X']]
-        dst = src.copy()
-        state[self.outputs['X']] = dst
-
-    @staticmethod
-    def step(self, state):
-        src = state[self.inputs['X']]
-        dst = src.copy()
-        state[self.outputs['X']] = dst
+register_impl(API_PY.Connection)
 
 
 @register_impl

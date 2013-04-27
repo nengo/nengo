@@ -43,6 +43,7 @@ class Ensemble(object):
 
 
 class LIFNeuron(object):
+    # XXX insert correct constants
     def __init__(self, tau_ref=0.01, tau_rc=0.01):
         self.tau_ref = tau_ref
         self.tau_rc = tau_rc

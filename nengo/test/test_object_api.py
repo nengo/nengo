@@ -16,7 +16,7 @@ from nengo.object_api import (
     TimeNode,
     )
 
-class ObjectAPISmokeTests(unittest.TestCase):
+class SmokeTests(unittest.TestCase):
 
     def Simulator(self, *args, **kwargs):
         return API.Simulator(backend='reference', *args, **kwargs)
@@ -27,7 +27,7 @@ class ObjectAPISmokeTests(unittest.TestCase):
         net.add(Probe(tn.output))
         net.add(Probe(simulation_time))
         sim = self.Simulator(net, dt=0.001, verbosity=0)
-        results = sim.run(.1)
+        results = sim.run_steps(101)
 
         assert len(results[simulation_time]) == 101
         for i, t in enumerate(results[simulation_time]):
@@ -41,7 +41,7 @@ class ObjectAPISmokeTests(unittest.TestCase):
         net.add(Probe(ens.output))
 
         sim = self.Simulator(net, dt=0.001, verbosity=1)
-        results = sim.run(.1)
+        results = sim.run_steps(101)
 
         assert len(results[simulation_time]) == 101
         total_n_spikes = 0
@@ -56,8 +56,8 @@ class ObjectAPISmokeTests(unittest.TestCase):
         net = Network()
         net.add(Probe(simulation_time))
 
-        v1 = API.Var()
-        v2 = API.Var()
+        v1 = API.Var(size=1)
+        v2 = API.Var(size=1)
         c1 = net.add(Connection(v1, v2))
         c2 = net.add(Connection(v2, v1))
 
@@ -68,7 +68,7 @@ class ObjectAPISmokeTests(unittest.TestCase):
         net = Network()
 
         ens1 = net.add(LIFNeurons(3))
-        v = API.Var()
+        v = API.Var(size=3)
         c1 = net.add(Connection(ens1.output, v))
         filt = net.add(Filter(v))
         probe = net.add(Probe(filt.output))

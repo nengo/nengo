@@ -29,6 +29,52 @@ class SizeError(SimulatorException):
     """Implementation produced output of incorrect size"""
 
 
+def sizeof(obj):
+    try:
+        return obj.size
+    except AttributeError:
+        pass
+
+    try:
+        return len(obj)
+    except TypeError:
+        pass
+
+    if isinstance(obj, (int, float)):
+        return 1
+
+    raise TypeError(obj)
+
+
+class MultiArray(object):
+    def __init__(self, shape):
+        self.shape = shape
+
+    @property
+    def size(self):
+        return reduce(lambda x, y: x * y, self.shape, 1)
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def __len__(self):
+        return self.shape[0]
+
+
+class Array1(MultiArray):
+    def __init__(self, data):
+        MultiArray.__init__(self, (len(data),))
+        self.data = data
+
+    def __iter__(self):
+        return iter(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx]
+
+    def __setitem__(self, idx, val):
+        self.data[idx] = val
+
 
 def scheduling_graph(network):
     all_members = network.all_members
@@ -62,7 +108,7 @@ class ImplBase(object):
     def reset(obj, state):
         pass
     @staticmethod
-    def step(obj, old_state, new_state):
+    def step(obj, state):
         pass
     @staticmethod
     def probe(obj, state):
@@ -114,9 +160,8 @@ class Simulator(API.SimulatorBase):
         return cls
 
     def __init__(self, network, dt, verbosity=0):
-        API.SimulatorBase.__init__(self, network)
+        API.SimulatorBase.__init__(self, network, dt)
         self.state = SimulatorState()
-        self.dt = dt
         self.verbosity = verbosity
         self.state[API.simulation_time] = self.simulation_time
         DG = scheduling_graph(network)
@@ -169,7 +214,7 @@ class Simulator(API.SimulatorBase):
                 print 'No step:', member
 
         for tt in xrange(steps):
-            self.simulation_time += self.dt
+            self.simulation_steps += 1
             self.state.step()
             self.state[API.simulation_time] = self.simulation_time
             for step_fn, member in step_fns:
@@ -179,15 +224,17 @@ class Simulator(API.SimulatorBase):
                     if "takes exactly" in str(e):
                         e.args = e.args + (step_fn, 'of implementation for',  member)
                     raise
-                for key, val in member.outputs.items():
-                    if val not in self.state:
+                for key, var in member.outputs.items():
+                    if var not in self.state:
                         raise StepIncomplete("Step %s did not produce outputs[%s]" % (
                             member, key))
-                    if self.state[val].size != val.size:
+
+                    val = self.state[var]
+                    if sizeof(val) != var.size:
                         raise SizeError(
                             "Step %s produced outputs[%s] of wrong size %i, which"
                             " should have been %i" % (
-                            member, key, self.state[val].size, val.size))
+                            member, key, sizeof(val), var.size))
 
         rval = {}
         for probe in self.network.all_probes:
@@ -220,9 +267,9 @@ class TimeNode(ImplBase):
         state[node.output] = node.func(state[API.simulation_time])
 
     @staticmethod
-    def step(node, old_state, new_state):
-        t = new_state[API.simulation_time]
-        new_state[node.output] = node.func(t)
+    def step(node, state):
+        t = state[API.simulation_time]
+        state[node.output] = node.func(t)
 
 
 @register_impl
@@ -237,43 +284,24 @@ class Probe(ImplBase):
         state.probes[probe].append(obj)
 
 
-@register_impl
-class Uniform(ImplBase):
-    @staticmethod
-    def build(dist, state, dt):
-        rng = random.Random(dist.seed)
-        def draw_n(N):
-            return[rng.uniform(dist.low, dist.high) for ii in xrange(N)]
-        state[dist.rng] = draw_n
-
-    @staticmethod
-    def step(obj, old_state, new_state):
-        new_state[obj.rng] = old_state[obj.rng]
-
-
-@register_impl
-class Gaussian(ImplBase):
-    @staticmethod
-    def build(dist, state, dt):
-        rng = random.Random(dist.seed)
-        def draw_n(N):
-            return[rng.gauss(dist.mean, dist.std) for ii in xrange(N)]
-        state[dist.rng] = draw_n
-
-    @staticmethod
-    def step(obj, old_state, new_state):
-        new_state[obj.rng] = old_state[obj.rng]
+def draw(dist, rng, N):
+    if dist.dist_name == 'uniform':
+        return [rng.uniform(dist.low, dist.high) for ii in xrange(N)]
+    elif dist.dist_name == 'gaussian':
+        return [rng.gauss(dist.mean, dist.std) for ii in xrange(N)]
+    else:
+        raise NotImplementedError()
 
 
 @register_impl
 class LIFNeurons(ImplBase):
     @staticmethod
     def build(neurons, state, dt):
-        build(neurons.max_rate, state, dt)
-        build(neurons.intercept, state, dt)
 
-        max_rates = state[neurons.max_rate.rng](neurons.size)
-        threshold = state[neurons.intercept.rng](neurons.size)
+        max_rates = draw(neurons.max_rate,
+                random.Random(neurons.max_rate.seed), neurons.size)
+        threshold = draw(neurons.intercept,
+                random.Random(neurons.intercept.seed), neurons.size)
 
         def x_fn(max_rate):
             u = neurons.tau_ref - (1.0 / max_rate)
@@ -282,31 +310,38 @@ class LIFNeurons(ImplBase):
         alpha = [(1 - x) / intercept for x, intercept in zip(xlist, threshold)]
         j_bias = [1 - aa * intercept for aa, intercept in zip(alpha, threshold)]
 
-        state[neurons.alpha] = alpha
-        state[neurons.j_bias] = j_bias
-        state[neurons.voltage] = [0] * neurons.size
-        state[neurons.refractory_time] = [0] * neurons.size
-        state[neurons.output] = [0] * neurons.size
+        state[neurons.alpha] = Array1(alpha)
+        state[neurons.j_bias] = Array1(j_bias)
+        state[neurons.voltage] = Array1([0] * neurons.size)
+        state[neurons.refractory_time] = Array1([0] * neurons.size)
+        state[neurons.output] = Array1([0] * neurons.size)
 
     @staticmethod
     def reset(neurons, state):
-        state[neurons.voltage] = [0] * neurons.size
-        state[neurons.refractory_time] = [0] * neurons.size
-        state[neurons.output] = [0] * neurons.size
+        state[neurons.voltage] = Array1([0] * neurons.size)
+        state[neurons.refractory_time] = Array1([0] * neurons.size)
+        state[neurons.output] = Array1([0] * neurons.size)
 
     @staticmethod
-    def step(neurons, old_state, new_state):
-        alpha = old_state[neurons.alpha]
-        j_bias = old_state[neurons.j_bias]
-        voltage = old_state[neurons.voltage]
-        refractory_time = old_state[neurons.refractory_time]
+    def step(neurons, state):
+        alpha = state[neurons.inputs['alpha']]
+        j_bias = state[neurons.inputs['j_bias']]
+        voltage = state[neurons.inputs['voltage']]
+        refractory_time = state[neurons.inputs['refractory_time']]
+        try:
+            input_current = state[neurons.inputs['input_current']]
+        except KeyError:
+            input_current = [0] * neurons.size
+
+        J = [jbi + ici for jbi, ici in zip(j_bias, input_current)]
+        assert len(J) == neurons.size
         tau_rc = neurons.tau_rc
         tau_ref = neurons.tau_ref
-        dt = new_state[API.simulation_time] - old_state[API.simulation_time]
-        J  = j_bias # XXX WRONG MATH
-        new_voltage = [0] * neurons.size
-        new_refractory_time = [0] * neurons.size
-        new_output = [0] * neurons.size
+        dt = state[API.simulation_time] - state[API.simulation_time.delayed()]
+        
+        new_voltage = Array1([0] * neurons.size)
+        new_refractory_time = Array1([0] * neurons.size)
+        new_output = Array1([0] * neurons.size)
 
         def clip(a, low, high):
             if a < low:
@@ -354,10 +389,38 @@ class LIFNeurons(ImplBase):
             new_output[ii] = spiked
 
 
-        new_state[neurons.alpha] = alpha
-        new_state[neurons.j_bias] = j_bias
-        new_state[neurons.voltage] = new_voltage
-        new_state[neurons.refractory_time] = new_refractory_time
-        new_state[neurons.output] = new_output
+        state[neurons.outputs['alpha']] = alpha
+        state[neurons.outputs['j_bias']] = j_bias
+        state[neurons.outputs['voltage']] = new_voltage
+        state[neurons.outputs['refractory_time']] = new_refractory_time
+        state[neurons.outputs['X']] = new_output
 
 
+@register_impl
+class Connection(ImplBase):
+    @staticmethod
+    def reset(self, state):
+        src = state[self.inputs['X']]
+        dst = src.copy()
+        state[self.outputs['X']] = dst
+
+    @staticmethod
+    def step(self, state):
+        src = state[self.inputs['X']]
+        dst = src.copy()
+        state[self.outputs['X']] = dst
+
+
+@register_impl
+class Filter(ImplBase):
+    @staticmethod
+    def reset(self, state):
+        state[self.output] = Array1([0] * self.output.size)
+
+    @staticmethod
+    def step(self, state):
+        X_prev = state[self.inputs['X_prev']]
+        var = state[self.inputs['var']]
+        assert len(X_prev) == len(var) == self.output.size
+        state[self.output] = Array1(
+            [xi + self.tau * vi for xi, vi in zip(X_prev, var)])

@@ -60,7 +60,7 @@ class Gaussian(Distribution):
 #
 
 class Var(object):
-    def __init__(self, name=None, size=1, dtype=float, shape=None):
+    def __init__(self, name=None, size=None, dtype=float, shape=None):
         """
         A variable that will contain some numeric data.
 
@@ -79,6 +79,14 @@ class Var(object):
         self.size = size
         self.dtype = dtype
         self.shape = shape
+        if shape is None:
+            if size is None:
+                raise TypeError('size arg is required')
+        else:
+            _size = reduce(lambda a, b: a * b, shape, 1)
+            if size is not None and _size != size:
+                raise ValueError('shape and size are inconsistent')
+            self.size = _size
 
     def __str__(self):
         clsname = self.__class__.__name__
@@ -150,7 +158,7 @@ class Filter(Node):
         """
         Node.__init__(self)
         self.tau = tau
-        self.outputs['X'] = Var()
+        self.outputs['X'] = Var(size=var.size)
         self.inputs['X_prev'] = self.outputs['X'].delayed()
         self.inputs['var'] = var
 
@@ -327,7 +335,8 @@ class TimeNode(Node):
         Node.__init__(self)
         self.func = func
         if output is None:
-            output = Var()
+            # TODO: call func(0) to measure output?
+            output = Var(shape=())
         self.outputs['X'] = output
         self.inputs['time'] = simulation_time
         if output.name is None:
@@ -361,7 +370,7 @@ class RandomConnection(Connection):
 class LearnedConnection(Connection):
     def __init__(self, src, dst):
         Connection.__init__(self, src, dst)
-        self.outputs['error_signal'] = Var()
+        self.outputs['error_signal'] = Var(shape=())
 
     @property
     def error_signal(self):
@@ -410,19 +419,20 @@ class hPES_Connection(LearnedConnection):
 # Simulator
 #
 
-simulation_time = Var('time')
-simulation_stop_now = Var('stop_when')
+simulation_time = Var('time', shape=())
+simulation_stop_now = Var('stop_when', shape=())
 
 
 class SimulatorBase(object):
     _backends = {}
 
-    def __init__(self, network):
+    def __init__(self, network, dt):
         self.network = network
-        self.simulation_time = 0.0
+        self.dt = dt
+        self.simulation_steps = 0
 
     def reset(self):
-        self.simulation_time = 0.0
+        self.simulation_steps = 0
 
     def run_steps(self, steps, dt):
         """
@@ -430,6 +440,10 @@ class SimulatorBase(object):
         to a list of either lists or arrays.
         """
         raise NotImplementedError('Use a simulator subclass')
+
+    @property
+    def simulation_time(self):
+        return self.simulation_steps * self.dt
 
 def Simulator(*args, **kwargs):
     backend = kwargs.pop('backend', 'reference')
@@ -443,3 +457,4 @@ def Simulator(*args, **kwargs):
                 ' import the python module that implements that backend?' %
                 backend, SimulatorBase._backends.keys())
     return SimulatorBase._backends[backend](*args, **kwargs)
+
