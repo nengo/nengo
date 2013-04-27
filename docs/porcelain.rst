@@ -12,6 +12,9 @@ to construct ensembles and connect them together.
 This API should be sufficient for 90% of models
 created using Nengo.
 
+For the remaining 10% of use cases, have a look 
+at the lower-level TODO documentation.
+
 nengo.nef.Network
 -----------
 

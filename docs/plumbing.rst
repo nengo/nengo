@@ -3,7 +3,7 @@ Advanced API
 ============
 
 The Nengo API operates on two levels.
-This page describes the more complicated low-level interface
+This page describes the more primitive (but flexible) low-level interface
 for creating neural simulations using Nengo.
 
 This API is designed for more experienced
