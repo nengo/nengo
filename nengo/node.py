@@ -80,11 +80,11 @@ class Node(object):
             try:
                 func()
                 fixed_func = lambda : func() #wrap it in a python function
-            except ValueError: #thrown if parameters are wrong in func() call above
+            except (ValueError,TypeError): #thrown if parameters are wrong in func() call above
                 try:
                     func(0.0)
                     fixed_func = lambda t : func(t)
-                except ValueError:
+                except (ValueError,TypeError):
                     print "Function must accept either 0 or 1 arguments"
                     return None
         

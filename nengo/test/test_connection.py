@@ -4,11 +4,9 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-#math.sin()
-
 m = nengo.Model("test_connection")
 
-input = m.make_node("input", lambda x: [math.sin(x)])
+input = m.make_node("input", math.sin)
 
 pop1 = m.make_ensemble("pop1", 100, 1)
 pop2 = m.make_ensemble('pop2', 50, 1)
