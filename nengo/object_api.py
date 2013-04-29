@@ -33,27 +33,36 @@ class SelfDependencyError(Exception):
 
 
 class MultipleSourceError(Exception):
-    """A variable at time t cannot be the output of multiple nodes"""
+    """A variable at time t cannot be the output of multiple nodes."""
 
 
 class Distribution(object):
+    """
+    Base class for random distributions (e.g. Uniform, Gaussian)
+    """
     @property
     def dist_name(self):
         return self.__class__.__name__.lower()
 
 
 class Uniform(Distribution):
-    def __init__(self, low, high, seed=None):
+    """Specification of a uniformly-distributed random number stream
+    """
+    def __init__(self, low, high, seed=None, generator=None):
         self.low = low
         self.high = high
         self.seed = seed
+        self.generator = generator
 
 
 class Gaussian(Distribution):
-    def __init__(self, mean, std, seed=None):
+    """Specification of a Gaussian-distributed random number stream
+    """
+    def __init__(self, mean, std, seed=None, generator=None):
         self.mean = mean
         self.std = std
         self.seed = seed
+        self.generator = generator
 
 #
 # Top-level objects and containers
@@ -62,7 +71,16 @@ class Gaussian(Distribution):
 class Var(object):
     def __init__(self, name=None, size=None, dtype=float, shape=None):
         """
-        A variable that will contain some numeric data.
+        Var represents a dynamic model element (e.g. membrane potential,
+        adaptive weights), which is generally a multi-dimensional array of
+        numbers at each time step of model simulation.
+
+        The inputs and outputs of a model component (Node) are instances of either
+        * Var (this class)
+        * DelayedVar (created by this class's .delayed() function)
+
+        Var refers to a dynamic model element at the *current* timestep.
+        DelayedVar refers to a dynamic model element at the *previous* timestep.
 
         Parameters
         ----------
@@ -103,9 +121,16 @@ class Var(object):
 
 
 class DelayedVar(object):
+    """
+    DelayedVar stands for a dynamic model quantity (see Var) but from the
+    previous simulator time step, rather than the current time step.
+    """
+
     def __init__(self, var, delay):
         self.var = var
         self.delay = delay
+        if self.delay != 1:
+            raise NotImplementedError('do we need this case?')
 
     @property
     def name(self):
@@ -125,6 +150,14 @@ class DelayedVar(object):
 
 
 class Node(object):
+    """
+    A component of a brain model (e.g. Connection, Filter, Population)
+
+    It is generally a function from self.inputs -> self.outputs, which are
+    OrderedDict containers of Var instances.
+
+    The inputs may contain DelayedVar instances, but the outputs may not.
+    """
     def __init__(self):
         self.outputs = OrderedDict()
         self.inputs = OrderedDict()
@@ -138,6 +171,9 @@ class Node(object):
 
 
 class Probe(Node):
+    """
+    Probe: a marker that some Var (target) should be recorded during simulation.
+    """
     def __init__(self, target):
         Node.__init__(self)
         self.inputs['target'] = target
@@ -151,6 +187,9 @@ class Probe(Node):
 
 
 class Filter(Node):
+    """
+    TODO: rename this to ExponentialFilter, it is not a general base class.
+    """
     tau=.02
     def __init__(self, var, tau=tau):
         """
@@ -167,6 +206,9 @@ class Filter(Node):
 
 
 class Adder(Node):
+    """
+    This model component simply adds up its inputs to produce one output.
+    """
     def __init__(self, size, args=()):
         Node.__init__(self)
         for ii, arg in enumerate(args):
@@ -178,6 +220,9 @@ class Adder(Node):
 
 
 class Connection(Node):
+    """
+    A Connection (Base instance) simply copies a signal from src -> dst
+    """
     def __init__(self, src, dst):
         """
         Parameters
@@ -202,11 +247,21 @@ class Connection(Node):
 
 
 class Network(object):
+    """
+    A Network is a container for the various Node instances that make up
+    a neural model.  It can be used (a) as a container to to  keep track of
+    Node instances, and (b) as the argument to configure a Simulator (see
+    below).
+
+    A Network can contain sub-networks (self.networks). The `all_*` properties
+    recursively extract elements from those sub-networks, to provide a flattened
+    view of the network.
+    """
     def __init__(self):
         self.probes = []
         self.connections = []
         self.nodes = []
-        self.networks = []
+        self.networks = OrderedDict()
         self.filters = []
 
     def add(self, thing):
@@ -258,6 +313,10 @@ class Network(object):
 
 
 class Neurons(Node):
+    """
+    Neurons is a convenience base-class for subclasses that implement Neuron
+    populations.
+    """
     def __init__(self, size, input_current=None):
         """
         :param int size:
@@ -278,6 +337,9 @@ class Neurons(Node):
 
 
 class LIFNeurons(Neurons):
+    """
+    LIFNeurons represents a population of LIF neurons.
+    """
     # -- N.B. does not include input_current
     _input_names = ['alpha', 'j_bias', 'voltage', 'refractory_time']
 
@@ -331,6 +393,9 @@ class LIFNeurons(Neurons):
 
 
 class TimeNode(Node):
+    """
+    TimeNode represents a function of the simulator time.
+    """
     def __init__(self, func, output=None, name=None):
         Node.__init__(self)
         self.func = func
@@ -345,6 +410,9 @@ class TimeNode(Node):
 
 
 class PiecewiseNode(Node):
+    """
+    PiecewiseNode represents a piecewise function of a scalar-valued input.
+    """
     def __init__(self, table):
         """
         Parameters
@@ -359,6 +427,10 @@ class PiecewiseNode(Node):
 #
 
 class RandomConnection(Connection):
+    """
+    RandomConnection represents a randomly-generated all-to-all linear signal
+    transformation (aka random projection).
+    """
     def __init__(self, src, dst, dist):
         Connection.__init__(self, src, dst)
         self.dist = dist
@@ -368,6 +440,10 @@ class RandomConnection(Connection):
 
 
 class LearnedConnection(Connection):
+    """
+    LearnedConnection is a convenience base class for Connections that evolve
+    in order to minimize a scalar-valued error signal.
+    """
     def __init__(self, src, dst):
         Connection.__init__(self, src, dst)
         self.outputs['error_signal'] = Var(shape=())
@@ -378,6 +454,11 @@ class LearnedConnection(Connection):
 
 
 class MSE_MinimizingConnection(LearnedConnection):
+    """
+    MSE_MinimizingConnection is a Connection that adapts to 
+    minimize the mean-squared-error between its output and a target
+    signal.
+    """
     def __init__(self, src, dst, target, learning_rate=0.01):
         LearnedConnection.__init__(self, src, dst)
         self.inputs['target'] = target
@@ -392,6 +473,10 @@ class MSE_MinimizingConnection(LearnedConnection):
 
 
 class hPES_Connection(LearnedConnection):
+    """
+    hPES_Connection is a Connection that adapts to 
+    minimize something that I don't yet understand (XXX).
+    """
     theta_tau = 0.02
     unsupervised_rate_factor = 10.
     supervision_ratio = 1.0
@@ -420,10 +505,27 @@ class hPES_Connection(LearnedConnection):
 #
 
 simulation_time = Var('time', shape=())
+"""simulation_time stands for the total elapsed time within a brain simulation
+"""
+
 simulation_stop_now = Var('stop_when', shape=())
+"""simulation_stop_now can be the output of one model component (Node), and
+if it is ever non-zero, the Simulator will finish the current time-step and
+stop.
+"""
 
 
 class SimulatorBase(object):
+    """ A Simulator evaluates a brain model, as expressed by a Network.
+    It will simulate it by fixed time steps of size (dt) seconds.
+
+    Calling run_steps will step the simulator forward from time 0, and return
+    the values of all probed Vars in a dictionary of sequences.
+
+    Calling reset() will move the simulator back to time 0, and prepare it to
+    run forward again.  The result of run_steps after a reset should be
+    identical to the first time that the simulator ran.
+    """
     _backends = {}
 
     def __init__(self, network, dt):
@@ -446,6 +548,10 @@ class SimulatorBase(object):
         return self.simulation_steps * self.dt
 
 def Simulator(*args, **kwargs):
+    """
+    Factory method for creating a simulator.
+
+    """
     backend = kwargs.pop('backend', 'reference')
     if backend not in SimulatorBase._backends:
         if backend == 'reference':
