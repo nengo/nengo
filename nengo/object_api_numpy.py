@@ -17,6 +17,18 @@ from object_api_python import ImplBase
 class Simulator(API_PY.Simulator):
 
     # These classes create a new registry (distinct from parent class)
+    #
+    # The register_impl decorators populate these dictionaries so that
+    #
+    # e.g.:
+    #  build_registry[API.TimeNode] = TimeNode.build
+    # 
+    # These registries are used by the Simulator implementation in
+    # object_api_python to build, reset, step, etc. all of the model elements.
+    #
+    # This numpy simulator [currently] re-uses the same SimulatorState that's
+    # used for the Pure-python simulator, and the build, reset, step functions
+    # have the signatures that the Pure-python simulator expects.
     impl_registry = {}
     build_registry = {}
     reset_registry = {}
