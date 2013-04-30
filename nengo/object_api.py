@@ -336,20 +336,20 @@ class Neurons(Node):
         return self._input_current
 
 
-class LIFNeurons(Neurons):
-    """
-    LIFNeurons represents a population of LIF neurons.
-    """
-    # -- N.B. does not include input_current
-    _input_names = ['alpha', 'j_bias', 'voltage', 'refractory_time']
+class LIFRateNeurons(Neurons):
+    _tau_rc_default = 0.02
+    _tau_ref_default = 0.002
+    _max_rate_default = Uniform(200, 400)
+    _intercept_default = Uniform(-1, 1)
+    _seed_default = None
 
     def __init__(self, size,
             input_current=None,
-            tau_rc=0.02,
-            tau_ref=0.002,
-            max_rate=Uniform(200, 400),
-            intercept=Uniform(-1, 1),
-            seed=None):
+            tau_rc=_tau_rc_default,
+            tau_ref=_tau_ref_default,
+            max_rate=_max_rate_default,
+            intercept=_intercept_default,
+            seed=_seed_default):
         """
         Parameters
         ----------
@@ -358,17 +358,17 @@ class LIFNeurons(Neurons):
         :param float tau_ref: refractory period length (s)
 
         """
+
         Neurons.__init__(self, size, input_current)
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
         self.max_rate = max_rate
         self.intercept = intercept
         self.seed = seed
-
-        for name in self._input_names:
-            self.outputs[name] = Var(name=name, size=size)
-            self.inputs[name] = self.outputs[name].delayed()
-
+        self.outputs['alpha'] = Var('alpha', size=size)
+        self.outputs['j_bias'] = Var('j_bias', size=size)
+        self.inputs['alpha'] = self.outputs['alpha'].delayed()
+        self.inputs['j_bias'] = self.outputs['j_bias'].delayed()
 
     @property
     def alpha(self):
@@ -377,6 +377,35 @@ class LIFNeurons(Neurons):
     @property
     def j_bias(self):
         return self.outputs['j_bias']
+
+
+class LIFNeurons(LIFRateNeurons):
+    """
+    LIFNeurons represents a population of LIF neurons.
+    """
+
+    def __init__(self, size,
+            input_current=None,
+            tau_rc=LIFRateNeurons._tau_rc_default,
+            tau_ref=LIFRateNeurons._tau_ref_default,
+            max_rate=LIFRateNeurons._max_rate_default,
+            intercept=LIFRateNeurons._intercept_default,
+            seed=LIFRateNeurons._seed_default):
+        """
+        Parameters
+        ----------
+        :param int size: number of neurons in this population
+        :param float tau_rc: the RC time constant
+        :param float tau_ref: refractory period length (s)
+
+        """
+        LIFRateNeurons.__init__(self, size, input_current, tau_rc, tau_ref,
+                                max_rate, intercept, seed)
+
+        self.outputs['voltage'] = Var('voltage', size=size)
+        self.outputs['refractory_time'] = Var('refractory_time', size=size)
+        self.inputs['voltage'] = self.outputs['voltage'].delayed()
+        self.inputs['refractory_time'] = self.outputs['refractory_time'].delayed()
 
     @property
     def voltage(self):
