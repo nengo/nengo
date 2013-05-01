@@ -1,6 +1,9 @@
 import numpy as np
 import collections
 
+from filter import make_filter
+import nengo
+
 def is_probe(obj):
     return isinstance(obj, (ListProbe, ArrayProbe))
 
@@ -34,12 +37,13 @@ class ArrayProbe(object):
     """
     buffer_size = 1000
 
-    def __init__(self, target, sample_every, static):
+    def __init__(self, target, sample_every, static, filter=nengo.pstc(0.01)):
         """
         """
         self.target = target
         self.sample_every = sample_every
         self.static = static
+        self.filter=make_filter(filter, dimensions=target.dimensions)
 
     def _build(self, state, dt):
         """
@@ -71,7 +75,8 @@ class ArrayProbe(object):
                                          + self.data.shape[1:])])
 
             # record the filtered value
-            self.data[self.i+1:i_samp+1] = old_state[self.target].flatten()
+            self.data[self.i+1:i_samp+1] = \
+                self.filter.filter(dt=dt, signal=old_state[self.target]).flatten()
             self.i = i_samp
         self.simtime += dt
 

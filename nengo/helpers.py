@@ -54,7 +54,7 @@ def gen_transform(dim_pre, dim_post, weight=1,
         return transform
 
 def pstc(tau):
-    return {'type':"ExponentialPSC", pstc:tau}
+    return {'type':"ExponentialPSC", 'pstc':tau}
 
 def uniform(low, high):
     return {'type':'uniform', 'low':low, 'high':high}

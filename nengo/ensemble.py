@@ -241,7 +241,7 @@ class SpikingEnsemble(BaseEnsemble):
             samples = samples.T * scale 
 
             eval_points = samples
-            eval_points = np.arange(-1,1,.01).reshape(1,200)
+            eval_points = np.arange(-1,1,.005).reshape(1,400)
             self.num_samples = eval_points.shape[1]
 
         else:
@@ -288,19 +288,21 @@ class SpikingEnsemble(BaseEnsemble):
             # simulate neurons for .25 seconds to get startup 
             # transient out of the way
             state = {}
-            for t in range(int(.1/dt)): 
+            for t in range(int(.25/dt)): 
                 self.neuron_model._step(state, J[:,i], dt)
 
             # run the neuron model for 1 second,
             # accumulating spikes to get a spike rate
-            num_time_samples = int(0.5/dt)
+            num_time_samples = int(2.0/dt)
             firing_rates = np.zeros((self.neuron_model.size, num_time_samples), dtype='float')
             for t in range(num_time_samples): 
                 firing_rates[:,t] = self.neuron_model._step(state, J[:,i], dt)
 
             # TODO: np.mean instead?
-            A[:,i] = np.sum(firing_rates, axis=1) / 0.5
+            A[:,i] = np.sum(firing_rates, axis=1) / 2.0
             self.neuron_model._reset(state)
+
+        import pdb; pdb.set_trace()
 
         # add noise to elements of A
         # std_dev = max firing rate of population * .1
@@ -336,12 +338,13 @@ class SpikingEnsemble(BaseEnsemble):
         
         # compute decoders - least squares method 
         decoders = np.dot(Ginv, U)
+    
+        import pdb; pdb.set_trace()
 
         return decoders
 
     def get(self, name):
-        search = [x for x in self.outputs if x.name == name] + \
-                [self for x in self.vector_inputs+self.neuron_inputs if x.post == self.name + ":" + name]
+        search = [x for x in self.outputs if x.name == name]
         if len(search) > 1:
             print "Warning, found more than one object with same name"
         if len(search) == 0:
@@ -429,7 +432,8 @@ class SpikingEnsemble(BaseEnsemble):
 
         # compute the decoded origin decoded_input from the neuron output
         for i,o in enumerate(self.outputs):
-            new_state[o] = np.dot(self.spikes, self.decoders[i]).flatten()
+            new_state[o] = np.dot(self.spikes, self.decoders[i] / dt).flatten()
+            #if np.sum(new_state[o]) > 0: import pdb; pdb.set_trace()
 
 def Ensemble(*args, **kwargs):
     if kwargs.pop('mode', 'spiking') == 'spiking':

@@ -29,7 +29,7 @@ def make_connection(pre, post,
             " and neuron space arguments (weights).")
 
     if filter: 
-        filter = make_filter(filter)
+        filter = make_filter(filter, dimensions=pre.dimensions)
         
     if weights == None: 
         return VectorConnection(pre, post, transform, function, filter, learning_rule)
@@ -72,8 +72,8 @@ class VectorConnection(Connection):
         pre_in = state[self.pre]
         if self.transform:
             pre_in = np.dot(self.transform, pre_in)
-        '''if self.filter: 
-            pre_in = self.filter.filter(dt, source=pre_in)'''
+        if self.filter: 
+            pre_in = self.filter.filter(signal=pre_in, dt=dt)
         return pre_in
     
     def learn(self, dt):

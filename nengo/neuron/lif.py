@@ -40,7 +40,7 @@ class LIFNeuron(Neuron):
 
     def _reset(self, state):
         # reset internal states
-        self.voltage = np.zeros(self.size)
+        self.voltage = np.random.uniform(size=self.size) #np.zeros(self.size)
         self.refractory_time = np.zeros(self.size)
 
     def _step(self, new_state, J, dt):
@@ -64,18 +64,18 @@ class LIFNeuron(Neuron):
         post_ref = 1.0 - (self.refractory_time - dt) / dt
 
         # set any post_ref elements < 0 = 0, and > 1 = 1
-        v *= np.clip(post_ref, 0, 1)
+        v *= np.clip(post_ref, 0.0, 1.0)
         
         # determine which neurons spike
         # if v > 1 set spiked = 1, else 0
         spiked = np.zeros(len(v), dtype='float')
-        spiked[v > 1] = 1.0
+        spiked[v > 1.0] = 1.0
         
         # adjust refractory time (neurons that spike get
         # a new refractory time set, all others get it reduced by dt)
 
         # linearly approximate time since neuron crossed spike threshold
-        overshoot = (v - 1) / dV 
+        overshoot = (v - 1.0) / dV 
         spiketime = dt * (1.0 - overshoot)
 
         # adjust refractory time (neurons that spike get a new
@@ -83,10 +83,7 @@ class LIFNeuron(Neuron):
         new_refractory_time = np.where(spiked, 
             spiketime + self.tau_ref, self.refractory_time - dt)
 
-        # return an ordered dictionary of internal variables to update
-        # (including setting a neuron that spikes to a voltage of 0)
-
-        self.voltage = v * (1 - spiked)
+        self.voltage = v * (1.0 - spiked)
         self.refractory_time = new_refractory_time
         # store in the state variable
         new_state[self.spikes] = spiked 

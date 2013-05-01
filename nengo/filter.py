@@ -2,18 +2,18 @@ import collections
 
 import numpy as np
 
-def make_filter(parameters):
+def make_filter(parameters, dimensions):
 
     parameters = parameters.copy()
     filter_type = parameters.pop('type').lower() 
 
-    if filter_type == 'exponentialpstc':
-        return ExponentialPSTC(parameters)
+    if filter_type == 'exponentialpsc':
+        return ExponentialPSC(pstc=parameters['pstc'], dimensions=dimensions)
 
-class ExponentialPSTCFilter:
+class ExponentialPSC:
     """Filter an arbitrary value"""
 
-    def __init__(self, pstc, name=None, source=None, dimension=None):
+    def __init__(self, pstc, name=None, dimensions=None):
         """
         :param float pstc:
         :param string name:
@@ -22,27 +22,16 @@ class ExponentialPSTCFilter:
         :param tuple shape:
         """
         self.pstc = pstc
-        self.source = source
-        if source == None:
-            if dimension == None:
-                raise Exception("Must pass a dimension to filter if no source given")
-            self.value = np.array([0.0 for i in range(dimension)])
-        else:
-            self.value = np.array([0.0 for i in range(source.shape[0])])
-        
+        self.value = np.zeros(dimensions)
 
-    def filter(self, dt, source=None):
+    def filter(self, signal, dt):
         """
         :param float dt: the timestep of the update
         """
-        if self.source:
-            source_input = self.source
-        else:
-            source_input = source
         
         if self.pstc >= dt:
-            decay = np.cast(np.exp(-dt / self.pstc), self.value.dtype)
-            value_new = decay * self.value + (1 - decay) * source_input
+            decay = np.exp(-dt / self.pstc)
+            value_new = decay * self.value + (1 - decay) * signal
             self.value = value_new
 
         return self.value
