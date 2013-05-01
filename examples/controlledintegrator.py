@@ -1,6 +1,6 @@
-from .. import nengo as nengo
-from ..nengo.connection import gen_transfrom
-from ..nengo.filter import ExponentialPSC
+import nengo
+from nengo.helpers import gen_transform
+from nengo.helpers import pstc
 
 ## This example demonstrates how to create a controlled integrator in neurons.
 ##   The controlled integrator takes two inputs: 
@@ -64,19 +64,19 @@ model.make_ensemble('A', 225, 2,                    # Make a population with 225
                                                     #   inputs
 
 # Create the connections within the model
-model.connect('Input', 'A', transform = gen_transform(index_post = 0, weight = tau), 
-              filter = {'type': 'ExponentialPSC', 'pstc': 0.1})  
+model.connect('Input', 'A', transform = gen_transform(1, 2, index_post = 0, weight = tau), 
+              filter = pstc(0.1))  
                                                     # Connect all the input signals to the 
                                                     #   ensemble with the appropriate 1 x 2
                                                     #   mappings, postsynaptic time
                                                     #   constant is 10ms
-model.connect('Control', 'A', transform = gen_transform(index_post = 1), 
-              filter = {'type': 'ExponentialPSC', 'pstc': 0.1})
+model.connect('Control', 'A', transform = gen_transform(1, 2, index_post = 1), 
+              filter = pstc(0.1))
 
 def feedback(x):
     return x[0] * x[1]
-model.connect('A', 'A', transform = gen_transform(index_post = 0), func = feedback, 
-              filter = {'type': 'ExponentialPSC', 'pstc': tau})  
+model.connect('A', 'A', transform = gen_transform(2, 2, index_post = 0), func = feedback, 
+              filter = pstc(tau))  
                                                     # Create the recurrent
                                                     #   connection mapping the
                                                     #   1D function 'feedback'

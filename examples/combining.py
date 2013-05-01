@@ -1,5 +1,5 @@
-from .. import nengo as nengo
-from ..nengo.connection import gen_transform
+import nengo
+from nengo.helpers import gen_transform
 
 ## This example demonstrates how to create a neuronal ensemble that will combine two 1-D
 ##   inputs into one 2-D representation.
@@ -39,9 +39,9 @@ model.make_ensemble('C', 100, 2,        # Make a population with 100 neurons, 2 
 model.connect('Input A', 'A')           # Connect the inputs to the appropriate neuron
 model.connect('Input B', 'B')           #   populations (default connection is identity)
 
-model.connect('A', 'C', gen_transform(index_post = 0))    
+model.connect('A', 'C', gen_transform(1, 2, index_post = 0))    
                                         # Connect with A to the first dimension of C
-model.connect('B', 'C', gen_transform(index_post = 1))
+model.connect('B', 'C', gen_transform(1, 2, index_post = 1))
                                         # Connect with B to the second dimension of C
 
 # Build the model

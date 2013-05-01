@@ -1,4 +1,4 @@
-from .. import nengo as nengo
+import nengo
 
 ## This example demonstrates how to create a neuronal ensemble that can add the values
 ##   represented in two preceding populations. 

@@ -1,5 +1,4 @@
-from .. import nengo as nengo
-from ..nengo.connection import gen_transform
+import nengo
 
 ## This example demonstrates how to create a neuronal ensemble that acts as an oscillator.
 ##   In this example, the oscillatory is a 2-D ring oscillator. The function an integrator 

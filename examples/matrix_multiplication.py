@@ -1,6 +1,6 @@
-from .. import nengo as nengo
-from ..nengo.networks import array
-from ..nengo.connection import gen_transform
+import nengo
+from nengo.networks import array
+from nengo.helpers import gen_transform
 
 ## This example demonstrates how to create a neural model to perform a matrix multiplication
 ##   on arbitrarily sized matricies.

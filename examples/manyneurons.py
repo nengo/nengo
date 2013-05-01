@@ -1,4 +1,4 @@
-from .. import nengo as nengo
+import nengo
 
 ## This example demonstrates how to create a neuronal ensemble that represents a one
 ##   dimensional signal. The population of neurons is configured to receive random

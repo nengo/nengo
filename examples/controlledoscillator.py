@@ -1,5 +1,5 @@
-from .. import nengo as nengo
-from ..nengo.connection import gen_transform
+import nengo
+from nengo.helpers import gen_transform
 
 ## This example demonstrates how to create a neuronal ensemble that acts as an oscillator.
 ##   In this example, the oscillatory is a 2-D ring oscillator. The function an integrator 
@@ -50,10 +50,10 @@ model.make_ensemble('A', 500, 3,                # Make a population with 500 neu
                     radius = 1.7)               # and a radius of 1.7
 
 # Create the connections within the model
-model.connect('Input', 'A', transform = gen_transform(index_post = [0,1]))
+model.connect('Input', 'A', transform = gen_transform(1, 3, index_post = [0,1]))
                                                 # Connect the input population to the first 2
                                                 #   dimensions of the oscillator
-model.connect('Speed', 'A', transform = gen_transform(index_post = [2]))
+model.connect('Speed', 'A', transform = gen_transform(1, 3, index_post = [2]))
                                                 # Connect the speed control to the third dimension
                                                 #   of the oscillator
 
@@ -62,7 +62,7 @@ def controlled_path(x):                         # Define the nonlinear interacti
             x[1] - x[2] * speed * tau * x[0], 
             0]
 
-model.connect('A', 'A', func = controlled_path, filter = {'type': 'ExponentialPSC', 'pstc': tau})
+model.connect('A', 'A', func = controlled_path, filter = pstc(tau))
                                                 # Recurrently connect the population 
                                                 #   with the defined function for controlling
                                                 #   the oscillator

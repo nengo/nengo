@@ -1,5 +1,5 @@
-from .. import nengo as nengo
-from ..nengo.networks import array
+import nengo
+from nengo.networks import array
 
 ## This example demonstrates how to create a neuronal network array that can represent a 
 ##   two-dimensional signal. A neuronal network array is a collection of neuronal ensembles,

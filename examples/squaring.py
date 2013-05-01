@@ -1,4 +1,4 @@
-from .. import nengo as nengo
+import nengo
 
 ## This example demonstrates computing a nonlinear function (squaring) in neurons.
 ##

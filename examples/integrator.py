@@ -1,6 +1,6 @@
-from .. import nengo as nengo
-from ..nengo.connection import gen_transfrom
-from ..nengo.filter import ExponentialPSC
+import nengo
+from nengo.helpers import gen_transform
+from nengo.helpers import pstc
 
 ## This example demonstrates how to create an integrator in neurons.
 ##   The function an integrator implements can be written in the 
@@ -43,9 +43,9 @@ model.make_ensemble('A', 100, 1)                    # Make a population with 100
 
 # Create the connections within the model
 model.connect('Input', 'A', transform = tau,        # Connect the input to the integrator, 
-              filter = 0.1)                         #   scaling the input by tau_feedback with 
+              filter = pstc(0.1))                   #   scaling the input by tau_feedback with 
                                                     #   a postsynaptic time constant of 10ms
-model.connect('A', 'A', filter = tau)
+model.connect('A', 'A', filter = pstc(tau))
                                                     # Connect the population to itself with the 
                                                     #   default weight of 1
 

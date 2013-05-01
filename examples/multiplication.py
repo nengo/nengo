@@ -1,5 +1,5 @@
-from .. import nengo as nengo
-from ..nengo.connection import gen_transform
+import nengo
+from nengo.helpers import gen_transform
 
 ## This example demonstrates how to create a neuronal ensemble that will combine two 1-D
 ##   inputs into one 2-D representations, and perform the multiplication of the two
@@ -51,9 +51,9 @@ model.make_ensemble('D', 100, 1, radius = 100)  # Make a population with 100 neu
 # Create the connections within the model
 model.connect('Input A', 'A')                   # Connect all the relevant objects
 model.connect('Input B', 'B')
-model.connect('A', 'C', transform = gen_transform(index_post = 0)) 
+model.connect('A', 'C', transform = gen_transform(1, 2, index_post = 0)) 
                                                 # Connect with A to the first dimension of C
-model.connect('B', 'C', transform = gen_transform(index_post = 1)) 
+model.connect('B', 'C', transform = gen_transform(1, 2, index_post = 1)) 
                                                 # Connect with B to the second dimension of C
 
 def product(x):                                 # Define the product function

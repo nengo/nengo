@@ -1,4 +1,4 @@
-from .. import nengo as nengo
+import nengo
 
 ## This example demonstrates how to create a neuronal ensemble that behaves like
 ## a communication channel (leaves input unchanged)

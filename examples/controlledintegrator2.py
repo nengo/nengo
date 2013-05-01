@@ -1,6 +1,6 @@
-from .. import nengo as nengo
-from ..nengo.connection import gen_transfrom
-from ..nengo.filter import ExponentialPSC
+import nengo
+from nengo.helpers import gen_transform
+from nengo.helpers import pstc
 
 ##   The controlled integrator takes two inputs: 
 ##      Input - the input to the integrator
@@ -52,19 +52,19 @@ model.make_ensemble('A', 225, 2,                    # Make a population with 225
 # Create the connections within the model
 tau = 0.1
 model.connect('Input', 'A', transform = [[tau], [0]], 
-              filter = {'type': 'ExponentialPSC', 'pstc': 0.1})  
+              filter = pstc(0.1))  
                                                     # Connect all the input signals to the 
                                                     #   ensemble with the appropriate 1 x 2
                                                     #   mappings, postsynaptic time
                                                     #   constant is 10ms
 model.connect('Control', 'A', transform = [[0], [1]], 
-              filter = {'type': 'ExponentialPSC', 'pstc': 0.1}) 
+              filter = pstc(0.1)) 
 
 def feedback(x):
     return x[0] * x[1] + x[0]                       # Note: This is different than the other c
                                                     #   controlled integrator
 model.connect('A', 'A', transform = [[1], [0]], func = feedback, 
-              filter = {'type': 'ExponentialPSC', 'pstc': tau}) 
+              filter = pstc(tau)) 
                                                     # Create the recurrent
                                                     #   connection mapping the
                                                     #   1D function 'feedback'
