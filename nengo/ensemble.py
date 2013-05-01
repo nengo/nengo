@@ -194,7 +194,9 @@ class SpikingEnsemble(BaseEnsemble):
         self.neuron_inputs += [connection]
 
     def add_output(self, func):
-        self.outputs += [ Output(name=func.__name__, 
+        func = nengo.fix_function(func)
+        
+        self.outputs += [ Output(name=self.name + ":" + func.__name__, 
             dimensions=func(np.zeros(self.dimensions)).shape[0]) ]
         self.output_funcs += [func]
         
@@ -274,6 +276,8 @@ class SpikingEnsemble(BaseEnsemble):
             if len(target_values.shape) < 2:
                 target_values.shape = target_values.shape[0], 1
             target_values = target_values.T
+            
+            print "initial size", target_values.shape
         
         # compute the input current for every neuron and every sample point
         J = np.dot(self.encoders, eval_points)
@@ -327,6 +331,7 @@ class SpikingEnsemble(BaseEnsemble):
         # np.multiply is very fast element-wise multiplication
         Ginv = np.dot(v, np.multiply(w[:, np.newaxis], v.T)) 
         
+        print A.shape, target_values.T.shape
         U = np.dot(A, target_values.T)
         
         # compute decoders - least squares method 

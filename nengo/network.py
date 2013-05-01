@@ -1,9 +1,10 @@
 import inspect
 import numpy as np
+import math
 
 from . import ensemble
 from . import probe
-from . import node
+import node
 
 from ensemble import SpikingEnsemble
 from output import Output
@@ -179,26 +180,22 @@ class Network():
         if isinstance(obj, basestring):
             obj = self.get(obj)
 
-        if not isinstance(obj, Output):
-            #then the obj is an ensemble or node (i.e. no specific output
-            #was specified)
-            
-            #try to load default output
-            o = obj.get(obj.name + ":output")
-            
-            if not isinstance(o, Output):
-                #we need to create a new output and add it to the object
-
-                #use identity function if func not given
-                if func == None:
-                    def output(val):
-                        return val
-                    func = output
-                
-                #add new output to pre with given function
-                o = obj.add_output(func)
+        if isinstance(obj, Output):
+            o = obj
         else:
-            o = obj 
+            #then the obj is an ensemble or node (i.e. no specific output
+            #was given)
+            
+            if func != None:
+                o = obj.add_output(func)
+            else:
+                #try to load default output
+                o = obj.get(obj.name + ":output")
+                
+                if not isinstance(o, Output):
+                    #then create the default output and add it to the object
+                    o = obj.add_output(lambda x: np.asarray(x))
+                    
         return o
 
     def get_object(self, name):

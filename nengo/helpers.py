@@ -1,4 +1,6 @@
 import numpy as np
+import math
+import inspect
 
 def gen_transform(dim_pre, dim_post, weight=1,
                           index_pre=None, index_post=None, transform=None):
@@ -64,3 +66,53 @@ def sample_pdf(params, size):
         return np.random.normal(size=size, loc=params["mean"], scale=params["variance"])
     else:
         print "Unrecognized pdf type"
+        
+def fix_function(func):
+    """Takes a given function and wraps it so that it is always returns an nparray"""
+        
+    #if it's a lambda function, change the name to "output" (for ease of use
+    #when referring to the output later)
+    if func.__name__ == "<lambda>":
+        func.__name__ = "output"
+        
+    name = func.__name__
+    
+    python_func = func
+    if isinstance(func, (type(math.sin),type(np.sin))):
+        #this means func is a python or numpy builtin, so wrap it in a regular
+        #python function so it can be inspected in other places with
+        #the inspect module
+        try:
+            func()
+            func = lambda : func()
+        except (ValueError,TypeError):
+            #this means the func() call failed (func doesn't accept
+            #0 arguments)
+            try:
+                func(0.0)
+                func = lambda t: func(t)
+            except (ValueError,TypeError):
+                print "Function must accept either 0 or 1 arguments"
+                return None
+        
+    num_args = len(inspect.getargspec(python_func).args)
+    
+    array_func = python_func
+            
+    #check if it's returning a float or list rather than an nparray
+    if num_args == 0:
+        result = array_func()
+        if isinstance(result, float):
+            array_func = lambda : np.asarray([python_func()])
+        elif isinstance(result, list):
+            array_func = lambda : np.asarray(python_func())
+    else:
+        result = array_func(0.0)
+        if isinstance(result, float):
+            array_func = lambda t: np.asarray([python_func(t)])
+        elif isinstance(result, list):
+            array_func = lambda t: np.asarray(python_func(t))
+    
+    array_func.__name__ = name
+    
+    return array_func
