@@ -276,8 +276,6 @@ class SpikingEnsemble(BaseEnsemble):
             if len(target_values.shape) < 2:
                 target_values.shape = target_values.shape[0], 1
             target_values = target_values.T
-            
-            print "initial size", target_values.shape
         
         # compute the input current for every neuron and every sample point
         J = np.dot(self.encoders, eval_points)
@@ -301,8 +299,6 @@ class SpikingEnsemble(BaseEnsemble):
             # TODO: np.mean instead?
             A[:,i] = np.sum(firing_rates, axis=1) / 2.0
             self.neuron_model._reset(state)
-
-        import pdb; pdb.set_trace()
 
         # add noise to elements of A
         # std_dev = max firing rate of population * .1
@@ -333,13 +329,10 @@ class SpikingEnsemble(BaseEnsemble):
         # np.multiply is very fast element-wise multiplication
         Ginv = np.dot(v, np.multiply(w[:, np.newaxis], v.T)) 
         
-        print A.shape, target_values.T.shape
         U = np.dot(A, target_values.T)
         
         # compute decoders - least squares method 
         decoders = np.dot(Ginv, U)
-    
-        import pdb; pdb.set_trace()
 
         return decoders
 
@@ -347,9 +340,10 @@ class SpikingEnsemble(BaseEnsemble):
         search = [x for x in self.outputs if x.name == name]
         if len(search) > 1:
             print "Warning, found more than one object with same name"
+            return None
         if len(search) == 0:
             print name + " not found in ensemble.get"
-            return self
+            return None
         return search[0]
 
     def make_encoders(self, encoders=None):
@@ -424,7 +418,6 @@ class SpikingEnsemble(BaseEnsemble):
         
         # pass the input current total into the neuron model
         self.spikes = self.neuron_model._step(new_state, J, dt)
-        #import pdb; pdb.set_trace()
     
         # update the weight matrices on learned terminations
         for c in self.vector_inputs+self.neuron_inputs:
@@ -433,7 +426,6 @@ class SpikingEnsemble(BaseEnsemble):
         # compute the decoded origin decoded_input from the neuron output
         for i,o in enumerate(self.outputs):
             new_state[o] = np.dot(self.spikes, self.decoders[i] / dt).flatten()
-            #if np.sum(new_state[o]) > 0: import pdb; pdb.set_trace()
 
 def Ensemble(*args, **kwargs):
     if kwargs.pop('mode', 'spiking') == 'spiking':

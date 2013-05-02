@@ -182,9 +182,8 @@ class Network():
 
         if isinstance(obj, Output):
             o = obj
-        else:
-            #then the obj is an ensemble or node (i.e. no specific output
-            #was given)
+        elif isinstance(obj, (SpikingEnsemble,node.Node)):
+            #then no specific output was specified
             
             if func != None:
                 o = obj.add_output(func)
@@ -194,6 +193,7 @@ class Network():
                 
                 if not isinstance(o, Output):
                     #then create the default output and add it to the object
+                    print "Creating default output"
                     o = obj.add_output(lambda x: np.asarray(x))
                     
         return o
@@ -281,7 +281,7 @@ class Network():
         """
 
         target = self.get(target)
-        if isinstance(target, SpikingEnsemble):
+        if isinstance(target, (SpikingEnsemble,node.Node)):
             target = self.get_object_output(target)
         
         p = probe.ArrayProbe(

@@ -73,6 +73,7 @@ class Node(object):
                 
         if len(search) > 1:
             print "Warning, found more than one object with same name"
+            return None
         if len(search) == 0:
             print name + " not found in node.get"
             return None
