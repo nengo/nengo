@@ -25,6 +25,12 @@ def sample_unit_signal(dimensions, num_samples, rng):
     return samples.T
 
 
+def filter_coefs(pstc, dt):
+    pstc = max(pstc, dt)
+    decay = np.exp(-dt / pstc)
+    return decay, (1.0 - decay)
+
+
 class EnsembleOrigin(object):
     def __init__(self, ensemble, func=None,
             pop_idx=0,
@@ -577,8 +583,6 @@ class Network(object):
                 func=None,
                 transform=1.0,
                 index_post=None):
-        n = 1 # XXX how to know this
-        decoded = self.model.signal(n=n)
         if name1 in self.ensembles:
             src = self.ensembles[name1]
             dst = self.ensembles[name2]
@@ -587,29 +591,41 @@ class Network(object):
             self.model.transform(np.asarray(transform), decoded, dst.sig)
         elif name1 in self.inputs:
             src = self.inputs[name1]
-            dst = self.ensembles[name2]
-            if func is not None:
+            pop_idx = 0 # XXX
+            dst = self.ensembles[name2].input_signals[pop_idx]
+            if func is None:
+                alpha = np.asarray(transform)
+                if alpha.size == 1:
+                    self.model.transform(alpha, src, dst)
+                else:
+                    raise NotImplementedError()
+            else:
                 raise NotImplementedError()
-            self.model.transform(np.asarray(transform), decoded, dst.sig)
         else:
             raise NotImplementedError()
         
     def make_probe(self, name, dt_sample, pstc):
-        src = self.ensembles[name].sig
+        ens = self.ensembles[name]
+        if ens.array_size > 1:
+            raise NotImplementedError()
+        src = ens.origin['X'].sig
         sig = self.model.signal(src.n)
-        # XXX use pstc to calculate decay
-        self.model.filter(.9, sig, sig)
-        self.model.transform(.1, src, sig)
+        tcoef, fcoef = filter_coefs(pstc=pstc, dt=self.dt)
+        self.model.filter(fcoef, sig, sig)
+        self.model.transform(tcoef, src, sig)
         return Probe(self.model.signal_probe(sig, dt_sample),
                      self)
 
-    def run(self, simtime):
+    def _make_simulator(self):
+        sim = self.Simulator(self.model)
+        self.sim = sim
+
+    def run(self, simtime, verbose=False):
         try:
             self.sim
         except:
-            sim = self.Simulator(self.model)
-            self.sim = sim
+            self._make_simulator()
         n_steps = int(simtime // self.dt)
-        self.sim.run_steps(n_steps)
+        self.sim.run_steps(n_steps, verbose=verbose)
 
 

@@ -2,7 +2,7 @@ import numpy as np
 
 
 def lif_step(J, voltage, refractory_time, spiked, dt, tau_rc, tau_ref, upsample):
-    if upsample != 1.0:
+    if upsample != 1:
         raise NotImplementedError()
 
     # Euler's method
@@ -38,7 +38,6 @@ def lif_step(J, voltage, refractory_time, spiked, dt, tau_rc, tau_ref, upsample)
 
     voltage[:] = v * (1 - spiked)
     refractory_time[:] = new_refractory_time
-    
 
 def batch_lif_rates(J, tau_rc, tau_ref):
     A = tau_ref - tau_rc * np.log(1 - 1.0 / np.maximum(J, 0))

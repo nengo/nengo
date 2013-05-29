@@ -1,15 +1,6 @@
 import numpy as np
 
 
-class DuplicateFilter(Exception):
-    """A signal appears as `newsig` in multiple filters.
-
-    This is ambiguous because at simulation time, a filter means
-
-        signals[newsig] <- alpha * signals[oldsig]
-    """
-
-
 class Signal(object):
     def __init__(self, n=1):
         self.n = n
@@ -29,7 +20,7 @@ class Constant(Signal):
 
 class Population(object):
     # XXX rename this to PopulationLIF
-    def __init__(self, n, bias=None, tau_rc=.02, tau_ref=.002):
+    def __init__(self, n, bias=None, tau_rc=.02, tau_ref=.002, upsample=1):
         self.n = n
         if bias is None:
             bias = np.zeros(n)
@@ -40,6 +31,7 @@ class Population(object):
         self.bias = bias
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
+        self.upsample = upsample
 
 
 class Transform(object):
