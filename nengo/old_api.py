@@ -1,7 +1,20 @@
+"""
+old_api.py: adapter for nengo_theano and [Jython] nengo-1.4
+
+The purpose of this emulation layer is to run scripts and tests that were
+written for nengo-1.4 and theano_nengo. Authors are encouraged to use
+the "api.py" file instead of this file for their current work.
+
+"""
+
+# XXX currently this is the *only* API file so there are lots of
+# opportunities for refactoring with a "new api" file as that gets written.
+
 import numpy as np
+
 import base
-import simulator
 from neuron import batch_lif_rates
+import simulator
 
 
 def sample_unit_signal(dimensions, num_samples, rng):
@@ -45,18 +58,21 @@ class EnsembleOrigin(object):
         :param function func:
             the transformation to perform to the ensemble's
             represented values to get the output value
-        
         """
-        babbling_signal = ensemble.babbling_signal[pts_slice].T
+        if ensemble.array_size > 1:
+            raise NotImplementedError()
+        babbling_signal = ensemble.babbling_signal.T
         if func:
             targets = np.asarray(map(func, babbling_signal))
         else:
             targets = babbling_signal
-        n, = targets.shape[1:]
 
-        A = ensemble.babbling_neurons[pop_idx][pts_slice]
+        n, = targets.shape[1:]
+        dt = ensemble.model.dt
+
+        A = ensemble.babbling_neurons[pop_idx] * dt
         b = targets
-        weights, res, rank, s = np.linalg.lstsq(A, b, rcond=rcond)
+        weights, res, rank, s = np.linalg.lstsq(A, b)#, rcond=rcond)
 
         self.sig = ensemble.model.signal(n=n)
         self.decoder = ensemble.model.decoder(
@@ -88,9 +104,7 @@ def make_alpha_bias(max_rates, intercepts, tau_ref, tau_rc):
 
 class Ensemble:
     """An ensemble is a collection of neurons representing a vector space.
-    
     """
-    
     def __init__(self, model, n_neurons, dimensions, dt, tau_ref=0.002, tau_rc=0.02,
                  max_rate=(200, 300), intercept=(-1.0, 1.0), radius=1.0,
                  encoders=None, seed=None, neuron_type='lif',
@@ -233,15 +247,14 @@ class Ensemble:
             # make default origin
             self.add_origin('X', pop_idx=0)
 
-        elif self.mode == 'direct': 
-            
+        elif self.mode == 'direct':
             # make default origin
             self.add_origin('X',
                             dimensions=self.dimensions*self.array_size) 
             # reset n_neurons to 0
             self.n_neurons = 0
 
-    def add_termination(self, name, pstc, 
+    def add_termination(self, name, pstc,
                         decoded_input=None, encoded_input=None):
         """Accounts for a new termination that takes the given input
         (a theano object) and filters it with the given pstc.
@@ -415,9 +428,9 @@ class Ensemble:
                                ).T[:self.n_neurons, :self.dimensions]
             encoders = np.tile(encoders, (self.array_size, 1, 1))
 
-        # normalize encoders across represented dimensions 
-        norm = np.sum(encoders * encoders, axis=2, keepdims=True)
-        self.encoders = encoders / np.sqrt(norm)        
+        # normalize encoders across represented dimensions
+        norm = np.sum(encoders * encoders, axis=2)[:, :, None]
+        self.encoders = encoders / np.sqrt(norm)
 
         # combine encoders and gain for simplification
         self.encoders *= alpha[:, :, None]
@@ -528,13 +541,20 @@ class Probe(object):
 
     def get_data(self):
         sim = self.net.sim
-        return sim.signal_probe_output(self.probe)
+        lst = sim.signal_probe_output(self.probe)
+        rval = np.asarray(lst).reshape(len(lst), -1)
+        return rval
 
 
 class Network(object):
 
-    def __init__(self, name, seed=None, dt=0.001,
-                 Simulator=simulator.Simulator):
+    def __init__(self, name,
+            seed=None,
+            fixed_seed=None,
+            dt=0.001,
+            Simulator=simulator.Simulator):
+        self.seed = seed
+        self.fixed_seed = fixed_seed
         self.model = base.Model(dt)
         self.ensembles = {}
         self.inputs = {}
@@ -570,12 +590,20 @@ class Network(object):
         return rval
 
     def make_array(self, name, *args, **kwargs):
-        rval = Ensemble(self.model, *args, dt=self.dt, **kwargs)
+        seed = kwargs.pop('seed', self.fixed_seed)
+        if seed is None:
+            seed = self.seed
+            self.seed += 1
+        rval = Ensemble(self.model, *args, dt=self.dt, seed=seed, **kwargs)
         self.ensembles[name] = rval
         return rval
 
     def make(self, name, *args, **kwargs):
-        rval = Ensemble(self.model, *args, dt=self.dt, **kwargs)
+        seed = kwargs.pop('seed', self.fixed_seed)
+        if seed is None:
+            seed = self.seed
+            self.seed += 1
+        rval = Ensemble(self.model, *args, dt=self.dt, seed=seed, **kwargs)
         self.ensembles[name] = rval
         return rval
 
@@ -596,25 +624,39 @@ class Network(object):
             if func is None:
                 alpha = np.asarray(transform)
                 if alpha.size == 1:
-                    self.model.transform(alpha, src, dst)
+                    self.model.filter(alpha, src, dst)
                 else:
                     raise NotImplementedError()
             else:
                 raise NotImplementedError()
         else:
             raise NotImplementedError()
-        
+
     def make_probe(self, name, dt_sample, pstc):
-        ens = self.ensembles[name]
-        if ens.array_size > 1:
+        if name in self.ensembles:
+            ens = self.ensembles[name]
+            if ens.array_size > 1:
+                raise NotImplementedError()
+            src = ens.origin['X'].sig
+            if pstc > self.dt:
+                # -- create a new smoothed-out signal
+                fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
+                probe_sig = self.model.signal(src.n)
+                self.model.filter(fcoef, probe_sig, probe_sig)
+                self.model.transform(tcoef, src, probe_sig)
+                return Probe(
+                    self.model.signal_probe(probe_sig, dt_sample),
+                    self)
+            else:
+                return Probe(self.model.signal_probe(src, dt_sample),
+                    self)
+        elif name in self.inputs:
+            src = self.inputs[name]
+            return Probe(self.model.signal_probe(src, dt_sample),
+                self)
+        else:
             raise NotImplementedError()
-        src = ens.origin['X'].sig
-        sig = self.model.signal(src.n)
-        tcoef, fcoef = filter_coefs(pstc=pstc, dt=self.dt)
-        self.model.filter(fcoef, sig, sig)
-        self.model.transform(tcoef, src, sig)
-        return Probe(self.model.signal_probe(sig, dt_sample),
-                     self)
+
 
     def _make_simulator(self):
         sim = self.Simulator(self.model)
