@@ -1,11 +1,14 @@
 """
-base.py: model description classes
+simulator_objects.py: model description classes
 
-These classes are used to describe a nengo model (Model).
+These classes are used to describe a Nengo model to be simulated.
 Model is the input to a *simulator* (see e.g. simulator.py).
 
 """
 import numpy as np
+
+from .nonlinear import registry as nlreg
+
 
 random_weight_rng = np.random.RandomState(12345)
 
@@ -143,50 +146,16 @@ class Constant(Signal):
         self.value = value
 
 
-class Population(object):
-    """A population of LIF neurons"""
-    # XXX rename this to PopulationLIF
-    def __init__(self, n, bias=None, tau_rc=.02, tau_ref=.002, upsample=1):
-        self.n = n
-        if bias is None:
-            bias = np.zeros(n)
-        else:
-            bias = np.asarray(bias, dtype=np.float64)
-            if bias.shape != (n,):
-                raise ValueError('shape', (bias.shape, n))
-        self.bias = bias
-        self.tau_rc = tau_rc
-        self.tau_ref = tau_ref
-        self.upsample = upsample
-
-
-class PopulationLIFRate(object):
-    """A population of "rate-mode" LIF neurons"""
-    def __init__(self, n, bias=None, tau_rc=.02, tau_ref=.002):
-        self.n = n
-        if bias is None:
-            bias = np.zeros(n)
-        else:
-            bias = np.asarray(bias, dtype=np.float64)
-            if bias.shape != (n,):
-                raise ValueError('shape', (bias.shape, n))
-        self.bias = bias
-        self.tau_rc = tau_rc
-        self.tau_ref = tau_ref
+class CustomComputation(object):
+    """A custom computation. Implements the same interface as populations."""
+    def __init__(self, func):
+        self.func = func
 
 
 class Transform(object):
     """A linear transform from a decoded signal to the signals buffer"""
     def __init__(self, alpha, insig, outsig):
         self.alpha = alpha
-        self.insig = insig
-        self.outsig = outsig
-
-
-class CustomTransform(object):
-    """An arbitrary transform from a decoded signal to the signals buffer"""
-    def __init__(self, func, insig, outsig):
-        self.func = func
         self.insig = insig
         self.outsig = outsig
 
@@ -235,20 +204,18 @@ class Decoder(object):
         self.weights = weights
 
 
-class Model(object):
+class SimModel(object):
     """
     A container for model components.
     """
     def __init__(self, dt=0.001):
         self.dt = dt
         self.signals = []
-        self.populations = []
-        self.populations_lif_rate = []
+        self.nonlinearities = []
         self.encoders = []
         self.decoders = []
         self.transforms = []
         self.filters = []
-        self.custom_transforms = []
         self.signal_probes = []
 
     def signal(self, n=1, value=None):
@@ -266,17 +233,14 @@ class Model(object):
         self.signal_probes.append(rval)
         return rval
 
-    def population(self, *args, **kwargs):
-        """Add an LIF population to the model"""
-        rval = Population(*args, **kwargs)
-        self.populations.append(rval)
-        return rval
-
-    def population_lif_rate(self, *args, **kwargs):
-        """Add an LIF-rate population to the model"""
-        rval = PopulationLIFRate(*args, **kwargs)
-        self.populations_lif_rate.append(rval)
-        return rval
+    def nonlinearity(self, nlclass, *args, **kwargs):
+        """Add a nonlinearity (some computation) to the model"""
+        if not nlclass in nlreg:
+            raise TypeError('The "' + nl.__class__.__name__ + '" nonlinearity '
+                            'is not in nengo.nonlinear.registry.')
+        rval = nlclass(*args, **kwargs)
+        self.nonlinearities.append(rval)
+        return rvla
 
     def encoder(self, sig, pop, weights=None):
         """Add an encoder to the model"""
@@ -301,10 +265,3 @@ class Model(object):
         rval = Filter(alpha, oldsig, newsig)
         self.filters.append(rval)
         return rval
-
-    def custom_transform(self, func, insig, outsig):
-        """Add a custom transform to the model"""
-        rval = CustomTransform(func, insig, outsig)
-        self.custom_transforms.append(rval)
-        return rval
-

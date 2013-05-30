@@ -159,4 +159,3 @@ class Simulator(object):
 
     def signal_probe_output(self, probe):
         return self.probe_outputs[probe]
-
