@@ -1,5 +1,5 @@
 from unittest import TestCase
-from nengo.nef.model import Model
+from nengo.model import Model
 from nengo.nef.network import Network
 
 class TestNetwork(TestCase):
