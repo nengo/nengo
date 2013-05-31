@@ -30,6 +30,10 @@ class SignalView(object):
         return self.shape[0]
 
     @property
+    def dtype(self):
+        return self.base._dtype
+
+    @property
     def size(self):
         return int(np.prod(self.shape))
 
@@ -104,7 +108,7 @@ class Signal(SignalView):
     """Interpretable, vector-valued quantity within NEF"""
     def __init__(self, n=1, dtype=np.float64):
         self.n = n
-        self.dtype = dtype
+        self._dtype = dtype
 
     @property
     def shape(self):
