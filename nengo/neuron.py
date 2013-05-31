@@ -29,14 +29,18 @@ def step_lif(J, voltage, refractory_time, spiked, dt, tau_rc, tau_ref, upsample)
     # adjust refractory time (neurons that spike get
     # a new refractory time set, all others get it reduced by dt)
 
-    # linearly approximate time since neuron crossed spike threshold
-    overshoot = (v - 1) / dV
-    spiketime = dt * (1.0 - overshoot)
+    old = np.seterr(all='ignore')
+    try:
+        # linearly approximate time since neuron crossed spike threshold
+        overshoot = (v - 1) / dV
+        spiketime = dt * (1.0 - overshoot)
 
-    # adjust refractory time (neurons that spike get a new
-    # refractory time set, all others get it reduced by dt)
-    new_refractory_time = spiked * (spiketime + tau_ref) \
-            + (1 - spiked) * (refractory_time - dt)
+        # adjust refractory time (neurons that spike get a new
+        # refractory time set, all others get it reduced by dt)
+        new_refractory_time = spiked * (spiketime + tau_ref) \
+                + (1 - spiked) * (refractory_time - dt)
+    finally:
+        np.seterr(**old)
 
     # return an ordered dictionary of internal variables to update
     # (including setting a neuron that spikes to a voltage of 0)
