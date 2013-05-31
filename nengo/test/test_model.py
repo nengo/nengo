@@ -1,5 +1,5 @@
 from unittest import TestCase
-from nengo.nef.model import Model
+from nengo.model import Model
 
 class TestModel(TestCase):
     def setUp(self):

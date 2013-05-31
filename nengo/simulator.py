@@ -5,8 +5,9 @@ simulator.py: Simple reference simulator for base.Model
 
 import numpy as np
 
-from neuron import step_lif
-from neuron import step_lif_rate
+from nonlinear import LIF, SimLIF, LIFRate, SimLIFRate
+
+registry = {LIF: SimLIF, LIFRate: SimLIFRate}
 
 def get_signal(signals_dct, obj):
     # look up a Signal or SignalView
@@ -32,7 +33,7 @@ def get_signal(signals_dct, obj):
         return view
     else:
         raise TypeError()
-        
+
 
 def zero_array_dct(dct):
     for arr in dct.values():
@@ -47,7 +48,7 @@ class Simulator(object):
         self.signals = {}
         self.signals_tmp = {}
         self.signals_copy = {}
-        self.populations = {}
+        self.nonlinearities = {}
         self.probe_outputs = {}
 
         for sig in self.model.signals:
@@ -58,58 +59,29 @@ class Simulator(object):
             self.signals_tmp[sig] = np.zeros(sig.n)
             self.signals_copy[sig] = np.zeros(sig.n)
 
-        for pop in self.model.populations:
-            self.populations[pop] = {
-                'ic': np.zeros(pop.n),
-                'v': np.zeros(pop.n),
-                'rt': np.zeros(pop.n),
-                'out': np.zeros(pop.n),
-                'jbias': pop.bias,
-            }
+        for pop in self.model.nonlinearities:
+            self.nonlinearities[pop] = registry[pop.__class__](pop)
 
         for probe in self.model.signal_probes:
             self.probe_outputs[probe] = []
 
 
     def step(self):
-        # population bias: bias -> input current
-        for pop in self.model.populations:
-            self.populations[pop]['ic'][...] = self.populations[pop]['jbias']
-
         # encoders: signals -> input current
         for enc in self.model.encoders:
-            self.populations[enc.pop]['ic'] += np.dot(
+            self.nonlinearities[enc.pop].J += np.dot(
                 get_signal(self.signals,enc.sig),
                 enc.weights.T)
 
-        # population dynamics (TODO: registry)
-        for pop in self.model.populations:
-            step_lif(
-                self.populations[pop]['ic'],
-                self.populations[pop]['v'],
-                self.populations[pop]['rt'],
-                self.populations[pop]['out'],
-                dt=self.model.dt,
-                tau_rc=pop.tau_rc,
-                tau_ref=pop.tau_ref,
-                upsample=pop.upsample,
-                )
-
-        # population dynamics (TODO: registry)
-        for pop in self.model.populations_lif_rate:
-            step_lif_rate(
-                self.populations[pop]['ic'],
-                self.populations[pop]['out'],
-                tau_rc=pop.tau_rc,
-                tau_ref=pop.tau_ref,
-                dt=self.model.dt,
-                )
+        # population dynamics
+        for pop in self.nonlinearities.values():
+            pop.step(dt=self.model.dt)
 
         # decoders: population output -> signals_tmp
         zero_array_dct(self.signals_tmp)
         for dec in self.model.decoders:
             get_signal(self.signals_tmp, dec.sig)[...] += np.dot(
-                self.populations[dec.pop]['out'],
+                self.nonlinearities[dec.pop].out,
                 dec.weights.T)
 
         # -- copy: signals -> signals_copy
@@ -124,7 +96,7 @@ class Simulator(object):
             targ = get_signal(self.signals, new)
             # -- we check for size mismatch,
             #    because incrementing scalar to len-1 arrays is ok
-            #    if the shapes are not compatible, we'll get a 
+            #    if the shapes are not compatible, we'll get a
             #    problem in targ[...] += inc
             if inc.size != targ.size:
                 raise ValueError('shape mismatch in filter',
@@ -136,11 +108,6 @@ class Simulator(object):
             get_signal(self.signals, tf.outsig)[...] += np.dot(
                 tf.alpha,
                 get_signal(self.signals_tmp, tf.insig))
-
-        # -- customs: signals -> signals
-        for ct in self.model.custom_transforms:
-            get_signal(self.signals, ct.outsig)[...] = ct.func(
-                get_signal(self.signals, ct.insig))
 
         # -- probes signals -> probe buffers
         for probe in self.model.signal_probes:
