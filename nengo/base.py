@@ -100,6 +100,8 @@ class SignalView(object):
                 shape=shape,
                 elemstrides=elemstrides,
                 offset=offset)
+        elif isinstance(item, slice):
+            return self.__getitem__((item,))
         else:
             raise NotImplementedError(item)
 
