@@ -198,6 +198,14 @@ class Filter(object):
         self.newsig = newsig
         self.alpha = alpha
 
+    def __str__(self):
+        return '%s{%s, %s, %s}' % (
+            self.__class__.__name__,
+            self.alpha, self.oldsig, self.newsig)
+
+    def __repr__(self):
+        return str(self)
+
 
 class Encoder(object):
     """A linear transform from a signal to a population"""
