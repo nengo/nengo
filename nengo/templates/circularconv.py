@@ -3,7 +3,7 @@ circularconv.py: provides CircularConvolution template
 """
 
 import numpy as np
-
+from ..nonlinear import LIF
 
 class CircularConvolution(object):
     """
@@ -50,10 +50,10 @@ class CircularConvolution(object):
         self.pops = []
         for ii in range(D//2):
             # TODO: use neuron_type
-            AA = model.population(neurons_per_product)
-            AB = model.population(neurons_per_product)
-            BA = model.population(neurons_per_product)
-            BB = model.population(neurons_per_product)
+            AA = model.nonlinearity(LIF(neurons_per_product))
+            AB = model.nonlinearity(LIF(neurons_per_product))
+            BA = model.nonlinearity(LIF(neurons_per_product))
+            BB = model.nonlinearity(LIF(neurons_per_product))
             model.encoder(self.A_Fourier[ii, 0:1], AA)
             model.encoder(self.A_Fourier[ii, 1:2], AA)
             model.encoder(self.A_Fourier[ii, 0:1], AB)
@@ -62,7 +62,7 @@ class CircularConvolution(object):
             model.encoder(self.A_Fourier[ii, 1:2], BA)
             model.encoder(self.B_Fourier[ii, 0:1], BB)
             model.encoder(self.B_Fourier[ii, 1:2], BB)
-            
+
             model.decoder(AA, self.AB_prods[ii, 0:1])
             model.decoder(AB, self.AB_prods[ii, 1:2])
             model.decoder(BA, self.AB_prods[ii, 2:3])
@@ -71,4 +71,3 @@ class CircularConvolution(object):
         model.transform(inverse_fourier_matrix,
                        self.AB_prods.base,
                        self.out.base)
-

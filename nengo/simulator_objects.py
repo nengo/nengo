@@ -7,8 +7,6 @@ Model is the input to a *simulator* (see e.g. simulator.py).
 """
 import numpy as np
 
-from .nonlinear import registry as nlreg
-
 
 random_weight_rng = np.random.RandomState(12345)
 
@@ -182,10 +180,10 @@ class Encoder(object):
         self.sig = sig
         self.pop = pop
         if weights is None:
-            weights = random_weight_rng.randn(pop.n, sig.size)
+            weights = random_weight_rng.randn(pop.n_neurons, sig.size)
         else:
             weights = np.asarray(weights)
-            if weights.shape != (pop.n, sig.size):
+            if weights.shape != (pop.n_neurons, sig.size):
                 raise ValueError('weight shape', weights.shape)
         self.weights = weights
 
@@ -196,10 +194,10 @@ class Decoder(object):
         self.pop = pop
         self.sig = sig
         if weights is None:
-            weights = random_weight_rng.randn(sig.size, pop.n)
+            weights = random_weight_rng.randn(sig.size, pop.n_neurons)
         else:
             weights = np.asarray(weights)
-            if weights.shape != (sig.size, pop.n):
+            if weights.shape != (sig.size, pop.n_neurons):
                 raise ValueError('weight shape', weights.shape)
         self.weights = weights
 
@@ -233,14 +231,10 @@ class SimModel(object):
         self.signal_probes.append(rval)
         return rval
 
-    def nonlinearity(self, nlclass, *args, **kwargs):
+    def nonlinearity(self, nl):
         """Add a nonlinearity (some computation) to the model"""
-        if not nlclass in nlreg:
-            raise TypeError('The "' + nl.__class__.__name__ + '" nonlinearity '
-                            'is not in nengo.nonlinear.registry.')
-        rval = nlclass(*args, **kwargs)
-        self.nonlinearities.append(rval)
-        return rvla
+        self.nonlinearities.append(nl)
+        return nl
 
     def encoder(self, sig, pop, weights=None):
         """Add an encoder to the model"""
