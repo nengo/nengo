@@ -39,6 +39,16 @@ class Simulator(object):
         for probe in self.model.signal_probes:
             self.probe_outputs[probe] = []
 
+    def get_signal(self, signals_dct, obj):
+        if obj in signals_dct:
+            return signals_dct
+        elif obj.base in signals_dct:
+            base = signals_dct[obj.base]
+            raise base.TODO('fetch view')
+        else:
+            raise TypeError()
+            
+
     def step(self):
         # population bias: bias -> input current
         for pop in self.model.populations:
@@ -46,8 +56,9 @@ class Simulator(object):
 
         # encoders: signals -> input current
         for enc in self.model.encoders:
-            self.populations[enc.pop]['ic'] += np.dot(self.signals[enc.sig],
-                                                      enc.weights.T)
+            self.populations[enc.pop]['ic'] += np.dot(
+                self.get_signal(self.signals,enc.sig),
+                enc.weights.T)
 
         # population dynamics
         for pop in self.model.populations:

@@ -9,11 +9,118 @@ import numpy as np
 
 random_weight_rng = np.random.RandomState(12345)
 
+class ShapeMismatch(ValueError):
+    pass
 
-class Signal(object):
+
+class TODO(NotImplementedError):
+    """Potentially easy NotImplementedError"""
+
+
+class SignalView(object):
+    """Interpretable, vector-valued quantity within NEF
+    """
+    def __init__(self, base, shape, elemstrides, offset):
+        self.base = base
+        self.shape = tuple(shape)
+        self.elemstrides = tuple(elemstrides)
+        self.offset = int(offset)
+
+    def __len__(self):
+        return self.shape[0]
+
+    @property
+    def size(self):
+        return int(np.prod(self.shape))
+
+    def reshape(self, *shape):
+        if len(shape) == 1 and isinstance(shape[0], (list, tuple)):
+            shape = shape[0]
+        if self.elemstrides == (1,):
+            size = int(np.prod(shape))
+            if size != self.size:
+                raise ShapeMismatch(shape, self.shape)
+            elemstrides = [1]
+            for si in reversed(shape[1:]):
+                elemstrides = [si * elemstrides[0]] + elemstrides
+            return SignalView(
+                base=self.base,
+                shape=shape,
+                elemstrides=elemstrides,
+                offset=self.offset)
+        else:
+            # -- there are cases where reshaping can still work
+            #    but there are limits too, because we can only
+            #    support view-based reshapes. So the strides have
+            #    to work.
+            raise TODO('reshape of strided view')
+
+    def transpose(self, neworder=None):
+        raise TODO('transpose')
+
+    def __getitem__(self, item):
+        # -- copy the shape and strides
+        shape = list(self.shape)
+        elemstrides = list(self.elemstrides)
+        offset = self.offset
+        if isinstance(item, (list, tuple)):
+            dims_to_del = []
+            for ii, idx in enumerate(item):
+                if isinstance(idx, int):
+                    dims_to_del.append(ii)
+                    offset += idx * elemstrides[ii]
+                elif isinstance(idx, slice):
+                    start, stop, stride = idx.indices(shape[ii])
+                    offset += start * elemstrides[ii]
+                    if stride != 1:
+                        raise NotImplementedError()
+                    shape[ii] = stop - start
+            for dim in reversed(dims_to_del):
+                shape.pop(dim)
+                elemstrides.pop(dim)
+            return SignalView(
+                base=self.base,
+                shape=shape,
+                elemstrides=elemstrides,
+                offset=offset)
+        elif isinstance(item, (int, np.integer)):
+            if len(self.shape) == 0:
+                raise IndexError()
+            if not (0 <= item < self.shape[0]):
+                raise NotImplementedError()
+            shape = self.shape[1:]
+            elemstrides = self.elemstrides[1:]
+            offset = self.offset + item * self.elemstrides[0]
+            return SignalView(
+                base=self.base,
+                shape=shape,
+                elemstrides=elemstrides,
+                offset=offset)
+        else:
+            raise NotImplementedError(item)
+
+
+class Signal(SignalView):
     """Interpretable, vector-valued quantity within NEF"""
-    def __init__(self, n=1):
+    def __init__(self, n=1, dtype=np.float64):
         self.n = n
+        self.dtype = dtype
+
+    @property
+    def shape(self):
+        return (self.n,)
+
+    @property
+    def elemstrides(self):
+        return (1,)
+
+    @property
+    def offset(self):
+        return 0
+
+    @property
+    def base(self):
+        return self
 
 
 class SignalProbe(object):
@@ -91,13 +198,11 @@ class Encoder(object):
     def __init__(self, sig, pop, weights=None):
         self.sig = sig
         self.pop = pop
-        assert isinstance(sig, Signal)
-        assert isinstance(pop, Population)
         if weights is None:
-            weights = random_weight_rng.randn(pop.n, sig.n)
+            weights = random_weight_rng.randn(pop.n, sig.size)
         else:
             weights = np.asarray(weights)
-            if weights.shape != (pop.n, sig.n):
+            if weights.shape != (pop.n, sig.size):
                 raise ValueError('weight shape', weights.shape)
         self.weights = weights
 
@@ -108,10 +213,10 @@ class Decoder(object):
         self.pop = pop
         self.sig = sig
         if weights is None:
-            weights = random_weight_rng.randn(sig.n, pop.n)
+            weights = random_weight_rng.randn(sig.size, pop.n)
         else:
             weights = np.asarray(weights)
-            if weights.shape != (sig.n, pop.n):
+            if weights.shape != (sig.size, pop.n):
                 raise ValueError('weight shape', weights.shape)
         self.weights = weights
 
