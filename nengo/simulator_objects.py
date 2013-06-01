@@ -180,10 +180,10 @@ class Encoder(object):
         self.sig = sig
         self.pop = pop
         if weights is None:
-            weights = random_weight_rng.randn(pop.n_neurons, sig.size)
+            weights = random_weight_rng.randn(pop.n_in, sig.size)
         else:
             weights = np.asarray(weights)
-            if weights.shape != (pop.n_neurons, sig.size):
+            if weights.shape != (pop.n_in, sig.size):
                 raise ValueError('weight shape', weights.shape)
         self.weights = weights
 
@@ -194,10 +194,10 @@ class Decoder(object):
         self.pop = pop
         self.sig = sig
         if weights is None:
-            weights = random_weight_rng.randn(sig.size, pop.n_neurons)
+            weights = random_weight_rng.randn(sig.size, pop.n_out)
         else:
             weights = np.asarray(weights)
-            if weights.shape != (sig.size, pop.n_neurons):
+            if weights.shape != (sig.size, pop.n_out):
                 raise ValueError('weight shape', weights.shape)
         self.weights = weights
 

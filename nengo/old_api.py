@@ -7,12 +7,18 @@ the "api.py" file instead of this file for their current work.
 
 """
 
-# XXX currently this is the *only* API file so there are lots of
-# opportunities for refactoring with a "new api" file as that gets written.
-
 import numpy as np
 
-from . import simulator_objects
+from simulator_objects import SimModel
+from nonlinear import LIF
+from nonlinear import LIFRate
+from nonlinear import Direct
+
+neuron_type_registry = {
+    'lif': LIF,
+    'lif-rate': LIFRate,
+        }
+
 from . import simulator
 
 
@@ -69,7 +75,7 @@ class EnsembleOrigin(object):
         n, = targets.shape[1:]
         dt = ensemble.model.dt
 
-        A = ensemble.babbling_neurons[pop_idx] * dt
+        A = ensemble.neurons[pop_idx].babbling_rate * dt
         b = targets
         weights, res, rank, s = np.linalg.lstsq(A, b)#, rcond=rcond)
 
@@ -82,23 +88,6 @@ class EnsembleOrigin(object):
         # set up self.sig as an unfiltered signal
         self.transform = ensemble.model.transform(1.0, self.sig, self.sig)
         self.filter = ensemble.model.filter(0.0, self.sig, self.sig)
-
-
-def make_alpha_bias(max_rates, intercepts, tau_ref, tau_rc):
-    """Compute the alpha and bias needed to get the given max_rate
-    and intercept values.
-
-    Returns gain (alpha) and offset (j_bias) values of neurons.
-
-    :param float array max_rates: maximum firing rates of neurons
-    :param float array intercepts: x-intercepts of neurons
-
-    """
-    x = 1.0 / (1 - np.exp(
-            (tau_ref - (1.0 / max_rates)) / tau_rc))
-    alpha = (1 - x) / (intercepts - 1.0)
-    j_bias = 1 - alpha * intercepts
-    return alpha, j_bias
 
 
 class Ensemble:
@@ -196,47 +185,40 @@ class Ensemble:
         # if we're creating a spiking ensemble
         if self.mode == 'spiking':
 
-            # TODO: handle different neuron types,
-            self.neurons = [
-                self.model.population(n_neurons,
-                    tau_rc=tau_rc, tau_ref=tau_ref)
-                for ii in range(array_size)]
-
-            # compute alpha and bias
             self.rng = np.random.RandomState(seed)
             self.max_rate = max_rate
-            max_rates = self.rng.uniform(
-                size=(self.array_size, self.n_neurons),
-                low=max_rate[0], high=max_rate[1])
-            threshold = self.rng.uniform(
-                size=(self.array_size, self.n_neurons),
-                low=intercept[0], high=intercept[1])
-            alpha, bias = make_alpha_bias(max_rates, threshold,
-                    tau_ref, tau_rc)
 
-            for i, bias_i in enumerate(bias):
-                self.neurons[i].bias = bias_i
-
+            self._make_encoders(encoders)
             self.babbling_signal = sample_unit_signal(
                     self.dimensions, 500, self.rng)
 
-            self._make_encoders(encoders, alpha)
-            self.babbling_neurons = []
+            self.neurons = []
+            for ii in range(array_size):
+                neurons_ii = self.model.nonlinearity(
+                        # TODO: handle different neuron types,
+                        LIF(n_neurons, tau_rc=tau_rc, tau_ref=tau_ref))
+                self.neurons.append(neurons_ii)
+                max_rates = self.rng.uniform(
+                    size=self.n_neurons,
+                    low=max_rate[0], high=max_rate[1])
+                threshold = self.rng.uniform(
+                    size=self.n_neurons,
+                    low=intercept[0], high=intercept[1])
+                neurons_ii.set_gain_bias(max_rates, threshold)
 
-            # -- alias self.encoders to the matrices
-            # in the model encoders
-            for i, encoder_i in enumerate(self.encoders):
+                # pre-multiply encoder weights by gain
+                self.encoders[ii] *= neurons_ii.gain[:, None]
+
+                # -- alias self.encoders to the matrices
+                # in the model encoders (objects)
                 self.model.encoder(
-                    self.input_signals[i],
-                    self.neurons[i],
-                    weights=encoder_i)
-                self.babbling_neurons.append(
-                    batch_lif_rates(
-                        bias + np.dot(
-                            encoder_i,
-                            self.babbling_signal[i:i+1]).T,
-                        tau_rc=tau_rc,
-                        tau_ref=tau_ref))
+                    self.input_signals[ii],
+                    neurons_ii,
+                    weights=self.encoders[ii])
+                neurons_ii.babbling_rate = neurons_ii.rates(
+                        np.dot(
+                            self.encoders[ii],
+                            self.babbling_signal[ii:ii+1]).T)
 
             # set up a dictionary for encoded_input connections
             self.encoded_input = {}
@@ -402,7 +384,7 @@ class Ensemble:
 
         return name + '_' + str(i)
 
-    def _make_encoders(self, encoders, alpha):
+    def _make_encoders(self, encoders):
         """Generates a set of encoders.
 
         :param int neurons: number of neurons
@@ -430,9 +412,6 @@ class Ensemble:
         # normalize encoders across represented dimensions
         norm = np.sum(encoders * encoders, axis=2)[:, :, None]
         self.encoders = encoders / np.sqrt(norm)
-
-        # combine encoders and gain for simplification
-        self.encoders *= alpha[:, :, None]
 
     def theano_tick(self):
         if self.mode == 'direct':
@@ -532,7 +511,6 @@ class Ensemble:
         return updates
 
 
-
 class Probe(object):
     def __init__(self, probe, net):
         self.probe = probe
@@ -546,7 +524,6 @@ class Probe(object):
 
 
 class Network(object):
-
     def __init__(self, name,
             seed=None,
             fixed_seed=None,
@@ -554,7 +531,7 @@ class Network(object):
             Simulator=simulator.Simulator):
         self.seed = seed
         self.fixed_seed = fixed_seed
-        self.model = simulator_objects.SimModel(dt)
+        self.model = SimModel(dt)
         self.ensembles = {}
         self.inputs = {}
 
@@ -579,10 +556,13 @@ class Network(object):
         return self.model.dt
 
     def make_input(self, name, value):
-        raise NotImplementedError
         if callable(value):
             rval = self.model.signal()
-            # self.model.custom_transform(value, self.simtime, rval)
+            pop = self.model.nonlinearity(
+                Direct(n_in=1, n_out=1, fn=value))
+            self.model.encoder(self.simtime, pop, weights=[[1.0]])
+            self.model.decoder(pop, rval, weights=[[1.0]])
+            self.model.transform(1.0, rval, rval)
             self.inputs[name] = rval
         else:
             rval = self.model.signal(value=value)

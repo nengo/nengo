@@ -5,9 +5,51 @@ simulator.py: Simple reference simulator for base.Model
 
 import numpy as np
 
-from nonlinear import LIF, SimLIF, LIFRate, SimLIFRate
+from nonlinear import LIF, LIFRate, Direct
 
-registry = {LIF: SimLIF, LIFRate: SimLIFRate}
+
+class SimObj(object):
+    def __init__(self, n_in, n_out):
+        self.n_in = n_in
+        self.n_out = n_out
+        self.J = np.zeros(n_in)
+        self.out = np.zeros(n_out)
+
+
+class SimDirect(SimObj):
+    def __init__(self, direct):
+        SimObj.__init__(self, direct.n_in, direct.n_out)
+        self.direct = direct
+
+    def step(self, dt):
+        self.out[...] = self.direct.fn(self.J[...])
+
+
+class SimLIF(SimObj):
+    def __init__(self, lif):
+        SimObj.__init__(self, lif.n_neurons, lif.n_neurons)
+        self.lif = lif
+        self.voltage = np.zeros(lif.n_neurons)
+        self.refractory_time = np.zeros(lif.n_neurons)
+
+    def step(self, dt):
+        self.lif.step_math0(dt,
+                            self.J,
+                            self.voltage,
+                            self.refractory_time,
+                            self.out)
+
+
+class SimLIFRate(SimObj):
+    def __init__(self, lifrate):
+        raise NotImplementedError()
+
+
+registry = {
+    LIF: SimLIF,
+    LIFRate: SimLIFRate,
+    Direct: SimDirect,
+    }
 
 def get_signal(signals_dct, obj):
     # look up a Signal or SignalView
@@ -67,6 +109,10 @@ class Simulator(object):
 
 
     def step(self):
+        # reset nonlinearities' J -> 0
+        for pop in self.nonlinearities.values():
+            pop.J[...] = 0
+
         # encoders: signals -> input current
         for enc in self.model.encoders:
             self.nonlinearities[enc.pop].J += np.dot(
@@ -98,9 +144,12 @@ class Simulator(object):
             #    because incrementing scalar to len-1 arrays is ok
             #    if the shapes are not compatible, we'll get a
             #    problem in targ[...] += inc
-            if inc.size != targ.size:
-                raise ValueError('shape mismatch in filter',
-                                 (filt, inc.shape, targ.shape))
+            if inc.shape != targ.shape:
+                if inc.size == targ.size == 1:
+                    inc = np.asarray(inc).reshape(targ.shape)
+                else:
+                    raise ValueError('shape mismatch in filter',
+                        (filt, inc.shape, targ.shape))
             targ[...] += inc
 
         # -- transforms: signals_tmp -> signals
