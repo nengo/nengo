@@ -556,10 +556,13 @@ class Network(object):
         return self.model.dt
 
     def make_input(self, name, value):
-        raise NotImplementedError
         if callable(value):
             rval = self.model.signal()
-            # self.model.custom_transform(value, self.simtime, rval)
+            pop = self.model.nonlinearity(
+                Direct(n_in=1, n_out=1, fn=value))
+            self.model.encoder(self.simtime, pop, weights=[[1.0]])
+            self.model.decoder(pop, rval, weights=[[1.0]])
+            self.model.transform(1.0, rval, rval)
             self.inputs[name] = rval
         else:
             rval = self.model.signal(value=value)
