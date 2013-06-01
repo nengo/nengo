@@ -7,9 +7,6 @@ the "api.py" file instead of this file for their current work.
 
 """
 
-# XXX currently this is the *only* API file so there are lots of
-# opportunities for refactoring with a "new api" file as that gets written.
-
 import numpy as np
 
 from . import simulator_objects
@@ -532,7 +529,6 @@ class Ensemble:
         return updates
 
 
-
 class Probe(object):
     def __init__(self, probe, net):
         self.probe = probe
@@ -546,7 +542,6 @@ class Probe(object):
 
 
 class Network(object):
-
     def __init__(self, name,
             seed=None,
             fixed_seed=None,
