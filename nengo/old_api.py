@@ -9,7 +9,16 @@ the "api.py" file instead of this file for their current work.
 
 import numpy as np
 
-from . import simulator_objects
+from simulator_objects import SimModel
+from nonlinear import LIF
+from nonlinear import LIFRate
+from nonlinear import Direct
+
+neuron_type_registry = {
+    'lif': LIF,
+    'lif-rate': LIFRate,
+        }
+
 from . import simulator
 
 
@@ -549,7 +558,7 @@ class Network(object):
             Simulator=simulator.Simulator):
         self.seed = seed
         self.fixed_seed = fixed_seed
-        self.model = simulator_objects.SimModel(dt)
+        self.model = SimModel(dt)
         self.ensembles = {}
         self.inputs = {}
 
