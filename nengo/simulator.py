@@ -144,9 +144,12 @@ class Simulator(object):
             #    because incrementing scalar to len-1 arrays is ok
             #    if the shapes are not compatible, we'll get a
             #    problem in targ[...] += inc
-            if inc.size != targ.size:
-                raise ValueError('shape mismatch in filter',
-                                 (filt, inc.shape, targ.shape))
+            if inc.shape != targ.shape:
+                if inc.size == targ.size == 1:
+                    inc = np.asarray(inc).reshape(targ.shape)
+                else:
+                    raise ValueError('shape mismatch in filter',
+                        (filt, inc.shape, targ.shape))
             targ[...] += inc
 
         # -- transforms: signals_tmp -> signals
