@@ -75,7 +75,7 @@ class EnsembleOrigin(object):
         n, = targets.shape[1:]
         dt = ensemble.model.dt
 
-        A = ensemble.babbling_neurons[pop_idx] * dt
+        A = ensemble.neurons[pop_idx].babbling_rate * dt
         b = targets
         weights, res, rank, s = np.linalg.lstsq(A, b)#, rcond=rcond)
 
@@ -88,23 +88,6 @@ class EnsembleOrigin(object):
         # set up self.sig as an unfiltered signal
         self.transform = ensemble.model.transform(1.0, self.sig, self.sig)
         self.filter = ensemble.model.filter(0.0, self.sig, self.sig)
-
-
-def make_alpha_bias(max_rates, intercepts, tau_ref, tau_rc):
-    """Compute the alpha and bias needed to get the given max_rate
-    and intercept values.
-
-    Returns gain (alpha) and offset (j_bias) values of neurons.
-
-    :param float array max_rates: maximum firing rates of neurons
-    :param float array intercepts: x-intercepts of neurons
-
-    """
-    x = 1.0 / (1 - np.exp(
-            (tau_ref - (1.0 / max_rates)) / tau_rc))
-    alpha = (1 - x) / (intercepts - 1.0)
-    j_bias = 1 - alpha * intercepts
-    return alpha, j_bias
 
 
 class Ensemble:
@@ -202,47 +185,40 @@ class Ensemble:
         # if we're creating a spiking ensemble
         if self.mode == 'spiking':
 
-            # TODO: handle different neuron types,
-            self.neurons = [
-                self.model.population(n_neurons,
-                    tau_rc=tau_rc, tau_ref=tau_ref)
-                for ii in range(array_size)]
-
-            # compute alpha and bias
             self.rng = np.random.RandomState(seed)
             self.max_rate = max_rate
-            max_rates = self.rng.uniform(
-                size=(self.array_size, self.n_neurons),
-                low=max_rate[0], high=max_rate[1])
-            threshold = self.rng.uniform(
-                size=(self.array_size, self.n_neurons),
-                low=intercept[0], high=intercept[1])
-            alpha, bias = make_alpha_bias(max_rates, threshold,
-                    tau_ref, tau_rc)
 
-            for i, bias_i in enumerate(bias):
-                self.neurons[i].bias = bias_i
-
+            self._make_encoders(encoders)
             self.babbling_signal = sample_unit_signal(
                     self.dimensions, 500, self.rng)
 
-            self._make_encoders(encoders, alpha)
-            self.babbling_neurons = []
+            self.neurons = []
+            for ii in range(array_size):
+                neurons_ii = self.model.nonlinearity(
+                        # TODO: handle different neuron types,
+                        LIF(n_neurons, tau_rc=tau_rc, tau_ref=tau_ref))
+                self.neurons.append(neurons_ii)
+                max_rates = self.rng.uniform(
+                    size=self.n_neurons,
+                    low=max_rate[0], high=max_rate[1])
+                threshold = self.rng.uniform(
+                    size=self.n_neurons,
+                    low=intercept[0], high=intercept[1])
+                neurons_ii.set_gain_bias(max_rates, threshold)
 
-            # -- alias self.encoders to the matrices
-            # in the model encoders
-            for i, encoder_i in enumerate(self.encoders):
+                # pre-multiply encoder weights by gain
+                self.encoders[ii] *= neurons_ii.gain[:, None]
+
+                # -- alias self.encoders to the matrices
+                # in the model encoders (objects)
                 self.model.encoder(
-                    self.input_signals[i],
-                    self.neurons[i],
-                    weights=encoder_i)
-                self.babbling_neurons.append(
-                    batch_lif_rates(
-                        bias + np.dot(
-                            encoder_i,
-                            self.babbling_signal[i:i+1]).T,
-                        tau_rc=tau_rc,
-                        tau_ref=tau_ref))
+                    self.input_signals[ii],
+                    neurons_ii,
+                    weights=self.encoders[ii])
+                neurons_ii.babbling_rate = neurons_ii.rates(
+                        np.dot(
+                            self.encoders[ii],
+                            self.babbling_signal[ii:ii+1]).T)
 
             # set up a dictionary for encoded_input connections
             self.encoded_input = {}
@@ -408,7 +384,7 @@ class Ensemble:
 
         return name + '_' + str(i)
 
-    def _make_encoders(self, encoders, alpha):
+    def _make_encoders(self, encoders):
         """Generates a set of encoders.
 
         :param int neurons: number of neurons
@@ -436,9 +412,6 @@ class Ensemble:
         # normalize encoders across represented dimensions
         norm = np.sum(encoders * encoders, axis=2)[:, :, None]
         self.encoders = encoders / np.sqrt(norm)
-
-        # combine encoders and gain for simplification
-        self.encoders *= alpha[:, :, None]
 
     def theano_tick(self):
         if self.mode == 'direct':
