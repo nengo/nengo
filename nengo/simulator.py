@@ -118,6 +118,12 @@ class Simulator(object):
             self.nonlinearities[enc.pop].J += np.dot(
                 get_signal(self.signals,enc.sig),
                 enc.weights.T)
+                
+        # neuron connections: neuron out -> neuron in
+        for nc in self.model.neuron_connections:
+            self.nonlinearities[nc.dst].J += np.dot(
+                self.nonlinearities[nc.src].out,
+                nc.weights.T)
 
         # population dynamics
         for pop in self.nonlinearities.values():
