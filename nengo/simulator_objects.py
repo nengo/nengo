@@ -200,7 +200,21 @@ class Decoder(object):
             if weights.shape != (sig.size, pop.n_out):
                 raise ValueError('weight shape', weights.shape)
         self.weights = weights
-
+        
+        
+class NeuronConnection(object):
+    """Directed linear weights between two populations"""
+    def __init__(self, src, dst, weights=None):
+        self.src = src
+        self.dst = dst
+        if weights is None:
+            weights = random_weight_rng.randn(dst.n_in, src.n_out)
+        else:
+            weights = np.asarray(weights)
+            if weights.shape != (dst.n_in, src.n_out):
+                raise ValueError('weight shape', weights.shape)
+        self.weights = weights
+        
 
 class SimModel(object):
     """
@@ -215,6 +229,7 @@ class SimModel(object):
         self.transforms = []
         self.filters = []
         self.signal_probes = []
+        self.neuron_connections = []
 
     def signal(self, n=1, value=None):
         """Add a signal to the model"""
@@ -246,6 +261,12 @@ class SimModel(object):
         """Add a decoder to the model"""
         rval = Decoder(pop, sig, weights=weights)
         self.decoders.append(rval)
+        return rval
+        
+    def neuron_connection(self, src, dst, weights=None):
+        """Connect two nonlinearities"""
+        rval = NeuronConnection(src, dst, weights)
+        self.neuron_connection.append(rval)
         return rval
 
     def transform(self, alpha, insig, outsig):
