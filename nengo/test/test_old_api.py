@@ -63,15 +63,13 @@ class TestOldAPI(TestCase):
         if self.show:
             plt.show()
 
-
-
         # target is off-by-one at the sampling frequency of dt=0.001
         print rmse(target, in_probe.get_data())
         assert rmse(target, in_probe.get_data()) < .001
         print rmse(target, A_fast_probe.get_data())
-        assert rmse(target, A_fast_probe.get_data()) < .30
+        assert rmse(target, A_fast_probe.get_data()) < .35
         print rmse(target, A_med_probe.get_data())
-        assert rmse(target, A_med_probe.get_data()) < .025
+        assert rmse(target, A_med_probe.get_data()) < .035
         print rmse(target, A_slow_probe.get_data())
         assert rmse(target, A_slow_probe.get_data()) < 0.1
 

@@ -8,39 +8,30 @@ import numpy as np
 from nonlinear import LIF, LIFRate, Direct
 
 
-class SimObj(object):
-    def __init__(self, n_in, n_out):
-        self.n_in = n_in
-        self.n_out = n_out
-        self.J = np.zeros(n_in)
-        self.out = np.zeros(n_out)
+
+class SimDirect(object):
+    def __init__(self, nl):
+        self.nl = nl
+
+    def step(self, dt, J, output):
+        output[...] = self.nl.fn(J)
 
 
-class SimDirect(SimObj):
-    def __init__(self, direct):
-        SimObj.__init__(self, direct.n_in, direct.n_out)
-        self.direct = direct
+class SimLIF(object):
+    def __init__(self, nl):
+        self.nl = nl
+        self.voltage = np.zeros(nl.n_in)
+        self.refractory_time = np.zeros(nl.n_in)
 
-    def step(self, dt):
-        self.out[...] = self.direct.fn(self.J[...])
-
-
-class SimLIF(SimObj):
-    def __init__(self, lif):
-        SimObj.__init__(self, lif.n_neurons, lif.n_neurons)
-        self.lif = lif
-        self.voltage = np.zeros(lif.n_neurons)
-        self.refractory_time = np.zeros(lif.n_neurons)
-
-    def step(self, dt):
-        self.lif.step_math0(dt,
-                            self.J,
+    def step(self, dt, J, output):
+        self.nl.step_math0(dt,
+                            J,
                             self.voltage,
                             self.refractory_time,
-                            self.out)
+                            output)
 
 
-class SimLIFRate(SimObj):
+class SimLIFRate(object):
     def __init__(self, lifrate):
         raise NotImplementedError()
 
@@ -82,6 +73,20 @@ def zero_array_dct(dct):
         arr[...] = 0
 
 
+def dot_inc(a, b, targ):
+    # -- we check for size mismatch,
+    #    because incrementing scalar to len-1 arrays is ok
+    #    if the shapes are not compatible, we'll get a
+    #    problem in targ[...] += inc
+    inc =  np.dot(a, b)
+    if inc.shape != targ.shape:
+        if inc.size == targ.size == 1:
+            inc = np.asarray(inc).reshape(targ.shape)
+        else:
+            raise ValueError('shape mismatch', (inc.shape, targ.shape))
+    targ[...] += inc
+
+
 class Simulator(object):
     def __init__(self, model):
         self.model = model
@@ -104,68 +109,62 @@ class Simulator(object):
         for pop in self.model.nonlinearities:
             self.nonlinearities[pop] = registry[pop.__class__](pop)
 
-        for probe in self.model.signal_probes:
+        for probe in self.model.probes:
             self.probe_outputs[probe] = []
 
 
     def step(self):
-        # reset nonlinearities' J -> 0
-        for pop in self.nonlinearities.values():
-            pop.J[...] = 0
+        # -- reset nonlinearities: bias -> input_current
+        for nl in self.model.nonlinearities:
+            self.signals[nl.input_signal][...] = self.signals[nl.bias_signal]
 
-        # encoders: signals -> input current
+
+        # -- encoders: signals -> input current
+        #    (N.B. this includes neuron -> neuron connections)
         for enc in self.model.encoders:
-            self.nonlinearities[enc.pop].J += np.dot(
-                get_signal(self.signals,enc.sig),
-                enc.weights.T)
+            dot_inc(get_signal(self.signals,enc.sig),
+                    enc.weights.T,
+                    self.signals[enc.pop.input_signal])
                 
-        # neuron connections: neuron out -> neuron in
-        for nc in self.model.neuron_connections:
-            self.nonlinearities[nc.dst].J += np.dot(
-                self.nonlinearities[nc.src].out,
-                nc.weights.T)
-
-        # population dynamics
-        for pop in self.nonlinearities.values():
-            pop.step(dt=self.model.dt)
-
-        # decoders: population output -> signals_tmp
+        # -- reset: 0 -> signals_tmp
         zero_array_dct(self.signals_tmp)
+
+        # -- population dynamics
+        for nl in self.model.nonlinearities:
+            pop = self.nonlinearities[nl]
+            pop.step(dt=self.model.dt,
+                     J=self.signals[nl.input_signal],
+                     output=self.signals_tmp[nl.output_signal])
+
+        # -- decoders: population output -> signals_tmp
         for dec in self.model.decoders:
-            get_signal(self.signals_tmp, dec.sig)[...] += np.dot(
-                self.nonlinearities[dec.pop].out,
-                dec.weights.T)
+            dot_inc(self.signals_tmp[dec.pop.output_signal],
+                    dec.weights.T,
+                    get_signal(self.signals_tmp, dec.sig))
 
         # -- copy: signals -> signals_copy
         for sig in self.model.signals:
             self.signals_copy[sig][...] = self.signals[sig]
 
-        # -- filters: signals_copy -> signals
+        # -- reset: 0 -> signals
         zero_array_dct(self.signals)
+
+
+        # -- filters: signals_copy -> signals
         for filt in self.model.filters:
-            new, old = filt.newsig, filt.oldsig
-            inc =  np.dot(filt.alpha, get_signal(self.signals_copy, old))
-            targ = get_signal(self.signals, new)
-            # -- we check for size mismatch,
-            #    because incrementing scalar to len-1 arrays is ok
-            #    if the shapes are not compatible, we'll get a
-            #    problem in targ[...] += inc
-            if inc.shape != targ.shape:
-                if inc.size == targ.size == 1:
-                    inc = np.asarray(inc).reshape(targ.shape)
-                else:
-                    raise ValueError('shape mismatch in filter',
-                        (filt, inc.shape, targ.shape))
-            targ[...] += inc
+            dot_inc(filt.alpha,
+                    get_signal(self.signals_copy, filt.oldsig),
+                    get_signal(self.signals, filt.newsig))
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
-            get_signal(self.signals, tf.outsig)[...] += np.dot(
-                tf.alpha,
-                get_signal(self.signals_tmp, tf.insig))
+            dot_inc(tf.alpha, 
+                    get_signal(self.signals_tmp, tf.insig),
+                    get_signal(self.signals, tf.outsig))
+
 
         # -- probes signals -> probe buffers
-        for probe in self.model.signal_probes:
+        for probe in self.model.probes:
             period = int(probe.dt / self.model.dt)
             if self.n_steps % period == 0:
                 tmp = get_signal(self.signals, probe.sig).copy()
@@ -179,5 +178,5 @@ class Simulator(object):
             if verbose:
                 print self.signals
 
-    def signal_probe_output(self, probe):
-        return self.probe_outputs[probe]
+    def probe_data(self, probe):
+        return np.asarray(self.probe_outputs[probe])
