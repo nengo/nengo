@@ -306,6 +306,7 @@ class Ensemble:
         # generate an initial weight matrix if none provided,
         # random numbers between -.001 and .001
         if 'weight_matrix' not in kwargs.keys():
+            # XXX use self.rng
             weight_matrix = np.random.uniform(
                 size=(self.array_size * pre.array_size,
                       self.n_neurons, pre.n_neurons),
@@ -518,7 +519,7 @@ class Probe(object):
 
     def get_data(self):
         sim = self.net.sim
-        lst = sim.signal_probe_output(self.probe)
+        lst = sim.probe_data(self.probe)
         rval = np.asarray(lst).reshape(len(lst), -1)
         return rval
 
@@ -560,12 +561,10 @@ class Network(object):
             rval = self.model.signal()
             pop = self.model.nonlinearity(
                 Direct(n_in=1, n_out=1, fn=value))
-            self.model.encoder(self.simtime, pop, weights=[[1.0]])
-            self.model.decoder(pop, rval, weights=[[1.0]])
-            self.model.transform(1.0, rval, rval)
-            self.inputs[name] = rval
+            self.model.encoder(self.simtime, pop, weights=np.asarray([[1]]))
+            self.inputs[name] = pop.output_signal
         else:
-            rval = self.model.signal(value=value)
+            rval = self.model.signal(n=1, value=float(value))
             self.inputs[name] = rval
         return rval
 
@@ -625,14 +624,14 @@ class Network(object):
                 self.model.filter(fcoef, probe_sig, probe_sig)
                 self.model.transform(tcoef, src, probe_sig)
                 return Probe(
-                    self.model.signal_probe(probe_sig, dt_sample),
+                    self.model.probe(probe_sig, dt_sample),
                     self)
             else:
-                return Probe(self.model.signal_probe(src, dt_sample),
+                return Probe(self.model.probe(src, dt_sample),
                     self)
         elif name in self.inputs:
             src = self.inputs[name]
-            return Probe(self.model.signal_probe(src, dt_sample),
+            return Probe(self.model.probe(src, dt_sample),
                 self)
         else:
             raise NotImplementedError()

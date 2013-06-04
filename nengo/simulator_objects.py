@@ -130,7 +130,7 @@ class Signal(SignalView):
         return self
 
 
-class SignalProbe(object):
+class Probe(object):
     """A model probe to record a signal"""
     def __init__(self, sig, dt):
         self.sig = sig
@@ -144,10 +144,11 @@ class Constant(Signal):
         self.value = value
 
 
-class CustomComputation(object):
-    """A custom computation. Implements the same interface as populations."""
-    def __init__(self, func):
-        self.func = func
+class Nonlinearity(object):
+    def __init__(self, input_signal, output_signal, bias_signal):
+        self.input_signal = input_signal
+        self.output_signal = output_signal
+        self.bias_signal = bias_signal
 
 
 class Transform(object):
@@ -201,20 +202,6 @@ class Decoder(object):
                 raise ValueError('weight shape', weights.shape)
         self.weights = weights
         
-        
-class NeuronConnection(object):
-    """Directed linear weights between two populations"""
-    def __init__(self, src, dst, weights=None):
-        self.src = src
-        self.dst = dst
-        if weights is None:
-            weights = random_weight_rng.randn(dst.n_in, src.n_out)
-        else:
-            weights = np.asarray(weights)
-            if weights.shape != (dst.n_in, src.n_out):
-                raise ValueError('weight shape', weights.shape)
-        self.weights = weights
-        
 
 class SimModel(object):
     """
@@ -228,8 +215,7 @@ class SimModel(object):
         self.decoders = []
         self.transforms = []
         self.filters = []
-        self.signal_probes = []
-        self.neuron_connections = []
+        self.probes = []
 
     def signal(self, n=1, value=None):
         """Add a signal to the model"""
@@ -240,15 +226,26 @@ class SimModel(object):
         self.signals.append(rval)
         return rval
 
-    def signal_probe(self, sig, dt):
-        """Add a signal probe to the model"""
-        rval = SignalProbe(sig, dt)
-        self.signal_probes.append(rval)
+    def probe(self, sig, dt):
+        """Add a probe to the model"""
+        rval = Probe(sig, dt)
+        self.probes.append(rval)
         return rval
 
     def nonlinearity(self, nl):
         """Add a nonlinearity (some computation) to the model"""
         self.nonlinearities.append(nl)
+        # TODO: make our nonlinearities inherit from Nonlinearity
+        #       and put this logic in the constructor
+        bias = getattr(nl, 'bias', np.zeros(nl.n_in))
+        if not hasattr(nl, 'input_signal'):
+            nl.input_signal = self.signal(nl.n_in)
+        if not hasattr(nl, 'output_signal'):
+            nl.output_signal = self.signal(nl.n_out)
+        if not hasattr(nl, 'bias_signal'):
+            nl.bias_signal = self.signal(nl.n_in, value=bias)
+        self.transform(1.0, nl.output_signal, nl.output_signal)
+        self.filter(1.0, nl.bias_signal, nl.bias_signal)
         return nl
 
     def encoder(self, sig, pop, weights=None):
@@ -265,9 +262,8 @@ class SimModel(object):
         
     def neuron_connection(self, src, dst, weights=None):
         """Connect two nonlinearities"""
-        rval = NeuronConnection(src, dst, weights)
-        self.neuron_connection.append(rval)
-        return rval
+        print "Deprecated: use encoder(src.output_signal) for neuron_connection"
+        return self.encoder(src.output_signal, dst, weights)
 
     def transform(self, alpha, insig, outsig):
         """Add a transform to the model"""
