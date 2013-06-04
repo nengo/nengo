@@ -57,6 +57,9 @@ class TestOldAPI(TestCase):
         plt.plot(in_data, label='in')
         plt.legend(loc='upper left')
 
+        #print in_probe.get_data()
+        #print net.sim.sim_step
+
         if self.show:
             plt.show()
 
@@ -71,4 +74,18 @@ class TestOldAPI(TestCase):
         assert rmse(target, A_med_probe.get_data()) < .025
         print rmse(target, A_slow_probe.get_data())
         assert rmse(target, A_slow_probe.get_data()) < 0.1
+
+    def test_direct_mode_simple(self):
+        """
+        """
+        net = Network('Runtime Test', dt=0.001, seed=123,
+                     Simulator=self.Simulator)
+        net.make_input('in', value=np.sin)
+        p = net.make_probe('in', dt_sample=0.001, pstc=0.001)
+        net.run(0.01)
+        data = p.get_data()
+        print data.dtype
+        print data
+        assert np.allclose(data[1:].flatten(),
+                           np.sin(np.arange(0, 0.0085, .001)))
 
