@@ -7,6 +7,7 @@ the "api.py" file instead of this file for their current work.
 
 """
 
+import random
 import numpy as np
 
 from simulator_objects import SimModel
@@ -94,7 +95,7 @@ class EnsembleOrigin(object):
 class Ensemble:
     """An ensemble is a collection of neurons representing a vector space.
     """
-    def __init__(self, model, n_neurons, dimensions, dt, tau_ref=0.002, tau_rc=0.02,
+    def __init__(self, model, neurons, dimensions, dt, tau_ref=0.002, tau_rc=0.02,
                  max_rate=(200, 300), intercept=(-1.0, 1.0), radius=1.0,
                  encoders=None, seed=None, neuron_type='lif',
                  array_size=1, eval_points=None, decoder_noise=0.1,
@@ -142,8 +143,9 @@ class Ensemble:
         """
         if seed is None:
             seed = np.random.randint(1000)
-        self.seed = seed
-        self.n_neurons = n_neurons
+        self.n_neurons = neurons
+        del neurons  # neurons usually means the nonlinearities
+        n_neurons = self.n_neurons
         self.dimensions = dimensions
         self.array_size = array_size
         self.radius = radius
@@ -531,7 +533,9 @@ class Network(object):
             fixed_seed=None,
             dt=0.001,
             Simulator=simulator.Simulator):
-        self.seed = seed
+        self.random = random.Random()
+        if seed is not None:
+            self.random.seed(seed)
         self.fixed_seed = fixed_seed
         self.model = SimModel(dt)
         self.ensembles = {}
@@ -571,21 +575,27 @@ class Network(object):
             self.inputs[name] = rval
         return rval
 
-    def make_array(self, name, *args, **kwargs):
-        seed = kwargs.pop('seed', self.fixed_seed)
-        if seed is None:
-            seed = self.seed
-            self.seed += 1
-        rval = Ensemble(self.model, *args, dt=self.dt, seed=seed, **kwargs)
-        self.ensembles[name] = rval
-        return rval
+    def make_array(self, name, neurons, array_size, dimensions=1, **kwargs):
+        """Generate a network array specifically.
+
+        This function is depricated; use for legacy code
+        or non-theano API compatibility.
+        """
+        return self.make(
+            name=name, neurons=neurons, dimensions=dimensions,
+            array_size=array_size, **kwargs)
 
     def make(self, name, *args, **kwargs):
-        seed = kwargs.pop('seed', self.fixed_seed)
-        if seed is None:
-            seed = self.seed
-            self.seed += 1
-        rval = Ensemble(self.model, *args, dt=self.dt, seed=seed, **kwargs)
+        if 'seed' not in kwargs.keys():
+            if self.fixed_seed is not None:
+                kwargs['seed'] = self.fixed_seed
+            else:
+                # if no seed provided, get one randomly from the rng
+                kwargs['seed'] = self.random.randrange(0x7fffffff)
+
+        kwargs['dt'] = self.dt
+        rval = Ensemble(self.model, *args, **kwargs)
+
         self.ensembles[name] = rval
         for ii, pop in enumerate(rval.neurons):
             # TODO: add this to simulator_objects
