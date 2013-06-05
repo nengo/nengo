@@ -60,8 +60,10 @@ class LIF(object):
         if self.upsample != 1:
             raise NotImplementedError()
 
+        # N.B. J here *includes* bias
+
         # Euler's method
-        dV = dt / self.tau_rc * (J + self.bias - voltage)
+        dV = dt / self.tau_rc * (J - voltage)
 
         # increase the voltage, ignore values below 0
         v = np.maximum(voltage + dV, 0)
@@ -96,7 +98,7 @@ class LIF(object):
         voltage[:] = v * (1 - spiked)
         refractory_time[:] = new_refractory_time
 
-    def rates(self, J):
+    def rates(self, J_without_bias):
         """Return LIF firing rates for current J in Hz
 
         Parameters
@@ -109,7 +111,7 @@ class LIF(object):
             XXX
         """
         old = np.seterr(all='ignore')
-        J = J + self.bias
+        J = J_without_bias + self.bias
         try:
             A = self.tau_ref - self.tau_rc * np.log(
                 1 - 1.0 / np.maximum(J, 0))
