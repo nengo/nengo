@@ -150,6 +150,15 @@ class Constant(Signal):
         # TODO: change constructor to get n from value
         assert self.value.size == n
 
+    @property
+    def shape(self):
+        return self.value.shape
+
+    @property
+    def elemstrides(self):
+        s = np.asarray(self.value.strides)
+        return tuple(map(int, s / self.dtype.itemsize))
+
 
 class Nonlinearity(object):
     def __init__(self, input_signal, output_signal, bias_signal):
