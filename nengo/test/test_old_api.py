@@ -18,7 +18,7 @@ class TestOldAPI(TestCase):
     #    subclassing this class and overriding this attribute.
     Simulator = Simulator
 
-    show = True
+    show = False
 
     def test_direct_mode_simple(self):
         """
