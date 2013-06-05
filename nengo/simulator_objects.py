@@ -141,7 +141,9 @@ class Constant(Signal):
     """A signal meant to hold a fixed value"""
     def __init__(self, n, value):
         Signal.__init__(self, n)
-        self.value = value
+        self.value = np.asarray(value)
+        # TODO: change constructor to get n from value
+        assert self.value.size == n
 
 
 class Nonlinearity(object):
@@ -235,17 +237,13 @@ class SimModel(object):
     def nonlinearity(self, nl):
         """Add a nonlinearity (some computation) to the model"""
         self.nonlinearities.append(nl)
-        # TODO: make our nonlinearities inherit from Nonlinearity
-        #       and put this logic in the constructor
-        bias = getattr(nl, 'bias', np.zeros(nl.n_in))
-        if not hasattr(nl, 'input_signal'):
-            nl.input_signal = self.signal(nl.n_in)
-        if not hasattr(nl, 'output_signal'):
-            nl.output_signal = self.signal(nl.n_out)
-        if not hasattr(nl, 'bias_signal'):
-            nl.bias_signal = self.signal(nl.n_in, value=bias)
+        assert nl.bias_signal not in self.signals
+        assert nl.input_signal not in self.signals
+        assert nl.output_signal not in self.signals
+        self.signals.append(nl.bias_signal)
+        self.signals.append(nl.input_signal)
+        self.signals.append(nl.output_signal)
         self.transform(1.0, nl.output_signal, nl.output_signal)
-        self.filter(1.0, nl.bias_signal, nl.bias_signal)
         return nl
 
     def encoder(self, sig, pop, weights=None):
@@ -259,7 +257,7 @@ class SimModel(object):
         rval = Decoder(pop, sig, weights=weights)
         self.decoders.append(rval)
         return rval
-        
+
     def neuron_connection(self, src, dst, weights=None):
         """Connect two nonlinearities"""
         print "Deprecated: use encoder(src.output_signal) for neuron_connection"
@@ -267,12 +265,16 @@ class SimModel(object):
 
     def transform(self, alpha, insig, outsig):
         """Add a transform to the model"""
+        if hasattr(outsig, 'value'):
+            raise TypeError('transform destination is constant')
         rval = Transform(alpha, insig, outsig)
         self.transforms.append(rval)
         return rval
 
     def filter(self, alpha, oldsig, newsig):
         """Add a filter to the model"""
+        if hasattr(newsig, 'value'):
+            raise TypeError('filter destination is constant')
         rval = Filter(alpha, oldsig, newsig)
         self.filters.append(rval)
         return rval
