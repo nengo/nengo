@@ -20,7 +20,7 @@ class TestOldAPI(TestCase):
 
     show = False
 
-    def test_basic_1(self):
+    def test_basic_1(self, N=1000):
         """
         Create a network with sin(t) being represented by
         a population of spiking neurons. Assert that the
@@ -35,7 +35,7 @@ class TestOldAPI(TestCase):
         print 'make_input'
         net.make_input('in', value=np.sin)
         print 'make A'
-        net.make('A', 1000, 1)
+        net.make('A', N, 1)
         print 'connecting in -> A'
         net.connect('in', 'A')
         A_fast_probe = net.make_probe('A', dt_sample=0.01, pstc=0.001)
@@ -43,6 +43,7 @@ class TestOldAPI(TestCase):
         A_slow_probe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
         in_probe = net.make_probe('in', dt_sample=0.01, pstc=0.01)
 
+        # net.run(0.01); return
         net.run(1.0)
 
         target = np.sin(np.arange(0, 1000, 10) / 1000.)
@@ -73,6 +74,9 @@ class TestOldAPI(TestCase):
         assert rmse(target, A_med_probe.get_data()) < .035
         print rmse(target, A_slow_probe.get_data())
         assert rmse(target, A_slow_probe.get_data()) < 0.1
+
+    def test_basic_5K(self):
+        return self.test_basic_1(5000)
 
     def test_direct_mode_simple(self):
         """
