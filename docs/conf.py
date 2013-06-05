@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-# nengo documentation build configuration file, created by
-# sphinx-quickstart on Mon Mar 18 11:16:41 2013.
+# Nengo documentation build configuration file, created by
+# sphinx-quickstart on Mon Apr 22 15:42:07 2013.
 #
 # This file is execfile()d with the current directory set to its containing dir.
 #
@@ -18,28 +18,6 @@ import sys, os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
-class Mock(object):
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __call__(self, *args, **kwargs):
-        return Mock()
-
-    @classmethod
-    def __getattr__(cls, name):
-        if name in ('__file__', '__path__'):
-            return '/dev/null'
-        elif name[0] == name[0].upper():
-            mockType = type(name, (), {})
-            mockType.__module__ = __name__
-            return mockType
-        else:
-            return Mock()
-
-MOCK_MODULES = []
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock()
-
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -47,7 +25,9 @@ for mod_name in MOCK_MODULES:
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.mathjax', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.autosummary',
+              'sphinx.ext.mathjax', 'sphinx.ext.viewcode', 'numpydoc']
+numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -62,8 +42,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'nengo'
-copyright = u'2013, CNRGlab at UWaterloo'
+project = u'Nengo'
+copyright = u'2013, CNRGlab @ UWaterloo'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -186,7 +166,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'nengodoc'
+htmlhelp_basename = 'Nengodoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -205,8 +185,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'nengo.tex', u'Nengo Documentation',
-   u'CNRGlab at UWaterloo', 'manual'),
+  ('index', 'Nengo.tex', u'Nengo API Documentation',
+   u'CNRGlab @ UWaterloo', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -236,7 +216,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'nengo', u'Nengo Documentation',
-     [u'CNRGlab at UWaterloo'], 1)
+     [u'CNRGlab @ UWaterloo'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -249,8 +229,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'nengo', u'Nengo Documentation',
-   u'CNRGlab at UWaterloo', 'nengo', 'One line description of project.',
+  ('index', 'Nengo', u'Nengo Documentation',
+   u'CNRGlab @ UWaterloo', 'Nengo', 'One line description of project.',
    'Miscellaneous'),
 ]
 
