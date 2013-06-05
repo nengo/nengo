@@ -65,13 +65,26 @@ class EnsembleOrigin(object):
             the transformation to perform to the ensemble's
             represented values to get the output value
         """
-        if ensemble.array_size > 1:
-            raise NotImplementedError()
-        babbling_signal = ensemble.babbling_signal.T
-        if func:
-            targets = np.asarray(map(func, babbling_signal))
+        eval_points = ensemble.babbling_signal
+
+        # compute the targets at the sampled points
+        if func is None:
+            # if no function provided, use identity function as default
+            targets = eval_points.T
         else:
-            targets = babbling_signal
+            # otherwise calculate targets using provided function
+
+            # scale all our sample points by ensemble radius,
+            # calculate function value, then scale back to unit length
+
+            # this ensures that we accurately capture the shape of the
+            # function when the radius is > 1 (think for example func=x**2)
+            targets = \
+                (np.array(
+                    [func(s * ensemble.radius) for s in eval_points.T]
+                    ) / ensemble.radius )
+            if len(targets.shape) < 2:
+                targets.shape = targets.shape[0], 1
 
         n, = targets.shape[1:]
         dt = ensemble.model.dt
@@ -221,7 +234,7 @@ class Ensemble:
                 neurons_ii.babbling_rate = neurons_ii.rates(
                         np.dot(
                             self.encoders[ii],
-                            self.babbling_signal[ii:ii+1]).T)
+                            self.babbling_signal).T)
 
             # set up a dictionary for encoded_input connections
             self.encoded_input = {}
@@ -571,7 +584,9 @@ class Network(object):
             pop.bias_signal.name = name + '.bias'
             pop.output_signal.name = name + '.output'
         else:
-            rval = self.model.signal(n=1, value=float(value))
+            value = np.asarray(value, dtype='float')
+            N, = value.shape
+            rval = self.model.signal(n=N, value=value)
             self.inputs[name] = rval
         return rval
 
@@ -611,17 +626,32 @@ class Network(object):
         if name1 in self.ensembles:
             src = self.ensembles[name1]
             dst = self.ensembles[name2]
-            decoder = self.model.decoder(src.pop, decoded)
-            decoder.desired_function = func
-            self.model.transform(np.asarray(transform), decoded, dst.sig)
+            if func is None:
+                oname = 'X'
+            else:
+                oname = func.__name__
+
+            if oname not in src.origin:
+                src.add_origin(oname, func)
+
+            decoded_signal = src.origin[oname].sig
+            self.model.transform(np.asarray(transform),
+                    decoded_signal, dst.input_signals[0])
+
         elif name1 in self.inputs:
             src = self.inputs[name1]
-            pop_idx = 0 # XXX
-            dst = self.ensembles[name2].input_signals[pop_idx]
+            dst_ensemble = self.ensembles[name2]
+            if (dst_ensemble.array_size,) != src.shape:
+                raise NotImplementedError()
+
+            for ii in range(dst_ensemble.array_size):
+                src_ii = src[ii]
+                dst_ii = dst_ensemble.input_signals[ii]
+
             if func is None:
                 alpha = np.asarray(transform)
                 if alpha.size == 1:
-                    self.model.filter(alpha, src, dst)
+                    self.model.filter(alpha, src_ii, dst_ii)
                 else:
                     raise NotImplementedError()
             else:
@@ -632,8 +662,6 @@ class Network(object):
     def make_probe(self, name, dt_sample, pstc):
         if name in self.ensembles:
             ens = self.ensembles[name]
-            if ens.array_size > 1:
-                raise NotImplementedError()
             src = ens.origin['X'].sig
             if pstc > self.dt:
                 # -- create a new smoothed-out signal

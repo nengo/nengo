@@ -146,11 +146,11 @@ class TestOldAPI(TestCase):
                 for k in range(D3):
                     transformA[(j+k*D2+i*D2*D3)*2][j+i*D2]=1
                     transformB[(j+k*D2+i*D2*D3)*2+1][k+j*D3]=1
-                    
-        net.connect('A','C',transform=transformA)            
-        net.connect('B','C',transform=transformB)            
-                    
-                    
+
+        net.connect('A','C',transform=transformA)
+        net.connect('B','C',transform=transformB)
+
+
         # now compute the products and do the appropriate summing
         print "make_array: output D"
         net.make_array('D',N,D1*D3,radius=radius, neuron_type='lif')
@@ -159,12 +159,17 @@ class TestOldAPI(TestCase):
             return x[0]*x[1]
         # the mapping for this transformation is much easier, since we want to
         # combine D2 pairs of elements (we sum D2 products together)    
+
+        # XXX index_post is not implemented
         net.connect('C','D',index_post=[i/D2 for i in range(D1*D2*D3)],func=product)
 
-        net.get_object('input A').origin['X'].decoded_output.set_value(
-            np.asarray([.5, -.5]).astype('float32'))
-        net.get_object('input B').origin['X'].decoded_output.set_value(
-            np.asarray([0, 1, -1, 0]).astype('float32'))
+        if 0:
+            # is there a portable API for doing this?
+
+            net.get_object('input A').origin['X'].decoded_output.set_value(
+                np.asarray([.5, -.5]).astype('float32'))
+            net.get_object('input B').origin['X'].decoded_output.set_value(
+                np.asarray([0, 1, -1, 0]).astype('float32'))
 
         Dprobe = net.make_probe('D', dt_sample=0.01, pstc=0.1)
 
