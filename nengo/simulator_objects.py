@@ -206,6 +206,18 @@ class Transform(object):
         self.alpha_signal = Constant(n=alpha.size, value=alpha)
         self.insig = insig
         self.outsig = outsig
+        if self.alpha_signal.size == 1:
+            if self.insig.shape != self.outsig.shape:
+                raise ShapeMismatch()
+        else:
+            if self.alpha_signal.shape != (
+                    self.outsig.shape + self.insig.shape):
+                raise ShapeMismatch(
+                        self.alpha_signal.shape,
+                        self.outsig.shape,
+                        self.insig.shape,
+                        )
+
 
     def __str__(self):
         return ("Transform (id " + str(id(self)) + ")"
