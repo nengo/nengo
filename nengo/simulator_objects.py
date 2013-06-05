@@ -22,6 +22,7 @@ class SignalView(object):
     """Interpretable, vector-valued quantity within NEF
     """
     def __init__(self, base, shape, elemstrides, offset):
+        assert base
         self.base = base
         self.shape = tuple(shape)
         self.elemstrides = tuple(elemstrides)
@@ -32,7 +33,11 @@ class SignalView(object):
 
     @property
     def dtype(self):
-        return self.base._dtype
+        return np.dtype(self.base._dtype)
+
+    @property
+    def ndim(self):
+        return len(self.shape)
 
     @property
     def size(self):
