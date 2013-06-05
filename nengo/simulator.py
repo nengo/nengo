@@ -72,7 +72,11 @@ def dot_inc(a, b, targ):
     #    because incrementing scalar to len-1 arrays is ok
     #    if the shapes are not compatible, we'll get a
     #    problem in targ[...] += inc
-    inc =  np.dot(a, b)
+    try:
+        inc =  np.dot(a, b)
+    except Exception, e:
+        e.args = e.args + (a.shape, b.shape)
+        raise
     if inc.shape != targ.shape:
         if inc.size == targ.size == 1:
             inc = np.asarray(inc).reshape(targ.shape)
