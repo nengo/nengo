@@ -540,15 +540,13 @@ class Network(object):
         self.simtime = self.model.signal()
         self.one = self.model.signal(value=1.0)
 
-        # -- hold 1.0 in self.one
-        self.model.filter(1.0, self.one, self.one)
-
         # -- steps counts by 1.0
-        self.model.filter(1.0, self.steps, self.steps)
         self.model.filter(1.0, self.one, self.steps)
+        self.model.filter(1.0, self.steps, self.steps)
 
         # simtime <- dt * steps
         self.model.filter(dt, self.steps, self.simtime)
+        self.model.filter(dt, self.one, self.simtime)
 
         self.Simulator = Simulator
 
@@ -563,6 +561,10 @@ class Network(object):
                 Direct(n_in=1, n_out=1, fn=value))
             self.model.encoder(self.simtime, pop, weights=np.asarray([[1]]))
             self.inputs[name] = pop.output_signal
+            # TODO: add this to simulator_objects
+            pop.input_signal.name = name + '.input'
+            pop.bias_signal.name = name + '.bias'
+            pop.output_signal.name = name + '.output'
         else:
             rval = self.model.signal(n=1, value=float(value))
             self.inputs[name] = rval
@@ -584,6 +586,11 @@ class Network(object):
             self.seed += 1
         rval = Ensemble(self.model, *args, dt=self.dt, seed=seed, **kwargs)
         self.ensembles[name] = rval
+        for ii, pop in enumerate(rval.neurons):
+            # TODO: add this to simulator_objects
+            pop.input_signal.name = name + '[%i].input' % ii
+            pop.bias_signal.name = name + '[%i].bias' % ii
+            pop.output_signal.name = name + '[%i].output' % ii
         return rval
 
     def connect(self, name1, name2,

@@ -24,16 +24,15 @@ class SimLIF(object):
         self.refractory_time = np.zeros(nl.n_in)
 
     def step(self, dt, J, output):
-        self.nl.step_math0(dt,
-                            J,
-                            self.voltage,
-                            self.refractory_time,
-                            output)
+        self.nl.step_math0(dt, J, self.voltage, self.refractory_time, output)
 
 
 class SimLIFRate(object):
-    def __init__(self, lifrate):
-        raise NotImplementedError()
+    def __init__(self, nl):
+        self.nl = nl
+
+    def step(self, dt, J, output):
+        output[:] = dt * self.nl.rates(J - self.nl.bias)
 
 
 registry = {
@@ -68,11 +67,6 @@ def get_signal(signals_dct, obj):
         raise TypeError()
 
 
-def zero_array_dct(dct):
-    for arr in dct.values():
-        arr[...] = 0
-
-
 def dot_inc(a, b, targ):
     # -- we check for size mismatch,
     #    because incrementing scalar to len-1 arrays is ok
@@ -97,14 +91,20 @@ class Simulator(object):
         self.signals_copy = {}
         self.nonlinearities = {}
         self.probe_outputs = {}
+        self.constant_signals = []
+        self.dynamic_signals = []
 
         for sig in self.model.signals:
             if hasattr(sig, 'value'):
                 self.signals[sig] = np.asarray(sig.value)
+                self.signals_tmp[sig] = np.asarray(sig.value)
+                self.signals_copy[sig] = np.asarray(sig.value)
+                self.constant_signals.append(sig)
             else:
                 self.signals[sig] = np.zeros(sig.n)
-            self.signals_tmp[sig] = np.zeros(sig.n)
-            self.signals_copy[sig] = np.zeros(sig.n)
+                self.signals_tmp[sig] = np.zeros(sig.n)
+                self.signals_copy[sig] = np.zeros(sig.n)
+                self.dynamic_signals.append(sig)
 
         for pop in self.model.nonlinearities:
             self.nonlinearities[pop] = registry[pop.__class__](pop)
@@ -118,16 +118,16 @@ class Simulator(object):
         for nl in self.model.nonlinearities:
             self.signals[nl.input_signal][...] = self.signals[nl.bias_signal]
 
-
         # -- encoders: signals -> input current
         #    (N.B. this includes neuron -> neuron connections)
         for enc in self.model.encoders:
-            dot_inc(get_signal(self.signals,enc.sig),
+            dot_inc(get_signal(self.signals, enc.sig),
                     enc.weights.T,
                     self.signals[enc.pop.input_signal])
-                
+
         # -- reset: 0 -> signals_tmp
-        zero_array_dct(self.signals_tmp)
+        for sig in self.dynamic_signals:
+            self.signals_tmp[sig][...] = 0
 
         # -- population dynamics
         for nl in self.model.nonlinearities:
@@ -143,12 +143,12 @@ class Simulator(object):
                     get_signal(self.signals_tmp, dec.sig))
 
         # -- copy: signals -> signals_copy
-        for sig in self.model.signals:
+        for sig in self.dynamic_signals:
             self.signals_copy[sig][...] = self.signals[sig]
 
         # -- reset: 0 -> signals
-        zero_array_dct(self.signals)
-
+        for sig in self.dynamic_signals:
+            self.signals[sig][...] = 0
 
         # -- filters: signals_copy -> signals
         for filt in self.model.filters:
@@ -158,10 +158,9 @@ class Simulator(object):
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
-            dot_inc(tf.alpha, 
+            dot_inc(tf.alpha,
                     get_signal(self.signals_tmp, tf.insig),
                     get_signal(self.signals, tf.outsig))
-
 
         # -- probes signals -> probe buffers
         for probe in self.model.probes:

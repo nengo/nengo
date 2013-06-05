@@ -1,4 +1,5 @@
 import numpy as np
+from simulator_objects import Constant, Signal
 
 #
 # Definitions of standard kinds of Non-Linearity
@@ -16,6 +17,10 @@ class Direct(object):
         """
         fn: 
         """
+        self.input_signal = Signal(n_in)
+        self.output_signal = Signal(n_out)
+        self.bias_signal = Constant(n=n_in, value=np.zeros(n_in))
+
         self.n_in = n_in
         self.n_out = n_out
         self.fn = fn
@@ -26,12 +31,24 @@ class Direct(object):
 
 class LIF(object):
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, upsample=1):
+        self.input_signal = Signal(n_neurons)
+        self.output_signal = Signal(n_neurons)
+        self.bias_signal = Constant(n=n_neurons, value=np.zeros(n_neurons))
+
         self.n_neurons = n_neurons
         self.upsample = upsample
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
         self.gain = np.random.rand(n_neurons)
-        self.bias = np.random.rand(n_neurons)
+
+
+    @property
+    def bias(self):
+        return self.bias_signal.value
+
+    @bias.setter
+    def bias(self, value):
+        self.bias_signal.value[...] = value
 
     @property
     def n_in(self):
@@ -60,8 +77,10 @@ class LIF(object):
         if self.upsample != 1:
             raise NotImplementedError()
 
+        # N.B. J here *includes* bias
+
         # Euler's method
-        dV = dt / self.tau_rc * (J + self.bias - voltage)
+        dV = dt / self.tau_rc * (J - voltage)
 
         # increase the voltage, ignore values below 0
         v = np.maximum(voltage + dV, 0)
@@ -96,7 +115,7 @@ class LIF(object):
         voltage[:] = v * (1 - spiked)
         refractory_time[:] = new_refractory_time
 
-    def rates(self, J):
+    def rates(self, J_without_bias):
         """Return LIF firing rates for current J in Hz
 
         Parameters
@@ -109,7 +128,7 @@ class LIF(object):
             XXX
         """
         old = np.seterr(all='ignore')
-        J = J + self.bias
+        J = J_without_bias + self.bias
         try:
             A = self.tau_ref - self.tau_rc * np.log(
                 1 - 1.0 / np.maximum(J, 0))
@@ -122,6 +141,10 @@ class LIF(object):
 
 
 class LIFRate(LIF):
+    def __init__(self, n_neurons):
+        self.input_signal = Signal(n_neurons)
+        self.output_signal = Signal(n_neurons)
+        self.bias_signal = Constant(n=n_neurons, value=np.zeros(n_neurons))
 
     @property
     def n_in(self):
