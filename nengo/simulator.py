@@ -24,16 +24,15 @@ class SimLIF(object):
         self.refractory_time = np.zeros(nl.n_in)
 
     def step(self, dt, J, output):
-        self.nl.step_math0(dt,
-                            J,
-                            self.voltage,
-                            self.refractory_time,
-                            output)
+        self.nl.step_math0(dt, J, self.voltage, self.refractory_time, output)
 
 
 class SimLIFRate(object):
-    def __init__(self, lifrate):
-        raise NotImplementedError()
+    def __init__(self, nl):
+        self.nl = nl
+
+    def step(self, dt, J, output):
+        output[:] = dt * self.nl.rates(J - self.nl.bias)
 
 
 registry = {
@@ -118,14 +117,13 @@ class Simulator(object):
         for nl in self.model.nonlinearities:
             self.signals[nl.input_signal][...] = self.signals[nl.bias_signal]
 
-
         # -- encoders: signals -> input current
         #    (N.B. this includes neuron -> neuron connections)
         for enc in self.model.encoders:
             dot_inc(get_signal(self.signals,enc.sig),
                     enc.weights.T,
                     self.signals[enc.pop.input_signal])
-                
+
         # -- reset: 0 -> signals_tmp
         zero_array_dct(self.signals_tmp)
 
@@ -158,7 +156,7 @@ class Simulator(object):
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
-            dot_inc(tf.alpha, 
+            dot_inc(tf.alpha,
                     get_signal(self.signals_tmp, tf.insig),
                     get_signal(self.signals, tf.outsig))
 
