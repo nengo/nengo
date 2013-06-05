@@ -59,9 +59,6 @@ class TestOldAPI(TestCase):
         in_probe = net.make_probe('in', dt_sample=0.01, pstc=0.01)
 
         net.run(1.0)
-        print net.sim.signals[net.one]
-        print net.sim.signals[net.steps]
-        print net.sim.signals[net.simtime]
 
         target = np.sin(np.arange(0, 1000, 10) / 1000.)
         target.shape = (100, 1)
