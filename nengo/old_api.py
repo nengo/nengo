@@ -52,7 +52,6 @@ def filter_coefs(pstc, dt):
 
 class EnsembleOrigin(object):
     def __init__(self, ensemble, func=None,
-            pop_idx=0,
             pts_slice=slice(None, None, None),
             rcond=5e-2,
             ):
@@ -88,21 +87,27 @@ class EnsembleOrigin(object):
 
         n, = targets.shape[1:]
         dt = ensemble.model.dt
+        self.sigs = []
+        self.decoders = []
+        self.transforms = []
 
+        for ii in range(ensemble.array_size):
+            A = ensemble.neurons[ii].babbling_rate * dt
+            b = targets
+            weights, res, rank, s = np.linalg.lstsq(A, b, rcond=rcond)
 
-        A = ensemble.neurons[pop_idx].babbling_rate * dt
-        b = targets
-        weights, res, rank, s = np.linalg.lstsq(A, b, rcond=rcond)
+            sig = ensemble.model.signal(n=n)
+            decoder = ensemble.model.decoder(
+                sig=sig,
+                pop=ensemble.neurons[ii],
+                weights=weights.T)
 
-        self.sig = ensemble.model.signal(n=n)
-        self.decoder = ensemble.model.decoder(
-            sig=self.sig,
-            pop=ensemble.neurons[pop_idx],
-            weights=weights.T)
+            # set up self.sig as an unfiltered signal
+            transform = ensemble.model.transform(1.0, sig, sig)
 
-        # set up self.sig as an unfiltered signal
-        self.transform = ensemble.model.transform(1.0, self.sig, self.sig)
-        self.filter = ensemble.model.filter(0.0, self.sig, self.sig)
+            self.sigs.append(sig)
+            self.decoders.append(decoder)
+            self.transforms.append(transform)
 
 
 class Ensemble:
@@ -242,7 +247,7 @@ class Ensemble:
             self.learned_terminations = []
 
             # make default origin
-            self.add_origin('X', pop_idx=0)
+            self.add_origin('X')
 
         elif self.mode == 'direct':
             # make default origin
@@ -623,6 +628,7 @@ class Network(object):
                 func=None,
                 transform=1.0,
                 index_post=None):
+        transform = np.asarray(transform)
         if name1 in self.ensembles:
             src = self.ensembles[name1]
             dst = self.ensembles[name2]
@@ -634,9 +640,36 @@ class Network(object):
             if oname not in src.origin:
                 src.add_origin(oname, func)
 
-            decoded_signal = src.origin[oname].sig
-            self.model.transform(np.asarray(transform),
-                    decoded_signal, dst.input_signals[0])
+            if src.array_size != dst.array_size:
+                decoded_origin = src.origin[oname]
+                print transform.shape
+                print dst.array_size * dst.dimensions
+                print src.array_size
+                if transform.shape == (
+                        dst.array_size * dst.dimensions,
+                        src.array_size):
+                    transform.shape = (
+                        dst.dimensions,
+                        dst.array_size,
+                        src.array_size)
+                    for ii in range(dst.array_size):
+                        for jj in range(src.array_size):
+                            self.model.transform(
+                                    transform[:, ii:ii+1, jj],
+                                decoded_origin.sigs[jj],
+                                dst.input_signals[ii])
+                else:
+                    for ii, jj in enumerate(index_post):
+                        assert transform.size == 1
+                        self.model.transform(
+                            transform,
+                            decoded_origin.sigs[ii],
+                            dst.input_signals[jj])
+            else:
+                for ii in range(src.array_size):
+                    decoded_signal = src.origin[oname].sigs[ii]
+                    self.model.transform(transform,
+                            decoded_signal, dst.input_signals[ii])
 
         elif name1 in self.inputs:
             src = self.inputs[name1]
@@ -662,18 +695,24 @@ class Network(object):
     def make_probe(self, name, dt_sample, pstc):
         if name in self.ensembles:
             ens = self.ensembles[name]
-            src = ens.origin['X'].sig
+            srcs = ens.origin['X'].sigs
+            src_n = srcs[0].size
+            probe_sig = self.model.signal(len(srcs) * src_n)
             if pstc > self.dt:
                 # -- create a new smoothed-out signal
                 fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
-                probe_sig = self.model.signal(src.n)
                 self.model.filter(fcoef, probe_sig, probe_sig)
-                self.model.transform(tcoef, src, probe_sig)
+                for ii, src in enumerate(srcs):
+                    self.model.transform(tcoef, src,
+                            probe_sig[ii * src_n: (ii + 1) * src_n])
                 return Probe(
                     self.model.probe(probe_sig, dt_sample),
                     self)
             else:
-                return Probe(self.model.probe(src, dt_sample),
+                for ii, src in enumerate(srcs):
+                    self.model.transform(1.0, src,
+                            probe_sig[ii * src_n: (ii + 1) * src_n])
+                return Probe(self.model.probe(probe_sig, dt_sample),
                     self)
         elif name in self.inputs:
             src = self.inputs[name]
