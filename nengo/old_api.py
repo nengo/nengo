@@ -53,7 +53,7 @@ class EnsembleOrigin(object):
     def __init__(self, ensemble, func=None,
             pop_idx=0,
             pts_slice=slice(None, None, None),
-            rcond=1e-3,
+            rcond=5e-2,
             ):
         """The output from a population of neurons (ensemble),
         performing a transformation (func) on the represented value.
@@ -75,9 +75,10 @@ class EnsembleOrigin(object):
         n, = targets.shape[1:]
         dt = ensemble.model.dt
 
+
         A = ensemble.neurons[pop_idx].babbling_rate * dt
         b = targets
-        weights, res, rank, s = np.linalg.lstsq(A, b)#, rcond=rcond)
+        weights, res, rank, s = np.linalg.lstsq(A, b, rcond=rcond)
 
         self.sig = ensemble.model.signal(n=n)
         self.decoder = ensemble.model.decoder(
