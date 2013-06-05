@@ -540,15 +540,13 @@ class Network(object):
         self.simtime = self.model.signal()
         self.one = self.model.signal(value=1.0)
 
-        # -- hold 1.0 in self.one
-        self.model.filter(1.0, self.one, self.one)
-
         # -- steps counts by 1.0
-        self.model.filter(1.0, self.steps, self.steps)
         self.model.filter(1.0, self.one, self.steps)
+        self.model.filter(1.0, self.steps, self.steps)
 
         # simtime <- dt * steps
         self.model.filter(dt, self.steps, self.simtime)
+        self.model.filter(dt, self.one, self.simtime)
 
         self.Simulator = Simulator
 
