@@ -86,9 +86,9 @@ class TestOldAPI(TestCase):
         print rmse(target, in_probe.get_data())
         assert rmse(target, in_probe.get_data()) < .001
         print rmse(target, A_fast_probe.get_data())
-        assert rmse(target, A_fast_probe.get_data()) < .35
+        assert rmse(target, A_fast_probe.get_data()) < .3
         print rmse(target, A_med_probe.get_data())
-        assert rmse(target, A_med_probe.get_data()) < .035
+        assert rmse(target, A_med_probe.get_data()) < .03
         print rmse(target, A_slow_probe.get_data())
         assert rmse(target, A_slow_probe.get_data()) < 0.1
 

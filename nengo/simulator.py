@@ -116,7 +116,6 @@ class Simulator(object):
     def step(self):
         # -- reset nonlinearities: bias -> input_current
         for nl in self.model.nonlinearities:
-            foo = self.signals[nl.bias_signal]
             self.signals[nl.input_signal][...] = self.signals[nl.bias_signal]
 
         # -- encoders: signals -> input current
