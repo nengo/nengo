@@ -18,7 +18,22 @@ class TestOldAPI(TestCase):
     #    subclassing this class and overriding this attribute.
     Simulator = Simulator
 
-    show = False
+    show = True
+
+    def test_direct_mode_simple(self):
+        """
+        """
+        net = Network('Runtime Test', dt=0.001, seed=123,
+                     Simulator=self.Simulator)
+        net.make_input('in', value=np.sin)
+        p = net.make_probe('in', dt_sample=0.001, pstc=0.001)
+        net.run(0.01)
+        data = p.get_data()
+        print data.dtype
+        print data
+        assert np.allclose(data.flatten(),
+                           np.sin(np.arange(0, 0.0095, .001)))
+
 
     def test_basic_1(self, N=1000):
         """
@@ -43,8 +58,10 @@ class TestOldAPI(TestCase):
         A_slow_probe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
         in_probe = net.make_probe('in', dt_sample=0.01, pstc=0.01)
 
-        # net.run(0.01); return
         net.run(1.0)
+        print net.sim.signals[net.one]
+        print net.sim.signals[net.steps]
+        print net.sim.signals[net.simtime]
 
         target = np.sin(np.arange(0, 1000, 10) / 1000.)
         target.shape = (100, 1)
@@ -77,20 +94,6 @@ class TestOldAPI(TestCase):
 
     def test_basic_5K(self):
         return self.test_basic_1(5000)
-
-    def test_direct_mode_simple(self):
-        """
-        """
-        net = Network('Runtime Test', dt=0.001, seed=123,
-                     Simulator=self.Simulator)
-        net.make_input('in', value=np.sin)
-        p = net.make_probe('in', dt_sample=0.001, pstc=0.001)
-        net.run(0.01)
-        data = p.get_data()
-        print data.dtype
-        print data
-        assert np.allclose(data[1:].flatten(),
-                           np.sin(np.arange(0, 0.0085, .001)))
 
     def test_matrix_mul(self):
         # Adjust these values to change the matrix dimensions

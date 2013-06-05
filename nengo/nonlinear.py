@@ -1,4 +1,5 @@
 import numpy as np
+from simulator_objects import Constant, Signal
 
 #
 # Definitions of standard kinds of Non-Linearity
@@ -16,6 +17,10 @@ class Direct(object):
         """
         fn: 
         """
+        self.input_signal = Signal(n_in)
+        self.output_signal = Signal(n_out)
+        self.bias_signal = Constant(n=n_in, value=np.zeros(n_in))
+
         self.n_in = n_in
         self.n_out = n_out
         self.fn = fn
@@ -26,12 +31,24 @@ class Direct(object):
 
 class LIF(object):
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, upsample=1):
+        self.input_signal = Signal(n_neurons)
+        self.output_signal = Signal(n_neurons)
+        self.bias_signal = Constant(n=n_neurons, value=np.zeros(n_neurons))
+
         self.n_neurons = n_neurons
         self.upsample = upsample
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
         self.gain = np.random.rand(n_neurons)
-        self.bias = np.random.rand(n_neurons)
+
+
+    @property
+    def bias(self):
+        return self.bias_signal.value
+
+    @bias.setter
+    def bias(self, value):
+        self.bias_signal.value[...] = value
 
     @property
     def n_in(self):
@@ -124,6 +141,10 @@ class LIF(object):
 
 
 class LIFRate(LIF):
+    def __init__(self, n_neurons):
+        self.input_signal = Signal(n_neurons)
+        self.output_signal = Signal(n_neurons)
+        self.bias_signal = Constant(n=n_neurons, value=np.zeros(n_neurons))
 
     @property
     def n_in(self):
