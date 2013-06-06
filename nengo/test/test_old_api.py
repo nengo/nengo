@@ -20,19 +20,44 @@ class TestOldAPI(TestCase):
 
     show = False
 
+    def test_counters(self):
+        net = Network('foo', dt=0.001, seed=123,
+                     Simulator=self.Simulator)
+
+        simtime_probe = net._raw_probe(net.simtime, dt_sample=.001)
+        steps_probe = net._raw_probe(net.steps, dt_sample=.001)
+        net.run(0.003)
+        simtime_data = simtime_probe.get_data()
+        steps_data = steps_probe.get_data()
+        assert np.allclose(simtime_data.flatten(), [.001, .002, .003])
+        assert np.allclose(steps_data.flatten(), [1, 2, 3])
+
+
     def test_direct_mode_simple(self):
         """
         """
         net = Network('Runtime Test', dt=0.001, seed=123,
                      Simulator=self.Simulator)
         net.make_input('in', value=np.sin)
-        p = net.make_probe('in', dt_sample=0.001, pstc=0.001)
+        p = net.make_probe('in', dt_sample=0.001, pstc=0.0)
+        rawp = net._raw_probe(net.inputs['in'], dt_sample=.001)
+        st_probe = net._raw_probe(net.simtime, dt_sample=.001)
         net.run(0.01)
+
         data = p.get_data()
+        raw_data = rawp.get_data()
+        st_data = st_probe.get_data()
         print data.dtype
-        print data
-        assert np.allclose(data.flatten(),
+        print st_data
+        print raw_data
+        assert np.allclose(st_data.ravel(),
+                           np.arange(0.001, 0.0105, .001))
+        assert np.allclose(raw_data.ravel(),
                            np.sin(np.arange(0, 0.0095, .001)))
+        # -- the make_probe call induces a one-step delay
+        #    on readout even when the pstc is really small.
+        assert np.allclose(data.ravel()[1:],
+                           np.sin(np.arange(0, 0.0085, .001)))
 
 
     def test_basic_1(self, N=1000):
@@ -56,7 +81,7 @@ class TestOldAPI(TestCase):
         A_fast_probe = net.make_probe('A', dt_sample=0.01, pstc=0.001)
         A_med_probe = net.make_probe('A', dt_sample=0.01, pstc=0.01)
         A_slow_probe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
-        in_probe = net.make_probe('in', dt_sample=0.01, pstc=0.01)
+        in_probe = net.make_probe('in', dt_sample=0.01, pstc=0.0)
 
         net.run(1.0)
 
@@ -222,7 +247,7 @@ class TestOldAPI(TestCase):
         plt.subplot(412); plt.plot(Bprobe.get_data())
         plt.subplot(413); plt.plot(Cprobe.get_data())
         plt.subplot(414); plt.plot(Dprobe.get_data())
-        #if self.show:
-        plt.show()
+        if self.show:
+            plt.show()
 
-        nose.SkipTest('test correctness')
+        raise nose.SkipTest('test correctness')

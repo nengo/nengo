@@ -10,6 +10,17 @@ import numpy as np
 
 random_weight_rng = np.random.RandomState(12345)
 
+"""
+Set assert_named_signals True to raise an Exception
+if model.signal is used to create a signal with no name.
+
+This can help to identify code that's creating un-named signals,
+if you are trying to track down mystery signals that are showing
+up in a model.
+"""
+assert_named_signals = False
+
+
 class ShapeMismatch(ValueError):
     pass
 
@@ -34,10 +45,14 @@ class SignalView(object):
         return self.shape[0]
 
     def __str__(self):
-        return "SignalView(id " + str(id(self)) + ")"
+        return '%s{%s, %s}' % (
+            self.__class__.__name__,
+            self.name, self.shape)
 
     def __repr__(self):
-        return str(self)
+        return '%s{%s, %s}' % (
+            self.__class__.__name__,
+            self.name, self.shape)
 
     @property
     def dtype(self):
@@ -123,8 +138,11 @@ class SignalView(object):
     def name(self):
         try:
             return self._name
-        except:
-            return 'View(%s)' % self.base.name
+        except AttributeError:
+            if self.base is self:
+                return '<anon>'
+            else:
+                return 'View(%s)' % self.base.name
 
     @name.setter
     def name(self, value):
@@ -139,6 +157,8 @@ class Signal(SignalView):
         self._dtype = dtype
         if name is not None:
             self._name = name
+        if assert_named_signals:
+            assert name
 
     def __str__(self):
         return "Signal (" + str(self.n) + "D, id " + str(id(self)) + ")"
@@ -179,12 +199,10 @@ class Probe(object):
 class Constant(Signal):
     """A signal meant to hold a fixed value"""
     def __init__(self, n, value, name=None):
-        Signal.__init__(self, n)
+        Signal.__init__(self, n, name=name)
         self.value = np.asarray(value)
         # TODO: change constructor to get n from value
         assert self.value.size == n
-        if name is not None:
-            self._name = name
 
     def __str__(self):
         return "Constant (" + str(self.value) + ", id " + str(id(self)) + ")"
@@ -221,7 +239,9 @@ class Transform(object):
         alpha = np.asarray(alpha)
         if hasattr(outsig, 'value'):
             raise TypeError('transform destination is constant')
-        self.alpha_signal = Constant(n=alpha.size, value=alpha)
+        self.alpha_signal = Constant(n=alpha.size,
+                                     value=alpha,
+                                     name='tf_alpha')
         self.insig = insig
         self.outsig = outsig
         if self.alpha_signal.size == 1:
@@ -259,7 +279,8 @@ class Filter(object):
         if hasattr(newsig, 'value'):
             raise TypeError('filter destination is constant')
         alpha = np.asarray(alpha)
-        self.alpha_signal = Constant(n=alpha.size, value=alpha)
+        self.alpha_signal = Constant(n=alpha.size, value=alpha,
+                                     name='f_alpha')
         self.oldsig = oldsig
         self.newsig = newsig
 
@@ -352,9 +373,9 @@ class SimModel(object):
     def signal(self, n=1, value=None, name=None):
         """Add a signal to the model"""
         if value is None:
-            rval = Signal(n)
+            rval = Signal(n, name=name)
         else:
-            rval = Constant(n, value)
+            rval = Constant(n, value, name=name)
         self.signals.add(rval)
         return rval
 
@@ -367,16 +388,12 @@ class SimModel(object):
     def nonlinearity(self, nl):
         """Add a nonlinearity (some computation) to the model"""
         self.nonlinearities.add(nl)
-
-        # These are sets now, so it doesn't matter
         #assert nl.bias_signal not in self.signals
         #assert nl.input_signal not in self.signals
         #assert nl.output_signal not in self.signals
-
         self.signals.add(nl.bias_signal)
         self.signals.add(nl.input_signal)
         self.signals.add(nl.output_signal)
-        self.transform(1.0, nl.output_signal, nl.output_signal)
         return nl
 
     def encoder(self, sig, pop, weights=None):
