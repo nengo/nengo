@@ -175,7 +175,7 @@ class EnsembleOrigin(object):
 class Ensemble:
     """An ensemble is a collection of neurons representing a vector space.
     """
-    def __init__(self, model, neurons, dimensions, dt, tau_ref=0.002, tau_rc=0.02,
+    def __init__(self, model, name, neurons, dimensions, dt, tau_ref=0.002, tau_rc=0.02,
                  max_rate=(200, 300), intercept=(-1.0, 1.0), radius=1.0,
                  encoders=None, seed=None, neuron_type='lif',
                  array_size=1, eval_points=None, decoder_noise=0.1,
@@ -262,7 +262,9 @@ class Ensemble:
         self.decoded_input = {}
 
         self.input_signals = [
-            model.signal(n=dimensions)
+            model.signal(
+                n=dimensions,
+                name='%s.input_signals[%i]' % (name, ii))
             for ii in range(array_size)]
 
         # if we're creating a spiking ensemble
@@ -279,7 +281,9 @@ class Ensemble:
             for ii in range(array_size):
                 neurons_ii = self.model.nonlinearity(
                         # TODO: handle different neuron types,
-                        LIF(n_neurons, tau_rc=tau_rc, tau_ref=tau_ref))
+                        LIF(n_neurons, tau_rc=tau_rc, tau_ref=tau_ref,
+                            name=name + '[%i]' % ii),
+                    )
                 self.neurons.append(neurons_ii)
                 max_rates = self.rng.uniform(
                     size=self.n_neurons,
@@ -621,9 +625,9 @@ class Network(object):
         self.ensembles = {}
         self.inputs = {}
 
-        self.steps = self.model.signal()
-        self.simtime = self.model.signal()
-        self.one = self.model.signal(value=1.0)
+        self.steps = self.model.signal(name='steps')
+        self.simtime = self.model.signal(name='simtime')
+        self.one = self.model.signal(value=1.0, name='one')
 
         # -- steps counts by 1.0
         self.model.filter(1.0, self.one, self.steps)
@@ -676,14 +680,9 @@ class Network(object):
                 kwargs['seed'] = self.random.randrange(0x7fffffff)
 
         kwargs['dt'] = self.dt
-        rval = Ensemble(self.model, *args, **kwargs)
+        rval = Ensemble(self.model, name, *args, **kwargs)
 
         self.ensembles[name] = rval
-        for ii, pop in enumerate(rval.neurons):
-            # TODO: add this to simulator_objects
-            pop.input_signal.name = name + '[%i].input' % ii
-            pop.bias_signal.name = name + '[%i].bias' % ii
-            pop.output_signal.name = name + '[%i].output' % ii
         return rval
 
     def connect(self, name1, name2,

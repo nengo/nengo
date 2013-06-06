@@ -21,12 +21,14 @@ class TODO(NotImplementedError):
 class SignalView(object):
     """Interpretable, vector-valued quantity within NEF
     """
-    def __init__(self, base, shape, elemstrides, offset):
+    def __init__(self, base, shape, elemstrides, offset, name=None):
         assert base
         self.base = base
         self.shape = tuple(shape)
         self.elemstrides = tuple(elemstrides)
         self.offset = int(offset)
+        if name is not None:
+            self._name = name
 
     def __len__(self):
         return self.shape[0]
@@ -111,12 +113,26 @@ class SignalView(object):
         else:
             raise NotImplementedError(item)
 
+    @property
+    def name(self):
+        try:
+            return self._name
+        except:
+            return 'View(%s)' % self.base.name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+
 
 class Signal(SignalView):
     """Interpretable, vector-valued quantity within NEF"""
-    def __init__(self, n=1, dtype=np.float64):
+    def __init__(self, n=1, dtype=np.float64, name=None):
         self.n = n
         self._dtype = dtype
+        if name is not None:
+            self._name = name
 
     @property
     def shape(self):
@@ -144,11 +160,13 @@ class Probe(object):
 
 class Constant(Signal):
     """A signal meant to hold a fixed value"""
-    def __init__(self, n, value):
+    def __init__(self, n, value, name=None):
         Signal.__init__(self, n)
         self.value = np.asarray(value)
         # TODO: change constructor to get n from value
         assert self.value.size == n
+        if name is not None:
+            self._name = name
 
     @property
     def shape(self):

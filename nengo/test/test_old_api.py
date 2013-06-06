@@ -101,7 +101,7 @@ class TestOldAPI(TestCase):
         D1 = 1
         D2 = 2
         seed = 123
-        N = 500
+        N = 50
 
         net=Network('Matrix Multiplication', seed=seed,
                    Simulator=self.Simulator)
