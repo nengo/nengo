@@ -112,21 +112,29 @@ class TestOldAPI(TestCase):
             neuron_type='lif')
 
         # connect inputs to them so we can set their value
-        inputA = net.make_input('input A', value=[.5, -.5])
-
+        net.make_input('input A', value=[.5, -.5])
+        net.connect('input A', 'A')
         inprobe = net.make_probe('input A', dt_sample=0.01, pstc=0.1)
+        sprobe = net._probe_signals(
+            net.ensembles['A'].input_signals, dt_sample=0.01, pstc=0.01)
         Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
-        sprobe = net.make_probe_srcs(net.ensembles['A'].input_signals, dt_sample=0.01, pstc=0.01)
 
         net.run(1)
 
-        print Aprobe.get_data().shape
-        plt.subplot(311); plt.plot(Aprobe.get_data())
-        plt.subplot(312); plt.plot(inprobe.get_data())
-        plt.subplot(313); plt.plot(sprobe.get_data())
-        plt.show()
+        in_data = inprobe.get_data()
+        s_data = sprobe.get_data()
+        A_data = Aprobe.get_data()
 
-        nose.SkipTest('test correctness')
+        plt.subplot(311); plt.plot(in_data)
+        plt.subplot(312); plt.plot(s_data)
+        plt.subplot(313); plt.plot(A_data)
+        if self.show:
+            plt.show()
+
+        assert np.allclose(in_data[-10:], [.5, -.5], atol=.01, rtol=.01)
+        assert np.allclose(s_data[-10:], [.5, -.5], atol=.01, rtol=.01)
+        assert np.allclose(A_data[-10:], [.5, -.5], atol=.01, rtol=.01)
+
         
 
     def test_matrix_mul(self):

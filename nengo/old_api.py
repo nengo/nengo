@@ -719,7 +719,8 @@ class Network(object):
             src = self.inputs[name1]
             dst_ensemble = self.ensembles[name2]
             if (dst_ensemble.array_size,) != src.shape:
-                raise NotImplementedError()
+                raise ShapeMismatch(
+                    (dst_ensemble.array_size,), src.shape)
 
             for ii in range(dst_ensemble.array_size):
                 src_ii = src[ii]
@@ -727,15 +728,54 @@ class Network(object):
 
                 assert func is None
                 self.model.filter(1.0, src_ii, dst_ii)
-            else:
-                raise NotImplementedError()
         else:
             raise NotImplementedError()
 
-    def make_probe_srcs(self, srcs, dt_sample, pstc):
-        #TODO: rename srcs to signals
+    def _probe_signals(self, srcs, dt_sample, pstc):
+        """
+        set up a probe for signals (srcs) that will record
+        their value *after* decoding, transforming, filtering.
+
+        This is appropriate for inputs, constants, non-linearities, etc.
+        But if you want to probe the part of a filter that is purely the
+        decoded contribution from a population, then use
+        _probe_decoded_signals.
+        """
         src_n = srcs[0].size
-        probe_sig = self.model.signal(len(srcs) * src_n)
+        probe_sig = self.model.signal(
+            n=len(srcs) * src_n,
+            name='probe(%s)' % srcs[0].name
+            )
+
+        if pstc > self.dt:
+            # -- create a new smoothed-out signal
+            fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
+            self.model.filter(fcoef, probe_sig, probe_sig)
+            for ii, src in enumerate(srcs):
+                self.model.filter(tcoef, src,
+                        probe_sig[ii * src_n: (ii + 1) * src_n])
+            return Probe(
+                self.model.probe(probe_sig, dt_sample),
+                self)
+        else:
+            for ii, src in enumerate(srcs):
+                self.model.filter(1.0, src,
+                        probe_sig[ii * src_n: (ii + 1) * src_n])
+            return Probe(self.model.probe(probe_sig, dt_sample),
+                self)
+
+    def _probe_decoded_signals(self, srcs, dt_sample, pstc):
+        """
+        set up a probe for signals (srcs) that will record
+        their value just from being decoded.
+
+        This is appropriate for functions decoded from nonlinearities.
+        """
+        src_n = srcs[0].size
+        probe_sig = self.model.signal(
+            n=len(srcs) * src_n,
+            name='probe(%s)' % srcs[0].name
+            )
 
         if pstc > self.dt:
             # -- create a new smoothed-out signal
@@ -758,11 +798,11 @@ class Network(object):
         if name in self.ensembles:
             ens = self.ensembles[name]
             srcs = ens.origin['X'].sigs
-            return self.make_probe_srcs(srcs, dt_sample, pstc)
+            return self._probe_decoded_signals(srcs, dt_sample, pstc)
 
         elif name in self.inputs:
             src = self.inputs[name]
-            return self.make_probe_srcs([src], dt_sample, pstc)
+            return self._probe_signals([src], dt_sample, pstc)
 
         else:
             raise NotImplementedError()
