@@ -113,7 +113,7 @@ def filter_coefs(pstc, dt):
 
 
 class EnsembleOrigin(object):
-    def __init__(self, ensemble, func=None,
+    def __init__(self, ensemble, name, func=None,
             pts_slice=slice(None, None, None),
             rcond=5e-2,
             ):
@@ -158,7 +158,7 @@ class EnsembleOrigin(object):
             b = targets
             weights, res, rank, s = np.linalg.lstsq(A, b, rcond=rcond)
 
-            sig = ensemble.model.signal(n=n)
+            sig = ensemble.model.signal(n=n, name='%s[%i]' % (name, ii))
             decoder = ensemble.model.decoder(
                 sig=sig,
                 pop=ensemble.neurons[ii],
@@ -234,6 +234,7 @@ class Ensemble:
         self.decoder_noise = decoder_noise
         self.mode = mode
         self.model = model
+        self.name = name
 
         # make sure that eval_points is the right shape
         if eval_points is not None:
@@ -441,7 +442,10 @@ class Ensemble:
         # and the whole shebang for interpreting the neural activity
         if self.mode == 'spiking':
             self.origin[name] = EnsembleOrigin(
-                ensemble=self, func=func, **kwargs)
+                ensemble=self,
+                func=func,
+                name='%s.%s' % (self.name, name),
+                **kwargs)
 
         # if we're in direct mode then this population is just directly
         # performing the specified function, use a basic origin
@@ -656,7 +660,7 @@ class Network(object):
         else:
             value = np.asarray(value, dtype='float')
             N, = value.shape
-            rval = self.model.signal(n=N, value=value)
+            rval = self.model.signal(n=N, value=value, name=name)
             self.inputs[name] = rval
         return rval
 
