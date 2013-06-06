@@ -93,6 +93,42 @@ class TestOldAPI(TestCase):
     def test_basic_5K(self):
         return self.test_basic_1(5000)
 
+    def test_vector_input_constant(self):
+        # Adjust these values to change the matrix dimensions
+        #  Matrix A is D1xD2
+        #  Matrix B is D2xD3
+        #  result is D1xD3
+        D1 = 1
+        D2 = 2
+        seed = 123
+        N = 500
+
+        net=Network('Matrix Multiplication', seed=seed,
+                   Simulator=self.Simulator)
+
+        # make 2 matrices to store the input
+        print "make_array: input matrices A and B"
+        net.make_array('A', neurons=N, array_size=D1*D2, 
+            neuron_type='lif')
+
+        # connect inputs to them so we can set their value
+        inputA = net.make_input('input A', value=[.5, -.5])
+
+        inprobe = net.make_probe('input A', dt_sample=0.01, pstc=0.1)
+        Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
+        sprobe = net.make_probe_srcs(net.ensembles['A'].input_signals, dt_sample=0.01, pstc=0.01)
+
+        net.run(1)
+
+        print Aprobe.get_data().shape
+        plt.subplot(311); plt.plot(Aprobe.get_data())
+        plt.subplot(312); plt.plot(inprobe.get_data())
+        plt.subplot(313); plt.plot(sprobe.get_data())
+        plt.show()
+
+        nose.SkipTest('test correctness')
+        
+
     def test_matrix_mul(self):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
@@ -100,9 +136,9 @@ class TestOldAPI(TestCase):
         #  result is D1xD3
         D1 = 1
         D2 = 2
-        D3 = 3
+        D3 = 2
         seed = 123
-        N = 50
+        N = 500
 
         net=Network('Matrix Multiplication', seed=seed,
                    Simulator=self.Simulator)
@@ -112,12 +148,14 @@ class TestOldAPI(TestCase):
 
         # make 2 matrices to store the input
         print "make_array: input matrices A and B"
-        net.make_array('A',N,D1*D2,radius=radius, neuron_type='lif')
-        net.make_array('B',N,D2*D3,radius=radius, neuron_type='lif')
+        net.make_array('A', neurons=N, array_size=D1*D2, 
+            radius=radius, neuron_type='lif')
+        net.make_array('B', neurons=N, array_size=D2*D3, 
+            radius=radius, neuron_type='lif')
 
         # connect inputs to them so we can set their value
-        net.make_input('input A',[0]*D1*D2)
-        net.make_input('input B',[0]*D2*D3)
+        inputA = net.make_input('input A', value=[.5, -.5])
+        inputB = net.make_input('input B', value=[0, -1, 1, 0])
         print "connect: input matrices A and B"
         net.connect('input A','A')
         net.connect('input B','B')
@@ -147,9 +185,10 @@ class TestOldAPI(TestCase):
                     transformA[(j+k*D2+i*D2*D3)*2][j+i*D2]=1
                     transformB[(j+k*D2+i*D2*D3)*2+1][k+j*D3]=1
 
+        print "connect A->C"
         net.connect('A','C',transform=transformA)
+        print "connect B->C"
         net.connect('B','C',transform=transformB)
-
 
         # now compute the products and do the appropriate summing
         print "make_array: output D"
@@ -163,24 +202,19 @@ class TestOldAPI(TestCase):
         # XXX index_post is not implemented
         net.connect('C','D',index_post=[i/D2 for i in range(D1*D2*D3)],func=product)
 
-        if 0:
-            # is there a portable API for doing this?
-
-            net.get_object('input A').origin['X'].decoded_output.set_value(
-                np.asarray([.5, -.5]).astype('float32'))
-            net.get_object('input B').origin['X'].decoded_output.set_value(
-                np.asarray([0, 1, -1, 0]).astype('float32'))
-
+        Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
+        Bprobe = net.make_probe('B', dt_sample=0.01, pstc=0.1)
+        Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.1)
         Dprobe = net.make_probe('D', dt_sample=0.01, pstc=0.1)
 
         net.run(1)
 
-
-        net_data = Dprobe.get_data()
-        print net_data.shape
-        plt.plot(net_data[:, 0])
-        plt.plot(net_data[:, 1])
-        if self.show:
-            plt.show()
+        print Aprobe.get_data().shape
+        plt.subplot(411); plt.plot(Aprobe.get_data())
+        plt.subplot(412); plt.plot(Bprobe.get_data())
+        plt.subplot(413); plt.plot(Cprobe.get_data())
+        plt.subplot(414); plt.plot(Dprobe.get_data())
+        #if self.show:
+        plt.show()
 
         nose.SkipTest('test correctness')
