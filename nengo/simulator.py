@@ -156,15 +156,21 @@ class Simulator(object):
 
         # -- filters: signals_copy -> signals
         for filt in self.model.filters:
+            #print 
+            #print 'old sig: ', get_signal(self.signals_copy, filt.oldsig)
             dot_inc(filt.alpha,
                     get_signal(self.signals_copy, filt.oldsig),
                     get_signal(self.signals, filt.newsig))
+            #print 'new sig: ', get_signal(self.signals, filt.newsig)
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
+            print 
+            print 'old sig: ', get_signal(self.signals_copy, filt.oldsig)
             dot_inc(tf.alpha,
                     get_signal(self.signals_tmp, tf.insig),
                     get_signal(self.signals, tf.outsig))
+            print 'new sig: ', get_signal(self.signals, filt.newsig)
 
         # -- probes signals -> probe buffers
         for probe in self.model.probes:
