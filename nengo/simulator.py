@@ -119,6 +119,10 @@ class Simulator(object):
 
     def step(self):
         # -- reset nonlinearities: bias -> input_current
+        #print 'PRE'
+        #for k, v in self.signals.items():
+        #    print k, v
+
         for nl in self.model.nonlinearities:
             self.signals[nl.input_signal][...] = self.signals[nl.bias_signal]
 
@@ -157,20 +161,23 @@ class Simulator(object):
         # -- filters: signals_copy -> signals
         for filt in self.model.filters:
             #print 
-            #print 'old sig: ', get_signal(self.signals_copy, filt.oldsig)
+            #print 'old sig: ', filt.oldsig.name, get_signal(self.signals_copy, filt.oldsig)
             dot_inc(filt.alpha,
                     get_signal(self.signals_copy, filt.oldsig),
                     get_signal(self.signals, filt.newsig))
-            #print 'new sig: ', get_signal(self.signals, filt.newsig)
+            #print 'new sig: ', filt.newsig.name, get_signal(self.signals, filt.newsig)
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
-            print 
-            print 'old sig: ', get_signal(self.signals_copy, filt.oldsig)
+            #print 
+            #print 'old sig: ', tf.insig.name, get_signal(self.signals_copy, tf.insig)
             dot_inc(tf.alpha,
                     get_signal(self.signals_tmp, tf.insig),
                     get_signal(self.signals, tf.outsig))
-            print 'new sig: ', get_signal(self.signals, filt.newsig)
+            #print 'new sig: ', tf.outsig.name, get_signal(self.signals, tf.outsig)
+        #print 'POST'
+        #for k, v in self.signals.items():
+        #    print k, v
 
         # -- probes signals -> probe buffers
         for probe in self.model.probes:
