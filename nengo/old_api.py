@@ -249,14 +249,6 @@ class Ensemble:
         elif len(intercept) == 1:
             intercept.append(1)
 
-        if 0:
-          self.cache_key = cache.generate_ensemble_key(n_neurons=n_neurons,
-            dimensions=dimensions, tau_rc=tau_rc, tau_ref=tau_ref,
-            max_rate=max_rate, intercept=intercept, radius=radius,
-            encoders=encoders, decoder_noise=decoder_noise,
-            eval_points=eval_points, noise=noise, seed=seed, dt=dt,
-            array_size=array_size)
-
         # make dictionary for origins
         self.origin = {}
         # set up a dictionary for decoded_input
