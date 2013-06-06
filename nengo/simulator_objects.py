@@ -299,7 +299,7 @@ class SimModel(object):
         self.filters = []
         self.probes = []
 
-    def signal(self, n=1, value=None):
+    def signal(self, n=1, value=None, name=None):
         """Add a signal to the model"""
         if value is None:
             rval = Signal(n)
