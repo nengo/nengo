@@ -630,8 +630,8 @@ class Network(object):
         self.model.filter(1.0, self.steps, self.steps)
 
         # simtime <- dt * steps
-        self.model.filter(dt, self.steps, self.simtime)
         self.model.filter(dt, self.one, self.simtime)
+        self.model.filter(dt, self.steps, self.simtime)
 
         self.Simulator = Simulator
 
@@ -648,7 +648,11 @@ class Network(object):
             pop.input_signal.name = name + '.input'
             pop.bias_signal.name = name + '.bias'
             pop.output_signal.name = name + '.output'
-            rval = pop.output_signal
+
+            # move from signals_tmp -> signals
+            self.model.transform(1.0,
+                                 pop.output_signal,
+                                 pop.output_signal)
         else:
             value = np.asarray(value, dtype='float')
             N, = value.shape
@@ -701,7 +705,7 @@ class Network(object):
             transform = compute_transform(dim_pre=dim_pre,
                 dim_post=dst.dimensions, array_size=dst.array_size, **kwargs)
             #TODO: move this into the compute transform jesus
-            transform.shape = (len(decoded_origin.sigs), decoded_origin.sigs[0].size, 
+            transform.shape = (len(decoded_origin.sigs), decoded_origin.sigs[0].size,
                 dst.array_size, dst.dimensions)
 
             print transform.shape
@@ -729,6 +733,13 @@ class Network(object):
                 self.model.filter(1.0, src_ii, dst_ii)
         else:
             raise NotImplementedError()
+
+    def _raw_probe(self, sig, dt_sample):
+        """
+        Create an un-filtered probe of the named signal,
+        without constructing any filters or transforms.
+        """
+        return Probe(self.model.probe(sig, dt_sample), self)
 
     def _probe_signals(self, srcs, dt_sample, pstc):
         """
