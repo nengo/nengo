@@ -22,6 +22,68 @@ neuron_type_registry = {
 
 from . import simulator
 
+def compute_transform(dim_pre, dim_post, array_size, weight=1,
+                      index_pre=None, index_post=None, transform=None):
+    """Helper function used by :func:`nef.Network.connect()` to create
+    the `dim_post` by `dim_pre` transform matrix.
+
+    Values are either 0 or *weight*. *index_pre* and *index_post*
+    are used to determine which values are non-zero, and indicate
+    which dimensions of the pre-synaptic ensemble should be routed
+    to which dimensions of the post-synaptic ensemble.
+
+    :param int dim_pre: first dimension of transform matrix
+    :param int dim_post: second dimension of transform matrix
+    :param int array_size: size of the network array
+    :param float weight: the non-zero value to put into the matrix
+    :param index_pre: the indexes of the pre-synaptic dimensions to use
+    :type index_pre: list of integers or a single integer
+    :param index_post:
+        the indexes of the post-synaptic dimensions to use
+    :type index_post: list of integers or a single integer
+    :returns:
+        a two-dimensional transform matrix performing
+        the requested routing
+
+    """
+
+    if transform is None:
+        # create a matrix of zeros
+        transform = [[0] * dim_pre for i in range(dim_post * array_size)]
+
+        # default index_pre/post lists set up *weight* value
+        # on diagonal of transform
+
+        # if dim_post * array_size != dim_pre,
+        # then values wrap around when edge hit
+        if index_pre is None:
+            index_pre = range(dim_pre)
+        elif isinstance(index_pre, int):
+            index_pre = [index_pre]
+        if index_post is None:
+            index_post = range(dim_post * array_size)
+        elif isinstance(index_post, int):
+            index_post = [index_post]
+
+        for i in range(max(len(index_pre), len(index_post))):
+            pre = index_pre[i % len(index_pre)]
+            post = index_post[i % len(index_post)]
+            transform[post][pre] = weight
+
+    transform = np.asarray(transform).astype('float32')
+
+    # reformulate to account for post.array_size
+    if transform.shape == (dim_post * array_size, dim_pre):
+        array_transform = [[[0] * dim_pre for i in range(dim_post)]
+                           for j in range(array_size)]
+
+        for i in range(array_size):
+            for j in range(dim_post):
+                array_transform[i][j] = transform[i * dim_post + j]
+
+        transform = array_transform
+
+    return np.asarray(transform)
 
 def sample_unit_signal(dimensions, num_samples, rng):
     """Generate sample points uniformly distributed within the sphere.
@@ -625,9 +687,7 @@ class Network(object):
 
     def connect(self, name1, name2,
                 func=None,
-                transform=1.0,
-                index_post=None):
-        transform = np.asarray(transform)
+                **kwargs):
         if name1 in self.ensembles:
             src = self.ensembles[name1]
             dst = self.ensembles[name2]
@@ -639,36 +699,25 @@ class Network(object):
             if oname not in src.origin:
                 src.add_origin(oname, func)
 
-            if src.array_size != dst.array_size:
-                decoded_origin = src.origin[oname]
-                print transform.shape
-                print dst.array_size * dst.dimensions
-                print src.array_size
-                if transform.shape == (
-                        dst.array_size * dst.dimensions,
-                        src.array_size):
-                    transform.shape = (
-                        dst.dimensions,
-                        dst.array_size,
-                        src.array_size)
-                    for ii in range(dst.array_size):
-                        for jj in range(src.array_size):
-                            self.model.transform(
-                                    transform[:, ii:ii+1, jj],
-                                decoded_origin.sigs[jj],
-                                dst.input_signals[ii])
-                else:
-                    for ii, jj in enumerate(index_post):
-                        assert transform.size == 1
-                        self.model.transform(
-                            transform,
-                            decoded_origin.sigs[ii],
-                            dst.input_signals[jj])
-            else:
-                for ii in range(src.array_size):
-                    decoded_signal = src.origin[oname].sigs[ii]
-                    self.model.transform(transform,
-                            decoded_signal, dst.input_signals[ii])
+            decoded_origin = src.origin[oname]
+
+            dim_pre = len(decoded_origin.sigs) * decoded_origin.sigs[0].size
+            # (dst.array_size x dst.dim x dim_pre)
+            transform = compute_transform(dim_pre=dim_pre,
+                dim_post=dst.dimensions, array_size=dst.array_size, **kwargs)
+            #TODO: move this into the compute transform jesus
+            transform.shape = (len(decoded_origin.sigs), decoded_origin.sigs[0].size, 
+                dst.array_size, dst.dimensions)
+
+            print transform.shape
+            print dst.array_size * dst.dimensions
+            print src.array_size
+            for ii in range(src.array_size):
+                for jj in range(dst.array_size):
+                    self.model.transform(
+                        transform[ii, :, jj].T,
+                        decoded_origin.sigs[ii],
+                        dst.input_signals[jj])
 
         elif name1 in self.inputs:
             src = self.inputs[name1]
@@ -680,43 +729,45 @@ class Network(object):
                 src_ii = src[ii]
                 dst_ii = dst_ensemble.input_signals[ii]
 
-            if func is None:
-                alpha = np.asarray(transform)
-                if alpha.size == 1:
-                    self.model.filter(alpha, src_ii, dst_ii)
-                else:
-                    raise NotImplementedError()
+                assert func is None
+                self.model.filter(1.0, src_ii, dst_ii)
             else:
                 raise NotImplementedError()
         else:
             raise NotImplementedError()
 
+    def make_probe_srcs(self, srcs, dt_sample, pstc):
+        #TODO: rename srcs to signals
+        src_n = srcs[0].size
+        probe_sig = self.model.signal(len(srcs) * src_n)
+
+        if pstc > self.dt:
+            # -- create a new smoothed-out signal
+            fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
+            self.model.filter(fcoef, probe_sig, probe_sig)
+            for ii, src in enumerate(srcs):
+                self.model.transform(tcoef, src,
+                        probe_sig[ii * src_n: (ii + 1) * src_n])
+            return Probe(
+                self.model.probe(probe_sig, dt_sample),
+                self)
+        else:
+            for ii, src in enumerate(srcs):
+                self.model.transform(1.0, src,
+                        probe_sig[ii * src_n: (ii + 1) * src_n])
+            return Probe(self.model.probe(probe_sig, dt_sample),
+                self)
+
     def make_probe(self, name, dt_sample, pstc):
         if name in self.ensembles:
             ens = self.ensembles[name]
             srcs = ens.origin['X'].sigs
-            src_n = srcs[0].size
-            probe_sig = self.model.signal(len(srcs) * src_n)
-            if pstc > self.dt:
-                # -- create a new smoothed-out signal
-                fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
-                self.model.filter(fcoef, probe_sig, probe_sig)
-                for ii, src in enumerate(srcs):
-                    self.model.transform(tcoef, src,
-                            probe_sig[ii * src_n: (ii + 1) * src_n])
-                return Probe(
-                    self.model.probe(probe_sig, dt_sample),
-                    self)
-            else:
-                for ii, src in enumerate(srcs):
-                    self.model.transform(1.0, src,
-                            probe_sig[ii * src_n: (ii + 1) * src_n])
-                return Probe(self.model.probe(probe_sig, dt_sample),
-                    self)
+            return self.make_probe_srcs(srcs, dt_sample, pstc)
+
         elif name in self.inputs:
             src = self.inputs[name]
-            return Probe(self.model.probe(src, dt_sample),
-                self)
+            return self.make_probe_srcs([src], dt_sample, pstc)
+
         else:
             raise NotImplementedError()
 
