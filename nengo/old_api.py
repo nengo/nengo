@@ -10,6 +10,7 @@ the "api.py" file instead of this file for their current work.
 import random
 import numpy as np
 
+from simulator_objects import ShapeMismatch
 from simulator_objects import SimModel
 from nonlinear import LIF
 from nonlinear import LIFRate
@@ -107,15 +108,25 @@ def sample_unit_signal(dimensions, num_samples, rng):
 
 
 def filter_coefs(pstc, dt):
+    """
+    Use like: fcoef, tcoef = filter_coefs(pstc=pstc, dt=dt)
+        transform(tcoef, a, b)
+        filter(fcoef, b, b)
+    """
     pstc = max(pstc, dt)
     decay = np.exp(-dt / pstc)
     return decay, (1.0 - decay)
 
 
+# -- James and Terry arrived at this by eyeballing some graphs.
+#    Not clear if this should be a constant at all, it
+#    may depend on fn being estimated, number of neurons, etc...
+DEFAULT_RCOND=0.01
+
 class EnsembleOrigin(object):
     def __init__(self, ensemble, name, func=None,
             pts_slice=slice(None, None, None),
-            rcond=5e-2,
+            rcond=DEFAULT_RCOND,
             ):
         """The output from a population of neurons (ensemble),
         performing a transformation (func) on the represented value.
@@ -140,10 +151,7 @@ class EnsembleOrigin(object):
 
             # this ensures that we accurately capture the shape of the
             # function when the radius is > 1 (think for example func=x**2)
-            targets = \
-                (np.array(
-                    [func(s * ensemble.radius) for s in eval_points.T]
-                    ) / ensemble.radius )
+            targets = np.array([func(s) for s in eval_points.T])
             if len(targets.shape) < 2:
                 targets.shape = targets.shape[0], 1
 
@@ -154,6 +162,8 @@ class EnsembleOrigin(object):
         self.transforms = []
 
         for ii in range(ensemble.array_size):
+            # -- N.B. this is only accurate for models firing well
+            #    under the simulator's dt.
             A = ensemble.neurons[ii].babbling_rate * dt
             b = targets
             weights, res, rank, s = np.linalg.lstsq(A, b, rcond=rcond)
@@ -267,8 +277,9 @@ class Ensemble:
             self.max_rate = max_rate
 
             self._make_encoders(encoders)
+            self.encoders /= radius
             self.babbling_signal = sample_unit_signal(
-                    self.dimensions, 500, self.rng)
+                    self.dimensions, 500, self.rng) * radius
 
             self.neurons = []
             for ii in range(array_size):
@@ -623,7 +634,7 @@ class Network(object):
 
         self.steps = self.model.signal(name='steps')
         self.simtime = self.model.signal(name='simtime')
-        self.one = self.model.signal(value=1.0, name='one')
+        self.one = self.model.signal(value=[1.0], name='one')
 
         # -- steps counts by 1.0
         self.model.filter(1.0, self.one, self.steps)
@@ -686,6 +697,7 @@ class Network(object):
 
     def connect(self, name1, name2,
                 func=None,
+                pstc=0.01,
                 **kwargs):
         if name1 in self.ensembles:
             src = self.ensembles[name1]
@@ -708,15 +720,35 @@ class Network(object):
             transform.shape = (len(decoded_origin.sigs), decoded_origin.sigs[0].size,
                 dst.array_size, dst.dimensions)
 
-            print transform.shape
-            print dst.array_size * dst.dimensions
-            print src.array_size
-            for ii in range(src.array_size):
+            if pstc > self.dt:
+                smoothed_signals = []
+                for ii in range(src.array_size):
+                    filtered_signal = self.model.signal(
+                        n=decoded_origin.sigs[ii].n, #-- views not ok here
+                        name=decoded_origin.sigs[ii].name + '::pstc=%s' % pstc)
+                    fcoef, tcoef = filter_coefs(pstc, dt=self.dt)
+                    self.model.transform(tcoef,
+                                         decoded_origin.sigs[ii],
+                                         filtered_signal)
+                    self.model.filter(fcoef, filtered_signal, filtered_signal)
+                    smoothed_signals.append(filtered_signal)
                 for jj in range(dst.array_size):
-                    self.model.transform(
-                        transform[ii, :, jj].T,
-                        decoded_origin.sigs[ii],
-                        dst.input_signals[jj])
+                    for ii in range(src.array_size):
+                        self.model.transform(
+                            tcoef * transform[ii, :, jj].T,
+                            decoded_origin.sigs[ii],
+                            dst.input_signals[jj])
+                    self.model.filter(fcoef * transform[ii, :, jj].T,
+                                      filtered_signal,
+                                      dst.input_signals[jj])
+            else:
+                smoothed_signals = decoded_origin.sigs
+                for ii in range(src.array_size):
+                    for jj in range(dst.array_size):
+                        self.model.transform(
+                            transform[ii, :, jj].T,
+                            smoothed_signals[ii],
+                            dst.input_signals[jj])
 
         elif name1 in self.inputs:
             src = self.inputs[name1]
@@ -726,11 +758,11 @@ class Network(object):
                     (dst_ensemble.array_size,), src.shape)
 
             for ii in range(dst_ensemble.array_size):
-                src_ii = src[ii]
+                src_ii = src[ii:ii+1]
                 dst_ii = dst_ensemble.input_signals[ii]
 
                 assert func is None
-                self.model.filter(1.0, src_ii, dst_ii)
+                self.model.filter(kwargs.get('transform', 1.0), src_ii, dst_ii)
         else:
             raise NotImplementedError()
 

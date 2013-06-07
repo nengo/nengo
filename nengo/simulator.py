@@ -162,9 +162,13 @@ class Simulator(object):
         for filt in self.model.filters:
             #print 
             #print 'old sig: ', filt.oldsig.name, get_signal(self.signals_copy, filt.oldsig)
-            dot_inc(filt.alpha,
-                    get_signal(self.signals_copy, filt.oldsig),
-                    get_signal(self.signals, filt.newsig))
+            try:
+                dot_inc(filt.alpha,
+                        get_signal(self.signals_copy, filt.oldsig),
+                        get_signal(self.signals, filt.newsig))
+            except Exception, e:
+                e.args = e.args + (filt.oldsig, filt.newsig)
+                raise
             #print 'new sig: ', filt.newsig.name, get_signal(self.signals, filt.newsig)
 
         # -- transforms: signals_tmp -> signals
