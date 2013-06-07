@@ -252,8 +252,8 @@ class Transform(object):
                     self.outsig.shape + self.insig.shape):
                 raise ShapeMismatch(
                         self.alpha_signal.shape,
-                        self.outsig.shape,
                         self.insig.shape,
+                        self.outsig.shape,
                         )
 
 
@@ -283,6 +283,22 @@ class Filter(object):
                                      name='f_alpha')
         self.oldsig = oldsig
         self.newsig = newsig
+
+        if self.alpha_signal.size == 1:
+            if self.oldsig.shape != self.newsig.shape:
+                raise ShapeMismatch(
+                        self.alpha_signal.shape,
+                        self.oldsig.shape,
+                        self.newsig.shape,
+                        )
+        else:
+            if self.alpha_signal.shape != (
+                    self.newsig.shape + self.oldsig.shape):
+                raise ShapeMismatch(
+                        self.alpha_signal.shape,
+                        self.oldsig.shape,
+                        self.newsig.shape,
+                        )
 
     def __str__(self):
         return ("Filter (id " + str(id(self)) + ")"
