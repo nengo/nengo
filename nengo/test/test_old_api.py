@@ -1,3 +1,4 @@
+import os
 from unittest import TestCase
 
 from matplotlib import pyplot as plt
@@ -18,7 +19,7 @@ class TestOldAPI(TestCase):
     #    subclassing this class and overriding this attribute.
     Simulator = Simulator
 
-    show = False
+    show = int(os.getenv("NENGO_TEST_SHOW", 0))
 
     def test_counters(self):
         net = Network('foo', dt=0.001, seed=123,
