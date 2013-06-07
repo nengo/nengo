@@ -734,17 +734,18 @@ class Network(object):
                     smoothed_signals.append(filtered_signal)
                 for jj in range(dst.array_size):
                     for ii in range(src.array_size):
-                        self.model.transform(
-                            tcoef * transform[ii, :, jj].T,
-                            decoded_origin.sigs[ii],
+                        if np.all(transform[ii, :, jj] == 0):
+                            continue
+                        self.model.filter(
+                            transform[ii, :, jj].T,
+                            smoothed_signals[ii],
                             dst.input_signals[jj])
-                    self.model.filter(fcoef * transform[ii, :, jj].T,
-                                      filtered_signal,
-                                      dst.input_signals[jj])
             else:
                 smoothed_signals = decoded_origin.sigs
                 for ii in range(src.array_size):
                     for jj in range(dst.array_size):
+                        if np.all(transform[ii, :, jj] == 0):
+                            continue
                         self.model.transform(
                             transform[ii, :, jj].T,
                             smoothed_signals[ii],
