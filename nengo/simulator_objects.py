@@ -10,6 +10,17 @@ import numpy as np
 
 random_weight_rng = np.random.RandomState(12345)
 
+"""
+Set assert_named_signals True to raise an Exception
+if model.signal is used to create a signal with no name.
+
+This can help to identify code that's creating un-named signals,
+if you are trying to track down mystery signals that are showing
+up in a model.
+"""
+assert_named_signals = False
+
+
 class ShapeMismatch(ValueError):
     pass
 
@@ -21,15 +32,27 @@ class TODO(NotImplementedError):
 class SignalView(object):
     """Interpretable, vector-valued quantity within NEF
     """
-    def __init__(self, base, shape, elemstrides, offset):
+    def __init__(self, base, shape, elemstrides, offset, name=None):
         assert base
         self.base = base
         self.shape = tuple(shape)
         self.elemstrides = tuple(elemstrides)
         self.offset = int(offset)
+        if name is not None:
+            self._name = name
 
     def __len__(self):
         return self.shape[0]
+
+    def __str__(self):
+        return '%s{%s, %s}' % (
+            self.__class__.__name__,
+            self.name, self.shape)
+
+    def __repr__(self):
+        return '%s{%s, %s}' % (
+            self.__class__.__name__,
+            self.name, self.shape)
 
     @property
     def dtype(self):
@@ -111,12 +134,31 @@ class SignalView(object):
         else:
             raise NotImplementedError(item)
 
+    @property
+    def name(self):
+        try:
+            return self._name
+        except AttributeError:
+            if self.base is self:
+                return '<anon>'
+            else:
+                return 'View(%s)' % self.base.name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+
 
 class Signal(SignalView):
     """Interpretable, vector-valued quantity within NEF"""
-    def __init__(self, n=1, dtype=np.float64):
+    def __init__(self, n=1, dtype=np.float64, name=None):
         self.n = n
         self._dtype = dtype
+        if name is not None:
+            self._name = name
+        if assert_named_signals:
+            assert name
 
     @property
     def shape(self):
@@ -144,8 +186,8 @@ class Probe(object):
 
 class Constant(Signal):
     """A signal meant to hold a fixed value"""
-    def __init__(self, n, value):
-        Signal.__init__(self, n)
+    def __init__(self, n, value, name=None):
+        Signal.__init__(self, n, name=name)
         self.value = np.asarray(value)
         # TODO: change constructor to get n from value
         assert self.value.size == n
@@ -173,9 +215,23 @@ class Transform(object):
         alpha = np.asarray(alpha)
         if hasattr(outsig, 'value'):
             raise TypeError('transform destination is constant')
-        self.alpha_signal = Constant(n=alpha.size, value=alpha)
+        self.alpha_signal = Constant(n=alpha.size,
+                                     value=alpha,
+                                     name='tf_alpha')
         self.insig = insig
         self.outsig = outsig
+        if self.alpha_signal.size == 1:
+            if self.insig.shape != self.outsig.shape:
+                raise ShapeMismatch()
+        else:
+            if self.alpha_signal.shape != (
+                    self.outsig.shape + self.insig.shape):
+                raise ShapeMismatch(
+                        self.alpha_signal.shape,
+                        self.insig.shape,
+                        self.outsig.shape,
+                        )
+
 
     @property
     def alpha(self):
@@ -192,9 +248,26 @@ class Filter(object):
         if hasattr(newsig, 'value'):
             raise TypeError('filter destination is constant')
         alpha = np.asarray(alpha)
-        self.alpha_signal = Constant(n=alpha.size, value=alpha)
+        self.alpha_signal = Constant(n=alpha.size, value=alpha,
+                                     name='f_alpha')
         self.oldsig = oldsig
         self.newsig = newsig
+
+        if self.alpha_signal.size == 1:
+            if self.oldsig.shape != self.newsig.shape:
+                raise ShapeMismatch(
+                        self.alpha_signal.shape,
+                        self.oldsig.shape,
+                        self.newsig.shape,
+                        )
+        else:
+            if self.alpha_signal.shape != (
+                    self.newsig.shape + self.oldsig.shape):
+                raise ShapeMismatch(
+                        self.alpha_signal.shape,
+                        self.oldsig.shape,
+                        self.newsig.shape,
+                        )
 
     def __str__(self):
         return '%s{%s, %s, %s}' % (
@@ -269,12 +342,12 @@ class SimModel(object):
         self.filters = []
         self.probes = []
 
-    def signal(self, n=1, value=None):
+    def signal(self, n=1, value=None, name=None):
         """Add a signal to the model"""
         if value is None:
-            rval = Signal(n)
+            rval = Signal(n, name=name)
         else:
-            rval = Constant(n, value)
+            rval = Constant(n, value, name=name)
         self.signals.append(rval)
         return rval
 
@@ -293,7 +366,6 @@ class SimModel(object):
         self.signals.append(nl.bias_signal)
         self.signals.append(nl.input_signal)
         self.signals.append(nl.output_signal)
-        self.transform(1.0, nl.output_signal, nl.output_signal)
         return nl
 
     def encoder(self, sig, pop, weights=None):

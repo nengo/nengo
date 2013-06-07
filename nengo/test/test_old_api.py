@@ -1,3 +1,4 @@
+import os
 from unittest import TestCase
 
 from matplotlib import pyplot as plt
@@ -18,7 +19,20 @@ class TestOldAPI(TestCase):
     #    subclassing this class and overriding this attribute.
     Simulator = Simulator
 
-    show = False
+    show = int(os.getenv("NENGO_TEST_SHOW", 0))
+
+    def test_counters(self):
+        net = Network('foo', dt=0.001, seed=123,
+                     Simulator=self.Simulator)
+
+        simtime_probe = net._raw_probe(net.simtime, dt_sample=.001)
+        steps_probe = net._raw_probe(net.steps, dt_sample=.001)
+        net.run(0.003)
+        simtime_data = simtime_probe.get_data()
+        steps_data = steps_probe.get_data()
+        assert np.allclose(simtime_data.flatten(), [.001, .002, .003])
+        assert np.allclose(steps_data.flatten(), [1, 2, 3])
+
 
     def test_direct_mode_simple(self):
         """
@@ -26,13 +40,25 @@ class TestOldAPI(TestCase):
         net = Network('Runtime Test', dt=0.001, seed=123,
                      Simulator=self.Simulator)
         net.make_input('in', value=np.sin)
-        p = net.make_probe('in', dt_sample=0.001, pstc=0.001)
+        p = net.make_probe('in', dt_sample=0.001, pstc=0.0)
+        rawp = net._raw_probe(net.inputs['in'], dt_sample=.001)
+        st_probe = net._raw_probe(net.simtime, dt_sample=.001)
         net.run(0.01)
+
         data = p.get_data()
+        raw_data = rawp.get_data()
+        st_data = st_probe.get_data()
         print data.dtype
-        print data
-        assert np.allclose(data.flatten(),
+        print st_data
+        print raw_data
+        assert np.allclose(st_data.ravel(),
+                           np.arange(0.001, 0.0105, .001))
+        assert np.allclose(raw_data.ravel(),
                            np.sin(np.arange(0, 0.0095, .001)))
+        # -- the make_probe call induces a one-step delay
+        #    on readout even when the pstc is really small.
+        assert np.allclose(data.ravel()[1:],
+                           np.sin(np.arange(0, 0.0085, .001)))
 
 
     def test_basic_1(self, N=1000):
@@ -56,7 +82,7 @@ class TestOldAPI(TestCase):
         A_fast_probe = net.make_probe('A', dt_sample=0.01, pstc=0.001)
         A_med_probe = net.make_probe('A', dt_sample=0.01, pstc=0.01)
         A_slow_probe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
-        in_probe = net.make_probe('in', dt_sample=0.01, pstc=0.01)
+        in_probe = net.make_probe('in', dt_sample=0.01, pstc=0.0)
 
         net.run(1.0)
 
@@ -83,14 +109,113 @@ class TestOldAPI(TestCase):
         print rmse(target, in_probe.get_data())
         assert rmse(target, in_probe.get_data()) < .001
         print rmse(target, A_fast_probe.get_data())
-        assert rmse(target, A_fast_probe.get_data()) < .3
+        assert rmse(target, A_fast_probe.get_data()) < .1, (
+            rmse(target, A_fast_probe.get_data()))
         print rmse(target, A_med_probe.get_data())
-        assert rmse(target, A_med_probe.get_data()) < .03
+        assert rmse(target, A_med_probe.get_data()) < .01
         print rmse(target, A_slow_probe.get_data())
         assert rmse(target, A_slow_probe.get_data()) < 0.1
 
     def test_basic_5K(self):
         return self.test_basic_1(5000)
+
+    def test_vector_input_constant(self):
+        # Adjust these values to change the matrix dimensions
+        #  Matrix A is D1xD2
+        #  Matrix B is D2xD3
+        #  result is D1xD3
+        D1 = 1
+        D2 = 2
+        seed = 123
+        N = 50
+
+        net=Network('Matrix Multiplication', seed=seed,
+                   Simulator=self.Simulator)
+
+        # make 2 matrices to store the input
+        print "make_array: input matrices A and B"
+        net.make_array('A', neurons=N, array_size=D1*D2, 
+            neuron_type='lif')
+
+        # connect inputs to them so we can set their value
+        net.make_input('input A', value=[.5, -.5])
+        net.connect('input A', 'A')
+        inprobe = net.make_probe('input A', dt_sample=0.01, pstc=0.1)
+        sprobe = net._probe_signals(
+            net.ensembles['A'].input_signals, dt_sample=0.01, pstc=0.01)
+        Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
+
+        net.run(1)
+
+        in_data = inprobe.get_data()
+        s_data = sprobe.get_data()
+        A_data = Aprobe.get_data()
+
+        plt.subplot(311); plt.plot(in_data)
+        plt.subplot(312); plt.plot(s_data)
+        plt.subplot(313); plt.plot(A_data)
+        if self.show:
+            plt.show()
+
+        assert np.allclose(in_data[-10:], [.5, -.5], atol=.01, rtol=.01)
+        assert np.allclose(s_data[-10:], [.5, -.5], atol=.01, rtol=.01)
+        assert np.allclose(A_data[-10:], [.5, -.5], atol=.01, rtol=.01)
+
+    def test_prod(self):
+
+        def product(x):
+            return x[0]*x[1]
+        #from nengo_theano import Network
+
+        N = 250
+        seed = 123
+        net=Network('Matrix Multiplication', seed=seed)
+                   #Simulator=self.Simulator)
+
+        net.make_input('sin', value=np.sin)
+        net.make_input('neg', value=[-.5])
+        net.make_array('p', 2 * N, 1, dimensions=2, radius=1.5)
+        net.make_array('D', N, 1, dimensions=1)
+        net.connect('sin', 'p', transform=[[1], [0]])
+        net.connect('neg', 'p', transform=[[0], [1]])
+        net.connect('p', 'D', func=product, pstc=0.01)
+
+        p_raw = net._probe_decoded_signals(
+            [net.ensembles['p'].origin['product'].sigs[0]],
+            dt_sample=.01, pstc=.01)
+
+        probe_p = net.make_probe('p', dt_sample=.01, pstc=.01)
+        probe_d = net.make_probe('D', dt_sample=.01, pstc=.01)
+
+        net.run(6)
+
+        data_p = probe_p.get_data()
+        data_d = probe_d.get_data()
+        data_r = p_raw.get_data()
+
+        plt.subplot(211);
+        plt.plot(data_p)
+        plt.plot(np.sin(np.arange(0, 6, .01)))
+        plt.subplot(212);
+        plt.plot(data_d)
+        plt.plot(data_r)
+        plt.plot(-.5 * np.sin(np.arange(0, 6, .01)))
+
+        if self.show:
+            plt.show()
+
+        assert np.allclose(data_p[:, 0], np.sin(np.arange(0, 6, .01)),
+                          atol=.1, rtol=.01)
+        assert np.allclose(data_p[20:, 1], -0.5,
+                          atol=.1, rtol=.01)
+
+        def match(a, b):
+            assert np.allclose(a, b, .1, .1)
+
+        match(data_d[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
+
+        match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
+
 
     def test_matrix_mul(self):
         # Adjust these values to change the matrix dimensions
@@ -99,9 +224,9 @@ class TestOldAPI(TestCase):
         #  result is D1xD3
         D1 = 1
         D2 = 2
-        D3 = 3
+        D3 = 2
         seed = 123
-        N = 50
+        N = 200
 
         net=Network('Matrix Multiplication', seed=seed,
                    Simulator=self.Simulator)
@@ -111,12 +236,14 @@ class TestOldAPI(TestCase):
 
         # make 2 matrices to store the input
         print "make_array: input matrices A and B"
-        net.make_array('A',N,D1*D2,radius=radius, neuron_type='lif')
-        net.make_array('B',N,D2*D3,radius=radius, neuron_type='lif')
+        net.make_array('A', neurons=N, array_size=D1*D2,
+            radius=radius, neuron_type='lif')
+        net.make_array('B', neurons=N, array_size=D2*D3,
+            radius=radius, neuron_type='lif')
 
         # connect inputs to them so we can set their value
-        net.make_input('input A',[0]*D1*D2)
-        net.make_input('input B',[0]*D2*D3)
+        inputA = net.make_input('input A', value=[.5, -.5])
+        inputB = net.make_input('input B', value=[0, -1, 1, 0])
         print "connect: input matrices A and B"
         net.connect('input A','A')
         net.connect('input B','B')
@@ -137,7 +264,7 @@ class TestOldAPI(TestCase):
         #  A of (i,j) is j+i*D2 and the index in B of (j,k) is k+j*D3.
         #  The index in C is j+k*D2+i*D2*D3, multiplied by 2 since there are
         #  two values per ensemble.  We add 1 to the B index so it goes into
-        #  the second value in the ensemble.  
+        #  the second value in the ensemble.
         transformA=[[0]*(D1*D2) for i in range(D1*D2*D3*2)]
         transformB=[[0]*(D2*D3) for i in range(D1*D2*D3*2)]
         for i in range(D1):
@@ -145,11 +272,12 @@ class TestOldAPI(TestCase):
                 for k in range(D3):
                     transformA[(j+k*D2+i*D2*D3)*2][j+i*D2]=1
                     transformB[(j+k*D2+i*D2*D3)*2+1][k+j*D3]=1
-                    
-        net.connect('A','C',transform=transformA)            
-        net.connect('B','C',transform=transformB)            
-                    
-                    
+
+        print "connect A->C"
+        net.connect('A','C',transform=transformA)
+        print "connect B->C"
+        net.connect('B','C',transform=transformB)
+
         # now compute the products and do the appropriate summing
         print "make_array: output D"
         net.make_array('D',N,D1*D3,radius=radius, neuron_type='lif')
@@ -157,24 +285,41 @@ class TestOldAPI(TestCase):
         def product(x):
             return x[0]*x[1]
         # the mapping for this transformation is much easier, since we want to
-        # combine D2 pairs of elements (we sum D2 products together)    
+        # combine D2 pairs of elements (we sum D2 products together)
+
         net.connect('C','D',index_post=[i/D2 for i in range(D1*D2*D3)],func=product)
 
-        net.get_object('input A').origin['X'].decoded_output.set_value(
-            np.asarray([.5, -.5]).astype('float32'))
-        net.get_object('input B').origin['X'].decoded_output.set_value(
-            np.asarray([0, 1, -1, 0]).astype('float32'))
+        Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.01)
+        Bprobe = net.make_probe('B', dt_sample=0.01, pstc=0.01)
+        Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.01)
+        Dprobe = net.make_probe('D', dt_sample=0.01, pstc=0.01)
 
-        Dprobe = net.make_probe('D', dt_sample=0.01, pstc=0.1)
+        prod_probe = net._probe_decoded_signals(
+            net.ensembles['C'].origin['product'].sigs, dt_sample=0.01, pstc=.01)
 
         net.run(1)
 
-
-        net_data = Dprobe.get_data()
-        print net_data.shape
-        plt.plot(net_data[:, 0])
-        plt.plot(net_data[:, 1])
+        print prod_probe.get_data()[-1]
+        plt.subplot(411); plt.plot(Aprobe.get_data())
+        plt.subplot(412); plt.plot(Bprobe.get_data())
+        plt.subplot(413); plt.plot(Cprobe.get_data())
+        plt.subplot(414); plt.plot(prod_probe.get_data())
         if self.show:
             plt.show()
 
-        nose.SkipTest('test correctness')
+        assert np.allclose(Aprobe.get_data()[50:, 0], 0.5,
+                          atol=.1, rtol=.01)
+        assert np.allclose(Aprobe.get_data()[50:, 1], -0.5,
+                          atol=.1, rtol=.01)
+
+        assert np.allclose(Bprobe.get_data()[50:, 0], 0,
+                          atol=.1, rtol=.01)
+        assert np.allclose(Bprobe.get_data()[50:, 1], -1,
+                          atol=.1, rtol=.01)
+        assert np.allclose(Bprobe.get_data()[50:, 2], 1,
+                          atol=.1, rtol=.01)
+        assert np.allclose(Bprobe.get_data()[50:, 3], 0,
+                          atol=.1, rtol=.01)
+
+        raise NotImplementedError('test correctness')
+

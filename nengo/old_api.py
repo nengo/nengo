@@ -7,8 +7,10 @@ the "api.py" file instead of this file for their current work.
 
 """
 
+import random
 import numpy as np
 
+from simulator_objects import ShapeMismatch
 from simulator_objects import SimModel
 from nonlinear import LIF
 from nonlinear import LIFRate
@@ -21,6 +23,68 @@ neuron_type_registry = {
 
 from . import simulator
 
+def compute_transform(dim_pre, dim_post, array_size, weight=1,
+                      index_pre=None, index_post=None, transform=None):
+    """Helper function used by :func:`nef.Network.connect()` to create
+    the `dim_post` by `dim_pre` transform matrix.
+
+    Values are either 0 or *weight*. *index_pre* and *index_post*
+    are used to determine which values are non-zero, and indicate
+    which dimensions of the pre-synaptic ensemble should be routed
+    to which dimensions of the post-synaptic ensemble.
+
+    :param int dim_pre: first dimension of transform matrix
+    :param int dim_post: second dimension of transform matrix
+    :param int array_size: size of the network array
+    :param float weight: the non-zero value to put into the matrix
+    :param index_pre: the indexes of the pre-synaptic dimensions to use
+    :type index_pre: list of integers or a single integer
+    :param index_post:
+        the indexes of the post-synaptic dimensions to use
+    :type index_post: list of integers or a single integer
+    :returns:
+        a two-dimensional transform matrix performing
+        the requested routing
+
+    """
+
+    if transform is None:
+        # create a matrix of zeros
+        transform = [[0] * dim_pre for i in range(dim_post * array_size)]
+
+        # default index_pre/post lists set up *weight* value
+        # on diagonal of transform
+
+        # if dim_post * array_size != dim_pre,
+        # then values wrap around when edge hit
+        if index_pre is None:
+            index_pre = range(dim_pre)
+        elif isinstance(index_pre, int):
+            index_pre = [index_pre]
+        if index_post is None:
+            index_post = range(dim_post * array_size)
+        elif isinstance(index_post, int):
+            index_post = [index_post]
+
+        for i in range(max(len(index_pre), len(index_post))):
+            pre = index_pre[i % len(index_pre)]
+            post = index_post[i % len(index_post)]
+            transform[post][pre] = weight
+
+    transform = np.asarray(transform).astype('float32')
+
+    # reformulate to account for post.array_size
+    if transform.shape == (dim_post * array_size, dim_pre):
+        array_transform = [[[0] * dim_pre for i in range(dim_post)]
+                           for j in range(array_size)]
+
+        for i in range(array_size):
+            for j in range(dim_post):
+                array_transform[i][j] = transform[i * dim_post + j]
+
+        transform = array_transform
+
+    return np.asarray(transform)
 
 def sample_unit_signal(dimensions, num_samples, rng):
     """Generate sample points uniformly distributed within the sphere.
@@ -44,16 +108,25 @@ def sample_unit_signal(dimensions, num_samples, rng):
 
 
 def filter_coefs(pstc, dt):
+    """
+    Use like: fcoef, tcoef = filter_coefs(pstc=pstc, dt=dt)
+        transform(tcoef, a, b)
+        filter(fcoef, b, b)
+    """
     pstc = max(pstc, dt)
     decay = np.exp(-dt / pstc)
     return decay, (1.0 - decay)
 
 
+# -- James and Terry arrived at this by eyeballing some graphs.
+#    Not clear if this should be a constant at all, it
+#    may depend on fn being estimated, number of neurons, etc...
+DEFAULT_RCOND=0.01
+
 class EnsembleOrigin(object):
-    def __init__(self, ensemble, func=None,
-            pop_idx=0,
+    def __init__(self, ensemble, name, func=None,
             pts_slice=slice(None, None, None),
-            rcond=1e-3,
+            rcond=DEFAULT_RCOND,
             ):
         """The output from a population of neurons (ensemble),
         performing a transformation (func) on the represented value.
@@ -64,36 +137,55 @@ class EnsembleOrigin(object):
             the transformation to perform to the ensemble's
             represented values to get the output value
         """
-        if ensemble.array_size > 1:
-            raise NotImplementedError()
-        babbling_signal = ensemble.babbling_signal.T
-        if func:
-            targets = np.asarray(map(func, babbling_signal))
+        eval_points = ensemble.babbling_signal
+
+        # compute the targets at the sampled points
+        if func is None:
+            # if no function provided, use identity function as default
+            targets = eval_points.T
         else:
-            targets = babbling_signal
+            # otherwise calculate targets using provided function
+
+            # scale all our sample points by ensemble radius,
+            # calculate function value, then scale back to unit length
+
+            # this ensures that we accurately capture the shape of the
+            # function when the radius is > 1 (think for example func=x**2)
+            targets = np.array([func(s) for s in eval_points.T])
+            if len(targets.shape) < 2:
+                targets.shape = targets.shape[0], 1
 
         n, = targets.shape[1:]
         dt = ensemble.model.dt
+        self.sigs = []
+        self.decoders = []
+        self.transforms = []
 
-        A = ensemble.neurons[pop_idx].babbling_rate * dt
-        b = targets
-        weights, res, rank, s = np.linalg.lstsq(A, b)#, rcond=rcond)
+        for ii in range(ensemble.array_size):
+            # -- N.B. this is only accurate for models firing well
+            #    under the simulator's dt.
+            A = ensemble.neurons[ii].babbling_rate * dt
+            b = targets
+            weights, res, rank, s = np.linalg.lstsq(A, b, rcond=rcond)
 
-        self.sig = ensemble.model.signal(n=n)
-        self.decoder = ensemble.model.decoder(
-            sig=self.sig,
-            pop=ensemble.neurons[pop_idx],
-            weights=weights.T)
+            sig = ensemble.model.signal(n=n, name='%s[%i]' % (name, ii))
+            decoder = ensemble.model.decoder(
+                sig=sig,
+                pop=ensemble.neurons[ii],
+                weights=weights.T)
 
-        # set up self.sig as an unfiltered signal
-        self.transform = ensemble.model.transform(1.0, self.sig, self.sig)
-        self.filter = ensemble.model.filter(0.0, self.sig, self.sig)
+            # set up self.sig as an unfiltered signal
+            transform = ensemble.model.transform(1.0, sig, sig)
+
+            self.sigs.append(sig)
+            self.decoders.append(decoder)
+            self.transforms.append(transform)
 
 
 class Ensemble:
     """An ensemble is a collection of neurons representing a vector space.
     """
-    def __init__(self, model, n_neurons, dimensions, dt, tau_ref=0.002, tau_rc=0.02,
+    def __init__(self, model, name, neurons, dimensions, dt, tau_ref=0.002, tau_rc=0.02,
                  max_rate=(200, 300), intercept=(-1.0, 1.0), radius=1.0,
                  encoders=None, seed=None, neuron_type='lif',
                  array_size=1, eval_points=None, decoder_noise=0.1,
@@ -141,8 +233,9 @@ class Ensemble:
         """
         if seed is None:
             seed = np.random.randint(1000)
-        self.seed = seed
-        self.n_neurons = n_neurons
+        self.n_neurons = neurons
+        del neurons  # neurons usually means the nonlinearities
+        n_neurons = self.n_neurons
         self.dimensions = dimensions
         self.array_size = array_size
         self.radius = radius
@@ -151,6 +244,7 @@ class Ensemble:
         self.decoder_noise = decoder_noise
         self.mode = mode
         self.model = model
+        self.name = name
 
         # make sure that eval_points is the right shape
         if eval_points is not None:
@@ -165,21 +259,15 @@ class Ensemble:
         elif len(intercept) == 1:
             intercept.append(1)
 
-        if 0:
-          self.cache_key = cache.generate_ensemble_key(n_neurons=n_neurons,
-            dimensions=dimensions, tau_rc=tau_rc, tau_ref=tau_ref,
-            max_rate=max_rate, intercept=intercept, radius=radius,
-            encoders=encoders, decoder_noise=decoder_noise,
-            eval_points=eval_points, noise=noise, seed=seed, dt=dt,
-            array_size=array_size)
-
         # make dictionary for origins
         self.origin = {}
         # set up a dictionary for decoded_input
         self.decoded_input = {}
 
         self.input_signals = [
-            model.signal(n=dimensions)
+            model.signal(
+                n=dimensions,
+                name='%s.input_signals[%i]' % (name, ii))
             for ii in range(array_size)]
 
         # if we're creating a spiking ensemble
@@ -189,14 +277,17 @@ class Ensemble:
             self.max_rate = max_rate
 
             self._make_encoders(encoders)
+            self.encoders /= radius
             self.babbling_signal = sample_unit_signal(
-                    self.dimensions, 500, self.rng)
+                    self.dimensions, 500, self.rng) * radius
 
             self.neurons = []
             for ii in range(array_size):
                 neurons_ii = self.model.nonlinearity(
                         # TODO: handle different neuron types,
-                        LIF(n_neurons, tau_rc=tau_rc, tau_ref=tau_ref))
+                        LIF(n_neurons, tau_rc=tau_rc, tau_ref=tau_ref,
+                            name=name + '[%i]' % ii),
+                    )
                 self.neurons.append(neurons_ii)
                 max_rates = self.rng.uniform(
                     size=self.n_neurons,
@@ -218,7 +309,7 @@ class Ensemble:
                 neurons_ii.babbling_rate = neurons_ii.rates(
                         np.dot(
                             self.encoders[ii],
-                            self.babbling_signal[ii:ii+1]).T)
+                            self.babbling_signal).T)
 
             # set up a dictionary for encoded_input connections
             self.encoded_input = {}
@@ -226,7 +317,7 @@ class Ensemble:
             self.learned_terminations = []
 
             # make default origin
-            self.add_origin('X', pop_idx=0)
+            self.add_origin('X')
 
         elif self.mode == 'direct':
             # make default origin
@@ -354,7 +445,10 @@ class Ensemble:
         # and the whole shebang for interpreting the neural activity
         if self.mode == 'spiking':
             self.origin[name] = EnsembleOrigin(
-                ensemble=self, func=func, **kwargs)
+                ensemble=self,
+                func=func,
+                name='%s.%s' % (self.name, name),
+                **kwargs)
 
         # if we're in direct mode then this population is just directly
         # performing the specified function, use a basic origin
@@ -530,23 +624,25 @@ class Network(object):
             fixed_seed=None,
             dt=0.001,
             Simulator=simulator.Simulator):
-        self.seed = seed
+        self.random = random.Random()
+        if seed is not None:
+            self.random.seed(seed)
         self.fixed_seed = fixed_seed
         self.model = SimModel(dt)
         self.ensembles = {}
         self.inputs = {}
 
-        self.steps = self.model.signal()
-        self.simtime = self.model.signal()
-        self.one = self.model.signal(value=1.0)
+        self.steps = self.model.signal(name='steps')
+        self.simtime = self.model.signal(name='simtime')
+        self.one = self.model.signal(value=[1.0], name='one')
 
         # -- steps counts by 1.0
         self.model.filter(1.0, self.one, self.steps)
         self.model.filter(1.0, self.steps, self.steps)
 
         # simtime <- dt * steps
-        self.model.filter(dt, self.steps, self.simtime)
         self.model.filter(dt, self.one, self.simtime)
+        self.model.filter(dt, self.steps, self.simtime)
 
         self.Simulator = Simulator
 
@@ -565,81 +661,194 @@ class Network(object):
             pop.input_signal.name = name + '.input'
             pop.bias_signal.name = name + '.bias'
             pop.output_signal.name = name + '.output'
+
+            # move from signals_tmp -> signals
+            self.model.transform(1.0,
+                                 pop.output_signal,
+                                 pop.output_signal)
         else:
-            rval = self.model.signal(n=1, value=float(value))
+            value = np.asarray(value, dtype='float')
+            N, = value.shape
+            rval = self.model.signal(n=N, value=value, name=name)
             self.inputs[name] = rval
         return rval
 
-    def make_array(self, name, *args, **kwargs):
-        seed = kwargs.pop('seed', self.fixed_seed)
-        if seed is None:
-            seed = self.seed
-            self.seed += 1
-        rval = Ensemble(self.model, *args, dt=self.dt, seed=seed, **kwargs)
-        self.ensembles[name] = rval
-        return rval
+    def make_array(self, name, neurons, array_size, dimensions=1, **kwargs):
+        """Generate a network array specifically.
+
+        This function is depricated; use for legacy code
+        or non-theano API compatibility.
+        """
+        return self.make(
+            name=name, neurons=neurons, dimensions=dimensions,
+            array_size=array_size, **kwargs)
 
     def make(self, name, *args, **kwargs):
-        seed = kwargs.pop('seed', self.fixed_seed)
-        if seed is None:
-            seed = self.seed
-            self.seed += 1
-        rval = Ensemble(self.model, *args, dt=self.dt, seed=seed, **kwargs)
+        if 'seed' not in kwargs.keys():
+            if self.fixed_seed is not None:
+                kwargs['seed'] = self.fixed_seed
+            else:
+                # if no seed provided, get one randomly from the rng
+                kwargs['seed'] = self.random.randrange(0x7fffffff)
+
+        kwargs['dt'] = self.dt
+        rval = Ensemble(self.model, name, *args, **kwargs)
+
         self.ensembles[name] = rval
-        for ii, pop in enumerate(rval.neurons):
-            # TODO: add this to simulator_objects
-            pop.input_signal.name = name + '[%i].input' % ii
-            pop.bias_signal.name = name + '[%i].bias' % ii
-            pop.output_signal.name = name + '[%i].output' % ii
         return rval
 
     def connect(self, name1, name2,
                 func=None,
-                transform=1.0,
-                index_post=None):
+                pstc=0.01,
+                **kwargs):
         if name1 in self.ensembles:
             src = self.ensembles[name1]
             dst = self.ensembles[name2]
-            decoder = self.model.decoder(src.pop, decoded)
-            decoder.desired_function = func
-            self.model.transform(np.asarray(transform), decoded, dst.sig)
+            if func is None:
+                oname = 'X'
+            else:
+                oname = func.__name__
+
+            if oname not in src.origin:
+                src.add_origin(oname, func)
+
+            decoded_origin = src.origin[oname]
+
+            dim_pre = len(decoded_origin.sigs) * decoded_origin.sigs[0].size
+            # (dst.array_size x dst.dim x dim_pre)
+            transform = compute_transform(dim_pre=dim_pre,
+                dim_post=dst.dimensions, array_size=dst.array_size, **kwargs)
+            #TODO: move this into the compute transform jesus
+            transform.shape = (len(decoded_origin.sigs), decoded_origin.sigs[0].size, 
+                dst.array_size, dst.dimensions)
+
+            if pstc > self.dt:
+                smoothed_signals = []
+                for ii in range(src.array_size):
+                    filtered_signal = self.model.signal(
+                        n=decoded_origin.sigs[ii].n, #-- views not ok here
+                        name=decoded_origin.sigs[ii].name + '::pstc=%s' % pstc)
+                    fcoef, tcoef = filter_coefs(pstc, dt=self.dt)
+                    self.model.transform(tcoef,
+                                         decoded_origin.sigs[ii],
+                                         filtered_signal)
+                    self.model.filter(fcoef, filtered_signal, filtered_signal)
+                    smoothed_signals.append(filtered_signal)
+                for jj in range(dst.array_size):
+                    for ii in range(src.array_size):
+                        if np.all(transform[ii, :, jj] == 0):
+                            continue
+                        self.model.filter(
+                            transform[ii, :, jj].T,
+                            smoothed_signals[ii],
+                            dst.input_signals[jj])
+            else:
+                smoothed_signals = decoded_origin.sigs
+                for ii in range(src.array_size):
+                    for jj in range(dst.array_size):
+                        if np.all(transform[ii, :, jj] == 0):
+                            continue
+                        self.model.transform(
+                            transform[ii, :, jj].T,
+                            smoothed_signals[ii],
+                            dst.input_signals[jj])
+
         elif name1 in self.inputs:
             src = self.inputs[name1]
-            pop_idx = 0 # XXX
-            dst = self.ensembles[name2].input_signals[pop_idx]
-            if func is None:
-                alpha = np.asarray(transform)
-                if alpha.size == 1:
-                    self.model.filter(alpha, src, dst)
-                else:
-                    raise NotImplementedError()
-            else:
-                raise NotImplementedError()
+            dst_ensemble = self.ensembles[name2]
+            if (dst_ensemble.array_size,) != src.shape:
+                raise ShapeMismatch(
+                    (dst_ensemble.array_size,), src.shape)
+
+            for ii in range(dst_ensemble.array_size):
+                src_ii = src[ii:ii+1]
+                dst_ii = dst_ensemble.input_signals[ii]
+
+                assert func is None
+                self.model.filter(kwargs.get('transform', 1.0), src_ii, dst_ii)
         else:
             raise NotImplementedError()
+
+    def _raw_probe(self, sig, dt_sample):
+        """
+        Create an un-filtered probe of the named signal,
+        without constructing any filters or transforms.
+        """
+        return Probe(self.model.probe(sig, dt_sample), self)
+
+    def _probe_signals(self, srcs, dt_sample, pstc):
+        """
+        set up a probe for signals (srcs) that will record
+        their value *after* decoding, transforming, filtering.
+
+        This is appropriate for inputs, constants, non-linearities, etc.
+        But if you want to probe the part of a filter that is purely the
+        decoded contribution from a population, then use
+        _probe_decoded_signals.
+        """
+        src_n = srcs[0].size
+        probe_sig = self.model.signal(
+            n=len(srcs) * src_n,
+            name='probe(%s)' % srcs[0].name
+            )
+
+        if pstc > self.dt:
+            # -- create a new smoothed-out signal
+            fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
+            self.model.filter(fcoef, probe_sig, probe_sig)
+            for ii, src in enumerate(srcs):
+                self.model.filter(tcoef, src,
+                        probe_sig[ii * src_n: (ii + 1) * src_n])
+            return Probe(
+                self.model.probe(probe_sig, dt_sample),
+                self)
+        else:
+            for ii, src in enumerate(srcs):
+                self.model.filter(1.0, src,
+                        probe_sig[ii * src_n: (ii + 1) * src_n])
+            return Probe(self.model.probe(probe_sig, dt_sample),
+                self)
+
+    def _probe_decoded_signals(self, srcs, dt_sample, pstc):
+        """
+        set up a probe for signals (srcs) that will record
+        their value just from being decoded.
+
+        This is appropriate for functions decoded from nonlinearities.
+        """
+        src_n = srcs[0].size
+        probe_sig = self.model.signal(
+            n=len(srcs) * src_n,
+            name='probe(%s)' % srcs[0].name
+            )
+
+        if pstc > self.dt:
+            # -- create a new smoothed-out signal
+            fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
+            self.model.filter(fcoef, probe_sig, probe_sig)
+            for ii, src in enumerate(srcs):
+                self.model.transform(tcoef, src,
+                        probe_sig[ii * src_n: (ii + 1) * src_n])
+            return Probe(
+                self.model.probe(probe_sig, dt_sample),
+                self)
+        else:
+            for ii, src in enumerate(srcs):
+                self.model.transform(1.0, src,
+                        probe_sig[ii * src_n: (ii + 1) * src_n])
+            return Probe(self.model.probe(probe_sig, dt_sample),
+                self)
 
     def make_probe(self, name, dt_sample, pstc):
         if name in self.ensembles:
             ens = self.ensembles[name]
-            if ens.array_size > 1:
-                raise NotImplementedError()
-            src = ens.origin['X'].sig
-            if pstc > self.dt:
-                # -- create a new smoothed-out signal
-                fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
-                probe_sig = self.model.signal(src.n)
-                self.model.filter(fcoef, probe_sig, probe_sig)
-                self.model.transform(tcoef, src, probe_sig)
-                return Probe(
-                    self.model.probe(probe_sig, dt_sample),
-                    self)
-            else:
-                return Probe(self.model.probe(src, dt_sample),
-                    self)
+            srcs = ens.origin['X'].sigs
+            return self._probe_decoded_signals(srcs, dt_sample, pstc)
+
         elif name in self.inputs:
             src = self.inputs[name]
-            return Probe(self.model.probe(src, dt_sample),
-                self)
+            return self._probe_signals([src], dt_sample, pstc)
+
         else:
             raise NotImplementedError()
 
