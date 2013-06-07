@@ -160,7 +160,63 @@ class TestOldAPI(TestCase):
         assert np.allclose(s_data[-10:], [.5, -.5], atol=.01, rtol=.01)
         assert np.allclose(A_data[-10:], [.5, -.5], atol=.01, rtol=.01)
 
-        
+
+    
+    def test_prod(self):
+
+        def product(x):
+            return x[0]*x[1]
+        #from nengo_theano import Network
+
+        N = 250
+        seed = 123
+        net=Network('Matrix Multiplication', seed=seed)
+                   #Simulator=self.Simulator)
+
+        net.make_input('sin', value=np.sin)
+        net.make_input('neg', value=[-.5])
+        net.make_array('p', 2 * N, 1, dimensions=2, radius=1.5)
+        net.make_array('D', N, 1, dimensions=1)
+        net.connect('sin', 'p', transform=[[1], [0]])
+        net.connect('neg', 'p', transform=[[0], [1]])
+        net.connect('p', 'D', func=product, pstc=0.01)
+
+        p_raw = net._probe_decoded_signals(
+            [net.ensembles['p'].origin['product'].sigs[0]],
+            dt_sample=.01, pstc=.01)
+
+        probe_p = net.make_probe('p', dt_sample=.01, pstc=.01)
+        probe_d = net.make_probe('D', dt_sample=.01, pstc=.01)
+
+        net.run(6)
+
+        data_p = probe_p.get_data()
+        data_d = probe_d.get_data()
+        data_r = p_raw.get_data()
+
+        plt.subplot(211);
+        plt.plot(data_p)
+        plt.plot(np.sin(np.arange(0, 6, .01)))
+        plt.subplot(212);
+        plt.plot(data_d)
+        plt.plot(data_r)
+        plt.plot(-.5 * np.sin(np.arange(0, 6, .01)))
+
+        if self.show:
+            plt.show()
+
+        assert np.allclose(data_p[:, 0], np.sin(np.arange(0, 6, .01)),
+                          atol=.1, rtol=.01)
+        assert np.allclose(data_p[20:, 1], -0.5,
+                          atol=.1, rtol=.01)
+
+        def match(a, b):
+            assert np.allclose(a, b, .1, .1)
+
+        match(data_d[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
+
+        match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
+
 
     def test_matrix_mul(self):
         # Adjust these values to change the matrix dimensions
