@@ -161,8 +161,6 @@ class TestOldAPI(TestCase):
         assert np.allclose(s_data[-10:], [.5, -.5], atol=.01, rtol=.01)
         assert np.allclose(A_data[-10:], [.5, -.5], atol=.01, rtol=.01)
 
-
-    
     def test_prod(self):
 
         def product(x):
@@ -228,7 +226,7 @@ class TestOldAPI(TestCase):
         D2 = 2
         D3 = 2
         seed = 123
-        N = 500
+        N = 200
 
         net=Network('Matrix Multiplication', seed=seed,
                    Simulator=self.Simulator)
@@ -238,9 +236,9 @@ class TestOldAPI(TestCase):
 
         # make 2 matrices to store the input
         print "make_array: input matrices A and B"
-        net.make_array('A', neurons=N, array_size=D1*D2, 
+        net.make_array('A', neurons=N, array_size=D1*D2,
             radius=radius, neuron_type='lif')
-        net.make_array('B', neurons=N, array_size=D2*D3, 
+        net.make_array('B', neurons=N, array_size=D2*D3,
             radius=radius, neuron_type='lif')
 
         # connect inputs to them so we can set their value
@@ -289,22 +287,39 @@ class TestOldAPI(TestCase):
         # the mapping for this transformation is much easier, since we want to
         # combine D2 pairs of elements (we sum D2 products together)
 
-        # XXX index_post is not implemented
         net.connect('C','D',index_post=[i/D2 for i in range(D1*D2*D3)],func=product)
 
-        Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
-        Bprobe = net.make_probe('B', dt_sample=0.01, pstc=0.1)
-        Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.1)
-        Dprobe = net.make_probe('D', dt_sample=0.01, pstc=0.1)
+        Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.01)
+        Bprobe = net.make_probe('B', dt_sample=0.01, pstc=0.01)
+        Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.01)
+        Dprobe = net.make_probe('D', dt_sample=0.01, pstc=0.01)
+
+        prod_probe = net._probe_decoded_signals(
+            net.ensembles['C'].origin['product'].sigs, dt_sample=0.01, pstc=.01)
 
         net.run(1)
 
-        print Aprobe.get_data().shape
+        print prod_probe.get_data()[-1]
         plt.subplot(411); plt.plot(Aprobe.get_data())
         plt.subplot(412); plt.plot(Bprobe.get_data())
         plt.subplot(413); plt.plot(Cprobe.get_data())
-        plt.subplot(414); plt.plot(Dprobe.get_data())
+        plt.subplot(414); plt.plot(prod_probe.get_data())
         if self.show:
             plt.show()
 
-        raise nose.SkipTest('test correctness')
+        assert np.allclose(Aprobe.get_data()[50:, 0], 0.5,
+                          atol=.1, rtol=.01)
+        assert np.allclose(Aprobe.get_data()[50:, 1], -0.5,
+                          atol=.1, rtol=.01)
+
+        assert np.allclose(Bprobe.get_data()[50:, 0], 0,
+                          atol=.1, rtol=.01)
+        assert np.allclose(Bprobe.get_data()[50:, 1], -1,
+                          atol=.1, rtol=.01)
+        assert np.allclose(Bprobe.get_data()[50:, 2], 1,
+                          atol=.1, rtol=.01)
+        assert np.allclose(Bprobe.get_data()[50:, 3], 0,
+                          atol=.1, rtol=.01)
+
+        raise NotImplementedError('test correctness')
+
