@@ -10,7 +10,7 @@ def test_signal_indexing_1():
     two = m.signal(2)
     three = m.signal(3)
 
-    m.filter(1, three[0], one)
+    m.filter(1, three[0:1], one)
     m.filter(2.0, three[1:], two)
     m.filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three)
 
@@ -29,7 +29,7 @@ def test_signal_indexing_1():
 def setup_simtime(m):
     steps = m.signal()
     simtime = m.signal()
-    one = m.signal(value=1.0)
+    one = m.signal(value=[1.0])
 
     # -- steps counts by 1.0
     m.filter(1.0, steps, steps)
