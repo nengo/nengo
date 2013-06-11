@@ -11,7 +11,7 @@ class TestCircularConv(unittest.TestCase):
     def Simulator(self, m):
         return Simulator(m)
 
-    def test_small(self, D=4, neurons_per_product=3):
+    def _test_cconv(self, D, neurons_per_product):
         # D is dimensionality of semantic pointers
 
         m = SimModel(.001)
@@ -28,10 +28,11 @@ class TestCircularConv(unittest.TestCase):
 
         raise nose.SkipTest()
 
+    def test_small(self):
+        return self._test_cconv(D=4, neurons_per_product=3)
+
     def test_med(self):
-        return self.test_small(D=50, neurons_per_product=128)
+        return self._test_cconv(D=50, neurons_per_product=128)
 
     def test_large(self):
-        return self.test_small(D=512, neurons_per_product=128)
-
-
+        return self._test_cconv(D=512, neurons_per_product=128)
