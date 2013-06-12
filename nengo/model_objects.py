@@ -1,3 +1,4 @@
+import random
 import warnings
 
 import numpy as np
@@ -154,7 +155,13 @@ class Ensemble(object):
         self.enc = so.Encoder(self.sig, self.nl, encoders)
 
     def __str__(self):
-        print "Ensemble: " + str(self.nl)
+        return ("Ensemble (id " + str(id(self)) + "): \n"
+                "    " + str(self.nl) + "\n"
+                "    " + str(self.sig) + "\n"
+                "    " + str(self.enc))
+
+    def __repr__(self):
+        return str(self)
 
     def add_to_model(self, model):
         model.nonlinearity(self.nl)
@@ -223,9 +230,16 @@ class Node(object):
 
     def __str__(self):
         if hasattr(self, 'nl'):
-            return "Function node: " + str(self.sig)
+            return ("Function node (id " + str(id(self)) + "): \n"
+                    "    " + str(self.nl) + "\n"
+                    "    " + str(self.sig) + "\n"
+                    "    " + str(self.enc))
         else:
-            return "Constant node: " + str(self.sig)
+            return ("Constant node (id " + str(id(self)) + "):  \n"
+                    "    " + str(self.sig))
+
+    def __repr__(self):
+        return str(self)
 
     def add_to_model(self, model):
         if hasattr(self, 'nl'):
@@ -288,7 +302,7 @@ class Connection(object):
 
     """
 
-    def __init__(self, pre, post, transform=None, weights=None, decoders=None,
+    def __init__(self, pre, post, transform=1.0, weights=None, decoders=None,
                  filter=None, function=None, learning_rule=None,
                  modulatory=False):
         if weights is not None:
@@ -315,27 +329,38 @@ class Connection(object):
 
         elif isinstance(self.pre, Node):
             if function is None:
-                alpha = np.asarray(transform)
-                if alpha.size == 1:
-                    self.filter = so.Filter(alpha, self.pre.sig,
-                                            self.post.sig[0])
-                else:
-                    raise NotImplementedError()
+                self.transform = so.Transform(np.asarray(transform),
+                                              self.pre.sig,
+                                              self.post.sig)
+                # alpha = np.asarray(transform)
+                # if alpha.size == 1:
+                #     self.transform = so.Transform(alpha, self.pre.sig,
+                #                                   self.post.sig)
+                # else:
+                #     raise NotImplementedError()
             else:
                 raise NotImplementedError()
         else:
             raise NotImplementedError()
+
+    def __str__(self):
+        ret = "Connection (id " + str(id(self)) + "): \n"
+        if hasattr(self, 'decoder'):
+            return ret + ("    " + str(self.decoder) + "\n"
+                          "    " + str(self.transform))
+        else:
+            return ret + "    " + str(self.transform)
+
+    def __repr__(self):
+        return str(self)
 
     @property
     def name(self):
         return self.pre.name + ">" + self.post.name
 
     def add_to_model(self, model):
-        if hasattr(self, 'filter'):
-            model.signals.add(self.filter.alpha_signal)
-            model.filters.add(self.filter)
-        else:
+        if hasattr(self, 'decoder'):
             model.decoders.add(self.decoder)
             model.signals.add(self.decoder.weights_signal)
-            model.transform.add(self.transform)
-            model.signals.add(self.transform.alpha_signal)
+        model.transforms.add(self.transform)
+        model.signals.add(self.transform.alpha_signal)

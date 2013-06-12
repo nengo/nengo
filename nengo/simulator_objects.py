@@ -32,12 +32,10 @@ class SignalView(object):
         return self.shape[0]
 
     def __str__(self):
-        return "View of " + str(self.base)
+        return "SignalView(id " + str(id(self)) + ")"
 
     def __repr__(self):
-        args = ', '.join([repr(a) for a in (self.base, self.shape,
-                                            self.elemstrides, self.offset)])
-        return "SignalView(" + args + ")"
+        return str(self)
 
     @property
     def dtype(self):
@@ -127,10 +125,10 @@ class Signal(SignalView):
         self._dtype = dtype
 
     def __str__(self):
-        return "Signal (" + str(self.n) + " D)"
+        return "Signal (" + str(self.n) + "D, id " + str(id(self)) + ")"
 
     def __repr__(self):
-        return "Signal(" + repr(self.n) + ", " + repr(self._dtype) + ")"
+        return str(self)
 
     @property
     def shape(self):
@@ -158,6 +156,9 @@ class Probe(object):
     def __str__(self):
         return "Probing " + str(self.sig)
 
+    def __repr__(self):
+        return str(self)
+
 
 class Constant(Signal):
     """A signal meant to hold a fixed value"""
@@ -166,6 +167,12 @@ class Constant(Signal):
         self.value = np.asarray(value)
         # TODO: change constructor to get n from value
         assert self.value.size == n
+
+    def __str__(self):
+        return "Constant (" + str(self.value) + ", id " + str(id(self)) + ")"
+
+    def __repr__(self):
+        return str(self)
 
     @property
     def shape(self):
@@ -183,6 +190,12 @@ class Nonlinearity(object):
         self.output_signal = output_signal
         self.bias_signal = bias_signal
 
+    def __str__(self):
+        return "Nonlinearity (id " + str(id(self)) + ")"
+
+    def __repr__(self):
+        return str(self)
+
 
 class Transform(object):
     """A linear transform from a decoded signal to the signals buffer"""
@@ -193,6 +206,13 @@ class Transform(object):
         self.alpha_signal = Constant(n=alpha.size, value=alpha)
         self.insig = insig
         self.outsig = outsig
+
+    def __str__(self):
+        return ("Transform (id " + str(id(self)) + ")"
+                " from " + str(self.insig) + " to " + str(self.outsig))
+
+    def __repr__(self):
+        return str(self)
 
     @property
     def alpha(self):
@@ -214,9 +234,8 @@ class Filter(object):
         self.newsig = newsig
 
     def __str__(self):
-        return '%s{%s, %s, %s}' % (
-            self.__class__.__name__,
-            self.alpha, self.oldsig, self.newsig)
+        return ("Filter (id " + str(id(self)) + ")"
+                " from " + str(self.oldsig) + " to " + str(self.newsig))
 
     def __repr__(self):
         return str(self)
@@ -242,6 +261,13 @@ class Encoder(object):
                 raise ValueError('weight shape', weights.shape)
         self.weights_signal = Constant(n=weights.size, value=weights)
 
+    def __str__(self):
+        return ("Encoder (id " + str(id(self)) + ")"
+                " of " + str(self.sig) + " to " + str(self.pop))
+
+    def __repr__(self):
+        return str(self)
+
     @property
     def weights(self):
         return self.weights_signal.value
@@ -262,6 +288,13 @@ class Decoder(object):
             if weights.shape != (sig.size, pop.n_out):
                 raise ValueError('weight shape', weights.shape)
         self.weights_signal = Constant(n=weights.size, value=weights)
+
+    def __str__(self):
+        return ("Decoder (id " + str(id(self)) + ")"
+                " of " + str(self.pop) + " to " + str(self.sig))
+
+    def __repr__(self):
+        return str(self)
 
     @property
     def weights(self):
