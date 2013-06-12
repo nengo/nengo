@@ -40,26 +40,25 @@ class TestNewAPI(TestCase):
         model = Model('Runtime Test', seed=123, backend='numpy')
 
         model.make_node('in', output=np.sin)
-        pprint(model.o)
         model.make_ensemble('A', LIF(N), 1)
-        pprint(model.o)
         model.connect('in', 'A')
-        pprint(model.o)
-        model.probe('A')
-        model.probe('in')
+        A_fast_probe = model.probe('A', sample_every=0.01, pstc=0.001)
+        A_med_probe = model.probe('A', sample_every=0.01, pstc=0.01)
+        A_slow_probe = model.probe('A', sample_every=0.01, pstc=0.1)
+        in_probe = model.probe('in', sample_every=0.01, pstc=0.01)
 
-        res = model.run(1.0)
-        pprint(res)
+        pprint(model.o)
+        model.run(1.0)
 
         target = np.sin(np.arange(0, 1000, 10) / 1000.)
         target.shape = (100, 1)
 
         for speed in 'fast', 'med', 'slow':
             probe = locals()['A_%s_probe' % speed]
-            data = np.asarray(probe.get_data()).flatten()
+            data = np.asarray(model.sim_obj.probe_data(probe)).flatten()
             plt.plot(data, label=speed)
 
-        in_data = np.asarray(in_probe.get_data()).flatten()
+        in_data = np.asarray(model.sim_obj.probe_data(in_probe)).flatten()
 
         plt.plot(in_data, label='in')
         plt.legend(loc='upper left')
@@ -71,14 +70,14 @@ class TestNewAPI(TestCase):
             plt.show()
 
         # target is off-by-one at the sampling frequency of dt=0.001
-        print rmse(target, in_probe.get_data())
-        assert rmse(target, in_probe.get_data()) < .001
-        print rmse(target, A_fast_probe.get_data())
-        assert rmse(target, A_fast_probe.get_data()) < .3
-        print rmse(target, A_med_probe.get_data())
-        assert rmse(target, A_med_probe.get_data()) < .03
-        print rmse(target, A_slow_probe.get_data())
-        assert rmse(target, A_slow_probe.get_data()) < 0.1
+        print rmse(target, model.sim_obj.probe_data(in_probe))
+        assert rmse(target, model.sim_obj.probe_data(in_probe)) < .001
+        print rmse(target, model.sim_obj.probe_data(A_fast_probe))
+        assert rmse(target, model.sim_obj.probe_data(A_fast_probe)) < .3
+        print rmse(target, model.sim_obj.probe_data(A_med_probe))
+        assert rmse(target, model.sim_obj.probe_data(A_med_probe)) < .03
+        print rmse(target, model.sim_obj.probe_data(A_slow_probe))
+        assert rmse(target, model.sim_obj.probe_data(A_slow_probe)) < 0.1
 
     def test_basic_5K(self):
         return self.test_basic_1(5000)
@@ -100,23 +99,20 @@ class TestNewAPI(TestCase):
         radius = 1
 
         # make 2 matrices to store the input
-        print "make_ensemble: input matrices A and B"
         model.make_ensemble('A', LIF(N), D1*D2, radius=radius)
         model.make_ensemble('B', LIF(N), D2*D3, radius=radius)
 
         # connect inputs to them so we can set their value
         model.make_node('input A', [0] * D1 * D2)
         model.make_node('input B', [0] * D2 * D3)
-        print "connect: input matrices A and B"
         model.connect('input A', 'A')
         model.connect('input B', 'B')
 
         # the C matrix holds the intermediate product calculations
         #  need to compute D1*D2*D3 products to multiply 2 matrices together
-        print "make_array: intermediate C"
         model.make_ensemble('C', LIF(4 * N), D1 * D2 * D3, # dimensions=2,
-                            radius=1.5*radius,
-                            encoders=[[1,1], [1,-1], [-1,1], [-1,-1]])
+                            radius=1.5*radius)
+                            # encoders=[[1,1], [1,-1], [-1,1], [-1,-1]])
 
         #  determine the transformation matrices to get the correct pairwise
         #  products computed.  This looks a bit like black magic but if
@@ -142,7 +138,6 @@ class TestNewAPI(TestCase):
         model.connect('B', 'C', transform=transformB)
 
         # now compute the products and do the appropriate summing
-        print "make_ensemble: output D"
         model.make_ensemble('D', LIF(N), D1 * D3, radius=radius)
 
         def product(x):
@@ -156,6 +151,8 @@ class TestNewAPI(TestCase):
             np.asarray([.5, -.5]).astype('float32'))
         model.get('input B').origin['X'].decoded_output.set_value(
             np.asarray([0, 1, -1, 0]).astype('float32'))
+
+        pprint(model.o)
 
         Dprobe = model.probe('D')
 

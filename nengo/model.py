@@ -180,8 +180,6 @@ class Model(SimModel):
         self.steps = self.signal()
         self.one = self.signal(value=1.0)
 
-        self.probed = []
-
         self.name = name
         self.backend = backend
 
@@ -306,8 +304,6 @@ class Model(SimModel):
         for obj in self.o.values():
             obj.add_to_model(self)
 
-        for obj in self.probed:
-            SimModel.probe(self, obj.sig, self.dt)
 
     def reset(self):
         """Reset the state of the simulation.
@@ -665,7 +661,7 @@ class Model(SimModel):
         self.o[name] = node
         return node
 
-    def probe(self, target, sample_every=None, static=False):
+    def probe(self, target, sample_every=None, pstc=None, static=False):
         """Probe a piece of data contained in the model.
 
         When a piece of data is probed, it will be recorded through
@@ -713,15 +709,32 @@ class Model(SimModel):
         Network.probe : The same function for Networks
 
         """
-        if sample_every is not None:
-            raise NotImplementedError()
+        def _filter_coefs(pstc, dt):
+            pstc = max(pstc, dt)
+            decay = math.exp(-dt / pstc)
+            return decay, (1.0 - decay)
+
+        if static != False:
+            return NotImplementedError()
+
+        if sample_every is None:
+            sample_every = self.dt
+
 
         obj = self.get(target)
-        if not obj in self.probed:
-            self.probed.append(obj)
+
+        if pstc is not None and pstc > self.dt:
+            fcoef, tcoef = _filter_coefs(pstc=pstc, dt=self.dt)
+            probe_sig = self.signal(obj.sig.n)
+            self.filter(fcoef, probe_sig, probe_sig)
+            self.transform(tcoef, obj.sig, probe_sig)
+            return SimModel.probe(self, probe_sig, sample_every)
+
+        else:
+            return SimModel.probe(self, obj.sig, sample_every)
 
 
-    def connect(self, pre, post, function=None, transform=None,
+    def connect(self, pre, post, function=None, transform=1.0,
                 filter=None, learning_rule=None):
         """Connect ``pre`` to ``post``.
 
