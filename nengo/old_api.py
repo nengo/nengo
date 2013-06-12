@@ -556,18 +556,17 @@ class Network(object):
 
     def make_input(self, name, value):
         if callable(value):
-            rval = self.model.signal()
             pop = self.model.nonlinearity(
                 Direct(n_in=1, n_out=1, fn=value))
             self.model.encoder(self.simtime, pop, weights=np.asarray([[1]]))
-            self.inputs[name] = pop.output_signal
             # TODO: add this to simulator_objects
             pop.input_signal.name = name + '.input'
             pop.bias_signal.name = name + '.bias'
             pop.output_signal.name = name + '.output'
+            rval = pop.output_signal
         else:
             rval = self.model.signal(n=1, value=float(value))
-            self.inputs[name] = rval
+        self.inputs[name] = rval
         return rval
 
     def make_array(self, name, *args, **kwargs):

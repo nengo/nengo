@@ -2,6 +2,7 @@ import math
 import random
 import warnings
 
+from . import logger
 from .model_objects import Uniform, Gaussian
 from .model_objects import Ensemble, Network, Node, Connection
 from .simulator_objects import SimModel
@@ -170,15 +171,25 @@ class Model(SimModel):
     }
 
     def __init__(self, name, seed=None, fixed_seed=None, backend='numpy'):
-        self.dt = 0.001
-        SimModel.__init__(self)
+        SimModel.__init__(self, dt=0.001)
 
         self.o = {}  # Objects in the model
         self.a = {}  # Aliases to objects
+        self.p = {}
+        self.d = {}
 
         self.simtime = self.signal()
         self.steps = self.signal()
         self.one = self.signal(value=1.0)
+
+        # -- steps counts by 1.0
+        self.filter(1.0, self.one, self.steps)
+        self.filter(1.0, self.steps, self.steps)
+
+        # simtime <- dt * steps
+        self.filter(self.dt, self.steps, self.simtime)
+        self.filter(self.dt, self.one, self.simtime)
+
 
         self.name = name
         self.backend = backend
@@ -256,7 +267,6 @@ class Model(SimModel):
     def all_members(self):
         pass
 
-
     ### Simulation methods
 
     def build(self, dt=0.001):
@@ -281,7 +291,9 @@ class Model(SimModel):
             **Default**: 0.001; i.e., 1 millisecond
 
         """
+        logger.debug("Mapping model objects to sim objects")
         self._make_simulator_objects()
+        logger.debug("Creating simulator")
         self.sim_obj = self.simulator.Simulator(self)
 
     def _make_simulator_objects(self):
@@ -292,18 +304,8 @@ class Model(SimModel):
         to the SimModel's lists.
 
         """
-
-        # -- steps counts by 1.0
-        self.filter(1.0, self.one, self.steps)
-        self.filter(1.0, self.steps, self.steps)
-
-        # simtime <- dt * steps
-        self.filter(self.dt, self.steps, self.simtime)
-        self.filter(self.dt, self.one, self.simtime)
-
         for obj in self.o.values():
             obj.add_to_model(self)
-
 
     def reset(self):
         """Reset the state of the simulation.
@@ -312,6 +314,7 @@ class Model(SimModel):
         probes in the network and calls thier reset functions.
 
         """
+        logger.debug("Resetting simulator")
         self.sim_obj.reset()
 
     def run(self, time, dt=0.001, output=None, stop_when=None):
@@ -364,14 +367,21 @@ class Model(SimModel):
 
         """
         if self.sim_obj is None:
+            logger.debug("No simulator object yet. Building.")
             self.build()
         if stop_when is not None:
             raise NotImplementedError()
         if output is not None:
             raise NotImplementedError()
+
         steps = int(time / dt)
-        self.sim_obj.run_steps(steps) #, verbose=True)
-        return self.sim_obj.probe_outputs
+        logger.debug("Running simulator for " + str(steps) + " steps")
+        self.sim_obj.run_steps(steps)
+
+        for k in self.p:
+            self.d[k] = self.sim_obj.probe_data(self.p[k])
+
+        return self.d
 
     ### Model manipulation
 
@@ -421,22 +431,11 @@ class Model(SimModel):
         default : optional
             If ``target`` is not in the model, then ``get`` will
             return ``default``.
-            If ``default`` is not specified and ``target`` does not
-            exist, a ``ValueError`` is raised.
 
         Returns
         -------
         target : Nengo object
             The Nengo object specified by ``target``.
-
-        Raises
-        ------
-        ValueError
-            If the ``target`` does not exist and no ``default`` is specified.
-
-        See Also
-        --------
-        Network.get : The same function for Networks
 
         """
         if isinstance(target, str):
@@ -448,10 +447,51 @@ class Model(SimModel):
             return default
 
         if not target in self.o.values():
-            warnings.warn("Cannot find " + target + " in this model.")
+            warnings.warn("Cannot find " + str(target) + " in this model.")
             return default
 
         return target
+
+    def get_string(self, target, default=None):
+        """Return the canonical string of the Nengo object specified.
+
+        Parameters
+        ----------
+        target : string or Nengo object
+            The ``target`` can be specified with a string
+            (see `string reference <string_reference.html>`_)
+            or a Nengo object.
+            If a string is passed, ``get_string`` returns
+            the canonical version of it; i.e., if it is
+            an alias, the non-aliased version is returned.
+
+        default : optional
+            If ``target`` is not in the model, then ``get`` will
+            return ``default``.
+
+        Returns
+        -------
+        target : Nengo object
+            The Nengo object specified by ``target``.
+
+        Raises
+        ------
+        ValueError
+            If the ``target`` does not exist and no ``default`` is specified.
+
+        """
+        if isinstance(target, str):
+            if self.a.has_key(target):
+                obj = self.a[target]
+            elif self.o.has_key(target):
+                return target
+
+        for k, v in self.o.iteritems():
+            if v == target:
+                return k
+
+        warnings.warn("Cannot find " + str(target) + " in this model.")
+        return default
 
     def make_alias(self, alias, target):
         """Adds a named shortcut to an existing Nengo object
@@ -477,10 +517,6 @@ class Model(SimModel):
         ValueError
             If ``target`` can't be found in the model.
 
-        See Also
-        --------
-        Network.make_alias : The same function for Networks
-
         """
         obj = self.get(target)
         if obj is None:
@@ -502,10 +538,6 @@ class Model(SimModel):
         -------
         target : Nengo object
             The Nengo object removed.
-
-        See Also
-        --------
-        Network.remove : The same function for Networks
 
         """
         obj = self.get(target)
@@ -576,7 +608,7 @@ class Model(SimModel):
 
         See Also
         --------
-        Network.make_ensemble : The same function for Networks
+        Ensemble : The Ensemble object
 
         """
         ens = Ensemble(name, neurons, dimensions,
@@ -616,10 +648,6 @@ class Model(SimModel):
             the random number generator, so if the network creation code
             changes, the entire network changes.
 
-        See Also
-        --------
-        Network.make_network : The same function for Networks
-
         """
         net = Network(name, seed)
         self.o[name] = net
@@ -654,10 +682,10 @@ class Model(SimModel):
 
         See Also
         --------
-        Network.make_node : The same function for Networks
+        Node : The Node object
 
         """
-        node = Node(name, output, self.simtime)
+        node = Node(name, output, input=self.simtime)
         self.o[name] = node
         return node
 
@@ -704,10 +732,6 @@ class Model(SimModel):
 
             **Default**: False
 
-        See Also
-        --------
-        Network.probe : The same function for Networks
-
         """
         def _filter_coefs(pstc, dt):
             pstc = max(pstc, dt)
@@ -720,19 +744,25 @@ class Model(SimModel):
         if sample_every is None:
             sample_every = self.dt
 
-
         obj = self.get(target)
+        obj_s = self.get_string(target)
 
         if pstc is not None and pstc > self.dt:
             fcoef, tcoef = _filter_coefs(pstc=pstc, dt=self.dt)
             probe_sig = self.signal(obj.sig.n)
             self.filter(fcoef, probe_sig, probe_sig)
             self.transform(tcoef, obj.sig, probe_sig)
-            return SimModel.probe(self, probe_sig, sample_every)
-
+            p = SimModel.probe(self, probe_sig, sample_every)
         else:
-            return SimModel.probe(self, obj.sig, sample_every)
+            p = SimModel.probe(self, obj.sig, sample_every)
 
+        i = 0
+        while self.p.has_key(obj_s):
+            i += 1
+            obj_s = self.get_string(target) + "_" + str(i)
+
+        self.p[obj_s] = p
+        return p
 
     def connect(self, pre, post, function=None, transform=1.0,
                 filter=None, learning_rule=None):
@@ -836,7 +866,6 @@ class Model(SimModel):
         See Also
         --------
         Connection : The Connection object
-        Network.connect : The same function for Networks
 
         """
         pre = self.get(pre)
@@ -904,7 +933,7 @@ class Model(SimModel):
 
         See Also
         --------
-        Network.connect_neurons : The same function for Networks
+        Connection : The Connection object
 
         """
         con = Connection(pre, post, weights=weights, filter=filter,

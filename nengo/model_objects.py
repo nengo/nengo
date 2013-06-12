@@ -215,12 +215,12 @@ class Node(object):
     def __init__(self, name, output, input):
         self.name = name
         if callable(output):
-            self.sig = so.Signal()
             self.nl = nl.Direct(n_in=1, n_out=1, fn=output)
             self.enc = so.Encoder(input, self.nl, weights=np.asarray([[1]]))
             self.nl.input_signal.name = name + '.input'
             self.nl.bias_signal.name = name + '.bias'
             self.nl.output_signal.name = name + '.output'
+            self.sig = self.nl.output_signal
         else:
             if type(output) == list:
                 self.sig = so.Constant(n=len(output),
@@ -332,12 +332,6 @@ class Connection(object):
                 self.transform = so.Transform(np.asarray(transform),
                                               self.pre.sig,
                                               self.post.sig)
-                # alpha = np.asarray(transform)
-                # if alpha.size == 1:
-                #     self.transform = so.Transform(alpha, self.pre.sig,
-                #                                   self.post.sig)
-                # else:
-                #     raise NotImplementedError()
             else:
                 raise NotImplementedError()
         else:
@@ -362,5 +356,9 @@ class Connection(object):
         if hasattr(self, 'decoder'):
             model.decoders.add(self.decoder)
             model.signals.add(self.decoder.weights_signal)
-        model.transforms.add(self.transform)
-        model.signals.add(self.transform.alpha_signal)
+        if hasattr(self, 'transform'):
+            model.transforms.add(self.transform)
+            model.signals.add(self.transform.alpha_signal)
+        if hasattr(self, 'filter'):
+            model.filters.add(self.filter)
+            model.signals.add(self.filter.alpha_signal)
