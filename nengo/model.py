@@ -2,27 +2,105 @@ import math
 import random
 import warnings
 
-class Uniform(object):
-    def __init__(self, low, high):
-        self.low = low
-        self.high = high
+from . import logger
+from .model_objects import Uniform, Gaussian
+from .model_objects import Ensemble, Network, Node, Connection
+from .simulator_objects import SimModel
 
-    def __eq__(self, other):
-        return self.low == other.low and self.high == other.high
+def gen_transform(pre_dims, post_dims,
+                  weight=1, index_pre=None, index_post=None):
+    """Helper function used to create a ``pre_dims`` by ``post_dims``
+    linear transformation matrix.
 
-    def sample(n):
-        return [random.uniform(self.low, self.high) for _ in xrange(n)]
+    Parameters
+    ----------
+    pre_dims, post_dims : int
+        The numbers of presynaptic and postsynaptic dimensions.
+    weight : float, optional
+        The weight value to use in the transform.
 
-class Gaussian(object):
-    def __init__(self, mean, std):
-        self.mean = mean
-        self.std = std
+        All values in the transform are either 0 or ``weight``.
 
-    def __eq__(self, other):
-        return self.mean == other.mean and self.std == other.std
+        **Default**: 1.0
+    index_pre, index_post : iterable of int
+        Determines which values are non-zero, and indicates which
+        dimensions of the pre-synaptic ensemble should be routed to which
+        dimensions of the post-synaptic ensemble.
 
-    def sample(n):
-        return [random.gauss(self.mean, self.std) for _ in xrange(n)]
+    Returns
+    -------
+    transform : 2D matrix of floats
+        A two-dimensional transform matrix performing the requested routing.
+
+    Examples
+    --------
+
+      # Sends the first two dims of pre to the first two dims of post
+      >>> gen_transform(pre_dims=2, post_dims=3,
+                        index_pre=[0, 1], index_post=[0, 1])
+      [[1, 0], [0, 1], [0, 0]]
+
+    """
+    t = [[0] * pre_dims for i in range(post_dims)]
+    if index_pre is None:
+        index_pre = range(dim_pre)
+    elif isinstance(index_pre, int):
+        index_pre = [index_pre]
+    if index_post is None:
+        index_post = range(dim_post)
+    elif isinstance(index_post, int):
+        index_post = [index_post]
+
+    for i in range(max(len(index_pre), len(index_post))):
+        pre = index_pre[i % len(index_pre)]
+        post = index_post[i % len(index_post)]
+        t[post][pre] = weight
+    return t
+
+
+def gen_weights(pre_neurons, post_neurons, function):
+    """Helper function used to create a ``pre_neurons`` by ``post_neurons``
+    connection weight matrix.
+
+    Parameters
+    ----------
+    pre_neurons, post_neurons : int
+        The numbers of presynaptic and postsynaptic neurons.
+    function : function
+        A function that generates weights.
+
+        If it accepts no arguments, it will be called to
+        generate each individual weight (useful
+        to great random weights, for example).
+        If it accepts two arguments, it will be given the
+        ``pre`` and ``post`` index in the weight matrix.
+
+    Returns
+    -------
+    weights : 2D matrix of floats
+        A two-dimensional connection weight matrix.
+
+    Examples
+    --------
+
+      >>> gen_weights(2, 2, random.random)
+      [[0.6281625119511959, 0.48560016153108376], [0.9639779858394248, 0.4768136917985597]]
+
+      >>> def product(pre, post):
+      ...     return pre * post
+      >>> gen_weights(3, 3, product)
+      [[0, 0, 0], [0, 1, 2], [0, 2, 4]]
+
+    """
+    argspec = inspect.getargspec(func)
+    if len(argspec[0]) == 0:
+        return [[func() for _ in xrange(pre_neurons)
+                 for _ in xrange(post_neurons)]]
+    elif len(argspec[0]) == 2:
+        return [[func(pre, post) for pre in xrange(pre_neurons)
+                 for post in xrange(post_neurons)]]
+
+
 
 class Model(SimModel):
     """A model contains a single network and the ability to
@@ -88,23 +166,106 @@ class Model(SimModel):
 
     """
 
-    def __init__(self, name, seed=None, fixed_seed=None,
-                 backend='numpy'):
-        self.network = Network()
+    BACKENDS = {
+        'numpy': 'nengo.simulator',
+    }
+
+    def __init__(self, name, seed=None, fixed_seed=None, backend='numpy'):
+        SimModel.__init__(self, dt=0.001)
+
+        self.o = {}  # Objects in the model
+        self.a = {}  # Aliases to objects
+        self.p = {}
+        self.d = {}
+
+        self.simtime = self.signal()
+        self.steps = self.signal()
+        self.one = self.signal(value=1.0)
+
+        # -- steps counts by 1.0
+        self.filter(1.0, self.one, self.steps)
+        self.filter(1.0, self.steps, self.steps)
+
+        # simtime <- dt * steps
+        self.filter(self.dt, self.steps, self.simtime)
+        self.filter(self.dt, self.one, self.simtime)
+
+
         self.name = name
         self.backend = backend
-        self.byname = {}
-        self.simulator = None
+
         if seed is None:
             self.seed = 123
         else:
             self.seed = seed
+
         if fixed_seed is not None:
             raise NotImplementedError()
 
+    def __str__(self):
+        return "Model: " + self.name
+
+    @property
+    def backend(self):
+        return self._backend
+
+    @backend.setter
+    def backend(self, backend):
+        if hasattr(self, '_backend') and backend == self._backend:
+            return
+
+        try:
+            toimport = Model.BACKENDS[backend]
+            self.simulator = __import__(toimport, globals(), locals(),
+                                        ['simulator'], -1)
+            self.sim_obj = None
+            self._backend = backend
+
+        except KeyError:
+            warnings.warn(backend + " not a registered backend. "
+                          "Falling back to numpy.")
+            self.backend = 'numpy'
+
+        except ImportError:
+            if backend == 'numpy':
+                raise ImportError("Cannot import numpy backend!")
+            warnings.warn(backend + " cannot be imported. "
+                          "Falling back to numpy.")
+            self.backend = 'numpy'
+
     @property
     def time(self):
-        return self.simulator.simulator_time
+        if self.sim_obj is None:
+            return None
+        return self.sim_obj.simulator_time
+
+    @property
+    def all_connections(self):
+        pass
+
+    @property
+    def all_ensembles(self):
+        pass
+
+    @property
+    def all_nodes(self):
+        pass
+
+    @property
+    def all_networks(self):
+        pass
+
+    @property
+    def all_probed(self):
+        pass
+
+    @property
+    def members(self):
+        pass
+
+    @property
+    def all_members(self):
+        pass
 
     ### Simulation methods
 
@@ -130,7 +291,21 @@ class Model(SimModel):
             **Default**: 0.001; i.e., 1 millisecond
 
         """
-        self.simulator = Simulator(self.network, dt=dt)
+        logger.debug("Mapping model objects to sim objects")
+        self._make_simulator_objects()
+        logger.debug("Creating simulator")
+        self.sim_obj = self.simulator.Simulator(self)
+
+    def _make_simulator_objects(self):
+        """Maps the high-level model objects to simulator objects.
+
+        Since Model is a subclass of SimModel, all we have to do
+        is add all of the information being tracked in our model objects
+        to the SimModel's lists.
+
+        """
+        for obj in self.o.values():
+            obj.add_to_model(self)
 
     def reset(self):
         """Reset the state of the simulation.
@@ -139,7 +314,8 @@ class Model(SimModel):
         probes in the network and calls thier reset functions.
 
         """
-        self.simulator.reset()
+        logger.debug("Resetting simulator")
+        self.sim_obj.reset()
 
     def run(self, time, dt=0.001, output=None, stop_when=None):
         """Runs a simulation of the model.
@@ -190,18 +366,24 @@ class Model(SimModel):
             ``output`` is None.
 
         """
-        if self.simulator is None:
-            self.simulator = API.Simulator(self.network, dt=dt,
-                                           backend=self.backend_type)
-        assert dt == self.simulator.dt
+        if self.sim_obj is None:
+            logger.debug("No simulator object yet. Building.")
+            self.build()
         if stop_when is not None:
             raise NotImplementedError()
         if output is not None:
             raise NotImplementedError()
-        steps = int(time / dt)
-        self.simulator.run_steps(steps )
 
-    ### Model creation methods
+        steps = int(time / dt)
+        logger.debug("Running simulator for " + str(steps) + " steps")
+        self.sim_obj.run_steps(steps)
+
+        for k in self.p:
+            self.d[k] = self.sim_obj.probe_data(self.p[k])
+
+        return self.d
+
+    ### Model manipulation
 
     def add(self, obj):
         """Adds a Nengo object to this model.
@@ -228,7 +410,11 @@ class Model(SimModel):
         Network.add : The same function for Networks
 
         """
-        return self.network.add(obj)
+        if self.o.has_key(obj.name):
+            raise ValueError("Something called " + obj.name + " already exists."
+                             " Please choose a different name.")
+        self.o[obj.name] = obj
+        return obj
 
     def get(self, target, default=None):
         """Return the Nengo object specified.
@@ -245,8 +431,43 @@ class Model(SimModel):
         default : optional
             If ``target`` is not in the model, then ``get`` will
             return ``default``.
-            If ``default`` is not specified and ``target`` does not
-            exist, a ``ValueError`` is raised.
+
+        Returns
+        -------
+        target : Nengo object
+            The Nengo object specified by ``target``.
+
+        """
+        if isinstance(target, str):
+            if self.a.has_key(target):
+                return self.a[target]
+            elif self.o.has_key(target):
+                return self.o[target]
+            warnings.warn("Cannot find " + target + " in this model.")
+            return default
+
+        if not target in self.o.values():
+            warnings.warn("Cannot find " + str(target) + " in this model.")
+            return default
+
+        return target
+
+    def get_string(self, target, default=None):
+        """Return the canonical string of the Nengo object specified.
+
+        Parameters
+        ----------
+        target : string or Nengo object
+            The ``target`` can be specified with a string
+            (see `string reference <string_reference.html>`_)
+            or a Nengo object.
+            If a string is passed, ``get_string`` returns
+            the canonical version of it; i.e., if it is
+            an alias, the non-aliased version is returned.
+
+        default : optional
+            If ``target`` is not in the model, then ``get`` will
+            return ``default``.
 
         Returns
         -------
@@ -258,12 +479,19 @@ class Model(SimModel):
         ValueError
             If the ``target`` does not exist and no ``default`` is specified.
 
-        See Also
-        --------
-        Network.get : The same function for Networks
-
         """
-        return self.network.get(target, default)
+        if isinstance(target, str):
+            if self.a.has_key(target):
+                obj = self.a[target]
+            elif self.o.has_key(target):
+                return target
+
+        for k, v in self.o.iteritems():
+            if v == target:
+                return k
+
+        warnings.warn("Cannot find " + str(target) + " in this model.")
+        return default
 
     def make_alias(self, alias, target):
         """Adds a named shortcut to an existing Nengo object
@@ -289,16 +517,48 @@ class Model(SimModel):
         ValueError
             If ``target`` can't be found in the model.
 
-        See Also
-        --------
-        Network.make_alias : The same function for Networks
+        """
+        obj = self.get(target)
+        if obj is None:
+            raise ValueError(target + " cannot be found.")
+        self.a[alias] = obj
+        return obj
+
+    def remove(self, target):
+        """Removes a Nengo object from the model.
+
+        Parameters
+        ----------
+        target : str, Nengo object
+            A string referencing the Nengo object to be removed
+            (see `string reference <string_reference.html>`)
+            or node or name of the node to be removed.
+
+        Returns
+        -------
+        target : Nengo object
+            The Nengo object removed.
 
         """
-        self.network.make_alias(alias, target)
+        obj = self.get(target)
+        if obj is None:
+            warnings.warn(target + " not in this model.")
+            return
 
-    def make_ensemble(self, name, neurons, dimensions, max_rate=(50, 100),
-                      intercept=(-1, 1), radius=1.0, encoders=None,
-                      neuron_model=lif(), mode='spiking'):
+        for k, v in self.o.iteritems():
+            if v == obj:
+                del self.o[k]
+        for k, v in self.a.iteritem():
+            if v == obj:
+                del self.a[k]
+
+        return obj
+
+    # Model creation methods
+
+    def make_ensemble(self, name, neurons, dimensions,
+                      max_rates=Uniform(50, 100), intercepts=Uniform(-1, 1),
+                      radius=1.0, encoders=None, mode='spiking'):
         """Create and return an ensemble of neurons.
 
         The ensemble created by this function is automatically added to
@@ -312,14 +572,14 @@ class Model(SimModel):
             Number of neurons in the ensemble.
         dimensions : int
             Number of dimensions that this ensemble will represent.
-        max_rate : iterable, optional
+        max_rates : iterable, optional
             A 2-element iterable containing the minimum and maximum
             values of a uniform distribution from which the maximum
             firing rates of neurons in the ensemble will be selected
             (in Hz).
 
             **Default**: (50, 100)
-        intercept : iterable, optional
+        intercepts : iterable, optional
             A 2-element iterable containing the minimum and maximum
             values of a uniform distribution from which the x-intercepts
             of neuron tuning curves will be selected.
@@ -348,22 +608,18 @@ class Model(SimModel):
 
         See Also
         --------
-        Network.make_ensemble : The same function for Networks
+        Ensemble : The Ensemble object
 
         """
-        ens = self.byname[name] = Ensemble(name, neurons, dimensions,
-                                           max_rate=max_rate,
-                                           intercept=intercept,
-                                           radius=radius,
-                                           encoders=encoders,
-                                           neuron_model=neuron_model,
-                                           mode=mode,
-                                           seed=self.seed,
-                                          )
-        self.network.add(ens._neurons)  # ???
-        self.network.add(ens._encoder)  # ???
-        self.network.add(ens._adder)    # ???
-        self.seed += 101
+        ens = Ensemble(name, neurons, dimensions,
+                       max_rates=max_rates,
+                       intercepts=intercepts,
+                       radius=radius,
+                       encoders=encoders,
+                       mode=mode,
+                       seed=self.seed,
+        )
+        self.o[name] = ens
         return ens
 
     def make_network(self, name, seed=None):
@@ -392,12 +648,10 @@ class Model(SimModel):
             the random number generator, so if the network creation code
             changes, the entire network changes.
 
-        See Also
-        --------
-        Network.make_network : The same function for Networks
-
         """
-        return self.network.add_network(name, seed)
+        net = Network(name, seed)
+        self.o[name] = net
+        return net
 
     def make_node(self, name, output):
         """Create and return a node of dimensionality ``len(output)``,
@@ -428,34 +682,14 @@ class Model(SimModel):
 
         See Also
         --------
-        Network.make_node : The same function for Networks
+        Node : The Node object
 
         """
-        return self.network.make_node(name, output)
+        node = Node(name, output, input=self.simtime)
+        self.o[name] = node
+        return node
 
-    def remove(self, target):
-        """Removes a Nengo object from the model.
-
-        Parameters
-        ----------
-        target : str, Nengo object
-            A string referencing the Nengo object to be removed
-            (see `string reference <string_reference.html>`)
-            or node or name of the node to be removed.
-
-        Returns
-        -------
-        target : Nengo object
-            The Nengo object removed.
-
-        See Also
-        --------
-        Network.remove : The same function for Networks
-
-        """
-        self.network.remove(target)
-
-    def probe(self, target, sample_every=None, static=False):
+    def probe(self, target, sample_every=None, pstc=None, static=False):
         """Probe a piece of data contained in the model.
 
         When a piece of data is probed, it will be recorded through
@@ -498,19 +732,40 @@ class Model(SimModel):
 
             **Default**: False
 
-        See Also
-        --------
-        Network.probe : The same function for Networks
-
         """
-        obj = self.get(target)
-        if isinstance(obj, Ensemble):
-            return self.network.add(API.Probe(obj._adder.output))
-        else:
-            return self.network.add(API.Probe(obj))
+        def _filter_coefs(pstc, dt):
+            pstc = max(pstc, dt)
+            decay = math.exp(-dt / pstc)
+            return decay, (1.0 - decay)
 
-    def connect(self, pre, post, function=None, transform=None,
-                filter=psc(), learning_rule=None):
+        if static != False:
+            return NotImplementedError()
+
+        if sample_every is None:
+            sample_every = self.dt
+
+        obj = self.get(target)
+        obj_s = self.get_string(target)
+
+        if pstc is not None and pstc > self.dt:
+            fcoef, tcoef = _filter_coefs(pstc=pstc, dt=self.dt)
+            probe_sig = self.signal(obj.sig.n)
+            self.filter(fcoef, probe_sig, probe_sig)
+            self.transform(tcoef, obj.sig, probe_sig)
+            p = SimModel.probe(self, probe_sig, sample_every)
+        else:
+            p = SimModel.probe(self, obj.sig, sample_every)
+
+        i = 0
+        while self.p.has_key(obj_s):
+            i += 1
+            obj_s = self.get_string(target) + "_" + str(i)
+
+        self.p[obj_s] = p
+        return p
+
+    def connect(self, pre, post, function=None, transform=1.0,
+                filter=None, learning_rule=None):
         """Connect ``pre`` to ``post``.
 
         Parameters
@@ -611,14 +866,18 @@ class Model(SimModel):
         See Also
         --------
         Connection : The Connection object
-        Network.connect : The same function for Networks
 
         """
-        return self.network.connect(
-            pre, post, function, transform, filter, learning_rule)
+        pre = self.get(pre)
+        post = self.get(post)
+        con = Connection(pre, post,
+                         function=function, transform=transform,
+                         filter=filter, learning_rule=learning_rule)
+        self.o[con.name] = con
+        return con
 
     def connect_neurons(self, pre, post, weights,
-                        filter=psc(), learning_rule=None):
+                        filter=None, learning_rule=None):
         """Directly connect the neurons in the ``pre`` ensemble
         to the neurons in the ``post`` ensemble.
 
@@ -674,8 +933,10 @@ class Model(SimModel):
 
         See Also
         --------
-        Network.connect_neurons : The same function for Networks
+        Connection : The Connection object
 
         """
-        return self.network.connect_neurons(
-            pre, post, weights, filter, learning_rule)
+        con = Connection(pre, post, weights=weights, filter=filter,
+                         learning_rule=learning_rule)
+        self.o[con.name] = con
+        return con

@@ -15,7 +15,7 @@ class Direct(object):
     """
     def __init__(self, n_in, n_out, fn):
         """
-        fn: 
+        fn:
         """
         self.input_signal = Signal(n_in)
         self.output_signal = Signal(n_out)
@@ -24,6 +24,12 @@ class Direct(object):
         self.n_in = n_in
         self.n_out = n_out
         self.fn = fn
+
+    def __str__(self):
+        return "Direct (id " + str(id(self)) + ")"
+
+    def __repr__(self):
+        return str(self)
 
     def fn(self, J):
         return J
@@ -41,6 +47,11 @@ class LIF(object):
         self.tau_ref = tau_ref
         self.gain = np.random.rand(n_neurons)
 
+    def __str__(self):
+        return "LIF (id " + str(id(self)) + ", " + str(self.n_neurons) + "N)"
+
+    def __repr__(self):
+        return str(self)
 
     @property
     def bias(self):
@@ -68,6 +79,8 @@ class LIF(object):
         :param float array intercepts: x-intercepts of neurons
 
         """
+        max_rates = np.asarray(max_rates)
+        intercepts = np.asarray(intercepts)
         x = 1.0 / (1 - np.exp(
             (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
         self.gain = (1 - x) / (intercepts - 1.0)
@@ -142,9 +155,16 @@ class LIF(object):
 
 class LIFRate(LIF):
     def __init__(self, n_neurons):
+        LIF.__init__(self, n_neurons)
         self.input_signal = Signal(n_neurons)
         self.output_signal = Signal(n_neurons)
         self.bias_signal = Constant(n=n_neurons, value=np.zeros(n_neurons))
+
+    def __str__(self):
+        return "LIFRate (id " + str(id(self)) + ", " + str(self.n_neurons) + "N)"
+
+    def __repr__(self):
+        return str(self)
 
     @property
     def n_in(self):
@@ -153,6 +173,3 @@ class LIFRate(LIF):
     @property
     def n_out(self):
         return self.n_neurons
-
-
-
