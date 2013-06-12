@@ -23,7 +23,9 @@ class TestNewAPI(TestCase):
         model.make_node('in', output=np.sin)
         model.probe('in')
         res = model.run(0.01)
-        data = np.asarray(res.values()[0])
+        data = res['in']
+        print data.dtype
+        print data
         assert np.allclose(data.flatten(), np.sin(np.arange(0, 0.0095, .001)))
 
 
@@ -42,23 +44,22 @@ class TestNewAPI(TestCase):
         model.make_node('in', output=np.sin)
         model.make_ensemble('A', LIF(N), 1)
         model.connect('in', 'A')
-        A_fast_probe = model.probe('A', sample_every=0.01, pstc=0.001)
-        A_med_probe = model.probe('A', sample_every=0.01, pstc=0.01)
-        A_slow_probe = model.probe('A', sample_every=0.01, pstc=0.1)
-        in_probe = model.probe('in', sample_every=0.01, pstc=0.01)
+        model.probe('A', sample_every=0.01, pstc=0.001)  # 'A'
+        model.probe('A', sample_every=0.01, pstc=0.01)  # 'A_1'
+        model.probe('A', sample_every=0.01, pstc=0.1)  # 'A_2'
+        model.probe('in', sample_every=0.01, pstc=0.01)
 
         pprint(model.o)
-        model.run(1.0)
+        res = model.run(1.0)
 
         target = np.sin(np.arange(0, 1000, 10) / 1000.)
         target.shape = (100, 1)
 
-        for speed in 'fast', 'med', 'slow':
-            probe = locals()['A_%s_probe' % speed]
-            data = np.asarray(model.sim_obj.probe_data(probe)).flatten()
-            plt.plot(data, label=speed)
+        for A, label in (('A', 'fast'), ('A_1', 'med'), ('A_2', 'slow')):
+            data = np.asarray(res[A]).flatten()
+            plt.plot(data, label=label)
 
-        in_data = np.asarray(model.sim_obj.probe_data(in_probe)).flatten()
+        in_data = np.asarray(res['in']).flatten()
 
         plt.plot(in_data, label='in')
         plt.legend(loc='upper left')
@@ -70,14 +71,14 @@ class TestNewAPI(TestCase):
             plt.show()
 
         # target is off-by-one at the sampling frequency of dt=0.001
-        print rmse(target, model.sim_obj.probe_data(in_probe))
-        assert rmse(target, model.sim_obj.probe_data(in_probe)) < .001
-        print rmse(target, model.sim_obj.probe_data(A_fast_probe))
-        assert rmse(target, model.sim_obj.probe_data(A_fast_probe)) < .3
-        print rmse(target, model.sim_obj.probe_data(A_med_probe))
-        assert rmse(target, model.sim_obj.probe_data(A_med_probe)) < .03
-        print rmse(target, model.sim_obj.probe_data(A_slow_probe))
-        assert rmse(target, model.sim_obj.probe_data(A_slow_probe)) < 0.1
+        print rmse(target, res['in'])
+        assert rmse(target, res['in']) < .001
+        print rmse(target, res['A'])
+        assert rmse(target, res['A']) < .3
+        print rmse(target, res['A_1'])
+        assert rmse(target, res['A_1']) < .03
+        print rmse(target, res['A_2'])
+        assert rmse(target, res['A_2']) < 0.1
 
     def test_basic_5K(self):
         return self.test_basic_1(5000)
