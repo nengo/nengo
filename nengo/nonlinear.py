@@ -11,8 +11,6 @@ from simulator_objects import Constant, Signal
 #
 
 class Direct(object):
-    """
-    """
     def __init__(self, n_in, n_out, fn, name=None):
         """
         fn:
@@ -92,8 +90,12 @@ class LIF(object):
 
         Returns gain (alpha) and offset (j_bias) values of neurons.
 
-        :param float array max_rates: maximum firing rates of neurons
-        :param float array intercepts: x-intercepts of neurons
+        Parameters
+        ---------
+        max_rates : list of floats
+            Maximum firing rates of neurons.
+        intercepts : list of floats
+            X-intercepts of neurons.
 
         """
         max_rates = np.asarray(max_rates)

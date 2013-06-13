@@ -8,7 +8,6 @@ import numpy as np
 from nonlinear import LIF, LIFRate, Direct
 
 
-
 class SimDirect(object):
     def __init__(self, nl):
         self.nl = nl
@@ -39,7 +38,7 @@ registry = {
     LIF: SimLIF,
     LIFRate: SimLIFRate,
     Direct: SimDirect,
-    }
+}
 
 def get_signal(signals_dct, obj):
     # look up a Signal or SignalView

@@ -2,7 +2,6 @@ import os
 from unittest import TestCase
 
 from matplotlib import pyplot as plt
-import nose
 import numpy as np
 
 from nengo.simulator import Simulator
@@ -13,7 +12,7 @@ def rmse(a, b):
 
 
 class TestOldAPI(TestCase):
-    # -- Tests are in a class so that 
+    # -- Tests are in a class so that
     #    nengo_ocl can automatically run all
     #    member unit tests for other simulators by
     #    subclassing this class and overriding this attribute.
@@ -134,7 +133,7 @@ class TestOldAPI(TestCase):
 
         # make 2 matrices to store the input
         print "make_array: input matrices A and B"
-        net.make_array('A', neurons=N, array_size=D1*D2, 
+        net.make_array('A', neurons=N, array_size=D1*D2,
             neuron_type='lif')
 
         # connect inputs to them so we can set their value
@@ -450,3 +449,7 @@ class TestOldAPI(TestCase):
                             data[-10:, i * D3 + k],
                             Dmat[i, k])
 
+
+if __name__ == '__main__':
+    import nose
+    nose.runmodule()
