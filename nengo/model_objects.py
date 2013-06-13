@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 
 from . import nonlinear as nl
-from . import simulator_objects as so
+from . import sim
 
 
 class Uniform(object):
@@ -17,6 +17,7 @@ class Uniform(object):
 
     def sample(self, n):
         return [random.uniform(self.low, self.high) for _ in xrange(n)]
+
 
 class Gaussian(object):
     def __init__(self, mean, std):
@@ -31,6 +32,10 @@ class Gaussian(object):
 
 
 class Network(object):
+    def __init__(self, name, seed, parent):
+        self.model = model
+        self.name = name
+
     def add(self, obj):
         pass
 
@@ -67,39 +72,13 @@ class Ensemble(object):
 
     Attributes
     ----------
-    name : str
-        The name of the ensemble (must be unique).
-    metadata : dict
-        An editable dictionary used to store miscellaneous information
-        about this ensemble.
-    properties : dict
-        A read-only dictionary used to store miscellaneous information
-        about this ensemble that is automatically generated.
-    neurons : a Neuron model (see `nengo.nonlinear`)
-        Information about the neurons in this ensemble.
-    dimensions : int
-        The number of dimensions represented by this ensemble.
-    rates : vector of ``neurons`` floats
-        The maximum firing rates of all of the neurons in this ensemble.
-    intercepts : vector of ``neurons`` floats
-        The x-intercepts of the tuning curves of all of the neurons
-        in this ensemble
-    encoders : 2D matrix of floats
-        The encoding vectors of all of the neurons in this ensemble.
-    seed : int
-        The random seed used to generate this ensemble.
-    noise : dict
-        Information about the noise that will be injected into
-        this ensemble; contains 'current', which is the amplitude of
-        the current to inject, 'frequency', which is the sampling rate.
 
     """
     def __init__(self, name, neurons, dimensions,
                  radius=1.0, encoders=None,
                  max_rates=Uniform(50, 100), intercepts=Uniform(-1, 1),
-                 mode='spiking', decoder_noise=None,
-                 eval_points=None, noise=None, noise_frequency=None,
-                 decoder_sign=None, seed=None):
+                 decoder_noise=None, eval_points=None,
+                 noise=None, noise_frequency=None, seed=None):
         # Error for things not implemented yet or don't make sense
         if decoder_noise is not None:
             raise NotImplementedError('decoder_noise')
@@ -107,8 +86,6 @@ class Ensemble(object):
             raise NotImplementedError('eval_points')
         if noise is not None or noise_frequency is not None:
             raise NotImplementedError('noise')
-        if mode != 'spiking':
-            raise NotImplementedError('mode')
         if decoder_sign is not None:
             raise NotImplementedError('decoder_sign')
 
@@ -116,17 +93,6 @@ class Ensemble(object):
             warnings.warn("neurons should be an instance of a nonlinearity, "
                           "not an int. Defaulting to LIF.")
             neurons = nl.LIF(neurons)
-
-        # Warn if called with weird sets of arguments
-        # if neurons.gain is not None and neurons.bias is None:
-        #     warnings.warn("gain is set, but bias is not. Ignoring gain.")
-        # if neurons.bias is not None and neurons.gain is None:
-        #     warnings.warn("bias is set, but gain is not. Ignoring bias.")
-        # if neurons.gain is not None and neurons.bias is not None:
-        #     if max_rates != Uniform(50, 100):
-        #         warnings.warn("gain and bias are set. Ignoring max_rates.")
-        #     if intercepts != Uniform(-1, 1):
-        #         warnings.warn("gain and bias are set. Ignoring intercepts.")
 
         # Look at arguments and expand those that need expanding
         if hasattr(max_rates, 'sample'):
@@ -145,14 +111,14 @@ class Ensemble(object):
         #  self.enc - the encoders that map the signal into the population
 
         # Set up the signal
-        self.sig = so.Signal(n=dimensions)
+        self.signal = sim.Signal(n=dimensions)
 
         # Set up the neurons
         neurons.set_gain_bias(max_rates, intercepts)
-        self.nl = neurons
+        self.neurons = neurons
 
         # Set up the encoders
-        self.enc = so.Encoder(self.sig, self.nl, encoders)
+        self.enc = sim.Encoder(self.sig, self.nl, encoders)
 
     def __str__(self):
         return ("Ensemble (id " + str(id(self)) + "): \n"
@@ -168,6 +134,9 @@ class Ensemble(object):
         model.signals.add(self.sig)
         model.encoders.add(self.enc)
         model.signals.add(self.enc.weights_signal)
+
+    def remove_from_model(self, model):
+        raise NotImplementedError
 
     @property
     def dimensions(self):
@@ -216,17 +185,17 @@ class Node(object):
         self.name = name
         if callable(output):
             self.nl = nl.Direct(n_in=1, n_out=1, fn=output)
-            self.enc = so.Encoder(input, self.nl, weights=np.asarray([[1]]))
+            self.enc = sim.Encoder(input, self.nl, weights=np.asarray([[1]]))
             self.nl.input_signal.name = name + '.input'
             self.nl.bias_signal.name = name + '.bias'
             self.nl.output_signal.name = name + '.output'
             self.sig = self.nl.output_signal
         else:
             if type(output) == list:
-                self.sig = so.Constant(n=len(output),
+                self.sig = sim.Constant(n=len(output),
                                        value=[float(n) for n in output])
             else:
-                self.sig = so.Constant(n=1, value=float(output))
+                self.sig = sim.Constant(n=1, value=float(output))
 
     def __str__(self):
         if hasattr(self, 'nl'):
@@ -248,6 +217,9 @@ class Node(object):
             model.encoders.add(self.enc)
             model.signals.add(self.enc.weights_signal)
         model.signals.add(self.sig)
+
+    def remove_from_model(self, model):
+        raise NotImplementedError
 
 
 class Connection(object):
@@ -321,15 +293,15 @@ class Connection(object):
         self.post = post
 
         if isinstance(self.pre, Ensemble):
-            self.decoder = so.Decoder(self.pre.nl, self.pre.sig)
+            self.decoder = sim.Decoder(self.pre.nl, self.pre.sig)
             self.decoder.desired_function = function
-            self.transform = so.Transform(np.asarray(transform),
+            self.transform = sim.Transform(np.asarray(transform),
                                           self.pre.sig,
                                           self.post.sig)
 
         elif isinstance(self.pre, Node):
             if function is None:
-                self.transform = so.Transform(np.asarray(transform),
+                self.transform = sim.Transform(np.asarray(transform),
                                               self.pre.sig,
                                               self.post.sig)
             else:
@@ -362,3 +334,23 @@ class Connection(object):
         if hasattr(self, 'filter'):
             model.filters.add(self.filter)
             model.signals.add(self.filter.alpha_signal)
+
+    def remove_from_model(self, model):
+        raise NotImplementedError
+
+
+# class Probe(object):
+#     def __init__(self, target, sample_every=None, filter=None):
+#         if pstc is not None and pstc > self.dt:
+#             fcoef, tcoef = _filter_coefs(pstc=pstc, dt=self.dt)
+#             probe_sig = self.signal(obj.sig.n)
+#             self.filter(fcoef, probe_sig, probe_sig)
+#             self.transform(tcoef, obj.sig, probe_sig)
+#             self.probe = SimModel.probe(self, probe_sig, sample_every)
+
+
+#     @staticmethod
+#     def filter_coefs(pstc, dt):
+#         pstc = max(pstc, dt)
+#         decay = math.exp(-dt / pstc)
+#         return decay, (1.0 - decay)

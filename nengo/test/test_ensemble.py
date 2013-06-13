@@ -1,18 +1,14 @@
 from unittest import TestCase
 
-from nose import SkipTest
+from ..model import Model
+from ..model_objects import Ensemble
+from ..nonlinear import LIF, LIFRate, Direct
 
-#from .. import nef as nef
-#from nef.model import Model
-#from nef.ensemble import Ensemble
-#from nef.neuron.lif import LIFNeuron
 
 class TestEnsemble(TestCase):
     def setUp(self):
-        raise SkipTest()
-        self.model = Model("Test Model")
-        self.ens1 = self.model.make_ensemble("ens1", 100, 1, (100,200), (-1,1), 1, None, LIFNeuron())
-
+        self.model = Model("Test")
+        self.lif_ens = Ensemble("ens1", 100, 1, (100,200), (-1,1), 1, None, LIFNeuron())
 
     def test_basic(self):
         assertEqual(self.ens1, self.model.get("ens1"))
@@ -24,14 +20,12 @@ class TestEnsemble(TestCase):
         assertEqual(self.ens1.radius, 1)
         assertEqual(self.ens1.encoders, None)
 
-
     def test_advanced(self):
         #self.ens1.rates = [...]
         #self.ens1.intercepts = [...]
         # And more stuff
         pass
 
-  
     def test_run(self):
         data = []
 
@@ -40,25 +34,23 @@ class TestEnsemble(TestCase):
 
         assert True #MSE(data - ideal) < threshold
 
-
     def test_run_rate(self):
         data = []
-        
+
         self.model.setMode('rate') ## How do we do this?
         self.model.probe('ens1', 1, False)
         self.model.run(1, dt = 0.001, output = data)
 
-        assert True #MSE(data - ideal) < threshold 
-
+        assert True #MSE(data - ideal) < threshold
 
     def test_run_direct(self):
         data = []
-        
-        self.model.setMode('direct') 
+
+        self.model.setMode('direct')
         self.model.probe('ens1', 1, False)
         self.model.run(1, dt = 0.001, output = data)
 
-        assert True #MSE(data - ideal) < threshold 
+        assert True #MSE(data - ideal) < threshold
 
     def test_ensemble(self):
         # Unit test for ensemble???
