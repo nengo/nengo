@@ -31,6 +31,10 @@ class Gaussian(object):
 
 
 class Network(object):
+    def __init__(self, name, seed, parent):
+        self.model = model
+        self.name = name
+
     def add(self, obj):
         pass
 
@@ -169,6 +173,9 @@ class Ensemble(object):
         model.encoders.add(self.enc)
         model.signals.add(self.enc.weights_signal)
 
+    def remove_from_model(self, model):
+        raise NotImplementedError
+
     @property
     def dimensions(self):
         return self.sig.n
@@ -248,6 +255,9 @@ class Node(object):
             model.encoders.add(self.enc)
             model.signals.add(self.enc.weights_signal)
         model.signals.add(self.sig)
+
+    def remove_from_model(self, model):
+        raise NotImplementedError
 
 
 class Connection(object):
@@ -362,3 +372,23 @@ class Connection(object):
         if hasattr(self, 'filter'):
             model.filters.add(self.filter)
             model.signals.add(self.filter.alpha_signal)
+
+    def remove_from_model(self, model):
+        raise NotImplementedError
+
+
+# class Probe(object):
+#     def __init__(self, target, sample_every=None, filter=None):
+#         if pstc is not None and pstc > self.dt:
+#             fcoef, tcoef = _filter_coefs(pstc=pstc, dt=self.dt)
+#             probe_sig = self.signal(obj.sig.n)
+#             self.filter(fcoef, probe_sig, probe_sig)
+#             self.transform(tcoef, obj.sig, probe_sig)
+#             self.probe = SimModel.probe(self, probe_sig, sample_every)
+
+
+#     @staticmethod
+#     def filter_coefs(pstc, dt):
+#         pstc = max(pstc, dt)
+#         decay = math.exp(-dt / pstc)
+#         return decay, (1.0 - decay)
