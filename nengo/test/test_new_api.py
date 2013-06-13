@@ -49,7 +49,7 @@ class TestNewAPI(TestCase):
         model.probe('A', sample_every=0.01, pstc=0.1)  # 'A_2'
         model.probe('in', sample_every=0.01, pstc=0.01)
 
-        pprint(model.o)
+        pprint(model.objs)
         res = model.run(1.0)
 
         target = np.sin(np.arange(0, 1000, 10) / 1000.)
@@ -72,13 +72,13 @@ class TestNewAPI(TestCase):
 
         # target is off-by-one at the sampling frequency of dt=0.001
         print rmse(target, res['in'])
-        assert rmse(target, res['in']) < .001
+        assert rmse(target, res['in']) < .01
         print rmse(target, res['A'])
-        assert rmse(target, res['A']) < .3
+        assert rmse(target, res['A']) < .03
         print rmse(target, res['A_1'])
-        assert rmse(target, res['A_1']) < .03
+        assert rmse(target, res['A_1']) < .6
         print rmse(target, res['A_2'])
-        assert rmse(target, res['A_2']) < 0.1
+        assert rmse(target, res['A_2']) < .6
 
     def test_basic_5K(self):
         return self.test_basic_1(5000)
@@ -153,7 +153,7 @@ class TestNewAPI(TestCase):
         model.get('input B').origin['X'].decoded_output.set_value(
             np.asarray([0, 1, -1, 0]).astype('float32'))
 
-        pprint(model.o)
+        pprint(model.objs)
 
         Dprobe = model.probe('D')
 
