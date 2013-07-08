@@ -25,7 +25,7 @@ class TestOldAPI(TestCase):
         """
         net = Network('Runtime Test', dt=0.001, seed=123,
                      Simulator=self.Simulator)
-        net.make_input('in', value=np.sin)
+        net.make_input('in', values=np.sin)
         p = net.make_probe('in', dt_sample=0.001, pstc=0.001)
         net.run(0.01)
         data = p.get_data()
@@ -48,11 +48,15 @@ class TestOldAPI(TestCase):
         net = Network('Runtime Test', dt=0.001, seed=123,
                      Simulator=self.Simulator)
         print 'make_input'
-        net.make_input('in', value=np.sin)
+        net.make_input('in', values=np.sin)
         print 'make A'
         net.make('A', N, 1)
+        print 'make B'
+        net.make('B', N, 1)
         print 'connecting in -> A'
         net.connect('in', 'A')
+        print 'connecting A -> B'
+        net.connect('A', 'B')
         A_fast_probe = net.make_probe('A', dt_sample=0.01, pstc=0.001)
         A_med_probe = net.make_probe('A', dt_sample=0.01, pstc=0.01)
         A_slow_probe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
@@ -111,8 +115,10 @@ class TestOldAPI(TestCase):
 
         # make 2 matrices to store the input
         print "make_array: input matrices A and B"
-        net.make_array('A',N,D1*D2,radius=radius, neuron_type='lif')
-        net.make_array('B',N,D2*D3,radius=radius, neuron_type='lif')
+        net.make_array('A', n_neurons=N, dimensions=D1*D2,
+            radius=radius, neuron_type='lif')
+        net.make_array('B', n_neurons=N, dimensions=D2*D3,
+            radius=radius, neuron_type='lif')
 
         # connect inputs to them so we can set their value
         net.make_input('input A',[0]*D1*D2)
@@ -124,8 +130,8 @@ class TestOldAPI(TestCase):
         # the C matrix holds the intermediate product calculations
         #  need to compute D1*D2*D3 products to multiply 2 matrices together
         print "make_array: intermediate C"
-        net.make_array('C',4 * N,D1*D2*D3,dimensions=2,radius=1.5*radius,
-            encoders=[[1,1],[1,-1],[-1,1],[-1,-1]], neuron_type='lif')
+        net.make_array('C', n_neurons=4*N, array_size=D1*D2*D3, dimensions=2,
+            radius=1.5*radius, encoders=[[1,1],[1,-1],[-1,1],[-1,-1]], neuron_type='lif')
 
         #  determine the transformation matrices to get the correct pairwise
         #  products computed.  This looks a bit like black magic but if
