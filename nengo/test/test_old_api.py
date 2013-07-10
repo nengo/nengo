@@ -331,31 +331,37 @@ class TestOldAPI(TestCase):
         seed = 123
         N = 200
 
+        Amat = np.asarray([[.5, -.5]])
+        Bmat = np.asarray([[0, -1.,], [.7, 0]])
+
         net=Network('Matrix Multiplication', seed=seed,
                    Simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
-        radius=1
+        radius = 1
 
         # make 2 matrices to store the input
         print "make_array: input matrices A and B"
-        net.make_array('A', neurons=N, array_size=D1*D2,
+        net.make_array('A', neurons=N, array_size=D1 * D2,
             radius=radius, neuron_type='lif')
-        net.make_array('B', neurons=N, array_size=D2*D3,
+        net.make_array('B', neurons=N, array_size=D2 * D3,
             radius=radius, neuron_type='lif')
 
         # connect inputs to them so we can set their value
-        inputA = net.make_input('input A', value=[.5, -.5])
-        inputB = net.make_input('input B', value=[0, -1, 1, 0])
+        inputA = net.make_input('input A', value=Amat.ravel())
+        inputB = net.make_input('input B', value=Bmat.ravel())
         print "connect: input matrices A and B"
-        net.connect('input A','A')
-        net.connect('input B','B')
+        net.connect('input A', 'A')
+        net.connect('input B', 'B')
 
         # the C matrix holds the intermediate product calculations
         #  need to compute D1*D2*D3 products to multiply 2 matrices together
         print "make_array: intermediate C"
-        net.make_array('C',4 * N,D1*D2*D3,dimensions=2,radius=1.5*radius,
-            encoders=[[1,1],[1,-1],[-1,1],[-1,-1]], neuron_type='lif')
+        net.make_array('C', 4 * N, D1 * D2 * D3,
+            dimensions=2,
+            radius=1.5 * radius,
+            encoders=[[1, 1], [1, -1], [-1, 1], [-1, -1]],
+            neuron_type='lif')
 
         #  determine the transformation matrices to get the correct pairwise
         #  products computed.  This looks a bit like black magic but if
@@ -368,29 +374,33 @@ class TestOldAPI(TestCase):
         #  The index in C is j+k*D2+i*D2*D3, multiplied by 2 since there are
         #  two values per ensemble.  We add 1 to the B index so it goes into
         #  the second value in the ensemble.
-        transformA=[[0]*(D1*D2) for i in range(D1*D2*D3*2)]
-        transformB=[[0]*(D2*D3) for i in range(D1*D2*D3*2)]
+        transformA = [[0] * (D1 * D2) for i in range(D1 * D2 * D3 * 2)]
+        transformB = [[0] * (D2 * D3) for i in range(D1 * D2 * D3 * 2)]
         for i in range(D1):
             for j in range(D2):
                 for k in range(D3):
-                    transformA[(j+k*D2+i*D2*D3)*2][j+i*D2]=1
-                    transformB[(j+k*D2+i*D2*D3)*2+1][k+j*D3]=1
+                    tmp = (j + k * D2 + i * D2 * D3)
+                    transformA[tmp * 2][j + i * D2] = 1
+                    transformB[tmp * 2 + 1][k + j * D3] = 1
 
         print "connect A->C"
-        net.connect('A','C',transform=transformA)
+        net.connect('A', 'C', transform=transformA)
         print "connect B->C"
-        net.connect('B','C',transform=transformB)
+        net.connect('B', 'C', transform=transformB)
 
         # now compute the products and do the appropriate summing
         print "make_array: output D"
-        net.make_array('D',N,D1*D3,radius=radius, neuron_type='lif')
+        net.make_array('D', N , D1 * D3,
+            radius=radius,
+            neuron_type='lif')
 
         def product(x):
             return x[0]*x[1]
         # the mapping for this transformation is much easier, since we want to
         # combine D2 pairs of elements (we sum D2 products together)
 
-        net.connect('C','D',index_post=[i/D2 for i in range(D1*D2*D3)],func=product)
+        net.connect('C', 'D',
+            index_post=[i / D2 for i in range(D1 * D2 * D3)], func=product)
 
         Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.01)
         Bprobe = net.make_probe('B', dt_sample=0.01, pstc=0.01)
@@ -398,15 +408,22 @@ class TestOldAPI(TestCase):
         Dprobe = net.make_probe('D', dt_sample=0.01, pstc=0.01)
 
         prod_probe = net._probe_decoded_signals(
-            net.ensembles['C'].origin['product'].sigs, dt_sample=0.01, pstc=.01)
+            net.ensembles['C'].origin['product'].sigs,
+            dt_sample=0.01,
+            pstc=.01)
 
         net.run(1)
 
-        print prod_probe.get_data()[-1]
-        plt.subplot(411); plt.plot(Aprobe.get_data())
-        plt.subplot(412); plt.plot(Bprobe.get_data())
-        plt.subplot(413); plt.plot(Cprobe.get_data())
-        plt.subplot(414); plt.plot(prod_probe.get_data())
+        Dmat = np.dot(Amat, Bmat)
+        data = Dprobe.get_data()
+
+        for i in range(D1):
+            for k in range(D3):
+                plt.subplot(D1, D3, i * D3 + k + 1)
+                plt.title('D[%i, %i]' % (i, k))
+                plt.plot(data[:, i * D3 + k])
+                plt.axhline(Dmat[i, k])
+                plt.ylim(-radius, radius)
         if self.show:
             plt.show()
 
@@ -419,10 +436,17 @@ class TestOldAPI(TestCase):
                           atol=.1, rtol=.01)
         assert np.allclose(Bprobe.get_data()[50:, 1], -1,
                           atol=.1, rtol=.01)
-        assert np.allclose(Bprobe.get_data()[50:, 2], 1,
+        assert np.allclose(Bprobe.get_data()[50:, 2], .7,
                           atol=.1, rtol=.01)
         assert np.allclose(Bprobe.get_data()[50:, 3], 0,
                           atol=.1, rtol=.01)
 
-        raise NotImplementedError('test correctness')
+        for i in range(D1):
+            for k in range(D3):
+                assert np.allclose(
+                        data[-10:, i * D3 + k],
+                        Dmat[i, k],
+                        atol=0.1, rtol=0.1), (
+                            data[-10:, i * D3 + k],
+                            Dmat[i, k])
 

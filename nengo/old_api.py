@@ -722,7 +722,7 @@ class Network(object):
 
             transform = compute_transform(
                 array_size_pre=src.array_size,
-                dim_pre=src.dimensions,
+                dim_pre=decoded_origin.sigs[0].n,
                 array_size_post=dst.array_size,
                 dim_post=dst.dimensions,
                 **kwargs)
