@@ -724,7 +724,6 @@ class Network(object):
                 array_size_post=dst.array_size,
                 dim_post=dst.dimensions,
                 **kwargs)
-            print transform
 
             if pstc > self.dt:
                 smoothed_signals = []
