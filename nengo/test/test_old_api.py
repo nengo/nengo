@@ -217,6 +217,109 @@ class TestOldAPI(TestCase):
         match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
 
 
+    def test_multidim_probe(self):
+        # Adjust these values to change the matrix dimensions
+        #  Matrix A is D1xD2
+        #  Matrix B is D2xD3
+        #  result is D1xD3
+        D1 = 1
+        D2 = 2
+        D3 = 3
+        seed = 123
+        N = 200
+
+        Amat = np.asarray([[.4, .8]])
+        Bmat = np.asarray([[-1.0, -0.6, -.15], [0.25, .5, .7]])
+
+        net=Network('V', seed=seed, Simulator=self.Simulator)
+
+        # values should stay within the range (-radius,radius)
+        radius = 2.0
+
+        # make 2 matrices to store the input
+        print "make_array: input matrices A and B"
+        net.make_array('A', neurons=N, array_size=D1 * D2,
+            radius=radius, neuron_type='lif')
+        net.make_array('B', neurons=N, array_size=D2 * D3,
+            radius=radius, neuron_type='lif')
+
+        # connect inputs to them so we can set their value
+        inputA = net.make_input('input A', value=Amat.flatten())
+        inputB = net.make_input('input B', value=Bmat.flatten())
+        print "connect: input matrices A and B"
+        net.connect('input A', 'A')
+        net.connect('input B', 'B')
+
+        # the C matrix holds the intermediate product calculations
+        #  need to compute D1*D2*D3 products to multiply 2 matrices together
+        print "make_array: intermediate C"
+        net.make_array('C', 4 * N, D1 * D2 * D3,
+            dimensions=2,
+            radius=1.5 * radius,
+            encoders=[[1, 1], [1, -1], [-1, 1], [-1, -1]],
+            neuron_type='lif')
+
+        transformA=[[0] * (D1 * D2) for i in range(D1 * D2 * D3 * 2)]
+        transformB=[[0] * (D2 * D3) for i in range(D1 * D2 * D3 * 2)]
+        for i in range(D1):
+            for k in range(D3):
+                for j in range(D2):
+                    tmp = (j + k * D2 + i * D2 * D3)
+                    transformA[tmp * 2][j + i * D2] = 1
+                    transformB[tmp * 2 + 1][k + j * D3] = 1
+
+        print transformA
+        #print transformB
+
+        print "connect A->C"
+        net.connect('A', 'C', transform=transformA)
+        #print "connect B->C"
+        net.connect('B', 'C', transform=transformB)
+
+        Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.01)
+
+        net.run(1)
+
+        print Cprobe.get_data().shape
+        print Amat
+        print Bmat
+        #assert Cprobe.get_data().shape == (100, D1 * D2 * D3, 2)
+        data = Cprobe.get_data()
+        for i in range(D1):
+            for k in range(D3):
+                for j in range(D2):
+                    tmp = (j + k * D2 + i * D2 * D3)
+                    plt.subplot(D1 * D2 * D3, 2, 1 + 2 * tmp);
+                    plt.title('A[%i, %i]' % (i, j))
+                    plt.axhline(Amat[i, j])
+                    plt.ylim(-radius, radius)
+                    plt.plot(data[:, 2 * tmp])
+
+                    plt.subplot(D1 * D2 * D3, 2, 2 + 2 * tmp);
+                    plt.title('B[%i, %i]' % (j, k))
+                    plt.axhline(Bmat[j, k])
+                    plt.ylim(-radius, radius)
+                    plt.plot(data[:, 2 * tmp + 1])
+        if self.show:
+            plt.show()
+
+        for i in range(D1):
+            for k in range(D3):
+                for j in range(D2):
+                    tmp = (j + k * D2 + i * D2 * D3)
+                    assert np.allclose(
+                            data[-10:, 2 * tmp],
+                            Amat[i, j],
+                            atol=0.1, rtol=0.1), (
+                                data[-10:, 2 * tmp],
+                                Amat[i, j])
+
+                    assert np.allclose(
+                            data[-10:, 1 + 2 * tmp],
+                            Bmat[j, k],
+                            atol=0.1, rtol=0.1)
+
+
     def test_matrix_mul(self):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2

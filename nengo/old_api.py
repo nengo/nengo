@@ -23,8 +23,9 @@ neuron_type_registry = {
 
 from . import simulator
 
-def compute_transform(dim_pre, dim_post, array_size, weight=1,
-                      index_pre=None, index_post=None, transform=None):
+
+def compute_transform(dim_pre, dim_post, array_size_post, array_size_pre,
+        weight=1, index_pre=None, index_post=None, transform=None):
     """Helper function used by :func:`nef.Network.connect()` to create
     the `dim_post` by `dim_pre` transform matrix.
 
@@ -48,21 +49,23 @@ def compute_transform(dim_pre, dim_post, array_size, weight=1,
 
     """
 
+    all_pre = dim_pre * array_size_pre
+
     if transform is None:
         # create a matrix of zeros
-        transform = [[0] * dim_pre for i in range(dim_post * array_size)]
+        transform = [[0] * all_pre for i in range(dim_post * array_size_post)]
 
         # default index_pre/post lists set up *weight* value
         # on diagonal of transform
 
-        # if dim_post * array_size != dim_pre,
+        # if dim_post * array_size_post != all_pre,
         # then values wrap around when edge hit
         if index_pre is None:
-            index_pre = range(dim_pre)
+            index_pre = range(all_pre)
         elif isinstance(index_pre, int):
             index_pre = [index_pre]
         if index_post is None:
-            index_post = range(dim_post * array_size)
+            index_post = range(dim_post * array_size_post)
         elif isinstance(index_post, int):
             index_post = [index_post]
 
@@ -71,20 +74,23 @@ def compute_transform(dim_pre, dim_post, array_size, weight=1,
             post = index_post[i % len(index_post)]
             transform[post][pre] = weight
 
-    transform = np.asarray(transform).astype('float32')
+    transform = np.asarray(transform)
 
-    # reformulate to account for post.array_size
-    if transform.shape == (dim_post * array_size, dim_pre):
-        array_transform = [[[0] * dim_pre for i in range(dim_post)]
-                           for j in range(array_size)]
-
-        for i in range(array_size):
+    # reformulate to account for post.array_size_post
+    if transform.shape == (dim_post * array_size_post, all_pre):
+        rval = np.zeros((array_size_pre, dim_pre, array_size_post, dim_post))
+        for i in range(array_size_post):
             for j in range(dim_post):
-                array_transform[i][j] = transform[i * dim_post + j]
+                rval[:, :, i, j] = transform[i * dim_post + j].reshape(
+                        array_size_pre, dim_pre)
 
-        transform = array_transform
+        transform = rval
+    else:
+        raise NotImplementedError()
 
-    return np.asarray(transform)
+    rval = np.asarray(transform)
+    return rval
+
 
 def sample_unit_signal(dimensions, num_samples, rng):
     """Generate sample points uniformly distributed within the sphere.
@@ -712,13 +718,13 @@ class Network(object):
 
             decoded_origin = src.origin[oname]
 
-            dim_pre = len(decoded_origin.sigs) * decoded_origin.sigs[0].size
-            # (dst.array_size x dst.dim x dim_pre)
-            transform = compute_transform(dim_pre=dim_pre,
-                dim_post=dst.dimensions, array_size=dst.array_size, **kwargs)
-            #TODO: move this into the compute transform jesus
-            transform.shape = (len(decoded_origin.sigs), decoded_origin.sigs[0].size,
-                dst.array_size, dst.dimensions)
+            transform = compute_transform(
+                array_size_pre=src.array_size,
+                dim_pre=src.dimensions,
+                array_size_post=dst.array_size,
+                dim_post=dst.dimensions,
+                **kwargs)
+            print transform
 
             if pstc > self.dt:
                 smoothed_signals = []
@@ -849,7 +855,6 @@ class Network(object):
 
         else:
             raise NotImplementedError()
-
 
     def _make_simulator(self):
         sim = self.Simulator(self.model)
