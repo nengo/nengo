@@ -1,14 +1,13 @@
 import inspect
 import math
 import random
-import warnings
 
 from . import logger
 from .model_objects import *
-from .sim import SimModel
+from .simulator_objects import *
 
 
-class Model(SimModel):
+class Model(object):
     """A model contains a single network and the ability to
     run simulations of that network.
 
@@ -76,25 +75,34 @@ class Model(SimModel):
         'numpy': 'nengo.simulator',
     }
 
-    def __init__(self, name, seed=None, fixed_seed=None, backend='numpy'):
-        SimModel.__init__(self, dt=0.001)
+    def __init__(self, name, seed=None, fixed_seed=None, backend='numpy',
+                 dt=0.001):
+        self.dt = dt
+
+        self.signals = set()
+        self.nonlinearities = set()
+        self.encoders = set()
+        self.decoders = set()
+        self.transforms = set()
+        self.filters = set()
+        self.probes = set()
 
         self.objs = {}
         self.aliases = {}
         self.probed = {}
         self.probe_data = {}
 
-        self.simtime = self.signal()
-        self.steps = self.signal()
-        self.one = self.signal(value=1.0)
+        self.simtime = self.add(Signal(name='simtime'))
+        self.steps = self.add(Signal(name='steps'))
+        self.one = self.add(Constant(1, value=[1.0], name='one'))
 
         # -- steps counts by 1.0
-        self.filter(1.0, self.one, self.steps)
-        self.filter(1.0, self.steps, self.steps)
+        self.add(Filter(1.0, self.one, self.steps))
+        self.add(Filter(1.0, self.steps, self.steps))
 
         # simtime <- dt * steps
-        self.filter(self.dt, self.steps, self.simtime)
-        self.filter(self.dt, self.one, self.simtime)
+        self.add(Filter(dt, self.one, self.simtime))
+        self.add(Filter(dt, self.steps, self.simtime))
 
         self.name = name
         self.backend = backend
@@ -127,15 +135,15 @@ class Model(SimModel):
             self._backend = backend
 
         except KeyError:
-            warnings.warn(backend + " not a registered backend. "
-                          "Falling back to numpy.")
+            print (backend + " not a registered backend. "
+                   "Falling back to numpy.")
             self.backend = 'numpy'
 
         except ImportError:
             if backend == 'numpy':
                 raise ImportError("Cannot import numpy backend!")
-            warnings.warn(backend + " cannot be imported. "
-                          "Falling back to numpy.")
+            print (backend + " cannot be imported. "
+                   "Falling back to numpy.")
             self.backend = 'numpy'
 
     @property
@@ -269,11 +277,12 @@ class Model(SimModel):
         Network.add : The same function for Networks
 
         """
-        if self.objs.has_key(obj.name):
+        if hasattr(obj, 'name') and self.objs.has_key(obj.name):
             raise ValueError("Something called " + obj.name + " already exists."
                              " Please choose a different name.")
         obj.add_to_model(self)
-        self.objs[obj.name] = obj
+        if hasattr(obj, 'name'):
+            self.objs[obj.name] = obj
         return obj
 
     def get(self, target, default=None):
@@ -303,11 +312,11 @@ class Model(SimModel):
                 return self.aliases[target]
             elif self.objs.has_key(target):
                 return self.objs[target]
-            warnings.warn("Cannot find " + target + " in this model.")
+            print "Cannot find " + target + " in this model."
             return default
 
         if not target in self.objs.values():
-            warnings.warn("Cannot find " + str(target) + " in this model.")
+            print "Cannot find " + str(target) + " in this model."
             return default
 
         return target
@@ -350,7 +359,7 @@ class Model(SimModel):
             if v == target:
                 return k
 
-        warnings.warn("Cannot find " + str(target) + " in this model.")
+        print "Cannot find " + str(target) + " in this model."
         return default
 
     def remove(self, target):
@@ -371,7 +380,7 @@ class Model(SimModel):
         """
         obj = self.get(target)
         if obj is None:
-            warnings.warn(target + " not in this model.")
+            print target + " not in this model."
             return
 
         obj.remove_from_model(self)

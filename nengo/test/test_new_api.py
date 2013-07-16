@@ -17,8 +17,6 @@ class TestNewAPI(TestCase):
     show = False
 
     def test_direct_mode_simple(self):
-        """
-        """
         model = Model('Runtime Test', seed=123, backend='numpy')
         model.make_node('in', output=np.sin)
         model.probe('in')
@@ -167,3 +165,7 @@ class TestNewAPI(TestCase):
             plt.show()
 
         nose.SkipTest('test correctness')
+
+if __name__ == '__main__':
+    import nose
+    nose.runmodule()

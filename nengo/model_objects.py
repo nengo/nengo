@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 
 from . import nonlinear as nl
-from . import sim
+from .simulator_objects import *
 
 
 class Uniform(object):
@@ -89,6 +89,9 @@ class Ensemble(object):
         if decoder_sign is not None:
             raise NotImplementedError('decoder_sign')
 
+        if seed is None:
+            seed = np.random.randint(1000)
+
         if isinstance(neurons, int):
             warnings.warn("neurons should be an instance of a nonlinearity, "
                           "not an int. Defaulting to LIF.")
@@ -106,9 +109,9 @@ class Ensemble(object):
         self.radius = radius
 
         # The essential components of an ensemble are:
-        #  self.sig - the signal (vector) being represented
-        #  self.nl - the nonlinearity (neuron model) representing the signal
-        #  self.enc - the encoders that map the signal into the population
+        #  self.signal - the signal (vector) being represented
+        #  self.neurons - the neuron model representing the signal
+        #  self.encoders - the encoders that map the signal into the population
 
         # Set up the signal
         self.signal = sim.Signal(n=dimensions)
@@ -118,16 +121,7 @@ class Ensemble(object):
         self.neurons = neurons
 
         # Set up the encoders
-        self.enc = sim.Encoder(self.sig, self.nl, encoders)
-
-    def __str__(self):
-        return ("Ensemble (id " + str(id(self)) + "): \n"
-                "    " + str(self.nl) + "\n"
-                "    " + str(self.sig) + "\n"
-                "    " + str(self.enc))
-
-    def __repr__(self):
-        return str(self)
+        self.encoders = sim.Encoder(self.sig, self.nl, encoders)
 
     def add_to_model(self, model):
         model.nonlinearity(self.nl)
@@ -139,8 +133,12 @@ class Ensemble(object):
         raise NotImplementedError
 
     @property
+    def n_neurons(self):
+        return self.neurons.n_neurons
+
+    @property
     def dimensions(self):
-        return self.sig.n
+        return self.signal.n
 
 class Node(object):
     """Provides arbitrary data to Nengo objects.

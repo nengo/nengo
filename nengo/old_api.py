@@ -10,8 +10,10 @@ the "api.py" file instead of this file for their current work.
 import random
 import numpy as np
 
-from simulator_objects import ShapeMismatch
-from simulator_objects import SimModel
+from model import Model
+from simulator_objects import ShapeMismatch, Filter, Transform
+from simulator_objects import Constant, Decoder, Encoder, Signal
+from simulator_objects import Probe as _Probe
 from nonlinear import LIF
 from nonlinear import LIFRate
 from nonlinear import Direct
@@ -174,14 +176,14 @@ class EnsembleOrigin(object):
             b = targets
             weights, res, rank, s = np.linalg.lstsq(A, b, rcond=rcond)
 
-            sig = ensemble.model.signal(n=n, name='%s[%i]' % (name, ii))
-            decoder = ensemble.model.decoder(
+            sig = ensemble.model.add(Signal(n=n, name='%s[%i]' % (name, ii)))
+            decoder = ensemble.model.add(Decoder(
                 sig=sig,
                 pop=ensemble.neurons[ii],
-                weights=weights.T)
+                weights=weights.T))
 
             # set up self.sig as an unfiltered signal
-            transform = ensemble.model.transform(1.0, sig, sig)
+            transform = ensemble.model.add(Transform(1.0, sig, sig))
 
             self.sigs.append(sig)
             self.decoders.append(decoder)
@@ -271,9 +273,8 @@ class Ensemble:
         self.decoded_input = {}
 
         self.input_signals = [
-            model.signal(
-                n=dimensions,
-                name='%s.input_signals[%i]' % (name, ii))
+            model.add(Signal(n=dimensions,
+                             name='%s.input_signals[%i]' % (name, ii)))
             for ii in range(array_size)]
 
         # if we're creating a spiking ensemble
@@ -289,10 +290,10 @@ class Ensemble:
 
             self.neurons = []
             for ii in range(array_size):
-                neurons_ii = self.model.nonlinearity(
+                neurons_ii = self.model.add(
                         # TODO: handle different neuron types,
                         LIF(n_neurons, tau_rc=tau_rc, tau_ref=tau_ref,
-                            name=name + '[%i]' % ii),
+                            name=name + '[%i]' % ii)
                     )
                 self.neurons.append(neurons_ii)
                 max_rates = self.rng.uniform(
@@ -308,10 +309,10 @@ class Ensemble:
 
                 # -- alias self.encoders to the matrices
                 # in the model encoders (objects)
-                self.model.encoder(
+                self.model.add(Encoder(
                     self.input_signals[ii],
                     neurons_ii,
-                    weights=self.encoders[ii])
+                    weights=self.encoders[ii]))
                 neurons_ii.babbling_rate = neurons_ii.rates(
                         np.dot(
                             self.encoders[ii],
@@ -634,21 +635,21 @@ class Network(object):
         if seed is not None:
             self.random.seed(seed)
         self.fixed_seed = fixed_seed
-        self.model = SimModel(dt)
+        self.model = Model(dt)
         self.ensembles = {}
         self.inputs = {}
 
-        self.steps = self.model.signal(name='steps')
-        self.simtime = self.model.signal(name='simtime')
-        self.one = self.model.signal(value=[1.0], name='one')
+        # self.simtime = self.model.add(Signal(name='simtime'))
+        # self.steps = self.model.add(Signal(name='steps'))
+        # self.one = self.model.add(Constant(1, value=[1.0], name='one'))
 
         # -- steps counts by 1.0
-        self.model.filter(1.0, self.one, self.steps)
-        self.model.filter(1.0, self.steps, self.steps)
+        # self.model.add(Filter(1.0, self.one, self.steps))
+        # self.model.add(Filter(1.0, self.steps, self.steps))
 
         # simtime <- dt * steps
-        self.model.filter(dt, self.one, self.simtime)
-        self.model.filter(dt, self.steps, self.simtime)
+        # self.model.add(Filter(dt, self.one, self.simtime))
+        # self.model.add(Filter(dt, self.steps, self.simtime))
 
         self.Simulator = Simulator
 
@@ -658,10 +659,10 @@ class Network(object):
 
     def make_input(self, name, value):
         if callable(value):
-            rval = self.model.signal()
-            pop = self.model.nonlinearity(
-                Direct(n_in=1, n_out=1, fn=value))
-            self.model.encoder(self.simtime, pop, weights=np.asarray([[1]]))
+            rval = self.model.add(Signal())
+            pop = self.model.add(Direct(n_in=1, n_out=1, fn=value))
+            self.model.add(Encoder(
+                self.model.simtime, pop, weights=np.asarray([[1]])))
             self.inputs[name] = pop.output_signal
             # TODO: add this to simulator_objects
             pop.input_signal.name = name + '.input'
@@ -669,13 +670,13 @@ class Network(object):
             pop.output_signal.name = name + '.output'
 
             # move from signals_tmp -> signals
-            self.model.transform(1.0,
-                                 pop.output_signal,
-                                 pop.output_signal)
+            self.model.add(Transform(1.0,
+                                     pop.output_signal,
+                                     pop.output_signal))
         else:
             value = np.asarray(value, dtype='float')
             N, = value.shape
-            rval = self.model.signal(n=N, value=value, name=name)
+            rval = self.model.add(Constant(n=N, value=value, name=name))
             self.inputs[name] = rval
         return rval
 
@@ -730,33 +731,34 @@ class Network(object):
             if pstc > self.dt:
                 smoothed_signals = []
                 for ii in range(src.array_size):
-                    filtered_signal = self.model.signal(
+                    filtered_signal = self.model.add(Signal(
                         n=decoded_origin.sigs[ii].n, #-- views not ok here
-                        name=decoded_origin.sigs[ii].name + '::pstc=%s' % pstc)
+                        name=decoded_origin.sigs[ii].name + '::pstc=%s' % pstc))
                     fcoef, tcoef = filter_coefs(pstc, dt=self.dt)
-                    self.model.transform(tcoef,
-                                         decoded_origin.sigs[ii],
-                                         filtered_signal)
-                    self.model.filter(fcoef, filtered_signal, filtered_signal)
+                    self.model.add(Transform(tcoef,
+                                             decoded_origin.sigs[ii],
+                                             filtered_signal))
+                    self.model.add(Filter(
+                        fcoef, filtered_signal, filtered_signal))
                     smoothed_signals.append(filtered_signal)
                 for jj in range(dst.array_size):
                     for ii in range(src.array_size):
                         if np.all(transform[ii, :, jj] == 0):
                             continue
-                        self.model.filter(
+                        self.model.add(Filter(
                             transform[ii, :, jj].T,
                             smoothed_signals[ii],
-                            dst.input_signals[jj])
+                            dst.input_signals[jj]))
             else:
                 smoothed_signals = decoded_origin.sigs
                 for ii in range(src.array_size):
                     for jj in range(dst.array_size):
                         if np.all(transform[ii, :, jj] == 0):
                             continue
-                        self.model.transform(
+                        self.model.add(Transform(
                             transform[ii, :, jj].T,
                             smoothed_signals[ii],
-                            dst.input_signals[jj])
+                            dst.input_signals[jj]))
 
         elif name1 in self.inputs:
             src = self.inputs[name1]
@@ -770,7 +772,8 @@ class Network(object):
                 dst_ii = dst_ensemble.input_signals[ii]
 
                 assert func is None
-                self.model.filter(kwargs.get('transform', 1.0), src_ii, dst_ii)
+                self.model.add(Filter(
+                    kwargs.get('transform', 1.0), src_ii, dst_ii))
         else:
             raise NotImplementedError()
 
@@ -779,7 +782,7 @@ class Network(object):
         Create an un-filtered probe of the named signal,
         without constructing any filters or transforms.
         """
-        return Probe(self.model.probe(sig, dt_sample), self)
+        return Probe(self.model.add(_Probe(sig, dt_sample)), self)
 
     def _probe_signals(self, srcs, dt_sample, pstc):
         """
@@ -792,26 +795,26 @@ class Network(object):
         _probe_decoded_signals.
         """
         src_n = srcs[0].size
-        probe_sig = self.model.signal(
+        probe_sig = self.model.add(Signal(
             n=len(srcs) * src_n,
             name='probe(%s)' % srcs[0].name
-            )
+            ))
 
         if pstc > self.dt:
             # -- create a new smoothed-out signal
             fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
-            self.model.filter(fcoef, probe_sig, probe_sig)
+            self.model.add(Filter(fcoef, probe_sig, probe_sig))
             for ii, src in enumerate(srcs):
-                self.model.filter(tcoef, src,
-                        probe_sig[ii * src_n: (ii + 1) * src_n])
+                self.model.add(Filter(
+                    tcoef, src, probe_sig[ii * src_n: (ii + 1) * src_n]))
             return Probe(
-                self.model.probe(probe_sig, dt_sample),
+                self.model.add(_Probe(probe_sig, dt_sample)),
                 self)
         else:
             for ii, src in enumerate(srcs):
-                self.model.filter(1.0, src,
-                        probe_sig[ii * src_n: (ii + 1) * src_n])
-            return Probe(self.model.probe(probe_sig, dt_sample),
+                self.model.add(Filter(
+                    1.0, src, probe_sig[ii * src_n: (ii + 1) * src_n]))
+            return Probe(self.model.add(_Probe(probe_sig, dt_sample)),
                 self)
 
     def _probe_decoded_signals(self, srcs, dt_sample, pstc):
@@ -822,26 +825,26 @@ class Network(object):
         This is appropriate for functions decoded from nonlinearities.
         """
         src_n = srcs[0].size
-        probe_sig = self.model.signal(
+        probe_sig = self.model.add(Signal(
             n=len(srcs) * src_n,
-            name='probe(%s)' % srcs[0].name
-            )
+            name='probe(%s,pstc=%f)' % (srcs[0].name, pstc)
+            ))
 
         if pstc > self.dt:
             # -- create a new smoothed-out signal
             fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
-            self.model.filter(fcoef, probe_sig, probe_sig)
+            self.model.add(Filter(fcoef, probe_sig, probe_sig))
             for ii, src in enumerate(srcs):
-                self.model.transform(tcoef, src,
-                        probe_sig[ii * src_n: (ii + 1) * src_n])
+                self.model.add(Transform(
+                    tcoef, src, probe_sig[ii * src_n: (ii + 1) * src_n]))
             return Probe(
-                self.model.probe(probe_sig, dt_sample),
+                self.model.add(_Probe(probe_sig, dt_sample)),
                 self)
         else:
             for ii, src in enumerate(srcs):
-                self.model.transform(1.0, src,
-                        probe_sig[ii * src_n: (ii + 1) * src_n])
-            return Probe(self.model.probe(probe_sig, dt_sample),
+                self.model.add(Transform(
+                    1.0, src, probe_sig[ii * src_n: (ii + 1) * src_n]))
+            return Probe(self.model.add(_Probe(probe_sig, dt_sample)),
                 self)
 
     def make_probe(self, name, dt_sample, pstc):
