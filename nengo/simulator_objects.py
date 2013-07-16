@@ -182,6 +182,9 @@ class Signal(SignalView):
     def base(self):
         return self
 
+    def add_to_model(self, model):
+        model.signals.add(self)
+
 
 class Probe(object):
     """A model probe to record a signal"""
@@ -194,6 +197,10 @@ class Probe(object):
 
     def __repr__(self):
         return str(self)
+
+    def add_to_model(self, model):
+        model.probes.add(self)
+
 
 
 class Constant(Signal):
@@ -220,19 +227,6 @@ class Constant(Signal):
         return tuple(map(int, s / self.dtype.itemsize))
 
 
-class Nonlinearity(object):
-    def __init__(self, input_signal, output_signal, bias_signal):
-        self.input_signal = input_signal
-        self.output_signal = output_signal
-        self.bias_signal = bias_signal
-
-    def __str__(self):
-        return "Nonlinearity (id " + str(id(self)) + ")"
-
-    def __repr__(self):
-        return str(self)
-
-
 class Transform(object):
     """A linear transform from a decoded signal to the signals buffer"""
     def __init__(self, alpha, insig, outsig):
@@ -256,7 +250,6 @@ class Transform(object):
                         self.outsig.shape,
                         )
 
-
     def __str__(self):
         return ("Transform (id " + str(id(self)) + ")"
                 " from " + str(self.insig) + " to " + str(self.outsig))
@@ -271,6 +264,10 @@ class Transform(object):
     @alpha.setter
     def alpha(self, value):
         self.alpha_signal.value[...] = value
+
+    def add_to_model(self, model):
+        model.signals.add(self.alpha_signal)
+        model.transforms.add(self)
 
 
 class Filter(object):
@@ -315,6 +312,11 @@ class Filter(object):
     def alpha(self, value):
         self.alpha_signal.value[...] = value
 
+    def add_to_model(self, model):
+        model.signals.add(self.alpha_signal)
+        model.filters.add(self)
+
+
 class Encoder(object):
     """A linear transform from a signal to a population"""
     def __init__(self, sig, pop, weights=None):
@@ -342,6 +344,11 @@ class Encoder(object):
     @weights.setter
     def weights(self, value):
         self.weights_signal.value[...] = value
+
+    def add_to_model(self, model):
+        model.encoders.add(self)
+        model.signals.add(self.weights_signal)
+
 
 class Decoder(object):
     """A linear transform from a population to a signal"""
@@ -371,76 +378,6 @@ class Decoder(object):
     def weights(self, value):
         self.weights_signal.value[...] = value
 
-
-class SimModel(object):
-    """
-    A container for model components.
-    """
-    def __init__(self, dt=0.001):
-        self.dt = dt
-        self.signals = set()
-        self.nonlinearities = set()
-        self.encoders = set()
-        self.decoders = set()
-        self.transforms = set()
-        self.filters = set()
-        self.probes = set()
-
-    def signal(self, n=1, value=None, name=None):
-        """Add a signal to the model"""
-        if value is None:
-            rval = Signal(n, name=name)
-        else:
-            rval = Constant(n, value, name=name)
-        self.signals.add(rval)
-        return rval
-
-    def probe(self, sig, dt):
-        """Add a probe to the model"""
-        rval = Probe(sig, dt)
-        self.probes.add(rval)
-        return rval
-
-    def nonlinearity(self, nl):
-        """Add a nonlinearity (some computation) to the model"""
-        self.nonlinearities.add(nl)
-        #assert nl.bias_signal not in self.signals
-        #assert nl.input_signal not in self.signals
-        #assert nl.output_signal not in self.signals
-        self.signals.add(nl.bias_signal)
-        self.signals.add(nl.input_signal)
-        self.signals.add(nl.output_signal)
-        return nl
-
-    def encoder(self, sig, pop, weights=None):
-        """Add an encoder to the model"""
-        rval = Encoder(sig, pop, weights=weights)
-        self.encoders.add(rval)
-        self.signals.add(rval.weights_signal)
-        return rval
-
-    def decoder(self, pop, sig, weights=None):
-        """Add a decoder to the model"""
-        rval = Decoder(pop, sig, weights=weights)
-        self.decoders.add(rval)
-        self.signals.add(rval.weights_signal)
-        return rval
-
-    def neuron_connection(self, src, dst, weights=None):
-        """Connect two nonlinearities"""
-        print "Deprecated: use encoder(src.output_signal) for neuron_connection"
-        return self.encoder(src.output_signal, dst, weights)
-
-    def transform(self, alpha, insig, outsig):
-        """Add a transform to the model"""
-        rval = Transform(alpha, insig, outsig)
-        self.signals.add(rval.alpha_signal)
-        self.transforms.add(rval)
-        return rval
-
-    def filter(self, alpha, oldsig, newsig):
-        """Add a filter to the model"""
-        rval = Filter(alpha, oldsig, newsig)
-        self.signals.add(rval.alpha_signal)
-        self.filters.add(rval)
-        return rval
+    def add_to_model(self, model):
+        model.decoders.add(self)
+        model.signals.add(self.weights_signal)

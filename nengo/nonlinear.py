@@ -10,7 +10,21 @@ from simulator_objects import Constant, Signal
 # part of that set of objects.
 #
 
-class Direct(object):
+class Nonlinearity(object):
+    def __str__(self):
+        return "Nonlinearity (id " + str(id(self)) + ")"
+
+    def __repr__(self):
+        return str(self)
+
+    def add_to_model(self, model):
+        model.nonlinearities.add(self)
+        model.signals.add(self.bias_signal)
+        model.signals.add(self.input_signal)
+        model.signals.add(self.output_signal)
+
+
+class Direct(Nonlinearity):
     def __init__(self, n_in, n_out, fn, name=None):
         """
         fn:
@@ -42,7 +56,7 @@ class Direct(object):
         return J
 
 
-class LIF(object):
+class LIF(Nonlinearity):
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, upsample=1,
                 name=None):
         if name is None:
