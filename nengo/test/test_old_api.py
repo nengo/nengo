@@ -24,14 +24,13 @@ class TestOldAPI(TestCase):
         net = Network('foo', dt=0.001, seed=123,
                      Simulator=self.Simulator)
 
-        simtime_probe = net._raw_probe(net.simtime, dt_sample=.001)
-        steps_probe = net._raw_probe(net.steps, dt_sample=.001)
+        simtime_probe = net._raw_probe(net.model.simtime, dt_sample=.001)
+        steps_probe = net._raw_probe(net.model.steps, dt_sample=.001)
         net.run(0.003)
         simtime_data = simtime_probe.get_data()
         steps_data = steps_probe.get_data()
         assert np.allclose(simtime_data.flatten(), [.001, .002, .003])
         assert np.allclose(steps_data.flatten(), [1, 2, 3])
-
 
     def test_direct_mode_simple(self):
         """
@@ -41,7 +40,7 @@ class TestOldAPI(TestCase):
         net.make_input('in', value=np.sin)
         p = net.make_probe('in', dt_sample=0.001, pstc=0.0)
         rawp = net._raw_probe(net.inputs['in'], dt_sample=.001)
-        st_probe = net._raw_probe(net.simtime, dt_sample=.001)
+        st_probe = net._raw_probe(net.model.simtime, dt_sample=.001)
         net.run(0.01)
 
         data = p.get_data()
@@ -58,7 +57,6 @@ class TestOldAPI(TestCase):
         #    on readout even when the pstc is really small.
         assert np.allclose(data.ravel()[1:],
                            np.sin(np.arange(0, 0.0085, .001)))
-
 
     def test_basic_1(self, N=1000):
         """
@@ -215,7 +213,6 @@ class TestOldAPI(TestCase):
 
         match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
 
-
     def test_multidim_probe(self):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
@@ -317,7 +314,6 @@ class TestOldAPI(TestCase):
                             data[-10:, 1 + 2 * tmp],
                             Bmat[j, k],
                             atol=0.1, rtol=0.1)
-
 
     def test_matrix_mul(self):
         # Adjust these values to change the matrix dimensions
