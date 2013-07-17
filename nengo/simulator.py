@@ -5,7 +5,7 @@ simulator.py: Simple reference simulator for base.Model
 
 import numpy as np
 
-from nonlinear import LIF, LIFRate, Direct
+from objects import LIF, LIFRate, Direct
 
 
 class SimDirect(object):
@@ -159,7 +159,7 @@ class Simulator(object):
 
         # -- filters: signals_copy -> signals
         for filt in self.model.filters:
-            #print 
+            #print
             #print 'old sig: ', filt.oldsig.name, get_signal(self.signals_copy, filt.oldsig)
             try:
                 dot_inc(filt.alpha,
@@ -172,7 +172,7 @@ class Simulator(object):
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
-            #print 
+            #print
             #print 'old sig: ', tf.insig.name, get_signal(self.signals_copy, tf.insig)
             dot_inc(tf.alpha,
                     get_signal(self.signals_tmp, tf.insig),

@@ -10,18 +10,11 @@ the "api.py" file instead of this file for their current work.
 import random
 import numpy as np
 
-from model import Model
-from simulator_objects import ShapeMismatch, Filter, Transform
-from simulator_objects import Constant, Decoder, Encoder, Signal
-from simulator_objects import Probe as _Probe
-from nonlinear import LIF
-from nonlinear import LIFRate
-from nonlinear import Direct
-
-neuron_type_registry = {
-    'lif': LIF,
-    'lif-rate': LIFRate,
-        }
+from .model import Model
+from .objects import ShapeMismatch, Filter, Transform
+from .objects import Constant, Decoder, Encoder, Signal
+from .objects import Probe as _Probe
+from .objects import LIF, LIFRate, Direct
 
 from . import simulator
 
@@ -638,18 +631,6 @@ class Network(object):
         self.model = Model(dt)
         self.ensembles = {}
         self.inputs = {}
-
-        # self.simtime = self.model.add(Signal(name='simtime'))
-        # self.steps = self.model.add(Signal(name='steps'))
-        # self.one = self.model.add(Constant(1, value=[1.0], name='one'))
-
-        # -- steps counts by 1.0
-        # self.model.add(Filter(1.0, self.one, self.steps))
-        # self.model.add(Filter(1.0, self.steps, self.steps))
-
-        # simtime <- dt * steps
-        # self.model.add(Filter(dt, self.one, self.simtime))
-        # self.model.add(Filter(dt, self.steps, self.simtime))
 
         self.Simulator = Simulator
 

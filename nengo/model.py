@@ -3,9 +3,7 @@ import math
 import random
 
 from . import logger
-from .model_objects import *
-from .simulator_objects import *
-
+from .objects import *
 
 class Model(object):
     """A model contains a single network and the ability to
