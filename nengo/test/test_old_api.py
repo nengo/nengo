@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 from nengo.simulator import Simulator
-from nengo.old_api import Network
+import nengo.old_api as nef
 
 def rmse(a, b):
     return np.sqrt(np.mean((a - b) ** 2))
@@ -21,8 +21,8 @@ class TestOldAPI(TestCase):
     show = int(os.getenv("NENGO_TEST_SHOW", 0))
 
     def test_counters(self):
-        net = Network('foo', dt=0.001, seed=123,
-                     Simulator=self.Simulator)
+        net = nef.Network('foo', dt=0.001, seed=123,
+                          Simulator=self.Simulator)
 
         simtime_probe = net._raw_probe(net.model.simtime, dt_sample=.001)
         steps_probe = net._raw_probe(net.model.steps, dt_sample=.001)
@@ -35,8 +35,8 @@ class TestOldAPI(TestCase):
     def test_direct_mode_simple(self):
         """
         """
-        net = Network('Runtime Test', dt=0.001, seed=123,
-                     Simulator=self.Simulator)
+        net = nef.Network('Runtime Test', dt=0.001, seed=123,
+                          Simulator=self.Simulator)
         net.make_input('in', value=np.sin)
         p = net.make_probe('in', dt_sample=0.001, pstc=0.0)
         rawp = net._raw_probe(net.inputs['in'], dt_sample=.001)
@@ -68,8 +68,8 @@ class TestOldAPI(TestCase):
         Expected duration of test: about .7 seconds
         """
 
-        net = Network('Runtime Test', dt=0.001, seed=123,
-                     Simulator=self.Simulator)
+        net = nef.Network('Runtime Test', dt=0.001, seed=123,
+                          Simulator=self.Simulator)
         print 'make_input'
         net.make_input('in', value=np.sin)
         print 'make A'
@@ -126,8 +126,8 @@ class TestOldAPI(TestCase):
         seed = 123
         N = 50
 
-        net=Network('Matrix Multiplication', seed=seed,
-                   Simulator=self.Simulator)
+        net = nef.Network('Matrix Multiplication', seed=seed,
+                          Simulator=self.Simulator)
 
         # make 2 matrices to store the input
         print "make_array: input matrices A and B"
@@ -162,12 +162,11 @@ class TestOldAPI(TestCase):
 
         def product(x):
             return x[0]*x[1]
-        #from nengo_theano import Network
 
         N = 250
         seed = 123
-        net=Network('Matrix Multiplication', seed=seed)
-                   #Simulator=self.Simulator)
+        net = nef.Network('Matrix Multiplication', seed=seed,
+                          Simulator=self.Simulator)
 
         net.make_input('sin', value=np.sin)
         net.make_input('neg', value=[-.5])
@@ -227,7 +226,7 @@ class TestOldAPI(TestCase):
         Amat = np.asarray([[.4, .8]])
         Bmat = np.asarray([[-1.0, -0.6, -.15], [0.25, .5, .7]])
 
-        net=Network('V', seed=seed, Simulator=self.Simulator)
+        net = nef.Network('V', seed=seed, Simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 2.0
@@ -329,8 +328,8 @@ class TestOldAPI(TestCase):
         Amat = np.asarray([[.5, -.5]])
         Bmat = np.asarray([[0, -1.,], [.7, 0]])
 
-        net=Network('Matrix Multiplication', seed=seed,
-                   Simulator=self.Simulator)
+        net = nef.Network('Matrix Multiplication', seed=seed,
+                          Simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 1
