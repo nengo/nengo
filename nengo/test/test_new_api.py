@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import nose
 import numpy as np
 
-from nengo.nonlinear import LIF
+from nengo.objects import Direct, LIF
 from nengo.model import Model
 
 def rmse(a, b):
