@@ -1,10 +1,11 @@
 import numpy as np
-from nengo.nonlinear import LIF
+
+from nengo.objects import LIF
 
 def test_lif_rate_basic():
-    """
-    Test that the rate model approximately matches the
+    """Test that the rate model approximately matches the
     dynamic model.
+
     """
     lif = LIF(10)
     J = np.arange(0, 5, .5)
