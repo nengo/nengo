@@ -3,68 +3,39 @@ import warnings
 
 import numpy as np
 
-# -- James and Terry arrived at this by eyeballing some graphs.
-#    Not clear if this should be a constant at all, it
-#    may depend on fn being estimated, number of neurons, etc...
-DEFAULT_RCOND=0.01
+from .  import objects
 
-class Connection(object):
-    """Describes a connection between two Nengo objects.
 
-    The connection encapsulates a lot of information that Nengo needs
-    to compute a biologically plausible connection between two networks
-    that implements some mathematical function.
-    Alternatively, the connection could bypass this logic and just store
-    a set of connection weights between two Ensembles.
-
-    Attributes
-    ----------
-    pre : Nengo object
-        The Nengo object on the presynaptic side of this connection.
-    post : Nengo object
-        The Nengo object on the postsynaptic side of this connection.
-    transform : 2D matrix of floats
-        If the connection operates in vector (state) space,
-        ``transform`` is a two-dimensional array of floats
-        that represents the linear transformation
-        between ``pre`` and ``post``.
-    weights : 2D matrix of floats
-        If the connection operates in neuron space,
-        ``weights`` is a two-dimensional array of floats
-        that represents the connection weights
-        between ``pre`` neurons and ``post`` neurons.
-    decoders : 2D matrix of floats
-        If the connection operates in vector space,
-        it will have a set of decoders defined that
-        maps the neural activity to a vector representation.
-    filter : dict
-        A dictionary describing the filter that is applied to
-        presynaptic spikes before being communicated to ``post``.
-    function : function
-        The function that this connection implements.
-    learning_rule : dict
-        A dictionary describing a learning rule that
-        modifies connection's decoders, weights,
-        or both during a simulation.
-    modulatory : bool
-        A boolean indicating if the connection is modulatory.
-
-        Modulatory connections do not impart current in ``post``.
-        Instead, it can be used by ``post`` to do other operations
-        (e.g., modulate learning).
-
-    See Also
-    --------
-    Model.connect : Helper to make connections
-    Model.connect_neurons : Helper to make direct connections
+class SimpleConnection(object):
+    """A SimpleConnection connects two Signals (or objects with signals)
+    via a transform and a filter.
 
     """
+    def __init__(self, pre, post, transform=1.0, filter=None):
+        self.pre = pre
+        self.post = post
+        self.filter = objects.Filter(transform,
+                                     self.pre.signal, self.post.input_signal)
 
-    def __init__(self, pre, post, transform=1.0, weights=None, decoders=None,
+    def __str__(self):
+        return "SimpleConnection(" + self.name + ")"
+
+    @property
+    def name(self):
+        return self.pre.name + ">" + self.post.name
+
+    def add_to_model(self, model):
+        model.add(self.filter)
+
+
+class DecodedConnection(object):
+    """A DecodedConnection connects two Signals (or objects with signals)
+    via a set of decoders, a transform, and a filter.
+
+    """
+    def __init__(self, pre, post, transform=1.0, decoders=None,
                  filter=None, function=None, learning_rule=None,
                  eval_points=None, modulatory=False):
-        if weights is not None:
-            raise NotImplementedError()
         if decoders is not None:
             raise NotImplementedError()
         if filter is not None:
@@ -155,6 +126,8 @@ class Connection(object):
         raise NotImplementedError
 
 
+
+
 # class Probe(object):
 #     def __init__(self, target, sample_every=None, filter=None):
 #         if pstc is not None and pstc > self.dt:
@@ -170,5 +143,3 @@ class Connection(object):
 #         pstc = max(pstc, dt)
 #         decay = math.exp(-dt / pstc)
 #         return decay, (1.0 - decay)
-
-

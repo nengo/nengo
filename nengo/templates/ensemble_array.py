@@ -1,23 +1,4 @@
-"""
-old_api.py: adapter for nengo_theano and [Jython] nengo-1.4
-
-The purpose of this emulation layer is to run scripts and tests that were
-written for nengo-1.4 and theano_nengo. Authors are encouraged to use
-the "api.py" file instead of this file for their current work.
-
-"""
-
-import random
-import numpy as np
-
-from .model import Model
-from .objects import ShapeMismatch, Filter, Transform
-from .objects import Constant, Decoder, Encoder, Signal
-from .objects import Probe as _Probe
-from .objects import LIF, LIFRate, Direct
-
-from . import simulator
-
+from .. import Model
 
 def compute_transform(dim_pre, dim_post, array_size_post, array_size_pre,
         weight=1, index_pre=None, index_post=None, transform=None):
@@ -85,103 +66,6 @@ def compute_transform(dim_pre, dim_post, array_size_post, array_size_pre,
 
     rval = np.asarray(transform)
     return rval
-
-
-def sample_unit_signal(dimensions, num_samples, rng):
-    """Generate sample points uniformly distributed within the sphere.
-
-    Returns float array of sample points: dimensions x num_samples
-
-    """
-    samples = rng.randn(num_samples, dimensions)
-
-    # normalize magnitude of sampled points to be of unit length
-    norm = np.sum(samples * samples, axis=1)
-    samples /= np.sqrt(norm)[:, None]
-
-    # generate magnitudes for vectors from uniform distribution
-    scale = rng.rand(num_samples, 1) ** (1.0 / dimensions)
-
-    # scale sample points
-    samples *= scale
-
-    return samples.T
-
-
-def filter_coefs(pstc, dt):
-    """
-    Use like: fcoef, tcoef = filter_coefs(pstc=pstc, dt=dt)
-        transform(tcoef, a, b)
-        filter(fcoef, b, b)
-    """
-    pstc = max(pstc, dt)
-    decay = np.exp(-dt / pstc)
-    return decay, (1.0 - decay)
-
-
-# -- James and Terry arrived at this by eyeballing some graphs.
-#    Not clear if this should be a constant at all, it
-#    may depend on fn being estimated, number of neurons, etc...
-DEFAULT_RCOND=0.01
-
-class EnsembleOrigin(object):
-    def __init__(self, ensemble, name, func=None,
-            pts_slice=slice(None, None, None),
-            rcond=DEFAULT_RCOND,
-            ):
-        """The output from a population of neurons (ensemble),
-        performing a transformation (func) on the represented value.
-
-        :param Ensemble ensemble:
-            the Ensemble to which this origin is attached
-        :param function func:
-            the transformation to perform to the ensemble's
-            represented values to get the output value
-        """
-        eval_points = ensemble.babbling_signal
-
-        # compute the targets at the sampled points
-        if func is None:
-            # if no function provided, use identity function as default
-            targets = eval_points.T
-        else:
-            # otherwise calculate targets using provided function
-
-            # scale all our sample points by ensemble radius,
-            # calculate function value, then scale back to unit length
-
-            # this ensures that we accurately capture the shape of the
-            # function when the radius is > 1 (think for example func=x**2)
-            targets = np.array([func(s) for s in eval_points.T])
-            if len(targets.shape) < 2:
-                targets.shape = targets.shape[0], 1
-
-        n, = targets.shape[1:]
-        dt = ensemble.model.dt
-        self.sigs = []
-        self.decoders = []
-        self.transforms = []
-
-        for ii in range(ensemble.array_size):
-            # -- N.B. this is only accurate for models firing well
-            #    under the simulator's dt.
-            A = ensemble.neurons[ii].babbling_rate * dt
-            b = targets
-            weights, res, rank, s = np.linalg.lstsq(A, b, rcond=rcond)
-
-            sig = ensemble.model.add(Signal(n=n, name='%s[%i]' % (name, ii)))
-            decoder = ensemble.model.add(Decoder(
-                sig=sig,
-                pop=ensemble.neurons[ii],
-                weights=weights.T))
-
-            # set up self.sig as an unfiltered signal
-            transform = ensemble.model.add(Transform(1.0, sig, sig))
-
-            self.sigs.append(sig)
-            self.decoders.append(decoder)
-            self.transforms.append(transform)
-
 
 class Ensemble:
     """An ensemble is a collection of neurons representing a vector space.
@@ -605,82 +489,6 @@ class Ensemble:
                             TT.flatten(X).astype('float32')}))
         return updates
 
-
-class Probe(object):
-    def __init__(self, probe, net):
-        self.probe = probe
-        self.net = net
-
-    def get_data(self):
-        sim = self.net.sim
-        lst = sim.probe_data(self.probe)
-        rval = np.asarray(lst).reshape(len(lst), -1)
-        return rval
-
-
-class Network(object):
-    def __init__(self, name,
-            seed=None,
-            fixed_seed=None,
-            dt=0.001,
-            Simulator=simulator.Simulator):
-        self.random = random.Random()
-        if seed is not None:
-            self.random.seed(seed)
-        self.fixed_seed = fixed_seed
-        self.model = Model(dt)
-        self.ensembles = {}
-        self.inputs = {}
-
-        self.Simulator = Simulator
-
-    @property
-    def dt(self):
-        return self.model.dt
-
-    def make_input(self, name, value):
-        if callable(value):
-            rval = self.model.add(Signal(name=name))
-            pop = self.model.add(Direct(n_in=1, n_out=1, fn=value))
-            self.model.add(Encoder(
-                self.model.simtime, pop, weights=np.asarray([[1]])))
-            self.inputs[name] = pop.output_signal
-
-            # move from signals_tmp -> signals
-            self.model.add(Transform(1.0,
-                                     pop.output_signal,
-                                     pop.output_signal))
-        else:
-            value = np.asarray(value, dtype='float')
-            N, = value.shape
-            rval = self.model.add(Constant(n=N, value=value, name=name))
-            self.inputs[name] = rval
-        return rval
-
-    def make_array(self, name, neurons, array_size, dimensions=1, **kwargs):
-        """Generate a network array specifically.
-
-        This function is depricated; use for legacy code
-        or non-theano API compatibility.
-        """
-        return self.make(
-            name=name, neurons=neurons, dimensions=dimensions,
-            array_size=array_size, **kwargs)
-
-    def make(self, name, *args, **kwargs):
-        if 'seed' not in kwargs.keys():
-            if self.fixed_seed is not None:
-                kwargs['seed'] = self.fixed_seed
-            else:
-                # if no seed provided, get one randomly from the rng
-                kwargs['seed'] = self.random.randrange(0x7fffffff)
-
-        kwargs['dt'] = self.dt
-        rval = Ensemble(self.model, name, *args, **kwargs)
-
-        self.ensembles[name] = rval
-        return rval
-
     def connect(self, name1, name2,
                 func=None,
                 pstc=0.01,
@@ -754,97 +562,60 @@ class Network(object):
         else:
             raise NotImplementedError()
 
-    def _raw_probe(self, sig, dt_sample):
-        """
-        Create an un-filtered probe of the named signal,
-        without constructing any filters or transforms.
-        """
-        return Probe(self.model.add(_Probe(sig, dt_sample)), self)
+class EnsembleOrigin(object):
+    def __init__(self, ensemble, name, func=None,
+            pts_slice=slice(None, None, None),
+            rcond=DEFAULT_RCOND,
+            ):
+        """The output from a population of neurons (ensemble),
+        performing a transformation (func) on the represented value.
 
-    def _probe_signals(self, srcs, dt_sample, pstc):
+        :param Ensemble ensemble:
+            the Ensemble to which this origin is attached
+        :param function func:
+            the transformation to perform to the ensemble's
+            represented values to get the output value
         """
-        set up a probe for signals (srcs) that will record
-        their value *after* decoding, transforming, filtering.
+        eval_points = ensemble.babbling_signal
 
-        This is appropriate for inputs, constants, non-linearities, etc.
-        But if you want to probe the part of a filter that is purely the
-        decoded contribution from a population, then use
-        _probe_decoded_signals.
-        """
-        src_n = srcs[0].size
-        probe_sig = self.model.add(Signal(
-            n=len(srcs) * src_n,
-            name='probe(%s)' % srcs[0].name
-            ))
-
-        if pstc > self.dt:
-            # -- create a new smoothed-out signal
-            fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
-            self.model.add(Filter(fcoef, probe_sig, probe_sig))
-            for ii, src in enumerate(srcs):
-                self.model.add(Filter(
-                    tcoef, src, probe_sig[ii * src_n: (ii + 1) * src_n]))
-            return Probe(
-                self.model.add(_Probe(probe_sig, dt_sample)),
-                self)
+        # compute the targets at the sampled points
+        if func is None:
+            # if no function provided, use identity function as default
+            targets = eval_points.T
         else:
-            for ii, src in enumerate(srcs):
-                self.model.add(Filter(
-                    1.0, src, probe_sig[ii * src_n: (ii + 1) * src_n]))
-            return Probe(self.model.add(_Probe(probe_sig, dt_sample)),
-                self)
+            # otherwise calculate targets using provided function
 
-    def _probe_decoded_signals(self, srcs, dt_sample, pstc):
-        """
-        set up a probe for signals (srcs) that will record
-        their value just from being decoded.
+            # scale all our sample points by ensemble radius,
+            # calculate function value, then scale back to unit length
 
-        This is appropriate for functions decoded from nonlinearities.
-        """
-        src_n = srcs[0].size
-        probe_sig = self.model.add(Signal(
-            n=len(srcs) * src_n,
-            name='probe(%s,pstc=%f)' % (srcs[0].name, pstc)
-            ))
+            # this ensures that we accurately capture the shape of the
+            # function when the radius is > 1 (think for example func=x**2)
+            targets = np.array([func(s) for s in eval_points.T])
+            if len(targets.shape) < 2:
+                targets.shape = targets.shape[0], 1
 
-        if pstc > self.dt:
-            # -- create a new smoothed-out signal
-            fcoef, tcoef = filter_coefs(pstc=pstc, dt=self.dt)
-            self.model.add(Filter(fcoef, probe_sig, probe_sig))
-            for ii, src in enumerate(srcs):
-                self.model.add(Transform(
-                    tcoef, src, probe_sig[ii * src_n: (ii + 1) * src_n]))
-            return Probe(
-                self.model.add(_Probe(probe_sig, dt_sample)),
-                self)
-        else:
-            for ii, src in enumerate(srcs):
-                self.model.add(Transform(
-                    1.0, src, probe_sig[ii * src_n: (ii + 1) * src_n]))
-            return Probe(self.model.add(_Probe(probe_sig, dt_sample)),
-                self)
+        n, = targets.shape[1:]
+        dt = ensemble.model.dt
+        self.sigs = []
+        self.decoders = []
+        self.transforms = []
 
-    def make_probe(self, name, dt_sample, pstc):
-        if name in self.ensembles:
-            ens = self.ensembles[name]
-            srcs = ens.origin['X'].sigs
-            return self._probe_decoded_signals(srcs, dt_sample, pstc)
+        for ii in range(ensemble.array_size):
+            # -- N.B. this is only accurate for models firing well
+            #    under the simulator's dt.
+            A = ensemble.neurons[ii].babbling_rate * dt
+            b = targets
+            weights, res, rank, s = np.linalg.lstsq(A, b, rcond=rcond)
 
-        elif name in self.inputs:
-            src = self.inputs[name]
-            return self._probe_signals([src], dt_sample, pstc)
+            sig = ensemble.model.add(Signal(n=n, name='%s[%i]' % (name, ii)))
+            decoder = ensemble.model.add(Decoder(
+                sig=sig,
+                pop=ensemble.neurons[ii],
+                weights=weights.T))
 
-        else:
-            raise NotImplementedError()
+            # set up self.sig as an unfiltered signal
+            transform = ensemble.model.add(Transform(1.0, sig, sig))
 
-    def _make_simulator(self):
-        sim = self.Simulator(self.model)
-        self.sim = sim
-
-    def run(self, simtime, verbose=False):
-        try:
-            self.sim
-        except:
-            self._make_simulator()
-        n_steps = int(simtime // self.dt)
-        self.sim.run_steps(n_steps, verbose=verbose)
+            self.sigs.append(sig)
+            self.decoders.append(decoder)
+            self.transforms.append(transform)

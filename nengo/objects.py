@@ -1,7 +1,39 @@
 import random
-import warnings
 
 import numpy as np
+
+
+def sample_unit_signal(dimensions, num_samples, rng):
+    """Generate sample points uniformly distributed within the sphere.
+
+    Returns float array of sample points: dimensions x num_samples
+
+    """
+    samples = rng.randn(num_samples, dimensions)
+
+    # normalize magnitude of sampled points to be of unit length
+    norm = np.sum(samples * samples, axis=1)
+    samples /= np.sqrt(norm)[:, None]
+
+    # generate magnitudes for vectors from uniform distribution
+    scale = rng.rand(num_samples, 1) ** (1.0 / dimensions)
+
+    # scale sample points
+    samples *= scale
+
+    return samples.T
+
+
+# -- James and Terry arrived at this by eyeballing some graphs.
+#    Not clear if this should be a constant at all, it
+#    may depend on fn being estimated, number of neurons, etc...
+DEFAULT_RCOND=0.01
+
+def solve_decoders(activities, targets):
+    weights, res, rank, s = np.linalg.lstsq(activities, targets,
+                                            rcond=DEFAULT_RCOND)
+    return weights.T
+
 
 ### High-level objects
 
@@ -68,10 +100,10 @@ class Network(object):
 class Ensemble(object):
     """A collection of neurons that collectively represent a vector.
 
-    Attributes
-    ----------
-
     """
+
+    EVAL_POINTS = 500
+
     def __init__(self, name, neurons, dimensions,
                  radius=1.0, encoders=None,
                  max_rates=Uniform(50, 100), intercepts=Uniform(-1, 1),
@@ -80,62 +112,133 @@ class Ensemble(object):
         # Error for things not implemented yet or don't make sense
         if decoder_noise is not None:
             raise NotImplementedError('decoder_noise')
-        if eval_points is not None:
-            raise NotImplementedError('eval_points')
         if noise is not None or noise_frequency is not None:
             raise NotImplementedError('noise')
-        if decoder_sign is not None:
-            raise NotImplementedError('decoder_sign')
-
-        if seed is None:
-            seed = np.random.randint(1000)
-
-        if isinstance(neurons, int):
-            warnings.warn("neurons should be an instance of a nonlinearity, "
-                          "not an int. Defaulting to LIF.")
-            neurons = nl.LIF(neurons)
 
         # Look at arguments and expand those that need expanding
+        if seed is None:
+            seed = np.random.randint(1000)
+        self.rng = np.random.RandomState(seed)
+
+        if isinstance(neurons, int):
+            print ("neurons should be an instance of a nonlinearity, "
+                   "not an int. Defaulting to LIF.")
+            neurons = LIF(neurons)
+
         if hasattr(max_rates, 'sample'):
             max_rates = max_rates.sample(neurons.n_neurons)
         if hasattr(intercepts, 'sample'):
             intercepts = intercepts.sample(neurons.n_neurons)
 
+        if eval_points is None:
+            eval_points = sample_unit_signal(
+                dimensions, Ensemble.EVAL_POINTS, self.rng) * radius
+
+        if encoders is None:
+            encoders = self.rng.randn(neurons.n_neurons, dimensions)
+            norm = np.sum(encoders * encoders, axis=1)[:, None]
+            encoders /= np.sqrt(norm)
+
         # Store things on the ensemble that will be necessary for
         # later calculations or organization
         self.name = name
+        self.eval_points = eval_points
         self.radius = radius
 
         # The essential components of an ensemble are:
-        #  self.signal - the signal (vector) being represented
+        #  self.input_signal - the summed inputs
         #  self.neurons - the neuron model representing the signal
         #  self.encoders - the encoders that map the signal into the population
+        self.input_signal = Signal(n=dimensions, name=name + ".input_signal")
 
-        # Set up the signal
-        self.signal = sim.Signal(n=dimensions)
-
-        # Set up the neurons
         neurons.set_gain_bias(max_rates, intercepts)
         self.neurons = neurons
 
         # Set up the encoders
-        self.encoders = sim.Encoder(self.sig, self.nl, encoders)
+        self.encoders = Encoder(self.input_signal, self.neurons, encoders)
 
-    def add_to_model(self, model):
-        self.neurons.add_to_model(model)
-        self.signal.add_to_model(model)
-        self.encoders.add_to_model(model)
+        # Set up probes
+        self.probes = []
+        self.probeable = (
+            'decoded_output',  # Default
+            'spikes',
+        )
 
-    def remove_from_model(self, model):
-        raise NotImplementedError
+    @property
+    def dimensions(self):
+        return self.input_signal.n
+
+    @property
+    def eval_points(self):
+        return self._eval_points
+
+    @eval_points.setter
+    def eval_points(self, points):
+        points = np.array(points)
+        if len(points.shape) == 1:
+            points.shape = [1, eval_points.shape[0]]
+        self._eval_points = points
 
     @property
     def n_neurons(self):
         return self.neurons.n_neurons
 
-    @property
-    def dimensions(self):
-        return self.signal.n
+    def activities(self, eval_points=None):
+        if eval_points is None:
+            eval_points = self.eval_points
+
+        return self.neurons.rates(
+            np.dot(self.encoders.weights, eval_points).T)
+
+    def probe(self, to_probe, dt, model=None):
+        if to_probe == '':
+            to_probe = 'decoded_output'
+
+        if to_probe == 'decoded_output':
+            if not hasattr(self, 'decoded_output'):
+                self.decoded_output = Signal(n=self.dimensions,
+                                             name=self.name + ".decoded_output")
+                activites = self.activities() * dt
+                targets = self.eval_points.T
+                self.decoders = Decoder(
+                    sig=self.decoded_output, pop=self.neurons,
+                    weights=solve_decoders(activites, targets))
+                self.transform = Transform(
+                    1.0, self.decoded_output, self.decoded_output)
+
+                probe = Probe(self.decoded_output, dt)
+                self.probes.append(probe)
+                if model is not None:
+                    model.add(self.decoded_output)
+                    model.add(self.decoders)
+                    model.add(self.transform)
+                    model.add(probe)
+
+        return probe
+
+    def add_to_model(self, model):
+        model.add(self.neurons)
+        model.add(self.encoders)
+        model.add(self.input_signal)
+        if hasattr(self, 'decoded_output'):
+            model.add(self.decoded_output)
+            model.add(self.decoders)
+            model.add(self.transform)
+        for probe in self.probes:
+            model.add(probe)
+
+    def remove_from_model(self, model):
+        model.remove(self.neurons)
+        model.remove(self.encoders)
+        model.remove(self.input_signal)
+        if hasattr(self, 'decoded_output'):
+            model.remove(self.decoded_output)
+            model.remove(self.decoders)
+            model.remove(self.transform)
+        for probe in self.probes:
+            model.remove(probe)
+
+
 
 class Node(object):
     """Provides arbitrary data to Nengo objects.
@@ -178,76 +281,54 @@ class Node(object):
 
     def __init__(self, name, output, input):
         self.name = name
+
+        if type(input) != Signal:
+            input = input.signal
+        self.input_signal = input
+
         if callable(output):
-            self.nl = nl.Direct(n_in=1, n_out=1, fn=output)
-            self.enc = sim.Encoder(input, self.nl, weights=np.asarray([[1]]))
-            self.nl.input_signal.name = name + '.input'
-            self.nl.bias_signal.name = name + '.bias'
-            self.nl.output_signal.name = name + '.output'
-            self.sig = self.nl.output_signal
+            n_out = output(np.ones(input.size)).size
+            self.function = Direct(n_in=input.size,
+                                   n_out=n_out,
+                                   fn=output,
+                                   name=name)
+            self.encoder = Encoder(input, self.function,
+                                   weights=np.asarray([[1]]))
+            self.signal = self.function.output_signal
+            self.transform = Transform(1.0, self.signal, self.signal)
         else:
             if type(output) == list:
-                self.sig = sim.Constant(n=len(output),
-                                       value=[float(n) for n in output])
+                self.signal = Constant(n=len(output),
+                                       value=[float(n) for n in output],
+                                       name=name)
             else:
-                self.sig = sim.Constant(n=1, value=float(output))
+                self.signal = Constant(n=1, value=float(output), name=name)
 
-    def __str__(self):
-        if hasattr(self, 'nl'):
-            return ("Function node (id " + str(id(self)) + "): \n"
-                    "    " + str(self.nl) + "\n"
-                    "    " + str(self.sig) + "\n"
-                    "    " + str(self.enc))
-        else:
-            return ("Constant node (id " + str(id(self)) + "):  \n"
-                    "    " + str(self.sig))
-
-    def __repr__(self):
-        return str(self)
+    def probe(self, model):
+        pass
 
     def add_to_model(self, model):
-        if hasattr(self, 'nl'):
-            model.nonlinearity(self.nl)
-        if hasattr(self, 'enc'):
-            model.encoders.add(self.enc)
-            model.signals.add(self.enc.weights_signal)
-        model.signals.add(self.sig)
+        if hasattr(self, 'function'):
+            model.add(self.function)
+        if hasattr(self, 'encoder'):
+            model.add(self.encoder)
+        if hasattr(self, 'transform'):
+            model.add(self.transform)
+        # model.add(self.input_signal)  # Should already be in network
+        model.add(self.signal)
 
     def remove_from_model(self, model):
         raise NotImplementedError
 
 
-def sample_unit_signal(dimensions, num_samples, rng):
-    """Generate sample points uniformly distributed within the sphere.
-
-    Returns float array of sample points: dimensions x num_samples
-
-    """
-    samples = rng.randn(num_samples, dimensions)
-
-    # normalize magnitude of sampled points to be of unit length
-    norm = np.sum(samples * samples, axis=1)
-    samples /= np.sqrt(norm)[:, None]
-
-    # generate magnitudes for vectors from uniform distribution
-    scale = rng.rand(num_samples, 1) ** (1.0 / dimensions)
-
-    # scale sample points
-    samples *= scale
-
-    return samples.T
-
-
-### Low-level objects
-
 """
-simulator_objects.py: model description classes
+Low-level objects
+=================
 
 These classes are used to describe a Nengo model to be simulated.
 Model is the input to a *simulator* (see e.g. simulator.py).
 
 """
-import numpy as np
 
 
 random_weight_rng = np.random.RandomState(12345)
@@ -403,7 +484,10 @@ class Signal(SignalView):
             assert name
 
     def __str__(self):
-        return "Signal (" + str(self.n) + "D, id " + str(id(self)) + ")"
+        try:
+            return "Signal(" + self._name + ", " + str(self.n) + "D)"
+        except AttributeError:
+            return "Signal (id " + str(id(self)) + ", " + str(self.n) + "D)"
 
     def __repr__(self):
         return str(self)
@@ -444,7 +528,6 @@ class Probe(object):
         model.probes.add(self)
 
 
-
 class Constant(Signal):
     """A signal meant to hold a fixed value"""
     def __init__(self, n, value, name=None):
@@ -454,7 +537,9 @@ class Constant(Signal):
         assert self.value.size == n
 
     def __str__(self):
-        return "Constant (" + str(self.value) + ", id " + str(id(self)) + ")"
+        if self.name is not None:
+            return "Constant(" + self.name + ")"
+        return "Constant(id " + str(id(self)) + ")"
 
     def __repr__(self):
         return str(self)
@@ -475,9 +560,10 @@ class Transform(object):
         alpha = np.asarray(alpha)
         if hasattr(outsig, 'value'):
             raise TypeError('transform destination is constant')
-        self.alpha_signal = Constant(n=alpha.size,
-                                     value=alpha,
-                                     name='tf_alpha')
+
+        name = insig.name + ">" + outsig.name + ".tf_alpha"
+
+        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
         self.insig = insig
         self.outsig = outsig
         if self.alpha_signal.size == 1:
@@ -518,8 +604,10 @@ class Filter(object):
         if hasattr(newsig, 'value'):
             raise TypeError('filter destination is constant')
         alpha = np.asarray(alpha)
-        self.alpha_signal = Constant(n=alpha.size, value=alpha,
-                                     name='f_alpha')
+
+        name = oldsig.name + ">" + newsig.name + ".f_alpha"
+
+        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
         self.oldsig = oldsig
         self.newsig = newsig
 
@@ -570,7 +658,9 @@ class Encoder(object):
             weights = np.asarray(weights)
             if weights.shape != (pop.n_in, sig.size):
                 raise ValueError('weight shape', weights.shape)
-        self.weights_signal = Constant(n=weights.size, value=weights)
+
+        name = sig.name + ".encoders"
+        self.weights_signal = Constant(n=weights.size, value=weights, name=name)
 
     def __str__(self):
         return ("Encoder (id " + str(id(self)) + ")"
@@ -603,7 +693,8 @@ class Decoder(object):
             weights = np.asarray(weights)
             if weights.shape != (sig.size, pop.n_out):
                 raise ValueError('weight shape', weights.shape)
-        self.weights_signal = Constant(n=weights.size, value=weights)
+        name = sig.name + ".decoders"
+        self.weights_signal = Constant(n=weights.size, value=weights, name=name)
 
     def __str__(self):
         return ("Decoder (id " + str(id(self)) + ")"
@@ -651,21 +742,14 @@ class Nonlinearity(object):
 
 class Direct(Nonlinearity):
     def __init__(self, n_in, n_out, fn, name=None):
-        """
-        fn:
-        """
         if name is None:
-            self.input_signal = Signal(n_in)
-            self.output_signal = Signal(n_out)
-            self.bias_signal = Constant(n=n_in, value=np.zeros(n_in))
-        else:
-            self.input_signal = Signal(n_in,
-                                      name=name + '.input')
-            self.output_signal = Signal(n_out,
-                                       name=name + '.output')
-            self.bias_signal = Constant(n=n_in,
-                                        value=np.zeros(n_in),
-                                       name=name + '.bias')
+            name = "<Direct%d>" % id(self)
+
+        self.input_signal = Signal(n_in, name=name + '.input')
+        self.output_signal = Signal(n_out, name=name + '.output')
+        self.bias_signal = Constant(n=n_in,
+                                    value=np.zeros(n_in),
+                                    name=name + '.bias')
 
         self.n_in = n_in
         self.n_out = n_out
@@ -685,15 +769,13 @@ class LIF(Nonlinearity):
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, upsample=1,
                 name=None):
         if name is None:
-            self.input_signal = Signal(n_neurons)
-            self.output_signal = Signal(n_neurons)
-            self.bias_signal = Constant(n=n_neurons, value=np.zeros(n_neurons))
-        else:
-            self.input_signal = Signal(n_neurons, name=name + '.input')
-            self.output_signal = Signal(n_neurons, name=name + '.output')
-            self.bias_signal = Constant(n=n_neurons,
-                                        value=np.zeros(n_neurons),
-                                       name=name + '.bias')
+            name = "<LIF%d>" % id(self)
+
+        self.input_signal = Signal(n_neurons, name=name + '.input')
+        self.output_signal = Signal(n_neurons, name=name + '.output')
+        self.bias_signal = Constant(n=n_neurons,
+                                    value=np.zeros(n_neurons),
+                                    name=name + '.bias')
 
         self.n_neurons = n_neurons
         self.upsample = upsample
