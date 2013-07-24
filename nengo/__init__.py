@@ -5,3 +5,4 @@ logger = logging.getLogger('nengo')
 logger.setLevel(logging.DEBUG)
 
 from .model import Model
+from .objects import LIF
