@@ -1,33 +1,49 @@
-from .. import nengo as nengo
+import numpy as np
+import matplotlib.pyplot as plt
 
-## This example demonstrates how to create a neuronal ensemble that can represent a 
-##   two-dimensional signal.
-##
-## Network diagram:
-##
-##      [Input] ---> (Neurons) 
-##
-##
-## Network behaviour:
-##   Neurons = Input
-##
+import nengo
 
-# Create the nengo model
+"""
+This example demonstrates how to create a neuronal ensemble
+that represents a two-dimensional signal.
+
+Network diagram:
+
+     [Input] ---> (Neurons)
+
+Network behaviour:
+  Neurons = Input
+
+"""
+
 model = nengo.Model('2D Representation')
 
-# Create the model inputs
-model.make_node('Input', [0, 0])        # Create a controllable 2-D input with 
-                                        #   a starting value of (0,0)
+model.make_node('Sin', output=np.sin)
+model.make_node('Cos', output=np.cos)
 
-# Create the neuronal ensembles
-model.make_ensemble('Neurons', 100, 2)  # Create a population with 100 neurons 
-                                        #   representing 2 dimensions
+# Create a population with 100 LIF neurons representing 2 dimensions
+e = model.make_ensemble('Neurons', nengo.LIF(100), 2)
 
-# Create the connections within the model
-model.connect('Input','Neurons')        # Connect the input to the neuronal population
+# Connect the input to the neuronal population
+model.connect('Sin', 'Neurons', transform=[[1], [0]])
+model.connect('Cos', 'Neurons', transform=[[0], [1]])
 
-# Build the model
-model.build()
+model.probe('Sin')
+model.probe('Cos')
+model.probe('Neurons')
+model.probe(e.decoded_output)
 
-# Run the model
-model.run(1)                            # Run the model for 1 second
+# Run the model for 1 second
+model.run(5)
+
+print model.data.keys()
+
+t = model.data['simtime']
+
+plt.plot(t, model.data['Sin'], label="Sine")
+plt.plot(t, model.data['Cos'], label="Cosine")
+plt.plot(t, model.data['Neurons'], label="Neuron approximation")
+plt.plot(t, model.data['Neurons.decoded_output'])
+
+plt.legend()
+plt.show()
