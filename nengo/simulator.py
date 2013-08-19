@@ -5,8 +5,7 @@ simulator.py: Simple reference simulator for base.Model
 
 import numpy as np
 
-from nonlinear import LIF, LIFRate, Direct
-
+from objects import LIF, LIFRate, Direct
 
 
 class SimDirect(object):
@@ -39,7 +38,7 @@ registry = {
     LIF: SimLIF,
     LIFRate: SimLIFRate,
     Direct: SimDirect,
-    }
+}
 
 def get_signal(signals_dct, obj):
     # look up a Signal or SignalView
@@ -116,7 +115,6 @@ class Simulator(object):
         for probe in self.model.probes:
             self.probe_outputs[probe] = []
 
-
     def step(self):
         # -- reset nonlinearities: bias -> input_current
         #print 'PRE'
@@ -160,8 +158,8 @@ class Simulator(object):
 
         # -- filters: signals_copy -> signals
         for filt in self.model.filters:
-            #print 
-            #print 'old sig: ', filt.oldsig.name, get_signal(self.signals_copy, filt.oldsig)
+            #print
+            # print 'old sig: ', filt.oldsig.name, get_signal(self.signals_copy, filt.oldsig)
             try:
                 dot_inc(filt.alpha,
                         get_signal(self.signals_copy, filt.oldsig),
@@ -169,11 +167,11 @@ class Simulator(object):
             except Exception, e:
                 e.args = e.args + (filt.oldsig, filt.newsig)
                 raise
-            #print 'new sig: ', filt.newsig.name, get_signal(self.signals, filt.newsig)
+            # print 'new sig: ', filt.newsig.name, get_signal(self.signals, filt.newsig)
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
-            #print 
+            #print
             #print 'old sig: ', tf.insig.name, get_signal(self.signals_copy, tf.insig)
             dot_inc(tf.alpha,
                     get_signal(self.signals_tmp, tf.insig),

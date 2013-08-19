@@ -1,176 +1,31 @@
+from pprint import pprint
 import os
 from unittest import TestCase
 
 from matplotlib import pyplot as plt
-import nose
 import numpy as np
 
 from nengo.simulator import Simulator
-from nengo.old_api import Network
+import nengo.old_api as nef
 
 def rmse(a, b):
     return np.sqrt(np.mean((a - b) ** 2))
 
 
 class TestOldAPI(TestCase):
-    # -- Tests are in a class so that 
-    #    nengo_ocl can automatically run all
-    #    member unit tests for other simulators by
-    #    subclassing this class and overriding this attribute.
     Simulator = Simulator
 
     show = int(os.getenv("NENGO_TEST_SHOW", 0))
-
-    def test_counters(self):
-        net = Network('foo', dt=0.001, seed=123,
-                     Simulator=self.Simulator)
-
-        simtime_probe = net._raw_probe(net.simtime, dt_sample=.001)
-        steps_probe = net._raw_probe(net.steps, dt_sample=.001)
-        net.run(0.003)
-        simtime_data = simtime_probe.get_data()
-        steps_data = steps_probe.get_data()
-        assert np.allclose(simtime_data.flatten(), [.001, .002, .003])
-        assert np.allclose(steps_data.flatten(), [1, 2, 3])
-
-
-    def test_direct_mode_simple(self):
-        """
-        """
-        net = Network('Runtime Test', dt=0.001, seed=123,
-                     Simulator=self.Simulator)
-        net.make_input('in', value=np.sin)
-        p = net.make_probe('in', dt_sample=0.001, pstc=0.0)
-        rawp = net._raw_probe(net.inputs['in'], dt_sample=.001)
-        st_probe = net._raw_probe(net.simtime, dt_sample=.001)
-        net.run(0.01)
-
-        data = p.get_data()
-        raw_data = rawp.get_data()
-        st_data = st_probe.get_data()
-        print data.dtype
-        print st_data
-        print raw_data
-        assert np.allclose(st_data.ravel(),
-                           np.arange(0.001, 0.0105, .001))
-        assert np.allclose(raw_data.ravel(),
-                           np.sin(np.arange(0, 0.0095, .001)))
-        # -- the make_probe call induces a one-step delay
-        #    on readout even when the pstc is really small.
-        assert np.allclose(data.ravel()[1:],
-                           np.sin(np.arange(0, 0.0085, .001)))
-
-
-    def test_basic_1(self, N=1000):
-        """
-        Create a network with sin(t) being represented by
-        a population of spiking neurons. Assert that the
-        decoded value from the population is close to the
-        true value (which is input to the population).
-
-        Expected duration of test: about .7 seconds
-        """
-
-        net = Network('Runtime Test', dt=0.001, seed=123,
-                     Simulator=self.Simulator)
-        print 'make_input'
-        net.make_input('in', value=np.sin)
-        print 'make A'
-        net.make('A', N, 1)
-        print 'connecting in -> A'
-        net.connect('in', 'A')
-        A_fast_probe = net.make_probe('A', dt_sample=0.01, pstc=0.001)
-        A_med_probe = net.make_probe('A', dt_sample=0.01, pstc=0.01)
-        A_slow_probe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
-        in_probe = net.make_probe('in', dt_sample=0.01, pstc=0.0)
-
-        net.run(1.0)
-
-        target = np.sin(np.arange(0, 1000, 10) / 1000.)
-        target.shape = (100, 1)
-
-        for speed in 'fast', 'med', 'slow':
-            probe = locals()['A_%s_probe' % speed]
-            data = np.asarray(probe.get_data()).flatten()
-            plt.plot(data, label=speed)
-
-        in_data = np.asarray(in_probe.get_data()).flatten()
-
-        plt.plot(in_data, label='in')
-        plt.legend(loc='upper left')
-
-        #print in_probe.get_data()
-        #print net.sim.sim_step
-
-        if self.show:
-            plt.show()
-
-        # target is off-by-one at the sampling frequency of dt=0.001
-        print rmse(target, in_probe.get_data())
-        assert rmse(target, in_probe.get_data()) < .001
-        print rmse(target, A_fast_probe.get_data())
-        assert rmse(target, A_fast_probe.get_data()) < .1, (
-            rmse(target, A_fast_probe.get_data()))
-        print rmse(target, A_med_probe.get_data())
-        assert rmse(target, A_med_probe.get_data()) < .01
-        print rmse(target, A_slow_probe.get_data())
-        assert rmse(target, A_slow_probe.get_data()) < 0.1
-
-    def test_basic_5K(self):
-        return self.test_basic_1(5000)
-
-    def test_vector_input_constant(self):
-        # Adjust these values to change the matrix dimensions
-        #  Matrix A is D1xD2
-        #  Matrix B is D2xD3
-        #  result is D1xD3
-        D1 = 1
-        D2 = 2
-        seed = 123
-        N = 50
-
-        net=Network('Matrix Multiplication', seed=seed,
-                   Simulator=self.Simulator)
-
-        # make 2 matrices to store the input
-        print "make_array: input matrices A and B"
-        net.make_array('A', neurons=N, array_size=D1*D2, 
-            neuron_type='lif')
-
-        # connect inputs to them so we can set their value
-        net.make_input('input A', value=[.5, -.5])
-        net.connect('input A', 'A')
-        inprobe = net.make_probe('input A', dt_sample=0.01, pstc=0.1)
-        sprobe = net._probe_signals(
-            net.ensembles['A'].input_signals, dt_sample=0.01, pstc=0.01)
-        Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
-
-        net.run(1)
-
-        in_data = inprobe.get_data()
-        s_data = sprobe.get_data()
-        A_data = Aprobe.get_data()
-
-        plt.subplot(311); plt.plot(in_data)
-        plt.subplot(312); plt.plot(s_data)
-        plt.subplot(313); plt.plot(A_data)
-        if self.show:
-            plt.show()
-
-        assert np.allclose(in_data[-10:], [.5, -.5], atol=.01, rtol=.01)
-        assert np.allclose(s_data[-10:], [.5, -.5], atol=.01, rtol=.01)
-        assert np.allclose(A_data[-10:], [.5, -.5], atol=.01, rtol=.01)
 
     def test_prod(self):
 
         def product(x):
             return x[0]*x[1]
-        #from nengo_theano import Network
 
         N = 250
         seed = 123
-        net=Network('Matrix Multiplication', seed=seed)
-                   #Simulator=self.Simulator)
+        net = nef.Network('Matrix Multiplication', seed=seed,
+                          simulator=self.Simulator)
 
         net.make_input('sin', value=np.sin)
         net.make_input('neg', value=[-.5])
@@ -216,7 +71,6 @@ class TestOldAPI(TestCase):
 
         match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
 
-
     def test_multidim_probe(self):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
@@ -231,7 +85,7 @@ class TestOldAPI(TestCase):
         Amat = np.asarray([[.4, .8]])
         Bmat = np.asarray([[-1.0, -0.6, -.15], [0.25, .5, .7]])
 
-        net=Network('V', seed=seed, Simulator=self.Simulator)
+        net = nef.Network('V', seed=seed, simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 2.0
@@ -319,7 +173,6 @@ class TestOldAPI(TestCase):
                             Bmat[j, k],
                             atol=0.1, rtol=0.1)
 
-
     def test_matrix_mul(self):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
@@ -334,8 +187,8 @@ class TestOldAPI(TestCase):
         Amat = np.asarray([[.5, -.5]])
         Bmat = np.asarray([[0, -1.,], [.7, 0]])
 
-        net=Network('Matrix Multiplication', seed=seed,
-                   Simulator=self.Simulator)
+        net = nef.Network('Matrix Multiplication', seed=seed,
+                          simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 1
@@ -450,3 +303,7 @@ class TestOldAPI(TestCase):
                             data[-10:, i * D3 + k],
                             Dmat[i, k])
 
+
+if __name__ == '__main__':
+    import nose
+    nose.runmodule()

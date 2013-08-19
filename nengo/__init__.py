@@ -1,5 +1,6 @@
 import logging
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())  # Prevent output if no handler set
 
-logging.basicConfig(format='[%(levelname)s] %(message)s')
-logger = logging.getLogger('nengo')
-logger.setLevel(logging.DEBUG)
+from .model import Model
+from .objects import LIF
