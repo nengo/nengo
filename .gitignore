@@ -7,3 +7,4 @@ dist
 *~
 *.bak
 *.swp
+nengo/test/nengo.simulator/

@@ -8,422 +8,292 @@ import numpy as np
 from nengo.objects import Direct, LIF
 from nengo import Model
 
-def rmse(a, b):
-    return np.sqrt(np.mean((a - b) ** 2))
-
-
-class TestNewAPI(TestCase):
-    show = int(os.getenv("NENGO_TEST_SHOW", 0))
-
-    def test_counters(self):
-        m = Model('foo', dt=0.001, seed=123)
-
-        simtime_probe = net._raw_probe(m.simtime, dt_sample=.001)
-        steps_probe = net._raw_probe(m.steps, dt_sample=.001)
-        m.run(0.003)
-        simtime_data = simtime_probe.get_data()
-        steps_data = steps_probe.get_data()
-        assert np.allclose(simtime_data.flatten(), [.001, .002, .003])
-        assert np.allclose(steps_data.flatten(), [1, 2, 3])
-
-    def test_direct_mode_simple(self):
-        m = Model('Runtime Test', dt=0.001, seed=123)
-        m.make_node('in', output=np.sin)
-        p = m.probe('in', dt_sample=0.001, pstc=0.0)
-        rawp = m._raw_probe('in', dt_sample=.001)
-        st_probe = m._raw_probe(m.simtime, dt_sample=.001)
-        m.run(0.01)
-
-        data = p.get_data()
-        raw_data = rawp.get_data()
-        st_data = st_probe.get_data()
-        print data.dtype
-        print st_data
-        print raw_data
-        assert np.allclose(st_data.ravel(),
-                           np.arange(0.001, 0.0105, .001))
-        assert np.allclose(raw_data.ravel(),
-                           np.sin(np.arange(0, 0.0095, .001)))
-        # -- the make_probe call induces a one-step delay
-        #    on readout even when the pstc is really small.
-        assert np.allclose(data.ravel()[1:],
-                           np.sin(np.arange(0, 0.0085, .001)))
-
-    def test_basic_1(self, N=1000):
-        """
-        Create a network with sin(t) being represented by
-        a population of spiking neurons. Assert that the
-        decoded value from the population is close to the
-        true value (which is input to the population).
-
-        Expected duration of test: about .7 seconds
-        """
-
-        m = Model('Runtime Test', dt=0.001, seed=123)
-        m.make_node('in', output=np.sin)
-        m.make_ensemble('A', N, 1)
-        m.connect('in', 'A')
-        A_fast_probe = m.probe('A', dt_sample=0.01, pstc=0.001)
-        A_med_probe = m.probe('A', dt_sample=0.01, pstc=0.01)
-        A_slow_probe = m.probe('A', dt_sample=0.01, pstc=0.1)
-        in_probe = m.probe('in', dt_sample=0.01, pstc=0.0)
-
-        m.run(1.0)
-
-        target = np.sin(np.arange(0, 1000, 10) / 1000.)
-        target.shape = (100, 1)
-
-        for speed in 'fast', 'med', 'slow':
-            probe = locals()['A_%s_probe' % speed]
-            data = np.asarray(probe.get_data()).flatten()
-            plt.plot(data, label=speed)
-
-        in_data = np.asarray(in_probe.get_data()).flatten()
-
-        plt.plot(in_data, label='in')
-        plt.legend(loc='upper left')
-
-        if self.show:
-            plt.show()
-
-        # target is off-by-one at the sampling frequency of dt=0.001
-        print rmse(target, in_probe.get_data())
-        assert rmse(target, in_probe.get_data()) < .001
-        print rmse(target, A_fast_probe.get_data())
-        assert rmse(target, A_fast_probe.get_data()) < .1, (
-            rmse(target, A_fast_probe.get_data()))
-        print rmse(target, A_med_probe.get_data())
-        assert rmse(target, A_med_probe.get_data()) < .01
-        print rmse(target, A_slow_probe.get_data())
-        assert rmse(target, A_slow_probe.get_data()) < 0.1
-
-    def test_basic_5K(self):
-        return self.test_basic_1(5000)
-
-    def test_vector_input_constant(self):
-        # Adjust these values to change the matrix dimensions
-        #  Matrix A is D1xD2
-        #  Matrix B is D2xD3
-        #  result is D1xD3
-        D1 = 1
-        D2 = 2
-        seed = 123
-        N = 50
-
-        m = Model('Matrix Multiplication', seed=seed)
-
-        # make 2 matrices to store the input
-        print "make_array: input matrices A and B"
-        m.make_array('A', neurons=N, array_size=D1*D2,
-            neuron_type='lif')
-
-        # connect inputs to them so we can set their value
-        m.make_node('input A', output=[.5, -.5])
-        m.connect('input A', 'A')
-        inprobe = m.make_probe('input A', dt_sample=0.01, pstc=0.1)
-        sprobe = m._probe_signals(
-            net.ensembles['A'].input_signals, dt_sample=0.01, pstc=0.01)
-        Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.1)
-
-        net.run(1)
-
-        in_data = inprobe.get_data()
-        s_data = sprobe.get_data()
-        A_data = Aprobe.get_data()
-
-        plt.subplot(311); plt.plot(in_data)
-        plt.subplot(312); plt.plot(s_data)
-        plt.subplot(313); plt.plot(A_data)
-        if self.show:
-            plt.show()
-
-        assert np.allclose(in_data[-10:], [.5, -.5], atol=.01, rtol=.01)
-        assert np.allclose(s_data[-10:], [.5, -.5], atol=.01, rtol=.01)
-        assert np.allclose(A_data[-10:], [.5, -.5], atol=.01, rtol=.01)
-
-    def test_prod(self):
-
-        def product(x):
-            return x[0]*x[1]
-
-        N = 250
-        seed = 123
-        m = Model('Matrix Multiplication', seed=seed)
-
-        m.make_input('sin', value=np.sin)
-        m.make_input('neg', value=[-.5])
-        m.make_array('p', 2 * N, 1, dimensions=2, radius=1.5)
-        m.make_array('D', N, 1, dimensions=1)
-        m.connect('sin', 'p', transform=[[1], [0]])
-        m.connect('neg', 'p', transform=[[0], [1]])
-        m.connect('p', 'D', func=product, pstc=0.01)
-
-        p_raw = net._probe_decoded_signals(
-            [net.ensembles['p'].origin['product'].sigs[0]],
-            dt_sample=.01, pstc=.01)
-
-        probe_p = net.make_probe('p', dt_sample=.01, pstc=.01)
-        probe_d = net.make_probe('D', dt_sample=.01, pstc=.01)
-
-        net.run(6)
-
-        data_p = probe_p.get_data()
-        data_d = probe_d.get_data()
-        data_r = p_raw.get_data()
-
-        plt.subplot(211);
-        plt.plot(data_p)
-        plt.plot(np.sin(np.arange(0, 6, .01)))
-        plt.subplot(212);
-        plt.plot(data_d)
-        plt.plot(data_r)
-        plt.plot(-.5 * np.sin(np.arange(0, 6, .01)))
-
-        if self.show:
-            plt.show()
-
-        assert np.allclose(data_p[:, 0], np.sin(np.arange(0, 6, .01)),
-                          atol=.1, rtol=.01)
-        assert np.allclose(data_p[20:, 1], -0.5,
-                          atol=.1, rtol=.01)
-
-        def match(a, b):
-            assert np.allclose(a, b, .1, .1)
-
-        match(data_d[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
-
-        match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
-
-    def test_multidim_probe(self):
-        # Adjust these values to change the matrix dimensions
-        #  Matrix A is D1xD2
-        #  Matrix B is D2xD3
-        #  result is D1xD3
-        D1 = 1
-        D2 = 2
-        D3 = 3
-        seed = 123
-        N = 200
-
-        Amat = np.asarray([[.4, .8]])
-        Bmat = np.asarray([[-1.0, -0.6, -.15], [0.25, .5, .7]])
-
-        net = nef.Network('V', seed=seed)
-
-        # values should stay within the range (-radius,radius)
-        radius = 2.0
-
-        # make 2 matrices to store the input
-        print "make_array: input matrices A and B"
-        net.make_array('A', neurons=N, array_size=D1 * D2,
-            radius=radius, neuron_type='lif')
-        net.make_array('B', neurons=N, array_size=D2 * D3,
-            radius=radius, neuron_type='lif')
-
-        # connect inputs to them so we can set their value
-        inputA = net.make_input('input A', value=Amat.flatten())
-        inputB = net.make_input('input B', value=Bmat.flatten())
-        print "connect: input matrices A and B"
-        net.connect('input A', 'A')
-        net.connect('input B', 'B')
-
-        # the C matrix holds the intermediate product calculations
-        #  need to compute D1*D2*D3 products to multiply 2 matrices together
-        print "make_array: intermediate C"
-        net.make_array('C', 4 * N, D1 * D2 * D3,
-            dimensions=2,
-            radius=1.5 * radius,
-            encoders=[[1, 1], [1, -1], [-1, 1], [-1, -1]],
-            neuron_type='lif')
-
-        transformA=[[0] * (D1 * D2) for i in range(D1 * D2 * D3 * 2)]
-        transformB=[[0] * (D2 * D3) for i in range(D1 * D2 * D3 * 2)]
-        for i in range(D1):
-            for k in range(D3):
-                for j in range(D2):
-                    tmp = (j + k * D2 + i * D2 * D3)
-                    transformA[tmp * 2][j + i * D2] = 1
-                    transformB[tmp * 2 + 1][k + j * D3] = 1
-
-        print transformA
-        #print transformB
-
-        print "connect A->C"
-        net.connect('A', 'C', transform=transformA)
-        #print "connect B->C"
-        net.connect('B', 'C', transform=transformB)
-
-        Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.01)
-
-        net.run(1)
-
-        print Cprobe.get_data().shape
-        print Amat
-        print Bmat
-        #assert Cprobe.get_data().shape == (100, D1 * D2 * D3, 2)
-        data = Cprobe.get_data()
-        for i in range(D1):
-            for k in range(D3):
-                for j in range(D2):
-                    tmp = (j + k * D2 + i * D2 * D3)
-                    plt.subplot(D1 * D2 * D3, 2, 1 + 2 * tmp);
-                    plt.title('A[%i, %i]' % (i, j))
-                    plt.axhline(Amat[i, j])
-                    plt.ylim(-radius, radius)
-                    plt.plot(data[:, 2 * tmp])
-
-                    plt.subplot(D1 * D2 * D3, 2, 2 + 2 * tmp);
-                    plt.title('B[%i, %i]' % (j, k))
-                    plt.axhline(Bmat[j, k])
-                    plt.ylim(-radius, radius)
-                    plt.plot(data[:, 2 * tmp + 1])
-        if self.show:
-            plt.show()
-
-        for i in range(D1):
-            for k in range(D3):
-                for j in range(D2):
-                    tmp = (j + k * D2 + i * D2 * D3)
-                    assert np.allclose(
-                            data[-10:, 2 * tmp],
-                            Amat[i, j],
-                            atol=0.1, rtol=0.1), (
-                                data[-10:, 2 * tmp],
-                                Amat[i, j])
-
-                    assert np.allclose(
-                            data[-10:, 1 + 2 * tmp],
-                            Bmat[j, k],
-                            atol=0.1, rtol=0.1)
-
-    def test_matrix_mul(self):
-        # Adjust these values to change the matrix dimensions
-        #  Matrix A is D1xD2
-        #  Matrix B is D2xD3
-        #  result is D1xD3
-        D1 = 1
-        D2 = 2
-        D3 = 2
-        seed = 123
-        N = 200
-
-        Amat = np.asarray([[.5, -.5]])
-        Bmat = np.asarray([[0, -1.,], [.7, 0]])
-
-        net = nef.Network('Matrix Multiplication', seed=seed)
-
-        # values should stay within the range (-radius,radius)
-        radius = 1
-
-        # make 2 matrices to store the input
-        print "make_array: input matrices A and B"
-        net.make_array('A', neurons=N, array_size=D1 * D2,
-            radius=radius, neuron_type='lif')
-        net.make_array('B', neurons=N, array_size=D2 * D3,
-            radius=radius, neuron_type='lif')
-
-        # connect inputs to them so we can set their value
-        inputA = net.make_input('input A', value=Amat.ravel())
-        inputB = net.make_input('input B', value=Bmat.ravel())
-        print "connect: input matrices A and B"
-        net.connect('input A', 'A')
-        net.connect('input B', 'B')
-
-        # the C matrix holds the intermediate product calculations
-        #  need to compute D1*D2*D3 products to multiply 2 matrices together
-        print "make_array: intermediate C"
-        net.make_array('C', 4 * N, D1 * D2 * D3,
-            dimensions=2,
-            radius=1.5 * radius,
-            encoders=[[1, 1], [1, -1], [-1, 1], [-1, -1]],
-            neuron_type='lif')
-
-        #  determine the transformation matrices to get the correct pairwise
-        #  products computed.  This looks a bit like black magic but if
-        #  you manually try multiplying two matrices together, you can see
-        #  the underlying pattern.  Basically, we need to build up D1*D2*D3
-        #  pairs of numbers in C to compute the product of.  If i,j,k are the
-        #  indexes into the D1*D2*D3 products, we want to compute the product
-        #  of element (i,j) in A with the element (j,k) in B.  The index in
-        #  A of (i,j) is j+i*D2 and the index in B of (j,k) is k+j*D3.
-        #  The index in C is j+k*D2+i*D2*D3, multiplied by 2 since there are
-        #  two values per ensemble.  We add 1 to the B index so it goes into
-        #  the second value in the ensemble.
-        transformA = [[0] * (D1 * D2) for i in range(D1 * D2 * D3 * 2)]
-        transformB = [[0] * (D2 * D3) for i in range(D1 * D2 * D3 * 2)]
-        for i in range(D1):
-            for j in range(D2):
-                for k in range(D3):
-                    tmp = (j + k * D2 + i * D2 * D3)
-                    transformA[tmp * 2][j + i * D2] = 1
-                    transformB[tmp * 2 + 1][k + j * D3] = 1
-
-        print "connect A->C"
-        net.connect('A', 'C', transform=transformA)
-        print "connect B->C"
-        net.connect('B', 'C', transform=transformB)
-
-        # now compute the products and do the appropriate summing
-        print "make_array: output D"
-        net.make_array('D', N , D1 * D3,
-            radius=radius,
-            neuron_type='lif')
-
-        def product(x):
-            return x[0]*x[1]
-        # the mapping for this transformation is much easier, since we want to
-        # combine D2 pairs of elements (we sum D2 products together)
-
-        net.connect('C', 'D',
-            index_post=[i / D2 for i in range(D1 * D2 * D3)], func=product)
-
-        Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.01)
-        Bprobe = net.make_probe('B', dt_sample=0.01, pstc=0.01)
-        Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.01)
-        Dprobe = net.make_probe('D', dt_sample=0.01, pstc=0.01)
-
-        prod_probe = net._probe_decoded_signals(
-            net.ensembles['C'].origin['product'].sigs,
-            dt_sample=0.01,
-            pstc=.01)
-
-        net.run(1)
-
-        Dmat = np.dot(Amat, Bmat)
-        data = Dprobe.get_data()
-
-        for i in range(D1):
-            for k in range(D3):
-                plt.subplot(D1, D3, i * D3 + k + 1)
-                plt.title('D[%i, %i]' % (i, k))
-                plt.plot(data[:, i * D3 + k])
-                plt.axhline(Dmat[i, k])
-                plt.ylim(-radius, radius)
-        if self.show:
-            plt.show()
-
-        assert np.allclose(Aprobe.get_data()[50:, 0], 0.5,
-                          atol=.1, rtol=.01)
-        assert np.allclose(Aprobe.get_data()[50:, 1], -0.5,
-                          atol=.1, rtol=.01)
-
-        assert np.allclose(Bprobe.get_data()[50:, 0], 0,
-                          atol=.1, rtol=.01)
-        assert np.allclose(Bprobe.get_data()[50:, 1], -1,
-                          atol=.1, rtol=.01)
-        assert np.allclose(Bprobe.get_data()[50:, 2], .7,
-                          atol=.1, rtol=.01)
-        assert np.allclose(Bprobe.get_data()[50:, 3], 0,
-                          atol=.1, rtol=.01)
-
-        for i in range(D1):
-            for k in range(D3):
-                assert np.allclose(
-                        data[-10:, i * D3 + k],
-                        Dmat[i, k],
-                        atol=0.1, rtol=0.1), (
-                            data[-10:, i * D3 + k],
-                            Dmat[i, k])
+
+# class TestNewAPI(TestCase):
+#     plot = int(os.getenv("NENGO_TEST_PLOT", 0))
+
+#     def test_prod(self):
+#         def product(x):
+#             return x[0]*x[1]
+
+#         N = 250
+#         seed = 123
+#         m = Model('Matrix Multiplication', seed=seed)
+
+#         m.make_input('sin', value=np.sin)
+#         m.make_input('neg', value=[-.5])
+#         m.make_array('p', 2 * N, 1, dimensions=2, radius=1.5)
+#         m.make_array('D', N, 1, dimensions=1)
+#         m.connect('sin', 'p', transform=[[1], [0]])
+#         m.connect('neg', 'p', transform=[[0], [1]])
+#         m.connect('p', 'D', func=product, pstc=0.01)
+
+#         p_raw = net._probe_decoded_signals(
+#             [net.ensembles['p'].origin['product'].sigs[0]],
+#             dt_sample=.01, pstc=.01)
+
+#         probe_p = net.make_probe('p', dt_sample=.01, pstc=.01)
+#         probe_d = net.make_probe('D', dt_sample=.01, pstc=.01)
+
+#         net.run(6)
+
+#         data_p = probe_p.get_data()
+#         data_d = probe_d.get_data()
+#         data_r = p_raw.get_data()
+
+#         plt.subplot(211);
+#         plt.plot(data_p)
+#         plt.plot(np.sin(np.arange(0, 6, .01)))
+#         plt.subplot(212);
+#         plt.plot(data_d)
+#         plt.plot(data_r)
+#         plt.plot(-.5 * np.sin(np.arange(0, 6, .01)))
+
+#         if self.show:
+#             plt.show()
+
+#         assert np.allclose(data_p[:, 0], np.sin(np.arange(0, 6, .01)),
+#                           atol=.1, rtol=.01)
+#         assert np.allclose(data_p[20:, 1], -0.5,
+#                           atol=.1, rtol=.01)
+
+#         def match(a, b):
+#             assert np.allclose(a, b, .1, .1)
+
+#         match(data_d[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
+
+#         match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
+
+#     def test_multidim_probe(self):
+#         # Adjust these values to change the matrix dimensions
+#         #  Matrix A is D1xD2
+#         #  Matrix B is D2xD3
+#         #  result is D1xD3
+#         D1 = 1
+#         D2 = 2
+#         D3 = 3
+#         seed = 123
+#         N = 200
+
+#         Amat = np.asarray([[.4, .8]])
+#         Bmat = np.asarray([[-1.0, -0.6, -.15], [0.25, .5, .7]])
+
+#         net = nef.Network('V', seed=seed)
+
+#         # values should stay within the range (-radius,radius)
+#         radius = 2.0
+
+#         # make 2 matrices to store the input
+#         print "make_array: input matrices A and B"
+#         net.make_array('A', neurons=N, array_size=D1 * D2,
+#             radius=radius, neuron_type='lif')
+#         net.make_array('B', neurons=N, array_size=D2 * D3,
+#             radius=radius, neuron_type='lif')
+
+#         # connect inputs to them so we can set their value
+#         inputA = net.make_input('input A', value=Amat.flatten())
+#         inputB = net.make_input('input B', value=Bmat.flatten())
+#         print "connect: input matrices A and B"
+#         net.connect('input A', 'A')
+#         net.connect('input B', 'B')
+
+#         # the C matrix holds the intermediate product calculations
+#         #  need to compute D1*D2*D3 products to multiply 2 matrices together
+#         print "make_array: intermediate C"
+#         net.make_array('C', 4 * N, D1 * D2 * D3,
+#             dimensions=2,
+#             radius=1.5 * radius,
+#             encoders=[[1, 1], [1, -1], [-1, 1], [-1, -1]],
+#             neuron_type='lif')
+
+#         transformA=[[0] * (D1 * D2) for i in range(D1 * D2 * D3 * 2)]
+#         transformB=[[0] * (D2 * D3) for i in range(D1 * D2 * D3 * 2)]
+#         for i in range(D1):
+#             for k in range(D3):
+#                 for j in range(D2):
+#                     tmp = (j + k * D2 + i * D2 * D3)
+#                     transformA[tmp * 2][j + i * D2] = 1
+#                     transformB[tmp * 2 + 1][k + j * D3] = 1
+
+#         print transformA
+#         #print transformB
+
+#         print "connect A->C"
+#         net.connect('A', 'C', transform=transformA)
+#         #print "connect B->C"
+#         net.connect('B', 'C', transform=transformB)
+
+#         Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.01)
+
+#         net.run(1)
+
+#         print Cprobe.get_data().shape
+#         print Amat
+#         print Bmat
+#         #assert Cprobe.get_data().shape == (100, D1 * D2 * D3, 2)
+#         data = Cprobe.get_data()
+#         for i in range(D1):
+#             for k in range(D3):
+#                 for j in range(D2):
+#                     tmp = (j + k * D2 + i * D2 * D3)
+#                     plt.subplot(D1 * D2 * D3, 2, 1 + 2 * tmp);
+#                     plt.title('A[%i, %i]' % (i, j))
+#                     plt.axhline(Amat[i, j])
+#                     plt.ylim(-radius, radius)
+#                     plt.plot(data[:, 2 * tmp])
+
+#                     plt.subplot(D1 * D2 * D3, 2, 2 + 2 * tmp);
+#                     plt.title('B[%i, %i]' % (j, k))
+#                     plt.axhline(Bmat[j, k])
+#                     plt.ylim(-radius, radius)
+#                     plt.plot(data[:, 2 * tmp + 1])
+#         if self.show:
+#             plt.show()
+
+#         for i in range(D1):
+#             for k in range(D3):
+#                 for j in range(D2):
+#                     tmp = (j + k * D2 + i * D2 * D3)
+#                     assert np.allclose(
+#                             data[-10:, 2 * tmp],
+#                             Amat[i, j],
+#                             atol=0.1, rtol=0.1), (
+#                                 data[-10:, 2 * tmp],
+#                                 Amat[i, j])
+
+#                     assert np.allclose(
+#                             data[-10:, 1 + 2 * tmp],
+#                             Bmat[j, k],
+#                             atol=0.1, rtol=0.1)
+
+#     def test_matrix_mul(self):
+#         # Adjust these values to change the matrix dimensions
+#         #  Matrix A is D1xD2
+#         #  Matrix B is D2xD3
+#         #  result is D1xD3
+#         D1 = 1
+#         D2 = 2
+#         D3 = 2
+#         seed = 123
+#         N = 200
+
+#         Amat = np.asarray([[.5, -.5]])
+#         Bmat = np.asarray([[0, -1.,], [.7, 0]])
+
+#         net = nef.Network('Matrix Multiplication', seed=seed)
+
+#         # values should stay within the range (-radius,radius)
+#         radius = 1
+
+#         # make 2 matrices to store the input
+#         print "make_array: input matrices A and B"
+#         net.make_array('A', neurons=N, array_size=D1 * D2,
+#             radius=radius, neuron_type='lif')
+#         net.make_array('B', neurons=N, array_size=D2 * D3,
+#             radius=radius, neuron_type='lif')
+
+#         # connect inputs to them so we can set their value
+#         inputA = net.make_input('input A', value=Amat.ravel())
+#         inputB = net.make_input('input B', value=Bmat.ravel())
+#         print "connect: input matrices A and B"
+#         net.connect('input A', 'A')
+#         net.connect('input B', 'B')
+
+#         # the C matrix holds the intermediate product calculations
+#         #  need to compute D1*D2*D3 products to multiply 2 matrices together
+#         print "make_array: intermediate C"
+#         net.make_array('C', 4 * N, D1 * D2 * D3,
+#             dimensions=2,
+#             radius=1.5 * radius,
+#             encoders=[[1, 1], [1, -1], [-1, 1], [-1, -1]],
+#             neuron_type='lif')
+
+#         #  determine the transformation matrices to get the correct pairwise
+#         #  products computed.  This looks a bit like black magic but if
+#         #  you manually try multiplying two matrices together, you can see
+#         #  the underlying pattern.  Basically, we need to build up D1*D2*D3
+#         #  pairs of numbers in C to compute the product of.  If i,j,k are the
+#         #  indexes into the D1*D2*D3 products, we want to compute the product
+#         #  of element (i,j) in A with the element (j,k) in B.  The index in
+#         #  A of (i,j) is j+i*D2 and the index in B of (j,k) is k+j*D3.
+#         #  The index in C is j+k*D2+i*D2*D3, multiplied by 2 since there are
+#         #  two values per ensemble.  We add 1 to the B index so it goes into
+#         #  the second value in the ensemble.
+#         transformA = [[0] * (D1 * D2) for i in range(D1 * D2 * D3 * 2)]
+#         transformB = [[0] * (D2 * D3) for i in range(D1 * D2 * D3 * 2)]
+#         for i in range(D1):
+#             for j in range(D2):
+#                 for k in range(D3):
+#                     tmp = (j + k * D2 + i * D2 * D3)
+#                     transformA[tmp * 2][j + i * D2] = 1
+#                     transformB[tmp * 2 + 1][k + j * D3] = 1
+
+#         print "connect A->C"
+#         net.connect('A', 'C', transform=transformA)
+#         print "connect B->C"
+#         net.connect('B', 'C', transform=transformB)
+
+#         # now compute the products and do the appropriate summing
+#         print "make_array: output D"
+#         net.make_array('D', N , D1 * D3,
+#             radius=radius,
+#             neuron_type='lif')
+
+#         def product(x):
+#             return x[0]*x[1]
+#         # the mapping for this transformation is much easier, since we want to
+#         # combine D2 pairs of elements (we sum D2 products together)
+
+#         net.connect('C', 'D',
+#             index_post=[i / D2 for i in range(D1 * D2 * D3)], func=product)
+
+#         Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.01)
+#         Bprobe = net.make_probe('B', dt_sample=0.01, pstc=0.01)
+#         Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.01)
+#         Dprobe = net.make_probe('D', dt_sample=0.01, pstc=0.01)
+
+#         prod_probe = net._probe_decoded_signals(
+#             net.ensembles['C'].origin['product'].sigs,
+#             dt_sample=0.01,
+#             pstc=.01)
+
+#         net.run(1)
+
+#         Dmat = np.dot(Amat, Bmat)
+#         data = Dprobe.get_data()
+
+#         for i in range(D1):
+#             for k in range(D3):
+#                 plt.subplot(D1, D3, i * D3 + k + 1)
+#                 plt.title('D[%i, %i]' % (i, k))
+#                 plt.plot(data[:, i * D3 + k])
+#                 plt.axhline(Dmat[i, k])
+#                 plt.ylim(-radius, radius)
+#         if self.show:
+#             plt.show()
+
+#         assert np.allclose(Aprobe.get_data()[50:, 0], 0.5,
+#                           atol=.1, rtol=.01)
+#         assert np.allclose(Aprobe.get_data()[50:, 1], -0.5,
+#                           atol=.1, rtol=.01)
+
+#         assert np.allclose(Bprobe.get_data()[50:, 0], 0,
+#                           atol=.1, rtol=.01)
+#         assert np.allclose(Bprobe.get_data()[50:, 1], -1,
+#                           atol=.1, rtol=.01)
+#         assert np.allclose(Bprobe.get_data()[50:, 2], .7,
+#                           atol=.1, rtol=.01)
+#         assert np.allclose(Bprobe.get_data()[50:, 3], 0,
+#                           atol=.1, rtol=.01)
+
+#         for i in range(D1):
+#             for k in range(D3):
+#                 assert np.allclose(
+#                         data[-10:, i * D3 + k],
+#                         Dmat[i, k],
+#                         atol=0.1, rtol=0.1), (
+#                             data[-10:, i * D3 + k],
+#                             Dmat[i, k])
 
 if __name__ == '__main__':
     import nose
