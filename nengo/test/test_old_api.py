@@ -2,18 +2,17 @@ import os
 from unittest import TestCase
 
 from matplotlib import pyplot as plt
-import nose
 import numpy as np
 
 from nengo.simulator import Simulator
-from nengo.old_api import Network
+import nengo.old_api as nef
 
 def rmse(a, b):
     return np.sqrt(np.mean((a - b) ** 2))
 
 
 class TestOldAPI(TestCase):
-    # -- Tests are in a class so that 
+    # -- Tests are in a class so that
     #    nengo_ocl can automatically run all
     #    member unit tests for other simulators by
     #    subclassing this class and overriding this attribute.
@@ -22,27 +21,26 @@ class TestOldAPI(TestCase):
     show = int(os.getenv("NENGO_TEST_SHOW", 0))
 
     def test_counters(self):
-        net = Network('foo', dt=0.001, seed=123,
-                     Simulator=self.Simulator)
+        net = nef.Network('foo', dt=0.001, seed=123,
+                          Simulator=self.Simulator)
 
-        simtime_probe = net._raw_probe(net.simtime, dt_sample=.001)
-        steps_probe = net._raw_probe(net.steps, dt_sample=.001)
+        simtime_probe = net._raw_probe(net.model.simtime, dt_sample=.001)
+        steps_probe = net._raw_probe(net.model.steps, dt_sample=.001)
         net.run(0.003)
         simtime_data = simtime_probe.get_data()
         steps_data = steps_probe.get_data()
         assert np.allclose(simtime_data.flatten(), [.001, .002, .003])
         assert np.allclose(steps_data.flatten(), [1, 2, 3])
 
-
     def test_direct_mode_simple(self):
         """
         """
-        net = Network('Runtime Test', dt=0.001, seed=123,
-                     Simulator=self.Simulator)
+        net = nef.Network('Runtime Test', dt=0.001, seed=123,
+                          Simulator=self.Simulator)
         net.make_input('in', value=np.sin)
         p = net.make_probe('in', dt_sample=0.001, pstc=0.0)
         rawp = net._raw_probe(net.inputs['in'], dt_sample=.001)
-        st_probe = net._raw_probe(net.simtime, dt_sample=.001)
+        st_probe = net._raw_probe(net.model.simtime, dt_sample=.001)
         net.run(0.01)
 
         data = p.get_data()
@@ -60,7 +58,6 @@ class TestOldAPI(TestCase):
         assert np.allclose(data.ravel()[1:],
                            np.sin(np.arange(0, 0.0085, .001)))
 
-
     def test_basic_1(self, N=1000):
         """
         Create a network with sin(t) being represented by
@@ -71,8 +68,8 @@ class TestOldAPI(TestCase):
         Expected duration of test: about .7 seconds
         """
 
-        net = Network('Runtime Test', dt=0.001, seed=123,
-                     Simulator=self.Simulator)
+        net = nef.Network('Runtime Test', dt=0.001, seed=123,
+                          Simulator=self.Simulator)
         print 'make_input'
         net.make_input('in', value=np.sin)
         print 'make A'
@@ -129,12 +126,12 @@ class TestOldAPI(TestCase):
         seed = 123
         N = 50
 
-        net=Network('Matrix Multiplication', seed=seed,
-                   Simulator=self.Simulator)
+        net = nef.Network('Matrix Multiplication', seed=seed,
+                          Simulator=self.Simulator)
 
         # make 2 matrices to store the input
         print "make_array: input matrices A and B"
-        net.make_array('A', neurons=N, array_size=D1*D2, 
+        net.make_array('A', neurons=N, array_size=D1*D2,
             neuron_type='lif')
 
         # connect inputs to them so we can set their value
@@ -165,12 +162,11 @@ class TestOldAPI(TestCase):
 
         def product(x):
             return x[0]*x[1]
-        #from nengo_theano import Network
 
         N = 250
         seed = 123
-        net=Network('Matrix Multiplication', seed=seed)
-                   #Simulator=self.Simulator)
+        net = nef.Network('Matrix Multiplication', seed=seed,
+                          Simulator=self.Simulator)
 
         net.make_input('sin', value=np.sin)
         net.make_input('neg', value=[-.5])
@@ -216,7 +212,6 @@ class TestOldAPI(TestCase):
 
         match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
 
-
     def test_multidim_probe(self):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
@@ -231,7 +226,7 @@ class TestOldAPI(TestCase):
         Amat = np.asarray([[.4, .8]])
         Bmat = np.asarray([[-1.0, -0.6, -.15], [0.25, .5, .7]])
 
-        net=Network('V', seed=seed, Simulator=self.Simulator)
+        net = nef.Network('V', seed=seed, Simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 2.0
@@ -319,7 +314,6 @@ class TestOldAPI(TestCase):
                             Bmat[j, k],
                             atol=0.1, rtol=0.1)
 
-
     def test_matrix_mul(self):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
@@ -334,8 +328,8 @@ class TestOldAPI(TestCase):
         Amat = np.asarray([[.5, -.5]])
         Bmat = np.asarray([[0, -1.,], [.7, 0]])
 
-        net=Network('Matrix Multiplication', seed=seed,
-                   Simulator=self.Simulator)
+        net = nef.Network('Matrix Multiplication', seed=seed,
+                          Simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 1
@@ -450,3 +444,7 @@ class TestOldAPI(TestCase):
                             data[-10:, i * D3 + k],
                             Dmat[i, k])
 
+
+if __name__ == '__main__':
+    import nose
+    nose.runmodule()
