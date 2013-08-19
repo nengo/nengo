@@ -612,7 +612,7 @@ class Probe(object):
         self.net = net
 
     def get_data(self):
-        sim = self.net.sim
+        sim = self.net.model.sim_obj
         lst = sim.probe_data(self.probe)
         rval = np.asarray(lst).reshape(len(lst), -1)
         return rval
@@ -623,16 +623,14 @@ class Network(object):
             seed=None,
             fixed_seed=None,
             dt=0.001,
-            Simulator=simulator.Simulator):
+            simulator=simulator.Simulator):
         self.random = random.Random()
         if seed is not None:
             self.random.seed(seed)
         self.fixed_seed = fixed_seed
-        self.model = Model(dt)
+        self.model = Model(name, dt=dt, simulator=simulator)
         self.ensembles = {}
         self.inputs = {}
-
-        self.Simulator = Simulator
 
     @property
     def dt(self):
@@ -738,19 +736,24 @@ class Network(object):
                             dst.input_signals[jj]))
 
         elif name1 in self.inputs:
+            transform = np.array(kwargs.get('transform', 1.0))
             src = self.inputs[name1]
-            dst_ensemble = self.ensembles[name2]
-            if (dst_ensemble.array_size,) != src.shape:
-                raise ShapeMismatch(
-                    (dst_ensemble.array_size,), src.shape)
 
-            for ii in range(dst_ensemble.array_size):
-                src_ii = src[ii:ii+1]
+            if transform.ndim == 2 and (transform.shape[1],) != src.shape:
+                raise ShapeMismatch((transform.shape[1],), src.shape)
+
+            dst_ensemble = self.ensembles[name2]
+            dst_len = dst_ensemble.array_size * dst_ensemble.dimensions
+
+            if transform.ndim == 2 and (transform.shape[0],) != (dst_len,):
+                raise ShapeMismatch((transform.shape[0],), (dst_len,))
+
+            for ii in range(0, dst_len, dst_ensemble.dimensions):
+                src_ii = src[ii:ii+dst_ensemble.dimensions]
                 dst_ii = dst_ensemble.input_signals[ii]
 
                 assert func is None
-                self.model.add(Filter(
-                    kwargs.get('transform', 1.0), src_ii, dst_ii))
+                self.model.add(Filter(transform, src_ii, dst_ii))
         else:
             raise NotImplementedError()
 
@@ -837,14 +840,5 @@ class Network(object):
         else:
             raise NotImplementedError()
 
-    def _make_simulator(self):
-        sim = self.Simulator(self.model)
-        self.sim = sim
-
     def run(self, simtime, verbose=False):
-        try:
-            self.sim
-        except:
-            self._make_simulator()
-        n_steps = int(simtime // self.dt)
-        self.sim.run_steps(n_steps, verbose=verbose)
+        self.model.run(simtime)

@@ -30,20 +30,15 @@ model.connect('Cos', 'Neurons', transform=[[0], [1]])
 
 model.probe('Sin')
 model.probe('Cos')
-model.probe('Neurons')
-model.probe(e.decoded_output)
+model.probe('Neurons', pstc=0.02)
 
 # Run the model for 1 second
 model.run(5)
-
-print model.data.keys()
 
 t = model.data['simtime']
 
 plt.plot(t, model.data['Sin'], label="Sine")
 plt.plot(t, model.data['Cos'], label="Cosine")
 plt.plot(t, model.data['Neurons'], label="Neuron approximation")
-plt.plot(t, model.data['Neurons.decoded_output'])
-
 plt.legend()
 plt.show()

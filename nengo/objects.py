@@ -1,3 +1,4 @@
+import inspect
 import random
 
 import numpy as np
@@ -22,6 +23,11 @@ def sample_unit_signal(dimensions, num_samples, rng):
     samples *= scale
 
     return samples.T
+
+def filter_coefs(pstc, dt):
+    pstc = max(pstc, dt)
+    decay = np.exp(-dt / pstc)
+    return decay, (1.0 - decay)
 
 
 # -- James and Terry arrived at this by eyeballing some graphs.
@@ -106,7 +112,7 @@ class Ensemble(object):
 
     def __init__(self, name, neurons, dimensions,
                  radius=1.0, encoders=None,
-                 max_rates=Uniform(50, 100), intercepts=Uniform(-1, 1),
+                 max_rates=Uniform(200, 300), intercepts=Uniform(-1.0, 1.0),
                  decoder_noise=None, eval_points=None,
                  noise=None, noise_frequency=None, seed=None):
         # Error for things not implemented yet or don't make sense
@@ -124,6 +130,7 @@ class Ensemble(object):
             print ("neurons should be an instance of a nonlinearity, "
                    "not an int. Defaulting to LIF.")
             neurons = LIF(neurons)
+        neurons.name = name
 
         if hasattr(max_rates, 'sample'):
             max_rates = max_rates.sample(neurons.n_neurons)
@@ -138,12 +145,11 @@ class Ensemble(object):
             encoders = self.rng.randn(neurons.n_neurons, dimensions)
             norm = np.sum(encoders * encoders, axis=1)[:, None]
             encoders /= np.sqrt(norm)
+        encoders /= radius
 
-        # Store things on the ensemble that will be necessary for
-        # later calculations or organization
         self.name = name
-        self.eval_points = eval_points
         self.radius = radius
+        self.eval_points = eval_points
 
         # The essential components of an ensemble are:
         #  self.input_signal - the summed inputs
@@ -155,6 +161,7 @@ class Ensemble(object):
         self.neurons = neurons
 
         # Set up the encoders
+        encoders *= self.neurons.gain[:, None]
         self.encoders = Encoder(self.input_signal, self.neurons, encoders)
 
         # Set up probes
@@ -190,7 +197,12 @@ class Ensemble(object):
         return self.neurons.rates(
             np.dot(self.encoders.weights, eval_points).T)
 
-    def probe(self, to_probe, dt, model=None):
+    def probe(self, to_probe, dt_sample, filter=None, model=None):
+        if model is not None:
+            dt = model.dt
+        else:
+            dt = 0.001
+
         if to_probe == '':
             to_probe = 'decoded_output'
 
@@ -205,16 +217,28 @@ class Ensemble(object):
                     weights=solve_decoders(activites, targets))
                 self.transform = Transform(
                     1.0, self.decoded_output, self.decoded_output)
-
-                probe = Probe(self.decoded_output, dt)
-                self.probes.append(probe)
                 if model is not None:
                     model.add(self.decoded_output)
                     model.add(self.decoders)
                     model.add(self.transform)
-                    model.add(probe)
 
-        return probe
+            if filter is not None and filter > dt_sample:
+                fcoef, tcoef = filter_coefs(pstc=filter, dt=dt)
+                probe_sig = Signal(self.decoded_output.n)
+                self.probes.append(probe_sig)
+                self.probes.append(Filter(fcoef, probe_sig, probe_sig))
+                self.probes.append(
+                    Transform(tcoef, self.decoded_output, probe_sig))
+                self.probes.append(Probe(probe_sig, dt_sample))
+                if model is not None:
+                    for obj in self.probes[-4:]:
+                        model.add(obj)
+            else:
+                self.probes.append(Probe(self.decoded_output, dt_sample))
+                if model is not None:
+                    model.add(self.probes[-1])
+
+        return self.probes[-1]
 
     def add_to_model(self, model):
         model.add(self.neurons)
@@ -237,7 +261,6 @@ class Ensemble(object):
             model.remove(self.transform)
         for probe in self.probes:
             model.remove(probe)
-
 
 
 class Node(object):
@@ -297,12 +320,13 @@ class Node(object):
             self.signal = self.function.output_signal
             self.transform = Transform(1.0, self.signal, self.signal)
         else:
+            if type(output) == float:
+                output = [output]
+
             if type(output) == list:
                 self.signal = Constant(n=len(output),
                                        value=[float(n) for n in output],
                                        name=name)
-            else:
-                self.signal = Constant(n=1, value=float(output), name=name)
 
     def probe(self, model):
         pass
@@ -471,6 +495,15 @@ class SignalView(object):
     def name(self, value):
         self._name = value
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'name': self.name,
+            'base': self.base.name,
+            'shape': list(self.shape),
+            'elemstrides': list(self.elemstrides),
+            'offset': self.offset,
+        }
 
 
 class Signal(SignalView):
@@ -511,6 +544,14 @@ class Signal(SignalView):
     def add_to_model(self, model):
         model.signals.add(self)
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'name': self.name,
+            'n': self.n,
+            'dtype': str(self.dtype),
+        }
+
 
 class Probe(object):
     """A model probe to record a signal"""
@@ -526,6 +567,13 @@ class Probe(object):
 
     def add_to_model(self, model):
         model.probes.add(self)
+
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'sig': self.sig.name,
+            'dt': self.dt,
+        }
 
 
 class Constant(Signal):
@@ -552,6 +600,13 @@ class Constant(Signal):
     def elemstrides(self):
         s = np.asarray(self.value.strides)
         return tuple(map(int, s / self.dtype.itemsize))
+
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'name': self.name,
+            'value': self.value.tolist(),
+        }
 
 
 class Transform(object):
@@ -596,6 +651,14 @@ class Transform(object):
     def add_to_model(self, model):
         model.signals.add(self.alpha_signal)
         model.transforms.add(self)
+
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'alpha': self.alpha.tolist(),
+            'insig': self.insig.name,
+            'outsig': self.outsig.name,
+        }
 
 
 class Filter(object):
@@ -646,6 +709,14 @@ class Filter(object):
         model.signals.add(self.alpha_signal)
         model.filters.add(self)
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'alpha': self.alpha.tolist(),
+            'oldsig': self.oldsig.name,
+            'newsig': self.newsig.name,
+        }
+
 
 class Encoder(object):
     """A linear transform from a signal to a population"""
@@ -681,6 +752,14 @@ class Encoder(object):
         model.encoders.add(self)
         model.signals.add(self.weights_signal)
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'sig': self.sig.name,
+            'pop': self.pop.name,
+            'weights': self.weights.tolist(),
+        }
+
 
 class Decoder(object):
     """A linear transform from a population to a signal"""
@@ -715,16 +794,16 @@ class Decoder(object):
         model.decoders.add(self)
         model.signals.add(self.weights_signal)
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'pop': self.pop.name,
+            'sig': self.sig.name,
+            'weights': self.weights.tolist(),
+        }
+
 
 ### Nonlinearities
-
-# Definitions of standard kinds of Non-Linearity
-
-# TODO: Consider moving these into simulator_objects.py
-# because they are the basic objects that are destinations for
-# e.g. encoders and sources for decoders. They are tightly
-# part of that set of objects.
-#
 
 class Nonlinearity(object):
     def __str__(self):
@@ -744,6 +823,7 @@ class Direct(Nonlinearity):
     def __init__(self, n_in, n_out, fn, name=None):
         if name is None:
             name = "<Direct%d>" % id(self)
+        self.name = name
 
         self.input_signal = Signal(n_in, name=name + '.input')
         self.output_signal = Signal(n_out, name=name + '.output')
@@ -764,19 +844,29 @@ class Direct(Nonlinearity):
     def fn(self, J):
         return J
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'input_signal': self.input_signal.name,
+            'output_signal': self.output_signal.name,
+            'bias_signal': self.bias_signal.name,
+            'fn': inspect.getsouce(self.fn),
+        }
+
+
 
 class LIF(Nonlinearity):
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, upsample=1,
                 name=None):
         if name is None:
             name = "<LIF%d>" % id(self)
-
         self.input_signal = Signal(n_neurons, name=name + '.input')
         self.output_signal = Signal(n_neurons, name=name + '.output')
         self.bias_signal = Constant(n=n_neurons,
                                     value=np.zeros(n_neurons),
                                     name=name + '.bias')
 
+        self._name = name
         self.n_neurons = n_neurons
         self.upsample = upsample
         self.tau_rc = tau_rc
@@ -788,6 +878,17 @@ class LIF(Nonlinearity):
 
     def __repr__(self):
         return str(self)
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+        self.input_signal.name = value + '.input'
+        self.output_signal.name = value + '.output'
+        self.bias_signal.name = value + '.bias'
 
     @property
     def bias(self):
@@ -891,6 +992,19 @@ class LIF(Nonlinearity):
         finally:
             np.seterr(**old)
         return A
+
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'input_signal': self.input_signal.name,
+            'output_signal': self.output_signal.name,
+            'bias_signal': self.bias_signal.name,
+            'n_neurons': self.n_neurons,
+            'upsample': self.upsample,
+            'tau_rc': self.tau_rc,
+            'tau_ref': self.tau_ref,
+            'gain': self.gain.tolist(),
+        }
 
 
 class LIFRate(LIF):
