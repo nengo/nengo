@@ -24,53 +24,102 @@ Network behaviour:
    A = A_matrix * A
 """
 
+import nengo.old_api as api
 import numpy as np
-import nengo.old_api as nengo
-from nengo.old_api import compute_transform
 
-# Define model parameters
-dt = 1e-3
-speed = 10                                      # Base frequency of oscillation
-tau = 0.1                                       # Recurrent time constant
+### Define model parameters
+speed = 10       # Base frequency of oscillation
+tau = 0.1        # TODO: this is supposed to be the feedback time constant
 
-# Create the nengo model
-net = nengo.Network('Controlled Oscillator')    # Create the network object
+### Create the nengo model
+model = api.Network('Integrator')
 
-# Make controllable inputs
+### Create the model inputs
 def start_input(t):
-    if t < 0.15:
-        return [1,0]
-    else:
-        return [0,0]
+    if t < 0.01: return [1,0]
+    else:        return [0,0]
 
-net.make_input('Input', start_input)
+model.make_input('Input', start_input)
 
-net.make_input('Speed', [1])
+def speed_func(t):
+    if   t < 0.3: return 1
+    elif t < 0.6: return 0.5
+    else:         return 1
 
-# Create the neuronal ensembles
-net.make('A', 500, 3, radius=1.7)
+model.make_input('Speed', speed_func)
 
-# Create the connections within the model
-# net.connect('Input', 'A', transform=np.array([[1,0],[0,1],[0,0]]))
+### Create the neuronal ensemble
+model.make('A', 500, 3, radius=1.7)
 
-# net.connect('Speed', 'A', transform=np.array([[0],[0],[1]]))
-
-net.connect('Input', 'A', transform=[[1,0],[0,1],[0,0]])
-
-net.connect('Speed', 'A', transform=[[0],[0],[1]])
+### Create the connections within the model
+model.connect('Input', 'A', transform=[[1,0],[0,1],[0,0]])
+model.connect('Speed', 'A', transform=[[0],[0],[1]])
 
 def controlled_path(x):
     return [x[0] + x[2] * speed * tau * x[1],
             x[1] - x[2] * speed * tau * x[0],
             0]
 
-net.connect('A', 'A', function=controlled_path)
-# net.connect('A', 'A', function=controlled_path,
-              # filter={'type': 'ExponentialPSC', 'pstc': tau})
+# model.connect('A', 'A', func=controlled_path, pstc=tau)
+model.connect('A', 'A', func=controlled_path)
 
-# Build the model
-net.build()
+### Add probes
+probe_dt = 0.002
+probe_tau = 0.03
+input_p = model.make_probe('Input', 0.001, 0.001)
+output_p = model.make_probe('A', probe_dt, probe_tau)
 
-# Run the model
-net.run(1)
+### Run the model
+t_final = 1
+model.run(t_final)
 
+### Plot the results
+try:
+    import numpy as np
+    import matplotlib.pyplot as plt
+    plt.figure(1)
+    plt.clf()
+    ins = input_p.get_data()
+    outs = output_p.get_data()
+    t = lambda x: (t_final/float(len(x)))*np.arange(len(x))
+
+    plt.subplot(211)
+    plt.plot(t(ins), ins)
+    plt.subplot(212)
+    plt.plot(t(outs), outs)
+    # plt.show()
+
+    ### animation
+    import matplotlib.animation as animation
+
+    x, y, w = outs.T
+
+    fig = plt.figure(2)
+    fig.clf()
+    r = 1.5
+    ax = fig.add_subplot(111, autoscale_on=False, xlim=(-r,r), ylim=(-r,r))
+    ax.grid()
+
+    dots = [ax.plot([],[],'ko-',markersize=(10-i)) for i in xrange(9)]
+    dots = map(lambda x: x[0], dots)
+    time_text = ax.text(0.05, 0.9, '', transform=ax.transAxes)
+
+    def init():
+        for dot in dots:
+            dot.set_data([],[])
+        time_text.set_text('')
+        return dots + [time_text]
+
+    def animate(i):
+        for j in xrange(0, min(i,len(dots))):
+            dots[j].set_data([x[i-j]],[y[i-j]])
+        time_text.set_text('time = %.3f' % (i*probe_dt))
+        return dots + [time_text]
+
+    ani = animation.FuncAnimation(fig, animate, frames=np.arange(1, len(x)),
+                                  interval=20, blit=True, init_func=init)
+
+    plt.show()
+
+except ImportError:
+    print "Could not import required libraries for plotting"
