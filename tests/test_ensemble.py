@@ -2,6 +2,7 @@ try:
     import unittest2 as unittest
 except ImportError:
     import unittest
+import logging
 import os
 
 import numpy as np
@@ -10,6 +11,9 @@ import nengo
 import nengo.old_api as nef
 
 from helpers import Plotter, rmse, simulates, SimulatesMetaclass
+
+
+logger = logging.getLogger(__name__)
 
 
 class TestEnsemble(unittest.TestCase):
@@ -148,7 +152,8 @@ class TestEnsemble(unittest.TestCase):
             plt.savefig('test_ensemble.test_scalar-old.pdf')
             plt.close()
 
-        # print rmse(target, in_data), rmse(target, a_data)
+        logger.debug("[Old API] input RMSE: %f", rmse(target, in_data))
+        logger.debug("[Old API] A RMSE: %f", rmse(target, a_data))
         assert rmse(target, in_data) < 0.001
         assert rmse(target, a_data) < 0.1
 
@@ -170,12 +175,13 @@ class TestEnsemble(unittest.TestCase):
             plt.savefig('test_ensemble.test_scalar-new.pdf')
             plt.close()
 
-        # print rmse(target, m.data['in']), rmse(target, m.data['A'])
+        logger.debug("[New API] input RMSE: %f", rmse(target, m.data['in']))
+        logger.debug("[New API] A RMSE: %f", rmse(target, m.data['A']))
         assert rmse(target, m.data['in']) < 0.001
         assert rmse(target, m.data['A']) < 0.1
 
         # Check old/new API similarity
-        # print rmse(a_data, m.data['A'])
+        logger.debug("Old/New API RMSE: %f", rmse(a_data, m.data['A']))
         assert rmse(a_data, m.data['A']) < 0.1
 
     @simulates
@@ -218,9 +224,10 @@ class TestEnsemble(unittest.TestCase):
             plt.savefig('test_ensemble.test_vector-old.pdf')
             plt.close()
 
-        # Not sure why, but this isn't working...
-        # print rmse(target[:,0], sin_data), rmse(target[:,1], cos_data),
-        # print rmse(target[:,2], arctan_data), rmse(target, a_data)
+        logger.debug("[Old API] sin RMSE: %f", rmse(target[:,0], sin_data))
+        logger.debug("[Old API] cos RMSE: %f", rmse(target[:,1], cos_data))
+        logger.debug("[Old API] atan RMSE: %f", rmse(target[:,2], arctan_data))
+        logger.debug("[Old API] A RMSE: %f", rmse(target, a_data))
         # assert rmse(target[:,0], sin_data) < 0.001
         # assert rmse(target[:,1], cos_data) < 0.001
         # assert rmse(target[:,2], arctan_data) < 0.001
@@ -253,13 +260,18 @@ class TestEnsemble(unittest.TestCase):
             plt.close()
 
         # Not sure why, but this isn't working...
+        logger.debug("[New API] sin RMSE: %f", rmse(target[:,0], m.data['sin']))
+        logger.debug("[New API] cos RMSE: %f", rmse(target[:,1], m.data['cos']))
+        logger.debug("[New API] atan RMSE: %f",
+                     rmse(target[:,2], m.data['arctan']))
+        logger.debug("[New API] A RMSE: %f", rmse(target, m.data['A']))
         # assert rmse(target[:,0], m.data['sin']) < 0.001
         # assert rmse(target[:,1], m.data['cos']) < 0.001
         # assert rmse(target[:,2], m.data['arctan']) < 0.001
         assert rmse(target, m.data['A']) < 0.1
 
         # Check old/new API similarity
-        # print rmse(a_data, m.data['A'])
+        logger.debug("Old/New API RMSE: %f", rmse(a_data, m.data['A']))
         assert rmse(a_data, m.data['A']) < 0.1
 
 
