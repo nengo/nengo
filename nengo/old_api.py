@@ -752,7 +752,7 @@ class Network(object):
                 dst_ii = dst_ensemble.input_signals[ii]
                 if pstc > self.dt:
                     src_filtered = self.model.add(Signal(
-                        n=dst_ensemble.dimensions, #-- views not ok here
+                        n=src_ii.size, #-- views not ok here
                         name=src.name + '::d=%d,pstc=%s' % (ii,pstc)))
                     fcoef, tcoef = filter_coefs(pstc, dt=self.dt)
                     self.model.add(Transform(tcoef, src_ii, src_filtered))
