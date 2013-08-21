@@ -2,22 +2,24 @@ __copyright__ = "2013, Nengo contributors"
 __license__ = "http://www.gnu.org/licenses/gpl.html"
 
 import logging
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())  # Prevent output if no handler set
-
+import sys
 from .model import Model
 from .objects import LIF
 
 
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())  # Prevent output if no handler set
+
+
 def log(debug=False):
-    """Log messages to the console (stderr).
+    """Log messages to the console (stdout).
 
     Typically someone using Nengo as a library will set up their own
     logging things, and Nengo will just populate their log.
     However, if the user is using Nengo directly, they can use this
     functions to get a simple log output to the console.
     """
-    sh = logging.StreamHandler()
+    sh = logging.StreamHandler(sys.stdout)
     level = logging.DEBUG if debug else logging.WARNING
     if logging.root.getEffectiveLevel() > level:
         logging.root.setLevel(level)

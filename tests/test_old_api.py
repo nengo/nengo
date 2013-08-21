@@ -2,6 +2,7 @@ try:
     import unittest2 as unittest
 except ImportError:
     import unittest
+import logging
 import os
 
 import numpy as np
@@ -10,6 +11,9 @@ import nengo
 import nengo.old_api as nef
 
 from helpers import Plotter, rmse, simulates, SimulatesMetaclass
+
+
+logger = logging.getLogger(__name__)
 
 
 class TestOldAPI(unittest.TestCase):
@@ -48,7 +52,6 @@ class TestOldAPI(unittest.TestCase):
         data_r = p_raw.get_data()
 
         with Plotter(simulator) as plt:
-            print '1'
             plt.subplot(211);
             plt.plot(data_p)
             plt.plot(np.sin(np.arange(0, 6, .01)))
@@ -57,7 +60,6 @@ class TestOldAPI(unittest.TestCase):
             plt.plot(data_r)
             plt.plot(-.5 * np.sin(np.arange(0, 6, .01)))
             plt.savefig('test_old_api.test_prod.pdf')
-            print 'should have saved'
             plt.close()
 
         assert np.allclose(data_p[:, 0], np.sin(np.arange(0, 6, .01)),
@@ -92,7 +94,7 @@ class TestOldAPI(unittest.TestCase):
         radius = 2.0
 
         # make 2 matrices to store the input
-        print "make_array: input matrices A and B"
+        logging.debug("make_array: input matrices A and B")
         net.make_array('A', neurons=N, array_size=D1 * D2,
             radius=radius, neuron_type='lif')
         net.make_array('B', neurons=N, array_size=D2 * D3,
@@ -101,13 +103,13 @@ class TestOldAPI(unittest.TestCase):
         # connect inputs to them so we can set their value
         inputA = net.make_input('input A', value=Amat.flatten())
         inputB = net.make_input('input B', value=Bmat.flatten())
-        print "connect: input matrices A and B"
+        logging.debug("connect: input matrices A and B")
         net.connect('input A', 'A')
         net.connect('input B', 'B')
 
         # the C matrix holds the intermediate product calculations
         #  need to compute D1*D2*D3 products to multiply 2 matrices together
-        print "make_array: intermediate C"
+        logging.debug("make_array: intermediate C")
         net.make_array('C', 4 * N, D1 * D2 * D3,
             dimensions=2,
             radius=1.5 * radius,
@@ -123,22 +125,21 @@ class TestOldAPI(unittest.TestCase):
                     transformA[tmp * 2][j + i * D2] = 1
                     transformB[tmp * 2 + 1][k + j * D3] = 1
 
-        print transformA
-        #print transformB
+        logging.debug("transA: %s", str(transformA))
+        logging.debug("transB: %s", str(transformB))
 
-        print "connect A->C"
+        logging.debug("connect A->C")
         net.connect('A', 'C', transform=transformA)
-        #print "connect B->C"
+        logging.debug("connect B->C")
         net.connect('B', 'C', transform=transformB)
 
         Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.01)
 
         net.run(1)
 
-        print Cprobe.get_data().shape
-        print Amat
-        print Bmat
-        #assert Cprobe.get_data().shape == (100, D1 * D2 * D3, 2)
+        logging.debug("Cprove.shape=%s", str(Cprobe.get_data().shape))
+        logging.debug("Amat=%s", str(Amat))
+        logging.debug("Bmat=%s", str(Bmat))
         data = Cprobe.get_data()
 
         with Plotter(simulator) as plt:
@@ -198,7 +199,7 @@ class TestOldAPI(unittest.TestCase):
         radius = 1
 
         # make 2 matrices to store the input
-        print "make_array: input matrices A and B"
+        logging.debug("make_array: input matrices A and B")
         net.make_array('A', neurons=N, array_size=D1 * D2,
             radius=radius, neuron_type='lif')
         net.make_array('B', neurons=N, array_size=D2 * D3,
@@ -207,13 +208,13 @@ class TestOldAPI(unittest.TestCase):
         # connect inputs to them so we can set their value
         inputA = net.make_input('input A', value=Amat.ravel())
         inputB = net.make_input('input B', value=Bmat.ravel())
-        print "connect: input matrices A and B"
+        logging.debug("connect: input matrices A and B")
         net.connect('input A', 'A')
         net.connect('input B', 'B')
 
         # the C matrix holds the intermediate product calculations
         #  need to compute D1*D2*D3 products to multiply 2 matrices together
-        print "make_array: intermediate C"
+        logging.debug("make_array: intermediate C")
         net.make_array('C', 4 * N, D1 * D2 * D3,
             dimensions=2,
             radius=1.5 * radius,
@@ -240,13 +241,13 @@ class TestOldAPI(unittest.TestCase):
                     transformA[tmp * 2][j + i * D2] = 1
                     transformB[tmp * 2 + 1][k + j * D3] = 1
 
-        print "connect A->C"
+        logging.debug("connect A->C")
         net.connect('A', 'C', transform=transformA)
-        print "connect B->C"
+        logging.debug("connect B->C")
         net.connect('B', 'C', transform=transformB)
 
         # now compute the products and do the appropriate summing
-        print "make_array: output D"
+        logging.debug("make_array: output D")
         net.make_array('D', N , D1 * D3,
             radius=radius,
             neuron_type='lif')

@@ -1,9 +1,11 @@
 import logging
-logger = logging.getLogger(__name__)
 
 import numpy as np
 
-from .  import objects
+from . import objects
+
+
+logger = logging.getLogger(__name__)
 
 
 class SimpleConnection(object):
@@ -29,8 +31,8 @@ class SimpleConnection(object):
 
 
 class DecodedConnection(object):
-    """A DecodedConnection connects two Signals (or objects with signals)
-    via a set of decoders, a transform, and a filter.
+    """A DecodedConnection connects a nonlinearity to a Signal
+    (or objects with those) via a set of decoders, a transform, and a filter.
 
     """
     def __init__(self, pre, post, transform=1.0, decoders=None,
@@ -124,22 +126,3 @@ class DecodedConnection(object):
 
     def remove_from_model(self, model):
         raise NotImplementedError
-
-
-
-
-# class Probe(object):
-#     def __init__(self, target, sample_every=None, filter=None):
-#         if pstc is not None and pstc > self.dt:
-#             fcoef, tcoef = _filter_coefs(pstc=pstc, dt=self.dt)
-#             probe_sig = self.signal(obj.sig.n)
-#             self.filter(fcoef, probe_sig, probe_sig)
-#             self.transform(tcoef, obj.sig, probe_sig)
-#             self.probe = SimModel.probe(self, probe_sig, sample_every)
-
-
-#     @staticmethod
-#     def filter_coefs(pstc, dt):
-#         pstc = max(pstc, dt)
-#         decay = math.exp(-dt / pstc)
-#         return decay, (1.0 - decay)
