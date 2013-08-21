@@ -7,7 +7,9 @@ the "api.py" file instead of this file for their current work.
 
 """
 
+import logging
 import random
+
 import numpy as np
 
 from .model import Model
@@ -18,6 +20,8 @@ from .objects import LIF, LIFRate, Direct
 
 from . import simulator
 
+
+logger = logging.getLogger(__name__)
 
 def compute_transform(dim_pre, dim_post, array_size_post, array_size_pre,
         weight=1, index_pre=None, index_post=None, transform=None):

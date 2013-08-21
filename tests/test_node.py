@@ -8,7 +8,7 @@ import numpy as np
 import nengo
 import nengo.old_api as nef
 
-from nengo.test.helpers import simulates, SimulatesMetaclass
+from helpers import simulates, SimulatesMetaclass
 
 
 class TestNode(unittest.TestCase):
@@ -51,4 +51,5 @@ class TestNode(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    nengo.log_to_file('log.txt', debug=True)
     unittest.main()
