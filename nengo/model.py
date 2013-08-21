@@ -4,12 +4,11 @@ import json
 import logging
 import math
 import pickle
-import pprint
 import os.path
 import random
 
-from .objects import *
-from .connections import *
+from . import objects
+from . import connections
 from . import simulator
 
 
@@ -99,21 +98,21 @@ class Model(object):
         if fixed_seed is not None:
             raise NotImplementedError()
 
-        self.simtime = self.add(Signal(name='simtime'))
-        self.steps = self.add(Signal(name='steps'))
-        self.one = self.add(Constant(1, value=[1.0], name='one'))
+        self.simtime = self.add(objects.Signal(name='simtime'))
+        self.steps = self.add(objects.Signal(name='steps'))
+        self.one = self.add(objects.Constant(1, value=[1.0], name='one'))
 
         # Automatically probe these
         self.probe(self.simtime)
         self.probe(self.steps)
 
         # -- steps counts by 1.0
-        self.add(Filter(1.0, self.one, self.steps))
-        self.add(Filter(1.0, self.steps, self.steps))
+        self.add(objects.Filter(1.0, self.one, self.steps))
+        self.add(objects.Filter(1.0, self.steps, self.steps))
 
         # simtime <- dt * steps
-        self.add(Filter(dt, self.one, self.simtime))
-        self.add(Filter(dt, self.steps, self.simtime))
+        self.add(objects.Filter(dt, self.one, self.simtime))
+        self.add(objects.Filter(dt, self.steps, self.simtime))
 
     def __str__(self):
         return "Model: " + self.name
@@ -134,10 +133,6 @@ class Model(object):
     def networks(self):
         return [o for o in self.objs.values() if isinstance(o, Network)]
 
-    @property
-    def objects(self):
-        return self.objs.values()
-
     ### I/O
 
     def save(self, fname, format=None):
@@ -152,12 +147,12 @@ class Model(object):
         if format in ('json', '.json'):
             with codecs.open(fname, 'w', encoding='utf-8') as f:
                 json.dump(self.to_json(), f, sort_keys=True, indent=2)
-                print "Saved {} successfully.".format(fname)
+                logger.info("Saved %s successfully.", fname)
         else:
             # Default to pickle
             with open(fname, 'wb') as f:
                 pickle.dump(self, f)
-                print "Saved {} successfully.".format(fname)
+                logger.info("Saved %s successfully.", fname)
 
     def to_json(self):
         d = {
@@ -210,7 +205,7 @@ class Model(object):
         probes in the network and calls thier reset functions.
 
         """
-        logger.debug("Resetting simulator")
+        logger.debug("Resetting simulator for %s", self.name)
         self.sim_obj.reset()
 
     def run(self, time, dt=0.001, output=None, stop_when=None):
@@ -263,7 +258,7 @@ class Model(object):
 
         """
         if getattr(self, 'sim_obj', None) is None:
-            logger.debug("Creating simulator")
+            logger.debug("Creating simulator for %s", model.name)
             self.sim_obj = self.simulator(self)
 
         steps = int(time // self.dt)
@@ -337,11 +332,11 @@ class Model(object):
                 return self.aliases[target]
             elif self.objs.has_key(target):
                 return self.objs[target]
-            print "Cannot find " + target + " in this model."
+            logger.error("Cannot find %s in this model.", target)
             return default
 
         if not target in self.objs.values():
-            print "Cannot find " + str(target) + " in this model."
+            logger.error("Cannot find %s in this model.", str(target))
             return default
 
         return target
@@ -384,7 +379,7 @@ class Model(object):
             if v == target:
                 return k
 
-        print "Cannot find " + str(target) + " in this model."
+        logger.warning("Cannot find %s in this model.", str(target))
         return default
 
     def remove(self, target):
@@ -405,7 +400,7 @@ class Model(object):
         """
         obj = self.get(target)
         if obj is None:
-            print target + " not in this model."
+            logger.warning("%s is not in this model.", str(target))
             return
 
         obj.remove_from_model(self)
@@ -413,9 +408,11 @@ class Model(object):
         for k, v in self.objs.iteritems():
             if v == obj:
                 del self.objs[k]
+                logger.info("%s removed.", k)
         for k, v in self.aliases.iteritem():
             if v == obj:
                 del self.aliases[k]
+                logger.info("Alias '%s' removed.", k)
 
         return obj
 
@@ -448,13 +445,15 @@ class Model(object):
         if obj_s is None:
             raise ValueError(target + " cannot be found.")
         self.aliases[alias] = obj_s
+        logger.info("%s aliased to %s", obj_s, alias)
         return self.get(obj_s)
 
 
     # Model creation methods
 
     def make_ensemble(self, name, neurons, dimensions,
-                      max_rates=Uniform(200, 300), intercepts=Uniform(-1, 1),
+                      max_rates=objects.Uniform(200, 300),
+                      intercepts=objects.Uniform(-1, 1),
                       radius=1.0, encoders=None):
         """Create and return an ensemble of neurons.
 
@@ -508,12 +507,12 @@ class Model(object):
         Ensemble : The Ensemble object
 
         """
-        ens = Ensemble(name, neurons, dimensions,
-                       max_rates=max_rates,
-                       intercepts=intercepts,
-                       radius=radius,
-                       encoders=encoders,
-                       seed=self.seed,
+        ens = objects.Ensemble(name, neurons, dimensions,
+                               max_rates=max_rates,
+                               intercepts=intercepts,
+                               radius=radius,
+                               encoders=encoders,
+                               seed=self.seed,
         )
         return self.add(ens)
 
@@ -544,7 +543,7 @@ class Model(object):
             changes, the entire network changes.
 
         """
-        net = Network(name, seed, model=self)
+        net = objects.Network(name, seed, model=self)
         return self.add(net)
 
     def make_node(self, name, output):
@@ -579,7 +578,7 @@ class Model(object):
         Node : The Node object
 
         """
-        node = Node(name, output, input=self.simtime)
+        node = objects.Node(name, output, input=self.simtime)
         return self.add(node)
 
     def probe(self, target, sample_every=None, filter=None):
@@ -637,23 +636,23 @@ class Model(object):
                 target, probe_type = s[0], s[1]
         obj = self.get(target)
 
-        if type(obj) == Ensemble:
+        if type(obj) == objects.Ensemble:
             obj_s = self.get_string(target)
             p = obj.probe(probe_type, sample_every, filter, self)
             self.probed[key] = p
             return p
 
-        if type(obj) != Signal:
+        if type(obj) != objects.Signal:
             obj = obj.signal
 
         if filter is not None and filter > self.dt:
             fcoef, tcoef = _filter_coefs(pstc=filter, dt=self.dt)
-            probe_sig = self.add(Signal(obj.n))
-            self.add(Filter(fcoef, probe_sig, probe_sig))
-            self.add(Transform(tcoef, obj, probe_sig))
-            p = self.add(Probe(probe_sig, sample_every))
+            probe_sig = self.add(objects.Signal(obj.n))
+            self.add(objects.Filter(fcoef, probe_sig, probe_sig))
+            self.add(objects.Transform(tcoef, obj, probe_sig))
+            p = self.add(objects.Probe(probe_sig, sample_every))
         else:
-            p = self.add(Probe(obj, sample_every))
+            p = self.add(objects.Probe(obj, sample_every))
 
         self.probed[key] = p
         return p
@@ -764,76 +763,12 @@ class Model(object):
         pre = self.get(pre)
         post = self.get(post)
 
-        if type(pre) == Ensemble:
-            return self.add(DecodedConnection(pre, post, **kwargs))
+        if type(pre) == objects.Ensemble:
+            logger.info("Creating DecodedConnection")
+            return self.add(connections.DecodedConnection(pre, post, **kwargs))
         else:
-            return self.add(SimpleConnection(pre, post, **kwargs))
-
-    def connect_neurons(self, pre, post, weights,
-                        filter=None, learning_rule=None):
-        """Directly connect the neurons in the ``pre`` ensemble
-        to the neurons in the ``post`` ensemble.
-
-        ``connect_neurons`` connects ensembles in a way that bypasses
-        many of the facilities that Nengo provides. However,
-        even in Nengo models, it is often useful to work directly
-        with neural activities rather than with the vectors that those
-        activities represent. This is especially useful for
-        gating and learning.
-
-        Parameters
-        ----------
-        pre, post : str or Ensemble
-            The items to connect.
-            ``pre`` and ``post`` can be strings that identify an Ensemble
-            (see `string reference <string_reference.html>`_), or they
-            can be the Ensembles themselves.
-
-        weights : float matrix (``pre`` neurons by ``post`` neurons)
-            A matrix representing the connection weights
-            between each ``pre`` neuron to each ``post`` neuron.
-            The dimensionality of this matrix is ``pre`` neurons by
-            ``post`` neurons.
-
-            In the following simple example, an ensemble with a single neuron
-            has strong negative connections to an ensemble with ten neurons::
-
-              pre = model.make_ensemble("pre", neurons=1, dimensions=1)
-              post = model.make_ensemble("post", neurons=10, dimensions=1)
-              model.connect_neurons(pre, post, [[-1] * 10])
-
-            The weight matrix is cumbersome to make manually;
-            a helper function for making transforms is provided
-            (see :func:`nengo.gen_weights()`).
-
-        filter : dict, optional
-            ``filter`` contains information about the type of filter
-            to use across this connection.
-
-            **Default**: specifies an exponentially decaying filter
-            with ``tau=0.01``.
-
-        learning_rule : dict, optional
-            ``learning_rule`` contains information about the type of
-            learning rule that modifies this connection.
-
-            **Default**: None
-
-        Returns
-        -------
-        connection : Connection
-            The Connection object created.
-
-        See Also
-        --------
-        Connection : The Connection object
-
-        """
-        pre = self.get(pre)
-        post = self.get(post)
-        con = Connection(pre, post, weights=weights, filter=filter,
-                         learning_rule=learning_rule)
-        return self.add(con)
+            logger.info("Creating SimpleConnection")
+            return self.add(connections.SimpleConnection(pre, post, **kwargs))
 
 
 def gen_transform(pre_dims, post_dims,
