@@ -639,7 +639,8 @@ class Network(object):
     def make_input(self, name, value):
         if callable(value):
             rval = self.model.add(Signal(name=name))
-            pop = self.model.add(Direct(n_in=1, n_out=1, fn=value))
+            fval = np.asarray(value(0))
+            pop = self.model.add(Direct(n_in=1, n_out=fval.size, fn=value))
             self.model.add(Encoder(
                 self.model.simtime, pop, weights=np.asarray([[1]])))
             self.inputs[name] = pop.output_signal
