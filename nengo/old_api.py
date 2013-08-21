@@ -679,13 +679,11 @@ class Network(object):
         self.ensembles[name] = rval
         return rval
 
-    def connect(self, name1, name2,
-                func=None,
-                pstc=0.01,
-                **kwargs):
+    def connect(self, name1, name2, func=None, pstc=0.005, **kwargs):
         if name1 in self.ensembles:
             src = self.ensembles[name1]
             dst = self.ensembles[name2]
+
             if func is None:
                 oname = 'X'
             else:
@@ -736,14 +734,15 @@ class Network(object):
                             dst.input_signals[jj]))
 
         elif name1 in self.inputs:
-            transform = np.array(kwargs.get('transform', 1.0))
+            assert func is None, "Cannot compute a function on an input"
+
             src = self.inputs[name1]
-
-            if transform.ndim == 2 and (transform.shape[1],) != src.shape:
-                raise ShapeMismatch((transform.shape[1],), src.shape)
-
             dst_ensemble = self.ensembles[name2]
             dst_len = dst_ensemble.array_size * dst_ensemble.dimensions
+
+            transform = np.array(kwargs.get('transform', 1.0))
+            if transform.ndim == 2 and (transform.shape[1],) != src.shape:
+                raise ShapeMismatch((transform.shape[1],), src.shape)
 
             if transform.ndim == 2 and (transform.shape[0],) != (dst_len,):
                 raise ShapeMismatch((transform.shape[0],), (dst_len,))
@@ -751,11 +750,19 @@ class Network(object):
             for ii in range(0, dst_len, dst_ensemble.dimensions):
                 src_ii = src[ii:ii+dst_ensemble.dimensions]
                 dst_ii = dst_ensemble.input_signals[ii]
+                if pstc > self.dt:
+                    src_filtered = self.model.add(Signal(
+                        n=dst_ensemble.dimensions, #-- views not ok here
+                        name=src.name + '::d=%d,pstc=%s' % (ii,pstc)))
+                    fcoef, tcoef = filter_coefs(pstc, dt=self.dt)
+                    self.model.add(Transform(tcoef, src_ii, src_filtered))
+                    self.model.add(Filter(fcoef, src_filtered, src_filtered))
+                    src_ii = src_filtered
 
-                assert func is None
                 self.model.add(Filter(transform, src_ii, dst_ii))
         else:
-            raise NotImplementedError()
+            raise ValueError(
+                "\"%s\" is not an ensemble or an input name" % name1)
 
     def _raw_probe(self, sig, dt_sample):
         """
