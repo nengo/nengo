@@ -1,12 +1,11 @@
-"""
-simulator.py: Simple reference simulator for base.Model
-
-"""
+import logging
 
 import numpy as np
 
 from objects import LIF, LIFRate, Direct
 
+
+logger = logging.getLogger(__name__)
 
 class SimDirect(object):
     def __init__(self, nl):

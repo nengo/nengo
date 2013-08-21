@@ -7,4 +7,5 @@ dist
 *~
 *.bak
 *.swp
-nengo/test/nengo.simulator/
+nengo.simulator.plots/
+log.txt

@@ -295,6 +295,6 @@ from nengo import Model
 #                             data[-10:, i * D3 + k],
 #                             Dmat[i, k])
 
-if __name__ == '__main__':
-    import nose
-    nose.runmodule()
+if __name__ == "__main__":
+    nengo.log_to_file('log.txt', debug=True)
+    unittest.main()
