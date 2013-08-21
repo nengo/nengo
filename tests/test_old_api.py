@@ -1,23 +1,22 @@
-from pprint import pprint
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 import os
-from unittest import TestCase
 
-from matplotlib import pyplot as plt
 import numpy as np
 
-from nengo.simulator import Simulator
+import nengo
 import nengo.old_api as nef
 
-def rmse(a, b):
-    return np.sqrt(np.mean((a - b) ** 2))
+from helpers import Plotter, rmse, simulates, SimulatesMetaclass
 
 
-class TestOldAPI(TestCase):
-    Simulator = Simulator
+class TestOldAPI(unittest.TestCase):
+    __metaclass__ = SimulatesMetaclass
 
-    show = int(os.getenv("NENGO_TEST_SHOW", 0))
-
-    def test_prod(self):
+    @simulates
+    def test_prod(self, simulator):
 
         def product(x):
             return x[0]*x[1]
@@ -25,7 +24,7 @@ class TestOldAPI(TestCase):
         N = 250
         seed = 123
         net = nef.Network('Matrix Multiplication', seed=seed,
-                          simulator=self.Simulator)
+                          simulator=simulator)
 
         net.make_input('sin', value=np.sin)
         net.make_input('neg', value=[-.5])
@@ -48,16 +47,18 @@ class TestOldAPI(TestCase):
         data_d = probe_d.get_data()
         data_r = p_raw.get_data()
 
-        plt.subplot(211);
-        plt.plot(data_p)
-        plt.plot(np.sin(np.arange(0, 6, .01)))
-        plt.subplot(212);
-        plt.plot(data_d)
-        plt.plot(data_r)
-        plt.plot(-.5 * np.sin(np.arange(0, 6, .01)))
-
-        if self.show:
-            plt.show()
+        with Plotter(simulator) as plt:
+            print '1'
+            plt.subplot(211);
+            plt.plot(data_p)
+            plt.plot(np.sin(np.arange(0, 6, .01)))
+            plt.subplot(212);
+            plt.plot(data_d)
+            plt.plot(data_r)
+            plt.plot(-.5 * np.sin(np.arange(0, 6, .01)))
+            plt.savefig('test_old_api.test_prod.pdf')
+            print 'should have saved'
+            plt.close()
 
         assert np.allclose(data_p[:, 0], np.sin(np.arange(0, 6, .01)),
                           atol=.1, rtol=.01)
@@ -68,10 +69,10 @@ class TestOldAPI(TestCase):
             assert np.allclose(a, b, .1, .1)
 
         match(data_d[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
-
         match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
 
-    def test_multidim_probe(self):
+    @simulates
+    def test_multidim_probe(self, simulator):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
         #  Matrix B is D2xD3
@@ -85,7 +86,7 @@ class TestOldAPI(TestCase):
         Amat = np.asarray([[.4, .8]])
         Bmat = np.asarray([[-1.0, -0.6, -.15], [0.25, .5, .7]])
 
-        net = nef.Network('V', seed=seed, simulator=self.Simulator)
+        net = nef.Network('V', seed=seed, simulator=simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 2.0
@@ -139,23 +140,25 @@ class TestOldAPI(TestCase):
         print Bmat
         #assert Cprobe.get_data().shape == (100, D1 * D2 * D3, 2)
         data = Cprobe.get_data()
-        for i in range(D1):
-            for k in range(D3):
-                for j in range(D2):
-                    tmp = (j + k * D2 + i * D2 * D3)
-                    plt.subplot(D1 * D2 * D3, 2, 1 + 2 * tmp);
-                    plt.title('A[%i, %i]' % (i, j))
-                    plt.axhline(Amat[i, j])
-                    plt.ylim(-radius, radius)
-                    plt.plot(data[:, 2 * tmp])
 
-                    plt.subplot(D1 * D2 * D3, 2, 2 + 2 * tmp);
-                    plt.title('B[%i, %i]' % (j, k))
-                    plt.axhline(Bmat[j, k])
-                    plt.ylim(-radius, radius)
-                    plt.plot(data[:, 2 * tmp + 1])
-        if self.show:
-            plt.show()
+        with Plotter(simulator) as plt:
+            for i in range(D1):
+                for k in range(D3):
+                    for j in range(D2):
+                        tmp = (j + k * D2 + i * D2 * D3)
+                        plt.subplot(D1 * D2 * D3, 2, 1 + 2 * tmp);
+                        plt.title('A[%i, %i]' % (i, j))
+                        plt.axhline(Amat[i, j])
+                        plt.ylim(-radius, radius)
+                        plt.plot(data[:, 2 * tmp])
+
+                        plt.subplot(D1 * D2 * D3, 2, 2 + 2 * tmp);
+                        plt.title('B[%i, %i]' % (j, k))
+                        plt.axhline(Bmat[j, k])
+                        plt.ylim(-radius, radius)
+                        plt.plot(data[:, 2 * tmp + 1])
+            plt.savefig('test_old_api.test_multidimprobe.pdf')
+            plt.close()
 
         for i in range(D1):
             for k in range(D3):
@@ -173,7 +176,8 @@ class TestOldAPI(TestCase):
                             Bmat[j, k],
                             atol=0.1, rtol=0.1)
 
-    def test_matrix_mul(self):
+    @simulates
+    def test_matrix_mul(self, simulator):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
         #  Matrix B is D2xD3
@@ -188,7 +192,7 @@ class TestOldAPI(TestCase):
         Bmat = np.asarray([[0, -1.,], [.7, 0]])
 
         net = nef.Network('Matrix Multiplication', seed=seed,
-                          simulator=self.Simulator)
+                          simulator=simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 1
@@ -270,15 +274,16 @@ class TestOldAPI(TestCase):
         Dmat = np.dot(Amat, Bmat)
         data = Dprobe.get_data()
 
-        for i in range(D1):
-            for k in range(D3):
-                plt.subplot(D1, D3, i * D3 + k + 1)
-                plt.title('D[%i, %i]' % (i, k))
-                plt.plot(data[:, i * D3 + k])
-                plt.axhline(Dmat[i, k])
-                plt.ylim(-radius, radius)
-        if self.show:
-            plt.show()
+        with Plotter(simulator) as plt:
+            for i in range(D1):
+                for k in range(D3):
+                    plt.subplot(D1, D3, i * D3 + k + 1)
+                    plt.title('D[%i, %i]' % (i, k))
+                    plt.plot(data[:, i * D3 + k])
+                    plt.axhline(Dmat[i, k])
+                    plt.ylim(-radius, radius)
+            plt.savefig('test_old_api.test_matrix_mul.pdf')
+            plt.close()
 
         assert np.allclose(Aprobe.get_data()[50:, 0], 0.5,
                           atol=.1, rtol=.01)
@@ -304,6 +309,6 @@ class TestOldAPI(TestCase):
                             Dmat[i, k])
 
 
-if __name__ == '__main__':
-    import nose
-    nose.runmodule()
+if __name__ == "__main__":
+    nengo.log_to_file('log.txt', debug=True)
+    unittest.main()

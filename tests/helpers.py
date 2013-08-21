@@ -23,7 +23,7 @@ class Plotter(object):
     plot = int(os.getenv("NENGO_TEST_PLOT", 0))
 
     def __init__(self, simulator):
-        self.dirname = simulator.__module__
+        self.dirname = simulator.__module__ + ".plots"
 
     def __enter__(self):
         if self.plot:

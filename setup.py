@@ -28,4 +28,5 @@ setup(
     requires=[
         "numpy (>=1.5.0)",
     ],
+    test_suite='tests',
 )

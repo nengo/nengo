@@ -1,7 +1,11 @@
 import inspect
+import logging
 import random
 
 import numpy as np
+
+
+logger = logging.getLogger(__name__)
 
 
 def sample_unit_signal(dimensions, num_samples, rng):
