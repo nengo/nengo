@@ -14,6 +14,7 @@ def sample_unit_signal(dimensions, num_samples, rng):
     Returns float array of sample points: dimensions x num_samples
 
     """
+    logger.debug("Randomly generating %d eval points", num_samples)
     samples = rng.randn(num_samples, dimensions)
 
     # normalize magnitude of sampled points to be of unit length
@@ -131,8 +132,8 @@ class Ensemble(object):
         self.rng = np.random.RandomState(seed)
 
         if isinstance(neurons, int):
-            print ("neurons should be an instance of a nonlinearity, "
-                   "not an int. Defaulting to LIF.")
+            logger.warning(("neurons should be an instance of a nonlinearity, "
+                          "not an int. Defaulting to LIF."))
             neurons = LIF(neurons)
         neurons.name = name
 
@@ -146,6 +147,8 @@ class Ensemble(object):
                 dimensions, Ensemble.EVAL_POINTS, self.rng) * radius
 
         if encoders is None:
+            logger.debug("Randomly generating encoders, shape=(%d, %d)",
+                         neurons.n_neurons, dimensions)
             encoders = self.rng.randn(neurons.n_neurons, dimensions)
             norm = np.sum(encoders * encoders, axis=1)[:, None]
             encoders /= np.sqrt(norm)
@@ -156,9 +159,6 @@ class Ensemble(object):
         self.eval_points = eval_points
 
         # The essential components of an ensemble are:
-        #  self.input_signal - the summed inputs
-        #  self.neurons - the neuron model representing the signal
-        #  self.encoders - the encoders that map the signal into the population
         self.input_signal = Signal(n=dimensions, name=name + ".input_signal")
 
         neurons.set_gain_bias(max_rates, intercepts)
@@ -212,6 +212,7 @@ class Ensemble(object):
 
         if to_probe == 'decoded_output':
             if not hasattr(self, 'decoded_output'):
+                logger.debug("Creating decoded_output")
                 self.decoded_output = Signal(n=self.dimensions,
                                              name=self.name + ".decoded_output")
                 activites = self.activities() * dt
@@ -227,6 +228,7 @@ class Ensemble(object):
                     model.add(self.transform)
 
             if filter is not None and filter > dt_sample:
+                logger.debug("Creating filtered probe")
                 fcoef, tcoef = filter_coefs(pstc=filter, dt=dt)
                 probe_sig = Signal(self.decoded_output.n)
                 self.probes.append(probe_sig)
@@ -238,6 +240,7 @@ class Ensemble(object):
                     for obj in self.probes[-4:]:
                         model.add(obj)
             else:
+                logger.debug("Creating raw probe")
                 self.probes.append(Probe(self.decoded_output, dt_sample))
                 if model is not None:
                     model.add(self.probes[-1])
@@ -378,11 +381,10 @@ class ShapeMismatch(ValueError):
 
 class TODO(NotImplementedError):
     """Potentially easy NotImplementedError"""
+    pass
 
 
 class SignalView(object):
-    """Interpretable, vector-valued quantity within NEF
-    """
     def __init__(self, base, shape, elemstrides, offset, name=None):
         assert base
         self.base = base
@@ -924,6 +926,7 @@ class LIF(Nonlinearity):
             X-intercepts of neurons.
 
         """
+        logging.debug("Setting gain and bias on %s", self.name)
         max_rates = np.asarray(max_rates)
         intercepts = np.asarray(intercepts)
         x = 1.0 / (1 - np.exp(
