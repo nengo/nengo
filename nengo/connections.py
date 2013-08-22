@@ -14,7 +14,7 @@ class SimpleConnection(object):
 
     """
     def __init__(self, pre, post, transform=1.0, filter=None):
-        dt = 0.0005
+        dt = 0.001
 
         self.pre = pre
         self.post = post
@@ -76,7 +76,7 @@ class DecodedConnection(object):
                 targets.shape = targets.shape[0], 1
 
         n, = targets.shape[1:]
-        dt = 0.0005
+        dt = 0.001
 
         # -- N.B. this is only accurate for models firing well
         #    under the simulator's dt.
