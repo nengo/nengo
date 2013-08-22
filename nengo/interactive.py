@@ -114,8 +114,13 @@ probe_2d_txt = """
 <svg xmlns="http://www.w3.org/2000/svg" versioN="1.1" height="%(widget_height)s" width="%(widget_width)s" >
 <script type="application/ecmascript"><![CDATA[
 
+    var %(probe_name)s_old_x = [0, 0, 0];
+    var %(probe_name)s_old_y = [0, 0, 0];
+
     function %(probe_name)s_update() {
-        var %(probe_name)s_dot = document.getElementById("%(probe_name)s_dot");
+        var %(probe_name)s_dot0 = document.getElementById("%(probe_name)s_dot0");
+        var %(probe_name)s_dot1 = document.getElementById("%(probe_name)s_dot1");
+        var %(probe_name)s_dot2 = document.getElementById("%(probe_name)s_dot2");
         if (%(prefix)s_run_state == "running" )
         {
             var expr = 'list(%(py_model_obj)s.sim_obj.probe_outputs[%(probe_name)s.probe][-1])';
@@ -129,13 +134,27 @@ probe_2d_txt = """
                         //console.log(content.user_expressions.probe_data.data);
                         var pair = JSON.parse(content.user_expressions.probe_data.data['text/plain']);
                         var cx = (pair[0] + 1.5) / 3.0 * %(widget_width)s;
-                        var cy =(pair[1] + 1.5) / 3.0 * %(widget_height)s;
-                        console.log(pair);
-                        console.log(cx);
-                        console.log(cy);
-                        %(probe_name)s_dot.setAttribute("cx", cx);
-                        %(probe_name)s_dot.setAttribute("cy", cy);
-                        console.log('-> done execute_reply');
+                        var cy = (pair[1] + 1.5) / 3.0 * %(widget_height)s;
+                        %(probe_name)s_old_x[2] = %(probe_name)s_old_x[1];
+                        %(probe_name)s_old_x[1] = %(probe_name)s_old_x[0];
+                        %(probe_name)s_old_x[0] = cx;
+                        %(probe_name)s_old_y[2] = %(probe_name)s_old_y[1];
+                        %(probe_name)s_old_y[1] = %(probe_name)s_old_y[0];
+                        %(probe_name)s_old_y[0] = cy;
+                        //console.log(pair);
+                        //console.log(cx);
+                        //console.log(cy);
+                        %(probe_name)s_dot0.setAttribute("cx", cx);
+                        %(probe_name)s_dot0.setAttribute("cy", cy);
+                        %(probe_name)s_dot1.setAttribute("cx",
+                            %(probe_name)s_old_x[1]);
+                        %(probe_name)s_dot1.setAttribute("cy",
+                            %(probe_name)s_old_y[1]);
+                        %(probe_name)s_dot2.setAttribute("cx",
+                            %(probe_name)s_old_x[2]);
+                        %(probe_name)s_dot2.setAttribute("cy",
+                            %(probe_name)s_old_y[2]);
+                        //console.log('-> done execute_reply');
                     },
                     'output': function(msg_type, content, metadata){
                         console.log('out');
@@ -170,7 +189,23 @@ probe_2d_txt = """
 ></rect>
 <circle
     onload="%(probe_name)s_update()"
-    id="%(probe_name)s_dot"
+    id="%(probe_name)s_dot2"
+    cx="0"
+    cy="0"
+    r="5"
+    fill="rgb(200, 200, 200)"
+></circle>
+<circle
+    onload="%(probe_name)s_update()"
+    id="%(probe_name)s_dot1"
+    cx="0"
+    cy="0"
+    r="5"
+    fill="rgb(100, 100, 100)"
+></circle>
+<circle
+    onload="%(probe_name)s_update()"
+    id="%(probe_name)s_dot0"
     cx="0"
     cy="0"
     r="5"
