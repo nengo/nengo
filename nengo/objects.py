@@ -196,7 +196,7 @@ class Ensemble(object):
 
     def _add_decoded_output(self, model=None):
         if not hasattr(self, 'decoded_output'):
-            dt = 0.0005 if model is None else model.dt
+            dt = 0.001 if model is None else model.dt
 
             self.decoded_output = Signal(n=self.dimensions,
                                          name=self.name + ".decoded_output")
@@ -849,7 +849,7 @@ class Direct(Nonlinearity):
             'input_signal': self.input_signal.name,
             'output_signal': self.output_signal.name,
             'bias_signal': self.bias_signal.name,
-            'fn': inspect.getsouce(self.fn),
+            'fn': inspect.getsource(self.fn),
         }
 
 
