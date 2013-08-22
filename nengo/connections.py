@@ -20,7 +20,7 @@ class SimpleConnection(object):
                                      self.pre.signal, self.post.input_signal)
 
     def __str__(self):
-        return "SimpleConnection(" + self.name + ")"
+        return self.name + " (SimpleConnection)"
 
     @property
     def name(self):
@@ -40,19 +40,17 @@ class DecodedConnection(object):
                  eval_points=None, modulatory=False):
         if decoders is not None:
             raise NotImplementedError()
-        if filter is not None:
-            raise NotImplementedError()
         if learning_rule is not None:
             raise NotImplementedError()
 
-        # if function is None:
-        #     function = lambda x: x
-
-        if eval_points is None:
-            eval_points = pre.babbling_signal ## TODO: eval_points ensemble prop
+        transform = np.asarray(transform)
 
         self.pre = pre
         self.post = post
+        self.function = function
+
+        if eval_points is None:
+            eval_points = post.eval_points
 
         if function is None:
             targets = eval_points.T
@@ -62,65 +60,46 @@ class DecodedConnection(object):
                 targets.shape = targets.shape[0], 1
 
         n, = targets.shape[1:]
-        dt = pre.model.dt
+        dt = 0.0005
 
         # -- N.B. this is only accurate for models firing well
         #    under the simulator's dt.
-        A = pre.neurons.babbling_rate * dt
-        b = targets
-        weights, res, rank, s = np.linalg.lstsq(A, b, rcond=rcond)
+        activities = pre.activities(eval_points) * dt
 
-        sig = ensemble.model.add(Signal(n=n, name='%s[%i]' % (name, ii)))
-        decoder = ensemble.model.add(Decoder(
-                sig=sig,
-                pop=ensemble.neurons[ii],
-                weights=weights.T))
+        self.signal = objects.Signal(n, name=self.name)
+        self.decoders = objects.Decoder(
+            sig=self.signal, pop=pre.neurons,
+            weights=objects.solve_decoders(activities, targets))
+        if function is not None:
+            self.decoders.desired_function = function
 
-        # set up self.sig as an unfiltered signal
-        transform = ensemble.model.add(Transform(1.0, sig, sig))
-
-        self.sigs.append(sig)
-        self.decoders.append(decoder)
-        self.transforms.append(transform)
-
-
-        # if isinstance(self.pre, Ensemble):
-        #     self.decoder = sim.Decoder(self.pre.nl, self.pre.sig)
-        #     self.decoder.desired_function = function
-        #     self.transform = sim.Transform(np.asarray(transform),
-        #                                   self.pre.sig,
-        #                                   self.post.sig)
-
-        # elif isinstance(self.pre, Node):
-        #     if function is None:
-        #         self.transform = sim.Transform(np.asarray(transform),
-        #                                       self.pre.sig,
-        #                                       self.post.sig)
-        #     else:
-        #         raise NotImplementedError()
-        # else:
-        #     raise NotImplementedError()
+        if filter is not None:
+            fcoef, tcoef = objects.filter_coefs(pstc=filter, dt=dt)
+            self.filter = objects.Filter(
+                fcoef, self.signal, self.signal)
+            self.transform = objects.Transform(
+                tcoef * transform, self.signal, post.input_signal)
+        else:
+            self.transform = objects.Transform(
+                transform, self.signal, post.input_signal)
 
     def __str__(self):
-        ret = "Connection (id " + str(id(self)) + "): \n"
-        if hasattr(self, 'decoder'):
-            return ret + ("    " + str(self.decoder) + "\n"
-                          "    " + str(self.transform))
-        else:
-            return ret + "    " + str(self.transform)
+        return self.name + " (DecodedConnection)"
 
     def __repr__(self):
         return str(self)
 
     @property
     def name(self):
-        return self.pre.name + ">" + self.post.name
+        name = self.pre.name + ">" + self.post.name
+        if self.function is not None:
+            return name + ":" + self.function.__name__
+        return name
 
     def add_to_model(self, model):
-        if hasattr(self, 'decoder'):
-            model.add(self.decoder)
-        if hasattr(self, 'transform'):
-            model.add(self.transform)
+        model.add(self.signal)
+        model.add(self.decoders)
+        model.add(self.transform)
         if hasattr(self, 'filter'):
             model.add(self.filter)
 

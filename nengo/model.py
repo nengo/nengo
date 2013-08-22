@@ -639,7 +639,7 @@ class Model(object):
         if type(obj) == objects.Ensemble:
             obj_s = self.get_string(target)
             p = obj.probe(probe_type, sample_every, filter, self)
-            self.probed[key] = p
+            self.probed[key] = p.probe
             return p
 
         if type(obj) != objects.Signal:
