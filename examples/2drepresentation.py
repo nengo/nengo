@@ -30,13 +30,12 @@ model.connect('Cos', 'Neurons', transform=[[0], [1]])
 
 model.probe('Sin')
 model.probe('Cos')
-model.probe('Neurons', pstc=0.02)
+model.probe('Neurons', filter=0.02)
 
 # Run the model for 1 second
 model.run(5)
 
 t = model.data['simtime']
-
 plt.plot(t, model.data['Sin'], label="Sine")
 plt.plot(t, model.data['Cos'], label="Cosine")
 plt.plot(t, model.data['Neurons'], label="Neuron approximation")
