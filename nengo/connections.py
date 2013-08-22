@@ -14,8 +14,20 @@ class SimpleConnection(object):
 
     """
     def __init__(self, pre, post, transform=1.0, filter=None):
+        dt = 0.0005
+
         self.pre = pre
         self.post = post
+
+        if filter is not None and filter > dt:
+            name = self.pre.name + ".filtered(%f)" % filter
+            self.signal = objects.Signal(n=self.pre.signal.size, name=name)
+            fcoef, tcoef = objects.filter_coefs(pstc=filter, dt=dt)
+            self.sig_transform = objects.Transform(
+                tcoef, self.pre.signal, self.signal)
+            self.sig_filter = objects.Filter(
+                fcoef, self.signal, self.signal)
+
         self.filter = objects.Filter(transform,
                                      self.pre.signal, self.post.input_signal)
 
@@ -27,6 +39,10 @@ class SimpleConnection(object):
         return self.pre.name + ">" + self.post.name
 
     def add_to_model(self, model):
+        if hasattr(self, 'signal'):
+            model.add(self.signal)
+            model.add(self.sig_transform)
+            model.add(self.sig_filter)
         model.add(self.filter)
 
 
@@ -73,12 +89,14 @@ class DecodedConnection(object):
         if function is not None:
             self.decoders.desired_function = function
 
-        if filter is not None:
+        if filter is not None and filter > dt:
             fcoef, tcoef = objects.filter_coefs(pstc=filter, dt=dt)
-            self.filter = objects.Filter(
+            self.sig_transform = objects.Transform(
+                tcoef, self.signal, self.signal)
+            self.sig_filter = objects.Filter(
                 fcoef, self.signal, self.signal)
-            self.transform = objects.Transform(
-                tcoef * transform, self.signal, post.input_signal)
+            self.filter = objects.Filter(
+                transform, self.signal, post.input_signal)
         else:
             self.transform = objects.Transform(
                 transform, self.signal, post.input_signal)
@@ -99,8 +117,11 @@ class DecodedConnection(object):
     def add_to_model(self, model):
         model.add(self.signal)
         model.add(self.decoders)
-        model.add(self.transform)
-        if hasattr(self, 'filter'):
+        if hasattr(self, 'transform'):
+            model.add(self.transform)
+        if hasattr(self, 'sig_transform'):
+            model.add(self.sig_transform)
+            model.add(self.sig_filter)
             model.add(self.filter)
 
     def remove_from_model(self, model):
