@@ -12,7 +12,7 @@ class RawProbe(object):
 
 
 class FilteredProbe(object):
-    def __init__(self, signal, dt_sample, filter):
+    def __init__(self, signal, dt_sample, filter, dt=0.001):
         fcoef, tcoef = objects.filter_coefs(pstc=filter, dt=dt)
         self.orig_signal = signal
         self.signal = objects.Signal(signal.n, name='probe(%s)' % signal.name)

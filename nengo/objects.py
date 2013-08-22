@@ -135,7 +135,7 @@ class Ensemble(object):
             logger.warning(("neurons should be an instance of a nonlinearity, "
                           "not an int. Defaulting to LIF."))
             neurons = LIF(neurons)
-        neurons.name = name
+        neurons.name = name + "." + neurons.__class__.__name__
 
         if hasattr(max_rates, 'sample'):
             max_rates = max_rates.sample(neurons.n_neurons)
@@ -229,7 +229,8 @@ class Ensemble(object):
             self._add_decoded_output(model)
             if filter is not None and filter > dt_sample:
                 logger.debug("Creating filtered probe")
-                p = FilteredProbe(self.decoded_output, dt_sample, filter)
+                dt = 0.001 if model is None else model.dt
+                p = FilteredProbe(self.decoded_output, dt_sample, filter, dt)
             else:
                 logger.debug("Creating raw probe")
                 p = RawProbe(self.decoded_output, dt_sample)
@@ -313,7 +314,7 @@ class Node(object):
             self.function = Direct(n_in=input.size,
                                    n_out=n_out,
                                    fn=output,
-                                   name=name)
+                                   name=name + ".Direct")
             self.encoder = Encoder(input, self.function,
                                    weights=np.asarray([[1]]))
             self.signal = self.function.output_signal
