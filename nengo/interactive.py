@@ -1,8 +1,7 @@
-from IPython.display import SVG
+from IPython.display import SVG, display
 
 txt = """
 <svg xmlns="http://www.w3.org/2000/svg" versioN="1.1" height="100" width="500" >
-<line x0="0" y0="0" x1="10" y1="10" id="foo" style="stroke:rgb(255,0,0);stroke-width:2" />
 <script type="application/ecmascript"><![CDATA[
 
     var %(prefix)s_run_state = "stopped";
@@ -14,23 +13,27 @@ txt = """
 
         function animation_step () {
             if (%(prefix)s_run_state == "stopped") return;
-            console.log('step');
-            console.log('%(py_model_obj)s.sim_obj.run_steps(%(sim_steps_per_anim_step)s);');
+            if (0) {
+                console.log('step');
+                console.log('%(py_model_obj)s.sim_obj.run_steps(%(sim_steps_per_anim_step)s);');
+            }
             IPython.notebook.kernel.execute(
                 '%(py_model_obj)s.sim_obj.run_steps(%(sim_steps_per_anim_step)s);',
                 {
                     'execute_reply': function(content, metadata){
-                        console.log('execute_reply:');
-                        console.log(content);
-                        console.log(metadata);
-                        console.log(content.user_variables.val.data);
-                        console.log(content.user_expressions.n_steps.data);
+                        if (0) {
+                            console.log('execute_reply:');
+                            console.log(content);
+                            console.log(metadata);
+                            console.log(content.user_variables.val.data);
+                            console.log(content.user_expressions.n_steps.data);
+                            console.log('-> done execute_reply');
+                        }
                         %(prefix)s_time_marker.setAttribute("cx", content.user_expressions.n_steps.data['text/plain']);
-                        console.log('-> done execute_reply');
                     },
                     'output': function(msg_type, content, metadata){
-                        console.log('out');
                         if (0) {
+                            console.log('out');
                             console.log(msg_type);
                             console.log(content);
                             console.log(metadata);
@@ -97,11 +100,98 @@ txt = """
 def old_api_controller(model, model_name, period_ms=100):
     if getattr(model.model, 'sim_obj', None) is None:
         model.model.sim_obj = model.model.simulator(model.model)
-    return SVG(txt % {
+    display(SVG(txt % {
         'prefix': model_name, 
         'py_model_obj': model_name + '.model',
         'period_ms': period_ms,
         'sim_steps_per_anim_step': 1,
-    })
+    }))
+
+
+
+
+probe_2d_txt = """
+<svg xmlns="http://www.w3.org/2000/svg" versioN="1.1" height="%(widget_height)s" width="%(widget_width)s" >
+<script type="application/ecmascript"><![CDATA[
+
+    function %(probe_name)s_update() {
+        var %(probe_name)s_dot = document.getElementById("%(probe_name)s_dot");
+        if (%(prefix)s_run_state == "running" )
+        {
+            var expr = 'list(%(py_model_obj)s.sim_obj.probe_outputs[%(probe_name)s.probe][-1])';
+            IPython.notebook.kernel.execute(
+                'pass',
+                {
+                    'execute_reply': function(content, metadata){
+                        console.log('execute_reply:');
+                        //console.log(metadata);
+                        //console.log(content.user_expressions.probe_data);
+                        //console.log(content.user_expressions.probe_data.data);
+                        var pair = JSON.parse(content.user_expressions.probe_data.data['text/plain']);
+                        var cx = (pair[0] + 1.5) / 3.0 * %(widget_width)s;
+                        var cy =(pair[1] + 1.5) / 3.0 * %(widget_height)s;
+                        console.log(pair);
+                        console.log(cx);
+                        console.log(cy);
+                        %(probe_name)s_dot.setAttribute("cx", cx);
+                        %(probe_name)s_dot.setAttribute("cy", cy);
+                        console.log('-> done execute_reply');
+                    },
+                    'output': function(msg_type, content, metadata){
+                        console.log('out');
+                        if (1) {
+                            console.log(msg_type);
+                            console.log(content);
+                            console.log(metadata);
+                            console.log('-> done');
+                        }
+                    },
+                    'clear_output': function(a){
+                        console.log('co');
+                    },
+                    'set_next_input': function(a){
+                        console.log('sni');
+                    },
+                },
+                {
+                    'silent': false,
+                    'user_expressions': { 'probe_data': expr, },
+                }
+            );
+        }
+        setTimeout(%(probe_name)s_update, %(period_ms)s);
+    }
+]]> </script>
+
+<rect x="0" cy="0" width="%(rect_width)s" height="%(rect_height)s"
+    fill="white"
+    stroke="black"
+    stroke-width="1"
+></rect>
+<circle
+    onload="%(probe_name)s_update()"
+    id="%(probe_name)s_dot"
+    cx="0"
+    cy="0"
+    r="5"
+    fill="black"
+></circle>
+</svg>
+"""
+
+def probe_2d(model_name, probe_name, width=250, height=250, period_ms=100):
+    rendered = probe_2d_txt % {
+        'prefix': model_name, 
+        'py_model_obj': model_name + '.model',
+        'period_ms': period_ms,
+        'sim_steps_per_anim_step': 1,
+        'widget_width': width,
+        'widget_height': height,
+        'rect_width': width - 2,
+        'rect_height': height - 2,
+        'probe_name': probe_name,
+    }
+    # print rendered
+    display(SVG(rendered))
 
 
