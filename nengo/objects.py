@@ -38,7 +38,7 @@ def filter_coefs(pstc, dt):
 # -- James and Terry arrived at this by eyeballing some graphs.
 #    Not clear if this should be a constant at all, it
 #    may depend on fn being estimated, number of neurons, etc...
-DEFAULT_RCOND=0.01
+DEFAULT_RCOND = 0.01
 
 def solve_decoders(activities, targets):
     weights, res, rank, s = np.linalg.lstsq(activities, targets,
@@ -194,6 +194,24 @@ class Ensemble(object):
     def n_neurons(self):
         return self.neurons.n_neurons
 
+    def _add_decoded_output(self, model=None):
+        if not hasattr(self, 'decoded_output'):
+            dt = 0.0005 if model is None else model.dt
+
+            self.decoded_output = Signal(n=self.dimensions,
+                                         name=self.name + ".decoded_output")
+            activites = self.activities() * dt
+            targets = self.eval_points.T
+            self.decoders = Decoder(
+                sig=self.decoded_output, pop=self.neurons,
+                weights=solve_decoders(activites, targets))
+            self.transform = Transform(
+                1.0, self.decoded_output, self.decoded_output)
+            if model is not None:
+                model.add(self.decoded_output)
+                model.add(self.decoders)
+                model.add(self.transform)
+
     def activities(self, eval_points=None):
         if eval_points is None:
             eval_points = self.eval_points
@@ -202,50 +220,24 @@ class Ensemble(object):
             np.dot(self.encoders.weights, eval_points).T)
 
     def probe(self, to_probe, dt_sample, filter=None, model=None):
-        if model is not None:
-            dt = model.dt
-        else:
-            dt = 0.001
+        from .probes import FilteredProbe, RawProbe
 
         if to_probe == '':
             to_probe = 'decoded_output'
 
         if to_probe == 'decoded_output':
-            if not hasattr(self, 'decoded_output'):
-                logger.debug("Creating decoded_output")
-                self.decoded_output = Signal(n=self.dimensions,
-                                             name=self.name + ".decoded_output")
-                activites = self.activities() * dt
-                targets = self.eval_points.T
-                self.decoders = Decoder(
-                    sig=self.decoded_output, pop=self.neurons,
-                    weights=solve_decoders(activites, targets))
-                self.transform = Transform(
-                    1.0, self.decoded_output, self.decoded_output)
-                if model is not None:
-                    model.add(self.decoded_output)
-                    model.add(self.decoders)
-                    model.add(self.transform)
-
+            self._add_decoded_output(model)
             if filter is not None and filter > dt_sample:
                 logger.debug("Creating filtered probe")
-                fcoef, tcoef = filter_coefs(pstc=filter, dt=dt)
-                probe_sig = Signal(self.decoded_output.n)
-                self.probes.append(probe_sig)
-                self.probes.append(Filter(fcoef, probe_sig, probe_sig))
-                self.probes.append(
-                    Transform(tcoef, self.decoded_output, probe_sig))
-                self.probes.append(Probe(probe_sig, dt_sample))
-                if model is not None:
-                    for obj in self.probes[-4:]:
-                        model.add(obj)
+                p = FilteredProbe(self.decoded_output, dt_sample, filter)
             else:
                 logger.debug("Creating raw probe")
-                self.probes.append(Probe(self.decoded_output, dt_sample))
-                if model is not None:
-                    model.add(self.probes[-1])
+                p = RawProbe(self.decoded_output, dt_sample)
 
-        return self.probes[-1]
+        self.probes.append(p)
+        if model is not None:
+            model.add(p)
+        return p
 
     def add_to_model(self, model):
         model.add(self.neurons)
@@ -317,7 +309,7 @@ class Node(object):
         self.input_signal = input
 
         if callable(output):
-            n_out = output(np.ones(input.size)).size
+            n_out = np.array(output(np.ones(input.size))).size
             self.function = Direct(n_in=input.size,
                                    n_out=n_out,
                                    fn=output,
