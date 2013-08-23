@@ -196,5 +196,10 @@ class Simulator(object):
             if verbose:
                 print self.signals
 
+    def reset(self):
+        tmp = self.__class__(self.model)
+        self.__dict__ = tmp.__dict__
+        return self
+
     def probe_data(self, probe):
         return np.asarray(self.probe_outputs[probe])
