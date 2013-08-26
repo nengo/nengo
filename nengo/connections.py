@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from . import objects
-
+from . import decoders as decsolve
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +27,11 @@ class SimpleConnection(object):
                 tcoef, self.pre.signal, self.signal)
             self.sig_filter = objects.Filter(
                 fcoef, self.signal, self.signal)
-
-        self.filter = objects.Filter(transform,
-                                     self.pre.signal, self.post.input_signal)
+            self.filter = objects.Filter(
+                transform, self.signal, self.post.input_signal)
+        else:
+            self.filter = objects.Filter(
+                transform, self.pre.signal, self.post.input_signal)
 
     def __str__(self):
         return self.name + " (SimpleConnection)"
@@ -85,7 +87,7 @@ class DecodedConnection(object):
         self.signal = objects.Signal(n, name=self.name)
         self.decoders = objects.Decoder(
             sig=self.signal, pop=pre.neurons,
-            weights=objects.solve_decoders(activities, targets))
+            weights=decsolve.solve_decoders(activities, targets))
         if function is not None:
             self.decoders.desired_function = function
 

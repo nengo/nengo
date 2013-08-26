@@ -1,9 +1,9 @@
+
 import inspect
 import logging
-import random
-
 import numpy as np
 
+from . import decoders
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +35,6 @@ def filter_coefs(pstc, dt):
     return decay, (1.0 - decay)
 
 
-# -- James and Terry arrived at this by eyeballing some graphs.
-#    Not clear if this should be a constant at all, it
-#    may depend on fn being estimated, number of neurons, etc...
-DEFAULT_RCOND = 0.01
-
-def solve_decoders(activities, targets):
-    weights, res, rank, s = np.linalg.lstsq(activities, targets,
-                                            rcond=DEFAULT_RCOND)
-    return weights.T
-
-
 ### High-level objects
 
 class Uniform(object):
@@ -56,9 +45,9 @@ class Uniform(object):
     def __eq__(self, other):
         return self.low == other.low and self.high == other.high
 
-    def sample(self, n):
-        return [random.uniform(self.low, self.high) for _ in xrange(n)]
-
+    def sample(self, n, rng=None):
+        rng = np.random if rng is None else rng
+        return rng.uniform(low=self.low, high=self.high, size=n)
 
 class Gaussian(object):
     def __init__(self, mean, std):
@@ -68,8 +57,9 @@ class Gaussian(object):
     def __eq__(self, other):
         return self.mean == other.mean and self.std == other.std
 
-    def sample(self, n):
-        return [random.gauss(self.mean, self.std) for _ in xrange(n)]
+    def sample(self, n, rng=None):
+        rng = np.random if rng is None else rng
+        return rng.normal(loc=self.mean, scale=self.std, size=n)
 
 
 class Network(object):
@@ -126,10 +116,8 @@ class Ensemble(object):
         if noise is not None or noise_frequency is not None:
             raise NotImplementedError('noise')
 
-        # Look at arguments and expand those that need expanding
-        if seed is None:
-            seed = np.random.randint(1000)
-        self.rng = np.random.RandomState(seed)
+        self.seed = np.random.randint(2**31-1) if seed is None else seed
+        self.rng = np.random.RandomState(self.seed)
 
         if isinstance(neurons, int):
             logger.warning(("neurons should be an instance of a nonlinearity, "
@@ -138,9 +126,9 @@ class Ensemble(object):
         neurons.name = name + "." + neurons.__class__.__name__
 
         if hasattr(max_rates, 'sample'):
-            max_rates = max_rates.sample(neurons.n_neurons)
+            max_rates = max_rates.sample(neurons.n_neurons, rng=self.rng)
         if hasattr(intercepts, 'sample'):
-            intercepts = intercepts.sample(neurons.n_neurons)
+            intercepts = intercepts.sample(neurons.n_neurons, rng=self.rng)
 
         if eval_points is None:
             eval_points = sample_unit_signal(
@@ -204,7 +192,7 @@ class Ensemble(object):
             targets = self.eval_points.T
             self.decoders = Decoder(
                 sig=self.decoded_output, pop=self.neurons,
-                weights=solve_decoders(activites, targets))
+                weights=decoders.solve_decoders(activites, targets))
             self.transform = Transform(
                 1.0, self.decoded_output, self.decoded_output)
             if model is not None:
@@ -870,7 +858,8 @@ class LIF(Nonlinearity):
         self.upsample = upsample
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
-        self.gain = np.random.rand(n_neurons)
+        self.gain = None
+        self.bias = None
 
     def __str__(self):
         return "LIF (id " + str(id(self)) + ", " + str(self.n_neurons) + "N)"

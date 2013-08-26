@@ -1,90 +1,118 @@
-from .. import nengo as nengo
-from ..nengo.connection import gen_transfrom
-from ..nengo.filter import ExponentialPSC
+"""
+Nengo Example: Controlled Integrator
 
-## This example demonstrates how to create a controlled integrator in neurons.
-##   The controlled integrator takes two inputs: 
-##      Input - the input to the integrator
-##      Control - the control signal to the integrator
-##   The function the controlled integrator implements can be written in the 
-##   following control theoretic equation:
-##     
-##     a_dot(t) = control(t) * a(t) + B * input(t)
-##
-##   The NEF equivalent equation for this integrator is:
-##
-##     a_dot(t) = control(t) * a(t) + tau * input(t)
-##
-##   where tau is the recurrent time constant.
-##
-## Network diagram:
-##
-##                     .----.
-##                     v    | 
-##      [Input] ----> (A) --'
-##                     ^ 
-##      [Control] -----'
-##
-##
-## Network behaviour:
-##   A = tau * Input + Input * Control
-##
+A controlled integrator is a circuit that acts on two signals:
 
-# Define model parameters
-tau = 0.1                                           # Recurrent time constant
+1. Input - the signal being integrated
+2. Control - the control signal to the integrator
 
-# Create the nengo model
+A controlled integrator accumulates input, but its state can be directly manipulated by the control signal.
+We can write the dynamics of a simple controlled integrator like this:
+
+$$
+\dot{a}(t) = \mathrm{control}(t) \cdot a(t) + B \cdot \mathrm{input}(t)
+$$
+
+In this notebook, we will build a controlled intgrator with Leaky Integrate and Fire ([LIF](TODO)) neurons.
+The Neural Engineering Framework ([NEF](TODO)) equivalent equation for this integrator is:
+
+$$
+\dot{a}(t) = \mathrm{control}(t) \cdot a(t) + \tau \cdot \mathrm{input}(t).
+$$
+
+We call the coefficient $\tau$ here a *recurrent time constant* because it governs the rate of integration.
+
+Network behaviour:
+`A = tau * Input + Input * Control`
+
+(MISSING: Network circuit diagram - can maybe generate this in-line?)
+"""
+
+### do some setup before we start
+import numpy as np
+import matplotlib.pyplot as plt
+
+import nengo
 model = nengo.Model('Controlled Integrator')
+print "seed", model.seed
 
-# Create the model inputs
-def input_func(t):                                  # Create a function that outputs
-    if t < 0.2:                                     #   5 at time 0.2s, then 0 at time 0.3s,
-        return [0]                                  #   -10 at time 0.44, then 0 at time 0.8,
-    elif t < 0.3:                                   #   5 at time 0.8, then 0 at time 0.9
-        return [5]
-    elif t < 0.44:
-        return [0]
-    elif t < 0.54:
-        return [-10]
-    elif t < 0.8:
-        return [0]
-    elif t < 0.9:
-        return [5]
-    else:
-        return [0]
-model.make_node('Input', input_func)                # Create a controllable input function 
-                                                    #   with the function above
-model.make_node('Control', [1])                     # Create a controllable input function
-                                                    #   with a starting value of 1
+# Make a population with 225 LIF neurons
+# representing a 2 dimensional signal,
+# with a larger radius to accommodate large inputs
+A = model.make_ensemble('A', nengo.LIF(225), dimensions=2, radius=1.5)
 
-# Create the neuronal ensembles
-model.make_ensemble('A', 225, 2,                    # Make a population with 225 neurons, 
-                    radius = 1.5)                   #   2 dimensions, and a larger radius 
-                                                    #   to accommodate large simulataneous 
-                                                    #   inputs
+plt.figure(3)
+plt.clf()
+x = np.linspace(-1, 1, 101)
+acts = A.neurons.rates(A.neurons.gain[None,:] * x[:,None])
+plt.plot(x, acts)
 
-# Create the connections within the model
-model.connect('Input', 'A', transform = gen_transform(index_post = 0, weight = tau), 
-              filter = {'type': 'ExponentialPSC', 'pstc': 0.1})  
-                                                    # Connect all the input signals to the 
-                                                    #   ensemble with the appropriate 1 x 2
-                                                    #   mappings, postsynaptic time
-                                                    #   constant is 10ms
-model.connect('Control', 'A', transform = gen_transform(index_post = 1), 
-              filter = {'type': 'ExponentialPSC', 'pstc': 0.1})
+def input_func(t):              # Create a function that outputs
+    if   t < 0.2:  return 0     # 0 for t < 0.2
+    elif t < 0.3:  return 5     # 5 for 0.2 < t < 0.3
+    elif t < 0.44: return 0     # 0 for 0.3 < t < 0.44
+    elif t < 0.54: return -10   # -10 for 0.44 < t < 0.54
+    elif t < 0.8:  return 0     # 0 for 0.54 < t < 0.8
+    elif t < 0.9:  return 5     # 5 for 0.8 < t < 0.9
+    else:          return 0     # 0 for t > 0.9
 
-def feedback(x):
-    return x[0] * x[1]
-model.connect('A', 'A', transform = gen_transform(index_post = 0), func = feedback, 
-              filter = {'type': 'ExponentialPSC', 'pstc': tau})  
-                                                    # Create the recurrent
-                                                    #   connection mapping the
-                                                    #   1D function 'feedback'
-                                                    #   into the 2D population
-                                                    #   using the 1 x 2 transform
+t = np.linspace(0, 1, 101)
+plt.figure(1)
+plt.clf()
+plt.plot(t, map(input_func, t))
+plt.ylim((-11,11));
 
-# Build the model
-model.build()
+model.make_node('Input', output=input_func)
 
-# Run the model
-model.run(1)                                        # Run the model for 1 second
+tau = 0.1
+model.connect('Input', 'A',
+              transform=[[tau], [0]],
+              filter=tau)
+
+def control_func(t):            # Create a function that outputs
+    if   t < 0.6: return 1      # 1 for t < 0.65
+    else:         return 0.5    # 0.5 for t > 0.65
+
+t = np.linspace(0, 1, 101)
+plt.plot(t, map(control_func, t))
+plt.ylim(0,1.1);
+
+model.make_node('Control', output=control_func)
+model.connect('Control', 'A', transform=[[0], [1]], filter=0.005)
+
+model.connect('A', 'A',
+              function=lambda x: x[0] * x[1],  # -- function is applied first to A
+              transform=[[1], [0]],            # -- transform converts function output to new state inputs
+              filter=tau)
+
+# Record both dimensions of A
+model.probe('A', filter=0.02)
+
+# Run the model for 1.4 seconds
+model.run(1.4)
+
+# Plot the value and control signals, along with the exact integral
+t = model.data[model.simtime]
+dt = t[1] - t[0]
+input_sig = map(input_func, t)
+control_sig = map(control_func, t)
+ref = dt * np.cumsum(input_sig)
+
+plt.figure(2, figsize=(6,8))
+plt.clf()
+plt.subplot(211)
+plt.plot(t, input_sig, label='input')
+plt.ylim(-11, 11)
+plt.ylabel('input')
+plt.legend(loc=3, frameon=False)
+
+plt.subplot(212)
+plt.plot(t, ref, 'k--', label='exact')
+plt.plot(t, model.data['A'][:,0], label='A (value)')
+plt.plot(t, model.data['A'][:,1], label='A (control)')
+plt.ylim([-1.1, 1.1])
+plt.xlabel('time [s]')
+plt.ylabel('x(t)')
+plt.legend(loc=3, frameon=False);
+
+plt.show()
