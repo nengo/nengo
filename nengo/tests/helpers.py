@@ -53,27 +53,6 @@ def rmse(a, b):
     return np.sqrt(np.mean((a - b) ** 2))
 
 
-# Inspired by Xavier Decoret's post: http://stackoverflow.com/a/4455312
-def simulates(f, simulators=simulators):
-    setattr(f, "simulators", getattr(f, "simulators", ()) + simulators)
-    return f
-
-
-class SimulatesMetaclass(type):
-    def __new__(meta, name, bases, dict):
-        for methodname, method in dict.items():
-            if hasattr(method, "simulators"):
-                dict.pop(methodname)
-                simulators = getattr(method, "simulators")
-                delattr(method, "simulators")
-                for simulator in simulators:
-                    def method_for_sim(self, method=method, sim=simulator):
-                        method(self, sim)
-                    methodname_for_sim = methodname + "(" + str(simulator) + ")"
-                    dict[methodname_for_sim] = method_for_sim
-        return type.__new__(meta, name, bases, dict)
-
-
 simulator_test_cases = []
 
 class AddToTestCaseRegistry(type):
