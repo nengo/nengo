@@ -5,6 +5,7 @@ except ImportError:
     import unittest
 import os
 import os.path
+import sys
 
 try:
     # For Python >=3.3
@@ -15,8 +16,6 @@ except:
 import numpy as np
 
 import nengo.simulator
-
-simulators = (nengo.simulator.Simulator,)
 
 
 class Plotter(object):
@@ -51,22 +50,67 @@ def rmse(a, b):
     return np.sqrt(np.mean((a - b) ** 2))
 
 
-# Inspired by Xavier Decoret's post: http://stackoverflow.com/a/4455312
-def simulates(f, simulators=simulators):
-    setattr(f, "simulators", getattr(f, "simulators", ()) + simulators)
-    return f
+class SimulatorTestCase(unittest.TestCase):
+    """
+    Base class for TestCase classes that use self.Simulator(m)
+    to produce a simulator for Model `m`.
+
+    There are many such test classes (TODO: add them to class registry).
+
+    External projects that wish to run all SimulatorTestCase subclasses
+    as unit tests using a different simulator can achieve that result by
+    including the following sort of code among their own unit tests:
+
+    .. code-block:: python
+
+        globals().update(simulator_test_suite(simulator_allocator))
+
+    The `simulator_allocator` should behave like nengo.simulator.Simulator.
+    For example, the original test suite could be run like this:
+
+    .. code-block:: python
+
+        globals().update(simulator_test_suite(nengo.simulator.Simulator))
+
+    """
+
+    def Simulator(self, model):
+        return nengo.simulator.Simulator(model)
 
 
-class SimulatesMetaclass(type):
-    def __new__(meta, name, bases, dict):
-        for methodname, method in dict.items():
-            if hasattr(method, "simulators"):
-                dict.pop(methodname)
-                simulators = getattr(method, "simulators")
-                delattr(method, "simulators")
-                for simulator in simulators:
-                    def method_for_sim(self, method=method, sim=simulator):
-                        method(self, sim)
-                    methodname_for_sim = methodname + "(" + str(simulator) + ")"
-                    dict[methodname_for_sim] = method_for_sim
-        return type.__new__(meta, name, bases, dict)
+def simulator_suite(simulator_allocator, name_suffix=''):
+    done = set()
+    rval = {}
+    def define_new_test_case(base_class):
+        if base_class in done or not hasattr(base_class, "Simulator"):
+            return
+        done.add(base_class)
+        class MyTestCase(base_class):
+            simulator_test_case_ignore = True
+            def Simulator(self, model):
+                return simulator_allocator(model)
+                rval = sim_npy.Simulator(model)
+                rval.alloc_all()
+                rval.plan_all()
+                return rval
+        MyTestCase.__name__ = base_class.__name__
+        rval[base_class.__name__ + name_suffix] = MyTestCase
+    def search(thing):
+        try:
+            iter(thing)
+        except TypeError:
+            return define_new_test_case(type(thing))
+        for obj in thing:
+            search(obj)
+    #N.B. -- each of the test modules is imported outside of the
+    #        main package hierarchy like a main script, so
+    #        all relative imports in test_modules are re-imported
+    #        even if they have already been imported by the main
+    #        environment.... in particular THIS FILE (and the
+    #        SimulatorTestCase) base class is re-imported
+    #        once for each test module.
+    search(
+        unittest.defaultTestLoader.discover(
+            nengo.tests.__path__[0]))
+    return rval
+
