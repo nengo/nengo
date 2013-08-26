@@ -16,7 +16,6 @@ except:
 import numpy as np
 
 import nengo.simulator
-from list_of_test_modules import simulator_test_case_mods
 
 
 class Plotter(object):
@@ -49,45 +48,6 @@ class Plotter(object):
 
 def rmse(a, b):
     return np.sqrt(np.mean((a - b) ** 2))
-
-
-simulator_test_cases = []
-
-class AddToTestCaseRegistry(type):
-    def __new__(meta, name, bases, dct):
-
-        # -- create the TestCase class
-        rval = type.__new__(meta, name, bases, dct)
-
-        # -- add it to the registry (optionally)
-        if dct.get('simulator_test_case_ignore', False):
-            pass
-        elif 'SimulatorTestCase' not in globals():
-            # -- don't add the superclass to the registry
-            assert name == 'SimulatorTestCase'
-        else:
-            # -- help devs out by verifying that this
-            #    class will automatically be created by typing
-            #    import nengo.tests. This works when running via
-            #    nosetests
-            #
-            # -- running via unittest discover imports each test
-            #    file as if it were not part of a package so the module
-            #    name has no leading 'nengo.tests'. So just chill
-            #    out in that case and don't bother.
-            if (dct['__module__'].startswith('nengo.tests') and
-                dct['__module__'] not in simulator_test_case_mods):
-                print >> sys.stderr, ("WARNING: "
-                    "Module %s has not been included in the"
-                    " `nengo.tests.simulator_test_case_mods` registry, so"
-                    " its tests won't be run automatically for external"
-                    " simulators." % dct['__module__'])
-
-            simulator_test_cases.append(rval)
-
-        # -- return the original class which is identical to what it
-        #    would have been without this metaclass
-        return rval
 
 
 class SimulatorTestCase(unittest.TestCase):
@@ -123,8 +83,6 @@ class SimulatorTestCase(unittest.TestCase):
     tailored to use a custom simulator.
 
     """
-    # -- hack to build TestCase registry
-    __metaclass__ = AddToTestCaseRegistry
 
     def Simulator(self, model):
         return nengo.simulator.Simulator(model)
