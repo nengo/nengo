@@ -9,11 +9,12 @@ import nengo
 from nengo.objects import Constant
 from nengo.templates.circularconv import CircularConvolution
 
-from helpers import Plotter, rmse, simulates, SimulatesMetaclass
+from helpers import SimulatorTestCase
+import nose
 
 
-class TestCircularConv(unittest.TestCase):
-    def _test_cconv(self, simulator, D, neurons_per_product):
+class TestCircularConv(SimulatorTestCase):
+    def _test_cconv(self, D, neurons_per_product):
         # D is dimensionality of semantic pointers
 
         m = nengo.Model(.001)
@@ -28,22 +29,18 @@ class TestCircularConv(unittest.TestCase):
         sim = self.Simulator(m)
         sim.run_steps(10)
 
-        raise nose.SkipTest()
+        # -- XXX
+        #    We're missing correctness testing, but we've already run
+        #    smoke test of the code in CircularConvolution.
 
-    @simulates
-    @unittest.skip("Not implemented yet")
-    def test_small(self, simulator):
-        return self._test_cconv(simulator, D=4, neurons_per_product=3)
+    def test_small(self):
+        return self._test_cconv(D=4, neurons_per_product=3)
 
-    @simulates
-    @unittest.skip("Not implemented yet")
-    def test_med(self, simulator):
-        return self._test_cconv(simulator, D=50, neurons_per_product=128)
+    def test_med(self):
+        return self._test_cconv(D=50, neurons_per_product=128)
 
-    @simulates
-    @unittest.skip("Not implemented yet")
-    def test_large(self, simulator):
-        return self._test_cconv(simulator, D=512, neurons_per_product=128)
+    def test_large(self):
+        return self._test_cconv(D=512, neurons_per_product=128)
 
 
 if __name__ == "__main__":

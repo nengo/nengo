@@ -70,3 +70,9 @@ class SimulatesMetaclass(type):
                     methodname_for_sim = methodname + "(" + str(simulator) + ")"
                     dict[methodname_for_sim] = method_for_sim
         return type.__new__(meta, name, bases, dict)
+
+
+class SimulatorTestCase(object):
+    def Simulator(self, model):
+        return nengo.simulator.Simulator(model)
+
