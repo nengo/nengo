@@ -25,8 +25,15 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.autosummary',
-              'sphinx.ext.mathjax', 'sphinx.ext.viewcode', 'numpydoc']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.todo',
+    'numpydoc',
+]
+todo_include_todos = True
 numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
@@ -185,7 +192,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Nengo.tex', u'Nengo API Documentation',
+  ('index', 'Nengo.tex', u'Nengo Documentation',
    u'CNRGlab @ UWaterloo', 'manual'),
 ]
 
