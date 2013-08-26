@@ -10,17 +10,16 @@ import numpy as np
 import nengo
 import nengo.old_api as nef
 
-from helpers import Plotter, rmse, simulates, SimulatesMetaclass
+from helpers import Plotter
+from helpers import SimulatorTestCase
 
 
 logger = logging.getLogger(__name__)
 
 
-class TestOldAPI(unittest.TestCase):
-    __metaclass__ = SimulatesMetaclass
+class TestOldAPI(SimulatorTestCase):
 
-    @simulates
-    def test_prod(self, simulator):
+    def test_prod(self):
 
         def product(x):
             return x[0]*x[1]
@@ -28,7 +27,7 @@ class TestOldAPI(unittest.TestCase):
         N = 250
         seed = 123
         net = nef.Network('Matrix Multiplication', seed=seed,
-                          simulator=simulator)
+                          simulator=self.Simulator)
 
         net.make_input('sin', value=np.sin)
         net.make_input('neg', value=[-.5])
@@ -51,7 +50,7 @@ class TestOldAPI(unittest.TestCase):
         data_d = probe_d.get_data()
         data_r = p_raw.get_data()
 
-        with Plotter(simulator) as plt:
+        with Plotter(self.Simulator) as plt:
             plt.subplot(211);
             plt.plot(data_p)
             plt.plot(np.sin(np.arange(0, 6, .01)))
@@ -73,8 +72,7 @@ class TestOldAPI(unittest.TestCase):
         match(data_d[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
         match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
 
-    @simulates
-    def test_multidim_probe(self, simulator):
+    def test_multidim_probe(self):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
         #  Matrix B is D2xD3
@@ -88,7 +86,7 @@ class TestOldAPI(unittest.TestCase):
         Amat = np.asarray([[.4, .8]])
         Bmat = np.asarray([[-1.0, -0.6, -.15], [0.25, .5, .7]])
 
-        net = nef.Network('V', seed=seed, simulator=simulator)
+        net = nef.Network('V', seed=seed, simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 2.0
@@ -142,7 +140,7 @@ class TestOldAPI(unittest.TestCase):
         logging.debug("Bmat=%s", str(Bmat))
         data = Cprobe.get_data()
 
-        with Plotter(simulator) as plt:
+        with Plotter(self.Simulator) as plt:
             for i in range(D1):
                 for k in range(D3):
                     for j in range(D2):
@@ -177,8 +175,7 @@ class TestOldAPI(unittest.TestCase):
                             Bmat[j, k],
                             atol=0.1, rtol=0.1)
 
-    @simulates
-    def test_matrix_mul(self, simulator):
+    def test_matrix_mul(self):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
         #  Matrix B is D2xD3
@@ -193,7 +190,7 @@ class TestOldAPI(unittest.TestCase):
         Bmat = np.asarray([[0, -1.,], [.7, 0]])
 
         net = nef.Network('Matrix Multiplication', seed=seed,
-                          simulator=simulator)
+                          simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 1
@@ -275,7 +272,7 @@ class TestOldAPI(unittest.TestCase):
         Dmat = np.dot(Amat, Bmat)
         data = Dprobe.get_data()
 
-        with Plotter(simulator) as plt:
+        with Plotter(self.Simulator) as plt:
             for i in range(D1):
                 for k in range(D3):
                     plt.subplot(D1, D3, i * D3 + k + 1)
