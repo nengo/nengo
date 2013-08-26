@@ -1,3 +1,4 @@
+import copy
 import inspect
 import logging
 import numpy as np
@@ -68,7 +69,12 @@ class Ensemble(object):
                  radius=1.0, encoders=None,
                  max_rates=Uniform(200, 300), intercepts=Uniform(-1.0, 1.0),
                  decoder_noise=None, eval_points=None,
-                 noise=None, noise_frequency=None, seed=None):
+                 noise=None, noise_frequency=None, seed=None,
+                 input_signal=None):
+        """
+        TODO
+        """
+
         # Error for things not implemented yet or don't make sense
         if decoder_noise is not None:
             raise NotImplementedError('decoder_noise')
@@ -78,10 +84,25 @@ class Ensemble(object):
         self.seed = np.random.randint(2**31-1) if seed is None else seed
         self.rng = np.random.RandomState(self.seed)
 
+        self.name = name
+        self.radius = radius
+
+        if eval_points is None:
+            eval_points = sample_unit_signal(
+                dimensions, Ensemble.EVAL_POINTS, self.rng) * radius
+        self.eval_points = eval_points
+
+        # Set up input signal
+        self.input_signal = (core.Signal(n=dimensions,
+                                         name=name + ".input_signal")
+                             if input_signal is None else input_signal)
+
+        # Set up neurons
         if isinstance(neurons, int):
             logger.warning(("neurons should be an instance of a nonlinearity, "
                             "not an int. Defaulting to LIF."))
             neurons = LIF(neurons)
+        neurons = copy.deepcopy(neurons)
         neurons.name = name + "." + neurons.__class__.__name__
 
         if hasattr(max_rates, 'sample'):
@@ -89,10 +110,10 @@ class Ensemble(object):
         if hasattr(intercepts, 'sample'):
             intercepts = intercepts.sample(neurons.n_neurons, rng=self.rng)
 
-        if eval_points is None:
-            eval_points = sample_unit_signal(
-                dimensions, Ensemble.EVAL_POINTS, self.rng) * radius
+        neurons.set_gain_bias(max_rates, intercepts)
+        self.neurons = neurons
 
+        # Set up the encoders
         if encoders is None:
             logger.debug("Randomly generating encoders, shape=(%d, %d)",
                          neurons.n_neurons, dimensions)
@@ -101,18 +122,6 @@ class Ensemble(object):
             encoders /= np.sqrt(norm)
         encoders /= radius
 
-        self.name = name
-        self.radius = radius
-        self.eval_points = eval_points
-
-        # The essential components of an ensemble are:
-        self.input_signal = core.Signal(n=dimensions,
-                                        name=name + ".input_signal")
-
-        neurons.set_gain_bias(max_rates, intercepts)
-        self.neurons = neurons
-
-        # Set up the encoders
         encoders *= self.neurons.gain[:, None]
         self.encoders = core.Encoder(self.input_signal, self.neurons, encoders)
 
@@ -126,7 +135,7 @@ class Ensemble(object):
 
     @property
     def dimensions(self):
-        return self.input_signal.n
+        return self.input_signal.size
 
     @property
     def n_neurons(self):
