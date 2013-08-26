@@ -15,10 +15,7 @@ except:
 
 import numpy as np
 
-import nengo.simulator
 from list_of_test_modules import simulator_test_case_mods
-
-simulators = (nengo.simulator.Simulator,)
 
 
 class Plotter(object):
