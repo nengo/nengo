@@ -6,5 +6,6 @@ simulator_test_case_mods = [
     'nengo.tests.test_ensemble',
     'nengo.tests.test_model',
     'nengo.tests.test_node',
+    'nengo.tests.test_simulator',
     ]
 
