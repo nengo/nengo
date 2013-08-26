@@ -10,7 +10,6 @@ from nengo.objects import Constant
 from nengo.templates.circularconv import CircularConvolution
 
 from helpers import SimulatorTestCase
-import nose
 
 
 class TestCircularConv(SimulatorTestCase):

@@ -10,18 +10,19 @@ import numpy as np
 import nengo
 import nengo.old_api as nef
 
-from helpers import Plotter, rmse, simulates, SimulatesMetaclass
+from helpers import Plotter
+from helpers import rmse
+from helpers import SimulatorTestCase
 
 
 logger = logging.getLogger(__name__)
 
 
-class TestEnsemble(unittest.TestCase):
-    __metaclass__ = SimulatesMetaclass
+class TestEnsemble(SimulatorTestCase):
 
-    @simulates
-    def test_constant_scalar(self, simulator):
+    def test_constant_scalar(self):
         """A network that represents a constant value."""
+        simulator = self.Simulator
         params = dict(simulator=simulator, seed=123, dt=0.001)
         N = 30
         val = 0.5
@@ -71,9 +72,9 @@ class TestEnsemble(unittest.TestCase):
         assert np.allclose(m.data['in'].ravel(), val, atol=.05, rtol=.05)
         assert np.allclose(m.data['A'][-10:], val, atol=.05, rtol=.05)
 
-    @simulates
-    def test_constant_vector(self, simulator):
+    def test_constant_vector(self):
         """A network that represents a constant 3D vector."""
+        simulator = self.Simulator
         params = dict(simulator=simulator, seed=123, dt=0.001)
         N = 30
         vals = [0.6, 0.1, -0.5]
@@ -123,9 +124,9 @@ class TestEnsemble(unittest.TestCase):
         assert np.allclose(m.data['in'][-10:], vals, atol=.05, rtol=.05)
         assert np.allclose(m.data['A'][-10:], vals, atol=.05, rtol=.05)
 
-    @simulates
-    def test_scalar(self, simulator):
+    def test_scalar(self):
         """A network that represents sin(t)."""
+        simulator = self.Simulator
         params = dict(simulator=simulator, seed=123, dt=0.001)
         N = 30
         target = np.sin(np.arange(4999) / 1000.)
@@ -184,9 +185,9 @@ class TestEnsemble(unittest.TestCase):
         logger.debug("Old/New API RMSE: %f", rmse(a_data, m.data['A']))
         assert rmse(a_data, m.data['A']) < 0.1
 
-    @simulates
-    def test_vector(self, simulator):
+    def test_vector(self):
         """A network that represents sin(t), cos(t), arctan(t)."""
+        simulator = self.Simulator
         params = dict(simulator=simulator, seed=123, dt=0.001)
         N = 40
         target = np.vstack((np.sin(np.arange(4999) / 1000.),
