@@ -8,14 +8,12 @@ import numpy as np
 from nengo import Model
 from nengo.objects import Direct, Encoder, Decoder, Filter, Signal, Transform
 
-from helpers import Plotter, rmse, simulates, SimulatesMetaclass
+from helpers import SimulatorTestCase
 
 
-class TestSimulator(unittest.TestCase):
-    __metaclass__ = SimulatesMetaclass
+class TestSimulator(SimulatorTestCase):
 
-    @simulates
-    def test_signal_indexing_1(self, simulator):
+    def test_signal_indexing_1(self):
         m = Model("test_signal_indexing_1")
         one = m.add(Signal(1))
         two = m.add(Signal(2))
@@ -25,7 +23,7 @@ class TestSimulator(unittest.TestCase):
         m.add(Filter(2.0, three[1:], two))
         m.add(Filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three))
 
-        sim = simulator(m)
+        sim = self.Simulator(m)
         sim.signals[three] = np.asarray([1, 2, 3])
         sim.step()
         assert np.all(sim.signals[one] == 1)
@@ -36,8 +34,7 @@ class TestSimulator(unittest.TestCase):
         assert np.all(sim.signals[two] == [4, 2])
         assert np.all(sim.signals[three] == [1, 2, 3])
 
-    @simulates
-    def test_simple_direct_mode(self, simulator):
+    def test_simple_direct_mode(self):
         m = Model("test_simple_direct_mode")
         sig = m.add(Signal())
 
@@ -46,7 +43,7 @@ class TestSimulator(unittest.TestCase):
         m.add(Decoder(pop, sig, weights=[[1.0]]))
         m.add(Transform(1.0, sig, sig))
 
-        sim = simulator(m)
+        sim = self.Simulator(m)
         for i in range(5):
             sim.step()
             if i > 0:

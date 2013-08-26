@@ -8,15 +8,13 @@ import numpy as np
 import nengo
 import nengo.old_api as nef
 
-from helpers import simulates, SimulatesMetaclass
+from helpers import SimulatorTestCase
 
 
-class TestNode(unittest.TestCase):
-    __metaclass__ = SimulatesMetaclass
+class TestNode(SimulatorTestCase):
 
-    @simulates
-    def test_simple(self, simulator):
-        params = dict(simulator=simulator, seed=123, dt=0.001)
+    def test_simple(self):
+        params = dict(simulator=self.Simulator, seed=123, dt=0.001)
 
         # Old API
         net = nef.Network('test_simple', **params)
