@@ -4,5 +4,6 @@
 simulator_test_case_mods = [
     'nengo.tests.test_circularconv',
     'nengo.tests.test_ensemble',
+    'nengo.tests.test_model',
     ]
 
