@@ -16,6 +16,7 @@ except:
 import numpy as np
 
 import nengo.simulator
+from list_of_test_modules import simulator_test_case_mods
 
 simulators = (nengo.simulator.Simulator,)
 
@@ -78,14 +79,6 @@ simulator_test_cases = []
 class AddToTestCaseRegistry(type):
     def __new__(meta, name, bases, dct):
 
-        # -- help devs out by verifying that this
-        #    class will automatically be created by typing
-        #    import nengo.tests
-        if dct['__module__'] not in nengo.tests.simulator_test_case_mods:
-            print >> sys.stderr, ("Module %s has not been included in the"
-                " nengo.tests.simulator_test_case_mods registry, so it's"
-                " tests won't be run automatically for external simulators")
-
         # -- create the TestCase class
         rval = type.__new__(meta, name, bases, dct)
 
@@ -96,6 +89,16 @@ class AddToTestCaseRegistry(type):
             # -- don't add the superclass to the registry
             assert name == 'SimulatorTestCase'
         else:
+            # -- help devs out by verifying that this
+            #    class will automatically be created by typing
+            #    import nengo.tests
+            if dct['__module__'] not in simulator_test_case_mods:
+                print >> sys.stderr, ("WARNING: "
+                    "Module %s has not been included in the"
+                    " `nengo.tests.simulator_test_case_mods` registry, so"
+                    " its tests won't be run automatically for external"
+                    " simulators." % dct['__module__'])
+
             simulator_test_cases.append(rval)
 
         # -- return the original class which is identical to what it

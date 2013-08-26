@@ -1,11 +1,7 @@
 
-# -- import these modules to populate the registry
-#    of standard simulator test cases
-#    `helpers.simulator_test_cases`
-simulator_test_case_mods = [
-    'nengo.tests.test_circularconv',
-    'nengo.tests.test_ensemble',
-    ]
+# -- putting this in a separate file helps prevent circular import madness
+from list_of_test_modules import simulator_test_case_mods
+
 for test_module in simulator_test_case_mods:
     __import__(test_module)
 
