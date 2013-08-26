@@ -68,8 +68,15 @@ class AddToTestCaseRegistry(type):
         else:
             # -- help devs out by verifying that this
             #    class will automatically be created by typing
-            #    import nengo.tests
-            if dct['__module__'] not in simulator_test_case_mods:
+            #    import nengo.tests. This works when running via
+            #    nosetests
+            #
+            # -- running via unittest discover imports each test
+            #    file as if it were not part of a package so the module
+            #    name has no leading 'nengo.tests'. So just chill
+            #    out in that case and don't bother.
+            if (dct['__module__'].startswith('nengo.tests') and
+                dct['__module__'] not in simulator_test_case_mods):
                 print >> sys.stderr, ("WARNING: "
                     "Module %s has not been included in the"
                     " `nengo.tests.simulator_test_case_mods` registry, so"
@@ -83,7 +90,7 @@ class AddToTestCaseRegistry(type):
         return rval
 
 
-class SimulatorTestCase(object):
+class SimulatorTestCase(unittest.TestCase):
     """
     Base class for TestCase classes that use self.Simulator(m)
     to produce a simulator for Model `m`.
