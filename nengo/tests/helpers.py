@@ -63,27 +63,54 @@ class SimulatorTestCase(unittest.TestCase):
 
     .. code-block:: python
 
-        for TestCase in simulator_test_cases:
-            class MyTestCase(TestCase):
-                simulator_test_case_ignore = True
-                def Simulator(self, model):
-                    return MySimulator(model)
-            MyTestCase.__name__ = TestCase.__name__
-            globals()[TestCase.__name__] = MyTestCase
-            del MyTestCase
-            del TestCase
+        globals().update(simulator_test_suite(simulator_allocator))
 
+    The `simulator_allocator` should behave like nengo.simulator.Simulator.
+    For example, the original test suite could be run like this:
 
-    The way this works is that SimulatorTestCase provides a default Simulator
-    method, which is then used by the TestCase suite.
+    .. code-block:: python
 
-    Other projects can borrow the entire TestCaseSuite, and create a new class
-    for each one in the original suite. They override the Simulator method in
-    each one of these new classes, and thereby create a full test suite
-    tailored to use a custom simulator.
+        globals().update(simulator_test_suite(nengo.simulator.Simulator))
 
     """
 
     def Simulator(self, model):
         return nengo.simulator.Simulator(model)
+
+
+def simulator_suite(simulator_allocator, name_suffix=''):
+    done = set()
+    rval = {}
+    def define_new_test_case(base_class):
+        if base_class in done or not hasattr(base_class, "Simulator"):
+            return
+        done.add(base_class)
+        class MyTestCase(base_class):
+            simulator_test_case_ignore = True
+            def Simulator(self, model):
+                return simulator_allocator(model)
+                rval = sim_npy.Simulator(model)
+                rval.alloc_all()
+                rval.plan_all()
+                return rval
+        MyTestCase.__name__ = base_class.__name__
+        rval[base_class.__name__ + name_suffix] = MyTestCase
+    def search(thing):
+        try:
+            iter(thing)
+        except TypeError:
+            return define_new_test_case(type(thing))
+        for obj in thing:
+            search(obj)
+    #N.B. -- each of the test modules is imported outside of the
+    #        main package hierarchy like a main script, so
+    #        all relative imports in test_modules are re-imported
+    #        even if they have already been imported by the main
+    #        environment.... in particular THIS FILE (and the
+    #        SimulatorTestCase) base class is re-imported
+    #        once for each test module.
+    search(
+        unittest.defaultTestLoader.discover(
+            nengo.tests.__path__[0]))
+    return rval
 
