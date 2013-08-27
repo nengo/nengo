@@ -1,8 +1,8 @@
 import numpy as np
 
 import nengo
-from nengo.objects import Encoder, Decoder, Filter, Signal, Transform
-from nengo.objects import Direct, LIF, LIFRate
+from nengo.core import Encoder, Decoder, Filter, Signal, Transform
+from nengo.core import Direct, LIF, LIFRate
 from nengo.tests.helpers import SimulatorTestCase, unittest
 
 import logging

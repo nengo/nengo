@@ -4,8 +4,11 @@ circularconv.py: provides CircularConvolution template
 
 import numpy as np
 
-from ..objects import Decoder, Encoder, Filter, LIF, Signal, Transform
+from ..core import Decoder, Encoder, Filter, LIF, Signal, Transform
 
+
+def weights(n_in, n_out):
+    return np.random.randn(n_in, n_out)
 
 class CircularConvolution(object):
     """
@@ -56,19 +59,21 @@ class CircularConvolution(object):
             AB = model.add(LIF(neurons_per_product))
             BA = model.add(LIF(neurons_per_product))
             BB = model.add(LIF(neurons_per_product))
-            model.add(Encoder(self.A_Fourier[ii, 0:1], AA))
-            model.add(Encoder(self.A_Fourier[ii, 1:2], AA))
-            model.add(Encoder(self.A_Fourier[ii, 0:1], AB))
-            model.add(Encoder(self.B_Fourier[ii, 1:2], AB))
-            model.add(Encoder(self.B_Fourier[ii, 0:1], BA))
-            model.add(Encoder(self.A_Fourier[ii, 1:2], BA))
-            model.add(Encoder(self.B_Fourier[ii, 0:1], BB))
-            model.add(Encoder(self.B_Fourier[ii, 1:2], BB))
+            n_in = AA.n_in
+            n_out = self.A_Fourier[ii, 0:1].size
+            model.add(Encoder(self.A_Fourier[ii, 0:1], AA, weights(n_in,n_out)))
+            model.add(Encoder(self.A_Fourier[ii, 1:2], AA, weights(n_in,n_out)))
+            model.add(Encoder(self.A_Fourier[ii, 0:1], AB, weights(n_in,n_out)))
+            model.add(Encoder(self.B_Fourier[ii, 1:2], AB, weights(n_in,n_out)))
+            model.add(Encoder(self.B_Fourier[ii, 0:1], BA, weights(n_in,n_out)))
+            model.add(Encoder(self.A_Fourier[ii, 1:2], BA, weights(n_in,n_out)))
+            model.add(Encoder(self.B_Fourier[ii, 0:1], BB, weights(n_in,n_out)))
+            model.add(Encoder(self.B_Fourier[ii, 1:2], BB, weights(n_in,n_out)))
 
-            model.add(Decoder(AA, self.AB_prods[ii, 0:1]))
-            model.add(Decoder(AB, self.AB_prods[ii, 1:2]))
-            model.add(Decoder(BA, self.AB_prods[ii, 2:3]))
-            model.add(Decoder(BB, self.AB_prods[ii, 3:4]))
+            model.add(Decoder(AA, self.AB_prods[ii, 0:1], weights(n_out,n_in)))
+            model.add(Decoder(AB, self.AB_prods[ii, 1:2], weights(n_out,n_in)))
+            model.add(Decoder(BA, self.AB_prods[ii, 2:3], weights(n_out,n_in)))
+            model.add(Decoder(BB, self.AB_prods[ii, 3:4], weights(n_out,n_in)))
 
         model.add(Transform(inverse_fourier_matrix,
                             self.AB_prods.base,

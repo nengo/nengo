@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from objects import LIF, LIFRate, Direct
+from .core import LIF, LIFRate, Direct
 
 
 logger = logging.getLogger(__name__)
