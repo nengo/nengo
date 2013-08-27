@@ -1,7 +1,3 @@
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
 import logging
 import os
 
@@ -9,24 +5,21 @@ import numpy as np
 
 import nengo
 import nengo.old_api as nef
-
-from helpers import Plotter, rmse, simulates, SimulatesMetaclass
+from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
 
 
 logger = logging.getLogger(__name__)
 
+class TestEnsemble(SimulatorTestCase):
 
-class TestEnsemble(unittest.TestCase):
-    __metaclass__ = SimulatesMetaclass
-
-    @simulates
-    def test_constant_scalar(self, simulator):
-        """A network that represents a constant value."""
+    def test_constant_scalar(self):
+        """A Network that represents a constant value."""
+        simulator = self.Simulator
         params = dict(simulator=simulator, seed=123, dt=0.001)
         N = 30
         val = 0.5
 
-        # Old API
+        # old api
         net = nef.Network('test_constant_scalar', **params)
         net.make_input('in', value=[val])
         net.make('A', N, 1)
@@ -47,8 +40,8 @@ class TestEnsemble(unittest.TestCase):
             plt.savefig('test_ensemble.test_constant_scalar-old.pdf')
             plt.close()
 
-        assert np.allclose(in_data.ravel(), val, atol=.05, rtol=.05)
-        assert np.allclose(a_data[-10:], val, atol=.05, rtol=.05)
+        self.assertTrue(np.allclose(in_data.ravel(), val, atol=.05, rtol=.05))
+        self.assertTrue(np.allclose(a_data[-10:], val, atol=.05, rtol=.05))
 
         # New API
         m = nengo.Model('test_constant_scalar', **params)
@@ -68,12 +61,13 @@ class TestEnsemble(unittest.TestCase):
             plt.savefig('test_ensemble.test_constant_scalar-new.pdf')
             plt.close()
 
-        assert np.allclose(m.data['in'].ravel(), val, atol=.05, rtol=.05)
-        assert np.allclose(m.data['A'][-10:], val, atol=.05, rtol=.05)
+        self.assertTrue(np.allclose(m.data['in'].ravel(), val,
+                                    atol=.05, rtol=.05))
+        self.assertTrue(np.allclose(m.data['A'][-10:], val, atol=.05, rtol=.05))
 
-    @simulates
-    def test_constant_vector(self, simulator):
+    def test_constant_vector(self):
         """A network that represents a constant 3D vector."""
+        simulator = self.Simulator
         params = dict(simulator=simulator, seed=123, dt=0.001)
         N = 30
         vals = [0.6, 0.1, -0.5]
@@ -99,8 +93,8 @@ class TestEnsemble(unittest.TestCase):
             plt.savefig('test_ensemble.test_constant_vector-old.pdf')
             plt.close()
 
-        assert np.allclose(in_data[-10:], vals, atol=.05, rtol=.05)
-        assert np.allclose(a_data[-10:], vals, atol=.05, rtol=.05)
+        self.assertTrue(np.allclose(in_data[-10:], vals, atol=.05, rtol=.05))
+        self.assertTrue(np.allclose(a_data[-10:], vals, atol=.05, rtol=.05))
 
         # New API
         m = nengo.Model('test_constant_vector', **params)
@@ -120,12 +114,14 @@ class TestEnsemble(unittest.TestCase):
             plt.savefig('test_ensemble.test_constant_vector-new.pdf')
             plt.close()
 
-        assert np.allclose(m.data['in'][-10:], vals, atol=.05, rtol=.05)
-        assert np.allclose(m.data['A'][-10:], vals, atol=.05, rtol=.05)
+        self.assertTrue(np.allclose(m.data['in'][-10:], vals,
+                                    atol=.05, rtol=.05))
+        self.assertTrue(np.allclose(m.data['A'][-10:], vals,
+                                    atol=.05, rtol=.05))
 
-    @simulates
-    def test_scalar(self, simulator):
+    def test_scalar(self):
         """A network that represents sin(t)."""
+        simulator = self.Simulator
         params = dict(simulator=simulator, seed=123, dt=0.001)
         N = 30
         target = np.sin(np.arange(4999) / 1000.)
@@ -154,8 +150,8 @@ class TestEnsemble(unittest.TestCase):
 
         logger.debug("[Old API] input RMSE: %f", rmse(target, in_data))
         logger.debug("[Old API] A RMSE: %f", rmse(target, a_data))
-        assert rmse(target, in_data) < 0.001
-        assert rmse(target, a_data) < 0.1
+        self.assertTrue(rmse(target, in_data) < 0.001)
+        self.assertTrue(rmse(target, a_data) < 0.1)
 
         # New API
         m = nengo.Model('test_scalar', **params)
@@ -177,16 +173,16 @@ class TestEnsemble(unittest.TestCase):
 
         logger.debug("[New API] input RMSE: %f", rmse(target, m.data['in']))
         logger.debug("[New API] A RMSE: %f", rmse(target, m.data['A']))
-        assert rmse(target, m.data['in']) < 0.001
-        assert rmse(target, m.data['A']) < 0.1
+        self.assertTrue(rmse(target, m.data['in']) < 0.001)
+        self.assertTrue(rmse(target, m.data['A']) < 0.1)
 
         # Check old/new API similarity
         logger.debug("Old/New API RMSE: %f", rmse(a_data, m.data['A']))
-        assert rmse(a_data, m.data['A']) < 0.1
+        self.assertTrue(rmse(a_data, m.data['A']) < 0.1)
 
-    @simulates
-    def test_vector(self, simulator):
+    def test_vector(self):
         """A network that represents sin(t), cos(t), arctan(t)."""
+        simulator = self.Simulator
         params = dict(simulator=simulator, seed=123, dt=0.001)
         N = 40
         target = np.vstack((np.sin(np.arange(4999) / 1000.),
@@ -228,10 +224,7 @@ class TestEnsemble(unittest.TestCase):
         logger.debug("[Old API] cos RMSE: %f", rmse(target[:,1], cos_data))
         logger.debug("[Old API] atan RMSE: %f", rmse(target[:,2], arctan_data))
         logger.debug("[Old API] A RMSE: %f", rmse(target, a_data))
-        # assert rmse(target[:,0], sin_data) < 0.001
-        # assert rmse(target[:,1], cos_data) < 0.001
-        # assert rmse(target[:,2], arctan_data) < 0.001
-        assert rmse(target, a_data) < 0.1
+        self.assertTrue(rmse(target, a_data) < 0.1)
 
         # New API
         m = nengo.Model('test_vector', **params)
@@ -265,14 +258,11 @@ class TestEnsemble(unittest.TestCase):
         logger.debug("[New API] atan RMSE: %f",
                      rmse(target[:,2], m.data['arctan']))
         logger.debug("[New API] A RMSE: %f", rmse(target, m.data['A']))
-        # assert rmse(target[:,0], m.data['sin']) < 0.001
-        # assert rmse(target[:,1], m.data['cos']) < 0.001
-        # assert rmse(target[:,2], m.data['arctan']) < 0.001
-        assert rmse(target, m.data['A']) < 0.1
+        self.assertTrue(rmse(target, m.data['A']) < 0.1)
 
         # Check old/new API similarity
         logger.debug("Old/New API RMSE: %f", rmse(a_data, m.data['A']))
-        assert rmse(a_data, m.data['A']) < 0.1
+        self.assertTrue(rmse(a_data, m.data['A']) < 0.1)
 
 
 if __name__ == "__main__":

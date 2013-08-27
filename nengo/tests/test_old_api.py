@@ -1,7 +1,3 @@
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
 import logging
 import os
 
@@ -9,18 +5,14 @@ import numpy as np
 
 import nengo
 import nengo.old_api as nef
-
-from helpers import Plotter, rmse, simulates, SimulatesMetaclass
+from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
 
 
 logger = logging.getLogger(__name__)
 
+class TestOldAPI(SimulatorTestCase):
 
-class TestOldAPI(unittest.TestCase):
-    __metaclass__ = SimulatesMetaclass
-
-    @simulates
-    def test_prod(self, simulator):
+    def test_prod(self):
 
         def product(x):
             return x[0]*x[1]
@@ -28,7 +20,7 @@ class TestOldAPI(unittest.TestCase):
         N = 250
         seed = 123
         net = nef.Network('Matrix Multiplication', seed=seed,
-                          simulator=simulator)
+                          simulator=self.Simulator)
 
         net.make_input('sin', value=np.sin)
         net.make_input('neg', value=[-.5])
@@ -51,7 +43,7 @@ class TestOldAPI(unittest.TestCase):
         data_d = probe_d.get_data()
         data_r = p_raw.get_data()
 
-        with Plotter(simulator) as plt:
+        with Plotter(self.Simulator) as plt:
             plt.subplot(211);
             plt.plot(data_p)
             plt.plot(np.sin(np.arange(0, 6, .01)))
@@ -62,19 +54,18 @@ class TestOldAPI(unittest.TestCase):
             plt.savefig('test_old_api.test_prod.pdf')
             plt.close()
 
-        assert np.allclose(data_p[:, 0], np.sin(np.arange(0, 6, .01)),
-                          atol=.1, rtol=.01)
-        assert np.allclose(data_p[20:, 1], -0.5,
-                          atol=.1, rtol=.01)
+        self.assertTrue(np.allclose(data_p[:, 0], np.sin(np.arange(0, 6, .01)),
+                                    atol=.1, rtol=.01))
+        self.assertTrue(np.allclose(data_p[20:, 1], -0.5,
+                                    atol=.1, rtol=.01))
 
         def match(a, b):
-            assert np.allclose(a, b, .1, .1)
+            self.assertTrue(np.allclose(a, b, .1, .1))
 
         match(data_d[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
         match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
 
-    @simulates
-    def test_multidim_probe(self, simulator):
+    def test_multidim_probe(self):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
         #  Matrix B is D2xD3
@@ -88,7 +79,7 @@ class TestOldAPI(unittest.TestCase):
         Amat = np.asarray([[.4, .8]])
         Bmat = np.asarray([[-1.0, -0.6, -.15], [0.25, .5, .7]])
 
-        net = nef.Network('V', seed=seed, simulator=simulator)
+        net = nef.Network('V', seed=seed, simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 2.0
@@ -142,7 +133,7 @@ class TestOldAPI(unittest.TestCase):
         logging.debug("Bmat=%s", str(Bmat))
         data = Cprobe.get_data()
 
-        with Plotter(simulator) as plt:
+        with Plotter(self.Simulator) as plt:
             for i in range(D1):
                 for k in range(D3):
                     for j in range(D2):
@@ -165,20 +156,19 @@ class TestOldAPI(unittest.TestCase):
             for k in range(D3):
                 for j in range(D2):
                     tmp = (j + k * D2 + i * D2 * D3)
-                    assert np.allclose(
+                    self.assertTrue(np.allclose(
+                        data[-10:, 2 * tmp],
+                        Amat[i, j],
+                        atol=0.1, rtol=0.1), (
                             data[-10:, 2 * tmp],
-                            Amat[i, j],
-                            atol=0.1, rtol=0.1), (
-                                data[-10:, 2 * tmp],
-                                Amat[i, j])
+                            Amat[i, j]))
 
-                    assert np.allclose(
-                            data[-10:, 1 + 2 * tmp],
-                            Bmat[j, k],
-                            atol=0.1, rtol=0.1)
+                    self.assertTrue(np.allclose(
+                        data[-10:, 1 + 2 * tmp],
+                        Bmat[j, k],
+                        atol=0.1, rtol=0.1))
 
-    @simulates
-    def test_matrix_mul(self, simulator):
+    def test_matrix_mul(self):
         # Adjust these values to change the matrix dimensions
         #  Matrix A is D1xD2
         #  Matrix B is D2xD3
@@ -193,7 +183,7 @@ class TestOldAPI(unittest.TestCase):
         Bmat = np.asarray([[0, -1.,], [.7, 0]])
 
         net = nef.Network('Matrix Multiplication', seed=seed,
-                          simulator=simulator)
+                          simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 1
@@ -275,7 +265,7 @@ class TestOldAPI(unittest.TestCase):
         Dmat = np.dot(Amat, Bmat)
         data = Dprobe.get_data()
 
-        with Plotter(simulator) as plt:
+        with Plotter(self.Simulator) as plt:
             for i in range(D1):
                 for k in range(D3):
                     plt.subplot(D1, D3, i * D3 + k + 1)
@@ -286,28 +276,28 @@ class TestOldAPI(unittest.TestCase):
             plt.savefig('test_old_api.test_matrix_mul.pdf')
             plt.close()
 
-        assert np.allclose(Aprobe.get_data()[50:, 0], 0.5,
-                          atol=.1, rtol=.01)
-        assert np.allclose(Aprobe.get_data()[50:, 1], -0.5,
-                          atol=.1, rtol=.01)
+        self.assertTrue(np.allclose(Aprobe.get_data()[50:, 0], 0.5,
+                                    atol=.1, rtol=.01))
+        self.assertTrue(np.allclose(Aprobe.get_data()[50:, 1], -0.5,
+                                    atol=.1, rtol=.01))
 
-        assert np.allclose(Bprobe.get_data()[50:, 0], 0,
-                          atol=.1, rtol=.01)
-        assert np.allclose(Bprobe.get_data()[50:, 1], -1,
-                          atol=.1, rtol=.01)
-        assert np.allclose(Bprobe.get_data()[50:, 2], .7,
-                          atol=.1, rtol=.01)
-        assert np.allclose(Bprobe.get_data()[50:, 3], 0,
-                          atol=.1, rtol=.01)
+        self.assertTrue(np.allclose(Bprobe.get_data()[50:, 0], 0,
+                                    atol=.1, rtol=.01))
+        self.assertTrue(np.allclose(Bprobe.get_data()[50:, 1], -1,
+                                    atol=.1, rtol=.01))
+        self.assertTrue(np.allclose(Bprobe.get_data()[50:, 2], .7,
+                                    atol=.1, rtol=.01))
+        self.assertTrue(np.allclose(Bprobe.get_data()[50:, 3], 0,
+                                    atol=.1, rtol=.01))
 
         for i in range(D1):
             for k in range(D3):
-                assert np.allclose(
+                self.assertTrue(np.allclose(
+                    data[-10:, i * D3 + k],
+                    Dmat[i, k],
+                    atol=0.1, rtol=0.1), (
                         data[-10:, i * D3 + k],
-                        Dmat[i, k],
-                        atol=0.1, rtol=0.1), (
-                            data[-10:, i * D3 + k],
-                            Dmat[i, k])
+                        Dmat[i, k]))
 
 
 if __name__ == "__main__":
