@@ -5,7 +5,6 @@ except ImportError:
     import unittest
 import os
 import os.path
-import sys
 
 try:
     # For Python >=3.3
@@ -55,62 +54,42 @@ class SimulatorTestCase(unittest.TestCase):
     Base class for TestCase classes that use self.Simulator(m)
     to produce a simulator for Model `m`.
 
-    There are many such test classes (TODO: add them to class registry).
-
     External projects that wish to run all SimulatorTestCase subclasses
     as unit tests using a different simulator can achieve that result by
-    including the following sort of code among their own unit tests:
+    creating a load_tests function that overrides the simulator.
 
     .. code-block:: python
 
-        globals().update(simulator_test_suite(simulator_allocator))
+       def load_tests(loader, tests, pattern):
+           def _flattentestcases(test_suite_or_case):
+               try:
+                   suite = iter(test_suite_or_case)
+               except TypeError:
+                   yield test_suite_or_case
+               else:
+                   for test in suite:
+                       for subtest in _flattentestcases(test):
+                           yield subtest
+           suite = unittest.TestSuite()
+           nengo_tests = loader.discover('nengo.tests')
+           for test in _flattentestcases(nengo_tests):
+               if hasattr(test, 'Simulator'):
+                   test.Simulator = simulator
+                   suite.addTest(test)
+           return suite
 
-    The `simulator_allocator` should behave like nengo.simulator.Simulator.
-    For example, the original test suite could be run like this:
+    The `simulator` above should behave like nengo.simulator.Simulator;
+    i.e., it takes in a model as its only argument.
+    Additional arguments can be added by creating a function to do so.
+    For example, in `nengo_ocl`:
 
     .. code-block:: python
 
-        globals().update(simulator_test_suite(nengo.simulator.Simulator))
+       def simulator(*args, **kwargs):
+           rval = sim_ocl.Simulator(ctx, *args, **kwargs)
+           rval.alloc_all()
+           rval.plan_all()
+           return rval
 
     """
-
-    def Simulator(self, model):
-        return nengo.simulator.Simulator(model)
-
-
-def simulator_suite(simulator_allocator, name_suffix=''):
-    done = set()
-    rval = {}
-    def define_new_test_case(base_class):
-        if base_class in done or not hasattr(base_class, "Simulator"):
-            return
-        done.add(base_class)
-        class MyTestCase(base_class):
-            simulator_test_case_ignore = True
-            def Simulator(self, model):
-                return simulator_allocator(model)
-                rval = sim_npy.Simulator(model)
-                rval.alloc_all()
-                rval.plan_all()
-                return rval
-        MyTestCase.__name__ = base_class.__name__
-        rval[base_class.__name__ + name_suffix] = MyTestCase
-    def search(thing):
-        try:
-            iter(thing)
-        except TypeError:
-            return define_new_test_case(type(thing))
-        for obj in thing:
-            search(obj)
-    #N.B. -- each of the test modules is imported outside of the
-    #        main package hierarchy like a main script, so
-    #        all relative imports in test_modules are re-imported
-    #        even if they have already been imported by the main
-    #        environment.... in particular THIS FILE (and the
-    #        SimulatorTestCase) base class is re-imported
-    #        once for each test module.
-    search(
-        unittest.defaultTestLoader.discover(
-            nengo.tests.__path__[0]))
-    return rval
-
+    Simulator = nengo.simulator.Simulator

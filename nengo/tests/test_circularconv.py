@@ -1,15 +1,9 @@
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
 import numpy as np
 
 import nengo
 from nengo.objects import Constant
 from nengo.templates.circularconv import CircularConvolution
-
-from helpers import SimulatorTestCase
+from nengo.tests.helpers import SimulatorTestCase, unittest
 
 
 class TestCircularConv(SimulatorTestCase):

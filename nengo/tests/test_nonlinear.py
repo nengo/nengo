@@ -28,7 +28,7 @@ class TestNonlinear(unittest.TestCase):
 
         sim_rates = np.sum(spikes, axis=0)
         math_rates = lif.rates(J)
-        assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
+        self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
 
 if __name__ == "__main__":
