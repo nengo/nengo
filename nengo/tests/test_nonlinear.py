@@ -5,7 +5,7 @@ except ImportError:
 
 import numpy as np
 
-from nengo.objects import LIF
+from nengo import LIF
 
 
 class TestNonlinear(unittest.TestCase):

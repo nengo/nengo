@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from . import objects
+from . import core
 from . import decoders as decsolve
 
 logger = logging.getLogger(__name__)
@@ -21,16 +21,16 @@ class SimpleConnection(object):
 
         if filter is not None and filter > dt:
             name = self.pre.name + ".filtered(%f)" % filter
-            self.signal = objects.Signal(n=self.pre.signal.size, name=name)
-            fcoef, tcoef = objects.filter_coefs(pstc=filter, dt=dt)
-            self.sig_transform = objects.Transform(
+            self.signal = core.Signal(n=self.pre.signal.size, name=name)
+            fcoef, tcoef = core.filter_coefs(pstc=filter, dt=dt)
+            self.sig_transform = core.Transform(
                 tcoef, self.pre.signal, self.signal)
-            self.sig_filter = objects.Filter(
+            self.sig_filter = core.Filter(
                 fcoef, self.signal, self.signal)
-            self.filter = objects.Filter(
+            self.filter = core.Filter(
                 transform, self.signal, self.post.input_signal)
         else:
-            self.filter = objects.Filter(
+            self.filter = core.Filter(
                 transform, self.pre.signal, self.post.input_signal)
 
     def __str__(self):
@@ -84,23 +84,23 @@ class DecodedConnection(object):
         #    under the simulator's dt.
         activities = pre.activities(eval_points) * dt
 
-        self.signal = objects.Signal(n, name=self.name)
-        self.decoders = objects.Decoder(
+        self.signal = core.Signal(n, name=self.name)
+        self.decoders = core.Decoder(
             sig=self.signal, pop=pre.neurons,
             weights=decsolve.solve_decoders(activities, targets))
         if function is not None:
             self.decoders.desired_function = function
 
         if filter is not None and filter > dt:
-            fcoef, tcoef = objects.filter_coefs(pstc=filter, dt=dt)
-            self.sig_transform = objects.Transform(
+            fcoef, tcoef = core.filter_coefs(pstc=filter, dt=dt)
+            self.sig_transform = core.Transform(
                 tcoef, self.signal, self.signal)
-            self.sig_filter = objects.Filter(
+            self.sig_filter = core.Filter(
                 fcoef, self.signal, self.signal)
-            self.filter = objects.Filter(
+            self.filter = core.Filter(
                 transform, self.signal, post.input_signal)
         else:
-            self.transform = objects.Transform(
+            self.transform = core.Transform(
                 transform, self.signal, post.input_signal)
 
     def __str__(self):
