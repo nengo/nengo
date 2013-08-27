@@ -1,14 +1,8 @@
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
 import numpy as np
 
 import nengo
 import nengo.old_api as nef
-
-from helpers import SimulatorTestCase
+from nengo.tests.helpers import SimulatorTestCase, unittest
 
 
 class TestNode(SimulatorTestCase):
@@ -27,25 +21,24 @@ class TestNode(SimulatorTestCase):
         data = p.get_data()
         raw_data = rawp.get_data()
         st_data = st_probe.get_data()
-        assert np.allclose(st_data.ravel(),
-                           np.arange(0.001, 0.0105, .001))
-        assert np.allclose(raw_data.ravel(),
-                           np.sin(np.arange(0, 0.0095, .001)))
+        self.assertTrue(np.allclose(st_data.ravel(),
+                                    np.arange(0.001, 0.0105, .001)))
+        self.assertTrue(np.allclose(raw_data.ravel(),
+                                    np.sin(np.arange(0, 0.0095, .001))))
         # -- the make_probe call induces a one-step delay
         #    on readout even when the pstc is really small.
-        # TWB: But should it?
-        assert np.allclose(data.ravel()[1:],
-                           np.sin(np.arange(0, 0.0085, .001)))
+        self.assertTrue(np.allclose(data.ravel()[1:],
+                                    np.sin(np.arange(0, 0.0085, .001))))
 
         # New API
         m = nengo.Model('test_simple', **params)
         node = m.make_node('in', output=np.sin)
         m.probe('in')
         m.run(0.01)
-        assert np.allclose(m.data[m.simtime].ravel(),
-                           np.arange(0.001, 0.0105, .001))
-        assert np.allclose(m.data['in'].ravel(),
-                           np.sin(np.arange(0, 0.0095, .001)))
+        self.assertTrue(np.allclose(m.data[m.simtime].ravel(),
+                                    np.arange(0.001, 0.0105, .001)))
+        self.assertTrue(np.allclose(m.data['in'].ravel(),
+                                    np.sin(np.arange(0, 0.0095, .001))))
 
 
 if __name__ == "__main__":
