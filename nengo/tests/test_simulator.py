@@ -1,20 +1,14 @@
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
 import numpy as np
 
-from nengo import Model
+import nengo
 from nengo.objects import Direct, Encoder, Decoder, Filter, Signal, Transform
-
-from helpers import SimulatorTestCase
+from nengo.tests.helpers import SimulatorTestCase, unittest
 
 
 class TestSimulator(SimulatorTestCase):
 
     def test_signal_indexing_1(self):
-        m = Model("test_signal_indexing_1")
+        m = nengo.Model("test_signal_indexing_1")
         one = m.add(Signal(1))
         two = m.add(Signal(2))
         three = m.add(Signal(3))
@@ -26,16 +20,16 @@ class TestSimulator(SimulatorTestCase):
         sim = self.Simulator(m)
         sim.signals[three] = np.asarray([1, 2, 3])
         sim.step()
-        assert np.all(sim.signals[one] == 1)
-        assert np.all(sim.signals[two] == [4, 6])
-        assert np.all(sim.signals[three] == [3, 2, 1])
+        self.assertTrue(np.all(sim.signals[one] == 1))
+        self.assertTrue(np.all(sim.signals[two] == [4, 6]))
+        self.assertTrue(np.all(sim.signals[three] == [3, 2, 1]))
         sim.step()
-        assert np.all(sim.signals[one] == 3)
-        assert np.all(sim.signals[two] == [4, 2])
-        assert np.all(sim.signals[three] == [1, 2, 3])
+        self.assertTrue(np.all(sim.signals[one] == 3))
+        self.assertTrue(np.all(sim.signals[two] == [4, 2]))
+        self.assertTrue(np.all(sim.signals[three] == [1, 2, 3]))
 
     def test_simple_direct_mode(self):
-        m = Model("test_simple_direct_mode")
+        m = nengo.Model("test_simple_direct_mode")
         sig = m.add(Signal())
 
         pop = m.add(Direct(n_in=1, n_out=1, fn=np.sin))
@@ -47,7 +41,8 @@ class TestSimulator(SimulatorTestCase):
         for i in range(5):
             sim.step()
             if i > 0:
-                assert sim.signals[sig] == np.sin(sim.signals[m.simtime] - .001)
+                self.assertEqual(sim.signals[sig],
+                                 np.sin(sim.signals[m.simtime] - .001))
 
 
 if __name__ == "__main__":
