@@ -17,6 +17,65 @@ import numpy as np
 import nengo.simulator
 
 
+def all_testcases(test_suite_or_case):
+    """A test suite contains nested test suites and test cases.
+    This generator function dives into test suites and only yields test cases.
+
+    """
+    try:
+        suite = iter(test_suite_or_case)
+    except TypeError:
+        yield test_suite_or_case
+    else:
+        for test in suite:
+            for subtest in all_testcases(test):
+                yield subtest
+
+
+def load_nengo_tests(simulator):
+    """This function returns a function that unittest will call
+    to run all SimulatorTestCases with the provided simulator.
+
+    The function returned by this function must be
+    called load_tests, and should be in a test_*.py module
+    in the test folder for the simulator.
+
+    For example, to run all nengo simultor tests in a project called
+    `my_simulator`, create my_simulator/tests/test_sim.py containing
+
+    .. code-block:: python
+
+       from my_simulator import MySimulator
+       from nengo.tests.helpers import load_nengo_tests
+       load_tests = load_nengo_tests(MySimulator)
+
+    """
+    def load_tests(loader, tests, pattern, simulator=simulator):
+        return simulator_test_suite(simulator, loader)
+    return load_tests
+
+
+def simulator_test_suite(simulator, loader=None):
+    """This function returns a test suite with all SimulatorTestCases
+    using the provided simulator.
+
+    This function just returns a test suite, actually running those tests
+    requires more effort. This function is provided for more advanced
+    unit testing setups; for simple setups using `unittest`,
+    use `nengo.tests.helpers.load_nengo_tests`.
+
+    """
+    if loader is None:
+        loader = unittest.defaultTestLoader
+    suite = unittest.TestSuite()
+    nengo_tests = loader.discover('nengo.tests')
+    for test in all_testcases(nengo_tests):
+        if hasattr(test, 'Simulator'):
+            test.Simulator = simulator
+            suite.addTest(test)
+    return suite
+
+
 class Plotter(object):
     plot = int(os.getenv("NENGO_TEST_PLOT", 0))
 
@@ -55,41 +114,10 @@ class SimulatorTestCase(unittest.TestCase):
     to produce a simulator for Model `m`.
 
     External projects that wish to run all SimulatorTestCase subclasses
-    as unit tests using a different simulator can achieve that result by
-    creating a load_tests function that overrides the simulator.
-
-    .. code-block:: python
-
-       def load_tests(loader, tests, pattern):
-           def _flattentestcases(test_suite_or_case):
-               try:
-                   suite = iter(test_suite_or_case)
-               except TypeError:
-                   yield test_suite_or_case
-               else:
-                   for test in suite:
-                       for subtest in _flattentestcases(test):
-                           yield subtest
-           suite = unittest.TestSuite()
-           nengo_tests = loader.discover('nengo.tests')
-           for test in _flattentestcases(nengo_tests):
-               if hasattr(test, 'Simulator'):
-                   test.Simulator = simulator
-                   suite.addTest(test)
-           return suite
-
-    The `simulator` above should behave like nengo.simulator.Simulator;
-    i.e., it takes in a model as its only argument.
-    Additional arguments can be added by creating a function to do so.
-    For example, in `nengo_ocl`:
-
-    .. code-block:: python
-
-       def simulator(*args, **kwargs):
-           rval = sim_ocl.Simulator(ctx, *args, **kwargs)
-           rval.alloc_all()
-           rval.plan_all()
-           return rval
+    as unit tests using a different simulator can achieve that result
+    with the helper functions
+    `nengo.tests.helpers.load_nengo_tests` (recommended) or
+    `nengo.tests.helpers.simulator_test_suite` (advanced).
 
     """
     Simulator = nengo.simulator.Simulator
