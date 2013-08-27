@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from nengo.objects import Constant
+from nengo.core import Constant
 from nengo.templates.circularconv import CircularConvolution
 from nengo.tests.helpers import SimulatorTestCase, unittest
 

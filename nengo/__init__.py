@@ -1,7 +1,8 @@
 import logging
 import sys
+
 from .model import Model
-from .objects import LIF
+from .core import LIF
 
 
 logger = logging.getLogger(__name__)

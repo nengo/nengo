@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from nengo.objects import Direct, Encoder, Decoder, Filter, Signal, Transform
+from nengo.core import Direct, Encoder, Decoder, Filter, Signal, Transform
 from nengo.tests.helpers import SimulatorTestCase, unittest
 
 import logging
