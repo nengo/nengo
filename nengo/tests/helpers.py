@@ -51,11 +51,14 @@ def load_nengo_tests(simulator):
 
     """
     def load_tests(loader, tests, pattern, simulator=simulator):
-        return simulator_test_suite(simulator, loader)
+        if tests is None:
+            tests = unittest.TestSuite()
+        tests.addTests(simulator_test_suite(simulator))
+        return tests
     return load_tests
 
 
-def simulator_test_suite(simulator, loader=None):
+def simulator_test_suite(simulator):
     """This function returns a test suite with all SimulatorTestCases
     using the provided simulator.
 
@@ -65,8 +68,7 @@ def simulator_test_suite(simulator, loader=None):
     use `nengo.tests.helpers.load_nengo_tests`.
 
     """
-    if loader is None:
-        loader = unittest.defaultTestLoader
+    loader = unittest.TestLoader()
     suite = unittest.TestSuite()
     nengo_tests = loader.discover('nengo.tests')
     for test in all_testcases(nengo_tests):
@@ -74,6 +76,46 @@ def simulator_test_suite(simulator, loader=None):
             test.Simulator = simulator
             suite.addTest(test)
     return suite
+
+
+class NengoTestLoader(unittest.TestLoader):
+    """TestLoader that can access Nengo tests.
+
+    This is for use in other packages that want to use Nengo test.
+    Passing this loader to various unittest calls will allow
+    for running individual Nengo tests.
+    By default, if a name is passed, it tries the local module first.
+    If that local module doesn't have the appropriate test,
+    then `nengo.tests` is searched instead.
+
+    A common use case for this loader is at the bottom of simulator
+    tests files that access Nengo's tests.
+    For example, to run either all or only specific Nengo simultor tests
+    in a project called `my_simulator`, at the bottom of
+    my_simulator/tests/test_sim.py, write:
+
+    .. code-block:: python
+
+       from nengo.tests.helpers import NengoTestLoader
+       if __name__ == '__main__':
+           unittest.main(testLoader=NengoTestLoader(MySimulator))
+
+    """
+    def __init__(self, simulator):
+        self.simulator = simulator
+
+    def loadTestsFromName(self, name, module=None):
+        # First try using default behavior
+        try:
+            return unittest.TestLoader.loadTestsFromName(self, name, module)
+        except AttributeError:
+            # Test wasn't found, so try loading from nengo's tests instead
+            name = 'nengo.tests.' + name
+            suite = unittest.TestLoader.loadTestsFromName(self, name, None)
+            for test in all_testcases(suite):
+                if hasattr(test, 'Simulator'):
+                    test.Simulator = self.simulator
+            return suite
 
 
 class Plotter(object):
