@@ -9,9 +9,9 @@ class TestSimulator(SimulatorTestCase):
 
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
-        one = m.add(Signal(1))
-        two = m.add(Signal(2))
-        three = m.add(Signal(3))
+        one = m.add(Signal(n=1))
+        two = m.add(Signal(n=2))
+        three = m.add(Signal(n=3))
 
         m.add(Filter(1, three[0:1], one))
         m.add(Filter(2.0, three[1:], two))
