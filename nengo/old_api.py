@@ -16,7 +16,7 @@ from .model import Model
 from .objects import ShapeMismatch, Filter, Transform
 from .objects import Constant, Decoder, Encoder, Signal
 from .objects import Probe as _Probe
-from .objects import LIF, LIFRate, Direct
+from .objects import LIF, Direct, is_constant
 
 from . import simulator
 
@@ -760,7 +760,10 @@ class Network(object):
                         n=src_ii.size, #-- views not ok here
                         name=src.name + '::d=%d,pstc=%s' % (ii,pstc)))
                     fcoef, tcoef = filter_coefs(pstc, dt=self.dt)
-                    self.model.add(Transform(tcoef, src_ii, src_filtered))
+                    if is_constant(src_ii):
+                        self.model.add(Filter(tcoef, src_ii, src_filtered))
+                    else:
+                        self.model.add(Transform(tcoef, src_ii, src_filtered))
                     self.model.add(Filter(fcoef, src_filtered, src_filtered))
                     src_ii = src_filtered
 
