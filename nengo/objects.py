@@ -596,12 +596,21 @@ class Constant(Signal):
         }
 
 
+def is_constant(sig):
+    """
+    Return True iff `sig` is (or is a view of) a Constant signal.
+    """
+    return isinstance(sig.base, Constant)
+
+
 class Transform(object):
     """A linear transform from a decoded signal to the signals buffer"""
     def __init__(self, alpha, insig, outsig):
         alpha = np.asarray(alpha)
         if hasattr(outsig, 'value'):
             raise TypeError('transform destination is constant')
+        if is_constant(insig):
+            raise TypeError('constant input (use filter instead)')
 
         name = insig.name + ">" + outsig.name + ".tf_alpha"
 
