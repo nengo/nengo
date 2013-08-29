@@ -207,3 +207,50 @@ class LIF(_LIFBase):
 
         voltage[:] = v * (1 - spiked)
         refractory_time[:] = new_refractory_time
+
+
+class LearningRule(object):
+    _learning_rate = 1e-5
+    _connection = None
+
+    @property
+    def learning_rate(self):
+        return self._learning_rate
+
+    @learning_rate.setter
+    def learning_rate(self, learning_rate):
+        self._learning_rate = learning_rate
+
+    @property
+    def connection(self):
+        return self._connection
+
+    @connection.setter
+    def connection(self, connection):
+        if self._connection is not None:
+            raise ValueError("Connection is already set and cannot be changed.")
+        self._connection = connection
+
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return str(self)
+
+
+class PES(LearningRule):
+    def __init__(self, error, learning_rate=1.0):
+        self.error = error
+        self.learning_rate = learning_rate
+
+    @property
+    def connection(self):
+        return self._connection
+
+    @connection.setter
+    def connection(self, connection):
+        if self._connection is not None:
+            raise ValueError("Connection is already set and cannot be changed.")
+        self.error_connection = self.error.connect_to(
+            connection.post, modulatory=True)
+        self._connection = connection
