@@ -19,6 +19,7 @@ import logging
 from .config import Config, Default
 from .objects import Ensemble, Node, Connection, Probe, Network
 from .neurons import Direct, LIF, LIFRate, AdaptiveLIF, AdaptiveLIFRate
+from .learning_rules import PES
 from . import networks
 from .simulator import Simulator
 from .utils.logging import log
