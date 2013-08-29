@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 import nengo
-from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
+from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
 from nengo.helpers import piecewise
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class TestConnection(SimulatorTestCase):
         inn = nengo.Node(output=np.sin)
         inh = nengo.Node(piecewise({0: 0, 2.5: 1}))
         nengo.Connection(inn, a)
-        con = nengo.Connection(inh, a.neurons, transform=[[-2.5]]*N)
+        nengo.Connection(inh, a.neurons, transform=[[-2.5]]*N)
 
         inn_p = nengo.Probe(inn, 'output')
         a_p = nengo.Probe(a, 'decoded_output', filter=0.1)
@@ -53,7 +53,7 @@ class TestConnection(SimulatorTestCase):
         inh = nengo.Node(piecewise({0: 0, 2.5: 1}))
         nengo.Connection(inn, a)
         nengo.Connection(inh, b)
-        con = nengo.Connection(b, a.neurons, transform=[[-2.5]]*N)
+        nengo.Connection(b, a.neurons, transform=[[-2.5]]*N)
 
         inn_p = nengo.Probe(inn, 'output')
         a_p = nengo.Probe(a, 'decoded_output', filter=0.1)

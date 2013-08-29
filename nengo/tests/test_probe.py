@@ -7,9 +7,6 @@ import nengo
 from nengo.tests.helpers import SimulatorTestCase, unittest, assert_allclose
 
 
-logger = logging.getLogger(__name__)
-
-
 class TestProbe(SimulatorTestCase):
 
     def test_multirun(self):

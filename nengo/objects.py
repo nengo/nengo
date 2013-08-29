@@ -287,6 +287,7 @@ class Connection(object):
         self.filter = filter
         self.transform = transform
         self.modulatory = modulatory
+        self.learning_rule = kwargs.pop('learning_rule', None)
 
         if isinstance(self.pre, Ensemble):
             self.decoders = kwargs.pop('decoders', None)
@@ -316,13 +317,14 @@ class Connection(object):
         return label
 
     @property
-    def transform(self):
-        """TODO"""
-        return self._transform
+    def learning_rule(self):
+        return self._learning_rule
 
-    @transform.setter
-    def transform(self, _transform):
-        self._transform = np.asarray(_transform)
+    @learning_rule.setter
+    def learning_rule(self, _learning_rule):
+        if _learning_rule is not None:
+            _learning_rule.connection = self
+        self._learning_rule = _learning_rule
 
     def add_to_model(self, model):
         model.connections.append(self)
