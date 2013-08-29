@@ -547,6 +547,7 @@ class Connection(NengoObject):
 
         self.synapse = synapse
         self.modulatory = modulatory
+        self.learning_rules = []
 
         # don't check shapes until we've set all parameters
         self._skip_check_shapes = True

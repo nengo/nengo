@@ -755,6 +755,31 @@ class SimFilterSynapse(Operator):
         return step
 
 
+class SimPES(Operator):
+    """Set output to the change in decoders of the PES rule."""
+    def __init__(self, output, error, activities, learning_rate):
+        self.output = output
+        self.error = error
+        self.activities = activities
+        self.learning_rate = learning_rate
+
+        self.reads = [error, activities]
+
+        self.updates = [output]
+        self.sets = []
+        self.incs = []
+
+    def make_step(self, signals, dt):
+        output = signals[self.output]
+        error = signals[self.error]
+        activities = signals[self.activities]
+        learning_rate = self.learning_rate
+
+        def step():
+            output[...] += learning_rate * np.outer(error, activities) * dt
+        return step
+
+
 class Model(object):
     """Output of the Builder, used by the Simulator."""
 
@@ -1211,9 +1236,10 @@ def build_connection(conn, model, config):  # noqa: C901
         # Add operator for decoders and filtering
         decoders = decoders.T
 
-        decoder_signal = Signal(decoders, name="%s.decoders" % conn.label)
+        model.sig[conn]['decoders'] = Signal(
+            decoders, name="%s.decoders" % conn.label)
         signal = Signal(np.zeros(signal_size), name=conn.label)
-        model.add_op(ProdUpdate(decoder_signal,
+        model.add_op(ProdUpdate(model.sig[conn]['decoders'],
                                 model.sig[conn]['in'],
                                 Signal(0, name="decay"),
                                 signal,
@@ -1258,6 +1284,10 @@ def build_connection(conn, model, config):  # noqa: C901
                         signal,
                         model.sig[conn]['out'],
                         tag=conn.label))
+
+    # Set up learning rules
+    for learning_rule in conn.learning_rules:
+        Builder.build(learning_rule, model=model)
 
     model.params[conn] = BuiltConnection(decoders=decoders,
                                          eval_points=eval_points,
@@ -1333,3 +1363,12 @@ def build_alpha_synapse(synapse, owner, input_signal, model, config):
         synapse, owner, input_signal, num, den, model, config)
 
 Builder.register_builder(build_alpha_synapse, nengo.synapses.Alpha)
+
+
+def build_pes(pes, model):
+    model.add_op(SimPES(output=model.sig[pes.connection]['decoders'],
+                        error=model.sig[pes.error_connection]['out'],
+                        activities=model.sig[pes.connection.pre]['neuron_out'],
+                        learning_rate=pes.learning_rate))
+
+Builder.register_builder(build_pes, nengo.learning_rules.PES)
