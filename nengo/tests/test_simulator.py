@@ -9,9 +9,9 @@ class TestSimulator(SimulatorTestCase):
 
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
-        one = m.add(Signal(1))
-        two = m.add(Signal(2))
-        three = m.add(Signal(3))
+        one = m.add(Signal(n=1))
+        two = m.add(Signal(n=2))
+        three = m.add(Signal(n=3))
 
         m.add(Filter(1, three[0:1], one))
         m.add(Filter(2.0, three[1:], two))
@@ -43,6 +43,56 @@ class TestSimulator(SimulatorTestCase):
             if i > 0:
                 self.assertEqual(sim.signals[sig],
                                  np.sin(sim.signals[m.simtime] - .001))
+
+    def test_encoder_decoder_pathway(self):
+        m = nengo.Model("")
+        one = m.add(Signal(n=1, name='foo'))
+        pop = m.add(Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop'))
+        enc = m.add(Encoder(one, pop, [[1.0], [2.0]]))
+        dec = m.add(Decoder(pop, one, [[.2, .1]]))
+        tf = m.add(Transform(0.5, one, one))
+        fi = m.add(Filter(0.2, one, one))
+
+        sim = self.Simulator(m)
+        sim.signals[one] = np.asarray([1.0])
+        def pp(sig, target):
+            print sig, sim.signals[sig], target
+        sim.step()
+        pp(one, .55)
+        pp(enc.sig, .55) # -- was 1.0 during step fn
+        pp(enc.weights_signal, [[1], [2]]) #
+        pp(pop.input_signal, [1, 2])
+        pp(pop.output_signal, [2, 3])
+        #pp(sim.dec_outputs[dec.sig], [.7])
+
+        assert np.allclose(sim.signals[one], .55, atol=.01, rtol=.01), (
+            sim.signals[one])
+
+    def test_encoder_decoder_with_views(self):
+        m = nengo.Model("")
+        one = m.add(Signal(n=1, name='foo'))
+        pop = m.add(Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop'))
+        enc = m.add(Encoder(one[:], pop, [[1.0], [2.0]]))
+        dec = m.add(Decoder(pop, one, [[.2, .1]]))
+        tf = m.add(Transform(0.5, one, one[:]))
+        fi = m.add(Filter(0.2, one[:], one))
+
+        sim = self.Simulator(m)
+        sim.signals[one] = np.asarray([1.0])
+        def pp(sig, target):
+            #print sig, sim.signals[sig], target
+            pass
+        sim.step()
+        pp(one, .55)
+        pp(enc.sig, .55) # -- was 1.0 during step fn
+        pp(enc.weights_signal, [[1], [2]]) #
+        pp(pop.input_signal, [1, 2])
+        pp(pop.output_signal, [2, 3])
+        #pp(sim.dec_outputs[dec.sig], [.7])
+
+        assert np.allclose(sim.signals[one], .55, atol=.01, rtol=.01), (
+            sim.signals[one])
+
 
 
 if __name__ == "__main__":
