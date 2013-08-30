@@ -65,8 +65,8 @@ class TestSimulator(SimulatorTestCase):
         pp(pop.output_signal, [2, 3])
         #pp(sim.dec_outputs[dec.sig], [.7])
 
-        assert np.allclose(sim.signals[one], .55, atol=.01, rtol=.01), (
-            sim.signals[one])
+        self.assertTrue(np.allclose(sim.signals[one], .55, atol=.01, rtol=.01),
+                        msg=str(sim.signals[one]))
 
     def test_encoder_decoder_with_views(self):
         m = nengo.Model("")
@@ -90,8 +90,8 @@ class TestSimulator(SimulatorTestCase):
         pp(pop.output_signal, [2, 3])
         #pp(sim.dec_outputs[dec.sig], [.7])
 
-        assert np.allclose(sim.signals[one], .55, atol=.01, rtol=.01), (
-            sim.signals[one])
+        self.assertTrue(np.allclose(sim.signals[one], .55, atol=.01, rtol=.01),
+                        msg=sim.signals[one])
 
 
 
