@@ -12,20 +12,20 @@ class TestModel(SimulatorTestCase):
 
         # Old API
         net = nef.Network('test_counters', **params)
-        simtime_probe = net._raw_probe(net.model.simtime, dt_sample=.001)
+        t_probe = net._raw_probe(net.model.t, dt_sample=.001)
         steps_probe = net._raw_probe(net.model.steps, dt_sample=.001)
         net.run(0.003)
-        simtime_data = simtime_probe.get_data()
+        t_data = t_probe.get_data()
         steps_data = steps_probe.get_data()
-        self.assertTrue(np.allclose(simtime_data.flatten(), [.001, .002, .003]))
+        self.assertTrue(np.allclose(t_data.flatten(), [.001, .002, .003]))
         self.assertTrue(np.allclose(steps_data.flatten(), [1, 2, 3]))
 
         # New API
         m = nengo.Model('test_counters', **params)
-        m.probe(m.simtime)
-        m.probe(m.steps)
+        # m.probe(m.t)  # Automatically probed
+        # m.probe(m.steps)  # Automatically probed
         m.run(0.003)
-        self.assertTrue(np.allclose(m.data[m.simtime].flatten(),
+        self.assertTrue(np.allclose(m.data[m.t].flatten(),
                                     [.001, .002, .003]))
         self.assertTrue(np.allclose(m.data[m.steps].flatten(), [1, 2, 3]))
 
