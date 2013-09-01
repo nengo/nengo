@@ -35,7 +35,7 @@ class TestSimulator(SimulatorTestCase):
         sig = m.add(Signal())
 
         pop = m.add(Direct(n_in=1, n_out=1, fn=np.sin))
-        m.add(Encoder(m.simtime, pop, weights=[[1.0]]))
+        m.add(Encoder(m.t, pop, weights=[[1.0]]))
         m.add(Decoder(pop, sig, weights=[[1.0]]))
         m.add(Transform(1.0, sig, sig))
 
@@ -43,8 +43,9 @@ class TestSimulator(SimulatorTestCase):
         sim.step()
         for i in range(5):
             sim.step()
+
             t = (i + 2) * m.dt
-            self.assertTrue(np.allclose(sim.signals[m.simtime], t))
+            self.assertTrue(np.allclose(sim.signals[m.t], t))
             self.assertTrue(np.allclose(sim.signals[sig], np.sin(t - m.dt)))
 
     def test_encoder_decoder_pathway(self):

@@ -7,8 +7,8 @@ import pickle
 import os.path
 import numpy as np
 
-from . import core
 from . import connections
+from . import core
 from . import objects
 from . import simulator
 
@@ -16,7 +16,7 @@ from . import simulator
 logger = logging.getLogger(__name__)
 
 class Model(object):
-    """A model contains a single network and the ability to
+    """A model contains a vsingle network and the ability to
     run simulations of that network.
 
     Model is the first part of the API that modelers
@@ -94,12 +94,12 @@ class Model(object):
         self.rng = np.random.RandomState(self.seed)
         self.fixed_seed = fixed_seed
 
-        self.simtime = self.add(core.Signal(name='simtime'))
+        self.t = self.add(core.Signal(name='simtime'))
         self.steps = self.add(core.Signal(name='steps'))
         self.one = self.add(core.Constant(1, value=[1.0], name='one'))
 
         # Automatically probe these
-        self.probe(self.simtime)
+        self.probe(self.t)
         self.probe(self.steps)
 
         # -- steps counts by 1.0
@@ -107,8 +107,8 @@ class Model(object):
         self.add(core.Filter(1.0, self.steps, self.steps))
 
         # simtime <- dt * steps
-        self.add(core.Filter(dt, self.one, self.simtime))
-        self.add(core.Filter(dt, self.steps, self.simtime))
+        self.add(core.Filter(dt, self.one, self.t))
+        self.add(core.Filter(dt, self.steps, self.t))
 
     def _get_new_seed(self):
         return self.rng.randint(2**31-1) if self.fixed_seed is None \
@@ -513,36 +513,6 @@ class Model(object):
             encoders=encoders, seed=self._get_new_seed())
         return self.add(ens)
 
-    def make_network(self, name, seed=None):
-        """Create and return a network.
-
-        Networks can contain other networks, and are useful
-        for organizing ensembles and connections.
-        This function creates a new network, which can then be used to
-        create ensembles and other Nengo objects that are within that
-        network.
-
-        Parameters
-        ----------
-        name : str
-            Name of the network. This must be unique within the model.
-
-        Returns
-        -------
-        network : Network
-            The created network.
-        seed : int, optional
-            Random number seed that will be fed to the
-            random number generator. Setting this seed makes
-            the creation of the network a deterministic process;
-            however, each new ensemble in the network advances
-            the random number generator, so if the network creation code
-            changes, the entire network changes.
-
-        """
-        net = objects.Network(name, seed, model=self)
-        return self.add(net)
-
     def make_node(self, name, output):
         """Create and return a node of dimensionality ``len(output)``,
         which produces the defined output.
@@ -575,84 +545,8 @@ class Model(object):
         Node : The Node object
 
         """
-        node = objects.Node(name, output, input=self.simtime)
+        node = objects.Node(name, output, input=self.t)
         return self.add(node)
-
-    def probe(self, target, sample_every=None, filter=None):
-        """Probe a piece of data contained in the model.
-
-        When a piece of data is probed, it will be recorded through
-        the course of the simulation.
-
-        Parameters
-        ----------
-        target : str, Nengo object
-            The piece of data being probed.
-            This can specified as a string
-            (see `string reference <string_reference.html>`_)
-            or a Nengo object. Each Nengo object will emit
-            what it considers to be the most useful piece of data
-            by default; if that's not what you want,
-            then specify the correct data using the string format.
-        sample_every : float, optional
-            How often to sample the target data, in seconds.
-
-            Some types of data (e.g. connection weight matrices)
-            are very large, and change relatively slowly.
-            Use ``sample_every`` to limit the amount of data
-            being recorded. For example::
-
-              model.probe('A>B.weights', sample_every=0.5)
-
-            records the value of the weight matrix between
-            the ``A`` and ``B`` ensembles every 0.5 simulated seconds.
-
-            **Default**: Every timestep (i.e., ``dt``).
-        static : bool, optional
-            Denotes if a piece of data does not change.
-
-            Some data that you would want to know about the model
-            does not change over the course of the simulation;
-            this includes things like the properties of a model
-            (e.g., number of neurons or connections) or the random seed
-            associated with a model. In these cases, to record that data
-            only once (for later being written to a file),
-            set ``static`` to True.
-
-            **Default**: False
-
-        """
-        if sample_every is None:
-            sample_every = self.dt
-
-        probe_type = ''
-        key = target
-        if isinstance(target, str):
-            s = target.split('.')
-            if len(s) > 1:
-                target, probe_type = s[0], s[1]
-        obj = self.get(target)
-
-        if type(obj) == objects.Ensemble:
-            obj_s = self.get_string(target)
-            p = obj.probe(probe_type, sample_every, filter, self)
-            self.probed[key] = p.probe
-            return p
-
-        if type(obj) != core.Signal:
-            obj = obj.signal
-
-        if filter is not None and filter > self.dt:
-            fcoef, tcoef = _filter_coefs(pstc=filter, dt=self.dt)
-            probe_sig = self.add(core.Signal(obj.n))
-            self.add(core.Filter(fcoef, probe_sig, probe_sig))
-            self.add(core.Transform(tcoef, obj, probe_sig))
-            p = self.add(core.Probe(probe_sig, sample_every))
-        else:
-            p = self.add(core.Probe(obj, sample_every))
-
-        self.probed[key] = p
-        return p
 
     def connect(self, pre, post, **kwargs):
         """Connect ``pre`` to ``post``.
@@ -760,12 +654,92 @@ class Model(object):
         pre = self.get(pre)
         post = self.get(post)
 
-        if type(pre) == objects.Ensemble:
-            logger.info("Creating DecodedConnection")
-            return self.add(connections.DecodedConnection(pre, post, **kwargs))
+        if 'dt' not in kwargs:
+            kwargs['dt'] = self.dt
+
+        try:
+            connection = pre.connect_to(post, **kwargs)
+        except AttributeError:
+            # Default to making a simple connection
+            connection = connections.SimpleConnection(pre, post, **kwargs)
+        return self.add(connection)
+
+    def probe(self, target, sample_every=None, filter=None):
+        """Probe a piece of data contained in the model.
+
+        When a piece of data is probed, it will be recorded through
+        the course of the simulation.
+
+        Parameters
+        ----------
+        target : str, Nengo object
+            The piece of data being probed.
+            This can specified as a string
+            (see `string reference <string_reference.html>`_)
+            or a Nengo object. Each Nengo object will emit
+            what it considers to be the most useful piece of data
+            by default; if that's not what you want,
+            then specify the correct data using the string format.
+        sample_every : float, optional
+            How often to sample the target data, in seconds.
+
+            Some types of data (e.g. connection weight matrices)
+            are very large, and change relatively slowly.
+            Use ``sample_every`` to limit the amount of data
+            being recorded. For example::
+
+              model.probe('A>B.weights', sample_every=0.5)
+
+            records the value of the weight matrix between
+            the ``A`` and ``B`` ensembles every 0.5 simulated seconds.
+
+            **Default**: Every timestep (i.e., ``dt``).
+        static : bool, optional
+            Denotes if a piece of data does not change.
+
+            Some data that you would want to know about the model
+            does not change over the course of the simulation;
+            this includes things like the properties of a model
+            (e.g., number of neurons or connections) or the random seed
+            associated with a model. In these cases, to record that data
+            only once (for later being written to a file),
+            set ``static`` to True.
+
+            **Default**: False
+
+        """
+        if sample_every is None:
+            sample_every = self.dt
+
+        if isinstance(target, core.Signal):
+            c = None
+            if filter is not None and filter > self.dt:
+                p = objects.Probe(target.name, target.n, sample_every)
+                c = self.connect(target, p, filter=filter, dt=self.dt)
+            else:
+                p = objects.RawProbe(target, sample_every)
+        elif isinstance(target, str):
+            s = target.split('.')
+            if len(s) > 1:
+                obj = self.get(s[:-2])
+                p, c = obj.probe(s[-1], sample_every, filter, self.dt)
+            else:
+                obj = self.get(target)
+                p, c = obj.probe(sample_every=sample_every,
+                                 filter=filter, dt=self.dt)
+        elif hasattr(target, 'probe'):
+            p, c = target.probe(sample_every=sample_every,
+                                filter=filter, dt=self.dt)
         else:
-            logger.info("Creating SimpleConnection")
-            return self.add(connections.SimpleConnection(pre, post, **kwargs))
+            raise TypeError("Type " + target.__class__.__name__ + " "
+                            "has no probe function.")
+
+        self.probed[target] = p.probe
+        self.add(p)
+        if c is not None:
+            self.add(c)
+        return p
+
 
 
 def gen_transform(pre_dims, post_dims,
