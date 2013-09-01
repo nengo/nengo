@@ -622,7 +622,7 @@ class Network(object):
             fval = np.asarray(value(0))
             pop = self.model.add(core.Direct(n_in=1, n_out=fval.size, fn=value))
             self.model.add(core.Encoder(
-                self.model.simtime, pop, weights=np.asarray([[1]])))
+                self.model.t, pop, weights=np.asarray([[1]])))
             self.inputs[name] = pop.output_signal
 
             # move from signals_tmp -> signals

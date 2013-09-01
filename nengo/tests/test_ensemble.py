@@ -32,7 +32,7 @@ class TestEnsemble(SimulatorTestCase):
         a_data = a_p.get_data()
 
         with Plotter(simulator) as plt:
-            t = net.model.data[net.model.simtime]
+            t = net.model.data[net.model.t]
             plt.plot(t, in_data, label='Input')
             plt.plot(t, a_data, label='Neuron approximation, pstc=0.1')
             plt.legend(loc=0)
@@ -53,7 +53,7 @@ class TestEnsemble(SimulatorTestCase):
         m.run(1)
 
         with Plotter(simulator) as plt:
-            t = m.data[m.simtime]
+            t = m.data[m.t]
             plt.plot(t, m.data['in'], label='Input')
             plt.plot(t, m.data['A'], label='Neuron approximation, pstc=0.1')
             plt.legend(loc=0)
@@ -85,7 +85,7 @@ class TestEnsemble(SimulatorTestCase):
         a_data = a_p.get_data()
 
         with Plotter(simulator) as plt:
-            t = net.model.data[net.model.simtime]
+            t = net.model.data[net.model.t]
             plt.plot(t, in_data, label='Input')
             plt.plot(t, a_data, label='Neuron approximation, pstc=0.1')
             plt.legend(loc=0, prop={'size': 10})
@@ -106,7 +106,7 @@ class TestEnsemble(SimulatorTestCase):
         m.run(1)
 
         with Plotter(simulator) as plt:
-            t = m.data[m.simtime]
+            t = m.data[m.t]
             plt.plot(t, m.data['in'], label='Input')
             plt.plot(t, m.data['A'], label='Neuron approximation, pstc=0.1')
             plt.legend(loc=0, prop={'size': 10})
@@ -140,7 +140,7 @@ class TestEnsemble(SimulatorTestCase):
         a_data = a_p.get_data()
 
         with Plotter(simulator) as plt:
-            t = net.model.data[net.model.simtime]
+            t = net.model.data[net.model.t]
             plt.plot(t, in_data, label='Input')
             plt.plot(t, a_data, label='Neuron approximation, pstc=0.02')
             plt.legend(loc=0)
@@ -163,7 +163,7 @@ class TestEnsemble(SimulatorTestCase):
         m.run(5)
 
         with Plotter(simulator) as plt:
-            t = m.data[m.simtime]
+            t = m.data[m.t]
             plt.plot(t, m.data['in'], label='Input')
             plt.plot(t, m.data['A'], label='Neuron approximation, pstc=0.02')
             plt.legend(loc=0)
@@ -210,7 +210,7 @@ class TestEnsemble(SimulatorTestCase):
         a_data = a_p.get_data()
 
         with Plotter(simulator) as plt:
-            t = net.model.data[net.model.simtime]
+            t = net.model.data[net.model.t]
             plt.plot(t, sin_data, label='sin')
             plt.plot(t, cos_data, label='cos')
             plt.plot(t, arctan_data, label='arctan')
@@ -242,7 +242,7 @@ class TestEnsemble(SimulatorTestCase):
         m.run(5)
 
         with Plotter(simulator) as plt:
-            t = m.data[m.simtime]
+            t = m.data[m.t]
             plt.plot(t, m.data['sin'], label='sin')
             plt.plot(t, m.data['cos'], label='cos')
             plt.plot(t, m.data['arctan'], label='arctan')

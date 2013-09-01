@@ -2,9 +2,9 @@ import inspect
 import logging
 import numpy as np
 
+from . import connections
 from . import core
 from . import decoders
-from . import probes
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,6 @@ def sample_unit_signal(dimensions, num_samples, rng):
 
     return samples.T
 
-### High-level objects
 
 class Uniform(object):
     def __init__(self, low, high):
@@ -44,6 +43,7 @@ class Uniform(object):
         rng = np.random if rng is None else rng
         return rng.uniform(low=self.low, high=self.high, size=n)
 
+
 class Gaussian(object):
     def __init__(self, mean, std):
         self.mean = mean
@@ -55,42 +55,6 @@ class Gaussian(object):
     def sample(self, n, rng=None):
         rng = np.random if rng is None else rng
         return rng.normal(loc=self.mean, scale=self.std, size=n)
-
-
-class Network(object):
-    def __init__(self, name, seed, parent):
-        self.model = model
-        self.name = name
-
-    def add(self, obj):
-        pass
-
-    def get(self, target, default=None):
-        pass
-
-    def remove(self, target):
-        pass
-
-    def connect(self, *args, **kwargs):
-        pass
-
-    def connect_neurons(self, *args, **kwargs):
-        pass
-
-    def make_alias(self, alias, target):
-        pass
-
-    def make_ensemble(self, *args, **kwargs):
-        pass
-
-    def make_network(self, *args, **kwargs):
-        pass
-
-    def make_node(self, *args, **kwargs):
-        pass
-
-    def probe(self, target, sample_every=None, static=False):
-        pass
 
 
 class Ensemble(object):
@@ -116,7 +80,7 @@ class Ensemble(object):
 
         if isinstance(neurons, int):
             logger.warning(("neurons should be an instance of a nonlinearity, "
-                          "not an int. Defaulting to LIF."))
+                            "not an int. Defaulting to LIF."))
             neurons = LIF(neurons)
         neurons.name = name + "." + neurons.__class__.__name__
 
@@ -152,7 +116,8 @@ class Ensemble(object):
         encoders *= self.neurons.gain[:, None]
         self.encoders = core.Encoder(self.input_signal, self.neurons, encoders)
 
-        # Set up probes
+        # Set up connections and probes
+        self.connections = []
         self.probes = []
         self.probeable = (
             'decoded_output',  # Default
@@ -164,6 +129,10 @@ class Ensemble(object):
         return self.input_signal.n
 
     @property
+    def n_neurons(self):
+        return self.neurons.n_neurons
+
+    @property
     def eval_points(self):
         return self._eval_points
 
@@ -171,30 +140,8 @@ class Ensemble(object):
     def eval_points(self, points):
         points = np.array(points)
         if len(points.shape) == 1:
-            points.shape = [1, eval_points.shape[0]]
+            points.shape = (1, eval_points.shape[0])
         self._eval_points = points
-
-    @property
-    def n_neurons(self):
-        return self.neurons.n_neurons
-
-    def _add_decoded_output(self, model=None):
-        if not hasattr(self, 'decoded_output'):
-            dt = 0.001 if model is None else model.dt
-
-            self.decoded_output = core.Signal(
-                n=self.dimensions, name=self.name + ".decoded_output")
-            activites = self.activities() * dt
-            targets = self.eval_points.T
-            self.decoders = core.Decoder(
-                sig=self.decoded_output, pop=self.neurons,
-                weights=decoders.solve_decoders(activites, targets))
-            self.transform = core.Transform(
-                1.0, self.decoded_output, self.decoded_output)
-            if model is not None:
-                model.add(self.decoded_output)
-                model.add(self.decoders)
-                model.add(self.transform)
 
     def activities(self, eval_points=None):
         if eval_points is None:
@@ -203,36 +150,27 @@ class Ensemble(object):
         return self.neurons.rates(
             np.dot(self.encoders.weights, eval_points).T)
 
-    def probe(self, to_probe, dt_sample, filter=None, model=None):
+    def connect_to(self, post, **kwargs):
+        connection = connections.DecodedConnection(self, post, **kwargs)
+        self.connections.append(connection)
+        return connection
 
-
-        if to_probe == '':
-            to_probe = 'decoded_output'
-
+    def probe(self, to_probe='decoded_output',
+              sample_every=0.001, filter=0.01, dt=0.001):
         if to_probe == 'decoded_output':
-            self._add_decoded_output(model)
-            if filter is not None and filter > dt_sample:
-                logger.debug("Creating filtered probe")
-                dt = 0.001 if model is None else model.dt
-                p = probes.FilteredProbe(
-                    self.decoded_output, dt_sample, filter, dt)
-            else:
-                logger.debug("Creating raw probe")
-                p = probes.RawProbe(self.decoded_output, dt_sample)
+            p = Probe(self.name + '.decoded_output',
+                      self.dimensions, sample_every)
+            c = self.connect_to(p, filter=filter)
 
         self.probes.append(p)
-        if model is not None:
-            model.add(p)
-        return p
+        return p, c
 
     def add_to_model(self, model):
         model.add(self.neurons)
         model.add(self.encoders)
         model.add(self.input_signal)
-        if hasattr(self, 'decoded_output'):
-            model.add(self.decoded_output)
-            model.add(self.decoders)
-            model.add(self.transform)
+        for connection in self.connections:
+            model.add(connection)
         for probe in self.probes:
             model.add(probe)
 
@@ -240,10 +178,8 @@ class Ensemble(object):
         model.remove(self.neurons)
         model.remove(self.encoders)
         model.remove(self.input_signal)
-        if hasattr(self, 'decoded_output'):
-            model.remove(self.decoded_output)
-            model.remove(self.decoders)
-            model.remove(self.transform)
+        for connection in self.connections:
+            model.remove(connection)
         for probe in self.probes:
             model.remove(probe)
 
@@ -302,29 +238,127 @@ class Node(object):
                                         name=name + ".Direct")
             self.encoder = core.Encoder(input, self.function,
                                         weights=np.asarray([[1]]))
-            self.signal = self.function.output_signal
             self.transform = core.Transform(1.0, self.signal, self.signal)
         else:
-            if type(output) == float:
-                output = [output]
+            output = np.asarray(output)
+            if output.shape == ():
+                output.shape = (1,)
+            self._signal = core.Constant(n=output.size, value=output, name=name)
 
-            if type(output) == list:
-                self.signal = core.Constant(n=len(output),
-                                            value=[float(n) for n in output],
-                                            name=name)
+        # Set up connections and probes
+        self.connections = []
+        self.probes = []
 
-    def probe(self, model):
-        pass
+    @property
+    def signal(self):
+        try:
+            return self.function.output_signal
+        except AttributeError:
+            return self._signal
+
+    def connect_to(self, post, **kwargs):
+        connection = connections.SimpleConnection(self.signal, post, **kwargs)
+        self.connections.append(connection)
+        return connection
+
+    def probe(self, to_probe='output',
+              sample_every=0.001, filter=0.0, dt=0.001):
+        if to_probe == 'output':
+            c = None
+            if filter <= dt:
+                p = RawProbe(self.signal, sample_every)
+            else:
+                p = Probe(self.name + ".output", self.signal.n, sample_every)
+                c = self.connect_to(p, filter=filter, dt=dt)
+
+        self.probes.append(p)
+        return p, c
 
     def add_to_model(self, model):
         if hasattr(self, 'function'):
             model.add(self.function)
-        if hasattr(self, 'encoder'):
             model.add(self.encoder)
-        if hasattr(self, 'transform'):
             model.add(self.transform)
-        # model.add(self.input_signal)  # Should already be in network
-        model.add(self.signal)
+        else:
+            model.add(self._signal)
+        if not self.input_signal in model.signals:
+            model.add(self.input_signal)
+        for connection in self.connections:
+            model.add(connection)
+        for probe in self.probes:
+            model.add(probe)
 
     def remove_from_model(self, model):
-        raise NotImplementedError
+        if hasattr(self, 'function'):
+            model.remove(self.function)
+            model.remove(self.encoder)
+            model.remove(self.transform)
+        else:
+            model.remove(self._signal)
+        model.remove(self.input_signal)
+        for connection in self.connections:
+            model.remove(connection)
+        for probe in self.probes:
+            model.remove(probe)
+
+
+class RawProbe(object):
+    """A raw probe is a wrapper around `nengo.core.Probe`.
+
+    This wrapper is necessary because `nengo.Model` expects
+    the `nengo.core.Probe` object to be `Probe.probe`.
+
+    """
+    def __init__(self, signal, sample_every):
+        self.probe = core.Probe(signal, sample_every)
+
+    @property
+    def sample_every(self):
+        return self.probe.dt
+
+    @property
+    def sample_rate(self):
+        return 1.0 / self.probe.dt
+
+    def add_to_model(self, model):
+        model.add(self.probe)
+
+    def remove_from_model(self, model):
+        model.remove(self.probe)
+
+
+class Probe(object):
+    """A probe is a dummy object that only has an input signal and probe.
+
+    It is used as a target for a connection so that probe logic can
+    reuse connection logic.
+
+    Parameters
+    ==========
+    probed : Nengo object
+        The object being probed.
+
+    """
+    def __init__(self, name, n_in, sample_every):
+        self.input_signal = core.Signal(n=n_in, name="Probe(" + name + ")")
+        self.probe = core.Probe(self.input_signal, sample_every)
+
+    @property
+    def name(self):
+        return self.input_signal.name
+
+    @property
+    def sample_every(self):
+        return self.probe.dt
+
+    @property
+    def sample_rate(self):
+        return 1.0 / self.probe.dt
+
+    def add_to_model(self, model):
+        model.add(self.input_signal)
+        model.add(self.probe)
+
+    def remove_from_model(self, model):
+        model.remove(self.input_signal)
+        model.remove(self.probe)
