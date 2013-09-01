@@ -33,7 +33,7 @@ class TestSimulator(SimulatorTestCase):
         sig = m.add(Signal())
 
         pop = m.add(Direct(n_in=1, n_out=1, fn=np.sin))
-        m.add(Encoder(m.simtime, pop, weights=[[1.0]]))
+        m.add(Encoder(m.t, pop, weights=[[1.0]]))
         m.add(Decoder(pop, sig, weights=[[1.0]]))
         m.add(Transform(1.0, sig, sig))
 
@@ -42,7 +42,7 @@ class TestSimulator(SimulatorTestCase):
             sim.step()
             if i > 0:
                 self.assertEqual(sim.signals[sig],
-                                 np.sin(sim.signals[m.simtime] - .001))
+                                 np.sin(sim.signals[m.t] - .001))
 
     def test_encoder_decoder_pathway(self):
         m = nengo.Model("")

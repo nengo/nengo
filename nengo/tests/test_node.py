@@ -15,7 +15,7 @@ class TestNode(SimulatorTestCase):
         net.make_input('in', value=np.sin)
         p = net.make_probe('in', dt_sample=0.001, pstc=0.0)
         rawp = net._raw_probe(net.inputs['in'], dt_sample=.001)
-        st_probe = net._raw_probe(net.model.simtime, dt_sample=.001)
+        st_probe = net._raw_probe(net.model.t, dt_sample=.001)
         net.run(0.01)
 
         data = p.get_data()
@@ -35,7 +35,7 @@ class TestNode(SimulatorTestCase):
         node = m.make_node('in', output=np.sin)
         m.probe('in')
         m.run(0.01)
-        self.assertTrue(np.allclose(m.data[m.simtime].ravel(),
+        self.assertTrue(np.allclose(m.data[m.t].ravel(),
                                     np.arange(0.001, 0.0105, .001)))
         self.assertTrue(np.allclose(m.data['in'].ravel(),
                                     np.sin(np.arange(0, 0.0095, .001))))
