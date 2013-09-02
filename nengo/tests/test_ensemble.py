@@ -3,14 +3,61 @@ import logging
 import numpy as np
 
 import nengo
+from nengo.objects import Ensemble
 import nengo.old_api as nef
 from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
 
 
 logger = logging.getLogger(__name__)
 
-class TestEnsemble(SimulatorTestCase):
+class TestEnsembleEncoders(unittest.TestCase):
 
+    @staticmethod
+    def _random_encoders(n_neurons, *dims):
+        encoders = np.random.randn(*dims)
+        normed = np.copy(encoders)
+        if normed.shape == ():
+            normed.shape = (1,)
+        if normed.shape == (dims[0],):
+            normed = np.tile(normed, (n_neurons, 1))
+        norm = np.sum(normed * normed, axis=1)[:, np.newaxis]
+        normed /= np.sqrt(norm)
+        return encoders, normed
+
+    def _test_encoders(self, n_dimensions):
+        n_neurons = 10
+        other_args = {'name': 'A',
+                      'neurons': nengo.LIF(n_neurons),
+                      'dimensions': n_dimensions}
+
+        logger.debug("No encoders")
+        self.assertIsNotNone(Ensemble(encoders=None, **other_args))
+
+        logger.debug("One encoder that all neurons will share")
+        encoders, normed = self._random_encoders(n_neurons, n_dimensions)
+        ens = Ensemble(encoders=encoders, **other_args)
+        self.assertTrue(np.allclose(normed, ens.encoders),
+                        (normed, ens.encoders))
+
+        logger.debug("All encoders")
+        encoders, normed = self._random_encoders(
+            n_neurons, n_neurons, n_dimensions)
+        ens = Ensemble(encoders=encoders, **other_args)
+        self.assertTrue(np.allclose(normed, ens.encoders),
+                        (normed, ens.encoders))
+
+    def test_encoders(self):
+        self._test_encoders(2)
+        self._test_encoders(10)
+
+    def test_encoders_one_dimension(self):
+        self._test_encoders(1)
+
+    def test_encoders_high_dimension(self):
+        self._test_encoders(20)
+
+
+class TestEnsemble(SimulatorTestCase):
     def test_constant_scalar(self):
         """A Network that represents a constant value."""
         simulator = self.Simulator
@@ -24,12 +71,12 @@ class TestEnsemble(SimulatorTestCase):
         net.make('A', N, 1)
         net.connect('in', 'A')
 
-        in_p = net.make_probe('in', dt_sample=0.001, pstc=0.0)
-        a_p = net.make_probe('A', dt_sample=0.001, pstc=0.1)
+        net.make_probe('in', dt_sample=0.001, pstc=0.0)
+        net.make_probe('A', dt_sample=0.001, pstc=0.1)
         net.run(1)
 
-        in_data = in_p.get_data()
-        a_data = a_p.get_data()
+        in_data = net.model.data['in']
+        a_data = net.model.data['A']
 
         with Plotter(simulator) as plt:
             t = net.model.data[net.model.t]
@@ -77,12 +124,12 @@ class TestEnsemble(SimulatorTestCase):
         net.make('A', N * len(vals), len(vals))
         net.connect('in', 'A', transform=np.eye(len(vals)))
 
-        in_p = net.make_probe('in', dt_sample=0.001, pstc=0.0)
-        a_p = net.make_probe('A', dt_sample=0.001, pstc=0.1)
+        net.make_probe('in', dt_sample=0.001, pstc=0.0)
+        net.make_probe('A', dt_sample=0.001, pstc=0.1)
         net.run(1)
 
-        in_data = in_p.get_data()
-        a_data = a_p.get_data()
+        in_data = net.model.data['in']
+        a_data = net.model.data['A']
 
         with Plotter(simulator) as plt:
             t = net.model.data[net.model.t]
@@ -132,12 +179,12 @@ class TestEnsemble(SimulatorTestCase):
         net.make('A', N, 1)
         net.connect('in', 'A')
 
-        in_p = net.make_probe('in', dt_sample=0.001, pstc=0.0)
-        a_p = net.make_probe('A', dt_sample=0.001, pstc=0.02)
+        net.make_probe('in', dt_sample=0.001, pstc=0.0)
+        net.make_probe('A', dt_sample=0.001, pstc=0.02)
         net.run(5)
 
-        in_data = in_p.get_data()
-        a_data = a_p.get_data()
+        in_data = net.model.data['in']
+        a_data = net.model.data['A']
 
         with Plotter(simulator) as plt:
             t = net.model.data[net.model.t]
@@ -198,16 +245,16 @@ class TestEnsemble(SimulatorTestCase):
         net.connect('cos', 'A', transform=[[0], [1], [0]])
         net.connect('arctan', 'A', transform=[[0], [0], [1]])
 
-        sin_p = net.make_probe('sin', dt_sample=0.001, pstc=0.0)
-        cos_p = net.make_probe('cos', dt_sample=0.001, pstc=0.0)
-        arctan_p = net.make_probe('arctan', dt_sample=0.001, pstc=0.0)
-        a_p = net.make_probe('A', dt_sample=0.001, pstc=0.02)
+        net.make_probe('sin', dt_sample=0.001, pstc=0.0)
+        net.make_probe('cos', dt_sample=0.001, pstc=0.0)
+        net.make_probe('arctan', dt_sample=0.001, pstc=0.0)
+        net.make_probe('A', dt_sample=0.001, pstc=0.02)
         net.run(5)
 
-        sin_data = sin_p.get_data()
-        cos_data = cos_p.get_data()
-        arctan_data = arctan_p.get_data()
-        a_data = a_p.get_data()
+        sin_data = net.model.data['sin']
+        cos_data = net.model.data['cos']
+        arctan_data = net.model.data['arctan']
+        a_data = net.model.data['A']
 
         with Plotter(simulator) as plt:
             t = net.model.data[net.model.t]

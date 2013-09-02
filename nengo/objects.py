@@ -115,15 +115,16 @@ class Ensemble(object):
 
         # Set up the encoders
         if encoders is None:
-            logger.debug("Randomly generating encoders, shape=(%d, %d)",
-                         neurons.n_neurons, dimensions)
             encoders = self.rng.randn(neurons.n_neurons, dimensions)
-            norm = np.sum(encoders * encoders, axis=1)[:, None]
-            encoders /= np.sqrt(norm)
-        encoders /= radius
-
-        encoders *= self.neurons.gain[:, None]
-        self.encoders = core.Encoder(self.input_signal, self.neurons, encoders)
+        else:
+            encoders = np.asarray(encoders)
+            if encoders.shape == ():
+                encoders.shape = (1,)
+            if encoders.shape == (dimensions,):
+                encoders = np.tile(encoders, (neurons.n_neurons, 1))
+        norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
+        encoders /= np.sqrt(norm)
+        self.encoders = encoders
 
         # Set up connections and probes
         self.connections = []
@@ -142,6 +143,28 @@ class Ensemble(object):
         return self.neurons.n_neurons
 
     @property
+    def encoders(self):
+        # NB: Copy is super necessary!
+        encoders = np.copy(self.encoder.weights)
+
+        # Undo calculations done for speed reasons
+        encoders /= self.neurons.gain[:, np.newaxis]
+        encoders *= np.asarray(self.radius)
+        return encoders
+
+    @encoders.setter
+    def encoders(self, weights):
+        if hasattr(self, 'encoder') and self.encoder is not None:
+            logger.warning("Encoder being overwritten on %s. If encoder has "
+                           "already been added to a model, it must be "
+                           "removed manually.", self.name)
+
+        # Do some calculations ahead of time
+        weights /= np.asarray(self.radius)
+        weights *= self.neurons.gain[:, np.newaxis]
+        self.encoder = core.Encoder(self.input_signal, self.neurons, weights)
+
+    @property
     def eval_points(self):
         return self._eval_points
 
@@ -157,7 +180,7 @@ class Ensemble(object):
             eval_points = self.eval_points
 
         return self.neurons.rates(
-            np.dot(self.encoders.weights, eval_points).T)
+            np.dot(self.encoder.weights, eval_points).T)
 
     def connect_to(self, post, **kwargs):
         connection = connections.DecodedConnection(self, post, **kwargs)
@@ -176,7 +199,7 @@ class Ensemble(object):
 
     def add_to_model(self, model):
         model.add(self.neurons)
-        model.add(self.encoders)
+        model.add(self.encoder)
         model.add(self.input_signal)
         for connection in self.connections:
             model.add(connection)
@@ -185,7 +208,7 @@ class Ensemble(object):
 
     def remove_from_model(self, model):
         model.remove(self.neurons)
-        model.remove(self.encoders)
+        model.remove(self.encoder)
         model.remove(self.input_signal)
         for connection in self.connections:
             model.remove(connection)
