@@ -13,22 +13,12 @@ class TestNode(SimulatorTestCase):
         # Old API
         net = nef.Network('test_simple', **params)
         net.make_input('in', value=np.sin)
-        p = net.make_probe('in', dt_sample=0.001, pstc=0.0)
-        rawp = net._raw_probe(net.inputs['in'], dt_sample=.001)
-        st_probe = net._raw_probe(net.model.t, dt_sample=.001)
+        net.make_probe('in', dt_sample=0.001, pstc=0.0)
         net.run(0.01)
-
-        data = p.get_data()
-        raw_data = rawp.get_data()
-        st_data = st_probe.get_data()
-        self.assertTrue(np.allclose(st_data.ravel(),
+        self.assertTrue(np.allclose(net.model.data[net.model.t].ravel(),
                                     np.arange(0.001, 0.0105, .001)))
-        self.assertTrue(np.allclose(raw_data.ravel(),
+        self.assertTrue(np.allclose(net.model.data['in'].ravel(),
                                     np.sin(np.arange(0, 0.0095, .001))))
-        # -- the make_probe call induces a one-step delay
-        #    on readout even when the pstc is really small.
-        self.assertTrue(np.allclose(data.ravel()[1:],
-                                    np.sin(np.arange(0, 0.0085, .001))))
 
         # New API
         m = nengo.Model('test_simple', **params)
