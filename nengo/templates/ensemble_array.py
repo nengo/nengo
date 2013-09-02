@@ -5,6 +5,7 @@ import numpy as np
 from ..connections import ConnectionList
 from .. import core
 from .. import objects
+from .. import probes
 
 logger = logging.getLogger(__name__)
 
@@ -83,11 +84,10 @@ class EnsembleArray(object):
         self.connections.append(connection)
         return connection
 
-
     def probe(self, to_probe='decoded_output',
               sample_every=0.001, filter=0.01, dt=0.001):
         if to_probe == 'decoded_output':
-            p = objects.Probe(self.name + ".decoded_output",
+            p = probes.Probe(self.name + ".decoded_output",
                               self.dimensions, sample_every)
             c = self.connect_to(p, filter=filter)
 
