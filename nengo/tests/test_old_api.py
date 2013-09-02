@@ -79,7 +79,7 @@ class TestOldAPI(SimulatorTestCase):
         Amat = np.asarray([[.4, .8]])
         Bmat = np.asarray([[-1.0, -0.6, -.15], [0.25, .5, .7]])
 
-        net = nef.Network('V', seed=seed, simulator=self.Simulator)
+        net = nef.Network('Multidim array', seed=seed, simulator=self.Simulator)
 
         # values should stay within the range (-radius,radius)
         radius = 2.0

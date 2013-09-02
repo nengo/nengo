@@ -6,6 +6,7 @@ import numpy as np
 from . import connections
 from . import core
 from . import decoders
+from . import probes
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +17,12 @@ def sample_unit_signal(dimensions, num_samples, rng):
     Returns float array of sample points: dimensions x num_samples
 
     """
-    logger.debug("Randomly generating %d eval points", num_samples)
+    # logger.debug("Randomly generating %d eval points", num_samples)
     samples = rng.randn(num_samples, dimensions)
 
     # normalize magnitude of sampled points to be of unit length
     norm = np.sum(samples * samples, axis=1)
-    samples /= np.sqrt(norm)[:, None]
+    samples /= np.sqrt(norm)[:, np.newaxis]
 
     # generate magnitudes for vectors from uniform distribution
     scale = rng.rand(num_samples, 1) ** (1.0 / dimensions)
@@ -190,8 +191,8 @@ class Ensemble(object):
     def probe(self, to_probe='decoded_output',
               sample_every=0.001, filter=0.01, dt=0.001):
         if to_probe == 'decoded_output':
-            p = Probe(self.name + '.decoded_output',
-                      self.dimensions, sample_every)
+            p = probes.Probe(self.name + '.decoded_output',
+                             self.dimensions, sample_every)
             c = self.connect_to(p, filter=filter)
 
         self.probes.append(p)
@@ -298,9 +299,10 @@ class Node(object):
         if to_probe == 'output':
             c = None
             if filter <= dt:
-                p = RawProbe(self.signal, sample_every)
+                p = probes.RawProbe(self.signal, sample_every)
             else:
-                p = Probe(self.name + ".output", self.signal.n, sample_every)
+                p = probes.Probe(self.name + ".output",
+                                 self.signal.n, sample_every)
                 c = self.connect_to(p, filter=filter, dt=dt)
 
         self.probes.append(p)
@@ -332,65 +334,3 @@ class Node(object):
             model.remove(connection)
         for probe in self.probes:
             model.remove(probe)
-
-
-class RawProbe(object):
-    """A raw probe is a wrapper around `nengo.core.Probe`.
-
-    This wrapper is necessary because `nengo.Model` expects
-    the `nengo.core.Probe` object to be `Probe.probe`.
-
-    """
-    def __init__(self, signal, sample_every):
-        self.probe = core.Probe(signal, sample_every)
-
-    @property
-    def sample_every(self):
-        return self.probe.dt
-
-    @property
-    def sample_rate(self):
-        return 1.0 / self.probe.dt
-
-    def add_to_model(self, model):
-        model.add(self.probe)
-
-    def remove_from_model(self, model):
-        model.remove(self.probe)
-
-
-class Probe(object):
-    """A probe is a dummy object that only has an input signal and probe.
-
-    It is used as a target for a connection so that probe logic can
-    reuse connection logic.
-
-    Parameters
-    ==========
-    probed : Nengo object
-        The object being probed.
-
-    """
-    def __init__(self, name, n_in, sample_every):
-        self.input_signal = core.Signal(n=n_in, name="Probe(" + name + ")")
-        self.probe = core.Probe(self.input_signal, sample_every)
-
-    @property
-    def name(self):
-        return self.input_signal.name
-
-    @property
-    def sample_every(self):
-        return self.probe.dt
-
-    @property
-    def sample_rate(self):
-        return 1.0 / self.probe.dt
-
-    def add_to_model(self, model):
-        model.add(self.input_signal)
-        model.add(self.probe)
-
-    def remove_from_model(self, model):
-        model.remove(self.input_signal)
-        model.remove(self.probe)

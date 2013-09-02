@@ -10,6 +10,7 @@ import numpy as np
 from . import connections
 from . import core
 from . import objects
+from . import probes
 from . import simulator
 
 
@@ -262,7 +263,8 @@ class Model(object):
             self.sim_obj = self.simulator(self)
 
         steps = int(time // self.dt)
-        logger.debug("Running for %f seconds; %d steps", time, steps)
+        logger.debug("Running %s for %f seconds, or %d steps",
+                     self.name, time, steps)
         self.sim_obj.run_steps(steps)
 
         for k in self.probed:
@@ -332,11 +334,11 @@ class Model(object):
                 return self.aliases[target]
             elif self.objs.has_key(target):
                 return self.objs[target]
-            logger.error("Cannot find %s in this model.", target)
+            logger.error("Cannot find %s in model %s.", target, self.name)
             return default
 
         if not target in self.objs.values():
-            logger.error("Cannot find %s in this model.", str(target))
+            logger.error("Cannot find %s in model %s.", str(target), self.name)
             return default
 
         return target
@@ -379,7 +381,7 @@ class Model(object):
             if v == target:
                 return k
 
-        logger.warning("Cannot find %s in this model.", str(target))
+        logger.warning("Cannot find %s in model %s.", str(target), self.name)
         return default
 
     def remove(self, target):
@@ -400,7 +402,7 @@ class Model(object):
         """
         obj = self.get(target)
         if obj is None:
-            logger.warning("%s is not in this model.", str(target))
+            logger.warning("%s is not in model %s.", str(target), self.name)
             return
 
         obj.remove_from_model(self)
@@ -711,13 +713,13 @@ class Model(object):
         if sample_every is None:
             sample_every = self.dt
 
-        if isinstance(target, core.Signal):
+        if hasattr(target, 'base') and isinstance(target.base, core.Signal):
             c = None
             if filter is not None and filter > self.dt:
-                p = objects.Probe(target.name, target.n, sample_every)
+                p = probes.Probe(target.name, target.n, sample_every)
                 c = self.connect(target, p, filter=filter, dt=self.dt)
             else:
-                p = objects.RawProbe(target, sample_every)
+                p = probes.RawProbe(target, sample_every)
         elif isinstance(target, str):
             s = target.split('.')
             if len(s) > 1:

@@ -4,6 +4,7 @@ import numpy as np
 
 from . import core
 from . import decoders as decsolve
+from . import probes
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,8 @@ class SimpleConnection(object):
         else:
             self.filter = core.Filter(transform, self.pre, self.post)
 
+        self.probes = []
+
     def __str__(self):
         return self.name + " (SimpleConnection)"
 
@@ -43,12 +46,26 @@ class SimpleConnection(object):
     def name(self):
         return self.pre.name + ">" + self.post.name
 
+    def probe(self, to_probe='signal', sample_every=0.001, filter=None):
+        if filter is not None or filter > 0:
+            raise ValueError("Cannot create filtered probes on connections; "
+                             "the connection is already filtered.")
+
+        if to_probe == 'signal':
+            signal = self.signal if hasattr(self, 'signal') else self.pre
+            p = probes.RawProbe(signal, sample_every)
+
+        self.probes.append(p)
+        return p, c
+
     def add_to_model(self, model):
         if hasattr(self, 'signal'):
             model.add(self.signal)
             model.add(self.sig_transform)
             model.add(self.sig_filter)
         model.add(self.filter)
+        for probe in self.probes:
+            model.add(probe)
 
 
 class DecodedConnection(object):
@@ -116,6 +133,17 @@ class DecodedConnection(object):
         if self.function is not None:
             return name + ":" + self.function.__name__
         return name
+
+    def probe(self, to_probe='signal', sample_every=0.001, filter=None):
+        if filter is not None or filter > 0:
+            raise ValueError("Cannot create filtered probes on connections; "
+                             "the connection is already filtered.")
+
+        if to_probe == 'signal':
+            p = probes.RawProbe(self.signal, sample_every)
+
+        self.probes.append(p)
+        return p, c
 
     def add_to_model(self, model):
         model.add(self.signal)
