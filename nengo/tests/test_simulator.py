@@ -38,11 +38,12 @@ class TestSimulator(SimulatorTestCase):
         m.add(Transform(1.0, sig, sig))
 
         sim = self.Simulator(m)
+        sim.step()
         for i in range(5):
             sim.step()
-            if i > 0:
-                self.assertEqual(sim.signals[sig],
-                                 np.sin(sim.signals[m.simtime] - .001))
+            t = (i + 2) * m.dt
+            self.assertTrue(np.allclose(sim.signals[m.simtime], t))
+            self.assertTrue(np.allclose(sim.signals[sig], np.sin(t - m.dt)))
 
     def test_encoder_decoder_pathway(self):
         m = nengo.Model("")
@@ -55,15 +56,17 @@ class TestSimulator(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.signals[one] = np.asarray([1.0])
-        def pp(sig, target):
-            print sig, sim.signals[sig], target
         sim.step()
-        pp(one, .55)
-        pp(enc.sig, .55) # -- was 1.0 during step fn
-        pp(enc.weights_signal, [[1], [2]]) #
-        pp(pop.input_signal, [1, 2])
-        pp(pop.output_signal, [2, 3])
-        #pp(sim.dec_outputs[dec.sig], [.7])
+
+        if 0:
+            def pp(sig, target):
+                print sig, sim.signals[sig], target
+            pp(one, .55)
+            pp(enc.sig, .55) # -- was 1.0 during step fn
+            pp(enc.weights_signal, [[1], [2]]) #
+            pp(pop.input_signal, [1, 2])
+            pp(pop.output_signal, [2, 3])
+            #pp(sim.dec_outputs[dec.sig], [.7])
 
         self.assertTrue(np.allclose(sim.signals[one], .55, atol=.01, rtol=.01),
                         msg=str(sim.signals[one]))
