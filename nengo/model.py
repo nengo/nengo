@@ -1,4 +1,5 @@
 import codecs
+import copy
 import inspect
 import json
 import logging
@@ -10,11 +11,15 @@ import numpy as np
 from . import connections
 from . import core
 from . import objects
-from . import probes
 from . import simulator
 
 
 logger = logging.getLogger(__name__)
+
+
+class ModelFrozenError(RuntimeError):
+    msg = "Model has been built and cannot be modified further."
+
 
 class Model(object):
     """A model contains a vsingle network and the ability to
@@ -71,10 +76,8 @@ class Model(object):
 
     """
 
-    def __init__(self, name, seed=None, fixed_seed=None,
-                 simulator=simulator.Simulator, dt=0.001):
-        self.dt = dt
-
+    def __init__(self, name, simulator=simulator.Simulator,
+                 seed=None, fixed_seed=None):
         self.signals = set()
         self.nonlinearities = set()
         self.encoders = set()
@@ -87,6 +90,8 @@ class Model(object):
         self.aliases = {}
         self.probed = {}
         self.data = {}
+        self.connections = []
+        self.signal_probes = []
 
         self.name = name
         self.simulator = simulator
@@ -107,9 +112,7 @@ class Model(object):
         self.add(core.Filter(1.0, self.one, self.steps))
         self.add(core.Filter(1.0, self.steps, self.steps))
 
-        # simtime <- dt * steps
-        self.add(core.Filter(dt, self.one, self.t))
-        self.add(core.Filter(dt, self.steps, self.t))
+        self.built = False
 
     def _get_new_seed(self):
         return self.rng.randint(2**31-1) if self.fixed_seed is None \
@@ -117,22 +120,6 @@ class Model(object):
 
     def __str__(self):
         return "Model: " + self.name
-
-    @property
-    def connections(self):
-        return [o for o in self.objs.values() if isinstance(o, Connection)]
-
-    @property
-    def ensembles(self):
-        return [o for o in self.objs.values() if isinstance(o, Ensemble)]
-
-    @property
-    def nodes(self):
-        return [o for o in self.objs.values() if isinstance(o, Node)]
-
-    @property
-    def networks(self):
-        return [o for o in self.objs.values() if isinstance(o, Network)]
 
     ### I/O
 
@@ -199,6 +186,63 @@ class Model(object):
 
     ### Simulation methods
 
+    @property
+    def built(self):
+        return self._frozen
+
+    @built.setter
+    def built(self, frozen):
+        self._frozen = frozen
+
+        # If built, stub out all methods but reset and run
+        def stub(*args, **kwargs):
+            raise ModelFrozenError(ModelFrozenError.msg)
+        if frozen:
+            for k, v in inspect.getmembers(self, predicate=inspect.isroutine):
+                if k not in ('reset', 'run'):
+                    setattr(self, k, stub)
+
+    def build(self, dt=0.001):
+        logger.info("Copying model")
+        modelcopy = copy.deepcopy(self)
+        modelcopy.name += ", dt=%f" % dt
+        modelcopy.dt = dt
+        modelcopy.add(core.Filter(dt, modelcopy.one, modelcopy.t))
+        modelcopy.add(core.Filter(dt, modelcopy.steps, modelcopy.t))
+
+        # Sort all objects by name
+        all_objs = sorted(modelcopy.objs.values(), key=getattr(o, 'name'))
+
+        # 1. Build objects first
+        logger.info("Building objects")
+        for o in all_objs:
+            o.build(model=modelcopy, dt=dt)
+
+        # 2. Then probes
+        logger.info("Building probes")
+        for o in all_objs:
+            for p in o.probes:
+                p.build(model=modelcopy, dt=dt)
+        for p in self.signal_probes:
+            p.build(model=modelcopy, dt=dt)
+
+        # Collect raw probes
+        for target in self.probed:
+            if not isinstance(self.probed[target], core.Probe):
+                self.probed[target] = self.probed[target].probe
+
+        # 3. Then connections
+        logger.info("Building connections")
+        for o in all_objs:
+            for c in o.connections_out:
+                c.build(model=modelcopy, dt=dt)
+        for c in self.connections:
+            c.build(model=modelcopy, dt=dt)
+
+        modelcopy.built = True
+        logger.info("Finished. New model is %s.", modelcopy.name)
+        return modelcopy
+
     def reset(self):
         """Reset the state of the simulation.
 
@@ -207,7 +251,11 @@ class Model(object):
 
         """
         logger.debug("Resetting simulator for %s", self.name)
-        self.sim_obj.reset()
+        try:
+            self.sim_obj.reset()
+        except AttributeError:
+            logger.warning("Tried to reset %s, but had never been run.",
+                           self.name)
 
     def run(self, time, dt=0.001, output=None, stop_when=None):
         """Runs a simulation of the model.
@@ -258,11 +306,20 @@ class Model(object):
             ``output`` is None.
 
         """
+        if not self.built:
+            builtmodel = self.build(dt=dt)
+            return builtmodel.run(dt=dt, output=output, stop_when=stop_when)
+
+        if dt != self.dt:
+            raise ModelFrozenError(
+                "Model previously built with dt=%f. Rebuild model to use "
+                "different dt." % self.dt)
+
         if getattr(self, 'sim_obj', None) is None:
             logger.debug("Creating simulator for %s", self.name)
             self.sim_obj = self.simulator(self)
 
-        steps = int(time // self.dt)
+        steps = int(time // dt)
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.name, time, steps)
         self.sim_obj.run_steps(steps)
@@ -270,7 +327,7 @@ class Model(object):
         for k in self.probed:
             self.data[k] = self.sim_obj.probe_data(self.probed[k])
 
-        return self.data
+        return self
 
     ### Model manipulation
 
@@ -302,9 +359,21 @@ class Model(object):
         if hasattr(obj, 'name') and self.objs.has_key(obj.name):
             raise ValueError("Something called " + obj.name + " already exists."
                              " Please choose a different name.")
-        obj.add_to_model(self)
-        if hasattr(obj, 'name') and not obj.__module__ == 'core':
+
+        if 'core' in obj.__module__:
+            obj.add_to_model(self)
+        elif hasattr(obj, 'connections_out'):
             self.objs[obj.name] = obj
+        elif hasattr(obj, 'connections_in'):
+            self.signal_probes.append(obj)
+        elif hasattr(obj, 'probes'):
+            self.connections.append(obj)
+        else:
+            raise TypeError("Object not recognized as a Nengo object. "
+                            "Objects should have connections_in and "
+                            "connections_out lists; connections should "
+                            "have a probes dictionary.")
+
         return obj
 
     def get(self, target, default=None):
@@ -405,16 +474,17 @@ class Model(object):
             logger.warning("%s is not in model %s.", str(target), self.name)
             return
 
-        obj.remove_from_model(self)
-
-        for k, v in self.objs.iteritems():
-            if v == obj:
-                del self.objs[k]
-                logger.info("%s removed.", k)
-        for k, v in self.aliases.iteritem():
-            if v == obj:
-                del self.aliases[k]
-                logger.info("Alias '%s' removed.", k)
+        if 'core' in obj.__module__:
+            obj.remove_from_model(self)
+        else:
+            for k, v in self.objs.iteritems():
+                if v == obj:
+                    del self.objs[k]
+                    logger.info("%s removed.", k)
+            for k, v in self.aliases.iteritem():
+                if v == obj:
+                    del self.aliases[k]
+                    logger.info("Alias '%s' removed.", k)
 
         return obj
 
@@ -450,13 +520,9 @@ class Model(object):
         logger.info("%s aliased to %s", obj_s, alias)
         return self.get(obj_s)
 
-
     # Model creation methods
 
-    def make_ensemble(self, name, neurons, dimensions,
-                      max_rates=objects.Uniform(200, 300),
-                      intercepts=objects.Uniform(-1, 1),
-                      radius=1.0, encoders=None):
+    def make_ensemble(self, name, neurons, dimensions, **kwargs):
         """Create and return an ensemble of neurons.
 
         The ensemble created by this function is automatically added to
@@ -470,49 +536,13 @@ class Model(object):
             Number of neurons in the ensemble.
         dimensions : int
             Number of dimensions that this ensemble will represent.
-        max_rates : iterable, optional
-            A 2-element iterable containing the minimum and maximum
-            values of a uniform distribution from which the maximum
-            firing rates of neurons in the ensemble will be selected
-            (in Hz).
-
-            **Default**: (50, 100)
-        intercepts : iterable, optional
-            A 2-element iterable containing the minimum and maximum
-            values of a uniform distribution from which the x-intercepts
-            of neuron tuning curves will be selected.
-
-            **Default**: (-1, 1)
-        radius : float, optional
-            The representational range of the ensemble.
-            I.e., the maximum value that can be represented
-            in each dimension.
-
-            **Default**: 1.0
-        encoders : 2-D matrix of floats, optional
-            A matrix containing encoding vectors for each neuron.
-
-            **Default**: randomly generated vectors on the unit sphere.
-        neuron_model : dict, optional
-            Specifies the neuron model that this ensemble will
-            be made up of.
-
-            **Default**: A leaky integrate-and-fire (LIF) neuron
-            with ``tau_rc=0.02``, ``tau_ref=0.002``.
-        mode : {'spiking', 'direct', 'rate'}, optional
-            Simulation mode.
-
-            **Default**: 'spiking'
 
         See Also
         --------
         Ensemble : The Ensemble object
 
         """
-        ens = objects.Ensemble(
-            name, neurons, dimensions,
-            max_rates=max_rates, intercepts=intercepts, radius=radius,
-            encoders=encoders, seed=self._get_new_seed())
+        ens = objects.Ensemble(name, neurons, dimensions, **kwargs)
         return self.add(ens)
 
     def make_node(self, name, output):
@@ -547,7 +577,9 @@ class Model(object):
         Node : The Node object
 
         """
-        node = objects.Node(name, output, input=self.t)
+        node = objects.Node(name, output)
+        if callable(output):
+            self.connect(self.t, node)
         return self.add(node)
 
     def connect(self, pre, post, **kwargs):
@@ -656,17 +688,15 @@ class Model(object):
         pre = self.get(pre)
         post = self.get(post)
 
-        if 'dt' not in kwargs:
-            kwargs['dt'] = self.dt
-
         try:
-            connection = pre.connect_to(post, **kwargs)
+            return pre.connect_to(post, **kwargs)
         except AttributeError:
             # Default to making a simple connection
             connection = connections.SimpleConnection(pre, post, **kwargs)
-        return self.add(connection)
+            self.connections.append(connection)
+            return connection
 
-    def probe(self, target, sample_every=None, filter=None):
+    def probe(self, target, sample_every=0.001, filter=None):
         """Probe a piece of data contained in the model.
 
         When a piece of data is probed, it will be recorded through
@@ -710,130 +740,25 @@ class Model(object):
             **Default**: False
 
         """
-        if sample_every is None:
-            sample_every = self.dt
-
         if hasattr(target, 'base') and isinstance(target.base, core.Signal):
-            c = None
-            if filter is not None and filter > self.dt:
-                p = probes.Probe(target.name, target.n, sample_every)
-                c = self.connect(target, p, filter=filter, dt=self.dt)
+            if filter is not None:
+                p = probes.Probe(target.name, sample_every, target.n)
+                self.signal_probes.append(p)
+                self.connect(target, p, filter=filter)
             else:
-                p = probes.RawProbe(target, sample_every)
+                p = core.Probe(target, sample_every)
+                self.add(p)
         elif isinstance(target, str):
             s = target.split('.')
             if len(s) > 1:
                 obj = self.get(s[:-2])
-                p, c = obj.probe(s[-1], sample_every, filter, self.dt)
+                p = obj.probe(s[-1], sample_every, filter)
             else:
                 obj = self.get(target)
-                p, c = obj.probe(sample_every=sample_every,
-                                 filter=filter, dt=self.dt)
+                p = obj.probe(sample_every=sample_every, filter=filter)
         elif hasattr(target, 'probe'):
-            p, c = target.probe(sample_every=sample_every,
-                                filter=filter, dt=self.dt)
+            target.probe(sample_every=sample_every, filter=filter)
         else:
             raise TypeError("Type " + target.__class__.__name__ + " "
                             "has no probe function.")
-
-        self.probed[target] = p.probe
-        self.add(p)
-        if c is not None:
-            self.add(c)
-        return p
-
-
-
-def gen_transform(pre_dims, post_dims,
-                  weight=1.0, index_pre=None, index_post=None):
-    """Helper function used to create a ``pre_dims`` by ``post_dims``
-    linear transformation matrix.
-
-    Parameters
-    ----------
-    pre_dims, post_dims : int
-        The numbers of presynaptic and postsynaptic dimensions.
-    weight : float, optional
-        The weight value to use in the transform.
-
-        All values in the transform are either 0 or ``weight``.
-
-        **Default**: 1.0
-    index_pre, index_post : iterable of int
-        Determines which values are non-zero, and indicates which
-        dimensions of the pre-synaptic ensemble should be routed to which
-        dimensions of the post-synaptic ensemble.
-
-    Returns
-    -------
-    transform : 2D matrix of floats
-        A two-dimensional transform matrix performing the requested routing.
-
-    Examples
-    --------
-
-      # Sends the first two dims of pre to the first two dims of post
-      >>> gen_transform(pre_dims=2, post_dims=3,
-                        index_pre=[0, 1], index_post=[0, 1])
-      [[1, 0], [0, 1], [0, 0]]
-
-    """
-    t = [[0 for pre in xrange(pre_dims)] for post in xrange(post_dims)]
-    if index_pre is None:
-        index_pre = range(dim_pre)
-    elif isinstance(index_pre, int):
-        index_pre = [index_pre]
-
-    if index_post is None:
-        index_post = range(dim_post)
-    elif isinstance(index_post, int):
-        index_post = [index_post]
-
-    for i in xrange(min(len(index_pre), len(index_post))):  # was max
-        pre = index_pre[i]  # [i % len(index_pre)]
-        post = index_post[i]  # [i % len(index_post)]
-        t[post][pre] = weight
-    return t
-
-
-def gen_weights(pre_neurons, post_neurons, function):
-    """Helper function used to create a ``pre_neurons`` by ``post_neurons``
-    connection weight matrix.
-
-    Parameters
-    ----------
-    pre_neurons, post_neurons : int
-        The numbers of presynaptic and postsynaptic neurons.
-    function : function
-        A function that generates weights.
-
-        If it accepts no arguments, it will be called to
-        generate each individual weight (useful
-        to great random weights, for example).
-        If it accepts two arguments, it will be given the
-        ``pre`` and ``post`` index in the weight matrix.
-
-    Returns
-    -------
-    weights : 2D matrix of floats
-        A two-dimensional connection weight matrix.
-
-    Examples
-    --------
-
-      >>> gen_weights(2, 2, random.random)
-      [[0.6281625119511959, 0.48560016153108376], [0.9639779858394248, 0.4768136917985597]]
-
-      >>> def product(pre, post):
-      ...     return pre * post
-      >>> gen_weights(3, 3, product)
-      [[0, 0, 0], [0, 1, 2], [0, 2, 4]]
-
-    """
-    argspec = inspect.getargspec(func)
-    if len(argspec[0]) == 0:
-        return [[func() for pre in xrange(pre_neurons)
-                 for post in xrange(post_neurons)]]
-    elif len(argspec[0]) == 2:
-        return [[func(pre, post) for pre in xrange(pre_neurons)
-                 for post in xrange(post_neurons)]]
+        self.probed[target] = p

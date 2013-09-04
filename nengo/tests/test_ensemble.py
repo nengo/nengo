@@ -61,7 +61,7 @@ class TestEnsemble(SimulatorTestCase):
     def test_constant_scalar(self):
         """A Network that represents a constant value."""
         simulator = self.Simulator
-        params = dict(simulator=simulator, seed=123, dt=0.001)
+        params = dict(simulator=simulator, seed=123)
         N = 30
         val = 0.5
 
@@ -73,7 +73,7 @@ class TestEnsemble(SimulatorTestCase):
 
         net.make_probe('in', dt_sample=0.001, pstc=0.0)
         net.make_probe('A', dt_sample=0.001, pstc=0.1)
-        net.run(1)
+        net = net.run(1, dt=0.001)
 
         in_data = net.model.data['in']
         a_data = net.model.data['A']
@@ -97,7 +97,7 @@ class TestEnsemble(SimulatorTestCase):
 
         m.probe('in')
         m.probe('A', filter=0.1)
-        m.run(1)
+        m = m.run(1, dt=0.001)
 
         with Plotter(simulator) as plt:
             t = m.data[m.t]
@@ -114,7 +114,7 @@ class TestEnsemble(SimulatorTestCase):
     def test_constant_vector(self):
         """A network that represents a constant 3D vector."""
         simulator = self.Simulator
-        params = dict(simulator=simulator, seed=123, dt=0.001)
+        params = dict(simulator=simulator, seed=123)
         N = 30
         vals = [0.6, 0.1, -0.5]
 
@@ -126,7 +126,7 @@ class TestEnsemble(SimulatorTestCase):
 
         net.make_probe('in', dt_sample=0.001, pstc=0.0)
         net.make_probe('A', dt_sample=0.001, pstc=0.1)
-        net.run(1)
+        net = net.run(1, dt=0.001)
 
         in_data = net.model.data['in']
         a_data = net.model.data['A']
@@ -150,7 +150,7 @@ class TestEnsemble(SimulatorTestCase):
 
         m.probe('in')
         m.probe('A', filter=0.1)
-        m.run(1)
+        m = m.run(1, dt=0.001)
 
         with Plotter(simulator) as plt:
             t = m.data[m.t]
@@ -168,7 +168,7 @@ class TestEnsemble(SimulatorTestCase):
     def test_scalar(self):
         """A network that represents sin(t)."""
         simulator = self.Simulator
-        params = dict(simulator=simulator, seed=123, dt=0.001)
+        params = dict(simulator=simulator, seed=123)
         N = 30
         target = np.sin(np.arange(4999) / 1000.)
         target.shape = (4999, 1)
@@ -181,7 +181,7 @@ class TestEnsemble(SimulatorTestCase):
 
         net.make_probe('in', dt_sample=0.001, pstc=0.0)
         net.make_probe('A', dt_sample=0.001, pstc=0.02)
-        net.run(5)
+        net = net.run(5, dt=0.001)
 
         in_data = net.model.data['in']
         a_data = net.model.data['A']
@@ -207,7 +207,7 @@ class TestEnsemble(SimulatorTestCase):
 
         m.probe('in')
         m.probe('A', filter=0.02)
-        m.run(5)
+        m = m.run(5, dt=0.001)
 
         with Plotter(simulator) as plt:
             t = m.data[m.t]
@@ -249,7 +249,7 @@ class TestEnsemble(SimulatorTestCase):
         net.make_probe('cos', dt_sample=0.001, pstc=0.0)
         net.make_probe('arctan', dt_sample=0.001, pstc=0.0)
         net.make_probe('A', dt_sample=0.001, pstc=0.02)
-        net.run(5)
+        net = net.run(5, dt=0.001)
 
         sin_data = net.model.data['sin']
         cos_data = net.model.data['cos']
@@ -286,7 +286,7 @@ class TestEnsemble(SimulatorTestCase):
         m.probe('cos')
         m.probe('arctan')
         m.probe('A', filter=0.02)
-        m.run(5)
+        m = m.run(5, dt=0.001)
 
         with Plotter(simulator) as plt:
             t = m.data[m.t]
@@ -309,6 +309,56 @@ class TestEnsemble(SimulatorTestCase):
         # Check old/new API similarity
         logger.debug("Old/New API RMSE: %f", rmse(a_data, m.data['A']))
         self.assertTrue(rmse(a_data, m.data['A']) < 0.1)
+
+    def test_product(self):
+        def product(x):
+            return x[0]*x[1]
+
+        N = 250
+        seed = 123
+        m = nengo.Model('Matrix Multiplication', seed=seed,
+                          simulator=self.Simulator)
+
+        m.make_node('sin', value=np.sin)
+        m.make_node('neg', value=-.5)
+        m.make_array('p', 2 * N, 1, dimensions=2, radius=1.5)
+        m.make_array('D', N, 1, dimensions=1)
+        m.connect('sin', 'p', transform=[[1], [0]])
+        m.connect('neg', 'p', transform=[[0], [1]])
+        prod = m.connect('p', 'D', func=product, pstc=0.01)
+
+        net.make_probe(prod, dt_sample=.01, pstc=None)
+        net.make_probe('p', dt_sample=.01, pstc=.01)
+        net.make_probe('D', dt_sample=.01, pstc=.01)
+
+        net = net.run(6, dt=0.001)
+
+        data_p = net.model.data['p']
+        data_d = net.model.data['D']
+        data_r = net.model.data[prod]
+
+        with Plotter(self.Simulator) as plt:
+            plt.subplot(211);
+            plt.plot(data_p)
+            plt.plot(np.sin(np.arange(0, 6, .01)))
+            plt.subplot(212);
+            plt.plot(data_d)
+            plt.plot(data_r)
+            plt.plot(-.5 * np.sin(np.arange(0, 6, .01)))
+            plt.savefig('test_old_api.test_prod.pdf')
+            plt.close()
+
+        self.assertTrue(np.allclose(data_p[:, 0], np.sin(np.arange(0, 6, .01)),
+                                    atol=.1, rtol=.01))
+        self.assertTrue(np.allclose(data_p[20:, 1], -0.5,
+                                    atol=.1, rtol=.01))
+
+        def match(a, b):
+            self.assertTrue(np.allclose(a, b, .1, .1))
+
+        match(data_d[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
+        match(data_r[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
+
 
 
 if __name__ == "__main__":
