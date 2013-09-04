@@ -850,30 +850,39 @@ class Direct(Nonlinearity):
         }
 
 
-
-class LIF(Nonlinearity):
-    def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, upsample=1,
-                name=None):
+class _LIFBase(Nonlinearity):
+    def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, name=None):
         if name is None:
-            name = "<LIF%d>" % id(self)
+            name = "<%s%d>" % (self.__class__.__name__, id(self))
         self.input_signal = Signal(n_neurons, name=name + '.input')
         self.output_signal = Signal(n_neurons, name=name + '.output')
-        self.bias_signal = Constant(n=n_neurons,
-                                    value=np.zeros(n_neurons),
-                                    name=name + '.bias')
+        self.bias_signal = Constant(
+            n=n_neurons, value=np.zeros(n_neurons), name=name + '.bias')
 
         self._name = name
         self.n_neurons = n_neurons
-        self.upsample = upsample
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
         self.gain = None
 
     def __str__(self):
-        return "LIF (id " + str(id(self)) + ", " + str(self.n_neurons) + "N)"
+        return "%s (id %d, %dN)" % (
+            self.__class__.__name__, id(self), self.n_neurons)
 
     def __repr__(self):
         return str(self)
+
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'input_signal': self.input_signal.name,
+            'output_signal': self.output_signal.name,
+            'bias_signal': self.bias_signal.name,
+            'n_neurons': self.n_neurons,
+            'tau_rc': self.tau_rc,
+            'tau_ref': self.tau_ref,
+            'gain': self.gain.tolist(),
+        }
 
     @property
     def name(self):
@@ -924,6 +933,53 @@ class LIF(Nonlinearity):
         self.gain = (1 - x) / (intercepts - 1.0)
         self.bias = 1 - self.gain * intercepts
 
+    def rates(self, J_without_bias):
+        """Return LIF firing rates for current J in Hz
+
+        Parameters
+        ---------
+        J: ndarray of any shape
+            membrane voltages
+        tau_rc: broadcastable like J
+            XXX
+        tau_ref: broadcastable like J
+            XXX
+        """
+        old = np.seterr(divide='ignore', invalid='ignore')
+        try:
+            J = J_without_bias + self.bias
+            A = self.tau_ref - self.tau_rc * np.log(
+                1 - 1.0 / np.maximum(J, 0))
+            # if input current is enough to make neuron spike,
+            # calculate firing rate, else return 0
+            A = np.where(J > 1, 1 / A, 0)
+        finally:
+            np.seterr(**old)
+        return A
+
+
+class LIFRate(_LIFBase):
+    def math(self, J):
+        """Compute rates for input current (incl. bias)"""
+        old = np.seterr(divide='ignore')
+        try:
+            j = np.maximum(J - 1, 0.)
+            r = 1. / (self.tau_ref + self.tau_rc * np.log1p(1./j))
+        finally:
+            np.seterr(**old)
+        return r
+
+
+class LIF(_LIFBase):
+    def __init__(self, n_neurons, upsample=1, **kwargs):
+        _LIFBase.__init__(self, n_neurons, **kwargs)
+        self.upsample = upsample
+
+    def to_json(self):
+        d = _LIFBase.to_json(self)
+        d['upsample'] = upsample
+        return d
+
     def step_math0(self, dt, J, voltage, refractory_time, spiked):
         if self.upsample != 1:
             raise NotImplementedError()
@@ -965,62 +1021,3 @@ class LIF(Nonlinearity):
 
         voltage[:] = v * (1 - spiked)
         refractory_time[:] = new_refractory_time
-
-    def rates(self, J_without_bias):
-        """Return LIF firing rates for current J in Hz
-
-        Parameters
-        ---------
-        J: ndarray of any shape
-            membrane voltages
-        tau_rc: broadcastable like J
-            XXX
-        tau_ref: broadcastable like J
-            XXX
-        """
-        old = np.seterr(all='ignore')
-        J = J_without_bias + self.bias
-        try:
-            A = self.tau_ref - self.tau_rc * np.log(
-                1 - 1.0 / np.maximum(J, 0))
-            # if input current is enough to make neuron spike,
-            # calculate firing rate, else return 0
-            A = np.where(J > 1, 1 / A, 0)
-        finally:
-            np.seterr(**old)
-        return A
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'input_signal': self.input_signal.name,
-            'output_signal': self.output_signal.name,
-            'bias_signal': self.bias_signal.name,
-            'n_neurons': self.n_neurons,
-            'upsample': self.upsample,
-            'tau_rc': self.tau_rc,
-            'tau_ref': self.tau_ref,
-            'gain': self.gain.tolist(),
-        }
-
-
-class LIFRate(LIF):
-    def __init__(self, n_neurons):
-        LIF.__init__(self, n_neurons)
-        self.input_signal = Signal(n_neurons)
-        self.output_signal = Signal(n_neurons)
-        self.bias_signal = Constant(n=n_neurons, value=np.zeros(n_neurons))
-
-    def __str__(self):
-        return "LIFRate (id " + str(id(self)) + ", " + str(self.n_neurons) + "N)"
-
-    def __repr__(self):
-        return str(self)
-
-    @property
-    def n_in(self):
-        return self.n_neurons
-
-    @property
-    def n_out(self):
-        return self.n_neurons
