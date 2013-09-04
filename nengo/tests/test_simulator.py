@@ -4,6 +4,8 @@ import nengo
 from nengo.objects import Direct, Encoder, Decoder, Filter, Signal, Transform
 from nengo.tests.helpers import SimulatorTestCase, unittest
 
+import logging
+logger = logging.getLogger(__name__)
 
 class TestSimulator(SimulatorTestCase):
 
@@ -47,54 +49,59 @@ class TestSimulator(SimulatorTestCase):
 
     def test_encoder_decoder_pathway(self):
         m = nengo.Model("")
-        one = m.add(Signal(n=1, name='foo'))
+        foo = m.add(Signal(n=1, name='foo'))
         pop = m.add(Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop'))
-        enc = m.add(Encoder(one, pop, [[1.0], [2.0]]))
-        dec = m.add(Decoder(pop, one, [[.2, .1]]))
-        tf = m.add(Transform(0.5, one, one))
-        fi = m.add(Filter(0.2, one, one))
+        enc = m.add(Encoder(foo, pop, [[1.0], [2.0]]))
+        dec = m.add(Decoder(pop, foo, [[.2, .1]]))
+        tf = m.add(Transform(0.5, foo, foo))
+        fi = m.add(Filter(0.2, foo, foo))
 
         sim = self.Simulator(m)
-        sim.signals[one] = np.asarray([1.0])
+        sim.signals[foo] = np.asarray([1.0])
         sim.step()
 
-        if 0:
-            def pp(sig, target):
-                print sig, sim.signals[sig], target
-            pp(one, .55)
-            pp(enc.sig, .55) # -- was 1.0 during step fn
-            pp(enc.weights_signal, [[1], [2]]) #
-            pp(pop.input_signal, [1, 2])
-            pp(pop.output_signal, [2, 3])
-            #pp(sim.dec_outputs[dec.sig], [.7])
+        def check(sig, target):
+            if not np.allclose(sim.signals[sig], target):
+                msg = ("%s: value %s is not close to target %s" %
+                       (sig, sim.signals[sig], target))
+                raise AssertionError(msg)
+        check(foo, .55)
+        check(enc.sig, .55) # -- was 1.0 during step fn
+        check(enc.weights_signal, [[1], [2]]) #
+        check(pop.input_signal, [1, 2])
+        check(pop.output_signal, [2, 3])
+        check(sim.dec_outputs[dec.sig], [.7])
 
-        self.assertTrue(np.allclose(sim.signals[one], .55, atol=.01, rtol=.01),
-                        msg=str(sim.signals[one]))
+        self.assertTrue(np.allclose(sim.signals[foo], .55, atol=.01, rtol=.01),
+                        msg=str(sim.signals[foo]))
 
     def test_encoder_decoder_with_views(self):
         m = nengo.Model("")
-        one = m.add(Signal(n=1, name='foo'))
+        foo = m.add(Signal(n=1, name='foo'))
         pop = m.add(Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop'))
-        enc = m.add(Encoder(one[:], pop, [[1.0], [2.0]]))
-        dec = m.add(Decoder(pop, one, [[.2, .1]]))
-        tf = m.add(Transform(0.5, one, one[:]))
-        fi = m.add(Filter(0.2, one[:], one))
+        enc = m.add(Encoder(foo[:], pop, [[1.0], [2.0]]))
+        dec = m.add(Decoder(pop, foo, [[.2, .1]]))
+        tf = m.add(Transform(0.5, foo, foo[:]))
+        fi = m.add(Filter(0.2, foo[:], foo))
 
         sim = self.Simulator(m)
-        sim.signals[one] = np.asarray([1.0])
-        def pp(sig, target):
-            #print sig, sim.signals[sig], target
-            pass
+        sim.signals[foo] = np.asarray([1.0])
         sim.step()
-        pp(one, .55)
-        pp(enc.sig, .55) # -- was 1.0 during step fn
-        pp(enc.weights_signal, [[1], [2]]) #
-        pp(pop.input_signal, [1, 2])
-        pp(pop.output_signal, [2, 3])
-        #pp(sim.dec_outputs[dec.sig], [.7])
 
-        self.assertTrue(np.allclose(sim.signals[one], .55, atol=.01, rtol=.01),
-                        msg=sim.signals[one])
+        def check(sig, target):
+            if not np.allclose(sim.signals[sig], target):
+                msg = ("%s: value %s is not close to target %s" %
+                       (sig, sim.signals[sig], target))
+                raise AssertionError(msg)
+        check(foo, .55)
+        check(enc.sig, .55) # -- was 1.0 during step fn
+        check(enc.weights_signal, [[1], [2]]) #
+        check(pop.input_signal, [1, 2])
+        check(pop.output_signal, [2, 3])
+        check(sim.dec_outputs[dec.sig], [.7])
+
+        self.assertTrue(np.allclose(sim.signals[foo], .55, atol=.01, rtol=.01),
+                        msg=sim.signals[foo])
 
 
 
