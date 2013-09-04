@@ -61,10 +61,9 @@ class TestSimulator(SimulatorTestCase):
         sim.step()
 
         def check(sig, target):
-            if not np.allclose(sim.signals[sig], target):
-                msg = ("%s: value %s is not close to target %s" %
-                       (sig, sim.signals[sig], target))
-                raise AssertionError(msg)
+            self.assertTrue(np.allclose(sim.signals[sig], target),
+                            "%s: value %s is not close to target %s" %
+                            (sig, sim.signals[sig], target))
         check(foo, .55)
         check(enc.sig, .55) # -- was 1.0 during step fn
         check(enc.weights_signal, [[1], [2]]) #
@@ -89,10 +88,9 @@ class TestSimulator(SimulatorTestCase):
         sim.step()
 
         def check(sig, target):
-            if not np.allclose(sim.signals[sig], target):
-                msg = ("%s: value %s is not close to target %s" %
-                       (sig, sim.signals[sig], target))
-                raise AssertionError(msg)
+            self.assertTrue(np.allclose(sim.signals[sig], target),
+                            "%s: value %s is not close to target %s" %
+                            (sig, sim.signals[sig], target))
         check(foo, .55)
         check(enc.sig, .55) # -- was 1.0 during step fn
         check(enc.weights_signal, [[1], [2]]) #
