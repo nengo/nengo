@@ -868,7 +868,6 @@ class LIF(Nonlinearity):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
         self.gain = None
-        self.bias = None
 
     def __str__(self):
         return "LIF (id " + str(id(self)) + ", " + str(self.n_neurons) + "N)"
