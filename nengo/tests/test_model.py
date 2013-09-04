@@ -12,11 +12,9 @@ class TestModel(SimulatorTestCase):
 
         # Old API
         net = nef.Network('test_counters', **params)
-        t_probe = net._raw_probe(net.model.t, dt_sample=.001)
-        steps_probe = net._raw_probe(net.model.steps, dt_sample=.001)
         net.run(0.003)
-        t_data = t_probe.get_data()
-        steps_data = steps_probe.get_data()
+        t_data = net.model.data[net.model.t]
+        steps_data = net.model.data[net.model.steps]
         self.assertTrue(np.allclose(t_data.flatten(), [.001, .002, .003]))
         self.assertTrue(np.allclose(steps_data.flatten(), [1, 2, 3]))
 

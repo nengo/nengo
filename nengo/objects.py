@@ -6,7 +6,6 @@ import numpy as np
 from . import connections
 from . import core
 from . import decoders
-from . import probes
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +16,6 @@ def sample_unit_signal(dimensions, num_samples, rng):
     Returns float array of sample points: dimensions x num_samples
 
     """
-    # logger.debug("Randomly generating %d eval points", num_samples)
     samples = rng.randn(num_samples, dimensions)
 
     # normalize magnitude of sampled points to be of unit length
@@ -62,119 +60,146 @@ class Gaussian(object):
 class Ensemble(object):
     """A collection of neurons that collectively represent a vector.
 
+    Attributes
+    ----------
+    name
+    neurons
+    dimensions
+
+    encoders
+    eval_points
+    intercepts
+    max_rates
+    radius
+    seed
+
+    connections_in : type
+        description
+    connections_out : type
+        description
+    probes : type
+        description
+
     """
 
     EVAL_POINTS = 500
 
-    def __init__(self, name, neurons, dimensions,
-                 radius=1.0, encoders=None,
-                 max_rates=Uniform(200, 300), intercepts=Uniform(-1.0, 1.0),
-                 decoder_noise=None, eval_points=None,
-                 noise=None, noise_frequency=None, seed=None,
-                 input_signal=None):
-        """
-        TODO
-        """
+    def __init__(self, name, neurons, dimensions, **kwargs):
+        """Note: kwargs can contain any attribute; see class docstring."""
+        self.name = name
+        self.neurons = neurons
+        self.dimensions = dimensions
 
-        # Error for things not implemented yet or don't make sense
-        if decoder_noise is not None:
+        if 'decoder_noise' in kwargs:
             raise NotImplementedError('decoder_noise')
-        if noise is not None or noise_frequency is not None:
+
+        if 'noise' in kwargs or 'noise_frequency' in kwargs:
             raise NotImplementedError('noise')
 
-        self.seed = np.random.randint(2**31-1) if seed is None else seed
-        self.rng = np.random.RandomState(self.seed)
+        self.encoders = kwargs.get('encoders', None)
+        self.intercepts = kwargs.get('intercepts', Uniform(-1.0, 1.0))
+        self.max_rates = kwargs.get('max_rates', Uniform(200, 300))
+        self.radius = kwargs.get('radius', 1.0)
+        self.seed = kwargs.get('seed', np.random.randint(2**31-1))
 
-        self.name = name
-        self.radius = radius
-
-        if eval_points is None:
-            eval_points = sample_unit_signal(
-                dimensions, Ensemble.EVAL_POINTS, self.rng) * radius
-        self.eval_points = eval_points
-
-        # Set up input signal
-        self.input_signal = (core.Signal(n=dimensions,
-                                         name=name + ".input_signal")
-                             if input_signal is None else input_signal)
-
-        # Set up neurons
-        if isinstance(neurons, int):
-            logger.warning(("neurons should be an instance of a nonlinearity, "
-                            "not an int. Defaulting to LIF."))
-            neurons = LIF(neurons)
-        neurons = copy.deepcopy(neurons)
-        neurons.name = name + "." + neurons.__class__.__name__
-
-        if hasattr(max_rates, 'sample'):
-            max_rates = max_rates.sample(neurons.n_neurons, rng=self.rng)
-        if hasattr(intercepts, 'sample'):
-            intercepts = intercepts.sample(neurons.n_neurons, rng=self.rng)
-
-        neurons.set_gain_bias(max_rates, intercepts)
-        self.neurons = neurons
-
-        # Set up the encoders
-        if encoders is None:
-            encoders = self.rng.randn(neurons.n_neurons, dimensions)
-        else:
-            encoders = np.asarray(encoders)
-            if encoders.shape == ():
-                encoders.shape = (1,)
-            if encoders.shape == (dimensions,):
-                encoders = np.tile(encoders, (neurons.n_neurons, 1))
-        norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
-        encoders /= np.sqrt(norm)
-        self.encoders = encoders
+        # Order matters here
+        self.eval_points = kwargs.get('eval_points', None)
 
         # Set up connections and probes
-        self.connections = []
-        self.probes = []
-        self.probeable = (
-            'decoded_output',  # Default
-            'spikes',
-        )
+        self.connections_in = []
+        self.connections_out = []
+        self.probes = {'decoded_output': []}
 
     @property
     def dimensions(self):
-        return self.input_signal.size
+        """TODO"""
+        return self._dimensions
 
-    @property
-    def n_neurons(self):
-        return self.neurons.n_neurons
+    @dimensions.setter
+    def dimensions(self, _dimensions):
+        self._dimensions = _dimensions
+        self.eval_points = None  # Invalidate possibly cached eval_points
 
     @property
     def encoders(self):
-        # NB: Copy is super necessary!
-        encoders = np.copy(self.encoder.weights)
-
-        # Undo calculations done for speed reasons
-        encoders /= self.neurons.gain[:, np.newaxis]
-        encoders *= np.asarray(self.radius)
-        return encoders
+        """TODO"""
+        return self._encoders
 
     @encoders.setter
-    def encoders(self, weights):
-        if hasattr(self, 'encoder') and self.encoder is not None:
-            logger.warning("Encoder being overwritten on %s. If encoder has "
-                           "already been added to a model, it must be "
-                           "removed manually.", self.name)
-
-        # Do some calculations ahead of time
-        weights /= np.asarray(self.radius)
-        weights *= self.neurons.gain[:, np.newaxis]
-        self.encoder = core.Encoder(self.input_signal, self.neurons, weights)
+    def encoders(self, _encoders):
+        if _encoders is not None:
+            _encoders = np.asarray(_encoders)
+            enc_shape = (self.neurons.n_neurons, self.dimensions)
+            if _encoders.shape != enc_shape:
+                msg = ("Encoder shape must be (n_neurons, dimensions); "
+                       "in this case %s." % str(enc_shape))
+                raise core.ShapeMismatchError(msg)
+        self._encoders = _encoders
 
     @property
     def eval_points(self):
+        """TODO"""
+        if self._eval_points is None:
+            self._eval_points = sample_unit_signal(
+                self.dimensions, Ensemble.EVAL_POINTS, self.rng) * self.radius
         return self._eval_points
 
     @eval_points.setter
-    def eval_points(self, points):
-        points = np.array(points)
-        if len(points.shape) == 1:
-            points.shape = (1, eval_points.shape[0])
-        self._eval_points = points
+    def eval_points(self, _eval_points):
+        if _eval_points is not None:
+            _eval_points = np.asarray(_eval_points)
+            if len(_eval_points.shape) == 1:
+                _eval_points.shape = (1, _eval_points.shape[0])
+        self._eval_points = _eval_points
+
+    @property
+    def n_neurons(self):
+        """TODO"""
+        return self.neurons.n_neurons
+
+    @property
+    def neurons(self):
+        """TODO"""
+        return self._neurons
+
+    @neurons.setter
+    def neurons(self, _neurons):
+        if isinstance(_neurons, int):
+            logger.warning(("neurons should be an instance of a nonlinearity, "
+                            "not an int. Defaulting to LIF."))
+            _neurons = core.LIF(neurons)
+
+        # We needed this for the EnsembleArray template, as it would
+        # pass the same neurons object to each ensemble. But, this should
+        # be done at the template level, as it's not obvious that the
+        # passed in neuron object would become a copy.
+        # _neurons = copy.deepcopy(_neurons)
+
+        # Give a better name if name is default
+        if _neurons.name.startswith("<LIF"):
+            _neurons.name = self.name + "." + _neurons.__class__.__name__
+        self._neurons = _neurons
+
+    @property
+    def radius(self):
+        """TODO"""
+        return self._radius
+
+    @radius.setter
+    def radius(self, _radius):
+        self._radius = np.asarray(_radius)
+        self.eval_points = None  # Invalidate possibly cached eval_points
+
+    @property
+    def seed(self):
+        """TODO"""
+        return self._seed
+
+    @seed.setter
+    def seed(self, _seed):
+        self._seed = _seed
+        self.rng = np.random.RandomState(self._seed)
+        self.eval_points = None  #Invalidate possibly cached eval_points
 
     def activities(self, eval_points=None):
         if eval_points is None:
@@ -185,36 +210,53 @@ class Ensemble(object):
 
     def connect_to(self, post, **kwargs):
         connection = connections.DecodedConnection(self, post, **kwargs)
-        self.connections.append(connection)
+        self.connections_out.append(connection)
+        if hasattr(post, 'connections_in'):
+            post.connection_in.append(connection)
         return connection
 
-    def probe(self, to_probe='decoded_output',
-              sample_every=0.001, filter=0.01, dt=0.001):
+    def probe(self, to_probe='decoded_output', sample_every=0.001, filter=0.01):
         if to_probe == 'decoded_output':
-            p = probes.Probe(self.name + '.decoded_output',
-                             self.dimensions, sample_every)
-            c = self.connect_to(p, filter=filter)
+            probe = probes.Probe(self.name + '.decoded_output', sample_every)
+            self.connect_to(probe, filter=filter)
+            self.probes['decoded_output'].append(probe)
+        return probe
 
-        self.probes.append(p)
-        return p, c
+    def build(self, model, dt, input_signal=None):
+        # Set up input_signal
+        if input_signal is None:
+            self.input_signal = core.Signal(n=self.dimensions,
+                                            name=self.name + ".input_signal")
+            model.add(self.input_signal)
+        else:
+            # Assume that a provided input_signal is already in the model
+            self.input_signal = input_signal
 
-    def add_to_model(self, model):
+        # Set up neurons
+        max_rates = self.max_rates
+        if hasattr(max_rates, 'sample'):
+            max_rates = max_rates.sample(self.neurons.n_neurons, rng=self.rng)
+        intercepts = self.intercepts
+        if hasattr(intercepts, 'sample'):
+            intercepts = intercepts.sample(self.neurons.n_neurons, rng=self.rng)
+        self.neurons.set_gain_bias(max_rates, intercepts)
         model.add(self.neurons)
-        model.add(self.encoder)
-        model.add(self.input_signal)
-        for connection in self.connections:
-            model.add(connection)
-        for probe in self.probes:
-            model.add(probe)
 
-    def remove_from_model(self, model):
-        model.remove(self.neurons)
-        model.remove(self.encoder)
-        model.remove(self.input_signal)
-        for connection in self.connections:
-            model.remove(connection)
-        for probe in self.probes:
-            model.remove(probe)
+        # Set up encoder
+        if self.encoders is None:
+            encoders = self.rng.randn(self.neurons.n_neurons, self.dimensions)
+        else:
+            encoders = np.asarray(self.encoders, copy=True)
+        norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
+        encoders /= np.sqrt(norm)
+        encoders /= np.asarray(self.radius)
+        encoders *= self.neurons.gain[:, np.newaxis]
+        self.encoder = core.Encoder(self.input_signal, self.neurons, encoders)
+        model.add(self.encoder)
+
+        # Set up probes, but don't build them (done explicitly later)
+        for probe in self.probes['decoded_output']:
+            probe.dimensions = self.dimensions
 
 
 class Node(object):
@@ -228,109 +270,111 @@ class Node(object):
     that cannot be generated by a brain model alone.
     Nodes are also useful to test models in various situations.
 
-    Parameters
-    ----------
-    name : str
-        Name of this node. Must be unique in the network.
-    output : function, list of floats, dict, optional
-        The output that should be generated by this node.
-
-        If ``output`` is a function, it will be called on each timestep;
-        if it accepts a single parameter, it will be given
-        the current time of the simulation.
-
-        If ``output`` is a list of floats, that list will be
-        used as constant output.
-
-        If ``output`` is a dict, the output defines a piece-wise constant
-        function in which the keys define when the value changes,
-        and the values define what the value changes to.
-
     Attributes
     ----------
-    name : str
-        A unique name that identifies the node.
-    metadata : dict
-        An editable dictionary that modelers can use to store
-        extra information about a network.
+    name : type
+        description
+    output
+    dimensions : type
+        description
 
     """
 
-    def __init__(self, name, output, input):
+    def __init__(self, name, output, dimensions=1):
         self.name = name
-
-        if type(input) != core.Signal:
-            input = input.signal
-        self.input_signal = input
-
-        if callable(output):
-            n_out = np.array(output(np.ones(input.size))).size
-            self.function = core.Direct(n_in=input.size,
-                                        n_out=n_out,
-                                        fn=output,
-                                        name=name + ".Direct")
-            self.encoder = core.Encoder(input, self.function,
-                                        weights=np.asarray([[1]]))
-            self.transform = core.Transform(1.0, self.signal, self.signal)
-        else:
-            output = np.asarray(output)
-            if output.shape == ():
-                output.shape = (1,)
-            self._signal = core.Constant(n=output.size, value=output, name=name)
+        self.output = output
+        self.dimensions = dimensions
 
         # Set up connections and probes
-        self.connections = []
-        self.probes = []
+        self.connections_in = []
+        self.connections_out = []
+        self.probes = {'output': []}
 
     @property
-    def signal(self):
-        try:
-            return self.function.output_signal
-        except AttributeError:
-            return self._signal
+    def output(self):
+        return self._output
+
+    @output.setter
+    def output(self, _output):
+        if callable(_output):
+            self._output = _output
+        else:
+            self._output = np.asarray(_output)
+            if self._output.shape == ():
+                self._output.shape = (1,)
 
     def connect_to(self, post, **kwargs):
         connection = connections.SimpleConnection(self.signal, post, **kwargs)
-        self.connections.append(connection)
+        self.connections_out.append(connection)
+        if hasattr(post, 'connections_in'):
+            post.connection_in.append(connection)
         return connection
 
-    def probe(self, to_probe='output',
-              sample_every=0.001, filter=0.0, dt=0.001):
+    def probe(self, to_probe='output', sample_every=0.001, filter=None):
         if to_probe == 'output':
-            c = None
-            if filter <= dt:
-                p = probes.RawProbe(self.signal, sample_every)
-            else:
-                p = probes.Probe(self.name + ".output",
-                                 self.signal.n, sample_every)
-                c = self.connect_to(p, filter=filter, dt=dt)
+            p = probes.Probe(self.name + ".output", sample_every)
+            self.connect_to(p, filter=filter)
+            self.probes['output'].append(p)
+        return p
 
-        self.probes.append(p)
-        return p, c
+    def build(self, model, dt):
+        if callable(self.output):
+            # Set up input_signal
+            self.input_signal = core.Signal(self.dimensions,
+                                            name=self.name + ".input")
+            model.add(self.input_signal)
 
-    def add_to_model(self, model):
-        if hasattr(self, 'function'):
+            # Set up non-linearity
+            n_out = np.array(self.output(np.ones(self.dimensions))).size
+            self.function = core.Direct(n_in=self.dimensions,
+                                        n_out=n_out,
+                                        fn=self.output,
+                                        name=self.name + ".Direct")
             model.add(self.function)
+            self.signal = self.function.output_signal
+
+            # Set up encoder
+            self.encoder = core.Encoder(self.input_signal, self.function,
+                                        weights=np.asarray([[1]]))
             model.add(self.encoder)
+
+            # Set up transform
+            self.transform = core.Transform(1.0, self.signal, self.signal)
             model.add(self.transform)
         else:
-            model.add(self._signal)
-        if not self.input_signal in model.signals:
-            model.add(self.input_signal)
-        for connection in self.connections:
-            model.add(connection)
-        for probe in self.probes:
-            model.add(probe)
+            self.signal = core.Constant(n=self.output.size, value=self.output,
+                                        name=self.name)
+            model.add(self.signal)
 
-    def remove_from_model(self, model):
-        if hasattr(self, 'function'):
-            model.remove(self.function)
-            model.remove(self.encoder)
-            model.remove(self.transform)
-        else:
-            model.remove(self._signal)
-        model.remove(self.input_signal)
-        for connection in self.connections:
-            model.remove(connection)
-        for probe in self.probes:
-            model.remove(probe)
+        # Set up probes
+        for probe in self.probes['output']:
+            probe.dimensions = self.signal.size
+
+
+class Probe(object):
+    """A probe is a dummy object that only has an input signal and probe.
+
+    It is used as a target for a connection so that probe logic can
+    reuse connection logic.
+
+    """
+    def __init__(self, name, sample_every, dimensions=None):
+        self.name = name
+        self.sample_every = sample_every
+        self.dimensions = None
+
+        self.connections_in = []
+
+    @property
+    def sample_rate(self):
+        return 1.0 / self.sample_every
+
+    def build(self, model, dt):
+        # Set up input_signal
+        self.input_signal = core.Signal(n=self.dimensions,
+                                        name="Probe(" + self.name + ")")
+        model.add(self.input_signal)
+
+        # Set up probe
+        self.probe = core.Probe(self.input_signal, self.sample_every)
+        model.add(self.probe)
