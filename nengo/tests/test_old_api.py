@@ -23,25 +23,22 @@ class TestOldAPI(SimulatorTestCase):
                           simulator=self.Simulator)
 
         net.make_input('sin', value=np.sin)
-        net.make_input('neg', value=[-.5])
+        net.make_input('neg', value=-.5)
         net.make_array('p', 2 * N, 1, dimensions=2, radius=1.5)
         net.make_array('D', N, 1, dimensions=1)
         net.connect('sin', 'p', transform=[[1], [0]])
         net.connect('neg', 'p', transform=[[0], [1]])
-        net.connect('p', 'D', func=product, pstc=0.01)
+        prod = net.connect('p', 'D', func=product, pstc=0.01)
 
-        p_raw = net._probe_decoded_signals(
-            [net.ensembles['p'].origin['product'].sigs[0]],
-            dt_sample=.01, pstc=.01)
-
-        probe_p = net.make_probe('p', dt_sample=.01, pstc=.01)
-        probe_d = net.make_probe('D', dt_sample=.01, pstc=.01)
+        net.make_probe(prod, dt_sample=.01, pstc=None)
+        net.make_probe('p', dt_sample=.01, pstc=.01)
+        net.make_probe('D', dt_sample=.01, pstc=.01)
 
         net.run(6)
 
-        data_p = probe_p.get_data()
-        data_d = probe_d.get_data()
-        data_r = p_raw.get_data()
+        data_p = net.model.data['p']
+        data_d = net.model.data['D']
+        data_r = net.model.data[prod]
 
         with Plotter(self.Simulator) as plt:
             plt.subplot(211);
@@ -101,14 +98,13 @@ class TestOldAPI(SimulatorTestCase):
         # the C matrix holds the intermediate product calculations
         #  need to compute D1*D2*D3 products to multiply 2 matrices together
         logging.debug("make_array: intermediate C")
-        net.make_array('C', 4 * N, D1 * D2 * D3,
+        net.make_array('C', N * 2, D1 * D2 * D3,
             dimensions=2,
             radius=1.5 * radius,
-            encoders=[[1, 1], [1, -1], [-1, 1], [-1, -1]],
             neuron_type='lif')
 
-        transformA=[[0] * (D1 * D2) for i in range(D1 * D2 * D3 * 2)]
-        transformB=[[0] * (D2 * D3) for i in range(D1 * D2 * D3 * 2)]
+        transformA = [[0] * (D1 * D2) for i in range(D1 * D2 * D3 * 2)]
+        transformB = [[0] * (D2 * D3) for i in range(D1 * D2 * D3 * 2)]
         for i in range(D1):
             for k in range(D3):
                 for j in range(D2):
@@ -116,22 +112,27 @@ class TestOldAPI(SimulatorTestCase):
                     transformA[tmp * 2][j + i * D2] = 1
                     transformB[tmp * 2 + 1][k + j * D3] = 1
 
-        logging.debug("transA: %s", str(transformA))
-        logging.debug("transB: %s", str(transformB))
+        transformA = np.asarray(transformA)
+        transformB = np.asarray(transformB)
+
+        logging.debug("A->C trans: %s, shape=%s",
+                      str(transformA), transformA.shape)
+        logging.debug("B->C trans: %s, shape=%s",
+                      str(transformB), transformB.shape)
 
         logging.debug("connect A->C")
         net.connect('A', 'C', transform=transformA)
         logging.debug("connect B->C")
         net.connect('B', 'C', transform=transformB)
 
-        Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.01)
+        net.make_probe('C', dt_sample=0.01, pstc=0.01)
 
         net.run(1)
 
-        logging.debug("Cprove.shape=%s", str(Cprobe.get_data().shape))
+        logging.debug("Cprobe.shape=%s", str(net.model.data['C'].shape))
         logging.debug("Amat=%s", str(Amat))
         logging.debug("Bmat=%s", str(Bmat))
-        data = Cprobe.get_data()
+        data = net.model.data['C']
 
         with Plotter(self.Simulator) as plt:
             for i in range(D1):
@@ -208,7 +209,7 @@ class TestOldAPI(SimulatorTestCase):
         net.make_array('C', 4 * N, D1 * D2 * D3,
             dimensions=2,
             radius=1.5 * radius,
-            encoders=[[1, 1], [1, -1], [-1, 1], [-1, -1]],
+            # encoders=[[1, 1], [1, -1], [-1, 1], [-1, -1]],
             neuron_type='lif')
 
         #  determine the transformation matrices to get the correct pairwise
@@ -301,5 +302,5 @@ class TestOldAPI(SimulatorTestCase):
 
 
 if __name__ == "__main__":
-    nengo.log_to_file('log.txt', debug=True)
+    nengo.log(debug=True)
     unittest.main()

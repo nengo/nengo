@@ -538,7 +538,7 @@ class LIF(Nonlinearity):
                                     value=np.zeros(n_neurons),
                                     name=name + '.bias')
 
-        self._name = name
+        self.name = name
         self.n_neurons = n_neurons
         self.upsample = upsample
         self.tau_rc = tau_rc

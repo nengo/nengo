@@ -5,7 +5,6 @@ import numpy as np
 from ..connections import ConnectionList
 from .. import core
 from .. import objects
-from .. import probes
 
 logger = logging.getLogger(__name__)
 
@@ -19,42 +18,23 @@ class EnsembleArray(object):
 
         neurons, dims = neurons_per_ensemble, dimensions_per_ensemble
 
-        self.name = name
+        encoders = np.asarray(encoders)
+        enc_shape = (n_ensembles * neurons.n_neurons, dims)
+        msg = "Encoder shape is %s. Should be %s" % (encoders.shape, enc_shape)
+        assert encoders is None or encoders.shape == enc_shape, msg
 
+        self.name = name
         self.input_signal = core.Signal(
             n=n_ensembles*dims, name=name+".input_signal")
-
-        # Methinks there's too much freedom in defining encoders...
-        encoders = self._process_encoders(
-            encoders, neurons.n_neurons, dims, n_ensembles)
 
         self.ensembles = [
             objects.Ensemble(name+("[%d]" % i), neurons, dims,
                              input_signal=self.input_signal[i*dims:(i+1)*dims],
-                             encoders=encoders, **kwargs)
+                             encoders=encoders[i*dims:(i+1)*dims], **kwargs)
             for i, encoders in enumerate(encoders)]
 
         self.connections = []
         self.probes = []
-
-    @staticmethod
-    def _process_encoders(encoders, neurons, dims, n_ensembles):
-        if encoders is None:
-            encoders = [None for _ in xrange(n_ensembles)]
-        elif len(encoders) == dims:
-            if np.asarray(encoders).ndim == 1:
-                encoders = [np.array(encoders) for _ in xrange(n_ensembles)]
-        elif len(encoders) == neurons:
-            if len(encoders[0]) != dims:
-                msg = ("len(encoders[0]) should match dimensions_per_ensemble. "
-                       "Currently %d, %d" % (len(encoders[0]) != dims))
-                raise core.ShapeMismatch(msg)
-            encoders = [np.array(encoders) for _ in xrange(n_ensembles)]
-        elif len(encoders) != n_ensembles:
-            msg = ("len(encoders) should match n_ensembles. "
-                   "Currently %d, %d" % (len(encoders) != n_ensembles))
-            raise core.ShapeMismatch(msg)
-        return encoders
 
     @property
     def n_ensembles(self):
