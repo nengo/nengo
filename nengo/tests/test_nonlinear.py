@@ -9,6 +9,37 @@ import logging
 logger = logging.getLogger(__name__)
 
 class TestNonlinear(SimulatorTestCase):
+    def test_direct(self):
+        """Test direct mode"""
+
+        d = 3
+        n_steps = 3
+        n_trials = 3
+
+        rng = np.random.RandomState(seed=987)
+
+        for i in xrange(n_trials):
+            A = rng.normal(size=(d,d))
+            fn = lambda x: np.cos(np.dot(A, x))
+
+            x = np.random.normal(size=d)
+
+            m = nengo.Model("")
+            ins = m.add(Signal(n=d, name='ins'))
+            pop = m.add(Direct(n_in=d, n_out=d, fn=fn))
+            enc = m.add(Encoder(ins, pop, np.eye(d)))
+            dec = m.add(Decoder(pop, ins, np.eye(d)))
+            tf = m.add(Transform(1.0, ins, ins))
+
+            sim = self.Simulator(m)
+            sim.signals[ins] = x
+
+            y0 = np.array(x)
+            for j in xrange(n_steps):
+                y0 = fn(y0)
+                sim.step()
+                assert np.allclose(y0, sim.signals[ins])
+
     def test_lif_builtin(self):
         """Test that the dynamic model approximately matches the rates
 
