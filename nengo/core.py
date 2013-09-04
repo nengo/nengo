@@ -535,7 +535,7 @@ class _LIFBase(Nonlinearity):
         self.bias_signal = Constant(
             n=n_neurons, value=np.zeros(n_neurons), name=name + '.bias')
 
-        self._name = name
+        self.name = name
         self.n_neurons = n_neurons
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
