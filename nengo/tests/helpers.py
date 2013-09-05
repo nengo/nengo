@@ -158,10 +158,6 @@ class Plotter(object):
             return self.oldsavefig(os.path.join(self.dirname, fname), **kwargs)
 
 
-def rmse(a, b):
-    return np.sqrt(np.mean((a - b) ** 2))
-
-
 class SimulatorTestCase(unittest.TestCase):
     """
     Base class for TestCase classes that use self.Simulator(m)
@@ -175,3 +171,24 @@ class SimulatorTestCase(unittest.TestCase):
 
     """
     Simulator = nengo.simulator.Simulator
+
+
+def assert_allclose(self, logger, a, b, atol=1e-8, rtol=1e-5):
+    mask = np.abs(a - b) > atol + rtol * np.abs(b)
+    if mask.any():
+        nz = mask.nonzero()[0]
+        if len(nz) > 10: nz = nz[:10]
+        logger.debug("allclose failed: %d offending entries\n%s" % (
+                mask.sum(),
+                "\n".join(
+                    "(a=%14e, b=%14e, adiff=%14e, rdiff=%14e)" %
+                    (a[m], b[m], np.abs(a[m]-b[m]), np.abs((a[m]-b[m])/b[m]))
+                    for m in nz)))
+        self.assertTrue(
+            False, "allclose failed: %d offending entries" % (mask.sum()))
+
+def rms(x, axis=None):
+    return np.sqrt(np.mean(x**2, axis=axis))
+
+def rmse(a, b):
+    return rms(a - b)
