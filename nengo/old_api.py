@@ -819,6 +819,9 @@ class Network(object):
 
         This is appropriate for functions decoded from nonlinearities.
         """
+        for src in srcs[1:]:
+            if src.shape != srcs[0].shape:
+                raise ValueError('Probe multiple signals with different shapes')
         src_n = srcs[0].size
         probe_sig = self.model.add(Signal(
             n=len(srcs) * src_n,
