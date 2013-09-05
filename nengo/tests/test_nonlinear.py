@@ -3,10 +3,11 @@ import numpy as np
 import nengo
 from nengo.core import Encoder, Decoder, Filter, Signal, Transform
 from nengo.core import Direct, LIF, LIFRate
-from nengo.tests.helpers import SimulatorTestCase, unittest
+from nengo.tests.helpers import SimulatorTestCase, unittest, rms
 
 import logging
 logger = logging.getLogger(__name__)
+
 
 class TestNonlinear(SimulatorTestCase):
     def test_direct(self):
@@ -86,8 +87,8 @@ class TestNonlinear(SimulatorTestCase):
 
         sim_rates = np.sum(spikes, axis=0) / t_final
         math_rates = lif.rates(sim.signals[lif.input_signal])
-        # print "sim", sim_rates
-        # print "math", math_rates
+        logger.debug("ME = %f", (sim_rates - math_rates).mean())
+        logger.debug("RMSE = %f", rms(sim_rates - math_rates) / rms(math_rates))
         self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
     def test_lif_rate(self):
