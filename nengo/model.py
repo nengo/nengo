@@ -87,7 +87,7 @@ class Model(object):
         self.connections = []
         self.signal_probes = []
 
-        self.name = name
+        self.name = name + ''  # -- make self.name a string, raise error otw
         self.seed = np.random.randint(2**31-1) if seed is None else seed
         self.rng = np.random.RandomState(self.seed)
         self.fixed_seed = fixed_seed

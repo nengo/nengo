@@ -144,6 +144,7 @@ class Ensemble(object):
         """TODO"""
         return self._neurons
 
+
     @neurons.setter
     def neurons(self, _neurons):
         if isinstance(_neurons, int):
