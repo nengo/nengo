@@ -825,7 +825,10 @@ class Network(object):
         src_n = srcs[0].size
         probe_sig = self.model.add(Signal(
             n=len(srcs) * src_n,
-            name='probe(%s,pstc=%f)' % (srcs[0].name, pstc)
+            name='probe(%s%s,pstc=%f)' % (
+                srcs[0].name,
+                '...' if len(srcs) > 1 else '',
+                pstc)
             ))
 
         if pstc > self.dt:
