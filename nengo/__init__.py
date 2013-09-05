@@ -9,7 +9,10 @@ from .core import LIF
 
 
 logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())  # Prevent output if no handler set
+try:
+    logger.addHandler(logging.NullHandler())  # Prevent output if no handler set
+except AttributeError:
+    pass
 
 
 def log(debug=False):

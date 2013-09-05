@@ -173,6 +173,7 @@ class Ensemble(object):
         """
         return self._neurons
 
+
     @neurons.setter
     def neurons(self, _neurons):
         if isinstance(_neurons, int):
