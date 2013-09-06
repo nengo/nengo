@@ -230,26 +230,26 @@ class Simulator(object):
 
 
     def step(self):
+        # -- reset: 0 -> signals_tmp
+        for sig in self.dynamic_signals:
+            self.signals_tmp[sig][...] = 0
+
         # -- reset nonlinearities: bias -> input_current
         for nl in self.model.nonlinearities:
-            self.signals[nl.input_signal][...] = self.signals[nl.bias_signal]
+            self.signals_tmp[nl.input_signal][...] = self.signals[nl.bias_signal]
 
         # -- encoders: signals -> input current
         #    (N.B. this includes neuron -> neuron connections)
         for enc in self.model.encoders:
             dot_inc(get_signal(self.signals, enc.sig),
                     enc.weights.T,
-                    self.signals[enc.pop.input_signal])
-
-        # -- reset: 0 -> signals_tmp
-        for sig in self.dynamic_signals:
-            self.signals_tmp[sig][...] = 0
+                    self.signals_tmp[enc.pop.input_signal])
 
         # -- population dynamics
         for nl in self.model.nonlinearities:
             pop = self.nonlinearities[nl]
             pop.step(dt=self.model.dt,
-                     J=self.signals[nl.input_signal],
+                     J=self.signals_tmp[nl.input_signal],
                      output=self.signals_tmp[nl.output_signal])
 
         # -- decoders: population output -> signals_tmp
