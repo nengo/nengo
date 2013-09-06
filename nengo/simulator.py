@@ -4,6 +4,7 @@ from collections import defaultdict
 import time
 
 import networkx
+import networkx as nx
 import numpy as np
 
 from objects import LIF, LIFRate, Direct
@@ -44,7 +45,7 @@ def are_aliased(a, b):
         raise NotImplementedError('are_aliased?', (a_info, b_info))
 
 
-def foo(sim, go_on_init):
+def foo(signals, _output_signals):
     nxdg = networkx.DiGraph()
 
     operators = []
@@ -54,9 +55,9 @@ def foo(sim, go_on_init):
             self.dct = dct
             self.sig = sig
 
-            if dct is sim._output_signals:
+            if dct is _output_signals:
                 if sig.base not in dct:
-                    dct[sig.base] = sim.signals[sig.base].copy()
+                    dct[sig.base] = signals[sig.base].copy()
 
         def __hash__(self):
             return hash( (id(self.dct), self.sig))
@@ -82,11 +83,11 @@ def foo(sim, go_on_init):
 
         def __str__(self):
             dctname = {
-                id(sim.signals): 'signals',
-                id(sim.signals_tmp): 'signals_tmp',
-                id(sim.signals_copy): 'signals_copy',
-                id(sim._output_signals): 'output_signals',
-                    }[id(self.dct)]
+                id(signals): 'signals',
+                #id(signals_tmp): 'signals_tmp',
+                #id(signals_copy): 'signals_copy',
+                id(_output_signals): 'output_signals',
+                    }.get(id(self.dct), 'dct')
             return 'SigBuf(%s, %s)' % (dctname, self.sig)
 
 
@@ -94,16 +95,11 @@ def foo(sim, go_on_init):
         def __init__(self, dst):
             self.dst = dst
 
-            nxdg.add_edge(self, dst)
-
             operators.append(self)
 
             self.reads = []
             self.sets = [dst]
             self.incs = []
-
-            if go_on_init:
-                self.go()
 
         def __str__(self):
             return 'Reset(%s)' % str(self.dst)
@@ -111,22 +107,20 @@ def foo(sim, go_on_init):
         def go(self):
             self.dst.get()[...] = 0
 
+        def add_edges(self, nxdg):
+            nxdg.add_edge(self, self.dst)
+
+
     class Copy(object):
         def __init__(self, dst, src):
             self.dst = dst
             self.src = src
-
-            nxdg.add_edge(src, self)
-            nxdg.add_edge(self, dst)
 
             operators.append(self)
 
             self.reads = [src]
             self.sets = [dst]
             self.incs = []
-
-            if go_on_init:
-                self.go()
 
         def __str__(self):
             return 'Copy(%s -> %s)' % (
@@ -135,6 +129,11 @@ def foo(sim, go_on_init):
         def go(self):
             self.dst.get()[...] = self.src.get()
 
+        def add_edges(self, nxdg):
+            nxdg.add_edge(self.src, self)
+            nxdg.add_edge(self, self.dst)
+
+
     class DotInc(object):
         def __init__(self, A, X, Y, xT=False):
             self.A = A
@@ -142,18 +141,11 @@ def foo(sim, go_on_init):
             self.Y = Y
             self.xT = xT
 
-            nxdg.add_edge(self.A, self)
-            nxdg.add_edge(self.X, self)
-            nxdg.add_edge(self, self.Y)
-
             operators.append(self)
 
             self.reads = [self.A, self.X]
             self.sets = []
             self.incs = [self.Y]
-
-            if go_on_init:
-                self.go()
 
         def __str__(self):
             return 'DotInc(%s, %s -> %s)' % (
@@ -164,6 +156,12 @@ def foo(sim, go_on_init):
                     self.X.get().T if self.xT else self.X.get(),
                     self.Y.get())
 
+        def add_edges(self, nxdg):
+            nxdg.add_edge(self.A, self)
+            nxdg.add_edge(self.X, self)
+            nxdg.add_edge(self, self.Y)
+
+
     class NonLin(object):
         def __init__(self, output, J, nl, dt):
             self.output = output
@@ -171,17 +169,11 @@ def foo(sim, go_on_init):
             self.nl = nl
             self.dt = dt
 
-            nxdg.add_edge(J, self)
-            nxdg.add_edge(self, output)
-
             operators.append(self)
 
             self.reads = [J]
             self.sets = [output]
             self.incs = []
-
-            if go_on_init:
-                self.go()
 
         def go(self):
             self.nl.step(
@@ -189,10 +181,18 @@ def foo(sim, go_on_init):
                 J=self.J.get(),
                 output=self.output.get())
 
+        def add_edges(self, nxdg):
+            nxdg.add_edge(self.J, self)
+            nxdg.add_edge(self, self.output)
+
     class DGCLS(object):
         @property
         def operators(self):
             return operators
+
+        @property
+        def dg(self):
+            return nxdg
 
         def add_constraints(self, verbose=False):
 
@@ -349,109 +349,131 @@ def dot_inc(a, b, targ):
     targ[...] += inc
 
 
-class Simulator(object):
-    def __init__(self, model):
+def Simulator(*args):
+    if len(args) == 2:
+        if 'Test' in str(args[0]):
+            model = args[1]
+        else:
+            raise TypeError('extra args to Simulator', args)
+    elif len(args) == 1:
+        model = args
+    else:
+        raise TypeError()
+
+    signals = {}
+    signals_tmp = {}
+    signals_copy = {}
+    nonlinearities = {}
+    constant_signals = []
+    dynamic_signals = []
+
+    for sig in model.signals:
+        if hasattr(sig, 'value'):
+            signals[sig] = np.asarray(sig.value)
+            signals_tmp[sig] = np.asarray(sig.value)
+            signals_copy[sig] = np.asarray(sig.value)
+            constant_signals.append(sig)
+        else:
+            signals[sig] = np.zeros(sig.n)
+            signals_tmp[sig] = np.zeros(sig.n)
+            signals_copy[sig] = np.zeros(sig.n)
+            dynamic_signals.append(sig)
+
+    for pop in model.nonlinearities:
+        nonlinearities[pop] = registry[pop.__class__](pop)
+
+
+    output_signals = {}
+    _output_signals = output_signals
+
+    dg, SigBuf, Copy, DotInc, NonLin, Reset = foo(signals, output_signals)
+
+    # -- reset: 0 -> signals_tmp
+    nl_outputs = set(nl.output_signal for nl in model.nonlinearities)
+    nl_inputs = set(nl.input_signal for nl in model.nonlinearities)
+    for sig in dynamic_signals:
+        if sig not in nl_outputs and sig not in nl_inputs:
+            Reset(SigBuf(signals_tmp, sig))
+
+    # -- reset nonlinearities: bias -> input_current
+    for nl in model.nonlinearities:
+        Copy(SigBuf(signals_tmp, nl.input_signal,),
+             SigBuf(signals, nl.bias_signal))
+
+    # -- encoders: signals -> input current
+    #    (N.B. this includes neuron -> neuron connections)
+    for enc in model.encoders:
+        DotInc(SigBuf(signals, enc.sig),
+               SigBuf(signals, enc.weights_signal),
+               SigBuf(signals_tmp, enc.pop.input_signal),
+               xT=True)
+
+    # -- population dynamics
+    for nl in model.nonlinearities:
+        pop = nonlinearities[nl]
+        NonLin(output=SigBuf(signals_tmp, nl.output_signal),
+               J=SigBuf(signals_tmp, nl.input_signal),
+               nl=pop,
+               dt=model.dt)
+
+    # -- decoders: population output -> signals_tmp
+    for dec in model.decoders:
+        DotInc(SigBuf(signals_tmp, dec.pop.output_signal),
+               SigBuf(signals, dec.weights_signal),
+               SigBuf(signals_tmp, dec.sig),
+               xT=True)
+
+    # -- copy: signals -> signals_copy
+    for sig in dynamic_signals:
+        Copy(SigBuf(signals_copy, sig),
+             SigBuf(signals, sig))
+
+    # -- reset: 0 -> signals
+    for sig in dynamic_signals:
+        Reset(SigBuf(output_signals, sig))
+
+    # -- filters: signals_copy -> signals
+    for filt in model.filters:
+        try:
+            DotInc(SigBuf(signals, filt.alpha_signal),
+                   SigBuf(signals_copy, filt.oldsig),
+                   SigBuf(output_signals, filt.newsig))
+        except Exception, e:
+            e.args = e.args + (filt.oldsig, filt.newsig)
+            raise
+
+    # -- transforms: signals_tmp -> signals
+    for tf in model.transforms:
+        DotInc(SigBuf(signals, tf.alpha_signal),
+               SigBuf(signals_tmp, tf.insig),
+               SigBuf(output_signals, tf.outsig))
+
+
+    return Sim2(dg.operators, signals, dg.dg, _output_signals,
+                dg.add_constraints, dg.eval_order, model)
+
+
+class Sim2(object):
+    def __init__(self, operators, signals, dg, _output_signals,
+                 add_constraints, eval_order, model):
+        self.operators = operators
+        self.signals = signals
+        self._output_signals = _output_signals
+        self.dg = dg
         self.model = model
 
+        #self.g = nx.DiGraph()
+        for op in operators:
+            op.add_edges(dg)
+
+        add_constraints()  # <- this is slow
+        self.order = eval_order()
         self.n_steps = 0
-        self.signals = {}
-        self.signals_tmp = {}
-        self.signals_copy = {}
-        self.nonlinearities = {}
-        self.probe_outputs = {}
-        self.constant_signals = []
-        self.dynamic_signals = []
-
-        for sig in self.model.signals:
-            if hasattr(sig, 'value'):
-                self.signals[sig] = np.asarray(sig.value)
-                self.signals_tmp[sig] = np.asarray(sig.value)
-                self.signals_copy[sig] = np.asarray(sig.value)
-                self.constant_signals.append(sig)
-            else:
-                self.signals[sig] = np.zeros(sig.n)
-                self.signals_tmp[sig] = np.zeros(sig.n)
-                self.signals_copy[sig] = np.zeros(sig.n)
-                self.dynamic_signals.append(sig)
-
-        for pop in self.model.nonlinearities:
-            self.nonlinearities[pop] = registry[pop.__class__](pop)
-
-        for probe in self.model.probes:
-            self.probe_outputs[probe] = []
-
-        dg, SigBuf, Copy, DotInc, NonLin, Reset = foo(self,
-                                                      go_on_init=False)
-        output_signals = {}
-        self._output_signals = output_signals
-
-        # -- reset: 0 -> signals_tmp
-        nl_outputs = set(nl.output_signal for nl in self.model.nonlinearities)
-        nl_inputs = set(nl.input_signal for nl in self.model.nonlinearities)
-        for sig in self.dynamic_signals:
-            if sig not in nl_outputs and sig not in nl_inputs:
-                Reset(SigBuf(self.signals_tmp, sig))
-
-        # -- reset nonlinearities: bias -> input_current
-        for nl in self.model.nonlinearities:
-            Copy(SigBuf(self.signals_tmp, nl.input_signal,),
-                 SigBuf(self.signals, nl.bias_signal))
-
-        # -- encoders: signals -> input current
-        #    (N.B. this includes neuron -> neuron connections)
-        for enc in self.model.encoders:
-            DotInc(SigBuf(self.signals, enc.sig),
-                   SigBuf(self.signals, enc.weights_signal),
-                   SigBuf(self.signals_tmp, enc.pop.input_signal),
-                   xT=True)
-
-        # -- population dynamics
-        for nl in self.model.nonlinearities:
-            pop = self.nonlinearities[nl]
-            NonLin(output=SigBuf(self.signals_tmp, nl.output_signal),
-                   J=SigBuf(self.signals_tmp, nl.input_signal),
-                   nl=pop,
-                   dt=self.model.dt)
-
-        # -- decoders: population output -> signals_tmp
-        for dec in self.model.decoders:
-            DotInc(SigBuf(self.signals_tmp, dec.pop.output_signal),
-                   SigBuf(self.signals, dec.weights_signal),
-                   SigBuf(self.signals_tmp, dec.sig),
-                   xT=True)
-
-        # -- copy: signals -> signals_copy
-        for sig in self.dynamic_signals:
-            Copy(SigBuf(self.signals_copy, sig),
-                 SigBuf(self.signals, sig))
-
-        # -- reset: 0 -> signals
-        for sig in self.dynamic_signals:
-            Reset(SigBuf(output_signals, sig))
-
-        # -- filters: signals_copy -> signals
-        for filt in self.model.filters:
-            try:
-                DotInc(SigBuf(self.signals, filt.alpha_signal),
-                       SigBuf(self.signals_copy, filt.oldsig),
-                       SigBuf(output_signals, filt.newsig))
-            except Exception, e:
-                e.args = e.args + (filt.oldsig, filt.newsig)
-                raise
-
-        # -- transforms: signals_tmp -> signals
-        for tf in self.model.transforms:
-            DotInc(SigBuf(self.signals, tf.alpha_signal),
-                   SigBuf(self.signals_tmp, tf.insig),
-                   SigBuf(output_signals, tf.outsig))
-
-        self.dg = dg
-        # -- XXX: speed up to some reasonable level
-        self.dg.add_constraints()
+        self.probe_outputs = dict((probe, []) for probe in model.probes)
 
 
     def step(self):
-        for op in self.dg.eval_order():
+        for op in self.order:
             op.go()
 
         for k, v in self._output_signals.items():

@@ -85,7 +85,7 @@ class Model(object):
         self.probed = {}
         self.data = {}
 
-        self.name = name
+        self.name = name + ''
         self.simulator = simulator
 
         self.seed = np.random.randint(2**31-1) if seed is None else seed
