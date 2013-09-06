@@ -16,6 +16,10 @@ def foo(sim, go_on_init):
             self.dct = dct
             self.sig = sig
 
+            if dct is sim._output_signals:
+                if sig.base not in dct:
+                    dct[sig.base] = sim.signals[sig.base].copy()
+
         def __hash__(self):
             return hash( (id(self.dct), self.sig))
 
@@ -32,6 +36,15 @@ def foo(sim, go_on_init):
         def get(self):
             return get_signal(self.dct, self.sig)
 
+        def __str__(self):
+            dctname = {
+                id(sim.signals): 'signals',
+                id(sim.signals_tmp): 'signals_tmp',
+                id(sim.signals_copy): 'signals_copy',
+                id(sim._output_signals): 'output_signals',
+                    }[id(self.dct)]
+            return 'SigBuf(%s, %s)' % (dctname, self.sig)
+
 
     class Reset(object):
         def __init__(self, dst):
@@ -42,10 +55,14 @@ def foo(sim, go_on_init):
             operators.append(self)
 
             self.reads = []
-            self.writes = [dst]
+            self.sets = [dst]
+            self.incs = []
 
             if go_on_init:
                 self.go()
+
+        def __str__(self):
+            return 'Reset(%s)' % str(self.dst)
 
         def go(self):
             self.dst.get()[...] = 0
@@ -61,10 +78,15 @@ def foo(sim, go_on_init):
             operators.append(self)
 
             self.reads = [src]
-            self.writes = [dst]
+            self.sets = [dst]
+            self.incs = []
 
             if go_on_init:
                 self.go()
+
+        def __str__(self):
+            return 'Copy(%s -> %s)' % (
+                    str(self.src), str(self.dst))
 
         def go(self):
             self.dst.get()[...] = self.src.get()
@@ -83,10 +105,15 @@ def foo(sim, go_on_init):
             operators.append(self)
 
             self.reads = [self.A, self.X]
-            self.writes = [self.Y]
+            self.sets = []
+            self.incs = [self.Y]
 
             if go_on_init:
                 self.go()
+
+        def __str__(self):
+            return 'DotInc(%s, %s -> %s)' % (
+                    str(self.A), str(self.X), str(self.Y))
 
         def go(self):
             dot_inc(self.A.get(),
@@ -106,7 +133,8 @@ def foo(sim, go_on_init):
             operators.append(self)
 
             self.reads = [J]
-            self.writes = [output]
+            self.sets = [output]
+            self.incs = []
 
             if go_on_init:
                 self.go()
@@ -122,6 +150,20 @@ def foo(sim, go_on_init):
         def operators(self):
             return operators
 
+        def add_constraints(self):
+            self.sets_before_incs()
+            self.add_aliasing_restrictions()
+
+        def sets_before_incs(self):
+            for op1 in operators:
+                for op2 in operators:
+                    if op1 is op2:
+                        continue
+                    for w1 in op1.sets:
+                        for w2 in op2.incs:
+                            if w1.may_share_memory(w2):
+                                nxdg.add_edge(op1, op2)
+
         def add_aliasing_restrictions(self):
             # -- all operators that read *from*
             #    get_signal(buf, sig)
@@ -132,10 +174,29 @@ def foo(sim, go_on_init):
             #    TODO: make this more efficient
             for op1 in operators:
                 for op2 in operators:
-                    for w1 in op1.writes:
+                    if op1 is op2:
+                        continue
+                    for w1 in op1.sets + op1.incs:
                         for r2 in op2.reads:
                             if w1.may_share_memory(r2):
                                 nxdg.add_edge(op1, op2)
+                                try:
+                                    networkx.topological_sort(nxdg)
+                                except:
+                                    print 'sig', id(sim.signals)
+                                    print 'outsig', id(sim._output_signals)
+                                    print 'sig_copy', id(sim.signals_copy)
+                                    print 'w dct', id(op1.X.dct)
+                                    print 'op2 dct', id(op1.X.dct)
+
+                                    print 'edge', op1, op2
+                                    print w1.sig, r2.sig
+                                    print 'a', op1.A.sig
+                                    print 'a', op1.X.sig
+                                    print 'a', op1.Y.sig
+                                    print 'b', op2.src.sig
+                                    print 'b', op2.dst.sig
+                                    raise
 
         def eval_order(self):
             return [node for node in networkx.topological_sort(nxdg)
@@ -257,7 +318,8 @@ class Simulator(object):
 
         dg, SigBuf, Copy, DotInc, NonLin, Reset = foo(self,
                                                       go_on_init=False)
-        output_signals = dict(self.signals)
+        output_signals = {}
+        self._output_signals = output_signals
 
         # -- reset: 0 -> signals_tmp
         for sig in self.dynamic_signals:
@@ -317,19 +379,21 @@ class Simulator(object):
                    SigBuf(output_signals, tf.outsig))
 
         self.dg = dg
-        # -- TODO: speed up to some reasonable level
-        #self.dg.add_aliasing_restrictions()
-        self._output_signals = output_signals
-
+        # -- XXX: speed up to some reasonable level
+        self.dg.add_constraints()
 
 
     def step(self):
-        self._output_signals.update(self.signals)
-        # -- TODO: use this instead, too bad it currently creates a cycle
-        # for op in self.dg.eval_order():
-        #     op.go()
-        for op in self.dg.operators:
-            op.go()
+        if 0:
+            # -- This is still not right
+            for op in self.dg.eval_order():
+                op.go()
+        else:
+            for op in self.dg.operators:
+                op.go()
+
+        for k, v in self._output_signals.items():
+            self.signals[k][...] = v
 
         # -- probes signals -> probe buffers
         for probe in self.model.probes:
