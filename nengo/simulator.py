@@ -1,9 +1,47 @@
 import logging
+import itertools
+from collections import defaultdict
+import time
 
 import networkx
 import numpy as np
 
 from objects import LIF, LIFRate, Direct
+
+def are_aliased(a, b):
+    # Terminology: two arrays *overlap* if the lowermost memory addressed
+    # touched by upper one is higher than the uppermost memory address touched
+    # by the lower one.
+    # 
+    # np.may_share_memory returns True iff there is overlap.
+    # Overlap is a necessary but insufficient condition for *aliasing*.
+    #
+    # Aliasing is when two ndarrays refer a common memory location.
+    #
+
+    # -- least and greatest addresses don't even overlap
+    if not np.may_share_memory(a, b):
+        return False
+
+    a_info = a.__array_interface__
+    b_info = b.__array_interface__
+    if a.dtype != b.dtype:
+        raise NotImplementedError()
+    #a_data = a_info['data']
+    #b_data = b_info['data']
+    #a_shape = a_info['shape']
+    #b_shape = b_info['shape']
+    a_strides = a_info['strides']
+    b_strides = b_info['strides']
+
+    if a_strides == b_strides == None:
+        # -- a and b are both contiguous blocks
+        #    if they didn't overlap then
+        #    np.may_share_memory would have returned False
+        #    It didn't -> they overlap -> they are aliased.
+        return  True
+    else:
+        raise NotImplementedError('are_aliased?', (a_info, b_info))
 
 
 def foo(sim, go_on_init):
@@ -28,10 +66,16 @@ def foo(sim, go_on_init):
             #     base objects, strides, etc.
             return self.dct is other.dct and self.sig == other.sig
 
-        def may_share_memory(self, other):
-            return np.may_share_memory(
-                get_signal(self.dct, self.sig),
-                get_signal(other.dct, other.sig))
+        def is_aliased_with(self, other):
+            if self.dct is other.dct:
+                if self is other:
+                    return True
+                elif self.sig.same_view_as(other.sig):
+                    return True
+                else:
+                    return are_aliased(self.get(), other.get())
+            else:
+                return False
 
         def get(self):
             return get_signal(self.dct, self.sig)
@@ -150,53 +194,73 @@ def foo(sim, go_on_init):
         def operators(self):
             return operators
 
-        def add_constraints(self):
-            self.sets_before_incs()
-            self.add_aliasing_restrictions()
+        def add_constraints(self, verbose=False):
 
-        def sets_before_incs(self):
-            for op1 in operators:
-                for op2 in operators:
-                    if op1 is op2:
-                        continue
-                    for w1 in op1.sets:
-                        for w2 in op2.incs:
-                            if w1.may_share_memory(w2):
-                                nxdg.add_edge(op1, op2)
+            # -- all views of a base object in a particular dictionary
+            t0 = time.time()
+            if verbose: print 'building alias table ...'
+            by_base = defaultdict(list)
+            reads = defaultdict(list)
+            sets = defaultdict(list)
+            incs = defaultdict(list)
 
-        def add_aliasing_restrictions(self):
-            # -- all operators that read *from*
-            #    get_signal(buf, sig)
-            #    depend on all operators that output to
-            #    an area with overlap with get_signal(buf, sig)
+            for op in self.operators:
+                for node in op.reads + op.sets + op.incs:
+                    by_base[SigBuf(node.dct, node.sig.base)].append(node)
 
-            # -- add edges for memory alias dependencies
-            #    TODO: make this more efficient
-            for op1 in operators:
-                for op2 in operators:
-                    if op1 is op2:
-                        continue
-                    for w1 in op1.sets + op1.incs:
-                        for r2 in op2.reads:
-                            if w1.may_share_memory(r2):
-                                nxdg.add_edge(op1, op2)
-                                try:
-                                    networkx.topological_sort(nxdg)
-                                except:
-                                    print 'sig', id(sim.signals)
-                                    print 'outsig', id(sim._output_signals)
-                                    print 'sig_copy', id(sim.signals_copy)
-                                    print 'w dct', id(op1.X.dct)
-                                    print 'op2 dct', id(op1.X.dct)
+                for node in op.reads:
+                    reads[node].append(op)
 
-                                    print 'edge', op1, op2
-                                    print w1.sig, r2.sig
-                                    print 'a', op1.A.sig
-                                    print 'a', op1.X.sig
-                                    print 'a', op1.Y.sig
-                                    print 'b', op2.src.sig
-                                    print 'b', op2.dst.sig
-                                    raise
+                for node in op.sets:
+                    sets[node].append(op)
+
+                for node in op.incs:
+                    incs[node].append(op)
+
+            for node in sets:
+                assert len(sets[node]) == 1, (node, sets[node])
+
+            aliased = defaultdict(lambda : False)
+            aliased_with = defaultdict(set)
+            if verbose: print 'bases done ...'
+            for ii, (sb, views) in enumerate(by_base.items()):
+                if len(views) > 10:
+                    if verbose: print '%i / %i ' % (ii, len(views))
+                for v1, v2 in itertools.combinations(views, 2):
+                    is_aliased = v1.is_aliased_with(v2)
+                    if is_aliased:
+                        aliased[(v1, v2)] = True
+                        aliased[(v2, v1)] = True
+                        aliased_with[v1].add(v2)
+                        aliased_with[v2].add(v1)
+                if len(views) > 10:
+                    if verbose: print '%i / %i ' % (ii, len(views)), 'done'
+            t1 = time.time()
+            if verbose: print 'building alias table took', (t1 - t0)
+            #self.sets_before_incs()
+            #self.add_aliasing_restrictions()
+
+            # assert that for every node (a) that is set
+            # there are no other signals (b) that are
+            # aliased to (a) and also set.
+            for node, other in itertools.combinations(sets, 2):
+                assert not aliased[(node, other)]
+
+            # reads depend on sets and incs
+            for node, post_ops in reads.items():
+                pre_ops = sets[node] + incs[node]
+                for other in aliased_with[node]:
+                    pre_ops += sets[other] + incs[other]
+                for pre_op, post_op in itertools.product(pre_ops, post_ops):
+                    nxdg.add_edge(pre_op, post_op)
+
+            # incs depend on sets
+            for node, post_ops in incs.items():
+                pre_ops = sets[node]
+                for other in aliased_with[node]:
+                    pre_ops += sets[other]
+                for pre_op, post_op in itertools.product(pre_ops, post_ops):
+                    nxdg.add_edge(pre_op, post_op)
 
         def eval_order(self):
             return [node for node in networkx.topological_sort(nxdg)
@@ -322,8 +386,11 @@ class Simulator(object):
         self._output_signals = output_signals
 
         # -- reset: 0 -> signals_tmp
+        nl_outputs = set(nl.output_signal for nl in self.model.nonlinearities)
+        nl_inputs = set(nl.input_signal for nl in self.model.nonlinearities)
         for sig in self.dynamic_signals:
-            Reset(SigBuf(self.signals_tmp, sig))
+            if sig not in nl_outputs and sig not in nl_inputs:
+                Reset(SigBuf(self.signals_tmp, sig))
 
         # -- reset nonlinearities: bias -> input_current
         for nl in self.model.nonlinearities:
@@ -384,13 +451,8 @@ class Simulator(object):
 
 
     def step(self):
-        if 0:
-            # -- This is still not right
-            for op in self.dg.eval_order():
-                op.go()
-        else:
-            for op in self.dg.operators:
-                op.go()
+        for op in self.dg.eval_order():
+            op.go()
 
         for k, v in self._output_signals.items():
             self.signals[k][...] = v

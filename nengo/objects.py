@@ -389,6 +389,17 @@ class SignalView(object):
             self.name, self.shape)
 
     @property
+    def structure(self):
+        return (
+            self.shape,
+            self.elemstrides,
+            self.offset)
+
+    def same_view_as(self, other):
+        return self.structure == other.structure \
+           and self.base == other.base
+
+    @property
     def dtype(self):
         return np.dtype(self.base._dtype)
 
