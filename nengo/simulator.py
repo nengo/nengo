@@ -7,7 +7,7 @@ from objects import LIF, LIFRate, Direct
 
 
 def foo(sim, go_on_init):
-    dg = networkx.DiGraph()
+    nxdg = networkx.DiGraph()
 
     operators = []
 
@@ -26,8 +26,8 @@ def foo(sim, go_on_init):
 
         def may_share_memory(self, other):
             return np.may_share_memory(
-                get_signal(self.buf, self.sig),
-                get_signal(other.buf, other.sig))
+                get_signal(self.dct, self.sig),
+                get_signal(other.dct, other.sig))
 
         def get(self):
             return get_signal(self.dct, self.sig)
@@ -37,10 +37,11 @@ def foo(sim, go_on_init):
         def __init__(self, dst):
             self.dst = dst
 
-            dg.add_edge(self, dst)
+            nxdg.add_edge(self, dst)
 
             operators.append(self)
 
+            self.reads = []
             self.writes = [dst]
 
             if go_on_init:
@@ -54,8 +55,8 @@ def foo(sim, go_on_init):
             self.dst = dst
             self.src = src
 
-            dg.add_edge(src, self)
-            dg.add_edge(self, dst)
+            nxdg.add_edge(src, self)
+            nxdg.add_edge(self, dst)
 
             operators.append(self)
 
@@ -75,9 +76,9 @@ def foo(sim, go_on_init):
             self.Y = Y
             self.xT = xT
 
-            dg.add_edge(self.A, self)
-            dg.add_edge(self.X, self)
-            dg.add_edge(self, self.Y)
+            nxdg.add_edge(self.A, self)
+            nxdg.add_edge(self.X, self)
+            nxdg.add_edge(self, self.Y)
 
             operators.append(self)
 
@@ -99,8 +100,8 @@ def foo(sim, go_on_init):
             self.nl = nl
             self.dt = dt
 
-            dg.add_edge(J, self)
-            dg.add_edge(self, output)
+            nxdg.add_edge(J, self)
+            nxdg.add_edge(self, output)
 
             operators.append(self)
 
@@ -116,18 +117,32 @@ def foo(sim, go_on_init):
                 J=self.J.get(),
                 output=self.output.get())
 
-    def eval_order():
-        # -- add edges for memory alias dependencies
-        #    TODO: make this more efficient
-        for node in dg.nodes():
-            if isinstance(node, tuple):
-                buf, sig = node
-                # -- all operators that read *from*
-                #    get_signal(buf, sig)
-                #    depend on all operators that output to
-                #    an area with overlap with get_signal(buf, sig)
+    class DGCLS(object):
+        @property
+        def operators(self):
+            return operators
 
-    return dg, SigBuf, Copy, DotInc, NonLin, Reset, eval_order, operators
+        def add_aliasing_restrictions(self):
+            # -- all operators that read *from*
+            #    get_signal(buf, sig)
+            #    depend on all operators that output to
+            #    an area with overlap with get_signal(buf, sig)
+
+            # -- add edges for memory alias dependencies
+            #    TODO: make this more efficient
+            for op1 in operators:
+                for op2 in operators:
+                    for w1 in op1.writes:
+                        for r2 in op2.reads:
+                            if w1.may_share_memory(r2):
+                                nxdg.add_edge(op1, op2)
+
+        def eval_order(self):
+            return [node for node in networkx.topological_sort(nxdg)
+                    if not isinstance(node, SigBuf)]
+    DG = DGCLS()
+
+    return DG, SigBuf, Copy, DotInc, NonLin, Reset
 
 
 
@@ -240,8 +255,8 @@ class Simulator(object):
         for probe in self.model.probes:
             self.probe_outputs[probe] = []
 
-        dg, SigBuf, Copy, DotInc, NonLin, Reset, eval_order, operators, \
-                = foo(self, go_on_init=False)
+        dg, SigBuf, Copy, DotInc, NonLin, Reset = foo(self,
+                                                      go_on_init=False)
         output_signals = dict(self.signals)
 
         # -- reset: 0 -> signals_tmp
@@ -283,7 +298,7 @@ class Simulator(object):
 
         # -- reset: 0 -> signals
         for sig in self.dynamic_signals:
-            Reset(SigBuf(self.signals, sig))
+            Reset(SigBuf(output_signals, sig))
 
         # -- filters: signals_copy -> signals
         for filt in self.model.filters:
@@ -301,13 +316,19 @@ class Simulator(object):
                    SigBuf(self.signals_tmp, tf.insig),
                    SigBuf(output_signals, tf.outsig))
 
-        self.operators = operators
+        self.dg = dg
+        # -- TODO: speed up to some reasonable level
+        #self.dg.add_aliasing_restrictions()
         self._output_signals = output_signals
+
 
 
     def step(self):
         self._output_signals.update(self.signals)
-        for op in self.operators:
+        # -- TODO: use this instead, too bad it currently creates a cycle
+        # for op in self.dg.eval_order():
+        #     op.go()
+        for op in self.dg.operators:
             op.go()
 
         # -- probes signals -> probe buffers
