@@ -388,6 +388,17 @@ class SignalView(object):
             self.__class__.__name__,
             self.name, self.shape)
 
+    def view_like_self_of(self, newbase, name=None):
+        if newbase.base != newbase:
+            raise NotImplementedError()
+        if newbase.structure != self.base.structure:
+            raise NotImplementedError('probably ok but worth thinking about')
+        return SignalView(newbase,
+                          self.shape,
+                          self.elemstrides,
+                          self.offset,
+                          name)
+
     @property
     def structure(self):
         return (

@@ -11,9 +11,9 @@ class TestSimulator(SimulatorTestCase):
 
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
-        one = m.add(Signal(n=1))
-        two = m.add(Signal(n=2))
-        three = m.add(Signal(n=3))
+        one = m.add(Signal(n=1, name='a'))
+        two = m.add(Signal(n=2, name='b'))
+        three = m.add(Signal(n=3, name='c'))
 
         m.add(Filter(1, three[0:1], one))
         m.add(Filter(2.0, three[1:], two))
@@ -21,7 +21,12 @@ class TestSimulator(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.signals[three] = np.asarray([1, 2, 3])
+        #for k in sim.signals:
+            #print k, sim.signals[k]
         sim.step()
+        #print ' ---- '
+        #for k in sim.signals:
+            #print k, sim.signals[k]
         self.assertTrue(np.all(sim.signals[one] == 1))
         self.assertTrue(np.all(sim.signals[two] == [4, 6]))
         self.assertTrue(np.all(sim.signals[three] == [3, 2, 1]))
