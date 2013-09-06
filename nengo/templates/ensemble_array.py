@@ -30,7 +30,7 @@ class EnsembleArray(object):
         self.ensembles = [
             objects.Ensemble(name+("[%d]" % i), neurons, dims,
                              input_signal=self.input_signal[i*dims:(i+1)*dims],
-                             encoders=encoders[i*dims:(i+1)*dims], **kwargs)
+                             encoders=encoders, **kwargs)
             for i, encoders in enumerate(encoders)]
 
         self.connections = []

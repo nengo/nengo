@@ -17,16 +17,17 @@ class TestSimulator(SimulatorTestCase):
         m.add(Filter(2.0, three[1:], two))
         m.add(Filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three))
 
-        sim = self.Simulator(m)
-        sim.signals[three] = np.asarray([1, 2, 3])
+        sim = m.simulator(sim_class=self.Simulator)
+        memo = sim.model.memo
+        sim.signals[sim.copied(three)] = np.asarray([1, 2, 3])
         sim.step()
-        self.assertTrue(np.all(sim.signals[one] == 1))
-        self.assertTrue(np.all(sim.signals[two] == [4, 6]))
-        self.assertTrue(np.all(sim.signals[three] == [3, 2, 1]))
+        self.assertTrue(np.all(sim.signals[sim.copied(one)] == 1))
+        self.assertTrue(np.all(sim.signals[sim.copied(two)] == [4, 6]))
+        self.assertTrue(np.all(sim.signals[sim.copied(three)] == [3, 2, 1]))
         sim.step()
-        self.assertTrue(np.all(sim.signals[one] == 3))
-        self.assertTrue(np.all(sim.signals[two] == [4, 2]))
-        self.assertTrue(np.all(sim.signals[three] == [1, 2, 3]))
+        self.assertTrue(np.all(sim.signals[sim.copied(one)] == 3))
+        self.assertTrue(np.all(sim.signals[sim.copied(two)] == [4, 2]))
+        self.assertTrue(np.all(sim.signals[sim.copied(three)] == [1, 2, 3]))
 
     def test_simple_direct_mode(self):
         m = nengo.Model("test_simple_direct_mode")
@@ -37,12 +38,12 @@ class TestSimulator(SimulatorTestCase):
         m.add(Decoder(pop, sig, weights=[[1.0]]))
         m.add(Transform(1.0, sig, sig))
 
-        sim = self.Simulator(m)
+        sim = m.simulator(sim_class=self.Simulator)
         for i in range(5):
             sim.step()
             if i > 0:
-                self.assertEqual(sim.signals[sig],
-                                 np.sin(sim.signals[m.t] - .001))
+                self.assertEqual(sim.signals[sim.copied(sig)],
+                                 np.sin(sim.signals[sim.copied(m.t)] - .001))
 
     def test_encoder_decoder_pathway(self):
         m = nengo.Model("")
@@ -53,10 +54,10 @@ class TestSimulator(SimulatorTestCase):
         tf = m.add(Transform(0.5, one, one))
         fi = m.add(Filter(0.2, one, one))
 
-        sim = self.Simulator(m)
-        sim.signals[one] = np.asarray([1.0])
+        sim = m.simulator(sim_class=self.Simulator)
+        sim.signals[sim.copied(one)] = np.asarray([1.0])
         def pp(sig, target):
-            print sig, sim.signals[sig], target
+            print sig, sim.signals[sim.copied(sig)], target
         sim.step()
         pp(one, .55)
         pp(enc.sig, .55) # -- was 1.0 during step fn
@@ -65,8 +66,9 @@ class TestSimulator(SimulatorTestCase):
         pp(pop.output_signal, [2, 3])
         #pp(sim.dec_outputs[dec.sig], [.7])
 
-        self.assertTrue(np.allclose(sim.signals[one], .55, atol=.01, rtol=.01),
-                        msg=str(sim.signals[one]))
+        self.assertTrue(np.allclose(sim.signals[sim.copied(one)],
+                                    .55, atol=.01, rtol=.01),
+                        msg=str(sim.signals[sim.copied(one)]))
 
     def test_encoder_decoder_with_views(self):
         m = nengo.Model("")
@@ -77,10 +79,10 @@ class TestSimulator(SimulatorTestCase):
         tf = m.add(Transform(0.5, one, one[:]))
         fi = m.add(Filter(0.2, one[:], one))
 
-        sim = self.Simulator(m)
-        sim.signals[one] = np.asarray([1.0])
+        sim = m.simulator(sim_class=self.Simulator)
+        sim.signals[sim.copied(one)] = np.asarray([1.0])
         def pp(sig, target):
-            #print sig, sim.signals[sig], target
+            #print sig, sim.signals[sim.copied(sig)], target
             pass
         sim.step()
         pp(one, .55)
@@ -90,8 +92,9 @@ class TestSimulator(SimulatorTestCase):
         pp(pop.output_signal, [2, 3])
         #pp(sim.dec_outputs[dec.sig], [.7])
 
-        self.assertTrue(np.allclose(sim.signals[one], .55, atol=.01, rtol=.01),
-                        msg=sim.signals[one])
+        self.assertTrue(np.allclose(sim.signals[sim.copied(one)],
+                                    .55, atol=.01, rtol=.01),
+                        msg=sim.signals[sim.copied(one)])
 
 
 
