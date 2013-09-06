@@ -10,7 +10,7 @@ class TestCircularConv(SimulatorTestCase):
     def _test_cconv(self, D, neurons_per_product):
         # D is dimensionality of semantic pointers
 
-        m = nengo.Model()
+        m = nengo.Model('test_cconv_' + str(D))
         rng = np.random.RandomState(1234)
 
         A = m.add(Constant(D, value=rng.randn(D)))
@@ -19,7 +19,7 @@ class TestCircularConv(SimulatorTestCase):
         CircularConvolution(m, A, B,
             neurons_per_product=neurons_per_product)
 
-        sim = self.Simulator(m)
+        sim = m.simulator(sim_class=self.Simulator)
         sim.run_steps(10)
 
         # -- XXX

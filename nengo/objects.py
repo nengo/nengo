@@ -10,27 +10,6 @@ from . import decoders
 logger = logging.getLogger(__name__)
 
 
-def sample_unit_signal(dimensions, num_samples, rng):
-    """Generate sample points uniformly distributed within the sphere.
-
-    Returns float array of sample points: dimensions x num_samples
-
-    """
-    samples = rng.randn(num_samples, dimensions)
-
-    # normalize magnitude of sampled points to be of unit length
-    norm = np.sum(samples * samples, axis=1)
-    samples /= np.sqrt(norm)[:, np.newaxis]
-
-    # generate magnitudes for vectors from uniform distribution
-    scale = rng.rand(num_samples, 1) ** (1.0 / dimensions)
-
-    # scale sample points
-    samples *= scale
-
-    return samples.T
-
-
 class Uniform(object):
     def __init__(self, low, high):
         self.low = low
@@ -133,14 +112,14 @@ class Ensemble(object):
             if _encoders.shape != enc_shape:
                 msg = ("Encoder shape must be (n_neurons, dimensions); "
                        "in this case %s." % str(enc_shape))
-                raise core.ShapeMismatchError(msg)
+                raise core.ShapeMismatch(msg)
         self._encoders = _encoders
 
     @property
     def eval_points(self):
         """TODO"""
         if self._eval_points is None:
-            self._eval_points = sample_unit_signal(
+            self._eval_points = decoders.sample_hypersphere(
                 self.dimensions, Ensemble.EVAL_POINTS, self.rng) * self.radius
         return self._eval_points
 
@@ -209,28 +188,28 @@ class Ensemble(object):
             np.dot(self.encoder.weights, eval_points).T)
 
     def connect_to(self, post, **kwargs):
-        connection = connections.DecodedConnection(self, post, **kwargs)
+        connection = connections.DecodedNeuronConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
-            post.connection_in.append(connection)
+            post.connections_in.append(connection)
         return connection
 
     def probe(self, to_probe='decoded_output', sample_every=0.001, filter=0.01):
         if to_probe == 'decoded_output':
-            probe = probes.Probe(self.name + '.decoded_output', sample_every)
+            probe = Probe(self.name + '.decoded_output', sample_every)
             self.connect_to(probe, filter=filter)
             self.probes['decoded_output'].append(probe)
         return probe
 
-    def build(self, model, dt, input_signal=None):
-        # Set up input_signal
-        if input_signal is None:
-            self.input_signal = core.Signal(n=self.dimensions,
-                                            name=self.name + ".input_signal")
-            model.add(self.input_signal)
+    def build(self, model, dt, signal=None):
+        # Set up signal
+        if signal is None:
+            self.signal = core.Signal(n=self.dimensions,
+                                      name=self.name + ".signal")
+            model.add(self.signal)
         else:
-            # Assume that a provided input_signal is already in the model
-            self.input_signal = input_signal
+            # Assume that a provided signal is already in the model
+            self.signal = signal
 
         # Set up neurons
         max_rates = self.max_rates
@@ -244,19 +223,72 @@ class Ensemble(object):
 
         # Set up encoder
         if self.encoders is None:
-            encoders = self.rng.randn(self.neurons.n_neurons, self.dimensions)
+            encoders = decoders.sample_hypersphere(self.dimensions,
+                                                   self.neurons.n_neurons,
+                                                   self.rng, surface=True).T
         else:
             encoders = np.asarray(self.encoders, copy=True)
-        norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
-        encoders /= np.sqrt(norm)
+            norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
+            encoders /= np.sqrt(norm)
         encoders /= np.asarray(self.radius)
         encoders *= self.neurons.gain[:, np.newaxis]
-        self.encoder = core.Encoder(self.input_signal, self.neurons, encoders)
+        self.encoder = core.Encoder(self.signal, self.neurons, encoders)
         model.add(self.encoder)
 
         # Set up probes, but don't build them (done explicitly later)
         for probe in self.probes['decoded_output']:
             probe.dimensions = self.dimensions
+
+
+class ConstantNode(object):
+    def __init__(self, name, output):
+        self.name = name
+        self.output = output
+
+        # Set up connections and probes
+        self.connections_in = []
+        self.connections_out = []
+        self.probes = {'output': []}
+
+    @property
+    def output(self):
+        return self._output
+
+    @output.setter
+    def output(self, _output):
+        self._output = np.asarray(_output)
+        if self._output.shape == ():
+            self._output.shape = (1,)
+
+    def __str__(self):
+        return "Constant Node: " + self.name
+
+    def connect_to(self, post, **kwargs):
+        connection = connections.SignalConnection(self, post, **kwargs)
+        self.connections_out.append(connection)
+        if hasattr(post, 'connections_in'):
+            post.connections_in.append(connection)
+        return connection
+
+    def probe(self, to_probe='output', sample_every=0.001, filter=None):
+        if filter is not None and filter > 0:
+            logger.warning("Filter set on constant. Ignoring.")
+
+        if to_probe == 'output':
+            p = core.Probe(None, sample_every)
+            self.probes['output'].append(p)
+        return p
+
+    def build(self, model, dt):
+        # Set up signal
+        self.signal = core.Constant(self.output.size, self.output,
+                                    name=self.name)
+        model.add(self.signal)
+
+        # Set up probes
+        for probe in self.probes['output']:
+            probe.sig = self.signal
+            model.add(probe)
 
 
 class Node(object):
@@ -281,6 +313,8 @@ class Node(object):
     """
 
     def __init__(self, name, output, dimensions=1):
+        assert callable(output), "Use ConstantNode for constant nodes."
+
         self.name = name
         self.output = output
         self.dimensions = dimensions
@@ -290,65 +324,45 @@ class Node(object):
         self.connections_out = []
         self.probes = {'output': []}
 
-    @property
-    def output(self):
-        return self._output
-
-    @output.setter
-    def output(self, _output):
-        if callable(_output):
-            self._output = _output
-        else:
-            self._output = np.asarray(_output)
-            if self._output.shape == ():
-                self._output.shape = (1,)
+    def __str__(self):
+        return "Node: " + self.name
 
     def connect_to(self, post, **kwargs):
-        connection = connections.SimpleConnection(self.signal, post, **kwargs)
+        connection = connections.DecodedConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
-            post.connection_in.append(connection)
+            post.connections_in.append(connection)
         return connection
 
     def probe(self, to_probe='output', sample_every=0.001, filter=None):
         if to_probe == 'output':
-            p = probes.Probe(self.name + ".output", sample_every)
+            p = Probe(self.name + ".output", sample_every)
             self.connect_to(p, filter=filter)
             self.probes['output'].append(p)
         return p
 
     def build(self, model, dt):
-        if callable(self.output):
-            # Set up input_signal
-            self.input_signal = core.Signal(self.dimensions,
-                                            name=self.name + ".input")
-            model.add(self.input_signal)
+        # Set up signals
+        self.signal = core.Signal(self.dimensions,
+                                  name=self.name + ".signal")
+        model.add(self.signal)
 
-            # Set up non-linearity
-            n_out = np.array(self.output(np.ones(self.dimensions))).size
-            self.function = core.Direct(n_in=self.dimensions,
-                                        n_out=n_out,
-                                        fn=self.output,
-                                        name=self.name + ".Direct")
-            model.add(self.function)
-            self.signal = self.function.output_signal
+        # Set up non-linearity
+        n_out = np.array(self.output(np.ones(self.dimensions))).size
+        self.nonlinear = core.Direct(n_in=self.dimensions,
+                                     n_out=n_out,
+                                     fn=self.output,
+                                     name=self.name + ".Direct")
+        model.add(self.nonlinear)
 
-            # Set up encoder
-            self.encoder = core.Encoder(self.input_signal, self.function,
-                                        weights=np.asarray([[1]]))
-            model.add(self.encoder)
-
-            # Set up transform
-            self.transform = core.Transform(1.0, self.signal, self.signal)
-            model.add(self.transform)
-        else:
-            self.signal = core.Constant(n=self.output.size, value=self.output,
-                                        name=self.name)
-            model.add(self.signal)
+        # Set up encoder
+        self.encoder = core.Encoder(self.signal, self.nonlinear,
+                                    weights=np.eye(self.dimensions))
+        model.add(self.encoder)
 
         # Set up probes
         for probe in self.probes['output']:
-            probe.dimensions = self.signal.size
+            probe.dimensions = self.nonlinear.output_signal.n
 
 
 class Probe(object):
@@ -359,7 +373,7 @@ class Probe(object):
 
     """
     def __init__(self, name, sample_every, dimensions=None):
-        self.name = name
+        self.name = "Probe(" + name + ")"
         self.sample_every = sample_every
         self.dimensions = None
 
@@ -370,11 +384,10 @@ class Probe(object):
         return 1.0 / self.sample_every
 
     def build(self, model, dt):
-        # Set up input_signal
-        self.input_signal = core.Signal(n=self.dimensions,
-                                        name="Probe(" + self.name + ")")
-        model.add(self.input_signal)
+        # Set up signal
+        self.signal = core.Signal(n=self.dimensions, name=self.name)
+        model.add(self.signal)
 
         # Set up probe
-        self.probe = core.Probe(self.input_signal, self.sample_every)
+        self.probe = core.Probe(self.signal, self.sample_every)
         model.add(self.probe)

@@ -1,34 +1,62 @@
 import numpy as np
 
 import nengo
+from nengo.objects import Node
 import nengo.old_api as nef
-from nengo.tests.helpers import SimulatorTestCase, unittest
+from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
 
 
 class TestNode(SimulatorTestCase):
 
     def test_simple(self):
-        params = dict(simulator=self.Simulator, seed=123, dt=0.001)
-
-        # Old API
-        net = nef.Network('test_simple', **params)
-        net.make_input('in', value=np.sin)
-        net.make_probe('in', dt_sample=0.001, pstc=0.0)
-        net.run(0.01)
-        self.assertTrue(np.allclose(net.model.data[net.model.t].ravel(),
-                                    np.arange(0.001, 0.0105, .001)))
-        self.assertTrue(np.allclose(net.model.data['in'].ravel(),
-                                    np.sin(np.arange(0, 0.0095, .001))))
-
-        # New API
-        m = nengo.Model('test_simple', **params)
-        node = m.make_node('in', output=np.sin)
+        dt = 0.001
+        m = nengo.Model('test_simple', seed=123)
+        m.make_node('in', output=np.sin)
         m.probe('in')
-        m.run(0.01)
-        self.assertTrue(np.allclose(m.data[m.t].ravel(),
-                                    np.arange(0.001, 0.0105, .001)))
-        self.assertTrue(np.allclose(m.data['in'].ravel(),
-                                    np.sin(np.arange(0, 0.0095, .001))))
+
+        sim = m.simulator(dt=dt, sim_class=self.Simulator)
+        runtime = 0.5
+        sim.run(runtime)
+
+        with Plotter(self.Simulator) as plt:
+            plt.plot(sim.data(m.t), sim.data('in'), label='sin')
+            plt.legend(loc='best')
+            plt.savefig('test_node.test_simple.pdf')
+            plt.close()
+
+        self.assertTrue(np.allclose(sim.data(m.t).ravel(),
+                                    np.arange(dt, runtime, dt)))
+        # Two step delay!
+        self.assertTrue(np.allclose(sim.data('in')[2:].ravel(),
+                                    np.sin(np.arange(dt, runtime-dt*2, dt))))
+
+    def test_connected(self):
+        dt = 0.001
+        m = nengo.Model('test_connected', seed=123)
+        m.make_node('in', output=np.sin)
+        # Not using make_node, as make_node connects time to node
+        m.add(Node('out', output=np.square))
+        m.connect('in', 'out', filter=None)  # Direct connection
+        m.probe('in')
+        m.probe('out')
+
+        sim = m.simulator(dt=dt, sim_class=self.Simulator)
+        runtime = 0.5
+        sim.run(runtime)
+
+        with Plotter(self.Simulator) as plt:
+            plt.plot(sim.data(m.t), sim.data('in'), label='sin')
+            plt.plot(sim.data(m.t), sim.data('out'), label='sin squared')
+            plt.legend(loc='best')
+            plt.savefig('test_node.test_connected.pdf')
+            plt.close()
+
+        # One step delay!
+        self.assertTrue(np.allclose(sim.data('in')[2:].ravel(),
+                                    np.sin(np.arange(dt, runtime-dt*2, dt))))
+        # One step delay!
+        self.assertTrue(np.allclose(np.square(sim.data('in')[:-1]),
+                                    sim.data('out')[1:]))
 
 
 if __name__ == "__main__":
