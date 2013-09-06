@@ -67,10 +67,6 @@ class TestSimulator(SimulatorTestCase):
         check(foo, .55)
         check(enc.sig, .55) # -- was 1.0 during step fn
         check(enc.weights_signal, [[1], [2]]) #
-        for key in sim.signals:
-            print key
-            print sim.signals[key]
-            print sim.signals_tmp[key]
         try:
             check(pop.input_signal, [1, 2])
             check(pop.output_signal, [2, 3])

@@ -230,57 +230,85 @@ class Simulator(object):
 
 
     def step(self):
+        dg, SigBuf, Copy, DotInc, NonLin, Reset, eval_order = foo(self)
+        output_signals = dict(self.signals)
+
         # -- reset: 0 -> signals_tmp
         for sig in self.dynamic_signals:
-            self.signals_tmp[sig][...] = 0
+            #self.signals_tmp[sig][...] = 0
+            Reset(SigBuf(self.signals_tmp, sig)).go()
 
         # -- reset nonlinearities: bias -> input_current
         for nl in self.model.nonlinearities:
-            self.signals_tmp[nl.input_signal][...] = self.signals[nl.bias_signal]
+            #self.signals_tmp[nl.input_signal][...] = self.signals[nl.bias_signal]
+            Copy(SigBuf(self.signals_tmp, nl.input_signal,),
+                 SigBuf(self.signals, nl.bias_signal)).go()
 
         # -- encoders: signals -> input current
         #    (N.B. this includes neuron -> neuron connections)
         for enc in self.model.encoders:
-            dot_inc(get_signal(self.signals, enc.sig),
-                    enc.weights.T,
-                    self.signals_tmp[enc.pop.input_signal])
+            #dot_inc(get_signal(self.signals, enc.sig),
+                    #enc.weights.T,
+                    #self.signals_tmp[enc.pop.input_signal])
+
+            DotInc(SigBuf(self.signals, enc.sig),
+                   SigBuf(self.signals, enc.weights_signal),
+                   SigBuf(self.signals_tmp, enc.pop.input_signal),
+                   xT=True).go()
 
         # -- population dynamics
         for nl in self.model.nonlinearities:
             pop = self.nonlinearities[nl]
-            pop.step(dt=self.model.dt,
-                     J=self.signals_tmp[nl.input_signal],
-                     output=self.signals_tmp[nl.output_signal])
+            #pop.step(dt=self.model.dt,
+            #         J=self.signals_tmp[nl.input_signal],
+            #         output=self.signals_tmp[nl.output_signal])
+            NonLin(output=SigBuf(self.signals_tmp, nl.output_signal),
+                   J=SigBuf(self.signals_tmp, nl.input_signal),
+                   nl=pop,
+                   dt=self.model.dt).go()
 
         # -- decoders: population output -> signals_tmp
         for dec in self.model.decoders:
-            dot_inc(self.signals_tmp[dec.pop.output_signal],
-                    dec.weights.T,
-                    get_signal(self.signals_tmp, dec.sig))
+            #dot_inc(self.signals_tmp[dec.pop.output_signal],
+                    #dec.weights.T,
+                    #get_signal(self.signals_tmp, dec.sig))
+            DotInc(SigBuf(self.signals_tmp, dec.pop.output_signal),
+                   SigBuf(self.signals, dec.weights_signal),
+                   SigBuf(self.signals_tmp, dec.sig),
+                   xT=True).go()
 
         # -- copy: signals -> signals_copy
         for sig in self.dynamic_signals:
-            self.signals_copy[sig][...] = self.signals[sig]
+            #self.signals_copy[sig][...] = self.signals[sig]
+            Copy(SigBuf(self.signals_copy, sig),
+                 SigBuf(self.signals, sig)).go()
 
         # -- reset: 0 -> signals
         for sig in self.dynamic_signals:
-            self.signals[sig][...] = 0
+            #self.signals[sig][...] = 0
+            Reset(SigBuf(self.signals, sig)).go()
 
         # -- filters: signals_copy -> signals
         for filt in self.model.filters:
             try:
-                dot_inc(filt.alpha,
-                        get_signal(self.signals_copy, filt.oldsig),
-                        get_signal(self.signals, filt.newsig))
+                #dot_inc(filt.alpha,
+                        #get_signal(self.signals_copy, filt.oldsig),
+                        #get_signal(self.signals, filt.newsig))
+                DotInc(SigBuf(self.signals, filt.alpha_signal),
+                       SigBuf(self.signals_copy, filt.oldsig),
+                       SigBuf(output_signals, filt.newsig)).go()
             except Exception, e:
                 e.args = e.args + (filt.oldsig, filt.newsig)
                 raise
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
-            dot_inc(tf.alpha,
-                    get_signal(self.signals_tmp, tf.insig),
-                    get_signal(self.signals, tf.outsig))
+            #dot_inc(tf.alpha,
+            #        get_signal(self.signals_tmp, tf.insig),
+            #        get_signal(self.signals, tf.outsig))
+            DotInc(SigBuf(self.signals, tf.alpha_signal),
+                   SigBuf(self.signals_tmp, tf.insig),
+                   SigBuf(output_signals, tf.outsig)).go()
 
         # -- probes signals -> probe buffers
         for probe in self.model.probes:
@@ -390,7 +418,7 @@ class Simulator(object):
                     get_signal(self.signals, tf.outsig))
 
             DotInc(SigBuf(self.signals, tf.alpha_signal),
-                   SigBuf(self.signals_tmp, tf.insig), #.T?
+                   SigBuf(self.signals_tmp, tf.insig),
                    SigBuf(output_signals, tf.outsig))
 
         # -- probes signals -> probe buffers
