@@ -9,23 +9,29 @@ the associated functions will be placed here.
 
 import numpy as np
 
-# -- James and Terry arrived at this by eyeballing some graphs.
-#    Not clear if this should be a constant at all, it
-#    may depend on fn being estimated, number of neurons, etc...
-DEFAULT_RCOND = 0.01
 
-def solve_decoders(activities, targets):
-    # import time
-    # timer = time.time()
-    weights, res, rank, s = np.linalg.lstsq(activities, targets,
-                                            rcond=DEFAULT_RCOND)
+def sample_hypersphere(dimensions, n_samples, rng, surface=False):
+    """Generate sample points from a hypersphere.
 
-    # sigma = 0.1 * activities.max()
-    # weights = cholesky(activities, targets, sigma=sigma)
+    Returns float array of sample points: dimensions x n_samples
 
-    # print "time", time.time() - timer
-    return weights.T
+    """
+    samples = rng.randn(n_samples, dimensions)
 
+    # normalize magnitude of sampled points to be of unit length
+    norm = np.sum(samples * samples, axis=1)
+    samples /= np.sqrt(norm)[:, np.newaxis]
+
+    if surface:
+        return samples.T
+
+    # generate magnitudes for vectors from uniform distribution
+    scale = rng.rand(n_samples, 1) ** (1.0 / dimensions)
+
+    # scale sample points
+    samples *= scale
+
+    return samples.T
 
 # def gen_eval_points(n, d, radius=1.0, method='uniform'):
 #     """Various methods for randomly generating evaluation points.
@@ -50,65 +56,88 @@ def solve_decoders(activities, targets):
 
 #     return points
 
-# def regularizationParameter(sigma, Neval):
-#     return sigma**2 * Neval
 
-# def eigh(A, b, sigma):
-#     """
-#     Solve the given linear system(s) using the eigendecomposition.
-#     """
 
-#     m,n = A.shape
-#     reglambda = regularizationParameter(sigma, m)
 
-#     transpose = m < n
-#     if transpose:
-#         # substitution: x = A'*xbar, G*xbar = b where G = A*A' + lambda*I
-#         G = np.dot(A, A.T) + reglambda * np.eye(m)
-#     else:
-#         # multiplication by A': G*x = A'*b where G = A'*A + lambda*I
-#         G = np.dot(A.T, A) + reglambda * np.eye(n)
-#         b = np.dot(A.T, b)
 
-#     e,V = npl.eigh(G)
-#     eInv = 1. / e
+# -- James and Terry arrived at this by eyeballing some graphs.
+#    Not clear if this should be a constant at all, it
+#    may depend on fn being estimated, number of neurons, etc...
+DEFAULT_RCOND = 0.01
 
-#     x = np.dot(V.T, b)
-#     x = eInv[:,None] * x if len(b.shape) > 1 else eInv * x
-#     x = np.dot(V, x)
+def solve_decoders(activities, targets, method='lstsq'):
+    if method == 'lstsq':
+        weights, res, rank, s = np.linalg.lstsq(activities, targets,
+                                                rcond=DEFAULT_RCOND)
+    elif method == 'cholesky':
+        sigma = 0.1 * activities.max()
+        weights = cholesky(activities, targets, sigma=sigma)
+    elif method == 'eigh':
+        sigma = 0.1 * activities.max()
+        weights = eigh(activites, targets, sigma=sigma)
 
-#     if transpose:
-#         x = np.dot(A.T, x)
+    return weights.T
 
-#     return x
 
-# def cholesky(A, b, sigma):
-#     """
-#     Solve the given linear system(s) using the Cholesky decomposition
-#     """
+def regularizationParameter(sigma, Neval):
+    return sigma**2 * Neval
 
-#     m,n = A.shape
-#     reglambda = regularizationParameter(sigma, m)
+def eigh(A, b, sigma):
+    """
+    Solve the given linear system(s) using the eigendecomposition.
+    """
 
-#     transpose = m < n
-#     if transpose:
-#         # substitution: x = A'*xbar, G*xbar = b where G = A*A' + lambda*I
-#         G = np.dot(A, A.T) + reglambda * np.eye(m)
-#     else:
-#         # multiplication by A': G*x = A'*b where G = A'*A + lambda*I
-#         G = np.dot(A.T, A) + reglambda * np.eye(n)
-#         b = np.dot(A.T, b)
+    m,n = A.shape
+    reglambda = regularizationParameter(sigma, m)
 
-#     L = np.linalg.cholesky(G)
-#     L = np.linalg.inv(L.T)
+    transpose = m < n
+    if transpose:
+        # substitution: x = A'*xbar, G*xbar = b where G = A*A' + lambda*I
+        G = np.dot(A, A.T) + reglambda * np.eye(m)
+    else:
+        # multiplication by A': G*x = A'*b where G = A'*A + lambda*I
+        G = np.dot(A.T, A) + reglambda * np.eye(n)
+        b = np.dot(A.T, b)
 
-#     x = np.dot(L.T, b)
-#     x = np.dot(L, x)
+    e,V = np.linalg.eigh(G)
+    eInv = 1. / e
 
-#     if transpose:
-#         x = np.dot(A.T, x)
+    x = np.dot(V.T, b)
+    x = eInv[:,None] * x if len(b.shape) > 1 else eInv * x
+    x = np.dot(V, x)
 
-#     return x
+    if transpose:
+        x = np.dot(A.T, x)
+
+    return x
+
+def cholesky(A, b, sigma):
+    """
+    Solve the given linear system(s) using the Cholesky decomposition
+    """
+
+    m,n = A.shape
+    reglambda = regularizationParameter(sigma, m)
+
+    transpose = m < n
+    if transpose:
+        # substitution: x = A'*xbar, G*xbar = b where G = A*A' + lambda*I
+        G = np.dot(A, A.T) + reglambda * np.eye(m)
+    else:
+        # multiplication by A': G*x = A'*b where G = A'*A + lambda*I
+        G = np.dot(A.T, A) + reglambda * np.eye(n)
+        b = np.dot(A.T, b)
+
+    L = np.linalg.cholesky(G)
+    L = np.linalg.inv(L.T)
+
+    x = np.dot(L.T, b)
+    x = np.dot(L, x)
+
+    if transpose:
+        x = np.dot(A.T, x)
+
+    return x
 
 
 # def _conjgrad_iters(A, b, x, maxiters=None, atol=1e-6, btol=1e-6, rtol=1e-6):

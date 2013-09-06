@@ -8,7 +8,7 @@ from . import decoders as decsolve
 logger = logging.getLogger(__name__)
 
 
-class SimpleConnection(object):
+class SignalConnection(object):
     """A SimpleConnection connects two Signals (or objects with signals)
     via a transform and a filter.
 
@@ -59,10 +59,14 @@ class SimpleConnection(object):
         return probe
 
     def build(self, model, dt):
-        if not isinstance(self.pre, core.SignalView):
-            self.pre = pre.signal
-        if not isinstance(self.post, core.SignalView):
-            self.post = post.input_signal
+        # Pre / post may be high level objects (ensemble, node) or signals
+        if not core.is_signal(self.pre):
+            logger.warning("SimpleConnection is usually used for connecting "
+                           "raw Signals. Are you sure you shouldn't be using "
+                           "DecodedConnection?")
+            self.pre = self.pre.signal
+        if not core.is_signal(self.post):
+            self.post = self.post.signal
 
         if self.filter is not None and self.filter > dt:
             # Set up signal
@@ -81,8 +85,8 @@ class SimpleConnection(object):
             self.sig_filter = core.Filter(fcoef, self.signal, self.signal)
             model.add(self.sig_filter)
         else:
-            # Signal should already be in the model
             self.signal = self.pre
+            # Signal should already be in the model
 
         self.trans_filter = core.Filter(self.transform, self.signal, self.post)
         model.add(self.trans_filter)
@@ -96,6 +100,102 @@ class SimpleConnection(object):
 class DecodedConnection(object):
     """A DecodedConnection connects a nonlinearity to a Signal
     (or objects with those) via a set of decoders, a transform, and a filter.
+
+    Attributes
+    ----------
+    name
+    pre
+    post
+
+    filter : type
+        description
+    transform
+
+    probes : type
+        description
+
+    """
+    def __init__(self, pre, post, **kwargs):
+        self.pre = pre
+        self.post = post
+
+        self.filter = kwargs.get('filter', 0.005)
+        self.transform = kwargs.get('transform', 1.0)
+
+        self.probes = {'signal': []}
+
+    @property
+    def name(self):
+        name = self.pre.name + ">" + self.post.name
+        return name
+
+    @property
+    def transform(self):
+        return self._transform
+
+    @transform.setter
+    def transform(self, _transform):
+        self._transform = np.asarray(_transform)
+
+    def __str__(self):
+        return self.name + " (DecodedConnection)"
+
+    def __repr__(self):
+        return str(self)
+
+    def probe(self, to_probe='signal', sample_every=0.001, filter=None):
+        if filter is not None and filter > self.filter:
+            raise ValueError("Cannot create filtered probes on connections; "
+                             "the connection is already filtered.")
+
+        if to_probe == 'signal':
+            probe = core.Probe(None, sample_every)
+            self.probes['signal'].append(probe)
+        return probe
+
+    def build(self, model, dt):
+        # Pre must be a non-linearity
+        if not isinstance(self.pre, core.Nonlinearity):
+            self.pre = self.pre.nonlinear
+        # Post could be a node / ensemble, etc
+        if not core.is_signal(self.post):
+            self.post = self.post.signal
+
+        # Set up signal
+        dims = self.pre.output_signal.size
+        self.signal = core.Signal(dims, name=self.name)
+        model.add(self.signal)
+
+        # Set up decoders
+        decoders = np.eye(dims)
+        self.decoder = core.Decoder(sig=self.signal, pop=self.pre,
+                                    weights=decoders)
+        model.add(self.decoder)
+
+        # Set up filters and transform
+        if self.filter is not None and self.filter > dt:
+            fcoef, tcoef = core.filter_coefs(pstc=self.filter, dt=dt)
+            self.sig_transform = core.Transform(tcoef, self.signal, self.signal)
+            model.add(self.sig_transform)
+            self.sig_filter = core.Filter(fcoef, self.signal, self.signal)
+            model.add(self.sig_filter)
+            self.trans_filter = core.Filter(
+                self.transform, self.signal, self.post)
+            model.add(self.trans_filter)
+        else:
+            self.trans_transform = core.Transform(
+                self.transform, self.signal, self.post)
+            model.add(self.trans_transform)
+
+        # Set up probes
+        for probe in self.probes['signal']:
+            probe.sig = self.signal
+            model.add(probe)
+
+
+class DecodedNeuronConnection(object):
+    """A DecodedNeuronsConnection connects an ensemble to a Signal
+    via a set of decoders, a transform, and a filter.
 
     Attributes
     ----------
@@ -146,7 +246,7 @@ class DecodedConnection(object):
             if _decoders.shape[0] != self.pre.n_neurons:
                 msg = ("Decoders axis 0 must be n_neurons; in this case, "
                        "%d." % self.pre.n_neurons)
-                raise core.ShapeMismatchError(msg)
+                raise core.ShapeMismatch(msg)
 
         self._decoders = _decoders
 
@@ -181,7 +281,7 @@ class DecodedConnection(object):
         self._transform = np.asarray(_transform)
 
     def __str__(self):
-        return self.name + " (DecodedConnection)"
+        return self.name + " (DecodedNeuronConnection)"
 
     def __repr__(self):
         return str(self)
@@ -192,17 +292,23 @@ class DecodedConnection(object):
                              "the connection is already filtered.")
 
         if to_probe == 'signal':
-            probe = core.Probe(sample_every)
+            probe = core.Probe(None, sample_every)
             self.probes['signal'].append(probe)
         return probe
 
     def build(self, model, dt):
-        if not isinstance(self.post, core.SignalView):
-            self.post = post.input_signal
+        # Pre must be an ensemble -- but, don't want to import objects
+        assert self.pre.__class__.__name__ == "Ensemble"
+        # Post could be a node / ensemble, etc
+        if not core.is_signal(self.post):
+            self.post = self.post.signal
 
         # Set up signal
-        dims = len(function(self.eval_points.T[0]))
-        self.signal = core.Signal(n, name=self.name)
+        if self.function is None:
+            dims = self.eval_points.T[0].size
+        else:
+            dims = np.array(self.function(self.eval_points.T[0])).size
+        self.signal = core.Signal(dims, name=self.name)
         model.add(self.signal)
 
         # Set up decoders
@@ -211,24 +317,27 @@ class DecodedConnection(object):
             if self.function is None:
                 targets = self.eval_points.T
             else:
-                targets = np.array([function(ep) for ep in self.eval_points.T])
+                targets = np.array(
+                    [self.function(ep) for ep in self.eval_points.T])
                 if len(targets.shape) < 2:
                     targets.shape = targets.shape[0], 1
             decoders = decsolve.solve_decoders(activities, targets)
         else:
-            decoders = self.decoders
-        self.decoder = core.Decoder(pre.neurons, self.signal, decoders)
+            decoders = self.decoder
+        self.decoder = core.Decoder(
+            sig=self.signal, pop=self.pre.neurons,
+            weights=decsolve.solve_decoders(activities, targets))
         if self.function is not None:
-            self.decoder.desired_function = function
+            self.decoder.desired_function = self.function
         model.add(self.decoder)
 
-        # Set up filters and transforms
+        # Set up filters and transform
         if self.filter is not None and self.filter > dt:
-            fcoef, tcoef = core.filter_coefs(pstc=filter, dt=dt)
-            self.sig_transform = core.Transform(tcoef, self.signal, self.signal)
-            model.add(self.sig_transform)
+            fcoef, tcoef = core.filter_coefs(pstc=self.filter, dt=dt)
             self.sig_filter = core.Filter(fcoef, self.signal, self.signal)
             model.add(self.sig_filter)
+            self.sig_transform = core.Transform(tcoef, self.signal, self.signal)
+            model.add(self.sig_transform)
             self.trans_filter = core.Filter(
                 self.transform, self.signal, self.post)
             model.add(self.trans_filter)
@@ -237,7 +346,7 @@ class DecodedConnection(object):
                 self.transform, self.signal, self.post)
             model.add(self.trans_transform)
 
-        # Set up probes, but don't build them
+        # Set up probes
         for probe in self.probes['signal']:
             probe.sig = self.signal
             model.add(probe)

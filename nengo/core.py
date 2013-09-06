@@ -214,7 +214,7 @@ class Signal(SignalView):
         return self
 
     def add_to_model(self, model):
-        model.signals.add(self)
+        model.signals.append(self)
 
     def to_json(self):
         return {
@@ -238,7 +238,7 @@ class Probe(object):
         return str(self)
 
     def add_to_model(self, model):
-        model.probes.add(self)
+        model.probes.append(self)
 
     def to_json(self):
         return {
@@ -279,6 +279,10 @@ class Constant(Signal):
             'name': self.name,
             'value': self.value.tolist(),
         }
+
+
+def is_signal(sig):
+    return isinstance(sig, SignalView)
 
 
 def is_constant(sig):
@@ -330,8 +334,8 @@ class Transform(object):
         self.alpha_signal.value[...] = value
 
     def add_to_model(self, model):
-        model.signals.add(self.alpha_signal)
-        model.transforms.add(self)
+        model.signals.append(self.alpha_signal)
+        model.transforms.append(self)
 
     def to_json(self):
         return {
@@ -387,8 +391,8 @@ class Filter(object):
         self.alpha_signal.value[...] = value
 
     def add_to_model(self, model):
-        model.signals.add(self.alpha_signal)
-        model.filters.add(self)
+        model.signals.append(self.alpha_signal)
+        model.filters.append(self)
 
     def to_json(self):
         return {
@@ -426,8 +430,8 @@ class Encoder(object):
         self.weights_signal.value[...] = value
 
     def add_to_model(self, model):
-        model.encoders.add(self)
-        model.signals.add(self.weights_signal)
+        model.encoders.append(self)
+        model.signals.append(self.weights_signal)
 
     def to_json(self):
         return {
@@ -465,8 +469,8 @@ class Decoder(object):
         self.weights_signal.value[...] = value
 
     def add_to_model(self, model):
-        model.decoders.add(self)
-        model.signals.add(self.weights_signal)
+        model.decoders.append(self)
+        model.signals.append(self.weights_signal)
 
     def to_json(self):
         return {
@@ -485,10 +489,10 @@ class Nonlinearity(object):
         return str(self)
 
     def add_to_model(self, model):
-        model.nonlinearities.add(self)
-        model.signals.add(self.bias_signal)
-        model.signals.add(self.input_signal)
-        model.signals.add(self.output_signal)
+        model.nonlinearities.append(self)
+        model.signals.append(self.bias_signal)
+        model.signals.append(self.input_signal)
+        model.signals.append(self.output_signal)
 
 
 class Direct(Nonlinearity):
@@ -522,7 +526,7 @@ class Direct(Nonlinearity):
             'input_signal': self.input_signal.name,
             'output_signal': self.output_signal.name,
             'bias_signal': self.bias_signal.name,
-            'fn': inspect.getsource(self.fn),
+            'fn': self.fn.__name__,
         }
 
 
