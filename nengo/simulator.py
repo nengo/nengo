@@ -240,88 +240,84 @@ class Simulator(object):
         for probe in self.model.probes:
             self.probe_outputs[probe] = []
 
-        self.operators, self._output_signals = self.step(just_init=True)
+        dg, SigBuf, Copy, DotInc, NonLin, Reset, eval_order, operators, \
+                = foo(self, go_on_init=False)
+        output_signals = dict(self.signals)
+
+        # -- reset: 0 -> signals_tmp
+        for sig in self.dynamic_signals:
+            Reset(SigBuf(self.signals_tmp, sig))
+
+        # -- reset nonlinearities: bias -> input_current
+        for nl in self.model.nonlinearities:
+            Copy(SigBuf(self.signals_tmp, nl.input_signal,),
+                 SigBuf(self.signals, nl.bias_signal))
+
+        # -- encoders: signals -> input current
+        #    (N.B. this includes neuron -> neuron connections)
+        for enc in self.model.encoders:
+            DotInc(SigBuf(self.signals, enc.sig),
+                   SigBuf(self.signals, enc.weights_signal),
+                   SigBuf(self.signals_tmp, enc.pop.input_signal),
+                   xT=True)
+
+        # -- population dynamics
+        for nl in self.model.nonlinearities:
+            pop = self.nonlinearities[nl]
+            NonLin(output=SigBuf(self.signals_tmp, nl.output_signal),
+                   J=SigBuf(self.signals_tmp, nl.input_signal),
+                   nl=pop,
+                   dt=self.model.dt)
+
+        # -- decoders: population output -> signals_tmp
+        for dec in self.model.decoders:
+            DotInc(SigBuf(self.signals_tmp, dec.pop.output_signal),
+                   SigBuf(self.signals, dec.weights_signal),
+                   SigBuf(self.signals_tmp, dec.sig),
+                   xT=True)
+
+        # -- copy: signals -> signals_copy
+        for sig in self.dynamic_signals:
+            Copy(SigBuf(self.signals_copy, sig),
+                 SigBuf(self.signals, sig))
+
+        # -- reset: 0 -> signals
+        for sig in self.dynamic_signals:
+            Reset(SigBuf(self.signals, sig))
+
+        # -- filters: signals_copy -> signals
+        for filt in self.model.filters:
+            try:
+                DotInc(SigBuf(self.signals, filt.alpha_signal),
+                       SigBuf(self.signals_copy, filt.oldsig),
+                       SigBuf(output_signals, filt.newsig))
+            except Exception, e:
+                e.args = e.args + (filt.oldsig, filt.newsig)
+                raise
+
+        # -- transforms: signals_tmp -> signals
+        for tf in self.model.transforms:
+            DotInc(SigBuf(self.signals, tf.alpha_signal),
+                   SigBuf(self.signals_tmp, tf.insig),
+                   SigBuf(output_signals, tf.outsig))
+
+        self.operators = operators
+        self._output_signals = output_signals
 
 
-    def step(self, just_init=False):
-        if just_init:
-            dg, SigBuf, Copy, DotInc, NonLin, Reset, eval_order, operators, \
-                    = foo(self, go_on_init=False)
-            output_signals = dict(self.signals)
+    def step(self):
+        self._output_signals.update(self.signals)
+        for op in self.operators:
+            op.go()
 
-            # -- reset: 0 -> signals_tmp
-            for sig in self.dynamic_signals:
-                Reset(SigBuf(self.signals_tmp, sig))
+        # -- probes signals -> probe buffers
+        for probe in self.model.probes:
+            period = int(probe.dt / self.model.dt)
+            if self.n_steps % period == 0:
+                tmp = get_signal(self.signals, probe.sig).copy()
+                self.probe_outputs[probe].append(tmp)
 
-            # -- reset nonlinearities: bias -> input_current
-            for nl in self.model.nonlinearities:
-                Copy(SigBuf(self.signals_tmp, nl.input_signal,),
-                     SigBuf(self.signals, nl.bias_signal))
-
-            # -- encoders: signals -> input current
-            #    (N.B. this includes neuron -> neuron connections)
-            for enc in self.model.encoders:
-                DotInc(SigBuf(self.signals, enc.sig),
-                       SigBuf(self.signals, enc.weights_signal),
-                       SigBuf(self.signals_tmp, enc.pop.input_signal),
-                       xT=True)
-
-            # -- population dynamics
-            for nl in self.model.nonlinearities:
-                pop = self.nonlinearities[nl]
-                NonLin(output=SigBuf(self.signals_tmp, nl.output_signal),
-                       J=SigBuf(self.signals_tmp, nl.input_signal),
-                       nl=pop,
-                       dt=self.model.dt)
-
-            # -- decoders: population output -> signals_tmp
-            for dec in self.model.decoders:
-                DotInc(SigBuf(self.signals_tmp, dec.pop.output_signal),
-                       SigBuf(self.signals, dec.weights_signal),
-                       SigBuf(self.signals_tmp, dec.sig),
-                       xT=True)
-
-            # -- copy: signals -> signals_copy
-            for sig in self.dynamic_signals:
-                Copy(SigBuf(self.signals_copy, sig),
-                     SigBuf(self.signals, sig))
-
-            # -- reset: 0 -> signals
-            for sig in self.dynamic_signals:
-                Reset(SigBuf(self.signals, sig))
-
-            # -- filters: signals_copy -> signals
-            for filt in self.model.filters:
-                try:
-                    DotInc(SigBuf(self.signals, filt.alpha_signal),
-                           SigBuf(self.signals_copy, filt.oldsig),
-                           SigBuf(output_signals, filt.newsig))
-                except Exception, e:
-                    e.args = e.args + (filt.oldsig, filt.newsig)
-                    raise
-
-            # -- transforms: signals_tmp -> signals
-            for tf in self.model.transforms:
-                DotInc(SigBuf(self.signals, tf.alpha_signal),
-                       SigBuf(self.signals_tmp, tf.insig),
-                       SigBuf(output_signals, tf.outsig))
-
-        else:
-            self._output_signals.update(self.signals)
-            for op in self.operators:
-                op.go()
-
-        if just_init:
-            return operators, output_signals
-        else:
-            # -- probes signals -> probe buffers
-            for probe in self.model.probes:
-                period = int(probe.dt / self.model.dt)
-                if self.n_steps % period == 0:
-                    tmp = get_signal(self.signals, probe.sig).copy()
-                    self.probe_outputs[probe].append(tmp)
-
-            self.n_steps += 1
+        self.n_steps += 1
 
     def run_steps(self, N):
         for i in xrange(N):
