@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from .core import LIF, LIFRate, Direct
+import core
 
 
 logger = logging.getLogger(__name__)
@@ -34,9 +34,9 @@ class SimLIFRate(object):
 
 
 registry = {
-    LIF: SimLIF,
-    LIFRate: SimLIFRate,
-    Direct: SimDirect,
+    core.LIF: SimLIF,
+    core.LIFRate: SimLIFRate,
+    core.Direct: SimDirect,
 }
 
 def get_signal(signals_dct, obj):
@@ -86,6 +86,10 @@ def dot_inc(a, b, targ):
 class Simulator(object):
     def __init__(self, model):
         self.model = model
+
+        if not hasattr(self.model, 'dt'):
+            raise ValueError("Model does not appear to be built. "
+                             "See Model.prep_for_simulation.")
 
         self.n_steps = 0
         self.signals = {}
@@ -176,11 +180,25 @@ class Simulator(object):
 
         self.n_steps += 1
 
-    def run_steps(self, N):
-        for i in xrange(N):
+    def copied(self, obj):
+        return self.model.memo[id(obj)]
+
+    def data(self, probe):
+        if not isinstance(probe, core.Probe):
+            probe = self.model.probed[self.model.memo[id(probe)]]
+        return np.asarray(self.probe_outputs[probe])
+
+    def reset(self):
+        raise NotImplementedError
+
+    def run(self, time):
+        steps = int(time // self.model.dt)
+        logger.debug("Running %s for %f seconds, or %d steps",
+                     self.model.name, time, steps)
+        self.run_steps(steps)
+
+    def run_steps(self, steps):
+        for i in xrange(steps):
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
             self.step()
-
-    def probe_data(self, probe):
-        return np.asarray(self.probe_outputs[probe])

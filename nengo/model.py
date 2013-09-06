@@ -17,10 +17,6 @@ from . import simulator
 logger = logging.getLogger(__name__)
 
 
-class ModelFrozenError(RuntimeError):
-    msg = "Model has been built and cannot be modified further."
-
-
 class Model(object):
     """A model contains a vsingle network and the ability to
     run simulations of that network.
@@ -76,31 +72,27 @@ class Model(object):
 
     """
 
-    def __init__(self, name, simulator=simulator.Simulator,
-                 seed=None, fixed_seed=None):
-        self.signals = set()
-        self.nonlinearities = set()
-        self.encoders = set()
-        self.decoders = set()
-        self.transforms = set()
-        self.filters = set()
-        self.probes = set()
+    def __init__(self, name, seed=None, fixed_seed=None):
+        self.signals = []
+        self.nonlinearities = []
+        self.encoders = []
+        self.decoders = []
+        self.transforms = []
+        self.filters = []
+        self.probes = []
 
         self.objs = {}
         self.aliases = {}
         self.probed = {}
-        self.data = {}
         self.connections = []
         self.signal_probes = []
 
         self.name = name
-        self.simulator = simulator
-
         self.seed = np.random.randint(2**31-1) if seed is None else seed
         self.rng = np.random.RandomState(self.seed)
         self.fixed_seed = fixed_seed
 
-        self.t = self.add(core.Signal(name='simtime'))
+        self.t = self.add(core.Signal(name='t'))
         self.steps = self.add(core.Signal(name='steps'))
         self.one = self.add(core.Constant(1, value=[1.0], name='one'))
 
@@ -112,11 +104,9 @@ class Model(object):
         self.add(core.Filter(1.0, self.one, self.steps))
         self.add(core.Filter(1.0, self.steps, self.steps))
 
-        self.built = False
-
     def _get_new_seed(self):
-        return self.rng.randint(2**31-1) if self.fixed_seed is None \
-            else self.fixed_seed
+        return (self.rng.randint(2**31-1) if self.fixed_seed is None
+                else self.fixed_seed)
 
     def __str__(self):
         return "Model: " + self.name
@@ -146,7 +136,6 @@ class Model(object):
         d = {
             '__class__': self.__module__ + '.' + self.__class__.__name__,
             'name': self.name,
-            'dt': self.dt,
             # 'simulator': ?? We probably don't want to serialize this
         }
 
@@ -186,148 +175,43 @@ class Model(object):
 
     ### Simulation methods
 
-    @property
-    def built(self):
-        return self._frozen
-
-    @built.setter
-    def built(self, frozen):
-        self._frozen = frozen
-
-        # If built, stub out all methods but reset and run
-        def stub(*args, **kwargs):
-            raise ModelFrozenError(ModelFrozenError.msg)
-        if frozen:
-            for k, v in inspect.getmembers(self, predicate=inspect.isroutine):
-                if k not in ('reset', 'run'):
-                    setattr(self, k, stub)
-
-    def build(self, dt=0.001):
-        logger.info("Copying model")
-        modelcopy = copy.deepcopy(self)
-        modelcopy.name += ", dt=%f" % dt
-        modelcopy.dt = dt
-        modelcopy.add(core.Filter(dt, modelcopy.one, modelcopy.t))
-        modelcopy.add(core.Filter(dt, modelcopy.steps, modelcopy.t))
+    @staticmethod
+    def prep_for_simulation(model, dt):
+        model.name = model.name + ", dt=%f" % dt
+        model.dt = dt
+        model.add(core.Filter(dt, model.one, model.t))
+        model.add(core.Filter(dt, model.steps, model.t))
 
         # Sort all objects by name
-        all_objs = sorted(modelcopy.objs.values(), key=getattr(o, 'name'))
+        all_objs = sorted(model.objs.values(), key=lambda o: o.name)
 
         # 1. Build objects first
         logger.info("Building objects")
         for o in all_objs:
-            o.build(model=modelcopy, dt=dt)
+            o.build(model=model, dt=dt)
 
         # 2. Then probes
         logger.info("Building probes")
-        for o in all_objs:
-            for p in o.probes:
-                p.build(model=modelcopy, dt=dt)
-        for p in self.signal_probes:
-            p.build(model=modelcopy, dt=dt)
-
-        # Collect raw probes
-        for target in self.probed:
-            if not isinstance(self.probed[target], core.Probe):
-                self.probed[target] = self.probed[target].probe
+        for target in model.probed:
+            if not isinstance(model.probed[target], core.Probe):
+                model.probed[target].build(model=model, dt=dt)
+                model.probed[target] = model.probed[target].probe
 
         # 3. Then connections
         logger.info("Building connections")
         for o in all_objs:
             for c in o.connections_out:
-                c.build(model=modelcopy, dt=dt)
-        for c in self.connections:
-            c.build(model=modelcopy, dt=dt)
+                c.build(model=model, dt=dt)
+        for c in model.connections:
+            c.build(model=model, dt=dt)
 
-        modelcopy.built = True
-        logger.info("Finished. New model is %s.", modelcopy.name)
-        return modelcopy
-
-    def reset(self):
-        """Reset the state of the simulation.
-
-        Runs through all nodes, then ensembles, then connections and then
-        probes in the network and calls thier reset functions.
-
-        """
-        logger.debug("Resetting simulator for %s", self.name)
-        try:
-            self.sim_obj.reset()
-        except AttributeError:
-            logger.warning("Tried to reset %s, but had never been run.",
-                           self.name)
-
-    def run(self, time, dt=0.001, output=None, stop_when=None):
-        """Runs a simulation of the model.
-
-        Parameters
-        ----------
-        time : float
-            How long to run the simulation, in seconds.
-
-            If called more than once, successive calls will continue
-            the simulation for ``time`` more seconds.
-            To reset the simulation, call :func:`nengo.Model.reset()`.
-            Typical use cases are to either simply call it once::
-
-              model.run(10)
-
-            or to call it multiple times in a row::
-
-              time = 0
-              dt = 0.1
-              while time < 10:
-                  model.run(dt)
-                  time += dt
-        dt : float, optional
-            The length of a timestep, in seconds.
-
-            **Default**: 0.001
-        output : str or None, optional
-            Where probed data should be output.
-
-            If ``output`` is None, then probed data will be returned
-            by this function as a dictionary.
-
-            If ``output`` is a string, it is interpreted as a path,
-            and probed data will be written to that file.
-            The file extension will be parsed to determine the type
-            of file to write; any unrecognized extension
-            will be ignored and a comma-separated value file will
-            be created.
-
-            **Default**: None, so this function returns a dictionary
-            of probed data.
-
-        Returns
-        -------
-        data : dictionary
-            All of the probed data. This is only returned if
-            ``output`` is None.
-
-        """
-        if not self.built:
-            builtmodel = self.build(dt=dt)
-            return builtmodel.run(dt=dt, output=output, stop_when=stop_when)
-
-        if dt != self.dt:
-            raise ModelFrozenError(
-                "Model previously built with dt=%f. Rebuild model to use "
-                "different dt." % self.dt)
-
-        if getattr(self, 'sim_obj', None) is None:
-            logger.debug("Creating simulator for %s", self.name)
-            self.sim_obj = self.simulator(self)
-
-        steps = int(time // dt)
-        logger.debug("Running %s for %f seconds, or %d steps",
-                     self.name, time, steps)
-        self.sim_obj.run_steps(steps)
-
-        for k in self.probed:
-            self.data[k] = self.sim_obj.probe_data(self.probed[k])
-
-        return self
+    def simulator(self, dt=0.001, sim_class=simulator.Simulator, **sim_args):
+        logger.info("Copying model")
+        memo = {}
+        modelcopy = copy.deepcopy(self, memo)
+        modelcopy.memo = memo
+        self.prep_for_simulation(modelcopy, dt)
+        return sim_class(modelcopy, **sim_args)
 
     ### Model manipulation
 
@@ -356,13 +240,15 @@ class Model(object):
         Network.add : The same function for Networks
 
         """
+        if 'core' in obj.__module__:
+            obj.add_to_model(self)
+            return obj
+
         if hasattr(obj, 'name') and self.objs.has_key(obj.name):
             raise ValueError("Something called " + obj.name + " already exists."
                              " Please choose a different name.")
 
-        if 'core' in obj.__module__:
-            obj.add_to_model(self)
-        elif hasattr(obj, 'connections_out'):
+        if hasattr(obj, 'connections_out'):
             self.objs[obj.name] = obj
         elif hasattr(obj, 'connections_in'):
             self.signal_probes.append(obj)
@@ -404,10 +290,6 @@ class Model(object):
             elif self.objs.has_key(target):
                 return self.objs[target]
             logger.error("Cannot find %s in model %s.", target, self.name)
-            return default
-
-        if not target in self.objs.values():
-            logger.error("Cannot find %s in model %s.", str(target), self.name)
             return default
 
         return target
@@ -452,6 +334,12 @@ class Model(object):
 
         logger.warning("Cannot find %s in model %s.", str(target), self.name)
         return default
+
+    # def data(self, target):
+    #     target = self.get_string(target, target)
+    #     if not isinstance(target, str):
+    #         target = target.name
+    #     return self._data[target]
 
     def remove(self, target):
         """Removes a Nengo object from the model.
@@ -577,9 +465,11 @@ class Model(object):
         Node : The Node object
 
         """
-        node = objects.Node(name, output)
         if callable(output):
-            self.connect(self.t, node)
+            node = objects.Node(name, output)
+            self.connect(self.t, node, filter=None)
+        else:
+            node = objects.ConstantNode(name, output)
         return self.add(node)
 
     def connect(self, pre, post, **kwargs):
@@ -688,13 +578,12 @@ class Model(object):
         pre = self.get(pre)
         post = self.get(post)
 
-        try:
-            return pre.connect_to(post, **kwargs)
-        except AttributeError:
-            # Default to making a simple connection
-            connection = connections.SimpleConnection(pre, post, **kwargs)
+        if core.is_signal(pre):
+            connection = connections.SignalConnection(pre, post, **kwargs)
             self.connections.append(connection)
             return connection
+        else:
+            return pre.connect_to(post, **kwargs)
 
     def probe(self, target, sample_every=0.001, filter=None):
         """Probe a piece of data contained in the model.
@@ -740,9 +629,9 @@ class Model(object):
             **Default**: False
 
         """
-        if hasattr(target, 'base') and isinstance(target.base, core.Signal):
+        if core.is_signal(target):
             if filter is not None:
-                p = probes.Probe(target.name, sample_every, target.n)
+                p = objects.Probe(target.name, sample_every, target.n)
                 self.signal_probes.append(p)
                 self.connect(target, p, filter=filter)
             else:
@@ -757,8 +646,9 @@ class Model(object):
                 obj = self.get(target)
                 p = obj.probe(sample_every=sample_every, filter=filter)
         elif hasattr(target, 'probe'):
-            target.probe(sample_every=sample_every, filter=filter)
+            p = target.probe(sample_every=sample_every, filter=filter)
         else:
             raise TypeError("Type " + target.__class__.__name__ + " "
                             "has no probe function.")
+
         self.probed[target] = p
