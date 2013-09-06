@@ -406,6 +406,7 @@ def Simulator(*args):
     # -- transforms: signals_tmp -> signals
     for tf in model.transforms:
         #print 'Transform!', tf
+        print tf.insig
         DotInc(SigBuf(signals, tf.alpha_signal),
                SigBuf(signals, decoder_outputs.get(tf.insig,
                                                    output_currents[tf.insig])),
