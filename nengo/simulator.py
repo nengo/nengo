@@ -378,6 +378,7 @@ def Simulator(*args):
         if is_view(filt.newsig):
             output_stuff[filt.newsig] = filt.newsig.view_like_self_of(
                 output_stuff[filt.newsig.base])
+        assert filt.newsig in output_stuff
     for tf in model.transforms:
         if tf.outsig.base not in output_stuff:
             output_stuff[tf.outsig.base] = Signal(
@@ -389,6 +390,7 @@ def Simulator(*args):
         if is_view(tf.outsig):
             output_stuff[tf.outsig] = filt.newsig.view_like_self_of(
                 output_stuff[tf.outsig.base])
+        assert tf.outsig in output_stuff
 
     # -- filters: signals_copy -> signals
     for filt in model.filters:
@@ -406,10 +408,25 @@ def Simulator(*args):
     # -- transforms: signals_tmp -> signals
     for tf in model.transforms:
         #print 'Transform!', tf
-        print tf.insig
+        print tf
+        print tf.insig, id(tf.insig)
+        print tf.outsig, id(tf.outsig)
+        try:
+            insig = decoder_outputs[tf.insig]
+        except KeyError:
+            try:
+                insig = output_currents[tf.insig]
+            except KeyError:
+                if tf.insig.base in decoder_outputs:
+                    insig = tf.insig.view_like_self_of(decoder_outputs[tf.insig.base])
+                elif tf.insig.base in output_currents:
+                    insig = tf.insig.view_like_self_of(output_currents[tf.insig.base])
+                else:
+                    raise Exception('what is going on?')
+
+        print output_stuff[tf.outsig]
         DotInc(SigBuf(signals, tf.alpha_signal),
-               SigBuf(signals, decoder_outputs.get(tf.insig,
-                                                   output_currents[tf.insig])),
+               SigBuf(signals, insig),
                SigBuf(signals, output_stuff[tf.outsig]),
                #verbose=signals,
                tag='transform')
