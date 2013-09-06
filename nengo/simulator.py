@@ -194,77 +194,6 @@ def foo(signals, _output_signals):
         def dg(self):
             return nxdg
 
-        def add_constraints(self, verbose=False):
-
-            # -- all views of a base object in a particular dictionary
-            t0 = time.time()
-            if verbose: print 'building alias table ...'
-            by_base = defaultdict(list)
-            reads = defaultdict(list)
-            sets = defaultdict(list)
-            incs = defaultdict(list)
-
-            for op in self.operators:
-                for node in op.reads + op.sets + op.incs:
-                    by_base[SigBuf(node.dct, node.sig.base)].append(node)
-
-                for node in op.reads:
-                    reads[node].append(op)
-
-                for node in op.sets:
-                    sets[node].append(op)
-
-                for node in op.incs:
-                    incs[node].append(op)
-
-            for node in sets:
-                assert len(sets[node]) == 1, (node, sets[node])
-
-            aliased = defaultdict(lambda : False)
-            aliased_with = defaultdict(set)
-            if verbose: print 'bases done ...'
-            for ii, (sb, views) in enumerate(by_base.items()):
-                if len(views) > 10:
-                    if verbose: print '%i / %i ' % (ii, len(views))
-                for v1, v2 in itertools.combinations(views, 2):
-                    is_aliased = v1.is_aliased_with(v2)
-                    if is_aliased:
-                        aliased[(v1, v2)] = True
-                        aliased[(v2, v1)] = True
-                        aliased_with[v1].add(v2)
-                        aliased_with[v2].add(v1)
-                if len(views) > 10:
-                    if verbose: print '%i / %i ' % (ii, len(views)), 'done'
-            t1 = time.time()
-            if verbose: print 'building alias table took', (t1 - t0)
-            #self.sets_before_incs()
-            #self.add_aliasing_restrictions()
-
-            # assert that for every node (a) that is set
-            # there are no other signals (b) that are
-            # aliased to (a) and also set.
-            for node, other in itertools.combinations(sets, 2):
-                assert not aliased[(node, other)]
-
-            # reads depend on sets and incs
-            for node, post_ops in reads.items():
-                pre_ops = sets[node] + incs[node]
-                for other in aliased_with[node]:
-                    pre_ops += sets[other] + incs[other]
-                for pre_op, post_op in itertools.product(pre_ops, post_ops):
-                    nxdg.add_edge(pre_op, post_op)
-
-            # incs depend on sets
-            for node, post_ops in incs.items():
-                pre_ops = sets[node]
-                for other in aliased_with[node]:
-                    pre_ops += sets[other]
-                for pre_op, post_op in itertools.product(pre_ops, post_ops):
-                    nxdg.add_edge(pre_op, post_op)
-
-        def eval_order(self):
-            return [node for node in networkx.topological_sort(nxdg)
-                    if not isinstance(node, SigBuf)]
     DG = DGCLS()
 
     return DG, SigBuf, Copy, DotInc, NonLin, Reset
@@ -448,14 +377,11 @@ def Simulator(*args):
                SigBuf(signals_tmp, tf.insig),
                SigBuf(output_signals, tf.outsig))
 
-
-    return Sim2(dg.operators, signals, dg.dg, _output_signals,
-                dg.add_constraints, dg.eval_order, model)
+    return Sim2(dg.operators, signals, dg.dg, _output_signals, model)
 
 
 class Sim2(object):
-    def __init__(self, operators, signals, dg, _output_signals,
-                 add_constraints, eval_order, model):
+    def __init__(self, operators, signals, dg, _output_signals, model):
         self.operators = operators
         self.signals = signals
         self._output_signals = _output_signals
@@ -466,11 +392,82 @@ class Sim2(object):
         for op in operators:
             op.add_edges(dg)
 
-        add_constraints()  # <- this is slow
-        self.order = eval_order()
+        self.add_constraints()  # <- this is slow
+        self.order = self.eval_order()
         self.n_steps = 0
         self.probe_outputs = dict((probe, []) for probe in model.probes)
 
+    def add_constraints(self, verbose=False):
+
+        # -- all views of a base object in a particular dictionary
+        t0 = time.time()
+        if verbose: print 'building alias table ...'
+        by_base = defaultdict(list)
+        reads = defaultdict(list)
+        sets = defaultdict(list)
+        incs = defaultdict(list)
+
+        for op in self.operators:
+            for node in op.reads + op.sets + op.incs:
+                by_base[(id(node.dct), node.sig.base)].append(node)
+
+            for node in op.reads:
+                reads[node].append(op)
+
+            for node in op.sets:
+                sets[node].append(op)
+
+            for node in op.incs:
+                incs[node].append(op)
+
+        for node in sets:
+            assert len(sets[node]) == 1, (node, sets[node])
+
+        aliased = defaultdict(lambda : False)
+        aliased_with = defaultdict(set)
+        if verbose: print 'bases done ...'
+        for ii, (sb, views) in enumerate(by_base.items()):
+            if len(views) > 10:
+                if verbose: print '%i / %i ' % (ii, len(views))
+            for v1, v2 in itertools.combinations(views, 2):
+                is_aliased = v1.is_aliased_with(v2)
+                if is_aliased:
+                    aliased[(v1, v2)] = True
+                    aliased[(v2, v1)] = True
+                    aliased_with[v1].add(v2)
+                    aliased_with[v2].add(v1)
+            if len(views) > 10:
+                if verbose: print '%i / %i ' % (ii, len(views)), 'done'
+        t1 = time.time()
+        if verbose: print 'building alias table took', (t1 - t0)
+        #self.sets_before_incs()
+        #self.add_aliasing_restrictions()
+
+        # assert that for every node (a) that is set
+        # there are no other signals (b) that are
+        # aliased to (a) and also set.
+        for node, other in itertools.combinations(sets, 2):
+            assert not aliased[(node, other)]
+
+        # reads depend on sets and incs
+        for node, post_ops in reads.items():
+            pre_ops = sets[node] + incs[node]
+            for other in aliased_with[node]:
+                pre_ops += sets[other] + incs[other]
+            for pre_op, post_op in itertools.product(pre_ops, post_ops):
+                self.dg.add_edge(pre_op, post_op)
+
+        # incs depend on sets
+        for node, post_ops in incs.items():
+            pre_ops = sets[node]
+            for other in aliased_with[node]:
+                pre_ops += sets[other]
+            for pre_op, post_op in itertools.product(pre_ops, post_ops):
+                self.dg.add_edge(pre_op, post_op)
+
+    def eval_order(self):
+        return [node for node in networkx.topological_sort(self.dg)
+                if hasattr(node, 'go')]
 
     def step(self):
         for op in self.order:
