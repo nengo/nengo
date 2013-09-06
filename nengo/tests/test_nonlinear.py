@@ -101,7 +101,7 @@ class TestNonlinear(SimulatorTestCase):
         enc = m.add(Encoder(ins, lif))
 
         sim = self.Simulator(m)
-        sim.signals[ins] = np.random.normal(loc=0, scale=1, size=d)
+        sim.signals[ins][...] = np.random.normal(loc=0, scale=1, size=d)
         sim.step()
 
         sim_rates = sim.signals[lif.output_signal]

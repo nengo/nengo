@@ -1,8 +1,122 @@
 import logging
 
+import networkx
 import numpy as np
 
 from objects import LIF, LIFRate, Direct
+
+
+def foo(sim):
+    dg = networkx.DiGraph()
+
+    operators = []
+
+    class SigBuf(object):
+        def __init__(self, dct, sig):
+            self.dct = dct
+            self.sig = sig
+
+        def __hash__(self):
+            return hash( (id(self.dct), self.sig))
+
+        def __eq__(self, other):
+            # XXX signal equality should be implemented to match
+            #     base objects, strides, etc.
+            return self.dct is other.dct and self.sig == other.sig
+
+        def may_share_memory(self, other):
+            return np.may_share_memory(
+                get_signal(self.buf, self.sig),
+                get_signal(other.buf, other.sig))
+
+        def get(self):
+            return get_signal(self.dct, self.sig)
+
+
+    class Reset(object):
+        def __init__(self, dst):
+            self.dst = dst
+
+            dg.add_edge(self, dst)
+
+            operators.append(self)
+
+            self.writes = [dst]
+
+        def go(self):
+            self.dst.get()[...] = 0
+
+    class Copy(object):
+        def __init__(self, dst, src):
+            self.dst = dst
+            self.src = src
+
+            dg.add_edge(src, self)
+            dg.add_edge(self, dst)
+
+            operators.append(self)
+
+            self.reads = [src]
+            self.writes = [dst]
+
+        def go(self):
+            self.dst.get()[...] = self.src.get()
+
+    class DotInc(object):
+        def __init__(self, A, X, Y, xT=False):
+            self.A = A
+            self.X = X
+            self.Y = Y
+            self.xT = xT
+
+            dg.add_edge(self.A, self)
+            dg.add_edge(self.X, self)
+            dg.add_edge(self, self.Y)
+
+            operators.append(self)
+
+            self.reads = [self.A, self.X]
+            self.writes = [self.Y]
+
+        def go(self):
+            dot_inc(self.A.get(),
+                    self.X.get().T if self.xT else self.X.get(),
+                    self.Y.get())
+
+    class NonLin(object):
+        def __init__(self, output, J, nl, dt):
+            self.output = output
+            self.J = J
+            self.nl = nl
+            self.dt = dt
+
+            dg.add_edge(J, self)
+            dg.add_edge(self, output)
+
+            operators.append(self)
+
+            self.reads = [J]
+            self.writes = [output]
+
+        def go(self):
+            self.nl.step(
+                dt=self.dt,
+                J=self.J.get(),
+                output=self.output.get())
+
+    def eval_order():
+        # -- add edges for memory alias dependencies
+        #    TODO: make this more efficient
+        for node in dg.nodes():
+            if isinstance(node, tuple):
+                buf, sig = node
+                # -- all operators that read *from*
+                #    get_signal(buf, sig)
+                #    depend on all operators that output to
+                #    an area with overlap with get_signal(buf, sig)
+
+    return dg, SigBuf, Copy, DotInc, NonLin, Reset, eval_order
+
 
 
 logger = logging.getLogger(__name__)
@@ -114,104 +228,28 @@ class Simulator(object):
         for probe in self.model.probes:
             self.probe_outputs[probe] = []
 
+
     def step(self):
-        class NonLin(object):
-            def __init__(self, *args):
-                raise NotImplementedError()
-                self.__dict__.update(locals())
-                del self.self
-                dg.add_node(self)
-
-
-
-        import networkx
-
-        dg = networkx.DiGraph()
-
-        operators = []
-
-        class SigBuf(object):
-            def __init__(self, sig, buf):
-                self.sig = sig
-                self.buf = buf
-
-            def may_share_memory(self, other):
-                return np.may_share_memory(
-                    get_signal(self.buf, self.sig),
-                    get_signal(other.buf, other.sig),
-                    )
-
-        output_signals = dict()
-
-        class Assign(object):
-            def __init__(self, dst_buf, dst_sig, src_buf, src_sig):
-
-                self.dst = SigBuf(dst_buf, dst_sig)
-                self.src = SigBuf(src_buf, src_sig)
-
-                dg.add_edge(self.src, self)
-                dg.add_edge(self, self.dst)
-
-                operators.append(self)
-
-                self.reads = [self.src]
-                self.writes = [self.dst]
-
-        class DotInc(object):
-            def __init__(self, Abuf, Asig, Xbuf, Xsig, Ybuf, Ysig):
-                self.__dict__.update(locals())
-                del self.self
-
-                self.A = SigBuf(Abuf, Asig)
-                self.X = SigBuf(Xbuf, Xsig)
-                self.Y = SigBuf(Ybuf, Ysig)
-
-                self.reads = [self.A, self.X]
-                self.writes = [self.Y]
-
-                dg.add_edge(self.A, self)
-                dg.add_edge(self.X, self)
-                dg.add_edge(self, self.Y)
-
-                operators.append(self)
-
-
-        # -- add edges for memory alias dependencies
-        #    TODO: make this more efficient
-        for node in dg.nodes():
-            if isinstance(node, tuple):
-                buf, sig = node
-                # -- all operators that read *from*
-                #    get_signal(buf, sig)
-                #    depend on all operators that output to
-                #    an area with overlap with get_signal(buf, sig)
-
-
-        # -- reset: 0 -> signals_tmp
-        for sig in self.dynamic_signals:
-            self.signals_tmp[sig][...] = 0
-
         # -- reset nonlinearities: bias -> input_current
         for nl in self.model.nonlinearities:
-            self.signals_tmp[nl.input_signal][...] = self.signals[nl.bias_signal]
-            #Assign(self.signals, nl.input_signal, self.signals, nl.bias_signal)
+            self.signals[nl.input_signal][...] = self.signals[nl.bias_signal]
 
         # -- encoders: signals -> input current
         #    (N.B. this includes neuron -> neuron connections)
         for enc in self.model.encoders:
             dot_inc(get_signal(self.signals, enc.sig),
                     enc.weights.T,
-                    self.signals_tmp[enc.pop.input_signal])
+                    self.signals[enc.pop.input_signal])
 
-            #DotInc(Abuf=self.signals, Asig=enc.sig,
-            #       Xbuf=self.signals, Xsig=enc.weights_signal, #.T?
-            #       Ybuf=self.signals, Ysig=enc.pop.input_signal)
+        # -- reset: 0 -> signals_tmp
+        for sig in self.dynamic_signals:
+            self.signals_tmp[sig][...] = 0
 
         # -- population dynamics
         for nl in self.model.nonlinearities:
             pop = self.nonlinearities[nl]
             pop.step(dt=self.model.dt,
-                     J=self.signals_tmp[nl.input_signal],
+                     J=self.signals[nl.input_signal],
                      output=self.signals_tmp[nl.output_signal])
 
         # -- decoders: population output -> signals_tmp
@@ -228,21 +266,109 @@ class Simulator(object):
         for sig in self.dynamic_signals:
             self.signals[sig][...] = 0
 
-        # -- hack to keep signals up to date with signals_tmp for tests
-        for nl in self.model.nonlinearities:
-            self.signals[nl.input_signal][...] = self.signals_tmp[nl.input_signal]
-            Assign(SigBuf(output_signals, nl.input_signal),
-                   SigBuf(self.signals_tmp, nl.input_signal))
+        # -- filters: signals_copy -> signals
+        for filt in self.model.filters:
+            try:
+                dot_inc(filt.alpha,
+                        get_signal(self.signals_copy, filt.oldsig),
+                        get_signal(self.signals, filt.newsig))
+            except Exception, e:
+                e.args = e.args + (filt.oldsig, filt.newsig)
+                raise
 
-            self.signals[nl.output_signal][...] = self.signals_tmp[nl.output_signal]
-            Assign(SigBuf(output_signals, nl.output_signal),
-                   SigBuf(self.signals_tmp, nl.output_signal))
+        # -- transforms: signals_tmp -> signals
+        for tf in self.model.transforms:
+            dot_inc(tf.alpha,
+                    get_signal(self.signals_tmp, tf.insig),
+                    get_signal(self.signals, tf.outsig))
+
+        # -- probes signals -> probe buffers
+        for probe in self.model.probes:
+            period = int(probe.dt / self.model.dt)
+            if self.n_steps % period == 0:
+                tmp = get_signal(self.signals, probe.sig).copy()
+                self.probe_outputs[probe].append(tmp)
+
+        self.n_steps += 1
+
+    def step_(self):
+
+        dg, SigBuf, Copy, DotInc, NonLin, Reset, eval_order = foo(self)
+
+        output_signals = dict(self.signals)
+
+        # -- reset nonlinearities: bias -> input_current
+        for nl in self.model.nonlinearities:
+            self.signals[nl.input_signal][...] = self.signals[nl.bias_signal]
+            Copy(SigBuf(self.signals, nl.input_signal,),
+                 SigBuf(self.signals, nl.bias_signal))
+
+        # -- encoders: signals -> input current
+        #    (N.B. this includes neuron -> neuron connections)
+        for enc in self.model.encoders:
+            dot_inc(get_signal(self.signals, enc.sig),
+                    enc.weights.T,
+                    self.signals[enc.pop.input_signal])
+
+            DotInc(SigBuf(self.signals, enc.sig),
+                   SigBuf(self.signals, enc.weights_signal),
+                   SigBuf(self.signals, enc.pop.input_signal),
+                   xT=True)
+
+        # -- reset: 0 -> signals_tmp
+        for sig in self.dynamic_signals:
+            self.signals_tmp[sig][...] = 0
+            Reset(SigBuf(self.signals_tmp, sig))
+
+
+        # -- population dynamics
+        for nl in self.model.nonlinearities:
+            pop = self.nonlinearities[nl]
+            pop.step(dt=self.model.dt,
+                     J=self.signals_tmp[nl.input_signal],
+                     output=self.signals_tmp[nl.output_signal])
+            NonLin(output=SigBuf(self.signals_tmp, nl.output_signal),
+                   J=SigBuf(self.signals_tmp, nl.input_signal),
+                   nl=pop,
+                   dt=self.model.dt)
+
+        # -- decoders: population output -> signals_tmp
+        for dec in self.model.decoders:
+            dot_inc(self.signals_tmp[dec.pop.output_signal],
+                    dec.weights.T,
+                    get_signal(self.signals_tmp, dec.sig))
+
+            DotInc(SigBuf(self.signals_tmp, dec.pop.output_signal),
+                   SigBuf(self.signals, dec.weights_signal),
+                   SigBuf(self.signals_tmp, dec.sig))
+
+
+        # -- copy: signals -> signals_copy
+        for sig in self.dynamic_signals:
+            self.signals_copy[sig][...] = self.signals[sig]
+            Copy(SigBuf(self.signals_copy, sig),
+                 SigBuf(self.signals, sig))
+
+        # -- reset: 0 -> signals
+        for sig in self.dynamic_signals:
+            self.signals[sig][...] = 0
+            Reset(SigBuf(self.signals, sig))
+
+        if 0:
+            # -- hack to keep signals up to date with signals_tmp for tests
+            for nl in self.model.nonlinearities:
+                self.signals[nl.input_signal][...] = self.signals_tmp[nl.input_signal]
+                Copy(SigBuf(output_signals, nl.input_signal),
+                     SigBuf(self.signals_tmp, nl.input_signal))
+
+                self.signals[nl.output_signal][...] = self.signals_tmp[nl.output_signal]
+                Copy(SigBuf(output_signals, nl.output_signal),
+                     SigBuf(self.signals_tmp, nl.output_signal))
 
         for enc in self.model.encoders:
             self.signals[enc.pop.input_signal][...] = self.signals_tmp[enc.pop.input_signal]
-            Assign(SigBuf(output_signals, enc.pop.input_signal),
-                   SigBuf(self.signals_tmp, enc.pop.input_signal))
-
+            Copy(SigBuf(output_signals, enc.pop.input_signal),
+                 SigBuf(self.signals_tmp, enc.pop.input_signal))
 
         # -- filters: signals_copy -> signals
         for filt in self.model.filters:
@@ -250,7 +376,7 @@ class Simulator(object):
                 dot_inc(filt.alpha,
                         get_signal(self.signals_copy, filt.oldsig),
                         get_signal(self.signals, filt.newsig))
-                DotInc(filt.alpha,
+                DotInc(SigBuf(self.signals, filt.alpha_signal),
                        SigBuf(self.signals_copy, filt.oldsig),
                        SigBuf(output_signals, filt.newsig))
             except Exception, e:
@@ -263,8 +389,8 @@ class Simulator(object):
                     get_signal(self.signals_tmp, tf.insig),
                     get_signal(self.signals, tf.outsig))
 
-            DotInc(tf.alpha, #Abuf=self.signals, Asig=enc.sig,
-                   self.signals_tmp, tf.insig, #.T?
+            DotInc(SigBuf(self.signals, tf.alpha_signal),
+                   SigBuf(self.signals_tmp, tf.insig), #.T?
                    SigBuf(output_signals, tf.outsig))
 
         # -- probes signals -> probe buffers
