@@ -1,3 +1,4 @@
+import copy
 import logging
 
 import numpy as np
@@ -8,80 +9,129 @@ from .. import objects
 
 logger = logging.getLogger(__name__)
 
+
 class EnsembleArray(object):
-    def __init__(self, name, neurons_per_ensemble, n_ensembles,
-                 dimensions_per_ensemble=1, encoders=None, **kwargs):
+    """A collection of neurons that collectively represent a vector.
+
+    Attributes
+    ----------
+    name
+    neurons
+    dimensions
+
+    encoders
+    eval_points
+    intercepts
+    max_rates
+    radius
+    seed
+
+    connections_in : type
+        description
+    connections_out : type
+        description
+    probes : type
+        description
+
+    """
+
+    def __init__(self, name, neurons, n_ensembles,
+                 dimensions_per_ensemble=1, **ens_args):
         """
         TODO
         """
         assert n_ensembles > 0, "Number of ensembles must be positive"
 
-        neurons, dims = neurons_per_ensemble, dimensions_per_ensemble
-
-        encoders = np.asarray(encoders)
-        enc_shape = (n_ensembles * neurons.n_neurons, dims)
-        msg = "Encoder shape is %s. Should be %s" % (encoders.shape, enc_shape)
-        assert encoders is None or encoders.shape == enc_shape, msg
-
         self.name = name
-        self.input_signal = core.Signal(
-            n=n_ensembles*dims, name=name+".input_signal")
 
-        self.ensembles = [
-            objects.Ensemble(name+("[%d]" % i), neurons, dims,
-                             input_signal=self.input_signal[i*dims:(i+1)*dims],
-                             encoders=encoders, **kwargs)
-            for i, encoders in enumerate(encoders)]
+        # Make some empty ensembles for now
+        self.ensembles = [objects.Ensemble(name+("[%d]" % i), neurons, 1)
+                          for i in xrange(n_ensembles)]
 
-        self.connections = []
-        self.probes = []
+        # Any ens_args will be set on enclosed ensembles
+        for ens in self.ensembles:
+            for k, v in ens_args.items():
+                setattr(ens, k, v)
+
+        # Fill in the details of those ensembles here
+        self.neurons = neurons
+        self.dimensions_per_ensemble = dimensions_per_ensemble
+
+        self.connections_in = []
+        self.connections_out = []
+        self.probes = {'decoded_output': []}
+
+    @property
+    def dimensions(self):
+        return self.n_ensembles * self.dimensions_per_ensemble
+
+    @property
+    def dimensions_per_ensemble(self):
+        return self._dimensions_per_ensemble
+
+    @dimensions_per_ensemble.setter
+    def dimensions_per_ensemble(self, _dimensions_per_ensemble):
+        self._dimensions_per_ensemble = _dimensions_per_ensemble
+        for ens in self.ensembles:
+            ens.dimensions = _dimensions_per_ensemble
 
     @property
     def n_ensembles(self):
         return len(self.ensembles)
 
-    @property
-    def dimensions_per_ensemble(self):
-        return self.ensembles[0].dimensions
+    @n_ensembles.setter
+    def n_ensembles(self, _n_ensembles):
+        raise ValueError("Cannot change number of ensembles after creation. "
+                         "Please create a new EnsembleArray instead.")
 
     @property
-    def dimensions(self):
-        return self.n_ensembles*self.dimensions_per_ensemble
+    def neurons(self):
+        return self._neurons
+
+    @neurons.setter
+    def neurons(self, _neurons):
+        self._neurons = _neurons
+        each_neurons = _neurons.n_neurons / self.n_ensembles
+        extra_neurons = _neurons.n_neurons % self.n_ensembles
+        for i, ens in enumerate(self.ensembles):
+            # Copy and partition _neurons
+            ens_neurons = copy.deepcopy(_neurons)
+            if extra_neurons > 0:
+                ens_neurons.n_neurons = each_neurons + 1
+                extra_neurons -= 1
+            else:
+                ens_neurons.n_neurons = each_neurons
+            ens.neurons = ens_neurons
 
     def connect_to(self, post, transform=1.0, **kwargs):
-        if not isinstance(post, core.Signal):
-            post = post.input_signal
-
-        dims = self.dimensions_per_ensemble
-        if 'function' in kwargs:
-            dims = np.asarray(kwargs['function']([1] * dims)).size
-
         connections = []
         for i, ensemble in enumerate(self.ensembles):
-            c = ensemble.connect_to(post[i*dims:(i+1)*dims], **kwargs)
+            c = ensemble.connect_to(post, **kwargs)
             connections.append(c)
-        connection = ConnectionList(connections)
-        self.connections.append(connection)
+        connection = ConnectionList(connections, transform)
+        self.connections_out.append(connection)
+        if hasattr(post, 'connections_in'):
+            post.connections_in.append(connection)
         return connection
 
     def probe(self, to_probe='decoded_output',
               sample_every=0.001, filter=0.01, dt=0.001):
         if to_probe == 'decoded_output':
-            p = probes.Probe(self.name + ".decoded_output",
-                              self.dimensions, sample_every)
-            c = self.connect_to(p, filter=filter)
+            probe = objects.Probe(self.name + ".decoded_output", sample_every)
+            self.connect_to(probe, filter=filter)
+            self.probes['decoded_output'].append(probe)
+        return probe
 
-        self.probes.append(p)
-        return p, c
+    def build(self, model, dt):
+        self.signal = core.Signal(self.dimensions, name=self.name+".signal")
+        model.add(self.signal)
 
-    def add_to_model(self, model):
-        model.add(self.input_signal)
-        for ensemble in self.ensembles:
-            model.add(ensemble)
-        for connection in self.connections:
-            model.add(connection)
-        for probe in self.probes:
-            model.add(probe)
+        dims = self.dimensions_per_ensemble
 
-    def remove_from_model(self):
-        raise NotImplementedError("Nope")
+        for i, ens in enumerate(self.ensembles):
+            ens.build(model, dt, signal=self.signal[i*dims:(i+1)*dims])
+            # self.connections_in.extend(ens.connections_in)
+            # self.connections_out.extend(ens.connections_out)
+
+        for probe in self.probes['decoded_output']:
+            probe.dimensions = self.dimensions
