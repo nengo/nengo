@@ -195,12 +195,9 @@ class TestEnsemble(SimulatorTestCase):
             plt.savefig('test_ensemble.test_prod.pdf')
             plt.close()
 
-        self.assertTrue(np.allclose(
-            sim.data('factors')[:, 0], np.sin(np.arange(0, 6, .01)),
-            atol=.1, rtol=.01))
-        self.assertTrue(np.allclose(
-            sim.data('factors')[20:, 1], -0.5,
-            atol=.1, rtol=.01))
+        self.assertTrue(rmse(sim.data('factors')[:, 0],
+                             np.sin(np.arange(0, 6, .01))) < 0.1)
+        self.assertTrue(rmse(sim.data('factors')[20:, 1], -0.5) < 0.1)
 
         def match(a, b):
             self.assertTrue(np.allclose(a, b, .1, .1))
