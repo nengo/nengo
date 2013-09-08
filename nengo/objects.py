@@ -89,6 +89,9 @@ class Ensemble(object):
         self.connections_out = []
         self.probes = {'decoded_output': []}
 
+    def __str__(self):
+        return "Ensemble: " + self.name
+
     @property
     def dimensions(self):
         """TODO"""
@@ -110,8 +113,8 @@ class Ensemble(object):
             _encoders = np.asarray(_encoders)
             enc_shape = (self.neurons.n_neurons, self.dimensions)
             if _encoders.shape != enc_shape:
-                msg = ("Encoder shape must be (n_neurons, dimensions); "
-                       "in this case %s." % str(enc_shape))
+                msg = ("Encoder shape is %s. Should be (n_neurons, dimensions);"
+                       " in this case %s." % (_encoders.shape, enc_shape))
                 raise core.ShapeMismatch(msg)
         self._encoders = _encoders
 
@@ -147,12 +150,6 @@ class Ensemble(object):
             logger.warning(("neurons should be an instance of a nonlinearity, "
                             "not an int. Defaulting to LIF."))
             _neurons = core.LIF(neurons)
-
-        # We needed this for the EnsembleArray template, as it would
-        # pass the same neurons object to each ensemble. But, this should
-        # be done at the template level, as it's not obvious that the
-        # passed in neuron object would become a copy.
-        # _neurons = copy.deepcopy(_neurons)
 
         # Give a better name if name is default
         if _neurons.name.startswith("<LIF"):
@@ -210,6 +207,7 @@ class Ensemble(object):
         else:
             # Assume that a provided signal is already in the model
             self.signal = signal
+            self.dimensions = self.signal.size
 
         # Set up neurons
         max_rates = self.max_rates
