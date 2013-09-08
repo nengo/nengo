@@ -580,6 +580,18 @@ class LIF(Nonlinearity):
         return self.n_neurons
 
     @property
+    def n_neurons(self):
+        return self._n_neurons
+
+    @n_neurons.setter
+    def n_neurons(self, _n_neurons):
+        self._n_neurons = _n_neurons
+        self.input_signal.n = _n_neurons
+        self.output_signal.n = _n_neurons
+        self.bias_signal.n = _n_neurons
+        self.bias_signal.value = np.zeros(_n_neurons)
+
+    @property
     def n_out(self):
         return self.n_neurons
 

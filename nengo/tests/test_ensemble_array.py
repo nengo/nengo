@@ -4,316 +4,120 @@ import os
 import numpy as np
 
 import nengo
-from nengo.templates.ensemble_array import EnsembleArray
+from nengo.templates import EnsembleArray
 from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
 
 
 logger = logging.getLogger(__name__)
 
-class TestEnsembleArrayEncoders(unittest.TestCase):
+class TestEnsembleArrayCreation(unittest.TestCase):
 
-    @staticmethod
-    def _random_encoders(n_neurons, *dims):
-        encoders = np.random.randn(*dims)
-        return encoders
+    def test_n_ensembles(self):
+        ea = EnsembleArray('test_n_ensembles', nengo.LIF(1), 1)
+        with self.assertRaises(ValueError):
+            ea.n_ensembles = 3
 
-    @staticmethod
-    def _normalize(encoders, n_neurons, *dims):
-        normed = np.copy(encoders)
-        if normed.shape == ():
-            normed.shape = (1,)
-        if normed.shape == (dims[0],):
-            normed = np.tile(normed, (n_neurons, 1))
-        norm = np.sum(normed * normed, axis=1)[:, np.newaxis]
-        normed /= np.sqrt(norm)
-        return normed
+    def test_neuron_parititoning(self):
+        ea_even = EnsembleArray('Same size', nengo.LIF(10), 5)
+        for ens in ea_even.ensembles:
+            self.assertEqual(ens.n_neurons, 2)
 
-    def _test_encoders(self, n_ensembles, n_dimensions):
-        n_neurons = 10
-        other_args = {'name': 'A',
-                      'neurons_per_ensemble': nengo.LIF(n_neurons),
-                      'n_ensembles': n_ensembles,
-                      'dimensions_per_ensemble': n_dimensions}
+        ea_odd = EnsembleArray('Different size', nengo.LIF(19), 4)
 
-        logger.debug("No encoders")
-        self.assertIsNotNone(EnsembleArray(encoders=None, **other_args))
-
-        logger.debug("One set of one encoder for all neurons")
-        encoders = self._random_encoders(n_neurons, n_dimensions)
-        ea = EnsembleArray(encoders=encoders, **other_args)
-        normed = self._normalize(encoders, n_neurons, n_dimensions)
-        for ens in ea.ensembles:
-            self.assertTrue(np.allclose(normed, ens.encoders),
-                            (normed, ens.encoders))
-
-        logger.debug("One set of encoders specific to each neuron")
-        encoders = self._random_encoders(n_neurons, n_neurons, n_dimensions)
-        ea = EnsembleArray(encoders=encoders, **other_args)
-        normed = self._normalize(encoders, n_neurons, n_neurons, n_dimensions)
-        for ens in ea.ensembles:
-            self.assertTrue(np.allclose(normed, ens.encoders),
-                            (normed, ens.encoders))
-
-        logger.debug("All encoders specified")
-        encoders = self._random_encoders(
-            n_neurons, n_ensembles, n_neurons, n_dimensions)
-        ea = EnsembleArray(encoders=encoders, **other_args)
-        normed = [self._normalize(enc, n_neurons, n_neurons, n_dimensions)
-                  for enc in encoders]
-        for enc, ens in zip(normed, ea.ensembles):
-            self.assertTrue(np.allclose(enc, ens.encoders), (enc, ens.encoders))
-
-    def test_encoders(self):
-        self._test_encoders(3, 4)
-        self._test_encoders(4, 4)
-
-    def test_encoders_weird(self):
-        self._test_encoders(1, 1)
-
-    def test_encoders_one_ensemble(self):
-        self._test_encoders(1, 5)
-
-    def test_encoders_one_dimension(self):
-        self._test_encoders(6, 1)
+        # Order of the sizes shouldn't matter
+        sizes = [5, 5, 5, 4]
+        for ens in ea_odd.ensembles:
+            sizes.remove(ens.n_neurons)
+        self.assertEqual(len(sizes), 0)
 
 class TestEnsembleArray(SimulatorTestCase):
-
-    def test_multidim_probe(self):
-        # Adjust these values to change the matrix dimensions
-        #  Matrix A is D1xD2
-        #  Matrix B is D2xD3
-        #  result is D1xD3
-        D1 = 1
-        D2 = 2
-        D3 = 3
-        seed = 123
-        N = 200
-
-        Amat = np.asarray([[.4, .8]])
-        Bmat = np.asarray([[-1.0, -0.6, -.15], [0.25, .5, .7]])
-
-        net = nef.Network('Multidim array', seed=seed, simulator=self.Simulator)
-
-        # values should stay within the range (-radius,radius)
-        radius = 2.0
-
-        # make 2 matrices to store the input
-        logging.debug("make_array: input matrices A and B")
-        net.make_array('A', neurons=N, array_size=D1 * D2,
-            radius=radius, neuron_type='lif')
-        net.make_array('B', neurons=N, array_size=D2 * D3,
-            radius=radius, neuron_type='lif')
-
-        # connect inputs to them so we can set their value
-        inputA = net.make_input('input A', value=Amat.flatten())
-        inputB = net.make_input('input B', value=Bmat.flatten())
-        logging.debug("connect: input matrices A and B")
-        net.connect('input A', 'A')
-        net.connect('input B', 'B')
-
-        # the C matrix holds the intermediate product calculations
-        #  need to compute D1*D2*D3 products to multiply 2 matrices together
-        logging.debug("make_array: intermediate C")
-        net.make_array('C', N * 2, D1 * D2 * D3,
-            dimensions=2,
-            radius=1.5 * radius,
-            neuron_type='lif')
-
-        transformA = [[0] * (D1 * D2) for i in range(D1 * D2 * D3 * 2)]
-        transformB = [[0] * (D2 * D3) for i in range(D1 * D2 * D3 * 2)]
-        for i in range(D1):
-            for k in range(D3):
-                for j in range(D2):
-                    tmp = (j + k * D2 + i * D2 * D3)
-                    transformA[tmp * 2][j + i * D2] = 1
-                    transformB[tmp * 2 + 1][k + j * D3] = 1
-
-        transformA = np.asarray(transformA)
-        transformB = np.asarray(transformB)
-
-        logging.debug("A->C trans: %s, shape=%s",
-                      str(transformA), transformA.shape)
-        logging.debug("B->C trans: %s, shape=%s",
-                      str(transformB), transformB.shape)
-
-        logging.debug("connect A->C")
-        net.connect('A', 'C', transform=transformA)
-        logging.debug("connect B->C")
-        net.connect('B', 'C', transform=transformB)
-
-        net.make_probe('C', dt_sample=0.01, pstc=0.01)
-
-        net.run(1)
-
-        logging.debug("Cprobe.shape=%s", str(net.model.data['C'].shape))
-        logging.debug("Amat=%s", str(Amat))
-        logging.debug("Bmat=%s", str(Bmat))
-        data = net.model.data['C']
-
-        with Plotter(self.Simulator) as plt:
-            for i in range(D1):
-                for k in range(D3):
-                    for j in range(D2):
-                        tmp = (j + k * D2 + i * D2 * D3)
-                        plt.subplot(D1 * D2 * D3, 2, 1 + 2 * tmp);
-                        plt.title('A[%i, %i]' % (i, j))
-                        plt.axhline(Amat[i, j])
-                        plt.ylim(-radius, radius)
-                        plt.plot(data[:, 2 * tmp])
-
-                        plt.subplot(D1 * D2 * D3, 2, 2 + 2 * tmp);
-                        plt.title('B[%i, %i]' % (j, k))
-                        plt.axhline(Bmat[j, k])
-                        plt.ylim(-radius, radius)
-                        plt.plot(data[:, 2 * tmp + 1])
-            plt.savefig('test_old_api.test_multidimprobe.pdf')
-            plt.close()
-
-        for i in range(D1):
-            for k in range(D3):
-                for j in range(D2):
-                    tmp = (j + k * D2 + i * D2 * D3)
-                    self.assertTrue(np.allclose(
-                        data[-10:, 2 * tmp],
-                        Amat[i, j],
-                        atol=0.1, rtol=0.1), (
-                            data[-10:, 2 * tmp],
-                            Amat[i, j]))
-
-                    self.assertTrue(np.allclose(
-                        data[-10:, 1 + 2 * tmp],
-                        Bmat[j, k],
-                        atol=0.1, rtol=0.1))
-
     def test_matrix_mul(self):
-        # Adjust these values to change the matrix dimensions
-        #  Matrix A is D1xD2
-        #  Matrix B is D2xD3
-        #  result is D1xD3
-        D1 = 1
-        D2 = 2
-        D3 = 2
-        seed = 123
-        N = 200
+        N = 100
 
         Amat = np.asarray([[.5, -.5]])
         Bmat = np.asarray([[0, -1.,], [.7, 0]])
 
-        net = nef.Network('Matrix Multiplication', seed=seed,
-                          simulator=self.Simulator)
+        model = nengo.Model('Matrix Multiplication', seed=123)
 
-        # values should stay within the range (-radius,radius)
         radius = 1
 
-        # make 2 matrices to store the input
-        logging.debug("make_array: input matrices A and B")
-        net.make_array('A', neurons=N, array_size=D1 * D2,
-            radius=radius, neuron_type='lif')
-        net.make_array('B', neurons=N, array_size=D2 * D3,
-            radius=radius, neuron_type='lif')
+        model.add(EnsembleArray('A', nengo.LIF(N * Amat.size),
+                                Amat.size, radius=radius))
+        model.add(EnsembleArray('B', nengo.LIF(N * Bmat.size),
+                                Bmat.size, radius=radius))
 
-        # connect inputs to them so we can set their value
-        inputA = net.make_input('input A', value=Amat.ravel())
-        inputB = net.make_input('input B', value=Bmat.ravel())
-        logging.debug("connect: input matrices A and B")
-        net.connect('input A', 'A')
-        net.connect('input B', 'B')
+        inputA = model.make_node('input A', output=Amat.ravel())
+        inputB = model.make_node('input B', output=Bmat.ravel())
+        model.connect('input A', 'A')
+        model.connect('input B', 'B')
+        model.probe('A', sample_every=0.01, filter=0.01)
+        model.probe('B', sample_every=0.01, filter=0.01)
 
-        # the C matrix holds the intermediate product calculations
-        #  need to compute D1*D2*D3 products to multiply 2 matrices together
-        logging.debug("make_array: intermediate C")
-        net.make_array('C', 4 * N, D1 * D2 * D3,
-            dimensions=2,
-            radius=1.5 * radius,
-            # encoders=[[1, 1], [1, -1], [-1, 1], [-1, -1]],
-            neuron_type='lif')
+        C = model.add(EnsembleArray(
+            'C', nengo.LIF(N * Amat.size * Bmat.shape[1] * 2),
+            Amat.size * Bmat.shape[1], dimensions_per_ensemble=2,
+            radius=1.5 * radius))
 
-        #  determine the transformation matrices to get the correct pairwise
-        #  products computed.  This looks a bit like black magic but if
-        #  you manually try multiplying two matrices together, you can see
-        #  the underlying pattern.  Basically, we need to build up D1*D2*D3
-        #  pairs of numbers in C to compute the product of.  If i,j,k are the
-        #  indexes into the D1*D2*D3 products, we want to compute the product
-        #  of element (i,j) in A with the element (j,k) in B.  The index in
-        #  A of (i,j) is j+i*D2 and the index in B of (j,k) is k+j*D3.
-        #  The index in C is j+k*D2+i*D2*D3, multiplied by 2 since there are
-        #  two values per ensemble.  We add 1 to the B index so it goes into
-        #  the second value in the ensemble.
-        transformA = [[0] * (D1 * D2) for i in range(D1 * D2 * D3 * 2)]
-        transformB = [[0] * (D2 * D3) for i in range(D1 * D2 * D3 * 2)]
-        for i in range(D1):
-            for j in range(D2):
-                for k in range(D3):
-                    tmp = (j + k * D2 + i * D2 * D3)
-                    transformA[tmp * 2][j + i * D2] = 1
-                    transformB[tmp * 2 + 1][k + j * D3] = 1
+        transformA = np.zeros((C.dimensions, Amat.size))
+        transformB = np.zeros((C.dimensions, Bmat.size))
 
-        logging.debug("connect A->C")
-        net.connect('A', 'C', transform=transformA)
-        logging.debug("connect B->C")
-        net.connect('B', 'C', transform=transformB)
+        for i in range(Amat.shape[0]):
+            for j in range(Amat.shape[1]):
+                for k in range(Bmat.shape[1]):
+                    tmp = (j + k * Amat.shape[1] + i * Bmat.size)
+                    transformA[tmp * 2][j + i * Amat.shape[1]] = 1
+                    transformB[tmp * 2 + 1][k + j * Bmat.shape[1]] = 1
 
-        # now compute the products and do the appropriate summing
-        logging.debug("make_array: output D")
-        net.make_array('D', N , D1 * D3,
-            radius=radius,
-            neuron_type='lif')
+        model.connect('A', 'C', transform=transformA)
+        model.connect('B', 'C', transform=transformB)
+        model.probe('C', sample_every=0.01, filter=0.01)
+
+        D = model.add(EnsembleArray(
+            'D', nengo.LIF(N * Amat.shape[0] * Bmat.shape[1]),
+            Amat.shape[0] * Bmat.shape[1], radius=radius))
 
         def product(x):
             return x[0]*x[1]
-        # the mapping for this transformation is much easier, since we want to
-        # combine D2 pairs of elements (we sum D2 products together)
 
-        net.connect('C', 'D',
-            index_post=[i / D2 for i in range(D1 * D2 * D3)], func=product)
+        transformC = np.zeros((D.dimensions, Bmat.size))
+        for i in range(Bmat.size):
+            transformC[i / Bmat.shape[0]][i] = 1
 
-        Aprobe = net.make_probe('A', dt_sample=0.01, pstc=0.01)
-        Bprobe = net.make_probe('B', dt_sample=0.01, pstc=0.01)
-        Cprobe = net.make_probe('C', dt_sample=0.01, pstc=0.01)
-        Dprobe = net.make_probe('D', dt_sample=0.01, pstc=0.01)
+        model.connect('C', 'D', function=product, transform=transformC)
+        model.probe('D', sample_every=0.01, filter=0.01)
 
-        prod_probe = net._probe_decoded_signals(
-            net.ensembles['C'].origin['product'].sigs,
-            dt_sample=0.01,
-            pstc=.01)
-
-        net.run(1)
-
-        Dmat = np.dot(Amat, Bmat)
-        data = Dprobe.get_data()
+        sim = model.simulator()
+        sim.run(1)
 
         with Plotter(self.Simulator) as plt:
-            for i in range(D1):
-                for k in range(D3):
-                    plt.subplot(D1, D3, i * D3 + k + 1)
-                    plt.title('D[%i, %i]' % (i, k))
-                    plt.plot(data[:, i * D3 + k])
-                    plt.axhline(Dmat[i, k])
-                    plt.ylim(-radius, radius)
-            plt.savefig('test_old_api.test_matrix_mul.pdf')
+            plt.plot(sim.data('D'))
+            for d in np.dot(Amat, Bmat).flatten():
+                plt.axhline(d, color='k')
+            plt.savefig('test_ensemble_array.test_matrix_mul.pdf')
             plt.close()
 
-        self.assertTrue(np.allclose(Aprobe.get_data()[50:, 0], 0.5,
+        self.assertTrue(np.allclose(sim.data('A')[50:, 0], 0.5,
                                     atol=.1, rtol=.01))
-        self.assertTrue(np.allclose(Aprobe.get_data()[50:, 1], -0.5,
-                                    atol=.1, rtol=.01))
-
-        self.assertTrue(np.allclose(Bprobe.get_data()[50:, 0], 0,
-                                    atol=.1, rtol=.01))
-        self.assertTrue(np.allclose(Bprobe.get_data()[50:, 1], -1,
-                                    atol=.1, rtol=.01))
-        self.assertTrue(np.allclose(Bprobe.get_data()[50:, 2], .7,
-                                    atol=.1, rtol=.01))
-        self.assertTrue(np.allclose(Bprobe.get_data()[50:, 3], 0,
+        self.assertTrue(np.allclose(sim.data('A')[50:, 1], -0.5,
                                     atol=.1, rtol=.01))
 
-        for i in range(D1):
-            for k in range(D3):
+        self.assertTrue(np.allclose(sim.data('B')[50:, 0], 0,
+                                    atol=.1, rtol=.01))
+        self.assertTrue(np.allclose(sim.data('B')[50:, 1], -1,
+                                    atol=.1, rtol=.01))
+        self.assertTrue(np.allclose(sim.data('B')[50:, 2], .7,
+                                    atol=.1, rtol=.01))
+        self.assertTrue(np.allclose(sim.data('B')[50:, 3], 0,
+                                    atol=.1, rtol=.01))
+
+        Dmat = np.dot(Amat, Bmat)
+        for i in range(Amat.shape[0]):
+            for k in range(Bmat.shape[1]):
                 self.assertTrue(np.allclose(
-                    data[-10:, i * D3 + k],
+                    sim.data('D')[-10:, i * Bmat.shape[1] + k],
                     Dmat[i, k],
                     atol=0.1, rtol=0.1), (
-                        data[-10:, i * D3 + k],
+                        sim.data('D')[-10:, i * Bmat.shape[1] + k],
                         Dmat[i, k]))
 
 

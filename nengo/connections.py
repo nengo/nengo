@@ -61,10 +61,13 @@ class SignalConnection(object):
     def build(self, model, dt):
         # Pre / post may be high level objects (ensemble, node) or signals
         if not core.is_signal(self.pre):
-            logger.warning("SimpleConnection is usually used for connecting "
-                           "raw Signals. Are you sure you shouldn't be using "
-                           "DecodedConnection?")
             self.pre = self.pre.signal
+            if not core.is_constant(self.pre):
+                logger.warning("SignalConnection is usually used for "
+                               "connecting raw Signals and ConstantNodes. "
+                               "Are you sure you shouldn't be using "
+                               "DecodedConnection?")
+
         if not core.is_signal(self.post):
             self.post = self.post.signal
 
@@ -251,6 +254,13 @@ class DecodedNeuronConnection(object):
         self._decoders = _decoders
 
     @property
+    def dimensions(self):
+        if self.function is None:
+            return self.pre.dimensions
+        else:
+            return np.array(self.function(np.ones(self.pre.dimensions,))).size
+
+    @property
     def eval_points(self):
         if self._eval_points is None:
             # OK because ensembles always build first
@@ -304,10 +314,7 @@ class DecodedNeuronConnection(object):
             self.post = self.post.signal
 
         # Set up signal
-        if self.function is None:
-            dims = self.eval_points.T[0].size
-        else:
-            dims = np.array(self.function(self.eval_points.T[0])).size
+        dims = self.dimensions
         self.signal = core.Signal(dims, name=self.name)
         model.add(self.signal)
 
@@ -354,10 +361,27 @@ class DecodedNeuronConnection(object):
 
 class ConnectionList(object):
     """A connection made up of several other connections."""
-    def __init__(self, connections):
+    def __init__(self, connections, transform=1.0):
         self.connections = connections
+        self.transform = transform
         self.probes = {}
 
     def build(self, model, dt):
-        for connection in self.connection:
+        self.transform = np.asarray(self.transform)
+
+        i = 0
+        for connection in self.connections:
+            pre_dim = connection.dimensions
+
+            if self.transform.shape == ():
+                self.transform
+                trans = np.zeros((connection.post.dimensions, pre_dim))
+                trans[i:i+pre_dim] = self.transform
+
+            if self.transform.ndim == 2:
+                trans = self.transform[:,i:i+pre_dim]
+
+            i += pre_dim
+
+            connection.transform = trans
             connection.build(model, dt)
