@@ -209,7 +209,6 @@ class TestEnsemble(SimulatorTestCase):
         match(sim.data(conn)[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
 
 
-
 if __name__ == "__main__":
     nengo.log_to_file('log.txt', debug=True)
     unittest.main()
