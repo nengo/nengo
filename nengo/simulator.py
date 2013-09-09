@@ -84,6 +84,8 @@ def dot_inc(a, b, targ):
 
 
 class Simulator(object):
+    """TODO"""
+
     def __init__(self, model):
         self.model = model
 
@@ -119,6 +121,8 @@ class Simulator(object):
             self.probe_outputs[probe] = []
 
     def step(self):
+        """Simulate for a single time step."""
+
         # -- reset nonlinearities: bias -> input_current
         for nl in self.model.nonlinearities:
             self.signals[nl.input_signal][...] = self.signals[nl.bias_signal]
@@ -181,23 +185,62 @@ class Simulator(object):
         self.n_steps += 1
 
     def copied(self, obj):
+        """Get the simulator's copy of a model object.
+
+        Parameters
+        ----------
+        obj : Nengo object
+            A model from the original model
+
+        Returns
+        -------
+        sim_obj : Nengo object
+            The simulator's copy of `obj`.
+
+        Examples
+        --------
+        Manually set a raw signal value to ``5`` in the simulator
+        (advanced usage). [TODO: better example]
+
+        >>> model = nengo.Model()
+        >>> foo = m.add(Signal(n=1))
+        >>> sim = model.simulator()
+        >>> sim.signals[sim.copied(foo)] = np.asarray([5])
+        """
         return self.model.memo[id(obj)]
 
     def data(self, probe):
+        """Get data from signals that have been probed.
+
+        Parameters
+        ----------
+        probe : Probe
+            TODO
+
+        Returns
+        -------
+        data : ndarray
+            TODO: what are the dimensions?
+        """
+        ### hunse: TODO: I think this will fail for when using long strings
+        ### as names in a console, but I haven't proven this yet
         if not isinstance(probe, core.Probe):
             probe = self.model.probed[self.model.memo[id(probe)]]
         return np.asarray(self.probe_outputs[probe])
 
     def reset(self):
+        """TODO"""
         raise NotImplementedError
 
     def run(self, time):
+        """Simulate for the given length of time."""
         steps = int(time // self.model.dt)
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.model.name, time, steps)
         self.run_steps(steps)
 
     def run_steps(self, steps):
+        """Simulate for the given number of steps."""
         for i in xrange(steps):
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
