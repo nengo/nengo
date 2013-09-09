@@ -564,15 +564,18 @@ class Direct(Nonlinearity):
         self.fn = fn
 
     def __deepcopy__(self, memo):
-        rval = self.__class__.__new__(
-                self.__class__)
-        for k, v in self.__dict__.items():
-            if k == 'fn':
-                rval.fn = v
-            else:
-                rval.__dict__[k] = copy.deepcopy(v, memo)
-        memo[id(self)] = rval
-        return rval
+        try:
+            return memo[id(self)]
+        except KeyError:
+            rval = self.__class__.__new__(
+                    self.__class__)
+            memo[id(self)] = rval
+            for k, v in self.__dict__.items():
+                if k == 'fn':
+                    rval.fn = v
+                else:
+                    rval.__dict__[k] = copy.deepcopy(v, memo)
+            return rval
 
     def __str__(self):
         return "Direct (id " + str(id(self)) + ")"
