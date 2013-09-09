@@ -42,13 +42,14 @@ class TestSimulator(SimulatorTestCase):
 
         sim = m.simulator(sim_class=self.Simulator)
         sim.step()
+        dt = sim.model.dt
         for i in range(5):
             sim.step()
 
-            t = (i + 2) * m.dt
+            t = (i + 2) * dt
             self.assertTrue(np.allclose(sim.signals[sim.copied(m.t)], t))
             self.assertTrue(np.allclose(
-                    sim.signals[sim.copied(sig)], np.sin(t - m.dt)))
+                    sim.signals[sim.copied(sig)], np.sin(t - dt)))
 
     def test_encoder_decoder_pathway(self):
         m = nengo.Model("")

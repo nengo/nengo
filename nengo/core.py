@@ -7,7 +7,7 @@ All other objects use describe models in terms of these objects.
 Simulators only know about these objects.
 
 """
-import inspect
+import copy
 import logging
 
 import numpy as np
@@ -562,6 +562,17 @@ class Direct(Nonlinearity):
         self.n_in = n_in
         self.n_out = n_out
         self.fn = fn
+
+    def __deepcopy__(self, memo):
+        rval = self.__class__.__new__(
+                self.__class__)
+        for k, v in self.__dict__.items():
+            if k == 'fn':
+                rval.fn = v
+            else:
+                rval.__dict__[k] = copy.deepcopy(v, memo)
+        memo[id(self)] = rval
+        return rval
 
     def __str__(self):
         return "Direct (id " + str(id(self)) + ")"
