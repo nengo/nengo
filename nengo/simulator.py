@@ -52,7 +52,6 @@ def are_aliased(a, b):
 
 
 def foo():
-    nxdg = networkx.DiGraph()
 
     operators = []
 
@@ -193,18 +192,7 @@ def foo():
             nxdg.add_edge(self.J, self)
             nxdg.add_edge(self, self.output)
 
-    class DGCLS(object):
-        @property
-        def operators(self):
-            return operators
-
-        @property
-        def dg(self):
-            return nxdg
-
-    DG = DGCLS()
-
-    return DG, SigBuf, Copy, DotInc, NonLin, Reset
+    return operators, SigBuf, Copy, DotInc, NonLin, Reset
 
 
 
@@ -317,7 +305,9 @@ def Simulator(*args):
 
     output_signals = {}
 
-    dg, SigBuf, Copy, DotInc, NonLin, Reset = foo()
+    nxdg = networkx.DiGraph()
+
+    operators, SigBuf, Copy, DotInc, NonLin, Reset = foo()
 
     # -- reset nonlinearities: bias -> input_current
     input_currents = {}
@@ -444,7 +434,7 @@ def Simulator(*args):
                #verbose=signals,
                tag='transform')
 
-    return Sim2(dg.operators, signals, dg.dg, output_signals, model)
+    return Sim2(operators, signals, nxdg, output_signals, model)
 
 
 class Sim2(object):
