@@ -135,9 +135,7 @@ class Reset(Operator):
         self.dst = dst
         self.value = float(value)
 
-        self.reads = []
         self.sets = [dst]
-        self.incs = []
 
     def __str__(self):
         return 'Reset(%s)' % str(self.dst)
@@ -161,7 +159,6 @@ class Copy(Operator):
 
         self.reads = [src]
         self.sets = [] if as_update else [dst]
-        self.incs = []
         self.updates = [dst] if as_update else []
 
     def __str__(self):
@@ -187,7 +184,6 @@ class DotInc(Operator):
         self.tag = tag
 
         self.reads = [self.A, self.X]
-        self.sets = []
         self.incs = [self.Y]
 
     def __str__(self):
@@ -231,7 +227,6 @@ class SimDirect(Operator):
 
         self.reads = [J]
         self.sets = [output]
-        self.incs = []
 
     def make_step(self, dct, dt):
         J = get_signal(dct, self.J)
@@ -253,7 +248,6 @@ class SimLIF(Operator):
 
         self.reads = [J]
         self.sets = [output]
-        self.incs = []
         self.updates = [self.voltage, self.refractory_time]
 
     def init_signals(self, signals, dt, dtype=np.float64):
@@ -276,6 +270,9 @@ class SimLIFRate(Operator):
         self.output = output
         self.J = J
         self.nl = nl
+
+        self.reads = [J]
+        self.sets = [output]
 
     def make_step(self, dct, dt):
         J = get_signal(dct, self.J)
