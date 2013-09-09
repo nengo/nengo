@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class Model(object):
-    """A model contains a vsingle network and the ability to
+    """A model contains a single network and the ability to
     run simulations of that network.
 
     Model is the first part of the API that modelers
@@ -49,8 +49,8 @@ class Model(object):
         so if the network creation code changes, the entire model changes.
     fixed_seed : int, optional
         Random number seed that will be fed to the random number generator
-        before each random process. Unlike setting ``seed``,
-        each new ensemble in the network will use ``fixed_seed``,
+        before each random process. Unlike setting `seed`,
+        each new ensemble in the network will use `fixed_seed`,
         meaning that ensembles with the same properties will have the same
         set of neurons generated.
 
@@ -206,6 +206,23 @@ class Model(object):
             c.build(model=model, dt=dt)
 
     def simulator(self, dt=0.001, sim_class=simulator.Simulator, **sim_args):
+        """Get a new simulator object for the model.
+
+        Parameters
+        ----------
+        dt : float, optional
+            Fundamental unit of time for the simulator, in seconds.
+        sim_class : child class of `Simulator`, optional
+            The class of simulator to be used.
+        **sim_args : optional
+            Arguments to pass to the simulator constructor.
+
+        Returns
+        -------
+        simulator : `sim_class`
+            A new simulator object, containing a copy of the model in its
+            current state.
+        """
         logger.info("Copying model")
         memo = {}
         modelcopy = copy.deepcopy(self, memo)
@@ -268,20 +285,20 @@ class Model(object):
         Parameters
         ----------
         target : string or Nengo object
-            The ``target`` can be specified with a string
+            The `target` can be specified with a string
             (see `string reference <string_reference.html>`_)
             or a Nengo object.
-            If a Nengo object is passed, ``get`` just confirms
-            that ``target`` is a part of the model.
+            If a Nengo object is passed, `get` just confirms
+            that `target` is a part of the model.
 
-        default : optional
-            If ``target`` is not in the model, then ``get`` will
-            return ``default``.
+        default : Nengo object, optional
+            If `target` is not in the model, then `get` will
+            return `default`.
 
         Returns
         -------
         target : Nengo object
-            The Nengo object specified by ``target``.
+            The Nengo object specified by `target`.
 
         """
         if isinstance(target, str):
@@ -300,26 +317,26 @@ class Model(object):
         Parameters
         ----------
         target : string or Nengo object
-            The ``target`` can be specified with a string
+            The `target` can be specified with a string
             (see `string reference <string_reference.html>`_)
             or a Nengo object.
-            If a string is passed, ``get_string`` returns
+            If a string is passed, `get_string` returns
             the canonical version of it; i.e., if it is
             an alias, the non-aliased version is returned.
 
-        default : optional
-            If ``target`` is not in the model, then ``get`` will
-            return ``default``.
+        default : Nengo object, optional
+            If `target` is not in the model, then `get` will
+            return `default`.
 
         Returns
         -------
         target : Nengo object
-            The Nengo object specified by ``target``.
+            The Nengo object specified by `target`.
 
         Raises
         ------
         ValueError
-            If the ``target`` does not exist and no ``default`` is specified.
+            If the `target` does not exist and no `default` is specified.
 
         """
         if isinstance(target, str):
@@ -391,14 +408,14 @@ class Model(object):
         Parameters
         ----------
         alias : str
-            The alias to assign to ``target``.
+            The alias to assign to `target`.
         target : str or Nengo object
             Identifies the Nengo object to be aliased.
 
         Raises
         ------
         ValueError
-            If ``target`` can't be found in the model.
+            If `target` can't be found in the model.
 
         """
         obj_s = self.get_string(target)
@@ -410,7 +427,7 @@ class Model(object):
 
     # Model creation methods
 
-    def make_ensemble(self, name, neurons, dimensions, **kwargs):
+    def make_ensemble(self, name, neurons, dimensions, **ensemble_kwargs):
         """Create and return an ensemble of neurons.
 
         The ensemble created by this function is automatically added to
@@ -424,13 +441,14 @@ class Model(object):
             Number of neurons in the ensemble.
         dimensions : int
             Number of dimensions that this ensemble will represent.
+        **ensemble_kwargs : optional
+            Additional arguments to pass to the `Ensemble` constructor
 
         See Also
         --------
         Ensemble : The Ensemble object
-
         """
-        ens = objects.Ensemble(name, neurons, dimensions, **kwargs)
+        ens = objects.Ensemble(name, neurons, dimensions, **ensemble_kwargs)
         return self.add(ens)
 
     def make_node(self, name, output):
@@ -444,14 +462,14 @@ class Model(object):
         output : function, list of floats, dict
             The output that should be generated by this node.
 
-            If ``output`` is a function, it will be called on each timestep;
+            If `output` is a function, it will be called on each timestep;
             if it accepts a single parameter, it will be given
             the current time of the simulation.
 
-            If ``output`` is a list of floats, that list will be
+            If `output` is a list of floats, that list will be
             used as constant output.
 
-            If ``output`` is a dict, the output defines a piece-wise constant
+            If `output` is a dict, the output defines a piece-wise constant
             function in which the keys define when the value changes,
             and the values define what the value changes to.
 
@@ -473,27 +491,27 @@ class Model(object):
         return self.add(node)
 
     def connect(self, pre, post, **kwargs):
-        """Connect ``pre`` to ``post``.
+        """Connect `pre` to `post`.
 
         Parameters
         ----------
         pre, post : str or Nengo object
             The items to connect.
-            ``pre`` and ``post`` can be strings that identify a Nengo object
+            `pre` and `post` can be strings that identify a Nengo object
             (see `string reference <string_reference.html>`_), or they
             can be the Nengo objects themselves.
 
         function : Python function, optional
             The function that this connection will compute.
             This function takes as input the vector being represented by
-            ``pre``, and returns another vector which will be
-            projected to ``post``.
-            If ``function`` is not specified, by default the
+            `pre`, and returns another vector which will be
+            projected to `post`.
+            If `function` is not specified, by default the
             identity function will be used (i.e., the function returns
             the same vector that it takes as input;
             :math:`f(\mathbf{x}) = \mathbf{x}`).
-            The function takes a single parameter ``x``,
-            which is the current value of the ``pre`` ensemble,
+            The function takes a single parameter `x`,
+            which is the current value of the `pre` ensemble,
             and must return a float (for one-dimensional functions) or
             a list of floats.
 
@@ -514,14 +532,14 @@ class Model(object):
             **Default**: the ``identity`` function
             (:math:`f(x) = x`).
 
-        transform : float matrix (``function`` dims by ``post`` dims), optional
-            A matrix that maps the computed function onto ``post``.
-            Its dimensionality is ``function`` output dimensions
-            by ``post`` dimensions. If ``transform`` is not specified,
+        transform : array_like (`function` dims by `post` dims), optional
+            A matrix that maps the computed function onto `post`.
+            Its dimensionality is `function` output dimensions
+            by `post` dimensions. If `transform` is not specified,
             the identity matrix will be used. This mainly makes sense
-            when the dimensionality of the ``function`` output
-            is exactly the dimensionality of ``post``; if this isn't true,
-            then you should probably explicitly define ``transform``.
+            when the dimensionality of the `function` output
+            is exactly the dimensionality of `post`; if this isn't true,
+            then you should probably explicitly define `transform`.
 
             The following simple example passes through the values
             represented by a 2-dimensional ensemble to
@@ -553,14 +571,14 @@ class Model(object):
             **Default**: an identity matrix.
 
         filter : dict, optional
-            ``filter`` contains information about the type of filter
+            `filter` contains information about the type of filter
             to use across this connection.
 
             **Default**: specifies an exponentially decaying filter
             with ``tau=0.01``.
 
         learning_rule : dict, optional
-            ``learning_rule`` contains information about the type of
+            `learning_rule` contains information about the type of
             learning rule that modifies this connection.
 
             **Default**: None
@@ -572,8 +590,7 @@ class Model(object):
 
         See Also
         --------
-        Connection : The Connection object
-
+        Connection
         """
         pre = self.get(pre)
         post = self.get(post)
@@ -606,15 +623,15 @@ class Model(object):
 
             Some types of data (e.g. connection weight matrices)
             are very large, and change relatively slowly.
-            Use ``sample_every`` to limit the amount of data
+            Use `sample_every` to limit the amount of data
             being recorded. For example::
 
               model.probe('A>B.weights', sample_every=0.5)
 
             records the value of the weight matrix between
-            the ``A`` and ``B`` ensembles every 0.5 simulated seconds.
+            the `A` and `B` ensembles every 0.5 simulated seconds.
 
-            **Default**: Every timestep (i.e., ``dt``).
+            **Default**: Every timestep (i.e., `dt`).
         static : bool, optional
             Denotes if a piece of data does not change.
 
@@ -624,10 +641,13 @@ class Model(object):
             (e.g., number of neurons or connections) or the random seed
             associated with a model. In these cases, to record that data
             only once (for later being written to a file),
-            set ``static`` to True.
+            set `static` to True.
 
             **Default**: False
 
+        See Also
+        --------
+        Probe
         """
         if core.is_signal(target):
             if filter is not None:

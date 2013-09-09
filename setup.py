@@ -19,7 +19,7 @@ setup(
     version="0.1.0",
     author="CNRGlab at UWaterloo",
     author_email="celiasmith@uwaterloo.ca",
-    packages=['nengo'],
+    packages=['nengo', 'nengo.templates', 'nengo.tests'],
     scripts=[],
     url="https://github.com/ctn-waterloo/nengo",
     license="LICENSE.rst",
