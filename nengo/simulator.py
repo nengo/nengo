@@ -87,10 +87,10 @@ def foo():
         def __str__(self):
             return 'Reset(%s)' % str(self.dst)
 
-        def make_thunk(self, dct):
-            def thunk():
+        def make_step(self, dct):
+            def step():
                 get_signal(dct, self.dst.sig)[...] = self.value
-            return thunk
+            return step
 
         def add_edges(self, dg):
             dg.add_edge(self, self.dst)
@@ -111,11 +111,11 @@ def foo():
         def __str__(self):
             return 'Copy(%s -> %s)' % (str(self.src), str(self.dst))
 
-        def make_thunk(self, dct):
-            def thunk():
+        def make_step(self, dct):
+            def step():
                 get_signal(dct, self.dst.sig)[...] = get_signal(dct,
                         self.src.sig)
-            return thunk
+            return step
 
         def add_edges(self, dg):
             dg.add_edge(self.src, self)
@@ -140,13 +140,13 @@ def foo():
             return 'DotInc(%s, %s -> %s "%s")' % (
                     str(self.A), str(self.X), str(self.Y), self.tag)
 
-        def make_thunk(self, dct):
-            def thunk():
+        def make_step(self, dct):
+            def step():
                 X = get_signal(dct, self.X.sig)
                 dot_inc(get_signal(dct, self.A.sig),
                         X.T if self.xT else X,
                         get_signal(dct, self.Y.sig))
-            return thunk
+            return step
 
         def add_edges(self, dg):
             dg.add_edge(self.A, self)
@@ -167,13 +167,13 @@ def foo():
             self.sets = [output]
             self.incs = []
 
-        def make_thunk(self, dct):
-            def thunk():
+        def make_step(self, dct):
+            def step():
                 self.nl.step(
                     dt=self.dt,
                     J=get_signal(dct, self.J.sig),
                     output=get_signal(dct, self.output.sig))
-            return thunk
+            return step
 
         def add_edges(self, dg):
             dg.add_edge(self.J, self)
@@ -421,11 +421,11 @@ class Sim2(object):
         self._output_signals = _output_signals
         self.model = model
         self.dg = self._init_dg(operators)
-        self._thunk_order = [node
+        self._step_order = [node
             for node in networkx.topological_sort(self.dg)
-            if hasattr(node, 'make_thunk')]
-        self._thunks = [node.make_thunk(self._signals)
-            for node in self._thunk_order]
+            if hasattr(node, 'make_step')]
+        self._steps = [node.make_step(self._signals)
+            for node in self._step_order]
         self.n_steps = 0
         self.probe_outputs = dict((probe, []) for probe in model.probes)
 
@@ -501,8 +501,8 @@ class Sim2(object):
         return Accessor()
 
     def step(self):
-        for fn in self._thunks:
-            fn()
+        for step_fn in self._steps:
+            step_fn()
 
         for k, v in self._output_signals.items():
             self._signals[k][...] = v
