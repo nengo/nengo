@@ -88,6 +88,44 @@ class Operator(object):
         collect_operators_into.collect_operator(rval)
         return rval
 
+    #
+    # The lifetime of a Signal during one simulator timestep:
+    # 0) at most one set operator (optional) 
+    # 1) any number of increments
+    # 2) any number of reads
+    # 3) at most one update
+    #
+    # A signal that is only read can be considered a "constant"
+    #
+    # A signal that is both set *and* updated can be a problem: since
+    # reads must come after the set, and the set will destroy
+    # whatever were the contents of the update, it can be the case
+    # that the update is completely hidden and rendered irrelevant.
+    # There are however at least two reasons to use both a set and an update:
+    # (a) to use a signal as scratch space (updating means destroying it)
+    # (b) to use sets and updates on partly overlapping views of the same
+    #     memory.
+    #
+
+    # -- Signals that are read and not modified by this operator
+    reads = []
+    # -- Signals that are only assigned by this operator
+    sets = []
+    # -- Signals that are incremented by this operator
+    incs = []
+    # -- Signals that are updated to their [t + 1] value.
+    #    After this operator runs, these signals cannot be
+    #    used for reads until the next time step.
+    updates = []
+
+
+    def init_signals(self, signals, dt):
+        """
+        Install any buffers into the signals view that
+        this operator will need. Classes for nonlinearities
+        that use extra buffers should create them here.
+        """
+
 
 class Reset(Operator):
     """
@@ -104,8 +142,8 @@ class Reset(Operator):
     def __str__(self):
         return 'Reset(%s)' % str(self.dst)
 
-    def make_step(self, dct):
-        target = get_signal(dct, self.dst)
+    def make_step(self, signals, dt):
+        target = get_signal(signals, self.dst)
         value = self.value
         def step():
             target[...] = value
@@ -116,19 +154,20 @@ class Copy(Operator):
     """
     Assign the value of one signal to another
     """
-    def __init__(self, dst, src, tag=None):
+    def __init__(self, dst, src, as_update=False, tag=None):
         self.dst = dst
         self.src = src
         self.tag = tag
 
         self.reads = [src]
-        self.sets = [dst]
+        self.sets = [] if as_update else [dst]
         self.incs = []
+        self.updates = [dst] if as_update else []
 
     def __str__(self):
         return 'Copy(%s -> %s)' % (str(self.src), str(self.dst))
 
-    def make_step(self, dct):
+    def make_step(self, dct, dt):
         dst = get_signal(dct, self.dst)
         src = get_signal(dct, self.src)
         def step():
@@ -155,7 +194,7 @@ class DotInc(Operator):
         return 'DotInc(%s, %s -> %s "%s")' % (
                 str(self.A), str(self.X), str(self.Y), self.tag)
 
-    def make_step(self, dct):
+    def make_step(self, dct, dt):
         X = get_signal(dct, self.X)
         A = get_signal(dct, self.A)
         Y = get_signal(dct, self.Y)
@@ -180,53 +219,76 @@ class DotInc(Operator):
         return step
 
 
-class NonLin(Operator):
+class SimDirect(Operator):
     """
     Set signal `output` by some non-linear function of J (and possibly other
     things too.)
     """
-    def __init__(self, output, J, nl, dt):
+    def __init__(self, output, J, fn):
         self.output = output
         self.J = J
-        self.nl = nl
-        self.dt = dt
+        self.fn = fn
 
         self.reads = [J]
         self.sets = [output]
         self.incs = []
 
-    def make_step(self, dct):
+    def make_step(self, dct, dt):
+        dct = self.signals
         J = get_signal(dct, self.J)
         output = get_signal(dct, self.output)
+        fn = self.fn
         def step():
-            self.nl.step(dt=self.dt, J=J, output=output)
+            output[...] = fn(J)
         return step
 
 
-class SimDirect(object):
-    def __init__(self, nl):
+class SimLIF(Operator):
+    def __init__(self, output, J, nl):
+        self.nl = nl
+        self.output = output
+        self.J = J
+
+        self.voltage = Signal(nl.n_in)
+        self.refractory_time = Signal(nl.n_in)
+
+        self.reads = [J, self.voltage, self.refractory_time]
+        self.sets = [output]
+        self.incs = []
+        self.updates = [self.voltage, self.refractory_time]
+
+        # XXX where should dtype come from?
+        # XXX how to not initialize signals so soon?
+
+    def init_signals(self, signals, dt):
+        signals[self.voltage] = np.zeros(self.nl.n_in)
+        signals[self.refractory_time] = np.zeros(self.nl.n_in)
+
+    def make_step(self, dct, dt):
+        J = get_signal(dct, self.J)
+        output = get_signal(dct, self.output)
+        v = get_signal(dct, self.voltage)
+        rt = get_signal(dct, self.refractory_time)
+        fn = self.nl.step_math0
+        def step():
+            fn(dt, J, v, rt, output)
+        return step
+
+
+class SimLIFRate(Operator):
+    def __init__(self, output, J, nl):
+        self.output = output
+        self.J = J
         self.nl = nl
 
-    def step(self, dt, J, output):
-        output[...] = self.nl.fn(J)
-
-
-class SimLIF(object):
-    def __init__(self, nl):
-        self.nl = nl
-        self.voltage = np.zeros(nl.n_in)
-        self.refractory_time = np.zeros(nl.n_in)
-
-    def step(self, dt, J, output):
-        self.nl.step_math0(dt, J, self.voltage, self.refractory_time, output)
-
-
-class SimLIFRate(object):
-    def __init__(self, nl):
-        self.nl = nl
-
-    def step(self, dt, J, output):
-        output[:] = dt * self.nl.rates(J - self.nl.bias)
+    def make_step(self, dct, dt):
+        J = get_signal(dct, self.J)
+        output = get_signal(dct, self.output)
+        rates_fn = self.nl.rates
+        bias = self.nl.bias
+        def step():
+            output[...] = dt * rates_fn(J - bias)
+        return step
 
 
 registry = {
@@ -258,9 +320,6 @@ def Simulator(*args):
             if sig.base == sig:
                 signals[sig] = np.zeros(sig.n)
 
-    for pop in model.nonlinearities:
-        nonlinearities[pop] = registry[pop.__class__](pop)
-
     output_signals = {}
     operators = []
     with collect_operators_into(operators):
@@ -274,8 +333,7 @@ def Simulator(*args):
                                    name=nl.input_signal.name + '-incur')
             signals[input_current] = np.zeros(nl.input_signal.n)
             input_currents[nl.input_signal] = input_current
-            Copy(input_current,
-                 nl.bias_signal)
+            Copy(input_current, nl.bias_signal)
 
         # -- encoders: signals -> input current
         #    (N.B. this includes neuron -> neuron connections)
@@ -288,15 +346,15 @@ def Simulator(*args):
         # -- population dynamics
         output_currents = {}
         for nl in model.nonlinearities:
-            pop = nonlinearities[nl]
             output_current = Signal(nl.output_signal.n,
                                    name=nl.output_signal.name + '-outcur')
             signals[output_current] = np.zeros(nl.output_signal.n)
             output_currents[nl.output_signal] = output_current
-            NonLin(output=output_current,
+            nl_cls = registry[nl.__class__]
+            nl_op = nl_cls(output=output_current,
                    J=input_currents[nl.input_signal],
-                   nl=pop,
-                   dt=model.dt)
+                   nl=nl)
+            nl_op.init_signals(signals, model.dt)
 
         # -- decoders: population output -> signals_tmp
         decoder_outputs = {}
@@ -395,7 +453,7 @@ class Sim2(object):
         self._step_order = [node
             for node in networkx.topological_sort(self.dg)
             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self._signals)
+        self._steps = [node.make_step(self._signals, self.model.dt)
             for node in self._step_order]
         self.n_steps = 0
         self.probe_outputs = dict((probe, []) for probe in model.probes)
