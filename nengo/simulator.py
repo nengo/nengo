@@ -34,12 +34,11 @@ def foo():
             return 'Reset(%s)' % str(self.dst)
 
         def make_step(self, dct):
+            target = get_signal(dct, self.dst)
+            value = self.value
             def step():
-                get_signal(dct, self.dst)[...] = self.value
+                target[...] = value
             return step
-
-        def add_edges(self, dg):
-            dg.add_edge(self, self.dst)
 
 
     class Copy(object):
@@ -58,14 +57,11 @@ def foo():
             return 'Copy(%s -> %s)' % (str(self.src), str(self.dst))
 
         def make_step(self, dct):
+            dst = get_signal(dct, self.dst)
+            src = get_signal(dct, self.src)
             def step():
-                get_signal(dct, self.dst)[...] = get_signal(dct,
-                        self.src)
+                dst[...] = src
             return step
-
-        def add_edges(self, dg):
-            dg.add_edge(self.src, self)
-            dg.add_edge(self, self.dst)
 
 
     class DotInc(object):
@@ -87,17 +83,12 @@ def foo():
                     str(self.A), str(self.X), str(self.Y), self.tag)
 
         def make_step(self, dct):
+            X = get_signal(dct, self.X)
+            A = get_signal(dct, self.A)
+            Y = get_signal(dct, self.Y)
             def step():
-                X = get_signal(dct, self.X)
-                dot_inc(get_signal(dct, self.A),
-                        X.T if self.xT else X,
-                        get_signal(dct, self.Y))
+                dot_inc(A, X.T if self.xT else X, Y)
             return step
-
-        def add_edges(self, dg):
-            dg.add_edge(self.A, self)
-            dg.add_edge(self.X, self)
-            dg.add_edge(self, self.Y)
 
 
     class NonLin(object):
@@ -114,16 +105,11 @@ def foo():
             self.incs = []
 
         def make_step(self, dct):
+            J = get_signal(dct, self.J)
+            output = get_signal(dct, self.output)
             def step():
-                self.nl.step(
-                    dt=self.dt,
-                    J=get_signal(dct, self.J),
-                    output=get_signal(dct, self.output))
+                self.nl.step(dt=self.dt, J=J, output=output)
             return step
-
-        def add_edges(self, dg):
-            dg.add_edge(self.J, self)
-            dg.add_edge(self, self.output)
 
     return operators, Copy, DotInc, NonLin, Reset
 
@@ -379,7 +365,8 @@ class Sim2(object):
         dg = networkx.DiGraph()
 
         for op in operators:
-            op.add_edges(dg)
+            dg.add_edges_from(itertools.product(op.reads, [op]))
+            dg.add_edges_from(itertools.product([op], op.sets + op.incs))
 
         # -- all views of a base object in a particular dictionary
         by_base_writes = defaultdict(list)
