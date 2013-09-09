@@ -6,12 +6,6 @@ except ImportError:
 import os
 import os.path
 
-try:
-    # For Python >=3.3
-    from unittest.mock import Mock
-except:
-    from mock import Mock
-
 import numpy as np
 
 import nengo.simulator
@@ -121,6 +115,24 @@ class NengoTestLoader(unittest.TestLoader):
 class Plotter(object):
     plot = int(os.getenv("NENGO_TEST_PLOT", 0))
 
+    class Mock(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __call__(self, *args, **kwargs):
+            return Plotter.Mock()
+
+        @classmethod
+        def __getattr__(cls, name):
+            if name in ('__file__', '__path__'):
+                return '/dev/null'
+            elif name[0] == name[0].upper():
+                mockType = type(name, (), {})
+                mockType.__module__ = __name__
+                return mockType
+            else:
+                return Plotter.Mock()
+
     def __init__(self, simulator):
         self.dirname = simulator.__module__ + ".plots"
 
@@ -134,7 +146,7 @@ class Plotter(object):
             self.oldsavefig = self.plt.savefig
             self.plt.savefig = self.savefig
         else:
-            self.plt = Mock()
+            self.plt = Plotter.Mock()
         return self.plt
 
     def __exit__(self, type, value, traceback):
