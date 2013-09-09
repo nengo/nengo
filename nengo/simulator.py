@@ -395,12 +395,18 @@ class BaseSimulator(object):
                     return self._signals[item]
                 except KeyError, e:
                     try:
-                        return self._signals[self.model.memo[id(item)]]
+                        return self._signals[self.copied(item)]
                     except KeyError:
                         raise e  # -- re-raise the original KeyError
 
             def __setitem__(_, item, val):
-                self._signals[item][...] = val
+                try:
+                    self._signals[item][...] = val
+                except KeyError, e:
+                    try:
+                        self._signals[self.copied(item)][...] = val
+                    except KeyError:
+                        raise e  # -- re-raise the original KeyError
 
             def __iter__(_):
                 return self._signals.__iter__()
