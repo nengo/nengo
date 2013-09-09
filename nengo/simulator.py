@@ -355,13 +355,22 @@ def Simulator(*args):
     # -- decoders: population output -> signals_tmp
     decoder_outputs = {}
     for dec in model.decoders:
-        sig = Signal(dec.sig.n, name=dec.sig.name + '-dec')
-        signals[sig] = np.zeros(dec.sig.n)
-        decoder_outputs[dec.sig] = sig
-        Reset(SigBuf(signals, sig))
+        if dec.sig.base not in decoder_outputs:
+            sigbase = Signal(dec.sig.base.n,
+                             name=dec.sig.name + '-decbase')
+            signals[sigbase] = np.zeros(sigbase.n)
+            decoder_outputs[dec.sig.base] = sigbase
+        else:
+            sigbase = decoder_outputs[dec.sig.base]
+        if is_view(dec.sig):
+            dec_sig = dec.sig.view_like_self_of(sigbase)
+        else:
+            dec_sig = sigbase
+        decoder_outputs[dec.sig] = dec_sig
+        Reset(SigBuf(signals, dec_sig))
         DotInc(SigBuf(signals, output_currents[dec.pop.output_signal]),
                SigBuf(signals, dec.weights_signal),
-               SigBuf(signals, sig),
+               SigBuf(signals, dec_sig),
                xT=True)
 
     # -- set up output buffers
@@ -372,10 +381,12 @@ def Simulator(*args):
             output_stuff[filt.newsig.base] = Signal(
                 filt.newsig.base.n,
                 name=filt.newsig.base.name + '-out')
+            #print 'setup F output signal', filt.newsig, output_stuff[filt.newsig.base]
             output_signals[filt.newsig.base] = np.zeros(filt.newsig.base.n)
             signals[output_stuff[filt.newsig.base]] = output_signals[filt.newsig.base]
             Reset(SigBuf(signals, output_stuff[filt.newsig.base]))
         if is_view(filt.newsig):
+            #print 'setup F view', filt.newsig, filt.newsig.base
             output_stuff[filt.newsig] = filt.newsig.view_like_self_of(
                 output_stuff[filt.newsig.base])
         assert filt.newsig in output_stuff
@@ -384,11 +395,13 @@ def Simulator(*args):
             output_stuff[tf.outsig.base] = Signal(
                 tf.outsig.base.n,
                 name=tf.outsig.base.name + '-out')
+            #print 'setup T output signal', tf.outsig, output_stuff[tf.outsig.base]
             output_signals[tf.outsig.base] = np.zeros(tf.outsig.base.n)
             signals[output_stuff[tf.outsig.base]] = output_signals[tf.outsig.base]
             Reset(SigBuf(signals, output_stuff[tf.outsig.base]))
         if is_view(tf.outsig):
-            output_stuff[tf.outsig] = filt.newsig.view_like_self_of(
+            #print 'setup T view', tf.outsig, tf.outsig.base
+            output_stuff[tf.outsig] = tf.outsig.view_like_self_of(
                 output_stuff[tf.outsig.base])
         assert tf.outsig in output_stuff
 
@@ -408,9 +421,9 @@ def Simulator(*args):
     # -- transforms: signals_tmp -> signals
     for tf in model.transforms:
         #print 'Transform!', tf
-        print tf
-        print tf.insig, id(tf.insig)
-        print tf.outsig, id(tf.outsig)
+        #print tf
+        #print tf.insig, id(tf.insig)
+        #print tf.outsig, id(tf.outsig)
         try:
             insig = decoder_outputs[tf.insig]
         except KeyError:
@@ -424,7 +437,7 @@ def Simulator(*args):
                 else:
                     raise Exception('what is going on?')
 
-        print output_stuff[tf.outsig]
+        #print output_stuff[tf.outsig]
         DotInc(SigBuf(signals, tf.alpha_signal),
                SigBuf(signals, insig),
                SigBuf(signals, output_stuff[tf.outsig]),

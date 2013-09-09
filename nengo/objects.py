@@ -392,7 +392,7 @@ class SignalView(object):
         if newbase.base != newbase:
             raise NotImplementedError()
         if newbase.structure != self.base.structure:
-            raise NotImplementedError('probably ok but worth thinking about',
+            raise NotImplementedError('technically ok but should not happen',
                                      (self.base, newbase))
         return SignalView(newbase,
                           self.shape,
