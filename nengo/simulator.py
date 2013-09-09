@@ -45,9 +45,6 @@ class SignalDict(dict):
         else:
             raise KeyError(obj)
 
-def get_signal(dct, obj):
-    return dct[obj]
-
 
 class collect_operators_into(object):
     lists = []
@@ -144,7 +141,7 @@ class Reset(Operator):
         return 'Reset(%s)' % str(self.dst)
 
     def make_step(self, signals, dt):
-        target = get_signal(signals, self.dst)
+        target = signals[self.dst]
         value = self.value
         def step():
             target[...] = value
@@ -168,8 +165,8 @@ class Copy(Operator):
         return 'Copy(%s -> %s)' % (str(self.src), str(self.dst))
 
     def make_step(self, dct, dt):
-        dst = get_signal(dct, self.dst)
-        src = get_signal(dct, self.src)
+        dst = dct[self.dst]
+        src = dct[self.src]
         def step():
             dst[...] = src
         return step
@@ -194,9 +191,9 @@ class DotInc(Operator):
                 str(self.A), str(self.X), str(self.Y), self.tag)
 
     def make_step(self, dct, dt):
-        X = get_signal(dct, self.X)
-        A = get_signal(dct, self.A)
-        Y = get_signal(dct, self.Y)
+        X = dct[self.X]
+        A = dct[self.A]
+        Y = dct[self.Y]
         X = X.T if self.xT else X
         def step():
             # -- we check for size mismatch,
@@ -232,8 +229,8 @@ class SimDirect(Operator):
         self.sets = [output]
 
     def make_step(self, dct, dt):
-        J = get_signal(dct, self.J)
-        output = get_signal(dct, self.output)
+        J = dct[self.J]
+        output = dct[self.output]
         fn = self.fn
         def step():
             output[...] = fn(J)
@@ -258,10 +255,10 @@ class SimLIF(Operator):
         signals[self.refractory_time] = np.zeros(self.nl.n_in, dtype=dtype)
 
     def make_step(self, dct, dt):
-        J = get_signal(dct, self.J)
-        output = get_signal(dct, self.output)
-        v = get_signal(dct, self.voltage)
-        rt = get_signal(dct, self.refractory_time)
+        J = dct[self.J]
+        output = dct[self.output]
+        v = dct[self.voltage]
+        rt = dct[self.refractory_time]
         fn = self.nl.step_math0
         def step():
             fn(dt, J, v, rt, output)
@@ -278,8 +275,8 @@ class SimLIFRate(Operator):
         self.sets = [output]
 
     def make_step(self, dct, dt):
-        J = get_signal(dct, self.J)
-        output = get_signal(dct, self.output)
+        J = dct[self.J]
+        output = dct[self.output]
         rates_fn = self.nl.rates
         bias = self.nl.bias
         def step():
@@ -406,7 +403,7 @@ class BaseSimulator(object):
         for probe in self.model.probes:
             period = int(probe.dt / self.model.dt)
             if self.n_steps % period == 0:
-                tmp = get_signal(self._signals, probe.sig).copy()
+                tmp = self._signals[probe.sig].copy()
                 self.probe_outputs[probe].append(tmp)
 
         self.n_steps += 1
