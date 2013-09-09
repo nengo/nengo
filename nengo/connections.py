@@ -322,14 +322,15 @@ class DecodedNeuronConnection(object):
         if self.decoders is None:
             activities = self.pre.activities(self.eval_points) * dt
             if self.function is None:
-                targets = self.eval_points.T
+                targets = self.eval_points
             else:
                 targets = np.array(
-                    [self.function(ep) for ep in self.eval_points.T])
+                    [self.function(ep) for ep in self.eval_points])
                 if len(targets.shape) < 2:
                     targets.shape = targets.shape[0], 1
             decoders = decsolve.solve_decoders(activities, targets)
         else:
+            # XXX something's happening here... what it is ain't exactly clear
             decoders = self.decoder
         self.decoder = core.Decoder(
             sig=self.signal, pop=self.pre.neurons,

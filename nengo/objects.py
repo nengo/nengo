@@ -37,34 +37,34 @@ class Gaussian(object):
 
 
 class Ensemble(object):
-    """A collection of neurons that collectively represent a vector.
+    """A group of neurons that collectively represent a vector.
+
+    Parameters
+    ----------
+    name : str
+        An arbitrary name for the new ensemble.
+    neurons : Nonlinearity
+        The neuron model. This object defines both the
+        number and type of neurons.
+    dimensions : int
+        The number of representational dimensions
+    **kwargs
+        Can contain any attribute.
 
     Attributes
     ----------
-    name
-    neurons
     dimensions
-
     encoders
     eval_points
-    intercepts
-    max_rates
+    n_neurons
+    neurons
     radius
     seed
-
-    connections_in : type
-        description
-    connections_out : type
-        description
-    probes : type
-        description
-
     """
 
     EVAL_POINTS = 500
 
     def __init__(self, name, neurons, dimensions, **kwargs):
-        """Note: kwargs can contain any attribute; see class docstring."""
         self.name = name
         self.neurons = neurons
         self.dimensions = dimensions
@@ -94,7 +94,12 @@ class Ensemble(object):
 
     @property
     def dimensions(self):
-        """TODO"""
+        """The number of representational dimensions.
+
+        Returns
+        -------
+        ~ : int
+        """
         return self._dimensions
 
     @dimensions.setter
@@ -104,7 +109,16 @@ class Ensemble(object):
 
     @property
     def encoders(self):
-        """TODO"""
+        """The encoders, used to transform from representational space
+        to neuron space.
+
+        Each row is a neuron's encoder, each column is a representational
+        dimension.
+
+        Returns
+        -------
+        ~ : ndarray (`n_neurons`, `dimensions`)
+        """
         return self._encoders
 
     @encoders.setter
@@ -120,7 +134,12 @@ class Ensemble(object):
 
     @property
     def eval_points(self):
-        """TODO"""
+        """The evaluation points used for decoder solving.
+
+        Returns
+        -------
+        ~ : ndarray (n_eval_points, `dimensions`)
+        """
         if self._eval_points is None:
             self._eval_points = decoders.sample_hypersphere(
                 self.dimensions, Ensemble.EVAL_POINTS, self.rng) * self.radius
@@ -130,18 +149,28 @@ class Ensemble(object):
     def eval_points(self, _eval_points):
         if _eval_points is not None:
             _eval_points = np.asarray(_eval_points)
-            if len(_eval_points.shape) == 1:
-                _eval_points.shape = (1, _eval_points.shape[0])
+            if _eval_points.ndim == 1:
+                _eval_points.shape = (-1, 1)
         self._eval_points = _eval_points
 
     @property
     def n_neurons(self):
-        """TODO"""
+        """The number of neurons in the ensemble.
+
+        Returns
+        -------
+        ~ : int
+        """
         return self.neurons.n_neurons
 
     @property
     def neurons(self):
-        """TODO"""
+        """The neurons that make up the ensemble.
+
+        Returns
+        -------
+        ~ : Nonlinearity
+        """
         return self._neurons
 
     @neurons.setter
@@ -158,7 +187,12 @@ class Ensemble(object):
 
     @property
     def radius(self):
-        """TODO"""
+        """The representational radius of the ensemble.
+
+        Returns
+        -------
+        ~ : float
+        """
         return self._radius
 
     @radius.setter
@@ -168,7 +202,12 @@ class Ensemble(object):
 
     @property
     def seed(self):
-        """TODO"""
+        """The seed used for random number generation.
+
+        Returns
+        -------
+        ~ : int
+        """
         return self._seed
 
     @seed.setter
@@ -178,13 +217,40 @@ class Ensemble(object):
         self.eval_points = None  #Invalidate possibly cached eval_points
 
     def activities(self, eval_points=None):
+        """Determine the neuron firing rates at the given points.
+
+        Parameters
+        ----------
+        eval_points : array_like (n_points, `self.dimensions`), optional
+            The points at which to measure the firing rates
+            (``None`` uses `self.eval_points`).
+
+        Returns
+        -------
+        activities : array (n_points, `self.n_neurons`)
+            Firing rates (in Hz) for each neuron at each point.
+        """
         if eval_points is None:
             eval_points = self.eval_points
 
         return self.neurons.rates(
-            np.dot(self.encoder.weights, eval_points).T)
+            np.dot(eval_points, self.encoder.weights.T))
 
     def connect_to(self, post, **kwargs):
+        """Connect this ensemble to another object.
+
+        Parameters
+        ----------
+        post : model object
+            The connection's target destination.
+        **kwargs : optional
+            Arguments for the new DecodedNeuronConnection.
+
+        Returns
+        -------
+        connection : DecodedNeuronConnection
+            The new connection object.
+        """
         connection = connections.DecodedNeuronConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
@@ -192,13 +258,36 @@ class Ensemble(object):
         return connection
 
     def probe(self, to_probe='decoded_output', sample_every=0.001, filter=0.01):
+        """Probe a signal in this ensemble.
+
+        Parameters
+        ----------
+        to_probe : {'decoded_output'}, optional
+            The signal to probe.
+        sample_every : float, optional
+            The sampling period, in seconds.
+        filter : float, optional
+            The low-pass filter time constant of the probe, in seconds.
+
+        Returns
+        -------
+        probe : Probe
+            The new Probe object.
+        """
         if to_probe == 'decoded_output':
             probe = Probe(self.name + '.decoded_output', sample_every)
             self.connect_to(probe, filter=filter)
             self.probes['decoded_output'].append(probe)
+        else:
+            raise NotImplementedError(
+                "Probe target '%s' is not probable" % to_probe)
         return probe
 
     def build(self, model, dt, signal=None):
+        """Prepare this ensemble for simulation.
+
+        Called automatically by `model.build`.
+        """
         # Set up signal
         if signal is None:
             self.signal = core.Signal(n=self.dimensions,
@@ -223,7 +312,7 @@ class Ensemble(object):
         if self.encoders is None:
             encoders = decoders.sample_hypersphere(self.dimensions,
                                                    self.neurons.n_neurons,
-                                                   self.rng, surface=True).T
+                                                   self.rng, surface=True)
         else:
             encoders = np.asarray(self.encoders, copy=True)
             norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
@@ -300,14 +389,22 @@ class Node(object):
     that cannot be generated by a brain model alone.
     Nodes are also useful to test models in various situations.
 
+
+    Parameters
+    ----------
+    name : str
+        An arbitrary name for the object.
+    output : callable
+        Function that transforms the Node inputs into outputs.
+    dimensions : int, optional
+        The number of input dimensions.
+
     Attributes
     ----------
-    name : type
-        description
-    output
-    dimensions : type
-        description
-
+    name : str
+        The name of the object.
+    dimensions : int
+        The number of input dimensions.
     """
 
     def __init__(self, name, output, dimensions=1):
@@ -326,6 +423,7 @@ class Node(object):
         return "Node: " + self.name
 
     def connect_to(self, post, **kwargs):
+        """TODO"""
         connection = connections.DecodedConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
@@ -333,6 +431,7 @@ class Node(object):
         return connection
 
     def probe(self, to_probe='output', sample_every=0.001, filter=None):
+        """TODO"""
         if to_probe == 'output':
             p = Probe(self.name + ".output", sample_every)
             self.connect_to(p, filter=filter)
@@ -340,6 +439,7 @@ class Node(object):
         return p
 
     def build(self, model, dt):
+        """TODO"""
         # Set up signals
         self.signal = core.Signal(self.dimensions,
                                   name=self.name + ".signal")
@@ -369,6 +469,20 @@ class Probe(object):
     It is used as a target for a connection so that probe logic can
     reuse connection logic.
 
+    Parameters
+    ----------
+    name : str
+        An arbitrary name for the object.
+    sample_every : float
+        Sampling period in seconds.
+    dimensions : int, optional
+        Number of dimensions.
+
+    Attributes
+    ----------
+    connections_in : list
+        List of incoming connections.
+    sample_rate
     """
     def __init__(self, name, sample_every, dimensions=None):
         self.name = "Probe(" + name + ")"
@@ -379,9 +493,12 @@ class Probe(object):
 
     @property
     def sample_rate(self):
+        """TODO"""
         return 1.0 / self.sample_every
 
     def build(self, model, dt):
+        """TODO"""
+
         # Set up signal
         self.signal = core.Signal(n=self.dimensions, name=self.name)
         model.add(self.signal)

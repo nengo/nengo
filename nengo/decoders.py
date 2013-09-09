@@ -23,7 +23,7 @@ def sample_hypersphere(dimensions, n_samples, rng, surface=False):
     samples /= np.sqrt(norm)[:, np.newaxis]
 
     if surface:
-        return samples.T
+        return samples
 
     # generate magnitudes for vectors from uniform distribution
     scale = rng.rand(n_samples, 1) ** (1.0 / dimensions)
@@ -31,7 +31,7 @@ def sample_hypersphere(dimensions, n_samples, rng, surface=False):
     # scale sample points
     samples *= scale
 
-    return samples.T
+    return samples
 
 # def gen_eval_points(n, d, radius=1.0, method='uniform'):
 #     """Various methods for randomly generating evaluation points.
