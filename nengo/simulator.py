@@ -224,17 +224,16 @@ class SimDirect(Operator):
     Set signal `output` by some non-linear function of J (and possibly other
     things too.)
     """
-    def __init__(self, output, J, fn):
+    def __init__(self, output, J, nl):
         self.output = output
         self.J = J
-        self.fn = fn
+        self.fn = nl.fn
 
         self.reads = [J]
         self.sets = [output]
         self.incs = []
 
     def make_step(self, dct, dt):
-        dct = self.signals
         J = get_signal(dct, self.J)
         output = get_signal(dct, self.output)
         fn = self.fn
@@ -252,7 +251,7 @@ class SimLIF(Operator):
         self.voltage = Signal(nl.n_in)
         self.refractory_time = Signal(nl.n_in)
 
-        self.reads = [J, self.voltage, self.refractory_time]
+        self.reads = [J]
         self.sets = [output]
         self.incs = []
         self.updates = [self.voltage, self.refractory_time]
@@ -470,6 +469,7 @@ class Sim2(object):
         reads = defaultdict(list)
         sets = defaultdict(list)
         incs = defaultdict(list)
+        ups = defaultdict(list)
 
         for op in operators:
             for node in op.sets + op.incs:
@@ -483,6 +483,9 @@ class Sim2(object):
 
             for node in op.incs:
                 incs[node].append(op)
+
+            for node in op.updates:
+                ups[node].append(op)
 
         # -- assert that only one op sets any particular view
         for node in sets:
@@ -509,6 +512,21 @@ class Sim2(object):
             pre_ops = sets[node] + incs[node]
             for other in by_base_writes[node.base]:
                 pre_ops += sets[other] + incs[other]
+            dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
+
+        # -- assert that only one op updates any particular view
+        for node in ups:
+            assert len(ups[node]) == 1, (node, ups[node])
+
+        # -- assert that no two views are both updated and aliased
+        for node, other in itertools.combinations(ups, 2):
+            assert not node.shares_memory_with(other)
+
+        # -- updates depend on reads, sets, and incs.
+        for node, post_ops in ups.items():
+            pre_ops = sets[node] + incs[node] + reads[node]
+            for other in by_base_writes[node.base]:
+                pre_ops += sets[other] + incs[other] + reads[other]
             dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
 
         return dg
