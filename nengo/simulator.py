@@ -15,42 +15,6 @@ def is_base(sig):
 def is_view(sig):
     return not is_base(sig)
 
-def are_aliased(a, b):
-    # Terminology: two arrays *overlap* if the lowermost memory addressed
-    # touched by upper one is higher than the uppermost memory address touched
-    # by the lower one.
-    # 
-    # np.may_share_memory returns True iff there is overlap.
-    # Overlap is a necessary but insufficient condition for *aliasing*.
-    #
-    # Aliasing is when two ndarrays refer a common memory location.
-    #
-
-    # -- least and greatest addresses don't even overlap
-    if not np.may_share_memory(a, b):
-        return False
-
-    a_info = a.__array_interface__
-    b_info = b.__array_interface__
-    if a.dtype != b.dtype:
-        raise NotImplementedError()
-    #a_data = a_info['data']
-    #b_data = b_info['data']
-    #a_shape = a_info['shape']
-    #b_shape = b_info['shape']
-    a_strides = a_info['strides']
-    b_strides = b_info['strides']
-
-    if a_strides == b_strides == None:
-        # -- a and b are both contiguous blocks
-        #    if they didn't overlap then
-        #    np.may_share_memory would have returned False
-        #    It didn't -> they overlap -> they are aliased.
-        return  True
-    else:
-        raise NotImplementedError('are_aliased?', (a_info, b_info))
-
-
 def foo():
 
     operators = []
