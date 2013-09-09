@@ -27,6 +27,10 @@ class TestSimulator(SimulatorTestCase):
         #print ' ---- '
         #for k in sim.signals:
             #print k, sim.signals[k]
+        #print ' ---- '
+        #print sim.signals[one]
+        #print sim.signals[two]
+        #print sim.signals[three]
         self.assertTrue(np.all(sim.signals[one] == 1))
         self.assertTrue(np.all(sim.signals[two] == [4, 6]))
         self.assertTrue(np.all(sim.signals[three] == [3, 2, 1]))
