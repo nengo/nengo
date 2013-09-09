@@ -71,7 +71,7 @@ def foo():
 
         def is_aliased_with(self, other):
             if self.dct is other.dct:
-                if self.sig.base != other.sig.base:
+                if self.sig.base is not other.sig.base:
                     return False
                 elif self is other:
                     return True
@@ -350,6 +350,7 @@ def Simulator(*args):
                              name=dec.sig.name + '-decbase')
             signals[sigbase] = np.zeros(sigbase.n)
             decoder_outputs[dec.sig.base] = sigbase
+            Reset(SigBuf(signals, sigbase))
         else:
             sigbase = decoder_outputs[dec.sig.base]
         if is_view(dec.sig):
@@ -357,7 +358,6 @@ def Simulator(*args):
         else:
             dec_sig = sigbase
         decoder_outputs[dec.sig] = dec_sig
-        Reset(SigBuf(signals, dec_sig))
         DotInc(SigBuf(signals, output_currents[dec.pop.output_signal]),
                SigBuf(signals, dec.weights_signal),
                SigBuf(signals, dec_sig),
@@ -475,14 +475,25 @@ class Sim2(object):
         # -- all views of a base object in a particular dictionary
         t0 = time.time()
         if verbose: print 'building alias table ...'
-        by_base = defaultdict(list)
+        by_base_reads = defaultdict(list)
+        by_base_writes = defaultdict(list)
         reads = defaultdict(list)
         sets = defaultdict(list)
         incs = defaultdict(list)
 
         for op in self.operators:
-            for node in op.reads + op.sets + op.incs:
-                by_base[(id(node.dct), node.sig.base)].append(node)
+            # -- See below for why op.reads are not listed here.
+            #    In short: it's an optimization. We *assume* that
+            #    all reads are aliased to a set or inc, and as long
+            #    long as a topological ordering still exists, we saved
+            #    time on the analysis.
+            #    TODO: actually implement a fallback if the toposort
+            #          does not exist which uses a full alias check.
+            for node in op.sets + op.incs:
+                by_base_writes[(id(node.dct), node.sig.base)].append(node)
+
+            for node in op.reads:
+                by_base_reads[(id(node.dct), node.sig.base)].append(node)
 
             for node in op.reads:
                 reads[node].append(op)
@@ -496,47 +507,27 @@ class Sim2(object):
         for node in sets:
             assert len(sets[node]) == 1, (node, sets[node])
 
-        aliased = defaultdict(lambda : False)
-        aliased_with = defaultdict(set)
-        if verbose: print 'bases done ...'
-        for ii, (sb, views) in enumerate(by_base.items()):
-            if len(views) > 10:
-                if verbose: print '%i / %i ' % (ii, len(views))
-            for v1, v2 in itertools.combinations(views, 2):
-                is_aliased = v1.is_aliased_with(v2)
-                if is_aliased:
-                    aliased[(v1, v2)] = True
-                    aliased[(v2, v1)] = True
-                    aliased_with[v1].add(v2)
-                    aliased_with[v2].add(v1)
-            if len(views) > 10:
-                if verbose: print '%i / %i ' % (ii, len(views)), 'done'
-        t1 = time.time()
-        if verbose: print 'building alias table took', (t1 - t0)
-        #self.sets_before_incs()
-        #self.add_aliasing_restrictions()
-
         # assert that for every node (a) that is set
         # there are no other signals (b) that are
         # aliased to (a) and also set.
         for node, other in itertools.combinations(sets, 2):
-            assert not aliased[(node, other)]
+            #if node.sig.base is other.sig.base:
+            assert not node.is_aliased_with(other)
 
-        # reads depend on sets and incs
+        # -- incs depend on sets
+        for node, post_ops in incs.items():
+            pre_ops = list(sets[node])
+            for other in by_base_writes[(id(node.dct), node.sig.base)]:
+                pre_ops += sets[other]
+            self.dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
+
+        # -- reads depend on writes (sets and incs)
         for node, post_ops in reads.items():
             pre_ops = sets[node] + incs[node]
-            for other in aliased_with[node]:
+            for other in by_base_writes[(id(node.dct), node.sig.base)]:
                 pre_ops += sets[other] + incs[other]
-            for pre_op, post_op in itertools.product(pre_ops, post_ops):
-                self.dg.add_edge(pre_op, post_op)
+            self.dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
 
-        # incs depend on sets
-        for node, post_ops in incs.items():
-            pre_ops = sets[node]
-            for other in aliased_with[node]:
-                pre_ops += sets[other]
-            for pre_op, post_op in itertools.product(pre_ops, post_ops):
-                self.dg.add_edge(pre_op, post_op)
 
     def eval_order(self):
         return [node for node in networkx.topological_sort(self.dg)

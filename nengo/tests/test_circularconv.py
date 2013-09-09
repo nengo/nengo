@@ -32,7 +32,6 @@ class TestCircularConv(SimulatorTestCase):
     def test_med(self):
         return self._test_cconv(D=50, neurons_per_product=128)
 
-    @unittest.skip('same thing, but slow due to simulator alias checks')
     def test_large(self):
         return self._test_cconv(D=512, neurons_per_product=128)
 
