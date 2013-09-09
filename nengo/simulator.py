@@ -55,28 +55,10 @@ def foo():
 
     operators = []
 
-    class SigBuf(object):
-        def __init__(self, dct, sig):
-            self.sig = sig
-            self.dct = dct
-
-        def __hash__(self):
-            return hash( (self.sig,))
-
-        def __eq__(self, other):
-            return self.sig == other.sig
-
-        def is_aliased_with(self, other):
-            return self.sig.shares_memory_with(other.sig)
-
-        def __str__(self):
-            return 'SigBuf(%s)' % self.sig
-
-
     class Reset(object):
         def __init__(self, dst, value=0):
             self.dst = dst
-            self.value = value
+            self.value = float(value)
 
             operators.append(self)
 
@@ -89,7 +71,7 @@ def foo():
 
         def make_step(self, dct):
             def step():
-                get_signal(dct, self.dst.sig)[...] = self.value
+                get_signal(dct, self.dst)[...] = self.value
             return step
 
         def add_edges(self, dg):
@@ -113,8 +95,8 @@ def foo():
 
         def make_step(self, dct):
             def step():
-                get_signal(dct, self.dst.sig)[...] = get_signal(dct,
-                        self.src.sig)
+                get_signal(dct, self.dst)[...] = get_signal(dct,
+                        self.src)
             return step
 
         def add_edges(self, dg):
@@ -142,10 +124,10 @@ def foo():
 
         def make_step(self, dct):
             def step():
-                X = get_signal(dct, self.X.sig)
-                dot_inc(get_signal(dct, self.A.sig),
+                X = get_signal(dct, self.X)
+                dot_inc(get_signal(dct, self.A),
                         X.T if self.xT else X,
-                        get_signal(dct, self.Y.sig))
+                        get_signal(dct, self.Y))
             return step
 
         def add_edges(self, dg):
@@ -171,15 +153,15 @@ def foo():
             def step():
                 self.nl.step(
                     dt=self.dt,
-                    J=get_signal(dct, self.J.sig),
-                    output=get_signal(dct, self.output.sig))
+                    J=get_signal(dct, self.J),
+                    output=get_signal(dct, self.output))
             return step
 
         def add_edges(self, dg):
             dg.add_edge(self.J, self)
             dg.add_edge(self, self.output)
 
-    return operators, SigBuf, Copy, DotInc, NonLin, Reset
+    return operators, Copy, DotInc, NonLin, Reset
 
 
 
@@ -292,7 +274,7 @@ def Simulator(*args):
 
     output_signals = {}
 
-    operators, SigBuf, Copy, DotInc, NonLin, Reset = foo()
+    operators, Copy, DotInc, NonLin, Reset = foo()
 
     # -- reset nonlinearities: bias -> input_current
     input_currents = {}
@@ -303,15 +285,15 @@ def Simulator(*args):
                                name=nl.input_signal.name + '-incur')
         signals[input_current] = np.zeros(nl.input_signal.n)
         input_currents[nl.input_signal] = input_current
-        Copy(SigBuf(signals, input_current),
-             SigBuf(signals, nl.bias_signal))
+        Copy(input_current,
+             nl.bias_signal)
 
     # -- encoders: signals -> input current
     #    (N.B. this includes neuron -> neuron connections)
     for enc in model.encoders:
-        DotInc(SigBuf(signals, enc.sig),
-               SigBuf(signals, enc.weights_signal),
-               SigBuf(signals, input_currents[enc.pop.input_signal]),
+        DotInc(enc.sig,
+               enc.weights_signal,
+               input_currents[enc.pop.input_signal],
                xT=True)
 
     # -- population dynamics
@@ -322,8 +304,8 @@ def Simulator(*args):
                                name=nl.output_signal.name + '-outcur')
         signals[output_current] = np.zeros(nl.output_signal.n)
         output_currents[nl.output_signal] = output_current
-        NonLin(output=SigBuf(signals, output_current),
-               J=SigBuf(signals, input_currents[nl.input_signal]),
+        NonLin(output=output_current,
+               J=input_currents[nl.input_signal],
                nl=pop,
                dt=model.dt)
 
@@ -335,7 +317,7 @@ def Simulator(*args):
                              name=dec.sig.name + '-decbase')
             signals[sigbase] = np.zeros(sigbase.n)
             decoder_outputs[dec.sig.base] = sigbase
-            Reset(SigBuf(signals, sigbase))
+            Reset(sigbase)
         else:
             sigbase = decoder_outputs[dec.sig.base]
         if is_view(dec.sig):
@@ -343,9 +325,9 @@ def Simulator(*args):
         else:
             dec_sig = sigbase
         decoder_outputs[dec.sig] = dec_sig
-        DotInc(SigBuf(signals, output_currents[dec.pop.output_signal]),
-               SigBuf(signals, dec.weights_signal),
-               SigBuf(signals, dec_sig),
+        DotInc(output_currents[dec.pop.output_signal],
+               dec.weights_signal,
+               dec_sig,
                xT=True)
 
     # -- set up output buffers for filters and transforms
@@ -359,7 +341,7 @@ def Simulator(*args):
             output_signals[filt.newsig.base] = np.zeros(filt.newsig.base.n)
             signals[output_stuff[filt.newsig.base]] = \
                     output_signals[filt.newsig.base]
-            Reset(SigBuf(signals, output_stuff[filt.newsig.base]))
+            Reset(output_stuff[filt.newsig.base])
         if is_view(filt.newsig):
             output_stuff[filt.newsig] = filt.newsig.view_like_self_of(
                 output_stuff[filt.newsig.base])
@@ -373,7 +355,7 @@ def Simulator(*args):
             output_signals[tf.outsig.base] = np.zeros(tf.outsig.base.n)
             signals[output_stuff[tf.outsig.base]] = \
                     output_signals[tf.outsig.base]
-            Reset(SigBuf(signals, output_stuff[tf.outsig.base]))
+            Reset(output_stuff[tf.outsig.base])
         if is_view(tf.outsig):
             output_stuff[tf.outsig] = tf.outsig.view_like_self_of(
                 output_stuff[tf.outsig.base])
@@ -382,9 +364,9 @@ def Simulator(*args):
     # -- write to output buffers from filters
     for filt in model.filters:
         try:
-            DotInc(SigBuf(signals, filt.alpha_signal),
-                   SigBuf(signals, filt.oldsig),
-                   SigBuf(signals, output_stuff[filt.newsig]),
+            DotInc(filt.alpha_signal,
+                   filt.oldsig,
+                   output_stuff[filt.newsig],
                    tag='filter')
         except Exception, e:
             e.args = e.args + (filt.oldsig, filt.newsig)
@@ -407,9 +389,9 @@ def Simulator(*args):
                 else:
                     raise Exception('what is going on?')
 
-        DotInc(SigBuf(signals, tf.alpha_signal),
-               SigBuf(signals, insig),
-               SigBuf(signals, output_stuff[tf.outsig]),
+        DotInc(tf.alpha_signal,
+               insig,
+               output_stuff[tf.outsig],
                tag='transform')
 
     return Sim2(operators, signals, output_signals, model)
@@ -443,7 +425,7 @@ class Sim2(object):
 
         for op in operators:
             for node in op.sets + op.incs:
-                by_base_writes[(id(node.dct), node.sig.base)].append(node)
+                by_base_writes[node.base].append(node)
 
             for node in op.reads:
                 reads[node].append(op)
@@ -460,7 +442,7 @@ class Sim2(object):
 
         # -- assert that no two views are both set and aliased
         for node, other in itertools.combinations(sets, 2):
-            assert not node.is_aliased_with(other)
+            assert not node.shares_memory_with(other)
 
         # -- Scheduling algorithm for serial evaluation:
         #    1) All sets on a given base signal
@@ -470,14 +452,14 @@ class Sim2(object):
         # -- incs depend on sets
         for node, post_ops in incs.items():
             pre_ops = list(sets[node])
-            for other in by_base_writes[(id(node.dct), node.sig.base)]:
+            for other in by_base_writes[node.base]:
                 pre_ops += sets[other]
             dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
 
         # -- reads depend on writes (sets and incs)
         for node, post_ops in reads.items():
             pre_ops = sets[node] + incs[node]
-            for other in by_base_writes[(id(node.dct), node.sig.base)]:
+            for other in by_base_writes[node.base]:
                 pre_ops += sets[other] + incs[other]
             dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
 
