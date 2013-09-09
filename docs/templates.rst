@@ -14,10 +14,7 @@ EnsembleArray
 .. autoclass:: nengo.templates.EnsembleArray
    :members:
 
-Examples
---------
-
 .. toctree::
 
-   Ensemble Array <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/ensemblearray.ipynb>
-   Matrix Multiplication <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/matrixmultiplication.ipynb>
+   EnsembleArray example <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/ensemblearray.ipynb>
+   Matrix Multiplication example <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/matrixmultiplication.ipynb>

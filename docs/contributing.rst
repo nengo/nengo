@@ -14,6 +14,11 @@ Code style
 We try to stick to
 `PEP8 <http://www.python.org/dev/peps/pep-0008/#introduction>`_.
 
+We use ``numpydoc`` and
+`NumPy guidelines <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_
+for docstrings, as they are a bit nicer to read in plain text,
+and produce decent output with Sphinx.
+
 Unit testing
 ============
 
@@ -21,6 +26,13 @@ TODO some text
 
 We provide some helpers to make unit testing easier
 for Nengo developers.
+
+To run all unit tests you can use several methods.
+
+1. From the main ``nengo`` directory, run ``python setup.py test -q``.
+2. From the main ``nengo`` directory, run ``python -m unittest discover``.
+
+To run specific unit tests, run ``python /path/to/test_file.py TestClass.test_function``. Everything except for the path to the test file is optional.
 
 .. autoclass:: nengo.tests.helpers.Plotter
    :members:
