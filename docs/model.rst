@@ -25,7 +25,7 @@ information in the form of real valued numbers.
 
 ::
 
-  my_ensemble = model.make_ensemble("My Ensemble", nengo.LEIF(35), dimensions=1)
+  my_ensemble = model.make_ensemble("My Ensemble", nengo.LIF(35), dimensions=1)
 
 In this case, My Ensemble is made up of
 35 leaky integrate-and-fire neurons,
@@ -48,8 +48,8 @@ instead of a number.
 
 ::
 
-  import math
-  sin_node = model.make_node("Sine Node"), output=math.sin)
+  import numpy as np
+  sin_node = model.make_node("Sine Node", output=np.sin)
 
 This node will represent the sine over time.
 
@@ -64,7 +64,7 @@ in the activity a group of neurons.
 
   model.connect(my_node, my_ensemble)
 
-The connect My Node to My Ensemble,
+This connects My Node to My Ensemble,
 meaning that My Ensemble will now represent
 0.5 in its population of 35 neurons.
 
@@ -92,7 +92,7 @@ on the real numbers being connected.
 
 ::
 
-  model.connect(my_ensemble, two_d_ensemble, transform=[[0], [1]], function=math.sqrt)
+  model.connect(my_ensemble, two_d_ensemble, transform=[[0], [1]], function=np.square)
 
 Functions can be computed over multiple dimensions, as well.
 
@@ -106,9 +106,9 @@ Functions can be computed over multiple dimensions, as well.
 Probing Nengo objects
 =====================
 
-Once you have defined the objects if your model
+Once you have defined the objects in your model
 and how they're connected,
-you have to decide what data you want to collect
+decide what data you want to collect
 by probing those objects.
 
 For example, if we wanted to collect data from
@@ -147,18 +147,15 @@ for analysis or visualization.
 
 ::
 
-  product_data = sim.data(product_ensemble)
+  print sim.data(product_ensemble)[-10:]
 
 For more details on the functions
 in ``nengo.Model``, and ``nengo.simulator.Simulator``
-see :ref:`basic-api`.
+see `the basic API documentation <model_api.html>`_.
 
-========
-Examples
-========
-
-Representing information
-========================
+=======================
+Representation examples
+=======================
 
 .. toctree::
 
@@ -167,9 +164,9 @@ Representing information
    Many neurons <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/manyneurons.ipynb>
    2D representation <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/2drepresentation.ipynb>
 
-
-Transforming information
-========================
+=======================
+Transformation examples
+=======================
 
 .. toctree::
 
@@ -180,8 +177,9 @@ Transforming information
    Multiplication <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/multiplication.ipynb>
    Circular convolution <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/convolution.ipynb>
 
-Dynamics
-========
+=================
+Dynamics examples
+=================
 
 .. toctree::
 
@@ -191,8 +189,9 @@ Dynamics
    Simple harmonic oscillator <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/oscillator.ipynb>
    Controlled oscillator <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/controlledoscillator.ipynb>
 
-Learning
-========
+=================
+Learning examples
+=================
 
 .. toctree::
 
