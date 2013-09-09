@@ -57,33 +57,26 @@ def foo():
 
     class SigBuf(object):
         def __init__(self, dct, sig):
-            self.dct = dct
             self.sig = sig
-            assert isinstance(dct, dict)
+            self.dct = dct
 
         def __hash__(self):
-            return hash( (id(self.dct), self.sig))
+            return hash( (self.sig,))
 
         def __eq__(self, other):
-            assert self.dct is other.dct
             return self.sig == other.sig
 
         def is_aliased_with(self, other):
-            if self.dct is other.dct:
-                return self.sig.shares_memory_with(other.sig)
-            else:
-                raise NotImplementedError()
-
-        def get(self):
-            return get_signal(self.dct, self.sig)
+            return self.sig.shares_memory_with(other.sig)
 
         def __str__(self):
-            return 'SigBuf(-, %s)' % self.sig
+            return 'SigBuf(%s)' % self.sig
 
 
     class Reset(object):
-        def __init__(self, dst):
+        def __init__(self, dst, value=0):
             self.dst = dst
+            self.value = value
 
             operators.append(self)
 
@@ -94,17 +87,20 @@ def foo():
         def __str__(self):
             return 'Reset(%s)' % str(self.dst)
 
-        def go(self):
-            self.dst.get()[...] = 0
+        def make_thunk(self, dct):
+            def thunk():
+                get_signal(dct, self.dst.sig)[...] = self.value
+            return thunk
 
         def add_edges(self, dg):
             dg.add_edge(self, self.dst)
 
 
     class Copy(object):
-        def __init__(self, dst, src):
+        def __init__(self, dst, src, tag=None):
             self.dst = dst
             self.src = src
+            self.tag = tag
 
             operators.append(self)
 
@@ -113,11 +109,13 @@ def foo():
             self.incs = []
 
         def __str__(self):
-            return 'Copy(%s -> %s)' % (
-                    str(self.src), str(self.dst))
+            return 'Copy(%s -> %s)' % (str(self.src), str(self.dst))
 
-        def go(self):
-            self.dst.get()[...] = self.src.get()
+        def make_thunk(self, dct):
+            def thunk():
+                get_signal(dct, self.dst.sig)[...] = get_signal(dct,
+                        self.src.sig)
+            return thunk
 
         def add_edges(self, dg):
             dg.add_edge(self.src, self)
@@ -125,12 +123,11 @@ def foo():
 
 
     class DotInc(object):
-        def __init__(self, A, X, Y, xT=False, verbose=False, tag=None):
+        def __init__(self, A, X, Y, xT=False, tag=None):
             self.A = A
             self.X = X
             self.Y = Y
             self.xT = xT
-            self.verbose = verbose
             self.tag = tag
 
             operators.append(self)
@@ -143,17 +140,13 @@ def foo():
             return 'DotInc(%s, %s -> %s "%s")' % (
                     str(self.A), str(self.X), str(self.Y), self.tag)
 
-        def go(self):
-            dot_inc(self.A.get(),
-                    self.X.get().T if self.xT else self.X.get(),
-                    self.Y.get())
-            if self.verbose is not False:
-                print '---'
-                print self.tag
-                print self.A, self.X, self.Y
-                print self.A.get(), self.X.get(), self.Y.get()
-                print self.verbose
-                print '---'
+        def make_thunk(self, dct):
+            def thunk():
+                X = get_signal(dct, self.X.sig)
+                dot_inc(get_signal(dct, self.A.sig),
+                        X.T if self.xT else X,
+                        get_signal(dct, self.Y.sig))
+            return thunk
 
         def add_edges(self, dg):
             dg.add_edge(self.A, self)
@@ -174,11 +167,13 @@ def foo():
             self.sets = [output]
             self.incs = []
 
-        def go(self):
-            self.nl.step(
-                dt=self.dt,
-                J=self.J.get(),
-                output=self.output.get())
+        def make_thunk(self, dct):
+            def thunk():
+                self.nl.step(
+                    dt=self.dt,
+                    J=get_signal(dct, self.J.sig),
+                    output=get_signal(dct, self.output.sig))
+            return thunk
 
         def add_edges(self, dg):
             dg.add_edge(self.J, self)
@@ -426,9 +421,11 @@ class Sim2(object):
         self._output_signals = _output_signals
         self.model = model
         self.dg = self._init_dg(operators)
-        self._operators = [node
+        self._thunk_order = [node
             for node in networkx.topological_sort(self.dg)
-            if hasattr(node, 'go')]
+            if hasattr(node, 'make_thunk')]
+        self._thunks = [node.make_thunk(self._signals)
+            for node in self._thunk_order]
         self.n_steps = 0
         self.probe_outputs = dict((probe, []) for probe in model.probes)
 
@@ -504,8 +501,8 @@ class Sim2(object):
         return Accessor()
 
     def step(self):
-        for op in self._operators:
-            op.go()
+        for fn in self._thunks:
+            fn()
 
         for k, v in self._output_signals.items():
             self._signals[k][...] = v
