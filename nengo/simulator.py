@@ -256,12 +256,9 @@ class SimLIF(Operator):
         self.incs = []
         self.updates = [self.voltage, self.refractory_time]
 
-        # XXX where should dtype come from?
-        # XXX how to not initialize signals so soon?
-
-    def init_signals(self, signals, dt):
-        signals[self.voltage] = np.zeros(self.nl.n_in)
-        signals[self.refractory_time] = np.zeros(self.nl.n_in)
+    def init_signals(self, signals, dt, dtype=np.float64):
+        signals[self.voltage] = np.zeros(self.nl.n_in, dtype=dtype)
+        signals[self.refractory_time] = np.zeros(self.nl.n_in, dtype=dtype)
 
     def make_step(self, dct, dt):
         J = get_signal(dct, self.J)
@@ -319,7 +316,6 @@ def Simulator(*args):
             if sig.base == sig:
                 signals[sig] = np.zeros(sig.n)
 
-    output_signals = {}
     operators = []
     with collect_operators_into(operators):
 
@@ -378,16 +374,16 @@ def Simulator(*args):
 
         # -- set up output buffers for filters and transforms
         output_stuff = {}
-        output_signals = {}
         for filt in model.filters:
             if filt.newsig.base not in output_stuff:
                 output_stuff[filt.newsig.base] = Signal(
                     filt.newsig.base.n,
                     name=filt.newsig.base.name + '-out')
-                output_signals[filt.newsig.base] = np.zeros(filt.newsig.base.n)
                 signals[output_stuff[filt.newsig.base]] = \
-                        output_signals[filt.newsig.base]
+                    np.zeros(filt.newsig.base.n)
                 Reset(output_stuff[filt.newsig.base])
+                Copy(src=output_stuff[filt.newsig.base],
+                     dst=filt.newsig.base, as_update=True)
             if is_view(filt.newsig):
                 output_stuff[filt.newsig] = filt.newsig.view_like_self_of(
                     output_stuff[filt.newsig.base])
@@ -398,10 +394,11 @@ def Simulator(*args):
                 output_stuff[tf.outsig.base] = Signal(
                     tf.outsig.base.n,
                     name=tf.outsig.base.name + '-out')
-                output_signals[tf.outsig.base] = np.zeros(tf.outsig.base.n)
                 signals[output_stuff[tf.outsig.base]] = \
-                        output_signals[tf.outsig.base]
+                    np.zeros(tf.outsig.base.n)
                 Reset(output_stuff[tf.outsig.base])
+                Copy(src=output_stuff[tf.outsig.base],
+                     dst=tf.outsig.base, as_update=True)
             if is_view(tf.outsig):
                 output_stuff[tf.outsig] = tf.outsig.view_like_self_of(
                     output_stuff[tf.outsig.base])
@@ -440,13 +437,12 @@ def Simulator(*args):
                    output_stuff[tf.outsig],
                    tag='transform')
 
-    return Sim2(operators, signals, output_signals, model)
+    return Sim2(operators, signals, model)
 
 
 class Sim2(object):
-    def __init__(self, operators, signals, _output_signals, model):
+    def __init__(self, operators, signals, model):
         self._signals = signals
-        self._output_signals = _output_signals
         self.model = model
         self.dg = self._init_dg(operators)
         self._step_order = [node
@@ -520,7 +516,8 @@ class Sim2(object):
 
         # -- assert that no two views are both updated and aliased
         for node, other in itertools.combinations(ups, 2):
-            assert not node.shares_memory_with(other)
+            assert not node.shares_memory_with(other), (
+                    node, other)
 
         # -- updates depend on reads, sets, and incs.
         for node, post_ops in ups.items():
@@ -530,7 +527,6 @@ class Sim2(object):
             dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
 
         return dg
-
 
     @property
     def signals(self):
@@ -552,9 +548,6 @@ class Sim2(object):
         for step_fn in self._steps:
             step_fn()
 
-        for k, v in self._output_signals.items():
-            self._signals[k][...] = v
-
         # -- probes signals -> probe buffers
         for probe in self.model.probes:
             period = int(probe.dt / self.model.dt)
@@ -572,3 +565,4 @@ class Sim2(object):
 
     def probe_data(self, probe):
         return np.asarray(self.probe_outputs[probe])
+
