@@ -19,31 +19,34 @@ def is_base(sig):
 def is_view(sig):
     return not is_base(sig)
 
+class SignalDict(dict):
+    def __getitem__(self, obj):
+        if obj in self:
+            return dict.__getitem__(self, obj)
+        elif obj.base in self:
+            # look up views as a fallback
+            # --work around numpy's special case behaviour for scalars
+            base_array = self[obj.base]
+            try:
+                # for some installations, this works
+                itemsize = int(obj.dtype.itemsize)
+            except TypeError:
+                # other installations, this...
+                itemsize = int(obj.dtype().itemsize)
+            byteoffset = itemsize * obj.offset
+            bytestrides = [itemsize * s for s in obj.elemstrides]
+            view = np.ndarray(shape=obj.shape,
+                              dtype=obj.dtype,
+                              buffer=base_array.data,
+                              offset=byteoffset,
+                              strides=bytestrides,
+                             )
+            return view
+        else:
+            raise KeyError(obj)
 
-def get_signal(signals_dct, obj):
-    # look up a Signal or SignalView
-    # in a `signals_dct` such as self.signals
-    if obj in signals_dct:
-        return signals_dct[obj]
-    elif obj.base in signals_dct:
-        base_array = signals_dct[obj.base]
-        try:
-            # for some installations, this works
-            itemsize = int(obj.dtype.itemsize)
-        except TypeError:
-            # other installations, this...
-            itemsize = int(obj.dtype().itemsize)
-        byteoffset = itemsize * obj.offset
-        bytestrides = [itemsize * s for s in obj.elemstrides]
-        view = np.ndarray(shape=obj.shape,
-                          dtype=obj.dtype,
-                          buffer=base_array.data,
-                          offset=byteoffset,
-                          strides=bytestrides,
-                         )
-        return view
-    else:
-        raise TypeError()
+def get_signal(dct, obj):
+    return dct[obj]
 
 
 class collect_operators_into(object):
@@ -420,7 +423,7 @@ class BaseSimulator(object):
 
 class Simulator(BaseSimulator):
     def __init__(self, model):
-        signals = {}
+        signals = SignalDict()
 
         for sig in model.signals:
             if hasattr(sig, 'value'):
