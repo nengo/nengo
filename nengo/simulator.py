@@ -306,7 +306,6 @@ def Simulator(*args):
         raise TypeError()
 
     signals = {}
-    nonlinearities = {}
 
     for sig in model.signals:
         if hasattr(sig, 'value'):
@@ -382,6 +381,8 @@ def Simulator(*args):
                 signals[output_stuff[filt.newsig.base]] = \
                     np.zeros(filt.newsig.base.n)
                 Reset(output_stuff[filt.newsig.base])
+                # -- N.B. this copy will be performed *after* the
+                #    DotInc operators created below.
                 Copy(src=output_stuff[filt.newsig.base],
                      dst=filt.newsig.base, as_update=True)
             if is_view(filt.newsig):
@@ -397,6 +398,8 @@ def Simulator(*args):
                 signals[output_stuff[tf.outsig.base]] = \
                     np.zeros(tf.outsig.base.n)
                 Reset(output_stuff[tf.outsig.base])
+                # -- N.B. this copy will be performed *after* the
+                #    DotInc operators created below.
                 Copy(src=output_stuff[tf.outsig.base],
                      dst=tf.outsig.base, as_update=True)
             if is_view(tf.outsig):
