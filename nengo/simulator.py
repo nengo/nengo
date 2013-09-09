@@ -291,156 +291,7 @@ registry = {
 }
 
 
-def Simulator(*args):
-    if len(args) == 2:
-        if 'Test' in str(args[0]):
-            model = args[1]
-        else:
-            raise TypeError('extra args to Simulator', args)
-    elif len(args) == 1:
-        model = args
-    else:
-        raise TypeError()
-
-    signals = {}
-
-    for sig in model.signals:
-        if hasattr(sig, 'value'):
-            if sig.base == sig:
-                signals[sig] = np.asarray(sig.value)
-        else:
-            if sig.base == sig:
-                signals[sig] = np.zeros(sig.n)
-
-    operators = []
-    with collect_operators_into(operators):
-
-        # -- reset nonlinearities: bias -> input_current
-        input_currents = {}
-        for nl in model.nonlinearities:
-            if is_view(nl.input_signal):
-                raise NotImplementedError('need inc instead of copy')
-            input_current = Signal(nl.input_signal.n,
-                                   name=nl.input_signal.name + '-incur')
-            signals[input_current] = np.zeros(nl.input_signal.n)
-            input_currents[nl.input_signal] = input_current
-            Copy(input_current, nl.bias_signal)
-
-        # -- encoders: signals -> input current
-        #    (N.B. this includes neuron -> neuron connections)
-        for enc in model.encoders:
-            DotInc(enc.sig,
-                   enc.weights_signal,
-                   input_currents[enc.pop.input_signal],
-                   xT=True)
-
-        # -- population dynamics
-        output_currents = {}
-        for nl in model.nonlinearities:
-            output_current = Signal(nl.output_signal.n,
-                                   name=nl.output_signal.name + '-outcur')
-            signals[output_current] = np.zeros(nl.output_signal.n)
-            output_currents[nl.output_signal] = output_current
-            nl_cls = registry[nl.__class__]
-            nl_op = nl_cls(output=output_current,
-                   J=input_currents[nl.input_signal],
-                   nl=nl)
-            nl_op.init_signals(signals, model.dt)
-
-        # -- decoders: population output -> signals_tmp
-        decoder_outputs = {}
-        for dec in model.decoders:
-            if dec.sig.base not in decoder_outputs:
-                sigbase = Signal(dec.sig.base.n,
-                                 name=dec.sig.name + '-decbase')
-                signals[sigbase] = np.zeros(sigbase.n)
-                decoder_outputs[dec.sig.base] = sigbase
-                Reset(sigbase)
-            else:
-                sigbase = decoder_outputs[dec.sig.base]
-            if is_view(dec.sig):
-                dec_sig = dec.sig.view_like_self_of(sigbase)
-            else:
-                dec_sig = sigbase
-            decoder_outputs[dec.sig] = dec_sig
-            DotInc(output_currents[dec.pop.output_signal],
-                   dec.weights_signal,
-                   dec_sig,
-                   xT=True)
-
-        # -- set up output buffers for filters and transforms
-        output_stuff = {}
-        for filt in model.filters:
-            if filt.newsig.base not in output_stuff:
-                output_stuff[filt.newsig.base] = Signal(
-                    filt.newsig.base.n,
-                    name=filt.newsig.base.name + '-out')
-                signals[output_stuff[filt.newsig.base]] = \
-                    np.zeros(filt.newsig.base.n)
-                Reset(output_stuff[filt.newsig.base])
-                # -- N.B. this copy will be performed *after* the
-                #    DotInc operators created below.
-                Copy(src=output_stuff[filt.newsig.base],
-                     dst=filt.newsig.base, as_update=True)
-            if is_view(filt.newsig):
-                output_stuff[filt.newsig] = filt.newsig.view_like_self_of(
-                    output_stuff[filt.newsig.base])
-            assert filt.newsig in output_stuff
-
-        for tf in model.transforms:
-            if tf.outsig.base not in output_stuff:
-                output_stuff[tf.outsig.base] = Signal(
-                    tf.outsig.base.n,
-                    name=tf.outsig.base.name + '-out')
-                signals[output_stuff[tf.outsig.base]] = \
-                    np.zeros(tf.outsig.base.n)
-                Reset(output_stuff[tf.outsig.base])
-                # -- N.B. this copy will be performed *after* the
-                #    DotInc operators created below.
-                Copy(src=output_stuff[tf.outsig.base],
-                     dst=tf.outsig.base, as_update=True)
-            if is_view(tf.outsig):
-                output_stuff[tf.outsig] = tf.outsig.view_like_self_of(
-                    output_stuff[tf.outsig.base])
-            assert tf.outsig in output_stuff
-
-        # -- write to output buffers from filters
-        for filt in model.filters:
-            try:
-                DotInc(filt.alpha_signal,
-                       filt.oldsig,
-                       output_stuff[filt.newsig],
-                       tag='filter')
-            except Exception, e:
-                e.args = e.args + (filt.oldsig, filt.newsig)
-                raise
-
-        # -- write to output buffers from transforms
-        for tf in model.transforms:
-            try:
-                insig = decoder_outputs[tf.insig]
-            except KeyError:
-                try:
-                    insig = output_currents[tf.insig]
-                except KeyError:
-                    if tf.insig.base in decoder_outputs:
-                        insig = tf.insig.view_like_self_of(
-                            decoder_outputs[tf.insig.base])
-                    elif tf.insig.base in output_currents:
-                        insig = tf.insig.view_like_self_of(
-                            output_currents[tf.insig.base])
-                    else:
-                        raise Exception('what is going on?')
-
-            DotInc(tf.alpha_signal,
-                   insig,
-                   output_stuff[tf.outsig],
-                   tag='transform')
-
-    return Sim2(operators, signals, model)
-
-
-class Sim2(object):
+class BaseSimulator(object):
     def __init__(self, operators, signals, model):
         self._signals = signals
         self.model = model
@@ -565,4 +416,144 @@ class Sim2(object):
 
     def probe_data(self, probe):
         return np.asarray(self.probe_outputs[probe])
+
+
+class Simulator(BaseSimulator):
+    def __init__(self, model):
+        signals = {}
+
+        for sig in model.signals:
+            if hasattr(sig, 'value'):
+                if sig.base == sig:
+                    signals[sig] = np.asarray(sig.value)
+            else:
+                if sig.base == sig:
+                    signals[sig] = np.zeros(sig.n)
+
+        operators = []
+        with collect_operators_into(operators):
+
+            # -- reset nonlinearities: bias -> input_current
+            input_currents = {}
+            for nl in model.nonlinearities:
+                if is_view(nl.input_signal):
+                    raise NotImplementedError('need inc instead of copy')
+                input_current = Signal(nl.input_signal.n,
+                                       name=nl.input_signal.name + '-incur')
+                signals[input_current] = np.zeros(nl.input_signal.n)
+                input_currents[nl.input_signal] = input_current
+                Copy(input_current, nl.bias_signal)
+
+            # -- encoders: signals -> input current
+            #    (N.B. this includes neuron -> neuron connections)
+            for enc in model.encoders:
+                DotInc(enc.sig,
+                       enc.weights_signal,
+                       input_currents[enc.pop.input_signal],
+                       xT=True)
+
+            # -- population dynamics
+            output_currents = {}
+            for nl in model.nonlinearities:
+                output_current = Signal(nl.output_signal.n,
+                                       name=nl.output_signal.name + '-outcur')
+                signals[output_current] = np.zeros(nl.output_signal.n)
+                output_currents[nl.output_signal] = output_current
+                nl_cls = registry[nl.__class__]
+                nl_op = nl_cls(output=output_current,
+                       J=input_currents[nl.input_signal],
+                       nl=nl)
+                nl_op.init_signals(signals, model.dt)
+
+            # -- decoders: population output -> signals_tmp
+            decoder_outputs = {}
+            for dec in model.decoders:
+                if dec.sig.base not in decoder_outputs:
+                    sigbase = Signal(dec.sig.base.n,
+                                     name=dec.sig.name + '-decbase')
+                    signals[sigbase] = np.zeros(sigbase.n)
+                    decoder_outputs[dec.sig.base] = sigbase
+                    Reset(sigbase)
+                else:
+                    sigbase = decoder_outputs[dec.sig.base]
+                if is_view(dec.sig):
+                    dec_sig = dec.sig.view_like_self_of(sigbase)
+                else:
+                    dec_sig = sigbase
+                decoder_outputs[dec.sig] = dec_sig
+                DotInc(output_currents[dec.pop.output_signal],
+                       dec.weights_signal,
+                       dec_sig,
+                       xT=True)
+
+            # -- set up output buffers for filters and transforms
+            output_stuff = {}
+            for filt in model.filters:
+                if filt.newsig.base not in output_stuff:
+                    output_stuff[filt.newsig.base] = Signal(
+                        filt.newsig.base.n,
+                        name=filt.newsig.base.name + '-out')
+                    signals[output_stuff[filt.newsig.base]] = \
+                        np.zeros(filt.newsig.base.n)
+                    Reset(output_stuff[filt.newsig.base])
+                    # -- N.B. this copy will be performed *after* the
+                    #    DotInc operators created below.
+                    Copy(src=output_stuff[filt.newsig.base],
+                         dst=filt.newsig.base, as_update=True)
+                if is_view(filt.newsig):
+                    output_stuff[filt.newsig] = filt.newsig.view_like_self_of(
+                        output_stuff[filt.newsig.base])
+                assert filt.newsig in output_stuff
+
+            for tf in model.transforms:
+                if tf.outsig.base not in output_stuff:
+                    output_stuff[tf.outsig.base] = Signal(
+                        tf.outsig.base.n,
+                        name=tf.outsig.base.name + '-out')
+                    signals[output_stuff[tf.outsig.base]] = \
+                        np.zeros(tf.outsig.base.n)
+                    Reset(output_stuff[tf.outsig.base])
+                    # -- N.B. this copy will be performed *after* the
+                    #    DotInc operators created below.
+                    Copy(src=output_stuff[tf.outsig.base],
+                         dst=tf.outsig.base, as_update=True)
+                if is_view(tf.outsig):
+                    output_stuff[tf.outsig] = tf.outsig.view_like_self_of(
+                        output_stuff[tf.outsig.base])
+                assert tf.outsig in output_stuff
+
+            # -- write to output buffers from filters
+            for filt in model.filters:
+                try:
+                    DotInc(filt.alpha_signal,
+                           filt.oldsig,
+                           output_stuff[filt.newsig],
+                           tag='filter')
+                except Exception, e:
+                    e.args = e.args + (filt.oldsig, filt.newsig)
+                    raise
+
+            # -- write to output buffers from transforms
+            for tf in model.transforms:
+                try:
+                    insig = decoder_outputs[tf.insig]
+                except KeyError:
+                    try:
+                        insig = output_currents[tf.insig]
+                    except KeyError:
+                        if tf.insig.base in decoder_outputs:
+                            insig = tf.insig.view_like_self_of(
+                                decoder_outputs[tf.insig.base])
+                        elif tf.insig.base in output_currents:
+                            insig = tf.insig.view_like_self_of(
+                                output_currents[tf.insig.base])
+                        else:
+                            raise Exception('what is going on?')
+
+                DotInc(tf.alpha_signal,
+                       insig,
+                       output_stuff[tf.outsig],
+                       tag='transform')
+
+        BaseSimulator.__init__(self, operators, signals, model)
 
