@@ -423,6 +423,25 @@ class Node(object):
     def __str__(self):
         return "Node: " + self.name
 
+    def __deepcopy__(self, memo):
+        try:
+            return memo[id(self)]
+        except KeyError:
+            rval = self.__class__.__new__(self.__class__)
+            memo[id(self)] = rval
+            for k, v in self.__dict__.items():
+                if k == 'output':
+                    try:
+                        rval.__dict__[k] = copy.deepcopy(v, memo)
+                    except TypeError:
+                        # XXX some callable things aren't serializable
+                        #     is it worth crashing over?
+                        #     .... we're going to guess not.
+                        rval.__dict__[k] = v
+                else:
+                    rval.__dict__[k] = copy.deepcopy(v, memo)
+            return rval
+
     def connect_to(self, post, **kwargs):
         """TODO"""
         connection = connections.DecodedConnection(self, post, **kwargs)
