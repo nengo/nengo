@@ -515,6 +515,35 @@ class SignalView(object):
             'offset': self.offset,
         }
 
+    def shares_memory_with(self, other):
+        # Terminology: two arrays *overlap* if the lowermost memory addressed
+        # touched by upper one is higher than the uppermost memory address
+        # touched by the lower one.
+        #
+        # np.may_share_memory returns True iff there is overlap.
+        # Overlap is a necessary but insufficient condition for *aliasing*.
+        #
+        # Aliasing is when two ndarrays refer a common memory location.
+        #
+        if self.base is not other.base:
+            return False
+        if self is other or self.same_view_as(other):
+            return True
+        if self.ndim < other.ndim:
+            return other.shares_memory_with(self)
+
+        assert self.ndim >= other.ndim
+        if self.ndim == 0:
+            # self.same_view_as(other) would have
+            # returned above if this were True.
+            return False
+        elif self.ndim == 1:
+            raise NotImplementedError()
+        elif self.ndim == 2:
+            raise NotImplementedError()
+        else:
+            raise NotImplementedError()
+
 
 class Signal(SignalView):
     """Interpretable, vector-valued quantity within NEF"""

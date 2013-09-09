@@ -65,22 +65,14 @@ def foo():
             return hash( (id(self.dct), self.sig))
 
         def __eq__(self, other):
-            # XXX signal equality should be implemented to match
-            #     base objects, strides, etc.
-            return self.dct is other.dct and self.sig == other.sig
+            assert self.dct is other.dct
+            return self.sig == other.sig
 
         def is_aliased_with(self, other):
             if self.dct is other.dct:
-                if self.sig.base is not other.sig.base:
-                    return False
-                elif self is other:
-                    return True
-                elif self.sig.same_view_as(other.sig):
-                    return True
-                else:
-                    return are_aliased(self.get(), other.get())
+                return self.sig.shares_memory_with(other.sig)
             else:
-                return False
+                raise NotImplementedError()
 
         def get(self):
             return get_signal(self.dct, self.sig)
@@ -105,8 +97,8 @@ def foo():
         def go(self):
             self.dst.get()[...] = 0
 
-        def add_edges(self, nxdg):
-            nxdg.add_edge(self, self.dst)
+        def add_edges(self, dg):
+            dg.add_edge(self, self.dst)
 
 
     class Copy(object):
@@ -127,9 +119,9 @@ def foo():
         def go(self):
             self.dst.get()[...] = self.src.get()
 
-        def add_edges(self, nxdg):
-            nxdg.add_edge(self.src, self)
-            nxdg.add_edge(self, self.dst)
+        def add_edges(self, dg):
+            dg.add_edge(self.src, self)
+            dg.add_edge(self, self.dst)
 
 
     class DotInc(object):
@@ -163,10 +155,10 @@ def foo():
                 print self.verbose
                 print '---'
 
-        def add_edges(self, nxdg):
-            nxdg.add_edge(self.A, self)
-            nxdg.add_edge(self.X, self)
-            nxdg.add_edge(self, self.Y)
+        def add_edges(self, dg):
+            dg.add_edge(self.A, self)
+            dg.add_edge(self.X, self)
+            dg.add_edge(self, self.Y)
 
 
     class NonLin(object):
@@ -188,9 +180,9 @@ def foo():
                 J=self.J.get(),
                 output=self.output.get())
 
-        def add_edges(self, nxdg):
-            nxdg.add_edge(self.J, self)
-            nxdg.add_edge(self, self.output)
+        def add_edges(self, dg):
+            dg.add_edge(self.J, self)
+            dg.add_edge(self, self.output)
 
     return operators, SigBuf, Copy, DotInc, NonLin, Reset
 
@@ -305,8 +297,6 @@ def Simulator(*args):
 
     output_signals = {}
 
-    nxdg = networkx.DiGraph()
-
     operators, SigBuf, Copy, DotInc, NonLin, Reset = foo()
 
     # -- reset nonlinearities: bias -> input_current
@@ -363,7 +353,7 @@ def Simulator(*args):
                SigBuf(signals, dec_sig),
                xT=True)
 
-    # -- set up output buffers
+    # -- set up output buffers for filters and transforms
     output_stuff = {}
     output_signals = {}
     for filt in model.filters:
@@ -371,49 +361,42 @@ def Simulator(*args):
             output_stuff[filt.newsig.base] = Signal(
                 filt.newsig.base.n,
                 name=filt.newsig.base.name + '-out')
-            #print 'setup F output signal', filt.newsig, output_stuff[filt.newsig.base]
             output_signals[filt.newsig.base] = np.zeros(filt.newsig.base.n)
-            signals[output_stuff[filt.newsig.base]] = output_signals[filt.newsig.base]
+            signals[output_stuff[filt.newsig.base]] = \
+                    output_signals[filt.newsig.base]
             Reset(SigBuf(signals, output_stuff[filt.newsig.base]))
         if is_view(filt.newsig):
-            #print 'setup F view', filt.newsig, filt.newsig.base
             output_stuff[filt.newsig] = filt.newsig.view_like_self_of(
                 output_stuff[filt.newsig.base])
         assert filt.newsig in output_stuff
+
     for tf in model.transforms:
         if tf.outsig.base not in output_stuff:
             output_stuff[tf.outsig.base] = Signal(
                 tf.outsig.base.n,
                 name=tf.outsig.base.name + '-out')
-            #print 'setup T output signal', tf.outsig, output_stuff[tf.outsig.base]
             output_signals[tf.outsig.base] = np.zeros(tf.outsig.base.n)
-            signals[output_stuff[tf.outsig.base]] = output_signals[tf.outsig.base]
+            signals[output_stuff[tf.outsig.base]] = \
+                    output_signals[tf.outsig.base]
             Reset(SigBuf(signals, output_stuff[tf.outsig.base]))
         if is_view(tf.outsig):
-            #print 'setup T view', tf.outsig, tf.outsig.base
             output_stuff[tf.outsig] = tf.outsig.view_like_self_of(
                 output_stuff[tf.outsig.base])
         assert tf.outsig in output_stuff
 
-    # -- filters: signals_copy -> signals
+    # -- write to output buffers from filters
     for filt in model.filters:
         try:
-            #print 'Filter!', filt
             DotInc(SigBuf(signals, filt.alpha_signal),
                    SigBuf(signals, filt.oldsig),
                    SigBuf(signals, output_stuff[filt.newsig]),
-                   #verbose=signals,
                    tag='filter')
         except Exception, e:
             e.args = e.args + (filt.oldsig, filt.newsig)
             raise
 
-    # -- transforms: signals_tmp -> signals
+    # -- write to output buffers from transforms
     for tf in model.transforms:
-        #print 'Transform!', tf
-        #print tf
-        #print tf.insig, id(tf.insig)
-        #print tf.outsig, id(tf.outsig)
         try:
             insig = decoder_outputs[tf.insig]
         except KeyError:
@@ -421,38 +404,88 @@ def Simulator(*args):
                 insig = output_currents[tf.insig]
             except KeyError:
                 if tf.insig.base in decoder_outputs:
-                    insig = tf.insig.view_like_self_of(decoder_outputs[tf.insig.base])
+                    insig = tf.insig.view_like_self_of(
+                        decoder_outputs[tf.insig.base])
                 elif tf.insig.base in output_currents:
-                    insig = tf.insig.view_like_self_of(output_currents[tf.insig.base])
+                    insig = tf.insig.view_like_self_of(
+                        output_currents[tf.insig.base])
                 else:
                     raise Exception('what is going on?')
 
-        #print output_stuff[tf.outsig]
         DotInc(SigBuf(signals, tf.alpha_signal),
                SigBuf(signals, insig),
                SigBuf(signals, output_stuff[tf.outsig]),
-               #verbose=signals,
                tag='transform')
 
-    return Sim2(operators, signals, nxdg, output_signals, model)
+    return Sim2(operators, signals, output_signals, model)
 
 
 class Sim2(object):
-    def __init__(self, operators, signals, dg, _output_signals, model):
-        self.operators = operators
+    def __init__(self, operators, signals, _output_signals, model):
         self._signals = signals
         self._output_signals = _output_signals
-        self.dg = dg
         self.model = model
+        self.dg = self._init_dg(operators)
+        self._operators = [node
+            for node in networkx.topological_sort(self.dg)
+            if hasattr(node, 'go')]
+        self.n_steps = 0
+        self.probe_outputs = dict((probe, []) for probe in model.probes)
 
-        #self.g = nx.DiGraph()
+    def _init_dg(self, operators, verbose=False):
+        dg = networkx.DiGraph()
+
         for op in operators:
             op.add_edges(dg)
 
-        self.add_constraints()  # <- this is slow
-        self.order = self.eval_order()
-        self.n_steps = 0
-        self.probe_outputs = dict((probe, []) for probe in model.probes)
+        # -- all views of a base object in a particular dictionary
+        by_base_writes = defaultdict(list)
+        reads = defaultdict(list)
+        sets = defaultdict(list)
+        incs = defaultdict(list)
+
+        for op in operators:
+            for node in op.sets + op.incs:
+                by_base_writes[(id(node.dct), node.sig.base)].append(node)
+
+            for node in op.reads:
+                reads[node].append(op)
+
+            for node in op.sets:
+                sets[node].append(op)
+
+            for node in op.incs:
+                incs[node].append(op)
+
+        # -- assert that only one op sets any particular view
+        for node in sets:
+            assert len(sets[node]) == 1, (node, sets[node])
+
+        # -- assert that no two views are both set and aliased
+        for node, other in itertools.combinations(sets, 2):
+            assert not node.is_aliased_with(other)
+
+        # -- Scheduling algorithm for serial evaluation:
+        #    1) All sets on a given base signal
+        #    2) All incs on a given base signal
+        #    3) All reads on a given base signal
+
+        # -- incs depend on sets
+        for node, post_ops in incs.items():
+            pre_ops = list(sets[node])
+            for other in by_base_writes[(id(node.dct), node.sig.base)]:
+                pre_ops += sets[other]
+            dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
+
+        # -- reads depend on writes (sets and incs)
+        for node, post_ops in reads.items():
+            pre_ops = sets[node] + incs[node]
+            for other in by_base_writes[(id(node.dct), node.sig.base)]:
+                pre_ops += sets[other] + incs[other]
+            dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
+
+        return dg
+
 
     @property
     def signals(self):
@@ -470,71 +503,8 @@ class Sim2(object):
                 return self._signals.__len__()
         return Accessor()
 
-    def add_constraints(self, verbose=False):
-
-        # -- all views of a base object in a particular dictionary
-        t0 = time.time()
-        if verbose: print 'building alias table ...'
-        by_base_reads = defaultdict(list)
-        by_base_writes = defaultdict(list)
-        reads = defaultdict(list)
-        sets = defaultdict(list)
-        incs = defaultdict(list)
-
-        for op in self.operators:
-            # -- See below for why op.reads are not listed here.
-            #    In short: it's an optimization. We *assume* that
-            #    all reads are aliased to a set or inc, and as long
-            #    long as a topological ordering still exists, we saved
-            #    time on the analysis.
-            #    TODO: actually implement a fallback if the toposort
-            #          does not exist which uses a full alias check.
-            for node in op.sets + op.incs:
-                by_base_writes[(id(node.dct), node.sig.base)].append(node)
-
-            for node in op.reads:
-                by_base_reads[(id(node.dct), node.sig.base)].append(node)
-
-            for node in op.reads:
-                reads[node].append(op)
-
-            for node in op.sets:
-                sets[node].append(op)
-
-            for node in op.incs:
-                incs[node].append(op)
-
-        for node in sets:
-            assert len(sets[node]) == 1, (node, sets[node])
-
-        # assert that for every node (a) that is set
-        # there are no other signals (b) that are
-        # aliased to (a) and also set.
-        for node, other in itertools.combinations(sets, 2):
-            #if node.sig.base is other.sig.base:
-            assert not node.is_aliased_with(other)
-
-        # -- incs depend on sets
-        for node, post_ops in incs.items():
-            pre_ops = list(sets[node])
-            for other in by_base_writes[(id(node.dct), node.sig.base)]:
-                pre_ops += sets[other]
-            self.dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
-
-        # -- reads depend on writes (sets and incs)
-        for node, post_ops in reads.items():
-            pre_ops = sets[node] + incs[node]
-            for other in by_base_writes[(id(node.dct), node.sig.base)]:
-                pre_ops += sets[other] + incs[other]
-            self.dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
-
-
-    def eval_order(self):
-        return [node for node in networkx.topological_sort(self.dg)
-                if hasattr(node, 'go')]
-
     def step(self):
-        for op in self.order:
+        for op in self._operators:
             op.go()
 
         for k, v in self._output_signals.items():
