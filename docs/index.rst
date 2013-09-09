@@ -6,11 +6,16 @@ large-scale brain models using the methods of the
 `Neural Engineering Framework
 <http://compneuro.uwaterloo.ca/research/nef.html>`_.
 
+.. toctree::
+   :maxdepth: 2
+
+   installation
+
 If you're new to Nengo, start with the basic API
 and the associated examples.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    model
    model_api
