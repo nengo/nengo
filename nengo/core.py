@@ -11,6 +11,7 @@ import copy
 import logging
 
 import numpy as np
+import simulator as sim
 
 
 logger = logging.getLogger(__name__)
@@ -387,7 +388,20 @@ class Transform(object):
 
     def add_to_model(self, model):
         model.signals.append(self.alpha_signal)
-        model.transforms.append(self)
+        dst = model._get_output_view(self.outsig)
+
+        # XXX: Complicated lookup still necessary?
+        if self.insig in model._decoder_outputs:
+            insig = model._decoder_outputs[self.insig]
+        elif self.insig.base in model._decoder_outputs:
+            insig = self.insig.view_like_self_of(
+                model._decoder_outputs[self.insig.base])
+        else:
+            insig = self.insig
+
+        model._operators.append(
+            sim.DotInc(self.alpha_signal, insig, dst,
+                       tag='transform'))
 
     def to_json(self):
         return {
@@ -444,7 +458,11 @@ class Filter(object):
 
     def add_to_model(self, model):
         model.signals.append(self.alpha_signal)
-        model.filters.append(self)
+        dst = model._get_output_view(self.newsig)
+
+        model._operators.append(
+            sim.DotInc(self.alpha_signal, self.oldsig, dst,
+                       tag='transform'))
 
     def to_json(self):
         return {
@@ -482,8 +500,15 @@ class Encoder(object):
         self.weights_signal.value[...] = value
 
     def add_to_model(self, model):
-        model.encoders.append(self)
         model.signals.append(self.weights_signal)
+        model._operators.append(
+            sim.DotInc(
+                self.sig,
+                self.weights_signal,
+                self.pop.input_signal,
+                xT=True,
+                tag='encoder'))
+
 
     def to_json(self):
         return {
@@ -521,8 +546,27 @@ class Decoder(object):
         self.weights_signal.value[...] = value
 
     def add_to_model(self, model):
-        model.decoders.append(self)
         model.signals.append(self.weights_signal)
+        if self.sig.base not in model._decoder_outputs:
+            sigbase = Signal(self.sig.base.n, name=self.sig.name + '-decbase')
+            model.signals.append(sigbase)
+            model._decoder_outputs[self.sig.base] = sigbase
+            model._operators.append(
+                sim.Reset(sigbase))
+        else:
+            sigbase = model._decoder_outputs[self.sig.base]
+        if self.sig == self.sig.base:
+            dec_sig = sigbase
+        else:
+            dec_sig = self.sig.view_like_self_of(sigbase)
+        model._decoder_outputs[self.sig] = dec_sig
+        model._operators.append(
+            sim.DotInc(
+                self.pop.output_signal,
+                self.weights_signal,
+                dec_sig,
+                xT=True,
+                tag='Decoder'))
 
     def to_json(self):
         return {
@@ -541,13 +585,25 @@ class Nonlinearity(object):
         return str(self)
 
     def add_to_model(self, model):
-        model.nonlinearities.append(self)
+        # XXX: do we still need to append signals to model?
         model.signals.append(self.bias_signal)
         model.signals.append(self.input_signal)
         model.signals.append(self.output_signal)
+        model._operators.append(
+            self.operator(
+                output=self.output_signal,
+                J=self.input_signal,
+                nl=self))
+        # -- encoders will be scheduled between this copy
+        #    and nl_op
+        model._operators.append(
+            sim.Copy(dst=self.input_signal, src=self.bias_signal))
 
 
 class Direct(Nonlinearity):
+
+    operator = sim.SimDirect
+
     def __init__(self, n_in, n_out, fn, name=None):
         if name is None:
             name = "<Direct%d>" % id(self)
@@ -717,6 +773,7 @@ class _LIFBase(Nonlinearity):
 
 
 class LIFRate(_LIFBase):
+    operator = sim.SimLIFRate
     def math(self, J):
         """Compute rates for input current (incl. bias)"""
         old = np.seterr(divide='ignore')
@@ -729,13 +786,14 @@ class LIFRate(_LIFBase):
 
 
 class LIF(_LIFBase):
+    operator = sim.SimLIF
     def __init__(self, n_neurons, upsample=1, **kwargs):
         _LIFBase.__init__(self, n_neurons, **kwargs)
         self.upsample = upsample
 
     def to_json(self):
         d = _LIFBase.to_json(self)
-        d['upsample'] = upsample
+        d['upsample'] = self.upsample
         return d
 
     def step_math0(self, dt, J, voltage, refractory_time, spiked):
@@ -756,12 +814,11 @@ class LIF(_LIFBase):
         # set any post_ref elements < 0 = 0, and > 1 = 1
         v *= np.clip(post_ref, 0, 1)
 
-        # determine which neurons spike
-        # if v > 1 set spiked = 1, else 0
-        spiked[:] = (v > 1) * 1.0
-
         old = np.seterr(all='ignore')
         try:
+            # determine which neurons spike
+            # if v > 1 set spiked = 1, else 0
+            spiked[:] = (v > 1) * 1.0
 
             # linearly approximate time since neuron crossed spike threshold
             overshoot = (v - 1) / dV
