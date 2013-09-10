@@ -69,6 +69,14 @@ class Ensemble(object):
         self.neurons = neurons
         self.dimensions = dimensions
 
+        if neurons.n_neurons <= 0:
+            raise ValueError('number of neurons (%d) must be positive' %
+                             neurons.n_neurons)
+
+        if dimensions <= 0:
+            raise ValueError('number of dimensions (%d) must be positive' %
+                             dimensions)
+
         if 'decoder_noise' in kwargs:
             raise NotImplementedError('decoder_noise')
 
