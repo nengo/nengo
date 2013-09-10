@@ -492,10 +492,11 @@ class BaseSimulator(object):
         data : ndarray
             TODO: what are the dimensions?
         """
-        ### hunse: TODO: I think this will fail for when using long strings
-        ### as names in a console, but I haven't proven this yet
         if not isinstance(probe, core.Probe):
-            probe = self.model.probed[self.model.memo[id(probe)]]
+            if isinstance(probe, str):
+                probe = self.model.probed[probe]
+            else:
+                probe = self.model.probed[self.model.memo[id(probe)]]
         return np.asarray(self.probe_outputs[probe])
 
     def probe_data(self, probe):
