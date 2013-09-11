@@ -118,12 +118,12 @@ class DecodedConnection(object):
         description
 
     """
-    def __init__(self, pre, post, **kwargs):
+    def __init__(self, pre, post, filter=0.005, transform=1.0):
         self.pre = pre
         self.post = post
 
-        self.filter = kwargs.get('filter', 0.005)
-        self.transform = kwargs.get('transform', 1.0)
+        self.filter = filter
+        self.transform = transform
 
         self.probes = {'signal': []}
 
