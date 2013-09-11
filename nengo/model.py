@@ -688,7 +688,7 @@ class Model(object):
         elif isinstance(target, str):
             s = target.split('.')
             if len(s) > 1:
-                obj = self.get(s[:-2])
+                obj = self.get('.'.join(s[:-1]))
                 p = obj.probe(s[-1], sample_every, filter)
             else:
                 obj = self.get(target)
