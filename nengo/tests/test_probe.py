@@ -19,6 +19,17 @@ class TestProbe(SimulatorTestCase):
             "This is an extremely long name that will test "
             "if we can access sim data with long names"))
 
+    unittest.skip('known to fail, and problematic as discussed in #97')
+    def test_two_probes(self):
+
+        m = nengo.Model('model')
+        m.make_ensemble('A', nengo.LIF(10), 1)
+        x = m.probe('A')
+        y = m.probe('A')
+        sim = m.simulator(sim_class=self.Simulator)
+        sim.run(0.1)
+        self.assertIsNotNone(sim.data('A'))
+
 
 if __name__ == "__main__":
     nengo.log_to_file('log.txt', debug=True)

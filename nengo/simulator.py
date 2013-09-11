@@ -520,12 +520,19 @@ class Simulator(object):
         """
         if not isinstance(probe, core.Probe):
             if isinstance(probe, str):
-                probe = self.model.probed[probe]
+                probes = self.model.probed[probe]
             else:
-                probe = self.model.probed[self.model.memo[id(probe)]]
+                probes = self.model.probed[self.model.memo[id(probe)]]
+            if len(probes) == 1:
+                probe, = probes
+            else:
+                raise KeyError('Multiple probes by name "%s"' % probe)
         return np.asarray(self.probe_outputs[probe])
 
     def probe_data(self, probe):
-        return np.asarray(self.probe_outputs[probe])
+        orig = self.copied(probe)
+        # XXX so ugly, pls fix.
+        orig = self.model._extra_probe_lookup.get(orig, orig)
+        return np.asarray(self.probe_outputs[orig])
 
 
