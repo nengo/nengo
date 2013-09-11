@@ -44,6 +44,14 @@ class TestEnsembleEncoders(unittest.TestCase):
     def test_encoders_high_dimension(self):
         self._test_encoders(20)
 
+    def test_encoders_no_neurons(self):
+        with self.assertRaises(ValueError):
+            Ensemble('A', nengo.LIF(0), 1)
+       
+    def test_encoders_no_dimensions(self):
+        with self.assertRaises(ValueError):
+            Ensemble('A', nengo.LIF(1), 0)
+        
 
 class TestEnsemble(SimulatorTestCase):
     def test_constant_scalar(self):
