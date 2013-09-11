@@ -54,7 +54,7 @@ class Mock(object):
         else:
             return Mock()
 
-MOCK_MODULES = ['numpy', 'matplotlib']
+MOCK_MODULES = ['numpy', 'matplotlib', 'networkx']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
