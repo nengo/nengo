@@ -1,3 +1,35 @@
+import copy
+
+import numpy as np
+
+from . import decoders
+
+def tuning_curves(ens):
+    ens = copy.deepcopy(ens)
+    max_rates = ens.max_rates
+    if hasattr(max_rates, 'sample'):
+        max_rates = max_rates.sample(ens.neurons.n_neurons, rng=ens.rng)
+    intercepts = ens.intercepts
+    if hasattr(intercepts, 'sample'):
+        intercepts = intercepts.sample(ens.neurons.n_neurons, rng=ens.rng)
+    ens.neurons.set_gain_bias(max_rates, intercepts)
+
+    if ens.encoders is None:
+        encoders = decoders.sample_hypersphere(ens.dimensions,
+                                               ens.neurons.n_neurons,
+                                               ens.rng, surface=True)
+    else:
+        encoders = np.asarray(ens.encoders, copy=True)
+        norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
+        encoders /= np.sqrt(norm)
+    encoders /= np.asarray(ens.radius)
+    encoders *= ens.neurons.gain[:, np.newaxis]
+
+    ens.eval_points.sort(axis=0)
+    J = np.dot(ens.eval_points, encoders.T)
+    return ens.eval_points, ens.neurons.rates(J)
+
+
 def encoders():
     @staticmethod
     def _process_encoders(encoders, neurons, dims, n_ensembles):
@@ -212,3 +244,125 @@ def weights(pre_neurons, post_neurons, function):
 #     pstc = max(pstc, dt)
 #     decay = np.exp(-dt / pstc)
 #     return decay, (1.0 - decay)
+
+
+### Helper functions for creating inputs
+
+def piecewise(data):
+    """Create a piecewise constant function from a dictionary.
+    
+    Given an input of data={0:0, 0.5:1, 0.75:-1, 1:0} this will generate a
+    function that returns 0 up until t=0.5, then outputs a 1 until t=0.75,
+    then a -1 until t=1, and then returns 0 after that.  This is meant as a
+    shortcut for::
+    
+        def function(t):
+            if t<0.5: return 0
+            elif t<0.75: return 1
+            elif t<1: return -1
+            else: return 0
+        
+    The keys in the dictionary must be times (floats or ints).  The values in
+    the data dictionary can be floats, lists, or functions that return
+    floats or lists.  All lists must be of the same length.
+    
+    For times before the first specified time, it will default to zero (of
+    the correct length).  This means the above example can be simplified to::
+    
+        piecewise({0.5:1, 0.75:-1, 1:0})
+        
+    Parameters
+    ----------
+    data : dict
+        The values to change to.  Keys are the beginning time for the value.
+        Values can be int, float, list, or functions that return those.
+
+    Returns
+    -------
+    function:
+        A function that takes a variable t and returns the corresponding
+        value from the dictionary.
+
+    Examples
+    --------
+    
+      >>> func = piecewise({0.5:1, 0.75:-1, 1:0})
+      >>> func(0.2)
+      [0]
+      >>> func(0.58)
+      [1]
+
+      >>> func = piecewise({0.5:[1,0], 0.75:[0,1]})
+      >>> func(0.2)
+      [0,0]
+      >>> func(0.58)
+      [1,0]
+      >>> func(100)
+      [0,1]
+
+      >>> import math
+      >>> func = piecewise({0:math.sin, 0.5:math.cos})
+      >>> func(0.499)
+      [0.47854771647582706]
+      >>> func(0.5)
+      [0.8775825618903728]      
+        
+    """
+    
+    # first, sort the data (to simplify finding the right element when calling
+    #  the function)
+    ordered_data = []
+    output_length = None  # the dimensionality of the returned values
+    for time, output in sorted(data.items()):
+        if not isinstance(time, (float, int)):
+            raise TypeError('Keys must be times (floats or ints), not "%s"'%`time`)
+    
+        # handle ints and floats by turning them into a list
+        if isinstance(output, (float, int)):
+            output = [output]
+            
+        # figure out the length of this item    
+        if callable(output):
+            value = output(0.0)
+            if isinstance(value, (float, int)):
+                length = 1
+            else:
+                length = len(value)
+        else:    
+            length = len(output)
+            
+        # make sure this is the same length as previous items    
+        if output_length is None:
+            output_length = length
+        elif output_length != length:
+            raise Exception('invalid data for piecewise function ' +
+                            '(time %4g has %d items instead of %d)'%
+                            (time,length,output_length))
+                            
+        # add it to the ordered list                    
+        row = (time, output)
+        ordered_data.append(row)
+        
+    # set the value to zero for t befoer the first given time    
+    initial_value = [0]*output_length    
+        
+    # build the function to return 
+    def piecewise_function(t, data=ordered_data, start=initial_value):
+        value = start   # start at zero
+        
+        # find the correct output value
+        for time, output in ordered_data:
+            if value is None or time<=t:
+                value = output
+            else:
+                break
+        
+        # if it's a function, call it
+        if callable(value):
+            value = value(t)
+            # force the result to be a list
+            if isinstance(value, (int, float)):
+                value = [value]
+                
+        return value        
+    return piecewise_function    
