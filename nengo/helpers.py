@@ -366,3 +366,62 @@ def piecewise(data):
                 
         return value        
     return piecewise_function    
+    
+    
+def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
+    """Generate white noise inputs
+
+    Parameters
+    ----------
+    step : float
+        The step size of different frequencies to generate
+        
+    high : float
+        The highest frequency to generate (should be a multiple of step)
+        
+    rms : float
+        The RMS power of the signal
+
+    seed : int or None
+        Random number seed
+
+    dimensions : int or None
+        The number of different random signals to generate.  The resulting
+        function will return an array of length `dimensions` for every
+        point in time.  If `dimensions` is None, the resulting function will
+        just return a float for each point in time.
+
+    Returns
+    -------
+    function:
+        A function that takes a variable t and returns the value of the 
+        randomly generated signal.  This value is a float if `dimensions` is
+        None; otherwise it is a list of length `dimensions`.
+    """
+    rng = np.random.RandomState(seed)
+    
+    if dimensions is not None:
+        signals = [white_noise(step, high, rms=rms, seed=rng.randint(0x7ffffff))
+                    for i in range(dimensions)]
+        def white_noise_function(t, signals=signals):
+            return [signal(t) for signal in signals]
+        return white_noise_function    
+    
+    N = int(float(high) / step)                     # number of samples
+    frequencies = np.arange(1, N + 1) * step * 2 * np.pi   # frequency of each
+    amplitude = rng.uniform(0, 1, N)                # amplitude for each sample
+    phase = rng.uniform(0, 2*np.pi, N)              # phase of each sample
+
+    # compute the rms of the signal
+    rawRMS = np.sqrt(np.sum(amplitude**2)/2)
+    # rescale
+    amplitude = amplitude * rms / rawRMS
+    
+    # create a function that computes the bases and weights them by amplitude
+    def white_noise_function(t, f=frequencies, a=amplitude, p=phase):
+        return np.dot(a, np.sin((f*t)+p))
+    
+    return white_noise_function
+    
+    
+       
