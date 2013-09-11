@@ -289,7 +289,7 @@ class Ensemble(object):
             self.probes['decoded_output'].append(probe)
         elif to_probe == 'spikes':
             probe = Probe(self.name + '.spikes', sample_every)
-            connection = connections.DecodedConnection(self.neurons, probe, 
+            connection = connections.NonlinearityConnection(self.neurons, probe, 
                                     filter=None, transform=np.eye(self.n_neurons))
             self.connections_out.append(connection)
             if hasattr(probe, 'connections_in'):
