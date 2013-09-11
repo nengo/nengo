@@ -253,14 +253,14 @@ class Ensemble(object):
         post : model object
             The connection's target destination.
         **kwargs : optional
-            Arguments for the new DecodedNeuronConnection.
+            Arguments for the new DecodedConnection.
 
         Returns
         -------
-        connection : DecodedNeuronConnection
+        connection : DecodedConnection
             The new connection object.
         """
-        connection = connections.DecodedNeuronConnection(self, post, **kwargs)
+        connection = connections.DecodedConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
@@ -378,7 +378,7 @@ class ConstantNode(object):
 
     def build(self, model, dt):
         # Set up signal
-        self.signal = core.Constant(self.output.size, self.output,
+        self.signal = core.Constant(self.output,
                                     name=self.name)
         model.add(self.signal)
 
@@ -453,7 +453,7 @@ class Node(object):
 
     def connect_to(self, post, **kwargs):
         """TODO"""
-        connection = connections.DecodedConnection(self, post, **kwargs)
+        connection = connections.NonlinearityConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)

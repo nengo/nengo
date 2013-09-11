@@ -303,11 +303,10 @@ class Probe(object):
 
 class Constant(Signal):
     """A signal meant to hold a fixed value"""
-    def __init__(self, n, value, name=None):
-        Signal.__init__(self, n, name=name)
+    def __init__(self, value, name=None):
         self.value = np.asarray(value)
-        # TODO: change constructor to get n from value
-        assert self.value.size == n
+        
+        Signal.__init__(self, self.value.size, name=name)
 
     def __str__(self):
         if self.name is not None:
@@ -344,8 +343,7 @@ def is_constant(sig):
     """
     return isinstance(sig.base, Constant)
 
-
-class Transform(object):
+class Transform(object): #to be removed?
     """A linear transform from a decoded signal to the signals buffer"""
     def __init__(self, alpha, insig, outsig):
         alpha = np.asarray(alpha)
@@ -356,7 +354,7 @@ class Transform(object):
 
         name = insig.name + ">" + outsig.name + ".tf_alpha"
 
-        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
+        self.alpha_signal = Constant(alpha, name=name)
         self.insig = insig
         self.outsig = outsig
         if self.alpha_signal.size == 1:
@@ -412,7 +410,7 @@ class Transform(object):
         }
 
 
-class Filter(object):
+class Filter(object): #to be removed?
     """A linear transform from signals[t-1] to signals[t]"""
     def __init__(self, alpha, oldsig, newsig):
         if hasattr(newsig, 'value'):
@@ -421,7 +419,7 @@ class Filter(object):
 
         name = oldsig.name + ">" + newsig.name + ".f_alpha"
 
-        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
+        self.alpha_signal = Constant(alpha, name=name)
         self.oldsig = oldsig
         self.newsig = newsig
 
@@ -473,7 +471,7 @@ class Filter(object):
         }
 
 
-class Encoder(object):
+class Encoder(object): #to be removed?
     """A linear transform from a signal to a population"""
     def __init__(self, sig, pop, weights):
         self.sig = sig
@@ -482,7 +480,7 @@ class Encoder(object):
         if weights.shape != (pop.n_in, sig.size):
             raise ValueError('weight shape', weights.shape)
         name = sig.name + ".encoders"
-        self.weights_signal = Constant(n=weights.size, value=weights, name=name)
+        self.weights_signal = Constant(weights, name=name)
 
     def __str__(self):
         return ("Encoder (id " + str(id(self)) + ")"
@@ -519,7 +517,7 @@ class Encoder(object):
         }
 
 
-class Decoder(object):
+class Decoder(object): #to be removed?
     """A linear transform from a population to a signal"""
     def __init__(self, pop, sig, weights):
         self.pop = pop
@@ -528,7 +526,7 @@ class Decoder(object):
         if weights.shape != (sig.size, pop.n_out):
             raise ValueError('weight shape', weights.shape)
         name = sig.name + ".decoders"
-        self.weights_signal = Constant(n=weights.size, value=weights, name=name)
+        self.weights_signal = Constant(weights, name=name)
 
     def __str__(self):
         return ("Decoder (id " + str(id(self)) + ")"
@@ -555,10 +553,12 @@ class Decoder(object):
                 sim.Reset(sigbase))
         else:
             sigbase = model._decoder_outputs[self.sig.base]
+            
         if self.sig == self.sig.base:
             dec_sig = sigbase
         else:
             dec_sig = self.sig.view_like_self_of(sigbase)
+            
         model._decoder_outputs[self.sig] = dec_sig
         model._operators.append(
             sim.DotInc(
@@ -611,8 +611,7 @@ class Direct(Nonlinearity):
 
         self.input_signal = Signal(n_in, name=name + '.input')
         self.output_signal = Signal(n_out, name=name + '.output')
-        self.bias_signal = Constant(n=n_in,
-                                    value=np.zeros(n_in),
+        self.bias_signal = Constant(np.zeros(n_in),
                                     name=name + '.bias')
 
         self.n_in = n_in
@@ -658,8 +657,7 @@ class _LIFBase(Nonlinearity):
             name = "<%s%d>" % (self.__class__.__name__, id(self))
         self.input_signal = Signal(n_neurons, name=name + '.input')
         self.output_signal = Signal(n_neurons, name=name + '.output')
-        self.bias_signal = Constant(
-            n=n_neurons, value=np.zeros(n_neurons), name=name + '.bias')
+        self.bias_signal = Constant(np.zeros(n_neurons), name=name + '.bias')
 
         self.name = name
         self.n_neurons = n_neurons
