@@ -226,6 +226,8 @@ class DecodedNeuronConnection(object):
             raise NotImplementedError('modulatory')
 
         self.decoders = kwargs.get('decoders', None)
+        self.decoder_solver = kwargs.get('decoder_solver',
+                                         decsolve.least_squares)
         self.eval_points = kwargs.get('eval_points', None)
         self.filter = kwargs.get('filter', 0.005)
         self.function = kwargs.get('function', None)
@@ -328,13 +330,13 @@ class DecodedNeuronConnection(object):
                     [self.function(ep) for ep in self.eval_points])
                 if len(targets.shape) < 2:
                     targets.shape = targets.shape[0], 1
-            decoders = decsolve.solve_decoders(activities, targets)
+            decoders = self.decoder_solver(activities, targets)
         else:
-            # XXX something's happening here... what it is ain't exactly clear
+            # This allows for specifying decoders manually.
+            # Perhaps this isn't necessary if you can specify the solver
             decoders = self.decoder
         self.decoder = core.Decoder(
-            sig=self.signal, pop=self.pre.neurons,
-            weights=decsolve.solve_decoders(activities, targets))
+            sig=self.signal, pop=self.pre.neurons, weights=decoders)
         if self.function is not None:
             self.decoder.desired_function = self.function
         model.add(self.decoder)

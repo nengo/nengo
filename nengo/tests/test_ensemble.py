@@ -47,11 +47,11 @@ class TestEnsembleEncoders(unittest.TestCase):
     def test_encoders_no_neurons(self):
         with self.assertRaises(ValueError):
             Ensemble('A', nengo.LIF(0), 1)
-       
+
     def test_encoders_no_dimensions(self):
         with self.assertRaises(ValueError):
             Ensemble('A', nengo.LIF(1), 0)
-        
+
 
 class TestEnsemble(SimulatorTestCase):
     def test_constant_scalar(self):
@@ -174,7 +174,7 @@ class TestEnsemble(SimulatorTestCase):
 
         m = nengo.Model('test_product', seed=124)
 
-        N = 40
+        N = 80
         m.make_node('sin', output=np.sin)
         m.make_node('-0.5', output=-.5)
         m.make_ensemble('factors', nengo.LIF(2 * N), dimensions=2, radius=1.5)
@@ -208,7 +208,7 @@ class TestEnsemble(SimulatorTestCase):
         self.assertTrue(rmse(sim.data('factors')[20:, 1], -0.5) < 0.1)
 
         def match(a, b):
-            self.assertTrue(np.allclose(a, b, .1, .1))
+            self.assertTrue(rmse(a, b) < 0.1)
 
         match(sim.data('product')[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
         match(sim.data(conn)[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
