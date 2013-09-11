@@ -1,4 +1,5 @@
 import codecs
+from collections import defaultdict
 import copy
 import inspect
 import json
@@ -83,7 +84,8 @@ class Model(object):
 
         self.objs = {}
         self.aliases = {}
-        self.probed = {}
+        # -- map from signals to the probes of that signal
+        self.probed = defaultdict(list)
         self.connections = []
         self.signal_probes = []
 
@@ -192,10 +194,21 @@ class Model(object):
 
         # 2. Then probes
         logger.info("Building probes")
-        for target in model.probed:
-            if not isinstance(model.probed[target], core.Probe):
-                model.probed[target].build(model=model, dt=dt)
-                model.probed[target] = model.probed[target].probe
+        model._extra_probe_lookup = {}
+        for target, probes in model.probed.items():
+            for ii in range(len(probes)):
+                probe = probes[ii]
+                assert isinstance(probe, (objects.Probe, core.Probe))
+                if isinstance(probe, objects.Probe):
+                    # -- this call creates a new Signal and core.Probe
+                    probe.build(model=model, dt=dt)
+                    # -- XXX do we need this data structure anymore?
+                    probes[ii] = probe.probe
+                    # -- for data lookup we need to tell the user
+                    #    that his object.Probe instance that we deepcopied
+                    #    is now associated with this core.Probe object...
+                    print 'prep_for_simulation (copy)', id(probe)
+                    model._extra_probe_lookup[probe] = probe.probe
 
         # 3. Then connections
         logger.info("Building connections")
@@ -671,4 +684,4 @@ class Model(object):
             raise TypeError("Type " + target.__class__.__name__ + " "
                             "has no probe function.")
 
-        self.probed[target] = p
+        self.probed[target].append(p)
