@@ -187,7 +187,7 @@ class Ensemble(object):
         if isinstance(_neurons, int):
             logger.warning(("neurons should be an instance of a nonlinearity, "
                             "not an int. Defaulting to LIF."))
-            _neurons = core.LIF(neurons)
+            _neurons = core.LIF(_neurons)
 
         # Give a better name if name is default
         if _neurons.name.startswith("<LIF"):
