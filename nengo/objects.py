@@ -85,7 +85,7 @@ class Ensemble(object):
 
         self.encoders = kwargs.get('encoders', None)
         self.intercepts = kwargs.get('intercepts', Uniform(-1.0, 1.0))
-        self.max_rates = kwargs.get('max_rates', Uniform(200, 300))
+        self.max_rates = kwargs.get('max_rates', Uniform(200, 400))
         self.radius = kwargs.get('radius', 1.0)
         self.seed = kwargs.get('seed', np.random.randint(2**31-1))
 
@@ -314,14 +314,15 @@ class Ensemble(object):
         intercepts = self.intercepts
         if hasattr(intercepts, 'sample'):
             intercepts = intercepts.sample(self.neurons.n_neurons, rng=self.rng)
+        #intercepts *= self.radius
         self.neurons.set_gain_bias(max_rates, intercepts)
         model.add(self.neurons)
 
         # Set up encoder
         if self.encoders is None:
-            encoders = decoders.sample_hypersphere(self.dimensions,
-                                                   self.neurons.n_neurons,
-                                                   self.rng, surface=True)
+            encoders = decoders.sample_hypersphere(
+                self.dimensions, self.neurons.n_neurons,
+                self.rng, surface=True)
         else:
             encoders = np.asarray(self.encoders, copy=True)
             norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
