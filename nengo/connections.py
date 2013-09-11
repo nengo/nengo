@@ -373,13 +373,14 @@ class ConnectionList(object):
         for connection in self.connections:
             pre_dim = connection.dimensions
 
-            if self.transform.shape == ():
-                self.transform
+            if self.transform.ndim == 0:
                 trans = np.zeros((connection.post.dimensions, pre_dim))
-                trans[i:i+pre_dim] = self.transform
-
-            if self.transform.ndim == 2:
+                np.fill_diagonal(trans[i:i+pre_dim,:], self.transform)
+            elif self.transform.ndim == 2:
                 trans = self.transform[:,i:i+pre_dim]
+            else:
+                raise NotImplementedError(
+                    "Only transforms with 0 or 2 ndims are accepted")
 
             i += pre_dim
 

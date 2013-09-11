@@ -69,8 +69,6 @@ def _output_transform(dims):
 class DirectCircularConvolution(object):
     def __init__(self, model, A, B, C, invert_a=False, invert_b=False):
 
-        # assert A.dimensions == B.dimensions
-        # dims = A.dimensions
         dims = len(A)
         assert len(A) == len(B) and len(B) == len(C)
 
@@ -92,74 +90,39 @@ class DirectCircularConvolution(object):
         tf = model.add(Transform(1.0, C, C))
 
 
-def weights(n_in, n_out):
-    return np.random.randn(n_in, n_out)
-
 class CircularConvolution(object):
     """
     CircularConvolution docs XXX
     """
 
-    def __init__(self, model, A, B,
-            neurons_per_product=128,
-            neuron_type=None):
+    def __init__(self, model, A, B, C, neurons=None, radius=1, pstc=0.005,
+                 invert_a=False, invert_b=False, name=None):
+        from ..objects import Ensemble
+        from ..templates import EnsembleArray
 
-        if A.shape != B.shape:
-            raise ValueError()
-        if neuron_type != None:
-            raise NotImplementedError()
+        dims = A.dimensions
+        assert A.dimensions == B.dimensions and B.dimensions == C.dimensions
 
-        if len(A) % 2:
-            raise NotImplementedError()
+        transform_inA = _input_transform(dims, first=True, invert=invert_a)
+        transform_inB = _input_transform(dims, first=False, invert=invert_b)
+        transform_out = _output_transform(dims)
+        dims2 = transform_inA.shape[0]
 
-        D = len(A)
+        if name is None:
+            name = "D"
+        D = model.add(EnsembleArray(
+                name, neurons, dims2, dimensions_per_ensemble=2, radius=radius))
 
-        # XXX compute correct matrices here
-        fourier_matrix = np.random.randn(D, D)
-        inverse_fourier_matrix = np.random.randn(D, D * 2)
+        transform_inA = transform_inA.reshape(2*dims2, dims)
+        transform_inB = transform_inB.reshape(2*dims2, dims)
+        A.connect_to(D, transform=transform_inA, filter=pstc)
+        B.connect_to(D, transform=transform_inB, filter=pstc)
 
-        self.A = A
-        self.B = B
+        def product(x):
+            return x[0] * x[1]
+        D.connect_to(C, function=product, transform=transform_out, filter=pstc)
 
-        # -- the output signals
-        self.out = model.add(Signal(D))
-
-        # -- Fourier transforms of A, B, C
-        self.A_Fourier = model.add(Signal(D)).reshape(D//2, 2)
-        self.B_Fourier = model.add(Signal(D)).reshape(D//2, 2)
-        self.AB_prods = model.add(Signal(D * 2)).reshape(D//2, 4)
-
-        # -- compute the Fourier transform of A and B
-        #    as Filters.
-        #    N.B. delayed by one time step.
-        model.add(Filter(fourier_matrix, A, self.A_Fourier.base))
-        model.add(Filter(fourier_matrix, B, self.B_Fourier.base))
-
-        # -- compute the complex elementwise product of A, B
-        #    in Fourier domain
-        self.pops = []
-        for ii in range(D//2):
-            # TODO: use neuron_type
-            AA = model.add(LIF(neurons_per_product))
-            AB = model.add(LIF(neurons_per_product))
-            BA = model.add(LIF(neurons_per_product))
-            BB = model.add(LIF(neurons_per_product))
-            n_in = AA.n_in
-            n_out = self.A_Fourier[ii, 0:1].size
-            model.add(Encoder(self.A_Fourier[ii, 0:1], AA, weights(n_in,n_out)))
-            model.add(Encoder(self.A_Fourier[ii, 1:2], AA, weights(n_in,n_out)))
-            model.add(Encoder(self.A_Fourier[ii, 0:1], AB, weights(n_in,n_out)))
-            model.add(Encoder(self.B_Fourier[ii, 1:2], AB, weights(n_in,n_out)))
-            model.add(Encoder(self.B_Fourier[ii, 0:1], BA, weights(n_in,n_out)))
-            model.add(Encoder(self.A_Fourier[ii, 1:2], BA, weights(n_in,n_out)))
-            model.add(Encoder(self.B_Fourier[ii, 0:1], BB, weights(n_in,n_out)))
-            model.add(Encoder(self.B_Fourier[ii, 1:2], BB, weights(n_in,n_out)))
-
-            model.add(Decoder(AA, self.AB_prods[ii, 0:1], weights(n_out,n_in)))
-            model.add(Decoder(AB, self.AB_prods[ii, 1:2], weights(n_out,n_in)))
-            model.add(Decoder(BA, self.AB_prods[ii, 2:3], weights(n_out,n_in)))
-            model.add(Decoder(BB, self.AB_prods[ii, 3:4], weights(n_out,n_in)))
-
-        model.add(Transform(inverse_fourier_matrix,
-                            self.AB_prods.base,
-                            self.out.base))
+        self.ensemble = D
+        self.transform_inA = transform_inA
+        self.transform_inB = transform_inB
+        self.transform_out = transform_out
