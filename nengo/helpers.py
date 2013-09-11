@@ -1,3 +1,35 @@
+import copy
+
+import numpy as np
+
+from . import decoders
+
+def tuning_curves(ens):
+    ens = copy.deepcopy(ens)
+    max_rates = ens.max_rates
+    if hasattr(max_rates, 'sample'):
+        max_rates = max_rates.sample(ens.neurons.n_neurons, rng=ens.rng)
+    intercepts = ens.intercepts
+    if hasattr(intercepts, 'sample'):
+        intercepts = intercepts.sample(ens.neurons.n_neurons, rng=ens.rng)
+    ens.neurons.set_gain_bias(max_rates, intercepts)
+
+    if ens.encoders is None:
+        encoders = decoders.sample_hypersphere(ens.dimensions,
+                                               ens.neurons.n_neurons,
+                                               ens.rng, surface=True)
+    else:
+        encoders = np.asarray(ens.encoders, copy=True)
+        norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
+        encoders /= np.sqrt(norm)
+    encoders /= np.asarray(ens.radius)
+    encoders *= ens.neurons.gain[:, np.newaxis]
+
+    ens.eval_points.sort(axis=0)
+    J = np.dot(ens.eval_points, encoders.T)
+    return ens.eval_points, ens.neurons.rates(J)
+
+
 def encoders():
     @staticmethod
     def _process_encoders(encoders, neurons, dims, n_ensembles):
