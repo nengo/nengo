@@ -87,12 +87,12 @@ def transform(pre_dims, post_dims,
     """
     t = [[0 for pre in xrange(pre_dims)] for post in xrange(post_dims)]
     if index_pre is None:
-        index_pre = range(dim_pre)
+        index_pre = range(pre_dims)
     elif isinstance(index_pre, int):
         index_pre = [index_pre]
 
     if index_post is None:
-        index_post = range(dim_post)
+        index_post = range(post_dims)
     elif isinstance(index_post, int):
         index_post = [index_post]
 
