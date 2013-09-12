@@ -445,6 +445,9 @@ class Nonlinearity(object):
     def __repr__(self):
         return str(self)
 
+    def calc_direct_connect_transform(self, transform):
+        return transform
+
     def add_to_model(self, model):
         # XXX: do we still need to append signals to model?
         model.signals.append(self.bias_signal)
@@ -583,6 +586,9 @@ class _LIFBase(Nonlinearity):
     @property
     def n_out(self):
         return self.n_neurons
+
+    def calc_direct_connect_transform(self, transform):
+        return np.asarray(transform) * np.asarray([self.gain]).T
 
     def set_gain_bias(self, max_rates, intercepts):
         """Compute the alpha and bias needed to get the given max_rate
