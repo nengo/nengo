@@ -9,6 +9,24 @@ logger = logging.getLogger(__name__)
 
 class TestSimulator(SimulatorTestCase):
 
+    def test_steps(self):
+        m = nengo.Model("test_signal_indexing_1")
+        sim = m.simulator(sim_class=self.Simulator)
+        self.assertEqual(0, sim.signals[m.steps])
+        sim.step()
+        self.assertEqual(1, sim.signals[m.steps])
+        sim.step()
+        self.assertEqual(2, sim.signals[m.steps])
+
+    def test_time(self):
+        m = nengo.Model("test_signal_indexing_1")
+        sim = m.simulator(sim_class=self.Simulator)
+        self.assertEqual(0.00, sim.signals[m.t])
+        sim.step()
+        self.assertEqual(0.001, sim.signals[m.t])
+        sim.step()
+        self.assertEqual(0.002, sim.signals[m.t])
+
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
         one = m.add(Signal(n=1, name='a'))
@@ -33,7 +51,7 @@ class TestSimulator(SimulatorTestCase):
 
     def test_simple_direct_mode(self):
         m = nengo.Model("test_simple_direct_mode")
-        sig = m.add(Signal())
+        sig = m.add(Signal(n=1, name='sig'))
 
         pop = m.add(Direct(n_in=1, n_out=1, fn=np.sin))
         m.add(Encoder(m.t, pop, weights=[[1.0]]))
@@ -41,15 +59,21 @@ class TestSimulator(SimulatorTestCase):
         m.add(Transform(1.0, sig, sig))
 
         sim = m.simulator(sim_class=self.Simulator)
+        #sim.print_op_groups()
         sim.step()
+        #print 'after step:'
+        #print sim.signals
         dt = sim.model.dt
         for i in range(5):
             sim.step()
 
             t = (i + 2) * dt
-            self.assertTrue(np.allclose(sim.signals[sim.copied(m.t)], t))
-            self.assertTrue(np.allclose(
-                    sim.signals[sim.copied(sig)], np.sin(t - dt)))
+            self.assertTrue(np.allclose(sim.signals[sim.copied(m.t)], t),
+                msg='%s != %s' % (sim.signals[sim.copied(m.t)], t))
+            self.assertTrue(
+                np.allclose(
+                    sim.signals[sim.copied(sig)], np.sin(t - dt)),
+                msg='%s != %s' % (sim.signals[sim.copied(sig)], np.sin(t - dt)))
 
     def test_encoder_decoder_pathway(self):
         m = nengo.Model("")
