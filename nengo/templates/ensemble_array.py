@@ -122,6 +122,13 @@ class EnsembleArray(object):
             self.probes['decoded_output'].append(probe)
         return probe
 
+    def add_to_model(self, model):
+        if model.objs.has_key(self.name):
+            raise ValueError("Something called " + self.name + " already "
+                             "exists. Please choose a different name.")
+
+        model.objs[self.name] = self
+
     def build(self, model, dt):
         self.signal = core.Signal(self.dimensions, name=self.name+".signal")
         model.add(self.signal)
