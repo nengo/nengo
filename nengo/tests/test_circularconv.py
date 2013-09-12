@@ -62,7 +62,7 @@ class TestCircularConv(SimulatorTestCase):
     #     # assert_allclose(self, logger, c, c2, atol=1e-5, rtol=1e-5)
     #     assert_allclose(self, logger, c, c2, atol=1e-5, rtol=1e-3)
 
-    def test_circularconv(self, dims=5, neurons_per_product=150):
+    def _test_circularconv(self, dims=5, neurons_per_product=150):
         rng = np.random.RandomState(42342)
 
         n_neurons = neurons_per_product * dims
@@ -144,6 +144,16 @@ class TestCircularConv(SimulatorTestCase):
         rtol, atol = 0.1, 0.05
         self.assertTrue(np.allclose(d, d_sim, rtol=rtol, atol=atol))
         self.assertTrue(np.allclose(c, c_sim, rtol=rtol, atol=atol))
+
+    def test_small(self):
+        return self._test_circularconv(dims=4, neurons_per_product=128)
+
+    def test_med(self):
+        return self._test_circularconv(dims=50, neurons_per_product=128)
+
+    # Too much for my poor machine
+    # def test_large(self):
+    #     return self._test_circularconv(dims=512, neurons_per_product=128)
 
 
 if __name__ == "__main__":

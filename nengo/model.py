@@ -113,9 +113,8 @@ class Model(object):
     def _get_output_view(self, obj):
         # -- hacky helper used by Transform.add_to_model and Filter.add_to_model
         if obj.base not in self._next_signals:
-            self._next_signals[obj.base] = core.Signal(
-                obj.base.n,
-                name=obj.base.name + '-out')
+            self._next_signals[obj.base] = core.Signal(obj.base.n,
+                                                       name=obj.base.name + '-out')
             self._operators.append(
                 simulator.Reset(self._next_signals[obj.base]))
             # -- N.B. this copy will be performed *after* the
@@ -131,6 +130,7 @@ class Model(object):
                 self._next_signals[obj.base])
 
         return self._next_signals[obj]
+            
 
     def __str__(self):
         return "Model: " + self.name

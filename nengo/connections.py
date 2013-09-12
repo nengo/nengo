@@ -87,8 +87,8 @@ class SignalConnection(object):
 #        model._operators += [simulator.Reset(self.post)]
         model._operators += [simulator.DotInc(core.Constant(self.transform),
                                               self.signal,
-                                              model._get_output_view(self.post))]
-#                                              self.post)]
+#                                              model._get_output_view(self.post))]
+                                              self.post)]
 
     def _add_probes(self, model):
         for probe in self.probes['signal']:

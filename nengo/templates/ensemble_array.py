@@ -6,6 +6,7 @@ import numpy as np
 from ..connections import ConnectionList
 from .. import core
 from .. import objects
+from .. import simulator
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +133,8 @@ class EnsembleArray(object):
     def build(self, model, dt):
         self.signal = core.Signal(self.dimensions, name=self.name+".signal")
         model.add(self.signal)
+        
+        model._operators += [simulator.Reset(self.signal)]
 
         dims = self.dimensions_per_ensemble
 
