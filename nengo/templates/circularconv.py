@@ -51,8 +51,6 @@ class CircularConvolution(object):
         # -- compute the Fourier transform of A and B
         #    as Filters.
         #    N.B. delayed by one time step.
-#        model.add(Filter(fourier_matrix, A, self.A_Fourier.base))
-#        model.add(Filter(fourier_matrix, B, self.B_Fourier.base))
         model._operators += [simulator.ProdUpdate(core.Constant(fourier_matrix), A, 
                                                   core.Constant(0), self.A_Fourier.base)]
         model._operators += [simulator.ProdUpdate(core.Constant(fourier_matrix), B, 
@@ -71,14 +69,6 @@ class CircularConvolution(object):
             BB = model.add(LIF(neurons_per_product))
             n_in = AA.n_in
             n_out = self.A_Fourier[ii, 0:1].size
-#            model.add(Encoder(self.A_Fourier[ii, 0:1], AA, weights(n_in,n_out)))
-#            model.add(Encoder(self.A_Fourier[ii, 1:2], AA, weights(n_in,n_out)))
-#            model.add(Encoder(self.A_Fourier[ii, 0:1], AB, weights(n_in,n_out)))
-#            model.add(Encoder(self.B_Fourier[ii, 1:2], AB, weights(n_in,n_out)))
-#            model.add(Encoder(self.B_Fourier[ii, 0:1], BA, weights(n_in,n_out)))
-#            model.add(Encoder(self.A_Fourier[ii, 1:2], BA, weights(n_in,n_out)))
-#            model.add(Encoder(self.B_Fourier[ii, 0:1], BB, weights(n_in,n_out)))
-#            model.add(Encoder(self.B_Fourier[ii, 1:2], BB, weights(n_in,n_out)))
             model._operators += [
                 simulator.DotInc(core.Constant(weights(n_in,n_out)), self.A_Fourier[ii, 0:1], AA.input_signal),
                 simulator.DotInc(core.Constant(weights(n_in,n_out)), self.A_Fourier[ii, 1:2], AA.input_signal),
@@ -89,10 +79,6 @@ class CircularConvolution(object):
                 simulator.DotInc(core.Constant(weights(n_in,n_out)), self.B_Fourier[ii, 0:1], BB.input_signal),
                 simulator.DotInc(core.Constant(weights(n_in,n_out)), self.B_Fourier[ii, 1:2], BB.input_signal)]
 
-#            model.add(Decoder(AA, self.AB_prods[ii, 0:1], weights(n_out,n_in)))
-#            model.add(Decoder(AB, self.AB_prods[ii, 1:2], weights(n_out,n_in)))
-#            model.add(Decoder(BA, self.AB_prods[ii, 2:3], weights(n_out,n_in)))
-#            model.add(Decoder(BB, self.AB_prods[ii, 3:4], weights(n_out,n_in)))
             model._operators += [simulator.DotInc(core.Constant(weights(n_out,n_in)), AA.output_signal,
                                      self.AB_prods[ii,0:1]),
                                  simulator.DotInc(core.Constant(weights(n_out,n_in)), AB.output_signal,
@@ -102,9 +88,6 @@ class CircularConvolution(object):
                                  simulator.DotInc(core.Constant(weights(n_out,n_in)), BB.output_signal,
                                      self.AB_prods[ii,3:4])]
 
-#        model.add(Transform(inverse_fourier_matrix,
-#                            self.AB_prods.base,
-#                            self.out.base))
         model._operators += [simulator.ProdUpdate(core.Constant(inverse_fourier_matrix),
                                                   self.AB_prods.base,
                                                   core.Constant(0),

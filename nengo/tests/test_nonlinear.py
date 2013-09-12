@@ -28,9 +28,7 @@ class TestNonlinear(SimulatorTestCase):
             m = nengo.Model("")
             ins = m.add(Signal(n=d, name='ins'))
             pop = m.add(Direct(n_in=d, n_out=d, fn=fn))
-#            enc = m.add(Encoder(ins, pop, np.eye(d)))
-#            dec = m.add(Decoder(pop, ins, np.eye(d)))
-#            tf = m.add(Transform(1.0, ins, ins))
+
             m._operators += [simulator.DotInc(Constant(np.eye(d)), ins, pop.input_signal)]
             m._operators += [simulator.ProdUpdate(Constant(np.eye(d)), pop.output_signal, Constant(0), ins)]
 
@@ -73,7 +71,7 @@ class TestNonlinear(SimulatorTestCase):
         m = nengo.Model("")
         ins = m.add(Signal(n=d, name='ins'))
         lif = m.add(LIF(n))
-#        enc = m.add(Encoder(ins, lif))
+
         m._operators += [simulator.DotInc(Constant(np.ones((n,d))), #arbitrary encoders, doesn't really matter
                                           ins,
                                           lif.input_signal)]
@@ -106,7 +104,7 @@ class TestNonlinear(SimulatorTestCase):
         m = nengo.Model("")
         ins = m.add(Signal(n=d, name='ins'))
         lif = m.add(LIFRate(n))
-#        enc = m.add(Encoder(ins, lif))
+
         m._operators += [simulator.DotInc(Constant(np.ones((n,d))), #arbitrary encoders, doesn't really matter
                                                   ins,
                                                   lif.input_signal)]
