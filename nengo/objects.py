@@ -355,8 +355,8 @@ class Ensemble(object):
         model.add(self.encoder)
 
         # Set up probes, but don't build them (done explicitly later)
-        ## TODO: Why don't we put this in the Signal call? 
-        ##       e.g. probe = Probe(self.name + '.decoded_output', sample_every, >>self.dimensions<<)
+        # Note: Have to set it up here because we only know these things (dimensions,
+        #       n_neurons) at build time.
         for probe in self.probes['decoded_output']:
             probe.dimensions = self.dimensions
         for probe in self.probes['spikes']:
