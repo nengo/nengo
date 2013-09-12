@@ -135,7 +135,22 @@ class SignalView(object):
             raise TODO('reshape of strided view')
 
     def transpose(self, neworder=None):
-        raise TODO('transpose')
+        if neworder:
+            raise NotImplementedError()
+        return SignalView(
+                self.base,
+                reversed(self.shape),
+                reversed(self.elemstrides),
+                self.offset,
+                self.name + '.T'
+                )
+
+    @property
+    def T(self):
+        if self.ndim < 2:
+            return self
+        else:
+            return self.transpose()
 
     def __getitem__(self, item):
         # -- copy the shape and strides
