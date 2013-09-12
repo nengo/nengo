@@ -376,44 +376,22 @@ class Ensemble(object):
             probe.dimensions = self.n_neurons
 
 
-# class PassthroughNode(object):
-#     def __init__(self, dimensions=1):
-#         self.name = name
-#         self.dimensions = dimensions
-
-#         # Set up connections and probes
-#         self.connections_in = []
-#         self.connections_out = []
-#         self.probes = {}
-
-#     @property
-#     def name:
-#         return "Passthrough(%d)" % id(self)
-
-#     def __str__(self):
-#         return "Passthrough Node: " + self.name
-
-#     def connect_to(self, post, **kwargs):
-#         connection = connections.SignalConnection(self, post, **kwargs)
-#         self.connections_out.append(connection)
-#         if hasattr(post, 'connections_in'):
-#             post.connections_in.append(connection)
-#         return connection
-
-#     def probe(self, to_probe='output', sample_every=0.001, filter=None):
-#         raise NotImplementedError()
-
-#     def build(self, model, dt):
-#         self.signal = core.Signal(self.dimensions, name=self.name)
-
-
-#         model.operators += [
-
-#         # Set up probes
-#         for probe in self.probes['output']:
-#             probe.sig = self.signal
-#             model.add(probe)
-
+class PassthroughNode(object):
+    def __init__(self, name, dimensions=1):
+        self.name = name
+        self.dimensions = dimensions
+    
+        # Set up connections and probes
+        self.connections_out = []
+    
+    def connect_to(self, post, **kwargs):
+        connection = connections.SignalConnection(self, post, **kwargs)
+        self.connections_out += [connection]
+    
+    def build(self, model, dt):
+        self.signal = core.Signal(n=self.dimensions,
+                                  name=self.name + ".signal")
+        model.add(self.signal)
 
 class ConstantNode(object):
     def __init__(self, name, output):
