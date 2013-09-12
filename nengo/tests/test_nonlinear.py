@@ -62,7 +62,6 @@ class TestNonlinear(SimulatorTestCase):
         math_rates = lif.rates(J)
         self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
-#    @unittest.skip('This test is broken: Encoder needs weights')
     def test_lif(self):
         """Test that the dynamic model approximately matches the rates"""
         d = 1
@@ -95,10 +94,9 @@ class TestNonlinear(SimulatorTestCase):
         # print "math", math_rates
         self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
-#    @unittest.skip('This test is broken: Encoder needs weights')
     def test_lif_rate(self):
         """Test that the simulator rate model matches the built in one"""
-        d = 5
+        d = 1
         n = 5e3
 
         m = nengo.Model("")
