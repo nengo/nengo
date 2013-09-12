@@ -437,6 +437,8 @@ def is_constant(sig):
     return isinstance(sig.base, Constant)
 
 class Nonlinearity(object):
+    operator = None
+    
     def __str__(self):
         return "Nonlinearity (id " + str(id(self)) + ")"
 

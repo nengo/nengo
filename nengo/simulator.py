@@ -253,7 +253,7 @@ class DotInc(Operator):
             Y[...] += inc
 
         return step
-    
+
 class ProdUpdate(Operator):
     """
     Sets Y = A*X + B*Y
@@ -284,13 +284,13 @@ class ProdUpdate(Operator):
                 if val.size == Y.size == 1:
                     val = np.asarray(val).reshape(Y.shape)
                 else:
-                    raise ValueError('shape mismatch in %s (%s vs %s)' % 
+                    raise ValueError('shape mismatch in %s (%s vs %s)' %
                                      (self.tag, val.shape, Y.shape))
-            
+
             Y[...] *= B
             Y[...] += val
 
-            
+
 
         return step
 
@@ -441,6 +441,10 @@ class Simulator(object):
         if len(sets) >= 2:
             for node, other in itertools.combinations(sets, 2):
                 assert not node.shares_memory_with(other)
+
+        # --- assert that any node that is incremented is also set/updated
+        for node in incs:
+            assert len(sets[node]+ups[node]) > 0, (node)
 
         # -- Scheduling algorithm for serial evaluation:
         #    1) All sets on a given base signal
@@ -609,5 +613,3 @@ class Simulator(object):
         """TODO
         """
         return np.asarray(self.probe_outputs[probe])
-
-
