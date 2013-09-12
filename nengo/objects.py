@@ -6,6 +6,7 @@ import numpy as np
 from . import connections
 from . import core
 from . import decoders
+import simulator
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,7 @@ class Ensemble(object):
         # Set up connections and probes
         self.connections_in = []
         self.connections_out = []
-        self.probes = {'decoded_output': [], 'spikes': []}
+        self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
 
     def __str__(self):
         return "Ensemble: " + self.name
@@ -243,7 +244,10 @@ class Ensemble(object):
             eval_points = self.eval_points
 
         return self.neurons.rates(
-            np.dot(eval_points, self.encoder.weights.T))
+            np.dot(eval_points, self.encoders.T))
+            #note: this assumes that self.encoders has already been
+            #processed in the build function (i.e., had the radius
+            #and gain mixed in)
 
     def connect_to(self, post, **kwargs):
         """Connect this ensemble to another object.
@@ -287,6 +291,7 @@ class Ensemble(object):
             probe = Probe(self.name + '.decoded_output', sample_every)
             self.connect_to(probe, filter=filter)
             self.probes['decoded_output'].append(probe)
+
         elif to_probe == 'spikes':
             probe = Probe(self.name + '.spikes', sample_every)
             connection = connections.NonlinearityConnection(
@@ -296,6 +301,16 @@ class Ensemble(object):
             if hasattr(probe, 'connections_in'):
                 probe.connections_in.append(connection)
             self.probes['spikes'].append(probe)
+
+        elif to_probe == 'voltages':
+            probe = Probe(self.name + '.voltages', sample_every, self.n_neurons)
+            connection = connections.SignalConnection(
+                self.neurons.voltage, probe, filter=None)
+            self.connections_out.append(connection)
+            if hasattr(probe, 'connections_in'):
+                probe.connections_in.append(connection)
+            self.probes['voltages'].append(probe)
+
         else:
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % to_probe)
@@ -329,22 +344,26 @@ class Ensemble(object):
 
         # Set up encoder
         if self.encoders is None:
-            encoders = decoders.sample_hypersphere(
+            self.encoders = decoders.sample_hypersphere(
                 self.dimensions, self.neurons.n_neurons,
                 self.rng, surface=True)
         else:
-            encoders = np.asarray(self.encoders, copy=True)
-            norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
-            encoders /= np.sqrt(norm)
-        encoders /= np.asarray(self.radius)
-        encoders *= self.neurons.gain[:, np.newaxis]
-        self.encoder = core.Encoder(self.signal, self.neurons, encoders)
-        model.add(self.encoder)
+            self.encoders = np.asarray(self.encoders)
+            norm = np.sum(self.encoders * self.encoders, axis=1)[:, np.newaxis]
+            self.encoders /= np.sqrt(norm)
+        self.encoders /= np.asarray(self.radius)
+        self.encoders *= self.neurons.gain[:, np.newaxis]
+        model._operators += [simulator.DotInc(core.Constant(self.encoders),
+                    self.signal, self.neurons.input_signal)]
 
         # Set up probes, but don't build them (done explicitly later)
+        # Note: Have to set it up here because we only know these things (dimensions,
+        #       n_neurons) at build time.
         for probe in self.probes['decoded_output']:
             probe.dimensions = self.dimensions
         for probe in self.probes['spikes']:
+            probe.dimensions = self.n_neurons
+        for probe in self.probes['voltages']:
             probe.dimensions = self.n_neurons
 
 
@@ -494,9 +513,7 @@ class Node(object):
         model.add(self.nonlinear)
 
         # Set up encoder
-        self.encoder = core.Encoder(self.signal, self.nonlinear,
-                                    weights=np.eye(self.dimensions))
-        model.add(self.encoder)
+        model._operators += [simulator.DotInc(core.Constant(np.eye(self.dimensions)), self.signal, self.nonlinear.input_signal)]
 
         # Set up probes
         for probe in self.probes['output']:
@@ -527,7 +544,7 @@ class Probe(object):
     def __init__(self, name, sample_every, dimensions=None):
         self.name = "Probe(" + name + ")"
         self.sample_every = sample_every
-        self.dimensions = None
+        self.dimensions = dimensions ##None?
 
         self.connections_in = []
 

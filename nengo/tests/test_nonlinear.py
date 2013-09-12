@@ -1,7 +1,8 @@
 import numpy as np
 
 import nengo
-from nengo.core import Encoder, Decoder, Filter, Signal, Transform
+import nengo.simulator as simulator
+from nengo.core import Signal, Constant
 from nengo.core import Direct, LIF, LIFRate
 from nengo.tests.helpers import SimulatorTestCase, unittest
 
@@ -27,9 +28,9 @@ class TestNonlinear(SimulatorTestCase):
             m = nengo.Model("")
             ins = m.add(Signal(n=d, name='ins'))
             pop = m.add(Direct(n_in=d, n_out=d, fn=fn))
-            enc = m.add(Encoder(ins, pop, np.eye(d)))
-            dec = m.add(Decoder(pop, ins, np.eye(d)))
-            tf = m.add(Transform(1.0, ins, ins))
+
+            m._operators += [simulator.DotInc(Constant(np.eye(d)), ins, pop.input_signal)]
+            m._operators += [simulator.ProdUpdate(Constant(np.eye(d)), pop.output_signal, Constant(0), ins)]
 
             sim = m.simulator(sim_class=self.Simulator)
             sim.signals[ins] = x
@@ -61,21 +62,23 @@ class TestNonlinear(SimulatorTestCase):
         math_rates = lif.rates(J)
         self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
-    @unittest.skip('This test is broken: Encoder needs weights')
     def test_lif(self):
         """Test that the dynamic model approximately matches the rates"""
-        d = 5
+        d = 1
         n = 5e3
 
         m = nengo.Model("")
         ins = m.add(Signal(n=d, name='ins'))
         lif = m.add(LIF(n))
-        enc = m.add(Encoder(ins, lif))
 
-        sim = self.Simulator(m)
+        m._operators += [simulator.DotInc(Constant(np.ones((n,d))), #arbitrary encoders, doesn't really matter
+                                          ins,
+                                          lif.input_signal)]
+
+        sim = m.simulator()
         sim.signals[ins] = np.random.normal(loc=0, scale=1, size=d)
 
-        dt = m.dt
+        dt = sim.model.dt
         t_final = 1.
         t = dt * np.arange(np.round(t_final / dt))
         nt = len(t)
@@ -91,18 +94,20 @@ class TestNonlinear(SimulatorTestCase):
         # print "math", math_rates
         self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
-    @unittest.skip('This test is broken: Encoder needs weights')
     def test_lif_rate(self):
         """Test that the simulator rate model matches the built in one"""
-        d = 5
+        d = 1
         n = 5e3
 
         m = nengo.Model("")
         ins = m.add(Signal(n=d, name='ins'))
         lif = m.add(LIFRate(n))
-        enc = m.add(Encoder(ins, lif))
 
-        sim = self.Simulator(m)
+        m._operators += [simulator.DotInc(Constant(np.ones((n,d))), #arbitrary encoders, doesn't really matter
+                                                  ins,
+                                                  lif.input_signal)]
+
+        sim = m.simulator()
         sim.signals[ins][...] = np.random.normal(loc=0, scale=1, size=d)
         sim.step()
 
