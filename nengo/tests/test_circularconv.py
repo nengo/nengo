@@ -1,10 +1,10 @@
 import numpy as np
 
 import nengo
-from nengo.core import Constant
+from nengo.core import Constant, Signal
 from nengo.templates import EnsembleArray
 from nengo.templates.circularconv import \
-    DirectCircularConvolution, CircularConvolution
+    circconv, DirectCircularConvolution, CircularConvolution
 from nengo.tests.helpers import SimulatorTestCase, unittest, assert_allclose
 
 import logging
@@ -31,8 +31,8 @@ class TestCircularConv(SimulatorTestCase):
         outC = _output_transform(dims)
 
         XY = np.zeros((dims2,2))
-        XY += np.dot(inA, x)
-        XY += np.dot(inB, y)
+        XY += np.dot(inA.reshape(dims2, 2, dims), x)
+        XY += np.dot(inB.reshape(dims2, 2, dims), y)
 
         C = XY[:,0] * XY[:,1]
         z1 = np.dot(outC, C)
@@ -56,7 +56,7 @@ class TestCircularConv(SimulatorTestCase):
 
         DirectCircularConvolution(m, A, B, C)
 
-        sim = self.Simulator(m)
+        sim = m.simulator(sim_class=self.Simulator)
         sim.run_steps(10)
         c2 = sim.signals[C]
 
@@ -71,56 +71,57 @@ class TestCircularConv(SimulatorTestCase):
             2*dims - (2 if dims % 2 == 0 else 1))
         radius = 1
 
-        model = nengo.Model("circular convolution")
-
         a = rng.normal(scale=np.sqrt(1./dims), size=dims)
         b = rng.normal(scale=np.sqrt(1./dims), size=dims)
-        c = nengo.templates.circularconv.circconv(a, b)
+        c = circconv(a, b)
+        assert np.abs(a).max() < radius
+        assert np.abs(b).max() < radius
+        assert np.abs(c).max() < radius
 
+        ### model
+        model = nengo.Model("circular convolution")
         inputA = model.make_node("inputA", output=a)
         inputB = model.make_node("inputB", output=b)
-
         A = model.add(EnsembleArray('A', nengo.LIF(n_neurons), dims, radius=radius))
         B = model.add(EnsembleArray('B', nengo.LIF(n_neurons), dims, radius=radius))
         C = model.add(EnsembleArray('C', nengo.LIF(n_neurons), dims, radius=radius))
+        D = model.add(CircularConvolution(
+                'D', neurons=nengo.LIF(n_neurons_d),
+                dimensions=A.dimensions, radius=radius))
 
         inputA.connect_to(A)
         inputB.connect_to(B)
-
-        D = CircularConvolution(model, A, B, C, neurons=nengo.LIF(n_neurons_d),
-                                radius=radius, name="D", pstc=0.005)
+        D.connect_input_A(A)
+        D.connect_input_B(B)
+        D.connect_to(C)
 
         model.probe(A, filter=0.03)
         model.probe(B, filter=0.03)
         model.probe(C, filter=0.03)
-        model.probe(D.ensemble, filter=0.03)
+        model.probe(D, filter=0.03)
 
-        sim = model.simulator()
+        # check FFT magnitude
+        d = np.dot(D.transformA, a) + np.dot(D.transformB, b)
+        assert np.abs(d).max() < radius
+
+        ### simulation
+        sim = model.simulator(sim_class=self.Simulator)
         sim.run(1.0)
 
         t = sim.data(model.t).flatten()
         a_sim = sim.data(A)[t > 0.5].mean(0)
         b_sim = sim.data(B)[t > 0.5].mean(0)
         c_sim = sim.data(C)[t > 0.5].mean(0)
-        d_sim = sim.data(D.ensemble)[t > 0.5].mean(0)
+        d_sim = sim.data(D)[t > 0.5].mean(0)
 
-        d = np.dot(D.transform_inA, a) + np.dot(D.transform_inB, b)
-        m = np.prod(d.reshape((-1,2)), axis=1)
-
-        # print "max a", np.abs(a).max()
-        # print "max b", np.abs(b).max()
-        # print "max c", np.abs(c).max()
-        print "max multiply", np.abs(m).max()
-
-        print c
-        print c_sim
-
+        ### results
         rtol, atol = 0.05, 0.01
         self.assertTrue(np.allclose(a, a_sim, rtol=rtol, atol=atol))
         self.assertTrue(np.allclose(b, b_sim, rtol=rtol, atol=atol))
-        self.assertTrue(np.allclose(d, d_sim, rtol=rtol, atol=atol))
+        # self.assertTrue(np.allclose(d, d_sim, rtol=rtol, atol=atol))
         rtol, atol = 0.1, 0.05
         self.assertTrue(np.allclose(c, c_sim, rtol=rtol, atol=atol))
+        self.assertTrue(np.allclose(c, d_sim, rtol=rtol, atol=atol))
 
         # import matplotlib.pyplot as plt
         # def plot(sim, a, A, title=""):

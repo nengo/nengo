@@ -4,8 +4,8 @@ circularconv.py: provides CircularConvolution template
 
 import numpy as np
 
-from ..core import Decoder, Encoder, Filter, Signal, Transform
-from ..core import Direct, LIF
+from .. import core
+from .. import objects
 
 def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
     """A reference Numpy implementation of circular convolution"""
@@ -41,7 +41,7 @@ def _input_transform(dims, first, invert=False):
     if dims % 2 == 0: T = T[(i == 0) | (i > 3) & (i < len(i) - 3)]
     else:             T = T[(i == 0) | (i > 3)]
 
-    return T
+    return T.reshape((-1, dims))
 
 def _output_transform(dims):
     dims2 = (dims/2+1)
@@ -75,19 +75,16 @@ class DirectCircularConvolution(object):
         TinA = _input_transform(dims, first=True, invert=invert_a)
         TinB = _input_transform(dims, first=False, invert=invert_b)
         Tout = _output_transform(dims)
-        dims2 = TinA.shape[0]
+        dims2 = Tout.shape[1]
 
         def fn(x):
             x = x.reshape((dims2, 2))
             return (x[:,0] * x[:,1]).reshape((-1,1))
-        TinA = TinA.reshape(2*dims2, dims)
-        TinB = TinB.reshape(2*dims2, dims)
-
-        D = model.add(Direct(n_in=2*dims2, n_out=dims2, fn=fn))
-        encA = model.add(Encoder(A, D, TinA))
-        encB = model.add(Encoder(B, D, TinB))
-        dec = model.add(Decoder(D, C, Tout))
-        tf = model.add(Transform(1.0, C, C))
+        D = model.add(core.Direct(n_in=2*dims2, n_out=dims2, fn=fn))
+        encA = model.add(core.Encoder(A, D, TinA))
+        encB = model.add(core.Encoder(B, D, TinB))
+        dec = model.add(core.Decoder(D, C, Tout))
+        tf = model.add(core.Transform(1.0, C, C))
 
 
 class CircularConvolution(object):
@@ -95,34 +92,47 @@ class CircularConvolution(object):
     CircularConvolution docs XXX
     """
 
-    def __init__(self, model, A, B, C, neurons=None, radius=1, pstc=0.005,
-                 invert_a=False, invert_b=False, name=None):
-        from ..objects import Ensemble
+    def __init__(self, name, neurons, dimensions, radius=1,
+                 invert_a=False, invert_b=False):
         from ..templates import EnsembleArray
 
-        dims = A.dimensions
-        assert A.dimensions == B.dimensions and B.dimensions == C.dimensions
+        self.name = name
+        self.dimensions = dimensions
 
-        transform_inA = _input_transform(dims, first=True, invert=invert_a)
-        transform_inB = _input_transform(dims, first=False, invert=invert_b)
-        transform_out = _output_transform(dims)
-        dims2 = transform_inA.shape[0]
+        dims = dimensions
+        self.transformA = _input_transform(dims, first=True, invert=invert_a)
+        self.transformB = _input_transform(dims, first=False, invert=invert_b)
+        self.transformC = _output_transform(dims)
+        dims2 = self.transformC.shape[1]
+        self.ensemble = EnsembleArray(
+                name, neurons, dims2, dimensions_per_ensemble=2, radius=radius)
 
-        if name is None:
-            name = "D"
-        D = model.add(EnsembleArray(
-                name, neurons, dims2, dimensions_per_ensemble=2, radius=radius))
+        self.connections_in = []
+        self.connections_out = []
+        self.probes = {'decoded_output': []}
 
-        transform_inA = transform_inA.reshape(2*dims2, dims)
-        transform_inB = transform_inB.reshape(2*dims2, dims)
-        A.connect_to(D, transform=transform_inA, filter=pstc)
-        B.connect_to(D, transform=transform_inB, filter=pstc)
+    def connect_input_A(self, A, **kwargs):
+        A.connect_to(self.ensemble, transform=self.transformA, **kwargs)
 
+    def connect_input_B(self, B, **kwargs):
+        B.connect_to(self.ensemble, transform=self.transformB, **kwargs)
+
+    def connect_to(self, post, **kwargs):
         def product(x):
             return x[0] * x[1]
-        D.connect_to(C, function=product, transform=transform_out, filter=pstc)
+        c = self.ensemble.connect_to(
+            post, function=product, transform=self.transformC, **kwargs)
+        self.connections_out.append(c)
 
-        self.ensemble = D
-        self.transform_inA = transform_inA
-        self.transform_inB = transform_inB
-        self.transform_out = transform_out
+    def probe(self, to_probe='decoded_output',
+              sample_every=0.001, filter=0.01, dt=0.001):
+        if to_probe == 'decoded_output':
+            probe = objects.Probe(self.name + ".decoded_output", sample_every)
+            probe.dimensions = self.dimensions
+            self.connect_to(probe, filter=filter)
+            self.probes['decoded_output'].append(probe)
+        return probe
+
+    def build(self, model, dt):
+        self.ensemble.build(model, dt)
+
