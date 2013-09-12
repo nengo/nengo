@@ -116,6 +116,17 @@ class SignalView(object):
                 shape=shape,
                 elemstrides=elemstrides,
                 offset=self.offset)
+        elif self.size == 1:
+            # -- scalars can be reshaped to any number of (1, 1, 1...)
+            size = int(np.prod(shape))
+            if size != self.size:
+                raise ShapeMismatch(shape, self.shape)
+            elemstrides = [1] * len(shape)
+            return SignalView(
+                base=self.base,
+                shape=shape,
+                elemstrides=elemstrides,
+                offset=self.offset)
         else:
             # -- there are cases where reshaping can still work
             #    but there are limits too, because we can only
