@@ -285,10 +285,7 @@ class Model(object):
             obj.add_to_model(self)
             return obj
         except AttributeError:
-            raise TypeError("Object not recognized as a Nengo object. "
-                            "Objects should have connections_in and "
-                            "connections_out lists; connections should "
-                            "have a probes dictionary.")
+            raise TypeError("Error in %s.add_to_model."%obj)
 
     def get(self, target, default=None):
         """Return the Nengo object specified.

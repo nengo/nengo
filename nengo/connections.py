@@ -4,7 +4,8 @@ import numpy as np
 
 from . import core
 from . import decoders as decsolve
-import simulator
+from . import simulator
+
 
 logger = logging.getLogger(__name__)
 
@@ -96,11 +97,11 @@ class SignalConnection(object):
         # Pre / post may be high level objects (ensemble, node) or signals
         if not core.is_signal(self.pre):
             self.pre = self.pre.signal
-            if not core.is_constant(self.pre):
-                logger.warning("SignalConnection is usually used for "
-                               "connecting raw Signals and ConstantNodes. "
-                               "Are you sure you shouldn't be using "
-                               "DecodedConnection?")
+#            if not core.is_constant(self.pre):
+#                logger.warning("SignalConnection is usually used for "
+#                               "connecting raw Signals and ConstantNodes. "
+#                               "Are you sure you shouldn't be using "
+#                               "DecodedConnection?")
 
         if not core.is_signal(self.post):
             self.post = self.post.signal
