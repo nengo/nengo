@@ -97,7 +97,7 @@ class Ensemble(object):
         # Set up connections and probes
         self.connections_in = []
         self.connections_out = []
-        self.probes = {'decoded_output': [], 'spikes': []}
+        self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
 
     def __str__(self):
         return "Ensemble: " + self.name
@@ -289,6 +289,7 @@ class Ensemble(object):
             probe = Probe(self.name + '.decoded_output', sample_every)
             self.connect_to(probe, filter=filter)
             self.probes['decoded_output'].append(probe)
+            
         elif to_probe == 'spikes':
             probe = Probe(self.name + '.spikes', sample_every)
             connection = connections.NonlinearityConnection(
@@ -298,6 +299,16 @@ class Ensemble(object):
             if hasattr(probe, 'connections_in'):
                 probe.connections_in.append(connection)
             self.probes['spikes'].append(probe)
+            
+        elif to_probe == 'voltages':
+            probe = Probe(self.name + '.voltages', sample_every)
+            connection = connections.SignalConnection(
+                self.neurons.voltage, probe, filter=None)
+            self.connections_out.append(connection)
+            if hasattr(probe, 'connections_in'):
+                probe.connections_in.append(connection)
+            self.probes['voltages'].append(probe)
+            
         else:
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % to_probe)
@@ -335,7 +346,7 @@ class Ensemble(object):
                 self.dimensions, self.neurons.n_neurons,
                 self.rng, surface=True)
         else:
-            encoders = np.asarray(self.encoders, copy=True)
+            encoders = np.asarray(self.encoders).copy()
             norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
             encoders /= np.sqrt(norm)
         encoders /= np.asarray(self.radius)

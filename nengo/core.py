@@ -781,14 +781,32 @@ class LIFRate(_LIFBase):
         finally:
             np.seterr(**old)
         return r
-
-
+                
 class LIF(_LIFBase):
     operator = sim.SimLIF
     def __init__(self, n_neurons, upsample=1, **kwargs):
         _LIFBase.__init__(self, n_neurons, **kwargs)
         self.upsample = upsample
+        self.voltage = Signal(n_neurons)
+        self.refractory_time = Signal(n_neurons)
 
+    def add_to_model(self, model):
+        # XXX: do we still need to append signals to model?
+        model.signals.append(self.bias_signal)
+        model.signals.append(self.input_signal)
+        model.signals.append(self.output_signal)
+        model._operators.append(
+            self.operator(
+                output=self.output_signal,
+                J=self.input_signal,
+                nl=self, 
+                voltage=self.voltage,
+                refractory_time=self.refractory_time))
+        # -- encoders will be scheduled between this copy
+        #    and nl_op
+        model._operators.append(
+            sim.Copy(dst=self.input_signal, src=self.bias_signal))
+        
     def to_json(self):
         d = _LIFBase.to_json(self)
         d['upsample'] = self.upsample
