@@ -45,7 +45,7 @@ class TODO(NotImplementedError):
 
 class SignalView(object):
     def __init__(self, base, shape, elemstrides, offset, name=None):
-        assert base
+        assert base is not None
         self.base = base
         self.shape = tuple(shape)
         self.elemstrides = tuple(elemstrides)
