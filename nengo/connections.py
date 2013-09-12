@@ -127,32 +127,8 @@ class NonlinearityConnection(SignalConnection):
         description
 
     """
-<<<<<<< HEAD
-    def __init__(self, pre, post, filter=0.005, transform=1.0):
-        self.pre = pre
-        self.post = post
-
-        self.filter = filter
-        self.transform = transform
-
-        self.probes = {'signal': []}
-
-    @property
-    def name(self):
-        name = self.pre.name + ">" + self.post.name
-        return name
-
-    @property
-    def transform(self):
-        return self._transform
-
-    @transform.setter
-    def transform(self, _transform):
-        self._transform = np.asarray(_transform)
-=======
     def __init__(self, pre, post, **kwargs):
         SignalConnection.__init__(self, pre, post, **kwargs)
->>>>>>> master
 
     def __str__(self):
         return self.name + " (NonlinearityConnection)"
