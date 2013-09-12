@@ -80,17 +80,11 @@ class TestNode(SimulatorTestCase):
         sim.run(runtime)
         
         with Plotter(self.Simulator) as plt:
-#            plt.plot(sim.data(m.t), np.sin(sim.data(m.t)), label='sin')
-#            plt.plot(sim.data(m.t), np.cos(np.arange(0, runtime-dt, dt)), label='cos')
             plt.plot(sim.data(m.t), sim.data('in')+sim.data('in2'), label='in+in2')
             plt.plot(sim.data(m.t)[:-2], sim.data('out')[2:], label='out')
             plt.legend(loc='best')
             plt.savefig('test_node.test_passthrough.pdf')
             plt.close()
-        
-        # One step delay on output of first nonlinearity
-#        self.assertTrue(np.allclose(sim.data('in')[1:].ravel(),
-#                                    np.sin(np.arange(0, runtime-2*dt, dt))))
         
         # Two step delay between first and second nonlinearity due to passthrough
         self.assertTrue(np.allclose(sim.data('in')[:-2]+sim.data('in2')[:-2],
