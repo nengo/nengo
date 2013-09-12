@@ -6,6 +6,7 @@ import numpy as np
 from . import connections
 from . import core
 from . import decoders
+import simulator
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +246,10 @@ class Ensemble(object):
             eval_points = self.eval_points
 
         return self.neurons.rates(
-            np.dot(eval_points, self.encoder.weights.T))
+            np.dot(eval_points, self.encoders.T))
+            #note: this assumes that self.encoders has already been
+            #processed in the build function (i.e., had the radius
+            #and gain mixed in)
 
     def connect_to(self, post, **kwargs):
         """Connect this ensemble to another object.
@@ -342,10 +346,11 @@ class Ensemble(object):
 
         # Set up encoder
         if self.encoders is None:
-            encoders = decoders.sample_hypersphere(
+            self.encoders = decoders.sample_hypersphere(
                 self.dimensions, self.neurons.n_neurons,
                 self.rng, surface=True)
         else:
+<<<<<<< HEAD
             encoders = np.asarray(self.encoders).copy()
             norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
             encoders /= np.sqrt(norm)
@@ -353,6 +358,14 @@ class Ensemble(object):
         encoders *= self.neurons.gain[:, np.newaxis]
         self.encoder = core.Encoder(self.signal, self.neurons, encoders)
         model.add(self.encoder)
+=======
+            self.encoders = np.asarray(self.encoders, copy=True)
+            norm = np.sum(self.encoders * self.encoders, axis=1)[:, np.newaxis]
+            self.encoders /= np.sqrt(norm)
+        self.encoders /= np.asarray(self.radius)
+        self.encoders *= self.neurons.gain[:, np.newaxis]
+        model._operators += [simulator.DotInc(core.Constant(self.encoders), self.signal, self.neurons.input_signal)]
+>>>>>>> master
 
         # Set up probes, but don't build them (done explicitly later)
         # Note: Have to set it up here because we only know these things (dimensions,
@@ -511,9 +524,7 @@ class Node(object):
         model.add(self.nonlinear)
 
         # Set up encoder
-        self.encoder = core.Encoder(self.signal, self.nonlinear,
-                                    weights=np.eye(self.dimensions))
-        model.add(self.encoder)
+        model._operators += [simulator.DotInc(core.Constant(np.eye(self.dimensions)), self.signal, self.nonlinear.input_signal)]
 
         # Set up probes
         for probe in self.probes['output']:
