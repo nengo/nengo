@@ -249,12 +249,12 @@ class SignalView(object):
             ae0, = self.elemstrides
             be0, = other.elemstrides
             amin = self.offset
-            amax = self.shape[0] * ae0
+            amax = amin + self.shape[0] * ae0
             bmin = other.offset
-            bmax = other.shape[0] * be0
+            bmax = bmin + other.shape[0] * be0
             if amin <= amax <= bmin <= bmax:
                 return False
-            if amin >= amax >= bmin >= bmax:
+            if bmin <= bmax <= amin <= amax:
                 return False
             if ae0 == be0 == 1:
                 # -- strides are equal, and we've already checked for
