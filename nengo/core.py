@@ -246,7 +246,25 @@ class SignalView(object):
             # returned above if this were True.
             return False
         elif self.ndim == 1:
-            raise NotImplementedError()
+            ae0, = self.elemstrides
+            be0, = other.elemstrides
+            amin = self.offset
+            amax = self.shape[0] * ae0
+            bmin = other.offset
+            bmax = other.shape[0] * be0
+            if amin <= amax <= bmin <= bmax:
+                return False
+            if amin >= amax >= bmin >= bmax:
+                return False
+            if ae0 == be0 == 1:
+                # -- strides are equal, and we've already checked for
+                #    non-overlap. They do overlap, so they are aliased.
+                return True
+
+
+            # TODO: look for common divisor of ae0 and be0
+            raise NotImplementedError('1d',
+                (self.structure, other.structure))
         elif self.ndim == 2:
             raise NotImplementedError()
         else:
