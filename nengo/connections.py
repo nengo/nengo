@@ -62,6 +62,9 @@ class SignalConnection(object):
             self.probes['signal'].append(probe)
         return probe
 
+    def add_to_model(self, model):
+        model.connections.append(self)
+
     def _add_filter_transform(self, model, dt):
         if self.filter is not None and self.filter > dt:
             # Set up signal
@@ -297,6 +300,9 @@ class ConnectionList(object):
         self.connections = connections
         self.transform = transform
         self.probes = {}
+
+    def add_to_model(self, model):
+        model.connections.append(self)
 
     def build(self, model, dt):
         self.transform = np.asarray(self.transform)
