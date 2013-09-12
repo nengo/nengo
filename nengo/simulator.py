@@ -54,17 +54,13 @@ class SignalDict(dict):
 class Simulator(object):
     """Reference simulator for models."""
 
-    def __init__(self, model, dt, seed=None, builder=None):
+    def __init__(self, model, dt, seed=None, builder=None, real_time=False):
         if builder is None:
             # By default, we'll use builder.Builder and copy the model.
             builder = Builder(copy=True)
 
         # Call the builder to build the model
         self.model = builder(model, dt)
-
-        # Note: seed is not used right now, but one day...
-        if seed is None:
-            seed = self.model._get_new_seed() # generate simulator seed
 
         # -- map from Signal.base -> ndarray
         self._sigdict = SignalDict()
@@ -78,6 +74,7 @@ class Simulator(object):
         self._steps = [node.make_step(self._sigdict, self.model.dt)
             for node in self._step_order]
 
+        self.real_time = real_time
         self.n_steps = 0
         self.probe_outputs = dict((probe, []) for probe in self.model.probes)
 
@@ -270,11 +267,29 @@ class Simulator(object):
         steps = int(np.round(float(time_in_seconds) / self.model.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.model.name, time_in_seconds, steps)
-        self.run_steps(steps)
+        if self.real_time:
+            self.run_real_time(steps)
+        else:
+            self.run_steps(steps)
 
     def run_steps(self, steps):
         """Simulate for the given number of `dt` steps."""
         for i in xrange(steps):
+            if i % 1000 == 0:
+                logger.debug("Step %d", i)
+            self.step()
+
+    def run_real_time(self, steps):
+        """Simulate for the given number of `dt` steps."""
+        tol = 0.0001 #FIXME: make sure this number is reasonable
+        t_old = time.time()
+        for i in xrange(steps):
+            t_new = time.time()
+            elapsed = t_new - t_old
+            t_old = t_new
+            if elapsed + tol < self.model.dt:
+                #TODO: add a tolerance to account for delay on the sleep function
+                time.sleep( self.model.dt - elapsed - tol )
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
             self.step()
