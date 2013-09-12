@@ -1,6 +1,7 @@
 import copy
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from . import decoders
 
@@ -28,7 +29,6 @@ def tuning_curves(ens):
     ens.eval_points.sort(axis=0)
     J = np.dot(ens.eval_points, encoders.T)
     return ens.eval_points, ens.neurons.rates(J)
-
 
 def encoders():
     @staticmethod
@@ -250,27 +250,27 @@ def weights(pre_neurons, post_neurons, function):
 
 def piecewise(data):
     """Create a piecewise constant function from a dictionary.
-    
+
     Given an input of data={0:0, 0.5:1, 0.75:-1, 1:0} this will generate a
     function that returns 0 up until t=0.5, then outputs a 1 until t=0.75,
     then a -1 until t=1, and then returns 0 after that.  This is meant as a
     shortcut for::
-    
+
         def function(t):
             if t<0.5: return 0
             elif t<0.75: return 1
             elif t<1: return -1
             else: return 0
-        
+
     The keys in the dictionary must be times (floats or ints).  The values in
     the data dictionary can be floats, lists, or functions that return
     floats or lists.  All lists must be of the same length.
-    
+
     For times before the first specified time, it will default to zero (of
     the correct length).  This means the above example can be simplified to::
-    
+
         piecewise({0.5:1, 0.75:-1, 1:0})
-        
+
     Parameters
     ----------
     data : dict
@@ -285,7 +285,7 @@ def piecewise(data):
 
     Examples
     --------
-    
+
       >>> func = piecewise({0.5:1, 0.75:-1, 1:0})
       >>> func(0.2)
       [0]
@@ -305,10 +305,10 @@ def piecewise(data):
       >>> func(0.499)
       [0.47854771647582706]
       >>> func(0.5)
-      [0.8775825618903728]      
-        
+      [0.8775825618903728]
+
     """
-    
+
     # first, sort the data (to simplify finding the right element when calling
     #  the function)
     ordered_data = []
@@ -316,58 +316,175 @@ def piecewise(data):
     for time, output in sorted(data.items()):
         if not isinstance(time, (float, int)):
             raise TypeError('Keys must be times (floats or ints), not "%s"'%`time`)
-    
+
         # handle ints and floats by turning them into a list
         if isinstance(output, (float, int)):
             output = [output]
-            
-        # figure out the length of this item    
+
+        # figure out the length of this item
         if callable(output):
             value = output(0.0)
             if isinstance(value, (float, int)):
                 length = 1
             else:
                 length = len(value)
-        else:    
+        else:
             length = len(output)
-            
-        # make sure this is the same length as previous items    
+
+        # make sure this is the same length as previous items
         if output_length is None:
             output_length = length
         elif output_length != length:
             raise Exception('invalid data for piecewise function ' +
                             '(time %4g has %d items instead of %d)'%
                             (time,length,output_length))
-                            
-        # add it to the ordered list                    
+
+        # add it to the ordered list
         row = (time, output)
         ordered_data.append(row)
-        
-    # set the value to zero for t befoer the first given time    
-    initial_value = [0]*output_length    
-        
-    # build the function to return 
+
+    # set the value to zero for t befoer the first given time
+    initial_value = [0]*output_length
+
+    # build the function to return
     def piecewise_function(t, data=ordered_data, start=initial_value):
         value = start   # start at zero
-        
+
         # find the correct output value
         for time, output in ordered_data:
             if value is None or time<=t:
                 value = output
             else:
                 break
-        
+
         # if it's a function, call it
         if callable(value):
             value = value(t)
             # force the result to be a list
             if isinstance(value, (int, float)):
                 value = [value]
-                
-        return value        
-    return piecewise_function    
-    
-    
+
+        return value
+    return piecewise_function
+
+def rasterplot(time, spikes):
+    for i in np.arange(0,spikes.shape[1],2):
+        axes = plt.plot(time[spikes[:,i]>0],
+                np.ones_like(np.where(spikes[:,i]>0)).T+i, 'k,')
+    return axes
+
+def sorted_neurons(simulator, ensemble, iterations=200, seed=None):
+    '''Sort neurons in an ensemble by encoder and intercept.
+
+    Parameters
+    ----------
+    simulator: nengo.simulator.Simulator
+        The simulator that runs the ensemble
+
+    ensemble: nengo.objects.Ensemble
+        The population of neurons to be sorted
+
+    iterations: int
+        The number of times to iterate during the sort
+
+    seed: float
+        A random number seed
+
+    Returns
+    -------
+    indices: nparray
+        An array with sorted indices into the neurons in the ensemble
+
+    Examples
+    --------
+
+    You can use this to generate an array of sorted indices for plotting. This
+    can be done after collecting the data. E.g.
+
+    >>>indices = sorted_neurons(simulator, 'My neurons')
+    >>>plt.figure()
+    >>>rasterplot(sim.data('My neurons.spikes')[:,indices])
+
+    Algorithm
+    ---------
+
+    The algorithm is for each encoder in the initial set, randomly
+    pick another encoder and check to see if swapping those two
+    encoders would reduce the average difference between the
+    encoders and their neighbours.  Difference is measured as the
+    dot product.  Each encoder has four neighbours (N, S, E, W),
+    except for the ones on the edges which have fewer (no wrapping).
+    This algorithm is repeated `iterations` times, so a total of
+    `iterations*N` swaps are considered.
+    '''
+
+    def score(encoders, index, rows, cols=1):
+        """Helper function to compute similarity for one encoder.
+
+        :param array encoders: the encoders
+        :param integer index: the encoder to compute for
+        :param integer rows: the width of the 2d grid
+        :param integer cols: the height of the 2d grid
+        """
+        i = index % cols   # find the 2d location of the indexth element
+        j = index / cols
+
+        sim = 0     # total of dot products
+        count = 0   # number of neighbours
+        if i>0: # if we're not at the left edge, do the WEST comparison
+            sim += np.dot(encoders[j*cols+i], encoders[j*cols+i-1])
+            count += 1
+        if i<cols-1:  # if we're not at the right edge, do EAST
+            sim += np.dot(encoders[j*cols+i], encoders[j*cols+i+1])
+            count += 1
+        if j>0:   # if we're not at the top edge, do NORTH
+            sim += np.dot(encoders[j*cols+i], encoders[(j-1)*cols+i])
+            count += 1
+        if j<rows-1:  # if we're not at the bottom edge, do SOUTH
+            sim += np.dot(encoders[j*cols+i], encoders[(j+1)*cols+i])
+            count += 1
+        return sim/count
+
+    #Get the encoders from the neurons
+    ens = simulator.model.get(ensemble)
+    if ens is None:
+        raise Exception('The requested ensemble %s does not exist.' %
+                            ensemble)
+
+    #Normalize all the neurons
+    encoders = np.array(ens.encoders)
+    for i in np.arange(encoders.shape[0]):
+        encoders[i,:]=encoders[i,:]/np.linalg.norm(encoders[i,:])
+
+    #Make an array with the starting order of the neurons
+    N = encoders.shape[0]
+    indices = np.arange(N)
+    rng = np.random.RandomState(seed)
+
+    for k in range(iterations):
+        target = rng.randint(0, N, N)  # pick random swap targets
+        for i in range(N):
+            j = target[i]
+            if i != j:  # if not swapping with yourself
+                # compute similarity score how we are (unswapped)
+                sim1 = score(encoders, i, N) + score(encoders,
+                                                          j, N)
+                # swap the encoder
+                encoders[[i,j],:] = encoders[[j,i],:]
+                indices[[i,j]] = indices[[j,i]]
+                # compute similarity score how we are (swapped)
+                sim2 = score(encoders, i, N) + score(encoders,
+                                                          j, N)
+
+                # if we were better unswapped
+                if sim1 > sim2:
+                    # swap them back
+                    encoders[[i,j],:] = encoders[[j,i],:]
+                    indices[[i,j]] = indices[[j,i]]
+
+    return indices
+
+
 def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
     """Generate white noise inputs
 
@@ -375,10 +492,10 @@ def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
     ----------
     step : float
         The step size of different frequencies to generate
-        
+
     high : float
         The highest frequency to generate (should be a multiple of step)
-        
+
     rms : float
         The RMS power of the signal
 
@@ -394,19 +511,19 @@ def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
     Returns
     -------
     function:
-        A function that takes a variable t and returns the value of the 
+        A function that takes a variable t and returns the value of the
         randomly generated signal.  This value is a float if `dimensions` is
         None; otherwise it is a list of length `dimensions`.
     """
     rng = np.random.RandomState(seed)
-    
+
     if dimensions is not None:
         signals = [white_noise(step, high, rms=rms, seed=rng.randint(0x7ffffff))
                     for i in range(dimensions)]
         def white_noise_function(t, signals=signals):
             return [signal(t) for signal in signals]
-        return white_noise_function    
-    
+        return white_noise_function
+
     N = int(float(high) / step)                     # number of samples
     frequencies = np.arange(1, N + 1) * step * 2 * np.pi   # frequency of each
     amplitude = rng.uniform(0, 1, N)                # amplitude for each sample
@@ -416,12 +533,9 @@ def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
     rawRMS = np.sqrt(np.sum(amplitude**2)/2)
     # rescale
     amplitude = amplitude * rms / rawRMS
-    
+
     # create a function that computes the bases and weights them by amplitude
     def white_noise_function(t, f=frequencies, a=amplitude, p=phase):
         return np.dot(a, np.sin((f*t)+p))
-    
+
     return white_noise_function
-    
-    
-       
