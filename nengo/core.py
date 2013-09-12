@@ -45,7 +45,7 @@ class TODO(NotImplementedError):
 
 class SignalView(object):
     def __init__(self, base, shape, elemstrides, offset, name=None):
-        assert base
+        assert base is not None
         self.base = base
         self.shape = tuple(shape)
         self.elemstrides = tuple(elemstrides)
@@ -116,6 +116,17 @@ class SignalView(object):
                 shape=shape,
                 elemstrides=elemstrides,
                 offset=self.offset)
+        elif self.size == 1:
+            # -- scalars can be reshaped to any number of (1, 1, 1...)
+            size = int(np.prod(shape))
+            if size != self.size:
+                raise ShapeMismatch(shape, self.shape)
+            elemstrides = [1] * len(shape)
+            return SignalView(
+                base=self.base,
+                shape=shape,
+                elemstrides=elemstrides,
+                offset=self.offset)
         else:
             # -- there are cases where reshaping can still work
             #    but there are limits too, because we can only
@@ -124,7 +135,22 @@ class SignalView(object):
             raise TODO('reshape of strided view')
 
     def transpose(self, neworder=None):
-        raise TODO('transpose')
+        if neworder:
+            raise NotImplementedError()
+        return SignalView(
+                self.base,
+                reversed(self.shape),
+                reversed(self.elemstrides),
+                self.offset,
+                self.name + '.T'
+                )
+
+    @property
+    def T(self):
+        if self.ndim < 2:
+            return self
+        else:
+            return self.transpose()
 
     def __getitem__(self, item):
         # -- copy the shape and strides
@@ -220,7 +246,25 @@ class SignalView(object):
             # returned above if this were True.
             return False
         elif self.ndim == 1:
-            raise NotImplementedError()
+            ae0, = self.elemstrides
+            be0, = other.elemstrides
+            amin = self.offset
+            amax = self.shape[0] * ae0
+            bmin = other.offset
+            bmax = other.shape[0] * be0
+            if amin <= amax <= bmin <= bmax:
+                return False
+            if amin >= amax >= bmin >= bmax:
+                return False
+            if ae0 == be0 == 1:
+                # -- strides are equal, and we've already checked for
+                #    non-overlap. They do overlap, so they are aliased.
+                return True
+
+
+            # TODO: look for common divisor of ae0 and be0
+            raise NotImplementedError('1d',
+                (self.structure, other.structure))
         elif self.ndim == 2:
             raise NotImplementedError()
         else:

@@ -1,3 +1,8 @@
+"""
+Simulator.py
+
+Reference simulator for nengo models.
+"""
 import logging
 import itertools
 from collections import defaultdict
@@ -18,6 +23,7 @@ def is_base(sig):
 
 def is_view(sig):
     return not is_base(sig)
+
 
 class SignalDict(dict):
     """

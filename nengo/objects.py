@@ -348,7 +348,7 @@ class Ensemble(object):
                 self.dimensions, self.neurons.n_neurons,
                 self.rng, surface=True)
         else:
-            self.encoders = np.asarray(self.encoders)
+            self.encoders = np.asarray(self.encoders, dtype=float).copy()
             norm = np.sum(self.encoders * self.encoders, axis=1)[:, np.newaxis]
             self.encoders /= np.sqrt(norm)
         self.encoders /= np.asarray(self.radius)
