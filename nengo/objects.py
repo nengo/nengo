@@ -339,7 +339,7 @@ class Ensemble(object):
             # Assume that a provided signal is already in the model
             self.signal = signal
             self.dimensions = self.signal.size
-            
+
         #reset input signal to 0 each timestep
         model._operators += [simulator.Reset(self.signal)]
 
@@ -402,6 +402,9 @@ class PassthroughNode(object):
         self.signal = core.Signal(n=self.dimensions,
                                   name=self.name + ".signal")
         model.add(self.signal)
+
+        #reset input signal to 0 each timestep
+        model._operators += [simulator.Reset(self.signal)]
 
         # Set up probes
         for probe in self.probes['output']:
@@ -566,6 +569,9 @@ class Node(object):
                                   name=self.name + ".signal")
         model.add(self.signal)
 
+        #reset input signal to 0 each timestep
+        model._operators += [simulator.Reset(self.signal)]
+
         # Set up non-linearity
         n_out = np.array(self.output(np.ones(self.dimensions))).size
         self.nonlinear = core.Direct(n_in=self.dimensions,
@@ -625,6 +631,9 @@ class Probe(object):
         # Set up signal
         self.signal = core.Signal(n=self.dimensions, name=self.name)
         model.add(self.signal)
+
+        #reset input signal to 0 each timestep
+        model._operators += [simulator.Reset(self.signal)]
 
         # Set up probe
         self.probe = core.Probe(self.signal, self.sample_every)

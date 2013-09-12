@@ -36,11 +36,15 @@ class TestNonlinear(SimulatorTestCase):
             sim = m.simulator(sim_class=self.Simulator)
             sim.signals[ins] = x
 
-            y0 = np.array(x)
+            p0 = np.zeros(d)
+            s0 = np.array(x)
             for j in xrange(n_steps):
-                y0 = fn(y0)
+                tmp = p0
+                p0 = fn(s0)
+                s0 = tmp
                 sim.step()
-                assert np.allclose(y0, sim.signals[ins])
+                assert np.allclose(s0, sim.signals[ins]), (s0,sim.signals[ins])
+                assert np.allclose(p0, sim.signals[pop.output_signal]), (p0,sim.signals[pop.output_signal])
 
     def test_lif_builtin(self):
         """Test that the dynamic model approximately matches the rates
