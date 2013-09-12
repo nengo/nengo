@@ -84,9 +84,6 @@ class Model(object):
         # -- map from signals to shadows for time t + 1
         self._next_signals = {}
 
-        # -- map from signals to shadows used as decoder outputs
-        self._decoder_outputs = {}
-
         self.objs = {}
         self.aliases = {}
         self.probed = {}
@@ -107,8 +104,6 @@ class Model(object):
         self.probe(self.steps)
 
         # -- steps counts by 1.0
-#        self.add(core.Filter(1.0, self.one, self.steps))
-#        self.add(core.Filter(1.0, self.steps, self.steps))
         self._operators += [simulator.ProdUpdate(core.Constant(1), self.one, core.Constant(1), self.steps)]
 
     def _get_new_seed(self):
@@ -208,8 +203,6 @@ class Model(object):
     def prep_for_simulation(model, dt):
         model.name = model.name + ", dt=%f" % dt
         model.dt = dt
-#        model.add(core.Filter(dt, model.one, model.t))
-#        model.add(core.Filter(dt, model.steps, model.t))
         model._operators += [simulator.ProdUpdate(core.Constant(dt), model.one, 
                                                   core.Constant(1), model.t)]
 
