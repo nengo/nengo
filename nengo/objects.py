@@ -57,6 +57,8 @@ class Ensemble(object):
     encoders
     eval_points
     n_neurons
+    intercepts
+    max_rates
     neurons
     radius
     seed
