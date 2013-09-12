@@ -306,7 +306,7 @@ class SimDirect(Operator):
         self.fn = nl.fn
 
         self.reads = [J]
-        self.sets = [output]
+        self.updates = [output]
 
     def make_step(self, dct, dt):
         J = dct[self.J]
@@ -329,8 +329,7 @@ class SimLIF(Operator):
         self.refractory_time = refractory_time
 
         self.reads = [J]
-        self.sets = [output]
-        self.updates = [self.voltage, self.refractory_time]
+        self.updates = [self.voltage, self.refractory_time, output]
 
     def init_sigdict(self, sigdict, dt):
         Operator.init_sigdict(self, sigdict, dt)
@@ -362,7 +361,7 @@ class SimLIFRate(Operator):
         self.nl = nl
 
         self.reads = [J]
-        self.sets = [output]
+        self.updates = [output]
 
     def make_step(self, dct, dt):
         J = dct[self.J]
@@ -437,19 +436,30 @@ class Simulator(object):
         for node in sets:
             assert len(sets[node]) == 1, (node, sets[node])
 
-        # -- assert that no two views are both set and aliased
-        if len(sets) >= 2:
-            for node, other in itertools.combinations(sets, 2):
-                assert not node.shares_memory_with(other)
+        # -- assert that only one op updates any particular view
+        for node in ups:
+            assert len(ups[node]) == 1, (node, ups[node])
 
         # --- assert that any node that is incremented is also set/updated
         for node in incs:
             assert len(sets[node]+ups[node]) > 0, (node)
 
+        # -- assert that no two views are both set and aliased
+        if len(sets) >= 2:
+            for node, other in itertools.combinations(sets, 2):
+                assert not node.shares_memory_with(other)
+
+        # -- assert that no two views are both updated and aliased
+        if len(ups) >= 2:
+            for node, other in itertools.combinations(ups, 2):
+                assert not node.shares_memory_with(other), (
+                        node, other)
+
         # -- Scheduling algorithm for serial evaluation:
         #    1) All sets on a given base signal
         #    2) All incs on a given base signal
         #    3) All reads on a given base signal
+        #    4) All updates on a given base signal
 
         # -- incs depend on sets
         for node, post_ops in incs.items():
@@ -464,16 +474,6 @@ class Simulator(object):
             for other in by_base_writes[node.base]:
                 pre_ops += sets[other] + incs[other]
             dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
-
-        # -- assert that only one op updates any particular view
-        for node in ups:
-            assert len(ups[node]) == 1, (node, ups[node])
-
-        # -- assert that no two views are both updated and aliased
-        if len(ups) >= 2:
-            for node, other in itertools.combinations(ups, 2):
-                assert not node.shares_memory_with(other), (
-                        node, other)
 
         # -- updates depend on reads, sets, and incs.
         for node, post_ops in ups.items():
