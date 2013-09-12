@@ -1,3 +1,35 @@
+import copy
+
+import numpy as np
+
+from . import decoders
+
+def tuning_curves(ens):
+    ens = copy.deepcopy(ens)
+    max_rates = ens.max_rates
+    if hasattr(max_rates, 'sample'):
+        max_rates = max_rates.sample(ens.neurons.n_neurons, rng=ens.rng)
+    intercepts = ens.intercepts
+    if hasattr(intercepts, 'sample'):
+        intercepts = intercepts.sample(ens.neurons.n_neurons, rng=ens.rng)
+    ens.neurons.set_gain_bias(max_rates, intercepts)
+
+    if ens.encoders is None:
+        encoders = decoders.sample_hypersphere(ens.dimensions,
+                                               ens.neurons.n_neurons,
+                                               ens.rng, surface=True)
+    else:
+        encoders = np.asarray(ens.encoders, copy=True)
+        norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
+        encoders /= np.sqrt(norm)
+    encoders /= np.asarray(ens.radius)
+    encoders *= ens.neurons.gain[:, np.newaxis]
+
+    ens.eval_points.sort(axis=0)
+    J = np.dot(ens.eval_points, encoders.T)
+    return ens.eval_points, ens.neurons.rates(J)
+
+
 def encoders():
     @staticmethod
     def _process_encoders(encoders, neurons, dims, n_ensembles):
@@ -55,12 +87,12 @@ def transform(pre_dims, post_dims,
     """
     t = [[0 for pre in xrange(pre_dims)] for post in xrange(post_dims)]
     if index_pre is None:
-        index_pre = range(dim_pre)
+        index_pre = range(pre_dims)
     elif isinstance(index_pre, int):
         index_pre = [index_pre]
 
     if index_post is None:
-        index_post = range(dim_post)
+        index_post = range(post_dims)
     elif isinstance(index_post, int):
         index_post = [index_post]
 
@@ -334,3 +366,62 @@ def piecewise(data):
                 
         return value        
     return piecewise_function    
+    
+    
+def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
+    """Generate white noise inputs
+
+    Parameters
+    ----------
+    step : float
+        The step size of different frequencies to generate
+        
+    high : float
+        The highest frequency to generate (should be a multiple of step)
+        
+    rms : float
+        The RMS power of the signal
+
+    seed : int or None
+        Random number seed
+
+    dimensions : int or None
+        The number of different random signals to generate.  The resulting
+        function will return an array of length `dimensions` for every
+        point in time.  If `dimensions` is None, the resulting function will
+        just return a float for each point in time.
+
+    Returns
+    -------
+    function:
+        A function that takes a variable t and returns the value of the 
+        randomly generated signal.  This value is a float if `dimensions` is
+        None; otherwise it is a list of length `dimensions`.
+    """
+    rng = np.random.RandomState(seed)
+    
+    if dimensions is not None:
+        signals = [white_noise(step, high, rms=rms, seed=rng.randint(0x7ffffff))
+                    for i in range(dimensions)]
+        def white_noise_function(t, signals=signals):
+            return [signal(t) for signal in signals]
+        return white_noise_function    
+    
+    N = int(float(high) / step)                     # number of samples
+    frequencies = np.arange(1, N + 1) * step * 2 * np.pi   # frequency of each
+    amplitude = rng.uniform(0, 1, N)                # amplitude for each sample
+    phase = rng.uniform(0, 2*np.pi, N)              # phase of each sample
+
+    # compute the rms of the signal
+    rawRMS = np.sqrt(np.sum(amplitude**2)/2)
+    # rescale
+    amplitude = amplitude * rms / rawRMS
+    
+    # create a function that computes the bases and weights them by amplitude
+    def white_noise_function(t, f=frequencies, a=amplitude, p=phase):
+        return np.dot(a, np.sin((f*t)+p))
+    
+    return white_noise_function
+    
+    
+       

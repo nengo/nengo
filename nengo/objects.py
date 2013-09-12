@@ -87,7 +87,7 @@ class Ensemble(object):
 
         self.encoders = kwargs.get('encoders', None)
         self.intercepts = kwargs.get('intercepts', Uniform(-1.0, 1.0))
-        self.max_rates = kwargs.get('max_rates', Uniform(200, 300))
+        self.max_rates = kwargs.get('max_rates', Uniform(200, 400))
         self.radius = kwargs.get('radius', 1.0)
         self.seed = kwargs.get('seed', np.random.randint(2**31-1))
 
@@ -255,14 +255,14 @@ class Ensemble(object):
         post : model object
             The connection's target destination.
         **kwargs : optional
-            Arguments for the new DecodedNeuronConnection.
+            Arguments for the new DecodedConnection.
 
         Returns
         -------
-        connection : DecodedNeuronConnection
+        connection : DecodedConnection
             The new connection object.
         """
-        connection = connections.DecodedNeuronConnection(self, post, **kwargs)
+        connection = connections.DecodedConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
@@ -291,8 +291,14 @@ class Ensemble(object):
             self.probes['decoded_output'].append(probe)
         elif to_probe == 'spikes':
             probe = Probe(self.name + '.spikes', sample_every)
+<<<<<<< HEAD
             connection = connections.NonlinearityConnection(self.neurons, probe, 
                                     filter=None, transform=np.eye(self.n_neurons))
+=======
+            connection = connections.NonlinearityConnection(
+                self.neurons, probe, filter=None,
+                transform=np.eye(self.n_neurons))
+>>>>>>> master
             self.connections_out.append(connection)
             if hasattr(probe, 'connections_in'):
                 probe.connections_in.append(connection)
@@ -324,14 +330,15 @@ class Ensemble(object):
         intercepts = self.intercepts
         if hasattr(intercepts, 'sample'):
             intercepts = intercepts.sample(self.neurons.n_neurons, rng=self.rng)
+        #intercepts *= self.radius
         self.neurons.set_gain_bias(max_rates, intercepts)
         model.add(self.neurons)
 
         # Set up encoder
         if self.encoders is None:
-            encoders = decoders.sample_hypersphere(self.dimensions,
-                                                   self.neurons.n_neurons,
-                                                   self.rng, surface=True)
+            encoders = decoders.sample_hypersphere(
+                self.dimensions, self.neurons.n_neurons,
+                self.rng, surface=True)
         else:
             encoders = np.asarray(self.encoders, copy=True)
             norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
@@ -389,7 +396,7 @@ class ConstantNode(object):
 
     def build(self, model, dt):
         # Set up signal
-        self.signal = core.Constant(self.output.size, self.output,
+        self.signal = core.Constant(self.output,
                                     name=self.name)
         model.add(self.signal)
 
@@ -464,7 +471,7 @@ class Node(object):
 
     def connect_to(self, post, **kwargs):
         """TODO"""
-        connection = connections.DecodedConnection(self, post, **kwargs)
+        connection = connections.NonlinearityConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)

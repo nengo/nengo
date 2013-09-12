@@ -13,8 +13,8 @@ class TestCircularConv(SimulatorTestCase):
         m = nengo.Model('test_cconv_' + str(D))
         rng = np.random.RandomState(1234)
 
-        A = m.add(Constant(D, value=rng.randn(D)))
-        B = m.add(Constant(D, value=rng.randn(D)))
+        A = m.add(Constant(rng.randn(D)))
+        B = m.add(Constant(rng.randn(D)))
 
         CircularConvolution(m, A, B,
             neurons_per_product=neurons_per_product)

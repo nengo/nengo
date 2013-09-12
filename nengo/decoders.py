@@ -65,17 +65,21 @@ def sample_hypersphere(dimensions, n_samples, rng, surface=False):
 #    may depend on fn being estimated, number of neurons, etc...
 DEFAULT_RCOND = 0.01
 
-def solve_decoders(activities, targets, method='lstsq'):
-    if method == 'lstsq':
-        weights, res, rank, s = np.linalg.lstsq(activities, targets,
-                                                rcond=DEFAULT_RCOND)
-    elif method == 'cholesky':
-        sigma = 0.1 * activities.max()
-        weights = cholesky(activities, targets, sigma=sigma)
-    elif method == 'eigh':
-        sigma = 0.1 * activities.max()
-        weights = eigh(activites, targets, sigma=sigma)
+# def solve_decoders(activities, targets, method='lstsq'):
+#     if method == 'lstsq':
+#         weights, res, rank, s = np.linalg.lstsq(activities, targets,
+#                                                 rcond=DEFAULT_RCOND)
+#     elif method == 'cholesky':
+#     elif method == 'eigh':
+#         sigma = 0.1 * activities.max()
+#         weights = eigh(activites, targets, sigma=sigma)
 
+
+def least_squares(activities, targets):
+    noise = np.random.randn(*activities.shape) * activities.max() * 0.1
+    activities += noise
+    weights, res, rank, s = np.linalg.lstsq(activities, targets,
+                                            rcond=DEFAULT_RCOND)
     return weights.T
 
 
@@ -115,6 +119,8 @@ def cholesky(A, b, sigma):
     """
     Solve the given linear system(s) using the Cholesky decomposition
     """
+    # sigma = 0.1 * activities.max()
+    # weights = cholesky(activities, targets, sigma=sigma)
 
     m,n = A.shape
     reglambda = regularizationParameter(sigma, m)

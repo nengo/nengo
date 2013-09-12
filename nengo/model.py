@@ -100,7 +100,7 @@ class Model(object):
 
         self.t = self.add(core.Signal(name='t'))
         self.steps = self.add(core.Signal(name='steps'))
-        self.one = self.add(core.Constant(1, value=[1.0], name='one'))
+        self.one = self.add(core.Constant([1.0], name='one'))
 
         # Automatically probe these
         self.probe(self.t)
@@ -129,9 +129,11 @@ class Model(object):
                      dst=obj.base,
                      as_update=True,
                      tag='back-copy %s' % str(obj.base)))
+            
         if simulator.is_view(obj):
             self._next_signals[obj] = obj.view_like_self_of(
                 self._next_signals[obj.base])
+            
         return self._next_signals[obj]
 
     def __str__(self):
