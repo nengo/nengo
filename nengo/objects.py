@@ -301,7 +301,7 @@ class Ensemble(object):
             self.probes['spikes'].append(probe)
             
         elif to_probe == 'voltages':
-            probe = Probe(self.name + '.voltages', sample_every)
+            probe = Probe(self.name + '.voltages', sample_every, self.n_neurons)
             connection = connections.SignalConnection(
                 self.neurons.voltage, probe, filter=None)
             self.connections_out.append(connection)
@@ -355,9 +355,13 @@ class Ensemble(object):
         model.add(self.encoder)
 
         # Set up probes, but don't build them (done explicitly later)
+        ## TODO: Why don't we put this in the Signal call? 
+        ##       e.g. probe = Probe(self.name + '.decoded_output', sample_every, >>self.dimensions<<)
         for probe in self.probes['decoded_output']:
             probe.dimensions = self.dimensions
         for probe in self.probes['spikes']:
+            probe.dimensions = self.n_neurons
+        for probe in self.probes['voltages']:
             probe.dimensions = self.n_neurons
 
 
@@ -540,7 +544,7 @@ class Probe(object):
     def __init__(self, name, sample_every, dimensions=None):
         self.name = "Probe(" + name + ")"
         self.sample_every = sample_every
-        self.dimensions = None
+        self.dimensions = dimensions ##None?
 
         self.connections_in = []
 
