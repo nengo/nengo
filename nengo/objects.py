@@ -316,11 +316,20 @@ class Ensemble(object):
                 "Probe target '%s' is not probable" % to_probe)
         return probe
 
+    def add_to_model(self, model):
+        if model.objs.has_key(self.name):
+            raise ValueError("Something called " + self.name + " already "
+                             "exists. Please choose a different name.")
+
+        model.objs[self.name] = self
+
     def build(self, model, dt, signal=None):
         """Prepare this ensemble for simulation.
 
         Called automatically by `model.build`.
         """
+        # assert self in model.objs.values(), "Not added to model"
+
         # Set up signal
         if signal is None:
             self.signal = core.Signal(n=self.dimensions,
@@ -445,6 +454,13 @@ class ConstantNode(object):
             self.probes['output'].append(p)
         return p
 
+    def add_to_model(self, model):
+        if model.objs.has_key(self.name):
+            raise ValueError("Something called " + self.name + " already "
+                             "exists. Please choose a different name.")
+
+        model.objs[self.name] = self
+
     def build(self, model, dt):
         # Set up signal
         self.signal = core.Constant(self.output,
@@ -536,6 +552,13 @@ class Node(object):
             self.probes['output'].append(p)
         return p
 
+    def add_to_model(self, model):
+        if model.objs.has_key(self.name):
+            raise ValueError("Something called " + self.name + " already "
+                             "exists. Please choose a different name.")
+
+        model.objs[self.name] = self
+
     def build(self, model, dt):
         """TODO"""
         # Set up signals
@@ -552,7 +575,8 @@ class Node(object):
         model.add(self.nonlinear)
 
         # Set up encoder
-        model._operators += [simulator.DotInc(core.Constant(np.eye(self.dimensions)), self.signal, self.nonlinear.input_signal)]
+        model._operators += [simulator.DotInc(core.Constant(
+            np.eye(self.dimensions)), self.signal, self.nonlinear.input_signal)]
 
         # Set up probes
         for probe in self.probes['output']:
@@ -591,6 +615,9 @@ class Probe(object):
     def sample_rate(self):
         """TODO"""
         return 1.0 / self.sample_every
+
+    def add_to_model(self, model):
+        model.signal_probes.append(self)
 
     def build(self, model, dt):
         """TODO"""
