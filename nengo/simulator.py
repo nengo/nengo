@@ -263,7 +263,7 @@ class ProdUpdate(Operator):
         self.updates = [self.Y]
 
     def __str__(self):
-        return 'ProdUpdate(%s, %s, %s, %s -> %s "%s")' % (
+        return 'ProdUpdate(%s, %s, %s, -> %s "%s")' % (
                 str(self.A), str(self.X), str(self.B), str(self.Y), self.tag)
 
     def make_step(self, dct, dt):
