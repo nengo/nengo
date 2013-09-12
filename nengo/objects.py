@@ -264,7 +264,10 @@ class Ensemble(object):
         connection : DecodedConnection
             The new connection object.
         """
-        connection = connections.DecodedConnection(self, post, **kwargs)
+        if isinstance(post, core.Nonlinearity):
+            connection = connections.DecodedToNonlinearityConnection(self, post, **kwargs)
+        else:
+            connection = connections.DecodedConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
@@ -545,7 +548,10 @@ class Node(object):
 
     def connect_to(self, post, **kwargs):
         """TODO"""
-        connection = connections.NonlinearityConnection(self, post, **kwargs)
+        if isinstance(post, core.Nonlinearity):
+            connection = connections.NonlinearityToNonlinearityConnection(self, post, **kwargs)
+        else:
+            connection = connections.NonlinearityConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
