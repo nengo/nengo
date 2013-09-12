@@ -348,12 +348,13 @@ class Ensemble(object):
                 self.dimensions, self.neurons.n_neurons,
                 self.rng, surface=True)
         else:
-            self.encoders = np.asarray(self.encoders, copy=True)
+            self.encoders = np.asarray(self.encoders)
             norm = np.sum(self.encoders * self.encoders, axis=1)[:, np.newaxis]
             self.encoders /= np.sqrt(norm)
         self.encoders /= np.asarray(self.radius)
         self.encoders *= self.neurons.gain[:, np.newaxis]
-        model._operators += [simulator.DotInc(core.Constant(self.encoders), self.signal, self.neurons.input_signal)]
+        model._operators += [simulator.DotInc(core.Constant(self.encoders),
+                    self.signal, self.neurons.input_signal)]
 
         # Set up probes, but don't build them (done explicitly later)
         # Note: Have to set it up here because we only know these things (dimensions,
