@@ -223,7 +223,41 @@ class SignalView(object):
             'offset': self.offset,
         }
 
+    def is_contiguous(self, return_range=False):
+        def ret_false():
+            if return_range:
+                return False, None, None
+            else:
+                return False
+        shape, strides, offset = self.structure
+        if not shape:
+            if return_range:
+                return True, offset, offset + 1
+            else:
+                return True
+        if len(shape) == 1:
+            if strides[0] == 1:
+                if return_range:
+                    return True, offset, offset + shape[0]
+                else:
+                    return True
+            else:
+                return ret_false()
+        if len(shape) == 2:
+            if strides == (1, shape[0]) or strides == (shape[1], 1):
+                if return_range:
+                    return True, offset, offset + shape[0] * shape[1]
+                else:
+                    return True
+            else:
+                return ret_false()
+
+        raise NotImplementedError()
+        #if self.ndim == 1 and self.elemstrides[0] == 1:
+            #return self.offset, self.offset + self.size
+
     def shares_memory_with(self, other):
+        # XXX: WRITE SOME UNIT TESTS FOR THIS FUNCTION !!!
         # Terminology: two arrays *overlap* if the lowermost memory addressed
         # touched by upper one is higher than the uppermost memory address
         # touched by the lower one.
@@ -232,20 +266,19 @@ class SignalView(object):
         # Overlap is a necessary but insufficient condition for *aliasing*.
         #
         # Aliasing is when two ndarrays refer a common memory location.
-        #
         if self.base is not other.base:
             return False
         if self is other or self.same_view_as(other):
             return True
         if self.ndim < other.ndim:
             return other.shares_memory_with(self)
-
-        assert self.ndim >= other.ndim
-        if self.ndim == 0:
-            # self.same_view_as(other) would have
-            # returned above if this were True.
+        if self.size == 0 or other.size == 0:
             return False
-        elif self.ndim == 1:
+
+        assert self.ndim > 0
+        if self.ndim == 1:
+            # -- self is a vector view
+            #    and other is either a scalar or vector view
             ae0, = self.elemstrides
             be0, = other.elemstrides
             amin = self.offset
@@ -254,19 +287,35 @@ class SignalView(object):
             bmax = bmin + other.shape[0] * be0
             if amin <= amax <= bmin <= bmax:
                 return False
-            if bmin <= bmax <= amin <= amax:
+            elif bmin <= bmax <= amin <= amax:
                 return False
             if ae0 == be0 == 1:
                 # -- strides are equal, and we've already checked for
                 #    non-overlap. They do overlap, so they are aliased.
                 return True
-
-
             # TODO: look for common divisor of ae0 and be0
             raise NotImplementedError('1d',
                 (self.structure, other.structure))
         elif self.ndim == 2:
-            raise NotImplementedError()
+            # -- self is a matrix view
+            #    and other is either a scalar, vector or matrix view
+            a_contig, amin, amax = self.is_contiguous(return_range=True)
+            if a_contig:
+                # -- self has a contiguous memory layout,
+                #    from amin up to but not including amax
+                b_contig, bmin, bmax = other.is_contiguous(return_range=True)
+                if b_contig:
+                    # -- other is also contiguous
+                    if amin <= amax <= bmin <= bmax:
+                        return False
+                    elif bmin <= bmax <= amin <= amax:
+                        return False
+                    else:
+                        return True
+                raise NotImplementedError('2d self:contig, other:discontig',
+                    (self.structure, other.structure))
+            raise NotImplementedError('2d',
+                (self.structure, other.structure))
         else:
             raise NotImplementedError()
 
