@@ -338,13 +338,39 @@ def piecewise(data):
         return value        
     return piecewise_function  
     
-def rasterplot(time, spikes):
+def rasterplot(dt, spikes, ax=None):
+    '''Generate a raster plot of the provided spike data
+    
+    Parameters
+    ----------
+    dt: float
+        The time step of the spike data
+        
+    spikes: array
+        The spike data with columns for each neuron and 1s indicating spikes
+        
+    ax: matplotlib.axes.AxesSubplot
+        The figure axes to plot into.
+        
+    Returns
+    -------
+    ax: matplotlib.axes.AxesSubplot
+        The axes that were plotted into
+        
+    Examples
+    --------
+    >>> plt.figure()
+    >>>rasterplot(sim.model.dt, sim.data('A.spikes'))
+    '''
+    time = arange(0,spikes.shape[0])*dt
+    if ax is None: 
+        ax = plt.gca()
     for i in np.arange(0,spikes.shape[1],2):
-        axes = plt.plot(time[spikes[:,i]>0], 
+        ax.plot(time[spikes[:,i]>0], 
                 np.ones_like(np.where(spikes[:,i]>0)).T+i, 'k,') 
-    return axes 
+    return ax 
 
-def sorted_neurons(simulator, ensemble, iterations=200, seed=None):
+def sorted_neurons(ensemble, iterations=100, seed=None):
     '''Sort neurons in an ensemble by encoder and intercept.
     
     Parameters 
@@ -416,14 +442,8 @@ def sorted_neurons(simulator, ensemble, iterations=200, seed=None):
             count += 1
         return sim/count
         
-    #Get the encoders from the neurons
-    ens = simulator.model.get(ensemble)
-    if ens is None:
-        raise Exception('The requested ensemble %s does not exist.' %
-                            ensemble)        
-    
     #Normalize all the neurons
-    encoders = np.array(ens.encoders)
+    encoders = np.array(ensemble.encoders)
     for i in np.arange(encoders.shape[0]):
         encoders[i,:]=encoders[i,:]/np.linalg.norm(encoders[i,:])
     
