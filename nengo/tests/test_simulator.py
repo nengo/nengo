@@ -139,6 +139,21 @@ def test_noise(RefSimulator, seed):
     y = h / float(h.sum()) / dx
     assert np.allclose(y, z, atol=0.02)
 
+    def test_real_time_model(self, tol=.001):
+
+        import time
+
+        m = nengo.Model( "test_real_time_model" )
+        node = m.make_node( "node", [0] )
+        ens = m.make_ensemble( "ens", nengo.LIF(35), dimensions=1 )
+        m.connect( node, ens )
+
+        sim = m.simulator( sim_class=self.Simulator, real_time=True )
+        t_start = time.time()
+        sim.run( 2 )
+        t_end = time.time()
+        self.assertTrue( abs( t_end - t_start - 2 ) < tol )
+
 
 if __name__ == "__main__":
     nengo.log(debug=True)

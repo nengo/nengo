@@ -10,6 +10,7 @@ from collections import Mapping
 import logging
 
 import numpy as np
+import time
 
 import nengo.utils.numpy as npext
 from nengo.builder import Model
@@ -187,7 +188,7 @@ class Simulator(object):
 
         self._probe()
 
-    def run(self, time_in_seconds, progress_bar=True):
+    def run(self, time_in_seconds, progress_bar=True, real_time=False):
         """Simulate for the given length of time.
 
         Parameters
@@ -211,9 +212,24 @@ class Simulator(object):
         steps = int(np.round(float(time_in_seconds) / self.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.model.label, time_in_seconds, steps)
-        self.run_steps(steps, progress_bar=progress_bar)
+        self.run_steps(steps, progress_bar=progress_bar, real_time=real_time)
+    
+    def run_real_time(self, steps):
+        """Simulate for the given number of `dt` steps."""
+        tol = 0.0001 #FIXME: make sure this number is reasonable
+        t_old = time.time()
+        for i in xrange(steps):
+            t_new = time.time()
+            elapsed = t_new - t_old
+            t_old = t_new
+            if elapsed + tol < self.model.dt:
+                #TODO: add a tolerance to account for delay on the sleep function
+                time.sleep( self.model.dt - elapsed - tol )
+            if i % 1000 == 0:
+                logger.debug("Step %d", i)
+            self.step()
 
-    def run_steps(self, steps, progress_bar=True):
+    def run_steps(self, steps, progress_bar=True, real_time=False):
         """Simulate for the given number of `dt` steps.
 
         Parameters
@@ -234,10 +250,23 @@ class Simulator(object):
             :class:`nengo.utils.progress.ProgressBar`,
             or :class:`nengo.utils.progress.ProgressUpdater` instance.
         """
-        with ProgressTracker(steps, progress_bar) as progress:
+        if real_time:
+          with ProgressTracker(steps, progress_bar) as progress:
+            tol = 0.0001 #FIXME: make sure this number is reasonable
+            t_old = time.time()
             for i in range(steps):
+                t_new = time.time()
+                elapsed = t_new - t_old
+                t_old = t_new
+                if elapsed + tol < self.model.dt:
+                    time.sleep( self.model.dt - elapsed - tol )
                 self.step()
                 progress.step()
+        else:
+          with ProgressTracker(steps, progress_bar) as progress:
+              for i in range(steps):
+                  self.step()
+                  progress.step()
 
     def reset(self):
         """Reset the simulator state."""
