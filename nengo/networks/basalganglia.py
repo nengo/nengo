@@ -52,14 +52,17 @@ class BasalGanglia(Network):
             ens.encoders = encoders
             
         self.input = self.add(
-                    objects.PassthroughNode("Input", dimensions=dimensions))
+                    objects.PassthroughNode("input", dimensions=dimensions))
         self.output = self.add(
-                    objects.PassthroughNode("Output", dimensions=dimensions))
+                    objects.PassthroughNode("output", dimensions=dimensions))
         
         # spread the input to StrD1, StrD2, and STN
-        self.input.connect_to(strD1, transform=np.eye(dimensions)*ws*(1+lg), filter=None)
-        self.input.connect_to(strD2, transform=np.eye(dimensions)*ws*(1-le), filter=None)
-        self.input.connect_to(stn, transform=np.eye(dimensions)*wt, filter=None)
+        self.input.connect_to(strD1, transform=np.eye(dimensions)*ws*(1+lg), 
+                                       filter=None)
+        self.input.connect_to(strD2, transform=np.eye(dimensions)*ws*(1-le), 
+                                       filter=None)
+        self.input.connect_to(stn, transform=np.eye(dimensions)*wt, 
+                                       filter=None)
         
         # connect the striatum to the GPi and GPe (inhibitory)
         def func_str(x):
