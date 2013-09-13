@@ -264,10 +264,8 @@ class Ensemble(object):
         connection : DecodedConnection
             The new connection object.
         """
-        if isinstance(post, core.Nonlinearity):
-            connection = connections.DecodedToNonlinearityConnection(self, post, **kwargs)
-        else:
-            connection = connections.DecodedConnection(self, post, **kwargs)
+
+        connection = connections.DecodedConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
@@ -318,6 +316,21 @@ class Ensemble(object):
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % to_probe)
         return probe
+    
+    def calc_direct_connect_transform(self, transform):
+        if self.neurons.gain == None:
+            self.set_neuron_properties()
+        return np.asarray(transform) * np.asarray([self.neurons.gain]).T
+    
+    def set_neuron_properties(self):
+        max_rates = self.max_rates
+        if hasattr(max_rates, 'sample'):
+            max_rates = max_rates.sample(self.neurons.n_neurons, rng=self.rng)
+        intercepts = self.intercepts
+        if hasattr(intercepts, 'sample'):
+            intercepts = intercepts.sample(self.neurons.n_neurons, rng=self.rng)
+        #intercepts *= self.radius
+        self.neurons.set_gain_bias(max_rates, intercepts)
 
     def add_to_model(self, model):
         if model.objs.has_key(self.name):
@@ -351,14 +364,7 @@ class Ensemble(object):
             model._operators += [simulator.Reset(self.signal)]
 
         # Set up neurons
-        max_rates = self.max_rates
-        if hasattr(max_rates, 'sample'):
-            max_rates = max_rates.sample(self.neurons.n_neurons, rng=self.rng)
-        intercepts = self.intercepts
-        if hasattr(intercepts, 'sample'):
-            intercepts = intercepts.sample(self.neurons.n_neurons, rng=self.rng)
-        #intercepts *= self.radius
-        self.neurons.set_gain_bias(max_rates, intercepts)
+        self.set_neuron_properties()
         model.add(self.neurons)
 
         # Set up encoder
@@ -548,10 +554,7 @@ class Node(object):
 
     def connect_to(self, post, **kwargs):
         """TODO"""
-        if isinstance(post, core.Nonlinearity):
-            connection = connections.NonlinearityToNonlinearityConnection(self, post, **kwargs)
-        else:
-            connection = connections.NonlinearityConnection(self, post, **kwargs)
+        connection = connections.NonlinearityConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)

@@ -23,7 +23,9 @@ class TestToNonlinearityConnection(SimulatorTestCase):
         m.make_node('ideal', piecewise({0:np.sin,2.5:0}))
 
         m.connect('in', 'A')
-        m.connect('inh', a.neurons, transform=[[-5.0]]*N)
+        
+        trans = a.calc_direct_connect_transform([[-5.0]]*N) #calculate trans matrix
+        m.connect('inh', a.neurons.input_signal, transform=trans)
 
         m.probe('in')
         m.probe('A', filter=0.1)
@@ -59,7 +61,9 @@ class TestToNonlinearityConnection(SimulatorTestCase):
 
         m.connect('in', 'A')
         m.connect('inh', 'B')
-        m.connect('B', a.neurons, transform=[[-5.0]]*N)
+
+        trans = a.calc_direct_connect_transform([[-5.0]]*N) #calculate trans matrix
+        m.connect('B', a.neurons.input_signal, transform=trans)
 
         m.probe('in')
         m.probe('A', filter=0.1)
