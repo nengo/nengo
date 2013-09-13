@@ -214,21 +214,6 @@ class Simulator(object):
                      self.model.label, time_in_seconds, steps)
         self.run_steps(steps, progress_bar=progress_bar, real_time=real_time)
     
-    def run_real_time(self, steps):
-        """Simulate for the given number of `dt` steps."""
-        tol = 0.0001 #FIXME: make sure this number is reasonable
-        t_old = time.time()
-        for i in xrange(steps):
-            t_new = time.time()
-            elapsed = t_new - t_old
-            t_old = t_new
-            if elapsed + tol < self.model.dt:
-                #TODO: add a tolerance to account for delay on the sleep function
-                time.sleep( self.model.dt - elapsed - tol )
-            if i % 1000 == 0:
-                logger.debug("Step %d", i)
-            self.step()
-
     def run_steps(self, steps, progress_bar=True, real_time=False):
         """Simulate for the given number of `dt` steps.
 
