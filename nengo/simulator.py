@@ -285,12 +285,10 @@ class ProdUpdate(Operator):
                     val = np.asarray(val).reshape(Y.shape)
                 else:
                     raise ValueError('shape mismatch in %s (%s vs %s)' %
-                                     (self.tag, val.shape, Y.shape))
+                                     (self.tag, val, Y))
 
-            Y[...] *= B
+            Y[...] = np.dot(B,Y)
             Y[...] += val
-
-
 
         return step
 
