@@ -37,7 +37,7 @@ class TestSimulator(SimulatorTestCase):
 
         m._operators += [simulator.ProdUpdate(core.Constant(1), three[0:1], core.Constant(0), one)]
         m._operators += [simulator.ProdUpdate(core.Constant(2.0), three[1:], core.Constant(0), two)]
-        m._operators += [simulator.DotInc(core.Constant([[0,0,1], [0,1,0], [1,0,0]]), three, m._get_output_view(three))]
+        m._operators += [simulator.ProdUpdate(core.Constant([0,0,0]), core.Constant(0), core.Constant([[0,0,1],[0,1,0],[1,0,0]]), three)]
 
         sim = m.simulator(sim_class=self.Simulator)
         memo = sim.model.memo
