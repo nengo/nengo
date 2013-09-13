@@ -447,7 +447,8 @@ class Simulator(object):
         # -- assert that no two views are both set and aliased
         if len(sets) >= 2:
             for node, other in itertools.combinations(sets, 2):
-                assert not node.shares_memory_with(other)
+                assert not node.shares_memory_with(other), \
+                    ("%s shares memory with %s" % (node, other))
 
         # -- assert that no two views are both updated and aliased
         if len(ups) >= 2:
