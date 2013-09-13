@@ -318,7 +318,7 @@ class Ensemble(object):
         return probe
     
     def calc_direct_connect_transform(self, transform):
-        if self.neurons.gain == None:
+        if self.neurons.gain is None:
             self.set_neuron_properties()
         return np.asarray(transform) * np.asarray([self.neurons.gain]).T
     
@@ -364,7 +364,8 @@ class Ensemble(object):
             model._operators += [simulator.Reset(self.signal)]
 
         # Set up neurons
-        self.set_neuron_properties()
+        if self.neurons.gain is None:
+            self.set_neuron_properties()
         model.add(self.neurons)
 
         # Set up encoder
