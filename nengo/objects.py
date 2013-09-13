@@ -382,6 +382,7 @@ class PassthroughNode(object):
         self.dimensions = dimensions
     
         self.connections_out = []
+        self.probes = {'output': []}
     
     def connect_to(self, post, **kwargs):
         connection = connections.SignalConnection(self, post, **kwargs)
@@ -398,6 +399,20 @@ class PassthroughNode(object):
         self.signal = core.Signal(n=self.dimensions,
                                   name=self.name + ".signal")
         model.add(self.signal)
+
+        # Set up probes
+        for probe in self.probes['output']:
+            probe.sig = self.signal
+            model.add(probe)
+
+
+    def probe(self, to_probe='output', sample_every=0.001, filter=None):
+        if to_probe == 'output':
+            p = core.Probe(None, sample_every)
+            self.probes['output'].append(p)
+        return p
+
+
 
 class ConstantNode(object):
     def __init__(self, name, output):
