@@ -438,8 +438,9 @@ class Simulator(object):
             assert len(sets[node]) == 1, (node, sets[node])
 
         # -- assert that no two views are both set and aliased
-        for node, other in itertools.combinations(sets, 2):
-            assert not node.shares_memory_with(other)
+        if len(sets) >= 2:
+            for node, other in itertools.combinations(sets, 2):
+                assert not node.shares_memory_with(other)
 
         # -- Scheduling algorithm for serial evaluation:
         #    1) All sets on a given base signal
@@ -465,9 +466,10 @@ class Simulator(object):
             assert len(ups[node]) == 1, (node, ups[node])
 
         # -- assert that no two views are both updated and aliased
-        for node, other in itertools.combinations(ups, 2):
-            assert not node.shares_memory_with(other), (
-                    node, other)
+        if len(ups) >= 2:
+            for node, other in itertools.combinations(ups, 2):
+                assert not node.shares_memory_with(other), (
+                        node, other)
 
         # -- updates depend on reads, sets, and incs.
         for node, post_ops in ups.items():
