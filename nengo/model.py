@@ -666,12 +666,13 @@ class Model(object):
                 p = core.Probe(target, sample_every)
                 self.add(p)
         elif isinstance(target, str):
-            s = target.split('.')
-            if len(s) > 1:
-                obj = self.get('.'.join(s[:-1]))
-                p = obj.probe(s[-1], sample_every, filter)
+            obj = self.get(target, None)
+            if obj is None and '.' in target:
+                name, probe_name = target.rsplit('.', 1)
+                obj = self.get(name)
+                print self.objs.keys()
+                p = obj.probe(probe_name, sample_every, filter)
             else:
-                obj = self.get(target)
                 p = obj.probe(sample_every=sample_every, filter=filter)
         elif hasattr(target, 'probe'):
             p = target.probe(sample_every=sample_every, filter=filter)
