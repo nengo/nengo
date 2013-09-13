@@ -340,8 +340,12 @@ class Ensemble(object):
             self.signal = signal
             self.dimensions = self.signal.size
 
-        #reset input signal to 0 each timestep
-        model._operators += [simulator.Reset(self.signal)]
+        #reset input signal to 0 each timestep (unless this ensemble has
+        #a view of a larger signal -- generally meaning it is an ensemble
+        #in an ensemble array -- in which case something else will be
+        #responsible for resetting)
+        if self.signal.base == self.signal:
+            model._operators += [simulator.Reset(self.signal)]
 
         # Set up neurons
         max_rates = self.max_rates

@@ -74,8 +74,8 @@ class TestSimulator(SimulatorTestCase):
                 msg='%s != %s' % (sim.signals[sim.copied(m.t)], t))
             self.assertTrue(
                 np.allclose(
-                    sim.signals[sim.copied(sig)], np.sin(t - dt)),
-                msg='%s != %s' % (sim.signals[sim.copied(sig)], np.sin(t - dt)))
+                    sim.signals[sim.copied(sig)], np.sin(t - dt*2)),
+                msg='%s != %s' % (sim.signals[sim.copied(sig)], np.sin(t - dt*2)))
 
     def test_encoder_decoder_pathway(self):
         m = nengo.Model("")
