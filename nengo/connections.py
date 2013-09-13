@@ -162,60 +162,6 @@ class NonlinearityConnection(SignalConnection):
         # Set up probes
         self._add_probes(model)
 
-class NonlinearityToNonlinearityConnection(NonlinearityConnection):
-    """A NonlinearityConnection connects a nonlinearity to a Signal
-    (or objects with those) via a transform and a filter.
-
-    Attributes
-    ----------
-    name
-    pre
-    post
-
-    filter : type
-        description
-    transform
-
-    probes : type
-        description
-
-    """
-    def __init__(self, pre, post, **kwargs):
-        NonlinearityConnection.__init__(self, pre, post, **kwargs)
-
-    def __str__(self):
-        return self.name + " (NonlinearityToNonlinearityConnection)"
-
-    def _add_transform(self, model):
-        model._operators += [simulator.DotInc(core.Constant(self.transform),
-                                              self.signal,
-                                              self.post)]
-
-    def build(self, model, dt):
-        # Pre must be a non-linearity
-        if not isinstance(self.pre, core.Nonlinearity):
-            self.pre = self.pre.nonlinear
-        #then get the output signal of the nonlinearity
-        if not core.is_signal(self.pre):
-            self.pre = self.pre.output_signal
-        if not isinstance(self.post, core.Nonlinearity):
-            raise Error("Attempting to connect to non-nonlinearity via NonlinearityToNonlinearityConnection. Unable to comply")
-        self.transform = self.post.calc_direct_connect_transform(self.transform)
-        self.post = self.post.input_signal
-
-        # Set up signal
-        dims = self.pre.size
-        self.signal = core.Signal(dims, name=self.name)
-        model.add(self.signal)
-
-        # Set up filters and transform
-        self._add_filter(model, dt)
-        self._add_transform(model)
-
-        # Set up probes
-        self._add_probes(model)
-
-
 class DecodedConnection(SignalConnection):
     """A DecodedConnection connects an ensemble to a Signal
     via a set of decoders, a transform, and a filter.
@@ -315,10 +261,6 @@ class DecodedConnection(SignalConnection):
                                                       core.Constant(0),
                                                       self.signal)]
 
-        model._operators += [simulator.DotInc(core.Constant(self.transform),
-                                                  self.signal,
-                                                  self.post)]
-
     def build(self, model, dt):
         # Pre must be an ensemble -- but, don't want to import objects
         assert self.pre.__class__.__name__ == "Ensemble"
@@ -350,75 +292,6 @@ class DecodedConnection(SignalConnection):
 
         # Set up probes
         self._add_probes(model)
-
-
-class DecodedToNonlinearityConnection(DecodedConnection):
-    """A DecodedConnection connects an ensemble to a Signal
-    via a set of decoders, a transform, and a filter.
-
-    Attributes
-    ----------
-    name
-    pre
-    post
-
-    decoders
-    eval_points
-    filter : type
-        description
-    function : type
-        description
-    transform
-
-    probes : type
-        description
-
-    """
-    def __init__(self, pre, post, **kwargs):
-        DecodedConnection.__init__(self, pre, post, **kwargs)
-
-    def __str__(self):
-        return self.name + " (DecodedToNonlinearityConnection)"
-
-    def _add_transform(self, model):
-        model._operators += [simulator.DotInc(core.Constant(self.transform),
-                                                  self.signal,
-                                                  self.post)]
-
-    def build(self, model, dt):
-        # Pre must be an ensemble -- but, don't want to import objects
-        assert self.pre.__class__.__name__ == "Ensemble"
-        # Post could be a node / ensemble, etc
-        if not isinstance(self.post, core.Nonlinearity):
-            raise Error("Attempting to connect to non-nonlinearity via DecodedToNonlinearityConnection. Unable to comply")
-        self.transform = self.post.calc_direct_connect_transform(self.transform)
-        self.post = self.post.input_signal
-
-        # Set up signal
-        dims = self.dimensions
-        self.signal = core.Signal(dims, name=self.name)
-        model.add(self.signal)
-
-        # Set up decoders
-        if self._decoders is None:
-            activities = self.pre.activities(self.eval_points) * dt
-            if self.function is None:
-                targets = self.eval_points
-            else:
-                targets = np.array(
-                    [self.function(ep) for ep in self.eval_points])
-                if len(targets.shape) < 2:
-                    targets.shape = targets.shape[0], 1
-            self._decoders = self.decoder_solver(activities, targets)
-
-        # Set up filters and transform
-        self.pre = self.pre.neurons.output_signal
-        self._add_filter(model, dt)
-        self._add_transform(model)
-
-        # Set up probes
-        self._add_probes(model)
-
 
 class ConnectionList(object):
     """A connection made up of several other connections."""
