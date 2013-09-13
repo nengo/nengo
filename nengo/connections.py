@@ -84,10 +84,8 @@ class SignalConnection(object):
             self.signal = self.pre
             # Signal should already be in the model
 
-#        model._operators += [simulator.Reset(self.post)]
         model._operators += [simulator.DotInc(core.Constant(self.transform),
                                               self.signal,
-#                                              model._get_output_view(self.post))]
                                               self.post)]
 
     def _add_probes(self, model):
@@ -263,7 +261,6 @@ class DecodedConnection(SignalConnection):
 
         model._operators += [simulator.DotInc(core.Constant(self.transform),
                                                   self.signal,
-#                                                  model._get_output_view(self.post))]
                                                   self.post)]
 
     def build(self, model, dt):
