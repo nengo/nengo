@@ -316,11 +316,20 @@ class Ensemble(object):
                 "Probe target '%s' is not probable" % to_probe)
         return probe
 
+    def add_to_model(self, model):
+        if model.objs.has_key(self.name):
+            raise ValueError("Something called " + self.name + " already "
+                             "exists. Please choose a different name.")
+
+        model.objs[self.name] = self
+
     def build(self, model, dt, signal=None):
         """Prepare this ensemble for simulation.
 
         Called automatically by `model.build`.
         """
+        # assert self in model.objs.values(), "Not added to model"
+
         # Set up signal
         if signal is None:
             self.signal = core.Signal(n=self.dimensions,
@@ -367,6 +376,42 @@ class Ensemble(object):
             probe.dimensions = self.n_neurons
 
 
+class PassthroughNode(object):
+    def __init__(self, name, dimensions=1):
+        self.name = name
+        self.dimensions = dimensions
+
+        self.connections_out = []
+        self.probes = {'output': []}
+
+    def connect_to(self, post, **kwargs):
+        connection = connections.SignalConnection(self, post, **kwargs)
+        self.connections_out += [connection]
+
+    def add_to_model(self, model):
+        if model.objs.has_key(self.name):
+            raise ValueError("Something called " + self.name + " already "
+                             "exists. Please choose a different name.")
+
+        model.objs[self.name] = self
+
+    def build(self, model, dt):
+        self.signal = core.Signal(n=self.dimensions,
+                                  name=self.name + ".signal")
+        model.add(self.signal)
+
+        # Set up probes
+        for probe in self.probes['output']:
+            probe.sig = self.signal
+            model.add(probe)
+
+    def probe(self, to_probe='output', sample_every=0.001, filter=None):
+        if to_probe == 'output':
+            p = core.Probe(None, sample_every)
+            self.probes['output'].append(p)
+        return p
+
+
 class ConstantNode(object):
     def __init__(self, name, output):
         self.name = name
@@ -405,6 +450,13 @@ class ConstantNode(object):
             p = core.Probe(None, sample_every)
             self.probes['output'].append(p)
         return p
+
+    def add_to_model(self, model):
+        if model.objs.has_key(self.name):
+            raise ValueError("Something called " + self.name + " already "
+                             "exists. Please choose a different name.")
+
+        model.objs[self.name] = self
 
     def build(self, model, dt):
         # Set up signal
@@ -497,6 +549,13 @@ class Node(object):
             self.probes['output'].append(p)
         return p
 
+    def add_to_model(self, model):
+        if model.objs.has_key(self.name):
+            raise ValueError("Something called " + self.name + " already "
+                             "exists. Please choose a different name.")
+
+        model.objs[self.name] = self
+
     def build(self, model, dt):
         """TODO"""
         # Set up signals
@@ -513,7 +572,8 @@ class Node(object):
         model.add(self.nonlinear)
 
         # Set up encoder
-        model._operators += [simulator.DotInc(core.Constant(np.eye(self.dimensions)), self.signal, self.nonlinear.input_signal)]
+        model._operators += [simulator.DotInc(core.Constant(
+            np.eye(self.dimensions)), self.signal, self.nonlinear.input_signal)]
 
         # Set up probes
         for probe in self.probes['output']:
@@ -552,6 +612,9 @@ class Probe(object):
     def sample_rate(self):
         """TODO"""
         return 1.0 / self.sample_every
+
+    def add_to_model(self, model):
+        model.signal_probes.append(self)
 
     def build(self, model, dt):
         """TODO"""

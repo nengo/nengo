@@ -4,7 +4,8 @@ import numpy as np
 
 from . import core
 from . import decoders as decsolve
-import simulator
+from . import simulator
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,9 @@ class SignalConnection(object):
             self.probes['signal'].append(probe)
         return probe
 
+    def add_to_model(self, model):
+        model.connections.append(self)
+
     def _add_filter_transform(self, model, dt):
         if self.filter is not None and self.filter > dt:
             # Set up signal
@@ -93,11 +97,11 @@ class SignalConnection(object):
         # Pre / post may be high level objects (ensemble, node) or signals
         if not core.is_signal(self.pre):
             self.pre = self.pre.signal
-            if not core.is_constant(self.pre):
-                logger.warning("SignalConnection is usually used for "
-                               "connecting raw Signals and ConstantNodes. "
-                               "Are you sure you shouldn't be using "
-                               "DecodedConnection?")
+#            if not core.is_constant(self.pre):
+#                logger.warning("SignalConnection is usually used for "
+#                               "connecting raw Signals and ConstantNodes. "
+#                               "Are you sure you shouldn't be using "
+#                               "DecodedConnection?")
 
         if not core.is_signal(self.post):
             self.post = self.post.signal
@@ -298,6 +302,9 @@ class ConnectionList(object):
         self.transform = transform
         self.probes = {}
 
+    def add_to_model(self, model):
+        model.connections.append(self)
+
     def build(self, model, dt):
         self.transform = np.asarray(self.transform)
 
@@ -305,13 +312,14 @@ class ConnectionList(object):
         for connection in self.connections:
             pre_dim = connection.dimensions
 
-            if self.transform.shape == ():
-                self.transform
+            if self.transform.ndim == 0:
                 trans = np.zeros((connection.post.dimensions, pre_dim))
-                trans[i:i+pre_dim] = self.transform
-
-            if self.transform.ndim == 2:
+                np.fill_diagonal(trans[i:i+pre_dim,:], self.transform)
+            elif self.transform.ndim == 2:
                 trans = self.transform[:,i:i+pre_dim]
+            else:
+                raise NotImplementedError(
+                    "Only transforms with 0 or 2 ndims are accepted")
 
             i += pre_dim
 
