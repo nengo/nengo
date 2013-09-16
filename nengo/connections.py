@@ -66,7 +66,7 @@ class SignalConnection(object):
     def add_to_model(self, model):
         model.connections.append(self)
 
-    def _add_filter_transform(self, model, dt):
+    def _add_filter(self, model, dt):
         if self.filter is not None and self.filter > dt:
             # Set up signal
             name = self.pre.name + ".filtered(%f)" % self.filter
@@ -81,9 +81,10 @@ class SignalConnection(object):
                                                  self.signal)]
 
         else:
-            self.signal = self.pre
             # Signal should already be in the model
+            self.signal = self.pre
 
+    def _add_transform(self, model):
         model._operators += [simulator.DotInc(core.Constant(self.transform),
                                               self.signal,
                                               self.post)]
@@ -107,7 +108,8 @@ class SignalConnection(object):
             self.post = self.post.signal
 
         # Set up filters and transform
-        self._add_filter_transform(model, dt)
+        self._add_filter(model, dt)
+        self._add_transform(model)
 
         # Set up probes
         self._add_probes(model)
@@ -154,11 +156,11 @@ class NonlinearityConnection(SignalConnection):
         model.add(self.signal)
 
         # Set up filters and transform
-        self._add_filter_transform(model, dt)
+        self._add_filter(model, dt)
+        self._add_transform(model)
 
-        # Set up decoders
+        # Set up probes
         self._add_probes(model)
-
 
 class DecodedConnection(SignalConnection):
     """A DecodedConnection connects an ensemble to a Signal
@@ -245,7 +247,7 @@ class DecodedConnection(SignalConnection):
     def __str__(self):
         return self.name + " (DecodedConnection)"
 
-    def _add_filter_transform(self, model, dt):
+    def _add_filter(self, model, dt):
         if self.filter is not None and self.filter > dt:
             o_coef, n_coef = core.filter_coefs(pstc=self.filter, dt=dt)
 
@@ -258,10 +260,6 @@ class DecodedConnection(SignalConnection):
                                                       self.pre,
                                                       core.Constant(0),
                                                       self.signal)]
-
-        model._operators += [simulator.DotInc(core.Constant(self.transform),
-                                                  self.signal,
-                                                  self.post)]
 
     def build(self, model, dt):
         # Pre must be an ensemble -- but, don't want to import objects
@@ -289,11 +287,11 @@ class DecodedConnection(SignalConnection):
 
         # Set up filters and transform
         self.pre = self.pre.neurons.output_signal
-        self._add_filter_transform(model, dt)
+        self._add_filter(model, dt)
+        self._add_transform(model)
 
         # Set up probes
         self._add_probes(model)
-
 
 class ConnectionList(object):
     """A connection made up of several other connections."""
