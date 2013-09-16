@@ -125,6 +125,11 @@ class TestEnsembleArray(SimulatorTestCase):
             Amat.size * Bmat.shape[1], dimensions_per_ensemble=2,
             radius=1.5 * radius))
 
+        for ens in C.ensembles:
+            ens.encoders = np.tile([[1, 1],[-1, 1],[1, -1],[-1, -1]],
+                                   (ens.n_neurons / 4, 1))
+
+
         transformA = np.zeros((C.dimensions, Amat.size))
         transformB = np.zeros((C.dimensions, Bmat.size))
 

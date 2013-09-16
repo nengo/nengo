@@ -81,9 +81,6 @@ class Model(object):
         #
         self._operators = []
 
-        # -- map from signals to shadows for time t + 1
-        self._next_signals = {}
-
         self.objs = {}
         self.aliases = {}
         self.probed = {}
@@ -109,28 +106,6 @@ class Model(object):
     def _get_new_seed(self):
         return (self.rng.randint(2**31-1) if self.fixed_seed is None
                 else self.fixed_seed)
-
-    def _get_output_view(self, obj):
-        # -- hacky helper used by Transform.add_to_model and Filter.add_to_model
-        if obj.base not in self._next_signals:
-            self._next_signals[obj.base] = core.Signal(
-                obj.base.n,
-                name=obj.base.name + '-out')
-            self._operators.append(
-                simulator.Reset(self._next_signals[obj.base]))
-            # -- N.B. this copy will be performed *after* the
-            #    DotInc operators created below.
-            self._operators.append(
-                simulator.Copy(src=self._next_signals[obj.base],
-                     dst=obj.base,
-                     as_update=True,
-                     tag='back-copy %s' % str(obj.base)))
-
-        if simulator.is_view(obj):
-            self._next_signals[obj] = obj.view_like_self_of(
-                self._next_signals[obj.base])
-
-        return self._next_signals[obj]
 
     def __str__(self):
         return "Model: " + self.name

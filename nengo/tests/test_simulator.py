@@ -37,7 +37,7 @@ class TestSimulator(SimulatorTestCase):
 
         m._operators += [simulator.ProdUpdate(core.Constant(1), three[0:1], core.Constant(0), one)]
         m._operators += [simulator.ProdUpdate(core.Constant(2.0), three[1:], core.Constant(0), two)]
-        m._operators += [simulator.DotInc(core.Constant([[0,0,1], [0,1,0], [1,0,0]]), three, m._get_output_view(three))]
+        m._operators += [simulator.ProdUpdate(core.Constant([0,0,0]), core.Constant(0), core.Constant([[0,0,1],[0,1,0],[1,0,0]]), three)]
 
         sim = m.simulator(sim_class=self.Simulator)
         memo = sim.model.memo
@@ -74,8 +74,8 @@ class TestSimulator(SimulatorTestCase):
                 msg='%s != %s' % (sim.signals[sim.copied(m.t)], t))
             self.assertTrue(
                 np.allclose(
-                    sim.signals[sim.copied(sig)], np.sin(t - dt)),
-                msg='%s != %s' % (sim.signals[sim.copied(sig)], np.sin(t - dt)))
+                    sim.signals[sim.copied(sig)], np.sin(t - dt*2)),
+                msg='%s != %s' % (sim.signals[sim.copied(sig)], np.sin(t - dt*2)))
 
     def test_encoder_decoder_pathway(self):
         m = nengo.Model("")
@@ -87,27 +87,30 @@ class TestSimulator(SimulatorTestCase):
         m._operators += [simulator.ProdUpdate(Constant(decoders*0.5), pop.output_signal, Constant(0.2), foo)]
 
         sim = m.simulator(sim_class=self.Simulator)
-        sim.signals[sim.copied(foo)] = np.asarray([1.0])
-        sim.step()
 
         def check(sig, target):
             self.assertTrue(np.allclose(sim.signals[sim.copied(sig)], target),
                             "%s: value %s is not close to target %s" %
                             (sig, sim.signals[sim.copied(sig)], target))
-        check(foo, .55)
-        try:
-            check(pop.input_signal, [1, 2])
-            check(pop.output_signal, [2, 3])
-        except AssertionError:
-            # -- not passing in reference simulator because
-            #    input signals are zerod
-            check(pop.input_signal, [0, 0])
-            check(pop.output_signal, [0, 0])
-
-
-        self.assertTrue(np.allclose(sim.signals[sim.copied(foo)],
-                                    .55, atol=.01, rtol=.01),
-                        msg=str(sim.signals[sim.copied(foo)]))
+            
+        sim.signals[sim.copied(foo)] = np.asarray([1.0]) #set initial value of foo (foo=1.0)
+                                                         #pop.input_signal = [0,0]
+                                                         #pop.output_signal = [0,0]
+        sim.step() #DotInc to pop.input_signal (input=[1.0,2.0])
+                   #produpdate updates foo (foo=[0.2])
+                   #pop updates pop.output_signal (output=[2,3])
+            
+        check(foo, .2)
+        check(pop.input_signal, [1, 2])
+        check(pop.output_signal, [2, 3])
+        
+        sim.step() #DotInc to pop.input_signal (input=[0.2,0.4]) (note that pop resets its own input signal each timestep)
+                   #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
+                   #pop updates pop.output_signal (output=[1.2,1.4])
+                   
+        check(foo, .39)
+        check(pop.input_signal, [0.2, 0.4])
+        check(pop.output_signal, [1.2, 1.4])
 
     def test_encoder_decoder_with_views(self):
         m = nengo.Model("")
@@ -119,21 +122,32 @@ class TestSimulator(SimulatorTestCase):
         m._operators += [simulator.ProdUpdate(Constant(decoders*0.5), pop.output_signal, Constant(0.2), foo[:])]
 
         sim = m.simulator(sim_class=self.Simulator)
-        sim.signals[sim.copied(foo)] = np.asarray([1.0])
-        sim.step()
-
+        
+        
+        
         def check(sig, target):
             self.assertTrue(np.allclose(sim.signals[sim.copied(sig)], target),
                             "%s: value %s is not close to target %s" %
                             (sig, sim.signals[sim.copied(sig)], target))
-        check(foo, .55)
+            
+        sim.signals[sim.copied(foo)] = np.asarray([1.0]) #set initial value of foo (foo=1.0)
+                                                         #pop.input_signal = [0,0]
+                                                         #pop.output_signal = [0,0]
+        sim.step() #DotInc to pop.input_signal (input=[1.0,2.0])
+                   #produpdate updates foo (foo=[0.2])
+                   #pop updates pop.output_signal (output=[2,3])
+            
+        check(foo, .2)
         check(pop.input_signal, [1, 2])
         check(pop.output_signal, [2, 3])
-
-        self.assertTrue(np.allclose(sim.signals[sim.copied(foo)],
-                                    .55, atol=.01, rtol=.01),
-                        msg=sim.signals[sim.copied(foo)])
-
+        
+        sim.step() #DotInc to pop.input_signal (input=[0.2,0.4]) (note that pop resets its own input signal each timestep)
+                   #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
+                   #pop updates pop.output_signal (output=[1.2,1.4])
+                   
+        check(foo, .39)
+        check(pop.input_signal, [0.2, 0.4])
+        check(pop.output_signal, [1.2, 1.4])
 
 if __name__ == "__main__":
     nengo.log_to_file('log.txt', debug=True)

@@ -86,7 +86,7 @@ class SignalConnection(object):
 
         model._operators += [simulator.DotInc(core.Constant(self.transform),
                                               self.signal,
-                                              model._get_output_view(self.post))]
+                                              self.post)]
 
     def _add_probes(self, model):
         for probe in self.probes['signal']:
@@ -261,7 +261,7 @@ class DecodedConnection(SignalConnection):
 
         model._operators += [simulator.DotInc(core.Constant(self.transform),
                                                   self.signal,
-                                                  model._get_output_view(self.post))]
+                                                  self.post)]
 
     def build(self, model, dt):
         # Pre must be an ensemble -- but, don't want to import objects

@@ -62,7 +62,7 @@ class TestCircularConv(SimulatorTestCase):
     #     # assert_allclose(self, logger, c, c2, atol=1e-5, rtol=1e-5)
     #     assert_allclose(self, logger, c, c2, atol=1e-5, rtol=1e-3)
 
-    def test_circularconv(self, dims=5, neurons_per_product=150):
+    def _test_circularconv(self, dims=5, neurons_per_product=128):
         rng = np.random.RandomState(42342)
 
         n_neurons = neurons_per_product * dims
@@ -111,15 +111,16 @@ class TestCircularConv(SimulatorTestCase):
         sim.run(1.0)
 
         t = sim.data(model.t).flatten()
+
         with Plotter(self.Simulator) as plt:
             def plot(sim, a, A, title=""):
                 a_ref = np.tile(a, (len(t), 1))
                 a_sim = sim.data(A)
                 colors = ['b', 'g', 'r', 'c', 'm', 'y']
-                for i in xrange(dims):
+                for i in xrange(min(dims, len(colors))):
                     plt.plot(t, a_ref[:,i], '--', color=colors[i])
                     plt.plot(t, a_sim[:,i], '-', color=colors[i])
-                plt.title(title)
+                    plt.title(title)
 
             plt.subplot(221)
             plot(sim, a, A, title="A")
@@ -129,7 +130,7 @@ class TestCircularConv(SimulatorTestCase):
             plot(sim, c, C, title="C")
             plt.subplot(224)
             plot(sim, d, D, title="D")
-            plt.savefig('test_circularconv.test_circularconv.pdf')
+            plt.savefig('test_circularconv.test_circularconv_%d.pdf' % dims)
             plt.close()
 
         ### results
@@ -138,12 +139,20 @@ class TestCircularConv(SimulatorTestCase):
         c_sim = sim.data(C)[t > 0.5].mean(axis=0)
         d_sim = sim.data(D)[t > 0.5].mean(axis=0)
 
-        rtol, atol = 0.05, 0.01
+        rtol, atol = 0.1, 0.05
         self.assertTrue(np.allclose(a, a_sim, rtol=rtol, atol=atol))
         self.assertTrue(np.allclose(b, b_sim, rtol=rtol, atol=atol))
-        rtol, atol = 0.1, 0.05
         self.assertTrue(np.allclose(d, d_sim, rtol=rtol, atol=atol))
-        self.assertTrue(np.allclose(c, c_sim, rtol=rtol, atol=atol))
+        self.assertTrue(rmse(c, c_sim) < 0.075)
+
+    def test_small(self):
+        return self._test_circularconv(dims=4, neurons_per_product=128)
+
+    def test_med(self):
+        return self._test_circularconv(dims=10, neurons_per_product=128)
+
+    def test_large(self):
+        return self._test_circularconv(dims=20, neurons_per_product=128)
 
 
 if __name__ == "__main__":

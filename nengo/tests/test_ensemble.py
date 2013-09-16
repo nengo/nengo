@@ -177,7 +177,10 @@ class TestEnsemble(SimulatorTestCase):
         N = 80
         m.make_node('sin', output=np.sin)
         m.make_node('-0.5', output=-.5)
-        m.make_ensemble('factors', nengo.LIF(2 * N), dimensions=2, radius=1.5)
+        factors = m.make_ensemble(
+            'factors', nengo.LIF(2 * N), dimensions=2, radius=1.5)
+        factors.encoders = np.tile([[1, 1],[-1, 1],[1, -1],[-1, -1]],
+                                   (factors.n_neurons / 4, 1))
         m.make_ensemble('product', nengo.LIF(N), dimensions=1)
         m.connect('sin', 'factors', transform=[[1], [0]])
         m.connect('-0.5', 'factors', transform=[[0], [1]])
