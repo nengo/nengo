@@ -125,11 +125,11 @@ class Model(object):
                      dst=obj.base,
                      as_update=True,
                      tag='back-copy %s' % str(obj.base)))
-            
+
         if simulator.is_view(obj):
             self._next_signals[obj] = obj.view_like_self_of(
                 self._next_signals[obj.base])
-            
+
         return self._next_signals[obj]
 
     def __str__(self):
@@ -203,7 +203,7 @@ class Model(object):
     def prep_for_simulation(model, dt):
         model.name = model.name + ", dt=%f" % dt
         model.dt = dt
-        model._operators += [simulator.ProdUpdate(core.Constant(dt), model.one, 
+        model._operators += [simulator.ProdUpdate(core.Constant(dt), model.one,
                                                   core.Constant(1), model.t)]
 
         # Sort all objects by name
@@ -281,27 +281,11 @@ class Model(object):
         Network.add : The same function for Networks
 
         """
-        if 'core' in obj.__module__:
+        try:
             obj.add_to_model(self)
             return obj
-
-        if hasattr(obj, 'name') and self.objs.has_key(obj.name):
-            raise ValueError("Something called " + obj.name + " already exists."
-                             " Please choose a different name.")
-
-        if hasattr(obj, 'connections_out'):
-            self.objs[obj.name] = obj
-        elif hasattr(obj, 'connections_in'):
-            self.signal_probes.append(obj)
-        elif hasattr(obj, 'probes'):
-            self.connections.append(obj)
-        else:
-            raise TypeError("Object not recognized as a Nengo object. "
-                            "Objects should have connections_in and "
-                            "connections_out lists; connections should "
-                            "have a probes dictionary.")
-
-        return obj
+        except AttributeError:
+            raise TypeError("Error in %s.add_to_model."%obj)
 
     def get(self, target, default=None):
         """Return the Nengo object specified.
@@ -682,12 +666,13 @@ class Model(object):
                 p = core.Probe(target, sample_every)
                 self.add(p)
         elif isinstance(target, str):
-            s = target.split('.')
-            if len(s) > 1:
-                obj = self.get('.'.join(s[:-1]))
-                p = obj.probe(s[-1], sample_every, filter)
+            obj = self.get(target, None)
+            if obj is None and '.' in target:
+                name, probe_name = target.rsplit('.', 1)
+                obj = self.get(name)
+                print self.objs.keys()
+                p = obj.probe(probe_name, sample_every, filter)
             else:
-                obj = self.get(target)
                 p = obj.probe(sample_every=sample_every, filter=filter)
         elif hasattr(target, 'probe'):
             p = target.probe(sample_every=sample_every, filter=filter)
