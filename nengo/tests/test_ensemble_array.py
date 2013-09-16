@@ -33,27 +33,28 @@ class TestEnsembleArrayCreation(unittest.TestCase):
 class TestEnsembleArray(SimulatorTestCase):
     def test_multidim(self):
         """Test an ensemble array with multiple dimensions per ensemble"""
-        n_neurons = 100
-        radius = 1
+        dims = 3
+        n_neurons = 3 * 60
+        radius = 1.5
+
+        rng = np.random.RandomState(523887)
+        a = rng.uniform(low=-0.7, high=0.7, size=dims)
+        b = rng.uniform(low=-0.7, high=0.7, size=dims)
 
         ta = np.zeros((6,3))
         ta[[0, 2, 4], [0, 1, 2]] = 1
         tb = np.zeros((6,3))
         tb[[1, 3, 5], [0, 1, 2]] = 1
-
-        rng = np.random.RandomState(523887)
-        a = rng.uniform(low=-0.7, high=0.7, size=3)
-        b = rng.uniform(low=-0.7, high=0.7, size=3)
         c = np.dot(ta, a) + np.dot(tb, b)
 
-        model = nengo.Model('Matrix Multiplication', seed=123)
+        model = nengo.Model('Multidim', seed=123)
         inputA = model.make_node('input A', output=a)
         inputB = model.make_node('input B', output=b)
-        A = model.add(EnsembleArray('A', nengo.LIF(n_neurons), 3,
+        A = model.add(EnsembleArray('A', nengo.LIF(n_neurons), dims,
                                     radius=radius))
-        B = model.add(EnsembleArray('B', nengo.LIF(n_neurons), 3,
+        B = model.add(EnsembleArray('B', nengo.LIF(n_neurons), dims,
                                     radius=radius))
-        C = model.add(EnsembleArray('C', nengo.LIF(n_neurons), 3,
+        C = model.add(EnsembleArray('C', nengo.LIF(n_neurons * 2), dims,
                                     dimensions_per_ensemble=2, radius=radius))
 
         model.connect(inputA, A)
@@ -69,12 +70,30 @@ class TestEnsembleArray(SimulatorTestCase):
         sim.run(1.0)
 
         t = sim.data(model.t).flatten()
-        a_sim = sim.data(A)[t > 0.5].mean(0)
-        b_sim = sim.data(B)[t > 0.5].mean(0)
-        c_sim = sim.data(C)[t > 0.5].mean(0)
+        with Plotter(self.Simulator) as plt:
+            def plot(sim, a, A, title=""):
+                a_ref = np.tile(a, (len(t), 1))
+                a_sim = sim.data(A)
+                colors = ['b', 'g', 'r', 'c', 'm', 'y']
+                for i in xrange(a_sim.shape[1]):
+                    plt.plot(t, a_ref[:,i], '--', color=colors[i])
+                    plt.plot(t, a_sim[:,i], '-', color=colors[i])
+                plt.title(title)
 
-        atol = 0.01
-        rtol = 0.05
+            plt.subplot(131)
+            plot(sim, a, A, title="A")
+            plt.subplot(132)
+            plot(sim, b, B, title="B")
+            plt.subplot(133)
+            plot(sim, c, C, title="C")
+            plt.savefig('test_ensemble_array.test_multidim.pdf')
+            plt.close()
+
+        a_sim = sim.data(A)[t > 0.5].mean(axis=0)
+        b_sim = sim.data(B)[t > 0.5].mean(axis=0)
+        c_sim = sim.data(C)[t > 0.5].mean(axis=0)
+
+        rtol, atol = 0.1, 0.05
         self.assertTrue(np.allclose(a, a_sim, atol=atol, rtol=rtol))
         self.assertTrue(np.allclose(b, b_sim, atol=atol, rtol=rtol))
         self.assertTrue(np.allclose(c, c_sim, atol=atol, rtol=rtol))

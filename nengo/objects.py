@@ -380,21 +380,21 @@ class PassthroughNode(object):
     def __init__(self, name, dimensions=1):
         self.name = name
         self.dimensions = dimensions
-    
+
         self.connections_out = []
         self.probes = {'output': []}
-    
+
     def connect_to(self, post, **kwargs):
         connection = connections.SignalConnection(self, post, **kwargs)
         self.connections_out += [connection]
-        
+
     def add_to_model(self, model):
         if model.objs.has_key(self.name):
             raise ValueError("Something called " + self.name + " already "
                              "exists. Please choose a different name.")
 
         model.objs[self.name] = self
-    
+
     def build(self, model, dt):
         self.signal = core.Signal(n=self.dimensions,
                                   name=self.name + ".signal")
@@ -405,13 +405,11 @@ class PassthroughNode(object):
             probe.sig = self.signal
             model.add(probe)
 
-
     def probe(self, to_probe='output', sample_every=0.001, filter=None):
         if to_probe == 'output':
             p = core.Probe(None, sample_every)
             self.probes['output'].append(p)
         return p
-
 
 
 class ConstantNode(object):
