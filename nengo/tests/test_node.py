@@ -5,6 +5,8 @@ from nengo.objects import Node, PassthroughNode
 import nengo.old_api as nef
 from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
 
+import logging
+logger = logging.getLogger(__name__)
 
 class TestNode(SimulatorTestCase):
 
@@ -24,11 +26,11 @@ class TestNode(SimulatorTestCase):
             plt.savefig('test_node.test_simple.pdf')
             plt.close()
 
-        self.assertTrue(np.allclose(sim.data(m.t).ravel(),
-                                    np.arange(dt, runtime, dt)))
-        # One step delay
-        self.assertTrue(np.allclose(sim.data('in')[1:].ravel(),
-                                    np.sin(np.arange(0, runtime-dt*2, dt))))
+        sim_t = sim.data(m.t).ravel()
+        sim_in = sim.data('in').ravel()
+        t = dt * np.arange(1, len(sim_t) + 1)
+        self.assertTrue(np.allclose(sim_t, t))
+        self.assertTrue(np.allclose(sim_in[2:], np.sin(t[:-2]))) # 2-step delay
 
     def test_connected(self):
         dt = 0.001
@@ -51,12 +53,13 @@ class TestNode(SimulatorTestCase):
             plt.savefig('test_node.test_connected.pdf')
             plt.close()
 
-        # Delay of one timestep
-        self.assertTrue(np.allclose(sim.data('in')[1:].ravel(),
-                                    np.sin(np.arange(0, runtime-dt*2, dt))))
-        # Delay of one timestep
-        self.assertTrue(np.allclose(np.square(sim.data('in')[:-1]).ravel(),
-                                    sim.data('out')[1:].ravel()))
+        sim_t = sim.data(m.t).ravel()
+        sim_sin = sim.data('in').ravel()
+        sim_sq = sim.data('out').ravel()
+        t = dt * np.arange(1, len(sim_t) + 1)
+        self.assertTrue(np.allclose(sim_t, t))
+        self.assertTrue(np.allclose(sim_sin[2:], np.sin(t[:-2]))) # 2-step delay
+        self.assertTrue(np.allclose(sim_sq[1:], sim_sin[:-1]**2)) # 1-step delay
 
     def test_passthrough(self):
         dt = 0.001
@@ -86,9 +89,9 @@ class TestNode(SimulatorTestCase):
             plt.savefig('test_node.test_passthrough.pdf')
             plt.close()
 
-        # One step delay between first and second nonlinearity
-        self.assertTrue(np.allclose(sim.data('in')[:-1]+sim.data('in2')[:-1],
-                                    sim.data('out')[1:]))
+        # Two step delay between first and second nonlinearity due to passthrough
+        self.assertTrue(np.allclose(sim.data('in')[:-2]+sim.data('in2')[:-2],
+                                    sim.data('out')[2:]))
 
     def test_circular(self):
         dt = 0.001
