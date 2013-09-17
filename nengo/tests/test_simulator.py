@@ -45,11 +45,7 @@ class TestSimulator(SimulatorTestCase):
                 core.Constant([[0,0,1],[0,1,0],[1,0,0]]),
                 three,
                 tmp),
-            simulator.ProdUpdate(
-                core.Constant(1),
-                tmp,
-                core.Constant(0),
-                three),
+            simulator.Copy(src=tmp, dst=three, as_update=True),
             ]
 
         sim = m.simulator(sim_class=self.Simulator)
