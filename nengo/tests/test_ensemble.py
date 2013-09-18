@@ -132,8 +132,8 @@ class TestEnsemble(SimulatorTestCase):
             plt.savefig('test_ensemble.test_scalar.pdf')
             plt.close()
 
-        target = np.sin(np.arange(4999) / 1000.)
-        target.shape = (4999, 1)
+        target = np.sin(np.arange(5000) / 1000.)
+        target.shape = (-1, 1)
         logger.debug("[New API] input RMSE: %f", rmse(target, sim.data('in')))
         logger.debug("[New API] A RMSE: %f", rmse(target, sim.data('A')))
         self.assertTrue(rmse(target, sim.data('in')) < 0.001)
@@ -161,9 +161,9 @@ class TestEnsemble(SimulatorTestCase):
             plt.savefig('test_ensemble.test_vector.pdf')
             plt.close()
 
-        target = np.vstack((np.sin(np.arange(4999) / 1000.),
-                            np.cos(np.arange(4999) / 1000.),
-                            np.arctan(np.arange(4999) / 1000.))).T
+        target = np.vstack((np.sin(np.arange(5000) / 1000.),
+                            np.cos(np.arange(5000) / 1000.),
+                            np.arctan(np.arange(5000) / 1000.))).T
         logger.debug("In RMSE: %f", rmse(target, sim.data('in')))
         self.assertTrue(rmse(target, sim.data('in') < 0.001))
         self.assertTrue(rmse(target, sim.data('A')) < 0.1)
