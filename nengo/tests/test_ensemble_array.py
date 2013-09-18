@@ -66,7 +66,7 @@ class TestEnsembleArray(SimulatorTestCase):
         model.probe(B, filter=0.03)
         model.probe(C, filter=0.03)
 
-        sim = model.simulator()
+        sim = model.simulator(sim_class=self.Simulator)
         sim.run(1.0)
 
         t = sim.data(model.t).flatten()
@@ -158,7 +158,7 @@ class TestEnsembleArray(SimulatorTestCase):
         model.connect('C', 'D', function=product, transform=transformC)
         model.probe('D', sample_every=0.01, filter=0.01)
 
-        sim = model.simulator()
+        sim = model.simulator(sim_class=self.Simulator)
         sim.run(1)
 
         with Plotter(self.Simulator) as plt:
