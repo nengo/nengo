@@ -227,7 +227,7 @@ class Model(object):
         modelcopy = copy.deepcopy(self, memo)
         modelcopy.memo = memo
         self.prep_for_simulation(modelcopy, dt)
-        return sim_class(modelcopy, **sim_args)
+        return sim_class(model=modelcopy, **sim_args)
 
     ### Model manipulation
 
