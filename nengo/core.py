@@ -398,7 +398,7 @@ class Constant(Signal):
     """A signal meant to hold a fixed value"""
     def __init__(self, value, name=None):
         self.value = np.asarray(value)
-        
+
         Signal.__init__(self, self.value.size, name=name)
 
     def __str__(self):
@@ -438,7 +438,7 @@ def is_constant(sig):
 
 class Nonlinearity(object):
     operator = None
-    
+
     def __str__(self):
         return "Nonlinearity (id " + str(id(self)) + ")"
 
@@ -633,16 +633,16 @@ class _LIFBase(Nonlinearity):
 
 class LIFRate(_LIFBase):
     operator = sim.SimLIFRate
-    def math(self, J):
+    def math(self, dt, J):
         """Compute rates for input current (incl. bias)"""
         old = np.seterr(divide='ignore')
         try:
             j = np.maximum(J - 1, 0.)
-            r = 1. / (self.tau_ref + self.tau_rc * np.log1p(1./j))
+            r = dt / (self.tau_ref + self.tau_rc * np.log1p(1./j))
         finally:
             np.seterr(**old)
         return r
-                
+
 class LIF(_LIFBase):
     operator = sim.SimLIF
     def __init__(self, n_neurons, upsample=1, **kwargs):
@@ -660,14 +660,14 @@ class LIF(_LIFBase):
             self.operator(
                 output=self.output_signal,
                 J=self.input_signal,
-                nl=self, 
+                nl=self,
                 voltage=self.voltage,
                 refractory_time=self.refractory_time))
         # -- encoders will be scheduled between this copy
         #    and nl_op
         model._operators.append(
             sim.Copy(dst=self.input_signal, src=self.bias_signal))
-        
+
     def to_json(self):
         d = _LIFBase.to_json(self)
         d['upsample'] = self.upsample
