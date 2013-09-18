@@ -363,10 +363,9 @@ class SimLIFRate(Operator):
     def make_step(self, dct, dt):
         J = dct[self.J]
         output = dct[self.output]
-        rates_fn = self.nl.rates
-        bias = self.nl.bias
+        rates_fn = self.nl.math
         def step():
-            output[...] = dt * rates_fn(J - bias)
+            output[...] = dt * rates_fn(J)
         return step
 
 
