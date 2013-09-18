@@ -96,7 +96,8 @@ class TestNonlinear(SimulatorTestCase):
         sim_rates = np.sum(spikes, axis=0) / t_final
         math_rates = lif.rates(sim.signals[lif.input_signal])
         logger.debug("ME = %f", (sim_rates - math_rates).mean())
-        logger.debug("RMSE = %f", rms(sim_rates - math_rates) / rms(math_rates))
+        logger.debug("RMSE = %f",
+                     rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
         self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
     def test_lif_rate(self):
