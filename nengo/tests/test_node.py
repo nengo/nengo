@@ -9,8 +9,6 @@ from nengo.tests.helpers import assert_allclose
 import logging
 logger = logging.getLogger(__name__)
 
-# nengo.log(debug=True)
-
 class TestNode(SimulatorTestCase):
 
     def test_simple(self):
