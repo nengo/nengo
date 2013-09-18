@@ -67,58 +67,46 @@ class TestNonlinear(SimulatorTestCase):
         math_rates = lif.rates(J)
         self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
-    def test_lif(self):
+    def _test_lif_base(self, cls=LIF):
         """Test that the dynamic model approximately matches the rates"""
+        rng = np.random.RandomState(85243)
+
         d = 1
         n = 5e3
 
         m = nengo.Model("")
         ins = m.add(Signal(n=d, name='ins'))
-        lif = m.add(LIF(n))
+        lif = m.add(cls(n))
+        lif.set_gain_bias(max_rates=rng.uniform(low=10, high=200, size=n),
+                          intercepts=rng.uniform(low=-1, high=1, size=n))
 
-        m._operators += [simulator.DotInc(Constant(np.ones((n,d))), #arbitrary encoders, doesn't really matter
-                                          ins,
-                                          lif.input_signal)]
+        m._operators += [ # arbitrary encoders, doesn't really matter
+            simulator.DotInc(Constant(np.ones((n,d))), ins, lif.input_signal)]
 
-        sim = m.simulator()
-        sim.signals[ins] = np.random.normal(loc=0, scale=1, size=d)
+        sim = m.simulator(sim_class=self.Simulator)
+        sim.signals[ins] = 0.5 * np.ones(d)
 
+        t_final = 1.0
         dt = sim.model.dt
-        t_final = 1.
-        t = dt * np.arange(np.round(t_final / dt))
-        nt = len(t)
-
-        spikes = []
-        for ii in range(nt):
+        spikes = np.zeros(n)
+        for i in xrange(int(np.round(t_final / dt))):
             sim.step()
-            spikes.append(sim.signals[lif.output_signal])
+            spikes += sim.signals[lif.output_signal]
 
-        sim_rates = np.sum(spikes, axis=0) / t_final
-        math_rates = lif.rates(sim.signals[lif.input_signal])
+        math_rates = lif.rates(sim.signals[lif.input_signal] - lif.bias)
+        sim_rates = spikes / t_final
         logger.debug("ME = %f", (sim_rates - math_rates).mean())
-        logger.debug("RMSE = %f", rms(sim_rates - math_rates) / rms(math_rates))
+        logger.debug("RMSE = %f",
+                     rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
+        self.assertTrue(np.sum(math_rates > 0) > 0.5*n,
+                        "At least 50% of neurons must fire")
         self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
+
+    def test_lif(self):
+        self._test_lif_base(cls=LIF)
 
     def test_lif_rate(self):
-        """Test that the simulator rate model matches the built in one"""
-        d = 1
-        n = 5e3
-
-        m = nengo.Model("")
-        ins = m.add(Signal(n=d, name='ins'))
-        lif = m.add(LIFRate(n))
-
-        m._operators += [simulator.DotInc(Constant(np.ones((n,d))), #arbitrary encoders, doesn't really matter
-                                                  ins,
-                                                  lif.input_signal)]
-
-        sim = m.simulator()
-        sim.signals[ins][...] = np.random.normal(loc=0, scale=1, size=d)
-        sim.step()
-
-        sim_rates = sim.signals[lif.output_signal]
-        math_rates = lif.rates(sim.signals[lif.input_signal])
-        self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
+        self._test_lif_base(cls=LIFRate)
 
 
 if __name__ == "__main__":

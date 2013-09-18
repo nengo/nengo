@@ -363,10 +363,9 @@ class SimLIFRate(Operator):
     def make_step(self, dct, dt):
         J = dct[self.J]
         output = dct[self.output]
-        rates_fn = self.nl.rates
-        bias = self.nl.bias
+        rates_fn = self.nl.math
         def step():
-            output[...] = dt * rates_fn(J - bias)
+            output[...] = rates_fn(dt, J)
         return step
 
 
@@ -575,7 +574,7 @@ class Simulator(object):
 
     def run(self, time_in_seconds):
         """Simulate for the given length of time."""
-        steps = int(time_in_seconds // self.model.dt)
+        steps = int(np.round(float(time_in_seconds) / self.model.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.model.name, time_in_seconds, steps)
         self.run_steps(steps)
