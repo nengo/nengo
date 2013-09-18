@@ -365,7 +365,7 @@ class SimLIFRate(Operator):
         output = dct[self.output]
         rates_fn = self.nl.math
         def step():
-            output[...] = dt * rates_fn(J)
+            output[...] = rates_fn(dt, J)
         return step
 
 
