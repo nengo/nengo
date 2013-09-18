@@ -4,9 +4,12 @@ import nengo
 from nengo.objects import Node, PassthroughNode
 import nengo.old_api as nef
 from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
+from nengo.tests.helpers import assert_allclose
 
 import logging
 logger = logging.getLogger(__name__)
+
+# nengo.log(debug=True)
 
 class TestNode(SimulatorTestCase):
 
@@ -89,9 +92,10 @@ class TestNode(SimulatorTestCase):
             plt.savefig('test_node.test_passthrough.pdf')
             plt.close()
 
-        # Two step delay between first and second nonlinearity due to passthrough
-        self.assertTrue(np.allclose(sim.data('in')[:-2]+sim.data('in2')[:-2],
-                                    sim.data('out')[2:]))
+        # One-step delay between first and second nonlinearity
+        sim_in = sim.data('in')[:-1] + sim.data('in2')[:-1]
+        sim_out = sim.data('out')[1:]
+        self.assertTrue(np.allclose(sim_in, sim_out))
 
     def test_circular(self):
         dt = 0.001
@@ -109,7 +113,9 @@ class TestNode(SimulatorTestCase):
         runtime = 0.5
         sim.run(runtime)
 
-        self.assertTrue(np.allclose(sim.data("a"),sim.data("b")))
+        a = sim.data("a")
+        b = sim.data("b")
+        assert_allclose(self, logger, a, b)
 
 
 if __name__ == "__main__":
