@@ -7,6 +7,8 @@ from nengo.tests.helpers import SimulatorTestCase, unittest
 import logging
 logger = logging.getLogger(__name__)
 
+nengo.log(debug=True)
+
 class TestProbe(SimulatorTestCase):
 
     def test_long_name(self):
@@ -28,7 +30,8 @@ class TestProbe(SimulatorTestCase):
         """Test probing the time on multiple runs"""
         rng = np.random.RandomState(2239)
 
-        rtol = 1e-4 # a bit higher, since model.t accumulates error over time
+        # set rtol a bit higher, since OCL model.t accumulates error over time
+        rtol = 1e-4
 
         model = nengo.Model("Multi-run")
         sim = model.simulator(sim_class=self.Simulator)
@@ -46,7 +49,6 @@ class TestProbe(SimulatorTestCase):
             # assert_allclose(self, logger, sim_t, t, rtol=rtol)
 
             t_sum += ti
-            print t_sum, sim_t[-1]
             self.assertTrue(np.allclose(sim_t[-1], t_sum, rtol=rtol))
 
 
