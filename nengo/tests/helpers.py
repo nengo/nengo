@@ -174,6 +174,7 @@ class SimulatorTestCase(unittest.TestCase):
 
 
 def assert_allclose(self, logger, a, b, atol=1e-8, rtol=1e-5):
+    a, b = a.flatten(), b.flatten()
     mask = np.abs(a - b) > atol + rtol * np.abs(b)
     if mask.any():
         nz = mask.nonzero()[0]
