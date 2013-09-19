@@ -7,8 +7,6 @@ from nengo.tests.helpers import SimulatorTestCase, unittest
 import logging
 logger = logging.getLogger(__name__)
 
-nengo.log(debug=True)
-
 class TestProbe(SimulatorTestCase):
 
     def test_long_name(self):
