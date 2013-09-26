@@ -600,7 +600,7 @@ class Simulator(object):
             TODO: what are the dimensions?
         """
         if not isinstance(probe, core.Probe):
-            if isinstance(probe, str):
+            if self.model.probed.has_key(probe):
                 probe = self.model.probed[probe]
             else:
                 probe = self.model.probed[self.model.memo[id(probe)]]
