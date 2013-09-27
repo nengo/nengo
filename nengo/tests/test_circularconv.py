@@ -134,6 +134,7 @@ class TestCircularConv(SimulatorTestCase):
             plt.close()
 
         ### results
+        self.assertEqual(sim.data(A)[t > 0.5].shape, (500, dims))
         a_sim = sim.data(A)[t > 0.5].mean(axis=0)
         b_sim = sim.data(B)[t > 0.5].mean(axis=0)
         c_sim = sim.data(C)[t > 0.5].mean(axis=0)
