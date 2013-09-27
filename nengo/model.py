@@ -1,9 +1,8 @@
 import codecs
+from collections import OrderedDict
 import copy
-import inspect
 import json
 import logging
-import math
 import pickle
 import os.path
 import numpy as np
@@ -83,7 +82,7 @@ class Model(object):
 
         self.objs = {}
         self.aliases = {}
-        self.probed = {}
+        self.probed = OrderedDict()
         self.connections = []
         self.signal_probes = []
 
