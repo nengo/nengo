@@ -1,34 +1,17 @@
+from __future__ import absolute_import
+
 import copy
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from . import decoders
 
-def tuning_curves(ens):
-    ens = copy.deepcopy(ens)
-    max_rates = ens.max_rates
-    if hasattr(max_rates, 'sample'):
-        max_rates = max_rates.sample(ens.neurons.n_neurons, rng=ens.rng)
-    intercepts = ens.intercepts
-    if hasattr(intercepts, 'sample'):
-        intercepts = intercepts.sample(ens.neurons.n_neurons, rng=ens.rng)
-    ens.neurons.set_gain_bias(max_rates, intercepts)
+def tuning_curves(sim_ens):
+    sim_ens.eval_points.sort(axis=0)
+    J = np.dot(sim_ens.eval_points, sim_ens.encoders.T)
+    activities = sim_ens.neurons.rates(J)
+    return sim_ens.eval_points, activities
 
-    if ens.encoders is None:
-        encoders = decoders.sample_hypersphere(ens.dimensions,
-                                               ens.neurons.n_neurons,
-                                               ens.rng, surface=True)
-    else:
-        encoders = np.asarray(ens.encoders, copy=True)
-        norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
-        encoders /= np.sqrt(norm)
-    encoders /= np.asarray(ens.radius)
-    encoders *= ens.neurons.gain[:, np.newaxis]
-
-    ens.eval_points.sort(axis=0)
-    J = np.dot(ens.eval_points, encoders.T)
-    return ens.eval_points, ens.neurons.rates(J)
 
 def encoders():
     @staticmethod
@@ -145,105 +128,6 @@ def weights(pre_neurons, post_neurons, function):
         return [[func(pre, post) for pre in xrange(pre_neurons)
                  for post in xrange(post_neurons)]]
 
-
-# def compute_transform(dim_pre, dim_post, array_size_post, array_size_pre,
-#         weight=1, index_pre=None, index_post=None, transform=None):
-#     """Helper function used by :func:`nef.Network.connect()` to create
-#     the `dim_post` by `dim_pre` transform matrix.
-
-#     Values are either 0 or *weight*. *index_pre* and *index_post*
-#     are used to determine which values are non-zero, and indicate
-#     which dimensions of the pre-synaptic ensemble should be routed
-#     to which dimensions of the post-synaptic ensemble.
-
-#     :param int dim_pre: first dimension of transform matrix
-#     :param int dim_post: second dimension of transform matrix
-#     :param int array_size: size of the network arrayvv
-#     :param float weight: the non-zero value to put into the matrix
-#     :param index_pre: the indexes of the pre-synaptic dimensions to use
-#     :type index_pre: list of integers or a single integer
-#     :param index_post:
-#         the indexes of the post-synaptic dimensions to use
-#     :type index_post: list of integers or a single integer
-#     :returns:
-#         a two-dimensional transform matrix performing
-#         the requested routing
-
-#     """
-
-#     all_pre = dim_pre * array_size_pre
-
-#     if transform is None:
-#         # create a matrix of zeros
-#         transform = [[0] * all_pre for i in range(dim_post * array_size_post)]
-
-#         # default index_pre/post lists set up *weight* value
-#         # on diagonal of transform
-
-#         # if dim_post * array_size_post != all_pre,
-#         # then values wrap around when edge hit
-#         if index_pre is None:
-#             index_pre = range(all_pre)
-#         elif isinstance(index_pre, int):
-#             index_pre = [index_pre]
-#         if index_post is None:
-#             index_post = range(dim_post * array_size_post)
-#         elif isinstance(index_post, int):
-#             index_post = [index_post]
-
-#         for i in range(max(len(index_pre), len(index_post))):
-#             pre = index_pre[i % len(index_pre)]
-#             post = index_post[i % len(index_post)]
-#             transform[post][pre] = weight
-
-#     transform = np.asarray(transform)
-
-#     # reformulate to account for post.array_size_post
-#     if transform.shape == (dim_post * array_size_post, all_pre):
-#         rval = np.zeros((array_size_pre, dim_pre, array_size_post, dim_post))
-#         for i in range(array_size_post):
-#             for j in range(dim_post):
-#                 rval[:, :, i, j] = transform[i * dim_post + j].reshape(
-#                         array_size_pre, dim_pre)
-
-#         transform = rval
-#     else:
-#         raise NotImplementedError()
-
-#     rval = np.asarray(transform)
-#     return rval
-
-
-# def sample_unit_signal(dimensions, num_samples, rng):
-#     """Generate sample points uniformly distributed within the sphere.
-
-#     Returns float array of sample points: dimensions x num_samples
-
-#     """
-#     samples = rng.randn(num_samples, dimensions)
-
-#     # normalize magnitude of sampled points to be of unit length
-#     norm = np.sum(samples * samples, axis=1)
-#     samples /= np.sqrt(norm)[:, None]
-
-#     # generate magnitudes for vectors from uniform distribution
-#     scale = rng.rand(num_samples, 1) ** (1.0 / dimensions)
-
-#     # scale sample points
-#     samples *= scale
-
-#     return samples.T
-
-
-# def filter_coefs(pstc, dt):
-#     """
-#     Use like: fcoef, tcoef = filter_coefs(pstc=pstc, dt=dt)
-#         transform(tcoef, a, b)
-#         filter(fcoef, b, b)
-#     """
-#     pstc = max(pstc, dt)
-#     decay = np.exp(-dt / pstc)
-#     return decay, (1.0 - decay)
 
 
 ### Helper functions for creating inputs
@@ -366,37 +250,6 @@ def piecewise(data):
         return value
     return piecewise_function
 
-def rasterplot(dt, spikes, ax=None):
-    '''Generate a raster plot of the provided spike data
-
-    Parameters
-    ----------
-    dt: float
-        The time step of the spike data
-
-    spikes: array
-        The spike data with columns for each neuron and 1s indicating spikes
-
-    ax: matplotlib.axes.AxesSubplot
-        The figure axes to plot into.
-
-    Returns
-    -------
-    ax: matplotlib.axes.AxesSubplot
-        The axes that were plotted into
-
-    Examples
-    --------
-    >>> plt.figure()
-    >>>rasterplot(sim.model.dt, sim.data('A.spikes'))
-    '''
-    time = arange(0,spikes.shape[0])*dt
-    if ax is None:
-        ax = plt.gca()
-    for i in np.arange(0,spikes.shape[1],2):
-        ax.plot(time[spikes[:,i]>0],
-                np.ones_like(np.where(spikes[:,i]>0)).T+i, 'k,')
-    return ax
 
 def sorted_neurons(ensemble, iterations=100, seed=None):
     '''Sort neurons in an ensemble by encoder and intercept.
