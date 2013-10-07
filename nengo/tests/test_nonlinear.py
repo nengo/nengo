@@ -10,6 +10,29 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class TestNonlinearBuiltins(unittest.TestCase):
+    def test_lif_builtin(self):
+        """Test that the dynamic model approximately matches the rates
+
+        N.B.: Uses the built-in lif equations, NOT the passed simulator
+        """
+        lif = LIF(10)
+        J = np.arange(0, 5, .5)
+        voltage = np.zeros(10)
+        reftime = np.zeros(10)
+
+        spikes = []
+        spikes_ii = np.zeros(10)
+
+        for ii in range(1000):
+            lif.step_math0(.001, J + lif.bias, voltage, reftime, spikes_ii)
+            spikes.append(spikes_ii.copy())
+
+        sim_rates = np.sum(spikes, axis=0)
+        math_rates = lif.rates(J)
+        self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
+
+
 class TestNonlinear(SimulatorTestCase):
     def test_direct(self):
         """Test direct mode"""
@@ -45,27 +68,6 @@ class TestNonlinear(SimulatorTestCase):
                 sim.step()
                 assert np.allclose(s0, sim.signals[ins]), (s0,sim.signals[ins])
                 assert np.allclose(p0, sim.signals[pop.output_signal]), (p0,sim.signals[pop.output_signal])
-
-    def test_lif_builtin(self):
-        """Test that the dynamic model approximately matches the rates
-
-        N.B.: Uses the built-in lif equations, NOT the passed simulator
-        """
-        lif = LIF(10)
-        J = np.arange(0, 5, .5)
-        voltage = np.zeros(10)
-        reftime = np.zeros(10)
-
-        spikes = []
-        spikes_ii = np.zeros(10)
-
-        for ii in range(1000):
-            lif.step_math0(.001, J + lif.bias, voltage, reftime, spikes_ii)
-            spikes.append(spikes_ii.copy())
-
-        sim_rates = np.sum(spikes, axis=0)
-        math_rates = lif.rates(J)
-        self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
     def _test_lif_base(self, cls=LIF):
         """Test that the dynamic model approximately matches the rates"""
