@@ -10,7 +10,7 @@ from nengo.tests.helpers import (
 import logging
 logger = logging.getLogger(__name__)
 
-class TestCircularConv(SimulatorTestCase):
+class TestCircularConvHelpers(unittest.TestCase):
     def test_helpers(self):
         """Test the circular convolution helper functions in Numpy"""
         rng = np.random.RandomState(43232)
@@ -37,6 +37,9 @@ class TestCircularConv(SimulatorTestCase):
         z1 = np.dot(outC, C)
 
         assert_allclose(self, logger, z0, z1)
+
+
+class TestCircularConv(SimulatorTestCase):
 
     # def test_direct(self):
     #     """Test direct-mode circular convolution"""
