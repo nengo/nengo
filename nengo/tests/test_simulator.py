@@ -37,8 +37,10 @@ class TestSimulator(SimulatorTestCase):
 
         tmp = m.add(Signal(n=3, name='tmp'))
 
-        m._operators += [simulator.ProdUpdate(core.Constant(1), three[0:1], core.Constant(0), one)]
-        m._operators += [simulator.ProdUpdate(core.Constant(2.0), three[1:], core.Constant(0), two)]
+        m._operators += [simulator.ProdUpdate(
+            core.Constant(1), three[0:1], core.Constant(0), one)]
+        m._operators += [simulator.ProdUpdate(
+            core.Constant(2.0), three[1:], core.Constant(0), two)]
         m._operators += [
             simulator.Reset(tmp),
             simulator.DotInc(
@@ -50,24 +52,26 @@ class TestSimulator(SimulatorTestCase):
 
         sim = m.simulator(sim_class=self.Simulator)
         memo = sim.model.memo
-        sim.signals[sim.copied(three)] = np.asarray([1, 2, 3])
+        sim.signals[sim.get(three)] = np.asarray([1, 2, 3])
         sim.step()
-        self.assertTrue(np.all(sim.signals[sim.copied(one)] == 1))
-        self.assertTrue(np.all(sim.signals[sim.copied(two)] == [4, 6]))
-        self.assertTrue(np.all(sim.signals[sim.copied(three)] == [3, 2, 1]))
+        self.assertTrue(np.all(sim.signals[sim.get(one)] == 1))
+        self.assertTrue(np.all(sim.signals[sim.get(two)] == [4, 6]))
+        self.assertTrue(np.all(sim.signals[sim.get(three)] == [3, 2, 1]))
         sim.step()
-        self.assertTrue(np.all(sim.signals[sim.copied(one)] == 3))
-        self.assertTrue(np.all(sim.signals[sim.copied(two)] == [4, 2]))
-        self.assertTrue(np.all(sim.signals[sim.copied(three)] == [1, 2, 3]))
+        self.assertTrue(np.all(sim.signals[sim.get(one)] == 3))
+        self.assertTrue(np.all(sim.signals[sim.get(two)] == [4, 2]))
+        self.assertTrue(np.all(sim.signals[sim.get(three)] == [1, 2, 3]))
 
     def test_simple_direct_mode(self):
         m = nengo.Model("test_simple_direct_mode")
         sig = m.add(Signal(n=1, name='sig'))
 
         pop = m.add(Direct(n_in=1, n_out=1, fn=np.sin))
-        
-        m._operators += [simulator.DotInc(core.Constant([[1.0]]), m.t, pop.input_signal)]
-        m._operators += [simulator.ProdUpdate(core.Constant([[1.0]]), pop.output_signal, core.Constant(0), sig)]
+
+        m._operators += [simulator.DotInc(core.Constant([[1.0]]),
+                                          m.t, pop.input_signal)]
+        m._operators += [simulator.ProdUpdate(
+            core.Constant([[1.0]]), pop.output_signal, core.Constant(0), sig)]
 
         sim = m.simulator(sim_class=self.Simulator)
         #sim.print_op_groups()
@@ -79,12 +83,12 @@ class TestSimulator(SimulatorTestCase):
             sim.step()
 
             t = (i + 2) * dt
-            self.assertTrue(np.allclose(sim.signals[sim.copied(m.t)], t),
-                msg='%s != %s' % (sim.signals[sim.copied(m.t)], t))
+            self.assertTrue(np.allclose(sim.signals[sim.get(m.t)], t),
+                msg='%s != %s' % (sim.signals[sim.get(m.t)], t))
             self.assertTrue(
                 np.allclose(
-                    sim.signals[sim.copied(sig)], np.sin(t - dt*2)),
-                msg='%s != %s' % (sim.signals[sim.copied(sig)], np.sin(t - dt*2)))
+                    sim.signals[sim.get(sig)], np.sin(t - dt*2)),
+                msg='%s != %s' % (sim.signals[sim.get(sig)], np.sin(t - dt*2)))
 
     def test_encoder_decoder_pathway(self):
         #
@@ -115,28 +119,31 @@ class TestSimulator(SimulatorTestCase):
         sim = m.simulator(sim_class=self.Simulator)
 
         def check(sig, target):
-            self.assertTrue(np.allclose(sim.signals[sim.copied(sig)], target),
+            self.assertTrue(np.allclose(sim.signals[sim.get(sig)], target),
                             "%s: value %s is not close to target %s" %
-                            (sig, sim.signals[sim.copied(sig)], target))
+                            (sig, sim.signals[sim.get(sig)], target))
 
         # -- initialize things
-        sim.signals[sim.copied(foo)] = np.asarray([1.0])
+        sim.signals[sim.get(foo)] = np.asarray([1.0])
         check(foo, 1.0)
         check(pop.input_signal, 0)
         check(pop.output_signal, 0)
 
-        sim.step() #DotInc to pop.input_signal (input=[1.0,2.0])
-                   #produpdate updates foo (foo=[0.2])
-                   #pop updates pop.output_signal (output=[2,3])
+        sim.step()
+        #DotInc to pop.input_signal (input=[1.0,2.0])
+        #produpdate updates foo (foo=[0.2])
+        #pop updates pop.output_signal (output=[2,3])
 
         check(pop.input_signal, [1, 2])
         check(pop.output_signal, [2, 3])
         check(foo, .2)
         check(decs, [.1, .05])
 
-        sim.step() #DotInc to pop.input_signal (input=[0.2,0.4]) (note that pop resets its own input signal each timestep)
-                   #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
-                   #pop updates pop.output_signal (output=[1.2,1.4])
+        sim.step()
+        #DotInc to pop.input_signal (input=[0.2,0.4])
+        # (note that pop resets its own input signal each timestep)
+        #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
+        #pop updates pop.output_signal (output=[1.2,1.4])
 
         check(decs, [.1, .05])
         check(pop.input_signal, [0.2, 0.4])
@@ -154,33 +161,38 @@ class TestSimulator(SimulatorTestCase):
         pop = m.add(Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop'))
 
         decoders = np.asarray([.2,.1])
-        m._operators += [simulator.DotInc(Constant([[1.0],[2.0]]), foo[:], pop.input_signal)]
-        m._operators += [simulator.ProdUpdate(Constant(decoders*0.5), pop.output_signal, Constant(0.2), foo[:])]
+        m._operators += [simulator.DotInc(Constant([[1.0],[2.0]]),
+                                          foo[:], pop.input_signal)]
+        m._operators += [simulator.ProdUpdate(
+            Constant(decoders*0.5),pop.output_signal, Constant(0.2), foo[:])]
 
         sim = m.simulator(sim_class=self.Simulator)
-        
-        
-        
+
         def check(sig, target):
-            self.assertTrue(np.allclose(sim.signals[sim.copied(sig)], target),
+            self.assertTrue(np.allclose(sim.signals[sim.get(sig)], target),
                             "%s: value %s is not close to target %s" %
-                            (sig, sim.signals[sim.copied(sig)], target))
-            
-        sim.signals[sim.copied(foo)] = np.asarray([1.0]) #set initial value of foo (foo=1.0)
-                                                         #pop.input_signal = [0,0]
-                                                         #pop.output_signal = [0,0]
-        sim.step() #DotInc to pop.input_signal (input=[1.0,2.0])
-                   #produpdate updates foo (foo=[0.2])
-                   #pop updates pop.output_signal (output=[2,3])
-            
+                            (sig, sim.signals[sim.get(sig)], target))
+
+        #set initial value of foo (foo=1.0)
+        sim.signals[sim.get(foo)] = np.asarray([1.0])
+        #pop.input_signal = [0,0]
+        #pop.output_signal = [0,0]
+
+        sim.step()
+        #DotInc to pop.input_signal (input=[1.0,2.0])
+        #produpdate updates foo (foo=[0.2])
+        #pop updates pop.output_signal (output=[2,3])
+
         check(foo, .2)
         check(pop.input_signal, [1, 2])
         check(pop.output_signal, [2, 3])
-        
-        sim.step() #DotInc to pop.input_signal (input=[0.2,0.4]) (note that pop resets its own input signal each timestep)
-                   #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
-                   #pop updates pop.output_signal (output=[1.2,1.4])
-                   
+
+        sim.step()
+        #DotInc to pop.input_signal (input=[0.2,0.4])
+        # (note that pop resets its own input signal each timestep)
+        #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
+        #pop updates pop.output_signal (output=[1.2,1.4])
+
         check(foo, .39)
         check(pop.input_signal, [0.2, 0.4])
         check(pop.output_signal, [1.2, 1.4])

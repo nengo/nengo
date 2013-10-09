@@ -296,7 +296,7 @@ class Ensemble(object):
         elif to_probe == 'spikes':
             probe = Probe(self.name + '.spikes', sample_every)
             connection = connections.NonlinearityConnection(
-                self.neurons, probe, filter=None,
+                self.neurons, probe, filter=filter,
                 transform=np.eye(self.n_neurons))
             self.connections_out.append(connection)
             if hasattr(probe, 'connections_in'):
@@ -316,12 +316,12 @@ class Ensemble(object):
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % to_probe)
         return probe
-    
+
     def calc_direct_connect_transform(self, transform):
         if self.neurons.gain is None:
             self.set_neuron_properties()
         return np.asarray(transform) * np.asarray([self.neurons.gain]).T
-    
+
     def set_neuron_properties(self):
         max_rates = self.max_rates
         if hasattr(max_rates, 'sample'):

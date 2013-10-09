@@ -288,7 +288,8 @@ class Model(object):
                 return self.aliases[target]
             elif self.objs.has_key(target):
                 return self.objs[target]
-            logger.error("Cannot find %s in model %s.", target, self.name)
+            if default is None:
+                logger.error("Cannot find %s in model %s.", target, self.name)
             return default
 
         return target
@@ -640,12 +641,13 @@ class Model(object):
                 p = core.Probe(target, sample_every)
                 self.add(p)
         elif isinstance(target, str):
-            obj = self.get(target, None)
-            if obj is None and '.' in target:
+            obj = self.get(target, "NotFound")
+            if obj == "NotFound" and '.' in target:
                 name, probe_name = target.rsplit('.', 1)
                 obj = self.get(name)
-                print self.objs.keys()
                 p = obj.probe(probe_name, sample_every, filter)
+            elif obj == "NotFound":
+                raise ValueError(str(target) + " cannot be found.")
             else:
                 p = obj.probe(sample_every=sample_every, filter=filter)
         elif hasattr(target, 'probe'):
