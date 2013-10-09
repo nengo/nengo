@@ -30,12 +30,12 @@ def rasterplot(time, spikes, ax=None, **kwargs):
     if ax is None:
         ax = plt.gca()
 
-    try:
-        ax.eventplot
-        colors = kwargs.pop('colors', None)
-        if colors is None:
-            color_cycle = ax._get_lines.color_cycle
-            colors = [next(color_cycle) for _ in xrange(spikes.shape[1])]
+    colors = kwargs.pop('colors', None)
+    if colors is None:
+        color_cycle = ax._get_lines.color_cycle
+        colors = [next(color_cycle) for _ in xrange(spikes.shape[1])]
+
+    if hasattr(ax, 'eventplot'):
         spikes = [time[spikes[:,i] > 0].flatten()
                   for i in xrange(spikes.shape[1])]
         for ix in xrange(len(spikes)):
@@ -47,11 +47,11 @@ def rasterplot(time, spikes, ax=None, **kwargs):
             ax.set_ylim(0.4, 1.6)  # eventplot plots different for len==1
         ax.set_xlim(left=0)
 
-    except AttributeError:
+    else:
         # Older Matplotlib, doesn't have eventplot
         for i in xrange(spikes.shape[1]):
             ax.plot(time[spikes[:,i] > 0],
-                    np.ones_like(np.where(spikes[:,i] > 0)).T + i, 'k,',
-                    **kwargs)
+                    np.ones_like(np.where(spikes[:,i] > 0)).T + i, ',',
+                    color=colors[i], **kwargs)
 
     return ax
