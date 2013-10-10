@@ -124,9 +124,13 @@ def encoders_by_backprop(ens, dt):
     theta_opt, _, _ = fmin_l_bfgs_b(
         func=func,
         x0=theta0,
-        maxfun=50,
+        maxfun=16,
         iprint=2,
         )
+
+    enc, dec, bb = unpack(theta_opt, (encoders, decoders, ens.neurons.bias))
+    ens.encoders = enc
+    ens.neurons.bias = bb
 
 
 class TestOscillator(SimulatorTestCase):
