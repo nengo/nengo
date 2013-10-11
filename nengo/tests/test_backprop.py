@@ -61,8 +61,9 @@ def unpack(theta, args):
     return rval
 
 
-def encoders_by_backprop(ens, dt):
-    print 'figuring out encoders for', ens
+@nengo.decoders.timer('encoders_by_backprop')
+def encoders_by_backprop(ens, dt, l2_penalty=0.1, ):
+    print 'figuring out encoders for', ens, 'l2', l2_penalty
 
     # Set up neurons
     # XXX should ideally not do this until after the deepcopy
@@ -116,7 +117,7 @@ def encoders_by_backprop(ens, dt):
     theta0 = pack(encoders, decoders, ens.neurons.bias)
 
     ## L2-DECAY is hyperparam
-    def func(theta, l2_penalty=100.1, train_dec=True):
+    def func(theta, train_dec=True):
         enc, dec, bb = unpack(theta, (encoders, decoders, ens.neurons.bias))
 
         J_nobias = np.dot(eval_points, enc.T)
@@ -179,9 +180,8 @@ def encoders_by_backprop(ens, dt):
     ens.encoders = enc
     ens.neurons.bias = bb
     # XXX Why is this necessary? Why doesn't the built-in decoder solver work very well?
-    assert len(users) == 1
-    users[0].decoders = dec / dt
-
+    #assert len(users) == 1
+    #users[0].decoders = dec / dt
 
 class TestBackprop(SimulatorTestCase):
     def test_bp(self):
@@ -195,7 +195,8 @@ class TestBackprop(SimulatorTestCase):
         model.make_ensemble('BB', nengo.LIF(n_neurons * 3), dimensions=1, seed=3)
         model.connect('Input', 'A')
         model.connect('Input', 'B')
-        model.connect('A', 'AA', function=lambda x: x ** 2, filter=0.03)
+        model.connect('A', 'AA', function=lambda x: x ** 2, filter=0.03,
+                     decoder_solver=nengo.decoders.ridge_regression)
         model.connect('B', 'BB', function=lambda x: x ** 2, filter=0.03)
         #model.probe('A', filter=0.03)
         #model.probe('B', filter=0.03)

@@ -74,17 +74,73 @@ DEFAULT_RCOND = 0.01
 #         sigma = 0.1 * activities.max()
 #         weights = eigh(activites, targets, sigma=sigma)
 
+def timer(label):
+    import time
+    def deco(f):
+        def rval(*args, **kwargs):
+            t0 = time.time()
+            foo = f(*args, **kwargs)
+            t1 = time.time()
+            print 'timer "%s" call took: %.2f' % (label, t1 - t0)
+            return foo
+        return rval
+    return deco
 
-def least_squares(activities, targets):
-    noise = np.random.randn(*activities.shape) * activities.max() * 0.1
+
+@timer('least_squares')
+def least_squares(activities, targets, rcond=DEFAULT_RCOND, noise_amp=0.1):
+    noise = np.random.randn(*activities.shape) * activities.max() * noise_amp
     activities += noise
-    weights, res, rank, s = np.linalg.lstsq(activities, targets,
-                                            rcond=DEFAULT_RCOND)
+    weights, res, rank, s = np.linalg.lstsq(activities, targets, rcond=rcond)
     return weights.T
+
+
+from scipy.optimize import fmin_l_bfgs_b
+@timer('ridge_regression')
+def ridge_regression(activities, targets, l2_penalty=1.0, maxfun=100):
+    M, N = activities.shape
+    M_, D = targets.shape
+    assert M == M_
+    def func(theta):
+        dec = theta.reshape(N, D)
+        err = np.dot(activities, dec) - targets
+        ml_cost = np.sum(err ** 2)
+        l2_cost = np.sum(theta ** 2)
+        cost = ml_cost + l2_penalty * l2_cost
+        grad = np.dot(activities.T, err)
+        return cost, grad.ravel()
+    theta_opt, _, _ = fmin_l_bfgs_b(func=func, x0=np.zeros(N * D),
+                                    maxfun=maxfun)
+    return theta_opt.reshape(N, D).T
+
+@timer('auto_ridge_regression')
+def auto_ridge_regression(activities, targets, maxfun=100):
+    l2_penalty = 100.0
+    costs = [float('inf')]
+    decs = [None]
+    penalties = [None]
+    n_fit = int(.8 * len(activities))
+    while l2_penalty >= .01:
+        penalties.append(l2_penalty)
+        decs.append(
+            ridge_regression(
+                activities[:n_fit], targets[:n_fit], l2_penalty, maxfun))
+        err = np.dot(activities[n_fit:], decs[-1].T) - targets[n_fit:]
+        costs.append(((err) ** 2).sum())
+        if costs[-1] > costs[-2]:
+            break
+        l2_penalty /= 10
+    print 'auto_ridge_regression: best l2_penalty', penalties[-2]
+    return decs[-2]
+
+
+
+
 
 
 def regularizationParameter(sigma, Neval):
     return sigma**2 * Neval
+
 
 def eigh(A, b, sigma):
     """

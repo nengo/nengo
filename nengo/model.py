@@ -585,7 +585,7 @@ class Model(object):
         else:
             return pre.connect_to(post, **kwargs)
 
-    def probe(self, target, sample_every=0.001, filter=None):
+    def probe(self, target, sample_every=0.001, filter=None, **kwargs):
         """Probe a piece of data contained in the model.
 
         When a piece of data is probed, it will be recorded through
@@ -636,7 +636,7 @@ class Model(object):
             if filter is not None:
                 p = objects.Probe(target.name, sample_every, target.n)
                 self.signal_probes.append(p)
-                self.connect(target, p, filter=filter)
+                self.connect(target, p, filter=filter, **kwargs)
             else:
                 p = core.Probe(target, sample_every)
                 self.add(p)
@@ -646,13 +646,14 @@ class Model(object):
                 name, probe_name = target.rsplit('.', 1)
                 obj = self.get(name)
                 print self.objs.keys()
-                p = obj.probe(probe_name, sample_every, filter)
+                p = obj.probe(probe_name, sample_every, filter, **kwargs)
             else:
-                p = obj.probe(sample_every=sample_every, filter=filter)
+                p = obj.probe(sample_every=sample_every, filter=filter, **kwargs)
         elif hasattr(target, 'probe'):
-            p = target.probe(sample_every=sample_every, filter=filter)
+            p = target.probe(sample_every=sample_every, filter=filter, **kwargs)
         else:
             raise TypeError("Type " + target.__class__.__name__ + " "
                             "has no probe function.")
 
         self.probed[target] = p
+        return p

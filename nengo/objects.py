@@ -271,7 +271,8 @@ class Ensemble(object):
             post.connections_in.append(connection)
         return connection
 
-    def probe(self, to_probe='decoded_output', sample_every=0.001, filter=0.01):
+    def probe(self, to_probe='decoded_output', sample_every=0.001, filter=0.01,
+              **kwargs):
         """Probe a signal in this ensemble.
 
         Parameters
@@ -290,7 +291,7 @@ class Ensemble(object):
         """
         if to_probe == 'decoded_output':
             probe = Probe(self.name + '.decoded_output', sample_every)
-            self.connect_to(probe, filter=filter)
+            self.connect_to(probe, filter=filter, **kwargs)
             self.probes['decoded_output'].append(probe)
 
         elif to_probe == 'spikes':
