@@ -5,6 +5,7 @@ import nengo.simulator as simulator
 from nengo.core import Signal, Constant
 from nengo.core import Direct, LIF, LIFRate
 from nengo.tests.helpers import SimulatorTestCase, unittest, rms
+from nengo.tests.helpers import Plotter
 
 import logging
 logger = logging.getLogger(__name__)
@@ -51,20 +52,39 @@ class TestNonlinear(SimulatorTestCase):
 
         N.B.: Uses the built-in lif equations, NOT the passed simulator
         """
-        lif = LIF(10)
-        J = np.arange(0, 5, .5)
-        voltage = np.zeros(10)
-        reftime = np.zeros(10)
+        N = 100
+        lif = LIF(N)
+        ubound = 100
+        J = np.arange(0, ubound - 1e-9, float(ubound) / N)
+        voltage = np.zeros(N)
+        reftime = np.zeros(N)
 
         spikes = []
-        spikes_ii = np.zeros(10)
+        spikes_filt = []
+        spikes_ii = np.zeros(N)
+        spikes_filt_ii = np.zeros(N)
 
-        for ii in range(1000):
-            lif.step_math0(.001, J + lif.bias, voltage, reftime, spikes_ii)
+        dt = 0.001
+
+        for ii in range(int(1.0 / dt)):
+            lif.step_math0(dt, J + lif.bias, voltage, reftime, spikes_ii)
+            spikes_filt_ii *= .9
+            spikes_filt_ii += .1 * spikes_ii
             spikes.append(spikes_ii.copy())
+            spikes_filt.append(spikes_filt_ii.copy())
 
         sim_rates = np.sum(spikes, axis=0)
+        sim_filt_rates = np.sum(spikes_filt, axis=0)
         math_rates = lif.rates(J)
+
+        with Plotter(self.Simulator) as plt:
+            plt.plot(sim_rates, label='sim')
+            plt.plot(sim_filt_rates, label='sim-filt')
+            plt.plot(math_rates, label='rate')
+            plt.legend(loc=0)
+            plt.savefig('test_nonlinear.test_lif_builtin.pdf')
+            plt.close()
+
         self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
     def _test_lif_base(self, cls=LIF):

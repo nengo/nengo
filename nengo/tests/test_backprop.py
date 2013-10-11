@@ -13,8 +13,7 @@ from scipy.optimize import fmin_l_bfgs_b
 
 import nengo
 import nengo.helpers
-from nengo.networks.oscillator import Oscillator
-from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
+from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
 
 def targets(conn, eval_points):
     if conn.function is None:
@@ -42,14 +41,16 @@ def lif_rates_drates(ens, J_without_bias, bias):
         Ainv = 1 / A
         J1 = J > 1
         act = np.where(J1, Ainv, 0)
-        dJ = np.where(J1, tau_rc / (t0 * t1 * logt1 ** 2), 0)
+        dJ = np.where(J1, np.minimum(200,
+                              tau_rc / (t0 * t1 * (-tau_rc * logt1 + tau_ref) ** 2)), 0)
         return act, dJ
     finally:
         np.seterr(**old)
 
 
 def pack(*args):
-    return np.hstack([a.ravel() for a in args])
+    return np.hstack([a.flatten() for a in args])
+
 
 def unpack(theta, args):
     offset = 0
@@ -58,6 +59,7 @@ def unpack(theta, args):
         rval.append(theta[offset:offset + a.size].reshape(a.shape))
         offset += a.size
     return rval
+
 
 def encoders_by_backprop(ens, dt):
     print 'figuring out encoders for', ens
@@ -90,7 +92,6 @@ def encoders_by_backprop(ens, dt):
     assert targ_points.ndim == 2
     assert len(eval_points) == len(targ_points)
 
-    print eval_points.shape, encoders.shape
     if not isinstance(ens.neurons, nengo.core._LIFBase):
         print 'skipping non-LIF ensemble', ens
         return
@@ -100,77 +101,124 @@ def encoders_by_backprop(ens, dt):
     decoders, res, rank, s = np.linalg.lstsq(
         activities, targ_points, rcond=.01)
 
+    verbose = activities.shape[1] == 50
+
+    if verbose:
+        print 'eval shape', eval_points.shape
+        print 'eval range', eval_points.min(), eval_points.max()
+        print 'act shape', activities.shape
+        print 'act range', activities.min(), activities.mean(), activities.max()
+        print 'dec shape', decoders.shape
+        print 'targ shape', targ_points.shape
+
     theta0 = pack(encoders, decoders, ens.neurons.bias)
 
     ## L2-DECAY is hyperparam
-    def func(theta, l2_penalty=0.0001):
+    def func(theta, l2_penalty=100.1, train_dec=True):
         enc, dec, bb = unpack(theta, (encoders, decoders, ens.neurons.bias))
 
         J_nobias = np.dot(eval_points, enc.T)
         act, dJ = lif_rates_drates(ens, J_nobias, bb)
+        if verbose:
+            #import matplotlib.pyplot as plt
+            #plt.scatter((J_nobias + bb).flatten(), act.flatten())
+            #plt.scatter((J_nobias + bb).flatten(), dJ.flatten())
+            #plt.show()
+            print 'enc', enc.min(), enc.mean(), enc.max()
+        #print (J_nobias + bb).min(), (J_nobias + bb).max()
         pred = np.dot(act, dec)
         err = pred - targ_points
+        if verbose:
+            print '  err', err.min(), err.mean(), err.max(), 'total', np.sum(err ** 2)
         err_cost = 0.5 * np.sum(err ** 2)
         l2_cost = 0.5 * np.sum(decoders ** 2)
         cost = err_cost + l2_penalty * l2_cost
         #print 'sse', sse, dJ.max()
         dact = np.dot(err, dec.T)
+        
+        #  print dec.shape
+        if verbose:
+            print 'dact', dact.min(), dact.mean(), dact.max()
+
         dJ *= dact
-        dbias = dJ.sum(axis=0)
-        ddec = np.dot(act.T, err) + l2_penalty * dec
-        denc = np.dot(dJ.T, eval_points)
+        TUNE_ENCODERS = 0
+        dbias = dJ.sum(axis=0) * TUNE_ENCODERS
+        if train_dec:
+            ddec = np.dot(act.T, err) + l2_penalty * dec
+        else:
+            ddec = np.zeros_like(dec)
+        denc = np.dot(dJ.T, eval_points) * TUNE_ENCODERS
+        if verbose:
+            print '    denc', denc.min(), denc.mean(), denc.max()
         return cost, pack(denc, ddec, dbias)
 
-    theta_opt, _, _ = fmin_l_bfgs_b(
-        func=func,
-        x0=theta0,
-        maxfun=16,
-        iprint=2,
-        )
+    if 1:
+        theta_opt, _, _ = fmin_l_bfgs_b(
+            func=func,
+            x0=theta0,
+            maxfun=100, # HYPER
+            iprint=0,
+            args=(False,),
+            )
+        theta_opt, _, _ = fmin_l_bfgs_b(
+            func=func,
+            x0=theta_opt,
+            maxfun=50, # HYPER
+            iprint=0,
+            args=(True,),
+            )
+        print 'func theta_opt'
+        func(theta_opt)
+    else:
+        func(theta0)
+        theta_opt = theta0
 
     enc, dec, bb = unpack(theta_opt, (encoders, decoders, ens.neurons.bias))
     ens.encoders = enc
     ens.neurons.bias = bb
+    # XXX Why is this necessary? Why doesn't the built-in decoder solver work very well?
+    assert len(users) == 1
+    users[0].decoders = dec / dt
 
 
-class TestOscillator(SimulatorTestCase):
-    def test_oscillator(self):
-        model = nengo.Model('Oscillator')
-        inputs = {0:[1,0],0.5:[0,0]}
-        model.make_node('Input', nengo.helpers.piecewise(inputs))
-
-        tau = 0.1
-        freq = 5
-        model.add(Oscillator('T', tau, freq, neurons=nengo.LIF(100)))
-        model.connect('Input', 'T')
-
-        model.make_ensemble('A', nengo.LIF(100), dimensions=2)
-        model.connect('A', 'A', transform=[[1, -freq*tau], [freq*tau, 1]],
-                      filter=tau)
+class TestBackprop(SimulatorTestCase):
+    def test_bp(self):
+        model = nengo.Model('Oscillator', seed=123)
+        tspeed = 1.0
+        model.make_node('Input', lambda t: np.sin(tspeed * t))
+        n_neurons = 16
+        model.make_ensemble('A', nengo.LIF(n_neurons), dimensions=1, seed=123)
+        model.make_ensemble('B', nengo.LIF(n_neurons), dimensions=1, seed=123)
+        model.make_ensemble('AA', nengo.LIF(n_neurons * 3), dimensions=1, seed=3)
+        model.make_ensemble('BB', nengo.LIF(n_neurons * 3), dimensions=1, seed=3)
         model.connect('Input', 'A')
-
-        model.probe('Input')
-        model.probe('A', filter=0.01)
-        model.probe('T', filter=0.01)
+        model.connect('Input', 'B')
+        model.connect('A', 'AA', function=lambda x: x ** 2, filter=0.03)
+        model.connect('B', 'BB', function=lambda x: x ** 2, filter=0.03)
+        #model.probe('A', filter=0.03)
+        #model.probe('B', filter=0.03)
+        model.probe('AA', filter=0.05)
+        model.probe('BB', filter=0.05)
 
         if 1:
           for obj in model.objs.values():
             if isinstance(obj, nengo.objects.Ensemble) and obj.encoders is None:
-                encoders_by_backprop(obj, dt=0.001)
+                if obj.name.startswith("B"):
+                    encoders_by_backprop(obj, dt=0.001)
 
         sim = model.simulator(dt=0.001, sim_class=self.Simulator)
-        sim.run(3.0)
+        sim.run(10.0)
 
         with Plotter(self.Simulator) as plt:
             t = sim.data(model.t)
-            plt.plot(t, sim.data('A'), label='Manual')
-            plt.plot(t, sim.data('T'), label='Template')
-            plt.plot(t, sim.data('Input'), 'k', label='Input')
-            plt.legend(loc=0)
-            plt.savefig('test_oscillator.test_oscillator_bp.pdf')
+            plt.plot(t, sim.data('AA'), label='Random')
+            plt.plot(t, sim.data('BB'), label='BP')
+            plt.plot(t, np.sin(tspeed * t) ** 2, label='C')
+            plt.legend(loc='center')
+            plt.savefig('test_backprop.test_bp.pdf')
             plt.close()
             
-        self.assertTrue(rmse(sim.data('A'), sim.data('T')) < 0.3)
+        #self.assertTrue(rmse(sim.data('Input'), sim.data('A')) < 0.3)
 
 if __name__ == "__main__":
     nengo.log_to_file('log.txt', debug=True)
