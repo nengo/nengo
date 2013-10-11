@@ -64,7 +64,9 @@ def unpack(theta, args):
 @nengo.decoders.timer('encoders_by_backprop')
 def encoders_by_backprop(ens, dt, l2_penalty=0.1,
                          maxfun_nodec=100,
-                         maxfun_all=100):
+                         maxfun_all=100,
+                         verbose=False,
+                         bias_hack=None):
     print 'backprop to determine encoders for', ens, 'l2', l2_penalty
 
     # Set up neurons
@@ -99,12 +101,13 @@ def encoders_by_backprop(ens, dt, l2_penalty=0.1,
         print 'skipping non-LIF ensemble', ens
         return
 
+    if bias_hack is not None:
+        ens.neurons.bias += bias_hack
+
     J_nobias = np.dot(eval_points, encoders.T)
     activities = ens.neurons.rates(J_nobias)
     decoders, res, rank, s = np.linalg.lstsq(
         activities, targ_points, rcond=.01)
-
-    verbose = activities.shape[1] == 50
 
     if verbose:
         print 'eval shape', eval_points.shape

@@ -115,7 +115,7 @@ def ridge_regression(activities, targets, l2_penalty=1.0, maxfun=100):
 
 @timer('auto_ridge_regression')
 def auto_ridge_regression(activities, targets, maxfun=1000, max_l2_penalty=100.0,
-                         min_l2_penalty=1e-4):
+                         min_l2_penalty=1e-2):
     l2_penalty = float(max_l2_penalty)
     costs = [float('inf')]
     decs = [None]
