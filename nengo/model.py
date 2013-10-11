@@ -87,8 +87,7 @@ class Model(object):
         self.signal_probes = []
 
         self.name = name + ''  # -- make self.name a string, raise error otw
-        self.seed = np.random.randint(2**31-1) if seed is None else seed
-        self.rng = np.random.RandomState(self.seed)
+        self.seed = seed
         self.fixed_seed = fixed_seed
 
         self.t = self.add(core.Signal(name='t'))
@@ -102,12 +101,20 @@ class Model(object):
         # -- steps counts by 1.0
         self._operators += [simulator.ProdUpdate(core.Constant(1), self.one, core.Constant(1), self.steps)]
 
-    def _get_new_seed(self):
-        return (self.rng.randint(2**31-1) if self.fixed_seed is None
-                else self.fixed_seed)
+        self._rng = None
 
     def __str__(self):
         return "Model: " + self.name
+
+    def _get_new_seed(self):
+        if self.fixed_seed is not None:
+            return self.fixed_seed
+        else:
+            if self._rng is None:
+                # never create rng without knowing the seed
+                assert self.seed is not None
+                self._rng = np.random.RandomState(self.seed)
+            return self._rng.randint(2**32)
 
     ### I/O
 
@@ -203,7 +210,8 @@ class Model(object):
         for c in model.connections:
             c.build(model=model, dt=dt)
 
-    def simulator(self, dt=0.001, sim_class=simulator.Simulator, **sim_args):
+    def simulator(self, dt=0.001, sim_class=simulator.Simulator,
+                  model_seed=None, seed=None, **sim_args):
         """Get a new simulator object for the model.
 
         Parameters
@@ -212,6 +220,15 @@ class Model(object):
             Fundamental unit of time for the simulator, in seconds.
         sim_class : child class of `Simulator`, optional
             The class of simulator to be used.
+        model_seed : int, optional
+            Random number seed to overwrite the model.seed property of the
+            generated model. This allows the new model's seed to be different
+            from the original model's seed.
+        seed : int, optional
+            Random number seed for the simulator's random number generator.
+            This random number generator is responsible for creating any random
+            numbers used during simulation, such as random noise added to
+            neurons' membrane voltages.
         **sim_args : optional
             Arguments to pass to the simulator constructor.
 
@@ -225,8 +242,17 @@ class Model(object):
         memo = {}
         modelcopy = copy.deepcopy(self, memo)
         modelcopy.memo = memo
+
+        if model_seed is not None:
+            modelcopy.seed = model_seed
+        elif modelcopy.seed is None and modelcopy.fixed_seed is None:
+            modelcopy.seed = np.random.randint(2**32)
+
+        assert modelcopy.seed is None or modelcopy.fixed_seed is None, (
+            "Do not set both the fixed seed and the seed")
+
         self.prep_for_simulation(modelcopy, dt)
-        return sim_class(model=modelcopy, **sim_args)
+        return sim_class(model=modelcopy, **sim_args) # TODO: pass in seed
 
     ### Model manipulation
 

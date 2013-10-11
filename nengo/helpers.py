@@ -7,9 +7,9 @@ import numpy as np
 from . import decoders
 
 def tuning_curves(sim_ens):
-    sim_ens.eval_points.sort(axis=0)
-    J = np.dot(sim_ens.eval_points, sim_ens.encoders.T)
-    activities = sim_ens.neurons.rates(J)
+    eval_points = np.array(sim_ens.eval_points)
+    eval_points.sort(axis=0)
+    activities = sim_ens.activities(eval_points)
     return sim_ens.eval_points, activities
 
 
