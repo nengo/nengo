@@ -140,20 +140,21 @@ class NonlinearityConnection(SignalConnection):
         return self.name + " (NonlinearityConnection)"
 
     def build(self, model, dt):
-        # Pre must be a non-linearity
+        # Pre must be a nonlinearity
         if not isinstance(self.pre, core.Nonlinearity):
             self.pre = self.pre.nonlinear
-        #then get the output signal of the nonlinearity
+
+        # then get the output signal of the nonlinearity
         if not core.is_signal(self.pre):
             self.pre = self.pre.output_signal
-        # Post could be a node / ensemble, etc
-        if not core.is_signal(self.post):
-            self.post = self.post.signal
 
-        # Set up signal
-        dims = self.pre.size
-        self.signal = core.Signal(dims, name=self.name)
-        model.add(self.signal)
+        # Post could be a node / ensemble, etc
+        if isinstance(self.post, core.Nonlinearity):
+            if isinstance(self.post, core.GainNonlinearity):
+                self.transform = self.transform * self.post.gain[:,None]
+            self.post = self.post.input_signal
+        elif not core.is_signal(self.post):
+            self.post = self.post.signal
 
         # Set up filters and transform
         self._add_filter(model, dt)
@@ -161,6 +162,7 @@ class NonlinearityConnection(SignalConnection):
 
         # Set up probes
         self._add_probes(model)
+
 
 class DecodedConnection(SignalConnection):
     """A DecodedConnection connects an ensemble to a Signal
@@ -264,8 +266,13 @@ class DecodedConnection(SignalConnection):
     def build(self, model, dt):
         # Pre must be an ensemble -- but, don't want to import objects
         assert self.pre.__class__.__name__ == "Ensemble"
+
         # Post could be a node / ensemble, etc
-        if not core.is_signal(self.post):
+        if isinstance(self.post, core.Nonlinearity):
+            if isinstance(self.post, core.GainNonlinearity):
+                self.transform = self.transform * self.post.gain[:,None]
+            self.post = self.post.input_signal
+        elif not core.is_signal(self.post):
             self.post = self.post.signal
 
         # Set up signal
@@ -292,6 +299,7 @@ class DecodedConnection(SignalConnection):
 
         # Set up probes
         self._add_probes(model)
+
 
 class ConnectionList(object):
     """A connection made up of several other connections."""

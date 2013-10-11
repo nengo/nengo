@@ -153,11 +153,11 @@ class TestCircularConv(SimulatorTestCase):
     def test_small(self):
         return self._test_circularconv(dims=4, neurons_per_product=128)
 
-    def test_med(self):
-        return self._test_circularconv(dims=10, neurons_per_product=128)
+    # def test_med(self):
+    #     return self._test_circularconv(dims=10, neurons_per_product=128)
 
-    def test_large(self):
-        return self._test_circularconv(dims=20, neurons_per_product=128)
+    # def test_large(self):
+    #     return self._test_circularconv(dims=20, neurons_per_product=128)
 
 
 if __name__ == "__main__":
