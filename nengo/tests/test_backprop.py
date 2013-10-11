@@ -111,6 +111,8 @@ def encoders_by_backprop(ens, dt):
         print 'dec shape', decoders.shape
         print 'targ shape', targ_points.shape
 
+    # XXX add something to bias so that more activations are non-zero when
+    # fitting encoders
     theta0 = pack(encoders, decoders, ens.neurons.bias)
 
     ## L2-DECAY is hyperparam
@@ -141,7 +143,7 @@ def encoders_by_backprop(ens, dt):
             print 'dact', dact.min(), dact.mean(), dact.max()
 
         dJ *= dact
-        TUNE_ENCODERS = 0
+        TUNE_ENCODERS = 1
         dbias = dJ.sum(axis=0) * TUNE_ENCODERS
         if train_dec:
             ddec = np.dot(act.T, err) + l2_penalty * dec
