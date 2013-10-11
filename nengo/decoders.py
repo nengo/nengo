@@ -114,24 +114,29 @@ def ridge_regression(activities, targets, l2_penalty=1.0, maxfun=100):
     return theta_opt.reshape(N, D).T
 
 @timer('auto_ridge_regression')
-def auto_ridge_regression(activities, targets, maxfun=100):
-    l2_penalty = 100.0
+def auto_ridge_regression(activities, targets, maxfun=1000, max_l2_penalty=100.0,
+                         min_l2_penalty=1e-4):
+    l2_penalty = float(max_l2_penalty)
     costs = [float('inf')]
     decs = [None]
     penalties = [None]
     n_fit = int(.8 * len(activities))
-    while l2_penalty >= .01:
+    while l2_penalty >= min_l2_penalty:
         penalties.append(l2_penalty)
         decs.append(
             ridge_regression(
                 activities[:n_fit], targets[:n_fit], l2_penalty, maxfun))
         err = np.dot(activities[n_fit:], decs[-1].T) - targets[n_fit:]
         costs.append(((err) ** 2).sum())
+        #print 'penalties', penalties
+        #print 'costs', costs
         if costs[-1] > costs[-2]:
+            #print 'cost break'
             break
         l2_penalty /= 10
     print 'auto_ridge_regression: best l2_penalty', penalties[-2]
-    return decs[-2]
+    # -- refit using full data
+    return ridge_regression(activities, targets, penalties[-2], maxfun)
 
 
 

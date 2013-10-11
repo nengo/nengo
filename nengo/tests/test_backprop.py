@@ -62,8 +62,10 @@ def unpack(theta, args):
 
 
 @nengo.decoders.timer('encoders_by_backprop')
-def encoders_by_backprop(ens, dt, l2_penalty=0.1, ):
-    print 'figuring out encoders for', ens, 'l2', l2_penalty
+def encoders_by_backprop(ens, dt, l2_penalty=0.1,
+                         maxfun_nodec=100,
+                         maxfun_all=100):
+    print 'backprop to determine encoders for', ens, 'l2', l2_penalty
 
     # Set up neurons
     # XXX should ideally not do this until after the deepcopy
@@ -159,18 +161,17 @@ def encoders_by_backprop(ens, dt, l2_penalty=0.1, ):
         theta_opt, _, _ = fmin_l_bfgs_b(
             func=func,
             x0=theta0,
-            maxfun=100, # HYPER
+            maxfun=maxfun_nodec,
             iprint=0,
             args=(False,),
             )
         theta_opt, _, _ = fmin_l_bfgs_b(
             func=func,
             x0=theta_opt,
-            maxfun=50, # HYPER
+            maxfun=maxfun_all,
             iprint=0,
             args=(True,),
             )
-        print 'func theta_opt'
         func(theta_opt)
     else:
         func(theta0)
