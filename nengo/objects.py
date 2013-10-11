@@ -85,18 +85,19 @@ class Ensemble(object):
             raise NotImplementedError('noise')
 
         self.encoders = kwargs.get('encoders', None)
+        self.eval_points = kwargs.get('eval_points', None)
         self.intercepts = kwargs.get('intercepts', Uniform(-1.0, 1.0))
         self.max_rates = kwargs.get('max_rates', Uniform(200, 400))
         self.radius = kwargs.get('radius', 1.0)
-        self.seed = kwargs.get('seed', np.random.randint(2**31-1))
-
-        # Order matters here
-        self.eval_points = kwargs.get('eval_points', None)
+        self.seed = kwargs.get('seed', None)
 
         # Set up connections and probes
         self.connections_in = []
         self.connections_out = []
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
+
+        # objects created at build time
+        self._scaled_encoders = None  # encoders * neuron-gains / radius
 
     def __str__(self):
         return "Ensemble: " + self.name
@@ -114,7 +115,6 @@ class Ensemble(object):
     @dimensions.setter
     def dimensions(self, _dimensions):
         self._dimensions = _dimensions
-        self.eval_points = None  # Invalidate possibly cached eval_points
 
     @property
     def encoders(self):
@@ -149,9 +149,6 @@ class Ensemble(object):
         -------
         ~ : ndarray (n_eval_points, `dimensions`)
         """
-        if self._eval_points is None:
-            self._eval_points = decoders.sample_hypersphere(
-                self.dimensions, Ensemble.EVAL_POINTS, self.rng) * self.radius
         return self._eval_points
 
     @eval_points.setter
@@ -208,7 +205,6 @@ class Ensemble(object):
     @radius.setter
     def radius(self, _radius):
         self._radius = np.asarray(_radius)
-        self.eval_points = None  # Invalidate possibly cached eval_points
 
     @property
     def seed(self):
@@ -223,8 +219,6 @@ class Ensemble(object):
     @seed.setter
     def seed(self, _seed):
         self._seed = _seed
-        self.rng = np.random.RandomState(self._seed)
-        self.eval_points = None  #Invalidate possibly cached eval_points
 
     def activities(self, eval_points=None):
         """Determine the neuron firing rates at the given points.
@@ -240,11 +234,13 @@ class Ensemble(object):
         activities : array (n_points, `self.n_neurons`)
             Firing rates (in Hz) for each neuron at each point.
         """
+        assert self._scaled_encoders is not None, (
+            "Cannot get neuron activities before ensemble has been built")
         if eval_points is None:
             eval_points = self.eval_points
 
         return self.neurons.rates(
-            np.dot(eval_points, self.encoders.T))
+            np.dot(eval_points, self._scaled_encoders.T))
             #note: this assumes that self.encoders has already been
             #processed in the build function (i.e., had the radius
             #and gain mixed in)
@@ -317,21 +313,6 @@ class Ensemble(object):
                 "Probe target '%s' is not probable" % to_probe)
         return probe
 
-    def calc_direct_connect_transform(self, transform):
-        if self.neurons.gain is None:
-            self.set_neuron_properties()
-        return np.asarray(transform) * np.asarray([self.neurons.gain]).T
-
-    def set_neuron_properties(self):
-        max_rates = self.max_rates
-        if hasattr(max_rates, 'sample'):
-            max_rates = max_rates.sample(self.neurons.n_neurons, rng=self.rng)
-        intercepts = self.intercepts
-        if hasattr(intercepts, 'sample'):
-            intercepts = intercepts.sample(self.neurons.n_neurons, rng=self.rng)
-        #intercepts *= self.radius
-        self.neurons.set_gain_bias(max_rates, intercepts)
-
     def add_to_model(self, model):
         if model.objs.has_key(self.name):
             raise ValueError("Something called " + self.name + " already "
@@ -345,6 +326,16 @@ class Ensemble(object):
         Called automatically by `model.build`.
         """
         # assert self in model.objs.values(), "Not added to model"
+
+        # Create random number generator
+        if self.seed is None:
+            self.seed = model._get_new_seed()
+        rng = np.random.RandomState(self.seed)
+
+        # Generate eval points
+        if self.eval_points is None:
+            self.eval_points = decoders.sample_hypersphere(
+                self.dimensions, Ensemble.EVAL_POINTS, rng) * self.radius
 
         # Set up signal
         if signal is None:
@@ -365,22 +356,32 @@ class Ensemble(object):
 
         # Set up neurons
         if self.neurons.gain is None:
-            self.set_neuron_properties()
+            # if max_rates and intercepts are distributions,
+            # turn them into fixed samples.
+            if hasattr(self.max_rates, 'sample'):
+                self.max_rates = self.max_rates.sample(
+                    self.neurons.n_neurons, rng=rng)
+            if hasattr(self.intercepts, 'sample'):
+                self.intercepts = self.intercepts.sample(
+                    self.neurons.n_neurons, rng=rng)
+            self.neurons.set_gain_bias(self.max_rates, self.intercepts)
+
         model.add(self.neurons)
 
         # Set up encoder
         if self.encoders is None:
             self.encoders = decoders.sample_hypersphere(
-                self.dimensions, self.neurons.n_neurons,
-                self.rng, surface=True)
+                self.dimensions, self.neurons.n_neurons, rng, surface=True)
         else:
             self.encoders = np.asarray(self.encoders, dtype=float).copy()
             norm = np.sum(self.encoders * self.encoders, axis=1)[:, np.newaxis]
             self.encoders /= np.sqrt(norm)
-        self.encoders /= np.asarray(self.radius)
-        self.encoders *= self.neurons.gain[:, np.newaxis]
-        model._operators += [simulator.DotInc(core.Constant(self.encoders),
-                    self.signal, self.neurons.input_signal)]
+
+        self._scaled_encoders = self.encoders * (
+            self.neurons.gain / self.radius)[:, np.newaxis]
+        model._operators += [simulator.DotInc(
+                core.Constant(self._scaled_encoders),
+                self.signal, self.neurons.input_signal)]
 
         # Set up probes, but don't build them (done explicitly later)
         # Note: Have to set it up here because we only know these things (dimensions,

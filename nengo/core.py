@@ -499,9 +499,6 @@ class Direct(Nonlinearity):
     def __repr__(self):
         return str(self)
 
-    def fn(self, J):
-        return J
-
     def to_json(self):
         return {
             '__class__': self.__module__ + '.' + self.__class__.__name__,
@@ -512,7 +509,19 @@ class Direct(Nonlinearity):
         }
 
 
-class _LIFBase(Nonlinearity):
+class GainNonlinearity(Nonlinearity):
+    _gain = None
+
+    @property
+    def gain(self):
+        return self._gain
+
+    @gain.setter
+    def gain(self, gain):
+        self._gain = gain
+
+
+class _LIFBase(GainNonlinearity):
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, name=None):
         if name is None:
             name = "<%s%d>" % (self.__class__.__name__, id(self))
@@ -607,16 +616,12 @@ class _LIFBase(Nonlinearity):
         self.bias = 1 - self.gain * intercepts
 
     def rates(self, J_without_bias):
-        """Return LIF firing rates for current J in Hz
+        """LIF firing rates in Hz
 
         Parameters
         ---------
-        J: ndarray of any shape
-            membrane voltages
-        tau_rc: broadcastable like J
-            XXX
-        tau_ref: broadcastable like J
-            XXX
+        J_without_bias: ndarray of any shape
+            membrane currents, without bias voltage
         """
         old = np.seterr(divide='ignore', invalid='ignore')
         try:
@@ -642,6 +647,7 @@ class LIFRate(_LIFBase):
         finally:
             np.seterr(**old)
         return r
+
 
 class LIF(_LIFBase):
     operator = sim.SimLIF
