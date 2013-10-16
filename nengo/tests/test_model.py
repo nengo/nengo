@@ -60,9 +60,11 @@ class TestModelBuild(unittest.TestCase):
         m.probe('A', filter=0.01)
         m.probe('B', filter=0.01)
 
-        m1 = m.simulator(dt=0.001, model_seed=872).model
-        m2 = m.simulator(dt=0.001, model_seed=872).model
-        m3 = m.simulator(dt=0.001, model_seed=873).model
+        m.seed = 872
+        m1 = m.simulator(dt=0.001).model
+        m2 = m.simulator(dt=0.001).model
+        m.seed = 873
+        m3 = m.simulator(dt=0.001).model
 
         def compare_objs(obj1, obj2, attrs, equal=True):
             for attr in attrs:

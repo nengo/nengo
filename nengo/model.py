@@ -211,7 +211,7 @@ class Model(object):
             c.build(model=model, dt=dt)
 
     def simulator(self, dt=0.001, sim_class=simulator.Simulator,
-                  model_seed=None, seed=None, **sim_args):
+                  seed=None, **sim_args):
         """Get a new simulator object for the model.
 
         Parameters
@@ -220,10 +220,6 @@ class Model(object):
             Fundamental unit of time for the simulator, in seconds.
         sim_class : child class of `Simulator`, optional
             The class of simulator to be used.
-        model_seed : int, optional
-            Random number seed to overwrite the model.seed property of the
-            generated model. This allows the new model's seed to be different
-            from the original model's seed.
         seed : int, optional
             Random number seed for the simulator's random number generator.
             This random number generator is responsible for creating any random
@@ -243,13 +239,14 @@ class Model(object):
         modelcopy = copy.deepcopy(self, memo)
         modelcopy.memo = memo
 
-        if model_seed is not None:
-            modelcopy.seed = model_seed
-        elif modelcopy.seed is None and modelcopy.fixed_seed is None:
+        if modelcopy.seed is None and modelcopy.fixed_seed is None:
             modelcopy.seed = np.random.randint(2**32)
 
         assert modelcopy.seed is None or modelcopy.fixed_seed is None, (
             "Do not set both the fixed seed and the seed")
+
+        if seed is None:
+            seed = modelcopy._get_new_seed()
 
         self.prep_for_simulation(modelcopy, dt)
         return sim_class(model=modelcopy, **sim_args) # TODO: pass in seed
