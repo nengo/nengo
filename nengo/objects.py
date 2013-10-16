@@ -54,13 +54,20 @@ class Ensemble(object):
 
     Attributes
     ----------
-    dimensions
-    encoders
-    eval_points
+    dimensions : int
+        The number of representational dimensions.
+    encoders : ndarray (`n_neurons`, `dimensions`)
+        The encoders, used to transform from representational space
+        to neuron space. Each row is a neuron's encoder, each column is a
+        representational dimension.
+    eval_points : ndarray (n_eval_points, `dimensions`)
+        The evaluation points used for decoder solving.
     n_neurons
     neurons
-    radius
-    seed
+    radius : float
+        The representational radius of the ensemble.
+    seed : int
+        The seed used for random number generation.
     """
 
     EVAL_POINTS = 500
@@ -69,14 +76,6 @@ class Ensemble(object):
         self.name = name
         self.neurons = neurons
         self.dimensions = dimensions
-
-        if neurons.n_neurons <= 0:
-            raise ValueError('number of neurons (%d) must be positive' %
-                             neurons.n_neurons)
-
-        if dimensions <= 0:
-            raise ValueError('number of dimensions (%d) must be positive' %
-                             dimensions)
 
         if 'decoder_noise' in kwargs:
             raise NotImplementedError('decoder_noise')
@@ -103,63 +102,6 @@ class Ensemble(object):
         return "Ensemble: " + self.name
 
     @property
-    def dimensions(self):
-        """The number of representational dimensions.
-
-        Returns
-        -------
-        ~ : int
-        """
-        return self._dimensions
-
-    @dimensions.setter
-    def dimensions(self, _dimensions):
-        self._dimensions = _dimensions
-
-    @property
-    def encoders(self):
-        """The encoders, used to transform from representational space
-        to neuron space.
-
-        Each row is a neuron's encoder, each column is a representational
-        dimension.
-
-        Returns
-        -------
-        ~ : ndarray (`n_neurons`, `dimensions`)
-        """
-        return self._encoders
-
-    @encoders.setter
-    def encoders(self, _encoders):
-        if _encoders is not None:
-            _encoders = np.asarray(_encoders)
-            enc_shape = (self.neurons.n_neurons, self.dimensions)
-            if _encoders.shape != enc_shape:
-                msg = ("Encoder shape is %s. Should be (n_neurons, dimensions);"
-                       " in this case %s." % (_encoders.shape, enc_shape))
-                raise core.ShapeMismatch(msg)
-        self._encoders = _encoders
-
-    @property
-    def eval_points(self):
-        """The evaluation points used for decoder solving.
-
-        Returns
-        -------
-        ~ : ndarray (n_eval_points, `dimensions`)
-        """
-        return self._eval_points
-
-    @eval_points.setter
-    def eval_points(self, _eval_points):
-        if _eval_points is not None:
-            _eval_points = np.asarray(_eval_points)
-            if _eval_points.ndim == 1:
-                _eval_points.shape = (-1, 1)
-        self._eval_points = _eval_points
-
-    @property
     def n_neurons(self):
         """The number of neurons in the ensemble.
 
@@ -179,7 +121,6 @@ class Ensemble(object):
         """
         return self._neurons
 
-
     @neurons.setter
     def neurons(self, _neurons):
         if isinstance(_neurons, int):
@@ -191,34 +132,6 @@ class Ensemble(object):
         if _neurons.name.startswith("<LIF"):
             _neurons.name = self.name + "." + _neurons.__class__.__name__
         self._neurons = _neurons
-
-    @property
-    def radius(self):
-        """The representational radius of the ensemble.
-
-        Returns
-        -------
-        ~ : float
-        """
-        return self._radius
-
-    @radius.setter
-    def radius(self, _radius):
-        self._radius = np.asarray(_radius)
-
-    @property
-    def seed(self):
-        """The seed used for random number generation.
-
-        Returns
-        -------
-        ~ : int
-        """
-        return self._seed
-
-    @seed.setter
-    def seed(self, _seed):
-        self._seed = _seed
 
     def activities(self, eval_points=None):
         """Determine the neuron firing rates at the given points.
@@ -327,6 +240,14 @@ class Ensemble(object):
         """
         # assert self in model.objs.values(), "Not added to model"
 
+        if self.n_neurons <= 0:
+            raise ValueError(
+                'Number of neurons (%d) must be positive' % self.n_neurons)
+
+        if self.dimensions <= 0:
+            raise ValueError(
+                'Number of dimensions (%d) must be positive' % self.dimensions)
+
         # Create random number generator
         if self.seed is None:
             self.seed = model._get_new_seed()
@@ -336,6 +257,10 @@ class Ensemble(object):
         if self.eval_points is None:
             self.eval_points = decoders.sample_hypersphere(
                 self.dimensions, Ensemble.EVAL_POINTS, rng) * self.radius
+        else:
+            self.eval_points = np.array(self.eval_points, dtype=float)
+            if self.eval_points.ndim == 1:
+                self.eval_points.shape = (-1, 1)
 
         # Set up signal
         if signal is None:
@@ -368,12 +293,18 @@ class Ensemble(object):
 
         model.add(self.neurons)
 
-        # Set up encoder
+        # Set up encoders
         if self.encoders is None:
             self.encoders = decoders.sample_hypersphere(
                 self.dimensions, self.neurons.n_neurons, rng, surface=True)
         else:
-            self.encoders = np.asarray(self.encoders, dtype=float).copy()
+            self.encoders = np.array(self.encoders, dtype=float)
+            enc_shape = (self.neurons.n_neurons, self.dimensions)
+            if self.encoders.shape != enc_shape:
+                raise core.ShapeMismatch(
+                    "Encoder shape is %s. Should be (n_neurons, dimensions);"
+                    " in this case %s." % (self.encoders.shape, enc_shape))
+
             norm = np.sum(self.encoders * self.encoders, axis=1)[:, np.newaxis]
             self.encoders /= np.sqrt(norm)
 
