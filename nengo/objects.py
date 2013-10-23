@@ -54,13 +54,20 @@ class Ensemble(object):
 
     Attributes
     ----------
-    dimensions
-    encoders
-    eval_points
+    dimensions : int
+        The number of representational dimensions.
+    encoders : ndarray (`n_neurons`, `dimensions`)
+        The encoders, used to transform from representational space
+        to neuron space. Each row is a neuron's encoder, each column is a
+        representational dimension.
+    eval_points : ndarray (n_eval_points, `dimensions`)
+        The evaluation points used for decoder solving.
     n_neurons
     neurons
-    radius
-    seed
+    radius : float
+        The representational radius of the ensemble.
+    seed : int
+        The seed used for random number generation.
     """
 
     EVAL_POINTS = 500
@@ -70,14 +77,6 @@ class Ensemble(object):
         self.neurons = neurons
         self.dimensions = dimensions
 
-        if neurons.n_neurons <= 0:
-            raise ValueError('number of neurons (%d) must be positive' %
-                             neurons.n_neurons)
-
-        if dimensions <= 0:
-            raise ValueError('number of dimensions (%d) must be positive' %
-                             dimensions)
-
         if 'decoder_noise' in kwargs:
             raise NotImplementedError('decoder_noise')
 
@@ -85,82 +84,22 @@ class Ensemble(object):
             raise NotImplementedError('noise')
 
         self.encoders = kwargs.get('encoders', None)
+        self.eval_points = kwargs.get('eval_points', None)
         self.intercepts = kwargs.get('intercepts', Uniform(-1.0, 1.0))
         self.max_rates = kwargs.get('max_rates', Uniform(200, 400))
         self.radius = kwargs.get('radius', 1.0)
-        self.seed = kwargs.get('seed', np.random.randint(2**31-1))
-
-        # Order matters here
-        self.eval_points = kwargs.get('eval_points', None)
+        self.seed = kwargs.get('seed', None)
 
         # Set up connections and probes
         self.connections_in = []
         self.connections_out = []
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
 
+        # objects created at build time
+        self._scaled_encoders = None  # encoders * neuron-gains / radius
+
     def __str__(self):
         return "Ensemble: " + self.name
-
-    @property
-    def dimensions(self):
-        """The number of representational dimensions.
-
-        Returns
-        -------
-        ~ : int
-        """
-        return self._dimensions
-
-    @dimensions.setter
-    def dimensions(self, _dimensions):
-        self._dimensions = _dimensions
-        self.eval_points = None  # Invalidate possibly cached eval_points
-
-    @property
-    def encoders(self):
-        """The encoders, used to transform from representational space
-        to neuron space.
-
-        Each row is a neuron's encoder, each column is a representational
-        dimension.
-
-        Returns
-        -------
-        ~ : ndarray (`n_neurons`, `dimensions`)
-        """
-        return self._encoders
-
-    @encoders.setter
-    def encoders(self, _encoders):
-        if _encoders is not None:
-            _encoders = np.asarray(_encoders)
-            enc_shape = (self.neurons.n_neurons, self.dimensions)
-            if _encoders.shape != enc_shape:
-                msg = ("Encoder shape is %s. Should be (n_neurons, dimensions);"
-                       " in this case %s." % (_encoders.shape, enc_shape))
-                raise core.ShapeMismatch(msg)
-        self._encoders = _encoders
-
-    @property
-    def eval_points(self):
-        """The evaluation points used for decoder solving.
-
-        Returns
-        -------
-        ~ : ndarray (n_eval_points, `dimensions`)
-        """
-        if self._eval_points is None:
-            self._eval_points = decoders.sample_hypersphere(
-                self.dimensions, Ensemble.EVAL_POINTS, self.rng) * self.radius
-        return self._eval_points
-
-    @eval_points.setter
-    def eval_points(self, _eval_points):
-        if _eval_points is not None:
-            _eval_points = np.asarray(_eval_points)
-            if _eval_points.ndim == 1:
-                _eval_points.shape = (-1, 1)
-        self._eval_points = _eval_points
 
     @property
     def n_neurons(self):
@@ -182,7 +121,6 @@ class Ensemble(object):
         """
         return self._neurons
 
-
     @neurons.setter
     def neurons(self, _neurons):
         if isinstance(_neurons, int):
@@ -194,37 +132,6 @@ class Ensemble(object):
         if _neurons.name.startswith("<LIF"):
             _neurons.name = self.name + "." + _neurons.__class__.__name__
         self._neurons = _neurons
-
-    @property
-    def radius(self):
-        """The representational radius of the ensemble.
-
-        Returns
-        -------
-        ~ : float
-        """
-        return self._radius
-
-    @radius.setter
-    def radius(self, _radius):
-        self._radius = np.asarray(_radius)
-        self.eval_points = None  # Invalidate possibly cached eval_points
-
-    @property
-    def seed(self):
-        """The seed used for random number generation.
-
-        Returns
-        -------
-        ~ : int
-        """
-        return self._seed
-
-    @seed.setter
-    def seed(self, _seed):
-        self._seed = _seed
-        self.rng = np.random.RandomState(self._seed)
-        self.eval_points = None  #Invalidate possibly cached eval_points
 
     def activities(self, eval_points=None):
         """Determine the neuron firing rates at the given points.
@@ -240,11 +147,13 @@ class Ensemble(object):
         activities : array (n_points, `self.n_neurons`)
             Firing rates (in Hz) for each neuron at each point.
         """
+        assert self._scaled_encoders is not None, (
+            "Cannot get neuron activities before ensemble has been built")
         if eval_points is None:
             eval_points = self.eval_points
 
         return self.neurons.rates(
-            np.dot(eval_points, self.encoders.T))
+            np.dot(eval_points, self._scaled_encoders.T))
             #note: this assumes that self.encoders has already been
             #processed in the build function (i.e., had the radius
             #and gain mixed in)
@@ -317,21 +226,6 @@ class Ensemble(object):
                 "Probe target '%s' is not probable" % to_probe)
         return probe
 
-    def calc_direct_connect_transform(self, transform):
-        if self.neurons.gain is None:
-            self.set_neuron_properties()
-        return np.asarray(transform) * np.asarray([self.neurons.gain]).T
-
-    def set_neuron_properties(self):
-        max_rates = self.max_rates
-        if hasattr(max_rates, 'sample'):
-            max_rates = max_rates.sample(self.neurons.n_neurons, rng=self.rng)
-        intercepts = self.intercepts
-        if hasattr(intercepts, 'sample'):
-            intercepts = intercepts.sample(self.neurons.n_neurons, rng=self.rng)
-        #intercepts *= self.radius
-        self.neurons.set_gain_bias(max_rates, intercepts)
-
     def add_to_model(self, model):
         if model.objs.has_key(self.name):
             raise ValueError("Something called " + self.name + " already "
@@ -345,6 +239,28 @@ class Ensemble(object):
         Called automatically by `model.build`.
         """
         # assert self in model.objs.values(), "Not added to model"
+
+        if self.n_neurons <= 0:
+            raise ValueError(
+                'Number of neurons (%d) must be positive' % self.n_neurons)
+
+        if self.dimensions <= 0:
+            raise ValueError(
+                'Number of dimensions (%d) must be positive' % self.dimensions)
+
+        # Create random number generator
+        if self.seed is None:
+            self.seed = model._get_new_seed()
+        rng = np.random.RandomState(self.seed)
+
+        # Generate eval points
+        if self.eval_points is None:
+            self.eval_points = decoders.sample_hypersphere(
+                self.dimensions, Ensemble.EVAL_POINTS, rng) * self.radius
+        else:
+            self.eval_points = np.array(self.eval_points, dtype=float)
+            if self.eval_points.ndim == 1:
+                self.eval_points.shape = (-1, 1)
 
         # Set up signal
         if signal is None:
@@ -365,22 +281,38 @@ class Ensemble(object):
 
         # Set up neurons
         if self.neurons.gain is None:
-            self.set_neuron_properties()
+            # if max_rates and intercepts are distributions,
+            # turn them into fixed samples.
+            if hasattr(self.max_rates, 'sample'):
+                self.max_rates = self.max_rates.sample(
+                    self.neurons.n_neurons, rng=rng)
+            if hasattr(self.intercepts, 'sample'):
+                self.intercepts = self.intercepts.sample(
+                    self.neurons.n_neurons, rng=rng)
+            self.neurons.set_gain_bias(self.max_rates, self.intercepts)
+
         model.add(self.neurons)
 
-        # Set up encoder
+        # Set up encoders
         if self.encoders is None:
             self.encoders = decoders.sample_hypersphere(
-                self.dimensions, self.neurons.n_neurons,
-                self.rng, surface=True)
+                self.dimensions, self.neurons.n_neurons, rng, surface=True)
         else:
-            self.encoders = np.asarray(self.encoders, dtype=float).copy()
+            self.encoders = np.array(self.encoders, dtype=float)
+            enc_shape = (self.neurons.n_neurons, self.dimensions)
+            if self.encoders.shape != enc_shape:
+                raise core.ShapeMismatch(
+                    "Encoder shape is %s. Should be (n_neurons, dimensions);"
+                    " in this case %s." % (self.encoders.shape, enc_shape))
+
             norm = np.sum(self.encoders * self.encoders, axis=1)[:, np.newaxis]
             self.encoders /= np.sqrt(norm)
-        self.encoders /= np.asarray(self.radius)
-        self.encoders *= self.neurons.gain[:, np.newaxis]
-        model._operators += [simulator.DotInc(core.Constant(self.encoders),
-                    self.signal, self.neurons.input_signal)]
+
+        self._scaled_encoders = self.encoders * (
+            self.neurons.gain / self.radius)[:, np.newaxis]
+        model._operators += [simulator.DotInc(
+                core.Constant(self._scaled_encoders),
+                self.signal, self.neurons.input_signal)]
 
         # Set up probes, but don't build them (done explicitly later)
         # Note: Have to set it up here because we only know these things (dimensions,

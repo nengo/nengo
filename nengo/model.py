@@ -46,13 +46,6 @@ class Model(object):
         a deterministic process; however, each new ensemble
         in the network advances the random number generator,
         so if the network creation code changes, the entire model changes.
-    fixed_seed : int, optional
-        Random number seed that will be fed to the random number generator
-        before each random process. Unlike setting `seed`,
-        each new ensemble in the network will use `fixed_seed`,
-        meaning that ensembles with the same properties will have the same
-        set of neurons generated.
-
 
     Attributes
     ----------
@@ -71,7 +64,7 @@ class Model(object):
 
     """
 
-    def __init__(self, name, seed=None, fixed_seed=None):
+    def __init__(self, name, seed=None):
         self.signals = []
         self.probes = []
 
@@ -87,9 +80,7 @@ class Model(object):
         self.signal_probes = []
 
         self.name = name + ''  # -- make self.name a string, raise error otw
-        self.seed = np.random.randint(2**31-1) if seed is None else seed
-        self.rng = np.random.RandomState(self.seed)
-        self.fixed_seed = fixed_seed
+        self.seed = seed
 
         self.t = self.add(core.Signal(name='t'))
         self.steps = self.add(core.Signal(name='steps'))
@@ -100,14 +91,20 @@ class Model(object):
         self.probe(self.steps)
 
         # -- steps counts by 1.0
-        self._operators += [simulator.ProdUpdate(core.Constant(1), self.one, core.Constant(1), self.steps)]
+        self._operators += [simulator.ProdUpdate(
+                core.Constant(1), self.one, core.Constant(1), self.steps)]
 
-    def _get_new_seed(self):
-        return (self.rng.randint(2**31-1) if self.fixed_seed is None
-                else self.fixed_seed)
+        self._rng = None
 
     def __str__(self):
         return "Model: " + self.name
+
+    def _get_new_seed(self):
+        if self._rng is None:
+            # never create rng without knowing the seed
+            assert self.seed is not None
+            self._rng = np.random.RandomState(self.seed)
+        return self._rng.randint(2**32)
 
     ### I/O
 
@@ -203,7 +200,8 @@ class Model(object):
         for c in model.connections:
             c.build(model=model, dt=dt)
 
-    def simulator(self, dt=0.001, sim_class=simulator.Simulator, **sim_args):
+    def simulator(self, dt=0.001, sim_class=simulator.Simulator,
+                  seed=None, **sim_args):
         """Get a new simulator object for the model.
 
         Parameters
@@ -212,6 +210,11 @@ class Model(object):
             Fundamental unit of time for the simulator, in seconds.
         sim_class : child class of `Simulator`, optional
             The class of simulator to be used.
+        seed : int, optional
+            Random number seed for the simulator's random number generator.
+            This random number generator is responsible for creating any random
+            numbers used during simulation, such as random noise added to
+            neurons' membrane voltages.
         **sim_args : optional
             Arguments to pass to the simulator constructor.
 
@@ -225,8 +228,15 @@ class Model(object):
         memo = {}
         modelcopy = copy.deepcopy(self, memo)
         modelcopy.memo = memo
+
+        if modelcopy.seed is None:
+            modelcopy.seed = np.random.randint(2**32) # generate model seed
+
+        if seed is None:
+            seed = modelcopy._get_new_seed() # generate simulator seed
+
         self.prep_for_simulation(modelcopy, dt)
-        return sim_class(model=modelcopy, **sim_args)
+        return sim_class(model=modelcopy, **sim_args) # TODO: pass in seed
 
     ### Model manipulation
 
