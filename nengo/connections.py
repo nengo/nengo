@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from . import core
+from . import builder
 from . import decoders as decsolve
 from . import simulator
 
@@ -59,7 +59,7 @@ class SignalConnection(object):
                              "the connection is already filtered.")
 
         if to_probe == 'signal':
-            probe = core.Probe(None, sample_every)
+            probe = builder.Probe(None, sample_every)
             self.probes['signal'].append(probe)
         return probe
 
@@ -70,14 +70,14 @@ class SignalConnection(object):
         if self.filter is not None and self.filter > dt:
             # Set up signal
             name = self.pre.name + ".filtered(%f)" % self.filter
-            self.signal = core.Signal(n=self.pre.size, name=name)
+            self.signal = builder.Signal(n=self.pre.size, name=name)
             model.add(self.signal)
 
             # Set up filters and transforms
-            o_coef, n_coef = core.filter_coefs(pstc=self.filter, dt=dt)
-            model._operators += [simulator.ProdUpdate(core.Constant(n_coef),
+            o_coef, n_coef = builder.filter_coefs(pstc=self.filter, dt=dt)
+            model._operators += [simulator.ProdUpdate(builder.Constant(n_coef),
                                                  self.pre,
-                                                 core.Constant(o_coef),
+                                                 builder.Constant(o_coef),
                                                  self.signal)]
 
         else:
@@ -85,7 +85,7 @@ class SignalConnection(object):
             self.signal = self.pre
 
     def _add_transform(self, model):
-        model._operators += [simulator.DotInc(core.Constant(self.transform),
+        model._operators += [simulator.DotInc(builder.Constant(self.transform),
                                               self.signal,
                                               self.post)]
 
@@ -96,15 +96,15 @@ class SignalConnection(object):
 
     def build(self, model, dt):
         # Pre / post may be high level objects (ensemble, node) or signals
-        if not core.is_signal(self.pre):
+        if not builder.is_signal(self.pre):
             self.pre = self.pre.signal
-#            if not core.is_constant(self.pre):
+#            if not builder.is_constant(self.pre):
 #                logger.warning("SignalConnection is usually used for "
 #                               "connecting raw Signals and ConstantNodes. "
 #                               "Are you sure you shouldn't be using "
 #                               "DecodedConnection?")
 
-        if not core.is_signal(self.post):
+        if not builder.is_signal(self.post):
             self.post = self.post.signal
 
         # Set up filters and transform
@@ -141,19 +141,19 @@ class NonlinearityConnection(SignalConnection):
 
     def build(self, model, dt):
         # Pre must be a nonlinearity
-        if not isinstance(self.pre, core.Nonlinearity):
+        if not isinstance(self.pre, builder.Nonlinearity):
             self.pre = self.pre.nonlinear
 
         # then get the output signal of the nonlinearity
-        if not core.is_signal(self.pre):
+        if not builder.is_signal(self.pre):
             self.pre = self.pre.output_signal
 
         # Post could be a node / ensemble, etc
-        if isinstance(self.post, core.Nonlinearity):
-            if isinstance(self.post, core.GainNonlinearity):
+        if isinstance(self.post, builder.Nonlinearity):
+            if isinstance(self.post, builder.GainNonlinearity):
                 self.transform = self.transform * self.post.gain[:,None]
             self.post = self.post.input_signal
-        elif not core.is_signal(self.post):
+        elif not builder.is_signal(self.post):
             self.post = self.post.signal
 
         # Set up filters and transform
@@ -213,7 +213,7 @@ class DecodedConnection(SignalConnection):
             if _decoders.shape[0] != self.pre.n_neurons:
                 msg = ("Decoders axis 0 must be %d; in this case it is "
                        "%d. (shape=%s)" % (self.pre.n_neurons, _decoders.shape[0], _decoders.shape))
-                raise core.ShapeMismatch(msg)
+                raise builder.ShapeMismatch(msg)
 
         self._decoders = None if _decoders is None else _decoders.T
 
@@ -251,16 +251,16 @@ class DecodedConnection(SignalConnection):
 
     def _add_filter(self, model, dt):
         if self.filter is not None and self.filter > dt:
-            o_coef, n_coef = core.filter_coefs(pstc=self.filter, dt=dt)
+            o_coef, n_coef = builder.filter_coefs(pstc=self.filter, dt=dt)
 
-            model._operators += [simulator.ProdUpdate(core.Constant(self._decoders*n_coef),
+            model._operators += [simulator.ProdUpdate(builder.Constant(self._decoders*n_coef),
                                                       self.pre,
-                                                      core.Constant(o_coef),
+                                                      builder.Constant(o_coef),
                                                       self.signal)]
         else:
-            model._operators += [simulator.ProdUpdate(core.Constant(self._decoders),
+            model._operators += [simulator.ProdUpdate(builder.Constant(self._decoders),
                                                       self.pre,
-                                                      core.Constant(0),
+                                                      builder.Constant(0),
                                                       self.signal)]
 
     def build(self, model, dt):
@@ -268,16 +268,16 @@ class DecodedConnection(SignalConnection):
         assert self.pre.__class__.__name__ == "Ensemble"
 
         # Post could be a node / ensemble, etc
-        if isinstance(self.post, core.Nonlinearity):
-            if isinstance(self.post, core.GainNonlinearity):
+        if isinstance(self.post, builder.Nonlinearity):
+            if isinstance(self.post, builder.GainNonlinearity):
                 self.transform = self.transform * self.post.gain[:,None]
             self.post = self.post.input_signal
-        elif not core.is_signal(self.post):
+        elif not builder.is_signal(self.post):
             self.post = self.post.signal
 
         # Set up signal
         dims = self.dimensions
-        self.signal = core.Signal(dims, name=self.name)
+        self.signal = builder.Signal(dims, name=self.name)
         model.add(self.signal)
 
         # Set up decoders

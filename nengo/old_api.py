@@ -13,7 +13,7 @@ import random
 import numpy as np
 
 from . import Model
-from . import core
+from . import LIF
 from .templates.ensemble_array import EnsembleArray
 
 
@@ -45,12 +45,12 @@ class Network(object):
     def make(self, name, neurons, array_size, dimensions=1, **kwargs):
         if 'neuron_type' in kwargs:
             if kwargs['neuron_type'].lower() == 'lif':
-                neurons = core.LIF(neurons)
+                neurons = LIF(neurons)
             else:
                 raise ValueError("Only LIF supported")
             del kwargs['neuron_type']
         else:
-            neurons = core.LIF(neurons)
+            neurons = LIF(neurons)
         return self.model.add(EnsembleArray(
             name, neurons, array_size, dimensions, **kwargs))
 

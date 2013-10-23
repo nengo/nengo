@@ -2,8 +2,7 @@ import numpy as np
 
 import nengo
 import nengo.simulator as simulator
-import nengo.core as core
-from nengo.core import Direct, Signal, Constant
+from nengo.builder import Direct, Signal, Constant
 from nengo.tests.helpers import SimulatorTestCase, unittest
 
 import logging
@@ -38,13 +37,13 @@ class TestSimulator(SimulatorTestCase):
         tmp = m.add(Signal(n=3, name='tmp'))
 
         m._operators += [simulator.ProdUpdate(
-            core.Constant(1), three[0:1], core.Constant(0), one)]
+            Constant(1), three[0:1], Constant(0), one)]
         m._operators += [simulator.ProdUpdate(
-            core.Constant(2.0), three[1:], core.Constant(0), two)]
+            Constant(2.0), three[1:], Constant(0), two)]
         m._operators += [
             simulator.Reset(tmp),
             simulator.DotInc(
-                core.Constant([[0,0,1],[0,1,0],[1,0,0]]),
+                Constant([[0,0,1],[0,1,0],[1,0,0]]),
                 three,
                 tmp),
             simulator.Copy(src=tmp, dst=three, as_update=True),
@@ -68,10 +67,10 @@ class TestSimulator(SimulatorTestCase):
 
         pop = m.add(Direct(n_in=1, n_out=1, fn=np.sin))
 
-        m._operators += [simulator.DotInc(core.Constant([[1.0]]),
+        m._operators += [simulator.DotInc(Constant([[1.0]]),
                                           m.t, pop.input_signal)]
         m._operators += [simulator.ProdUpdate(
-            core.Constant([[1.0]]), pop.output_signal, core.Constant(0), sig)]
+            Constant([[1.0]]), pop.output_signal, Constant(0), sig)]
 
         sim = m.simulator(sim_class=self.Simulator)
         #sim.print_op_groups()
