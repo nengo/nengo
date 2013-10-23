@@ -90,35 +90,6 @@ class TestModelBuild(unittest.TestCase):
         compare_objs(A[0].neurons, A[2].neurons, neur_attrs, equal=False)
         compare_objs(B[0].neurons, B[2].neurons, neur_attrs, equal=False)
 
-    def test_fixed_seed(self):
-        """Test that setting the model seed fixes everything"""
-
-        ### TODO: this really just checks random parameters in ensembles.
-        ###   Are there other objects with random parameters that should be
-        ###   tested? (Perhaps initial weights of learned connections)
-
-        m = nengo.Model('test_fixed_seed', fixed_seed=829)
-        m.make_ensemble('A', nengo.LIF(40), 1)
-        m.make_ensemble('B', nengo.LIF(40), 1)
-
-        mbuilt = m.simulator(dt=0.001).model
-
-        def compare_objs(obj1, obj2, attrs):
-            for attr in attrs:
-                check = np.all(getattr(obj1, attr) == getattr(obj2, attr))
-                if not check:
-                    print getattr(obj1, attr)
-                    print getattr(obj2, attr)
-                self.assertTrue(check)
-
-        ens_attrs = ('encoders', 'max_rates', 'intercepts')
-        A, B = mbuilt.get('A'), mbuilt.get('B')
-
-        compare_objs(A, B, ens_attrs)
-
-        neur_attrs = ('gain', 'bias')
-        compare_objs(A.neurons, B.neurons, neur_attrs)
-
 
 class TestModel(SimulatorTestCase):
 
