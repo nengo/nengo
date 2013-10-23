@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from nengo.core import Constant, Signal
+from nengo.builder import Constant, Signal
 from nengo.templates import EnsembleArray
 from nengo.networks.circularconvolution import circconv, CircularConvolution
 from nengo.tests.helpers import (

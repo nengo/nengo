@@ -3,8 +3,8 @@ import inspect
 import logging
 import numpy as np
 
+from . import builder
 from . import connections
-from . import core
 from . import decoders
 import simulator
 
@@ -126,7 +126,7 @@ class Ensemble(object):
         if isinstance(_neurons, int):
             logger.warning(("neurons should be an instance of a nonlinearity, "
                             "not an int. Defaulting to LIF."))
-            _neurons = core.LIF(_neurons)
+            _neurons = builder.LIF(_neurons)
 
         # Give a better name if name is default
         if _neurons.name.startswith("<LIF"):
@@ -264,7 +264,7 @@ class Ensemble(object):
 
         # Set up signal
         if signal is None:
-            self.signal = core.Signal(n=self.dimensions,
+            self.signal = builder.Signal(n=self.dimensions,
                                       name=self.name + ".signal")
             model.add(self.signal)
         else:
@@ -301,7 +301,7 @@ class Ensemble(object):
             self.encoders = np.array(self.encoders, dtype=float)
             enc_shape = (self.neurons.n_neurons, self.dimensions)
             if self.encoders.shape != enc_shape:
-                raise core.ShapeMismatch(
+                raise builder.ShapeMismatch(
                     "Encoder shape is %s. Should be (n_neurons, dimensions);"
                     " in this case %s." % (self.encoders.shape, enc_shape))
 
@@ -311,7 +311,7 @@ class Ensemble(object):
         self._scaled_encoders = self.encoders * (
             self.neurons.gain / self.radius)[:, np.newaxis]
         model._operators += [simulator.DotInc(
-                core.Constant(self._scaled_encoders),
+                builder.Constant(self._scaled_encoders),
                 self.signal, self.neurons.input_signal)]
 
         # Set up probes, but don't build them (done explicitly later)
@@ -345,7 +345,7 @@ class PassthroughNode(object):
         model.objs[self.name] = self
 
     def build(self, model, dt):
-        self.signal = core.Signal(n=self.dimensions,
+        self.signal = builder.Signal(n=self.dimensions,
                                   name=self.name + ".signal")
         model.add(self.signal)
 
@@ -359,7 +359,7 @@ class PassthroughNode(object):
 
     def probe(self, to_probe='output', sample_every=0.001, filter=None):
         if to_probe == 'output':
-            p = core.Probe(None, sample_every)
+            p = builder.Probe(None, sample_every)
             self.probes['output'].append(p)
         return p
 
@@ -399,7 +399,7 @@ class ConstantNode(object):
             logger.warning("Filter set on constant. Ignoring.")
 
         if to_probe == 'output':
-            p = core.Probe(None, sample_every)
+            p = builder.Probe(None, sample_every)
             self.probes['output'].append(p)
         return p
 
@@ -412,7 +412,7 @@ class ConstantNode(object):
 
     def build(self, model, dt):
         # Set up signal
-        self.signal = core.Constant(self.output,
+        self.signal = builder.Constant(self.output,
                                     name=self.name)
         model.add(self.signal)
 
@@ -511,7 +511,7 @@ class Node(object):
     def build(self, model, dt):
         """TODO"""
         # Set up signals
-        self.signal = core.Signal(self.dimensions,
+        self.signal = builder.Signal(self.dimensions,
                                   name=self.name + ".signal")
         model.add(self.signal)
 
@@ -520,14 +520,14 @@ class Node(object):
 
         # Set up non-linearity
         n_out = np.array(self.output(np.ones(self.dimensions))).size
-        self.nonlinear = core.Direct(n_in=self.dimensions,
+        self.nonlinear = builder.Direct(n_in=self.dimensions,
                                      n_out=n_out,
                                      fn=self.output,
                                      name=self.name + ".Direct")
         model.add(self.nonlinear)
 
         # Set up encoder
-        model._operators += [simulator.DotInc(core.Constant(
+        model._operators += [simulator.DotInc(builder.Constant(
             np.eye(self.dimensions)), self.signal, self.nonlinear.input_signal)]
 
         # Set up probes
@@ -575,12 +575,12 @@ class Probe(object):
         """TODO"""
 
         # Set up signal
-        self.signal = core.Signal(n=self.dimensions, name=self.name)
+        self.signal = builder.Signal(n=self.dimensions, name=self.name)
         model.add(self.signal)
 
         #reset input signal to 0 each timestep
         model._operators += [simulator.Reset(self.signal)]
 
         # Set up probe
-        self.probe = core.Probe(self.signal, self.sample_every)
+        self.probe = builder.Probe(self.signal, self.sample_every)
         model.add(self.probe)
