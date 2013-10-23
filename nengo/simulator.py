@@ -11,7 +11,7 @@ import time
 import networkx as nx
 import numpy as np
 
-import core
+import builder
 
 logger = logging.getLogger(__name__)
 
@@ -603,7 +603,7 @@ class Simulator(object):
         data : ndarray
             TODO: what are the dimensions?
         """
-        if not isinstance(probe, core.Probe):
+        if not isinstance(probe, builder.Probe):
             if self.model.probed.has_key(probe):
                 probe = self.model.probed[probe]
             else:
