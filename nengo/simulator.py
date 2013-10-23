@@ -285,10 +285,14 @@ class Simulator(object):
         t_start = time.time()
         for i in xrange(steps):
             t_current = time.time()
-            # The difference between where the simulator is and should be
-            t_diff = self.model.dt * i - ( t_current - t_start )
-            if t_diff - tol > 0:
-                time.sleep( t_diff - tol )
+            
+            # What the current time should be, with a small tolerance
+            t_required = self.model.dt * i + t_start - tol
+            
+            while t_required - t_current  > 0:
+              time.sleep(1e-5) # Small sleep to keep the scheduler happy
+              t_current = time.time()
+            
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
             self.step()
