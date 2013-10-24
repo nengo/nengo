@@ -99,8 +99,8 @@ class TestModel(SimulatorTestCase):
         sim = m.simulator(dt=0.001, sim_class=self.Simulator)
         sim.run(0.003)
         self.assertTrue(np.allclose(sim.data(m.t).flatten(),
-                                    [.001, .002, .003]))
-        self.assertTrue(np.allclose(sim.data(m.steps).flatten(), [1, 2, 3]))
+                                    [0.00, .001, .002]))
+        self.assertTrue(np.allclose(sim.data(m.steps).flatten(), [0, 1, 2]))
 
 
 if __name__ == "__main__":

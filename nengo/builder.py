@@ -1,18 +1,12 @@
-"""
-Low-level objects
-=================
-
-These classes are used to describe a Nengo model to be simulated.
-All other objects use describe models in terms of these objects.
-Simulators only know about these objects.
-
-"""
 import copy
 import logging
 
 import numpy as np
-import simulator as sim
 
+from . import decoders
+from . import nonlinearities
+from . import objects
+from . import templates
 
 logger = logging.getLogger(__name__)
 
@@ -744,3 +738,411 @@ class SimLIFRate(Operator):
         def step():
             output[...] = rates_fn(dt, J)
         return step
+
+
+def builder(cls):
+    cls._builders = {}
+    for methodname in dir(cls):
+        method = getattr(cls, methodname)
+        if hasattr(method, '_builds'):
+            cls._builders.update({method._builds: method})
+    return cls
+
+
+def builds(cls):
+    def wrapper(func):
+        func._builds = cls
+        return func
+    return wrapper
+
+
+@builder
+class Builder(object):
+    def __call__(self, model, dt):
+        logger.info("Copying model")
+        memo = {}
+        model = copy.deepcopy(model, memo)
+        model.memo = memo
+        model.name = model.name + ", dt=%f" % dt
+        model.dt = dt
+        model.signals = []
+        model.probes = []
+        model.operators = []
+
+        # 1. Generate model seed
+        if model.seed is None:
+            model.seed = np.random.randint(2**32)
+
+        # 2. Build objects
+        logger.info("Building objects")
+        for obj in model.objs.values():
+            self._builders[obj.__class__](self, obj, model=model, dt=dt)
+
+        # 3. Then probes
+        logger.info("Building probes")
+        for target in model.probed:
+            if not isinstance(model.probed[target], Probe):
+                self._builders[objects.Probe](
+                    self, model.probed[target], model, dt)
+                model.probed[target] = model.probed[target].probe
+
+        # 4. Then connections
+        logger.info("Building connections")
+        for o in model.objs.values():
+            for c in o.connections_out:
+                self._builders[c.__class__](self, c, model=model, dt=dt)
+        for c in model.connections:
+            self._builders[c.__class__](self, c, model=model, dt=dt)
+
+        # Set up t and timesteps
+        model.t.value = -dt
+        model.operators += [
+            ProdUpdate(Constant(dt), model.one.signal,
+                       Constant(1), model.t.signal),
+            ProdUpdate(Constant(1), model.one.signal,
+                       Constant(1), model.steps.signal)
+        ]
+
+        return model
+
+    @builds(objects.Ensemble)
+    def build_ensemble(self, ens, model, dt, signal=None):
+        if ens.n_neurons <= 0:
+            raise ValueError(
+                'Number of neurons (%d) must be positive' % ens.n_neurons)
+
+        if ens.dimensions <= 0:
+            raise ValueError(
+                'Number of dimensions (%d) must be positive' % ens.dimensions)
+
+        # Create random number generator
+        if ens.seed is None:
+            ens.seed = model._get_new_seed()
+        rng = np.random.RandomState(ens.seed)
+
+        # Generate eval points
+        if ens.eval_points is None:
+            ens.eval_points = decoders.sample_hypersphere(
+                ens.dimensions, ens.EVAL_POINTS, rng) * ens.radius
+        else:
+            ens.eval_points = np.array(ens.eval_points, dtype=float)
+            if ens.eval_points.ndim == 1:
+                ens.eval_points.shape = (-1, 1)
+
+        # Set up signal
+        if signal is None:
+            ens.signal = Signal(n=ens.dimensions, name=ens.name + ".signal")
+            model.add(ens.signal)
+        else:
+            # Assume that a provided signal is already in the model
+            ens.signal = signal
+            ens.dimensions = ens.signal.size
+
+        #reset input signal to 0 each timestep (unless this ensemble has
+        #a view of a larger signal -- generally meaning it is an ensemble
+        #in an ensemble array -- in which case something else will be
+        #responsible for resetting)
+        if ens.signal.base == ens.signal:
+            model.operators += [Reset(ens.signal)]
+
+        # Set up neurons
+        if ens.neurons.gain is None or ens.neurons.bias is None:
+            # if max_rates and intercepts are distributions,
+            # turn them into fixed samples.
+            if hasattr(ens.max_rates, 'sample'):
+                ens.max_rates = ens.max_rates.sample(
+                    ens.neurons.n_neurons, rng=rng)
+            if hasattr(ens.intercepts, 'sample'):
+                ens.intercepts = ens.intercepts.sample(
+                    ens.neurons.n_neurons, rng=rng)
+            ens.neurons.set_gain_bias(ens.max_rates, ens.intercepts)
+
+        self._builders[ens.neurons.__class__](self, ens.neurons, model, dt)
+
+        # Set up encoders
+        if ens.encoders is None:
+            ens.encoders = decoders.sample_hypersphere(
+                ens.dimensions, ens.neurons.n_neurons, rng, surface=True)
+        else:
+            ens.encoders = np.array(ens.encoders, dtype=float)
+            enc_shape = (ens.neurons.n_neurons, ens.dimensions)
+            if ens.encoders.shape != enc_shape:
+                raise ShapeMismatch(
+                    "Encoder shape is %s. Should be (n_neurons, dimensions);"
+                    " in this case %s." % (ens.encoders.shape, enc_shape))
+
+            norm = np.sum(ens.encoders * ens.encoders, axis=1)[:, np.newaxis]
+            ens.encoders /= np.sqrt(norm)
+
+        ens._scaled_encoders = ens.encoders * (
+            ens.neurons.gain / ens.radius)[:, np.newaxis]
+        model.operators += [DotInc(
+                Constant(ens._scaled_encoders),
+                ens.signal, ens.neurons.input_signal)]
+
+        # Set up probes, but don't build them (done explicitly later)
+        # Note: Have to set it up here because we only know these things
+        #       (dimensions, n_neurons) at build time.
+        for probe in ens.probes['decoded_output']:
+            probe.dimensions = ens.dimensions
+        for probe in ens.probes['spikes']:
+            probe.dimensions = ens.n_neurons
+        for probe in ens.probes['voltages']:
+            probe.dimensions = ens.n_neurons
+
+    @builds(objects.PassthroughNode)
+    def build_passthrough(self, ptn, model, dt):
+        ptn.signal = Signal(n=ptn.dimensions, name=ptn.name + ".signal")
+        model.add(ptn.signal)
+
+        #reset input signal to 0 each timestep
+        model.operators += [Reset(ptn.signal)]
+
+        # Set up probes
+        for probe in ptn.probes['output']:
+            probe.dimensions = ptn.dimensions
+            model.add(probe)
+
+    @builds(objects.ConstantNode)
+    def build_constantnode(self, cn, model, dt):
+        # Set up signal
+        cn.signal = Constant(cn.output, name=cn.name)
+        model.add(cn.signal)
+
+        # Set up probes
+        for probe in cn.probes['output']:
+            probe.dimensions = cn.output.size
+            model.add(probe)
+
+    @builds(objects.Node)
+    def build_node(self, node, model, dt):
+        # Set up signals
+        node.signal = Signal(node.dimensions, name=node.name + ".signal")
+        model.add(node.signal)
+
+        #reset input signal to 0 each timestep
+        model.operators += [Reset(node.signal)]
+
+        # Set up non-linearity
+        n_out = np.array(node.output(np.ones(node.dimensions))).size
+        node.nonlinear = nonlinearities.Direct(n_in=node.dimensions,
+                                               n_out=n_out,
+                                               fn=node.output,
+                                               name=node.name + ".Direct")
+        self.build_direct(node.nonlinear, model, dt)
+
+        # Set up encoder
+        model.operators += [DotInc(Constant(
+            np.eye(node.dimensions)), node.signal, node.nonlinear.input_signal)]
+
+        # Set up probes
+        for probe in node.probes['output']:
+            probe.dimensions = node.nonlinear.output_signal.n
+
+    @builds(objects.Probe)
+    def build_probe(self, probe, model, dt):
+        # Set up signal
+        probe.signal = Signal(n=probe.dimensions, name=probe.name)
+        model.add(probe.signal)
+
+        #reset input signal to 0 each timestep
+        model.operators += [Reset(probe.signal)]
+
+        # Set up probe
+        probe.probe = Probe(probe.signal, probe.sample_every)
+        model.add(probe.probe)
+
+    def _build_connection_filter(self, conn, model, dt):
+        if conn.filter is not None and conn.filter > dt:
+            # Set up signal
+            name = conn.pre.name + ".filtered(%f)" % conn.filter
+            conn.signal = Signal(n=conn.pre.size, name=name)
+            model.add(conn.signal)
+
+            # Set up filters and transforms
+            o_coef, n_coef = filter_coefs(pstc=conn.filter, dt=dt)
+            model.operators += [ProdUpdate(Constant(n_coef),
+                                                      conn.pre,
+                                                      Constant(o_coef),
+                                                      conn.signal)]
+        else:
+            # Signal should already be in the model
+            conn.signal = conn.pre
+
+    def _build_connection_transform(self, conn, model):
+        model.operators += [DotInc(Constant(conn.transform),
+                                              conn.signal,
+                                              conn.post)]
+
+    def _build_connection_probes(self, conn, model):
+        for probe in conn.probes['signal']:
+            probe.dimensions = conn.signal.size
+            model.add(probe)
+
+    @builds(objects.SignalConnection)
+    def build_signalconnection(self, conn, model, dt):
+        # Pre / post may be high level objects (ensemble, node) or signals
+        if not is_signal(conn.pre):
+            conn.pre = conn.pre.signal
+
+        if not is_signal(conn.post):
+            conn.post = conn.post.signal
+
+        # Set up filters and transform
+        self._build_connection_filter(conn, model, dt)
+        self._build_connection_transform(conn, model)
+
+        # Set up probes
+        self._build_connection_probes(conn, model)
+
+    @builds(objects.NonlinearityConnection)
+    def build_nonlinearityconnection(self, conn, model, dt):
+        # Pre must be a nonlinearity
+        if not isinstance(conn.pre, nonlinearities.Nonlinearity):
+            conn.pre = conn.pre.nonlinear
+
+        # then get the output signal of the nonlinearity
+        if not is_signal(conn.pre):
+            conn.pre = conn.pre.output_signal
+
+        # Post could be a node / ensemble, etc
+        if isinstance(conn.post, nonlinearities.Nonlinearity):
+            if isinstance(conn.post, nonlinearities.NeuralNonlinearity):
+                conn.transform = conn.transform * conn.post.gain[:,None]
+            conn.post = conn.post.input_signal
+        elif not is_signal(conn.post):
+            conn.post = conn.post.signal
+
+        # Set up filters and transform
+        self._build_connection_filter(conn, model, dt)
+        self._build_connection_transform(conn, model)
+
+        # Set up probes
+        self._build_connection_probes(conn, model)
+
+    @builds(objects.DecodedConnection)
+    def build_decodedconnection(self, conn, model, dt):
+        # Pre must be an ensemble -- but, don't want to import objects
+        assert isinstance(conn.pre, objects.Ensemble)
+
+        # Post could be a node / ensemble, etc
+        if isinstance(conn.post, nonlinearities.Nonlinearity):
+            if isinstance(conn.post, nonlinearities.NeuralNonlinearity):
+                conn.transform = conn.transform * conn.post.gain[:,None]
+            conn.post = conn.post.input_signal
+        elif not is_signal(conn.post):
+            conn.post = conn.post.signal
+
+        # Set up signal
+        dims = conn.dimensions
+        conn.signal = Signal(dims, name=conn.name)
+        model.add(conn.signal)
+
+        # Set up decoders
+        if conn._decoders is None:
+            activities = conn.pre.activities(conn.eval_points) * dt
+            if conn.function is None:
+                targets = conn.eval_points
+            else:
+                targets = np.array(
+                    [conn.function(ep) for ep in conn.eval_points])
+                if len(targets.shape) < 2:
+                    targets.shape = targets.shape[0], 1
+            conn._decoders = conn.decoder_solver(activities, targets)
+
+        # Set up filters and transform
+        conn.pre = conn.pre.neurons.output_signal
+
+        # DecodedConnection._add_filter
+        if conn.filter is not None and conn.filter > dt:
+            o_coef, n_coef = filter_coefs(pstc=conn.filter, dt=dt)
+
+            model.operators += [ProdUpdate(Constant(conn._decoders*n_coef),
+                                            conn.pre,
+                                            Constant(o_coef),
+                                            conn.signal)]
+        else:
+            model.operators += [ProdUpdate(Constant(conn._decoders),
+                                            conn.pre,
+                                            Constant(0),
+                                            conn.signal)]
+
+        self._build_connection_transform(conn, model)
+
+        # Set up probes
+        self._build_connection_probes(conn, model)
+
+    @builds(objects.ConnectionList)
+    def build_connectionlist(self, conn, model, dt):
+        conn.transform = np.asarray(conn.transform)
+
+        i = 0
+        for connection in conn.connections:
+            pre_dim = connection.dimensions
+
+            if conn.transform.ndim == 0:
+                trans = np.zeros((connection.post.dimensions, pre_dim))
+                np.fill_diagonal(trans[i:i+pre_dim,:], conn.transform)
+            elif conn.transform.ndim == 2:
+                trans = conn.transform[:,i:i+pre_dim]
+            else:
+                raise NotImplementedError(
+                    "Only transforms with 0 or 2 ndims are accepted")
+
+            i += pre_dim
+
+            connection.transform = trans
+            self._builders[connection.__class__](self, connection, model, dt)
+
+    @builds(templates.EnsembleArray)
+    def build_ensemblearray(self, ea, model, dt):
+        ea.signal = Signal(ea.dimensions, name=ea.name+".signal")
+        model.add(ea.signal)
+        model.operators += [Reset(ea.signal)]
+        dims = ea.dimensions_per_ensemble
+
+        for i, ens in enumerate(ea.ensembles):
+            self.build_ensemble(ens, model, dt,
+                                signal=ea.signal[i*dims:(i+1)*dims])
+
+        for probe in ea.probes['decoded_output']:
+            probe.dimensions = ea.dimensions
+
+    @builds(nonlinearities.Direct)
+    def build_direct(self, nl, model, dt):
+        nl.input_signal = Signal(nl.n_in, name=nl.name + '.input')
+        model.add(nl.input_signal)
+        nl.output_signal = Signal(nl.n_out, name=nl.name + '.output')
+        model.add(nl.output_signal)
+        model.operators += [Reset(nl.input_signal),
+                            SimDirect(output=nl.output_signal,
+                                      J=nl.input_signal, nl=nl)]
+
+    def build_neural_nonlinearity(self, nl, model, dt):
+        nl.input_signal = Signal(nl.n_neurons, name=nl.name + '.input')
+        model.add(nl.input_signal)
+        nl.output_signal = Signal(nl.n_neurons, name=nl.name + '.output')
+        model.add(nl.output_signal)
+        nl.bias_signal = Constant(nl.bias, name=nl.name + '.bias')
+        model.add(nl.bias_signal)
+        model.operators += [Copy(dst=nl.input_signal, src=nl.bias_signal)]
+
+    @builds(nonlinearities.LIFRate)
+    def build_lifrate(self, lif, model, dt):
+        self.build_neural_nonlinearity(lif, model, dt)
+        model.operators += [SimLIFRate(output=lif.output_signal,
+                                       J=lif.input_signal,
+                                       nl=lif)]
+
+    @builds(nonlinearities.LIF)
+    def build_lif(self, lif, model, dt):
+        self.build_neural_nonlinearity(lif, model, dt)
+        lif.voltage = Signal(lif.n_neurons)
+        model.add(lif.voltage)
+        lif.refractory_time = Signal(lif.n_neurons)
+        model.add(lif.refractory_time)
+        model.operators += [SimLIF(output=lif.output_signal,
+                                   J=lif.input_signal,
+                                   nl=lif,
+                                   voltage=lif.voltage,
+                                   refractory_time=lif.refractory_time)]

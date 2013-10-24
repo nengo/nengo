@@ -2,8 +2,6 @@ import logging
 
 import numpy as np
 
-from . import builder
-
 logger = logging.getLogger(__name__)
 
 
@@ -16,36 +14,12 @@ class Nonlinearity(object):
     def __repr__(self):
         return str(self)
 
-    def add_to_model(self, model):
-        # XXX: do we still need to append signals to model?
-        model.signals.append(self.bias_signal)
-        model.signals.append(self.input_signal)
-        model.signals.append(self.output_signal)
-        model._operators.append(
-            self.operator(
-                output=self.output_signal,
-                J=self.input_signal,
-                nl=self))
-        # -- encoders will be scheduled between this copy
-        #    and nl_op
-        model._operators.append(
-            builder.Copy(dst=self.input_signal, src=self.bias_signal))
-
 
 class Direct(Nonlinearity):
-
-    operator = builder.SimDirect
-
     def __init__(self, n_in, n_out, fn, name=None):
         if name is None:
             name = "<Direct%d>" % id(self)
         self.name = name
-
-        self.input_signal = builder.Signal(n_in, name=name + '.input')
-        self.output_signal = builder.Signal(n_out, name=name + '.output')
-        self.bias_signal = builder.Constant(np.zeros(n_in),
-                                            name=name + '.bias')
-
         self.n_in = n_in
         self.n_out = n_out
         self.fn = fn
@@ -54,8 +28,7 @@ class Direct(Nonlinearity):
         try:
             return memo[id(self)]
         except KeyError:
-            rval = self.__class__.__new__(
-                    self.__class__)
+            rval = self.__class__.__new__(self.__class__)
             memo[id(self)] = rval
             for k, v in self.__dict__.items():
                 if k == 'fn':
@@ -80,8 +53,17 @@ class Direct(Nonlinearity):
         }
 
 
-class GainNonlinearity(Nonlinearity):
+class NeuralNonlinearity(Nonlinearity):
     _gain = None
+    _bias = None
+
+    @property
+    def bias(self):
+        return self._bias
+
+    @bias.setter
+    def bias(self, bias):
+        self._bias = bias
 
     @property
     def gain(self):
@@ -92,18 +74,15 @@ class GainNonlinearity(Nonlinearity):
         self._gain = gain
 
 
-class _LIFBase(GainNonlinearity):
+class _LIFBase(NeuralNonlinearity):
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, name=None):
         if name is None:
             name = "<%s%d>" % (self.__class__.__name__, id(self))
-        self.input_signal = builder.Signal(n_neurons, name=name + '.input')
-        self.output_signal = builder.Signal(n_neurons, name=name + '.output')
-        self.bias_signal = builder.Constant(np.zeros(n_neurons), name=name + '.bias')
-
         self.name = name
         self.n_neurons = n_neurons
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
+        self.bias = None
         self.gain = None
 
     def __str__(self):
@@ -126,39 +105,8 @@ class _LIFBase(GainNonlinearity):
         }
 
     @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        self._name = value
-        self.input_signal.name = value + '.input'
-        self.output_signal.name = value + '.output'
-        self.bias_signal.name = value + '.bias'
-
-    @property
-    def bias(self):
-        return self.bias_signal.value
-
-    @bias.setter
-    def bias(self, value):
-        self.bias_signal.value[...] = value
-
-    @property
     def n_in(self):
         return self.n_neurons
-
-    @property
-    def n_neurons(self):
-        return self._n_neurons
-
-    @n_neurons.setter
-    def n_neurons(self, _n_neurons):
-        self._n_neurons = _n_neurons
-        self.input_signal.n = _n_neurons
-        self.output_signal.n = _n_neurons
-        self.bias_signal.n = _n_neurons
-        self.bias_signal.value = np.zeros(_n_neurons)
 
     @property
     def n_out(self):
@@ -208,7 +156,6 @@ class _LIFBase(GainNonlinearity):
 
 
 class LIFRate(_LIFBase):
-    operator = builder.SimLIFRate
     def math(self, dt, J):
         """Compute rates for input current (incl. bias)"""
         old = np.seterr(divide='ignore')
@@ -221,29 +168,9 @@ class LIFRate(_LIFBase):
 
 
 class LIF(_LIFBase):
-    operator = builder.SimLIF
     def __init__(self, n_neurons, upsample=1, **kwargs):
         _LIFBase.__init__(self, n_neurons, **kwargs)
         self.upsample = upsample
-        self.voltage = builder.Signal(n_neurons)
-        self.refractory_time = builder.Signal(n_neurons)
-
-    def add_to_model(self, model):
-        # XXX: do we still need to append signals to model?
-        model.signals.append(self.bias_signal)
-        model.signals.append(self.input_signal)
-        model.signals.append(self.output_signal)
-        model._operators.append(
-            self.operator(
-                output=self.output_signal,
-                J=self.input_signal,
-                nl=self,
-                voltage=self.voltage,
-                refractory_time=self.refractory_time))
-        # -- encoders will be scheduled between this copy
-        #    and nl_op
-        model._operators.append(
-            builder.Copy(dst=self.input_signal, src=self.bias_signal))
 
     def to_json(self):
         d = _LIFBase.to_json(self)

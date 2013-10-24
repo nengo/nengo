@@ -29,9 +29,9 @@ class TestNode(SimulatorTestCase):
 
         sim_t = sim.data(m.t).ravel()
         sim_in = sim.data('in').ravel()
-        t = dt * np.arange(1, len(sim_t) + 1)
+        t = dt * np.arange(len(sim_t))
         self.assertTrue(np.allclose(sim_t, t))
-        self.assertTrue(np.allclose(sim_in[2:], np.sin(t[:-2]))) # 2-step delay
+        self.assertTrue(np.allclose(sim_in[1:], np.sin(t[:-1]))) # 1-step delay
 
     def test_connected(self):
         dt = 0.001
@@ -57,9 +57,9 @@ class TestNode(SimulatorTestCase):
         sim_t = sim.data(m.t).ravel()
         sim_sin = sim.data('in').ravel()
         sim_sq = sim.data('out').ravel()
-        t = dt * np.arange(1, len(sim_t) + 1)
+        t = dt * np.arange(len(sim_t))
         self.assertTrue(np.allclose(sim_t, t))
-        self.assertTrue(np.allclose(sim_sin[2:], np.sin(t[:-2]))) # 2-step delay
+        self.assertTrue(np.allclose(sim_sin[1:], np.sin(t[:-1]))) # 1-step delay
         self.assertTrue(np.allclose(sim_sq[1:], sim_sin[:-1]**2)) # 1-step delay
 
     def test_passthrough(self):
