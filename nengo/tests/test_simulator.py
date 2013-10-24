@@ -3,6 +3,7 @@ import numpy as np
 import nengo
 import nengo.simulator as simulator
 from nengo.builder import Signal, Constant
+from nengo.builder import DotInc, ProdUpdate, Reset, Copy
 from nengo.nonlinearities import Direct
 from nengo.tests.helpers import SimulatorTestCase, unittest
 
@@ -37,17 +38,17 @@ class TestSimulator(SimulatorTestCase):
 
         tmp = m.add(Signal(n=3, name='tmp'))
 
-        m._operators += [simulator.ProdUpdate(
+        m._operators += [ProdUpdate(
             Constant(1), three[0:1], Constant(0), one)]
-        m._operators += [simulator.ProdUpdate(
+        m._operators += [ProdUpdate(
             Constant(2.0), three[1:], Constant(0), two)]
         m._operators += [
-            simulator.Reset(tmp),
-            simulator.DotInc(
+            Reset(tmp),
+            DotInc(
                 Constant([[0,0,1],[0,1,0],[1,0,0]]),
                 three,
                 tmp),
-            simulator.Copy(src=tmp, dst=three, as_update=True),
+            Copy(src=tmp, dst=three, as_update=True),
             ]
 
         sim = m.simulator(sim_class=self.Simulator)
@@ -68,9 +69,9 @@ class TestSimulator(SimulatorTestCase):
 
         pop = m.add(Direct(n_in=1, n_out=1, fn=np.sin))
 
-        m._operators += [simulator.DotInc(Constant([[1.0]]),
+        m._operators += [DotInc(Constant([[1.0]]),
                                           m.t, pop.input_signal)]
-        m._operators += [simulator.ProdUpdate(
+        m._operators += [ProdUpdate(
             Constant([[1.0]]), pop.output_signal, Constant(0), sig)]
 
         sim = m.simulator(sim_class=self.Simulator)
@@ -103,13 +104,13 @@ class TestSimulator(SimulatorTestCase):
         decoders = np.asarray([.2,.1])
         decs = Constant(decoders*0.5)
         m._operators.append(
-            simulator.DotInc(
+            DotInc(
                 Constant([[1.0],[2.0]]),
                 foo,
                 pop.input_signal,
                 tag='dotinc'))
         m._operators.append(
-            simulator.ProdUpdate(
+            ProdUpdate(
                 decs,
                 pop.output_signal,
                 Constant(0.2),
@@ -161,9 +162,9 @@ class TestSimulator(SimulatorTestCase):
         pop = m.add(Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop'))
 
         decoders = np.asarray([.2,.1])
-        m._operators += [simulator.DotInc(Constant([[1.0],[2.0]]),
+        m._operators += [DotInc(Constant([[1.0],[2.0]]),
                                           foo[:], pop.input_signal)]
-        m._operators += [simulator.ProdUpdate(
+        m._operators += [ProdUpdate(
             Constant(decoders*0.5),pop.output_signal, Constant(0.2), foo[:])]
 
         sim = m.simulator(sim_class=self.Simulator)

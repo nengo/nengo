@@ -3,6 +3,7 @@ import numpy as np
 import nengo
 import nengo.simulator as simulator
 from nengo.builder import Signal, Constant
+from nengo.builder import DotInc, ProdUpdate
 from nengo.nonlinearities import Direct, LIF, LIFRate
 from nengo.tests.helpers import SimulatorTestCase, unittest, rms
 
@@ -53,8 +54,8 @@ class TestNonlinear(SimulatorTestCase):
             ins = m.add(Signal(n=d, name='ins'))
             pop = m.add(Direct(n_in=d, n_out=d, fn=fn))
 
-            m._operators += [simulator.DotInc(Constant(np.eye(d)), ins, pop.input_signal)]
-            m._operators += [simulator.ProdUpdate(Constant(np.eye(d)), pop.output_signal, Constant(0), ins)]
+            m._operators += [DotInc(Constant(np.eye(d)), ins, pop.input_signal)]
+            m._operators += [ProdUpdate(Constant(np.eye(d)), pop.output_signal, Constant(0), ins)]
 
             sim = m.simulator(sim_class=self.Simulator)
             sim.signals[ins] = x
@@ -83,7 +84,7 @@ class TestNonlinear(SimulatorTestCase):
                           intercepts=rng.uniform(low=-1, high=1, size=n))
 
         m._operators += [ # arbitrary encoders, doesn't really matter
-            simulator.DotInc(Constant(np.ones((n,d))), ins, lif.input_signal)]
+            DotInc(Constant(np.ones((n,d))), ins, lif.input_signal)]
 
         sim = m.simulator(sim_class=self.Simulator)
         sim.signals[ins] = 0.5 * np.ones(d)

@@ -5,7 +5,6 @@ import numpy as np
 from . import builder
 from . import nonlinearities
 from . import decoders as decsolve
-from . import simulator
 
 
 logger = logging.getLogger(__name__)
@@ -76,19 +75,19 @@ class SignalConnection(object):
 
             # Set up filters and transforms
             o_coef, n_coef = builder.filter_coefs(pstc=self.filter, dt=dt)
-            model._operators += [simulator.ProdUpdate(builder.Constant(n_coef),
-                                                 self.pre,
-                                                 builder.Constant(o_coef),
-                                                 self.signal)]
+            model._operators += [builder.ProdUpdate(builder.Constant(n_coef),
+                                                    self.pre,
+                                                    builder.Constant(o_coef),
+                                                    self.signal)]
 
         else:
             # Signal should already be in the model
             self.signal = self.pre
 
     def _add_transform(self, model):
-        model._operators += [simulator.DotInc(builder.Constant(self.transform),
-                                              self.signal,
-                                              self.post)]
+        model._operators += [builder.DotInc(builder.Constant(self.transform),
+                                            self.signal,
+                                            self.post)]
 
     def _add_probes(self, model):
         for probe in self.probes['signal']:
@@ -254,15 +253,15 @@ class DecodedConnection(SignalConnection):
         if self.filter is not None and self.filter > dt:
             o_coef, n_coef = builder.filter_coefs(pstc=self.filter, dt=dt)
 
-            model._operators += [simulator.ProdUpdate(builder.Constant(self._decoders*n_coef),
-                                                      self.pre,
-                                                      builder.Constant(o_coef),
-                                                      self.signal)]
+            model._operators += [builder.ProdUpdate(builder.Constant(self._decoders*n_coef),
+                                                    self.pre,
+                                                    builder.Constant(o_coef),
+                                                    self.signal)]
         else:
-            model._operators += [simulator.ProdUpdate(builder.Constant(self._decoders),
-                                                      self.pre,
-                                                      builder.Constant(0),
-                                                      self.signal)]
+            model._operators += [builder.ProdUpdate(builder.Constant(self._decoders),
+                                                    self.pre,
+                                                    builder.Constant(0),
+                                                    self.signal)]
 
     def build(self, model, dt):
         # Pre must be an ensemble -- but, don't want to import objects

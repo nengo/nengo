@@ -7,7 +7,6 @@ from . import builder
 from . import connections
 from . import decoders
 from . import nonlinearities
-import simulator
 
 logger = logging.getLogger(__name__)
 
@@ -278,7 +277,7 @@ class Ensemble(object):
         #in an ensemble array -- in which case something else will be
         #responsible for resetting)
         if self.signal.base == self.signal:
-            model._operators += [simulator.Reset(self.signal)]
+            model._operators += [builder.Reset(self.signal)]
 
         # Set up neurons
         if self.neurons.gain is None:
@@ -311,7 +310,7 @@ class Ensemble(object):
 
         self._scaled_encoders = self.encoders * (
             self.neurons.gain / self.radius)[:, np.newaxis]
-        model._operators += [simulator.DotInc(
+        model._operators += [builder.DotInc(
                 builder.Constant(self._scaled_encoders),
                 self.signal, self.neurons.input_signal)]
 
@@ -351,7 +350,7 @@ class PassthroughNode(object):
         model.add(self.signal)
 
         #reset input signal to 0 each timestep
-        model._operators += [simulator.Reset(self.signal)]
+        model._operators += [builder.Reset(self.signal)]
 
         # Set up probes
         for probe in self.probes['output']:
@@ -517,7 +516,7 @@ class Node(object):
         model.add(self.signal)
 
         #reset input signal to 0 each timestep
-        model._operators += [simulator.Reset(self.signal)]
+        model._operators += [builder.Reset(self.signal)]
 
         # Set up non-linearity
         n_out = np.array(self.output(np.ones(self.dimensions))).size
@@ -528,7 +527,7 @@ class Node(object):
         model.add(self.nonlinear)
 
         # Set up encoder
-        model._operators += [simulator.DotInc(builder.Constant(
+        model._operators += [builder.DotInc(builder.Constant(
             np.eye(self.dimensions)), self.signal, self.nonlinear.input_signal)]
 
         # Set up probes
@@ -580,7 +579,7 @@ class Probe(object):
         model.add(self.signal)
 
         #reset input signal to 0 each timestep
-        model._operators += [simulator.Reset(self.signal)]
+        model._operators += [builder.Reset(self.signal)]
 
         # Set up probe
         self.probe = builder.Probe(self.signal, self.sample_every)
