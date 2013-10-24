@@ -95,6 +95,7 @@ class TestModel(SimulatorTestCase):
 
     def test_counters(self):
         m = nengo.Model('test_counters', seed=123)
+        m.probe(m.steps)
         sim = m.simulator(dt=0.001, sim_class=self.Simulator)
         sim.run(0.003)
         self.assertTrue(np.allclose(sim.data(m.t).flatten(),
