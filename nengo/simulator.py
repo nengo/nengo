@@ -16,14 +16,6 @@ import builder
 logger = logging.getLogger(__name__)
 
 
-def is_base(sig):
-    return sig.base == sig
-
-
-def is_view(sig):
-    return not is_base(sig)
-
-
 class SignalDict(dict):
     """
     Map from Signal -> ndarray
