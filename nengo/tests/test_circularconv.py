@@ -91,19 +91,19 @@ class TestCircularConv(SimulatorTestCase):
         C = model.add(EnsembleArray(
             'C', nengo.LIF(n_neurons), dims, radius=radius))
         D = model.add(CircularConvolution(
-                'D', neurons=nengo.LIF(n_neurons_d),
-                dimensions=A.dimensions, radius=radius))
+            'D', neurons=nengo.LIF(n_neurons_d),
+            dimensions=A.dimensions, radius=radius))
 
         inputA.connect_to(A)
         inputB.connect_to(B)
         A.connect_to(D.A)
         B.connect_to(D.B)
-        D.connect_to(C)
+        D.output.connect_to(C)
 
         model.probe(A, filter=0.03)
         model.probe(B, filter=0.03)
         model.probe(C, filter=0.03)
-        model.probe(D, filter=0.03)
+        model.probe(D.ensemble, filter=0.03)
 
         # check FFT magnitude
         d = np.dot(D.transformA, a) + np.dot(D.transformB, b)
@@ -132,7 +132,7 @@ class TestCircularConv(SimulatorTestCase):
             plt.subplot(223)
             plot(sim, c, C, title="C")
             plt.subplot(224)
-            plot(sim, d, D, title="D")
+            plot(sim, d, D.ensemble, title="D")
             plt.savefig('test_circularconv.test_circularconv_%d.pdf' % dims)
             plt.close()
 
@@ -142,7 +142,7 @@ class TestCircularConv(SimulatorTestCase):
         a_sim = sim.data(A)[tmask].mean(axis=0)
         b_sim = sim.data(B)[tmask].mean(axis=0)
         c_sim = sim.data(C)[tmask].mean(axis=0)
-        d_sim = sim.data(D)[tmask].mean(axis=0)
+        d_sim = sim.data(D.ensemble)[tmask].mean(axis=0)
 
         rtol, atol = 0.1, 0.05
         self.assertTrue(np.allclose(a, a_sim, rtol=rtol, atol=atol))
