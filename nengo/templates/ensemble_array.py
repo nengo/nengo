@@ -3,7 +3,6 @@ import logging
 
 import numpy as np
 
-from ..connections import ConnectionList
 from .. import builder
 from .. import objects
 
@@ -108,7 +107,7 @@ class EnsembleArray(object):
         for i, ensemble in enumerate(self.ensembles):
             c = ensemble.connect_to(post, **kwargs)
             connections.append(c)
-        connection = ConnectionList(connections, transform)
+        connection = objects.ConnectionList(connections, transform)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
