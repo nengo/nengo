@@ -82,17 +82,12 @@ class Model(object):
         self.name = name + ''  # -- make self.name a string, raise error otw
         self.seed = seed
 
-        self.t = self.add(builder.Signal(name='t'))
-        self.steps = self.add(builder.Signal(name='steps'))
-        self.one = self.add(builder.Constant([1.0], name='one'))
+        self.t = self.make_node('t', output=0)
+        self.steps = self.make_node('steps', output=0)
+        self.one = self.make_node('one', output=[1.0])
 
-        # Automatically probe these
+        # Automatically probe time
         self.probe(self.t)
-        self.probe(self.steps)
-
-        # -- steps counts by 1.0
-        self._operators += [builder.ProdUpdate(
-                builder.Constant(1), self.one, builder.Constant(1), self.steps)]
 
         self._rng = None
 
@@ -174,8 +169,6 @@ class Model(object):
     def prep_for_simulation(model, dt):
         model.name = model.name + ", dt=%f" % dt
         model.dt = dt
-        model._operators += [builder.ProdUpdate(builder.Constant(dt), model.one,
-                                                builder.Constant(1), model.t)]
 
         # Sort all objects by name
         all_objs = sorted(model.objs.values(), key=lambda o: o.name)
@@ -199,6 +192,14 @@ class Model(object):
                 c.build(model=model, dt=dt)
         for c in model.connections:
             c.build(model=model, dt=dt)
+
+        model._operators += [
+            builder.ProdUpdate(builder.Constant(dt), model.one.signal,
+                               builder.Constant(1), model.t.signal),
+            builder.ProdUpdate(builder.Constant(1), model.one.signal,
+                               builder.Constant(1), model.steps.signal)
+        ]
+
 
     def simulator(self, dt=0.001, sim_class=simulator.Simulator,
                   seed=None, **sim_args):
@@ -372,17 +373,14 @@ class Model(object):
             logger.warning("%s is not in model %s.", str(target), self.name)
             return
 
-        if 'builder' in obj.__module__:
-            obj.remove_from_model(self)
-        else:
-            for k, v in self.objs.iteritems():
-                if v == obj:
-                    del self.objs[k]
-                    logger.info("%s removed.", k)
-            for k, v in self.aliases.iteritem():
-                if v == obj:
-                    del self.aliases[k]
-                    logger.info("Alias '%s' removed.", k)
+        for k, v in self.objs.iteritems():
+            if v == obj:
+                del self.objs[k]
+                logger.info("%s removed.", k)
+        for k, v in self.aliases.iteritem():
+            if v == obj:
+                del self.aliases[k]
+                logger.info("Alias '%s' removed.", k)
 
         return obj
 
@@ -587,13 +585,7 @@ class Model(object):
         """
         pre = self.get(pre)
         post = self.get(post)
-
-        if builder.is_signal(pre):
-            connection = connections.SignalConnection(pre, post, **kwargs)
-            self.connections.append(connection)
-            return connection
-        else:
-            return pre.connect_to(post, **kwargs)
+        return pre.connect_to(post, **kwargs)
 
     def probe(self, target, sample_every=0.001, filter=None):
         """Probe a piece of data contained in the model.
@@ -642,15 +634,7 @@ class Model(object):
         --------
         Probe
         """
-        if builder.is_signal(target):
-            if filter is not None:
-                p = objects.Probe(target.name, sample_every, target.n)
-                self.signal_probes.append(p)
-                self.connect(target, p, filter=filter)
-            else:
-                p = builder.Probe(target, sample_every)
-                self.add(p)
-        elif isinstance(target, str):
+        if isinstance(target, str):
             obj = self.get(target, "NotFound")
             if obj == "NotFound" and '.' in target:
                 name, probe_name = target.rsplit('.', 1)
