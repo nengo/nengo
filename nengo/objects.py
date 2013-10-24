@@ -6,6 +6,7 @@ import numpy as np
 from . import builder
 from . import connections
 from . import decoders
+from . import nonlinearities
 import simulator
 
 logger = logging.getLogger(__name__)
@@ -126,7 +127,7 @@ class Ensemble(object):
         if isinstance(_neurons, int):
             logger.warning(("neurons should be an instance of a nonlinearity, "
                             "not an int. Defaulting to LIF."))
-            _neurons = builder.LIF(_neurons)
+            _neurons = nonlinearities.LIF(_neurons)
 
         # Give a better name if name is default
         if _neurons.name.startswith("<LIF"):
@@ -520,10 +521,10 @@ class Node(object):
 
         # Set up non-linearity
         n_out = np.array(self.output(np.ones(self.dimensions))).size
-        self.nonlinear = builder.Direct(n_in=self.dimensions,
-                                     n_out=n_out,
-                                     fn=self.output,
-                                     name=self.name + ".Direct")
+        self.nonlinear = nonlinearities.Direct(n_in=self.dimensions,
+                                               n_out=n_out,
+                                               fn=self.output,
+                                               name=self.name + ".Direct")
         model.add(self.nonlinear)
 
         # Set up encoder
