@@ -2,8 +2,7 @@ import logging
 
 import numpy as np
 
-from .builder import Signal, Constant
-from . import simulator as sim
+from . import builder
 
 logger = logging.getLogger(__name__)
 
@@ -30,22 +29,22 @@ class Nonlinearity(object):
         # -- encoders will be scheduled between this copy
         #    and nl_op
         model._operators.append(
-            sim.Copy(dst=self.input_signal, src=self.bias_signal))
+            builder.Copy(dst=self.input_signal, src=self.bias_signal))
 
 
 class Direct(Nonlinearity):
 
-    operator = sim.SimDirect
+    operator = builder.SimDirect
 
     def __init__(self, n_in, n_out, fn, name=None):
         if name is None:
             name = "<Direct%d>" % id(self)
         self.name = name
 
-        self.input_signal = Signal(n_in, name=name + '.input')
-        self.output_signal = Signal(n_out, name=name + '.output')
-        self.bias_signal = Constant(np.zeros(n_in),
-                                    name=name + '.bias')
+        self.input_signal = builder.Signal(n_in, name=name + '.input')
+        self.output_signal = builder.Signal(n_out, name=name + '.output')
+        self.bias_signal = builder.Constant(np.zeros(n_in),
+                                            name=name + '.bias')
 
         self.n_in = n_in
         self.n_out = n_out
@@ -97,9 +96,9 @@ class _LIFBase(GainNonlinearity):
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, name=None):
         if name is None:
             name = "<%s%d>" % (self.__class__.__name__, id(self))
-        self.input_signal = Signal(n_neurons, name=name + '.input')
-        self.output_signal = Signal(n_neurons, name=name + '.output')
-        self.bias_signal = Constant(np.zeros(n_neurons), name=name + '.bias')
+        self.input_signal = builder.Signal(n_neurons, name=name + '.input')
+        self.output_signal = builder.Signal(n_neurons, name=name + '.output')
+        self.bias_signal = builder.Constant(np.zeros(n_neurons), name=name + '.bias')
 
         self.name = name
         self.n_neurons = n_neurons
@@ -209,7 +208,7 @@ class _LIFBase(GainNonlinearity):
 
 
 class LIFRate(_LIFBase):
-    operator = sim.SimLIFRate
+    operator = builder.SimLIFRate
     def math(self, dt, J):
         """Compute rates for input current (incl. bias)"""
         old = np.seterr(divide='ignore')
@@ -222,12 +221,12 @@ class LIFRate(_LIFBase):
 
 
 class LIF(_LIFBase):
-    operator = sim.SimLIF
+    operator = builder.SimLIF
     def __init__(self, n_neurons, upsample=1, **kwargs):
         _LIFBase.__init__(self, n_neurons, **kwargs)
         self.upsample = upsample
-        self.voltage = Signal(n_neurons)
-        self.refractory_time = Signal(n_neurons)
+        self.voltage = builder.Signal(n_neurons)
+        self.refractory_time = builder.Signal(n_neurons)
 
     def add_to_model(self, model):
         # XXX: do we still need to append signals to model?
@@ -244,7 +243,7 @@ class LIF(_LIFBase):
         # -- encoders will be scheduled between this copy
         #    and nl_op
         model._operators.append(
-            sim.Copy(dst=self.input_signal, src=self.bias_signal))
+            builder.Copy(dst=self.input_signal, src=self.bias_signal))
 
     def to_json(self):
         d = _LIFBase.to_json(self)
