@@ -8,7 +8,6 @@ import os.path
 import numpy as np
 
 from . import builder
-from . import connections
 from . import objects
 from . import simulator
 
