@@ -1,4 +1,3 @@
-
 import time
 import numpy as np
 
@@ -43,12 +42,12 @@ class TestProbe(SimulatorTestCase):
         for ti in t_stops:
             sim.run(ti)
             sim_t = sim.data(model.t).flatten()
-            t = dt * np.arange(1, len(sim_t)+1)
+            t = dt * np.arange(len(sim_t))
             self.assertTrue(np.allclose(sim_t, t, rtol=rtol))
             # assert_allclose(self, logger, sim_t, t, rtol=rtol)
 
             t_sum += ti
-            self.assertTrue(np.allclose(sim_t[-1], t_sum, rtol=rtol))
+            self.assertTrue(np.allclose(sim_t[-1], t_sum - dt, rtol=rtol))
 
     def test_dts(self):
         """Test probes with different sampling times."""
