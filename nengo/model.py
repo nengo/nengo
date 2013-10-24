@@ -91,7 +91,7 @@ class Model(object):
         self.probe(self.steps)
 
         # -- steps counts by 1.0
-        self._operators += [simulator.ProdUpdate(
+        self._operators += [builder.ProdUpdate(
                 builder.Constant(1), self.one, builder.Constant(1), self.steps)]
 
         self._rng = None
@@ -174,8 +174,8 @@ class Model(object):
     def prep_for_simulation(model, dt):
         model.name = model.name + ", dt=%f" % dt
         model.dt = dt
-        model._operators += [simulator.ProdUpdate(builder.Constant(dt), model.one,
-                                                  builder.Constant(1), model.t)]
+        model._operators += [builder.ProdUpdate(builder.Constant(dt), model.one,
+                                                builder.Constant(1), model.t)]
 
         # Sort all objects by name
         all_objs = sorted(model.objs.values(), key=lambda o: o.name)
