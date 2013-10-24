@@ -5,7 +5,7 @@ import logging
 import sys
 
 from .model import Model
-from .builder import LIF
+from .nonlinearities import LIF
 
 
 logger = logging.getLogger(__name__)
