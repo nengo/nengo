@@ -3,6 +3,7 @@ import logging
 import numpy as np
 
 from . import builder
+from . import nonlinearities
 from . import decoders as decsolve
 from . import simulator
 
@@ -141,7 +142,7 @@ class NonlinearityConnection(SignalConnection):
 
     def build(self, model, dt):
         # Pre must be a nonlinearity
-        if not isinstance(self.pre, builder.Nonlinearity):
+        if not isinstance(self.pre, nonlinearities.Nonlinearity):
             self.pre = self.pre.nonlinear
 
         # then get the output signal of the nonlinearity
@@ -149,8 +150,8 @@ class NonlinearityConnection(SignalConnection):
             self.pre = self.pre.output_signal
 
         # Post could be a node / ensemble, etc
-        if isinstance(self.post, builder.Nonlinearity):
-            if isinstance(self.post, builder.GainNonlinearity):
+        if isinstance(self.post, nonlinearities.Nonlinearity):
+            if isinstance(self.post, nonlinearities.GainNonlinearity):
                 self.transform = self.transform * self.post.gain[:,None]
             self.post = self.post.input_signal
         elif not builder.is_signal(self.post):
@@ -268,8 +269,8 @@ class DecodedConnection(SignalConnection):
         assert self.pre.__class__.__name__ == "Ensemble"
 
         # Post could be a node / ensemble, etc
-        if isinstance(self.post, builder.Nonlinearity):
-            if isinstance(self.post, builder.GainNonlinearity):
+        if isinstance(self.post, nonlinearities.Nonlinearity):
+            if isinstance(self.post, nonlinearities.GainNonlinearity):
                 self.transform = self.transform * self.post.gain[:,None]
             self.post = self.post.input_signal
         elif not builder.is_signal(self.post):
