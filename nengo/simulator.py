@@ -11,7 +11,7 @@ import time
 import networkx as nx
 import numpy as np
 
-import builder
+from . import builder
 
 logger = logging.getLogger(__name__)
 
@@ -54,29 +54,32 @@ class SignalDict(dict):
 class Simulator(object):
     """Reference simulator for models.
     """
-    def __init__(self, model):
-        if not hasattr(model, 'dt'):
-            raise ValueError("Model does not appear to be built. "
-                             "See Model.prep_for_simulation.")
+    builder = builder.Builder()
+
+    def __init__(self, model, dt, seed=None):
+        self.model = self.builder(model, dt)
+
+        # Note: seed is not used right now, but one day...
+        if seed is None:
+            seed = self.model._get_new_seed() # generate simulator seed
 
         # -- map from Signal.base -> ndarray
         self._sigdict = SignalDict()
-        self.model = model
-        for op in model._operators:
-            op.init_sigdict(self._sigdict, model.dt)
+        for op in self.model.operators:
+            op.init_sigdict(self._sigdict, self.model.dt)
 
         self.dg = self._init_dg()
         self._step_order = [node
             for node in nx.topological_sort(self.dg)
             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self._sigdict, model.dt)
+        self._steps = [node.make_step(self._sigdict, self.model.dt)
             for node in self._step_order]
 
         self.n_steps = 0
-        self.probe_outputs = dict((probe, []) for probe in model.probes)
+        self.probe_outputs = dict((probe, []) for probe in self.model.probes)
 
     def _init_dg(self, verbose=False):
-        operators = self.model._operators
+        operators = self.model.operators
         dg = nx.DiGraph()
 
         for op in operators:
