@@ -106,10 +106,12 @@ class NengoTestLoader(unittest.TestLoader):
             # Test wasn't found, so try loading from nengo's tests instead
             name = 'nengo.tests.' + name
             suite = unittest.TestLoader.loadTestsFromName(self, name, None)
+            filtered_suite = unittest.TestSuite()
             for test in all_testcases(suite):
-                if hasattr(test, 'Simulator'):
+                if isinstance(test, SimulatorTestCase):
                     test.Simulator = self.simulator
-            return suite
+                    filtered_suite.addTest(test)
+            return filtered_suite
 
 
 class Plotter(object):

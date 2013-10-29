@@ -12,24 +12,20 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TestBuilder(object):
-    def __enter__(self):
-        simulator.Simulator.builder = self
+def testbuilder(model, dt):
+    model.dt = dt
+    model.seed = 0
+    if not hasattr(model, 'probes'):
+        model.probes = []
+    return model
 
-    def __exit__(self, type, value, traceback):
-        simulator.Simulator.builder = Builder()
-
-    def __call__(self, model, dt):
-        model.dt = dt
-        model.seed = 0
-        if not hasattr(model, 'probes'):
-            model.probes = []
-        return model
 
 class TestSimulator(unittest.TestCase):
+    Simulator = simulator.Simulator
+
     def test_steps(self):
         m = nengo.Model("test_signal_indexing_1")
-        sim = m.simulator(sim_class=simulator.Simulator)
+        sim = m.simulator(sim_class=self.Simulator)
         self.assertEqual(0, sim.signals[sim.model.steps.signal])
         sim.step()
         self.assertEqual(1, sim.signals[sim.model.steps.signal])
@@ -38,7 +34,7 @@ class TestSimulator(unittest.TestCase):
 
     def test_time(self):
         m = nengo.Model("test_signal_indexing_1")
-        sim = m.simulator(sim_class=simulator.Simulator)
+        sim = m.simulator(sim_class=self.Simulator)
         self.assertEqual(0.00, sim.signals[sim.model.t.signal])
         sim.step()
         self.assertEqual(0.001, sim.signals[sim.model.t.signal])
@@ -62,17 +58,16 @@ class TestSimulator(unittest.TestCase):
             Copy(src=tmp, dst=three, as_update=True),
         ]
 
-        with TestBuilder():
-            sim = m.simulator(sim_class=simulator.Simulator)
-            sim.signals[three] = np.asarray([1, 2, 3])
-            sim.step()
-            self.assertTrue(np.all(sim.signals[one] == 1))
-            self.assertTrue(np.all(sim.signals[two] == [4, 6]))
-            self.assertTrue(np.all(sim.signals[three] == [3, 2, 1]))
-            sim.step()
-            self.assertTrue(np.all(sim.signals[one] == 3))
-            self.assertTrue(np.all(sim.signals[two] == [4, 2]))
-            self.assertTrue(np.all(sim.signals[three] == [1, 2, 3]))
+        sim = m.simulator(sim_class=self.Simulator, builder=testbuilder)
+        sim.signals[three] = np.asarray([1, 2, 3])
+        sim.step()
+        self.assertTrue(np.all(sim.signals[one] == 1))
+        self.assertTrue(np.all(sim.signals[two] == [4, 6]))
+        self.assertTrue(np.all(sim.signals[three] == [3, 2, 1]))
+        sim.step()
+        self.assertTrue(np.all(sim.signals[one] == 3))
+        self.assertTrue(np.all(sim.signals[two] == [4, 2]))
+        self.assertTrue(np.all(sim.signals[three] == [1, 2, 3]))
 
     def test_simple_direct_mode(self):
         dt = 0.001
@@ -90,19 +85,20 @@ class TestSimulator(unittest.TestCase):
             ProdUpdate(Constant([[1.0]]), pop.output_signal, Constant(0), sig)
         ]
 
-        with TestBuilder():
-            sim = m.simulator(sim_class=simulator.Simulator, dt=dt)
+        sim = m.simulator(sim_class=self.Simulator,
+                          dt=dt,
+                          builder=testbuilder)
+        sim.step()
+        for i in range(5):
             sim.step()
-            for i in range(5):
-                sim.step()
 
-                t = (i + 2) * dt
-                self.assertTrue(np.allclose(sim.signals[time], t),
-                                msg='%s != %s' % (sim.signals[time], t))
-                self.assertTrue(
-                    np.allclose(
-                        sim.signals[sig], np.sin(t - dt*2)),
-                    msg='%s != %s' % (sim.signals[sig], np.sin(t - dt*2)))
+            t = (i + 2) * dt
+            self.assertTrue(np.allclose(sim.signals[time], t),
+                            msg='%s != %s' % (sim.signals[time], t))
+            self.assertTrue(
+                np.allclose(
+                    sim.signals[sig], np.sin(t - dt*2)),
+                msg='%s != %s' % (sim.signals[sig], np.sin(t - dt*2)))
 
     def test_encoder_decoder_pathway(self):
         #
@@ -131,40 +127,41 @@ class TestSimulator(unittest.TestCase):
                             "%s: value %s is not close to target %s" %
                             (sig, sim.signals[sig], target))
 
-        with TestBuilder():
-            sim = m.simulator(sim_class=simulator.Simulator, dt=dt)
+        sim = m.simulator(sim_class=self.Simulator,
+                          dt=dt,
+                          builder=testbuilder)
 
-            # -- initialize things
-            sim.signals[foo] = np.asarray([1.0])
-            check(foo, 1.0)
-            check(pop.input_signal, 0)
-            check(pop.output_signal, 0)
+        # -- initialize things
+        sim.signals[foo] = np.asarray([1.0])
+        check(foo, 1.0)
+        check(pop.input_signal, 0)
+        check(pop.output_signal, 0)
 
-            sim.step()
-            #DotInc to pop.input_signal (input=[1.0,2.0])
-            #produpdate updates foo (foo=[0.2])
-            #pop updates pop.output_signal (output=[2,3])
+        sim.step()
+        #DotInc to pop.input_signal (input=[1.0,2.0])
+        #produpdate updates foo (foo=[0.2])
+        #pop updates pop.output_signal (output=[2,3])
 
-            check(pop.input_signal, [1, 2])
-            check(pop.output_signal, [2, 3])
-            check(foo, .2)
-            check(decs, [.1, .05])
+        check(pop.input_signal, [1, 2])
+        check(pop.output_signal, [2, 3])
+        check(foo, .2)
+        check(decs, [.1, .05])
 
-            sim.step()
-            #DotInc to pop.input_signal (input=[0.2,0.4])
-            # (note that pop resets its own input signal each timestep)
-            #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
-            #pop updates pop.output_signal (output=[1.2,1.4])
+        sim.step()
+        #DotInc to pop.input_signal (input=[0.2,0.4])
+        # (note that pop resets its own input signal each timestep)
+        #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
+        #pop updates pop.output_signal (output=[1.2,1.4])
 
-            check(decs, [.1, .05])
-            check(pop.input_signal, [0.2, 0.4])
-            check(pop.output_signal, [1.2, 1.4])
-            # -- foo is computed as a prodUpdate of the *previous* output signal
-            #    foo <- .2 * foo + dot(decoders * .5, output_signal)
-            #           .2 * .2  + dot([.2, .1] * .5, [2, 3])
-            #           .04      + (.2 + .15)
-            #        <- .39
-            check(foo, .39)
+        check(decs, [.1, .05])
+        check(pop.input_signal, [0.2, 0.4])
+        check(pop.output_signal, [1.2, 1.4])
+        # -- foo is computed as a prodUpdate of the *previous* output signal
+        #    foo <- .2 * foo + dot(decoders * .5, output_signal)
+        #           .2 * .2  + dot([.2, .1] * .5, [2, 3])
+        #           .04      + (.2 + .15)
+        #        <- .39
+        check(foo, .39)
 
     def test_encoder_decoder_with_views(self):
         m = nengo.Model("")
@@ -178,9 +175,11 @@ class TestSimulator(unittest.TestCase):
         m.operators = []
         Builder().build_direct(pop, m, dt)
         m.operators += [
-            DotInc(Constant([[1.0],[2.0]]), foo[:], pop.input_signal),
-            ProdUpdate(Constant(decoders*0.5), pop.output_signal,
-                       Constant(0.2), foo[:])
+            DotInc(Constant([[1.0], [2.0]]), foo[:], pop.input_signal),
+            ProdUpdate(Constant(decoders * 0.5),
+                       pop.output_signal,
+                       Constant(0.2),
+                       foo[:])
         ]
 
         def check(sig, target):
@@ -188,35 +187,38 @@ class TestSimulator(unittest.TestCase):
                             "%s: value %s is not close to target %s" %
                             (sig, sim.signals[sig], target))
 
-        with TestBuilder():
-            sim = m.simulator(sim_class=simulator.Simulator, dt=dt)
+        sim = m.simulator(sim_class=self.Simulator,
+                          dt=dt,
+                          builder=testbuilder)
 
-            #set initial value of foo (foo=1.0)
-            sim.signals[foo] = np.asarray([1.0])
-            #pop.input_signal = [0,0]
-            #pop.output_signal = [0,0]
+        #set initial value of foo (foo=1.0)
+        sim.signals[foo] = np.asarray([1.0])
+        #pop.input_signal = [0,0]
+        #pop.output_signal = [0,0]
 
-            sim.step()
-            #DotInc to pop.input_signal (input=[1.0,2.0])
-            #produpdate updates foo (foo=[0.2])
-            #pop updates pop.output_signal (output=[2,3])
+        sim.step()
+        #DotInc to pop.input_signal (input=[1.0,2.0])
+        #produpdate updates foo (foo=[0.2])
+        #pop updates pop.output_signal (output=[2,3])
 
-            check(foo, .2)
-            check(pop.input_signal, [1, 2])
-            check(pop.output_signal, [2, 3])
+        check(foo, .2)
+        check(pop.input_signal, [1, 2])
+        check(pop.output_signal, [2, 3])
 
-            sim.step()
-            #DotInc to pop.input_signal (input=[0.2,0.4])
-            # (note that pop resets its own input signal each timestep)
-            #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
-            #pop updates pop.output_signal (output=[1.2,1.4])
+        sim.step()
+        #DotInc to pop.input_signal (input=[0.2,0.4])
+        # (note that pop resets its own input signal each timestep)
+        #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
+        #pop updates pop.output_signal (output=[1.2,1.4])
 
-            check(foo, .39)
-            check(pop.input_signal, [0.2, 0.4])
-            check(pop.output_signal, [1.2, 1.4])
+        check(foo, .39)
+        check(pop.input_signal, [0.2, 0.4])
+        check(pop.output_signal, [1.2, 1.4])
 
 
 class TestNonlinear(unittest.TestCase):
+    Simulator = simulator.Simulator
+
     def test_direct(self):
         """Test direct mode"""
 
@@ -245,19 +247,20 @@ class TestNonlinear(unittest.TestCase):
                            Constant(0), ins)
             ]
 
-            with TestBuilder():
-                sim = m.simulator(sim_class=simulator.Simulator, dt=dt)
-                sim.signals[ins] = x
+            sim = m.simulator(sim_class=self.Simulator,
+                              dt=dt,
+                              builder=testbuilder)
+            sim.signals[ins] = x
 
-                p0 = np.zeros(d)
-                s0 = np.array(x)
-                for j in xrange(n_steps):
-                    tmp = p0
-                    p0 = fn(s0)
-                    s0 = tmp
-                    sim.step()
-                    assert np.allclose(s0, sim.signals[ins])
-                    assert np.allclose(p0, sim.signals[pop.output_signal])
+            p0 = np.zeros(d)
+            s0 = np.array(x)
+            for j in xrange(n_steps):
+                tmp = p0
+                p0 = fn(s0)
+                s0 = tmp
+                sim.step()
+                assert np.allclose(s0, sim.signals[ins])
+                assert np.allclose(p0, sim.signals[pop.output_signal])
 
     def _test_lif_base(self, cls=LIF):
         """Test that the dynamic model approximately matches the rates"""
@@ -275,28 +278,28 @@ class TestNonlinear(unittest.TestCase):
         m.signals = [ins]
         m.operators = []
         b = Builder()
-        b._builders[cls](b, lif, m, dt)
+        b._builders[cls](lif, m, dt)
         m.operators += [DotInc(Constant(np.ones((n,d))), ins, lif.input_signal)]
 
-        with TestBuilder():
-            sim = m.simulator(sim_class=simulator.Simulator)
-            sim.signals[ins] = 0.5 * np.ones(d)
+        sim = m.simulator(sim_class=self.Simulator,
+                          dt=dt,
+                          builder=testbuilder)
+        sim.signals[ins] = 0.5 * np.ones(d)
 
-            t_final = 1.0
-            dt = sim.model.dt
-            spikes = np.zeros(n)
-            for i in xrange(int(np.round(t_final / dt))):
-                sim.step()
-                spikes += sim.signals[lif.output_signal]
+        t_final = 1.0
+        spikes = np.zeros(n)
+        for i in xrange(int(np.round(t_final / dt))):
+            sim.step()
+            spikes += sim.signals[lif.output_signal]
 
-            math_rates = lif.rates(sim.signals[lif.input_signal] - lif.bias)
-            sim_rates = spikes / t_final
-            logger.debug("ME = %f", (sim_rates - math_rates).mean())
-            logger.debug("RMSE = %f",
-                         rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
-            self.assertTrue(np.sum(math_rates > 0) > 0.5*n,
-                            "At least 50% of neurons must fire")
-            self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
+        math_rates = lif.rates(sim.signals[lif.input_signal] - lif.bias)
+        sim_rates = spikes / t_final
+        logger.debug("ME = %f", (sim_rates - math_rates).mean())
+        logger.debug("RMSE = %f",
+                     rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
+        self.assertTrue(np.sum(math_rates > 0) > 0.5*n,
+                        "At least 50% of neurons must fire")
+        self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
     def test_lif(self):
         self._test_lif_base(cls=LIF)
