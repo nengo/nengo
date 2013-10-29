@@ -17,9 +17,11 @@ class TestNonlinearBuiltins(unittest.TestCase):
 
         N.B.: Uses the built-in lif equations, NOT the passed simulator
         """
+        rng = np.random.RandomState(85243)
+
         lif = LIF(10)
-        lif.set_gain_bias(np.random.uniform(80, 100, (10,)),
-                          np.random.uniform(-1, 1, (10,)))
+        lif.set_gain_bias(rng.uniform(80, 100, (10,)),
+                          rng.uniform(-1, 1, (10,)))
         J = np.arange(0, 5, .5)
         voltage = np.zeros(10)
         reftime = np.zeros(10)

@@ -441,18 +441,6 @@ class SignalConnection(object):
     def transform(self, _transform):
         self._transform = np.asarray(_transform)
 
-    # TODO: rewrite with objects.Probe
-
-    # def probe(self, to_probe='signal', sample_every=0.001, filter=None):
-    #     if filter is not None and filter > self.filter:
-    #         raise ValueError("Cannot create filtered probes on connections; "
-    #                          "the connection is already filtered.")
-
-    #     if to_probe == 'signal':
-    #         probe = builder.Probe(None, sample_every)
-    #         self.probes['signal'].append(probe)
-    #     return probe
-
     def add_to_model(self, model):
         model.connections.append(self)
 
@@ -475,9 +463,6 @@ class NonlinearityConnection(SignalConnection):
         description
 
     """
-    def __init__(self, pre, post, **kwargs):
-        SignalConnection.__init__(self, pre, post, **kwargs)
-
     def __str__(self):
         return self.name + " (NonlinearityConnection)"
 
