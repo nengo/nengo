@@ -11,7 +11,7 @@ import time
 import networkx as nx
 import numpy as np
 
-from . import builder
+from .builder import Builder, Probe
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +52,15 @@ class SignalDict(dict):
 
 
 class Simulator(object):
-    """Reference simulator for models.
-    """
-    builder = builder.Builder()
+    """Reference simulator for models."""
 
-    def __init__(self, model, dt, seed=None):
-        self.model = self.builder(model, dt)
+    def __init__(self, model, dt, seed=None, builder=None):
+        if builder is None:
+            # By default, we'll use builder.Builder and copy the model.
+            builder = Builder(copy=True)
+
+        # Call the builder to build the model
+        self.model = builder(model, dt)
 
         # Note: seed is not used right now, but one day...
         if seed is None:
@@ -289,7 +292,7 @@ class Simulator(object):
         data : ndarray
             TODO: what are the dimensions?
         """
-        if not isinstance(probe, builder.Probe):
+        if not isinstance(probe, Probe):
             if self.model.probed.has_key(probe):
                 probe = self.model.probed[probe]
             else:

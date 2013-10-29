@@ -22,12 +22,6 @@ up in a model.
 assert_named_signals = False
 
 
-def filter_coefs(pstc, dt):
-    pstc = max(pstc, dt)
-    decay = np.exp(-dt / pstc)
-    return decay, (1.0 - decay)
-
-
 class ShapeMismatch(ValueError):
     pass
 
@@ -740,62 +734,87 @@ class SimLIFRate(Operator):
         return step
 
 
-def builder(cls):
-    cls._builders = {}
-    for methodname in dir(cls):
-        method = getattr(cls, methodname)
-        if hasattr(method, '_builds'):
-            cls._builders.update({method._builds: method})
-    return cls
-
-
 def builds(cls):
+    """A decorator that adds a _builds attribute to a function,
+    denoting that that function is used to build
+    a certain high-level Nengo object.
+
+    This is used by the Builder class to associate its own methods
+    with the objects that those methods build.
+
+    """
     def wrapper(func):
         func._builds = cls
         return func
     return wrapper
 
 
-@builder
 class Builder(object):
+    """A callable class that copies a model and determines the signals
+    and operators necessary to simulate that model.
+
+    Builder does this by mapping each high-level object to its associated
+    signals and operators one-by-one, in the following order:
+
+      1. Ensembles and Nodes
+      2. Probes
+      3. Connections
+
+    """
+
+    def __init__(self, copy=True):
+        # Whether or not we make a deep-copy of the model we're building
+        self.copy = copy
+
+        # Build up a diction mapping from high-level object -> builder method,
+        # so that we don't have to use a lame if/elif chain to call the
+        # right method.
+        self._builders = {}
+        for methodname in dir(self):
+            method = getattr(self, methodname)
+            if hasattr(method, '_builds'):
+                self._builders.update({method._builds: method})
+
     def __call__(self, model, dt):
-        logger.info("Copying model")
-        memo = {}
-        model = copy.deepcopy(model, memo)
-        model.memo = memo
+        if self.copy:
+            # Make a copy of the model so that we can reuse the non-built model
+            logger.info("Copying model")
+            memo = {}
+            model = copy.deepcopy(model, memo)
+            model.memo = memo
+
         model.name = model.name + ", dt=%f" % dt
         model.dt = dt
+        if model.seed is None:
+            model.seed = np.random.randint(2**32)
+
+        # The purpose of the build process is to fill up these lists
         model.signals = []
         model.probes = []
         model.operators = []
 
-        # 1. Generate model seed
-        if model.seed is None:
-            model.seed = np.random.randint(2**32)
-
-        # 2. Build objects
+        # 1. Build objects
         logger.info("Building objects")
         for obj in model.objs.values():
-            self._builders[obj.__class__](self, obj, model=model, dt=dt)
+            self._builders[obj.__class__](obj, model=model, dt=dt)
 
-        # 3. Then probes
+        # 2. Then probes
         logger.info("Building probes")
         for target in model.probed:
             if not isinstance(model.probed[target], Probe):
                 self._builders[objects.Probe](
-                    self, model.probed[target], model, dt)
+                    model.probed[target], model, dt)
                 model.probed[target] = model.probed[target].probe
 
-        # 4. Then connections
+        # 3. Then connections
         logger.info("Building connections")
         for o in model.objs.values():
             for c in o.connections_out:
-                self._builders[c.__class__](self, c, model=model, dt=dt)
+                self._builders[c.__class__](c, model=model, dt=dt)
         for c in model.connections:
-            self._builders[c.__class__](self, c, model=model, dt=dt)
+            self._builders[c.__class__](c, model=model, dt=dt)
 
         # Set up t and timesteps
-        model.t.value = -dt
         model.operators += [
             ProdUpdate(Constant(dt), model.one.signal,
                        Constant(1), model.t.signal),
@@ -857,7 +876,7 @@ class Builder(object):
                     ens.neurons.n_neurons, rng=rng)
             ens.neurons.set_gain_bias(ens.max_rates, ens.intercepts)
 
-        self._builders[ens.neurons.__class__](self, ens.neurons, model, dt)
+        self._builders[ens.neurons.__class__](ens.neurons, model, dt)
 
         # Set up encoders
         if ens.encoders is None:
@@ -952,6 +971,12 @@ class Builder(object):
         probe.probe = Probe(probe.signal, probe.sample_every)
         model.add(probe.probe)
 
+    @staticmethod
+    def filter_coefs(pstc, dt):
+        pstc = max(pstc, dt)
+        decay = np.exp(-dt / pstc)
+        return decay, (1.0 - decay)
+
     def _build_connection_filter(self, conn, model, dt):
         if conn.filter is not None and conn.filter > dt:
             # Set up signal
@@ -960,19 +985,19 @@ class Builder(object):
             model.add(conn.signal)
 
             # Set up filters and transforms
-            o_coef, n_coef = filter_coefs(pstc=conn.filter, dt=dt)
+            o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
             model.operators += [ProdUpdate(Constant(n_coef),
-                                                      conn.pre,
-                                                      Constant(o_coef),
-                                                      conn.signal)]
+                                           conn.pre,
+                                           Constant(o_coef),
+                                           conn.signal)]
         else:
             # Signal should already be in the model
             conn.signal = conn.pre
 
     def _build_connection_transform(self, conn, model):
         model.operators += [DotInc(Constant(conn.transform),
-                                              conn.signal,
-                                              conn.post)]
+                                   conn.signal,
+                                   conn.post)]
 
     def _build_connection_probes(self, conn, model):
         for probe in conn.probes['signal']:
@@ -1055,7 +1080,7 @@ class Builder(object):
 
         # DecodedConnection._add_filter
         if conn.filter is not None and conn.filter > dt:
-            o_coef, n_coef = filter_coefs(pstc=conn.filter, dt=dt)
+            o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
 
             model.operators += [ProdUpdate(Constant(conn._decoders*n_coef),
                                             conn.pre,
@@ -1092,7 +1117,7 @@ class Builder(object):
             i += pre_dim
 
             connection.transform = trans
-            self._builders[connection.__class__](self, connection, model, dt)
+            self._builders[connection.__class__](connection, model, dt)
 
     @builds(templates.EnsembleArray)
     def build_ensemblearray(self, ea, model, dt):
