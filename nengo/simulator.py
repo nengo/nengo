@@ -11,17 +11,9 @@ import time
 import networkx as nx
 import numpy as np
 
-import core
+from .builder import Builder, Probe
 
 logger = logging.getLogger(__name__)
-
-
-def is_base(sig):
-    return sig.base == sig
-
-
-def is_view(sig):
-    return not is_base(sig)
 
 
 class SignalDict(dict):
@@ -59,341 +51,38 @@ class SignalDict(dict):
             raise KeyError(obj)
 
 
-class collect_operators_into(object):
-    """
-    Within this context, operators that are constructed
-    are, by default, appended to an `operators` list.
-
-    For example:
-
-    >>> operators = []
-    >>> with collect_operators_into(operators):
-    >>>    Reset(foo)
-    >>>    Copy(foo, bar)
-    >>> assert len(operators) == 2
-
-    After the context exits, `operators` contains the Reset
-    and the Copy instances.
-
-    """
-    # -- the list of `operators` lists to which we need to append
-    #    new operators when creating them.
-    lists = []
-
-    def __init__(self, operators):
-        if operators is None:
-            operators = []
-        self.operators = operators
-
-    def __enter__(self):
-        self.lists.append(self.operators)
-
-    def __exit__(self, exc_type, exc_value, tb):
-        self.lists.remove(self.operators)
-
-    @staticmethod
-    def collect_operator(op):
-        for lst in collect_operators_into.lists:
-            lst.append(op)
-
-
-class Operator(object):
-    """
-    Base class for operator instances understood by the reference simulator.
-    """
-
-    # -- N.B. automatically an @staticmethod
-    def __new__(cls, *args, **kwargs):
-        rval = super(Operator, cls).__new__(cls, *args, **kwargs)
-        collect_operators_into.collect_operator(rval)
-        return rval
-
-    #
-    # The lifetime of a Signal during one simulator timestep:
-    # 0) at most one set operator (optional)
-    # 1) any number of increments
-    # 2) any number of reads
-    # 3) at most one update
-    #
-    # A signal that is only read can be considered a "constant"
-    #
-    # A signal that is both set *and* updated can be a problem: since
-    # reads must come after the set, and the set will destroy
-    # whatever were the contents of the update, it can be the case
-    # that the update is completely hidden and rendered irrelevant.
-    # There are however at least two reasons to use both a set and an update:
-    # (a) to use a signal as scratch space (updating means destroying it)
-    # (b) to use sets and updates on partly overlapping views of the same
-    #     memory.
-    #
-
-    # -- Signals that are read and not modified by this operator
-    reads = []
-    # -- Signals that are only assigned by this operator
-    sets = []
-    # -- Signals that are incremented by this operator
-    incs = []
-    # -- Signals that are updated to their [t + 1] value.
-    #    After this operator runs, these signals cannot be
-    #    used for reads until the next time step.
-    updates = []
-
-    @property
-    def all_signals(self):
-        # -- Sanity check that no one has accidentally modified
-        #    these class variables, they should be empty
-        assert not Operator.reads
-        assert not Operator.sets
-        assert not Operator.incs
-        assert not Operator.updates
-
-        return self.reads + self.sets + self.incs + self.updates
-
-
-    def init_sigdict(self, sigdict, dt):
-        """
-        Install any buffers into the signals view that
-        this operator will need. Classes for nonlinearities
-        that use extra buffers should create them here.
-        """
-        for sig in self.all_signals:
-            if sig.base not in sigdict:
-                sigdict[sig.base] = np.zeros(
-                    sig.base.shape,
-                    dtype=sig.base.dtype,
-                    ) + getattr(sig.base, 'value', 0)
-
-
-class Reset(Operator):
-    """
-    Assign a constant value to a Signal.
-    """
-    def __init__(self, dst, value=0):
-        self.dst = dst
-        self.value = float(value)
-
-        self.sets = [dst]
-
-    def __str__(self):
-        return 'Reset(%s)' % str(self.dst)
-
-    def make_step(self, signals, dt):
-        target = signals[self.dst]
-        value = self.value
-        def step():
-            target[...] = value
-        return step
-
-
-class Copy(Operator):
-    """
-    Assign the value of one signal to another
-    """
-    def __init__(self, dst, src, as_update=False, tag=None):
-        self.dst = dst
-        self.src = src
-        self.tag = tag
-
-        self.reads = [src]
-        self.sets = [] if as_update else [dst]
-        self.updates = [dst] if as_update else []
-
-    def __str__(self):
-        return 'Copy(%s -> %s)' % (str(self.src), str(self.dst))
-
-    def make_step(self, dct, dt):
-        dst = dct[self.dst]
-        src = dct[self.src]
-        def step():
-            dst[...] = src
-        return step
-
-
-class DotInc(Operator):
-    """
-    Increment signal Y by dot(A, X)
-    """
-    def __init__(self, A, X, Y, xT=False, tag=None):
-        self.A = A
-        self.X = X
-        self.Y = Y
-        self.xT = xT
-        self.tag = tag
-
-        self.reads = [self.A, self.X]
-        self.incs = [self.Y]
-
-    def __str__(self):
-        return 'DotInc(%s, %s -> %s "%s")' % (
-                str(self.A), str(self.X), str(self.Y), self.tag)
-
-    def make_step(self, dct, dt):
-        X = dct[self.X]
-        A = dct[self.A]
-        Y = dct[self.Y]
-        X = X.T if self.xT else X
-        def step():
-            # -- we check for size mismatch,
-            #    because incrementing scalar to len-1 arrays is ok
-            #    if the shapes are not compatible, we'll get a
-            #    problem in Y[...] += inc
-            try:
-                inc =  np.dot(A, X)
-            except Exception, e:
-                e.args = e.args + (A.shape, X.shape)
-                raise
-            if inc.shape != Y.shape:
-                if inc.size == Y.size == 1:
-                    inc = np.asarray(inc).reshape(Y.shape)
-                else:
-                    raise ValueError('shape mismatch in %s %s x %s -> %s' % (
-                        self.tag, self.A, self.X, self.Y), (
-                        A.shape, X.shape, inc.shape, Y.shape))
-            Y[...] += inc
-
-        return step
-
-class ProdUpdate(Operator):
-    """
-    Sets Y <- dot(A, X) + B * Y
-    """
-    def __init__(self, A, X, B, Y, tag=None):
-        self.A = A
-        self.X = X
-        self.B = B
-        self.Y = Y
-        self.tag = tag
-
-        self.reads = [self.A, self.X, self.B]
-        self.updates = [self.Y]
-
-    def __str__(self):
-        return 'ProdUpdate(%s, %s, %s, -> %s "%s")' % (
-                str(self.A), str(self.X), str(self.B), str(self.Y), self.tag)
-
-    def make_step(self, dct, dt):
-        X = dct[self.X]
-        A = dct[self.A]
-        Y = dct[self.Y]
-        B = dct[self.B]
-
-        def step():
-            val = np.dot(A,X)
-            if val.shape != Y.shape:
-                if val.size == Y.size == 1:
-                    val = np.asarray(val).reshape(Y.shape)
-                else:
-                    raise ValueError('shape mismatch in %s (%s vs %s)' %
-                                     (self.tag, val, Y))
-            Y[...] *= B
-            Y[...] += val
-
-        return step
-
-
-class SimDirect(Operator):
-    """
-    Set signal `output` by some non-linear function of J (and possibly other
-    things too.)
-    """
-    def __init__(self, output, J, nl):
-        self.output = output
-        self.J = J
-        self.fn = nl.fn
-
-        self.reads = [J]
-        self.updates = [output]
-
-    def make_step(self, dct, dt):
-        J = dct[self.J]
-        output = dct[self.output]
-        fn = self.fn
-        def step():
-            output[...] = fn(J)
-        return step
-
-
-class SimLIF(Operator):
-    """
-    Set output to spikes generated by an LIF model.
-    """
-    def __init__(self, output, J, nl, voltage, refractory_time):
-        self.nl = nl
-        self.output = output
-        self.J = J
-        self.voltage = voltage
-        self.refractory_time = refractory_time
-
-        self.reads = [J]
-        self.updates = [self.voltage, self.refractory_time, output]
-
-    def init_sigdict(self, sigdict, dt):
-        Operator.init_sigdict(self, sigdict, dt)
-        sigdict[self.voltage] = np.zeros(
-            self.nl.n_in,
-            dtype=self.voltage.dtype)
-        sigdict[self.refractory_time] = np.zeros(
-            self.nl.n_in,
-            dtype=self.refractory_time.dtype)
-
-    def make_step(self, dct, dt):
-        J = dct[self.J]
-        output = dct[self.output]
-        v = dct[self.voltage]
-        rt = dct[self.refractory_time]
-        fn = self.nl.step_math0
-        def step():
-            fn(dt, J, v, rt, output)
-        return step
-
-
-class SimLIFRate(Operator):
-    """
-    Set output to spike rates of an LIF model.
-    """
-    def __init__(self, output, J, nl):
-        self.output = output
-        self.J = J
-        self.nl = nl
-
-        self.reads = [J]
-        self.updates = [output]
-
-    def make_step(self, dct, dt):
-        J = dct[self.J]
-        output = dct[self.output]
-        rates_fn = self.nl.math
-        def step():
-            output[...] = rates_fn(dt, J)
-        return step
-
-
 class Simulator(object):
-    """Reference simulator for models.
-    """
-    def __init__(self, model):
-        if not hasattr(model, 'dt'):
-            raise ValueError("Model does not appear to be built. "
-                             "See Model.prep_for_simulation.")
+    """Reference simulator for models."""
+
+    def __init__(self, model, dt, seed=None, builder=None):
+        if builder is None:
+            # By default, we'll use builder.Builder and copy the model.
+            builder = Builder(copy=True)
+
+        # Call the builder to build the model
+        self.model = builder(model, dt)
+
+        # Note: seed is not used right now, but one day...
+        if seed is None:
+            seed = self.model._get_new_seed() # generate simulator seed
 
         # -- map from Signal.base -> ndarray
         self._sigdict = SignalDict()
-        self.model = model
-        for op in model._operators:
-            op.init_sigdict(self._sigdict, model.dt)
+        for op in self.model.operators:
+            op.init_sigdict(self._sigdict, self.model.dt)
 
         self.dg = self._init_dg()
         self._step_order = [node
             for node in nx.topological_sort(self.dg)
             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self._sigdict, model.dt)
+        self._steps = [node.make_step(self._sigdict, self.model.dt)
             for node in self._step_order]
 
         self.n_steps = 0
-        self.probe_outputs = dict((probe, []) for probe in model.probes)
+        self.probe_outputs = dict((probe, []) for probe in self.model.probes)
 
     def _init_dg(self, verbose=False):
-        operators = self.model._operators
+        operators = self.model.operators
         dg = nx.DiGraph()
 
         for op in operators:
@@ -603,7 +292,7 @@ class Simulator(object):
         data : ndarray
             TODO: what are the dimensions?
         """
-        if not isinstance(probe, core.Probe):
+        if not isinstance(probe, Probe):
             if self.model.probed.has_key(probe):
                 probe = self.model.probed[probe]
             else:

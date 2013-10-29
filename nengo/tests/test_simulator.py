@@ -2,93 +2,103 @@ import numpy as np
 
 import nengo
 import nengo.simulator as simulator
-import nengo.core as core
-from nengo.core import Direct, Signal, Constant
-from nengo.tests.helpers import SimulatorTestCase, unittest
+from nengo.nonlinearities import Direct, LIF, LIFRate
+from nengo.builder import Builder
+from nengo.builder import Signal, Constant
+from nengo.builder import ProdUpdate, Reset, DotInc, Copy
+from nengo.tests.helpers import unittest, rms
 
 import logging
 logger = logging.getLogger(__name__)
 
-class TestSimulator(SimulatorTestCase):
+
+def testbuilder(model, dt):
+    model.dt = dt
+    model.seed = 0
+    if not hasattr(model, 'probes'):
+        model.probes = []
+    return model
+
+
+class TestSimulator(unittest.TestCase):
+    Simulator = simulator.Simulator
 
     def test_steps(self):
         m = nengo.Model("test_signal_indexing_1")
         sim = m.simulator(sim_class=self.Simulator)
-        self.assertEqual(0, sim.signals[m.steps])
+        self.assertEqual(0, sim.signals[sim.model.steps.signal])
         sim.step()
-        self.assertEqual(1, sim.signals[m.steps])
+        self.assertEqual(1, sim.signals[sim.model.steps.signal])
         sim.step()
-        self.assertEqual(2, sim.signals[m.steps])
+        self.assertEqual(2, sim.signals[sim.model.steps.signal])
 
     def test_time(self):
         m = nengo.Model("test_signal_indexing_1")
         sim = m.simulator(sim_class=self.Simulator)
-        self.assertEqual(0.00, sim.signals[m.t])
+        self.assertEqual(0.00, sim.signals[sim.model.t.signal])
         sim.step()
-        self.assertEqual(0.001, sim.signals[m.t])
+        self.assertEqual(0.001, sim.signals[sim.model.t.signal])
         sim.step()
-        self.assertEqual(0.002, sim.signals[m.t])
+        self.assertEqual(0.002, sim.signals[sim.model.t.signal])
 
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
-        one = m.add(Signal(n=1, name='a'))
-        two = m.add(Signal(n=2, name='b'))
-        three = m.add(Signal(n=3, name='c'))
 
-        tmp = m.add(Signal(n=3, name='tmp'))
+        one = Signal(n=1, name='a')
+        two = Signal(n=2, name='b')
+        three = Signal(n=3, name='c')
+        tmp = Signal(n=3, name='tmp')
+        m.signals = [one, two, three, tmp]
 
-        m._operators += [simulator.ProdUpdate(
-            core.Constant(1), three[0:1], core.Constant(0), one)]
-        m._operators += [simulator.ProdUpdate(
-            core.Constant(2.0), three[1:], core.Constant(0), two)]
-        m._operators += [
-            simulator.Reset(tmp),
-            simulator.DotInc(
-                core.Constant([[0,0,1],[0,1,0],[1,0,0]]),
-                three,
-                tmp),
-            simulator.Copy(src=tmp, dst=three, as_update=True),
-            ]
+        m.operators = [
+            ProdUpdate(Constant(1), three[:1], Constant(0), one),
+            ProdUpdate(Constant(2.0), three[1:], Constant(0), two),
+            Reset(tmp),
+            DotInc(Constant([[0,0,1],[0,1,0],[1,0,0]]), three, tmp),
+            Copy(src=tmp, dst=three, as_update=True),
+        ]
 
-        sim = m.simulator(sim_class=self.Simulator)
-        memo = sim.model.memo
-        sim.signals[sim.get(three)] = np.asarray([1, 2, 3])
+        sim = m.simulator(sim_class=self.Simulator, builder=testbuilder)
+        sim.signals[three] = np.asarray([1, 2, 3])
         sim.step()
-        self.assertTrue(np.all(sim.signals[sim.get(one)] == 1))
-        self.assertTrue(np.all(sim.signals[sim.get(two)] == [4, 6]))
-        self.assertTrue(np.all(sim.signals[sim.get(three)] == [3, 2, 1]))
+        self.assertTrue(np.all(sim.signals[one] == 1))
+        self.assertTrue(np.all(sim.signals[two] == [4, 6]))
+        self.assertTrue(np.all(sim.signals[three] == [3, 2, 1]))
         sim.step()
-        self.assertTrue(np.all(sim.signals[sim.get(one)] == 3))
-        self.assertTrue(np.all(sim.signals[sim.get(two)] == [4, 2]))
-        self.assertTrue(np.all(sim.signals[sim.get(three)] == [1, 2, 3]))
+        self.assertTrue(np.all(sim.signals[one] == 3))
+        self.assertTrue(np.all(sim.signals[two] == [4, 2]))
+        self.assertTrue(np.all(sim.signals[three] == [1, 2, 3]))
 
     def test_simple_direct_mode(self):
+        dt = 0.001
         m = nengo.Model("test_simple_direct_mode")
-        sig = m.add(Signal(n=1, name='sig'))
 
-        pop = m.add(Direct(n_in=1, n_out=1, fn=np.sin))
+        time = Signal(n=1, name='time')
+        sig = Signal(n=1, name='sig')
+        pop = Direct(n_in=1, n_out=1, fn=np.sin)
+        m.signals = [sig, time]
+        m.operators = []
+        Builder().build_direct(pop, m, dt)
+        m.operators += [
+            ProdUpdate(Constant(dt), Constant(1), Constant(1), time),
+            DotInc(Constant([[1.0]]), time, pop.input_signal),
+            ProdUpdate(Constant([[1.0]]), pop.output_signal, Constant(0), sig)
+        ]
 
-        m._operators += [simulator.DotInc(core.Constant([[1.0]]),
-                                          m.t, pop.input_signal)]
-        m._operators += [simulator.ProdUpdate(
-            core.Constant([[1.0]]), pop.output_signal, core.Constant(0), sig)]
-
-        sim = m.simulator(sim_class=self.Simulator)
-        #sim.print_op_groups()
+        sim = m.simulator(sim_class=self.Simulator,
+                          dt=dt,
+                          builder=testbuilder)
         sim.step()
-        #print 'after step:'
-        #print sim.signals
-        dt = sim.model.dt
         for i in range(5):
             sim.step()
 
             t = (i + 2) * dt
-            self.assertTrue(np.allclose(sim.signals[sim.get(m.t)], t),
-                msg='%s != %s' % (sim.signals[sim.get(m.t)], t))
+            self.assertTrue(np.allclose(sim.signals[time], t),
+                            msg='%s != %s' % (sim.signals[time], t))
             self.assertTrue(
                 np.allclose(
-                    sim.signals[sim.get(sig)], np.sin(t - dt*2)),
-                msg='%s != %s' % (sim.signals[sim.get(sig)], np.sin(t - dt*2)))
+                    sim.signals[sig], np.sin(t - dt*2)),
+                msg='%s != %s' % (sim.signals[sig], np.sin(t - dt*2)))
 
     def test_encoder_decoder_pathway(self):
         #
@@ -97,34 +107,32 @@ class TestSimulator(SimulatorTestCase):
         # things in the right order.
         #
         m = nengo.Model("")
-        foo = m.add(Signal(n=1, name='foo'))
-        pop = m.add(Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop'))
+        dt = 0.001
+        foo = Signal(n=1, name='foo')
+        pop = Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop')
 
         decoders = np.asarray([.2,.1])
         decs = Constant(decoders*0.5)
-        m._operators.append(
-            simulator.DotInc(
-                Constant([[1.0],[2.0]]),
-                foo,
-                pop.input_signal,
-                tag='dotinc'))
-        m._operators.append(
-            simulator.ProdUpdate(
-                decs,
-                pop.output_signal,
-                Constant(0.2),
-                foo,
-                tag='produp'))
 
-        sim = m.simulator(sim_class=self.Simulator)
+        m.signals = [foo, decs]
+        m.operators = []
+        Builder().build_direct(pop, m, dt)
+        m.operators += [
+            DotInc(Constant([[1.0],[2.0]]), foo, pop.input_signal),
+            ProdUpdate(decs, pop.output_signal, Constant(0.2), foo)
+        ]
 
         def check(sig, target):
-            self.assertTrue(np.allclose(sim.signals[sim.get(sig)], target),
+            self.assertTrue(np.allclose(sim.signals[sig], target),
                             "%s: value %s is not close to target %s" %
-                            (sig, sim.signals[sim.get(sig)], target))
+                            (sig, sim.signals[sig], target))
+
+        sim = m.simulator(sim_class=self.Simulator,
+                          dt=dt,
+                          builder=testbuilder)
 
         # -- initialize things
-        sim.signals[sim.get(foo)] = np.asarray([1.0])
+        sim.signals[foo] = np.asarray([1.0])
         check(foo, 1.0)
         check(pop.input_signal, 0)
         check(pop.output_signal, 0)
@@ -157,24 +165,34 @@ class TestSimulator(SimulatorTestCase):
 
     def test_encoder_decoder_with_views(self):
         m = nengo.Model("")
-        foo = m.add(Signal(n=1, name='foo'))
-        pop = m.add(Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop'))
+        dt = 0.001
+        foo = Signal(n=1, name='foo')
+        pop = Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop')
 
         decoders = np.asarray([.2,.1])
-        m._operators += [simulator.DotInc(Constant([[1.0],[2.0]]),
-                                          foo[:], pop.input_signal)]
-        m._operators += [simulator.ProdUpdate(
-            Constant(decoders*0.5),pop.output_signal, Constant(0.2), foo[:])]
 
-        sim = m.simulator(sim_class=self.Simulator)
+        m.signals = [foo]
+        m.operators = []
+        Builder().build_direct(pop, m, dt)
+        m.operators += [
+            DotInc(Constant([[1.0], [2.0]]), foo[:], pop.input_signal),
+            ProdUpdate(Constant(decoders * 0.5),
+                       pop.output_signal,
+                       Constant(0.2),
+                       foo[:])
+        ]
 
         def check(sig, target):
-            self.assertTrue(np.allclose(sim.signals[sim.get(sig)], target),
+            self.assertTrue(np.allclose(sim.signals[sig], target),
                             "%s: value %s is not close to target %s" %
-                            (sig, sim.signals[sim.get(sig)], target))
+                            (sig, sim.signals[sig], target))
+
+        sim = m.simulator(sim_class=self.Simulator,
+                          dt=dt,
+                          builder=testbuilder)
 
         #set initial value of foo (foo=1.0)
-        sim.signals[sim.get(foo)] = np.asarray([1.0])
+        sim.signals[foo] = np.asarray([1.0])
         #pop.input_signal = [0,0]
         #pop.output_signal = [0,0]
 
@@ -196,6 +214,99 @@ class TestSimulator(SimulatorTestCase):
         check(foo, .39)
         check(pop.input_signal, [0.2, 0.4])
         check(pop.output_signal, [1.2, 1.4])
+
+
+class TestNonlinear(unittest.TestCase):
+    Simulator = simulator.Simulator
+
+    def test_direct(self):
+        """Test direct mode"""
+
+        dt = 0.001
+        d = 3
+        n_steps = 3
+        n_trials = 3
+
+        rng = np.random.RandomState(seed=987)
+
+        for i in xrange(n_trials):
+            A = rng.normal(size=(d,d))
+            fn = lambda x: np.cos(np.dot(A, x))
+
+            x = np.random.normal(size=d)
+
+            m = nengo.Model("")
+            ins = Signal(n=d, name='ins')
+            pop = Direct(n_in=d, n_out=d, fn=fn)
+            m.signals = [ins]
+            m.operators = []
+            Builder().build_direct(pop, m, dt)
+            m.operators += [
+                DotInc(Constant(np.eye(d)), ins, pop.input_signal),
+                ProdUpdate(Constant(np.eye(d)), pop.output_signal,
+                           Constant(0), ins)
+            ]
+
+            sim = m.simulator(sim_class=self.Simulator,
+                              dt=dt,
+                              builder=testbuilder)
+            sim.signals[ins] = x
+
+            p0 = np.zeros(d)
+            s0 = np.array(x)
+            for j in xrange(n_steps):
+                tmp = p0
+                p0 = fn(s0)
+                s0 = tmp
+                sim.step()
+                assert np.allclose(s0, sim.signals[ins])
+                assert np.allclose(p0, sim.signals[pop.output_signal])
+
+    def _test_lif_base(self, cls=LIF):
+        """Test that the dynamic model approximately matches the rates"""
+        rng = np.random.RandomState(85243)
+
+        dt = 0.001
+        d = 1
+        n = 5e3
+
+        m = nengo.Model("")
+        ins = Signal(n=d, name='ins')
+        lif = cls(n)
+        lif.set_gain_bias(max_rates=rng.uniform(low=10, high=200, size=n),
+                          intercepts=rng.uniform(low=-1, high=1, size=n))
+        m.signals = [ins]
+        m.operators = []
+        b = Builder()
+        b._builders[cls](lif, m, dt)
+        m.operators += [DotInc(Constant(np.ones((n,d))), ins, lif.input_signal)]
+
+        sim = m.simulator(sim_class=self.Simulator,
+                          dt=dt,
+                          builder=testbuilder)
+        sim.signals[ins] = 0.5 * np.ones(d)
+
+        t_final = 1.0
+        spikes = np.zeros(n)
+        for i in xrange(int(np.round(t_final / dt))):
+            sim.step()
+            spikes += sim.signals[lif.output_signal]
+
+        math_rates = lif.rates(sim.signals[lif.input_signal] - lif.bias)
+        sim_rates = spikes / t_final
+        logger.debug("ME = %f", (sim_rates - math_rates).mean())
+        logger.debug("RMSE = %f",
+                     rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
+        self.assertTrue(np.sum(math_rates > 0) > 0.5*n,
+                        "At least 50% of neurons must fire")
+        self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
+
+    def test_lif(self):
+        self._test_lif_base(cls=LIF)
+
+    def test_lif_rate(self):
+        self._test_lif_base(cls=LIFRate)
+
 
 if __name__ == "__main__":
     nengo.log_to_file('log.txt', debug=True)

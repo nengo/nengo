@@ -7,8 +7,6 @@ import pickle
 import os.path
 import numpy as np
 
-from . import connections
-from . import core
 from . import objects
 from . import simulator
 
@@ -65,15 +63,7 @@ class Model(object):
     """
 
     def __init__(self, name, seed=None):
-        self.signals = []
-        self.probes = []
-
-        #
-        # -- Build stuff --
-        #
-        self._operators = []
-
-        self.objs = {}
+        self.objs = OrderedDict()
         self.aliases = {}
         self.probed = OrderedDict()
         self.connections = []
@@ -82,19 +72,15 @@ class Model(object):
         self.name = name + ''  # -- make self.name a string, raise error otw
         self.seed = seed
 
-        self.t = self.add(core.Signal(name='t'))
-        self.steps = self.add(core.Signal(name='steps'))
-        self.one = self.add(core.Constant([1.0], name='one'))
-
-        # Automatically probe these
-        self.probe(self.t)
-        self.probe(self.steps)
-
-        # -- steps counts by 1.0
-        self._operators += [simulator.ProdUpdate(
-                core.Constant(1), self.one, core.Constant(1), self.steps)]
-
         self._rng = None
+
+        # Some automatic stuff
+        self.t = self.make_node('t', output=0)
+        self.steps = self.make_node('steps', output=0)
+        self.one = self.make_node('one', output=[1.0])
+
+        # Automatically probe time
+        self.probe(self.t)
 
     def __str__(self):
         return "Model: " + self.name
@@ -170,36 +156,6 @@ class Model(object):
 
     ### Simulation methods
 
-    @staticmethod
-    def prep_for_simulation(model, dt):
-        model.name = model.name + ", dt=%f" % dt
-        model.dt = dt
-        model._operators += [simulator.ProdUpdate(core.Constant(dt), model.one,
-                                                  core.Constant(1), model.t)]
-
-        # Sort all objects by name
-        all_objs = sorted(model.objs.values(), key=lambda o: o.name)
-
-        # 1. Build objects first
-        logger.info("Building objects")
-        for o in all_objs:
-            o.build(model=model, dt=dt)
-
-        # 2. Then probes
-        logger.info("Building probes")
-        for target in model.probed:
-            if not isinstance(model.probed[target], core.Probe):
-                model.probed[target].build(model=model, dt=dt)
-                model.probed[target] = model.probed[target].probe
-
-        # 3. Then connections
-        logger.info("Building connections")
-        for o in all_objs:
-            for c in o.connections_out:
-                c.build(model=model, dt=dt)
-        for c in model.connections:
-            c.build(model=model, dt=dt)
-
     def simulator(self, dt=0.001, sim_class=simulator.Simulator,
                   seed=None, **sim_args):
         """Get a new simulator object for the model.
@@ -224,19 +180,7 @@ class Model(object):
             A new simulator object, containing a copy of the model in its
             current state.
         """
-        logger.info("Copying model")
-        memo = {}
-        modelcopy = copy.deepcopy(self, memo)
-        modelcopy.memo = memo
-
-        if modelcopy.seed is None:
-            modelcopy.seed = np.random.randint(2**32) # generate model seed
-
-        if seed is None:
-            seed = modelcopy._get_new_seed() # generate simulator seed
-
-        self.prep_for_simulation(modelcopy, dt)
-        return sim_class(model=modelcopy, **sim_args) # TODO: pass in seed
+        return sim_class(model=self, dt=dt, seed=seed, **sim_args)
 
     ### Model manipulation
 
@@ -372,17 +316,14 @@ class Model(object):
             logger.warning("%s is not in model %s.", str(target), self.name)
             return
 
-        if 'core' in obj.__module__:
-            obj.remove_from_model(self)
-        else:
-            for k, v in self.objs.iteritems():
-                if v == obj:
-                    del self.objs[k]
-                    logger.info("%s removed.", k)
-            for k, v in self.aliases.iteritem():
-                if v == obj:
-                    del self.aliases[k]
-                    logger.info("Alias '%s' removed.", k)
+        for k, v in self.objs.iteritems():
+            if v == obj:
+                del self.objs[k]
+                logger.info("%s removed.", k)
+        for k, v in self.aliases.iteritem():
+            if v == obj:
+                del self.aliases[k]
+                logger.info("Alias '%s' removed.", k)
 
         return obj
 
@@ -587,13 +528,7 @@ class Model(object):
         """
         pre = self.get(pre)
         post = self.get(post)
-
-        if core.is_signal(pre):
-            connection = connections.SignalConnection(pre, post, **kwargs)
-            self.connections.append(connection)
-            return connection
-        else:
-            return pre.connect_to(post, **kwargs)
+        return pre.connect_to(post, **kwargs)
 
     def probe(self, target, sample_every=0.001, filter=None):
         """Probe a piece of data contained in the model.
@@ -642,15 +577,7 @@ class Model(object):
         --------
         Probe
         """
-        if core.is_signal(target):
-            if filter is not None:
-                p = objects.Probe(target.name, sample_every, target.n)
-                self.signal_probes.append(p)
-                self.connect(target, p, filter=filter)
-            else:
-                p = core.Probe(target, sample_every)
-                self.add(p)
-        elif isinstance(target, str):
+        if isinstance(target, str):
             obj = self.get(target, "NotFound")
             if obj == "NotFound" and '.' in target:
                 name, probe_name = target.rsplit('.', 1)

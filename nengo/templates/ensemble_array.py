@@ -3,10 +3,7 @@ import logging
 
 import numpy as np
 
-from ..connections import ConnectionList
-from .. import core
 from .. import objects
-from .. import simulator
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +106,7 @@ class EnsembleArray(object):
         for i, ensemble in enumerate(self.ensembles):
             c = ensemble.connect_to(post, **kwargs)
             connections.append(c)
-        connection = ConnectionList(connections, transform)
+        connection = objects.ConnectionList(connections, transform)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
@@ -129,19 +126,3 @@ class EnsembleArray(object):
                              "exists. Please choose a different name.")
 
         model.objs[self.name] = self
-
-    def build(self, model, dt):
-        self.signal = core.Signal(self.dimensions, name=self.name+".signal")
-        model.add(self.signal)
-        
-        model._operators += [simulator.Reset(self.signal)]
-
-        dims = self.dimensions_per_ensemble
-
-        for i, ens in enumerate(self.ensembles):
-            ens.build(model, dt, signal=self.signal[i*dims:(i+1)*dims])
-            # self.connections_in.extend(ens.connections_in)
-            # self.connections_out.extend(ens.connections_out)
-
-        for probe in self.probes['decoded_output']:
-            probe.dimensions = self.dimensions

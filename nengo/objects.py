@@ -3,10 +3,8 @@ import inspect
 import logging
 import numpy as np
 
-from . import connections
-from . import core
 from . import decoders
-import simulator
+from . import nonlinearities
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +124,7 @@ class Ensemble(object):
         if isinstance(_neurons, int):
             logger.warning(("neurons should be an instance of a nonlinearity, "
                             "not an int. Defaulting to LIF."))
-            _neurons = core.LIF(_neurons)
+            _neurons = nonlinearities.LIF(_neurons)
 
         # Give a better name if name is default
         if _neurons.name.startswith("<LIF"):
@@ -174,7 +172,7 @@ class Ensemble(object):
             The new connection object.
         """
 
-        connection = connections.DecodedConnection(self, post, **kwargs)
+        connection = DecodedConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
@@ -204,7 +202,7 @@ class Ensemble(object):
 
         elif to_probe == 'spikes':
             probe = Probe(self.name + '.spikes', sample_every)
-            connection = connections.NonlinearityConnection(
+            connection = NonlinearityConnection(
                 self.neurons, probe, filter=filter,
                 transform=np.eye(self.n_neurons))
             self.connections_out.append(connection)
@@ -214,7 +212,7 @@ class Ensemble(object):
 
         elif to_probe == 'voltages':
             probe = Probe(self.name + '.voltages', sample_every, self.n_neurons)
-            connection = connections.SignalConnection(
+            connection = SignalConnection(
                 self.neurons.voltage, probe, filter=None)
             self.connections_out.append(connection)
             if hasattr(probe, 'connections_in'):
@@ -233,97 +231,6 @@ class Ensemble(object):
 
         model.objs[self.name] = self
 
-    def build(self, model, dt, signal=None):
-        """Prepare this ensemble for simulation.
-
-        Called automatically by `model.build`.
-        """
-        # assert self in model.objs.values(), "Not added to model"
-
-        if self.n_neurons <= 0:
-            raise ValueError(
-                'Number of neurons (%d) must be positive' % self.n_neurons)
-
-        if self.dimensions <= 0:
-            raise ValueError(
-                'Number of dimensions (%d) must be positive' % self.dimensions)
-
-        # Create random number generator
-        if self.seed is None:
-            self.seed = model._get_new_seed()
-        rng = np.random.RandomState(self.seed)
-
-        # Generate eval points
-        if self.eval_points is None:
-            self.eval_points = decoders.sample_hypersphere(
-                self.dimensions, Ensemble.EVAL_POINTS, rng) * self.radius
-        else:
-            self.eval_points = np.array(self.eval_points, dtype=float)
-            if self.eval_points.ndim == 1:
-                self.eval_points.shape = (-1, 1)
-
-        # Set up signal
-        if signal is None:
-            self.signal = core.Signal(n=self.dimensions,
-                                      name=self.name + ".signal")
-            model.add(self.signal)
-        else:
-            # Assume that a provided signal is already in the model
-            self.signal = signal
-            self.dimensions = self.signal.size
-
-        #reset input signal to 0 each timestep (unless this ensemble has
-        #a view of a larger signal -- generally meaning it is an ensemble
-        #in an ensemble array -- in which case something else will be
-        #responsible for resetting)
-        if self.signal.base == self.signal:
-            model._operators += [simulator.Reset(self.signal)]
-
-        # Set up neurons
-        if self.neurons.gain is None:
-            # if max_rates and intercepts are distributions,
-            # turn them into fixed samples.
-            if hasattr(self.max_rates, 'sample'):
-                self.max_rates = self.max_rates.sample(
-                    self.neurons.n_neurons, rng=rng)
-            if hasattr(self.intercepts, 'sample'):
-                self.intercepts = self.intercepts.sample(
-                    self.neurons.n_neurons, rng=rng)
-            self.neurons.set_gain_bias(self.max_rates, self.intercepts)
-
-        model.add(self.neurons)
-
-        # Set up encoders
-        if self.encoders is None:
-            self.encoders = decoders.sample_hypersphere(
-                self.dimensions, self.neurons.n_neurons, rng, surface=True)
-        else:
-            self.encoders = np.array(self.encoders, dtype=float)
-            enc_shape = (self.neurons.n_neurons, self.dimensions)
-            if self.encoders.shape != enc_shape:
-                raise core.ShapeMismatch(
-                    "Encoder shape is %s. Should be (n_neurons, dimensions);"
-                    " in this case %s." % (self.encoders.shape, enc_shape))
-
-            norm = np.sum(self.encoders * self.encoders, axis=1)[:, np.newaxis]
-            self.encoders /= np.sqrt(norm)
-
-        self._scaled_encoders = self.encoders * (
-            self.neurons.gain / self.radius)[:, np.newaxis]
-        model._operators += [simulator.DotInc(
-                core.Constant(self._scaled_encoders),
-                self.signal, self.neurons.input_signal)]
-
-        # Set up probes, but don't build them (done explicitly later)
-        # Note: Have to set it up here because we only know these things (dimensions,
-        #       n_neurons) at build time.
-        for probe in self.probes['decoded_output']:
-            probe.dimensions = self.dimensions
-        for probe in self.probes['spikes']:
-            probe.dimensions = self.n_neurons
-        for probe in self.probes['voltages']:
-            probe.dimensions = self.n_neurons
-
 
 class PassthroughNode(object):
     def __init__(self, name, dimensions=1):
@@ -334,7 +241,7 @@ class PassthroughNode(object):
         self.probes = {'output': []}
 
     def connect_to(self, post, **kwargs):
-        connection = connections.SignalConnection(self, post, **kwargs)
+        connection = SignalConnection(self, post, **kwargs)
         self.connections_out += [connection]
 
     def add_to_model(self, model):
@@ -344,22 +251,13 @@ class PassthroughNode(object):
 
         model.objs[self.name] = self
 
-    def build(self, model, dt):
-        self.signal = core.Signal(n=self.dimensions,
-                                  name=self.name + ".signal")
-        model.add(self.signal)
-
-        #reset input signal to 0 each timestep
-        model._operators += [simulator.Reset(self.signal)]
-
-        # Set up probes
-        for probe in self.probes['output']:
-            probe.sig = self.signal
-            model.add(probe)
-
     def probe(self, to_probe='output', sample_every=0.001, filter=None):
+        if filter is not None and filter > 0:
+            logger.warning("Filter set on constant. Usually accidental.")
+
         if to_probe == 'output':
-            p = core.Probe(None, sample_every)
+            p = Probe(self.name + ".output", sample_every)
+            self.connect_to(p, filter=filter)
             self.probes['output'].append(p)
         return p
 
@@ -388,18 +286,20 @@ class ConstantNode(object):
         return "Constant Node: " + self.name
 
     def connect_to(self, post, **kwargs):
-        connection = connections.SignalConnection(self, post, **kwargs)
+        connection = SignalConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
         return connection
 
     def probe(self, to_probe='output', sample_every=0.001, filter=None):
+        """TODO"""
         if filter is not None and filter > 0:
-            logger.warning("Filter set on constant. Ignoring.")
+            logger.warning("Filter set on constant. Usually accidental.")
 
         if to_probe == 'output':
-            p = core.Probe(None, sample_every)
+            p = Probe(self.name + ".output", sample_every)
+            self.connect_to(p, filter=filter)
             self.probes['output'].append(p)
         return p
 
@@ -409,17 +309,6 @@ class ConstantNode(object):
                              "exists. Please choose a different name.")
 
         model.objs[self.name] = self
-
-    def build(self, model, dt):
-        # Set up signal
-        self.signal = core.Constant(self.output,
-                                    name=self.name)
-        model.add(self.signal)
-
-        # Set up probes
-        for probe in self.probes['output']:
-            probe.sig = self.signal
-            model.add(probe)
 
 
 class Node(object):
@@ -487,7 +376,7 @@ class Node(object):
 
     def connect_to(self, post, **kwargs):
         """TODO"""
-        connection = connections.NonlinearityConnection(self, post, **kwargs)
+        connection = NonlinearityConnection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
@@ -508,31 +397,171 @@ class Node(object):
 
         model.objs[self.name] = self
 
-    def build(self, model, dt):
+
+class SignalConnection(object):
+    """A SimpleConnection connects two Signals (or objects with signals)
+    via a transform and a filter.
+
+    Attributes
+    ----------
+    name
+    filter : type
+        description
+    transform
+
+    probes : type
+        description
+
+    """
+    def __init__(self, pre, post, **kwargs):
+        self.pre = pre
+        self.post = post
+
+        self.filter = kwargs.get('filter', 0.005)
+        self.transform = kwargs.get('transform', 1.0)
+
+        self.probes = {'signal': []}
+
+    def __str__(self):
+        return self.name + " (SimpleConnection)"
+
+    def __repr__(self):
+        return str(self)
+
+    @property
+    def name(self):
+        return self.pre.name + ">" + self.post.name
+
+    @property
+    def transform(self):
         """TODO"""
-        # Set up signals
-        self.signal = core.Signal(self.dimensions,
-                                  name=self.name + ".signal")
-        model.add(self.signal)
+        return self._transform
 
-        #reset input signal to 0 each timestep
-        model._operators += [simulator.Reset(self.signal)]
+    @transform.setter
+    def transform(self, _transform):
+        self._transform = np.asarray(_transform)
 
-        # Set up non-linearity
-        n_out = np.array(self.output(np.ones(self.dimensions))).size
-        self.nonlinear = core.Direct(n_in=self.dimensions,
-                                     n_out=n_out,
-                                     fn=self.output,
-                                     name=self.name + ".Direct")
-        model.add(self.nonlinear)
+    def add_to_model(self, model):
+        model.connections.append(self)
 
-        # Set up encoder
-        model._operators += [simulator.DotInc(core.Constant(
-            np.eye(self.dimensions)), self.signal, self.nonlinear.input_signal)]
 
-        # Set up probes
-        for probe in self.probes['output']:
-            probe.dimensions = self.nonlinear.output_signal.n
+class NonlinearityConnection(SignalConnection):
+    """A NonlinearityConnection connects a nonlinearity to a Signal
+    (or objects with those) via a transform and a filter.
+
+    Attributes
+    ----------
+    name
+    pre
+    post
+
+    filter : type
+        description
+    transform
+
+    probes : type
+        description
+
+    """
+    def __str__(self):
+        return self.name + " (NonlinearityConnection)"
+
+
+class DecodedConnection(SignalConnection):
+    """A DecodedConnection connects an ensemble to a Signal
+    via a set of decoders, a transform, and a filter.
+
+    Attributes
+    ----------
+    name
+    pre
+    post
+
+    decoders
+    eval_points
+    filter : type
+        description
+    function : type
+        description
+    transform
+
+    probes : type
+        description
+
+    """
+    def __init__(self, pre, post, **kwargs):
+        SignalConnection.__init__(self, pre, post, **kwargs)
+
+        self.decoders = kwargs.get('decoders', None)
+        self.decoder_solver = kwargs.get('decoder_solver',
+                                         decoders.least_squares)
+        self.eval_points = kwargs.get('eval_points', None)
+        self.function = kwargs.get('function', None)
+        # self.modulatory = kwargs.get('modulatory', False)
+        if 'modulatory' in kwargs:
+            raise NotImplementedError('modulatory')
+
+    @property
+    def decoders(self):
+        return None if self._decoders is None else self._decoders.T
+
+    @decoders.setter
+    def decoders(self, _decoders):
+        if _decoders is not None and self.function is not None:
+            logger.warning("Setting decoders on a connection with a specified "
+                           "function. May not actually compute that function.")
+
+        if _decoders is not None:
+            _decoders = np.asarray(_decoders)
+            if _decoders.shape[0] != self.pre.n_neurons:
+                msg = ("Decoders axis 0 must be %d; in this case it is "
+                       "%d. (shape=%s)" % (self.pre.n_neurons, _decoders.shape[0], _decoders.shape))
+                raise builder.ShapeMismatch(msg)
+
+        self._decoders = None if _decoders is None else _decoders.T
+
+    @property
+    def dimensions(self):
+        if self.function is None:
+            return self.pre.dimensions
+        else:
+            return np.array(self.function(np.ones(self.pre.dimensions,))).size
+
+    @property
+    def eval_points(self):
+        if self._eval_points is None:
+            # OK because ensembles always build first
+            return self.pre.eval_points
+        return self._eval_points
+
+    @eval_points.setter
+    def eval_points(self, _eval_points):
+        if _eval_points is not None:
+            _eval_points = np.asarray(_eval_points)
+            if len(_eval_points.shape) == 1:
+                _eval_points.shape = (1, _eval_points.shape[0])
+        self._eval_points = _eval_points
+
+    @property
+    def name(self):
+        name = self.pre.name + ">" + self.post.name
+        if self.function is not None:
+            return name + ":" + self.function.__name__
+        return name
+
+    def __str__(self):
+        return self.name + " (DecodedConnection)"
+
+
+class ConnectionList(object):
+    """A connection made up of several other connections."""
+    def __init__(self, connections, transform=1.0):
+        self.connections = connections
+        self.transform = transform
+        self.probes = {}
+
+    def add_to_model(self, model):
+        model.connections.append(self)
 
 
 class Probe(object):
@@ -570,17 +599,3 @@ class Probe(object):
 
     def add_to_model(self, model):
         model.signal_probes.append(self)
-
-    def build(self, model, dt):
-        """TODO"""
-
-        # Set up signal
-        self.signal = core.Signal(n=self.dimensions, name=self.name)
-        model.add(self.signal)
-
-        #reset input signal to 0 each timestep
-        model._operators += [simulator.Reset(self.signal)]
-
-        # Set up probe
-        self.probe = core.Probe(self.signal, self.sample_every)
-        model.add(self.probe)
