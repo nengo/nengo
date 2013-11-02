@@ -786,7 +786,7 @@ class Builder(object):
         model.name = model.name + ", dt=%f" % dt
         model.dt = dt
         if model.seed is None:
-            model.seed = np.random.randint(2**32)
+            model.seed = np.random.randint(np.iinfo(np.int32).max)
 
         # The purpose of the build process is to fill up these lists
         model.signals = []

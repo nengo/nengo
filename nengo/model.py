@@ -90,7 +90,7 @@ class Model(object):
             # never create rng without knowing the seed
             assert self.seed is not None
             self._rng = np.random.RandomState(self.seed)
-        return self._rng.randint(2**32)
+        return self._rng.randint(np.iinfo(np.int32).max)
 
     ### I/O
 
