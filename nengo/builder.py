@@ -196,16 +196,6 @@ class SignalView(object):
         if self.base not in model.signals:
             raise TypeError("Cannot add signal views. Add the signal instead.")
 
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'name': self.name,
-            'base': self.base.name,
-            'shape': list(self.shape),
-            'elemstrides': list(self.elemstrides),
-            'offset': self.offset,
-        }
-
     def is_contiguous(self, return_range=False):
         def ret_false():
             if return_range:
@@ -345,14 +335,6 @@ class Signal(SignalView):
     def add_to_model(self, model):
         model.signals.append(self)
 
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'name': self.name,
-            'n': self.n,
-            'dtype': str(self.dtype),
-        }
-
 
 class Probe(object):
     """A model probe to record a signal"""
@@ -368,14 +350,6 @@ class Probe(object):
 
     def add_to_model(self, model):
         model.probes.append(self)
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'sig': self.sig.name,
-            'dt': self.dt,
-        }
-
 
 class Constant(Signal):
     """A signal meant to hold a fixed value"""
