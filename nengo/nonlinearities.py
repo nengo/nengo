@@ -43,15 +43,6 @@ class Direct(Nonlinearity):
     def __repr__(self):
         return str(self)
 
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'input_signal': self.input_signal.name,
-            'output_signal': self.output_signal.name,
-            'bias_signal': self.bias_signal.name,
-            'fn': self.fn.__name__,
-        }
-
 
 class NeuralNonlinearity(Nonlinearity):
     _gain = None
@@ -91,18 +82,6 @@ class _LIFBase(NeuralNonlinearity):
 
     def __repr__(self):
         return str(self)
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'input_signal': self.input_signal.name,
-            'output_signal': self.output_signal.name,
-            'bias_signal': self.bias_signal.name,
-            'n_neurons': self.n_neurons,
-            'tau_rc': self.tau_rc,
-            'tau_ref': self.tau_ref,
-            'gain': self.gain.tolist(),
-        }
 
     @property
     def n_in(self):
@@ -171,11 +150,6 @@ class LIF(_LIFBase):
     def __init__(self, n_neurons, upsample=1, **kwargs):
         _LIFBase.__init__(self, n_neurons, **kwargs)
         self.upsample = upsample
-
-    def to_json(self):
-        d = _LIFBase.to_json(self)
-        d['upsample'] = self.upsample
-        return d
 
     def step_math0(self, dt, J, voltage, refractory_time, spiked):
         if self.upsample != 1:

@@ -1,7 +1,5 @@
-import codecs
 from collections import OrderedDict
 import copy
-import json
 import logging
 import pickle
 import os.path
@@ -96,42 +94,15 @@ class Model(object):
     def save(self, fname, format=None):
         """Save this model to a file.
 
-        So far, JSON and Pickle are the possible formats.
+        So far, Pickle is the only implemented format.
 
         """
         if format is None:
             format = os.path.splitext(fname)[1]
 
-        if format in ('json', '.json'):
-            with codecs.open(fname, 'w', encoding='utf-8') as f:
-                json.dump(self.to_json(), f, sort_keys=True, indent=2)
-                logger.info("Saved %s successfully.", fname)
-        else:
-            # Default to pickle
-            with open(fname, 'wb') as f:
-                pickle.dump(self, f)
-                logger.info("Saved %s successfully.", fname)
-
-    def to_json(self):
-        d = {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'name': self.name,
-            # 'simulator': ?? We probably don't want to serialize this
-        }
-
-        d['signals'] = [sig.to_json() for sig in self.signals]
-        d['nonlinearities'] = [nl.to_json() for nl in self.nonlinearities]
-        d['encoders'] = [enc.to_json() for enc in self.encoders]
-        d['decoders'] = [dec.to_json() for dec in self.decoders]
-        d['transforms'] = [trans.to_json() for trans in self.transforms]
-        d['filters'] = [filt.to_json() for filt in self.filters]
-        d['probes'] = [pr.to_json() for pr in self.probes]
-
-        # d['aliases'] = self.aliases
-        # d['objs'] = {k: v.to_json() for k, v in self.objs.items()}
-        # d['probed'] = ?? Deal with later!
-        # d['data'] = ?? Do we want to serialize this?
-        return d
+        with open(fname, 'wb') as f:
+            pickle.dump(self, f)
+            logger.info("Saved %s successfully.", fname)
 
     @staticmethod
     def load(self, fname, format=None):
@@ -140,16 +111,12 @@ class Model(object):
         So far, JSON and Pickle are the possible formats.
 
         """
-        if format is None:
-            format = os.path.splitext(fname)[1]
+        # if format is None:
+        #     format = os.path.splitext(fname)[1]
 
-        if format == 'json':
-            with codecs.open(fname, 'r', encoding='utf-8') as f:
-                return Model.from_json(json.load(f))
-        else:
-            # Default to pickle
-            with open(fname, 'rb') as f:
-                return pickle.load(f)
+        # Default to pickle
+        with open(fname, 'rb') as f:
+            return pickle.load(f)
 
         raise IOError("Could not load {}".format(fname))
 
