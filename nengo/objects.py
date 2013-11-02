@@ -423,7 +423,7 @@ class SignalConnection(object):
         self.probes = {'signal': []}
 
     def __str__(self):
-        return self.name + " (SimpleConnection)"
+        return self.name + " (" + self.__class__.__name__ + ")"
 
     def __repr__(self):
         return str(self)
@@ -463,9 +463,7 @@ class NonlinearityConnection(SignalConnection):
         description
 
     """
-    def __str__(self):
-        return self.name + " (NonlinearityConnection)"
-
+    pass
 
 class DecodedConnection(SignalConnection):
     """A DecodedConnection connects an ensemble to a Signal
@@ -548,9 +546,6 @@ class DecodedConnection(SignalConnection):
         if self.function is not None:
             return name + ":" + self.function.__name__
         return name
-
-    def __str__(self):
-        return self.name + " (DecodedConnection)"
 
 
 class ConnectionList(object):
