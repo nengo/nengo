@@ -2,7 +2,7 @@ import numpy as np
 
 import nengo
 import nengo.simulator as simulator
-from nengo.builder import Signal, Constant
+from nengo.builder import Signal
 from nengo.builder import DotInc, ProdUpdate
 from nengo.nonlinearities import Direct, LIF, LIFRate
 from nengo.tests.helpers import SimulatorTestCase, unittest, rms

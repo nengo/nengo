@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from nengo.builder import Constant, Signal
+from nengo.builder import Signal
 from nengo.templates import EnsembleArray
 from nengo.networks.circularconvolution import circconv, CircularConvolution
 from nengo.tests.helpers import (
@@ -52,9 +52,9 @@ class TestCircularConv(SimulatorTestCase):
     #     c = circconv(a, b)
 
     #     m = nengo.Model("")
-    #     A = m.add(Constant(value=a))
-    #     B = m.add(Constant(value=b))
-    #     C = m.add(Signal(n=dims, name="C"))
+    #     A = m.add(Signal(value=a))
+    #     B = m.add(Signal(value=b))
+    #     C = m.add(Signal(shape=dims, name="C"))
 
     #     DirectCircularConvolution(m, A, B, C)
 
