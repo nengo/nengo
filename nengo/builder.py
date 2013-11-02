@@ -26,11 +26,6 @@ class ShapeMismatch(ValueError):
     pass
 
 
-class TODO(NotImplementedError):
-    """Potentially easy NotImplementedError"""
-    pass
-
-
 class SignalView(object):
     def __init__(self, base, shape, elemstrides, offset, name=None):
         assert base is not None
@@ -120,7 +115,7 @@ class SignalView(object):
             #    but there are limits too, because we can only
             #    support view-based reshapes. So the strides have
             #    to work.
-            raise TODO('reshape of strided view')
+            raise NotImplementedError('reshape of strided view')
 
     def transpose(self, neworder=None):
         if neworder:
