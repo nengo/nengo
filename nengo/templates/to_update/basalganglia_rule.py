@@ -1,32 +1,3 @@
-title='Basal Ganglia Rule'
-label='BG Rule'
-icon='BGRule.png'
-
-description="""<html>This template is dropped onto a basal ganglia model generated from the Basal Ganglia template.  It is used to define input rules in an SPA model. It provides the mapping from cortex to striatum to determine the value of the input semantic pointer with respect to the indexed rule.</html>"""
-
-params=[
-    ('index','Rule Index',int, 'The number of the rule currently being defined (0 indexed)'),
-    ('pattern','Semantic Pointer',str,'The input representation that activates the rule'),
-    ('dimensions','Dimensionality',int,'The dimensionality of the input'),
-    ('pstc','Input PSTC [s]',float,'Post-synaptic time constant for input filtering, in seconds'),
-    ('use_single_input','Use Single Input',bool,'Use a converged input rather than seperate inputs to striatum and STN'),
-    ]
-
-def test_params(net,node,p):
-    if p['index']>node.getNode('STN').dimension : return 'Rule index cannot exceed basal ganglia dimension minus one (use a zero-based index)'
-
-def test_drop(net,node):
-    try:
-        STN=node.getNode('STN')
-        StrD1=node.getNode('StrD1')
-        StrD2=node.getNode('StrD2')
-        return True
-    except:
-        return False
-
-import numeric
-import hrr
-
 def make(net,node,index=0,dimensions=8,pattern='I',pstc=0.01,use_single_input=False):
     STN=node.getNode('STN')
 
@@ -83,4 +54,3 @@ def make(net,node,index=0,dimensions=8,pattern='I',pstc=0.01,use_single_input=Fa
         net.network.setMetaData("templates", ArrayList())
     templates = net.network.getMetaData("templates")
     templates.add(node.getName())
-
