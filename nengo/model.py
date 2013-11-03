@@ -64,7 +64,6 @@ class Model(object):
 
     def __init__(self, name, seed=None):
         self.objs = OrderedDict()
-        self.aliases = {}
         self.probed = OrderedDict()
         self.connections = []
         self.signal_probes = []
@@ -238,14 +237,7 @@ class Model(object):
 
         """
         if isinstance(target, str):
-            if self.aliases.has_key(target):
-                return self.aliases[target]
-            elif self.objs.has_key(target):
-                return self.objs[target]
-            if default is None:
-                logger.error("Cannot find %s in model %s.", target, self.name)
-            return default
-
+            return self.objs.get(target, default)
         return target
 
     def get_string(self, target, default=None):
@@ -257,9 +249,7 @@ class Model(object):
             The `target` can be specified with a string
             (see `string reference <string_reference.html>`_)
             or a Nengo object.
-            If a string is passed, `get_string` returns
-            the canonical version of it; i.e., if it is
-            an alias, the non-aliased version is returned.
+            If a string is passed, `get_string` just returns that string.
 
         default : Nengo object, optional
             If `target` is not in the model, then `get` will
@@ -276,24 +266,12 @@ class Model(object):
             If the `target` does not exist and no `default` is specified.
 
         """
-        if isinstance(target, str):
-            if self.aliases.has_key(target):
-                obj = self.aliases[target]
-            elif self.objs.has_key(target):
-                return target
-
+        if isinstance(target, str) and self.objs.has_key(target):
+            return target
         for k, v in self.objs.iteritems():
             if v == target:
                 return k
-
-        logger.warning("Cannot find %s in model %s.", str(target), self.name)
         return default
-
-    # def data(self, target):
-    #     target = self.get_string(target, target)
-    #     if not isinstance(target, str):
-    #         target = target.name
-    #     return self._data[target]
 
     def remove(self, target):
         """Removes a Nengo object from the model.
@@ -320,44 +298,8 @@ class Model(object):
             if v == obj:
                 del self.objs[k]
                 logger.info("%s removed.", k)
-        for k, v in self.aliases.iteritem():
-            if v == obj:
-                del self.aliases[k]
-                logger.info("Alias '%s' removed.", k)
 
         return obj
-
-    def alias(self, alias, target):
-        """Adds a named shortcut to an existing Nengo object
-        within this model.
-
-        This is designed to simplify :func:`nengo.Model.connect()`,
-        :func:`nengo.Model.get()`, and :func:`nengo.Model.remove()` calls.
-        For example, you can do::
-
-            model.make_alias('vision', 'A.B.C.D.E')
-            model.make_alias('motor', 'W.X.Y.Z')
-            model.connect('vision', 'motor')
-
-        Parameters
-        ----------
-        alias : str
-            The alias to assign to `target`.
-        target : str or Nengo object
-            Identifies the Nengo object to be aliased.
-
-        Raises
-        ------
-        ValueError
-            If `target` can't be found in the model.
-
-        """
-        obj_s = self.get_string(target)
-        if obj_s is None:
-            raise ValueError(target + " cannot be found.")
-        self.aliases[alias] = obj_s
-        logger.info("%s aliased to %s", obj_s, alias)
-        return self.get(obj_s)
 
     # Model creation methods
 
