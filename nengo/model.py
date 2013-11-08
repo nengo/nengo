@@ -74,7 +74,6 @@ class Model(object):
         # Some automatic stuff
         self.t = self.make_node('t', output=0)
         self.steps = self.make_node('steps', output=0)
-        self.one = self.make_node('one', output=[1.0])
 
         # Automatically probe time
         self.probe(self.t)
