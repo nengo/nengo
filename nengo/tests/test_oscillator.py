@@ -44,5 +44,5 @@ class TestOscillator(SimulatorTestCase):
         self.assertTrue(rmse(sim.data('A'), sim.data('T.Oscillator')) < 0.3)
 
 if __name__ == "__main__":
-    nengo.log_to_file('log.txt', debug=True)
+    nengo.log(debug=True, path='log.txt')
     unittest.main()

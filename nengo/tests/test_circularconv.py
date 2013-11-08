@@ -41,30 +41,6 @@ class TestCircularConvHelpers(unittest.TestCase):
 
 class TestCircularConv(SimulatorTestCase):
 
-    # def test_direct(self):
-    #     """Test direct-mode circular convolution"""
-
-    #     dims = 1000
-
-    #     rng = np.random.RandomState(8238)
-    #     a = rng.randn(dims)
-    #     b = rng.randn(dims)
-    #     c = circconv(a, b)
-
-    #     m = nengo.Model("")
-    #     A = m.add(Signal(value=a))
-    #     B = m.add(Signal(value=b))
-    #     C = m.add(Signal(shape=dims, name="C"))
-
-    #     DirectCircularConvolution(m, A, B, C)
-
-    #     sim = m.simulator(sim_class=self.Simulator)
-    #     sim.run_steps(10)
-    #     c2 = sim.signals[C]
-
-    #     # assert_allclose(self, logger, c, c2, atol=1e-5, rtol=1e-5)
-    #     assert_allclose(self, logger, c, c2, atol=1e-5, rtol=1e-3)
-
     def _test_circularconv(self, dims=5, neurons_per_product=128):
         rng = np.random.RandomState(42342)
 
@@ -161,5 +137,5 @@ class TestCircularConv(SimulatorTestCase):
 
 
 if __name__ == "__main__":
-    nengo.log_to_file('log.txt', debug=True)
+    nengo.log(debug=True, path='log.txt')
     unittest.main()
