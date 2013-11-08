@@ -11,7 +11,7 @@ from nengo.helpers import piecewise
 
 logger = logging.getLogger(__name__)
 
-class TestToNonlinearityConnection(SimulatorTestCase):
+class TestNonlinearityConnection(SimulatorTestCase):
 
     def test_nonlinearity_to_nonlinearity(self):
         N = 30
@@ -90,5 +90,5 @@ class TestToNonlinearityConnection(SimulatorTestCase):
 
 
 if __name__ == "__main__":
-    nengo.log_to_file('log.txt', debug=True)
+    nengo.log(debug=True, path='log.txt')
     unittest.main()

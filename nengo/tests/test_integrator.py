@@ -42,5 +42,5 @@ class TestIntegrator(SimulatorTestCase):
         self.assertTrue(rmse(sim.data('A'), sim.data('T.Integrator')) < 0.2)
 
 if __name__ == "__main__":
-    nengo.log_to_file('log.txt', debug=True)
+    nengo.log(debug=True, path='log.txt')
     unittest.main()

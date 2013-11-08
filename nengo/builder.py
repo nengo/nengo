@@ -26,11 +26,6 @@ class ShapeMismatch(ValueError):
     pass
 
 
-class TODO(NotImplementedError):
-    """Potentially easy NotImplementedError"""
-    pass
-
-
 class SignalView(object):
     def __init__(self, base, shape, elemstrides, offset, name=None):
         assert base is not None
@@ -79,7 +74,7 @@ class SignalView(object):
 
     @property
     def dtype(self):
-        return np.dtype(self.base._dtype)
+        return np.dtype(self.base.dtype)
 
     @property
     def ndim(self):
@@ -120,7 +115,7 @@ class SignalView(object):
             #    but there are limits too, because we can only
             #    support view-based reshapes. So the strides have
             #    to work.
-            raise TODO('reshape of strided view')
+            raise NotImplementedError('reshape of strided view')
 
     def transpose(self, neworder=None):
         if neworder:
@@ -196,20 +191,6 @@ class SignalView(object):
     @name.setter
     def name(self, value):
         self._name = value
-
-    def add_to_model(self, model):
-        if self.base not in model.signals:
-            raise TypeError("Cannot add signal views. Add the signal instead.")
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'name': self.name,
-            'base': self.base.name,
-            'shape': list(self.shape),
-            'elemstrides': list(self.elemstrides),
-            'offset': self.offset,
-        }
 
     def is_contiguous(self, return_range=False):
         def ret_false():
@@ -310,9 +291,8 @@ class SignalView(object):
 
 class Signal(SignalView):
     """Interpretable, vector-valued quantity within NEF"""
-    def __init__(self, n=1, dtype=np.float64, name=None):
-        self.n = n
-        self._dtype = dtype
+    def __init__(self, value, name=None):
+        self.value = np.asarray(value, dtype=np.float64)
         if name is not None:
             self._name = name
         if assert_named_signals:
@@ -320,24 +300,30 @@ class Signal(SignalView):
 
     def __str__(self):
         try:
-            return "Signal(" + self._name + ", " + str(self.n) + "D)"
+            return "Signal(" + self._name + ", shape=" + str(self.shape) + ")"
         except AttributeError:
-            return "Signal (id " + str(id(self)) + ", " + str(self.n) + "D)"
+            return ("Signal(id " + str(id(self)) + ", shape="
+                    + str(self.shape) + ")")
 
     def __repr__(self):
         return str(self)
 
     @property
+    def dtype(self):
+        return self.value.dtype
+
+    @property
     def shape(self):
-        return (self.n,)
+        return self.value.shape
 
     @property
     def size(self):
-        return self.n
+        return self.value.size
 
     @property
     def elemstrides(self):
-        return (1,)
+        s = np.asarray(self.value.strides)
+        return tuple(map(int, s / self.dtype.itemsize))
 
     @property
     def offset(self):
@@ -346,17 +332,6 @@ class Signal(SignalView):
     @property
     def base(self):
         return self
-
-    def add_to_model(self, model):
-        model.signals.append(self)
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'name': self.name,
-            'n': self.n,
-            'dtype': str(self.dtype),
-        }
 
 
 class Probe(object):
@@ -370,59 +345,6 @@ class Probe(object):
 
     def __repr__(self):
         return str(self)
-
-    def add_to_model(self, model):
-        model.probes.append(self)
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'sig': self.sig.name,
-            'dt': self.dt,
-        }
-
-
-class Constant(Signal):
-    """A signal meant to hold a fixed value"""
-    def __init__(self, value, name=None):
-        self.value = np.asarray(value)
-
-        Signal.__init__(self, self.value.size, name=name)
-
-    def __str__(self):
-        if self.name is not None:
-            return "Constant(" + self.name + ")"
-        return "Constant(id " + str(id(self)) + ")"
-
-    def __repr__(self):
-        return str(self)
-
-    @property
-    def shape(self):
-        return self.value.shape
-
-    @property
-    def elemstrides(self):
-        s = np.asarray(self.value.strides)
-        return tuple(map(int, s / self.dtype.itemsize))
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'name': self.name,
-            'value': self.value.tolist(),
-        }
-
-
-def is_signal(sig):
-    return isinstance(sig, SignalView)
-
-
-def is_constant(sig):
-    """
-    Return True iff `sig` is (or is a view of) a Constant signal.
-    """
-    return isinstance(sig.base, Constant)
 
 
 class collect_operators_into(object):
@@ -575,6 +497,34 @@ class Copy(Operator):
         return step
 
 
+def reshape_dot(A, X, Y, tag=None):
+    """Checks if the dot product needs to be reshaped.
+
+    Also does a bunch of error checking based on the shapes of A and X.
+
+    """
+    badshape = False
+    ashape = (1,) if A.shape == () else A.shape
+    xshape = (1,) if X.shape == () else X.shape
+    if A.shape == ():
+        incshape = X.shape
+    elif X.shape == ():
+        incshape = A.shape
+    elif X.ndim == 1:
+        badshape = ashape[-1] != xshape[0]
+        incshape = ashape[:-1]
+    else:
+        badshape = ashape[-1] != xshape[-2]
+        incshape = ashape[:-1] + xshape[:-2] + xshape[-1:]
+
+    if (badshape or incshape != Y.shape) and incshape != ():
+        raise ValueError('shape mismatch in %s: %s x %s -> %s' % (
+            tag, A.shape, X.shape, Y.shape))
+
+    # If the result is scalar, we'll reshape it so Y[...] += inc works
+    return incshape == ()
+
+
 class DotInc(Operator):
     """
     Increment signal Y by dot(A, X)
@@ -598,25 +548,12 @@ class DotInc(Operator):
         A = dct[self.A]
         Y = dct[self.Y]
         X = X.T if self.xT else X
+        reshape = reshape_dot(A, X, Y, self.tag)
         def step():
-            # -- we check for size mismatch,
-            #    because incrementing scalar to len-1 arrays is ok
-            #    if the shapes are not compatible, we'll get a
-            #    problem in Y[...] += inc
-            try:
-                inc =  np.dot(A, X)
-            except Exception, e:
-                e.args = e.args + (A.shape, X.shape)
-                raise
-            if inc.shape != Y.shape:
-                if inc.size == Y.size == 1:
-                    inc = np.asarray(inc).reshape(Y.shape)
-                else:
-                    raise ValueError('shape mismatch in %s %s x %s -> %s' % (
-                        self.tag, self.A, self.X, self.Y), (
-                        A.shape, X.shape, inc.shape, Y.shape))
+            inc =  np.dot(A, X)
+            if reshape:
+                inc = np.asarray(inc).reshape(Y.shape)
             Y[...] += inc
-
         return step
 
 class ProdUpdate(Operator):
@@ -642,18 +579,13 @@ class ProdUpdate(Operator):
         A = dct[self.A]
         Y = dct[self.Y]
         B = dct[self.B]
-
+        reshape = reshape_dot(A, X, Y, self.tag)
         def step():
             val = np.dot(A,X)
-            if val.shape != Y.shape:
-                if val.size == Y.size == 1:
-                    val = np.asarray(val).reshape(Y.shape)
-                else:
-                    raise ValueError('shape mismatch in %s (%s vs %s)' %
-                                     (self.tag, val, Y))
+            if reshape:
+                val = np.asarray(val).reshape(Y.shape)
             Y[...] *= B
             Y[...] += val
-
         return step
 
 
@@ -789,7 +721,6 @@ class Builder(object):
             model.seed = np.random.randint(np.iinfo(np.int32).max)
 
         # The purpose of the build process is to fill up these lists
-        model.signals = []
         model.probes = []
         model.operators = []
 
@@ -816,10 +747,8 @@ class Builder(object):
 
         # Set up t and timesteps
         model.operators += [
-            ProdUpdate(Constant(dt), model.one.signal,
-                       Constant(1), model.t.signal),
-            ProdUpdate(Constant(1), model.one.signal,
-                       Constant(1), model.steps.signal)
+            ProdUpdate(Signal(1), Signal(dt), Signal(1), model.t.signal),
+            ProdUpdate(Signal(1), Signal(1), Signal(1), model.steps.signal),
         ]
 
         return model
@@ -850,8 +779,8 @@ class Builder(object):
 
         # Set up signal
         if signal is None:
-            ens.signal = Signal(n=ens.dimensions, name=ens.name + ".signal")
-            model.add(ens.signal)
+            ens.signal = Signal(np.zeros(ens.dimensions),
+                                name=ens.name + ".signal")
         else:
             # Assume that a provided signal is already in the model
             ens.signal = signal
@@ -895,9 +824,9 @@ class Builder(object):
 
         ens._scaled_encoders = ens.encoders * (
             ens.neurons.gain / ens.radius)[:, np.newaxis]
-        model.operators += [DotInc(
-                Constant(ens._scaled_encoders),
-                ens.signal, ens.neurons.input_signal)]
+        model.operators += [DotInc(Signal(ens._scaled_encoders),
+                                   ens.signal,
+                                   ens.neurons.input_signal)]
 
         # Set up probes, but don't build them (done explicitly later)
         # Note: Have to set it up here because we only know these things
@@ -911,8 +840,7 @@ class Builder(object):
 
     @builds(objects.PassthroughNode)
     def build_passthrough(self, ptn, model, dt):
-        ptn.signal = Signal(n=ptn.dimensions, name=ptn.name + ".signal")
-        model.add(ptn.signal)
+        ptn.signal = Signal(np.zeros(ptn.dimensions), name=ptn.name + ".signal")
 
         #reset input signal to 0 each timestep
         model.operators += [Reset(ptn.signal)]
@@ -925,19 +853,17 @@ class Builder(object):
     @builds(objects.ConstantNode)
     def build_constantnode(self, cn, model, dt):
         # Set up signal
-        cn.signal = Constant(cn.output, name=cn.name)
-        model.add(cn.signal)
+        cn.signal = Signal(cn.output, name=cn.name)
 
         # Set up probes
         for probe in cn.probes['output']:
             probe.dimensions = cn.output.size
-            model.add(probe)
 
     @builds(objects.Node)
     def build_node(self, node, model, dt):
         # Set up signals
-        node.signal = Signal(node.dimensions, name=node.name + ".signal")
-        model.add(node.signal)
+        node.signal = Signal(np.zeros(node.dimensions),
+                             name=node.name + ".signal")
 
         #reset input signal to 0 each timestep
         model.operators += [Reset(node.signal)]
@@ -951,25 +877,25 @@ class Builder(object):
         self.build_direct(node.nonlinear, model, dt)
 
         # Set up encoder
-        model.operators += [DotInc(Constant(
-            np.eye(node.dimensions)), node.signal, node.nonlinear.input_signal)]
+        model.operators += [DotInc(node.signal,
+                                   Signal([[1.0]]),
+                                   node.nonlinear.input_signal)]
 
         # Set up probes
         for probe in node.probes['output']:
-            probe.dimensions = node.nonlinear.output_signal.n
+            probe.dimensions = node.nonlinear.output_signal.shape
 
     @builds(objects.Probe)
     def build_probe(self, probe, model, dt):
         # Set up signal
-        probe.signal = Signal(n=probe.dimensions, name=probe.name)
-        model.add(probe.signal)
+        probe.signal = Signal(np.zeros(probe.dimensions), name=probe.name)
 
         #reset input signal to 0 each timestep
         model.operators += [Reset(probe.signal)]
 
         # Set up probe
         probe.probe = Probe(probe.signal, probe.sample_every)
-        model.add(probe.probe)
+        model.probes.append(probe.probe)
 
     @staticmethod
     def filter_coefs(pstc, dt):
@@ -981,21 +907,20 @@ class Builder(object):
         if conn.filter is not None and conn.filter > dt:
             # Set up signal
             name = conn.pre.name + ".filtered(%f)" % conn.filter
-            conn.signal = Signal(n=conn.pre.size, name=name)
-            model.add(conn.signal)
+            conn.signal = Signal(np.zeros(conn.pre.size), name=name)
 
             # Set up filters and transforms
             o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
-            model.operators += [ProdUpdate(Constant(n_coef),
+            model.operators += [ProdUpdate(Signal(n_coef),
                                            conn.pre,
-                                           Constant(o_coef),
+                                           Signal(o_coef),
                                            conn.signal)]
         else:
             # Signal should already be in the model
             conn.signal = conn.pre
 
     def _build_connection_transform(self, conn, model):
-        model.operators += [DotInc(Constant(conn.transform),
+        model.operators += [DotInc(Signal(conn.transform),
                                    conn.signal,
                                    conn.post)]
 
@@ -1007,10 +932,10 @@ class Builder(object):
     @builds(objects.SignalConnection)
     def build_signalconnection(self, conn, model, dt):
         # Pre / post may be high level objects (ensemble, node) or signals
-        if not is_signal(conn.pre):
+        if not isinstance(conn.pre, SignalView):
             conn.pre = conn.pre.signal
 
-        if not is_signal(conn.post):
+        if not isinstance(conn.post, SignalView):
             conn.post = conn.post.signal
 
         # Set up filters and transform
@@ -1027,7 +952,7 @@ class Builder(object):
             conn.pre = conn.pre.nonlinear
 
         # then get the output signal of the nonlinearity
-        if not is_signal(conn.pre):
+        if not isinstance(conn.pre, SignalView):
             conn.pre = conn.pre.output_signal
 
         # Post could be a node / ensemble, etc
@@ -1035,7 +960,7 @@ class Builder(object):
             if isinstance(conn.post, nonlinearities.NeuralNonlinearity):
                 conn.transform = conn.transform * conn.post.gain[:,None]
             conn.post = conn.post.input_signal
-        elif not is_signal(conn.post):
+        elif not isinstance(conn.post, SignalView):
             conn.post = conn.post.signal
 
         # Set up filters and transform
@@ -1055,13 +980,12 @@ class Builder(object):
             if isinstance(conn.post, nonlinearities.NeuralNonlinearity):
                 conn.transform = conn.transform * conn.post.gain[:,None]
             conn.post = conn.post.input_signal
-        elif not is_signal(conn.post):
+        elif not isinstance(conn.post, SignalView):
             conn.post = conn.post.signal
 
         # Set up signal
         dims = conn.dimensions
-        conn.signal = Signal(dims, name=conn.name)
-        model.add(conn.signal)
+        conn.signal = Signal(np.zeros(dims), name=conn.name)
 
         # Set up decoders
         if conn._decoders is None:
@@ -1082,15 +1006,15 @@ class Builder(object):
         if conn.filter is not None and conn.filter > dt:
             o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
 
-            model.operators += [ProdUpdate(Constant(conn._decoders*n_coef),
-                                            conn.pre,
-                                            Constant(o_coef),
-                                            conn.signal)]
+            model.operators += [ProdUpdate(Signal(conn._decoders*n_coef),
+                                           conn.pre,
+                                           Signal(o_coef),
+                                           conn.signal)]
         else:
-            model.operators += [ProdUpdate(Constant(conn._decoders),
-                                            conn.pre,
-                                            Constant(0),
-                                            conn.signal)]
+            model.operators += [ProdUpdate(Signal(conn._decoders),
+                                           conn.pre,
+                                           Signal(0),
+                                           conn.signal)]
 
         self._build_connection_transform(conn, model)
 
@@ -1121,8 +1045,7 @@ class Builder(object):
 
     @builds(templates.EnsembleArray)
     def build_ensemblearray(self, ea, model, dt):
-        ea.signal = Signal(ea.dimensions, name=ea.name+".signal")
-        model.add(ea.signal)
+        ea.signal = Signal(np.zeros(ea.dimensions), name=ea.name+".signal")
         model.operators += [Reset(ea.signal)]
         dims = ea.dimensions_per_ensemble
 
@@ -1135,21 +1058,18 @@ class Builder(object):
 
     @builds(nonlinearities.Direct)
     def build_direct(self, nl, model, dt):
-        nl.input_signal = Signal(nl.n_in, name=nl.name + '.input')
-        model.add(nl.input_signal)
-        nl.output_signal = Signal(nl.n_out, name=nl.name + '.output')
-        model.add(nl.output_signal)
+        nl.input_signal = Signal(np.zeros(nl.n_in), name=nl.name + '.input')
+        nl.output_signal = Signal(np.zeros(nl.n_out), name=nl.name + '.output')
         model.operators += [Reset(nl.input_signal),
                             SimDirect(output=nl.output_signal,
                                       J=nl.input_signal, nl=nl)]
 
     def build_neural_nonlinearity(self, nl, model, dt):
-        nl.input_signal = Signal(nl.n_neurons, name=nl.name + '.input')
-        model.add(nl.input_signal)
-        nl.output_signal = Signal(nl.n_neurons, name=nl.name + '.output')
-        model.add(nl.output_signal)
-        nl.bias_signal = Constant(nl.bias, name=nl.name + '.bias')
-        model.add(nl.bias_signal)
+        nl.input_signal = Signal(np.zeros(nl.n_neurons),
+                                 name=nl.name + '.input')
+        nl.output_signal = Signal(np.zeros(nl.n_neurons),
+                                  name=nl.name + '.output')
+        nl.bias_signal = Signal(nl.bias, name=nl.name + '.bias')
         model.operators += [Copy(dst=nl.input_signal, src=nl.bias_signal)]
 
     @builds(nonlinearities.LIFRate)
@@ -1162,10 +1082,8 @@ class Builder(object):
     @builds(nonlinearities.LIF)
     def build_lif(self, lif, model, dt):
         self.build_neural_nonlinearity(lif, model, dt)
-        lif.voltage = Signal(lif.n_neurons)
-        model.add(lif.voltage)
-        lif.refractory_time = Signal(lif.n_neurons)
-        model.add(lif.refractory_time)
+        lif.voltage = Signal(np.zeros(lif.n_neurons))
+        lif.refractory_time = Signal(np.zeros(lif.n_neurons))
         model.operators += [SimLIF(output=lif.output_signal,
                                    J=lif.input_signal,
                                    nl=lif,

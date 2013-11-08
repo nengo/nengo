@@ -15,5 +15,5 @@ class TestOldAPI(SimulatorTestCase):
 
 
 if __name__ == "__main__":
-    nengo.log(debug=True)
+    nengo.log(debug=True, path='log.txt')
     unittest.main()
