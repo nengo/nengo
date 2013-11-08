@@ -5,7 +5,7 @@ import nengo
 from nengo.helpers import piecewise
 
 class TestPiecewise(unittest.TestCase):
-    def test_basic(self):        
+    def test_basic(self):
         f = piecewise({0.5:1, 1.0:0})
         self.assertEqual(f(-10), [0])
         self.assertEqual(f(0), [0])
@@ -16,7 +16,7 @@ class TestPiecewise(unittest.TestCase):
         self.assertEqual(f(1.5), [0])
         self.assertEqual(f(100), [0])
 
-    def test_lists(self):        
+    def test_lists(self):
         f = piecewise({0.5:[1,0], 1.0:[0,1]})
         self.assertEqual(f(-10), [0,0])
         self.assertEqual(f(0), [0,0])
@@ -27,11 +27,11 @@ class TestPiecewise(unittest.TestCase):
         self.assertEqual(f(1.5), [0,1])
         self.assertEqual(f(100), [0,1])
 
-        
+
     def test_invalid_key(self):
         with self.assertRaises(TypeError):
             f = piecewise({0.5:1, 1:0, 'a':0.2})
-            
+
     def test_invalid_length(self):
         with self.assertRaises(Exception):
             f = piecewise({0.5:[1,0], 1.0:[1,0,0]})
@@ -40,7 +40,7 @@ class TestPiecewise(unittest.TestCase):
         with self.assertRaises(Exception):
             f = piecewise({0.5:0, 1.0:lambda t: [t, t**2]})
 
-            
+
     def test_function(self):
         f = piecewise({0:np.sin, 0.5:np.cos})
         self.assertEqual(f(0), [np.sin(0)])
@@ -55,7 +55,7 @@ class TestPiecewise(unittest.TestCase):
             return t, t**2, t**3
         def func2(t):
             return t**4, t**5, t**6
-                
+
         f = piecewise({0:func1, 0.5: func2})
         self.assertEqual(f(0), func1(0))
         self.assertEqual(f(0.25), func1(0.25))
@@ -63,8 +63,8 @@ class TestPiecewise(unittest.TestCase):
         self.assertEqual(f(0.5), func2(0.5))
         self.assertEqual(f(0.75), func2(0.75))
         self.assertEqual(f(1.0), func2(1.0))
-        
+
 
 if __name__ == "__main__":
-    nengo.log_to_file('log.txt', debug=True)
+    nengo.log(debug=True, path='log.txt')
     unittest.main()

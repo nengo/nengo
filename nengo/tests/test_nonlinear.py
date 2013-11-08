@@ -1,11 +1,8 @@
 import numpy as np
 
 import nengo
-import nengo.simulator as simulator
-from nengo.builder import Signal
-from nengo.builder import DotInc, ProdUpdate
-from nengo.nonlinearities import Direct, LIF, LIFRate
-from nengo.tests.helpers import SimulatorTestCase, unittest, rms
+from nengo.nonlinearities import LIF
+from nengo.tests.helpers import unittest
 
 import logging
 logger = logging.getLogger(__name__)
@@ -39,5 +36,5 @@ class TestNonlinearBuiltins(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    nengo.log_to_file('log.txt', debug=True)
+    nengo.log(debug=True, path='log.txt')
     unittest.main()
