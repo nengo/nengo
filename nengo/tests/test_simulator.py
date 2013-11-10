@@ -2,7 +2,7 @@ import numpy as np
 
 import nengo
 import nengo.simulator as simulator
-from nengo.nonlinearities import Direct, LIF, LIFRate
+from nengo.nonlinearities import PythonFunction, LIF, LIFRate
 from nengo.builder import Builder
 from nengo.builder import Signal
 from nengo.builder import ProdUpdate, Reset, DotInc, Copy
@@ -92,17 +92,17 @@ class TestSimulator(unittest.TestCase):
         self.assertTrue(np.all(sim.signals[two] == [4, 2]))
         self.assertTrue(np.all(sim.signals[three] == [1, 2, 3]))
 
-    def test_simple_direct_mode(self):
+    def test_simple_pyfunc(self):
         dt = 0.001
-        m = nengo.Model("test_simple_direct_mode")
+        m = nengo.Model("test_simple_pyfunc")
 
         time = Signal(np.zeros(1), name='time')
         sig = Signal(np.zeros(1), name='sig')
-        pop = Direct(n_in=1, n_out=1, fn=np.sin)
+        pop = PythonFunction(fn=np.sin, n_in=1)
         m.operators = []
         b = Builder()
         b.model = m
-        b.build_direct(pop)
+        b.build_pyfunc(pop)
         m.operators += [
             ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
             DotInc(Signal([[1.0]]), time, pop.input_signal),
@@ -133,15 +133,14 @@ class TestSimulator(unittest.TestCase):
         m = nengo.Model("")
         dt = 0.001
         foo = Signal([1.0], name='foo')
-        pop = Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop')
-
+        pop = PythonFunction(fn=lambda x: x + 1, n_in=2, name='pop')
         decoders = np.asarray([.2,.1])
-        decs = Signal(decoders*0.5)
+        decs = Signal(decoders * 0.5)
 
         m.operators = []
         b = Builder()
         b.model = m
-        b.build_direct(pop)
+        b.build_pyfunc(pop)
         m.operators += [
             DotInc(Signal([[1.0],[2.0]]), foo, pop.input_signal),
             ProdUpdate(decs, pop.output_signal, Signal(0.2), foo)
@@ -190,14 +189,13 @@ class TestSimulator(unittest.TestCase):
         m = nengo.Model("")
         dt = 0.001
         foo = Signal([1.0], name='foo')
-        pop = Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop')
-
+        pop = PythonFunction(fn=lambda x: x + 1, n_in=2, name='pop')
         decoders = np.asarray([.2,.1])
 
         m.operators = []
         b = Builder()
         b.model = m
-        b.build_direct(pop)
+        b.build_pyfunc(pop)
         m.operators += [
             DotInc(Signal([[1.0], [2.0]]), foo[:], pop.input_signal),
             ProdUpdate(
@@ -239,8 +237,8 @@ class TestSimulator(unittest.TestCase):
 class TestNonlinear(unittest.TestCase):
     Simulator = simulator.Simulator
 
-    def test_direct(self):
-        """Test direct mode"""
+    def test_pyfunc(self):
+        """Test Python Function nonlinearity"""
 
         dt = 0.001
         d = 3
@@ -257,11 +255,11 @@ class TestNonlinear(unittest.TestCase):
 
             m = nengo.Model("")
             ins = Signal(x, name='ins')
-            pop = Direct(n_in=d, n_out=d, fn=fn)
+            pop = PythonFunction(fn=fn, n_in=d)
             m.operators = []
             b = Builder()
             b.model = m
-            b.build_direct(pop)
+            b.build_pyfunc(pop)
             m.operators += [
                 DotInc(Signal(np.eye(d)), ins, pop.input_signal),
                 ProdUpdate(Signal(np.eye(d)), pop.output_signal, Signal(0), ins)
