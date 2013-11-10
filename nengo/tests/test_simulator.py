@@ -31,7 +31,6 @@ class TestSimulator(unittest.TestCase):
         five = Signal([5.0])
         zeroarray = Signal([[0,0,0]])
         array = Signal([1,2,3])
-        m.signals = [zero, one, five, array]
         m.operators = [ProdUpdate(zero, zero, one, five),
                        ProdUpdate(one, zeroarray, one, array)]
 
@@ -73,7 +72,6 @@ class TestSimulator(unittest.TestCase):
         two = Signal(np.zeros(2), name='b')
         three = Signal(np.zeros(3), name='c')
         tmp = Signal(np.zeros(3), name='tmp')
-        m.signals = [one, two, three, tmp]
 
         m.operators = [
             ProdUpdate(Signal(1), three[:1], Signal(0), one),
@@ -101,9 +99,10 @@ class TestSimulator(unittest.TestCase):
         time = Signal(np.zeros(1), name='time')
         sig = Signal(np.zeros(1), name='sig')
         pop = Direct(n_in=1, n_out=1, fn=np.sin)
-        m.signals = [sig, time]
         m.operators = []
-        Builder().build_direct(pop, m, dt)
+        b = Builder()
+        b.model = m
+        b.build_direct(pop)
         m.operators += [
             ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
             DotInc(Signal([[1.0]]), time, pop.input_signal),
@@ -139,9 +138,10 @@ class TestSimulator(unittest.TestCase):
         decoders = np.asarray([.2,.1])
         decs = Signal(decoders*0.5)
 
-        m.signals = [foo, decs]
         m.operators = []
-        Builder().build_direct(pop, m, dt)
+        b = Builder()
+        b.model = m
+        b.build_direct(pop)
         m.operators += [
             DotInc(Signal([[1.0],[2.0]]), foo, pop.input_signal),
             ProdUpdate(decs, pop.output_signal, Signal(0.2), foo)
@@ -194,9 +194,10 @@ class TestSimulator(unittest.TestCase):
 
         decoders = np.asarray([.2,.1])
 
-        m.signals = [foo]
         m.operators = []
-        Builder().build_direct(pop, m, dt)
+        b = Builder()
+        b.model = m
+        b.build_direct(pop)
         m.operators += [
             DotInc(Signal([[1.0], [2.0]]), foo[:], pop.input_signal),
             ProdUpdate(
@@ -257,9 +258,10 @@ class TestNonlinear(unittest.TestCase):
             m = nengo.Model("")
             ins = Signal(x, name='ins')
             pop = Direct(n_in=d, n_out=d, fn=fn)
-            m.signals = [ins]
             m.operators = []
-            Builder().build_direct(pop, m, dt)
+            b = Builder()
+            b.model = m
+            b.build_direct(pop)
             m.operators += [
                 DotInc(Signal(np.eye(d)), ins, pop.input_signal),
                 ProdUpdate(Signal(np.eye(d)), pop.output_signal, Signal(0), ins)
@@ -292,10 +294,10 @@ class TestNonlinear(unittest.TestCase):
         lif = cls(n)
         lif.set_gain_bias(max_rates=rng.uniform(low=10, high=200, size=n),
                           intercepts=rng.uniform(low=-1, high=1, size=n))
-        m.signals = [ins]
         m.operators = []
         b = Builder()
-        b._builders[cls](lif, m, dt)
+        b.model = m
+        b._builders[cls](lif)
         m.operators += [DotInc(Signal(np.ones((n,d))), ins, lif.input_signal)]
 
         sim = m.simulator(sim_class=self.Simulator, dt=dt, builder=testbuilder)
