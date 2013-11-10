@@ -262,55 +262,6 @@ class PassthroughNode(object):
         return p
 
 
-class ConstantNode(object):
-    def __init__(self, name, output):
-        self.name = name
-        self.output = output
-
-        # Set up connections and probes
-        self.connections_in = []
-        self.connections_out = []
-        self.probes = {'output': []}
-
-    @property
-    def output(self):
-        return self._output
-
-    @output.setter
-    def output(self, _output):
-        self._output = np.asarray(_output)
-        if self._output.shape == ():
-            self._output.shape = (1,)
-
-    def __str__(self):
-        return "Constant Node: " + self.name
-
-    def connect_to(self, post, **kwargs):
-        connection = SignalConnection(self, post, **kwargs)
-        self.connections_out.append(connection)
-        if hasattr(post, 'connections_in'):
-            post.connections_in.append(connection)
-        return connection
-
-    def probe(self, to_probe='output', sample_every=0.001, filter=None):
-        """TODO"""
-        if filter is not None and filter > 0:
-            logger.warning("Filter set on constant. Usually accidental.")
-
-        if to_probe == 'output':
-            p = Probe(self.name + ".output", sample_every)
-            self.connect_to(p, filter=filter)
-            self.probes['output'].append(p)
-        return p
-
-    def add_to_model(self, model):
-        if model.objs.has_key(self.name):
-            raise ValueError("Something called " + self.name + " already "
-                             "exists. Please choose a different name.")
-
-        model.objs[self.name] = self
-
-
 class Node(object):
     """Provides arbitrary data to Nengo objects.
 
@@ -341,8 +292,6 @@ class Node(object):
     """
 
     def __init__(self, name, output, dimensions=1):
-        assert callable(output), "Use ConstantNode for constant nodes."
-
         self.name = name
         self.output = output
         self.dimensions = dimensions
