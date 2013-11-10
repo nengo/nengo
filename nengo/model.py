@@ -325,11 +325,9 @@ class Model(object):
         Node : The Node object
 
         """
+        node = objects.Node(name, output)
         if callable(output):
-            node = objects.Node(name, output)
             self.connect(self.t, node, filter=None)
-        else:
-            node = objects.ConstantNode(name, output)
         return self.add(node)
 
     def connect(self, pre, post, **kwargs):

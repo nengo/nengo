@@ -851,40 +851,37 @@ class Builder(object):
             probe.dimensions = ptn.dimensions
             self.model.add(probe)
 
-    @builds(objects.ConstantNode)
-    def build_constantnode(self, cn):
-        # Set up signal
-        cn.signal = Signal(cn.output, name=cn.name)
-
-        # Set up probes
-        for probe in cn.probes['output']:
-            probe.dimensions = cn.output.size
-
     @builds(objects.Node)
     def build_node(self, node):
-        # Set up signals
-        node.signal = Signal(np.zeros(node.dimensions),
-                             name=node.name + ".signal")
+        if not callable(node.output):
+            if isinstance(node.output, (int, float, long, complex)):
+                node.signal = Signal([node.output], name=node.name)
+            else:
+                node.signal = Signal(node.output, name=node.name)
+            node.output_signal = node.signal
+        else:
+            node.signal = Signal(np.zeros(node.dimensions),
+                                 name=node.name + ".signal")
 
-        #reset input signal to 0 each timestep
-        self.model.operators.append(Reset(node.signal))
+            #reset input signal to 0 each timestep
+            self.model.operators.append(Reset(node.signal))
 
-        # Set up non-linearity
-        n_out = np.array(node.output(np.ones(node.dimensions))).size
-        node.nonlinear = nonlinearities.Direct(n_in=node.dimensions,
-                                               n_out=n_out,
-                                               fn=node.output,
-                                               name=node.name + ".Direct")
-        self.build_direct(node.nonlinear)
+            # Set up non-linearity
+            n_out = np.array(node.output(np.ones(node.dimensions))).size
+            node.nonlinear = nonlinearities.Direct(n_in=node.dimensions,
+                                                   n_out=n_out,
+                                                   fn=node.output,
+                                                   name=node.name + ".Direct")
+            self.build_direct(node.nonlinear)
+            node.output_signal = node.nonlinear.output_signal
 
-        # Set up encoder
-        self.model.operators.append(DotInc(node.signal,
-                                           Signal([[1.0]]),
-                                           node.nonlinear.input_signal))
+            self.model.operators.append(DotInc(node.signal,
+                                               Signal([[1.0]]),
+                                               node.nonlinear.input_signal))
 
         # Set up probes
         for probe in node.probes['output']:
-            probe.dimensions = node.nonlinear.output_signal.shape
+            probe.dimensions = node.output_signal.shape
 
     @builds(objects.Probe)
     def build_probe(self, probe):
@@ -948,13 +945,11 @@ class Builder(object):
 
     @builds(objects.NonlinearityConnection)
     def build_nonlinearityconnection(self, conn):
-        # Pre must be a nonlinearity
-        if not isinstance(conn.pre, nonlinearities.Nonlinearity):
-            conn.pre = conn.pre.nonlinear
-
-        # then get the output signal of the nonlinearity
         if not isinstance(conn.pre, SignalView):
-            conn.pre = conn.pre.output_signal
+            if hasattr(conn.pre, 'nonlinear'):
+                conn.pre = conn.pre.nonlinear.output_signal
+            else:
+                conn.pre = conn.pre.output_signal
 
         # Post could be a node / ensemble, etc
         if isinstance(conn.post, nonlinearities.Nonlinearity):
