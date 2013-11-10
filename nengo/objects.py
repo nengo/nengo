@@ -42,7 +42,7 @@ class Ensemble(object):
     ----------
     name : str
         An arbitrary name for the new ensemble.
-    neurons : Nonlinearity
+    neurons : Neurons
         The neuron model. This object defines both the
         number and type of neurons.
     dimensions : int
@@ -72,8 +72,8 @@ class Ensemble(object):
 
     def __init__(self, name, neurons, dimensions, **kwargs):
         self.name = name
+        self.dimensions = dimensions # Must be set before neurons
         self.neurons = neurons
-        self.dimensions = dimensions
 
         if 'decoder_noise' in kwargs:
             raise NotImplementedError('decoder_noise')
@@ -110,25 +110,31 @@ class Ensemble(object):
         return self.neurons.n_neurons
 
     @property
+    def nl(self):
+        return self._neurons
+
+    @property
     def neurons(self):
         """The neurons that make up the ensemble.
 
         Returns
         -------
-        ~ : Nonlinearity
+        ~ : Neurons
         """
         return self._neurons
 
     @neurons.setter
     def neurons(self, _neurons):
         if isinstance(_neurons, int):
-            logger.warning(("neurons should be an instance of a nonlinearity, "
+            logger.warning(("neurons should be an instance of a Neuron type, "
                             "not an int. Defaulting to LIF."))
             _neurons = nonlinearities.LIF(_neurons)
 
         # Give a better name if name is default
-        if _neurons.name.startswith("<LIF"):
+        if _neurons.name.startswith("<"):
             _neurons.name = self.name + "." + _neurons.__class__.__name__
+        # Store dimensions on neurons (necessary for some classes)
+        _neurons.dimensions = self.dimensions
         self._neurons = _neurons
 
     def activities(self, eval_points=None):
@@ -397,7 +403,7 @@ class Connection(object):
 
 
 class DecodedConnection(Connection):
-    """A DecodedConnection connects an ensemble to a Signal
+    """A DecodedConnection connects an ensemble to an object
     via a set of decoders, a transform, and a filter.
 
     Attributes
