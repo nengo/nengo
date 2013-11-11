@@ -901,74 +901,49 @@ class Builder(object):
         decay = np.exp(-dt / pstc)
         return decay, (1.0 - decay)
 
-    def _build_connection_filter(self, conn):
-        if conn.filter is not None and conn.filter > self.model.dt:
-            # Set up signal
-            name = conn.pre.name + ".filtered(%f)" % conn.filter
-            conn.signal = Signal(np.zeros(conn.pre.size), name=name)
-
-            # Set up filters and transforms
-            o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=self.model.dt)
-            self.model.operators.append(ProdUpdate(Signal(n_coef),
-                                                   conn.pre,
-                                                   Signal(o_coef),
-                                                   conn.signal))
-        else:
-            # Signal should already be in the model
-            conn.signal = conn.pre
-
-    def _build_connection_transform(self, conn):
-        self.model.operators.append(DotInc(Signal(conn.transform),
-                                           conn.signal,
-                                           conn.post))
-
     def _build_connection_probes(self, conn):
         for probe in conn.probes['signal']:
             probe.dimensions = conn.signal.size
             self.model.add(probe)
 
-    @builds(objects.SignalConnection)
-    def build_signalconnection(self, conn):
-        # Pre / post may be high level objects (ensemble, node) or signals
-        if not isinstance(conn.pre, SignalView):
-            conn.pre = conn.pre.signal
+    def _filtered_signal(self, signal, filter):
+        name = signal.name + ".filtered(%f)" % filter
+        filtered = Signal(np.zeros(signal.size), name=name)
+        o_coef, n_coef = self.filter_coefs(pstc=filter, dt=self.model.dt)
+        self.model.operators.append(ProdUpdate(
+            Signal(n_coef), signal, Signal(o_coef), filtered))
+        return filtered
 
-        if not isinstance(conn.post, SignalView):
-            conn.post = conn.post.signal
+    @builds(objects.Connection)
+    def build_connection(self, conn):
+        # Get signal from pre (could be ensemble, node, etc)
+        if isinstance(conn.pre, objects.Ensemble):
+            conn.signal = conn.pre.nl.output_signal
+        elif isinstance(conn.pre, (nonlinearities.Nonlinearity, objects.Node)):
+            conn.signal = conn.pre.output_signal
+        else:
+            conn.signal = conn.pre.signal
 
-        # Set up filters and transform
-        self._build_connection_filter(conn)
-        self._build_connection_transform(conn)
+        # Get signal from post (could be ensemble, node, etc)
+        if isinstance(conn.post, objects.Ensemble):
+            conn.post_sig = conn.post.signal
+        elif isinstance(conn.post, nonlinearities.Nonlinearity):
+            conn.transform *= conn.post.gain[:, np.newaxis]
+            conn.post_sig = conn.post.input_signal
+        else:
+            conn.post_sig = conn.post.signal
 
-        # Set up probes
-        self._build_connection_probes(conn)
+        # Set up filter
+        if conn.filter is not None and conn.filter > self.model.dt:
+            conn.signal = self._filtered_signal(conn.signal, conn.filter)
 
-    @builds(objects.NonlinearityConnection)
-    def build_nonlinearityconnection(self, conn):
-        if not isinstance(conn.pre, SignalView):
-            if hasattr(conn.pre, 'nonlinear'):
-                conn.pre = conn.pre.nonlinear.output_signal
-            else:
-                conn.pre = conn.pre.output_signal
-
-        # Post could be a node / ensemble, etc
-        if isinstance(conn.post, nonlinearities.Nonlinearity):
-            if isinstance(conn.post, nonlinearities.NeuralNonlinearity):
-                conn.transform = conn.transform * conn.post.gain[:,None]
-            conn.post = conn.post.input_signal
-        elif not isinstance(conn.post, SignalView):
-            conn.post = conn.post.signal
-
-        # Set up filters and transform
-        self._build_connection_filter(conn)
-        self._build_connection_transform(conn)
-
-        # Set up probes
-        self._build_connection_probes(conn)
+        # Set up transform
+        self.model.operators.append(DotInc(
+            Signal(conn.transform), conn.signal, conn.post_sig))
 
     @builds(objects.DecodedConnection)
     def build_decodedconnection(self, conn):
-        # Pre must be an ensemble -- but, don't want to import objects
+        # Pre must be an ensemble
         assert isinstance(conn.pre, objects.Ensemble)
 
         # Post could be a node / ensemble, etc
@@ -1014,8 +989,9 @@ class Builder(object):
                            conn.pre,
                            Signal(0),
                            conn.signal))
-
-        self._build_connection_transform(conn)
+        # Set up transform
+        self.model.operators.append(DotInc(
+            Signal(conn.transform), conn.signal, conn.post))
 
         # Set up probes
         self._build_connection_probes(conn)
