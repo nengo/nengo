@@ -6,7 +6,7 @@ from nengo.nonlinearities import PythonFunction, LIF, LIFRate
 from nengo.builder import Builder
 from nengo.builder import Signal
 from nengo.builder import ProdUpdate, Reset, DotInc, Copy
-from nengo.tests.helpers import unittest, rms
+from nengo.tests.helpers import unittest, rms, assert_allclose
 
 import logging
 logger = logging.getLogger(__name__)
@@ -276,8 +276,8 @@ class TestNonlinear(unittest.TestCase):
                 p0 = fn(s0)
                 s0 = tmp
                 sim.step()
-                assert np.allclose(s0, sim.signals[ins])
-                assert np.allclose(p0, sim.signals[pop.output_signal])
+                assert_allclose(self, logger, s0, sim.signals[ins])
+                assert_allclose(self, logger, p0, sim.signals[pop.output_signal])
 
     def _test_lif_base(self, cls=LIF):
         """Test that the dynamic model approximately matches the rates"""
