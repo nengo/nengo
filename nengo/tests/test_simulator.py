@@ -29,10 +29,10 @@ class TestSimulator(unittest.TestCase):
         zero = Signal([0])
         one = Signal([1])
         five = Signal([5.0])
-        zeroarray = Signal([[0,0,0]])
+        zeroarray = Signal([[0],[0],[0]])
         array = Signal([1,2,3])
         m.operators = [ProdUpdate(zero, zero, one, five),
-                       ProdUpdate(one, zeroarray, one, array)]
+                       ProdUpdate(zeroarray, one, one, array)]
 
         sim = m.simulator(sim_class=self.Simulator, builder=testbuilder)
         self.assertEqual(0, sim.signals[sim.get(zero)][0])
