@@ -529,11 +529,10 @@ class DotInc(Operator):
     """
     Increment signal Y by dot(A, X)
     """
-    def __init__(self, A, X, Y, xT=False, tag=None):
+    def __init__(self, A, X, Y, tag=None):
         self.A = A
         self.X = X
         self.Y = Y
-        self.xT = xT
         self.tag = tag
 
         self.reads = [self.A, self.X]
@@ -547,7 +546,6 @@ class DotInc(Operator):
         X = dct[self.X]
         A = dct[self.A]
         Y = dct[self.Y]
-        X = X.T if self.xT else X
         reshape = reshape_dot(A, X, Y, self.tag)
         def step():
             inc =  np.dot(A, X)
