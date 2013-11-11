@@ -11,12 +11,12 @@ from nengo.helpers import piecewise
 
 logger = logging.getLogger(__name__)
 
-class TestNonlinearityConnection(SimulatorTestCase):
+class TestConnection(SimulatorTestCase):
 
-    def test_nonlinearity_to_nonlinearity(self):
+    def test_neurons_to_neurons(self):
         N = 30
 
-        m = nengo.Model('test_nonlinearity_to_nonlinearity', seed=123)
+        m = nengo.Model('test_neurons_to_neurons', seed=123)
         a = m.make_ensemble('A', nengo.LIF(N), dimensions=1)
         m.make_node('in', output=np.sin)
         m.make_node('inh', piecewise({0:0,2.5:1}))
@@ -41,17 +41,17 @@ class TestNonlinearityConnection(SimulatorTestCase):
             plt.plot(t, sim.data('inh'), label='Inhib signal')
             plt.plot(t, sim.data('ideal'), label='Ideal output')
             plt.legend(loc=0, prop={'size':10})
-            plt.savefig('test_tononlinearity_connection.test_nonlinearity_to_nonlinearity.pdf')
+            plt.savefig('test_connection.test_neurons_to_neurons.pdf')
             plt.close()
 
         self.assertTrue(np.allclose(sim.data('A')[-10:], sim.data('ideal')[-10:],
                                     atol=.1, rtol=.01))
 
 
-    def test_decoder_to_nonlinearity(self):
+    def test_decoded_to_neurons(self):
         N = 30
 
-        m = nengo.Model('test_decoder_to_nonlinearity', seed=123)
+        m = nengo.Model('test_decoded_to_neurons', seed=123)
         a = m.make_ensemble('A', nengo.LIF(N), dimensions=1)
         b = m.make_ensemble('B', nengo.LIF(N), dimensions=1)
         m.make_node('in', output=np.sin)
@@ -80,7 +80,7 @@ class TestNonlinearityConnection(SimulatorTestCase):
             plt.plot(t, sim.data('inh'), label='Inhib signal')
             plt.plot(t, sim.data('ideal'), label='Ideal output')
             plt.legend(loc=0, prop={'size':10})
-            plt.savefig('test_tononlinearity_connection.test_decoder_to_nonlinearity.pdf')
+            plt.savefig('test_connection.test_decoded_to_neurons.pdf')
             plt.close()
 
         self.assertTrue(np.allclose(sim.data('A')[-10:], sim.data('ideal')[-10:],

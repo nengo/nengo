@@ -174,8 +174,21 @@ class SimulatorTestCase(unittest.TestCase):
     """
     Simulator = nengo.simulator.Simulator
 
+atols = {np.dtype(np.float32): 1e-7}
+rtols = {np.dtype(np.float32): 1e-4}
 
-def assert_allclose(self, logger, a, b, atol=1e-8, rtol=1e-5):
+def assert_allclose(self, logger, a, b, atol=None, rtol=None):
+    if atol is None:
+        try:
+            atol = atols[a.dtype]
+        except KeyError:
+            atol = 1e-8
+    if rtol is None:
+        try:
+            rtol = rtols[a.dtype]
+        except KeyError:
+            rtol = 1e-5
+
     a, b = a.flatten(), b.flatten()
     mask = np.abs(a - b) > atol + rtol * np.abs(b)
     if mask.any():

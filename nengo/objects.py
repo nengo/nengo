@@ -42,7 +42,7 @@ class Ensemble(object):
     ----------
     name : str
         An arbitrary name for the new ensemble.
-    neurons : Nonlinearity
+    neurons : Neurons
         The neuron model. This object defines both the
         number and type of neurons.
     dimensions : int
@@ -72,8 +72,8 @@ class Ensemble(object):
 
     def __init__(self, name, neurons, dimensions, **kwargs):
         self.name = name
+        self.dimensions = dimensions # Must be set before neurons
         self.neurons = neurons
-        self.dimensions = dimensions
 
         if 'decoder_noise' in kwargs:
             raise NotImplementedError('decoder_noise')
@@ -110,25 +110,31 @@ class Ensemble(object):
         return self.neurons.n_neurons
 
     @property
+    def nl(self):
+        return self._neurons
+
+    @property
     def neurons(self):
         """The neurons that make up the ensemble.
 
         Returns
         -------
-        ~ : Nonlinearity
+        ~ : Neurons
         """
         return self._neurons
 
     @neurons.setter
     def neurons(self, _neurons):
         if isinstance(_neurons, int):
-            logger.warning(("neurons should be an instance of a nonlinearity, "
+            logger.warning(("neurons should be an instance of a Neuron type, "
                             "not an int. Defaulting to LIF."))
             _neurons = nonlinearities.LIF(_neurons)
 
         # Give a better name if name is default
-        if _neurons.name.startswith("<LIF"):
+        if _neurons.name.startswith("<"):
             _neurons.name = self.name + "." + _neurons.__class__.__name__
+        # Store dimensions on neurons (necessary for some classes)
+        _neurons.dimensions = self.dimensions
         self._neurons = _neurons
 
     def activities(self, eval_points=None):
@@ -202,7 +208,7 @@ class Ensemble(object):
 
         elif to_probe == 'spikes':
             probe = Probe(self.name + '.spikes', sample_every)
-            connection = NonlinearityConnection(
+            connection = Connection(
                 self.neurons, probe, filter=filter,
                 transform=np.eye(self.n_neurons))
             self.connections_out.append(connection)
@@ -212,7 +218,7 @@ class Ensemble(object):
 
         elif to_probe == 'voltages':
             probe = Probe(self.name + '.voltages', sample_every, self.n_neurons)
-            connection = SignalConnection(
+            connection = Connection(
                 self.neurons.voltage, probe, filter=None)
             self.connections_out.append(connection)
             if hasattr(probe, 'connections_in'):
@@ -241,7 +247,7 @@ class PassthroughNode(object):
         self.probes = {'output': []}
 
     def connect_to(self, post, **kwargs):
-        connection = SignalConnection(self, post, **kwargs)
+        connection = Connection(self, post, **kwargs)
         self.connections_out += [connection]
 
     def add_to_model(self, model):
@@ -260,55 +266,6 @@ class PassthroughNode(object):
             self.connect_to(p, filter=filter)
             self.probes['output'].append(p)
         return p
-
-
-class ConstantNode(object):
-    def __init__(self, name, output):
-        self.name = name
-        self.output = output
-
-        # Set up connections and probes
-        self.connections_in = []
-        self.connections_out = []
-        self.probes = {'output': []}
-
-    @property
-    def output(self):
-        return self._output
-
-    @output.setter
-    def output(self, _output):
-        self._output = np.asarray(_output)
-        if self._output.shape == ():
-            self._output.shape = (1,)
-
-    def __str__(self):
-        return "Constant Node: " + self.name
-
-    def connect_to(self, post, **kwargs):
-        connection = SignalConnection(self, post, **kwargs)
-        self.connections_out.append(connection)
-        if hasattr(post, 'connections_in'):
-            post.connections_in.append(connection)
-        return connection
-
-    def probe(self, to_probe='output', sample_every=0.001, filter=None):
-        """TODO"""
-        if filter is not None and filter > 0:
-            logger.warning("Filter set on constant. Usually accidental.")
-
-        if to_probe == 'output':
-            p = Probe(self.name + ".output", sample_every)
-            self.connect_to(p, filter=filter)
-            self.probes['output'].append(p)
-        return p
-
-    def add_to_model(self, model):
-        if model.objs.has_key(self.name):
-            raise ValueError("Something called " + self.name + " already "
-                             "exists. Please choose a different name.")
-
-        model.objs[self.name] = self
 
 
 class Node(object):
@@ -341,8 +298,6 @@ class Node(object):
     """
 
     def __init__(self, name, output, dimensions=1):
-        assert callable(output), "Use ConstantNode for constant nodes."
-
         self.name = name
         self.output = output
         self.dimensions = dimensions
@@ -376,7 +331,7 @@ class Node(object):
 
     def connect_to(self, post, **kwargs):
         """TODO"""
-        connection = NonlinearityConnection(self, post, **kwargs)
+        connection = Connection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
@@ -398,13 +353,15 @@ class Node(object):
         model.objs[self.name] = self
 
 
-class SignalConnection(object):
-    """A SimpleConnection connects two Signals (or objects with signals)
-    via a transform and a filter.
+class Connection(object):
+    """A Connection connects two objects naively via a transform and a filter.
 
     Attributes
     ----------
     name
+    pre
+    post
+
     filter : type
         description
     transform
@@ -419,6 +376,7 @@ class SignalConnection(object):
 
         self.filter = kwargs.get('filter', 0.005)
         self.transform = kwargs.get('transform', 1.0)
+        self.modulatory = kwargs.get('modulatory', False)
 
         self.probes = {'signal': []}
 
@@ -445,28 +403,8 @@ class SignalConnection(object):
         model.connections.append(self)
 
 
-class NonlinearityConnection(SignalConnection):
-    """A NonlinearityConnection connects a nonlinearity to a Signal
-    (or objects with those) via a transform and a filter.
-
-    Attributes
-    ----------
-    name
-    pre
-    post
-
-    filter : type
-        description
-    transform
-
-    probes : type
-        description
-
-    """
-    pass
-
-class DecodedConnection(SignalConnection):
-    """A DecodedConnection connects an ensemble to a Signal
+class DecodedConnection(Connection):
+    """A DecodedConnection connects an ensemble to an object
     via a set of decoders, a transform, and a filter.
 
     Attributes
@@ -488,16 +426,13 @@ class DecodedConnection(SignalConnection):
 
     """
     def __init__(self, pre, post, **kwargs):
-        SignalConnection.__init__(self, pre, post, **kwargs)
+        Connection.__init__(self, pre, post, **kwargs)
 
         self.decoders = kwargs.get('decoders', None)
         self.decoder_solver = kwargs.get('decoder_solver',
                                          decoders.least_squares)
         self.eval_points = kwargs.get('eval_points', None)
         self.function = kwargs.get('function', None)
-        # self.modulatory = kwargs.get('modulatory', False)
-        if 'modulatory' in kwargs:
-            raise NotImplementedError('modulatory')
 
     @property
     def decoders(self):
@@ -513,7 +448,9 @@ class DecodedConnection(SignalConnection):
             _decoders = np.asarray(_decoders)
             if _decoders.shape[0] != self.pre.n_neurons:
                 msg = ("Decoders axis 0 must be %d; in this case it is "
-                       "%d. (shape=%s)" % (self.pre.n_neurons, _decoders.shape[0], _decoders.shape))
+                       "%d. (shape=%s)" % (self.pre.n_neurons,
+                                           _decoders.shape[0],
+                                           _decoders.shape))
                 raise builder.ShapeMismatch(msg)
 
         self._decoders = None if _decoders is None else _decoders.T

@@ -2,11 +2,11 @@ import numpy as np
 
 import nengo
 import nengo.simulator as simulator
-from nengo.nonlinearities import Direct, LIF, LIFRate
+from nengo.nonlinearities import PythonFunction, LIF, LIFRate
 from nengo.builder import Builder
 from nengo.builder import Signal
 from nengo.builder import ProdUpdate, Reset, DotInc, Copy
-from nengo.tests.helpers import unittest, rms
+from nengo.tests.helpers import unittest, rms, assert_allclose
 
 import logging
 logger = logging.getLogger(__name__)
@@ -29,11 +29,10 @@ class TestSimulator(unittest.TestCase):
         zero = Signal([0])
         one = Signal([1])
         five = Signal([5.0])
-        zeroarray = Signal([[0,0,0]])
+        zeroarray = Signal([[0],[0],[0]])
         array = Signal([1,2,3])
-        m.signals = [zero, one, five, array]
         m.operators = [ProdUpdate(zero, zero, one, five),
-                       ProdUpdate(one, zeroarray, one, array)]
+                       ProdUpdate(zeroarray, one, one, array)]
 
         sim = m.simulator(sim_class=self.Simulator, builder=testbuilder)
         self.assertEqual(0, sim.signals[sim.get(zero)][0])
@@ -51,20 +50,20 @@ class TestSimulator(unittest.TestCase):
     def test_steps(self):
         m = nengo.Model("test_signal_indexing_1")
         sim = m.simulator(sim_class=self.Simulator)
-        self.assertEqual(0, sim.signals[sim.model.steps.signal])
+        self.assertEqual(0, sim.signals[sim.model.steps.output_signal])
         sim.step()
-        self.assertEqual(1, sim.signals[sim.model.steps.signal])
+        self.assertEqual(1, sim.signals[sim.model.steps.output_signal])
         sim.step()
-        self.assertEqual(2, sim.signals[sim.model.steps.signal])
+        self.assertEqual(2, sim.signals[sim.model.steps.output_signal])
 
     def test_time(self):
         m = nengo.Model("test_signal_indexing_1")
         sim = m.simulator(sim_class=self.Simulator)
-        self.assertEqual(0.00, sim.signals[sim.model.t.signal])
+        self.assertEqual(0.00, sim.signals[sim.model.t.output_signal])
         sim.step()
-        self.assertEqual(0.001, sim.signals[sim.model.t.signal])
+        self.assertEqual(0.001, sim.signals[sim.model.t.output_signal])
         sim.step()
-        self.assertEqual(0.002, sim.signals[sim.model.t.signal])
+        self.assertEqual(0.002, sim.signals[sim.model.t.output_signal])
 
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
@@ -73,7 +72,6 @@ class TestSimulator(unittest.TestCase):
         two = Signal(np.zeros(2), name='b')
         three = Signal(np.zeros(3), name='c')
         tmp = Signal(np.zeros(3), name='tmp')
-        m.signals = [one, two, three, tmp]
 
         m.operators = [
             ProdUpdate(Signal(1), three[:1], Signal(0), one),
@@ -94,16 +92,17 @@ class TestSimulator(unittest.TestCase):
         self.assertTrue(np.all(sim.signals[two] == [4, 2]))
         self.assertTrue(np.all(sim.signals[three] == [1, 2, 3]))
 
-    def test_simple_direct_mode(self):
+    def test_simple_pyfunc(self):
         dt = 0.001
-        m = nengo.Model("test_simple_direct_mode")
+        m = nengo.Model("test_simple_pyfunc")
 
         time = Signal(np.zeros(1), name='time')
         sig = Signal(np.zeros(1), name='sig')
-        pop = Direct(n_in=1, n_out=1, fn=np.sin)
-        m.signals = [sig, time]
+        pop = PythonFunction(fn=np.sin, n_in=1)
         m.operators = []
-        Builder().build_direct(pop, m, dt)
+        b = Builder()
+        b.model = m
+        b.build_pyfunc(pop)
         m.operators += [
             ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
             DotInc(Signal([[1.0]]), time, pop.input_signal),
@@ -134,14 +133,14 @@ class TestSimulator(unittest.TestCase):
         m = nengo.Model("")
         dt = 0.001
         foo = Signal([1.0], name='foo')
-        pop = Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop')
-
+        pop = PythonFunction(fn=lambda x: x + 1, n_in=2, name='pop')
         decoders = np.asarray([.2,.1])
-        decs = Signal(decoders*0.5)
+        decs = Signal(decoders * 0.5)
 
-        m.signals = [foo, decs]
         m.operators = []
-        Builder().build_direct(pop, m, dt)
+        b = Builder()
+        b.model = m
+        b.build_pyfunc(pop)
         m.operators += [
             DotInc(Signal([[1.0],[2.0]]), foo, pop.input_signal),
             ProdUpdate(decs, pop.output_signal, Signal(0.2), foo)
@@ -190,13 +189,13 @@ class TestSimulator(unittest.TestCase):
         m = nengo.Model("")
         dt = 0.001
         foo = Signal([1.0], name='foo')
-        pop = Direct(n_in=2, n_out=2, fn=lambda x: x + 1, name='pop')
-
+        pop = PythonFunction(fn=lambda x: x + 1, n_in=2, name='pop')
         decoders = np.asarray([.2,.1])
 
-        m.signals = [foo]
         m.operators = []
-        Builder().build_direct(pop, m, dt)
+        b = Builder()
+        b.model = m
+        b.build_pyfunc(pop)
         m.operators += [
             DotInc(Signal([[1.0], [2.0]]), foo[:], pop.input_signal),
             ProdUpdate(
@@ -238,8 +237,8 @@ class TestSimulator(unittest.TestCase):
 class TestNonlinear(unittest.TestCase):
     Simulator = simulator.Simulator
 
-    def test_direct(self):
-        """Test direct mode"""
+    def test_pyfunc(self):
+        """Test Python Function nonlinearity"""
 
         dt = 0.001
         d = 3
@@ -256,10 +255,11 @@ class TestNonlinear(unittest.TestCase):
 
             m = nengo.Model("")
             ins = Signal(x, name='ins')
-            pop = Direct(n_in=d, n_out=d, fn=fn)
-            m.signals = [ins]
+            pop = PythonFunction(fn=fn, n_in=d)
             m.operators = []
-            Builder().build_direct(pop, m, dt)
+            b = Builder()
+            b.model = m
+            b.build_pyfunc(pop)
             m.operators += [
                 DotInc(Signal(np.eye(d)), ins, pop.input_signal),
                 ProdUpdate(Signal(np.eye(d)), pop.output_signal, Signal(0), ins)
@@ -276,8 +276,8 @@ class TestNonlinear(unittest.TestCase):
                 p0 = fn(s0)
                 s0 = tmp
                 sim.step()
-                assert np.allclose(s0, sim.signals[ins])
-                assert np.allclose(p0, sim.signals[pop.output_signal])
+                assert_allclose(self, logger, s0, sim.signals[ins])
+                assert_allclose(self, logger, p0, sim.signals[pop.output_signal])
 
     def _test_lif_base(self, cls=LIF):
         """Test that the dynamic model approximately matches the rates"""
@@ -292,10 +292,10 @@ class TestNonlinear(unittest.TestCase):
         lif = cls(n)
         lif.set_gain_bias(max_rates=rng.uniform(low=10, high=200, size=n),
                           intercepts=rng.uniform(low=-1, high=1, size=n))
-        m.signals = [ins]
         m.operators = []
         b = Builder()
-        b._builders[cls](lif, m, dt)
+        b.model = m
+        b._builders[cls](lif)
         m.operators += [DotInc(Signal(np.ones((n,d))), ins, lif.input_signal)]
 
         sim = m.simulator(sim_class=self.Simulator, dt=dt, builder=testbuilder)
