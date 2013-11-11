@@ -11,7 +11,7 @@ from nengo.helpers import piecewise
 
 logger = logging.getLogger(__name__)
 
-class TestNonlinearityConnection(SimulatorTestCase):
+class TestConnection(SimulatorTestCase):
 
     def test_nonlinearity_to_nonlinearity(self):
         N = 30
@@ -41,7 +41,7 @@ class TestNonlinearityConnection(SimulatorTestCase):
             plt.plot(t, sim.data('inh'), label='Inhib signal')
             plt.plot(t, sim.data('ideal'), label='Ideal output')
             plt.legend(loc=0, prop={'size':10})
-            plt.savefig('test_tononlinearity_connection.test_nonlinearity_to_nonlinearity.pdf')
+            plt.savefig('test_connection.test_nonlinearity_to_nonlinearity.pdf')
             plt.close()
 
         self.assertTrue(np.allclose(sim.data('A')[-10:], sim.data('ideal')[-10:],
@@ -80,7 +80,7 @@ class TestNonlinearityConnection(SimulatorTestCase):
             plt.plot(t, sim.data('inh'), label='Inhib signal')
             plt.plot(t, sim.data('ideal'), label='Ideal output')
             plt.legend(loc=0, prop={'size':10})
-            plt.savefig('test_tononlinearity_connection.test_decoder_to_nonlinearity.pdf')
+            plt.savefig('test_connection.test_decoder_to_nonlinearity.pdf')
             plt.close()
 
         self.assertTrue(np.allclose(sim.data('A')[-10:], sim.data('ideal')[-10:],

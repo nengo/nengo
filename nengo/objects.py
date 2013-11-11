@@ -202,7 +202,7 @@ class Ensemble(object):
 
         elif to_probe == 'spikes':
             probe = Probe(self.name + '.spikes', sample_every)
-            connection = NonlinearityConnection(
+            connection = Connection(
                 self.neurons, probe, filter=filter,
                 transform=np.eye(self.n_neurons))
             self.connections_out.append(connection)
@@ -212,7 +212,7 @@ class Ensemble(object):
 
         elif to_probe == 'voltages':
             probe = Probe(self.name + '.voltages', sample_every, self.n_neurons)
-            connection = SignalConnection(
+            connection = Connection(
                 self.neurons.voltage, probe, filter=None)
             self.connections_out.append(connection)
             if hasattr(probe, 'connections_in'):
@@ -241,7 +241,7 @@ class PassthroughNode(object):
         self.probes = {'output': []}
 
     def connect_to(self, post, **kwargs):
-        connection = SignalConnection(self, post, **kwargs)
+        connection = Connection(self, post, **kwargs)
         self.connections_out += [connection]
 
     def add_to_model(self, model):
@@ -325,7 +325,7 @@ class Node(object):
 
     def connect_to(self, post, **kwargs):
         """TODO"""
-        connection = NonlinearityConnection(self, post, **kwargs)
+        connection = Connection(self, post, **kwargs)
         self.connections_out.append(connection)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(connection)
@@ -347,13 +347,15 @@ class Node(object):
         model.objs[self.name] = self
 
 
-class SignalConnection(object):
-    """A SimpleConnection connects two Signals (or objects with signals)
-    via a transform and a filter.
+class Connection(object):
+    """A Connection connects two objects naively via a transform and a filter.
 
     Attributes
     ----------
     name
+    pre
+    post
+
     filter : type
         description
     transform
@@ -394,27 +396,7 @@ class SignalConnection(object):
         model.connections.append(self)
 
 
-class NonlinearityConnection(SignalConnection):
-    """A NonlinearityConnection connects a nonlinearity to a Signal
-    (or objects with those) via a transform and a filter.
-
-    Attributes
-    ----------
-    name
-    pre
-    post
-
-    filter : type
-        description
-    transform
-
-    probes : type
-        description
-
-    """
-    pass
-
-class DecodedConnection(SignalConnection):
+class DecodedConnection(Connection):
     """A DecodedConnection connects an ensemble to a Signal
     via a set of decoders, a transform, and a filter.
 
@@ -437,7 +419,7 @@ class DecodedConnection(SignalConnection):
 
     """
     def __init__(self, pre, post, **kwargs):
-        SignalConnection.__init__(self, pre, post, **kwargs)
+        Connection.__init__(self, pre, post, **kwargs)
 
         self.decoders = kwargs.get('decoders', None)
         self.decoder_solver = kwargs.get('decoder_solver',
@@ -462,7 +444,9 @@ class DecodedConnection(SignalConnection):
             _decoders = np.asarray(_decoders)
             if _decoders.shape[0] != self.pre.n_neurons:
                 msg = ("Decoders axis 0 must be %d; in this case it is "
-                       "%d. (shape=%s)" % (self.pre.n_neurons, _decoders.shape[0], _decoders.shape))
+                       "%d. (shape=%s)" % (self.pre.n_neurons,
+                                           _decoders.shape[0],
+                                           _decoders.shape))
                 raise builder.ShapeMismatch(msg)
 
         self._decoders = None if _decoders is None else _decoders.T
