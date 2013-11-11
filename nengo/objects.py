@@ -376,6 +376,7 @@ class Connection(object):
 
         self.filter = kwargs.get('filter', 0.005)
         self.transform = kwargs.get('transform', 1.0)
+        self.modulatory = kwargs.get('modulatory', False)
 
         self.probes = {'signal': []}
 
@@ -432,9 +433,6 @@ class DecodedConnection(Connection):
                                          decoders.least_squares)
         self.eval_points = kwargs.get('eval_points', None)
         self.function = kwargs.get('function', None)
-        # self.modulatory = kwargs.get('modulatory', False)
-        if 'modulatory' in kwargs:
-            raise NotImplementedError('modulatory')
 
     @property
     def decoders(self):
