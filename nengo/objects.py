@@ -523,7 +523,11 @@ class DecodedConnection(SignalConnection):
         if self.function is None:
             return self.pre.dimensions
         else:
-            return np.array(self.function(np.ones(self.pre.dimensions,))).size
+            if self._eval_points is not None:
+                val = self._eval_points[0]
+            else:
+                val = np.ones(self.pre.dimensions)
+            return np.array(self.function(val)).size
 
     @property
     def eval_points(self):
