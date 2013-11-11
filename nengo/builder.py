@@ -744,19 +744,20 @@ class Builder(object):
             self._builders[c.__class__](c)
 
         # Set up t and timesteps
-        self.model.operators.append(ProdUpdate(
-            Signal(1), Signal(self.model.dt), Signal(1), self.model.t.signal))
-        self.model.operators.append(ProdUpdate(
-            Signal(1), Signal(1), Signal(1), self.model.steps.signal))
-
+        self.model.operators.append(
+            ProdUpdate(Signal(1),
+                       Signal(self.model.dt),
+                       Signal(1),
+                       self.model.t.output_signal))
+        self.model.operators.append(
+            ProdUpdate(Signal(1),
+                       Signal(1),
+                       Signal(1),
+                       self.model.steps.output_signal))
         return self.model
 
     @builds(objects.Ensemble)
     def build_ensemble(self, ens, signal=None):
-        if ens.n_neurons < 0:
-            raise ValueError(
-                'Number of neurons (%d) must be non-negative' % ens.n_neurons)
-
         if ens.dimensions <= 0:
             raise ValueError(
                 'Number of dimensions (%d) must be positive' % ens.dimensions)
@@ -777,19 +778,19 @@ class Builder(object):
 
         # Set up signal
         if signal is None:
-            ens.signal = Signal(np.zeros(ens.dimensions),
-                                name=ens.name + ".signal")
+            ens.input_signal = Signal(np.zeros(ens.dimensions),
+                                      name=ens.name + ".signal")
         else:
             # Assume that a provided signal is already in the model
-            ens.signal = signal
-            ens.dimensions = ens.signal.size
+            ens.input_signal = signal
+            ens.dimensions = ens.input_signal.size
 
         #reset input signal to 0 each timestep (unless this ensemble has
         #a view of a larger signal -- generally meaning it is an ensemble
         #in an ensemble array -- in which case something else will be
         #responsible for resetting)
-        if ens.signal.base == ens.signal:
-            self.model.operators.append(Reset(ens.signal))
+        if ens.input_signal.base == ens.input_signal:
+            self.model.operators.append(Reset(ens.input_signal))
 
         # Set up neurons
         if ens.neurons.gain is None or ens.neurons.bias is None:
@@ -819,11 +820,17 @@ class Builder(object):
             norm = np.sum(ens.encoders * ens.encoders, axis=1)[:, np.newaxis]
             ens.encoders /= np.sqrt(norm)
 
-        ens._scaled_encoders = ens.encoders * (
-            ens.neurons.gain / ens.radius)[:, np.newaxis]
+        if isinstance(ens.neurons, nonlinearities.Direct):
+            ens._scaled_encoders = ens.encoders
+        else:
+            ens._scaled_encoders = ens.encoders * (
+                ens.neurons.gain / ens.radius)[:, np.newaxis]
         self.model.operators.append(DotInc(Signal(ens._scaled_encoders),
-                                           ens.signal,
+                                           ens.input_signal,
                                            ens.neurons.input_signal))
+
+        # Output is neural output
+        ens.output_signal = ens.neurons.output_signal
 
         # Set up probes, but don't build them (done explicitly later)
         # Note: Have to set it up here because we only know these things
@@ -837,10 +844,12 @@ class Builder(object):
 
     @builds(objects.PassthroughNode)
     def build_passthrough(self, ptn):
-        ptn.signal = Signal(np.zeros(ptn.dimensions), name=ptn.name + ".signal")
+        ptn.input_signal = Signal(np.zeros(ptn.dimensions),
+                                  name=ptn.name + ".signal")
+        ptn.output_signal = ptn.input_signal
 
         #reset input signal to 0 each timestep
-        self.model.operators.append(Reset(ptn.signal))
+        self.model.operators.append(Reset(ptn.input_signal))
 
         # Set up probes
         for probe in ptn.probes['output']:
@@ -851,24 +860,23 @@ class Builder(object):
     def build_node(self, node):
         if not callable(node.output):
             if isinstance(node.output, (int, float, long, complex)):
-                node.signal = Signal([node.output], name=node.name)
+                node.output_signal = Signal([node.output], name=node.name)
             else:
-                node.signal = Signal(node.output, name=node.name)
-            node.output_signal = node.signal
+                node.output_signal = Signal(node.output, name=node.name)
         else:
-            node.signal = Signal(np.zeros(node.dimensions),
-                                 name=node.name + ".signal")
+            node.input_signal = Signal(np.zeros(node.dimensions),
+                                       name=node.name + ".signal")
 
             #reset input signal to 0 each timestep
-            self.model.operators.append(Reset(node.signal))
+            self.model.operators.append(Reset(node.input_signal))
 
-            node.nl = nonlinearities.PythonFunction(
+            node.pyfn = nonlinearities.PythonFunction(
                 fn=node.output, n_in=node.dimensions, name=node.name + ".pyfn")
-            self.build_pyfunc(node.nl)
-            node.output_signal = node.nl.output_signal
-
+            self.build_pyfunc(node.pyfn)
             self.model.operators.append(DotInc(
-                node.signal, Signal([[1.0]]), node.nl.input_signal))
+                node.input_signal, Signal([[1.0]]), node.pyfn.input_signal))
+            node.output_signal = node.pyfn.output_signal
+
         # Set up probes
         for probe in node.probes['output']:
             probe.dimensions = node.output_signal.shape
@@ -876,13 +884,13 @@ class Builder(object):
     @builds(objects.Probe)
     def build_probe(self, probe):
         # Set up signal
-        probe.signal = Signal(np.zeros(probe.dimensions), name=probe.name)
+        probe.input_signal = Signal(np.zeros(probe.dimensions), name=probe.name)
 
         #reset input signal to 0 each timestep
-        self.model.operators.append(Reset(probe.signal))
+        self.model.operators.append(Reset(probe.input_signal))
 
         # Set up probe
-        probe.probe = Probe(probe.signal, probe.sample_every)
+        probe.probe = Probe(probe.input_signal, probe.sample_every)
         self.model.probes.append(probe.probe)
 
     @staticmethod
@@ -890,11 +898,6 @@ class Builder(object):
         pstc = max(pstc, dt)
         decay = np.exp(-dt / pstc)
         return decay, (1.0 - decay)
-
-    def _build_connection_probes(self, conn):
-        for probe in conn.probes['signal']:
-            probe.dimensions = conn.signal.size
-            self.model.add(probe)
 
     def _filtered_signal(self, signal, filter):
         name = signal.name + ".filtered(%f)" % filter
@@ -906,44 +909,43 @@ class Builder(object):
 
     @builds(objects.Connection)
     def build_connection(self, conn):
-        # Get signal from pre (could be ensemble, node, etc)
-        if isinstance(conn.pre, objects.Ensemble):
-            conn.signal = conn.pre.nl.output_signal
-        elif isinstance(conn.pre, (nonlinearities.Neurons, objects.Node)):
-            conn.signal = conn.pre.output_signal
-        else:
-            conn.signal = conn.pre.signal
+        conn.input_signal = conn.pre.output_signal
+        conn.output_signal = conn.post.input_signal
+        if conn.modulatory:
+            # Make a new signal, effectively detaching from post
+            conn.output_signal = Signal(np.zeros(conn.dimensions),
+                                        name=conn.name + ".mod_output")
 
-        # Get signal from post (could be ensemble, node, etc)
-        if isinstance(conn.post, objects.Ensemble):
-            conn.post_sig = conn.post.signal
-        elif isinstance(conn.post, nonlinearities.Neurons):
+        if isinstance(conn.post, nonlinearities.Neurons):
             conn.transform *= conn.post.gain[:, np.newaxis]
-            conn.post_sig = conn.post.input_signal
-        else:
-            conn.post_sig = conn.post.signal
 
         # Set up filter
         if conn.filter is not None and conn.filter > self.model.dt:
-            conn.signal = self._filtered_signal(conn.signal, conn.filter)
+            conn.input_signal = self._filtered_signal(
+                conn.input_signal, conn.filter)
 
         # Set up transform
         self.model.operators.append(DotInc(
-            Signal(conn.transform), conn.signal, conn.post_sig))
+            Signal(conn.transform), conn.input_signal, conn.output_signal))
+
+        # Set up probes
+        for probe in conn.probes['signal']:
+            probe.dimensions = conn.output_signal.size
+            self.model.add(probe)
+
 
     @builds(objects.DecodedConnection)
     def build_decodedconnection(self, conn):
-        # Pre must be an ensemble
         assert isinstance(conn.pre, objects.Ensemble)
-
-        # Post could be a node / ensemble, etc
-        if isinstance(conn.post, objects.Ensemble):
-            conn.post_sig = conn.post.signal
+        conn.input_signal = conn.pre.output_signal
+        conn.output_signal = conn.post.input_signal
+        if conn.modulatory:
+            # Make a new signal, effectively detaching from post,
+            # but still performing the decoding
+            conn.output_signal = Signal(np.zeros(conn.dimensions),
+                                        name=conn.name + ".mod_output")
         if isinstance(conn.post, nonlinearities.Neurons):
             conn.transform *= conn.post.gain[:, np.newaxis]
-            conn.post_sig = conn.post.input_signal
-        else:
-            conn.post_sig = conn.post.signal
         dt = self.model.dt
 
         # A special case for Direct mode.
@@ -951,16 +953,14 @@ class Builder(object):
         # compute the function and make a direct connection.
         if isinstance(conn.pre.neurons, nonlinearities.Direct):
             if conn.function is None:
-                conn.signal = conn.pre.signal
+                conn.signal = conn.input_signal
             else:
                 name = conn.name + ".pyfunc"
                 conn.pyfunc = nonlinearities.PythonFunction(
-                    fn=conn.function, n_in=conn.pre.dimensions, name=name)
+                    fn=conn.function, n_in=conn.input_signal.size, name=name)
                 self.build_pyfunc(conn.pyfunc)
-                # Set up encoder
                 self.model.operators.append(DotInc(
-                    conn.pre.signal, Signal(1.0), conn.pyfunc.input_signal,
-                    tag="?"))
+                    conn.input_signal, Signal(1.0), conn.pyfunc.input_signal))
                 conn.signal = conn.pyfunc.output_signal
 
             # Set up filter
@@ -969,7 +969,7 @@ class Builder(object):
 
         else:
             # For normal decoded connections...
-            conn.pre_sig = conn.pre.neurons.output_signal
+            conn.input_signal = conn.pre.output_signal
             conn.signal = Signal(np.zeros(conn.dimensions), name=conn.name)
 
             # Set up decoders
@@ -989,22 +989,24 @@ class Builder(object):
                 o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
                 self.model.operators.append(
                     ProdUpdate(Signal(conn._decoders * n_coef),
-                               conn.pre_sig,
+                               conn.input_signal,
                                Signal(o_coef),
                                conn.signal))
             else:
                 self.model.operators.append(
                     ProdUpdate(Signal(conn._decoders),
-                               conn.pre_sig,
+                               conn.input_signal,
                                Signal(0),
                                conn.signal))
 
         # Set up transform
         self.model.operators.append(DotInc(
-            Signal(conn.transform), conn.signal, conn.post_sig))
+            Signal(conn.transform), conn.signal, conn.output_signal))
 
         # Set up probes
-        self._build_connection_probes(conn)
+        for probe in conn.probes['signal']:
+            probe.dimensions = conn.output_signal.size
+            self.model.add(probe)
 
     @builds(objects.ConnectionList)
     def build_connectionlist(self, conn):
@@ -1013,7 +1015,6 @@ class Builder(object):
         i = 0
         for connection in conn.connections:
             pre_dim = connection.dimensions
-
             if conn.transform.ndim == 0:
                 trans = np.zeros((connection.post.dimensions, pre_dim))
                 np.fill_diagonal(trans[i:i+pre_dim,:], conn.transform)
@@ -1022,63 +1023,71 @@ class Builder(object):
             else:
                 raise NotImplementedError(
                     "Only transforms with 0 or 2 ndims are accepted")
-
             i += pre_dim
-
             connection.transform = trans
             self._builders[connection.__class__](connection)
 
     @builds(templates.EnsembleArray)
     def build_ensemblearray(self, ea):
-        ea.signal = Signal(np.zeros(ea.dimensions), name=ea.name+".signal")
-        self.model.operators.append(Reset(ea.signal))
+        ea.input_signal = Signal(np.zeros(ea.dimensions),
+                                 name=ea.name+".signal")
+        self.model.operators.append(Reset(ea.input_signal))
         dims = ea.dimensions_per_ensemble
 
         for i, ens in enumerate(ea.ensembles):
-            self.build_ensemble(ens, signal=ea.signal[i*dims:(i+1)*dims])
+            self.build_ensemble(ens, signal=ea.input_signal[i*dims:(i+1)*dims])
 
         for probe in ea.probes['decoded_output']:
             probe.dimensions = ea.dimensions
 
     @builds(nonlinearities.PythonFunction)
-    def build_pyfunc(self, nl):
-        nl.input_signal = Signal(np.zeros(nl.n_in), name=nl.name + '.input')
-        nl.output_signal = Signal(np.zeros(nl.n_out), name=nl.name + '.output')
-        nl.operators = [
-            Reset(nl.input_signal),
-            SimPyFunc(output=nl.output_signal, J=nl.input_signal, fn=nl.fn)
-        ]
-        self.model.operators.extend(nl.operators)
+    def build_pyfunc(self, pyfn):
+        pyfn.input_signal = Signal(np.zeros(pyfn.n_in),
+                                   name=pyfn.name + '.input')
+        pyfn.output_signal = Signal(np.zeros(pyfn.n_out),
+                                    name=pyfn.name + '.output')
+        pyfn.operators = [Reset(pyfn.input_signal),
+                          SimPyFunc(output=pyfn.output_signal,
+                                    J=pyfn.input_signal,
+                                    fn=pyfn.fn)]
+        self.model.operators.extend(pyfn.operators)
 
-    def build_neurons(self, nl):
-        nl.input_signal = Signal(np.zeros(nl.n_in),
-                                 name=nl.name + '.input')
-        nl.output_signal = Signal(np.zeros(nl.n_out),
-                                  name=nl.name + '.output')
-        nl.bias_signal = Signal(nl.bias, name=nl.name + '.bias')
+    def build_neurons(self, neurons):
+        neurons.input_signal = Signal(np.zeros(neurons.n_in),
+                                      name=neurons.name + '.input')
+        neurons.output_signal = Signal(np.zeros(neurons.n_out),
+                                       name=neurons.name + '.output')
+        neurons.bias_signal = Signal(neurons.bias, name=neurons.name + '.bias')
         self.model.operators.append(
-            Copy(src=nl.bias_signal, dst=nl.input_signal))
+            Copy(src=neurons.bias_signal, dst=neurons.input_signal))
 
     @builds(nonlinearities.Direct)
-    def build_direct(self, nl):
-        nl.input_signal = Signal(np.zeros(nl.dimensions), name=nl.name)
-        nl.output_signal = nl.input_signal
-        self.model.operators.append(Reset(nl.input_signal))
+    def build_direct(self, direct):
+        direct.input_signal = Signal(np.zeros(direct.dimensions),
+                                     name=direct.name)
+        direct.output_signal = direct.input_signal
+        self.model.operators.append(Reset(direct.input_signal))
 
     @builds(nonlinearities.LIFRate)
     def build_lifrate(self, lif):
+        if lif.n_neurons <= 0:
+            raise ValueError(
+                'Number of neurons (%d) must be non-negative' % lif.n_neurons)
         self.build_neurons(lif)
         self.model.operators.append(SimLIFRate(output=lif.output_signal,
-                                          J=lif.input_signal,
-                                          nl=lif))
+                                               J=lif.input_signal,
+                                               nl=lif))
 
     @builds(nonlinearities.LIF)
     def build_lif(self, lif):
+        if lif.n_neurons <= 0:
+            raise ValueError(
+                'Number of neurons (%d) must be non-negative' % lif.n_neurons)
         self.build_neurons(lif)
         lif.voltage = Signal(np.zeros(lif.n_neurons))
         lif.refractory_time = Signal(np.zeros(lif.n_neurons))
         self.model.operators.append(SimLIF(output=lif.output_signal,
-                                      J=lif.input_signal,
-                                      nl=lif,
-                                      voltage=lif.voltage,
-                                      refractory_time=lif.refractory_time))
+                                           J=lif.input_signal,
+                                           nl=lif,
+                                           voltage=lif.voltage,
+                                           refractory_time=lif.refractory_time))

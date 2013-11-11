@@ -89,7 +89,7 @@ class Direct(Neurons):
         return J_without_bias
 
     def set_gain_bias(self, max_rates, intercepts):
-        self.gain = np.ones(self.dimensions)
+        pass
 
 
 # TODO: class BasisFunctions or Population or Express;
