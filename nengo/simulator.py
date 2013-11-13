@@ -11,7 +11,8 @@ import time
 import networkx as nx
 import numpy as np
 
-from .builder import Builder, Probe
+from .builder import Builder, SimulatorProbe
+from .objects import Probe, Node
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ class SignalDict(dict):
 class Simulator(object):
     """Reference simulator for models."""
 
-    def __init__(self, model, dt, seed=None, builder=None):
+    def __init__(self, model, dt=0.001, seed=None, builder=None):
         if builder is None:
             # By default, we'll use builder.Builder and copy the model.
             builder = Builder(copy=True)
@@ -77,7 +78,7 @@ class Simulator(object):
             if hasattr(node, 'make_step')]
         self._steps = [node.make_step(self._sigdict, self.model.dt)
             for node in self._step_order]
-
+        
         self.n_steps = 0
         self.probe_outputs = dict((probe, []) for probe in self.model.probes)
 
@@ -269,7 +270,7 @@ class Simulator(object):
         """Simulate for the given length of time."""
         steps = int(np.round(float(time_in_seconds) / self.model.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
-                     self.model.name, time_in_seconds, steps)
+                     self.model.label, time_in_seconds, steps)
         self.run_steps(steps)
 
     def run_steps(self, steps):
@@ -292,11 +293,13 @@ class Simulator(object):
         data : ndarray
             TODO: what are the dimensions?
         """
-        if not isinstance(probe, Probe):
-            if self.model.probed.has_key(probe):
-                probe = self.model.probed[probe]
-            else:
-                probe = self.model.probed[self.model.memo[id(probe)]]
+        if isinstance(probe, Probe):
+            #then map it to the simulator probe
+            probe = self.model.probemap[probe]
+#        else:
+#            #then probe is the target object
+#            probe = self.model.probed[self.model.objectmap[probe]].probe
+            
         return np.asarray(self.probe_outputs[probe])
 
     def probe_data(self, probe):

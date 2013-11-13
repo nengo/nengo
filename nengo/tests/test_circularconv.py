@@ -1,7 +1,6 @@
 import numpy as np
 
 import nengo
-from nengo.builder import Signal
 from nengo.templates import EnsembleArray
 from nengo.networks.circularconvolution import circconv
 from nengo.tests.helpers import (
@@ -58,43 +57,40 @@ class TestCircularConv(SimulatorTestCase):
 
         ### model
         model = nengo.Model("circular convolution")
-        inputA = model.make_node("inputA", output=a)
-        inputB = model.make_node("inputB", output=b)
-        A = model.add(EnsembleArray(
-            'A', nengo.LIF(n_neurons), dims, radius=radius))
-        B = model.add(EnsembleArray(
-            'B', nengo.LIF(n_neurons), dims, radius=radius))
-        C = model.add(EnsembleArray(
-            'C', nengo.LIF(n_neurons), dims, radius=radius))
-        D = model.add(nengo.networks.CircularConvolution(
-            'D', neurons=nengo.LIF(n_neurons_d),
-            dimensions=A.dimensions, radius=radius))
+        with model:
+            inputA = nengo.Node(output=a)
+            inputB = nengo.Node(output=b)
+            A = EnsembleArray(nengo.LIF(n_neurons), dims, radius=radius)
+            B = EnsembleArray(nengo.LIF(n_neurons), dims, radius=radius)
+            C = EnsembleArray(nengo.LIF(n_neurons), dims, radius=radius)
+            D = nengo.networks.CircularConvolution(neurons=nengo.LIF(n_neurons_d),
+                dimensions=A.dimensions, radius=radius)
 
-        inputA.connect_to(A)
-        inputB.connect_to(B)
-        A.connect_to(D.A)
-        B.connect_to(D.B)
-        D.output.connect_to(C)
+            inputA.connect_to(A)
+            inputB.connect_to(B)
+            A.connect_to(D.A)
+            B.connect_to(D.B)
+            D.output.connect_to(C)
 
-        model.probe(A, filter=0.03)
-        model.probe(B, filter=0.03)
-        model.probe(C, filter=0.03)
-        model.probe(D.ensemble, filter=0.03)
+            A_p = nengo.Probe(A, 'decoded_output', filter=0.03)
+            B_p = nengo.Probe(B, 'decoded_output', filter=0.03)
+            C_p = nengo.Probe(C, 'decoded_output', filter=0.03)
+            D_p = nengo.Probe(D.ensemble, 'decoded_output', filter=0.03)
 
         # check FFT magnitude
         d = np.dot(D.transformA, a) + np.dot(D.transformB, b)
         self.assertTrue(np.abs(d).max() < radius)
 
         ### simulation
-        sim = model.simulator(sim_class=self.Simulator)
+        sim = self.Simulator(model)
         sim.run(1.0)
 
-        t = sim.data(model.t).flatten()
+        t = sim.data(model.t_probe).flatten()
 
         with Plotter(self.Simulator) as plt:
             def plot(sim, a, A, title=""):
                 a_ref = np.tile(a, (len(t), 1))
-                a_sim = sim.data(A)
+                a_sim = sim.data(A_p)
                 colors = ['b', 'g', 'r', 'c', 'm', 'y']
                 for i in xrange(min(dims, len(colors))):
                     plt.plot(t, a_ref[:,i], '--', color=colors[i])
@@ -114,11 +110,11 @@ class TestCircularConv(SimulatorTestCase):
 
         ### results
         tmask = t > (0.5 + sim.model.dt/2)
-        self.assertEqual(sim.data(A)[tmask].shape, (499, dims))
-        a_sim = sim.data(A)[tmask].mean(axis=0)
-        b_sim = sim.data(B)[tmask].mean(axis=0)
-        c_sim = sim.data(C)[tmask].mean(axis=0)
-        d_sim = sim.data(D.ensemble)[tmask].mean(axis=0)
+        self.assertEqual(sim.data(A_p)[tmask].shape, (499, dims))
+        a_sim = sim.data(A_p)[tmask].mean(axis=0)
+        b_sim = sim.data(B_p)[tmask].mean(axis=0)
+        c_sim = sim.data(C_p)[tmask].mean(axis=0)
+        d_sim = sim.data(D_p)[tmask].mean(axis=0)
 
         rtol, atol = 0.1, 0.05
         self.assertTrue(np.allclose(a, a_sim, rtol=rtol, atol=atol))

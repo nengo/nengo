@@ -12,17 +12,23 @@ logger = logging.getLogger(__name__)
 class TestEnsembleEncoders(unittest.TestCase):
     def _test_encoders(self, n_neurons=10, n_dimensions=3, encoders=None):
         if encoders is None:
-            encoders = np.random.randn(n_neurons, n_dimensions)
-            orig_encoders = encoders.copy()
+#            encoders = np.random.randn(n_neurons, n_dimensions)
+            encoders = np.random.standard_normal(size=(n_neurons,n_dimensions))
+            magnitudes = np.sqrt((encoders*encoders).sum(axis=-1))
+            encoders = encoders / magnitudes[...,np.newaxis]
 
-        args = {'name': 'A',
+        args = {'label': 'A',
                 'neurons': nengo.LIF(n_neurons),
                 'dimensions': n_dimensions}
 
         model = nengo.Model('_test_encoders')
-        ens = model.add(nengo.Ensemble(encoders=encoders, **args))
-        sim = model.simulator(dt=0.001)
-        self.assertTrue(np.allclose(orig_encoders, sim.model.get(ens).encoders))
+        with model:
+            nengo.Ensemble(encoders=encoders, **args)
+
+        sim = nengo.Simulator(model, dt=0.001)
+
+        self.assertTrue(np.allclose(encoders,
+                                    [o for o in sim.model.objs if o.label == 'A'][0].encoders))
 
     def test_encoders(self):
         self._test_encoders(n_dimensions=3)
@@ -55,27 +61,28 @@ class TestEnsemble(SimulatorTestCase):
         val = 0.5
 
         m = nengo.Model('test_constant_scalar', seed=123)
-        m.make_node('in', output=val)
-        m.make_ensemble('A', nl(N), 1)
-        m.connect('in', 'A')
-        m.probe('in')
-        m.probe('A', filter=0.1)
+        with m:
+            input = nengo.Node(output=val)
+            A = nengo.Ensemble(nl(N), 1)
+            nengo.Connection(input, A)
+            in_p = nengo.Probe(input, 'output')
+            A_p = nengo.Probe(A, 'decoded_output', filter=0.1)
 
-        sim = m.simulator(dt=0.001, sim_class=self.Simulator)
+        sim = self.Simulator(m, dt=0.001)
         sim.run(1.0)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.data(m.t)
-            plt.plot(t, sim.data('in'), label='Input')
-            plt.plot(t, sim.data('A'), label='Neuron approximation, pstc=0.1')
+            t = sim.data(m.t_probe)
+            plt.plot(t, sim.data(in_p), label='Input')
+            plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.1')
             plt.legend(loc=0)
             plt.savefig('test_ensemble.%s.test_constant_scalar.pdf'
                         % nl.__name__)
             plt.close()
 
-        self.assertTrue(np.allclose(sim.data('in').ravel(), val,
+        self.assertTrue(np.allclose(sim.data(in_p).ravel(), val,
                                     atol=.1, rtol=.01))
-        self.assertTrue(np.allclose(sim.data('A')[-10:], val,
+        self.assertTrue(np.allclose(sim.data(A_p)[-10:], val,
                                     atol=.1, rtol=.01))
 
     def _test_constant_vector(self, nl):
@@ -84,27 +91,28 @@ class TestEnsemble(SimulatorTestCase):
         vals = [0.6, 0.1, -0.5]
 
         m = nengo.Model('test_constant_vector', seed=123)
-        m.make_node('in', output=vals)
-        m.make_ensemble('A', nl(N * len(vals)), len(vals))
-        m.connect('in', 'A')
-        m.probe('in')
-        m.probe('A', filter=0.1)
+        with m:
+            input = nengo.Node(output=vals)
+            A = nengo.Ensemble(nl(N * len(vals)), len(vals))
+            nengo.Connection(input, A)
+            in_p = nengo.Probe(input, 'output')
+            A_p = nengo.Probe(A, 'decoded_output', filter=0.1)
 
-        sim = m.simulator(dt=0.001, sim_class=self.Simulator)
+        sim = self.Simulator(m, dt=0.001)
         sim.run(1.0)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.data(m.t)
-            plt.plot(t, sim.data('in'), label='Input')
-            plt.plot(t, sim.data('A'), label='Neuron approximation, pstc=0.1')
+            t = sim.data(m.t_probe)
+            plt.plot(t, sim.data(in_p), label='Input')
+            plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.1')
             plt.legend(loc=0, prop={'size': 10})
             plt.savefig('test_ensemble.%s.test_constant_vector.pdf'
                         % nl.__name__)
             plt.close()
 
-        self.assertTrue(np.allclose(sim.data('in')[-10:], vals,
+        self.assertTrue(np.allclose(sim.data(in_p)[-10:], vals,
                                     atol=.1, rtol=.01))
-        self.assertTrue(np.allclose(sim.data('A')[-10:], vals,
+        self.assertTrue(np.allclose(sim.data(A_p)[-10:], vals,
                                     atol=.1, rtol=.01))
 
     def _test_scalar(self, nl):
@@ -112,48 +120,50 @@ class TestEnsemble(SimulatorTestCase):
         N = 30
 
         m = nengo.Model('test_scalar', seed=123)
-        m.make_node('in', output=np.sin)
-        m.make_ensemble('A', nl(N), 1)
-        m.connect('in', 'A')
-        m.probe('in')
-        m.probe('A', filter=0.02)
+        with m:
+            input = nengo.Node(output=np.sin)
+            A = nengo.Ensemble(nl(N), 1)
+            nengo.Connection(input, A)
+            in_p = nengo.Probe(input, 'output')
+            A_p = nengo.Probe(A, 'decoded_output', filter=0.02)
 
-        sim = m.simulator(dt=0.001, sim_class=self.Simulator)
+        sim = self.Simulator(m, dt=0.001)
         sim.run(5.0)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.data(m.t)
-            plt.plot(t, sim.data('in'), label='Input')
-            plt.plot(t, sim.data('A'), label='Neuron approximation, pstc=0.02')
+            t = sim.data(m.t_probe)
+            plt.plot(t, sim.data(in_p), label='Input')
+            plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.02')
             plt.legend(loc=0)
             plt.savefig('test_ensemble.%s.test_scalar.pdf' % nl.__name__)
             plt.close()
 
         target = np.sin(np.arange(5000) / 1000.)
         target.shape = (-1, 1)
-        logger.debug("[New API] input RMSE: %f", rmse(target, sim.data('in')))
-        logger.debug("[New API] A RMSE: %f", rmse(target, sim.data('A')))
-        self.assertTrue(rmse(target, sim.data('in')) < 0.001)
-        self.assertTrue(rmse(target, sim.data('A')) < 0.1)
+        logger.debug("[New API] input RMSE: %f", rmse(target, sim.data(in_p)))
+        logger.debug("[New API] A RMSE: %f", rmse(target, sim.data(A_p)))
+        self.assertTrue(rmse(target, sim.data(in_p)) < 0.001)
+        self.assertTrue(rmse(target, sim.data(A_p)) < 0.1)
 
     def _test_vector(self, nl):
         """A network that represents sin(t), cos(t), arctan(t)."""
         N = 40
 
         m = nengo.Model('test_vector', seed=123)
-        m.make_node('in', output=lambda t: [np.sin(t), np.cos(t), np.arctan(t)])
-        m.make_ensemble('A', nl(N * 3), 3, radius=2)
-        m.connect('in', 'A')
-        m.probe('in')
-        m.probe('A', filter=0.02)
+        with m:
+            input = nengo.Node(output=lambda t: [np.sin(t), np.cos(t), np.arctan(t)])
+            A = nengo.Ensemble(nl(N * 3), 3, radius=2)
+            nengo.Connection(input, A)
+            in_p = nengo.Probe(input, 'output')
+            A_p = nengo.Probe(A, 'decoded_output', filter=0.02)
 
-        sim = m.simulator(dt=0.001, sim_class=self.Simulator)
+        sim = self.Simulator(m, dt=0.001)
         sim.run(5)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.data(m.t)
-            plt.plot(t, sim.data('in'), label='Input')
-            plt.plot(t, sim.data('A'), label='Neuron approximation, pstc=0.02')
+            t = sim.data(m.t_probe)
+            plt.plot(t, sim.data(in_p), label='Input')
+            plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.02')
             plt.legend(loc='best', prop={'size': 10})
             plt.savefig('test_ensemble.%s.test_vector.pdf' % nl.__name__)
             plt.close()
@@ -161,57 +171,55 @@ class TestEnsemble(SimulatorTestCase):
         target = np.vstack((np.sin(np.arange(5000) / 1000.),
                             np.cos(np.arange(5000) / 1000.),
                             np.arctan(np.arange(5000) / 1000.))).T
-        logger.debug("In RMSE: %f", rmse(target, sim.data('in')))
-        self.assertTrue(rmse(target, sim.data('in') < 0.001))
-        self.assertTrue(rmse(target, sim.data('A')) < 0.1)
+        logger.debug("In RMSE: %f", rmse(target, sim.data(in_p)))
+        self.assertTrue(rmse(target, sim.data(in_p) < 0.001))
+        self.assertTrue(rmse(target, sim.data(A_p)) < 0.1)
 
     def _test_product(self, nl):
-        def product(x):
-            return x[0] * x[1]
-
         m = nengo.Model('test_product', seed=124)
+        with m:
+            N = 80
+            sin = nengo.Node(output=np.sin)
+            cons = nengo.Node(output=-.5)
+            factors = nengo.Ensemble(nl(2 * N),
+                                     dimensions=2, radius=1.5)
+            if nl != nengo.Direct:
+                factors.encoders = np.tile([[1, 1],[-1, 1],[1, -1],[-1, -1]],
+                                           (factors.n_neurons / 4, 1))
+            product = nengo.Ensemble(nl(N), dimensions=1)
+            nengo.Connection(sin, factors, transform=[[1], [0]])
+            nengo.Connection(cons, factors, transform=[[0], [1]])
+            nengo.DecodedConnection(factors, product,
+                                           function=lambda x: x[0]*x[1], filter=0.01)
 
-        N = 80
-        m.make_node('sin', output=np.sin)
-        m.make_node('-0.5', output=-.5)
-        factors = m.make_ensemble(
-            'factors', nl(2 * N), dimensions=2, radius=1.5)
-        if nl != nengo.Direct:
-            factors.encoders = np.tile([[1, 1],[-1, 1],[1, -1],[-1, -1]],
-                                       (factors.n_neurons / 4, 1))
-        m.make_ensemble('product', nl(N), dimensions=1)
-        m.connect('sin', 'factors', transform=[[1], [0]])
-        m.connect('-0.5', 'factors', transform=[[0], [1]])
-        conn = m.connect('factors', 'product', function=product, filter=0.01)
+            sin_p = nengo.Probe(sin, 'output', sample_every=.01)
+            # m.probe(conn, sample_every=.01)  # FIXME
+            factors_p = nengo.Probe(factors, 'decoded_output', sample_every=.01, filter=.01)
+            product_p = nengo.Probe(product, 'decoded_output', sample_every=.01, filter=.01)
 
-        m.probe('sin', sample_every=.01)
-        # m.probe(conn, sample_every=.01)  # FIXME
-        m.probe('factors', sample_every=.01, filter=.01)
-        m.probe('product', sample_every=.01, filter=.01)
-
-        sim = m.simulator(dt=0.001, sim_class=self.Simulator)
+        sim = self.Simulator(m, dt=0.001)
         sim.run(6)
 
         with Plotter(self.Simulator) as plt:
             plt.subplot(211)
-            plt.plot(sim.data('factors'))
+            plt.plot(sim.data(factors_p))
             plt.plot(np.sin(np.arange(0, 6, .01)))
-            plt.plot(sim.data('sin'))
+            plt.plot(sim.data(sin_p))
             plt.subplot(212)
-            plt.plot(sim.data('product'))
+            plt.plot(sim.data(product_p))
             #plt.plot(sim.data(conn))
             plt.plot(-.5 * np.sin(np.arange(0, 6, .01)))
             plt.savefig('test_ensemble.%s.test_prod.pdf' % nl.__name__)
             plt.close()
 
-        self.assertTrue(rmse(sim.data('factors')[:, 0],
+        self.assertTrue(rmse(sim.data(factors_p)[:, 0],
                              np.sin(np.arange(0, 6, .01))) < 0.1)
-        self.assertTrue(rmse(sim.data('factors')[20:, 1], -0.5) < 0.1)
+        self.assertTrue(rmse(sim.data(factors_p)[20:, 1], -0.5) < 0.1)
 
         def match(a, b):
             self.assertTrue(rmse(a, b) < 0.1)
 
-        match(sim.data('product')[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
+        match(sim.data(product_p)[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
         #match(sim.data(conn)[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
 
     def test_direct(self):

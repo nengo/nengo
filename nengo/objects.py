@@ -1,10 +1,10 @@
 import copy
-import inspect
 import logging
 import numpy as np
 
 from . import decoders
 from . import nonlinearities
+from . import context
 
 logger = logging.getLogger(__name__)
 
@@ -70,8 +70,7 @@ class Ensemble(object):
 
     EVAL_POINTS = 500
 
-    def __init__(self, name, neurons, dimensions, **kwargs):
-        self.name = name
+    def __init__(self, neurons, dimensions, **kwargs):
         self.dimensions = dimensions # Must be set before neurons
         self.neurons = neurons
 
@@ -81,12 +80,14 @@ class Ensemble(object):
         if 'noise' in kwargs or 'noise_frequency' in kwargs:
             raise NotImplementedError('noise')
 
+        self.label = kwargs.get('label', "Ensemble")
         self.encoders = kwargs.get('encoders', None)
         self.eval_points = kwargs.get('eval_points', None)
         self.intercepts = kwargs.get('intercepts', Uniform(-1.0, 1.0))
         self.max_rates = kwargs.get('max_rates', Uniform(200, 400))
         self.radius = kwargs.get('radius', 1.0)
         self.seed = kwargs.get('seed', None)
+        self.auto_add = kwargs.get('auto_add', True)
 
         # Set up connections and probes
         self.connections_in = []
@@ -96,8 +97,12 @@ class Ensemble(object):
         # objects created at build time
         self._scaled_encoders = None  # encoders * neuron-gains / radius
 
+        #add self to current context
+        if self.auto_add:
+            context.add_to_current(self)
+
     def __str__(self):
-        return "Ensemble: " + self.name
+        return "Ensemble: " + self.label
 
     @property
     def n_neurons(self):
@@ -130,10 +135,6 @@ class Ensemble(object):
                             "not an int. Defaulting to LIF."))
             _neurons = nonlinearities.LIF(_neurons)
 
-        # Give a better name if name is default
-        if _neurons.name.startswith("<"):
-            _neurons.name = self.name + "." + _neurons.__class__.__name__
-        # Store dimensions on neurons (necessary for some classes)
         _neurons.dimensions = self.dimensions
         self._neurons = _neurons
 
@@ -178,13 +179,9 @@ class Ensemble(object):
             The new connection object.
         """
 
-        connection = DecodedConnection(self, post, **kwargs)
-        self.connections_out.append(connection)
-        if hasattr(post, 'connections_in'):
-            post.connections_in.append(connection)
-        return connection
+        return DecodedConnection(self, post, **kwargs)
 
-    def probe(self, to_probe='decoded_output', sample_every=0.001, filter=0.01):
+    def probe(self, probe):
         """Probe a signal in this ensemble.
 
         Parameters
@@ -201,41 +198,23 @@ class Ensemble(object):
         probe : Probe
             The new Probe object.
         """
-        if to_probe == 'decoded_output':
-            probe = Probe(self.name + '.decoded_output', sample_every)
-            self.connect_to(probe, filter=filter)
-            self.probes['decoded_output'].append(probe)
 
-        elif to_probe == 'spikes':
-            probe = Probe(self.name + '.spikes', sample_every)
-            connection = Connection(
-                self.neurons, probe, filter=filter,
+        self.probes[probe.attr].append(probe)
+
+        if probe.attr == 'decoded_output':
+            self.connect_to(probe, filter=probe.filter)
+        elif probe.attr == 'spikes':
+            Connection(self.neurons, probe, filter=probe.filter,
                 transform=np.eye(self.n_neurons))
-            self.connections_out.append(connection)
-            if hasattr(probe, 'connections_in'):
-                probe.connections_in.append(connection)
-            self.probes['spikes'].append(probe)
-
-        elif to_probe == 'voltages':
-            probe = Probe(self.name + '.voltages', sample_every, self.n_neurons)
-            connection = Connection(
-                self.neurons.voltage, probe, filter=None)
-            self.connections_out.append(connection)
-            if hasattr(probe, 'connections_in'):
-                probe.connections_in.append(connection)
-            self.probes['voltages'].append(probe)
-
+        elif probe.attr == 'voltages':
+            Connection(self.neurons.voltage, probe, filter=None)
         else:
             raise NotImplementedError(
-                "Probe target '%s' is not probable" % to_probe)
+                "Probe target '%s' is not probable" % probe.attr)
         return probe
 
     def add_to_model(self, model):
-        if model.objs.has_key(self.name):
-            raise ValueError("Something called " + self.name + " already "
-                             "exists. Please choose a different name.")
-
-        model.objs[self.name] = self
+        model.objs += [self]
 
 
 class Node(object):
@@ -267,9 +246,10 @@ class Node(object):
         The number of input dimensions.
     """
 
-    def __init__(self, name, output=None, dimensions=1):
-        self.name = name
+    def __init__(self, output=None, label="Node", dimensions=1):
+
         self.output = output
+        self.label = label
         self.dimensions = dimensions
 
         # Set up connections and probes
@@ -277,8 +257,11 @@ class Node(object):
         self.connections_out = []
         self.probes = {'output': []}
 
+        #add self to current context
+        context.add_to_current(self)
+
     def __str__(self):
-        return "Node: " + self.name
+        return "Node: " + self.label
 
     def __deepcopy__(self, memo):
         try:
@@ -301,26 +284,17 @@ class Node(object):
 
     def connect_to(self, post, **kwargs):
         """TODO"""
-        connection = Connection(self, post, **kwargs)
-        self.connections_out.append(connection)
-        if hasattr(post, 'connections_in'):
-            post.connections_in.append(connection)
-        return connection
+        return Connection(self, post, **kwargs)
 
-    def probe(self, to_probe='output', sample_every=0.001, filter=None):
+    def probe(self, probe):
         """TODO"""
-        if to_probe == 'output':
-            p = Probe(self.name + ".output", sample_every)
-            self.connect_to(p, filter=filter)
-            self.probes['output'].append(p)
-        return p
+        if probe.attr == 'output':
+            self.connect_to(probe, filter=probe.filter)
+            self.probes['output'].append(probe)
+        return probe
 
     def add_to_model(self, model):
-        if model.objs.has_key(self.name):
-            raise ValueError("Something called " + self.name + " already "
-                             "exists. Please choose a different name.")
-
-        model.objs[self.name] = self
+        model.objs += [self]
 
 
 class Connection(object):
@@ -350,15 +324,20 @@ class Connection(object):
 
         self.probes = {'signal': []}
 
+        #add self to pre and post
+        pre.connections_out.append(self)
+        if hasattr(post, 'connections_in'):
+            post.connections_in.append(self)
+
     def __str__(self):
-        return self.name + " (" + self.__class__.__name__ + ")"
+        return self.label + " (" + self.__class__.__name__ + ")"
 
     def __repr__(self):
         return str(self)
 
     @property
-    def name(self):
-        return self.pre.name + ">" + self.post.name
+    def label(self):
+        return self.pre.label + ">" + self.post.label
 
     @property
     def transform(self):
@@ -421,7 +400,7 @@ class DecodedConnection(Connection):
                        "%d. (shape=%s)" % (self.pre.n_neurons,
                                            _decoders.shape[0],
                                            _decoders.shape))
-                raise builder.ShapeMismatch(msg)
+                raise ValueError(msg)
 
         self._decoders = None if _decoders is None else _decoders.T
 
@@ -452,11 +431,11 @@ class DecodedConnection(Connection):
         self._eval_points = _eval_points
 
     @property
-    def name(self):
-        name = self.pre.name + ">" + self.post.name
+    def label(self):
+        label = self.pre.label + ">" + self.post.label
         if self.function is not None:
-            return name + ":" + self.function.__name__
-        return name
+            return label + ":" + self.function.__name__
+        return label
 
 
 class ConnectionList(object):
@@ -491,12 +470,20 @@ class Probe(object):
         List of incoming connections.
     sample_rate
     """
-    def __init__(self, name, sample_every, dimensions=None):
-        self.name = "Probe(" + name + ")"
+    def __init__(self, target, attr, sample_every=0.001, filter=None, dimensions=None):
+        self.target = target
+        self.attr = attr
+        self.label = "Probe(" + target.label + "." + attr + ")"
         self.sample_every = sample_every
         self.dimensions = dimensions ##None?
+        self.filter = filter
 
         self.connections_in = []
+
+        target.probe(self)
+
+        #add self to current context
+        context.add_to_current(self)
 
     @property
     def sample_rate(self):
@@ -504,4 +491,5 @@ class Probe(object):
         return 1.0 / self.sample_every
 
     def add_to_model(self, model):
-        model.signal_probes.append(self)
+        model.probed[self.target] = self #TODO: this won't work if you have multiple probes on the same target
+                                        #(it worked before because target was a string that specified the attr)

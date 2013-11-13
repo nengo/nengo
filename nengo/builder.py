@@ -334,7 +334,7 @@ class Signal(SignalView):
         return self
 
 
-class Probe(object):
+class SimulatorProbe(object):
     """A model probe to record a signal"""
     def __init__(self, sig, dt):
         self.sig = sig
@@ -720,7 +720,7 @@ class Builder(object):
         else:
             self.model = model
 
-        self.model.name = self.model.name + ", dt=%f" % dt
+        self.model.label = self.model.label + ", dt=%f" % dt
         self.model.dt = dt
         if self.model.seed is None:
             self.model.seed = np.random.randint(np.iinfo(np.int32).max)
@@ -728,22 +728,26 @@ class Builder(object):
         # The purpose of the build process is to fill up these lists
         self.model.probes = []
         self.model.operators = []
+        self.model.probemap = {}
+#        self.model.objectmap = {}
 
         # 1. Build objects
         logger.info("Building objects")
-        for obj in self.model.objs.values():
+        for obj in self.model.objs:
             self._builders[obj.__class__](obj)
 
         # 2. Then probes
         logger.info("Building probes")
-        for target in self.model.probed:
-            if not isinstance(self.model.probed[target], Probe):
-                self._builders[objects.Probe](self.model.probed[target])
-                self.model.probed[target] = self.model.probed[target].probe
+        for target,copytarget in zip(model.probed,self.model.probed):
+            if not isinstance(self.model.probed[copytarget], SimulatorProbe):
+                self._builders[objects.Probe](self.model.probed[copytarget])
+                self.model.probemap[model.probed[target]] = self.model.probed[copytarget].probe
+#                self.model.objectmap[target] = copytarget
+#                self.model.probed[copytarget] = self.model.probed[copytarget].probe
 
         # 3. Then connections
         logger.info("Building connections")
-        for o in self.model.objs.values():
+        for o in self.model.objs:
             for c in o.connections_out:
                 self._builders[c.__class__](c)
         for c in self.model.connections:
@@ -785,7 +789,7 @@ class Builder(object):
         # Set up signal
         if signal is None:
             ens.input_signal = Signal(np.zeros(ens.dimensions),
-                                      name=ens.name + ".signal")
+                                      name=ens.label + ".signal")
         else:
             # Assume that a provided signal is already in the model
             ens.input_signal = signal
@@ -853,7 +857,7 @@ class Builder(object):
         # Get input
         if node.output is None or callable(node.output):
             node.input_signal = Signal(np.zeros(node.dimensions),
-                                       name=node.name + ".signal")
+                                       name=node.label + ".signal")
             #reset input signal to 0 each timestep
             self.model.operators.append(Reset(node.input_signal))
 
@@ -862,12 +866,31 @@ class Builder(object):
             node.output_signal = node.input_signal
         elif not callable(node.output):
             if isinstance(node.output, (int, float, long, complex)):
-                node.output_signal = Signal([node.output], name=node.name)
+                node.output_signal = Signal([node.output], name=node.label)
             else:
-                node.output_signal = Signal(node.output, name=node.name)
+                node.output_signal = Signal(node.output, name=node.label)
+        else:
+            #if no input, assume input is supposed to come from model.t
+            if len(node.connections_in) == 0:
+                with self.model:
+                    objects.Connection(self.model.t, node, filter=None)
+
+            node.input_signal = Signal(np.zeros(node.dimensions),
+                                       name=node.label + ".signal")
+            #reset input signal to 0 each timestep
+            self.model.operators.append(Reset(node.input_signal))
+
+        # Provide output
+        if node.output is None:
+            node.output_signal = node.input_signal
+        elif not callable(node.output):
+            if isinstance(node.output, (int, float, long, complex)):
+                node.output_signal = Signal([node.output], name=node.label)
+            else:
+                node.output_signal = Signal(node.output, name=node.label)
         else:
             node.pyfn = nonlinearities.PythonFunction(
-                fn=node.output, n_in=node.dimensions, name=node.name + ".pyfn")
+                fn=node.output, n_in=node.dimensions, label=node.label + ".pyfn")
             self.build_pyfunc(node.pyfn)
             self.model.operators.append(DotInc(
                 node.input_signal, Signal([[1.0]]), node.pyfn.input_signal))
@@ -880,13 +903,13 @@ class Builder(object):
     @builds(objects.Probe)
     def build_probe(self, probe):
         # Set up signal
-        probe.input_signal = Signal(np.zeros(probe.dimensions), name=probe.name)
+        probe.input_signal = Signal(np.zeros(probe.dimensions), name=probe.label)
 
         #reset input signal to 0 each timestep
         self.model.operators.append(Reset(probe.input_signal))
 
         # Set up probe
-        probe.probe = Probe(probe.input_signal, probe.sample_every)
+        probe.probe = SimulatorProbe(probe.input_signal, probe.sample_every)
         self.model.probes.append(probe.probe)
 
     @staticmethod
@@ -910,7 +933,7 @@ class Builder(object):
         if conn.modulatory:
             # Make a new signal, effectively detaching from post
             conn.output_signal = Signal(np.zeros(conn.dimensions),
-                                        name=conn.name + ".mod_output")
+                                        name=conn.label + ".mod_output")
 
         if isinstance(conn.post, nonlinearities.Neurons):
             conn.transform *= conn.post.gain[:, np.newaxis]
@@ -926,7 +949,7 @@ class Builder(object):
                 Signal(conn.transform),
                 conn.input_signal,
                 conn.output_signal,
-                tag=conn.name))
+                tag=conn.label))
 
         # Set up probes
         for probe in conn.probes['signal']:
@@ -943,7 +966,7 @@ class Builder(object):
             # Make a new signal, effectively detaching from post,
             # but still performing the decoding
             conn.output_signal = Signal(np.zeros(conn.dimensions),
-                                        name=conn.name + ".mod_output")
+                                        name=conn.label + ".mod_output")
         if isinstance(conn.post, nonlinearities.Neurons):
             conn.transform *= conn.post.gain[:, np.newaxis]
         dt = self.model.dt
@@ -955,9 +978,9 @@ class Builder(object):
             if conn.function is None:
                 conn.signal = conn.input_signal
             else:
-                name = conn.name + ".pyfunc"
+                label = conn.label + ".pyfunc"
                 conn.pyfunc = nonlinearities.PythonFunction(
-                    fn=conn.function, n_in=conn.input_signal.size, name=name)
+                    fn=conn.function, n_in=conn.input_signal.size, label=label)
                 self.build_pyfunc(conn.pyfunc)
                 self.model.operators.append(DotInc(
                     conn.input_signal, Signal(1.0), conn.pyfunc.input_signal))
@@ -970,7 +993,7 @@ class Builder(object):
         else:
             # For normal decoded connections...
             conn.input_signal = conn.pre.output_signal
-            conn.signal = Signal(np.zeros(conn.dimensions), name=conn.name)
+            conn.signal = Signal(np.zeros(conn.dimensions), name=conn.label)
 
             # Set up decoders
             if conn._decoders is None:
@@ -1030,7 +1053,7 @@ class Builder(object):
     @builds(templates.EnsembleArray)
     def build_ensemblearray(self, ea):
         ea.input_signal = Signal(np.zeros(ea.dimensions),
-                                 name=ea.name+".signal")
+                                 name=ea.label+".signal")
         self.model.operators.append(Reset(ea.input_signal))
         dims = ea.dimensions_per_ensemble
 
@@ -1043,9 +1066,9 @@ class Builder(object):
     @builds(nonlinearities.PythonFunction)
     def build_pyfunc(self, pyfn):
         pyfn.input_signal = Signal(np.zeros(pyfn.n_in),
-                                   name=pyfn.name + '.input')
+                                   name=pyfn.label + '.input')
         pyfn.output_signal = Signal(np.zeros(pyfn.n_out),
-                                    name=pyfn.name + '.output')
+                                    name=pyfn.label + '.output')
         pyfn.operators = [Reset(pyfn.input_signal),
                           SimPyFunc(output=pyfn.output_signal,
                                     J=pyfn.input_signal,
@@ -1054,17 +1077,17 @@ class Builder(object):
 
     def build_neurons(self, neurons):
         neurons.input_signal = Signal(np.zeros(neurons.n_in),
-                                      name=neurons.name + '.input')
+                                      name=neurons.label + '.input')
         neurons.output_signal = Signal(np.zeros(neurons.n_out),
-                                       name=neurons.name + '.output')
-        neurons.bias_signal = Signal(neurons.bias, name=neurons.name + '.bias')
+                                       name=neurons.label + '.output')
+        neurons.bias_signal = Signal(neurons.bias, name=neurons.label + '.bias')
         self.model.operators.append(
             Copy(src=neurons.bias_signal, dst=neurons.input_signal))
 
     @builds(nonlinearities.Direct)
     def build_direct(self, direct):
         direct.input_signal = Signal(np.zeros(direct.dimensions),
-                                     name=direct.name)
+                                     name=direct.label)
         direct.output_signal = direct.input_signal
         self.model.operators.append(Reset(direct.input_signal))
 
