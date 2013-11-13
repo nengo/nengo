@@ -38,25 +38,24 @@ class CircularConvolution(Network):
             dimensions, first=False, invert=invert_b)
         self.transformC = self._output_transform(dimensions)
 
-        self.A = self.add(objects.Node('A', dimensions=dimensions))
-        self.B = self.add(objects.Node('B', dimensions=dimensions))
-        self.ensemble = self.add(EnsembleArray(
-            "CircConv", neurons, self.transformC.shape[1],
-            dimensions_per_ensemble=2, radius=radius))
-        self.output = self.add(
-            objects.Node("Output", dimensions=dimensions))
+        with self:
+            self.A = objects.Node(dimensions=dimensions)
+            self.B = objects.Node(dimensions=dimensions)
+            self.ensemble = EnsembleArray(neurons, self.transformC.shape[1],
+                dimensions_per_ensemble=2, radius=radius)
+            self.output = objects.Node(dimensions=dimensions)
 
-        for ens in self.ensemble.ensembles:
-            ens.encoders = np.tile(
-                [[1,1],[-1,1],[1,-1],[-1,-1]],
-                (ens.n_neurons / 4, 1))
+            for ens in self.ensemble.ensembles:
+                ens.encoders = np.tile(
+                    [[1,1],[-1,1],[1,-1],[-1,-1]],
+                    (ens.n_neurons / 4, 1))
 
-        self.A.connect_to(self.ensemble, transform=self.transformA)
-        self.B.connect_to(self.ensemble, transform=self.transformB)
-        self.ensemble.connect_to(self.output,
-                                 filter=0.02,
-                                 function=self.product,
-                                 transform=self.transformC)
+            self.A.connect_to(self.ensemble, transform=self.transformA)
+            self.B.connect_to(self.ensemble, transform=self.transformB)
+            self.ensemble.connect_to(self.output,
+                                     filter=0.02,
+                                     function=self.product,
+                                     transform=self.transformC)
 
     @staticmethod
     def _input_transform(dims, first, invert=False):

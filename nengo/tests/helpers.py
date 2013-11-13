@@ -115,7 +115,7 @@ class NengoTestLoader(unittest.TestLoader):
 
 
 class Plotter(object):
-    plot = int(os.getenv("NENGO_TEST_PLOT", 0))
+    
 
     class Mock(object):
         def __init__(self, *args, **kwargs):
@@ -135,7 +135,11 @@ class Plotter(object):
             else:
                 return Plotter.Mock()
 
-    def __init__(self, simulator):
+    def __init__(self, simulator, plot=None):
+        if plot is None:
+            self.plot = int(os.getenv("NENGO_TEST_PLOT", 0))
+        else:
+            self.plot = plot
         self.dirname = simulator.__module__ + ".plots"
 
     def __enter__(self):

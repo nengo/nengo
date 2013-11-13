@@ -1,4 +1,4 @@
-import logging
+import logging, copy
 
 import numpy as np
 
@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 class PythonFunction(object):
-    def __init__(self, fn, n_in, n_out=None, name=None):
-        if name is None:
-            name = "<Direct%d>" % id(self)
-        self.name = name
+    def __init__(self, fn, n_in, n_out=None, label=None):
+        if label is None:
+            label = "<Direct%d>" % id(self)
+        self.label = label
         self.n_in = n_in
         if n_out is None:
             self.n_out = np.asarray(fn(np.ones(n_in))).size
@@ -32,17 +32,17 @@ class PythonFunction(object):
 
 
 class Neurons(object):
-    def __init__(self, n_neurons, bias=None, gain=None, name=None):
+    def __init__(self, n_neurons, bias=None, gain=None, label=None):
         self.n_neurons = n_neurons
         self.bias = bias
         self.gain = gain
-        if name is None:
-            name = "<%s%d>" % (self.__class__.__name__, id(self))
-        self.name = name
+        if label is None:
+            label = "<%s%d>" % (self.__class__.__name__, id(self))
+        self.label = label
 
     def __str__(self):
         r = self.__class__.__name__ + "("
-        r += self.name if hasattr(self, 'name') else "id " + str(id(self))
+        r += self.label if hasattr(self, 'label') else "id " + str(id(self))
         r += ", %dN)" if hasattr(self, 'n_neurons') else ")"
         return r
 
@@ -67,10 +67,10 @@ class Neurons(object):
         raise NotImplementedError("Neurons must provide set_gain_bias")
 
 class Direct(Neurons):
-    def __init__(self, n_neurons=None, name=None):
+    def __init__(self, n_neurons=None, label=None):
         # n_neurons is ignored, but accepted to maintain compatibility
         # with other neuron types
-        Neurons.__init__(self, 0, name=name)
+        Neurons.__init__(self, 0, label=label)
 
     @property
     def n_in(self):
@@ -98,10 +98,10 @@ class Direct(Neurons):
 
 
 class _LIFBase(Neurons):
-    def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, name=None):
+    def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, label=None):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
-        Neurons.__init__(self, n_neurons, name=name)
+        Neurons.__init__(self, n_neurons, label=label)
 
     def default_encoders(self, dimensions, rng):
         return decoders.sample_hypersphere(
@@ -141,7 +141,7 @@ class _LIFBase(Neurons):
             X-intercepts of neurons.
 
         """
-        logging.debug("Setting gain and bias on %s", self.name)
+        logging.debug("Setting gain and bias on %s", self.label)
         max_rates = np.asarray(max_rates)
         intercepts = np.asarray(intercepts)
         x = 1.0 / (1 - np.exp(
@@ -156,7 +156,7 @@ class LIFRate(_LIFBase):
         old = np.seterr(divide='ignore')
         try:
             j = np.maximum(J - 1, 0.)
-            r = dt / (self.tau_ref + self.tau_rc * np.log1p(1./j))
+            r = dt / (self.tau_ref + self.tau_rc * np.log(1+1./j))
         finally:
             np.seterr(**old)
         return r
