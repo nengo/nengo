@@ -39,7 +39,8 @@ with model:
 
     # Connect the population to itself
     tau = 0.1
-    # The same time constant as recurrent to make it more 'ideal'
+
+    # A long time constant for stability
     nengo.DecodedConnection(A, A, transform=[[1]], filter=tau)
 
     # Connect the input
@@ -55,9 +56,10 @@ sim = nengo.Simulator(model)
 sim.run(6)
 
 # Plot the decoded output of the ensemble
+
 t = sim.data(model.t_probe)  # Get the time steps
-plt.plot(t, sim.data(p1), label="A output")
-plt.plot(t, sim.data(p2), 'k', label="Input")
+plt.plot(t, sim.data(p1), label="Input")
+plt.plot(t, sim.data(p2), 'k', label="Integrator output")
 plt.legend()
 
 plt.show()
