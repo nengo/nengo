@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 class TestProbe(SimulatorTestCase):
 
     def test_long_name(self):
+        """Test proving with very long names, as accessing them used to fail."""
         m = nengo.Model('test_long_name', seed=123)
         m.make_ensemble(("This is an extremely long name that will test "
                          "if we can access sim data with long names"),

@@ -377,6 +377,7 @@ class Connection(object):
         self.filter = kwargs.get('filter', 0.005)
         self.transform = kwargs.get('transform', 1.0)
         self.modulatory = kwargs.get('modulatory', False)
+        self.learning_rule = kwargs.get('learning_rule', None)
 
         self.probes = {'signal': []}
 
@@ -391,13 +392,14 @@ class Connection(object):
         return self.pre.name + ">" + self.post.name
 
     @property
-    def transform(self):
-        """TODO"""
-        return self._transform
+    def learning_rule(self):
+        return self._learning_rule
 
-    @transform.setter
-    def transform(self, _transform):
-        self._transform = np.asarray(_transform)
+    @learning_rule.setter
+    def learning_rule(self, _learning_rule):
+        if _learning_rule is not None:
+            _learning_rule.connection = self
+        self._learning_rule = _learning_rule
 
     def add_to_model(self, model):
         model.connections.append(self)

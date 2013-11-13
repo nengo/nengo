@@ -554,6 +554,7 @@ class DotInc(Operator):
             Y[...] += inc
         return step
 
+
 class ProdUpdate(Operator):
     """
     Sets Y <- dot(A, X) + B * Y
@@ -663,6 +664,30 @@ class SimLIFRate(Operator):
         return step
 
 
+class SimPES(Operator):
+    """
+    Set output to the change in decoders of the PES rule.
+    """
+    def __init__(self, output, error, activities, learning_rate):
+        self.output = output
+        self.error = error
+        self.activities = activities
+        self.learning_rate = learning_rate
+
+        self.read = [error, activities]
+        self.updates = [output]
+
+    def make_step(self, dct, dt):
+        output = dct[self.output]
+        error = dct[self.error]
+        activities = dct[self.activities]
+        learning_rate = self.learning_rate
+        import q
+        def step():
+            output[...] += learning_rate * np.outer(error, activities) * dt
+        return step
+
+
 def builds(cls):
     """A decorator that adds a _builds attribute to a function,
     denoting that that function is used to build
@@ -723,6 +748,7 @@ class Builder(object):
         self.model.probes = []
         self.model.operators = []
 
+
         # 1. Build objects
         logger.info("Building objects")
         for obj in self.model.objs.values():
@@ -737,11 +763,21 @@ class Builder(object):
 
         # 3. Then connections
         logger.info("Building connections")
+        learning_rules = []
         for o in self.model.objs.values():
             for c in o.connections_out:
                 self._builders[c.__class__](c)
+                if c.learning_rule is not None:
+                    learning_rules.append(c.learning_rule)
         for c in self.model.connections:
             self._builders[c.__class__](c)
+            if c.learning_rule is not None:
+                learning_rules.append(c.learning_rule)
+
+        # 4. Finally, learning rules
+        logger.info("Building learning rules")
+        for l in learning_rules:
+            self._builders[l.__class__](l)
 
         # Set up t and timesteps
         self.model.operators.append(
@@ -933,6 +969,10 @@ class Builder(object):
             probe.dimensions = conn.output_signal.size
             self.model.add(probe)
 
+        # Set up probes
+        for probe in conn.probes['signal']:
+            probe.dimensions = conn.output_signal.size
+            self.model.add(probe)
 
     @builds(objects.DecodedConnection)
     def build_decodedconnection(self, conn):
@@ -944,6 +984,7 @@ class Builder(object):
             # but still performing the decoding
             conn.output_signal = Signal(np.zeros(conn.dimensions),
                                         name=conn.name + ".mod_output")
+            self.model.operators.append(Reset(conn.output_signal))
         if isinstance(conn.post, nonlinearities.Neurons):
             conn.transform *= conn.post.gain[:, np.newaxis]
         dt = self.model.dt
@@ -987,14 +1028,16 @@ class Builder(object):
             # Set up filter
             if conn.filter is not None and conn.filter > dt:
                 o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
+                conn.decoder_signal = Signal(conn._decoders * n_coef)
                 self.model.operators.append(
-                    ProdUpdate(Signal(conn._decoders * n_coef),
+                    ProdUpdate(conn.decoder_signal,
                                conn.input_signal,
                                Signal(o_coef),
                                conn.signal))
             else:
+                conn.decoder_signal = Signal(conn._decoders)
                 self.model.operators.append(
-                    ProdUpdate(Signal(conn._decoders),
+                    ProdUpdate(conn.decoder_signal,
                                conn.input_signal,
                                Signal(0),
                                conn.signal))
@@ -1091,3 +1134,11 @@ class Builder(object):
                                            nl=lif,
                                            voltage=lif.voltage,
                                            refractory_time=lif.refractory_time))
+
+    @builds(nonlinearities.PES)
+    def build_pes(self, pes):
+        self.model.operators.append(
+            SimPES(output=pes.connection.decoder_signal,
+                   error=pes.error_connection.output_signal,
+                   activities=pes.connection.pre.neurons.output_signal,
+                   learning_rate=pes.learning_rate))
