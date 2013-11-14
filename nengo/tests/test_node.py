@@ -1,7 +1,6 @@
 import numpy as np
 
 import nengo
-from nengo.objects import Node
 from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
 from nengo.tests.helpers import assert_allclose
 
@@ -37,7 +36,7 @@ class TestNode(SimulatorTestCase):
         m = nengo.Model('test_connected', seed=123)
         m.make_node('in', output=np.sin)
         # Not using make_node, as make_node connects time to node
-        m.add(Node('out', output=np.square))
+        m.add(nengo.Node('out', output=np.square))
         m.connect('in', 'out', filter=None)  # Direct connection
         m.probe('in')
         m.probe('out')
@@ -67,8 +66,8 @@ class TestNode(SimulatorTestCase):
 
         m.make_node("in", output=np.sin)
         m.make_node("in2", output=lambda t: t)
-        m.add(Node("pass"))
-        m.add(Node("out", output=lambda x: x))
+        m.add(nengo.Node("pass"))
+        m.add(nengo.Node("out", output=lambda x: x))
 
         m.connect("in", "pass", filter=None)
         m.connect("in2", "pass", filter=None)
@@ -98,8 +97,8 @@ class TestNode(SimulatorTestCase):
         dt = 0.001
         m = nengo.Model("test_circular", seed=0)
 
-        m.add(Node("a", output=lambda x:x+1))
-        m.add(Node("b", output=lambda x:x+1))
+        m.add(nengo.Node("a", output=lambda x:x+1))
+        m.add(nengo.Node("b", output=lambda x:x+1))
         m.connect("a", "b", filter=None)
         m.connect("b", "a", filter=None)
 

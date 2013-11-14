@@ -1,8 +1,8 @@
 import numpy as np
-from nengo.tests.helpers import unittest
-import nengo
 
+import nengo
 from nengo.helpers import piecewise
+from nengo.tests.helpers import unittest
 
 class TestPiecewise(unittest.TestCase):
     def test_basic(self):

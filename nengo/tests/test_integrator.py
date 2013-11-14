@@ -3,8 +3,7 @@ import logging
 import numpy as np
 
 import nengo
-import nengo.helpers
-from nengo.networks import Integrator
+from nengo.helpers import piecewise
 from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
 
 
@@ -14,10 +13,11 @@ class TestIntegrator(SimulatorTestCase):
     def test_integrator(self):
         model = nengo.Model('Integrator')
         inputs = {0:0, 0.2:1, 1:0, 2:-2, 3:0, 4:1, 5:0}
-        model.make_node('Input', nengo.helpers.piecewise(inputs))
+        model.make_node('Input', piecewise(inputs))
 
         tau = 0.1
-        model.add(Integrator('T', tau, neurons=nengo.LIF(100), dimensions=1))
+        model.add(nengo.networks.Integrator(
+            'T', tau, neurons=nengo.LIF(100), dimensions=1))
         model.connect('Input', 'T.In', filter=tau)
 
         model.make_ensemble('A', nengo.LIF(100), dimensions=1)

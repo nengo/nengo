@@ -4,9 +4,6 @@ import numpy as np
 
 import nengo
 from nengo.builder import ShapeMismatch
-from nengo.objects import Ensemble
-from nengo import nonlinearities
-import nengo.old_api as nef
 from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
 
 
@@ -23,7 +20,7 @@ class TestEnsembleEncoders(unittest.TestCase):
                 'dimensions': n_dimensions}
 
         model = nengo.Model('_test_encoders')
-        ens = model.add(Ensemble(encoders=encoders, **args))
+        ens = model.add(nengo.Ensemble(encoders=encoders, **args))
         sim = model.simulator(dt=0.001)
         self.assertTrue(np.allclose(orig_encoders, sim.model.get(ens).encoders))
 
@@ -179,7 +176,7 @@ class TestEnsemble(SimulatorTestCase):
         m.make_node('-0.5', output=-.5)
         factors = m.make_ensemble(
             'factors', nl(2 * N), dimensions=2, radius=1.5)
-        if nl != nonlinearities.Direct:
+        if nl != nengo.Direct:
             factors.encoders = np.tile([[1, 1],[-1, 1],[1, -1],[-1, -1]],
                                        (factors.n_neurons / 4, 1))
         m.make_ensemble('product', nl(N), dimensions=1)
@@ -218,25 +215,25 @@ class TestEnsemble(SimulatorTestCase):
         #match(sim.data(conn)[:, 0], -0.5 * np.sin(np.arange(0, 6, .01)))
 
     def test_direct(self):
-        self._test_constant_scalar(nonlinearities.Direct)
-        self._test_constant_vector(nonlinearities.Direct)
-        self._test_scalar(nonlinearities.Direct)
-        self._test_vector(nonlinearities.Direct)
-        self._test_product(nonlinearities.Direct)
+        self._test_constant_scalar(nengo.Direct)
+        self._test_constant_vector(nengo.Direct)
+        self._test_scalar(nengo.Direct)
+        self._test_vector(nengo.Direct)
+        self._test_product(nengo.Direct)
 
     def test_lif(self):
-        self._test_constant_scalar(nonlinearities.LIF)
-        self._test_constant_vector(nonlinearities.LIF)
-        self._test_scalar(nonlinearities.LIF)
-        self._test_vector(nonlinearities.LIF)
-        self._test_product(nonlinearities.LIF)
+        self._test_constant_scalar(nengo.LIF)
+        self._test_constant_vector(nengo.LIF)
+        self._test_scalar(nengo.LIF)
+        self._test_vector(nengo.LIF)
+        self._test_product(nengo.LIF)
 
     def test_lifrate(self):
-        self._test_constant_scalar(nonlinearities.LIFRate)
-        self._test_constant_vector(nonlinearities.LIFRate)
-        self._test_scalar(nonlinearities.LIFRate)
-        self._test_vector(nonlinearities.LIFRate)
-        self._test_product(nonlinearities.LIFRate)
+        self._test_constant_scalar(nengo.LIFRate)
+        self._test_constant_vector(nengo.LIFRate)
+        self._test_scalar(nengo.LIFRate)
+        self._test_vector(nengo.LIFRate)
+        self._test_product(nengo.LIFRate)
 
 
 if __name__ == "__main__":
