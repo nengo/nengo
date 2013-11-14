@@ -1,7 +1,6 @@
 import numpy as np
 
 import nengo
-from nengo.networks.basalganglia import BasalGanglia
 from nengo.templates import EnsembleArray
 from nengo.tests.helpers import SimulatorTestCase, unittest
 
@@ -10,7 +9,7 @@ class TestBasalGanglia(SimulatorTestCase):
     def test_basic(self):
         model = nengo.Model('test_basalganglia_basic')
 
-        model.add(BasalGanglia('BG', dimensions=5))
+        model.add(nengo.networks.BasalGanglia('BG', dimensions=5))
         model.make_node('input', [0.8, 0.4, 0.4, 0.4, 0.4])
         model.connect('input', 'BG.input')
         model.probe('BG.output')

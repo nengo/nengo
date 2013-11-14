@@ -3,7 +3,7 @@ import numpy as np
 import nengo
 from nengo.builder import Signal
 from nengo.templates import EnsembleArray
-from nengo.networks.circularconvolution import circconv, CircularConvolution
+from nengo.networks.circularconvolution import circconv
 from nengo.tests.helpers import (
     SimulatorTestCase, unittest, assert_allclose, Plotter, rmse)
 
@@ -23,11 +23,11 @@ class TestCircularConvHelpers(unittest.TestCase):
         z0 = circconv(x, y, invert_a=invert_a, invert_b=invert_b)
 
         dims2 = 2*dims - (2 if dims % 2 == 0 else 1)
-        inA = CircularConvolution._input_transform(
+        inA = nengo.networks.CircularConvolution._input_transform(
             dims, first=True, invert=invert_a)
-        inB = CircularConvolution._input_transform(
+        inB = nengo.networks.CircularConvolution._input_transform(
             dims, first=False, invert=invert_b)
-        outC = CircularConvolution._output_transform(dims)
+        outC = nengo.networks.CircularConvolution._output_transform(dims)
 
         XY = np.zeros((dims2,2))
         XY += np.dot(inA.reshape(dims2, 2, dims), x)
@@ -66,7 +66,7 @@ class TestCircularConv(SimulatorTestCase):
             'B', nengo.LIF(n_neurons), dims, radius=radius))
         C = model.add(EnsembleArray(
             'C', nengo.LIF(n_neurons), dims, radius=radius))
-        D = model.add(CircularConvolution(
+        D = model.add(nengo.networks.CircularConvolution(
             'D', neurons=nengo.LIF(n_neurons_d),
             dimensions=A.dimensions, radius=radius))
 

@@ -1,7 +1,6 @@
 import numpy as np
 
 import nengo
-import nengo.old_api as nef
 from nengo.tests.helpers import SimulatorTestCase, unittest
 
 
