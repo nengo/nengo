@@ -50,14 +50,6 @@ class Neurons(object):
     def __repr__(self):
         return str(self)
 
-    @property
-    def n_in(self):
-        return self.n_neurons
-
-    @property
-    def n_out(self):
-        return self.n_neurons
-
     def default_encoders(self, dimensions, rng):
         raise NotImplementedError("Neurons must provide default_encoders")
 
@@ -73,16 +65,6 @@ class Direct(Neurons):
         # n_neurons is ignored, but accepted to maintain compatibility
         # with other neuron types
         Neurons.__init__(self, 0, label=label)
-
-    @property
-    def n_in(self):
-        # Dimensions are set in the build process
-        return self.dimensions
-
-    @property
-    def n_out(self):
-        # Dimensions are set in the build process
-        return self.dimensions
 
     def default_encoders(self, dimensions, rng):
         return np.eye(dimensions)
@@ -104,6 +86,14 @@ class _LIFBase(Neurons):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
         Neurons.__init__(self, n_neurons, label=label)
+
+    @property
+    def n_in(self):
+        return self.n_neurons
+
+    @property
+    def n_out(self):
+        return self.n_neurons
 
     def default_encoders(self, dimensions, rng):
         return decoders.sample_hypersphere(

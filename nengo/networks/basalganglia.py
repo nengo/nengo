@@ -55,13 +55,13 @@ class BasalGanglia(nengo.Network):
             self.output = nengo.Node(label="output", dimensions=dimensions)
 
             # spread the input to StrD1, StrD2, and STN
-            self.input.connect_to(
+            nengo.Connection(self.input,
                 strD1.input, filter=None,
                 transform=np.eye(dimensions) * self.ws * (1 + self.lg))
-            self.input.connect_to(
+            nengo.Connection(self.input,
                 strD2.input, filter=None,
                 transform=np.eye(dimensions) * self.ws * (1 - self.le))
-            self.input.connect_to(
+            nengo.Connection(self.input,
                 stn.input, filter=None,
                 transform=np.eye(dimensions) * self.wt)
 
