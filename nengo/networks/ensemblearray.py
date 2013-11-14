@@ -47,9 +47,9 @@ class EnsembleArray(nengo.Network):
 
         for i, e in enumerate(self.ensembles):
             trans = transform[:, i * function_d:(i + 1) * function_d]
-            nengo.DecodedConnection(e, output, transform=trans,
-                                    filter=None,
-                                    function=function)
+            nengo.Connection(e, output, transform=trans,
+                             filter=None,
+                             function=function)
 
         return output
 
