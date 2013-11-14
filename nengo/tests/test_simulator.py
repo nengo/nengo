@@ -1,11 +1,8 @@
 import numpy as np
 
 import nengo
-import nengo.simulator as simulator
-from nengo.nonlinearities import PythonFunction, LIF, LIFRate
 from nengo.builder import Builder
-from nengo.builder import Signal
-from nengo.builder import ProdUpdate, Reset, DotInc, Copy
+from nengo.builder import Signal, ProdUpdate, Reset, DotInc, Copy
 from nengo.tests.helpers import unittest, rms, assert_allclose
 
 import logging
@@ -21,7 +18,7 @@ def testbuilder(model, dt):
 
 
 class TestSimulator(unittest.TestCase):
-    Simulator = simulator.Simulator
+    Simulator = nengo.Simulator
 
     def test_signal_init_values(self):
         """Tests that initial values are not overwritten."""
@@ -98,7 +95,7 @@ class TestSimulator(unittest.TestCase):
 
         time = Signal(np.zeros(1), name='time')
         sig = Signal(np.zeros(1), name='sig')
-        pop = PythonFunction(fn=np.sin, n_in=1)
+        pop = nengo.PythonFunction(fn=np.sin, n_in=1)
         m.operators = []
         b = Builder()
         b.model = m
@@ -133,7 +130,7 @@ class TestSimulator(unittest.TestCase):
         m = nengo.Model("")
         dt = 0.001
         foo = Signal([1.0], name='foo')
-        pop = PythonFunction(fn=lambda x: x + 1, n_in=2, name='pop')
+        pop = nengo.PythonFunction(fn=lambda x: x + 1, n_in=2, name='pop')
         decoders = np.asarray([.2,.1])
         decs = Signal(decoders * 0.5)
 
@@ -189,7 +186,7 @@ class TestSimulator(unittest.TestCase):
         m = nengo.Model("")
         dt = 0.001
         foo = Signal([1.0], name='foo')
-        pop = PythonFunction(fn=lambda x: x + 1, n_in=2, name='pop')
+        pop = nengo.PythonFunction(fn=lambda x: x + 1, n_in=2, name='pop')
         decoders = np.asarray([.2,.1])
 
         m.operators = []
@@ -235,7 +232,7 @@ class TestSimulator(unittest.TestCase):
 
 
 class TestNonlinear(unittest.TestCase):
-    Simulator = simulator.Simulator
+    Simulator = nengo.Simulator
 
     def test_pyfunc(self):
         """Test Python Function nonlinearity"""
@@ -255,7 +252,7 @@ class TestNonlinear(unittest.TestCase):
 
             m = nengo.Model("")
             ins = Signal(x, name='ins')
-            pop = PythonFunction(fn=fn, n_in=d)
+            pop = nengo.PythonFunction(fn=fn, n_in=d)
             m.operators = []
             b = Builder()
             b.model = m
@@ -279,7 +276,7 @@ class TestNonlinear(unittest.TestCase):
                 assert_allclose(self, logger, s0, sim.signals[ins])
                 assert_allclose(self, logger, p0, sim.signals[pop.output_signal])
 
-    def _test_lif_base(self, cls=LIF):
+    def _test_lif_base(self, cls=nengo.LIF):
         """Test that the dynamic model approximately matches the rates"""
         rng = np.random.RandomState(85243)
 
@@ -316,10 +313,10 @@ class TestNonlinear(unittest.TestCase):
         self.assertTrue(np.allclose(sim_rates, math_rates, atol=1, rtol=0.02))
 
     def test_lif(self):
-        self._test_lif_base(cls=LIF)
+        self._test_lif_base(cls=nengo.LIF)
 
     def test_lif_rate(self):
-        self._test_lif_base(cls=LIFRate)
+        self._test_lif_base(cls=nengo.LIFRate)
 
 
 if __name__ == "__main__":

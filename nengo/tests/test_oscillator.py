@@ -3,8 +3,7 @@ import logging
 import numpy as np
 
 import nengo
-import nengo.helpers
-from nengo.networks.oscillator import Oscillator
+from nengo.helpers import piecewise
 from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
 
 
@@ -13,12 +12,12 @@ logger = logging.getLogger(__name__)
 class TestOscillator(SimulatorTestCase):
     def test_oscillator(self):
         model = nengo.Model('Oscillator')
-        inputs = {0:[1,0],0.5:[0,0]}
-        model.make_node('Input', nengo.helpers.piecewise(inputs))
+        model.make_node('Input', piecewise({0:[1,0],0.5:[0,0]}))
 
         tau = 0.1
         freq = 5
-        model.add(Oscillator('T', tau, freq, neurons=nengo.LIF(100)))
+        model.add(nengo.networks.Oscillator(
+            'T', tau, freq, neurons=nengo.LIF(100)))
         model.connect('Input', 'T.In')
 
         model.make_ensemble('A', nengo.LIF(100), dimensions=2)

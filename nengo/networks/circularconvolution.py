@@ -38,13 +38,13 @@ class CircularConvolution(Network):
             dimensions, first=False, invert=invert_b)
         self.transformC = self._output_transform(dimensions)
 
-        self.A = self.add(objects.PassthroughNode('A', dimensions))
-        self.B = self.add(objects.PassthroughNode('B', dimensions))
+        self.A = self.add(objects.Node('A', dimensions=dimensions))
+        self.B = self.add(objects.Node('B', dimensions=dimensions))
         self.ensemble = self.add(EnsembleArray(
             "CircConv", neurons, self.transformC.shape[1],
             dimensions_per_ensemble=2, radius=radius))
         self.output = self.add(
-            objects.PassthroughNode("Output", dimensions=dimensions))
+            objects.Node("Output", dimensions=dimensions))
 
         for ens in self.ensemble.ensembles:
             ens.encoders = np.tile(

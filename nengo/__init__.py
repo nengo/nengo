@@ -5,7 +5,11 @@ import logging
 import sys
 
 from .model import Model
-from .nonlinearities import LIF
+from . import networks
+from .nonlinearities import PythonFunction, LIF, LIFRate, Direct
+from .objects import (
+    Ensemble, Node, Connection, DecodedConnection, ConnectionList, Probe)
+from .simulator import Simulator
 
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,6 @@
 import numpy as np
 
 import nengo
-from nengo.nonlinearities import LIF
 from nengo.tests.helpers import unittest
 
 import logging
@@ -16,7 +15,7 @@ class TestNonlinearBuiltins(unittest.TestCase):
         """
         rng = np.random.RandomState(85243)
 
-        lif = LIF(10)
+        lif = nengo.LIF(10)
         lif.set_gain_bias(rng.uniform(80, 100, (10,)),
                           rng.uniform(-1, 1, (10,)))
         J = np.arange(0, 5, .5)

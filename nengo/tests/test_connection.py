@@ -3,9 +3,6 @@ import logging
 import numpy as np
 
 import nengo
-from nengo.builder import ShapeMismatch
-from nengo.objects import Ensemble
-import nengo.old_api as nef
 from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
 from nengo.helpers import piecewise
 

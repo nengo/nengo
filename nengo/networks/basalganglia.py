@@ -51,9 +51,9 @@ class BasalGanglia(Network):
             'GPe', intercepts=objects.Uniform(self.ee, 1), **ea_params))
 
         self.input = self.add(
-            objects.PassthroughNode("input", dimensions=dimensions))
+            objects.Node("input", dimensions=dimensions))
         self.output = self.add(
-            objects.PassthroughNode("output", dimensions=dimensions))
+            objects.Node("output", dimensions=dimensions))
 
         # spread the input to StrD1, StrD2, and STN
         self.input.connect_to(strD1, filter=None,
