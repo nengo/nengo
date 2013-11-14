@@ -1,8 +1,7 @@
 import numpy as np
 
 import nengo
-from nengo.objects import Node, PassthroughNode
-import nengo.old_api as nef
+from nengo.objects import Node
 from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
 from nengo.tests.helpers import assert_allclose
 
@@ -68,7 +67,7 @@ class TestNode(SimulatorTestCase):
 
         m.make_node("in", output=np.sin)
         m.make_node("in2", output=lambda t: t)
-        m.add(PassthroughNode("pass"))
+        m.add(Node("pass"))
         m.add(Node("out", output=lambda x: x))
 
         m.connect("in", "pass", filter=None)

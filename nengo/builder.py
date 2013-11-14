@@ -842,34 +842,24 @@ class Builder(object):
         for probe in ens.probes['voltages']:
             probe.dimensions = ens.n_neurons
 
-    @builds(objects.PassthroughNode)
-    def build_passthrough(self, ptn):
-        ptn.input_signal = Signal(np.zeros(ptn.dimensions),
-                                  name=ptn.name + ".signal")
-        ptn.output_signal = ptn.input_signal
-
-        #reset input signal to 0 each timestep
-        self.model.operators.append(Reset(ptn.input_signal))
-
-        # Set up probes
-        for probe in ptn.probes['output']:
-            probe.dimensions = ptn.dimensions
-            self.model.add(probe)
-
     @builds(objects.Node)
     def build_node(self, node):
-        if not callable(node.output):
+        # Get input
+        if node.output is None or callable(node.output):
+            node.input_signal = Signal(np.zeros(node.dimensions),
+                                       name=node.name + ".signal")
+            #reset input signal to 0 each timestep
+            self.model.operators.append(Reset(node.input_signal))
+
+        # Provide output
+        if node.output is None:
+            node.output_signal = node.input_signal
+        elif not callable(node.output):
             if isinstance(node.output, (int, float, long, complex)):
                 node.output_signal = Signal([node.output], name=node.name)
             else:
                 node.output_signal = Signal(node.output, name=node.name)
         else:
-            node.input_signal = Signal(np.zeros(node.dimensions),
-                                       name=node.name + ".signal")
-
-            #reset input signal to 0 each timestep
-            self.model.operators.append(Reset(node.input_signal))
-
             node.pyfn = nonlinearities.PythonFunction(
                 fn=node.output, n_in=node.dimensions, name=node.name + ".pyfn")
             self.build_pyfunc(node.pyfn)

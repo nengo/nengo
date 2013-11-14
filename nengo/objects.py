@@ -238,36 +238,6 @@ class Ensemble(object):
         model.objs[self.name] = self
 
 
-class PassthroughNode(object):
-    def __init__(self, name, dimensions=1):
-        self.name = name
-        self.dimensions = dimensions
-
-        self.connections_out = []
-        self.probes = {'output': []}
-
-    def connect_to(self, post, **kwargs):
-        connection = Connection(self, post, **kwargs)
-        self.connections_out += [connection]
-
-    def add_to_model(self, model):
-        if model.objs.has_key(self.name):
-            raise ValueError("Something called " + self.name + " already "
-                             "exists. Please choose a different name.")
-
-        model.objs[self.name] = self
-
-    def probe(self, to_probe='output', sample_every=0.001, filter=None):
-        if filter is not None and filter > 0:
-            logger.warning("Filter set on constant. Usually accidental.")
-
-        if to_probe == 'output':
-            p = Probe(self.name + ".output", sample_every)
-            self.connect_to(p, filter=filter)
-            self.probes['output'].append(p)
-        return p
-
-
 class Node(object):
     """Provides arbitrary data to Nengo objects.
 
@@ -297,7 +267,7 @@ class Node(object):
         The number of input dimensions.
     """
 
-    def __init__(self, name, output, dimensions=1):
+    def __init__(self, name, output=None, dimensions=1):
         self.name = name
         self.output = output
         self.dimensions = dimensions
