@@ -194,7 +194,7 @@ class TestEnsemble(SimulatorTestCase):
             product = nengo.Ensemble(nl(N), dimensions=1)
             nengo.Connection(sin, factors, transform=[[1], [0]])
             nengo.Connection(cons, factors, transform=[[0], [1]])
-            nengo.DecodedConnection(
+            nengo.Connection(
                 factors, product, function=lambda x: x[0] * x[1], filter=0.01)
 
             sin_p = nengo.Probe(sin, 'output', sample_every=.01)

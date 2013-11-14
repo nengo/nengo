@@ -105,10 +105,6 @@ class Ensemble(object):
         return self.neurons.n_neurons
 
     @property
-    def nl(self):
-        return self._neurons
-
-    @property
     def neurons(self):
         """The neurons that make up the ensemble.
 
@@ -153,24 +149,6 @@ class Ensemble(object):
             #processed in the build function (i.e., had the radius
             #and gain mixed in)
 
-    def connect_to(self, post, **kwargs):
-        """Connect this ensemble to another object.
-
-        Parameters
-        ----------
-        post : model object
-            The connection's target destination.
-        **kwargs : optional
-            Arguments for the new DecodedConnection.
-
-        Returns
-        -------
-        connection : DecodedConnection
-            The new connection object.
-        """
-
-        return DecodedConnection(self, post, **kwargs)
-
     def probe(self, probe):
         """Probe a signal in this ensemble.
 
@@ -192,7 +170,7 @@ class Ensemble(object):
         self.probes[probe.attr].append(probe)
 
         if probe.attr == 'decoded_output':
-            DecodedConnection(self, probe, filter=probe.filter)
+            Connection(self, probe, filter=probe.filter)
         elif probe.attr == 'spikes':
             Connection(self.neurons, probe, filter=probe.filter,
                        transform=np.eye(self.n_neurons))
@@ -270,15 +248,11 @@ class Node(object):
                     rval.__dict__[k] = copy.deepcopy(v, memo)
             return rval
 
-    def connect_to(self, post, **kwargs):
-        """TODO"""
-        return Connection(self, post, **kwargs)
-
     def probe(self, probe):
         """TODO"""
+        self.probes[probe.attr].append(probe)
         if probe.attr == 'output':
-            self.connect_to(probe, filter=probe.filter)
-            self.probes['output'].append(probe)
+            Connection(self, probe, filter=probe.filter)
         return probe
 
     def add_to_model(self, model):
@@ -286,7 +260,7 @@ class Node(object):
 
 
 class Connection(object):
-    """A Connection connects two objects naively via a transform and a filter.
+    """A Connection connects two objects together.
 
     Attributes
     ----------
@@ -303,15 +277,24 @@ class Connection(object):
 
     """
     def __init__(self, pre, post,
-                 filter=0.005, transform=1.0, modulatory=False):
+                 filter=0.005, transform=1.0, modulatory=False, **kwargs):
         self.pre = pre
         self.post = post
+        self.probes = {'signal': []}
 
         self.filter = filter
         self.transform = transform
         self.modulatory = modulatory
 
-        self.probes = {'signal': []}
+        if isinstance(self.pre, Ensemble):
+            self.decoders = kwargs.pop('decoders', None)
+            self.decoder_solver = kwargs.pop('decoder_solver', least_squares)
+            self.eval_points = kwargs.pop('eval_points', None)
+            self.function = kwargs.pop('function', None)
+
+        if len(kwargs) > 0:
+            raise TypeError("__init__() got an unexpected keyword argument '"
+                            + kwargs.keys()[0] + "'")
 
         #add self to current context
         nengo.context.add_to_current(self)
@@ -329,7 +312,10 @@ class Connection(object):
 
     @property
     def label(self):
-        return self.pre.label + ">" + self.post.label
+        label = self.pre.label + ">" + self.post.label
+        if hasattr(self, 'function') and self.function is not None:
+            return label + ":" + self.function.__name__
+        return label
 
     @property
     def transform(self):
@@ -342,38 +328,6 @@ class Connection(object):
 
     def add_to_model(self, model):
         model.connections.append(self)
-
-
-class DecodedConnection(Connection):
-    """A DecodedConnection connects an ensemble to an object
-    via a set of decoders, a transform, and a filter.
-
-    Attributes
-    ----------
-    name
-    pre
-    post
-
-    decoders
-    eval_points
-    filter : type
-        description
-    function : type
-        description
-    transform
-
-    probes : type
-        description
-
-    """
-    def __init__(self, pre, post, decoders=None, decoder_solver=least_squares,
-                 eval_points=None, function=None, **kwargs):
-        Connection.__init__(self, pre, post, **kwargs)
-
-        self.decoders = decoders
-        self.decoder_solver = decoder_solver
-        self.eval_points = eval_points
-        self.function = function
 
     @property
     def decoders(self):
@@ -398,19 +352,21 @@ class DecodedConnection(Connection):
 
     @property
     def dimensions(self):
-        if self.function is None:
+        if self.decoders is not None:
+            return self.decoders.shape[1]
+
+        if not hasattr(self, 'function') or self.function is None:
             return self.pre.dimensions
+
+        if self._eval_points is not None:
+            val = self._eval_points[0]
         else:
-            if self._eval_points is not None:
-                val = self._eval_points[0]
-            else:
-                val = np.ones(self.pre.dimensions)
-            return np.array(self.function(val)).size
+            val = np.zeros(self.pre.dimensions)
+        return np.array(self.function(val)).size
 
     @property
     def eval_points(self):
         if self._eval_points is None:
-            # OK because ensembles always build first
             return self.pre.eval_points
         return self._eval_points
 
@@ -418,16 +374,9 @@ class DecodedConnection(Connection):
     def eval_points(self, _eval_points):
         if _eval_points is not None:
             _eval_points = np.asarray(_eval_points)
-            if len(_eval_points.shape) == 1:
-                _eval_points.shape = (1, _eval_points.shape[0])
+            if _eval_points.ndim == 1:
+                _eval_points.shape = 1, _eval_points.shape[0]
         self._eval_points = _eval_points
-
-    @property
-    def label(self):
-        label = self.pre.label + ">" + self.post.label
-        if self.function is not None:
-            return label + ":" + self.function.__name__
-        return label
 
 
 class Probe(object):

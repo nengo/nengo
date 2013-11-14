@@ -6,7 +6,7 @@ class Integrator(nengo.Network):
         with self:
             self.input = nengo.Node()
             self.ensemble = nengo.Ensemble(**ens_args)
-            nengo.DecodedConnection(
+            nengo.Connection(
                 self.ensemble, self.ensemble, filter=recurrent_tau)
             nengo.Connection(
                 self.input, self.ensemble, transform=recurrent_tau)

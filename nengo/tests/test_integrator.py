@@ -20,7 +20,7 @@ class TestIntegrator(SimulatorTestCase):
             nengo.Connection(input, T.input, filter=tau)
 
             A = nengo.Ensemble(nengo.LIF(100), dimensions=1)
-            nengo.DecodedConnection(A, A, transform=[[1]], filter=tau)
+            nengo.Connection(A, A, transform=[[1]], filter=tau)
             nengo.Connection(input, A, transform=[[tau]], filter=tau)
 
             input_p = nengo.Probe(input, 'output')
