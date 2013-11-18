@@ -178,7 +178,7 @@ class TestEnsemble(SimulatorTestCase):
             'factors', nl(2 * N), dimensions=2, radius=1.5)
         if nl != nengo.Direct:
             factors.encoders = np.tile([[1, 1],[-1, 1],[1, -1],[-1, -1]],
-                                       (factors.n_neurons / 4, 1))
+                                       (factors.n_neurons // 4, 1))
         m.make_ensemble('product', nl(N), dimensions=1)
         m.connect('sin', 'factors', transform=[[1], [0]])
         m.connect('-0.5', 'factors', transform=[[0], [1]])

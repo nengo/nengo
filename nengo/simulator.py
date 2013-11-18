@@ -150,21 +150,21 @@ class Simulator(object):
         #    4) All updates on a given base signal
 
         # -- incs depend on sets
-        for node, post_ops in list(incs.items()):
+        for node, post_ops in incs.items():
             pre_ops = list(sets[node])
             for other in by_base_writes[node.base]:
                 pre_ops += sets[other]
             dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
 
         # -- reads depend on writes (sets and incs)
-        for node, post_ops in list(reads.items()):
+        for node, post_ops in reads.items():
             pre_ops = sets[node] + incs[node]
             for other in by_base_writes[node.base]:
                 pre_ops += sets[other] + incs[other]
             dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
 
         # -- updates depend on reads, sets, and incs.
-        for node, post_ops in list(ups.items()):
+        for node, post_ops in ups.items():
             pre_ops = sets[node] + incs[node] + reads[node]
             for other in by_base_writes[node.base]:
                 pre_ops += sets[other] + incs[other] + reads[other]

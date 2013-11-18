@@ -48,7 +48,7 @@ class EnsembleArray(object):
 
         # Any ens_args will be set on enclosed ensembles
         for ens in self.ensembles:
-            for k, v in list(ens_args.items()):
+            for k, v in ens_args.items():
                 setattr(ens, k, v)
 
         # Fill in the details of those ensembles here

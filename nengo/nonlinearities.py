@@ -33,7 +33,7 @@ class PythonFunction(object):
 
 class Neurons(object):
     def __init__(self, n_neurons, bias=None, gain=None, name=None):
-        self.n_neurons = n_neurons
+        self.n_neurons = int(n_neurons)
         self.bias = bias
         self.gain = gain
         if name is None:

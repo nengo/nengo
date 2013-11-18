@@ -127,7 +127,7 @@ class TestEnsembleArray(SimulatorTestCase):
 
         for ens in C.ensembles:
             ens.encoders = np.tile([[1, 1],[-1, 1],[1, -1],[-1, -1]],
-                                   (ens.n_neurons / 4, 1))
+                                   (ens.n_neurons // 4, 1))
 
 
         transformA = np.zeros((C.dimensions, Amat.size))
@@ -153,7 +153,7 @@ class TestEnsembleArray(SimulatorTestCase):
 
         transformC = np.zeros((D.dimensions, Bmat.size))
         for i in range(Bmat.size):
-            transformC[i / Bmat.shape[0]][i] = 1
+            transformC[i // Bmat.shape[0]][i] = 1
 
         model.connect('C', 'D', function=product, transform=transformC)
         model.probe('D', sample_every=0.01, filter=0.01)
