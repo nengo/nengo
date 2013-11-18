@@ -5,8 +5,8 @@ import pickle
 import os.path
 import numpy as np
 
-from . import objects
-from . import simulator
+from nengo import objects
+from nengo import simulator
 import collections
 
 

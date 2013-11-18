@@ -89,7 +89,7 @@ class EnsembleArray(object):
     @neurons.setter
     def neurons(self, _neurons):
         self._neurons = _neurons
-        each_neurons = _neurons.n_neurons / self.n_ensembles
+        each_neurons = _neurons.n_neurons // self.n_ensembles
         extra_neurons = _neurons.n_neurons % self.n_ensembles
         for i, ens in enumerate(self.ensembles):
             # Copy and partition _neurons

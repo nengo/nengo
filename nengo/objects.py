@@ -1,10 +1,9 @@
 import copy
-import inspect
 import logging
 import numpy as np
 
-from . import decoders
-from . import nonlinearities
+from nengo import decoders
+from nengo import nonlinearities
 
 logger = logging.getLogger(__name__)
 

@@ -348,54 +348,11 @@ class Probe(object):
         return str(self)
 
 
-class collect_operators_into(object):
-    """
-    Within this context, operators that are constructed
-    are, by default, appended to an `operators` list.
-
-    For example:
-
-    >>> operators = []
-    >>> with collect_operators_into(operators):
-    >>>    Reset(foo)
-    >>>    Copy(foo, bar)
-    >>> assert len(operators) == 2
-
-    After the context exits, `operators` contains the Reset
-    and the Copy instances.
-
-    """
-    # -- the list of `operators` lists to which we need to append
-    #    new operators when creating them.
-    lists = []
-
-    def __init__(self, operators):
-        if operators is None:
-            operators = []
-        self.operators = operators
-
-    def __enter__(self):
-        self.lists.append(self.operators)
-
-    def __exit__(self, exc_type, exc_value, tb):
-        self.lists.remove(self.operators)
-
-    @staticmethod
-    def collect_operator(op):
-        for lst in collect_operators_into.lists:
-            lst.append(op)
-
-
 class Operator(object):
     """
     Base class for operator instances understood by the reference simulator.
     """
 
-    # -- N.B. automatically an @staticmethod
-    def __new__(cls, *args, **kwargs):
-        rval = super(Operator, cls).__new__(cls, *args, **kwargs)
-        collect_operators_into.collect_operator(rval)
-        return rval
 
     #
     # The lifetime of a Signal during one simulator timestep:
