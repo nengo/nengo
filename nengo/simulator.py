@@ -147,21 +147,21 @@ class Simulator(object):
         #    4) All updates on a given base signal
 
         # -- incs depend on sets
-        for node, post_ops in incs.items():
+        for node, post_ops in list(incs.items()):
             pre_ops = list(sets[node])
             for other in by_base_writes[node.base]:
                 pre_ops += sets[other]
             dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
 
         # -- reads depend on writes (sets and incs)
-        for node, post_ops in reads.items():
+        for node, post_ops in list(reads.items()):
             pre_ops = sets[node] + incs[node]
             for other in by_base_writes[node.base]:
                 pre_ops += sets[other] + incs[other]
             dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
 
         # -- updates depend on reads, sets, and incs.
-        for node, post_ops in ups.items():
+        for node, post_ops in list(ups.items()):
             pre_ops = sets[node] + incs[node] + reads[node]
             for other in by_base_writes[node.base]:
                 pre_ops += sets[other] + incs[other] + reads[other]
@@ -186,7 +186,7 @@ class Simulator(object):
             def __getitem__(_, item):
                 try:
                     return self._sigdict[item]
-                except KeyError, e:
+                except KeyError as e:
                     try:
                         return self._sigdict[self.model.memo[id(item)]]
                     except KeyError:
@@ -195,7 +195,7 @@ class Simulator(object):
             def __setitem__(_, item, val):
                 try:
                     self._sigdict[item][...] = val
-                except KeyError, e:
+                except KeyError as e:
                     try:
                         self._sigdict[self.model.memo[id(item)]][...] = val
                     except KeyError:
@@ -208,10 +208,10 @@ class Simulator(object):
                 return self._sigdict.__len__()
 
             def __str__(_):
-                import StringIO
-                sio = StringIO.StringIO()
+                import io
+                sio = io.StringIO()
                 for k in self._sigdict:
-                    print >> sio, k, self._sigdict[k]
+                    print(k, self._sigdict[k], file=sio)
                 return sio.getvalue()
 
         return Accessor()
@@ -274,7 +274,7 @@ class Simulator(object):
 
     def run_steps(self, steps):
         """Simulate for the given number of `dt` steps."""
-        for i in xrange(steps):
+        for i in range(steps):
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
             self.step()
@@ -293,7 +293,7 @@ class Simulator(object):
             TODO: what are the dimensions?
         """
         if not isinstance(probe, Probe):
-            if self.model.probed.has_key(probe):
+            if probe in self.model.probed:
                 probe = self.model.probed[probe]
             else:
                 probe = self.model.probed[self.model.memo[id(probe)]]

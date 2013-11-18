@@ -44,11 +44,11 @@ class EnsembleArray(object):
 
         # Make some empty ensembles for now
         self.ensembles = [objects.Ensemble(name+("[%d]" % i), neurons, 1)
-                          for i in xrange(n_ensembles)]
+                          for i in range(n_ensembles)]
 
         # Any ens_args will be set on enclosed ensembles
         for ens in self.ensembles:
-            for k, v in ens_args.items():
+            for k, v in list(ens_args.items()):
                 setattr(ens, k, v)
 
         # Fill in the details of those ensembles here
@@ -121,7 +121,7 @@ class EnsembleArray(object):
         return probe
 
     def add_to_model(self, model):
-        if model.objs.has_key(self.name):
+        if self.name in model.objs:
             raise ValueError("Something called " + self.name + " already "
                              "exists. Please choose a different name.")
 

@@ -7,6 +7,7 @@ from . import decoders
 from . import nonlinearities
 from . import objects
 from . import templates
+import collections
 
 logger = logging.getLogger(__name__)
 
@@ -725,7 +726,7 @@ class Builder(object):
 
         # 1. Build objects
         logger.info("Building objects")
-        for obj in self.model.objs.values():
+        for obj in list(self.model.objs.values()):
             self._builders[obj.__class__](obj)
 
         # 2. Then probes
@@ -737,7 +738,7 @@ class Builder(object):
 
         # 3. Then connections
         logger.info("Building connections")
-        for o in self.model.objs.values():
+        for o in list(self.model.objs.values()):
             for c in o.connections_out:
                 self._builders[c.__class__](c)
         for c in self.model.connections:
@@ -845,7 +846,7 @@ class Builder(object):
     @builds(objects.Node)
     def build_node(self, node):
         # Get input
-        if node.output is None or callable(node.output):
+        if node.output is None or isinstance(node.output, collections.Callable):
             node.input_signal = Signal(np.zeros(node.dimensions),
                                        name=node.name + ".signal")
             #reset input signal to 0 each timestep
@@ -854,8 +855,8 @@ class Builder(object):
         # Provide output
         if node.output is None:
             node.output_signal = node.input_signal
-        elif not callable(node.output):
-            if isinstance(node.output, (int, float, long, complex)):
+        elif not isinstance(node.output, collections.Callable):
+            if isinstance(node.output, (int, float, complex)):
                 node.output_signal = Signal([node.output], name=node.name)
             else:
                 node.output_signal = Signal(node.output, name=node.name)

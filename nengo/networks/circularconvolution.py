@@ -64,7 +64,7 @@ class CircularConvolution(Network):
         T = np.zeros((dims2, 2, dims))
         dft = _dft_half_cached(dims)
 
-        for i in xrange(dims2):
+        for i in range(dims2):
             row = dft[i/4] if not invert else dft[i/4].conj()
             if first:
                 T[i,0] = row.real if i % 2 == 0 else row.imag
@@ -86,7 +86,7 @@ class CircularConvolution(Network):
         T = np.zeros((dims2, 4, dims))
         idft = _dft_half_cached(dims).conj()
 
-        for i in xrange(dims2):
+        for i in range(dims2):
             row = idft[i] if i == 0 or 2*i == dims else 2*idft[i]
             T[i,0] = row.real
             T[i,1] = -row.real

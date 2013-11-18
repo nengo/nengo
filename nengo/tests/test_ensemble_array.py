@@ -75,7 +75,7 @@ class TestEnsembleArray(SimulatorTestCase):
                 a_ref = np.tile(a, (len(t), 1))
                 a_sim = sim.data(A)
                 colors = ['b', 'g', 'r', 'c', 'm', 'y']
-                for i in xrange(a_sim.shape[1]):
+                for i in range(a_sim.shape[1]):
                     plt.plot(t, a_ref[:,i], '--', color=colors[i])
                     plt.plot(t, a_sim[:,i], '-', color=colors[i])
                 plt.title(title)
