@@ -683,7 +683,7 @@ class Builder(object):
 
         # 1. Build objects
         logger.info("Building objects")
-        for obj in list(self.model.objs.values()):
+        for obj in self.model.objs.values():
             self._builders[obj.__class__](obj)
 
         # 2. Then probes
@@ -695,7 +695,7 @@ class Builder(object):
 
         # 3. Then connections
         logger.info("Building connections")
-        for o in list(self.model.objs.values()):
+        for o in self.model.objs.values():
             for c in o.connections_out:
                 self._builders[c.__class__](c)
         for c in self.model.connections:

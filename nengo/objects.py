@@ -285,7 +285,7 @@ class Node(object):
         except KeyError:
             rval = self.__class__.__new__(self.__class__)
             memo[id(self)] = rval
-            for k, v in list(self.__dict__.items()):
+            for k, v in self.__dict__.items():
                 if k == 'output':
                     try:
                         rval.__dict__[k] = copy.deepcopy(v, memo)

@@ -282,7 +282,7 @@ class TestNonlinear(unittest.TestCase):
 
         dt = 0.001
         d = 1
-        n = 5e3
+        n = 5000
 
         m = nengo.Model("")
         ins = Signal(0.5 * np.ones(d), name='ins')
