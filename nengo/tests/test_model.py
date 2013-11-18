@@ -17,7 +17,8 @@ class TestModelBuild(unittest.TestCase):
         m.probe('B', filter=0.01)
 
         mcopy = m.simulator(dt=0.001).model
-        self.assertCountEqual(m.objs.keys(), mcopy.objs.keys())
+        self.assertTrue(
+            all(map(lambda a, b: a == b, m.objs.keys(), mcopy.objs.keys())))
 
         def compare_objs(orig, copy, attrs):
             for attr in attrs:
