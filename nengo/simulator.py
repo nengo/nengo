@@ -3,6 +3,9 @@ Simulator.py
 
 Reference simulator for nengo models.
 """
+
+from __future__ import print_function
+
 import logging
 import itertools
 from collections import defaultdict
@@ -211,7 +214,7 @@ class Simulator(object):
                 import io
                 sio = io.StringIO()
                 for k in self._sigdict:
-                    print(k, self._sigdict[k], file=sio)
+                    print_function(k, self._sigdict[k], file=sio)
                 return sio.getvalue()
 
         return Accessor()
