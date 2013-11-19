@@ -1,10 +1,11 @@
-from __future__ import absolute_import
+
 
 import copy
 
 import numpy as np
 
 from . import decoders
+import collections
 
 def tuning_curves(sim_ens):
     eval_points = np.array(sim_ens.eval_points)
@@ -17,16 +18,16 @@ def encoders():
     @staticmethod
     def _process_encoders(encoders, neurons, dims, n_ensembles):
         if encoders is None:
-            encoders = [None for _ in xrange(n_ensembles)]
+            encoders = [None for _ in range(n_ensembles)]
         elif len(encoders) == dims:
             if np.asarray(encoders).ndim == 1:
-                encoders = [np.array(encoders) for _ in xrange(n_ensembles)]
+                encoders = [np.array(encoders) for _ in range(n_ensembles)]
         elif len(encoders) == neurons:
             if len(encoders[0]) != dims:
                 msg = ("len(encoders[0]) should match dimensions_per_ensemble. "
                        "Currently %d, %d" % (len(encoders[0]) != dims))
                 raise core.ShapeMismatch(msg)
-            encoders = [np.array(encoders) for _ in xrange(n_ensembles)]
+            encoders = [np.array(encoders) for _ in range(n_ensembles)]
         elif len(encoders) != n_ensembles:
             msg = ("len(encoders) should match n_ensembles. "
                    "Currently %d, %d" % (len(encoders) != n_ensembles))
@@ -68,18 +69,18 @@ def transform(pre_dims, post_dims,
       [[1, 0], [0, 1], [0, 0]]
 
     """
-    t = [[0 for pre in xrange(pre_dims)] for post in xrange(post_dims)]
+    t = [[0 for pre in range(pre_dims)] for post in range(post_dims)]
     if index_pre is None:
-        index_pre = range(pre_dims)
+        index_pre = list(range(pre_dims))
     elif isinstance(index_pre, int):
         index_pre = [index_pre]
 
     if index_post is None:
-        index_post = range(post_dims)
+        index_post = list(range(post_dims))
     elif isinstance(index_post, int):
         index_post = [index_post]
 
-    for i in xrange(min(len(index_pre), len(index_post))):  # was max
+    for i in range(min(len(index_pre), len(index_post))):  # was max
         pre = index_pre[i]  # [i % len(index_pre)]
         post = index_post[i]  # [i % len(index_post)]
         t[post][pre] = weight
@@ -122,11 +123,11 @@ def weights(pre_neurons, post_neurons, function):
     """
     argspec = inspect.getargspec(func)
     if len(argspec[0]) == 0:
-        return [[func() for pre in xrange(pre_neurons)
-                 for post in xrange(post_neurons)]]
+        return [[func() for pre in range(pre_neurons)
+                 for post in range(post_neurons)]]
     elif len(argspec[0]) == 2:
-        return [[func(pre, post) for pre in xrange(pre_neurons)
-                 for post in xrange(post_neurons)]]
+        return [[func(pre, post) for pre in range(pre_neurons)
+                 for post in range(post_neurons)]]
 
 
 
@@ -199,14 +200,14 @@ def piecewise(data):
     output_length = None  # the dimensionality of the returned values
     for time, output in sorted(data.items()):
         if not isinstance(time, (float, int)):
-            raise TypeError('Keys must be times (floats or ints), not "%s"'%`time`)
+            raise TypeError('Keys must be times (floats or ints), not "%s"'%repr(time))
 
         # handle ints and floats by turning them into a list
         if isinstance(output, (float, int)):
             output = [output]
 
         # figure out the length of this item
-        if callable(output):
+        if isinstance(output, collections.Callable):
             value = output(0.0)
             if isinstance(value, (float, int)):
                 length = 1
@@ -242,7 +243,7 @@ def piecewise(data):
                 break
 
         # if it's a function, call it
-        if callable(value):
+        if isinstance(value, collections.Callable):
             value = value(t)
             # force the result to be a list
             if isinstance(value, (int, float)):

@@ -17,7 +17,8 @@ class TestModelBuild(unittest.TestCase):
         m.probe('B', filter=0.01)
 
         mcopy = m.simulator(dt=0.001).model
-        self.assertItemsEqual(m.objs.keys(), mcopy.objs.keys())
+        self.assertTrue(
+            all(map(lambda a, b: a == b, m.objs.keys(), mcopy.objs.keys())))
 
         def compare_objs(orig, copy, attrs):
             for attr in attrs:
@@ -71,8 +72,8 @@ class TestModelBuild(unittest.TestCase):
                          if equal else
                          np.any(getattr(obj1, attr) != getattr(obj2, attr)))
                 if not check:
-                    print getattr(obj1, attr)
-                    print getattr(obj2, attr)
+                    print(getattr(obj1, attr))
+                    print(getattr(obj2, attr))
                 self.assertTrue(check)
 
         ens_attrs = ('encoders', 'max_rates', 'intercepts')

@@ -44,7 +44,7 @@ class EnsembleArray(object):
 
         # Make some empty ensembles for now
         self.ensembles = [objects.Ensemble(name+("[%d]" % i), neurons, 1)
-                          for i in xrange(n_ensembles)]
+                          for i in range(n_ensembles)]
 
         # Any ens_args will be set on enclosed ensembles
         for ens in self.ensembles:
@@ -89,7 +89,7 @@ class EnsembleArray(object):
     @neurons.setter
     def neurons(self, _neurons):
         self._neurons = _neurons
-        each_neurons = _neurons.n_neurons / self.n_ensembles
+        each_neurons = _neurons.n_neurons // self.n_ensembles
         extra_neurons = _neurons.n_neurons % self.n_ensembles
         for i, ens in enumerate(self.ensembles):
             # Copy and partition _neurons
@@ -121,7 +121,7 @@ class EnsembleArray(object):
         return probe
 
     def add_to_model(self, model):
-        if model.objs.has_key(self.name):
+        if self.name in model.objs:
             raise ValueError("Something called " + self.name + " already "
                              "exists. Please choose a different name.")
 

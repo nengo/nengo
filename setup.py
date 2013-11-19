@@ -7,8 +7,8 @@ except ImportError:
         from ez_setup import use_setuptools
         use_setuptools()
         from setuptools import setup
-    except Exception, e:
-        print "Forget setuptools, trying distutils..."
+    except Exception as e:
+        print("Forget setuptools, trying distutils...")
         from distutils.core import setup
 
 

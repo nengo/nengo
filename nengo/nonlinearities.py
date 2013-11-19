@@ -23,7 +23,7 @@ class PythonFunction(object):
         except KeyError:
             rval = self.__class__.__new__(self.__class__)
             memo[id(self)] = rval
-            for k, v in self.__dict__.items():
+            for k, v in list(self.__dict__.items()):
                 if k == 'fn':
                     rval.fn = v
                 else:

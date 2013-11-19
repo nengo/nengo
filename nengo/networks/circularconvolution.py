@@ -19,8 +19,9 @@ _dft_half_cache = {}
 def _dft_half_cached(n):
     if n not in _dft_half_cache:
         x = np.arange(n)
-        w = np.arange(n/2+1)
-        D = (1./np.sqrt(n))*np.exp((-2.j*np.pi/n)*(w[:,None]*x[None,:]))
+        w = np.arange(n // 2 + 1)
+        D = ((1. / np.sqrt(n))
+             * np.exp((-2.j * np.pi / n) * (w[:,None] * x[None,:])))
         _dft_half_cache[n] = D
     return _dft_half_cache[n]
 
@@ -49,7 +50,7 @@ class CircularConvolution(Network):
         for ens in self.ensemble.ensembles:
             ens.encoders = np.tile(
                 [[1,1],[-1,1],[1,-1],[-1,-1]],
-                (ens.n_neurons / 4, 1))
+                (ens.n_neurons // 4, 1))
 
         self.A.connect_to(self.ensemble, transform=self.transformA)
         self.B.connect_to(self.ensemble, transform=self.transformB)
@@ -60,12 +61,12 @@ class CircularConvolution(Network):
 
     @staticmethod
     def _input_transform(dims, first, invert=False):
-        dims2 = 4*(dims/2+1)
+        dims2 = 4 * (dims // 2 + 1)
         T = np.zeros((dims2, 2, dims))
         dft = _dft_half_cached(dims)
 
-        for i in xrange(dims2):
-            row = dft[i/4] if not invert else dft[i/4].conj()
+        for i in range(dims2):
+            row = dft[i // 4] if not invert else dft[i // 4].conj()
             if first:
                 T[i,0] = row.real if i % 2 == 0 else row.imag
             else:
@@ -82,11 +83,11 @@ class CircularConvolution(Network):
 
     @staticmethod
     def _output_transform(dims):
-        dims2 = (dims/2+1)
+        dims2 = (dims // 2 + 1)
         T = np.zeros((dims2, 4, dims))
         idft = _dft_half_cached(dims).conj()
 
-        for i in xrange(dims2):
+        for i in range(dims2):
             row = idft[i] if i == 0 or 2*i == dims else 2*idft[i]
             T[i,0] = row.real
             T[i,1] = -row.real

@@ -83,7 +83,7 @@ class TestProbe(SimulatorTestCase):
 
         for i, pop in enumerate(pops):
             t = dt * np.arange(int(np.ceil(simtime / dts[i])))
-            x = np.asarray(map(input_fn, t))
+            x = np.asarray(list(map(input_fn, t)))
             y = sim.data(pop)
             self.assertTrue(len(x) == len(y))
             self.assertTrue(np.allclose(y[1:], x[:-1])) # 1-step delay
@@ -104,7 +104,7 @@ class TestProbe(SimulatorTestCase):
         model = nengo.Model('test_large_probes', seed=3249)
 
         pops = []
-        for i in xrange(n):
+        for i in range(n):
             xi = model.make_node('x%d' % i, output=input_fn)
             model.probe(xi)
             pops.append(xi)
@@ -124,7 +124,7 @@ class TestProbe(SimulatorTestCase):
             % locals())
 
         t = dt * np.arange(int(np.round(simtime / dt)))
-        x = np.asarray(map(input_fn, t))
+        x = np.asarray(list(map(input_fn, t)))
         for pop in pops:
             y = sim.data(pop)
             self.assertTrue(np.allclose(y[1:], x[:-1])) # 1-step delay

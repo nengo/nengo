@@ -5,8 +5,9 @@ import pickle
 import os.path
 import numpy as np
 
-from . import objects
-from . import simulator
+from nengo import objects
+from nengo import simulator
+import collections
 
 
 logger = logging.getLogger(__name__)
@@ -232,9 +233,9 @@ class Model(object):
             If the `target` does not exist and no `default` is specified.
 
         """
-        if isinstance(target, str) and self.objs.has_key(target):
+        if isinstance(target, str) and target in self.objs:
             return target
-        for k, v in self.objs.iteritems():
+        for k, v in self.objs.items():
             if v == target:
                 return k
         return default
@@ -260,7 +261,7 @@ class Model(object):
             logger.warning("%s is not in model %s.", str(target), self.name)
             return
 
-        for k, v in self.objs.iteritems():
+        for k, v in self.objs.items():
             if v == obj:
                 del self.objs[k]
                 logger.info("%s removed.", k)
@@ -326,7 +327,7 @@ class Model(object):
 
         """
         node = objects.Node(name, output)
-        if callable(output):
+        if isinstance(output, collections.Callable):
             self.connect(self.t, node, filter=None)
         return self.add(node)
 

@@ -7,6 +7,7 @@ from . import decoders
 from . import nonlinearities
 from . import objects
 from . import templates
+import collections
 
 logger = logging.getLogger(__name__)
 
@@ -347,54 +348,11 @@ class Probe(object):
         return str(self)
 
 
-class collect_operators_into(object):
-    """
-    Within this context, operators that are constructed
-    are, by default, appended to an `operators` list.
-
-    For example:
-
-    >>> operators = []
-    >>> with collect_operators_into(operators):
-    >>>    Reset(foo)
-    >>>    Copy(foo, bar)
-    >>> assert len(operators) == 2
-
-    After the context exits, `operators` contains the Reset
-    and the Copy instances.
-
-    """
-    # -- the list of `operators` lists to which we need to append
-    #    new operators when creating them.
-    lists = []
-
-    def __init__(self, operators):
-        if operators is None:
-            operators = []
-        self.operators = operators
-
-    def __enter__(self):
-        self.lists.append(self.operators)
-
-    def __exit__(self, exc_type, exc_value, tb):
-        self.lists.remove(self.operators)
-
-    @staticmethod
-    def collect_operator(op):
-        for lst in collect_operators_into.lists:
-            lst.append(op)
-
-
 class Operator(object):
     """
     Base class for operator instances understood by the reference simulator.
     """
 
-    # -- N.B. automatically an @staticmethod
-    def __new__(cls, *args, **kwargs):
-        rval = super(Operator, cls).__new__(cls, *args, **kwargs)
-        collect_operators_into.collect_operator(rval)
-        return rval
 
     #
     # The lifetime of a Signal during one simulator timestep:
@@ -845,7 +803,7 @@ class Builder(object):
     @builds(objects.Node)
     def build_node(self, node):
         # Get input
-        if node.output is None or callable(node.output):
+        if node.output is None or isinstance(node.output, collections.Callable):
             node.input_signal = Signal(np.zeros(node.dimensions),
                                        name=node.name + ".signal")
             #reset input signal to 0 each timestep
@@ -854,8 +812,8 @@ class Builder(object):
         # Provide output
         if node.output is None:
             node.output_signal = node.input_signal
-        elif not callable(node.output):
-            if isinstance(node.output, (int, float, long, complex)):
+        elif not isinstance(node.output, collections.Callable):
+            if isinstance(node.output, (int, float, complex)):
                 node.output_signal = Signal([node.output], name=node.name)
             else:
                 node.output_signal = Signal(node.output, name=node.name)

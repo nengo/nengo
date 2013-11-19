@@ -1,10 +1,9 @@
 import copy
-import inspect
 import logging
 import numpy as np
 
-from . import decoders
-from . import nonlinearities
+from nengo import decoders
+from nengo import nonlinearities
 
 logger = logging.getLogger(__name__)
 
@@ -231,7 +230,7 @@ class Ensemble(object):
         return probe
 
     def add_to_model(self, model):
-        if model.objs.has_key(self.name):
+        if self.name in model.objs:
             raise ValueError("Something called " + self.name + " already "
                              "exists. Please choose a different name.")
 
@@ -316,7 +315,7 @@ class Node(object):
         return p
 
     def add_to_model(self, model):
-        if model.objs.has_key(self.name):
+        if self.name in model.objs:
             raise ValueError("Something called " + self.name + " already "
                              "exists. Please choose a different name.")
 
