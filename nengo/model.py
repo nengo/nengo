@@ -79,8 +79,8 @@ class Model(object, context.Context):
             self.t_probe = objects.Probe(self.t, 'output')
         
         #make this the default context if one isn't already set
-        if context.current() is None:
-            context.push(self)
+        context.clear()
+        context.push(self)
 
     def __str__(self):
         return "Model: " + self.label
