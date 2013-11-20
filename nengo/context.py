@@ -38,6 +38,12 @@ def pop():
     global _stack
     _stack.pop()
     
+def clear():
+    """Empties the stack."""
+    
+    global _stack
+    _stack = []
+    
 class Context:
     """Any object that wants to be able to set itself as a context should subclass off this."""
     
