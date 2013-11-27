@@ -1,43 +1,52 @@
-from .. import nengo as nengo
+import nengo
+from nengo.objects import Uniform
+import numpy as np
 
-## This example demonstrates how to create a neuronal ensemble containing a pair of neurons.
-##
-## Network diagram:
-##
-##      [Input] ---> (Neurons) 
-##
-##
-## Network behaviour:
-##   Neurons = Input
-## 
+model = nengo.Model('Two Neurons')
 
-# Create the nengo model
-model = nengo.Model('Two Neurons')             # Create the network
+n = nengo.Ensemble(nengo.LIF(2), #
+                    dimensions=1, # Representing a scalar
+                    intercepts=Uniform(-.5, -.5), #Set the intercepts at .5
+                    max_rates=Uniform(100,100), #Set the max firing rate at 100hz
+                    encoders=[[1],[-1]]) #One 'on' and one 'off' neuron
 
-# Create the model inputs
-model.make_node('Input', [-0.45])              # Create a controllable input
-                                               #   with a starting value of -.45
 
-# Create the neuronal ensemble
-model.make_ensemble('Neurons', 2, 1,           # Make 2 neurons representing
-                    max_rate = (100, 100),     #   1 dimension, with a maximum
-                    intercept = (-0.5, -0.5),  #   firing rate of 100, with a
-                    encoders = [[1], [-1]]     #   tuning curve x-intercept of 
-                                               #   -0.5, encoders of 1 and -1 
-                                               #   (i.e. the first responds more
-                                               #   to positive values and the
-                                               #   second to negative values),
-                                               #   and a noise of variance 3
 
-model.noise = 3                                # Set the neural noise to have a
-                                               #   variance of 3
+sin = nengo.Node( output=lambda t: np.sin(8*t))
 
-# Create the connections within the model
-model.connect('Input','Neurons')               # Connect the input to the neuron
+nengo.Connection(sin, n, filter = 0.01)
 
-# Build the model
-model.build()                                  # Generate model parameters
+sin_p = nengo.Probe(sin, 'output') # The original input
+n_spikes = nengo.Probe(n, 'spikes') # Raw spikes from each neuron
+#nengo.Probe(n, 'voltages') # Subthreshold soma voltages of the neurons
+n_output = nengo.Probe(n, 'decoded_output', filter = 0.01) # Spikes filtered by a 10ms post-synaptic filter
 
-# Run the model
-model.run(1)                                   # Run for 1 second
+sim = nengo.Simulator(model) #Create a simulator
+sim.run(1) # Run it for 5 seconds
 
+
+import matplotlib.pyplot as plt
+# Plot the decoded output of the ensemble
+t = sim.data(model.t_probe) #Get the time steps
+plt.plot(t, sim.data(n_output))
+plt.plot(t, sim.data(sin_p))
+plt.xlim(0,1)
+
+# Plot the spiking output of the ensemble
+from nengo.matplotlib import rasterplot
+plt.figure(figsize=(10,8))
+plt.subplot(221)
+rasterplot(t, sim.data(n_spikes), colors=[(1,0,0), (0,0,0)])
+plt.xlim(0,1)
+plt.yticks((0, 1), ("On neuron", "Off neuron"))
+
+# Plot the soma voltages of the neurons
+#plt.subplot(222)
+#data = sim.data('Neurons.voltages')
+#plt.plot(t, data[:,0]+1, 'r')
+#plt.plot(t, data[:,1], 'k')
+#plt.yticks(())
+#plt.axis([0,1,0,2])
+#plt.subplots_adjust(wspace=0.05)
+
+plt.show()

@@ -202,12 +202,14 @@ class Ensemble(object):
         self.probes[probe.attr].append(probe)
 
         if probe.attr == 'decoded_output':
-            self.connect_to(probe, filter=probe.filter)
+            DecodedConnection(self, probe, filter=probe.filter)
         elif probe.attr == 'spikes':
-            Connection(self.neurons, probe, filter=probe.filter,
+            c = Connection(self.neurons, probe, filter=probe.filter,
                 transform=np.eye(self.n_neurons))
+            self.connections_out.append(c)
         elif probe.attr == 'voltages':
-            Connection(self.neurons.voltage, probe, filter=None)
+            c = Connection(self.neurons.voltage, probe, filter=None)
+            self.connections_out.append(c)
         else:
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % probe.attr)
@@ -325,7 +327,8 @@ class Connection(object):
         self.probes = {'signal': []}
 
         #add self to pre and post
-        pre.connections_out.append(self)
+        if hasattr(pre, 'connections_out'):
+            pre.connections_out.append(self)
         if hasattr(post, 'connections_in'):
             post.connections_in.append(self)
 
@@ -491,5 +494,4 @@ class Probe(object):
         return 1.0 / self.sample_every
 
     def add_to_model(self, model):
-        model.probed[self.target] = self #TODO: this won't work if you have multiple probes on the same target
-                                        #(it worked before because target was a string that specified the attr)
+        model.probed[(self.target,self.attr)] = self
