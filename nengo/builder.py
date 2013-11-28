@@ -747,9 +747,6 @@ class Builder(object):
 
         # 3. Then connections
         logger.info("Building connections")
-        for o in self.model.objs:
-            for c in o.connections_out:
-                self._builders[c.__class__](c)
         for c in self.model.connections:
             self._builders[c.__class__](c)
 
@@ -871,7 +868,7 @@ class Builder(object):
                 node.output_signal = Signal(node.output, name=node.label)
         else:
             #if no input, assume input is supposed to come from model.t
-            if len(node.connections_in) == 0:
+            if not node.has_input:
                 with self.model:
                     objects.Connection(self.model.t, node, filter=None)
 

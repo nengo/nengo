@@ -1,5 +1,6 @@
 import numpy as np
 
+import nengo
 from .. import objects
 from ..templates import EnsembleArray
 from . import Network
@@ -49,9 +50,8 @@ class CircularConvolution(Network):
                 ens.encoders = np.tile(
                     [[1,1],[-1,1],[1,-1],[-1,-1]],
                     (ens.n_neurons / 4, 1))
-
-            self.A.connect_to(self.ensemble, transform=self.transformA)
-            self.B.connect_to(self.ensemble, transform=self.transformB)
+            nengo.Connection(self.A, self.ensemble, transform=self.transformA)
+            nengo.Connection(self.B, self.ensemble, transform=self.transformB)
             self.ensemble.connect_to(self.output,
                                      filter=0.02,
                                      function=self.product,

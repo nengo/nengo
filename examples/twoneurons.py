@@ -38,7 +38,7 @@ plt.figure(figsize=(10,8))
 plt.subplot(221)
 rasterplot(t, sim.data(n_spikes), colors=[(1,0,0), (0,0,0)])
 plt.xlim(0,1)
-plt.yticks((0, 1), ("On neuron", "Off neuron"))
+plt.yticks((1, 2), ("On neuron", "Off neuron"))
 
 # Plot the soma voltages of the neurons
 #plt.subplot(222)

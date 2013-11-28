@@ -88,10 +88,10 @@ class Ensemble(object):
         self.radius = kwargs.get('radius', 1.0)
         self.seed = kwargs.get('seed', None)
         self.auto_add = kwargs.get('auto_add', True)
+            #TODO: this is only here because of peculiarities in EnsembleArray;
+            #once EnsembleArray is updated (hopefully) it can be removed
 
-        # Set up connections and probes
-        self.connections_in = []
-        self.connections_out = []
+        # Set up probes
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
 
         # objects created at build time
@@ -204,12 +204,10 @@ class Ensemble(object):
         if probe.attr == 'decoded_output':
             DecodedConnection(self, probe, filter=probe.filter)
         elif probe.attr == 'spikes':
-            c = Connection(self.neurons, probe, filter=probe.filter,
+            Connection(self.neurons, probe, filter=probe.filter,
                 transform=np.eye(self.n_neurons))
-            self.connections_out.append(c)
         elif probe.attr == 'voltages':
-            c = Connection(self.neurons.voltage, probe, filter=None)
-            self.connections_out.append(c)
+            Connection(self.neurons.voltage, probe, filter=None)
         else:
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % probe.attr)
@@ -249,14 +247,12 @@ class Node(object):
     """
 
     def __init__(self, output=None, label="Node", dimensions=1):
-
         self.output = output
         self.label = label
         self.dimensions = dimensions
+        self.has_input = False
 
-        # Set up connections and probes
-        self.connections_in = []
-        self.connections_out = []
+        # Set up probes
         self.probes = {'output': []}
 
         #add self to current context
@@ -323,14 +319,20 @@ class Connection(object):
         self.filter = kwargs.get('filter', 0.005)
         self.transform = kwargs.get('transform', 1.0)
         self.modulatory = kwargs.get('modulatory', False)
+        self.auto_add = kwargs.get('auto_add', True)
+            #TODO: this is only here because of peculiarities in EnsembleArray;
+            #once EnsembleArray is updated (hopefully) it can be removed
 
         self.probes = {'signal': []}
 
-        #add self to pre and post
-        if hasattr(pre, 'connections_out'):
-            pre.connections_out.append(self)
-        if hasattr(post, 'connections_in'):
-            post.connections_in.append(self)
+        #add self to current context
+        if self.auto_add:
+            context.add_to_current(self)
+        if hasattr(post, 'has_input'):
+            #TODO: this is just used to detect whether the node
+            #needs time as input; remove this once we have
+            #a better way of indicating that
+            post.has_input = True
 
     def __str__(self):
         return self.label + " (" + self.__class__.__name__ + ")"
@@ -448,6 +450,9 @@ class ConnectionList(object):
         self.transform = transform
         self.probes = {}
 
+        #add self to current context
+        context.add_to_current(self)
+
     def add_to_model(self, model):
         model.connections.append(self)
 
@@ -469,8 +474,6 @@ class Probe(object):
 
     Attributes
     ----------
-    connections_in : list
-        List of incoming connections.
     sample_rate
     """
     def __init__(self, target, attr, sample_every=0.001, filter=None, dimensions=None):
@@ -480,9 +483,6 @@ class Probe(object):
         self.sample_every = sample_every
         self.dimensions = dimensions ##None?
         self.filter = filter
-
-        self.connections_in = []
-
         target.probe(self)
 
         #add self to current context
