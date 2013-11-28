@@ -3,6 +3,7 @@ import logging
 
 import numpy as np
 
+import nengo
 from .. import objects
 from .. import context
 
@@ -26,10 +27,6 @@ class EnsembleArray(object):
     radius
     seed
 
-    connections_in : type
-        description
-    connections_out : type
-        description
     probes : type
         description
 
@@ -59,8 +56,6 @@ class EnsembleArray(object):
         self.neurons = neurons
         self.dimensions_per_ensemble = dimensions_per_ensemble
 
-        self.connections_in = []
-        self.connections_out = []
         self.probes = {'decoded_output': []}
         
         #add self to current context
@@ -111,12 +106,10 @@ class EnsembleArray(object):
     def connect_to(self, post, transform=1.0, **kwargs):
         connections = []
         for i, ensemble in enumerate(self.ensembles):
-            c = ensemble.connect_to(post, **kwargs)
+            c = nengo.DecodedConnection(ensemble, post, auto_add=False, **kwargs)
             connections.append(c)
         connection = objects.ConnectionList(connections, transform)
-        self.connections_out.append(connection)
-        if hasattr(post, 'connections_in'):
-            post.connections_in.append(connection)
+
         return connection
 
     def probe(self, probe):

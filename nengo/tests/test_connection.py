@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class TestConnection(SimulatorTestCase):
 
-    def test_neurons_to_neurons(self):
+    def test_node_to_neurons(self):
         N = 30
 
         m = nengo.Model('test_neurons_to_neurons', seed=123)
@@ -21,8 +21,7 @@ class TestConnection(SimulatorTestCase):
             ideal = nengo.Node(piecewise({0:np.sin,2.5:0}))
     
             nengo.Connection(input, a)
-    
-            con = nengo.Connection(inh, a.neurons, transform=[[-2.5]]*N)
+            nengo.Connection(inh, a.neurons, transform=[[-2.5]]*N)
     
             in_p = nengo.Probe(input, 'output')
             a_p = nengo.Probe(a, 'decoded_output', filter=0.1)
@@ -60,7 +59,7 @@ class TestConnection(SimulatorTestCase):
             nengo.Connection(input, a)
             nengo.Connection(inh, b)
     
-            con = nengo.DecodedConnection(b, a.neurons, transform=[[-2.5]]*N)
+            nengo.DecodedConnection(b, a.neurons, transform=[[-2.5]]*N)
     
             in_p = nengo.Probe(input, 'output')
             a_p = nengo.Probe(a, 'decoded_output', filter=0.1)

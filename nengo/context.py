@@ -8,7 +8,7 @@ def add_to_current(obj):
     
     con = current()
     if con is None:
-        logger.error("Can't add object without setting context")
+        raise AttributeError("Can't add object without setting context")
     else:
         con.add(obj)
 
@@ -25,7 +25,7 @@ def push(con):
     global _stack
     
     if not isinstance(con, Context):
-        logger.error("Only Context objects can be added to context stack")
+        raise TypeError("Only Context objects can be added to context stack")
     elif current() != con:
         _stack += [con]
         

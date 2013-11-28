@@ -1,4 +1,4 @@
-from .. import objects
+import nengo
 from .. import context
 
 class Network(object, context.Context):
@@ -19,5 +19,6 @@ class Network(object, context.Context):
 
     def add_to_model(self, model):
         for obj in self.objects:
-            obj.label = self.label + '.' +  obj.label
+            if not isinstance(obj, (nengo.Connection, nengo.ConnectionList)):
+                obj.label = self.label + '.' +  obj.label
             model.add(obj)

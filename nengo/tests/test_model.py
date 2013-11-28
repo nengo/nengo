@@ -23,11 +23,6 @@ class TestModelBuild(unittest.TestCase):
         def compare_objs(orig, copy, attrs):
             for attr in attrs:
                 self.assertEqual(getattr(orig, attr), getattr(copy, attr))
-            for attr in ('connections_in', 'connections_out'):
-                self.assertEqual(len(getattr(orig, attr)),
-                                 len(getattr(copy, attr)))
-                for o_c, c_c in zip(getattr(orig, attr), getattr(copy, attr)):
-                    compare_connections(o_c, c_c)
             for p_o, p_c in zip(orig.probes.values(), copy.probes.values()):
                 self.assertEqual(len(p_o), len(p_c))
 
@@ -45,7 +40,8 @@ class TestModelBuild(unittest.TestCase):
                 compare_objs(o, copy_o, ('output',))
             else:
                 compare_objs(o, copy_o, ens_attrs)
-                compare_objs(o, copy_o, ens_attrs)
+        for c,copy_c in zip(m.connections,mcopy.connections):
+            compare_connections(c,copy_c)
 
     def test_seeding(self):
         """Test that setting the model seed fixes everything"""

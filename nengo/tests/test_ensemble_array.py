@@ -13,11 +13,13 @@ logger = logging.getLogger(__name__)
 class TestEnsembleArrayCreation(unittest.TestCase):
 
     def test_n_ensembles(self):
+        nengo.Model()
         ea = EnsembleArray(nengo.LIF(1), 1)
         with self.assertRaises(ValueError):
             ea.n_ensembles = 3
 
     def test_neuron_parititoning(self):
+        nengo.Model()
         ea_even = EnsembleArray(nengo.LIF(10), 5)
         for ens in ea_even.ensembles:
             self.assertEqual(ens.n_neurons, 2)
