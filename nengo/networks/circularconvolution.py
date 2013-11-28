@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from ..templates import EnsembleArray
+from .ensemblearray import EnsembleArray
 
 
 def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
@@ -52,12 +52,14 @@ class CircularConvolution(nengo.Network):
                 ens.encoders = np.tile(
                     [[1, 1], [-1, 1], [1, -1], [-1, -1]],
                     (ens.n_neurons / 4, 1))
-            nengo.Connection(self.A, self.ensemble, transform=self.transformA)
-            nengo.Connection(self.B, self.ensemble, transform=self.transformB)
-            self.ensemble.connect_to(self.output,
-                                     filter=0.02,
-                                     function=self.product,
-                                     transform=self.transformC)
+            nengo.Connection(
+                self.A, self.ensemble.input, transform=self.transformA)
+            nengo.Connection(
+                self.B, self.ensemble.input, transform=self.transformB)
+            nengo.Connection(self.ensemble.add_output('product', self.product),
+                             self.output,
+                             filter=0.02,
+                             transform=self.transformC)
 
     @staticmethod
     def _input_transform(dims, first, invert=False):

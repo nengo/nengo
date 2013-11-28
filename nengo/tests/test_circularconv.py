@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from nengo.templates import EnsembleArray
+from nengo.networks import EnsembleArray
 from nengo.networks.circularconvolution import circconv
 from nengo.tests.helpers import (
     SimulatorTestCase, unittest, assert_allclose, Plotter, rmse)
@@ -68,16 +68,16 @@ class TestCircularConv(SimulatorTestCase):
                 neurons=nengo.LIF(n_neurons_d),
                 dimensions=A.dimensions, radius=radius)
 
-            inputA.connect_to(A)
-            inputB.connect_to(B)
-            A.connect_to(D.A)
-            B.connect_to(D.B)
-            D.output.connect_to(C)
+            nengo.Connection(inputA, A.input)
+            nengo.Connection(inputB, B.input)
+            nengo.Connection(A.output, D.A)
+            nengo.Connection(B.output, D.B)
+            nengo.Connection(D.output, C.input)
 
-            A_p = nengo.Probe(A, 'decoded_output', filter=0.03)
-            B_p = nengo.Probe(B, 'decoded_output', filter=0.03)
-            C_p = nengo.Probe(C, 'decoded_output', filter=0.03)
-            D_p = nengo.Probe(D.ensemble, 'decoded_output', filter=0.03)
+            A_p = nengo.Probe(A.output, 'output', filter=0.03)
+            B_p = nengo.Probe(B.output, 'output', filter=0.03)
+            C_p = nengo.Probe(C.output, 'output', filter=0.03)
+            D_p = nengo.Probe(D.ensemble.output, 'output', filter=0.03)
 
         # check FFT magnitude
         d = np.dot(D.transformA, a) + np.dot(D.transformB, b)

@@ -1040,19 +1040,6 @@ class Builder(object):
             connection.transform = trans
             self._builders[connection.__class__](connection)
 
-    @builds(nengo.templates.EnsembleArray)
-    def build_ensemblearray(self, ea):
-        ea.input_signal = Signal(np.zeros(ea.dimensions),
-                                 name=ea.label+".signal")
-        self.model.operators.append(Reset(ea.input_signal))
-        dims = ea.dimensions_per_ensemble
-
-        for i, ens in enumerate(ea.ensembles):
-            self.build_ensemble(ens, signal=ea.input_signal[i*dims:(i+1)*dims])
-
-        for probe in ea.probes['decoded_output']:
-            probe.dimensions = ea.dimensions
-
     @builds(nengo.PythonFunction)
     def build_pyfunc(self, pyfn):
         pyfn.input_signal = Signal(np.zeros(pyfn.n_in),
