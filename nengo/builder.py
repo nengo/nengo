@@ -1021,25 +1021,6 @@ class Builder(object):
             probe.dimensions = conn.output_signal.size
             self.model.add(probe)
 
-    @builds(nengo.ConnectionList)
-    def build_connectionlist(self, conn):
-        conn.transform = np.asarray(conn.transform)
-
-        i = 0
-        for connection in conn.connections:
-            pre_dim = connection.dimensions
-            if conn.transform.ndim == 0:
-                trans = np.zeros((connection.post.dimensions, pre_dim))
-                np.fill_diagonal(trans[i:i+pre_dim, :], conn.transform)
-            elif conn.transform.ndim == 2:
-                trans = conn.transform[:, i:i+pre_dim]
-            else:
-                raise NotImplementedError(
-                    "Only transforms with 0 or 2 ndims are accepted")
-            i += pre_dim
-            connection.transform = trans
-            self._builders[connection.__class__](connection)
-
     @builds(nengo.PythonFunction)
     def build_pyfunc(self, pyfn):
         pyfn.input_signal = Signal(np.zeros(pyfn.n_in),

@@ -433,20 +433,6 @@ class DecodedConnection(Connection):
         return label
 
 
-class ConnectionList(object):
-    """A connection made up of several other connections."""
-    def __init__(self, connections, transform=1.0):
-        self.connections = connections
-        self.transform = transform
-        self.probes = {}
-
-        #add self to current context
-        nengo.context.add_to_current(self)
-
-    def add_to_model(self, model):
-        model.connections.append(self)
-
-
 class Probe(object):
     """A probe is a dummy object that only has an input signal and probe.
 
@@ -506,7 +492,7 @@ class Network(object):
 
     def add_to_model(self, model):
         for obj in self.objects:
-            if not isinstance(obj, (nengo.Connection, nengo.ConnectionList)):
+            if not isinstance(obj, nengo.Connection):
                 obj.label = self.label + '.' + obj.label
             model.add(obj)
 
