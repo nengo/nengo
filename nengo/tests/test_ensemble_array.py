@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 import nengo
-from nengo.templates import EnsembleArray
+from nengo.networks import EnsembleArray
 from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
 
 
@@ -12,12 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class TestEnsembleArrayCreation(unittest.TestCase):
-    def test_n_ensembles(self):
-        nengo.Model()
-        ea = EnsembleArray(nengo.LIF(1), 1)
-        with self.assertRaises(ValueError):
-            ea.n_ensembles = 3
-
     def test_neuron_parititoning(self):
         nengo.Model()
         ea_even = EnsembleArray(nengo.LIF(10), 5)
@@ -54,21 +48,20 @@ class TestEnsembleArray(SimulatorTestCase):
         with model:
             inputA = nengo.Node(output=a)
             inputB = nengo.Node(output=b)
-            A = EnsembleArray(nengo.LIF(n_neurons), dims,
-                              radius=radius)
-            B = EnsembleArray(nengo.LIF(n_neurons), dims,
-                              radius=radius)
+            A = EnsembleArray(nengo.LIF(n_neurons), dims, radius=radius)
+            B = EnsembleArray(nengo.LIF(n_neurons), dims, radius=radius)
             C = EnsembleArray(nengo.LIF(n_neurons * 2), dims,
-                              dimensions_per_ensemble=2, radius=radius)
+                              dimensions_per_ensemble=2,
+                              radius=radius, label="C")
 
-            nengo.Connection(inputA, A)
-            nengo.Connection(inputB, B)
-            A.connect_to(C, transform=ta)
-            B.connect_to(C, transform=tb)
+            nengo.Connection(inputA, A.input)
+            nengo.Connection(inputB, B.input)
+            nengo.Connection(A.output, C.input, transform=ta)
+            nengo.Connection(B.output, C.input, transform=tb)
 
-            A_p = nengo.Probe(A, 'decoded_output', filter=0.03)
-            B_p = nengo.Probe(B, 'decoded_output', filter=0.03)
-            C_p = nengo.Probe(C, 'decoded_output', filter=0.03)
+            A_p = nengo.Probe(A.output, 'output', filter=0.03)
+            B_p = nengo.Probe(B.output, 'output', filter=0.03)
+            C_p = nengo.Probe(C.output, 'output', filter=0.03)
 
         sim = self.Simulator(model)
         sim.run(1.0)
@@ -118,17 +111,17 @@ class TestEnsembleArray(SimulatorTestCase):
 
             inputA = nengo.Node(output=Amat.ravel())
             inputB = nengo.Node(output=Bmat.ravel())
-            nengo.Connection(inputA, A)
-            nengo.Connection(inputB, B)
+            nengo.Connection(inputA, A.input)
+            nengo.Connection(inputB, B.input)
             A_p = nengo.Probe(
-                A, 'decoded_output', sample_every=0.01, filter=0.01)
+                A.output, 'output', sample_every=0.01, filter=0.01)
             B_p = nengo.Probe(
-                B, 'decoded_output', sample_every=0.01, filter=0.01)
+                B.output, 'output', sample_every=0.01, filter=0.01)
 
-            C = EnsembleArray(
-                nengo.LIF(N * Amat.size * Bmat.shape[1] * 2),
-                Amat.size * Bmat.shape[1], dimensions_per_ensemble=2,
-                radius=1.5 * radius)
+            C = EnsembleArray(nengo.LIF(N * Amat.size * Bmat.shape[1] * 2),
+                              Amat.size * Bmat.shape[1],
+                              dimensions_per_ensemble=2,
+                              radius=1.5 * radius)
 
             for ens in C.ensembles:
                 ens.encoders = np.tile([[1, 1], [-1, 1], [1, -1], [-1, -1]],
@@ -144,12 +137,10 @@ class TestEnsembleArray(SimulatorTestCase):
                         transformA[tmp * 2][j + i * Amat.shape[1]] = 1
                         transformB[tmp * 2 + 1][k + j * Bmat.shape[1]] = 1
 
-            # nengo.DecodedConnection(A, C, transform=transformA)
-            # nengo.DecodedConnection(B, C, transform=transformB)
-            A.connect_to(C, transform=transformA)
-            B.connect_to(C, transform=transformB)
+            nengo.Connection(A.output, C.input, transform=transformA)
+            nengo.Connection(B.output, C.input, transform=transformB)
             C_p = nengo.Probe(
-                C, 'decoded_output', sample_every=0.01, filter=0.01)
+                C.output, 'output', sample_every=0.01, filter=0.01)
 
             D = EnsembleArray(nengo.LIF(N * Amat.shape[0] * Bmat.shape[1]),
                               Amat.shape[0] * Bmat.shape[1], radius=radius)
@@ -161,11 +152,11 @@ class TestEnsembleArray(SimulatorTestCase):
             for i in range(Bmat.size):
                 transformC[i / Bmat.shape[0]][i] = 1
 
-            # nengo.DecodedConnection(
-            #    C, D, function=product, transform=transformC)
-            C.connect_to(D, function=product, transform=transformC)
+            prod = C.add_output("product", product)
+
+            nengo.Connection(prod, D.input, transform=transformC)
             D_p = nengo.Probe(
-                D, 'decoded_output', sample_every=0.01, filter=0.01)
+                D.output, 'output', sample_every=0.01, filter=0.01)
 
         sim = self.Simulator(model)
         sim.run(1)

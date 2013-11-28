@@ -86,9 +86,6 @@ class Ensemble(object):
         self.max_rates = kwargs.get('max_rates', Uniform(200, 400))
         self.radius = kwargs.get('radius', 1.0)
         self.seed = kwargs.get('seed', None)
-        self.auto_add = kwargs.get('auto_add', True)
-            #TODO: this is only here because of peculiarities in EnsembleArray;
-            #once EnsembleArray is updated (hopefully) it can be removed
 
         # Set up probes
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
@@ -97,8 +94,7 @@ class Ensemble(object):
         self._scaled_encoders = None  # encoders * neuron-gains / radius
 
         #add self to current context
-        if self.auto_add:
-            nengo.context.add_to_current(self)
+        nengo.context.add_to_current(self)
 
     def __str__(self):
         return "Ensemble: " + self.label
@@ -318,15 +314,11 @@ class Connection(object):
         self.filter = kwargs.get('filter', 0.005)
         self.transform = kwargs.get('transform', 1.0)
         self.modulatory = kwargs.get('modulatory', False)
-        self.auto_add = kwargs.get('auto_add', True)
-            #TODO: this is only here because of peculiarities in EnsembleArray;
-            #once EnsembleArray is updated (hopefully) it can be removed
 
         self.probes = {'signal': []}
 
         #add self to current context
-        if self.auto_add:
-            nengo.context.add_to_current(self)
+        nengo.context.add_to_current(self)
         if hasattr(post, 'has_input'):
             #TODO: this is just used to detect whether the node
             #needs time as input; remove this once we have
