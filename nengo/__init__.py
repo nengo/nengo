@@ -11,6 +11,8 @@ from .objects import (
     Ensemble, Node, Connection, DecodedConnection, ConnectionList, Probe)
 from .simulator import Simulator
 
+from .context import ContextStack
+context = ContextStack(maxlen=100)
 
 logger = logging.getLogger(__name__)
 try:

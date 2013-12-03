@@ -2,9 +2,9 @@ import copy
 import logging
 import numpy as np
 
+import nengo
 from . import decoders
 from . import nonlinearities
-from . import context
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ class Ensemble(object):
 
         #add self to current context
         if self.auto_add:
-            context.add_to_current(self)
+            nengo.context.add_to_current(self)
 
     def __str__(self):
         return "Ensemble: " + self.label
@@ -256,7 +256,7 @@ class Node(object):
         self.probes = {'output': []}
 
         #add self to current context
-        context.add_to_current(self)
+        nengo.context.add_to_current(self)
 
     def __str__(self):
         return "Node: " + self.label
@@ -327,7 +327,7 @@ class Connection(object):
 
         #add self to current context
         if self.auto_add:
-            context.add_to_current(self)
+            nengo.context.add_to_current(self)
         if hasattr(post, 'has_input'):
             #TODO: this is just used to detect whether the node
             #needs time as input; remove this once we have
@@ -451,7 +451,7 @@ class ConnectionList(object):
         self.probes = {}
 
         #add self to current context
-        context.add_to_current(self)
+        nengo.context.add_to_current(self)
 
     def add_to_model(self, model):
         model.connections.append(self)
@@ -486,7 +486,7 @@ class Probe(object):
         target.probe(self)
 
         #add self to current context
-        context.add_to_current(self)
+        nengo.context.add_to_current(self)
 
     @property
     def sample_rate(self):

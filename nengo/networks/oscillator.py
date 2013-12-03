@@ -2,7 +2,7 @@ import nengo
 from .. import context
 from . import Network
 
-class Oscillator(Network, context.Context):
+class Oscillator(Network):
     def make(self, recurrent_tau, frequency, **ens_args):
         with self:
             self.input = nengo.Node(label='In', dimensions=2)

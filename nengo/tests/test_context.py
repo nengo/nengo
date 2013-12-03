@@ -1,5 +1,4 @@
 import nengo
-from nengo import context
 
 from nengo.tests.helpers import SimulatorTestCase, unittest
 
@@ -64,12 +63,20 @@ class TestContext(SimulatorTestCase):
         ###TODO
         pass
 
-class MyContext(context.Context):
+
+class MyContext():
     def __init__(self):
         self.objs = []
 
     def add(self, obj):
         self.objs += [obj]
+
+    def __enter__(self):
+        nengo.context.append(self)
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        nengo.context.pop()
+
 
 if __name__ == "__main__":
     nengo.log(debug=True, path='log.txt')

@@ -5,8 +5,6 @@ import numpy as np
 
 import nengo
 from .. import objects
-from .. import context
-
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +57,7 @@ class EnsembleArray(object):
         self.probes = {'decoded_output': []}
         
         #add self to current context
-        context.add_to_current(self)
+        nengo.context.add_to_current(self)
 
     @property
     def dimensions(self):
