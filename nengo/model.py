@@ -4,14 +4,13 @@ import pickle
 import os.path
 import numpy as np
 
+import nengo
 from . import objects
-from . import context
-
 
 logger = logging.getLogger(__name__)
 
 
-class Model(object, context.Context):
+class Model(object):
     """A model contains a single network and the ability to
     run simulations of that network.
 
@@ -78,9 +77,9 @@ class Model(object, context.Context):
             # Automatically probe time
             self.t_probe = objects.Probe(self.t, 'output')
         
-        #make this the default context if one isn't already set
-        context.clear()
-        context.push(self)
+        #make this the default context
+        nengo.context.clear()
+        nengo.context.append(self)
 
     def __str__(self):
         return "Model: " + self.label
@@ -178,3 +177,9 @@ class Model(object, context.Context):
 
         self.objs = [o for o in self.objs if o != target]
         logger.info("%s removed.", target)
+        
+    def __enter__(self):
+        nengo.context.append(self)
+        
+    def __exit__(self, exception_type, exception_value, traceback):
+        nengo.context.pop()

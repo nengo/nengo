@@ -1,14 +1,13 @@
 import nengo
-from .. import context
 
-class Network(object, context.Context):
+class Network(object):
     def __init__(self, *args, **kwargs):
         self.label = kwargs.pop("label", "Network")
         self.objects = []
         self.make(*args, **kwargs)
         
         #add self to current context
-        context.add_to_current(self)
+        nengo.context.add_to_current(self)
 
     def add(self, obj):
         self.objects.append(obj)
@@ -22,3 +21,9 @@ class Network(object, context.Context):
             if not isinstance(obj, (nengo.Connection, nengo.ConnectionList)):
                 obj.label = self.label + '.' +  obj.label
             model.add(obj)
+            
+    def __enter__(self):
+        nengo.context.append(self)
+        
+    def __exit__(self, exception_type, exception_value, traceback):
+        nengo.context.pop()
