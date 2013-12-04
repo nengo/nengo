@@ -33,46 +33,11 @@ def sample_hypersphere(dimensions, n_samples, rng, surface=False):
 
     return samples
 
-# def gen_eval_points(n, d, radius=1.0, method='uniform'):
-#     """Various methods for randomly generating evaluation points.
-
-#     TODO: this method is currently not used anywhere!
-#     """
-
-#     method = method.lower()
-#     if method == 'uniform':
-#         ### pick points from a Gaussian distribution, then normalize the
-#         ### vector lengths so they are uniformly distributed
-#         radii = np.random.uniform(low=0, high=1, size=n)
-#         points = np.random.normal(size=(n,d))
-#         points *= (radii / np.sqrt((points**2).sum(-1)))[:,None]
-#     elif method in ['gaussian', 'normal']:
-#         ### pick the points from a Gaussian distribution
-#         points = np.random.normal(scale=radius, size=(n,d))
-#     else:
-#         ### TODO: other methods could allow users to specify different radii
-#         ### for different dimensions.
-#         raise ValueError("Unrecognized evaluation point generation method")
-
-#     return points
-
-
-
-
 
 # -- James and Terry arrived at this by eyeballing some graphs.
 #    Not clear if this should be a constant at all, it
 #    may depend on fn being estimated, number of neurons, etc...
 DEFAULT_RCOND = 0.01
-
-# def solve_decoders(activities, targets, method='lstsq'):
-#     if method == 'lstsq':
-#         weights, res, rank, s = np.linalg.lstsq(activities, targets,
-#                                                 rcond=DEFAULT_RCOND)
-#     elif method == 'cholesky':
-#     elif method == 'eigh':
-#         sigma = 0.1 * activities.max()
-#         weights = eigh(activites, targets, sigma=sigma)
 
 
 def least_squares(activities, targets):
@@ -86,12 +51,13 @@ def least_squares(activities, targets):
 def regularizationParameter(sigma, Neval):
     return sigma**2 * Neval
 
+
 def eigh(A, b, sigma):
     """
     Solve the given linear system(s) using the eigendecomposition.
     """
 
-    m,n = A.shape
+    m, n = A.shape
     reglambda = regularizationParameter(sigma, m)
 
     transpose = m < n
@@ -103,17 +69,18 @@ def eigh(A, b, sigma):
         G = np.dot(A.T, A) + reglambda * np.eye(n)
         b = np.dot(A.T, b)
 
-    e,V = np.linalg.eigh(G)
+    e, V = np.linalg.eigh(G)
     eInv = 1. / e
 
     x = np.dot(V.T, b)
-    x = eInv[:,None] * x if len(b.shape) > 1 else eInv * x
+    x = eInv[:, None] * x if len(b.shape) > 1 else eInv * x
     x = np.dot(V, x)
 
     if transpose:
         x = np.dot(A.T, x)
 
     return x
+
 
 def cholesky(A, b, sigma):
     """
@@ -122,7 +89,7 @@ def cholesky(A, b, sigma):
     # sigma = 0.1 * activities.max()
     # weights = cholesky(activities, targets, sigma=sigma)
 
-    m,n = A.shape
+    m, n = A.shape
     reglambda = regularizationParameter(sigma, m)
 
     transpose = m < n
@@ -200,7 +167,8 @@ def cholesky(A, b, sigma):
 #     for i in range(D):
 #         xi = getcol(x0, i).copy() if x0 is not None else x[:,i]
 #         bi = getcol(b, i)
-#         xi, itn = _conjgrad_iters(G, bi, xi, maxiters=maxiters, rtol=tol*np.sqrt(m))
+#         xi, itn = _conjgrad_iters(
+#             G, bi, xi, maxiters=maxiters, rtol=tol*np.sqrt(m))
 #         x[:,i] = xi
 #         itns.append(itn)
 

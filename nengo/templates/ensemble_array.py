@@ -3,6 +3,7 @@ import logging
 
 import numpy as np
 
+import nengo
 from .. import objects
 
 logger = logging.getLogger(__name__)
@@ -24,27 +25,25 @@ class EnsembleArray(object):
     radius
     seed
 
-    connections_in : type
-        description
-    connections_out : type
-        description
     probes : type
         description
 
     """
 
-    def __init__(self, name, neurons, n_ensembles,
-                 dimensions_per_ensemble=1, **ens_args):
+    def __init__(self, neurons, n_ensembles,
+                 dimensions_per_ensemble=1, label="EnsembleArray",
+                 **ens_args):
         """
         TODO
         """
         assert n_ensembles > 0, "Number of ensembles must be positive"
 
-        self.name = name
+        self.label = label
 
         # Make some empty ensembles for now
-        self.ensembles = [objects.Ensemble(name+("[%d]" % i), neurons, 1)
-                          for i in xrange(n_ensembles)]
+        self.ensembles = [objects.Ensemble(
+            neurons, 1, label=self.label+("[%d]" % i), auto_add=False)
+            for i in xrange(n_ensembles)]
 
         # Any ens_args will be set on enclosed ensembles
         for ens in self.ensembles:
@@ -55,9 +54,10 @@ class EnsembleArray(object):
         self.neurons = neurons
         self.dimensions_per_ensemble = dimensions_per_ensemble
 
-        self.connections_in = []
-        self.connections_out = []
         self.probes = {'decoded_output': []}
+
+        #add self to current context
+        nengo.context.add_to_current(self)
 
     @property
     def dimensions(self):
@@ -104,25 +104,18 @@ class EnsembleArray(object):
     def connect_to(self, post, transform=1.0, **kwargs):
         connections = []
         for i, ensemble in enumerate(self.ensembles):
-            c = ensemble.connect_to(post, **kwargs)
+            c = nengo.DecodedConnection(
+                ensemble, post, auto_add=False, **kwargs)
             connections.append(c)
         connection = objects.ConnectionList(connections, transform)
-        self.connections_out.append(connection)
-        if hasattr(post, 'connections_in'):
-            post.connections_in.append(connection)
+
         return connection
 
-    def probe(self, to_probe='decoded_output',
-              sample_every=0.001, filter=0.01, dt=0.001):
-        if to_probe == 'decoded_output':
-            probe = objects.Probe(self.name + ".decoded_output", sample_every)
-            self.connect_to(probe, filter=filter)
+    def probe(self, probe):
+        if probe.attr == 'decoded_output':
+            self.connect_to(probe, filter=probe.filter)
             self.probes['decoded_output'].append(probe)
         return probe
 
     def add_to_model(self, model):
-        if model.objs.has_key(self.name):
-            raise ValueError("Something called " + self.name + " already "
-                             "exists. Please choose a different name.")
-
-        model.objs[self.name] = self
+        model.objs += [self]

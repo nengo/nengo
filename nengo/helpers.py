@@ -1,10 +1,10 @@
 from __future__ import absolute_import
-
 import copy
 
 import numpy as np
 
 from . import decoders
+
 
 def tuning_curves(sim_ens):
     eval_points = np.array(sim_ens.eval_points)
@@ -23,8 +23,8 @@ def encoders():
                 encoders = [np.array(encoders) for _ in xrange(n_ensembles)]
         elif len(encoders) == neurons:
             if len(encoders[0]) != dims:
-                msg = ("len(encoders[0]) should match dimensions_per_ensemble. "
-                       "Currently %d, %d" % (len(encoders[0]) != dims))
+                msg = ("len(encoders[0]) should match dimensions_per_ensemble."
+                       " Currently %d, %d" % (len(encoders[0]) != dims))
                 raise core.ShapeMismatch(msg)
             encoders = [np.array(encoders) for _ in xrange(n_ensembles)]
         elif len(encoders) != n_ensembles:
@@ -112,7 +112,8 @@ def weights(pre_neurons, post_neurons, function):
     --------
 
       >>> gen_weights(2, 2, random.random)
-      [[0.6281625119511959, 0.48560016153108376], [0.9639779858394248, 0.4768136917985597]]
+      [[0.6281625119511959, 0.48560016153108376],
+       [0.9639779858394248, 0.4768136917985597]]
 
       >>> def product(pre, post):
       ...     return pre * post
@@ -127,7 +128,6 @@ def weights(pre_neurons, post_neurons, function):
     elif len(argspec[0]) == 2:
         return [[func(pre, post) for pre in xrange(pre_neurons)
                  for post in xrange(post_neurons)]]
-
 
 
 ### Helper functions for creating inputs
@@ -199,7 +199,8 @@ def piecewise(data):
     output_length = None  # the dimensionality of the returned values
     for time, output in sorted(data.items()):
         if not isinstance(time, (float, int)):
-            raise TypeError('Keys must be times (floats or ints), not "%s"'%`time`)
+            raise TypeError(
+                'Keys must be times (floats or ints), not "%s"' % repr(time))
 
         # handle ints and floats by turning them into a list
         if isinstance(output, (float, int)):
@@ -220,8 +221,8 @@ def piecewise(data):
             output_length = length
         elif output_length != length:
             raise Exception('invalid data for piecewise function ' +
-                            '(time %4g has %d items instead of %d)'%
-                            (time,length,output_length))
+                            '(time %4g has %d items instead of %d)' %
+                            (time, length, output_length))
 
         # add it to the ordered list
         row = (time, output)
@@ -236,7 +237,7 @@ def piecewise(data):
 
         # find the correct output value
         for time, output in ordered_data:
-            if value is None or time<=t:
+            if value is None or time <= t:
                 value = output
             else:
                 break
@@ -307,26 +308,26 @@ def sorted_neurons(ensemble, iterations=100, seed=None):
         i = index % cols   # find the 2d location of the indexth element
         j = index / cols
 
-        sim = 0     # total of dot products
-        count = 0   # number of neighbours
-        if i>0: # if we're not at the left edge, do the WEST comparison
-            sim += np.dot(encoders[j*cols+i], encoders[j*cols+i-1])
+        sim = 0  # total of dot products
+        count = 0  # number of neighbours
+        if i > 0:  # if we're not at the left edge, do the WEST comparison
+            sim += np.dot(encoders[j * cols + i], encoders[j * cols + i - 1])
             count += 1
-        if i<cols-1:  # if we're not at the right edge, do EAST
-            sim += np.dot(encoders[j*cols+i], encoders[j*cols+i+1])
+        if i < cols - 1:  # if we're not at the right edge, do EAST
+            sim += np.dot(encoders[j * cols + i], encoders[j * cols + i + 1])
             count += 1
-        if j>0:   # if we're not at the top edge, do NORTH
-            sim += np.dot(encoders[j*cols+i], encoders[(j-1)*cols+i])
+        if j > 0:  # if we're not at the top edge, do NORTH
+            sim += np.dot(encoders[j * cols + i], encoders[(j - 1) * cols + i])
             count += 1
-        if j<rows-1:  # if we're not at the bottom edge, do SOUTH
-            sim += np.dot(encoders[j*cols+i], encoders[(j+1)*cols+i])
+        if j < rows - 1:  # if we're not at the bottom edge, do SOUTH
+            sim += np.dot(encoders[j * cols + i], encoders[(j + 1) * cols + i])
             count += 1
-        return sim/count
+        return sim / count
 
     #Normalize all the neurons
     encoders = np.array(ensemble.encoders)
     for i in np.arange(encoders.shape[0]):
-        encoders[i,:]=encoders[i,:]/np.linalg.norm(encoders[i,:])
+        encoders[i, :] = encoders[i, :] / np.linalg.norm(encoders[i, :])
 
     #Make an array with the starting order of the neurons
     N = encoders.shape[0]
@@ -339,20 +340,18 @@ def sorted_neurons(ensemble, iterations=100, seed=None):
             j = target[i]
             if i != j:  # if not swapping with yourself
                 # compute similarity score how we are (unswapped)
-                sim1 = score(encoders, i, N) + score(encoders,
-                                                          j, N)
+                sim1 = score(encoders, i, N) + score(encoders, j, N)
                 # swap the encoder
-                encoders[[i,j],:] = encoders[[j,i],:]
-                indices[[i,j]] = indices[[j,i]]
+                encoders[[i, j], :] = encoders[[j, i], :]
+                indices[[i, j]] = indices[[j, i]]
                 # compute similarity score how we are (swapped)
-                sim2 = score(encoders, i, N) + score(encoders,
-                                                          j, N)
+                sim2 = score(encoders, i, N) + score(encoders, j, N)
 
                 # if we were better unswapped
                 if sim1 > sim2:
                     # swap them back
-                    encoders[[i,j],:] = encoders[[j,i],:]
-                    indices[[i,j]] = indices[[j,i]]
+                    encoders[[i, j], :] = encoders[[j, i], :]
+                    indices[[i, j]] = indices[[j, i]]
 
     return indices
 
@@ -390,21 +389,21 @@ def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
     rng = np.random.RandomState(seed)
 
     if dimensions is not None:
-        signals = [white_noise(step, high, rms=rms, seed=rng.randint(0x7ffffff))
-                    for i in range(dimensions)]
+        signals = [white_noise(
+            step, high, rms=rms, seed=rng.randint(0x7ffffff))
+            for i in range(dimensions)]
+
         def white_noise_function(t, signals=signals):
             return [signal(t) for signal in signals]
         return white_noise_function
 
-    N = int(float(high) / step)                     # number of samples
-    frequencies = np.arange(1, N + 1) * step * 2 * np.pi   # frequency of each
-    amplitude = rng.uniform(0, 1, N)                # amplitude for each sample
-    phase = rng.uniform(0, 2*np.pi, N)              # phase of each sample
+    N = int(float(high) / step)  # number of samples
+    frequencies = np.arange(1, N + 1) * step * 2 * np.pi  # frequency of each
+    amplitude = rng.uniform(0, 1, N)  # amplitude for each sample
+    phase = rng.uniform(0, 2*np.pi, N)  # phase of each sample
 
-    # compute the rms of the signal
-    rawRMS = np.sqrt(np.sum(amplitude**2)/2)
-    # rescale
-    amplitude = amplitude * rms / rawRMS
+    rawRMS = np.sqrt(np.sum(amplitude**2)/2)  # compute the rms of the signal
+    amplitude = amplitude * rms / rawRMS  # rescale
 
     # create a function that computes the bases and weights them by amplitude
     def white_noise_function(t, f=frequencies, a=amplitude, p=phase):

@@ -22,60 +22,44 @@ Network behaviour:
   A = tau * Input + Input
 
 """
-
 import nengo
+import nengo.helpers
 
-# Define model parameters
-tau = 0.1      # Recurrent time constant
+model = nengo.Model(label='Integrator')
 
-# Create the nengo model
-model = nengo.Model('Integrator')
-print model.seed
+with model:
+    # Our ensemble consists of 100 leaky integrate-and-fire neurons,
+    # representing a one-dimensional signal
+    A = nengo.Ensemble(nengo.LIF(100), dimensions=1, label='Integrator')
 
-# Create the model inputs
-# {0.2:5, 0.3:0, 0.44:-10, 0.54:0, 0.8:5, 0.9:0}
-def input_func(t):              # Create a function that outputs
-    if   t < 0.2:  return 0     # 0 for t < 0.2
-    elif t < 0.3:  return 5     # 5 for 0.2 < t < 0.3
-    elif t < 0.44: return 0     # 0 for 0.3 < t < 0.44
-    elif t < 0.54: return -10   # -10 for 0.44 < t < 0.54
-    elif t < 0.8:  return 0     # 0 for 0.54 < t < 0.8
-    elif t < 0.9:  return 5     # 5 for 0.8 < t < 0.9
-    else:          return 0     # 0 for t > 0.9
+    # Create a piecewise step function for input
+    input = nengo.Node(nengo.helpers.piecewise(
+        {0: 0, 0.2: 1, 1: 0, 2: -2, 3: 0, 4: 1, 5: 0}),
+        label='Piecewise input')
 
-model.make_node('Input', input_func)
+    # Connect the population to itself
+    tau = 0.1
 
-# A = model.make_ensemble('A', 100, 1)
-# model.connect('Input', 'A', transform=tau, filter=0.1)
-# model.connect('A', 'A', filter=tau)
+    # A long time constant for stability
+    nengo.DecodedConnection(A, A, transform=[[1]], filter=tau)
 
-model.make_node('Control', [1])
-A = model.make_ensemble('A', 500, 2, radius=1.5)
-model.connect('Input', 'A', transform=[[tau], [0]], filter=0.1)
-model.connect('Control', 'A', transform=[[0],[1]])
-model.connect('A', 'A', function=lambda x: x[0]*x[1], transform=[[1],[0]], filter=tau)
+    # Connect the input
+    nengo.Connection(input, A, transform=[[tau]], filter=tau)
 
+    # Add probes
+    p1 = nengo.Probe(input, 'output')
+    p2 = nengo.Probe(A, 'decoded_output', filter=0.01)
 
-model.probe('A', filter=0.02)
+# Create our simulator
+sim = nengo.Simulator(model)
+# Run it for 6 seconds
+sim.run(6)
 
-# Build the model
-# model.build()
+# Plot the decoded output of the ensemble
 
-# Run the model
-model.run(1)
+t = sim.data(model.t_probe)  # Get the time steps
+plt.plot(t, sim.data(p1), label="Input")
+plt.plot(t, sim.data(p2), 'k', label="Integrator output")
+plt.legend()
 
-### Plotting
-import numpy as np
-import matplotlib.pyplot as plt
-plt.ion()
-
-t = model.data[model.simtime]
-dt = t[1] - t[0]
-
-input_sig = map(input_func, t)
-exact_sig = dt*np.cumsum(input_sig)
-
-plt.figure(1)
-plt.clf()
-plt.plot(t, exact_sig, 'k--')
-plt.plot(t, model.data['A'])
+plt.show()

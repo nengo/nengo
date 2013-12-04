@@ -115,8 +115,6 @@ class NengoTestLoader(unittest.TestLoader):
 
 
 class Plotter(object):
-    plot = int(os.getenv("NENGO_TEST_PLOT", 0))
-
     class Mock(object):
         def __init__(self, *args, **kwargs):
             pass
@@ -135,7 +133,11 @@ class Plotter(object):
             else:
                 return Plotter.Mock()
 
-    def __init__(self, simulator):
+    def __init__(self, simulator, plot=None):
+        if plot is None:
+            self.plot = int(os.getenv("NENGO_TEST_PLOT", 0))
+        else:
+            self.plot = plot
         self.dirname = simulator.__module__ + ".plots"
 
     def __enter__(self):
@@ -177,6 +179,7 @@ class SimulatorTestCase(unittest.TestCase):
 atols = {np.dtype(np.float32): 1e-7}
 rtols = {np.dtype(np.float32): 1e-4}
 
+
 def assert_allclose(self, logger, a, b, atol=None, rtol=None):
     if atol is None:
         try:
@@ -193,18 +196,21 @@ def assert_allclose(self, logger, a, b, atol=None, rtol=None):
     mask = np.abs(a - b) > atol + rtol * np.abs(b)
     if mask.any():
         nz = mask.nonzero()[0]
-        if len(nz) > 10: nz = nz[:10]
+        if len(nz) > 10:
+            nz = nz[:10]
         logger.debug("allclose failed: %d offending entries\n%s" % (
-                mask.sum(),
-                "\n".join(
-                    "(a=%14e, b=%14e, adiff=%14e, rdiff=%14e)" %
-                    (a[m], b[m], np.abs(a[m]-b[m]), np.abs((a[m]-b[m])/b[m]))
-                    for m in nz)))
+            mask.sum(),
+            "\n".join(
+                "(a=%14e, b=%14e, adiff=%14e, rdiff=%14e)" %
+                (a[m], b[m], np.abs(a[m]-b[m]), np.abs((a[m]-b[m])/b[m]))
+                for m in nz)))
         self.assertTrue(
             False, "allclose failed: %d offending entries" % (mask.sum()))
 
+
 def rms(x, axis=None):
     return np.sqrt(np.mean(x**2, axis=axis))
+
 
 def rmse(a, b):
     return rms(a - b)
