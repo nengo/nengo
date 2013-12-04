@@ -404,10 +404,11 @@ class Operator(object):
         """
         for sig in self.all_signals:
             if sig.base not in sigdict:
-                sigdict[sig.base] = np.zeros(
-                    sig.base.shape,
-                    dtype=sig.base.dtype,
-                    ) + getattr(sig.base, 'value', 0)
+                sigdict[sig.base] = np.asarray(
+                    np.zeros(
+                        sig.base.shape,
+                        dtype=sig.base.dtype,
+                        ) + getattr(sig.base, 'value', 0))
 
 
 class Reset(Operator):
