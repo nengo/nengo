@@ -488,7 +488,8 @@ class Copy(Operator):
         self.updates = [dst] if as_update else []
 
     def __str__(self):
-        return 'Copy(%s -> %s)' % (str(self.src), str(self.dst))
+        return 'Copy(%s -> %s, as_update=%s)' % (
+            str(self.src), str(self.dst), self.as_update)
 
     def make_step(self, dct, dt):
         dst = dct[self.dst]
@@ -599,6 +600,10 @@ class SimPyFunc(Operator):
 
         self.reads = [J]
         self.updates = [output]
+
+    def __str__(self):
+        return 'SymPyFunc(%s -> %s "%s")' % (
+                str(self.J), str(self.output), str(self.fn))
 
     def make_step(self, dct, dt):
         J = dct[self.J]
