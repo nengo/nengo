@@ -6,22 +6,24 @@ from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
 
 logger = logging.getLogger(__name__)
 
+
 class TestOscillator(SimulatorTestCase):
     def test_oscillator(self):
         model = nengo.Model('Oscillator')
 
         with model:
-            inputs = {0:[1,0],0.5:[0,0]}
+            inputs = {0: [1, 0], 0.5: [0, 0]}
             input = nengo.Node(nengo.helpers.piecewise(inputs), label='Input')
 
             tau = 0.1
             freq = 5
-            T = nengo.networks.Oscillator(tau, freq, label="Oscillator", neurons=nengo.LIF(100))
+            T = nengo.networks.Oscillator(
+                tau, freq, label="Oscillator", neurons=nengo.LIF(100))
             nengo.Connection(input, T.input)
 
             A = nengo.Ensemble(nengo.LIF(100), label='A', dimensions=2)
             nengo.DecodedConnection(A, A, filter=tau,
-                          transform=[[1, -freq*tau], [freq*tau, 1]])
+                                    transform=[[1, -freq*tau], [freq*tau, 1]])
             nengo.Connection(input, A)
 
             in_probe = nengo.Probe(input, "output")

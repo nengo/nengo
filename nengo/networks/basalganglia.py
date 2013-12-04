@@ -1,11 +1,11 @@
-from .. import objects
-from . import Network
-from ..templates import EnsembleArray
-
-import nengo
 import numpy as np
 
-class BasalGanglia(Network):
+import nengo
+from ..objects import Uniform
+from ..templates import EnsembleArray
+
+
+class BasalGanglia(nengo.Network):
     # connection weights from (Gurney, Prescott, & Redgrave, 2001)
     mm = 1
     mp = 1
@@ -37,29 +37,32 @@ class BasalGanglia(Network):
 
         with self:
             strD1 = EnsembleArray(label='Striatal D1 neurons',
-                                  intercepts=objects.Uniform(self.e, 1), **ea_params)
+                                  intercepts=Uniform(self.e, 1), **ea_params)
 
             strD2 = EnsembleArray(label='Striatal D2 neurons',
-                                  intercepts=objects.Uniform(self.e, 1), **ea_params)
+                                  intercepts=Uniform(self.e, 1), **ea_params)
 
             stn = EnsembleArray(label='Subthalamic nucleus',
-                                intercepts=objects.Uniform(self.ep, 1), **ea_params)
+                                intercepts=Uniform(self.ep, 1), **ea_params)
 
             gpi = EnsembleArray(label='Globus pallidus internus',
-                                intercepts=objects.Uniform(self.eg, 1), **ea_params)
+                                intercepts=Uniform(self.eg, 1), **ea_params)
 
             gpe = EnsembleArray(label='Globus pallidus externus',
-                                intercepts=objects.Uniform(self.ee, 1), **ea_params)
+                                intercepts=Uniform(self.ee, 1), **ea_params)
 
-            self.input = objects.Node(label="input", dimensions=dimensions)
-            self.output = objects.Node(label="output", dimensions=dimensions)
+            self.input = nengo.Node(label="input", dimensions=dimensions)
+            self.output = nengo.Node(label="output", dimensions=dimensions)
 
             # spread the input to StrD1, StrD2, and STN
-            self.input.connect_to(strD1, filter=None,
+            self.input.connect_to(
+                strD1, filter=None,
                 transform=np.eye(dimensions) * self.ws * (1 + self.lg))
-            self.input.connect_to(strD2, filter=None,
+            self.input.connect_to(
+                strD2, filter=None,
                 transform=np.eye(dimensions) * self.ws * (1 - self.le))
-            self.input.connect_to(stn, filter=None,
+            self.input.connect_to(
+                stn, filter=None,
                 transform=np.eye(dimensions) * self.wt)
 
             # connect the striatum to the GPi and GPe (inhibitory)
@@ -67,10 +70,14 @@ class BasalGanglia(Network):
                 if x[0] < self.e:
                     return 0
                 return self.mm * (x[0] - self.e)
-            strD1.connect_to(gpi, function=func_str, filter=tau_gaba,
+            strD1.connect_to(gpi,
+                             function=func_str,
+                             filter=tau_gaba,
                              transform=-np.eye(dimensions) * self.wm)
-            strD2.connect_to(gpe, function=func_str, filter=tau_gaba,
-                            transform=-np.eye(dimensions) * self.wm)
+            strD2.connect_to(gpe,
+                             function=func_str,
+                             filter=tau_gaba,
+                             transform=-np.eye(dimensions) * self.wm)
 
             # connect the STN to GPi and GPe (broad and excitatory)
             def func_stn(x):
@@ -78,8 +85,10 @@ class BasalGanglia(Network):
                     return 0
                 return self.mp * (x[0] - self.ep)
             tr = np.ones((dimensions, dimensions)) * self.wp
-            stn.connect_to(gpi, function=func_stn, transform=tr, filter=tau_ampa)
-            stn.connect_to(gpe, function=func_stn, transform=tr, filter=tau_ampa)
+            stn.connect_to(
+                gpi, function=func_stn, transform=tr, filter=tau_ampa)
+            stn.connect_to(
+                gpe, function=func_stn, transform=tr, filter=tau_ampa)
 
             # connect the GPe to GPi and STN (inhibitory)
             def func_gpe(x):

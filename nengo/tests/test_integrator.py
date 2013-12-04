@@ -6,15 +6,17 @@ from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
 
 logger = logging.getLogger(__name__)
 
+
 class TestIntegrator(SimulatorTestCase):
     def test_integrator(self):
         model = nengo.Model('Integrator')
         with model:
-            inputs = {0:0, 0.2:1, 1:0, 2:-2, 3:0, 4:1, 5:0}
+            inputs = {0: 0, 0.2: 1, 1: 0, 2: -2, 3: 0, 4: 1, 5: 0}
             input = nengo.Node(nengo.helpers.piecewise(inputs))
 
             tau = 0.1
-            T = nengo.networks.Integrator(tau, neurons=nengo.LIF(100), dimensions=1)
+            T = nengo.networks.Integrator(
+                tau, neurons=nengo.LIF(100), dimensions=1)
             nengo.Connection(input, T.input, filter=tau)
 
             A = nengo.Ensemble(nengo.LIF(100), dimensions=1)

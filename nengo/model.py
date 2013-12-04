@@ -2,10 +2,10 @@ from collections import OrderedDict
 import logging
 import pickle
 import os.path
+
 import numpy as np
 
 import nengo
-from . import objects
 
 logger = logging.getLogger(__name__)
 
@@ -71,12 +71,12 @@ class Model(object):
 
         # Some automatic stuff
         with self:
-            self.t = objects.Node(label='t', output=0)
-            self.steps = objects.Node(label='steps', output=0)
+            self.t = nengo.Node(label='t', output=0)
+            self.steps = nengo.Node(label='steps', output=0)
 
             # Automatically probe time
-            self.t_probe = objects.Probe(self.t, 'output')
-        
+            self.t_probe = nengo.Probe(self.t, 'output')
+
         #make this the default context
         nengo.context.clear()
         nengo.context.append(self)
@@ -152,8 +152,8 @@ class Model(object):
         try:
             obj.add_to_model(self)
             return obj
-        except AttributeError,ae:
-            raise TypeError("Error in %s.add_to_model.\n%s"%(obj,ae))
+        except AttributeError, ae:
+            raise TypeError("Error in %s.add_to_model.\n%s" % (obj, ae))
 
     def remove(self, target):
         """Removes a Nengo object from the model.
@@ -177,9 +177,9 @@ class Model(object):
 
         self.objs = [o for o in self.objs if o != target]
         logger.info("%s removed.", target)
-        
+
     def __enter__(self):
         nengo.context.append(self)
-        
+
     def __exit__(self, exception_type, exception_value, traceback):
         nengo.context.pop()

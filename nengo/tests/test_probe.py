@@ -1,3 +1,4 @@
+import logging
 import time
 
 import numpy as np
@@ -5,8 +6,9 @@ import numpy as np
 import nengo
 from nengo.tests.helpers import SimulatorTestCase, unittest, assert_allclose
 
-import logging
+
 logger = logging.getLogger(__name__)
+
 
 class TestProbe(SimulatorTestCase):
 
@@ -24,8 +26,6 @@ class TestProbe(SimulatorTestCase):
 
         # t_stops = [0.123, 0.283, 0.821, 0.921]
         t_stops = dt * rng.randint(low=100, high=2000, size=10)
-        
-        
 
         t_sum = 0
         for ti in t_stops:
@@ -48,7 +48,7 @@ class TestProbe(SimulatorTestCase):
         # dts = 0.001 * np.hstack([2, rng.randint(low=1, high=100, size=n-1)])
 
         def input_fn(t):
-            return [1,2,3,4,5,6,7,8,9]
+            return range(1, 10)
 
         model = nengo.Model('test_probe_dts', seed=2891)
         with model:
@@ -75,8 +75,7 @@ class TestProbe(SimulatorTestCase):
             x = np.asarray(map(input_fn, t))
             y = sim.data(p)
             self.assertTrue(len(x) == len(y))
-            self.assertTrue(np.allclose(y[1:], x[:-1])) # 1-step delay
-
+            self.assertTrue(np.allclose(y[1:], x[:-1]))  # 1-step delay
 
     def test_large(self):
         """Test with a lot of big probes. Can also be used for speed."""
@@ -86,7 +85,7 @@ class TestProbe(SimulatorTestCase):
         # rng = np.random.RandomState(48392)
         # input_val = rng.normal(size=100).tolist()
         def input_fn(t):
-            return [1,2,3,4,5,6,7,8,9]
+            return range(1, 10)
             # return input_val
             # return [np.sin(t), np.cos(t)]
 
@@ -116,7 +115,7 @@ class TestProbe(SimulatorTestCase):
         x = np.asarray(map(input_fn, t))
         for p in probes:
             y = sim.data(p)
-            self.assertTrue(np.allclose(y[1:], x[:-1])) # 1-step delay
+            self.assertTrue(np.allclose(y[1:], x[:-1]))  # 1-step delay
 
 
 if __name__ == "__main__":

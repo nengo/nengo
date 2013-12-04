@@ -9,13 +9,15 @@ from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
 
 logger = logging.getLogger(__name__)
 
+
 class TestEnsembleEncoders(unittest.TestCase):
     def _test_encoders(self, n_neurons=10, n_dimensions=3, encoders=None):
         if encoders is None:
-#            encoders = np.random.randn(n_neurons, n_dimensions)
-            encoders = np.random.standard_normal(size=(n_neurons,n_dimensions))
-            magnitudes = np.sqrt((encoders*encoders).sum(axis=-1))
-            encoders = encoders / magnitudes[...,np.newaxis]
+            # encoders = np.random.randn(n_neurons, n_dimensions)
+            encoders = np.random.standard_normal(
+                size=(n_neurons, n_dimensions))
+            magnitudes = np.sqrt((encoders * encoders).sum(axis=-1))
+            encoders = encoders / magnitudes[..., np.newaxis]
 
         args = {'label': 'A',
                 'neurons': nengo.LIF(n_neurons),
@@ -27,8 +29,9 @@ class TestEnsembleEncoders(unittest.TestCase):
 
         sim = nengo.Simulator(model, dt=0.001)
 
-        self.assertTrue(np.allclose(encoders,
-                                    [o for o in sim.model.objs if o.label == 'A'][0].encoders))
+        self.assertTrue(np.allclose(
+            encoders,
+            [o for o in sim.model.objs if o.label == 'A'][0].encoders))
 
     def test_encoders(self):
         self._test_encoders(n_dimensions=3)
@@ -151,7 +154,8 @@ class TestEnsemble(SimulatorTestCase):
 
         m = nengo.Model('test_vector', seed=123)
         with m:
-            input = nengo.Node(output=lambda t: [np.sin(t), np.cos(t), np.arctan(t)])
+            input = nengo.Node(
+                output=lambda t: [np.sin(t), np.cos(t), np.arctan(t)])
             A = nengo.Ensemble(nl(N * 3), 3, radius=2)
             nengo.Connection(input, A)
             in_p = nengo.Probe(input, 'output')
@@ -184,18 +188,21 @@ class TestEnsemble(SimulatorTestCase):
             factors = nengo.Ensemble(nl(2 * N),
                                      dimensions=2, radius=1.5)
             if nl != nengo.Direct:
-                factors.encoders = np.tile([[1, 1],[-1, 1],[1, -1],[-1, -1]],
-                                           (factors.n_neurons / 4, 1))
+                factors.encoders = np.tile(
+                    [[1, 1], [-1, 1], [1, -1], [-1, -1]],
+                    (factors.n_neurons / 4, 1))
             product = nengo.Ensemble(nl(N), dimensions=1)
             nengo.Connection(sin, factors, transform=[[1], [0]])
             nengo.Connection(cons, factors, transform=[[0], [1]])
-            nengo.DecodedConnection(factors, product,
-                                           function=lambda x: x[0]*x[1], filter=0.01)
+            nengo.DecodedConnection(
+                factors, product, function=lambda x: x[0] * x[1], filter=0.01)
 
             sin_p = nengo.Probe(sin, 'output', sample_every=.01)
             # m.probe(conn, sample_every=.01)  # FIXME
-            factors_p = nengo.Probe(factors, 'decoded_output', sample_every=.01, filter=.01)
-            product_p = nengo.Probe(product, 'decoded_output', sample_every=.01, filter=.01)
+            factors_p = nengo.Probe(
+                factors, 'decoded_output', sample_every=.01, filter=.01)
+            product_p = nengo.Probe(
+                product, 'decoded_output', sample_every=.01, filter=.01)
 
         sim = self.Simulator(m, dt=0.001)
         sim.run(6)

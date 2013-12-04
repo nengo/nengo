@@ -1,4 +1,5 @@
-import logging, copy
+import copy
+import logging
 
 import numpy as np
 
@@ -65,6 +66,7 @@ class Neurons(object):
 
     def set_gain_bias(self, max_rates, intercepts):
         raise NotImplementedError("Neurons must provide set_gain_bias")
+
 
 class Direct(Neurons):
     def __init__(self, n_neurons=None, label=None):
@@ -197,8 +199,8 @@ class LIF(_LIFBase):
 
             # adjust refractory time (neurons that spike get a new
             # refractory time set, all others get it reduced by dt)
-            new_refractory_time = spiked * (spiketime + self.tau_ref) \
-                                  + (1 - spiked) * (refractory_time - dt)
+            new_refractory_time = (spiked * (spiketime + self.tau_ref)
+                                   + (1 - spiked) * (refractory_time - dt))
         finally:
             np.seterr(**old)
 
