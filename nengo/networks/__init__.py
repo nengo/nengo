@@ -1,4 +1,3 @@
-from .network import Network
 from .basalganglia import BasalGanglia
 from .circularconvolution import CircularConvolution
 from .integrator import Integrator

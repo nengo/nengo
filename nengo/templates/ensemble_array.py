@@ -41,9 +41,9 @@ class EnsembleArray(object):
         self.label = label
 
         # Make some empty ensembles for now
-        self.ensembles = [objects.Ensemble(neurons, 1, label=self.label+("[%d]" % i),
-                                           auto_add = False)
-                          for i in xrange(n_ensembles)]
+        self.ensembles = [objects.Ensemble(
+            neurons, 1, label=self.label+("[%d]" % i), auto_add=False)
+            for i in xrange(n_ensembles)]
 
         # Any ens_args will be set on enclosed ensembles
         for ens in self.ensembles:
@@ -55,7 +55,7 @@ class EnsembleArray(object):
         self.dimensions_per_ensemble = dimensions_per_ensemble
 
         self.probes = {'decoded_output': []}
-        
+
         #add self to current context
         nengo.context.add_to_current(self)
 
@@ -104,7 +104,8 @@ class EnsembleArray(object):
     def connect_to(self, post, transform=1.0, **kwargs):
         connections = []
         for i, ensemble in enumerate(self.ensembles):
-            c = nengo.DecodedConnection(ensemble, post, auto_add=False, **kwargs)
+            c = nengo.DecodedConnection(
+                ensemble, post, auto_add=False, **kwargs)
             connections.append(c)
         connection = objects.ConnectionList(connections, transform)
 

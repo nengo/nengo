@@ -18,7 +18,8 @@ class TestModelBuild(unittest.TestCase):
             B_p = nengo.Probe(B, 'decoded_output', filter=0.01)
 
         mcopy = nengo.Simulator(m, dt=0.001).model
-        self.assertItemsEqual([o.label for o in m.objs], [o.label for o in mcopy.objs])
+        self.assertItemsEqual(
+            [o.label for o in m.objs], [o.label for o in mcopy.objs])
 
         def compare_objs(orig, copy, attrs):
             for attr in attrs:
@@ -31,17 +32,16 @@ class TestModelBuild(unittest.TestCase):
             self.assertEqual(orig.transform, copy.transform)
             for p_o, p_c in zip(orig.probes.values(), copy.probes.values()):
                 self.assertEqual(len(p_o), len(p_c))
-        
-        
+
         ens_attrs = ('label', 'dimensions', 'radius')
-        
-        for o,copy_o in zip(m.objs,mcopy.objs):
+
+        for o, copy_o in zip(m.objs, mcopy.objs):
             if isinstance(o, nengo.Node):
                 compare_objs(o, copy_o, ('output',))
             else:
                 compare_objs(o, copy_o, ens_attrs)
-        for c,copy_c in zip(m.connections,mcopy.connections):
-            compare_connections(c,copy_c)
+        for c, copy_c in zip(m.connections, mcopy.connections):
+            compare_connections(c, copy_c)
 
     def test_seeding(self):
         """Test that setting the model seed fixes everything"""
@@ -98,7 +98,7 @@ class TestModel(SimulatorTestCase):
         m = nengo.Model('test_counters', seed=123)
         with m:
             p = nengo.Probe(m.steps, 'output')
-        
+
         sim = self.Simulator(m, dt=0.001)
         sim.run(0.003)
         self.assertTrue(np.allclose(sim.data(m.t_probe).flatten(),

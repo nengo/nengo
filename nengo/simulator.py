@@ -45,8 +45,7 @@ class SignalDict(dict):
                               dtype=obj.dtype,
                               buffer=base_array.data,
                               offset=byteoffset,
-                              strides=bytestrides,
-                             )
+                              strides=bytestrides)
             return view
         else:
             raise KeyError(obj)
@@ -65,7 +64,7 @@ class Simulator(object):
 
         # Note: seed is not used right now, but one day...
         if seed is None:
-            seed = self.model._get_new_seed() # generate simulator seed
+            seed = self.model._get_new_seed()  # generate simulator seed
 
         # -- map from Signal.base -> ndarray
         self._sigdict = SignalDict()
@@ -74,11 +73,11 @@ class Simulator(object):
 
         self.dg = self._init_dg()
         self._step_order = [node
-            for node in nx.topological_sort(self.dg)
-            if hasattr(node, 'make_step')]
+                            for node in nx.topological_sort(self.dg)
+                            if hasattr(node, 'make_step')]
         self._steps = [node.make_step(self._sigdict, self.model.dt)
-            for node in self._step_order]
-        
+                       for node in self._step_order]
+
         self.n_steps = 0
         self.probe_outputs = dict((probe, []) for probe in self.model.probes)
 
@@ -138,8 +137,7 @@ class Simulator(object):
         # -- assert that no two views are both updated and aliased
         if len(ups) >= 2:
             for node, other in itertools.combinations(ups, 2):
-                assert not node.shares_memory_with(other), (
-                        node, other)
+                assert not node.shares_memory_with(other), (node, other)
 
         # -- Scheduling algorithm for serial evaluation:
         #    1) All sets on a given base signal
@@ -296,10 +294,6 @@ class Simulator(object):
         if isinstance(probe, Probe):
             #then map it to the simulator probe
             probe = self.model.probemap[probe]
-#        else:
-#            #then probe is the target object
-#            probe = self.model.probed[self.model.objectmap[probe]].probe
-            
         return np.asarray(self.probe_outputs[probe])
 
     def probe_data(self, probe):

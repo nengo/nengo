@@ -3,10 +3,11 @@ import logging
 
 import numpy as np
 
-from . import decoders
-from . import nonlinearities
-from . import objects
-from . import templates
+import nengo
+import nengo.decoders
+import nengo.nonlinearities
+import nengo.templates
+
 
 logger = logging.getLogger(__name__)
 
@@ -63,14 +64,10 @@ class SignalView(object):
 
     @property
     def structure(self):
-        return (
-            self.shape,
-            self.elemstrides,
-            self.offset)
+        return (self.shape, self.elemstrides, self.offset)
 
     def same_view_as(self, other):
-        return self.structure == other.structure \
-           and self.base == other.base
+        return self.structure == other.structure and self.base == other.base
 
     @property
     def dtype(self):
@@ -121,12 +118,12 @@ class SignalView(object):
         if neworder:
             raise NotImplementedError()
         return SignalView(
-                self.base,
-                reversed(self.shape),
-                reversed(self.elemstrides),
-                self.offset,
-                self.name + '.T'
-                )
+            self.base,
+            reversed(self.shape),
+            reversed(self.elemstrides),
+            self.offset,
+            self.name + '.T'
+        )
 
     @property
     def T(self):
@@ -263,8 +260,7 @@ class SignalView(object):
                 #    non-overlap. They do overlap, so they are aliased.
                 return True
             # TODO: look for common divisor of ae0 and be0
-            raise NotImplementedError('1d',
-                (self.structure, other.structure))
+            raise NotImplementedError('1d', (self.structure, other.structure))
         elif self.ndim == 2:
             # -- self is a matrix view
             #    and other is either a scalar, vector or matrix view
@@ -281,10 +277,10 @@ class SignalView(object):
                         return False
                     else:
                         return True
-                raise NotImplementedError('2d self:contig, other:discontig',
+                raise NotImplementedError(
+                    '2d self:contig, other:discontig',
                     (self.structure, other.structure))
-            raise NotImplementedError('2d',
-                (self.structure, other.structure))
+            raise NotImplementedError('2d', (self.structure, other.structure))
         else:
             raise NotImplementedError()
 
@@ -437,7 +433,6 @@ class Operator(object):
 
         return self.reads + self.sets + self.incs + self.updates
 
-
     def init_sigdict(self, sigdict, dt):
         """
         Install any buffers into the signals view that
@@ -469,6 +464,7 @@ class Reset(Operator):
     def make_step(self, signals, dt):
         target = signals[self.dst]
         value = self.value
+
         def step():
             target[...] = value
         return step
@@ -494,6 +490,7 @@ class Copy(Operator):
     def make_step(self, dct, dt):
         dst = dct[self.dst]
         src = dct[self.src]
+
         def step():
             dst[...] = src
         return step
@@ -542,19 +539,21 @@ class DotInc(Operator):
 
     def __str__(self):
         return 'DotInc(%s, %s -> %s "%s")' % (
-                str(self.A), str(self.X), str(self.Y), self.tag)
+            str(self.A), str(self.X), str(self.Y), self.tag)
 
     def make_step(self, dct, dt):
         X = dct[self.X]
         A = dct[self.A]
         Y = dct[self.Y]
         reshape = reshape_dot(A, X, Y, self.tag)
+
         def step():
-            inc =  np.dot(A, X)
+            inc = np.dot(A, X)
             if reshape:
                 inc = np.asarray(inc).reshape(Y.shape)
             Y[...] += inc
         return step
+
 
 class ProdUpdate(Operator):
     """
@@ -572,7 +571,7 @@ class ProdUpdate(Operator):
 
     def __str__(self):
         return 'ProdUpdate(%s, %s, %s, -> %s "%s")' % (
-                str(self.A), str(self.X), str(self.B), str(self.Y), self.tag)
+            str(self.A), str(self.X), str(self.B), str(self.Y), self.tag)
 
     def make_step(self, dct, dt):
         X = dct[self.X]
@@ -580,8 +579,9 @@ class ProdUpdate(Operator):
         Y = dct[self.Y]
         B = dct[self.B]
         reshape = reshape_dot(A, X, Y, self.tag)
+
         def step():
-            val = np.dot(A,X)
+            val = np.dot(A, X)
             if reshape:
                 val = np.asarray(val).reshape(Y.shape)
             Y[...] *= B
@@ -603,12 +603,13 @@ class SimPyFunc(Operator):
 
     def __str__(self):
         return 'SimPyFunc(%s -> %s "%s")' % (
-                str(self.J), str(self.output), str(self.fn))
+            str(self.J), str(self.output), str(self.fn))
 
     def make_step(self, dct, dt):
         J = dct[self.J]
         output = dct[self.output]
         fn = self.fn
+
         def step():
             output[...] = fn(J)
         return step
@@ -643,6 +644,7 @@ class SimLIF(Operator):
         v = dct[self.voltage]
         rt = dct[self.refractory_time]
         fn = self.nl.step_math0
+
         def step():
             fn(dt, J, v, rt, output)
         return step
@@ -664,6 +666,7 @@ class SimLIFRate(Operator):
         J = dct[self.J]
         output = dct[self.output]
         rates_fn = self.nl.math
+
         def step():
             output[...] = rates_fn(dt, J)
         return step
@@ -729,7 +732,6 @@ class Builder(object):
         self.model.probes = []
         self.model.operators = []
         self.model.probemap = {}
-#        self.model.objectmap = {}
 
         # 1. Build objects
         logger.info("Building objects")
@@ -738,12 +740,11 @@ class Builder(object):
 
         # 2. Then probes
         logger.info("Building probes")
-        for target,copytarget in zip(model.probed,self.model.probed):
+        for target, copytarget in zip(model.probed, self.model.probed):
             if not isinstance(self.model.probed[copytarget], SimulatorProbe):
-                self._builders[objects.Probe](self.model.probed[copytarget])
-                self.model.probemap[model.probed[target]] = self.model.probed[copytarget].probe
-#                self.model.objectmap[target] = copytarget
-#                self.model.probed[copytarget] = self.model.probed[copytarget].probe
+                self._builders[nengo.Probe](self.model.probed[copytarget])
+                self.model.probemap[model.probed[target]] = self.model.probed[
+                    copytarget].probe
 
         # 3. Then connections
         logger.info("Building connections")
@@ -763,7 +764,7 @@ class Builder(object):
                        self.model.steps.output_signal))
         return self.model
 
-    @builds(objects.Ensemble)
+    @builds(nengo.Ensemble)
     def build_ensemble(self, ens, signal=None):
         if ens.dimensions <= 0:
             raise ValueError(
@@ -776,7 +777,7 @@ class Builder(object):
 
         # Generate eval points
         if ens.eval_points is None:
-            ens.eval_points = decoders.sample_hypersphere(
+            ens.eval_points = nengo.decoders.sample_hypersphere(
                 ens.dimensions, ens.EVAL_POINTS, rng) * ens.radius
         else:
             ens.eval_points = np.array(ens.eval_points, dtype=np.float64)
@@ -827,7 +828,7 @@ class Builder(object):
             norm = np.sum(ens.encoders * ens.encoders, axis=1)[:, np.newaxis]
             ens.encoders /= np.sqrt(norm)
 
-        if isinstance(ens.neurons, nonlinearities.Direct):
+        if isinstance(ens.neurons, nengo.Direct):
             ens._scaled_encoders = ens.encoders
         else:
             ens._scaled_encoders = ens.encoders * (
@@ -849,7 +850,7 @@ class Builder(object):
         for probe in ens.probes['voltages']:
             probe.dimensions = ens.n_neurons
 
-    @builds(objects.Node)
+    @builds(nengo.Node)
     def build_node(self, node):
         # Get input
         if node.output is None or callable(node.output):
@@ -870,24 +871,16 @@ class Builder(object):
             #if no input, assume input is supposed to come from model.t
             if not node.has_input:
                 with self.model:
-                    objects.Connection(self.model.t, node, filter=None)
+                    nengo.Connection(self.model.t, node, filter=None)
 
             node.input_signal = Signal(np.zeros(node.dimensions),
                                        name=node.label + ".signal")
             #reset input signal to 0 each timestep
             self.model.operators.append(Reset(node.input_signal))
 
-        # Provide output
-        if node.output is None:
-            node.output_signal = node.input_signal
-        elif not callable(node.output):
-            if isinstance(node.output, (int, float, long, complex)):
-                node.output_signal = Signal([node.output], name=node.label)
-            else:
-                node.output_signal = Signal(node.output, name=node.label)
-        else:
-            node.pyfn = nonlinearities.PythonFunction(
-                fn=node.output, n_in=node.dimensions, label=node.label + ".pyfn")
+            node.pyfn = nengo.PythonFunction(fn=node.output,
+                                             n_in=node.dimensions,
+                                             label=node.label + ".pyfn")
             self.build_pyfunc(node.pyfn)
             self.model.operators.append(DotInc(
                 node.input_signal, Signal([[1.0]]), node.pyfn.input_signal))
@@ -897,10 +890,11 @@ class Builder(object):
         for probe in node.probes['output']:
             probe.dimensions = node.output_signal.shape
 
-    @builds(objects.Probe)
+    @builds(nengo.Probe)
     def build_probe(self, probe):
         # Set up signal
-        probe.input_signal = Signal(np.zeros(probe.dimensions), name=probe.label)
+        probe.input_signal = Signal(np.zeros(probe.dimensions),
+                                    name=probe.label)
 
         #reset input signal to 0 each timestep
         self.model.operators.append(Reset(probe.input_signal))
@@ -923,7 +917,7 @@ class Builder(object):
             Signal(n_coef), signal, Signal(o_coef), filtered))
         return filtered
 
-    @builds(objects.Connection)
+    @builds(nengo.Connection)
     def build_connection(self, conn):
         conn.input_signal = conn.pre.output_signal
         conn.output_signal = conn.post.input_signal
@@ -932,7 +926,7 @@ class Builder(object):
             conn.output_signal = Signal(np.zeros(conn.dimensions),
                                         name=conn.label + ".mod_output")
 
-        if isinstance(conn.post, nonlinearities.Neurons):
+        if isinstance(conn.post, nengo.nonlinearities.Neurons):
             conn.transform *= conn.post.gain[:, np.newaxis]
 
         # Set up filter
@@ -953,10 +947,9 @@ class Builder(object):
             probe.dimensions = conn.output_signal.size
             self.model.add(probe)
 
-
-    @builds(objects.DecodedConnection)
+    @builds(nengo.DecodedConnection)
     def build_decodedconnection(self, conn):
-        assert isinstance(conn.pre, objects.Ensemble)
+        assert isinstance(conn.pre, nengo.Ensemble)
         conn.input_signal = conn.pre.output_signal
         conn.output_signal = conn.post.input_signal
         if conn.modulatory:
@@ -964,19 +957,19 @@ class Builder(object):
             # but still performing the decoding
             conn.output_signal = Signal(np.zeros(conn.dimensions),
                                         name=conn.label + ".mod_output")
-        if isinstance(conn.post, nonlinearities.Neurons):
+        if isinstance(conn.post, nengo.nonlinearities.Neurons):
             conn.transform *= conn.post.gain[:, np.newaxis]
         dt = self.model.dt
 
         # A special case for Direct mode.
         # In Direct mode, rather than do decoders, we just
         # compute the function and make a direct connection.
-        if isinstance(conn.pre.neurons, nonlinearities.Direct):
+        if isinstance(conn.pre.neurons, nengo.Direct):
             if conn.function is None:
                 conn.signal = conn.input_signal
             else:
                 label = conn.label + ".pyfunc"
-                conn.pyfunc = nonlinearities.PythonFunction(
+                conn.pyfunc = nengo.PythonFunction(
                     fn=conn.function, n_in=conn.input_signal.size, label=label)
                 self.build_pyfunc(conn.pyfunc)
                 self.model.operators.append(DotInc(
@@ -1028,7 +1021,7 @@ class Builder(object):
             probe.dimensions = conn.output_signal.size
             self.model.add(probe)
 
-    @builds(objects.ConnectionList)
+    @builds(nengo.ConnectionList)
     def build_connectionlist(self, conn):
         conn.transform = np.asarray(conn.transform)
 
@@ -1037,9 +1030,9 @@ class Builder(object):
             pre_dim = connection.dimensions
             if conn.transform.ndim == 0:
                 trans = np.zeros((connection.post.dimensions, pre_dim))
-                np.fill_diagonal(trans[i:i+pre_dim,:], conn.transform)
+                np.fill_diagonal(trans[i:i+pre_dim, :], conn.transform)
             elif conn.transform.ndim == 2:
-                trans = conn.transform[:,i:i+pre_dim]
+                trans = conn.transform[:, i:i+pre_dim]
             else:
                 raise NotImplementedError(
                     "Only transforms with 0 or 2 ndims are accepted")
@@ -1047,7 +1040,7 @@ class Builder(object):
             connection.transform = trans
             self._builders[connection.__class__](connection)
 
-    @builds(templates.EnsembleArray)
+    @builds(nengo.templates.EnsembleArray)
     def build_ensemblearray(self, ea):
         ea.input_signal = Signal(np.zeros(ea.dimensions),
                                  name=ea.label+".signal")
@@ -1060,7 +1053,7 @@ class Builder(object):
         for probe in ea.probes['decoded_output']:
             probe.dimensions = ea.dimensions
 
-    @builds(nonlinearities.PythonFunction)
+    @builds(nengo.PythonFunction)
     def build_pyfunc(self, pyfn):
         pyfn.input_signal = Signal(np.zeros(pyfn.n_in),
                                    name=pyfn.label + '.input')
@@ -1077,18 +1070,19 @@ class Builder(object):
                                       name=neurons.label + '.input')
         neurons.output_signal = Signal(np.zeros(neurons.n_out),
                                        name=neurons.label + '.output')
-        neurons.bias_signal = Signal(neurons.bias, name=neurons.label + '.bias')
+        neurons.bias_signal = Signal(neurons.bias,
+                                     name=neurons.label + '.bias')
         self.model.operators.append(
             Copy(src=neurons.bias_signal, dst=neurons.input_signal))
 
-    @builds(nonlinearities.Direct)
+    @builds(nengo.Direct)
     def build_direct(self, direct):
         direct.input_signal = Signal(np.zeros(direct.dimensions),
                                      name=direct.label)
         direct.output_signal = direct.input_signal
         self.model.operators.append(Reset(direct.input_signal))
 
-    @builds(nonlinearities.LIFRate)
+    @builds(nengo.LIFRate)
     def build_lifrate(self, lif):
         if lif.n_neurons <= 0:
             raise ValueError(
@@ -1098,7 +1092,7 @@ class Builder(object):
                                                J=lif.input_signal,
                                                nl=lif))
 
-    @builds(nonlinearities.LIF)
+    @builds(nengo.LIF)
     def build_lif(self, lif):
         if lif.n_neurons <= 0:
             raise ValueError(
@@ -1106,8 +1100,9 @@ class Builder(object):
         self.build_neurons(lif)
         lif.voltage = Signal(np.zeros(lif.n_neurons))
         lif.refractory_time = Signal(np.zeros(lif.n_neurons))
-        self.model.operators.append(SimLIF(output=lif.output_signal,
-                                           J=lif.input_signal,
-                                           nl=lif,
-                                           voltage=lif.voltage,
-                                           refractory_time=lif.refractory_time))
+        self.model.operators.append(
+            SimLIF(output=lif.output_signal,
+                   J=lif.input_signal,
+                   nl=lif,
+                   voltage=lif.voltage,
+                   refractory_time=lif.refractory_time))

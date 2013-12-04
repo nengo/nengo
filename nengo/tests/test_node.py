@@ -1,11 +1,14 @@
+import logging
+
 import numpy as np
 
 import nengo
 from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
 from nengo.tests.helpers import assert_allclose
 
-import logging
+
 logger = logging.getLogger(__name__)
+
 
 class TestNode(SimulatorTestCase):
 
@@ -31,7 +34,8 @@ class TestNode(SimulatorTestCase):
         sim_in = sim.data(p).ravel()
         t = dt * np.arange(len(sim_t))
         self.assertTrue(np.allclose(sim_t, t))
-        self.assertTrue(np.allclose(sim_in[1:], np.sin(t[:-1]))) # 1-step delay
+        # 1-step delay
+        self.assertTrue(np.allclose(sim_in[1:], np.sin(t[:-1])))
 
     def test_connected(self):
         dt = 0.001
@@ -51,8 +55,12 @@ class TestNode(SimulatorTestCase):
         with Plotter(self.Simulator) as plt:
             plt.plot(sim.data(m.t_probe), sim.data(p_in), label='sin')
             plt.plot(sim.data(m.t_probe), sim.data(p_out), label='sin squared')
-            plt.plot(sim.data(m.t_probe), np.sin(sim.data(m.t_probe)), label='ideal sin')
-            plt.plot(sim.data(m.t_probe), np.sin(sim.data(m.t_probe))**2, label='ideal squared')
+            plt.plot(sim.data(m.t_probe),
+                     np.sin(sim.data(m.t_probe)),
+                     label='ideal sin')
+            plt.plot(sim.data(m.t_probe),
+                     np.sin(sim.data(m.t_probe)) ** 2,
+                     label='ideal squared')
             plt.legend(loc='best')
             plt.savefig('test_node.test_connected.pdf')
             plt.close()
@@ -63,8 +71,9 @@ class TestNode(SimulatorTestCase):
         t = dt * np.arange(len(sim_t))
 
         self.assertTrue(np.allclose(sim_t, t))
-        self.assertTrue(np.allclose(sim_sin[1:], np.sin(t[:-1]))) # 1-step delay
-        self.assertTrue(np.allclose(sim_sq[1:], sim_sin[:-1]**2)) # 1-step delay
+        # 1-step delay
+        self.assertTrue(np.allclose(sim_sin[1:], np.sin(t[:-1])))
+        self.assertTrue(np.allclose(sim_sq[1:], sim_sin[:-1] ** 2))
 
     def test_passthrough(self):
         dt = 0.001
@@ -89,8 +98,12 @@ class TestNode(SimulatorTestCase):
         sim.run(runtime)
 
         with Plotter(self.Simulator) as plt:
-            plt.plot(sim.data(m.t_probe), sim.data(in1_p)+sim.data(in2_p), label='in+in2')
-            plt.plot(sim.data(m.t_probe)[:-2], sim.data(out_p)[2:], label='out')
+            plt.plot(sim.data(m.t_probe),
+                     sim.data(in1_p)+sim.data(in2_p),
+                     label='in+in2')
+            plt.plot(sim.data(m.t_probe)[:-2],
+                     sim.data(out_p)[2:],
+                     label='out')
             plt.legend(loc='best')
             plt.savefig('test_node.test_passthrough.pdf')
             plt.close()
@@ -105,8 +118,8 @@ class TestNode(SimulatorTestCase):
         m = nengo.Model("test_circular", seed=0)
 
         with m:
-            a = nengo.Node(output=lambda x:x+1)
-            b = nengo.Node(output=lambda x:x+1)
+            a = nengo.Node(output=lambda x: x+1)
+            b = nengo.Node(output=lambda x: x+1)
             nengo.Connection(a, b, filter=None)
             nengo.Connection(b, a, filter=None)
 

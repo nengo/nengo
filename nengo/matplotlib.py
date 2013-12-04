@@ -36,7 +36,7 @@ def rasterplot(time, spikes, ax=None, **kwargs):
         colors = [next(color_cycle) for _ in xrange(spikes.shape[1])]
 
     if hasattr(ax, 'eventplot'):
-        spikes = [time[spikes[:,i] > 0].flatten()
+        spikes = [time[spikes[:, i] > 0].flatten()
                   for i in xrange(spikes.shape[1])]
         for ix in xrange(len(spikes)):
             if spikes[ix].shape == (0,):
@@ -50,8 +50,8 @@ def rasterplot(time, spikes, ax=None, **kwargs):
     else:
         # Older Matplotlib, doesn't have eventplot
         for i in xrange(spikes.shape[1]):
-            ax.plot(time[spikes[:,i] > 0],
-                    np.ones_like(np.where(spikes[:,i] > 0)).T + i, ',',
+            ax.plot(time[spikes[:, i] > 0],
+                    np.ones_like(np.where(spikes[:, i] > 0)).T + i, ',',
                     color=colors[i], **kwargs)
 
     return ax

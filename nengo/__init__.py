@@ -1,22 +1,24 @@
 __copyright__ = "2013, Nengo contributors"
 __license__ = "http://www.gnu.org/licenses/gpl.html"
 
+import collections
 import logging
 import sys
 
 from .model import Model
-from . import networks
 from .nonlinearities import PythonFunction, LIF, LIFRate, Direct
-from .objects import (
-    Ensemble, Node, Connection, DecodedConnection, ConnectionList, Probe)
+from .objects import Ensemble, Node
+from .objects import Connection, DecodedConnection, ConnectionList
+from .objects import Probe
+from .objects import Network
+from . import networks
 from .simulator import Simulator
 
-from .context import ContextStack
-context = ContextStack(maxlen=100)
 
 logger = logging.getLogger(__name__)
 try:
-    logger.addHandler(logging.NullHandler())  # Prevent output if no handler set
+    # Prevent output if no handler set
+    logger.addHandler(logging.NullHandler())
 except AttributeError:
     pass
 
@@ -44,7 +46,23 @@ def log(debug=False, path=None):
         logger.info("Logging to %s", path)
         handler = logging.FileHandler(path, encoding='utf-8')
         handler.setFormatter(logging.Formatter(
-            ('%(asctime)s [%(levelname)s] %(name)s.%(funcName)s @ L%(lineno)d\n'
-             '  %(message)s')))
+            ('%(asctime)s [%(levelname)s] %(name)s.%(funcName)s'
+             '@ L%(lineno)d\n  %(message)s')))
     handler.setLevel(level)
     logging.root.addHandler(handler)
+
+
+class ContextStack(collections.deque):
+    def add_to_current(self, obj):
+        try:
+            curr = self.__getitem__(-1)
+        except IndexError:
+            raise IndexError("Context has not been set")
+
+        if not hasattr(curr, "add"):
+            raise AttributeError("Current context has no add function")
+
+        curr.add(obj)
+
+
+context = ContextStack(maxlen=100)

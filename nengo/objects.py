@@ -3,8 +3,7 @@ import logging
 import numpy as np
 
 import nengo
-from . import decoders
-from . import nonlinearities
+from .decoders import least_squares
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +70,7 @@ class Ensemble(object):
     EVAL_POINTS = 500
 
     def __init__(self, neurons, dimensions, **kwargs):
-        self.dimensions = dimensions # Must be set before neurons
+        self.dimensions = dimensions  # Must be set before neurons
         self.neurons = neurons
 
         if 'decoder_noise' in kwargs:
@@ -133,7 +132,7 @@ class Ensemble(object):
         if isinstance(_neurons, int):
             logger.warning(("neurons should be an instance of a Neuron type, "
                             "not an int. Defaulting to LIF."))
-            _neurons = nonlinearities.LIF(_neurons)
+            _neurons = nengo.LIF(_neurons)
 
         _neurons.dimensions = self.dimensions
         self._neurons = _neurons
@@ -205,7 +204,7 @@ class Ensemble(object):
             DecodedConnection(self, probe, filter=probe.filter)
         elif probe.attr == 'spikes':
             Connection(self.neurons, probe, filter=probe.filter,
-                transform=np.eye(self.n_neurons))
+                       transform=np.eye(self.n_neurons))
         elif probe.attr == 'voltages':
             Connection(self.neurons.voltage, probe, filter=None)
         else:
@@ -383,8 +382,7 @@ class DecodedConnection(Connection):
         Connection.__init__(self, pre, post, **kwargs)
 
         self.decoders = kwargs.get('decoders', None)
-        self.decoder_solver = kwargs.get('decoder_solver',
-                                         decoders.least_squares)
+        self.decoder_solver = kwargs.get('decoder_solver', least_squares)
         self.eval_points = kwargs.get('eval_points', None)
         self.function = kwargs.get('function', None)
 
@@ -481,8 +479,9 @@ class Probe(object):
         self.attr = attr
         self.label = "Probe(" + target.label + "." + attr + ")"
         self.sample_every = sample_every
-        self.dimensions = dimensions ##None?
+        self.dimensions = dimensions  # None?
         self.filter = filter
+
         target.probe(self)
 
         #add self to current context
@@ -494,4 +493,33 @@ class Probe(object):
         return 1.0 / self.sample_every
 
     def add_to_model(self, model):
-        model.probed[(self.target,self.attr)] = self
+        model.probed[(self.target, self.attr)] = self
+
+
+class Network(object):
+    def __init__(self, *args, **kwargs):
+        self.label = kwargs.pop("label", "Network")
+        self.objects = []
+        self.make(*args, **kwargs)
+
+        #add self to current context
+        nengo.context.add_to_current(self)
+
+    def add(self, obj):
+        self.objects.append(obj)
+        return obj
+
+    def make(self, *args, **kwargs):
+        raise NotImplementedError("Networks should implement this function.")
+
+    def add_to_model(self, model):
+        for obj in self.objects:
+            if not isinstance(obj, (nengo.Connection, nengo.ConnectionList)):
+                obj.label = self.label + '.' + obj.label
+            model.add(obj)
+
+    def __enter__(self):
+        nengo.context.append(self)
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        nengo.context.pop()

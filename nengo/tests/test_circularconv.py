@@ -9,6 +9,7 @@ from nengo.tests.helpers import (
 import logging
 logger = logging.getLogger(__name__)
 
+
 class TestCircularConvHelpers(unittest.TestCase):
     def test_helpers(self):
         """Test the circular convolution helper functions in Numpy"""
@@ -28,11 +29,11 @@ class TestCircularConvHelpers(unittest.TestCase):
             dims, first=False, invert=invert_b)
         outC = nengo.networks.CircularConvolution._output_transform(dims)
 
-        XY = np.zeros((dims2,2))
+        XY = np.zeros((dims2, 2))
         XY += np.dot(inA.reshape(dims2, 2, dims), x)
         XY += np.dot(inB.reshape(dims2, 2, dims), y)
 
-        C = XY[:,0] * XY[:,1]
+        C = XY[:, 0] * XY[:, 1]
         z1 = np.dot(outC, C)
 
         assert_allclose(self, logger, z0, z1)
@@ -63,7 +64,8 @@ class TestCircularConv(SimulatorTestCase):
             A = EnsembleArray(nengo.LIF(n_neurons), dims, radius=radius)
             B = EnsembleArray(nengo.LIF(n_neurons), dims, radius=radius)
             C = EnsembleArray(nengo.LIF(n_neurons), dims, radius=radius)
-            D = nengo.networks.CircularConvolution(neurons=nengo.LIF(n_neurons_d),
+            D = nengo.networks.CircularConvolution(
+                neurons=nengo.LIF(n_neurons_d),
                 dimensions=A.dimensions, radius=radius)
 
             inputA.connect_to(A)
@@ -93,8 +95,8 @@ class TestCircularConv(SimulatorTestCase):
                 a_sim = sim.data(A_p)
                 colors = ['b', 'g', 'r', 'c', 'm', 'y']
                 for i in xrange(min(dims, len(colors))):
-                    plt.plot(t, a_ref[:,i], '--', color=colors[i])
-                    plt.plot(t, a_sim[:,i], '-', color=colors[i])
+                    plt.plot(t, a_ref[:, i], '--', color=colors[i])
+                    plt.plot(t, a_sim[:, i], '-', color=colors[i])
                     plt.title(title)
 
             plt.subplot(221)

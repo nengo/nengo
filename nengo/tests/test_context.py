@@ -2,6 +2,7 @@ import nengo
 
 from nengo.tests.helpers import SimulatorTestCase, unittest
 
+
 class TestContext(SimulatorTestCase):
     def test_default(self):
         model = nengo.Model("test")
@@ -47,7 +48,8 @@ class TestContext(SimulatorTestCase):
                 with con3:
                     e3 = nengo.Ensemble(nengo.LIF(1), 1)
                     self.assertTrue(e3 in con3.objs)
-                    self.assertTrue(not e3 in con2.objs and not e3 in con1.objs)
+                    self.assertTrue(
+                        not e3 in con2.objs and not e3 in con1.objs)
 
                 e4 = nengo.Ensemble(nengo.LIF(1), 1)
                 self.assertTrue(e4 in con2.objs)
