@@ -446,10 +446,11 @@ class Operator(object):
         """
         for sig in self.all_signals:
             if sig.base not in sigdict:
-                sigdict[sig.base] = np.zeros(
-                    sig.base.shape,
-                    dtype=sig.base.dtype,
-                    ) + getattr(sig.base, 'value', 0)
+                sigdict[sig.base] = np.asarray(
+                    np.zeros(
+                        sig.base.shape,
+                        dtype=sig.base.dtype,
+                        ) + getattr(sig.base, 'value', 0))
 
 
 class Reset(Operator):
@@ -487,7 +488,8 @@ class Copy(Operator):
         self.updates = [dst] if as_update else []
 
     def __str__(self):
-        return 'Copy(%s -> %s)' % (str(self.src), str(self.dst))
+        return 'Copy(%s -> %s, as_update=%s)' % (
+            str(self.src), str(self.dst), self.as_update)
 
     def make_step(self, dct, dt):
         dst = dct[self.dst]
@@ -598,6 +600,10 @@ class SimPyFunc(Operator):
 
         self.reads = [J]
         self.updates = [output]
+
+    def __str__(self):
+        return 'SimPyFunc(%s -> %s "%s")' % (
+                str(self.J), str(self.output), str(self.fn))
 
     def make_step(self, dct, dt):
         J = dct[self.J]
@@ -915,8 +921,12 @@ class Builder(object):
                 conn.input_signal, conn.filter)
 
         # Set up transform
-        self.model.operators.append(DotInc(
-            Signal(conn.transform), conn.input_signal, conn.output_signal))
+        self.model.operators.append(
+            DotInc(
+                Signal(conn.transform),
+                conn.input_signal,
+                conn.output_signal,
+                tag=conn.name))
 
         # Set up probes
         for probe in conn.probes['signal']:
