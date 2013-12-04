@@ -560,7 +560,7 @@ class SimPyFunc(Operator):
         self.updates = [output]
 
     def __str__(self):
-        return 'SymPyFunc(%s -> %s "%s")' % (
+        return 'SimPyFunc(%s -> %s "%s")' % (
                 str(self.J), str(self.output), str(self.fn))
 
     def make_step(self, dct, dt):
@@ -879,8 +879,12 @@ class Builder(object):
                 conn.input_signal, conn.filter)
 
         # Set up transform
-        self.model.operators.append(DotInc(
-            Signal(conn.transform), conn.input_signal, conn.output_signal))
+        self.model.operators.append(
+            DotInc(
+                Signal(conn.transform),
+                conn.input_signal,
+                conn.output_signal,
+                tag=conn.name))
 
         # Set up probes
         for probe in conn.probes['signal']:
