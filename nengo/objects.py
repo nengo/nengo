@@ -69,23 +69,18 @@ class Ensemble(object):
 
     EVAL_POINTS = 500
 
-    def __init__(self, neurons, dimensions, **kwargs):
+    def __init__(self, neurons, dimensions, radius=1.0, encoders=None,
+                 intercepts=Uniform(-1.0, 1.0), max_rates=Uniform(200, 400),
+                 eval_points=None, seed=None, label="Ensemble"):
         self.dimensions = dimensions  # Must be set before neurons
         self.neurons = neurons
-
-        if 'decoder_noise' in kwargs:
-            raise NotImplementedError('decoder_noise')
-
-        if 'noise' in kwargs or 'noise_frequency' in kwargs:
-            raise NotImplementedError('noise')
-
-        self.label = kwargs.get('label', "Ensemble")
-        self.encoders = kwargs.get('encoders', None)
-        self.eval_points = kwargs.get('eval_points', None)
-        self.intercepts = kwargs.get('intercepts', Uniform(-1.0, 1.0))
-        self.max_rates = kwargs.get('max_rates', Uniform(200, 400))
-        self.radius = kwargs.get('radius', 1.0)
-        self.seed = kwargs.get('seed', None)
+        self.radius = radius
+        self.encoders = encoders
+        self.intercepts = intercepts
+        self.max_rates = max_rates
+        self.label = label
+        self.eval_points = eval_points
+        self.seed = seed
 
         # Set up probes
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
@@ -241,7 +236,7 @@ class Node(object):
         The number of input dimensions.
     """
 
-    def __init__(self, output=None, label="Node", dimensions=1):
+    def __init__(self, output=None, dimensions=1, label="Node"):
         self.output = output
         self.label = label
         self.dimensions = dimensions
@@ -307,13 +302,14 @@ class Connection(object):
         description
 
     """
-    def __init__(self, pre, post, **kwargs):
+    def __init__(self, pre, post,
+                 filter=0.005, transform=1.0, modulatory=False):
         self.pre = pre
         self.post = post
 
-        self.filter = kwargs.get('filter', 0.005)
-        self.transform = kwargs.get('transform', 1.0)
-        self.modulatory = kwargs.get('modulatory', False)
+        self.filter = filter
+        self.transform = transform
+        self.modulatory = modulatory
 
         self.probes = {'signal': []}
 
@@ -370,13 +366,14 @@ class DecodedConnection(Connection):
         description
 
     """
-    def __init__(self, pre, post, **kwargs):
+    def __init__(self, pre, post, decoders=None, decoder_solver=least_squares,
+                 eval_points=None, function=None, **kwargs):
         Connection.__init__(self, pre, post, **kwargs)
 
-        self.decoders = kwargs.get('decoders', None)
-        self.decoder_solver = kwargs.get('decoder_solver', least_squares)
-        self.eval_points = kwargs.get('eval_points', None)
-        self.function = kwargs.get('function', None)
+        self.decoders = decoders
+        self.decoder_solver = decoder_solver
+        self.eval_points = eval_points
+        self.function = function
 
     @property
     def decoders(self):
