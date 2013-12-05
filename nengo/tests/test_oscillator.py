@@ -1,6 +1,7 @@
 import logging
 
 import nengo
+import nengo.helpers
 from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
 
 
