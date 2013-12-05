@@ -117,6 +117,51 @@ class TestProbe(SimulatorTestCase):
             y = sim.data(p)
             self.assertTrue(np.allclose(y[1:], x[:-1]))  # 1-step delay
 
+    def _test_probe_length_n( self, n = 5 ):
+        """Test probe with arbitrary size limit n."""
+        
+        def input_fn( t ):
+            return np.sin( t )
+
+        model = nengo.Model( 'test_probe_length_n', seed = 2089 )
+        
+        with model:
+            node = nengo.Node( label = 'input', output = input_fn )
+            probe = nengo.Probe( node, 'output', maxlen = n )
+            
+        sim = self.Simulator( model )
+        simtime = 2.31
+        dt = sim.model.dt
+        total_steps =  int( np.round( simtime / dt) ) 
+        
+        probe_values_first = []
+        probe_values_last = []
+        
+        sim.run( dt ) #run for one time-step so that the values at the tested times align correctly
+
+        #manually run the simulation and store probe value at each instant
+        for i in range( total_steps ) :
+            t = dt * i 
+            sim.run( dt ) #run for 1 step
+            probe_values_last  = np.append( probe_values_last , sim.data( probe )[0] )
+            probe_values_first  = np.append( probe_values_first , sim.data( probe )[-1] )
+            
+        times = dt * np.arange( total_steps )
+        correct_values = np.asarray( map( input_fn, times ) )
+
+        logger.debug( "Manually ran one probe for %(simtime)s."  % locals()) 
+
+        #values of probes_values_first track the current values
+        self.assertTrue( np.allclose( correct_values , probe_values_first ) )
+
+        #values of probes_values_last lags n steps behind the current value
+        self.assertTrue( np.allclose( correct_values[ : total_steps - n + 1 ] , probe_values_last[ (n - 1) : ] ) )
+
+    def test_probe_length( self ):
+        self._test_probe_length_n( n = 1 )
+        self._test_probe_length_n( n = 2 )
+        self._test_probe_length_n( n = 10 )
+        self._test_probe_length_n( n = 1000 )
 
 if __name__ == "__main__":
     nengo.log(debug=True, path='log.txt')

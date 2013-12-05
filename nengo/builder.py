@@ -335,7 +335,7 @@ class SimulatorProbe(object):
     def __init__(self, sig, dt, maxlen):
         self.sig = sig
         self.dt = dt
-        self.maxlen = None
+        self.maxlen = maxlen
 
     def __str__(self):
         return "Probing " + str(self.sig)
