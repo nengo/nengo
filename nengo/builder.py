@@ -332,9 +332,10 @@ class Signal(SignalView):
 
 class SimulatorProbe(object):
     """A model probe to record a signal"""
-    def __init__(self, sig, dt):
+    def __init__(self, sig, dt, maxlen):
         self.sig = sig
         self.dt = dt
+        self.maxlen = None
 
     def __str__(self):
         return "Probing " + str(self.sig)
@@ -900,7 +901,7 @@ class Builder(object):
         self.model.operators.append(Reset(probe.input_signal))
 
         # Set up probe
-        probe.probe = SimulatorProbe(probe.input_signal, probe.sample_every)
+        probe.probe = SimulatorProbe(probe.input_signal, probe.sample_every, probe.maxlen )
         self.model.probes.append(probe.probe)
 
     @staticmethod

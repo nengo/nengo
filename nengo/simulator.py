@@ -79,7 +79,10 @@ class Simulator(object):
                        for node in self._step_order]
 
         self.n_steps = 0
-        self.probe_outputs = dict((probe, []) for probe in self.model.probes)
+        self.probe_outputs = dict(
+              ( probe, [] ) if probe.maxlen is None 
+              else collections.deque([], maxlen=probe.maxlen)
+              for probe in self.model.probes )
 
     def _init_dg(self, verbose=False):
         operators = self.model.operators
@@ -225,8 +228,10 @@ class Simulator(object):
         for probe in self.model.probes:
             period = int(probe.dt / self.model.dt)
             if self.n_steps % period == 0:
-                tmp = self._sigdict[probe.sig].copy()
-                self.probe_outputs[probe].append(tmp)
+                 tmp = self._sigdict[probe.sig]
+                 if probe.maxlen > 1:
+                     tmp = tmp.copy()
+                 self.probe_outputs[probe].append(tmp)
 
         self.n_steps += 1
 
