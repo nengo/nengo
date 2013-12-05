@@ -86,9 +86,6 @@ class Ensemble(object):
         self.max_rates = kwargs.get('max_rates', Uniform(200, 400))
         self.radius = kwargs.get('radius', 1.0)
         self.seed = kwargs.get('seed', None)
-        self.auto_add = kwargs.get('auto_add', True)
-            #TODO: this is only here because of peculiarities in EnsembleArray;
-            #once EnsembleArray is updated (hopefully) it can be removed
 
         # Set up probes
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
@@ -97,8 +94,7 @@ class Ensemble(object):
         self._scaled_encoders = None  # encoders * neuron-gains / radius
 
         #add self to current context
-        if self.auto_add:
-            nengo.context.add_to_current(self)
+        nengo.context.add_to_current(self)
 
     def __str__(self):
         return "Ensemble: " + self.label
@@ -318,15 +314,11 @@ class Connection(object):
         self.filter = kwargs.get('filter', 0.005)
         self.transform = kwargs.get('transform', 1.0)
         self.modulatory = kwargs.get('modulatory', False)
-        self.auto_add = kwargs.get('auto_add', True)
-            #TODO: this is only here because of peculiarities in EnsembleArray;
-            #once EnsembleArray is updated (hopefully) it can be removed
 
         self.probes = {'signal': []}
 
         #add self to current context
-        if self.auto_add:
-            nengo.context.add_to_current(self)
+        nengo.context.add_to_current(self)
         if hasattr(post, 'has_input'):
             #TODO: this is just used to detect whether the node
             #needs time as input; remove this once we have
@@ -441,20 +433,6 @@ class DecodedConnection(Connection):
         return label
 
 
-class ConnectionList(object):
-    """A connection made up of several other connections."""
-    def __init__(self, connections, transform=1.0):
-        self.connections = connections
-        self.transform = transform
-        self.probes = {}
-
-        #add self to current context
-        nengo.context.add_to_current(self)
-
-    def add_to_model(self, model):
-        model.connections.append(self)
-
-
 class Probe(object):
     """A probe is a dummy object that only has an input signal and probe.
 
@@ -514,7 +492,7 @@ class Network(object):
 
     def add_to_model(self, model):
         for obj in self.objects:
-            if not isinstance(obj, (nengo.Connection, nengo.ConnectionList)):
+            if not isinstance(obj, nengo.Connection):
                 obj.label = self.label + '.' + obj.label
             model.add(obj)
 

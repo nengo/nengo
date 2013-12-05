@@ -2,7 +2,7 @@ import numpy as np
 
 import nengo
 from ..objects import Uniform
-from ..templates import EnsembleArray
+from .ensemblearray import EnsembleArray
 
 
 class BasalGanglia(nengo.Network):
@@ -56,13 +56,13 @@ class BasalGanglia(nengo.Network):
 
             # spread the input to StrD1, StrD2, and STN
             self.input.connect_to(
-                strD1, filter=None,
+                strD1.input, filter=None,
                 transform=np.eye(dimensions) * self.ws * (1 + self.lg))
             self.input.connect_to(
-                strD2, filter=None,
+                strD2.input, filter=None,
                 transform=np.eye(dimensions) * self.ws * (1 - self.le))
             self.input.connect_to(
-                stn, filter=None,
+                stn.input, filter=None,
                 transform=np.eye(dimensions) * self.wt)
 
             # connect the striatum to the GPi and GPe (inhibitory)
@@ -70,13 +70,11 @@ class BasalGanglia(nengo.Network):
                 if x[0] < self.e:
                     return 0
                 return self.mm * (x[0] - self.e)
-            strD1.connect_to(gpi,
-                             function=func_str,
-                             filter=tau_gaba,
+            nengo.Connection(strD1.add_output('func_str', func_str),
+                             gpi.input, function=func_str, filter=tau_gaba,
                              transform=-np.eye(dimensions) * self.wm)
-            strD2.connect_to(gpe,
-                             function=func_str,
-                             filter=tau_gaba,
+            nengo.Connection(strD2.add_output('func_str', func_str),
+                             gpe.input, function=func_str, filter=tau_gaba,
                              transform=-np.eye(dimensions) * self.wm)
 
             # connect the STN to GPi and GPe (broad and excitatory)
@@ -85,25 +83,30 @@ class BasalGanglia(nengo.Network):
                     return 0
                 return self.mp * (x[0] - self.ep)
             tr = np.ones((dimensions, dimensions)) * self.wp
-            stn.connect_to(
-                gpi, function=func_stn, transform=tr, filter=tau_ampa)
-            stn.connect_to(
-                gpe, function=func_stn, transform=tr, filter=tau_ampa)
+            stn_output = stn.add_output('func_stn', func_stn)
+            nengo.Connection(stn_output, gpi.input, function=func_stn,
+                             transform=tr, filter=tau_ampa)
+            nengo.Connection(stn_output, gpe.input, function=func_stn,
+                             transform=tr, filter=tau_ampa)
 
             # connect the GPe to GPi and STN (inhibitory)
             def func_gpe(x):
                 if x[0] < self.ee:
                     return 0
                 return self.me * (x[0] - self.ee)
-            gpe.connect_to(gpi, function=func_gpe, filter=tau_gaba,
-                           transform=-np.eye(dimensions) * self.we)
-            gpe.connect_to(stn, function=func_gpe, filter=tau_gaba,
-                           transform=-np.eye(dimensions) * self.wg)
+            gpe_output = gpe.add_output('func_gpe', func_gpe)
+            nengo.Connection(gpe_output, gpi.input, function=func_gpe,
+                             filter=tau_gaba,
+                             transform=-np.eye(dimensions) * self.we)
+            nengo.Connection(gpe_output, stn.input, function=func_gpe,
+                             filter=tau_gaba,
+                             transform=-np.eye(dimensions) * self.wg)
 
             #connect GPi to output (inhibitory)
             def func_gpi(x):
                 if x[0] < self.eg:
                     return 0
                 return self.mg * (x[0] - self.eg)
-            gpi.connect_to(self.output, function=func_gpi, filter=None,
-                           transform=np.eye(dimensions) * output_weight)
+            nengo.Connection(gpi.add_output('func_gpi', func_gpi),
+                             self.output, function=func_gpi, filter=None,
+                             transform=np.eye(dimensions) * output_weight)
