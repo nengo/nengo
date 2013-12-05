@@ -71,10 +71,10 @@ class BasalGanglia(nengo.Network):
                     return 0
                 return self.mm * (x[0] - self.e)
             nengo.Connection(strD1.add_output('func_str', func_str),
-                             gpi.input, function=func_str, filter=tau_gaba,
+                             gpi.input, filter=tau_gaba,
                              transform=-np.eye(dimensions) * self.wm)
             nengo.Connection(strD2.add_output('func_str', func_str),
-                             gpe.input, function=func_str, filter=tau_gaba,
+                             gpe.input, filter=tau_gaba,
                              transform=-np.eye(dimensions) * self.wm)
 
             # connect the STN to GPi and GPe (broad and excitatory)
@@ -84,9 +84,9 @@ class BasalGanglia(nengo.Network):
                 return self.mp * (x[0] - self.ep)
             tr = np.ones((dimensions, dimensions)) * self.wp
             stn_output = stn.add_output('func_stn', func_stn)
-            nengo.Connection(stn_output, gpi.input, function=func_stn,
+            nengo.Connection(stn_output, gpi.input,
                              transform=tr, filter=tau_ampa)
-            nengo.Connection(stn_output, gpe.input, function=func_stn,
+            nengo.Connection(stn_output, gpe.input,
                              transform=tr, filter=tau_ampa)
 
             # connect the GPe to GPi and STN (inhibitory)
@@ -95,11 +95,9 @@ class BasalGanglia(nengo.Network):
                     return 0
                 return self.me * (x[0] - self.ee)
             gpe_output = gpe.add_output('func_gpe', func_gpe)
-            nengo.Connection(gpe_output, gpi.input, function=func_gpe,
-                             filter=tau_gaba,
+            nengo.Connection(gpe_output, gpi.input, filter=tau_gaba,
                              transform=-np.eye(dimensions) * self.we)
-            nengo.Connection(gpe_output, stn.input, function=func_gpe,
-                             filter=tau_gaba,
+            nengo.Connection(gpe_output, stn.input, filter=tau_gaba,
                              transform=-np.eye(dimensions) * self.wg)
 
             #connect GPi to output (inhibitory)
@@ -108,5 +106,5 @@ class BasalGanglia(nengo.Network):
                     return 0
                 return self.mg * (x[0] - self.eg)
             nengo.Connection(gpi.add_output('func_gpi', func_gpi),
-                             self.output, function=func_gpi, filter=None,
+                             self.output, filter=None,
                              transform=np.eye(dimensions) * output_weight)
