@@ -6,7 +6,6 @@ import numpy as np
 import nengo
 import nengo.decoders
 import nengo.nonlinearities
-import nengo.templates
 
 
 logger = logging.getLogger(__name__)
