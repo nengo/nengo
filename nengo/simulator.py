@@ -11,8 +11,8 @@ import time
 import networkx as nx
 import numpy as np
 
+import nengo
 from .builder import Builder, SimulatorProbe
-from .objects import Probe, Node
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class Simulator(object):
             seed = self.model._get_new_seed()  # generate simulator seed
 
         # -- map from Signal.base -> ndarray
-        self._sigdict = SignalDict()
+        self._sigdict = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
         for op in self.model.operators:
             op.init_sigdict(self._sigdict, self.model.dt)
 
@@ -215,6 +215,24 @@ class Simulator(object):
 
         return Accessor()
 
+    def data(self, probe):
+        """Get data from signals that have been probed.
+
+        Parameters
+        ----------
+        probe : Probe
+            TODO
+
+        Returns
+        -------
+        data : ndarray
+            TODO: what are the dimensions?
+        """
+        if isinstance(probe, nengo.Probe):
+            #then map it to the simulator probe
+            probe = self.model.probemap[probe]
+        return np.asarray(self.probe_outputs[probe])
+
     def step(self):
         """Advance the simulator by `self.model.dt` seconds.
         """
@@ -228,41 +246,8 @@ class Simulator(object):
                 tmp = self._sigdict[probe.sig].copy()
                 self.probe_outputs[probe].append(tmp)
 
+        self._sigdict['__time__'] += self.model.dt
         self.n_steps += 1
-
-    def get(self, obj):
-        """Get the simulator's copy of a model object.
-
-        Parameters
-        ----------
-        obj : Nengo object
-            A model from the original model
-
-        Returns
-        -------
-        sim_obj : Nengo object
-            The simulator's copy of `obj`.
-
-        Examples
-        --------
-        Get the simulator's version of an ensemble
-        in order to plot tuning curves
-
-        >>> model = nengo.Model()
-        >>> model.make_ensemble("A", nengo.LIF(4), 1)
-        >>> sim = model.simulator()
-        >>> A = sim.get("A")
-        >>> from nengo.helpers import tuning_curves
-        >>> print tuning_curves(A)
-        """
-        toret = self.model.get(obj, "NotFound")
-        if toret == "NotFound":
-            toret = self.model.memo[id(obj)]
-        return toret
-
-    def reset(self):
-        """TODO"""
-        raise NotImplementedError
 
     def run(self, time_in_seconds):
         """Simulate for the given length of time."""
@@ -278,25 +263,9 @@ class Simulator(object):
                 logger.debug("Step %d", i)
             self.step()
 
-    def data(self, probe):
-        """Get data from signals that have been probed.
-
-        Parameters
-        ----------
-        probe : Probe
-            TODO
-
-        Returns
-        -------
-        data : ndarray
-            TODO: what are the dimensions?
-        """
-        if isinstance(probe, Probe):
-            #then map it to the simulator probe
-            probe = self.model.probemap[probe]
-        return np.asarray(self.probe_outputs[probe])
-
-    def probe_data(self, probe):
-        """TODO
-        """
-        return np.asarray(self.probe_outputs[probe])
+    def time(self, dt=None):
+        dt = self.model.dt if dt is None else dt
+        last_t = self._sigdict['__time__'] - self.model.dt
+        n_steps = self.n_steps if dt is None else int(
+            self.n_steps / (dt / self.model.dt))
+        return np.linspace(0, last_t, n_steps)

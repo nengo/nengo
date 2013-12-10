@@ -592,10 +592,11 @@ class SimPyFunc(Operator):
     """Set signal `output` by some non-linear function of J
     (and possibly other things too.)
     """
-    def __init__(self, output, J, fn):
+    def __init__(self, output, J, fn, n_args):
         self.output = output
         self.J = J
         self.fn = fn
+        self.n_args = n_args
 
         self.reads = [J]
         self.updates = [output]
@@ -605,12 +606,24 @@ class SimPyFunc(Operator):
             str(self.J), str(self.output), str(self.fn))
 
     def make_step(self, dct, dt):
+        t = dct['__time__']
         J = dct[self.J]
         output = dct[self.output]
         fn = self.fn
 
-        def step():
-            output[...] = fn(J)
+        if self.n_args == 0:
+
+            def step():
+                output[...] = fn()
+
+        elif self.n_args == 1:
+
+            def step():
+                output[...] = fn(t)
+        elif self.n_args == 2:
+
+            def step():
+                output[...] = fn(t, J)
         return step
 
 
@@ -750,17 +763,6 @@ class Builder(object):
         for c in self.model.connections:
             self._builders[c.__class__](c)
 
-        # Set up t and timesteps
-        self.model.operators.append(
-            ProdUpdate(Signal(1),
-                       Signal(self.model.dt),
-                       Signal(1),
-                       self.model.t.output_signal))
-        self.model.operators.append(
-            ProdUpdate(Signal(1),
-                       Signal(1),
-                       Signal(1),
-                       self.model.steps.output_signal))
         return self.model
 
     @builds(nengo.Ensemble)
@@ -867,11 +869,6 @@ class Builder(object):
             else:
                 node.output_signal = Signal(node.output, name=node.label)
         else:
-            #if no input, assume input is supposed to come from model.t
-            if not node.has_input:
-                with self.model:
-                    nengo.Connection(self.model.t, node, filter=None)
-
             node.input_signal = Signal(np.zeros(node.dimensions),
                                        name=node.label + ".signal")
             #reset input signal to 0 each timestep
@@ -938,7 +935,9 @@ class Builder(object):
                 conn.signal = conn.input_signal
             else:
                 conn.pyfunc = self._direct_pyfunc(
-                    conn.input_signal, conn.function, conn.label)
+                    conn.input_signal,
+                    lambda t, x: conn.function(x),
+                    conn.label)
                 conn.signal = conn.pyfunc.output_signal
 
             if conn.filter is not None and conn.filter > dt:
@@ -999,7 +998,8 @@ class Builder(object):
         pyfn.operators = [Reset(pyfn.input_signal),
                           SimPyFunc(output=pyfn.output_signal,
                                     J=pyfn.input_signal,
-                                    fn=pyfn.fn)]
+                                    fn=pyfn.fn,
+                                    n_args=pyfn.n_args)]
         self.model.operators.extend(pyfn.operators)
 
     def build_neurons(self, neurons):

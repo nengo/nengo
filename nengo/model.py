@@ -72,14 +72,6 @@ class Model(object):
 
         self._rng = None
 
-        # Some automatic stuff
-        with self:
-            self.t = nengo.Node(label='t', output=0)
-            self.steps = nengo.Node(label='steps', output=0)
-
-            # Automatically probe time
-            self.t_probe = nengo.Probe(self.t, 'output')
-
         #make this the default context
         nengo.context.clear()
         nengo.context.append(self)

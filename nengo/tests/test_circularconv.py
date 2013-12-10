@@ -87,7 +87,7 @@ class TestCircularConv(SimulatorTestCase):
         sim = self.Simulator(model)
         sim.run(1.0)
 
-        t = sim.data(model.t_probe).flatten()
+        t = sim.time()
 
         with Plotter(self.Simulator) as plt:
             def plot(sim, a, A, title=""):

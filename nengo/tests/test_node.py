@@ -25,12 +25,12 @@ class TestNode(SimulatorTestCase):
         sim.run(runtime)
 
         with Plotter(self.Simulator) as plt:
-            plt.plot(sim.data(m.t_probe), sim.data(p), label='sin')
+            plt.plot(sim.time(), sim.data(p), label='sin')
             plt.legend(loc='best')
             plt.savefig('test_node.test_simple.pdf')
             plt.close()
 
-        sim_t = sim.data(m.t_probe).ravel()
+        sim_t = sim.time()
         sim_in = sim.data(p).ravel()
         t = dt * np.arange(len(sim_t))
         self.assertTrue(np.allclose(sim_t, t))
@@ -43,7 +43,8 @@ class TestNode(SimulatorTestCase):
 
         with m:
             input = nengo.Node(output=np.sin, label='input')
-            output = nengo.Node(output=np.square, label='output')
+            output = nengo.Node(output=lambda t, x: np.square(x),
+                                label='output')
             nengo.Connection(input, output, filter=None)  # Direct connection
             p_in = nengo.Probe(input, 'output')
             p_out = nengo.Probe(output, 'output')
@@ -53,19 +54,16 @@ class TestNode(SimulatorTestCase):
         sim.run(runtime)
 
         with Plotter(self.Simulator) as plt:
-            plt.plot(sim.data(m.t_probe), sim.data(p_in), label='sin')
-            plt.plot(sim.data(m.t_probe), sim.data(p_out), label='sin squared')
-            plt.plot(sim.data(m.t_probe),
-                     np.sin(sim.data(m.t_probe)),
-                     label='ideal sin')
-            plt.plot(sim.data(m.t_probe),
-                     np.sin(sim.data(m.t_probe)) ** 2,
-                     label='ideal squared')
+            t = sim.time()
+            plt.plot(t, sim.data(p_in), label='sin')
+            plt.plot(t, sim.data(p_out), label='sin squared')
+            plt.plot(t, np.sin(t), label='ideal sin')
+            plt.plot(t, np.sin(t) ** 2, label='ideal squared')
             plt.legend(loc='best')
             plt.savefig('test_node.test_connected.pdf')
             plt.close()
 
-        sim_t = sim.data(m.t_probe).ravel()
+        sim_t = sim.time()
         sim_sin = sim.data(p_in).ravel()
         sim_sq = sim.data(p_out).ravel()
         t = dt * np.arange(len(sim_t))
@@ -83,7 +81,7 @@ class TestNode(SimulatorTestCase):
             in1 = nengo.Node(output=np.sin)
             in2 = nengo.Node(output=lambda t: t)
             passthrough = nengo.Node()
-            out = nengo.Node(output=lambda x: x)
+            out = nengo.Node(output=lambda t, x: x)
 
             nengo.Connection(in1, passthrough, filter=None)
             nengo.Connection(in2, passthrough, filter=None)
@@ -98,10 +96,10 @@ class TestNode(SimulatorTestCase):
         sim.run(runtime)
 
         with Plotter(self.Simulator) as plt:
-            plt.plot(sim.data(m.t_probe),
+            plt.plot(sim.time(),
                      sim.data(in1_p)+sim.data(in2_p),
                      label='in+in2')
-            plt.plot(sim.data(m.t_probe)[:-2],
+            plt.plot(sim.time()[:-2],
                      sim.data(out_p)[2:],
                      label='out')
             plt.legend(loc='best')
