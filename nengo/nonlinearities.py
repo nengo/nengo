@@ -1,4 +1,5 @@
 import copy
+import inspect
 import logging
 
 import numpy as np
@@ -14,9 +15,17 @@ class PythonFunction(object):
             label = "<Direct%d>" % id(self)
         self.label = label
         self.n_in = n_in
-        if n_out is None:
-            self.n_out = np.asarray(fn(np.ones(n_in))).size
         self.fn = fn
+        self.n_out = n_out
+
+        if n_out is None:
+            if self.n_args == 0:
+                res = fn()
+            elif self.n_args == 1:
+                res = fn(np.asarray(0.0))
+            elif self.n_args == 2:
+                res = fn(np.asarray(0.0), np.zeros(n_in))
+            self.n_out = np.asarray(res).size
 
     def __deepcopy__(self, memo):
         try:
@@ -30,6 +39,22 @@ class PythonFunction(object):
                 else:
                     rval.__dict__[k] = copy.deepcopy(v, memo)
             return rval
+
+    @property
+    def n_args(self):
+        if isinstance(self.fn, np.ufunc) and self.fn.nin == 1:
+            return 1
+
+        argspec = inspect.getargspec(self.fn)
+        if len(argspec.args) == 0 and argspec.varags is None:
+            return 0
+        elif len(argspec.args) == 1 and argspec.varargs is None:
+            return 1
+        elif len(argspec.args) > 1 or argspec.varargs is not None:
+            return 2
+        assert False, ("PythonFunction.n_args case not handled, "
+                       "please file a Github issue.")
+
 
 
 class Neurons(object):

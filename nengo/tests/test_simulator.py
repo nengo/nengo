@@ -47,20 +47,20 @@ class TestSimulator(unittest.TestCase):
     def test_steps(self):
         m = nengo.Model("test_signal_indexing_1")
         sim = nengo.Simulator(m)
-        self.assertEqual(0, sim.signals[sim.model.steps.output_signal])
+        self.assertEqual(0, sim.n_steps)
         sim.step()
-        self.assertEqual(1, sim.signals[sim.model.steps.output_signal])
+        self.assertEqual(1, sim.n_steps)
         sim.step()
-        self.assertEqual(2, sim.signals[sim.model.steps.output_signal])
+        self.assertEqual(2, sim.n_steps)
 
     def test_time(self):
         m = nengo.Model("test_signal_indexing_1")
         sim = nengo.Simulator(m)
-        self.assertEqual(0.00, sim.signals[sim.model.t.output_signal])
+        self.assertEqual(0.00, sim.signals['__time__'])
         sim.step()
-        self.assertEqual(0.001, sim.signals[sim.model.t.output_signal])
+        self.assertEqual(0.001, sim.signals['__time__'])
         sim.step()
-        self.assertEqual(0.002, sim.signals[sim.model.t.output_signal])
+        self.assertEqual(0.002, sim.signals['__time__'])
 
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
@@ -120,15 +120,13 @@ class TestSimulator(unittest.TestCase):
                 msg='%s != %s' % (sim.signals[sig], np.sin(t - dt*2)))
 
     def test_encoder_decoder_pathway(self):
-        #
-        # This test is a very short and small simulation that
-        # verifies (like by hand) that the simulator does the right
-        # things in the right order.
-        #
+        """Verifies (like by hand) that the simulator does the right
+        things in the right order."""
+
         m = nengo.Model("")
         dt = 0.001
         foo = Signal([1.0], name='foo')
-        pop = nengo.PythonFunction(fn=lambda x: x + 1, n_in=2, label='pop')
+        pop = nengo.PythonFunction(fn=lambda t, x: x + 1, n_in=2, label='pop')
         decoders = np.asarray([.2, .1])
         decs = Signal(decoders * 0.5)
 
@@ -182,7 +180,7 @@ class TestSimulator(unittest.TestCase):
         m = nengo.Model("")
         dt = 0.001
         foo = Signal([1.0], name='foo')
-        pop = nengo.PythonFunction(fn=lambda x: x + 1, n_in=2, label='pop')
+        pop = nengo.PythonFunction(fn=lambda t, x: x + 1, n_in=2, label='pop')
         decoders = np.asarray([.2, .1])
 
         m.operators = []
@@ -240,7 +238,7 @@ class TestNonlinear(unittest.TestCase):
 
         for i in xrange(n_trials):
             A = rng.normal(size=(d, d))
-            fn = lambda x: np.cos(np.dot(A, x))
+            fn = lambda t, x: np.cos(np.dot(A, x))
 
             x = np.random.normal(size=d)
 
@@ -263,7 +261,7 @@ class TestNonlinear(unittest.TestCase):
             s0 = np.array(x)
             for j in xrange(n_steps):
                 tmp = p0
-                p0 = fn(s0)
+                p0 = fn(0, s0)
                 s0 = tmp
                 sim.step()
                 assert_allclose(self, logger, s0, sim.signals[ins])
