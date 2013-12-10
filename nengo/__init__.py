@@ -7,10 +7,7 @@ import sys
 
 from .model import Model
 from .nonlinearities import PythonFunction, LIF, LIFRate, Direct
-from .objects import Ensemble, Node
-from .objects import Connection, DecodedConnection
-from .objects import Probe
-from .objects import Network
+from .objects import Ensemble, Node, Connection, Probe, Network
 from . import networks
 from .simulator import Simulator
 

@@ -23,7 +23,7 @@ class TestOscillator(SimulatorTestCase):
             nengo.Connection(input, T.input)
 
             A = nengo.Ensemble(nengo.LIF(100), label='A', dimensions=2)
-            nengo.DecodedConnection(A, A, filter=tau,
+            nengo.Connection(A, A, filter=tau,
                                     transform=[[1, -freq*tau], [freq*tau, 1]])
             nengo.Connection(input, A)
 
