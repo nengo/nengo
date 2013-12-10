@@ -32,8 +32,9 @@ def rasterplot(time, spikes, ax=None, **kwargs):
 
     colors = kwargs.pop('colors', None)
     if colors is None:
-        color_cycle = ax._get_lines.color_cycle
-        colors = [next(color_cycle) for _ in xrange(spikes.shape[1])]
+        color_cycle = plt.rcParams['axes.color_cycle']
+        colors = [color_cycle[ix % len(color_cycle)]
+                  for ix in xrange(spikes.shape[1])]
 
     if hasattr(ax, 'eventplot'):
         spikes = [time[spikes[:, i] > 0].flatten()
