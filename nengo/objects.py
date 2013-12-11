@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 import nengo
-from .decoders import least_squares
+import nengo.decoders
 
 logger = logging.getLogger(__name__)
 
@@ -290,7 +290,8 @@ class Connection(object):
 
         if isinstance(self.pre, Ensemble):
             self.decoders = kwargs.pop('decoders', None)
-            self.decoder_solver = kwargs.pop('decoder_solver', least_squares)
+            self.decoder_solver = kwargs.pop(
+                'decoder_solver', nengo.decoders.lstsq_L2)
             self.eval_points = kwargs.pop('eval_points', None)
             self.function = kwargs.pop('function', None)
 

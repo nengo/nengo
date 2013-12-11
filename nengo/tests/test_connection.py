@@ -82,7 +82,7 @@ class TestConnection(SimulatorTestCase):
 
     def test_neurons_to_ensemble(self):
         name = 'neurons_to_ensemble'
-        N = 10
+        N = 20
 
         m = nengo.Model(name, seed=123)
         a = nengo.Ensemble(nengo.LIF(N * 2), dimensions=2)
