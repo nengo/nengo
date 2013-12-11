@@ -33,146 +33,42 @@ def sample_hypersphere(dimensions, n_samples, rng, surface=False):
 
     return samples
 
-
-# -- James and Terry arrived at this by eyeballing some graphs.
-#    Not clear if this should be a constant at all, it
-#    may depend on fn being estimated, number of neurons, etc...
 DEFAULT_RCOND = 0.01
 
 
-def least_squares(activities, targets, rng, noise_amp=0.01):
-    noise = rng.randn(*activities.shape) * activities.max() * noise_amp
-    activities += noise
-    weights, res, rank, s = np.linalg.lstsq(activities, targets,
-                                            rcond=DEFAULT_RCOND)
-    return weights.T
+def lstsq_L2(activities, targets, rng, noise_amp=0.1):
+    """Least-squares with L2 regularization."""
+    sigma = noise_amp * activities.max()
+    return _cholesky1(activities, targets, sigma).T
 
 
-def regularizationParameter(sigma, Neval):
-    return sigma ** 2 * Neval
+def lstsq_L2nz(activities, targets, rng, noise_amp=0.1):
+    """Least-squares with L2 regularization on non-zero components."""
+
+    # Compute the equivalent noise standard deviation. This equals the
+    # base amplitude (noise_amp times the overall max activation) times
+    # the square-root of the fraction of non-zero components.
+    sigma = (noise_amp * activities.max()) * np.sqrt((activities > 0).mean(0))
+
+    # sigma == 0 means the neuron is never active, so won't be used, but
+    # we have to make sigma != 0 for numeric reasons.
+    sigma[sigma == 0] = 1
+
+    # Solve the LS problem using the Cholesky decomposition
+    return _cholesky1(activities, targets, sigma).T
 
 
-def eigh(A, b, sigma):
-    """
-    Solve the given linear system(s) using the eigendecomposition.
-    """
+def _cholesky1(A, b, sigma):
+    """Solve the given linear system(s) using the Cholesky decomposition."""
+    reglambda = sigma ** 2 * A.shape[0]    # regularization parameter lambda
 
-    m, n = A.shape
-    reglambda = regularizationParameter(sigma, m)
-
-    transpose = m < n
-    if transpose:
-        # substitution: x = A'*xbar, G*xbar = b where G = A*A' + lambda*I
-        G = np.dot(A, A.T) + reglambda * np.eye(m)
-    else:
-        # multiplication by A': G*x = A'*b where G = A'*A + lambda*I
-        G = np.dot(A.T, A) + reglambda * np.eye(n)
-        b = np.dot(A.T, b)
-
-    e, V = np.linalg.eigh(G)
-    eInv = 1. / e
-
-    x = np.dot(V.T, b)
-    x = eInv[:, None] * x if len(b.shape) > 1 else eInv * x
-    x = np.dot(V, x)
-
-    if transpose:
-        x = np.dot(A.T, x)
-
-    return x
-
-
-def cholesky(A, b, sigma):
-    """
-    Solve the given linear system(s) using the Cholesky decomposition
-    """
-    # sigma = 0.1 * activities.max()
-    # weights = cholesky(activities, targets, sigma=sigma)
-
-    m, n = A.shape
-    reglambda = regularizationParameter(sigma, m)
-
-    transpose = m < n
-    if transpose:
-        # substitution: x = A'*xbar, G*xbar = b where G = A*A' + lambda*I
-        G = np.dot(A, A.T) + reglambda * np.eye(m)
-    else:
-        # multiplication by A': G*x = A'*b where G = A'*A + lambda*I
-        G = np.dot(A.T, A) + reglambda * np.eye(n)
-        b = np.dot(A.T, b)
+    G = np.dot(A.T, A)
+    np.fill_diagonal(G, G.diagonal() + reglambda)
+    b = np.dot(A.T, b)
 
     L = np.linalg.cholesky(G)
     L = np.linalg.inv(L.T)
+    return np.dot(L, np.dot(L.T, b))
 
-    x = np.dot(L.T, b)
-    x = np.dot(L, x)
-
-    if transpose:
-        x = np.dot(A.T, x)
-
-    return x
-
-
-# def _conjgrad_iters(A, b, x, maxiters=None, atol=1e-6, btol=1e-6, rtol=1e-6):
-#     """
-#     Perform conjugate gradient iterations
-#     """
-
-#     if maxiters is None:
-#         maxiters = b.shape[0]
-
-#     r = b - A(x)
-#     p = r.copy()
-#     rsold = np.dot(r,r)
-#     normA = 0.0
-#     normb = npl.norm(b)
-
-#     for i in range(maxiters):
-#         Ap = A(p)
-#         alpha = rsold / np.dot(p,Ap)
-#         x += alpha*p
-#         r -= alpha*Ap
-
-#         rsnew = np.dot(r,r)
-#         beta = rsnew/rsold
-
-#         if np.sqrt(rsnew) < rtol:
-#             break
-
-#         if beta < 1e-12: # no perceptible change in p
-#             break
-
-#         p = r + beta*p
-#         rsold = rsnew
-
-#     # print "normA est: %0.3e" % (normA)
-#     return x, i+1
-
-# def conjgrad(A, b, sigma, x0=None, maxiters=None, tol=1e-2):
-#     """
-#     Solve the given linear system using conjugate gradient
-#     """
-
-#     m,n = A.shape
-#     D = b.shape[1] if len(b.shape) > 1 else 1
-#     damp = m*sigma**2
-
-#     G = lambda x: (np.dot(A.T,np.dot(A,x)) + damp*x)
-#     b = np.dot(A.T,b)
-
-#     ### conjugate gradient
-#     x = np.zeros((n,D))
-#     itns = []
-
-#     for i in range(D):
-#         xi = getcol(x0, i).copy() if x0 is not None else x[:,i]
-#         bi = getcol(b, i)
-#         xi, itn = _conjgrad_iters(
-#             G, bi, xi, maxiters=maxiters, rtol=tol*np.sqrt(m))
-#         x[:,i] = xi
-#         itns.append(itn)
-
-#     if D == 1:
-#         return x.ravel(), itns[0]
-#     else:
-#         return x, itns
+    # factor = sp.linalg.cho_factor(G, overwrite_a=True, check_finite=False)
+    # return sp.linalg.cho_solve(factor, b, check_finite=False)
