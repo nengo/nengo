@@ -11,7 +11,7 @@ class EnsembleArray(nengo.Network):
         self.dimensions_per_ensemble = dimensions_per_ensemble
         self.ensembles = []
         transform = np.eye(self.dimensions)
-        each_neurons = neurons.n_neurons / n_ensembles
+        each_neurons = neurons.n_neurons // n_ensembles
         extra_neurons = neurons.n_neurons % n_ensembles
 
         with self:

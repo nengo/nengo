@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+import collections
 import copy
 
 import numpy as np
@@ -17,16 +17,16 @@ def encoders():
     @staticmethod
     def _process_encoders(encoders, neurons, dims, n_ensembles):
         if encoders is None:
-            encoders = [None for _ in xrange(n_ensembles)]
+            encoders = [None for _ in range(n_ensembles)]
         elif len(encoders) == dims:
             if np.asarray(encoders).ndim == 1:
-                encoders = [np.array(encoders) for _ in xrange(n_ensembles)]
+                encoders = [np.array(encoders) for _ in range(n_ensembles)]
         elif len(encoders) == neurons:
             if len(encoders[0]) != dims:
                 msg = ("len(encoders[0]) should match dimensions_per_ensemble."
                        " Currently %d, %d" % (len(encoders[0]) != dims))
                 raise core.ShapeMismatch(msg)
-            encoders = [np.array(encoders) for _ in xrange(n_ensembles)]
+            encoders = [np.array(encoders) for _ in range(n_ensembles)]
         elif len(encoders) != n_ensembles:
             msg = ("len(encoders) should match n_ensembles. "
                    "Currently %d, %d" % (len(encoders) != n_ensembles))
@@ -68,18 +68,18 @@ def transform(pre_dims, post_dims,
       [[1, 0], [0, 1], [0, 0]]
 
     """
-    t = [[0 for pre in xrange(pre_dims)] for post in xrange(post_dims)]
+    t = [[0 for pre in range(pre_dims)] for post in range(post_dims)]
     if index_pre is None:
-        index_pre = range(pre_dims)
+        index_pre = list(range(pre_dims))
     elif isinstance(index_pre, int):
         index_pre = [index_pre]
 
     if index_post is None:
-        index_post = range(post_dims)
+        index_post = list(range(post_dims))
     elif isinstance(index_post, int):
         index_post = [index_post]
 
-    for i in xrange(min(len(index_pre), len(index_post))):  # was max
+    for i in range(min(len(index_pre), len(index_post))):  # was max
         pre = index_pre[i]  # [i % len(index_pre)]
         post = index_post[i]  # [i % len(index_post)]
         t[post][pre] = weight
@@ -123,14 +123,14 @@ def weights(pre_neurons, post_neurons, function):
     """
     argspec = inspect.getargspec(func)
     if len(argspec[0]) == 0:
-        return [[func() for pre in xrange(pre_neurons)
-                 for post in xrange(post_neurons)]]
+        return [[func() for pre in range(pre_neurons)
+                 for post in range(post_neurons)]]
     elif len(argspec[0]) == 2:
-        return [[func(pre, post) for pre in xrange(pre_neurons)
-                 for post in xrange(post_neurons)]]
+        return [[func(pre, post) for pre in range(pre_neurons)
+                 for post in range(post_neurons)]]
 
 
-### Helper functions for creating inputs
+# Helper functions for creating inputs
 
 def piecewise(data):
     """Create a piecewise constant function from a dictionary.
@@ -207,7 +207,7 @@ def piecewise(data):
             output = [output]
 
         # figure out the length of this item
-        if callable(output):
+        if isinstance(output, collections.Callable):
             value = output(0.0)
             if isinstance(value, (float, int)):
                 length = 1
@@ -229,7 +229,7 @@ def piecewise(data):
         ordered_data.append(row)
 
     # set the value to zero for t befoer the first given time
-    initial_value = [0]*output_length
+    initial_value = [0] * output_length
 
     # build the function to return
     def piecewise_function(t, data=ordered_data, start=initial_value):
@@ -243,7 +243,7 @@ def piecewise(data):
                 break
 
         # if it's a function, call it
-        if callable(value):
+        if isinstance(value, collections.Callable):
             value = value(t)
             # force the result to be a list
             if isinstance(value, (int, float)):
@@ -324,12 +324,12 @@ def sorted_neurons(ensemble, iterations=100, seed=None):
             count += 1
         return sim / count
 
-    #Normalize all the neurons
+    # Normalize all the neurons
     encoders = np.array(ensemble.encoders)
     for i in np.arange(encoders.shape[0]):
         encoders[i, :] = encoders[i, :] / np.linalg.norm(encoders[i, :])
 
-    #Make an array with the starting order of the neurons
+    # Make an array with the starting order of the neurons
     N = encoders.shape[0]
     indices = np.arange(N)
     rng = np.random.RandomState(seed)
@@ -400,13 +400,14 @@ def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
     N = int(float(high) / step)  # number of samples
     frequencies = np.arange(1, N + 1) * step * 2 * np.pi  # frequency of each
     amplitude = rng.uniform(0, 1, N)  # amplitude for each sample
-    phase = rng.uniform(0, 2*np.pi, N)  # phase of each sample
+    phase = rng.uniform(0, 2 * np.pi, N)  # phase of each sample
 
-    rawRMS = np.sqrt(np.sum(amplitude**2)/2)  # compute the rms of the signal
+    # compute the rms of the signal
+    rawRMS = np.sqrt(np.sum(amplitude ** 2) / 2)
     amplitude = amplitude * rms / rawRMS  # rescale
 
     # create a function that computes the bases and weights them by amplitude
     def white_noise_function(t, f=frequencies, a=amplitude, p=phase):
-        return np.dot(a, np.sin((f*t)+p))
+        return np.dot(a, np.sin((f * t) + p))
 
     return white_noise_function

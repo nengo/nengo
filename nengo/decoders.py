@@ -49,7 +49,7 @@ def least_squares(activities, targets):
 
 
 def regularizationParameter(sigma, Neval):
-    return sigma**2 * Neval
+    return sigma ** 2 * Neval
 
 
 def eigh(A, b, sigma):

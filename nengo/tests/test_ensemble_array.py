@@ -72,7 +72,7 @@ class TestEnsembleArray(SimulatorTestCase):
                 a_ref = np.tile(a, (len(t), 1))
                 a_sim = sim.data(p)
                 colors = ['b', 'g', 'r', 'c', 'm', 'y']
-                for i in xrange(a_sim.shape[1]):
+                for i in range(a_sim.shape[1]):
                     plt.plot(t, a_ref[:, i], '--', color=colors[i])
                     plt.plot(t, a_sim[:, i], '-', color=colors[i])
                 plt.title(title)
@@ -125,7 +125,7 @@ class TestEnsembleArray(SimulatorTestCase):
 
             for ens in C.ensembles:
                 ens.encoders = np.tile([[1, 1], [-1, 1], [1, -1], [-1, -1]],
-                                       (ens.n_neurons / 4, 1))
+                                       (ens.n_neurons // 4, 1))
 
             transformA = np.zeros((C.dimensions, Amat.size))
             transformB = np.zeros((C.dimensions, Bmat.size))
@@ -150,7 +150,7 @@ class TestEnsembleArray(SimulatorTestCase):
 
             transformC = np.zeros((D.dimensions, Bmat.size))
             for i in range(Bmat.size):
-                transformC[i / Bmat.shape[0]][i] = 1
+                transformC[i // Bmat.shape[0]][i] = 1
 
             prod = C.add_output("product", product)
 

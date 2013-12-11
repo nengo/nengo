@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import numpy as np
 from IPython.display import HTML
 
@@ -10,7 +8,7 @@ def hide_input():
     Returns a link to toggle the visibility of the input block.
     """
 
-    uuid = np.random.randint(2**31 - 1)
+    uuid = np.random.randint(np.iinfo(np.int32).max)
 
     script = """
         <a id="%(uuid)s" href="javascript:toggle_input_%(uuid)s()"

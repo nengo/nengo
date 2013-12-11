@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class Uniform(object):
+
     def __init__(self, low, high):
         self.low = low
         self.high = high
@@ -22,6 +23,7 @@ class Uniform(object):
 
 
 class Gaussian(object):
+
     def __init__(self, mean, std):
         self.mean = mean
         self.std = std
@@ -88,7 +90,7 @@ class Ensemble(object):
         # objects created at build time
         self._scaled_encoders = None  # encoders * neuron-gains / radius
 
-        #add self to current context
+        # add self to current context
         nengo.context.add_to_current(self)
 
     def __str__(self):
@@ -145,9 +147,9 @@ class Ensemble(object):
 
         return self.neurons.rates(
             np.dot(eval_points, self._scaled_encoders.T))
-            #note: this assumes that self.encoders has already been
-            #processed in the build function (i.e., had the radius
-            #and gain mixed in)
+            # note: this assumes that self.encoders has already been
+            # processed in the build function (i.e., had the radius
+            # and gain mixed in)
 
     def probe(self, probe):
         """Probe a signal in this ensemble.
@@ -222,7 +224,7 @@ class Node(object):
         # Set up probes
         self.probes = {'output': []}
 
-        #add self to current context
+        # add self to current context
         nengo.context.add_to_current(self)
 
     def __str__(self):
@@ -275,6 +277,7 @@ class Connection(object):
         description
 
     """
+
     def __init__(self, pre, post,
                  filter=0.005, transform=1.0, modulatory=False, **kwargs):
         self.pre = pre
@@ -293,9 +296,9 @@ class Connection(object):
 
         if len(kwargs) > 0:
             raise TypeError("__init__() got an unexpected keyword argument '"
-                            + kwargs.keys()[0] + "'")
+                            + next(iter(kwargs)) + "'")
 
-        #add self to current context
+        # add self to current context
         nengo.context.add_to_current(self)
 
     def __str__(self):
@@ -392,7 +395,9 @@ class Probe(object):
     ----------
     sample_rate
     """
-    def __init__(self, target, attr, sample_every=0.001, filter=None, dimensions=None):
+
+    def __init__(self, target, attr,
+                 sample_every=0.001, filter=None, dimensions=None):
         self.target = target
         self.attr = attr
         self.label = "Probe(" + target.label + "." + attr + ")"
@@ -402,7 +407,7 @@ class Probe(object):
 
         target.probe(self)
 
-        #add self to current context
+        # add self to current context
         nengo.context.add_to_current(self)
 
     @property
@@ -415,12 +420,13 @@ class Probe(object):
 
 
 class Network(object):
+
     def __init__(self, *args, **kwargs):
         self.label = kwargs.pop("label", "Network")
         self.objects = []
         self.make(*args, **kwargs)
 
-        #add self to current context
+        # add self to current context
         nengo.context.add_to_current(self)
 
     def add(self, obj):
