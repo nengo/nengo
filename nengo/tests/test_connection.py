@@ -27,7 +27,7 @@ class TestConnection(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.run(5.0)
-        t = sim.time()
+        t = sim.trange()
         ideal = np.sin(t)
         ideal[t >= 2.5] = 0
 
@@ -62,7 +62,7 @@ class TestConnection(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.run(5.0)
-        t = sim.time()
+        t = sim.trange()
         ideal = np.sin(t)
         ideal[t >= 2.5] = 0
 
@@ -97,7 +97,7 @@ class TestConnection(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.run(5.0)
-        t = sim.time()
+        t = sim.trange()
 
         with Plotter(self.Simulator) as plt:
             plt.plot(t, sim.data(a_p), label='A')
@@ -121,7 +121,7 @@ class TestConnection(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.run(0.6)
-        t = sim.time()
+        t = sim.trange()
 
         with Plotter(self.Simulator) as plt:
             ax = plt.subplot(111)
@@ -154,7 +154,7 @@ class TestConnection(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.run(5.0)
-        t = sim.time()
+        t = sim.trange()
 
         with Plotter(self.Simulator) as plt:
             plt.plot(t, sim.data(inp_p), label='Input')

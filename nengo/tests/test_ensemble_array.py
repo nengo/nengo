@@ -66,7 +66,7 @@ class TestEnsembleArray(SimulatorTestCase):
         sim = self.Simulator(model)
         sim.run(1.0)
 
-        t = sim.time()
+        t = sim.trange()
         with Plotter(self.Simulator) as plt:
             def plot(sim, a, p, title=""):
                 a_ref = np.tile(a, (len(t), 1))
@@ -162,7 +162,7 @@ class TestEnsembleArray(SimulatorTestCase):
         sim.run(1)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.time(dt=0.01)
+            t = sim.trange(dt=0.01)
             plt.plot(t, sim.data(D_p))
             for d in np.dot(Amat, Bmat).flatten():
                 plt.axhline(d, color='k')

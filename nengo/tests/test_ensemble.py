@@ -75,7 +75,7 @@ class TestEnsemble(SimulatorTestCase):
         sim.run(1.0)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.time()
+            t = sim.trange()
             plt.plot(t, sim.data(in_p), label='Input')
             plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.1')
             plt.legend(loc=0)
@@ -105,7 +105,7 @@ class TestEnsemble(SimulatorTestCase):
         sim.run(1.0)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.time()
+            t = sim.trange()
             plt.plot(t, sim.data(in_p), label='Input')
             plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.1')
             plt.legend(loc=0, prop={'size': 10})
@@ -134,7 +134,7 @@ class TestEnsemble(SimulatorTestCase):
         sim.run(5.0)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.time()
+            t = sim.trange()
             plt.plot(t, sim.data(in_p), label='Input')
             plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.02')
             plt.legend(loc=0)
@@ -165,7 +165,7 @@ class TestEnsemble(SimulatorTestCase):
         sim.run(5)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.time()
+            t = sim.trange()
             plt.plot(t, sim.data(in_p), label='Input')
             plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.02')
             plt.legend(loc='best', prop={'size': 10})
@@ -208,7 +208,7 @@ class TestEnsemble(SimulatorTestCase):
         sim.run(6)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.time(dt=.01)
+            t = sim.trange(dt=.01)
             plt.subplot(211)
             plt.plot(t, sim.data(factors_p))
             plt.plot(t, np.sin(np.arange(0, 6, .01)))

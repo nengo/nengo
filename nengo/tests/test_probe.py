@@ -30,7 +30,7 @@ class TestProbe(SimulatorTestCase):
         t_sum = 0
         for ti in t_stops:
             sim.run(ti)
-            sim_t = sim.time()
+            sim_t = sim.trange()
             t = dt * np.arange(len(sim_t))
             self.assertTrue(np.allclose(sim_t, t, rtol=rtol))
             # assert_allclose(self, logger, sim_t, t, rtol=rtol)

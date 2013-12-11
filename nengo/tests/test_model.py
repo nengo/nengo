@@ -98,7 +98,7 @@ class TestModel(SimulatorTestCase):
         m = nengo.Model('test_counters', seed=123)
         sim = self.Simulator(m, dt=0.001)
         sim.run(0.003)
-        self.assertTrue(np.allclose(sim.time(), [0.00, .001, .002]))
+        self.assertTrue(np.allclose(sim.trange(), [0.00, .001, .002]))
 
 
 if __name__ == "__main__":
