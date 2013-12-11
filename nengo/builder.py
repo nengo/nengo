@@ -853,6 +853,12 @@ class Builder(object):
                 obj.input_signal = sig
                 self.model.operators.append(Reset(sig))
 
+        # -- if there is just one input_signal, then
+        #    allow anonymous connections to this node
+        if node.inputs and len(node.inputs) == 1:
+            # -- re-use obj variable from loop above
+            node.input_signal = obj.input_signal
+
         # Provide output
         if node.output is None:
             node.output_signal = None
