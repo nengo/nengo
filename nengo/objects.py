@@ -214,11 +214,10 @@ class Node(object):
         The number of input dimensions.
     """
 
-    def __init__(self, output=None, dimensions=1, label="Node"):
+    def __init__(self, output=None, dimensions=0, label="Node"):
         self.output = output
         self.label = label
         self.dimensions = dimensions
-        self.has_input = False
 
         # Set up probes
         self.probes = {'output': []}
@@ -298,11 +297,6 @@ class Connection(object):
 
         #add self to current context
         nengo.context.add_to_current(self)
-        if hasattr(post, 'has_input'):
-            #TODO: this is just used to detect whether the node
-            #needs time as input; remove this once we have
-            #a better way of indicating that
-            post.has_input = True
 
     def __str__(self):
         return self.label + " (" + self.__class__.__name__ + ")"

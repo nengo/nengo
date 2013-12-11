@@ -27,7 +27,7 @@ class TestConnection(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.run(5.0)
-        t = sim.data(m.t_probe)
+        t = sim.trange()
         ideal = np.sin(t)
         ideal[t >= 2.5] = 0
 
@@ -62,7 +62,7 @@ class TestConnection(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.run(5.0)
-        t = sim.data(m.t_probe)
+        t = sim.trange()
         ideal = np.sin(t)
         ideal[t >= 2.5] = 0
 
@@ -97,7 +97,7 @@ class TestConnection(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.run(5.0)
-        t = sim.data(m.t_probe)
+        t = sim.trange()
 
         with Plotter(self.Simulator) as plt:
             plt.plot(t, sim.data(a_p), label='A')
@@ -113,7 +113,7 @@ class TestConnection(SimulatorTestCase):
 
         m = nengo.Model(name, seed=123)
         a = nengo.Ensemble(nengo.LIF(N), dimensions=1)
-        out = nengo.Node(lambda x: x, dimensions=N)
+        out = nengo.Node(lambda t, x: x, dimensions=N)
         nengo.Connection(a.neurons, out, filter=None)
 
         a_spikes = nengo.Probe(a, 'spikes')
@@ -121,7 +121,7 @@ class TestConnection(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.run(0.6)
-        t = sim.data(m.t_probe)
+        t = sim.trange()
 
         with Plotter(self.Simulator) as plt:
             ax = plt.subplot(111)
@@ -154,7 +154,7 @@ class TestConnection(SimulatorTestCase):
 
         sim = self.Simulator(m)
         sim.run(5.0)
-        t = sim.data(m.t_probe)
+        t = sim.trange()
 
         with Plotter(self.Simulator) as plt:
             plt.plot(t, sim.data(inp_p), label='Input')

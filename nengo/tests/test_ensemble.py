@@ -75,7 +75,7 @@ class TestEnsemble(SimulatorTestCase):
         sim.run(1.0)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.data(m.t_probe)
+            t = sim.trange()
             plt.plot(t, sim.data(in_p), label='Input')
             plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.1')
             plt.legend(loc=0)
@@ -105,7 +105,7 @@ class TestEnsemble(SimulatorTestCase):
         sim.run(1.0)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.data(m.t_probe)
+            t = sim.trange()
             plt.plot(t, sim.data(in_p), label='Input')
             plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.1')
             plt.legend(loc=0, prop={'size': 10})
@@ -134,7 +134,7 @@ class TestEnsemble(SimulatorTestCase):
         sim.run(5.0)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.data(m.t_probe)
+            t = sim.trange()
             plt.plot(t, sim.data(in_p), label='Input')
             plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.02')
             plt.legend(loc=0)
@@ -165,7 +165,7 @@ class TestEnsemble(SimulatorTestCase):
         sim.run(5)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.data(m.t_probe)
+            t = sim.trange()
             plt.plot(t, sim.data(in_p), label='Input')
             plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.02')
             plt.legend(loc='best', prop={'size': 10})
@@ -208,14 +208,15 @@ class TestEnsemble(SimulatorTestCase):
         sim.run(6)
 
         with Plotter(self.Simulator) as plt:
+            t = sim.trange(dt=.01)
             plt.subplot(211)
-            plt.plot(sim.data(factors_p))
-            plt.plot(np.sin(np.arange(0, 6, .01)))
-            plt.plot(sim.data(sin_p))
+            plt.plot(t, sim.data(factors_p))
+            plt.plot(t, np.sin(np.arange(0, 6, .01)))
+            plt.plot(t, sim.data(sin_p))
             plt.subplot(212)
-            plt.plot(sim.data(product_p))
+            plt.plot(t, sim.data(product_p))
             #plt.plot(sim.data(conn))
-            plt.plot(-.5 * np.sin(np.arange(0, 6, .01)))
+            plt.plot(t, -.5 * np.sin(np.arange(0, 6, .01)))
             plt.savefig('test_ensemble.%s.test_prod.pdf' % nl.__name__)
             plt.close()
 

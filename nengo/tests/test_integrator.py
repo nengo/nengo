@@ -1,6 +1,7 @@
 import logging
 
 import nengo
+import nengo.helpers
 from nengo.tests.helpers import Plotter, rmse, SimulatorTestCase, unittest
 
 
@@ -31,7 +32,7 @@ class TestIntegrator(SimulatorTestCase):
         sim.run(6.0)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.data(model.t_probe)
+            t = sim.trange()
             plt.plot(t, sim.data(A_p), label='Manual')
             plt.plot(t, sim.data(T_p), label='Template')
             plt.plot(t, sim.data(input_p), 'k', label='Input')

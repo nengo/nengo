@@ -94,16 +94,11 @@ class TestModelBuild(unittest.TestCase):
 
 class TestModel(SimulatorTestCase):
 
-    def test_counters(self):
+    def test_time(self):
         m = nengo.Model('test_counters', seed=123)
-        with m:
-            p = nengo.Probe(m.steps, 'output')
-
         sim = self.Simulator(m, dt=0.001)
         sim.run(0.003)
-        self.assertTrue(np.allclose(sim.data(m.t_probe).flatten(),
-                                    [0.00, .001, .002]))
-        self.assertTrue(np.allclose(sim.data(p).flatten(), [0, 1, 2]))
+        self.assertTrue(np.allclose(sim.trange(), [0.00, .001, .002]))
 
 
 if __name__ == "__main__":

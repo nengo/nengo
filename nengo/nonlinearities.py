@@ -14,9 +14,15 @@ class PythonFunction(object):
             label = "<Direct%d>" % id(self)
         self.label = label
         self.n_in = n_in
-        if n_out is None:
-            self.n_out = np.asarray(fn(np.ones(n_in))).size
         self.fn = fn
+        self.n_out = n_out
+
+        if n_out is None:
+            if self.n_args == 1:
+                res = fn(np.asarray(0.0))
+            elif self.n_args == 2:
+                res = fn(np.asarray(0.0), np.zeros(n_in))
+            self.n_out = np.asarray(res).size
 
     def __deepcopy__(self, memo):
         try:
@@ -30,6 +36,10 @@ class PythonFunction(object):
                 else:
                     rval.__dict__[k] = copy.deepcopy(v, memo)
             return rval
+
+    @property
+    def n_args(self):
+        return 2 if self.n_in > 0 else 1
 
 
 class Neurons(object):
