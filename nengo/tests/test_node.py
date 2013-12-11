@@ -41,13 +41,12 @@ class TestNode(SimulatorTestCase):
         dt = 0.001
         m = nengo.Model('test_connected', seed=123)
 
-        with m:
-            input = nengo.Node(output=np.sin, label='input')
-            output = nengo.Node(output=lambda t, x: np.square(x),
-                                label='output')
-            nengo.Connection(input, output, filter=None)  # Direct connection
-            p_in = nengo.Probe(input, 'output')
-            p_out = nengo.Probe(output, 'output')
+        input = nengo.Node(output=np.sin, label='input')
+        output = nengo.Node(output=lambda t, x: np.square(x), dimensions=1,
+                            label='output')
+        nengo.Connection(input, output, filter=None)  # Direct connection
+        p_in = nengo.Probe(input, 'output')
+        p_out = nengo.Probe(output, 'output')
 
         sim = self.Simulator(m, dt=dt)
         runtime = 0.5
@@ -77,19 +76,18 @@ class TestNode(SimulatorTestCase):
         dt = 0.001
         m = nengo.Model("test_passthrough", seed=0)
 
-        with m:
-            in1 = nengo.Node(output=np.sin)
-            in2 = nengo.Node(output=lambda t: t)
-            passthrough = nengo.Node()
-            out = nengo.Node(output=lambda t, x: x)
+        in1 = nengo.Node(output=np.sin)
+        in2 = nengo.Node(output=lambda t: t)
+        passthrough = nengo.Node(dimensions=1)
+        out = nengo.Node(output=lambda t, x: x, dimensions=1)
 
-            nengo.Connection(in1, passthrough, filter=None)
-            nengo.Connection(in2, passthrough, filter=None)
-            nengo.Connection(passthrough, out, filter=None)
+        nengo.Connection(in1, passthrough, filter=None)
+        nengo.Connection(in2, passthrough, filter=None)
+        nengo.Connection(passthrough, out, filter=None)
 
-            in1_p = nengo.Probe(in1, 'output')
-            in2_p = nengo.Probe(in2, 'output')
-            out_p = nengo.Probe(out, 'output')
+        in1_p = nengo.Probe(in1, 'output')
+        in2_p = nengo.Probe(in2, 'output')
+        out_p = nengo.Probe(out, 'output')
 
         sim = self.Simulator(m, dt=dt)
         runtime = 0.5
@@ -116,8 +114,8 @@ class TestNode(SimulatorTestCase):
         m = nengo.Model("test_circular", seed=0)
 
         with m:
-            a = nengo.Node(output=lambda x: x+1)
-            b = nengo.Node(output=lambda x: x+1)
+            a = nengo.Node(output=lambda t, x: x+1, dimensions=1)
+            b = nengo.Node(output=lambda t, x: x+1, dimensions=1)
             nengo.Connection(a, b, filter=None)
             nengo.Connection(b, a, filter=None)
 
