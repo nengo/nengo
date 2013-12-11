@@ -124,10 +124,13 @@ class TestConnection(SimulatorTestCase):
         t = sim.data(m.t_probe)
 
         with Plotter(self.Simulator) as plt:
-            from nengo.matplotlib import rasterplot
             ax = plt.subplot(111)
-            rasterplot(t, sim.data(a_spikes), ax=ax)
-            rasterplot(t, sim.data(out_p), ax=ax)
+            try:
+                from nengo.matplotlib import rasterplot
+                rasterplot(t, sim.data(a_spikes), ax=ax)
+                rasterplot(t, sim.data(out_p), ax=ax)
+            except ImportError:
+                pass
             plt.savefig('test_connection.test_' + name + '.pdf')
             plt.close()
 
