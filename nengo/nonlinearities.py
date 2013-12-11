@@ -1,5 +1,4 @@
 import copy
-import inspect
 import logging
 
 import numpy as np
@@ -42,19 +41,7 @@ class PythonFunction(object):
 
     @property
     def n_args(self):
-        if isinstance(self.fn, np.ufunc) and self.fn.nin == 1:
-            return 1
-
-        argspec = inspect.getargspec(self.fn)
-        if len(argspec.args) == 0 and argspec.varags is None:
-            return 0
-        elif len(argspec.args) == 1 and argspec.varargs is None:
-            return 1
-        elif len(argspec.args) > 1 or argspec.varargs is not None:
-            return 2
-        assert False, ("PythonFunction.n_args case not handled, "
-                       "please file a Github issue.")
-
+        return 2 if self.n_in > 0 else 1
 
 
 class Neurons(object):
