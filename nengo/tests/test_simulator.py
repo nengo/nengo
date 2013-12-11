@@ -236,7 +236,7 @@ class TestNonlinear(unittest.TestCase):
 
         rng = np.random.RandomState(seed=987)
 
-        for i in xrange(n_trials):
+        for i in range(n_trials):
             A = rng.normal(size=(d, d))
             fn = lambda t, x: np.cos(np.dot(A, x))
 
@@ -259,7 +259,7 @@ class TestNonlinear(unittest.TestCase):
 
             p0 = np.zeros(d)
             s0 = np.array(x)
-            for j in xrange(n_steps):
+            for j in range(n_steps):
                 tmp = p0
                 p0 = fn(0, s0)
                 s0 = tmp
@@ -274,7 +274,7 @@ class TestNonlinear(unittest.TestCase):
 
         dt = 0.001
         d = 1
-        n = 5e3
+        n = 5000
 
         m = nengo.Model("")
         ins = Signal(0.5 * np.ones(d), name='ins')
@@ -291,7 +291,7 @@ class TestNonlinear(unittest.TestCase):
 
         t_final = 1.0
         spikes = np.zeros(n)
-        for i in xrange(int(np.round(t_final / dt))):
+        for i in range(int(np.round(t_final / dt))):
             sim.step()
             spikes += sim.signals[lif.output_signal]
 

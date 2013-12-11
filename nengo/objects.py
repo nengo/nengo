@@ -293,7 +293,7 @@ class Connection(object):
 
         if len(kwargs) > 0:
             raise TypeError("__init__() got an unexpected keyword argument '"
-                            + kwargs.keys()[0] + "'")
+                            + next(iter(kwargs)) + "'")
 
         #add self to current context
         nengo.context.add_to_current(self)

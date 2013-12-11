@@ -18,7 +18,7 @@ class TestModelBuild(unittest.TestCase):
             B_p = nengo.Probe(B, 'decoded_output', filter=0.01)
 
         mcopy = nengo.Simulator(m, dt=0.001).model
-        self.assertItemsEqual(
+        self.assertListEqual(
             [o.label for o in m.objs], [o.label for o in mcopy.objs])
 
         def compare_objs(orig, copy, attrs):
@@ -73,8 +73,8 @@ class TestModelBuild(unittest.TestCase):
                          if equal else
                          np.any(getattr(obj1, attr) != getattr(obj2, attr)))
                 if not check:
-                    print getattr(obj1, attr)
-                    print getattr(obj2, attr)
+                    print(getattr(obj1, attr))
+                    print(getattr(obj2, attr))
                 self.assertTrue(check)
 
         ens_attrs = ('encoders', 'max_rates', 'intercepts')

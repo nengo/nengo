@@ -94,7 +94,7 @@ class TestCircularConv(SimulatorTestCase):
                 a_ref = np.tile(a, (len(t), 1))
                 a_sim = sim.data(A_p)
                 colors = ['b', 'g', 'r', 'c', 'm', 'y']
-                for i in xrange(min(dims, len(colors))):
+                for i in range(min(dims, len(colors))):
                     plt.plot(t, a_ref[:, i], '--', color=colors[i])
                     plt.plot(t, a_sim[:, i], '-', color=colors[i])
                     plt.title(title)
