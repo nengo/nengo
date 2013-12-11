@@ -214,7 +214,7 @@ class Node(object):
         The number of input dimensions.
     """
 
-    def __init__(self, output=None, dimensions=1, label="Node"):
+    def __init__(self, output=None, dimensions=0, label="Node"):
         self.output = output
         self.label = label
         self.dimensions = dimensions
