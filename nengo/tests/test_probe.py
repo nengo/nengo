@@ -48,7 +48,7 @@ class TestProbe(SimulatorTestCase):
         # dts = 0.001 * np.hstack([2, rng.randint(low=1, high=100, size=n-1)])
 
         def input_fn(t):
-            return range(1, 10)
+            return list(range(1, 10))
 
         model = nengo.Model('test_probe_dts', seed=2891)
         with model:
@@ -72,7 +72,7 @@ class TestProbe(SimulatorTestCase):
 
         for i, p in enumerate(probes):
             t = dt * np.arange(int(np.ceil(simtime / dts[i])))
-            x = np.asarray(map(input_fn, t))
+            x = np.asarray(list(map(input_fn, t)))
             y = sim.data(p)
             self.assertTrue(len(x) == len(y))
             self.assertTrue(np.allclose(y[1:], x[:-1]))  # 1-step delay
@@ -85,7 +85,7 @@ class TestProbe(SimulatorTestCase):
         # rng = np.random.RandomState(48392)
         # input_val = rng.normal(size=100).tolist()
         def input_fn(t):
-            return range(1, 10)
+            return list(range(1, 10))
             # return input_val
             # return [np.sin(t), np.cos(t)]
 
@@ -93,7 +93,7 @@ class TestProbe(SimulatorTestCase):
 
         with model:
             probes = []
-            for i in xrange(n):
+            for i in range(n):
                 xi = nengo.Node(label='x%d' % i, output=input_fn)
                 probes.append(nengo.Probe(xi, 'output'))
                 # Ai = m.make_ensemble('A%d' % i, nengo.LIF(n_neurons), 1)
@@ -112,7 +112,7 @@ class TestProbe(SimulatorTestCase):
             % locals())
 
         t = dt * np.arange(int(np.round(simtime / dt)))
-        x = np.asarray(map(input_fn, t))
+        x = np.asarray(list(map(input_fn, t)))
         for p in probes:
             y = sim.data(p)
             self.assertTrue(np.allclose(y[1:], x[:-1]))  # 1-step delay

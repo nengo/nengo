@@ -147,7 +147,7 @@ class Model(object):
         try:
             obj.add_to_model(self)
             return obj
-        except AttributeError, ae:
+        except AttributeError as ae:
             raise TypeError("Error in %s.add_to_model.\n%s" % (obj, ae))
 
     def remove(self, target):
