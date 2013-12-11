@@ -35,7 +35,7 @@ class TestOscillator(SimulatorTestCase):
         sim.run(3.0)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.time()
+            t = sim.trange()
             plt.plot(t, sim.data(A_probe), label='Manual')
             plt.plot(t, sim.data(T_probe), label='Template')
             plt.plot(t, sim.data(in_probe), 'k', label='Input')

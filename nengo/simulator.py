@@ -263,7 +263,7 @@ class Simulator(object):
                 logger.debug("Step %d", i)
             self.step()
 
-    def time(self, dt=None):
+    def trange(self, dt=None):
         dt = self.model.dt if dt is None else dt
         last_t = self._sigdict['__time__'] - self.model.dt
         n_steps = self.n_steps if dt is None else int(

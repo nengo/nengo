@@ -25,12 +25,12 @@ class TestNode(SimulatorTestCase):
         sim.run(runtime)
 
         with Plotter(self.Simulator) as plt:
-            plt.plot(sim.time(), sim.data(p), label='sin')
+            plt.plot(sim.trange(), sim.data(p), label='sin')
             plt.legend(loc='best')
             plt.savefig('test_node.test_simple.pdf')
             plt.close()
 
-        sim_t = sim.time()
+        sim_t = sim.trange()
         sim_in = sim.data(p).ravel()
         t = dt * np.arange(len(sim_t))
         self.assertTrue(np.allclose(sim_t, t))
@@ -53,7 +53,7 @@ class TestNode(SimulatorTestCase):
         sim.run(runtime)
 
         with Plotter(self.Simulator) as plt:
-            t = sim.time()
+            t = sim.trange()
             plt.plot(t, sim.data(p_in), label='sin')
             plt.plot(t, sim.data(p_out), label='sin squared')
             plt.plot(t, np.sin(t), label='ideal sin')
@@ -62,7 +62,7 @@ class TestNode(SimulatorTestCase):
             plt.savefig('test_node.test_connected.pdf')
             plt.close()
 
-        sim_t = sim.time()
+        sim_t = sim.trange()
         sim_sin = sim.data(p_in).ravel()
         sim_sq = sim.data(p_out).ravel()
         t = dt * np.arange(len(sim_t))
@@ -94,10 +94,10 @@ class TestNode(SimulatorTestCase):
         sim.run(runtime)
 
         with Plotter(self.Simulator) as plt:
-            plt.plot(sim.time(),
+            plt.plot(sim.trange(),
                      sim.data(in1_p)+sim.data(in2_p),
                      label='in+in2')
-            plt.plot(sim.time()[:-2],
+            plt.plot(sim.trange()[:-2],
                      sim.data(out_p)[2:],
                      label='out')
             plt.legend(loc='best')
