@@ -213,13 +213,22 @@ class Node(object):
     name : str
         The name of the object.
     dimensions : int
-        The number of input dimensions.
+        The number of input dimensions. #XXX output?
     """
 
-    def __init__(self, output=None, dimensions=0, label="Node"):
+    def __init__(self, output=None, dimensions=0, label="Node",
+                 named_inputs=None):
         self.output = output
         self.label = label
-        self.dimensions = dimensions
+        self.dimensions = dimensions # -- output dimensions ??
+        self.named_inputs = named_inputs
+        self.initial_output_value = 0.0
+        if named_inputs:
+            for k, v in named_inputs.items():
+                if hasattr(self, k):
+                    raise NameError('already a Node attribute', k)
+                setattr(self, k, v)
+                v.label = k
 
         # Set up probes
         self.probes = {'output': []}
@@ -254,6 +263,8 @@ class Node(object):
         self.probes[probe.attr].append(probe)
         if probe.attr == 'output':
             Connection(self, probe, filter=probe.filter)
+        else:
+            raise NotImplementedError()
         return probe
 
     def add_to_model(self, model):

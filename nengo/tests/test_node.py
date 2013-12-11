@@ -129,6 +129,35 @@ class TestNode(SimulatorTestCase):
         assert_allclose(self, logger, sim.data(a_p), sim.data(b_p))
 
 
+    def test_named_inputs(self):
+        dt = 0.001
+        m = nengo.Model("test_named_inputs", seed=0)
+
+        ys = []
+        zs = []
+        def hello(t, y, z):
+            ys.append(float(y))
+            zs.append(float(z))
+            return 0
+
+        with m:
+            a = nengo.Node(np.sin)  # -- still works
+            b = nengo.Node(output=hello,
+                           inputs={
+                               'y': nengo.Vector(dimensions=1),
+                               'z': nengo.Vector(dimensions=1),
+                           }
+                          )
+            nengo.Connection(a, b.y, filter=None)
+            nengo.Connection(a, b.z, filter=None)
+
+        sim = self.Simulator(m, dt=dt)
+        sim.run(0.01)
+        assert all(y == z for y, z in zip(ys, zs))
+        assert np.allclose(ys[9], 0.009, rtol=1e-4)
+
+
+
 if __name__ == "__main__":
     nengo.log(debug=True, path='log.txt')
     unittest.main()
