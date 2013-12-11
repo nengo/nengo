@@ -19,7 +19,7 @@ class TestBasalGanglia(SimulatorTestCase):
 
         output = np.mean(sim.data(p)[50:], axis=0)
 
-        self.assertGreater(output[0], -0.1)
+        self.assertGreater(output[0], -0.15)
         self.assertLess(output[1], -0.8)
         self.assertLess(output[2], -0.8)
         self.assertLess(output[3], -0.8)
