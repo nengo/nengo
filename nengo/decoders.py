@@ -40,8 +40,8 @@ def sample_hypersphere(dimensions, n_samples, rng, surface=False):
 DEFAULT_RCOND = 0.01
 
 
-def least_squares(activities, targets):
-    noise = np.random.randn(*activities.shape) * activities.max() * 0.1
+def least_squares(activities, targets, rng, noise_amp=0.01):
+    noise = rng.randn(*activities.shape) * activities.max() * noise_amp
     activities += noise
     weights, res, rank, s = np.linalg.lstsq(activities, targets,
                                             rcond=DEFAULT_RCOND)
