@@ -1,4 +1,3 @@
-
 import collections
 import copy
 
@@ -131,7 +130,7 @@ def weights(pre_neurons, post_neurons, function):
                  for post in range(post_neurons)]]
 
 
-### Helper functions for creating inputs
+# Helper functions for creating inputs
 
 def piecewise(data):
     """Create a piecewise constant function from a dictionary.
@@ -230,7 +229,7 @@ def piecewise(data):
         ordered_data.append(row)
 
     # set the value to zero for t befoer the first given time
-    initial_value = [0]*output_length
+    initial_value = [0] * output_length
 
     # build the function to return
     def piecewise_function(t, data=ordered_data, start=initial_value):
@@ -325,12 +324,12 @@ def sorted_neurons(ensemble, iterations=100, seed=None):
             count += 1
         return sim / count
 
-    #Normalize all the neurons
+    # Normalize all the neurons
     encoders = np.array(ensemble.encoders)
     for i in np.arange(encoders.shape[0]):
         encoders[i, :] = encoders[i, :] / np.linalg.norm(encoders[i, :])
 
-    #Make an array with the starting order of the neurons
+    # Make an array with the starting order of the neurons
     N = encoders.shape[0]
     indices = np.arange(N)
     rng = np.random.RandomState(seed)
@@ -401,13 +400,14 @@ def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
     N = int(float(high) / step)  # number of samples
     frequencies = np.arange(1, N + 1) * step * 2 * np.pi  # frequency of each
     amplitude = rng.uniform(0, 1, N)  # amplitude for each sample
-    phase = rng.uniform(0, 2*np.pi, N)  # phase of each sample
+    phase = rng.uniform(0, 2 * np.pi, N)  # phase of each sample
 
-    rawRMS = np.sqrt(np.sum(amplitude**2)/2)  # compute the rms of the signal
+    # compute the rms of the signal
+    rawRMS = np.sqrt(np.sum(amplitude ** 2) / 2)
     amplitude = amplitude * rms / rawRMS  # rescale
 
     # create a function that computes the bases and weights them by amplitude
     def white_noise_function(t, f=frequencies, a=amplitude, p=phase):
-        return np.dot(a, np.sin((f*t)+p))
+        return np.dot(a, np.sin((f * t) + p))
 
     return white_noise_function
