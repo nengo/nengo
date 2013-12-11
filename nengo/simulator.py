@@ -5,7 +5,7 @@ Reference simulator for nengo models.
 """
 import logging
 import itertools
-from collections import defaultdict
+from collections import defaultdict, deque
 import time
 
 import networkx as nx
@@ -79,7 +79,14 @@ class Simulator(object):
                        for node in self._step_order]
 
         self.n_steps = 0
-        self.probe_outputs = dict((probe, []) for probe in self.model.probes)
+
+        #if the maxlen of a probe is set, then we make a deque
+        #that has its length as maxlen, so that it saves the most recent
+        #maxlen values of the probed data
+        self.probe_outputs = dict(
+              ( probe, [] ) if probe.maxlen is None 
+              else ( probe,  deque([], maxlen=probe.maxlen) )
+              for probe in self.model.probes )
 
     def _init_dg(self, verbose=False):
         operators = self.model.operators
@@ -225,8 +232,8 @@ class Simulator(object):
         for probe in self.model.probes:
             period = int(probe.dt / self.model.dt)
             if self.n_steps % period == 0:
-                tmp = self._sigdict[probe.sig].copy()
-                self.probe_outputs[probe].append(tmp)
+                 tmp = self._sigdict[probe.sig].copy()
+                 self.probe_outputs[probe].append(tmp)
 
         self.n_steps += 1
 
