@@ -734,7 +734,6 @@ class Builder(object):
         if ens.seed is None:
             ens.seed = self.model._get_new_seed()
         rng = np.random.RandomState(ens.seed)
-        ens._rng = rng
 
         # Generate eval points
         if ens.eval_points is None:
@@ -884,6 +883,8 @@ class Builder(object):
 
     @builds(nengo.Connection)
     def build_connection(self, conn):
+        rng = np.random.RandomState(self.model._get_new_seed())
+
         conn.input_signal = conn.pre.output_signal
         conn.output_signal = conn.post.input_signal
         dt = self.model.dt
@@ -915,8 +916,7 @@ class Builder(object):
                         [conn.function(ep) for ep in conn.eval_points])
                     if targets.ndim < 2:
                         targets.shape = targets.shape[0], 1
-                conn._decoders = conn.decoder_solver(
-                    activities, targets, rng=conn.pre._rng)
+                conn._decoders = conn.decoder_solver(activities, targets, rng)
 
             if conn.filter is not None and conn.filter > dt:
                 o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
