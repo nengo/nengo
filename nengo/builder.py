@@ -611,12 +611,7 @@ class SimPyFunc(Operator):
         output = dct[self.output]
         fn = self.fn
 
-        if self.n_args == 0:
-
-            def step():
-                output[...] = fn()
-
-        elif self.n_args == 1:
+        if self.n_args == 1:
 
             def step():
                 output[...] = fn(t)

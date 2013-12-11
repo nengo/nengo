@@ -18,9 +18,7 @@ class PythonFunction(object):
         self.n_out = n_out
 
         if n_out is None:
-            if self.n_args == 0:
-                res = fn()
-            elif self.n_args == 1:
+            if self.n_args == 1:
                 res = fn(np.asarray(0.0))
             elif self.n_args == 2:
                 res = fn(np.asarray(0.0), np.zeros(n_in))
