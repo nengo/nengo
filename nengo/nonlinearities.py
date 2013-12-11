@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class PythonFunction(object):
+
     def __init__(self, fn, n_in, n_out=None, label=None):
         if label is None:
             label = "<Direct%d>" % id(self)
@@ -43,6 +44,7 @@ class PythonFunction(object):
 
 
 class Neurons(object):
+
     def __init__(self, n_neurons, bias=None, gain=None, label=None):
         self.n_neurons = n_neurons
         self.bias = bias
@@ -71,6 +73,7 @@ class Neurons(object):
 
 
 class Direct(Neurons):
+
     def __init__(self, n_neurons=None, label=None):
         # n_neurons is ignored, but accepted to maintain compatibility
         # with other neuron types
@@ -92,6 +95,7 @@ class Direct(Neurons):
 
 
 class _LIFBase(Neurons):
+
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, label=None):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
@@ -153,18 +157,20 @@ class _LIFBase(Neurons):
 
 
 class LIFRate(_LIFBase):
+
     def math(self, dt, J):
         """Compute rates for input current (incl. bias)"""
         old = np.seterr(divide='ignore')
         try:
             j = np.maximum(J - 1, 0.)
-            r = dt / (self.tau_ref + self.tau_rc * np.log(1+1./j))
+            r = dt / (self.tau_ref + self.tau_rc * np.log(1 + 1. / j))
         finally:
             np.seterr(**old)
         return r
 
 
 class LIF(_LIFBase):
+
     def __init__(self, n_neurons, upsample=1, **kwargs):
         _LIFBase.__init__(self, n_neurons, **kwargs)
         self.upsample = upsample

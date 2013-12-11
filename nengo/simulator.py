@@ -29,6 +29,7 @@ class SignalDict(dict):
     2. so that a SignalView lookup returns a views of its base
 
     """
+
     def __getitem__(self, obj):
         if obj in self:
             return dict.__getitem__(self, obj)
@@ -129,7 +130,7 @@ class Simulator(object):
 
         # --- assert that any node that is incremented is also set/updated
         for node in incs:
-            assert len(sets[node]+ups[node]) > 0, (node)
+            assert len(sets[node] + ups[node]) > 0, (node)
 
         # -- assert that no two views are both set and aliased
         if len(sets) >= 2:
