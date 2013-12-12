@@ -84,6 +84,7 @@ def test_constant_scalar(Simulator, nl):
     assert np.allclose(sim.data(in_p).ravel(), val, atol=.1, rtol=.01)
     assert np.allclose(sim.data(A_p)[-10:], val, atol=.1, rtol=.01)
 
+
 def test_constant_vector(Simulator, nl):
     """A network that represents a constant 3D vector."""
     N = 30
@@ -109,6 +110,7 @@ def test_constant_vector(Simulator, nl):
 
     assert np.allclose(sim.data(in_p)[-10:], vals, atol=.1, rtol=.01)
     assert np.allclose(sim.data(A_p)[-10:], vals, atol=.1, rtol=.01)
+
 
 def test_scalar(Simulator, nl):
     """A network that represents sin(t)."""
@@ -139,6 +141,7 @@ def test_scalar(Simulator, nl):
     assert rmse(target, sim.data(in_p)) < 0.001
     assert rmse(target, sim.data(A_p)) < 0.1
 
+
 def test_vector(Simulator, nl):
     """A network that represents sin(t), cos(t), arctan(t)."""
     N = 40
@@ -167,6 +170,7 @@ def test_vector(Simulator, nl):
     logger.debug("In RMSE: %f", rmse(target, sim.data(in_p)))
     assert rmse(target, sim.data(in_p)) < 0.01
     assert rmse(target, sim.data(A_p)) < 0.1
+
 
 def test_product(Simulator, nl):
     N = 80

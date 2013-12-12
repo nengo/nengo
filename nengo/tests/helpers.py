@@ -51,7 +51,7 @@ class Plotter(object):
     def savefig(self, fname, **kwargs):
         if self.plot:
             if self.nl is not None:
-                fname = self.nl.__name__  + '.' + fname
+                fname = self.nl.__name__ + '.' + fname
             return self.oldsavefig(os.path.join(self.dirname, fname), **kwargs)
 
 

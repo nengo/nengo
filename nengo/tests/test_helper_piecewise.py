@@ -16,6 +16,7 @@ def test_basic():
     assert f(1.5) == [0]
     assert f(100) == [0]
 
+
 def test_lists():
     f = piecewise({0.5: [1, 0], 1.0: [0, 1]})
     assert f(-10) == [0, 0]
@@ -27,17 +28,21 @@ def test_lists():
     assert f(1.5) == [0, 1]
     assert f(100) == [0, 1]
 
+
 def test_invalid_key():
     with pytest.raises(TypeError):
         f = piecewise({0.5: 1, 1: 0, 'a': 0.2})
+
 
 def test_invalid_length():
     with pytest.raises(Exception):
         f = piecewise({0.5: [1, 0], 1.0: [1, 0, 0]})
 
+
 def test_invalid_function_length():
     with pytest.raises(Exception):
         f = piecewise({0.5: 0, 1.0: lambda t: [t, t ** 2]})
+
 
 def test_function():
     f = piecewise({0: np.sin, 0.5: np.cos})
@@ -47,6 +52,7 @@ def test_function():
     assert f(0.5) == [np.cos(0.5)]
     assert f(0.75) == [np.cos(0.75)]
     assert f(1.0) == [np.cos(1.0)]
+
 
 def test_function_list():
 
