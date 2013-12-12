@@ -34,8 +34,7 @@ class TestNode(SimulatorTestCase):
         sim_in = sim.data(p).ravel()
         t = dt * np.arange(len(sim_t))
         self.assertTrue(np.allclose(sim_t, t))
-        # 1-step delay
-        self.assertTrue(np.allclose(sim_in[1:], np.sin(t[:-1])))
+        self.assertTrue(np.allclose(sim_in, np.sin(t)))
 
     def test_connected(self):
         dt = 0.001
@@ -68,8 +67,8 @@ class TestNode(SimulatorTestCase):
         t = dt * np.arange(len(sim_t))
 
         self.assertTrue(np.allclose(sim_t, t))
-        # 1-step delay
-        self.assertTrue(np.allclose(sim_sin[1:], np.sin(t[:-1])))
+        self.assertTrue(np.allclose(sim_sin, np.sin(t)))
+        # -- still one-step delay
         self.assertTrue(np.allclose(sim_sq[1:], sim_sin[:-1] ** 2))
 
     def test_passthrough(self):
@@ -143,7 +142,7 @@ class TestNode(SimulatorTestCase):
         with m:
             a = nengo.Node(np.sin)  # -- still works
             b = nengo.Node(output=hello,
-                           inputs={
+                           named_inputs={
                                'y': nengo.Vector(dimensions=1),
                                'z': nengo.Vector(dimensions=1),
                            }
@@ -154,7 +153,7 @@ class TestNode(SimulatorTestCase):
         sim = self.Simulator(m, dt=dt)
         sim.run(0.01)
         assert all(y == z for y, z in zip(ys, zs))
-        assert np.allclose(ys[9], 0.009, rtol=1e-4)
+        assert np.allclose(ys[10], 0.009, rtol=1e-4)
 
 
 

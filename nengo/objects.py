@@ -213,16 +213,19 @@ class Node(object):
     name : str
         The name of the object.
     dimensions : int
-        The number of input dimensions. #XXX output?
+        The number of input dimensions.
     """
 
     def __init__(self, output=None, dimensions=0, label="Node",
+                 output_dimensions=None,
+                 initial_output_value=0.0,
                  named_inputs=None):
         self.output = output
         self.label = label
-        self.dimensions = dimensions # -- output dimensions ??
+        self.dimensions = dimensions
         self.named_inputs = named_inputs
-        self.initial_output_value = 0.0
+        self.output_dimensions = output_dimensions
+        self.initial_output_value = initial_output_value
         if named_inputs:
             for k, v in named_inputs.items():
                 if hasattr(self, k):
