@@ -50,9 +50,10 @@ class CircularConvolution(nengo.Network):
             self.output = nengo.Node(dimensions=dimensions)
 
             for ens in self.ensemble.ensembles:
-                ens.encoders = np.tile(
-                    [[1, 1], [-1, 1], [1, -1], [-1, -1]],
-                    (ens.n_neurons // 4, 1))
+                if not isinstance(neurons, nengo.Direct):
+                    ens.encoders = np.tile(
+                        [[1, 1], [-1, 1], [1, -1], [-1, -1]],
+                        (ens.n_neurons // 4, 1))
             nengo.Connection(
                 self.A, self.ensemble.input, transform=self.transformA)
             nengo.Connection(

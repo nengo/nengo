@@ -842,10 +842,11 @@ class Builder(object):
         else:
             ens._scaled_encoders = ens.encoders * (
                 ens.neurons.gain / ens.radius)[:, np.newaxis]
-        self.model.operators.append(DotInc(Signal(ens._scaled_encoders),
-                                           ens.input_signal,
-                                           ens.neurons.input_signal,
-                                           tag=ens.label + '.encoder'))
+        self.model.operators.append(DotInc(
+            Signal(ens._scaled_encoders, name=ens.label + ".scaled_encoders"),
+            ens.input_signal,
+            ens.neurons.input_signal,
+            tag=ens.label + ' encoding'))
 
         # Output is neural output
         ens.output_signal = ens.neurons.output_signal
@@ -888,10 +889,9 @@ class Builder(object):
             if node.dimensions:
                 self.model.operators.append(DotInc(
                     node.input_signal,
-                    Signal(1.0),
+                    Signal(1.0, name="1"),
                     node.pyfn.input_signal,
-                    tag=node.label + '.unclear'
-                    ))
+                    tag=node.label + " input"))
             node.output_signal = node.pyfn.output_signal
 
         # Set up probes
@@ -922,7 +922,11 @@ class Builder(object):
         filtered = Signal(np.zeros(signal.size), name=name)
         o_coef, n_coef = self.filter_coefs(pstc=filter, dt=self.model.dt)
         self.model.operators.append(ProdUpdate(
-            Signal(n_coef), signal, Signal(o_coef), filtered))
+            Signal(n_coef, name="n_coef"),
+            signal,
+            Signal(o_coef, name="o_coef"),
+            filtered,
+            tag=name + " filtering"))
         return filtered
 
     def _direct_pyfunc(self, input_signal, function, label):
@@ -930,7 +934,10 @@ class Builder(object):
             fn=function, n_in=input_signal.size, label=label)
         self.build_pyfunc(pyfunc)
         self.model.operators.append(DotInc(
-            input_signal, Signal(1.0), pyfunc.input_signal))
+            input_signal,
+            Signal(1.0, name="1"),
+            pyfunc.input_signal,
+            tag=label + " input"))
         return pyfunc
 
     @builds(nengo.Connection)
@@ -972,14 +979,19 @@ class Builder(object):
 
             if conn.filter is not None and conn.filter > dt:
                 o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
-                conn.decoder_signal = Signal(conn._decoders * n_coef)
+                conn.decoder_signal = Signal(
+                    conn._decoders * n_coef,
+                    name=conn.label + ".decoders * n_coef")
             else:
-                conn.decoder_signal = Signal(conn._decoders)
+                conn.decoder_signal = Signal(conn._decoders,
+                                             name=conn.label + '.decoders')
                 o_coef = 0
-            self.model.operators.append(ProdUpdate(conn.decoder_signal,
-                                                   conn.input_signal,
-                                                   Signal(o_coef),
-                                                   conn.signal))
+            self.model.operators.append(ProdUpdate(
+                conn.decoder_signal,
+                conn.input_signal,
+                Signal(o_coef, name="o_coef"),
+                conn.signal,
+                tag=conn.label + " filtering"))
         elif conn.filter is not None and conn.filter > self.model.dt:
             # 4. Filtered connection
             conn.signal = self._filtered_signal(conn.input_signal, conn.filter)
@@ -996,9 +1008,10 @@ class Builder(object):
             conn.output_signal = Signal(np.zeros(conn.output_signal.size),
                                         name=conn.label + ".mod_output")
         self.model.operators.append(
-            DotInc(
-                Signal(conn.transform), conn.signal, conn.output_signal,
-                tag=str(conn)))
+            DotInc(Signal(conn.transform, name=conn.label + ".transform"),
+                   conn.signal,
+                   conn.output_signal,
+                   tag=conn.label))
 
         # Set up probes
         for probe in conn.probes['signal']:
@@ -1055,8 +1068,10 @@ class Builder(object):
             raise ValueError(
                 'Number of neurons (%d) must be non-negative' % lif.n_neurons)
         self.build_neurons(lif)
-        lif.voltage = Signal(np.zeros(lif.n_neurons))
-        lif.refractory_time = Signal(np.zeros(lif.n_neurons))
+        lif.voltage = Signal(np.zeros(lif.n_neurons),
+                             name=lif.label + ".voltage")
+        lif.refractory_time = Signal(np.zeros(lif.n_neurons),
+                                     name=lif.label + ".refractory_time")
         self.model.operators.append(
             SimLIF(output=lif.output_signal,
                    J=lif.input_signal,
