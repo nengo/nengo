@@ -6,7 +6,6 @@ import pytest
 
 import nengo
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -34,6 +33,7 @@ def test_multirun(Simulator):
 
         t_sum += ti
         assert np.allclose(sim_t[-1], t_sum - dt, rtol=rtol)
+
 
 def test_dts(Simulator):
     """Test probes with different sampling times."""
@@ -73,6 +73,7 @@ def test_dts(Simulator):
         y = sim.data(p)
         assert len(x) == len(y)
         assert np.allclose(y[1:], x[:-1])  # 1-step delay
+
 
 def test_large(Simulator):
     """Test with a lot of big probes. Can also be used for speed."""

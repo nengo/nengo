@@ -55,14 +55,14 @@ class BasalGanglia(nengo.Network):
             self.output = nengo.Node(label="output", dimensions=dimensions)
 
             # spread the input to StrD1, StrD2, and STN
-            nengo.Connection(self.input,
-                strD1.input, filter=None,
+            nengo.Connection(
+                self.input, strD1.input, filter=None,
                 transform=np.eye(dimensions) * self.ws * (1 + self.lg))
-            nengo.Connection(self.input,
-                strD2.input, filter=None,
+            nengo.Connection(
+                self.input, strD2.input, filter=None,
                 transform=np.eye(dimensions) * self.ws * (1 - self.le))
-            nengo.Connection(self.input,
-                stn.input, filter=None,
+            nengo.Connection(
+                self.input, stn.input, filter=None,
                 transform=np.eye(dimensions) * self.wt)
 
             # connect the striatum to the GPi and GPe (inhibitory)

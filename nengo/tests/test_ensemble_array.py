@@ -74,6 +74,7 @@ def test_multidim(Simulator, nl):
     assert np.allclose(b, b_sim, atol=atol, rtol=rtol)
     assert np.allclose(c, c_sim, atol=atol, rtol=rtol)
 
+
 def test_matrix_mul(Simulator, nl):
     N = 100
 
@@ -82,8 +83,10 @@ def test_matrix_mul(Simulator, nl):
     radius = 1
 
     model = nengo.Model('Matrix Multiplication', seed=123)
-    A = nengo.networks.EnsembleArray(nl(N), Amat.size, radius=radius, label="A")
-    B = nengo.networks.EnsembleArray(nl(N), Bmat.size, radius=radius, label="B")
+    A = nengo.networks.EnsembleArray(
+        nl(N), Amat.size, radius=radius, label="A")
+    B = nengo.networks.EnsembleArray(
+        nl(N), Bmat.size, radius=radius, label="B")
 
     inputA = nengo.Node(output=Amat.ravel())
     inputB = nengo.Node(output=Bmat.ravel())
