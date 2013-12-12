@@ -130,8 +130,6 @@ def weights(pre_neurons, post_neurons, function):
                  for post in range(post_neurons)]]
 
 
-# Helper functions for creating inputs
-
 def piecewise(data):
     """Create a piecewise constant function from a dictionary.
 
@@ -356,7 +354,7 @@ def sorted_neurons(ensemble, iterations=100, seed=None):
     return indices
 
 
-def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
+def whitenoise(step, high, rms=0.5, seed=None, dimensions=None):
     """Generate white noise inputs
 
     Parameters
@@ -389,13 +387,13 @@ def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
     rng = np.random.RandomState(seed)
 
     if dimensions is not None:
-        signals = [white_noise(
+        signals = [whitenoise(
             step, high, rms=rms, seed=rng.randint(0x7ffffff))
             for i in range(dimensions)]
 
-        def white_noise_function(t, signals=signals):
+        def whitenoise_function(t, signals=signals):
             return [signal(t) for signal in signals]
-        return white_noise_function
+        return whitenoise_function
 
     N = int(float(high) / step)  # number of samples
     frequencies = np.arange(1, N + 1) * step * 2 * np.pi  # frequency of each
@@ -407,7 +405,7 @@ def white_noise(step, high, rms=0.5, seed=None, dimensions=None):
     amplitude = amplitude * rms / rawRMS  # rescale
 
     # create a function that computes the bases and weights them by amplitude
-    def white_noise_function(t, f=frequencies, a=amplitude, p=phase):
+    def whitenoise_function(t, f=frequencies, a=amplitude, p=phase):
         return np.dot(a, np.sin((f * t) + p))
 
-    return white_noise_function
+    return whitenoise_function
