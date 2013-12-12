@@ -66,6 +66,7 @@ class Model(object):
         self.probed = OrderedDict()
         self.connections = []
         self.signal_probes = []
+        self.rules = []
 
         self.label = label + ''  # -- make self.name a string, raise error otw
         self.seed = seed

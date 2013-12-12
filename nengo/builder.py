@@ -21,6 +21,18 @@ up in a model.
 assert_named_signals = False
 
 
+class IVector(object):
+    def __init__(self, dimensions, label=None, ival=0):
+        self.dimensions = dimensions
+        self.label = label
+        self.ival = ival
+
+    def build(self):
+        self.input_signal = Signal(
+            np.asarray(self.ival + np.zeros(self.dimensions)),
+            name=self.label)
+
+
 class ShapeMismatch(ValueError):
     pass
 
@@ -653,14 +665,14 @@ class SimPES(Operator):
         self.activities = activities
         self.learning_rate = learning_rate
 
-        self.read = [error, activities]
+        self.reads = [error, activities, learning_rate]
         self.updates = [output]
 
     def make_step(self, dct, dt):
         output = dct[self.output]
         error = dct[self.error]
         activities = dct[self.activities]
-        learning_rate = self.learning_rate
+        learning_rate = dct[self.learning_rate]
         def step():
             output[...] += np.outer((learning_rate * dt) * error, activities)
         return step
@@ -744,17 +756,13 @@ class Builder(object):
         # 3. Then connections
         # (Learning rules are collected from connection objects.)
         logger.info("Building connections")
-        learning_rules = []
         for c in self.model.connections:
             self._builders[c.__class__](c)
-            if c.learning_rule is not None:
-                learning_rules.append(c.learning_rule)
 
         # 4. Finally, learning rules
         logger.info("Building learning rules")
-        for l in learning_rules:
-            self._builders[l.__class__](l)
-
+        for l in self.model.rules:
+            self._builders[l.__class__](l, build_phase='rules')
         return self.model
 
     @builds(nengo.Ensemble)
@@ -1052,9 +1060,19 @@ class Builder(object):
                    refractory_time=lif.refractory_time))
 
     @builds(nengo.PES_Rule)
-    def build_pes(self, pes):
-        self.model.operators.append(
-            SimPES(output=pes.connection.decoder_signal,
-                   error=pes.error_connection.output_signal,
-                   activities=pes.connection.pre.neurons.output_signal,
-                   learning_rate=pes.learning_rate))
+    def build_pes(self, pes, build_phase='objects'):
+        if build_phase == 'objects':
+            pes.learning_rate.ival = pes.base_learning_rate
+            pes.learning_rate.build()
+            self.model.operators.append(
+                Reset(pes.learning_rate.input_signal,
+                      pes.base_learning_rate))
+        else:
+            assert build_phase == 'rules'
+            self.model.operators.append(
+                SimPES(output=pes.connection.decoder_signal,
+                       error=pes.error_connection.output_signal,
+                       activities=pes.connection.pre.neurons.output_signal,
+                       learning_rate=pes.learning_rate.input_signal))
+
+# -- make flake-8 happy

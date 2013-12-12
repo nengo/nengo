@@ -1,3 +1,4 @@
+import nengo
 from .objects import Connection
 
 
@@ -32,18 +33,24 @@ class LearningRule(object):
 
 
 class PES_Rule(LearningRule):
-    def __init__(self, connection, error, learning_rate=1.0):
+    def __init__(self, connection, error, base_learning_rate=1.0):
         # -- N.B. some of these are properties
         self.connection = connection
         self.error = error
-        self.learning_rate = learning_rate
-
-        # -- little reverse-lookup hacking for builder
-        connection.learning_rule = self
+        self.base_learning_rate = base_learning_rate
+        self.learning_rate = nengo.builder.IVector(dimensions=1,
+                                                   label='lr')
 
         self.error_connection = Connection(
             self.error,
             self.connection.post,
             modulatory=True)
+
+        nengo.context.add_to_current(self)
+
+    def add_to_model(self, model):
+        model.objs.append(self)
+        model.rules.append(self)
+        return self
 
 # -- make flake-8 happy
