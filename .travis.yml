@@ -4,9 +4,8 @@ python:
   - "2.7"
   - "3.3"
 install:
-  - pip install numpy --use-mirrors
-  - pip install networkx --use-mirrors
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install --use-mirrors unittest2; fi
+  - pip install -r requirements.txt --use-mirrors
+  - pip install -r requirements-test.txt --use-mirrors
   - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install --use-mirrors ordereddict; fi
 script:
   - python setup.py test

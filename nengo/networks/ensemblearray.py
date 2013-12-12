@@ -29,19 +29,19 @@ class EnsembleArray(nengo.Network):
             function_d = self.dimensions_per_ensemble
         else:
             func_output = function(np.zeros(self.dimensions_per_ensemble))
-            function_d = (1 if isinstance(func_output, (int, float))
-                          else len(func_output))
-        transform = np.eye(self.n_ensembles*function_d)
+            function_d = np.asarray(func_output).size
+        transform = np.identity(self.n_ensembles * function_d)
 
-        output = nengo.Node(dimensions=self.n_ensembles*function_d, label=name)
+        output = nengo.Node(dimensions=self.n_ensembles * function_d,
+                            label=name)
         setattr(self, name, output)
 
         for i, e in enumerate(self.ensembles):
             trans = transform[:, i * function_d:(i + 1) * function_d]
-            nengo.Connection(e, output, transform=trans,
+            nengo.Connection(e, output,
+                             transform=trans,
                              filter=None,
                              function=function)
-
         return output
 
     @property
