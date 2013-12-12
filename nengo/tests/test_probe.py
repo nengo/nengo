@@ -4,7 +4,9 @@ import time
 import numpy as np
 
 import nengo
-from nengo.tests.helpers import SimulatorTestCase, unittest, assert_allclose
+from nengo.tests.helpers import SimulatorTestCase, unittest
+
+logger = logging.getLogger(__file__)
 
 
 class TestProbe(SimulatorTestCase):
