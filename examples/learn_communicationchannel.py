@@ -8,35 +8,37 @@ N = 30
 D = 2
 
 model = nengo.Model('Learn Communication')
+with model:
+    # Create ensembles
+    pre = nengo.Ensemble(nengo.LIF(N * D), dimensions=D)
+    post = nengo.Ensemble(nengo.LIF(N * D), dimensions=D)
+    error = nengo.Ensemble(nengo.LIF(N * D), dimensions=D)
 
-# Create ensembles
-model.make_ensemble('Pre', nengo.LIF(N * D), dimensions=D)
-model.make_ensemble('Post', nengo.LIF(N * D), dimensions=D)
-error = model.make_ensemble('Error', nengo.LIF(N * D), dimensions=D)
+    # Create an input signal
+    driver = nengo.Node(output=lambda t: [np.sin(t), np.cos(t)])
 
-# Create an input signal
-model.make_node('Input', output=lambda t: [np.sin(t), np.cos(t)])
+    nengo.Connection(driver, pre)
 
-model.connect('Input', 'Pre')
+    # Set the modulatory signal.
+    nengo.Connection(pre, error)
+    nengo.Connection(post, error, transform=np.eye(D) * -1)
 
-# Set the modulatory signal.
-model.connect('Pre', 'Error')
-model.connect('Post', 'Error', transform=np.eye(D) * -1)
+    # Create a modulated connection between the 'pre' and 'post' ensembles
+    nengo.Connection(pre, post,
+                     function=lambda x: -1 * np.ones(x.shape),
+                     learning_rule=PES(error))
 
-# Create a modulated connection between the 'pre' and 'post' ensembles
-model.connect('Pre', 'Post', function=lambda x: -1 * np.ones(x.shape),
-              learning_rule=PES(error))
+    # For testing purposes
+    # XXX : what is semantics of error vs. actual_error?
+    actual_error = nengo.Ensemble(nengo.LIF(N * D), dimensions=D)
+    nengo.Connection(pre, actual_error)
+    nengo.Connection(post, actual_error, transform=np.eye(D) * -1)
 
-# For testing purposes
-model.make_ensemble('Actual error', nengo.LIF(N * D), dimensions=D)
-model.connect('Pre','Actual error')
-model.connect('Post','Actual error', transform=np.eye(D) * -1)
+    nengo.Probe(pre, 'decoded_output', filter=0.02)
+    nengo.Probe(post, 'decoded_output', filter=0.02)
+    nengo.Probe(actual_error, 'decoded_output', filter=0.02)
 
-model.probe('Pre', filter=0.02)
-model.probe('Post', filter=0.02)
-model.probe('Actual error', filter=0.02)
-
-sim = model.simulator()
+sim = nengo.Simultor(model)
 sim.run(5)
 
 # Plot results
@@ -49,5 +51,6 @@ plt.legend()
 plt.subplot(212)
 plt.plot(t, sim.data('Actual error'), label='Error')
 plt.legend()
-plt.tight_layout()
-plt.savefig('learning.pdf')
+plt.show()
+#plt.tight_layout()
+#plt.savefig('learning.pdf')

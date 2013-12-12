@@ -246,7 +246,7 @@ class LearningRule(object):
         return str(self)
 
 
-class PES(LearningRule):
+class PESLearning(LearningRule):
     def __init__(self, error, learning_rate=1.0):
         self.error = error
         self.learning_rate = learning_rate
@@ -262,3 +262,4 @@ class PES(LearningRule):
         self.error_connection = self.error.connect_to(
             connection.post, modulatory=True)
         self._connection = connection
+
