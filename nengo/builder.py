@@ -661,9 +661,8 @@ class SimPES(Operator):
         error = dct[self.error]
         activities = dct[self.activities]
         learning_rate = self.learning_rate
-        import q
         def step():
-            output[...] += learning_rate * np.outer(error, activities) * dt
+            output[...] += np.outer((learning_rate * dt) * error, activities)
         return step
 
 
@@ -931,9 +930,9 @@ class Builder(object):
             # Make a new signal, effectively detaching from post,
             # but still performing the decoding
             conn.output_signal = Signal(np.zeros(conn.dimensions),
-                                        name=conn.name + ".mod_output")
+                                        name=conn.label + ".mod_output")
             self.model.operators.append(Reset(conn.output_signal))
-        if isinstance(conn.post, nonlinearities.Neurons):
+        if isinstance(conn.post, nengo.nonlinearities.Neurons):
             conn.transform *= conn.post.gain[:, np.newaxis]
         dt = self.model.dt
 
@@ -987,10 +986,6 @@ class Builder(object):
         conn.transform = np.asarray(conn.transform, dtype=np.float64)
         if isinstance(conn.post, nengo.nonlinearities.Neurons):
             conn.transform *= conn.post.gain[:, np.newaxis]
-        if conn.modulatory:
-            # Make a new signal, effectively detaching from post
-            conn.output_signal = Signal(np.zeros(conn.output_signal.size),
-                                        name=conn.label + ".mod_output")
         self.model.operators.append(
             DotInc(
                 Signal(conn.transform), conn.signal, conn.output_signal,
@@ -1056,7 +1051,7 @@ class Builder(object):
                    voltage=lif.voltage,
                    refractory_time=lif.refractory_time))
 
-    @builds(nengo.PES)
+    @builds(nengo.PES_Rule)
     def build_pes(self, pes):
         self.model.operators.append(
             SimPES(output=pes.connection.decoder_signal,

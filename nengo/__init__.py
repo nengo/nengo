@@ -6,8 +6,9 @@ import logging
 import sys
 
 from .model import Model
-from .nonlinearities import PythonFunction, LIF, LIFRate, Direct, PES
+from .nonlinearities import PythonFunction, LIF, LIFRate, Direct
 from .objects import Ensemble, Node, Connection, Probe, Network
+from .learningrules import PES_Rule
 from . import networks
 from .simulator import Simulator
 
