@@ -12,6 +12,12 @@ from . import networks
 from .simulator import Simulator
 
 
+class Vector(object):
+    # STUB IMPLEMENTATION
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
 logger = logging.getLogger(__name__)
 try:
     # Prevent output if no handler set

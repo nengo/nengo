@@ -549,6 +549,43 @@ class ProdUpdate(Operator):
         return step
 
 
+class SimNode(Operator):
+    """Set signal `output` by some non-linear function of J
+    (and possibly other things too.)
+    """
+    def __init__(self, fn, input0, kw_inputs, output):
+        self.output = output
+        self.input0 = input0
+        self.kw_inputs = kw_inputs if kw_inputs else {}
+        self.fn = fn
+
+        self.reads = (
+                [input0] if input0 else []
+                + kw_inputs.values() if kw_inputs else [])
+        if output is not None:
+            self.updates = [output]
+
+    def __str__(self):
+        return 'SimPyFunc(%s -> %s "%s")' % (
+            str(self.inputs), str(self.output), str(self.fn))
+
+    def make_step(self, dct, dt):
+        if self.output is not None:
+            output = dct[self.output]
+        fn = self.fn
+        input0 = [dct[self.input0]] if self.input0 else []
+        kw_inputs = dict([(k, dct[v])
+                       for k, v in self.kw_inputs.items()])
+        steps = [0]
+        def step():
+            steps[0] += 1
+            result = fn(steps[0] * dt, *input0, **kw_inputs)
+            if self.output is not None:
+                output[...] = result
+        return step
+
+
+
 class SimPyFunc(Operator):
     """Set signal `output` by some non-linear function of J
     (and possibly other things too.)
@@ -812,35 +849,66 @@ class Builder(object):
 
     @builds(nengo.Node)
     def build_node(self, node):
-        # Get input
-        if (node.output is None
-                or isinstance(node.output, collections.Callable)):
-            node.input_signal = Signal(np.zeros(node.dimensions),
-                                       name=node.label + ".signal")
-            # reset input signal to 0 each timestep
-            self.model.operators.append(Reset(node.input_signal))
+        # Set up any input signals
+        if node.named_inputs:
+            for attr, obj in node.named_inputs.items():
+                sig = Signal(
+                    np.zeros(obj.dimensions),
+                    name='%s.%s.signal' % (node.label, attr))
+                obj.input_signal = sig
+                self.model.operators.append(Reset(sig))
+
+        # -- if the node has an un-named input, create it
+        if node.dimensions:
+            sig = Signal(
+                np.zeros(node.dimensions),
+                name='%s.input_signal' % (node.label))
+            self.model.operators.append(Reset(sig))
+            node.input_signal = sig
+        else:
+            node.input_signal = None
 
         # Provide output
         if node.output is None:
-            node.output_signal = node.input_signal
+            if node.dimensions:
+                # -- this is a "pass-through" Node
+                node.output_signal = node.input_signal
+            else:
+                node.output_signal = None
         elif not isinstance(node.output, collections.Callable):
-            if isinstance(node.output, (int, float, complex)):
+            if isinstance(node.output, (int, float, long, complex)):
                 node.output_signal = Signal([node.output], name=node.label)
             else:
                 node.output_signal = Signal(node.output, name=node.label)
         else:
-            node.input_signal = Signal(np.zeros(node.dimensions),
-                                       name=node.label + ".signal")
-            # reset input signal to 0 each timestep
-            self.model.operators.append(Reset(node.input_signal))
-
-            node.pyfn = nengo.PythonFunction(fn=node.output,
-                                             n_in=node.dimensions,
-                                             label=node.label + ".pyfn")
-            self.build_pyfunc(node.pyfn)
-            self.model.operators.append(DotInc(
-                node.input_signal, Signal(1.0), node.pyfn.input_signal))
-            node.output_signal = node.pyfn.output_signal
+            sim_node_named_inputs = None if not node.named_inputs else(
+                dict([(k, v.input_signal)
+                      for k, v in node.named_inputs.items()]))
+            if node.output_dimensions is None:
+                dummy_args = [0]
+                if node.dimensions:
+                    dummy_args += [node.input_signal.value]
+                if sim_node_named_inputs is None:
+                    dummy_kwargs = {}
+                else:
+                    dummy_kwargs = dict(
+                        [(k, v.value)
+                         for k, v in sim_node_named_inputs.items()])
+                dummy_result = node.output(*dummy_args, **dummy_kwargs)
+                node.output_dimensions = np.asarray(dummy_result).shape
+                if node.output_dimensions == ():
+                    # -- Nengo likes vectors.
+                    node.output_dimensions = (1,)
+            node.output_signal = Signal(
+                np.asarray(
+                    np.zeros(node.output_dimensions)
+                    + node.initial_output_value),
+                name=node.label)
+            self.model.operators.append(
+                SimNode(node.output,
+                    node.input_signal,
+                    sim_node_named_inputs,
+                    node.output_signal))
 
         # Set up probes
         for probe in node.probes['output']:
