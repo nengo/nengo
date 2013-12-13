@@ -9,13 +9,12 @@ from __future__ import print_function
 import logging
 import itertools
 from collections import defaultdict
-import time
 
 import networkx as nx
 import numpy as np
 
 import nengo
-from .builder import Builder, SimulatorProbe
+from .builder import Builder
 
 logger = logging.getLogger(__name__)
 
