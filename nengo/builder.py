@@ -366,8 +366,6 @@ class Operator(object):
     # (b) to use sets and updates on partly overlapping views of the same
     #     memory.
     #
-
-
     # N.B. It is done on purpose that there are no default values for
     # reads, sets, incs, and updates.
     #
@@ -385,11 +383,12 @@ class Operator(object):
     @property
     def sets(self):
         """Signals assigned by this operator
-        
+
         A signal that is set here cannot be set or updated
         by any other operator.
         """
         return self._sets
+
     @sets.setter
     def sets(self, val):
         self._sets = val
@@ -846,8 +845,7 @@ class Builder(object):
         self.model.operators.append(DotInc(Signal(ens._scaled_encoders),
                                            ens.input_signal,
                                            ens.neurons.input_signal,
-                                           tag=ens.label + '.encoder'
-                                          ))
+                                           tag=ens.label + '.encoder'))
 
         # Output is neural output
         ens.output_signal = ens.neurons.output_signal
