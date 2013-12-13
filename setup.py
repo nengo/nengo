@@ -14,18 +14,18 @@ except ImportError:
         from distutils.core import setup
 
 try:
-    class PyTest(TestCommand):
+    class Tox(TestCommand):
         def finalize_options(self):
             TestCommand.finalize_options(self)
-            self.test_args = ['--pep8']
+            self.test_args = []
             self.test_suite = True
 
         def run_tests(self):
             #import here, cause outside the eggs aren't loaded
-            import pytest
-            errno = pytest.main(self.test_args)
+            import tox
+            errno = tox.cmdline(self.test_args)
             sys.exit(errno)
-    testing = {'tests_require': ['pytest'], 'cmdclass': {'test': PyTest}}
+    testing = {'tests_require': ['tox'], 'cmdclass': {'test': Tox}}
 except NameError:
     testing = {}
 
@@ -45,6 +45,7 @@ setup(
     long_description=open('README.rst').read(),
     requires=[
         "numpy (>=1.5.0)",
+        "networkx",
     ],
     **testing
 )
