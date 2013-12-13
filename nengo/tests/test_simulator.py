@@ -98,7 +98,7 @@ class TestSimulator(unittest.TestCase):
 
         time = Signal(np.zeros(1), name='time')
         sig = Signal(np.zeros(1), name='sig')
-        pop = nengo.PythonFunction(fn=np.sin, n_in=1)
+        pop = nengo.PythonFunction(fn=lambda x: np.sin(x), n_in=1)
         m.operators = []
         b = Builder()
         b.model = m
