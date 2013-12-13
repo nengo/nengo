@@ -10,9 +10,9 @@ from nengo.tests.helpers import Plotter, rmse
 logger = logging.getLogger(__name__)
 
 
-def _test_encoders(n_neurons=10, n_dimensions=3, encoders=None):
+@pytest.mark.parametrize("n_dimensions", [1, 200])
+def test_encoders(n_dimensions, n_neurons=10, encoders=None):
     if encoders is None:
-        # encoders = np.random.randn(n_neurons, n_dimensions)
         encoders = np.random.standard_normal(size=(n_neurons, n_dimensions))
         magnitudes = np.sqrt((encoders * encoders).sum(axis=-1))
         encoders = encoders / magnitudes[..., np.newaxis]
@@ -29,33 +29,21 @@ def _test_encoders(n_neurons=10, n_dimensions=3, encoders=None):
         encoders, next(o for o in sim.model.objs if o.label == 'A').encoders)
 
 
-def test_encoders():
-    _test_encoders(n_dimensions=3)
-
-
-def test_encoders_one_dimension():
-    _test_encoders(n_dimensions=1)
-
-
-def test_encoders_high_dimension():
-    _test_encoders(n_dimensions=20)
-
-
 def test_encoders_wrong_shape():
-    n_neurons, n_dimensions = 10, 3
+    n_dimensions = 3
     encoders = np.random.randn(n_dimensions)
     with pytest.raises(ShapeMismatch):
-        _test_encoders(n_neurons, n_dimensions, encoders)
+        test_encoders(n_dimensions, encoders=encoders)
 
 
 def test_encoders_negative_neurons():
     with pytest.raises(ValueError):
-        _test_encoders(n_neurons=-1, n_dimensions=1)
+        test_encoders(1, n_neurons=-1)
 
 
 def test_encoders_no_dimensions():
     with pytest.raises(ValueError):
-        _test_encoders(n_neurons=1, n_dimensions=0)
+        test_encoders(0)
 
 
 def test_constant_scalar(Simulator, nl):
