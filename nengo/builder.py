@@ -1,5 +1,6 @@
 import collections
 import copy
+import functools
 import logging
 
 import numpy as np
@@ -21,16 +22,21 @@ up in a model.
 assert_named_signals = False
 
 
-class IVector(object):
-    def __init__(self, dimensions, label=None, ival=0):
+class Vector(object):
+    def __init__(self, dimensions, signame, label=None, ival=0):
         self.dimensions = dimensions
         self.label = label
         self.ival = ival
+        self.signame = signame
 
     def build(self):
-        self.input_signal = Signal(
-            np.asarray(self.ival + np.zeros(self.dimensions)),
-            name=self.label)
+        setattr(self, self.signame,
+                Signal(np.asarray(self.ival + np.zeros(self.dimensions)),
+                       name=self.label))
+
+IVector = functools.partial(Vector, signame = 'input_signal')
+OVector = functools.partial(Vector, signame = 'output_signal')
+
 
 
 class ShapeMismatch(ValueError):
