@@ -2,6 +2,11 @@ import nengo
 
 
 def pytest_funcarg__Simulator(request):
+    """the Simulator class being tested.
+
+    Please use this, and not nengo.Simulator directly,
+    unless the test is reference simulator specific.
+    """
     return nengo.Simulator
 
 
