@@ -1,14 +1,14 @@
 language: python
 python:
-  - "2.6"
   - "2.7"
-  - "3.3"
+env:
+  - TOXENV=py26
+  - TOXENV=py27
+  - TOXENV=py33
 install:
-  - pip install -r requirements.txt --use-mirrors
-  - pip install -r requirements-test.txt --use-mirrors
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install --use-mirrors ordereddict; fi
+  - pip install tox
 script:
-  - python setup.py test
+  - tox
 notifications:
   email:
     - tbekolay@gmail.com
