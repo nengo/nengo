@@ -31,7 +31,7 @@ class TestSimulator(unittest.TestCase):
         m.operators = [ProdUpdate(zero, zero, one, five),
                        ProdUpdate(zeroarray, one, one, array)]
 
-        sim = nengo.Simulator(m, builder=testbuilder)
+        sim = self.Simulator(m, builder=testbuilder)
         self.assertEqual(0, sim.signals[zero][0])
         self.assertEqual(1, sim.signals[one][0])
         self.assertEqual(5.0, sim.signals[five][0])
@@ -46,7 +46,7 @@ class TestSimulator(unittest.TestCase):
 
     def test_steps(self):
         m = nengo.Model("test_signal_indexing_1")
-        sim = nengo.Simulator(m)
+        sim = self.Simulator(m)
         self.assertEqual(0, sim.n_steps)
         sim.step()
         self.assertEqual(1, sim.n_steps)
@@ -55,7 +55,7 @@ class TestSimulator(unittest.TestCase):
 
     def test_time(self):
         m = nengo.Model("test_signal_indexing_1")
-        sim = nengo.Simulator(m)
+        sim = self.Simulator(m)
         self.assertEqual(0.00, sim.signals['__time__'])
         sim.step()
         self.assertEqual(0.001, sim.signals['__time__'])
@@ -71,14 +71,17 @@ class TestSimulator(unittest.TestCase):
         tmp = Signal(np.zeros(3), name='tmp')
 
         m.operators = [
-            ProdUpdate(Signal(1), three[:1], Signal(0), one),
-            ProdUpdate(Signal(2.0), three[1:], Signal(0), two),
+            ProdUpdate(Signal(1, name='A1'), three[:1],
+                       Signal(0, name='Z0'), one),
+            ProdUpdate(Signal(2.0, name='A2'), three[1:],
+                       Signal(0, name='Z1'), two),
             Reset(tmp),
-            DotInc(Signal([[0, 0, 1], [0, 1, 0], [1, 0, 0]]), three, tmp),
+            DotInc(Signal([[0, 0, 1], [0, 1, 0], [1, 0, 0]], name='A3'),
+                   three, tmp),
             Copy(src=tmp, dst=three, as_update=True),
         ]
 
-        sim = nengo.Simulator(m, builder=testbuilder)
+        sim = self.Simulator(m, builder=testbuilder)
         sim.signals[three] = np.asarray([1, 2, 3])
         sim.step()
         self.assertTrue(np.all(sim.signals[one] == 1))
@@ -106,7 +109,7 @@ class TestSimulator(unittest.TestCase):
             ProdUpdate(Signal([[1.0]]), pop.output_signal, Signal(0), sig),
         ]
 
-        sim = nengo.Simulator(m, dt=dt, builder=testbuilder)
+        sim = self.Simulator(m, dt=dt, builder=testbuilder)
         sim.step()
         for i in range(5):
             sim.step()
@@ -144,7 +147,7 @@ class TestSimulator(unittest.TestCase):
                             "%s: value %s is not close to target %s" %
                             (sig, sim.signals[sig], target))
 
-        sim = nengo.Simulator(m, dt=dt, builder=testbuilder)
+        sim = self.Simulator(m, dt=dt, builder=testbuilder)
 
         check(foo, 1.0)
         check(pop.input_signal, 0)
@@ -198,7 +201,7 @@ class TestSimulator(unittest.TestCase):
                             "%s: value %s is not close to target %s" %
                             (sig, sim.signals[sig], target))
 
-        sim = nengo.Simulator(m, dt=dt, builder=testbuilder)
+        sim = self.Simulator(m, dt=dt, builder=testbuilder)
 
         #pop.input_signal = [0,0]
         #pop.output_signal = [0,0]
@@ -255,7 +258,7 @@ class TestNonlinear(unittest.TestCase):
                     Signal(np.eye(d)), pop.output_signal, Signal(0), ins)
             ]
 
-            sim = nengo.Simulator(m, dt=dt, builder=testbuilder)
+            sim = self.Simulator(m, dt=dt, builder=testbuilder)
 
             p0 = np.zeros(d)
             s0 = np.array(x)
@@ -287,7 +290,7 @@ class TestNonlinear(unittest.TestCase):
         b._builders[cls](lif)
         m.operators += [DotInc(Signal(np.ones((n, d))), ins, lif.input_signal)]
 
-        sim = nengo.Simulator(m, dt=dt, builder=testbuilder)
+        sim = self.Simulator(m, dt=dt, builder=testbuilder)
 
         t_final = 1.0
         spikes = np.zeros(n)

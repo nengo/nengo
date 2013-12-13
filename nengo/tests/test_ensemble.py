@@ -124,8 +124,8 @@ class TestEnsemble(SimulatorTestCase):
 
         m = nengo.Model('test_scalar', seed=123)
         with m:
-            input = nengo.Node(output=np.sin)
-            A = nengo.Ensemble(nl(N), 1)
+            input = nengo.Node(output=np.sin, label='input')
+            A = nengo.Ensemble(nl(N), 1, label='A')
             nengo.Connection(input, A)
             in_p = nengo.Probe(input, 'output')
             A_p = nengo.Probe(A, 'decoded_output', filter=0.02)

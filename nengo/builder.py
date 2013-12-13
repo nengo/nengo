@@ -366,27 +366,61 @@ class Operator(object):
     # (b) to use sets and updates on partly overlapping views of the same
     #     memory.
     #
+    # N.B. It is done on purpose that there are no default values for
+    # reads, sets, incs, and updates.
+    #
+    # Each operator should explicitly set each of these properties.
 
-    # -- Signals that are read and not modified by this operator
-    reads = []
-    # -- Signals that are only assigned by this operator
-    sets = []
-    # -- Signals that are incremented by this operator
-    incs = []
-    # -- Signals that are updated to their [t + 1] value.
-    #    After this operator runs, these signals cannot be
-    #    used for reads until the next time step.
-    updates = []
+    @property
+    def reads(self):
+        """Signals that are read and not modified"""
+        return self._reads
+
+    @reads.setter
+    def reads(self, val):
+        self._reads = val
+
+    @property
+    def sets(self):
+        """Signals assigned by this operator
+
+        A signal that is set here cannot be set or updated
+        by any other operator.
+        """
+        return self._sets
+
+    @sets.setter
+    def sets(self, val):
+        self._sets = val
+
+    @property
+    def incs(self):
+        """Signals incremented by this operator
+
+        Increments will be applied after this signal has been
+        set (if it is set), and before reads.
+        """
+        return self._incs
+
+    @incs.setter
+    def incs(self, val):
+        self._incs = val
+
+    @property
+    def updates(self):
+        """Signals assigned their value for time t + 1
+
+        This operator will be scheduled so that updates appear after
+        all sets, increments and reads of this signal.
+        """
+        return self._updates
+
+    @updates.setter
+    def updates(self, val):
+        self._updates = val
 
     @property
     def all_signals(self):
-        # -- Sanity check that no one has accidentally modified
-        #    these class variables, they should be empty
-        assert not Operator.reads
-        assert not Operator.sets
-        assert not Operator.incs
-        assert not Operator.updates
-
         return self.reads + self.sets + self.incs + self.updates
 
     def init_sigdict(self, sigdict, dt):
@@ -413,6 +447,9 @@ class Reset(Operator):
         self.dst = dst
         self.value = float(value)
 
+        self.reads = []
+        self.incs = []
+        self.updates = []
         self.sets = [dst]
 
     def __str__(self):
@@ -436,10 +473,12 @@ class Copy(Operator):
         self.dst = dst
         self.src = src
         self.tag = tag
+        self.as_update = True
 
         self.reads = [src]
         self.sets = [] if as_update else [dst]
         self.updates = [dst] if as_update else []
+        self.incs = []
 
     def __str__(self):
         return 'Copy(%s -> %s, as_update=%s)' % (
@@ -495,6 +534,8 @@ class DotInc(Operator):
 
         self.reads = [self.A, self.X]
         self.incs = [self.Y]
+        self.sets = []
+        self.updates = []
 
     def __str__(self):
         return 'DotInc(%s, %s -> %s "%s")' % (
@@ -528,6 +569,8 @@ class ProdUpdate(Operator):
 
         self.reads = [self.A, self.X, self.B]
         self.updates = [self.Y]
+        self.incs = []
+        self.sets = []
 
     def __str__(self):
         return 'ProdUpdate(%s, %s, %s, -> %s "%s")' % (
@@ -560,8 +603,10 @@ class SimPyFunc(Operator):
         self.fn = fn
         self.n_args = n_args
 
-        self.reads = [J]
+        self.reads = [] if J is None else [J]
         self.updates = [output]
+        self.sets = []
+        self.incs = []
 
     def __str__(self):
         return 'SimPyFunc(%s -> %s "%s")' % (
@@ -569,7 +614,6 @@ class SimPyFunc(Operator):
 
     def make_step(self, dct, dt):
         t = dct['__time__']
-        J = dct[self.J]
         output = dct[self.output]
         fn = self.fn
 
@@ -578,6 +622,7 @@ class SimPyFunc(Operator):
             def step():
                 output[...] = fn(t)
         elif self.n_args == 2:
+            J = dct[self.J]
 
             def step():
                 output[...] = fn(t, J)
@@ -598,6 +643,8 @@ class SimLIF(Operator):
 
         self.reads = [J]
         self.updates = [self.voltage, self.refractory_time, output]
+        self.sets = []
+        self.incs = []
 
     def init_sigdict(self, sigdict, dt):
         Operator.init_sigdict(self, sigdict, dt)
@@ -632,6 +679,8 @@ class SimLIFRate(Operator):
 
         self.reads = [J]
         self.updates = [output]
+        self.sets = []
+        self.incs = []
 
     def make_step(self, dct, dt):
         J = dct[self.J]
@@ -795,7 +844,8 @@ class Builder(object):
                 ens.neurons.gain / ens.radius)[:, np.newaxis]
         self.model.operators.append(DotInc(Signal(ens._scaled_encoders),
                                            ens.input_signal,
-                                           ens.neurons.input_signal))
+                                           ens.neurons.input_signal,
+                                           tag=ens.label + '.encoder'))
 
         # Output is neural output
         ens.output_signal = ens.neurons.output_signal
@@ -815,10 +865,11 @@ class Builder(object):
         # Get input
         if (node.output is None
                 or isinstance(node.output, collections.Callable)):
-            node.input_signal = Signal(np.zeros(node.dimensions),
-                                       name=node.label + ".signal")
-            # reset input signal to 0 each timestep
-            self.model.operators.append(Reset(node.input_signal))
+            if node.dimensions:
+                node.input_signal = Signal(np.zeros(node.dimensions),
+                                           name=node.label + ".signal")
+                # reset input signal to 0 each timestep
+                self.model.operators.append(Reset(node.input_signal))
 
         # Provide output
         if node.output is None:
@@ -829,17 +880,18 @@ class Builder(object):
             else:
                 node.output_signal = Signal(node.output, name=node.label)
         else:
-            node.input_signal = Signal(np.zeros(node.dimensions),
-                                       name=node.label + ".signal")
-            # reset input signal to 0 each timestep
-            self.model.operators.append(Reset(node.input_signal))
 
             node.pyfn = nengo.PythonFunction(fn=node.output,
                                              n_in=node.dimensions,
                                              label=node.label + ".pyfn")
             self.build_pyfunc(node.pyfn)
-            self.model.operators.append(DotInc(
-                node.input_signal, Signal(1.0), node.pyfn.input_signal))
+            if node.dimensions:
+                self.model.operators.append(DotInc(
+                    node.input_signal,
+                    Signal(1.0),
+                    node.pyfn.input_signal,
+                    tag=node.label + '.unclear'
+                    ))
             node.output_signal = node.pyfn.output_signal
 
         # Set up probes
@@ -955,15 +1007,19 @@ class Builder(object):
 
     @builds(nengo.PythonFunction)
     def build_pyfunc(self, pyfn):
-        pyfn.input_signal = Signal(np.zeros(pyfn.n_in),
-                                   name=pyfn.label + '.input')
+        if pyfn.n_in:
+            pyfn.input_signal = Signal(np.zeros(pyfn.n_in),
+                                       name=pyfn.label + '.input')
+            pyfn.operators = [Reset(pyfn.input_signal)]
+        else:
+            pyfn.operators = []
         pyfn.output_signal = Signal(np.zeros(pyfn.n_out),
                                     name=pyfn.label + '.output')
-        pyfn.operators = [Reset(pyfn.input_signal),
-                          SimPyFunc(output=pyfn.output_signal,
-                                    J=pyfn.input_signal,
-                                    fn=pyfn.fn,
-                                    n_args=pyfn.n_args)]
+        pyfn.operators.append(
+            SimPyFunc(output=pyfn.output_signal,
+                      J=pyfn.input_signal if pyfn.n_in else None,
+                      fn=pyfn.fn,
+                      n_args=pyfn.n_args))
         self.model.operators.extend(pyfn.operators)
 
     def build_neurons(self, neurons):
