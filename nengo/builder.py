@@ -845,7 +845,9 @@ class Builder(object):
                 ens.neurons.gain / ens.radius)[:, np.newaxis]
         self.model.operators.append(DotInc(Signal(ens._scaled_encoders),
                                            ens.input_signal,
-                                           ens.neurons.input_signal))
+                                           ens.neurons.input_signal,
+                                           tag=ens.label + '.encoder'
+                                          ))
 
         # Output is neural output
         ens.output_signal = ens.neurons.output_signal
@@ -865,10 +867,11 @@ class Builder(object):
         # Get input
         if (node.output is None
                 or isinstance(node.output, collections.Callable)):
-            node.input_signal = Signal(np.zeros(node.dimensions),
-                                       name=node.label + ".signal")
-            # reset input signal to 0 each timestep
-            self.model.operators.append(Reset(node.input_signal))
+            if node.dimensions:
+                node.input_signal = Signal(np.zeros(node.dimensions),
+                                           name=node.label + ".signal")
+                # reset input signal to 0 each timestep
+                self.model.operators.append(Reset(node.input_signal))
 
         # Provide output
         if node.output is None:
@@ -879,17 +882,18 @@ class Builder(object):
             else:
                 node.output_signal = Signal(node.output, name=node.label)
         else:
-            node.input_signal = Signal(np.zeros(node.dimensions),
-                                       name=node.label + ".signal")
-            # reset input signal to 0 each timestep
-            self.model.operators.append(Reset(node.input_signal))
 
             node.pyfn = nengo.PythonFunction(fn=node.output,
                                              n_in=node.dimensions,
                                              label=node.label + ".pyfn")
             self.build_pyfunc(node.pyfn)
-            self.model.operators.append(DotInc(
-                node.input_signal, Signal(1.0), node.pyfn.input_signal))
+            if node.dimensions:
+                self.model.operators.append(DotInc(
+                    node.input_signal,
+                    Signal(1.0),
+                    node.pyfn.input_signal,
+                    tag=node.label + '.unclear'
+                    ))
             node.output_signal = node.pyfn.output_signal
 
         # Set up probes
@@ -1005,15 +1009,19 @@ class Builder(object):
 
     @builds(nengo.PythonFunction)
     def build_pyfunc(self, pyfn):
-        pyfn.input_signal = Signal(np.zeros(pyfn.n_in),
-                                   name=pyfn.label + '.input')
+        if pyfn.n_in:
+            pyfn.input_signal = Signal(np.zeros(pyfn.n_in),
+                                       name=pyfn.label + '.input')
+            pyfn.operators = [Reset(pyfn.input_signal)]
+        else:
+            pyfn.operators = []
         pyfn.output_signal = Signal(np.zeros(pyfn.n_out),
                                     name=pyfn.label + '.output')
-        pyfn.operators = [Reset(pyfn.input_signal),
-                          SimPyFunc(output=pyfn.output_signal,
-                                    J=pyfn.input_signal,
-                                    fn=pyfn.fn,
-                                    n_args=pyfn.n_args)]
+        pyfn.operators.append(
+            SimPyFunc(output=pyfn.output_signal,
+                      J=pyfn.input_signal if pyfn.n_in else None,
+                      fn=pyfn.fn,
+                      n_args=pyfn.n_args))
         self.model.operators.extend(pyfn.operators)
 
     def build_neurons(self, neurons):
