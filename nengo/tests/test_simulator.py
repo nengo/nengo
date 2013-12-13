@@ -56,11 +56,11 @@ class TestSimulator(unittest.TestCase):
     def test_time(self):
         m = nengo.Model("test_signal_indexing_1")
         sim = self.Simulator(m)
-        self.assertEqual(0.00, sim.signals['__time__'])
+        self.assertAlmostEqual(0.00, sim.signals['__time__'])
         sim.step()
-        self.assertEqual(0.001, sim.signals['__time__'])
+        self.assertAlmostEqual(0.001, sim.signals['__time__'])
         sim.step()
-        self.assertEqual(0.002, sim.signals['__time__'])
+        self.assertAlmostEqual(0.002, sim.signals['__time__'])
 
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
