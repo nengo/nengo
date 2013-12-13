@@ -1,2 +1,4 @@
+IPython
 pytest
 pytest-pep8
+pyzmq
