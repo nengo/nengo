@@ -19,7 +19,6 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("nb_path", examples)
 
 
-@pytest.mark.xfail
 def test_noexceptions(nb_path):
     """Ensure that no cells raise an exception."""
     with open(nb_path) as f:
@@ -38,8 +37,6 @@ def test_noexceptions(nb_path):
     shell.execute("pass")
     shell.get_msg()
 
-    cells = 0
-    failures = 0
     for ws in nb.worksheets:
         for cell in ws.cells:
             if cell.cell_type != 'code':
@@ -48,18 +45,18 @@ def test_noexceptions(nb_path):
             # wait for finish, maximum 60s
             reply = shell.get_msg(timeout=60)['content']
             if reply['status'] == 'error':
-                failures += 1
-                print("\nFAILURE:")
-                print(cell.input)
-                print('-----')
-                print("raised:")
-                print('\n'.join(reply['traceback']))
-            cells += 1
+                err_msg = ("\nFAILURE:" + cell.input + "\n"
+                           "-----\nraised:\n"
+                           + "\n".join(reply['traceback']))
+                kc.stop_channels()
+                km.shutdown_kernel()
+                del km
+                assert False, err_msg
 
     kc.stop_channels()
     km.shutdown_kernel()
     del km
-    assert failures == 0
+    assert True
 
 
 def test_nooutput(nb_path):
