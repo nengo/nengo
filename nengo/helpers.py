@@ -1,9 +1,6 @@
 import collections
-import copy
 
 import numpy as np
-
-from . import decoders
 
 
 def tuning_curves(sim_ens):
@@ -11,123 +8,6 @@ def tuning_curves(sim_ens):
     eval_points.sort(axis=0)
     activities = sim_ens.activities(eval_points)
     return eval_points, activities
-
-
-def encoders():
-    @staticmethod
-    def _process_encoders(encoders, neurons, dims, n_ensembles):
-        if encoders is None:
-            encoders = [None for _ in range(n_ensembles)]
-        elif len(encoders) == dims:
-            if np.asarray(encoders).ndim == 1:
-                encoders = [np.array(encoders) for _ in range(n_ensembles)]
-        elif len(encoders) == neurons:
-            if len(encoders[0]) != dims:
-                msg = ("len(encoders[0]) should match dimensions_per_ensemble."
-                       " Currently %d, %d" % (len(encoders[0]) != dims))
-                raise core.ShapeMismatch(msg)
-            encoders = [np.array(encoders) for _ in range(n_ensembles)]
-        elif len(encoders) != n_ensembles:
-            msg = ("len(encoders) should match n_ensembles. "
-                   "Currently %d, %d" % (len(encoders) != n_ensembles))
-            raise core.ShapeMismatch(msg)
-        return encoders
-
-
-def transform(pre_dims, post_dims,
-              weight=1.0, index_pre=None, index_post=None):
-    """Helper function used to create a ``pre_dims`` by ``post_dims``
-    linear transformation matrix.
-
-    Parameters
-    ----------
-    pre_dims, post_dims : int
-        The numbers of presynaptic and postsynaptic dimensions.
-    weight : float, optional
-        The weight value to use in the transform.
-
-        All values in the transform are either 0 or ``weight``.
-
-        **Default**: 1.0
-    index_pre, index_post : iterable of int
-        Determines which values are non-zero, and indicates which
-        dimensions of the pre-synaptic ensemble should be routed to which
-        dimensions of the post-synaptic ensemble.
-
-    Returns
-    -------
-    transform : 2D matrix of floats
-        A two-dimensional transform matrix performing the requested routing.
-
-    Examples
-    --------
-
-      # Sends the first two dims of pre to the first two dims of post
-      >>> gen_transform(pre_dims=2, post_dims=3,
-                        index_pre=[0, 1], index_post=[0, 1])
-      [[1, 0], [0, 1], [0, 0]]
-
-    """
-    t = [[0 for pre in range(pre_dims)] for post in range(post_dims)]
-    if index_pre is None:
-        index_pre = list(range(pre_dims))
-    elif isinstance(index_pre, int):
-        index_pre = [index_pre]
-
-    if index_post is None:
-        index_post = list(range(post_dims))
-    elif isinstance(index_post, int):
-        index_post = [index_post]
-
-    for i in range(min(len(index_pre), len(index_post))):  # was max
-        pre = index_pre[i]  # [i % len(index_pre)]
-        post = index_post[i]  # [i % len(index_post)]
-        t[post][pre] = weight
-    return t
-
-
-def weights(pre_neurons, post_neurons, function):
-    """Helper function used to create a ``pre_neurons`` by ``post_neurons``
-    connection weight matrix.
-
-    Parameters
-    ----------
-    pre_neurons, post_neurons : int
-        The numbers of presynaptic and postsynaptic neurons.
-    function : function
-        A function that generates weights.
-
-        If it accepts no arguments, it will be called to
-        generate each individual weight (useful
-        to great random weights, for example).
-        If it accepts two arguments, it will be given the
-        ``pre`` and ``post`` index in the weight matrix.
-
-    Returns
-    -------
-    weights : 2D matrix of floats
-        A two-dimensional connection weight matrix.
-
-    Examples
-    --------
-
-      >>> gen_weights(2, 2, random.random)
-      [[0.6281625119511959, 0.48560016153108376],
-       [0.9639779858394248, 0.4768136917985597]]
-
-      >>> def product(pre, post):
-      ...     return pre * post
-      >>> gen_weights(3, 3, product)
-      [[0, 0, 0], [0, 1, 2], [0, 2, 4]]
-
-    """
-    argspec = inspect.getargspec(func)
-    if len(argspec[0]) == 0:
-        return [[func() for pre in range(pre_neurons)
-                 for post in range(post_neurons)]]
-    elif len(argspec[0]) == 2:
-        return [[func(pre, post) for pre in range(pre_neurons)
-                 for post in range(post_neurons)]]
 
 
 def piecewise(data):

@@ -32,16 +32,19 @@ def test_lists():
 def test_invalid_key():
     with pytest.raises(TypeError):
         f = piecewise({0.5: 1, 1: 0, 'a': 0.2})
+        assert f
 
 
 def test_invalid_length():
     with pytest.raises(Exception):
         f = piecewise({0.5: [1, 0], 1.0: [1, 0, 0]})
+        assert f
 
 
 def test_invalid_function_length():
     with pytest.raises(Exception):
         f = piecewise({0.5: 0, 1.0: lambda t: [t, t ** 2]})
+        assert f
 
 
 def test_function():

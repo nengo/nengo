@@ -5,7 +5,7 @@ import pytest
 
 import nengo
 from nengo.helpers import piecewise
-from nengo.tests.helpers import Plotter, rmse
+from nengo.tests.helpers import Plotter
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ def test_node_to_neurons(Simulator, nl_nodirect):
     inn = nengo.Node(output=np.sin)
     inh = nengo.Node(piecewise({0: 0, 2.5: 1}))
     nengo.Connection(inn, a)
-    con = nengo.Connection(inh, a.neurons, transform=[[-2.5]]*N)
+    nengo.Connection(inh, a.neurons, transform=[[-2.5]]*N)
 
     inn_p = nengo.Probe(inn, 'output')
     a_p = nengo.Probe(a, 'decoded_output', filter=0.1)
@@ -54,7 +54,7 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect):
     inh = nengo.Node(piecewise({0: 0, 2.5: 1}))
     nengo.Connection(inn, a)
     nengo.Connection(inh, b)
-    con = nengo.Connection(b, a.neurons, transform=[[-2.5]]*N)
+    nengo.Connection(b, a.neurons, transform=[[-2.5]]*N)
 
     inn_p = nengo.Probe(inn, 'output')
     a_p = nengo.Probe(a, 'decoded_output', filter=0.1)
@@ -104,6 +104,7 @@ def test_neurons_to_ensemble(Simulator, nl_nodirect):
     with Plotter(Simulator, nl_nodirect) as plt:
         plt.plot(t, sim.data(a_p), label='A')
         plt.plot(t, sim.data(b_p), label='B')
+        plt.plot(t, sim.data(c_p), label='C')
         plt.savefig('test_connection.test_' + name + '.pdf')
         plt.close()
 

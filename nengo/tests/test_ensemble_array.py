@@ -118,7 +118,6 @@ def test_matrix_mul(Simulator, nl):
 
     nengo.Connection(A.output, C.input, transform=transformA)
     nengo.Connection(B.output, C.input, transform=transformB)
-    C_p = nengo.Probe(C.output, 'output', sample_every=0.01, filter=0.01)
 
     D = nengo.networks.EnsembleArray(nl(N),
                                      Amat.shape[0] * Bmat.shape[1],

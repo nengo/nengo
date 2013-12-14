@@ -17,9 +17,9 @@ def test_seeding():
     B = nengo.Ensemble(nengo.LIF(20), 1, label='B')
     nengo.Connection(input, A)
     nengo.Connection(A, B, function=lambda x: x ** 2)
-    input_p = nengo.Probe(input, 'output')
-    A_p = nengo.Probe(A, 'decoded_output', filter=0.01)
-    B_p = nengo.Probe(B, 'decoded_output', filter=0.01)
+    # input_p = nengo.Probe(input, 'output')
+    # A_p = nengo.Probe(A, 'decoded_output', filter=0.01)
+    # B_p = nengo.Probe(B, 'decoded_output', filter=0.01)
 
     m.seed = 872
     m1 = nengo.Simulator(m).model
