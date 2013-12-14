@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 
 import nengo
@@ -11,9 +10,9 @@ def test_build():
     B = nengo.Ensemble(nengo.LIF(20), 1)
     nengo.Connection(input, A)
     nengo.Connection(A, B, function=lambda x: x ** 2)
-    input_p = nengo.Probe(input, 'output')
-    A_p = nengo.Probe(A, 'decoded_output', filter=0.01)
-    B_p = nengo.Probe(B, 'decoded_output', filter=0.01)
+    # input_p = nengo.Probe(input, 'output')
+    # A_p = nengo.Probe(A, 'decoded_output', filter=0.01)
+    # B_p = nengo.Probe(B, 'decoded_output', filter=0.01)
 
     mcopy = nengo.Simulator(m).model
     assert [o.label for o in m.objs] == [o.label for o in mcopy.objs]

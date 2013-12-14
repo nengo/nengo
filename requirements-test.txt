@@ -1,5 +1,5 @@
 -e git://github.com/matplotlib/matplotlib.git#egg=matplotlib
 IPython
 pytest
-pytest-pep8
+pytest-xdist
 pyzmq

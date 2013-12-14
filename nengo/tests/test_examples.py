@@ -42,15 +42,14 @@ def test_noexceptions(nb_path):
             if cell.cell_type != 'code':
                 continue
             shell.execute(cell.input)
-            # wait for finish, maximum 60s
-            reply = shell.get_msg(timeout=60)['content']
+            # wait for finish, maximum 2 minutes
+            reply = shell.get_msg(timeout=120)['content']
             if reply['status'] == 'error':
                 err_msg = ("\nFAILURE:" + cell.input + "\n"
                            "-----\nraised:\n"
                            + "\n".join(reply['traceback']))
                 kc.stop_channels()
                 km.shutdown_kernel()
-                del km
                 assert False, err_msg
 
     kc.stop_channels()

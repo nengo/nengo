@@ -23,8 +23,13 @@ def rasterplot(time, spikes, ax=None, **kwargs):
 
     Examples
     --------
-    >>> plt.figure()
-    >>> rasterplot(sim.data(sim.model.t), sim.data('A.spikes'))
+    >>> import nengo
+    >>> model = nengo.Model("Raster")
+    >>> A = nengo.Ensemble(nengo.LIF(20), dimensions=1)
+    >>> A_spikes = nengo.Probe(A, "spikes")
+    >>> sim = nengo.Simulator(model)
+    >>> sim.run(1)
+    >>> rasterplot(sim.trange(), sim.data(A_spikes))
     '''
 
     if ax is None:
