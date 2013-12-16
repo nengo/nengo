@@ -50,11 +50,12 @@ def test_noexceptions(nb_path):
                            + "\n".join(reply['traceback']))
                 kc.stop_channels()
                 km.shutdown_kernel()
+                del km
                 assert False, err_msg
 
     kc.stop_channels()
-    km.shutdown_kernel()
-    del km
+    km.shutdown_kernel()  # noqa
+    del km  # noqa
     assert True
 
 
