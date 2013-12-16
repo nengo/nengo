@@ -6,9 +6,9 @@ Reference simulator for nengo models.
 
 from __future__ import print_function
 
-import logging
-import itertools
 from collections import defaultdict
+import itertools
+import logging
 
 import networkx as nx
 import numpy as np
@@ -84,7 +84,7 @@ class Simulator(object):
         self.n_steps = 0
         self.probe_outputs = dict((probe, []) for probe in self.model.probes)
 
-    def _init_dg(self, verbose=False):
+    def _init_dg(self, verbose=False):  # noqa
         operators = self.model.operators
         dg = nx.DiGraph()
 
@@ -186,22 +186,10 @@ class Simulator(object):
         """
         class Accessor(object):
             def __getitem__(_, item):
-                try:
-                    return self._sigdict[item]
-                except KeyError as e:
-                    try:
-                        return self._sigdict[self.model.memo[id(item)]]
-                    except KeyError:
-                        raise e  # -- re-raise the original KeyError
+                return self._sigdict[item]
 
             def __setitem__(_, item, val):
-                try:
-                    self._sigdict[item][...] = val
-                except KeyError as e:
-                    try:
-                        self._sigdict[self.model.memo[id(item)]][...] = val
-                    except KeyError:
-                        raise e  # -- re-raise the original KeyError
+                self._sigdict[item][...] = val
 
             def __iter__(_):
                 return self._sigdict.__iter__()

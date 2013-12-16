@@ -75,6 +75,20 @@ def test_multidim(Simulator, nl):
     assert np.allclose(c, c_sim, atol=atol, rtol=rtol)
 
 
+def _mmul_transforms(A_shape, B_shape, C_dim):
+    transformA = np.zeros((C_dim, A_shape[0] * A_shape[1]))
+    transformB = np.zeros((C_dim, B_shape[0] * B_shape[1]))
+
+    for i in range(A_shape[0]):
+        for j in range(A_shape[1]):
+            for k in range(B_shape[1]):
+                tmp = (j + k * A_shape[1] + i * B_shape[0] * B_shape[1])
+                transformA[tmp * 2][j + i * A_shape[1]] = 1
+                transformB[tmp * 2 + 1][k + j * B_shape[1]] = 1
+
+    return transformA, transformB
+
+
 def test_matrix_mul(Simulator, nl):
     N = 100
 
@@ -106,15 +120,8 @@ def test_matrix_mul(Simulator, nl):
             ens.encoders = np.tile([[1, 1], [-1, 1], [1, -1], [-1, -1]],
                                    (ens.n_neurons // 4, 1))
 
-    transformA = np.zeros((C.dimensions, Amat.size))
-    transformB = np.zeros((C.dimensions, Bmat.size))
-
-    for i in range(Amat.shape[0]):
-        for j in range(Amat.shape[1]):
-            for k in range(Bmat.shape[1]):
-                tmp = (j + k * Amat.shape[1] + i * Bmat.size)
-                transformA[tmp * 2][j + i * Amat.shape[1]] = 1
-                transformB[tmp * 2 + 1][k + j * Bmat.shape[1]] = 1
+    transformA, transformB = _mmul_transforms(
+        Amat.shape, Bmat.shape, C.dimensions)
 
     nengo.Connection(A.output, C.input, transform=transformA)
     nengo.Connection(B.output, C.input, transform=transformB)
@@ -123,14 +130,11 @@ def test_matrix_mul(Simulator, nl):
                                      Amat.shape[0] * Bmat.shape[1],
                                      radius=radius, label="D")
 
-    def product(x):
-        return x[0]*x[1]
-
     transformC = np.zeros((D.dimensions, Bmat.size))
     for i in range(Bmat.size):
         transformC[i // Bmat.shape[0]][i] = 1
 
-    prod = C.add_output("product", product)
+    prod = C.add_output("product", lambda x: x[0] * x[1])
 
     nengo.Connection(prod, D.input, transform=transformC)
     D_p = nengo.Probe(D.output, 'output', sample_every=0.01, filter=0.01)
