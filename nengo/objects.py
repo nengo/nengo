@@ -74,6 +74,10 @@ class Ensemble(object):
     def __init__(self, neurons, dimensions, radius=1.0, encoders=None,
                  intercepts=Uniform(-1.0, 1.0), max_rates=Uniform(200, 400),
                  eval_points=None, seed=None, label="Ensemble"):
+        if dimensions <= 0:
+            raise ValueError(
+                'Number of dimensions (%d) must be positive' % dimensions)
+
         self.dimensions = dimensions  # Must be set before neurons
         self.neurons = neurons
         self.radius = radius

@@ -2,6 +2,24 @@ import pytest
 
 import nengo
 
+node_attrs = ('output',)
+ens_attrs = ('label', 'dimensions', 'radius')
+connection_attrs = ('filter', 'transform')
+
+
+def compare(orig, copy):
+    if isinstance(orig, nengo.Node):
+        attrs = node_attrs
+    elif isinstance(orig, nengo.Ensemble):
+        attrs = ens_attrs
+    elif isinstance(orig, nengo.Connection):
+        attrs = connection_attrs
+
+    for attr in attrs:
+        assert getattr(orig, attr) == getattr(copy, attr)
+    for p_o, p_c in zip(orig.probes.values(), copy.probes.values()):
+        assert len(p_o) == len(p_c)
+
 
 def test_build():
     m = nengo.Model('test_build', seed=123)
@@ -17,27 +35,10 @@ def test_build():
     mcopy = nengo.Simulator(m).model
     assert [o.label for o in m.objs] == [o.label for o in mcopy.objs]
 
-    def compare_objs(orig, copy, attrs):
-        for attr in attrs:
-            assert getattr(orig, attr) == getattr(copy, attr)
-        for p_o, p_c in zip(orig.probes.values(), copy.probes.values()):
-            assert len(p_o) == len(p_c)
-
-    def compare_connections(orig, copy):
-        assert orig.filter == copy.filter
-        assert orig.transform == copy.transform
-        for p_o, p_c in zip(orig.probes.values(), copy.probes.values()):
-            assert len(p_o) == len(p_c)
-
-    ens_attrs = ('label', 'dimensions', 'radius')
-
     for o, copy_o in zip(m.objs, mcopy.objs):
-        if isinstance(o, nengo.Node):
-            compare_objs(o, copy_o, ('output',))
-        else:
-            compare_objs(o, copy_o, ens_attrs)
+        compare(o, copy_o)
     for c, copy_c in zip(m.connections, mcopy.connections):
-        compare_connections(c, copy_c)
+        compare(c, copy_c)
 
 
 if __name__ == "__main__":
