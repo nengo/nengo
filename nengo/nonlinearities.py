@@ -215,3 +215,13 @@ class LIF(_LIFBase):
 
         voltage[:] = v * (1 - spiked)
         refractory_time[:] = new_refractory_time
+        
+class LIFSurrogate(_LIFBase):
+    """
+    A surrogate model of LIF neurons. It contains neurons, but they are not meant to be simulated, 
+    rather their output is meant to be approximated efficiently. 
+    """
+    pass
+
+    
+

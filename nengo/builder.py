@@ -842,7 +842,14 @@ class Builder(object):
         else:
             ens._scaled_encoders = ens.encoders * (
                 ens.neurons.gain / ens.radius)[:, np.newaxis]
-        self.model.operators.append(DotInc(Signal(ens._scaled_encoders),
+        
+        if isinstance(ens.neurons, nengo.LIFSurrogate):
+            #we want scaled decoders for connection build, but we ignore them in simulation
+            encoder_signal = Signal(np.eye(ens.dimensions))
+        else:
+            encoder_signal = Signal(ens._scaled_encoders)
+            
+        self.model.operators.append(DotInc(encoder_signal,
                                            ens.input_signal,
                                            ens.neurons.input_signal,
                                            tag=ens.label + '.encoder'))
@@ -956,6 +963,22 @@ class Builder(object):
 
             if conn.filter is not None and conn.filter > dt:
                 conn.signal = self._filtered_signal(conn.signal, conn.filter)
+        elif (isinstance(conn.pre, nengo.Ensemble)
+              and isinstance(conn.pre.neurons, nengo.LIFSurrogate)):
+            # similar to direct, but we add bias and noise based on neuron properties
+            if conn.function is None:
+                conn.signal = conn.input_signal
+            else:
+                conn.pyfunc = self._direct_pyfunc(
+                    conn.input_signal,
+                    lambda t, x: conn.function(x),
+                    conn.label)
+                conn.signal = conn.pyfunc.output_signal
+                #TODO: add bias and noise operators here
+
+            if conn.filter is not None and conn.filter > dt:
+                conn.signal = self._filtered_signal(conn.signal, conn.filter)
+            
         elif isinstance(conn.pre, nengo.Ensemble):
             # 2. Normal decoded connection
             conn.signal = Signal(np.zeros(conn.dimensions), name=conn.label)
@@ -1063,3 +1086,12 @@ class Builder(object):
                    nl=lif,
                    voltage=lif.voltage,
                    refractory_time=lif.refractory_time))
+    
+    @builds(nengo.LIFSurrogate)
+    def build_lif_surrogate(self, lif):
+        lif.input_signal = Signal(np.zeros(lif.dimensions),
+                                     name=lif.label)
+        lif.output_signal = lif.input_signal
+        self.model.operators.append(Reset(lif.input_signal))
+
+        
