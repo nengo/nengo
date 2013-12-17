@@ -6,7 +6,7 @@ import logging
 import sys
 
 from .model import Model
-from .nonlinearities import PythonFunction, LIF, LIFRate, LIFSurrogate, Direct
+from .nonlinearities import PythonFunction, SurrogateFunction, LIF, LIFRate, LIFSurrogate, Direct
 from .objects import Ensemble, Node, Connection, Probe, Network
 from . import networks
 from .simulator import Simulator

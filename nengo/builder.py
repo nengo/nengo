@@ -628,6 +628,27 @@ class SimPyFunc(Operator):
                 output[...] = fn(t, J)
         return step
 
+class SimSurrFunc(SimPyFunc):
+    def __init__(self, output, J, fn, n_args):
+        SimPyFunc.__init__(self, output, J, fn, n_args)   
+        
+    def make_step(self, dct, dt):
+        t = dct['__time__']
+        output = dct[self.output]
+        fn = self.fn
+
+        if self.n_args == 1:
+
+            def step():
+                clean = fn(t)
+                output[...] = clean + 0.1*np.random.randn(clean.shape)
+        elif self.n_args == 2:
+            J = dct[self.J]
+
+            def step():
+                clean = fn(t, J)
+                output[...] = clean + 0.1*np.random.randn(clean.shape)
+        return step
 
 class SimLIF(Operator):
     """
@@ -939,6 +960,14 @@ class Builder(object):
         self.model.operators.append(DotInc(
             input_signal, Signal(1.0), pyfunc.input_signal))
         return pyfunc
+    
+    def _surrogate_pyfunc(self, input_signal, function, label):
+        surrfunc = nengo.SurrogateFunction(
+            fn=function, n_in=input_signal.size, label=label)
+        self.build_surrfunc(surrfunc)
+        self.model.operators.append(DotInc(
+            input_signal, Signal(1.0), surrfunc.input_signal))
+        return surrfunc    
 
     @builds(nengo.Connection)
     def build_connection(self, conn):
@@ -969,7 +998,7 @@ class Builder(object):
             if conn.function is None:
                 conn.signal = conn.input_signal
             else:
-                conn.pyfunc = self._direct_pyfunc(
+                conn.pyfunc = self._direct_surrfunc(
                     conn.input_signal,
                     lambda t, x: conn.function(x),
                     conn.label)
@@ -1045,6 +1074,23 @@ class Builder(object):
                       n_args=pyfn.n_args))
         self.model.operators.extend(pyfn.operators)
 
+    @builds(nengo.SurrogateFunction)
+    def build_surrfunc(self, sfn):
+        if sfn.n_in: #TODO: this should always be present unless we extend to nodes
+            sfn.input_signal = Signal(np.zeros(sfn.n_in),
+                                       name=sfn.label + '.input')
+            sfn.operators = [Reset(sfn.input_signal)]
+        else:
+            sfn.operators = []
+        sfn.output_signal = Signal(np.zeros(sfn.n_out),
+                                    name=sfn.label + '.output')
+        sfn.operators.append(
+            SimSurrFunc(output=sfn.output_signal,
+                      J=sfn.input_signal if sfn.n_in else None,
+                      fn=sfn.fn,
+                      n_args=sfn.n_args))
+        self.model.operators.extend(sfn.operators)
+        
     def build_neurons(self, neurons):
         neurons.input_signal = Signal(np.zeros(neurons.n_in),
                                       name=neurons.label + '.input')

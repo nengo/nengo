@@ -42,6 +42,13 @@ class PythonFunction(object):
     def n_args(self):
         return 2 if self.n_in > 0 else 1
 
+class SurrogateFunction(PythonFunction):
+    """
+    Wraps a PythonFunction to add a surrogate model of noise and bias in a neuron estimate.  
+    """
+    def __init__(self, fn, n_in, **kwargs):
+        PythonFunction.__init__(self, fn, n_in, **kwargs)
+        
 
 class Neurons(object):
 
