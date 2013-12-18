@@ -641,13 +641,13 @@ class SimSurrFunc(SimPyFunc):
 
             def step():
                 clean = fn(t)
-                output[...] = clean + .1*np.random.randn(clean.shape[0])
+                output[...] = clean + .1*np.random.randn(len(clean))
         elif self.n_args == 2:
             J = dct[self.J]
 
             def step():
                 clean = fn(t, J)
-                output[...] = clean + .1*np.random.randn(clean.shape[0])
+                output[...] = clean + .1*np.random.randn(len(clean))
         return step
 
 class SimLIF(Operator):
@@ -995,9 +995,14 @@ class Builder(object):
         elif (isinstance(conn.pre, nengo.Ensemble)
               and isinstance(conn.pre.neurons, nengo.LIFSurrogate)):
             # similar to direct, but we add bias and noise based on neuron properties
+            if conn.function is None:            
+                conn_fun = lambda t, x: x 
+            else:
+                conn_fun = lambda t, x: conn.function(x)
+                
             conn.pyfunc = self._surrogate_pyfunc(
                 conn.input_signal,
-                lambda t, x: x if conn.function is None else lambda t, x: conn.function(x),
+                conn_fun,
                 conn.label)
             conn.signal = conn.pyfunc.output_signal
 
