@@ -995,15 +995,11 @@ class Builder(object):
         elif (isinstance(conn.pre, nengo.Ensemble)
               and isinstance(conn.pre.neurons, nengo.LIFSurrogate)):
             # similar to direct, but we add bias and noise based on neuron properties
-            if conn.function is None:
-                conn.signal = conn.input_signal
-            else:
-                conn.pyfunc = self._surrogate_pyfunc(
-                    conn.input_signal,
-                    lambda t, x: conn.function(x),
-                    conn.label)
-                conn.signal = conn.pyfunc.output_signal
-                #TODO: add bias and noise operators here
+            conn.pyfunc = self._surrogate_pyfunc(
+                conn.input_signal,
+                lambda t, x: x if conn.function is None else lambda t, x: conn.function(x),
+                conn.label)
+            conn.signal = conn.pyfunc.output_signal
 
             if conn.filter is not None and conn.filter > dt:
                 conn.signal = self._filtered_signal(conn.signal, conn.filter)
