@@ -641,13 +641,13 @@ class SimSurrFunc(SimPyFunc):
 
             def step():
                 clean = fn(t)
-                output[...] = clean + 0.1*np.random.randn(clean.shape)
+                output[...] = clean + .1*np.random.randn(clean.shape[0])
         elif self.n_args == 2:
             J = dct[self.J]
 
             def step():
                 clean = fn(t, J)
-                output[...] = clean + 0.1*np.random.randn(clean.shape)
+                output[...] = clean + .1*np.random.randn(clean.shape[0])
         return step
 
 class SimLIF(Operator):
@@ -998,7 +998,7 @@ class Builder(object):
             if conn.function is None:
                 conn.signal = conn.input_signal
             else:
-                conn.pyfunc = self._direct_surrfunc(
+                conn.pyfunc = self._surrogate_pyfunc(
                     conn.input_signal,
                     lambda t, x: conn.function(x),
                     conn.label)
