@@ -629,25 +629,33 @@ class SimPyFunc(Operator):
         return step
 
 class SimSurrFunc(SimPyFunc):
-    def __init__(self, output, J, fn, n_args):
-        SimPyFunc.__init__(self, output, J, fn, n_args)   
+    """
+    Models non-ideal properties of function estimate from spikes.
+    """
+    def __init__(self, output, J, fn, n_args, S):
+        SimPyFunc.__init__(self, output, J, fn, n_args)
+        self.chol_S = np.linalg.cholesky(S)
         
     def make_step(self, dct, dt):
         t = dct['__time__']
         output = dct[self.output]
         fn = self.fn
-
+        
         if self.n_args == 1:
 
             def step():
                 clean = fn(t)
-                output[...] = clean + .1*np.random.randn(len(clean))
+                white_noise = np.random.randn(self.chol_S.shape[1])
+                correlated_noise = self.chol_S.dot(white_noise)
+                output[...] = clean + correlated_noise
         elif self.n_args == 2:
             J = dct[self.J]
 
             def step():
                 clean = fn(t, J)
-                output[...] = clean + .1*np.random.randn(len(clean))
+                white_noise = np.random.randn(self.chol_S.shape[1])
+                correlated_noise = self.chol_S.dot(white_noise)
+                output[...] = clean + correlated_noise
         return step
 
 class SimLIF(Operator):
@@ -865,7 +873,7 @@ class Builder(object):
                 ens.neurons.gain / ens.radius)[:, np.newaxis]
         
         if isinstance(ens.neurons, nengo.LIFSurrogate):
-            #we want scaled decoders for connection build, but we ignore them in simulation
+            #we want scaled decoders for the connection build, but we will ignore them in simulation
             encoder_signal = Signal(np.eye(ens.dimensions))
         else:
             encoder_signal = Signal(ens._scaled_encoders)
@@ -961,13 +969,24 @@ class Builder(object):
             input_signal, Signal(1.0), pyfunc.input_signal))
         return pyfunc
     
-    def _surrogate_pyfunc(self, input_signal, function, label):
+    def _surrogate_pyfunc(self, input_signal, function, label, pre, decoders):
         surrfunc = nengo.SurrogateFunction(
-            fn=function, n_in=input_signal.size, label=label)
+            function, input_signal.size, pre, decoders, label=label)
         self.build_surrfunc(surrfunc)
         self.model.operators.append(DotInc(
             input_signal, Signal(1.0), surrfunc.input_signal))
         return surrfunc    
+    
+    def _make_decoders(self, conn, dt, rng):
+        activities = conn.pre.activities(conn.eval_points) * dt
+        if conn.function is None:
+            targets = conn.eval_points
+        else:
+            targets = np.array(
+                [conn.function(ep) for ep in conn.eval_points])
+            if targets.ndim < 2:
+                targets.shape = targets.shape[0], 1
+        return conn.decoder_solver(activities, targets, rng)
 
     @builds(nengo.Connection)
     def build_connection(self, conn):
@@ -992,47 +1011,42 @@ class Builder(object):
 
             if conn.filter is not None and conn.filter > dt:
                 conn.signal = self._filtered_signal(conn.signal, conn.filter)
-        elif (isinstance(conn.pre, nengo.Ensemble)
-              and isinstance(conn.pre.neurons, nengo.LIFSurrogate)):
-            # similar to direct, but we add bias and noise based on neuron properties
-            if conn.function is None:            
-                conn_fun = lambda t, x: x 
-            else:
-                conn_fun = lambda t, x: conn.function(x)
                 
-            conn.pyfunc = self._surrogate_pyfunc(
-                conn.input_signal,
-                conn_fun,
-                conn.label)
-            conn.signal = conn.pyfunc.output_signal
-
-            if conn.filter is not None and conn.filter > dt:
-                conn.signal = self._filtered_signal(conn.signal, conn.filter)
-            
         elif isinstance(conn.pre, nengo.Ensemble):
             # 2. Normal decoded connection
-            conn.signal = Signal(np.zeros(conn.dimensions), name=conn.label)
             if conn._decoders is None:
-                activities = conn.pre.activities(conn.eval_points) * dt
-                if conn.function is None:
-                    targets = conn.eval_points
-                else:
-                    targets = np.array(
-                        [conn.function(ep) for ep in conn.eval_points])
-                    if targets.ndim < 2:
-                        targets.shape = targets.shape[0], 1
-                conn._decoders = conn.decoder_solver(activities, targets, rng)
+                conn._decoders = self._make_decoders(conn, dt, rng)
 
-            if conn.filter is not None and conn.filter > dt:
-                o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
-                conn.decoder_signal = Signal(conn._decoders * n_coef)
+            if isinstance(conn.pre.neurons, nengo.LIFSurrogate):
+                if conn.function is None:            
+                    conn_fun = lambda t, x: x  
+                else:
+                    conn_fun = lambda t, x: conn.function(x)
+                    
+                conn.pyfunc = self._surrogate_pyfunc(
+                    conn.input_signal,
+                    conn_fun,
+                    conn.label, 
+                    conn.pre, 
+                    conn._decoders)
+                conn.signal = conn.pyfunc.output_signal
+
+                if conn.filter is not None and conn.filter > dt:
+                    conn.signal = self._filtered_signal(conn.signal, conn.filter)
             else:
-                conn.decoder_signal = Signal(conn._decoders)
-                o_coef = 0
-            self.model.operators.append(ProdUpdate(conn.decoder_signal,
-                                                   conn.input_signal,
-                                                   Signal(o_coef),
-                                                   conn.signal))
+                conn.signal = Signal(np.zeros(conn.dimensions), name=conn.label)
+            
+                if conn.filter is not None and conn.filter > dt:
+                    o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
+                    conn.decoder_signal = Signal(conn._decoders * n_coef)
+                else:
+                    conn.decoder_signal = Signal(conn._decoders)
+                    o_coef = 0
+                self.model.operators.append(ProdUpdate(conn.decoder_signal,
+                                                       conn.input_signal,
+                                                       Signal(o_coef),
+                                                       conn.signal))
+                
         elif conn.filter is not None and conn.filter > self.model.dt:
             # 4. Filtered connection
             conn.signal = self._filtered_signal(conn.input_signal, conn.filter)
@@ -1077,7 +1091,7 @@ class Builder(object):
 
     @builds(nengo.SurrogateFunction)
     def build_surrfunc(self, sfn):
-        if sfn.n_in: #TODO: this should always be present unless we extend to nodes
+        if sfn.n_in: #TODO: is this always going to be be there?
             sfn.input_signal = Signal(np.zeros(sfn.n_in),
                                        name=sfn.label + '.input')
             sfn.operators = [Reset(sfn.input_signal)]
@@ -1089,7 +1103,8 @@ class Builder(object):
             SimSurrFunc(output=sfn.output_signal,
                       J=sfn.input_signal if sfn.n_in else None,
                       fn=sfn.fn,
-                      n_args=sfn.n_args))
+                      n_args=sfn.n_args, 
+                      S=sfn.S))
         self.model.operators.extend(sfn.operators)
         
     def build_neurons(self, neurons):

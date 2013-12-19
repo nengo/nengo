@@ -46,8 +46,13 @@ class SurrogateFunction(PythonFunction):
     """
     Wraps a PythonFunction to add a surrogate model of noise and bias in a neuron estimate.  
     """
-    def __init__(self, fn, n_in, **kwargs):
+    def __init__(self, fn, n_in, ensemble, decoders, **kwargs):
         PythonFunction.__init__(self, fn, n_in, **kwargs)
+
+        noise_sd = .5*ensemble.neurons.n_neurons**-2/100**-2
+        self.S = noise_sd**2 * np.eye(decoders.shape[0]) #mock noise covariance matrix
+
+        #TODO: set this with realistic value for ensemble, filter, add bias, etc. 
         
 
 class Neurons(object):
