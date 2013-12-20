@@ -628,6 +628,7 @@ class SimPyFunc(Operator):
                 output[...] = fn(t, J)
         return step
 
+#TODO: switch to interpolating function+bias and remove this (will allow more parallelism on GPU) 
 class SimSurrFunc(SimPyFunc):
     """
     Models non-ideal properties of function estimate from spikes.
@@ -657,6 +658,26 @@ class SimSurrFunc(SimPyFunc):
                 correlated_noise = self.chol_S.dot(white_noise)
                 output[...] = clean + correlated_noise
         return step
+    
+    
+class SimNoise(Operator):
+    def __init__(self, output, nl):
+        self.output = output
+        self.nl = nl
+        
+        self.reads = []
+        self.updates = []
+        self.sets = []
+        self.incs = [output]   
+    
+    def make_step(self, dct, dt):
+        t = dct['__time__']
+        output = dct[self.output]
+
+        def step():
+            output[...] += self.nl.get_noise(t)
+        return step
+
 
 class SimLIF(Operator):
     """
@@ -1091,20 +1112,30 @@ class Builder(object):
 
     @builds(nengo.SurrogateFunction)
     def build_surrfunc(self, sfn):
-        if sfn.n_in: #TODO: is this always going to be be there?
-            sfn.input_signal = Signal(np.zeros(sfn.n_in),
-                                       name=sfn.label + '.input')
-            sfn.operators = [Reset(sfn.input_signal)]
-        else:
-            sfn.operators = []
-        sfn.output_signal = Signal(np.zeros(sfn.n_out),
-                                    name=sfn.label + '.output')
+        sfn.input_signal = Signal(np.zeros(sfn.n_in),
+                                   name=sfn.label + '.input')
+        sfn.operators = [Reset(sfn.input_signal)]
+
+        sfn.static_signal = Signal(np.zeros(sfn.n_out),
+                                    name=sfn.label + '.static')
         sfn.operators.append(
-            SimSurrFunc(output=sfn.output_signal,
+            SimPyFunc(output=sfn.static_signal,
                       J=sfn.input_signal if sfn.n_in else None,
                       fn=sfn.fn,
-                      n_args=sfn.n_args, 
-                      S=sfn.S))
+                      n_args=sfn.n_args))         
+        
+        #TODO: don't need this once we swap to interpolation, which will set rather than update
+        sfn.output_signal = Signal(np.zeros(sfn.n_out), 
+                                    name=sfn.label + '.output')
+        self.model.operators.append(Reset(sfn.output_signal))
+        self.model.operators.append(
+            DotInc(Signal(np.ones(sfn.n_out)), sfn.static_signal, sfn.output_signal,
+                tag=str(sfn)+'.static'))
+        
+        sfn.noise_signal = Signal(np.zeros(sfn.n_out),
+                                    name=sfn.label + '.noise')
+        sfn.operators.append(SimNoise(output=sfn.output_signal, nl=sfn.noise)) 
+
         self.model.operators.extend(sfn.operators)
         
     def build_neurons(self, neurons):

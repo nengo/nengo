@@ -2,7 +2,7 @@ import copy
 import logging
 
 import numpy as np
-
+import scipy.signal as ss
 from . import decoders
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,7 @@ class PythonFunction(object):
     def n_args(self):
         return 2 if self.n_in > 0 else 1
 
+
 class SurrogateFunction(PythonFunction):
     """
     Wraps a PythonFunction to add a surrogate model of noise and bias in a neuron estimate.  
@@ -49,11 +50,93 @@ class SurrogateFunction(PythonFunction):
     def __init__(self, fn, n_in, ensemble, decoders, **kwargs):
         PythonFunction.__init__(self, fn, n_in, **kwargs)
 
-        noise_sd = .5*ensemble.neurons.n_neurons**-2/100**-2
-        self.S = noise_sd**2 * np.eye(decoders.shape[0]) #mock noise covariance matrix
-
+        # mock parameters ... 
+        noise_sd = .5*ensemble.neurons.n_neurons**-2/100**-2        
+        sigma = noise_sd**2 * np.eye(decoders.shape[0]) #noise covariance matrix
+        num = [0.01594, 4.855, 160]
+        den = [1, 406.6, 119400]
+        self.noise = Noise(sigma, num, den, .001)
+        
         #TODO: set this with realistic value for ensemble, filter, add bias, etc. 
         
+class Noise(object):
+    """
+    Generates noise with specified covariance and spectrum.
+    
+    Parameters
+    ----------
+    sigma: covariance matrix of noise for all an ensemble's outputs (#out x #out)
+    num: numerator of 2nd order transfer function that defines noise spectrum (Laplace domain)
+    den: denominator of 2nd order transfer function that defines noise spectrum (Laplace domain)
+    dt: time step (s) at which noise is generated
+    """
+    def __init__(self, sigma, num, den, dt):
+        self.sigma = sigma
+        self.dt = dt
+        self._noise_time = np.zeros(0)
+        self._zi = np.zeros([len(sigma), 2]) #initial conditions for filters
+        
+        self.chol_sigma = np.linalg.cholesky(sigma); 
+    
+        fs = 1/self.dt
+        [self.bz, self.az] = ss.bilinear(num, den, fs=fs)
+        
+        self.make_samples(0, 3)
+        actual_sd = np.std(self._noise_samples, 1)
+        ideal_sd = np.sqrt(np.diag(self.sigma))
+        self._gain = np.mean(ideal_sd) / np.mean(actual_sd)        
+
+
+    def get_noise(self, time):
+        """
+        Parameters
+        ---------- 
+        time: end of simulation time step
+         
+        Returns 
+        -------
+        vector of noise values (a random variable with spatial and
+          temporal correlations)
+        """ 
+        index = -1
+        if len(self._noise_time) > 0:
+            index = round((time - self._noise_time[0]) / self.dt)
+            if (index < 0) or (index > len(self._noise_time)-1):
+                index = -1
+         
+        if index < 0: 
+            self.make_samples(time, time+1.0)
+            index = 0
+        
+        return self._gain * self._noise_samples[:, index]
+
+
+    def make_samples(self, start_time, end_time):
+        """
+        This method sets internal variables in support of get_noise, which calls it as needed. 
+         
+        Parameters
+        ----------
+        start_time: beginning of simulation time for which to generate noise samples
+        end_time: end of simulation time for which to generate noise samples
+        """
+         
+        previous_time = [self._noise_time[-1]] if len(self._noise_time) > 0 else []
+        self._noise_time = np.arange(start_time, end_time, self.dt)
+ 
+        n_outs = self.chol_sigma.shape[0]
+        n_steps = len(self._noise_time)
+         
+        uncorrelated = np.random.randn(n_outs, n_steps)
+        correlated = self.chol_sigma.dot(uncorrelated)
+         
+        if len(previous_time) == 0 or abs(start_time - previous_time[0] - self.dt) > self.dt/10:       
+            self._zi = np.zeros([n_outs, 2]) #looks like a different simulation so zero initial conditions
+             
+        self._noise_samples = np.zeros_like(correlated);
+        for i in range(n_outs):
+            [self._noise_samples[i], self._zi[i]] = ss.lfilter(self.bz, self.az, correlated[i], zi=self._zi[i])
+
 
 class Neurons(object):
 
