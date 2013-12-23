@@ -47,7 +47,7 @@ class SurrogateFunction(PythonFunction):
     """
     Wraps a PythonFunction to add a surrogate model of noise and bias in a neuron estimate.  
     """
-    def __init__(self, fn, n_in, ensemble, decoders, **kwargs):
+    def __init__(self, fn, n_in, ensemble, decoders, dt, **kwargs):
         PythonFunction.__init__(self, fn, n_in, **kwargs)
 
         # mock parameters ... 
@@ -55,7 +55,9 @@ class SurrogateFunction(PythonFunction):
         sigma = noise_sd**2 * np.eye(decoders.shape[0]) #noise covariance matrix
         num = [0.01594, 4.855, 160]
         den = [1, 406.6, 119400]
-        self.noise = Noise(sigma, num, den, .001)
+        
+        self.noise = Noise(sigma, num, den, dt)
+        self.static = InterpolatorND(.1, ensemble, decoders, dt) #TODO: handle multiple outputs 
         
         #TODO: set this with realistic value for ensemble, filter, add bias, etc. 
         
@@ -110,7 +112,6 @@ class Noise(object):
         
         return self._gain * self._noise_samples[:, index]
 
-
     def make_samples(self, start_time, end_time):
         """
         This method sets internal variables in support of get_noise, which calls it as needed. 
@@ -137,6 +138,48 @@ class Noise(object):
         for i in range(n_outs):
             [self._noise_samples[i], self._zi[i]] = ss.lfilter(self.bz, self.az, correlated[i], zi=self._zi[i])
 
+
+class InterpolatorND:
+    """
+    An interpolator that scales linearly with # dimensions by ignoring off-axis 
+    nonlinearities. Results are a weighted average of interpolation along each 
+    axis. 
+    """ 
+    def __init__(self, dx, ens, decoders, dt):
+        self._dx = dx
+        self._minx = -2
+        self._x = np.linspace(self._minx, -self._minx, -2*self._minx/dx+1)
+        
+        self._y = np.zeros((len(self._x), ens.dimensions, decoders.shape[0]))
+        for i in range(ens.dimensions):
+            x = np.zeros((len(self._x), ens.dimensions))
+            x[:,i] = self._x
+            r = ens.activities(eval_points=x) * dt
+#             self._y[:,i] = r.dot(decoders.T)[:,0]
+            self._y[:,i,:] = r.dot(decoders.T)
+
+        self._m = np.zeros_like(self._y)
+        self._m[0:len(self._x)-1,:,:] = np.diff(self._y, axis=0) / dx #precompute slopes
+        self._m[len(self._x)-1,:,:] = self._m[len(self._x)-2,:,:] #simplify later indexing  
+        
+    def __call__(self, x):
+        if x.shape == () or x.shape == (1,): #this is treated separately for speed (about 4x faster for scalars)
+            x_ind = int((x-self._minx) / self._dx)
+            x_ind = x_ind if x_ind > 0 else 0
+            x_ind = x_ind if x_ind < len(self._x)-1 else len(self._x)-1
+            offset = x - self._x[x_ind]
+            return self._y[x_ind,0,:] + offset * self._m[x_ind,0,:]
+        else:
+            x2 = x**2
+            sx2 = sum(x2)
+            xrad = sx2**0.5 * np.sign(x) 
+            x_ind = np.floor((xrad-self._minx) / self._dx).astype(int)
+            x_ind = np.maximum(np.minimum(x_ind, len(self._x)-1), 0)
+            dim_ind = np.arange(len(x))
+            offset = xrad - self._x[x_ind]
+            y_on_axes = self._y[x_ind,dim_ind,:] + offset * self._m[x_ind,dim_ind,:]
+            return x2.dot(y_on_axes) / sx2 if sx2 > 0 else 0
+        
 
 class Neurons(object):
 

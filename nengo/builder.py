@@ -658,8 +658,29 @@ class SimSurrFunc(SimPyFunc):
                 correlated_noise = self.chol_S.dot(white_noise)
                 output[...] = clean + correlated_noise
         return step
+
+
+class SimInterp(Operator):
+    def __init__(self, x, y, nl):
+        self.x = x
+        self.y = y
+        self.nl = nl
+        
+        self.reads = [x]
+        self.updates = []
+        self.sets = [y]
+        self.incs = []   
     
-    
+    def make_step(self, dct, dt):
+        x = dct[self.x]
+        y = dct[self.y]
+        
+        def step():
+            y[...] = self.nl(x)
+            
+        return step
+     
+
 class SimNoise(Operator):
     def __init__(self, output, nl):
         self.output = output
@@ -990,13 +1011,13 @@ class Builder(object):
             input_signal, Signal(1.0), pyfunc.input_signal))
         return pyfunc
     
-    def _surrogate_pyfunc(self, input_signal, function, label, pre, decoders):
+    def _surrogate_pyfunc(self, input_signal, function, label, pre, decoders, dt):
         surrfunc = nengo.SurrogateFunction(
-            function, input_signal.size, pre, decoders, label=label)
+            function, input_signal.size, pre, decoders, dt, label=label)
         self.build_surrfunc(surrfunc)
         self.model.operators.append(DotInc(
             input_signal, Signal(1.0), surrfunc.input_signal))
-        return surrfunc    
+        return surrfunc
     
     def _make_decoders(self, conn, dt, rng):
         activities = conn.pre.activities(conn.eval_points) * dt
@@ -1049,7 +1070,8 @@ class Builder(object):
                     conn_fun,
                     conn.label, 
                     conn.pre, 
-                    conn._decoders)
+                    conn._decoders, 
+                    dt)
                 conn.signal = conn.pyfunc.output_signal
 
                 if conn.filter is not None and conn.filter > dt:
@@ -1116,24 +1138,25 @@ class Builder(object):
                                    name=sfn.label + '.input')
         sfn.operators = [Reset(sfn.input_signal)]
 
-        sfn.static_signal = Signal(np.zeros(sfn.n_out),
-                                    name=sfn.label + '.static')
-        sfn.operators.append(
-            SimPyFunc(output=sfn.static_signal,
-                      J=sfn.input_signal if sfn.n_in else None,
-                      fn=sfn.fn,
-                      n_args=sfn.n_args))         
+#         sfn.static_signal = Signal(np.zeros(sfn.n_out),
+#                                     name=sfn.label + '.static')
+#         sfn.operators.append(
+#             SimPyFunc(output=sfn.static_signal,
+#                       J=sfn.input_signal if sfn.n_in else None,
+#                       fn=sfn.fn,
+#                       n_args=sfn.n_args))         
         
-        #TODO: don't need this once we swap to interpolation, which will set rather than update
         sfn.output_signal = Signal(np.zeros(sfn.n_out), 
                                     name=sfn.label + '.output')
-        self.model.operators.append(Reset(sfn.output_signal))
-        self.model.operators.append(
-            DotInc(Signal(np.ones(sfn.n_out)), sfn.static_signal, sfn.output_signal,
-                tag=str(sfn)+'.static'))
+        self.model.operators.append(SimInterp(sfn.input_signal, sfn.output_signal, sfn.static))
         
-        sfn.noise_signal = Signal(np.zeros(sfn.n_out),
-                                    name=sfn.label + '.noise')
+#         self.model.operators.append(Reset(sfn.output_signal))
+#         self.model.operators.append(
+#             DotInc(Signal(np.ones(sfn.n_out)), sfn.static_signal, sfn.output_signal,
+#                 tag=str(sfn)+'.static'))
+        
+#         sfn.noise_signal = Signal(np.zeros(sfn.n_out),
+#                                     name=sfn.label + '.noise')
         sfn.operators.append(SimNoise(output=sfn.output_signal, nl=sfn.noise)) 
 
         self.model.operators.extend(sfn.operators)
