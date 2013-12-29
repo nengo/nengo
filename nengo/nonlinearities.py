@@ -182,6 +182,65 @@ class InterpolatorND:
                 y_on_axes[i] = self._y[x_ind[i],i,:] + offset[i] * self._m[x_ind[i],i,:]
                  
             return x2.dot(y_on_axes) / sx2 if sx2 > 0 else np.zeros(self._outdim)
+
+
+def smooth(signal, w_len):
+    """
+    Applies a square smoothing convolution with minimized edge effects. 
+    
+    Parameters
+    ----------
+    signal: something to smooth
+    w_len: window size (odd integer)
+    """
+    assert w_len%2 == 1, 'Window length should be odd'
+    reflected = np.concatenate((signal[w_len-1:0:-1], signal, signal[-1:-w_len:-1]), axis=1)
+    return np.convolve(reflected, np.ones(w_len)/w_len, mode='same')[w_len-1:-w_len+1]
+
+class Interpolator2D: 
+    """
+    Does 2D interpolation. 
+    """
+    def __init__(self, dx, ens, decoders, dt):
+        assert ens.dimensions == 2
+        self._dim = 2
+        self._outdim = decoders.shape[0]
+        self._dx = dx
+        self._minx = -2
+        self._x = np.linspace(self._minx, -self._minx, -2*self._minx/dx+1)
+        nx = len(self._x)
+        
+        xgrid = np.tile(self._x[:,None], [1,nx])
+        X = np.concatenate((np.reshape(xgrid, [1, nx**2]), np.reshape(xgrid.T, [1, nx**2])))
+        r = ens.activities(eval_points=X) * dt
+        Y = r.dot(decoders.T)  
+        self._y = np.reshape(Y, [nx, nx, self._outdim]) #TODO: check this
+        
+        self._grad0 = np.subtract(self._y[1:nx,:,:], self._y[0:nx-1,:,:]) / dx
+        self._grad0 = np.concatenate((self._grad0, self._grad0[nx-2:nx-1,:,:]), axis=0) #simplify later indexing
+        self._grad1 = np.subtract(self._y[:,1:nx,:], self._y[:,0:nx-1,:]) / dx
+        self._grad1 = np.concatenate((self._grad1, self._grad1[:,nx-2:nx-1,:]), axis=1)
+        
+        smoothing_window_length = 7
+        for i in range(self._outdim): #smooth edges for better extrapolation 
+            self._grad0[0,:,i] = smooth(self._grad0[0,:,i], smoothing_window_length)
+            self._grad0[-1,:,i] = smooth(self._grad0[-1,:,i], smoothing_window_length)
+            self._grad1[:,0,i] = smooth(self._grad1[:,0,i], smoothing_window_length)
+            self._grad1[:,-1,i] = smooth(self._grad1[:,-1,i], smoothing_window_length)
+        
+    def get_index(self, x):
+        x_ind = int((x-self._minx) / self._dx)
+        x_ind = x_ind if x_ind > 0 else 0
+        x_ind = x_ind if x_ind < len(self._x)-1 else len(self._x)-1
+        return x_ind
+
+    def __call__(self, x):
+        xi0 = self.get_index(x[0])
+        xi1 = self.get_index(x[1])
+        offset0 = x[0]-self._x[xi0]
+        offset1 = x[1]-self._x[xi1]
+        return self._y[xi0, xi1,:] + offset0*self._grad0[xi0, xi1,:] + offset1*self._grad1[xi0, xi1,:] 
+    
         
 
 class Neurons(object):
