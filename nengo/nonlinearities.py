@@ -149,21 +149,22 @@ class InterpolatorND:
         self._dx = dx
         self._minx = -2
         self._x = np.linspace(self._minx, -self._minx, -2*self._minx/dx+1)
+        self._dim = ens.dimensions
+        self._outdim = decoders.shape[0]
         
         self._y = np.zeros((len(self._x), ens.dimensions, decoders.shape[0]))
         for i in range(ens.dimensions):
             x = np.zeros((len(self._x), ens.dimensions))
             x[:,i] = self._x
             r = ens.activities(eval_points=x) * dt
-#             self._y[:,i] = r.dot(decoders.T)[:,0]
-            self._y[:,i,:] = r.dot(decoders.T)
+            self._y[:,i,:] = r.dot(decoders.T) #all dimensions of output along axis i 
 
         self._m = np.zeros_like(self._y)
         self._m[0:len(self._x)-1,:,:] = np.diff(self._y, axis=0) / dx #precompute slopes
         self._m[len(self._x)-1,:,:] = self._m[len(self._x)-2,:,:] #simplify later indexing  
         
     def __call__(self, x):
-        if x.shape == () or x.shape == (1,): #this is treated separately for speed (about 4x faster for scalars)
+        if self._dim == 1: #this is treated separately for speed (about 4x faster for scalars)
             x_ind = int((x-self._minx) / self._dx)
             x_ind = x_ind if x_ind > 0 else 0
             x_ind = x_ind if x_ind < len(self._x)-1 else len(self._x)-1
@@ -175,10 +176,12 @@ class InterpolatorND:
             xrad = sx2**0.5 * np.sign(x) 
             x_ind = np.floor((xrad-self._minx) / self._dx).astype(int)
             x_ind = np.maximum(np.minimum(x_ind, len(self._x)-1), 0)
-            dim_ind = np.arange(len(x))
+            y_on_axes = np.zeros([self._dim, self._outdim])
             offset = xrad - self._x[x_ind]
-            y_on_axes = self._y[x_ind,dim_ind,:] + offset * self._m[x_ind,dim_ind,:]
-            return x2.dot(y_on_axes) / sx2 if sx2 > 0 else 0
+            for i in range(self._dim):
+                y_on_axes[i] = self._y[x_ind[i],i,:] + offset[i] * self._m[x_ind[i],i,:]
+                 
+            return x2.dot(y_on_axes) / sx2 if sx2 > 0 else np.zeros(self._outdim)
         
 
 class Neurons(object):
