@@ -57,7 +57,12 @@ class SurrogateFunction(PythonFunction):
         den = [1, 406.6, 119400]
         
         self.noise = Noise(sigma, num, den, dt)
-        self.static = InterpolatorND(.1, ensemble, decoders, dt) #TODO: handle multiple outputs 
+        if ensemble.dimensions == 1:
+            self.static = InterpolatorND(.05, ensemble, decoders, dt)              
+        if ensemble.dimensions == 2:
+            self.static = Interpolator2D(.1, ensemble, decoders, dt)
+        else:
+            self.static = InterpolatorND(.1, ensemble, decoders, dt)  
         
         #TODO: set this with realistic value for ensemble, filter, add bias, etc. 
         
@@ -212,7 +217,7 @@ class Interpolator2D:
         
         xgrid = np.tile(self._x[:,None], [1,nx])
         X = np.concatenate((np.reshape(xgrid, [1, nx**2]), np.reshape(xgrid.T, [1, nx**2])))
-        r = ens.activities(eval_points=X) * dt
+        r = ens.activities(eval_points=X.T) * dt
         Y = r.dot(decoders.T)  
         self._y = np.reshape(Y, [nx, nx, self._outdim]) #TODO: check this
         
