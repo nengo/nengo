@@ -50,11 +50,11 @@ class SurrogateFunction(PythonFunction):
     def __init__(self, fn, n_in, ensemble, decoders, dt, **kwargs):
         PythonFunction.__init__(self, fn, n_in, **kwargs)
 
-        # mock parameters ... 
-        noise_sd = .5*ensemble.neurons.n_neurons**-2/100**-2        
+        # TODO: derive more realistic filter params from ensemble params
+        noise_sd = .6*ensemble.neurons.n_neurons**-.5/100**-.5
         sigma = noise_sd**2 * np.eye(decoders.shape[0]) #noise covariance matrix
         num = [0.01594, 4.855, 160]
-        den = [1, 406.6, 119400]
+        den = [1, 591.4731, 252661.872668]
         
         self.noise = Noise(sigma, num, den, dt)
         if ensemble.dimensions == 1:
@@ -64,7 +64,6 @@ class SurrogateFunction(PythonFunction):
         else:
             self.static = InterpolatorND(.1, ensemble, decoders, dt)  
         
-        #TODO: set this with realistic value for ensemble, filter, add bias, etc. 
         
 class Noise(object):
     """
@@ -219,7 +218,7 @@ class Interpolator2D:
         X = np.concatenate((np.reshape(xgrid, [1, nx**2]), np.reshape(xgrid.T, [1, nx**2])))
         r = ens.activities(eval_points=X.T) * dt
         Y = r.dot(decoders.T)  
-        self._y = np.reshape(Y, [nx, nx, self._outdim]) #TODO: check this
+        self._y = np.reshape(Y, [nx, nx, self._outdim]) 
         
         self._grad0 = np.subtract(self._y[1:nx,:,:], self._y[0:nx-1,:,:]) / dx
         self._grad0 = np.concatenate((self._grad0, self._grad0[nx-2:nx-1,:,:]), axis=0) #simplify later indexing
