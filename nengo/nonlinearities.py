@@ -2,7 +2,7 @@ import copy
 import logging
 
 import numpy as np
-
+import scipy.signal as ss
 from . import decoders
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,224 @@ class PythonFunction(object):
     def n_args(self):
         return 2 if self.n_in > 0 else 1
 
+
+class SurrogateFunction(PythonFunction):
+    """
+    Wraps a PythonFunction to add a surrogate model of noise and bias in a neuron estimate.  
+    """
+    def __init__(self, fn, n_in, ensemble, decoders, dt, **kwargs):
+        PythonFunction.__init__(self, fn, n_in, **kwargs)
+
+        # TODO: derive more realistic filter params from ensemble params
+        noise_sd = .6*ensemble.neurons.n_neurons**-.5/100**-.5
+        sigma = noise_sd**2 * np.eye(decoders.shape[0]) #noise covariance matrix
+        num = [0.01594, 4.855, 160]
+        den = [1, 591.4731, 252661.872668]
+        
+        self.noise = Noise(sigma, num, den, dt)
+        if ensemble.dimensions == 1:
+            self.static = InterpolatorND(.05, ensemble, decoders, dt)              
+        if ensemble.dimensions == 2:
+            self.static = Interpolator2D(.1, ensemble, decoders, dt)
+        else:
+            self.static = InterpolatorND(.1, ensemble, decoders, dt)  
+        
+        
+class Noise(object):
+    """
+    Generates noise with specified covariance and spectrum.
+    
+    Parameters
+    ----------
+    sigma: covariance matrix of noise for all an ensemble's outputs (#out x #out)
+    num: numerator of 2nd order transfer function that defines noise spectrum (Laplace domain)
+    den: denominator of 2nd order transfer function that defines noise spectrum (Laplace domain)
+    dt: time step (s) at which noise is generated
+    """
+    def __init__(self, sigma, num, den, dt):
+        self.sigma = sigma
+        self.dt = dt
+        self._noise_time = np.zeros(0)
+        self._zi = np.zeros([len(sigma), 2]) #initial conditions for filters
+        
+        self.chol_sigma = np.linalg.cholesky(sigma); 
+    
+        fs = 1/self.dt
+        [self.bz, self.az] = ss.bilinear(num, den, fs=fs)
+        
+        self.make_samples(0, 3)
+        actual_sd = np.std(self._noise_samples, 1)
+        ideal_sd = np.sqrt(np.diag(self.sigma))
+        self._gain = np.mean(ideal_sd) / np.mean(actual_sd)        
+
+
+    def get_noise(self, time):
+        """
+        Parameters
+        ---------- 
+        time: end of simulation time step
+         
+        Returns 
+        -------
+        vector of noise values (a random variable with spatial and
+          temporal correlations)
+        """ 
+        index = -1
+        if len(self._noise_time) > 0:
+            index = round((time - self._noise_time[0]) / self.dt)
+            if (index < 0) or (index > len(self._noise_time)-1):
+                index = -1
+         
+        if index < 0: 
+            self.make_samples(time, time+1.0)
+            index = 0
+        
+        return self._gain * self._noise_samples[:, index]
+
+    def make_samples(self, start_time, end_time):
+        """
+        This method sets internal variables in support of get_noise, which calls it as needed. 
+         
+        Parameters
+        ----------
+        start_time: beginning of simulation time for which to generate noise samples
+        end_time: end of simulation time for which to generate noise samples
+        """
+         
+        previous_time = [self._noise_time[-1]] if len(self._noise_time) > 0 else []
+        self._noise_time = np.arange(start_time, end_time, self.dt)
+ 
+        n_outs = self.chol_sigma.shape[0]
+        n_steps = len(self._noise_time)
+         
+        uncorrelated = np.random.randn(n_outs, n_steps)
+        correlated = self.chol_sigma.dot(uncorrelated)
+         
+        if len(previous_time) == 0 or abs(start_time - previous_time[0] - self.dt) > self.dt/10:       
+            self._zi = np.zeros([n_outs, 2]) #looks like a different simulation so zero initial conditions
+             
+        self._noise_samples = np.zeros_like(correlated);
+        for i in range(n_outs):
+            [self._noise_samples[i], self._zi[i]] = ss.lfilter(self.bz, self.az, correlated[i], zi=self._zi[i])
+
+
+class InterpolatorND:
+    """
+    An interpolator that scales linearly with # dimensions by ignoring off-axis 
+    nonlinearities. Results are a weighted average of interpolation along each 
+    axis. 
+    """ 
+    def __init__(self, dx, ens, decoders, dt):
+        self._dx = dx
+        self._minx = -2
+        self._x = np.linspace(self._minx, -self._minx, -2*self._minx/dx+1)
+        self._dim = ens.dimensions
+        self._outdim = decoders.shape[0]
+        
+        self._y = np.zeros((len(self._x), ens.dimensions, decoders.shape[0]))
+        for i in range(ens.dimensions):
+            x = np.zeros((len(self._x), ens.dimensions))
+            x[:,i] = self._x
+            r = ens.activities(eval_points=x) * dt
+            self._y[:,i,:] = r.dot(decoders.T) #all dimensions of output along axis i 
+
+        self._m = np.zeros_like(self._y)
+        self._m[0:len(self._x)-1,:,:] = np.diff(self._y, axis=0) / dx #precompute slopes
+        self._m[len(self._x)-1,:,:] = self._m[len(self._x)-2,:,:] #simplify later indexing  
+        
+    def __call__(self, x):
+        if self._dim == 1: #this is treated separately for speed (about 4x faster for scalars)
+            x_ind = int((x-self._minx) / self._dx)
+            x_ind = x_ind if x_ind > 0 else 0
+            x_ind = x_ind if x_ind < len(self._x)-1 else len(self._x)-1
+            offset = x - self._x[x_ind]
+            return self._y[x_ind,0,:] + offset * self._m[x_ind,0,:]
+        else:
+            x2 = x**2
+            sx2 = sum(x2)
+            xrad = sx2**0.5 * np.sign(x) 
+            x_ind = np.floor((xrad-self._minx) / self._dx).astype(int)
+            x_ind = np.maximum(np.minimum(x_ind, len(self._x)-1), 0)
+            y_on_axes = np.zeros([self._dim, self._outdim])
+            offset = xrad - self._x[x_ind]
+            for i in range(self._dim):
+                y_on_axes[i] = self._y[x_ind[i],i,:] + offset[i] * self._m[x_ind[i],i,:]
+                 
+            return x2.dot(y_on_axes) / sx2 if sx2 > 0 else np.zeros(self._outdim)
+
+
+def smooth(signal, w_len):
+    """
+    Applies a square smoothing convolution with minimized edge effects. 
+    
+    Parameters
+    ----------
+    signal: something to smooth
+    w_len: window size (odd integer)
+    """
+    assert w_len%2 == 1, 'Window length should be odd'
+    reflected = np.concatenate((signal[w_len-1:0:-1], signal, signal[-1:-w_len:-1]), axis=1)
+    return np.convolve(reflected, np.ones(w_len)/w_len, mode='same')[w_len-1:-w_len+1]
+
+class Interpolator2D: 
+    """
+    Does 2D interpolation. 
+    """
+    def __init__(self, dx, ens, decoders, dt):
+        assert ens.dimensions == 2
+        self._dim = 2
+        self._outdim = decoders.shape[0]
+        self._dx = dx
+        self._minx = -2
+        self._x = np.linspace(self._minx, -self._minx, -2*self._minx/dx+1)
+        nx = len(self._x)
+        
+        xgrid = np.tile(self._x[:,None], [1,nx])
+        X = np.concatenate((np.reshape(xgrid, [1, nx**2]), np.reshape(xgrid.T, [1, nx**2])))
+        r = ens.activities(eval_points=X.T) * dt
+        Y = r.dot(decoders.T)  
+        self._y = np.reshape(Y, [nx, nx, self._outdim]) 
+        
+        self._grad0 = np.subtract(self._y[1:nx,:,:], self._y[0:nx-1,:,:]) / dx
+        self._grad0 = np.concatenate((self._grad0, self._grad0[nx-2:nx-1,:,:]), axis=0) #simplify later indexing
+        self._grad1_bottom = np.subtract(self._y[:,1,:], self._y[:,0,:]) / dx
+        self._grad1_top = np.subtract(self._y[:,-1,:], self._y[:,-2,:]) / dx
+        
+        smoothing_window_length = int(.5/self._dx)
+        if smoothing_window_length % 2 == 0: 
+            smoothing_window_length = smoothing_window_length + 1
+        
+        if smoothing_window_length > 1:
+            for i in range(self._outdim): #smooth edges for better extrapolation 
+                self._grad0[0,:,i] = smooth(self._grad0[0,:,i], smoothing_window_length)
+                self._grad0[-1,:,i] = smooth(self._grad0[-1,:,i], smoothing_window_length)
+                self._grad1_bottom[:,i] = smooth(self._grad1_bottom[:,i], smoothing_window_length)
+                self._grad1_top[:,i] = smooth(self._grad1_top[:,i], smoothing_window_length)
+                # re-touch bottom edge to avoid discontinuity between first and second rows due to smoothing ... 
+                self._y[0,:,i] = self._y[1,:,i] - self._dx*self._grad0[0,:,i]
+        
+    def get_index(self, x, min_ind, max_ind):
+        x_ind = int((x-self._minx) / self._dx)
+        x_ind = x_ind if x_ind > min_ind else min_ind
+        x_ind = x_ind if x_ind < max_ind else max_ind
+        return x_ind
+
+    def __call__(self, x):
+        xi0 = self.get_index(x[0], 0, len(self._x)-1)
+        xi1 = self.get_index(x[1], 0, len(self._x)-1)
+        offset0 = x[0]-self._x[xi0]
+        offset1 = x[1]-self._x[xi1]
+        
+        if x[1] < self._minx:
+            return self._y[xi0, xi1,:] + offset0*self._grad0[xi0, xi1,:] + offset1*self._grad1_bottom[xi0,:]               
+        elif x[1] >= self._minx + self._dx*(len(self._x)-1):
+            return self._y[xi0, xi1,:] + offset0*self._grad0[xi0, xi1,:] + offset1*self._grad1_top[xi0,:]              
+        else:            
+            a = self._y[xi0, xi1,:] + offset0*self._grad0[xi0, xi1,:]
+            b = self._y[xi0, xi1+1,:] + offset0*self._grad0[xi0, xi1+1,:]
+            frac1 = offset1 / self._dx;
+            return a + frac1*(b-a)
+        
 
 class Neurons(object):
 
@@ -215,3 +433,13 @@ class LIF(_LIFBase):
 
         voltage[:] = v * (1 - spiked)
         refractory_time[:] = new_refractory_time
+        
+class LIFSurrogate(_LIFBase):
+    """
+    A surrogate model of LIF neurons. It contains neurons, but they are not meant to be simulated, 
+    rather their output is meant to be approximated efficiently. 
+    """
+    pass
+
+    
+
