@@ -222,29 +222,43 @@ class Interpolator2D:
         
         self._grad0 = np.subtract(self._y[1:nx,:,:], self._y[0:nx-1,:,:]) / dx
         self._grad0 = np.concatenate((self._grad0, self._grad0[nx-2:nx-1,:,:]), axis=0) #simplify later indexing
-        self._grad1 = np.subtract(self._y[:,1:nx,:], self._y[:,0:nx-1,:]) / dx
-        self._grad1 = np.concatenate((self._grad1, self._grad1[:,nx-2:nx-1,:]), axis=1)
+        self._grad1_bottom = np.subtract(self._y[:,1,:], self._y[:,0,:]) / dx
+        self._grad1_top = np.subtract(self._y[:,-1,:], self._y[:,-2,:]) / dx
         
-        smoothing_window_length = 7
-        for i in range(self._outdim): #smooth edges for better extrapolation 
-            self._grad0[0,:,i] = smooth(self._grad0[0,:,i], smoothing_window_length)
-            self._grad0[-1,:,i] = smooth(self._grad0[-1,:,i], smoothing_window_length)
-            self._grad1[:,0,i] = smooth(self._grad1[:,0,i], smoothing_window_length)
-            self._grad1[:,-1,i] = smooth(self._grad1[:,-1,i], smoothing_window_length)
+        smoothing_window_length = int(.5/self._dx)
+        if smoothing_window_length % 2 == 0: 
+            smoothing_window_length = smoothing_window_length + 1
         
-    def get_index(self, x):
+        if smoothing_window_length > 1:
+            for i in range(self._outdim): #smooth edges for better extrapolation 
+                self._grad0[0,:,i] = smooth(self._grad0[0,:,i], smoothing_window_length)
+                self._grad0[-1,:,i] = smooth(self._grad0[-1,:,i], smoothing_window_length)
+                self._grad1_bottom[:,i] = smooth(self._grad1_bottom[:,i], smoothing_window_length)
+                self._grad1_top[:,i] = smooth(self._grad1_top[:,i], smoothing_window_length)
+                # re-touch bottom edge to avoid discontinuity between first and second rows due to smoothing ... 
+                self._y[0,:,i] = self._y[1,:,i] - self._dx*self._grad0[0,:,i]
+        
+    def get_index(self, x, min_ind, max_ind):
         x_ind = int((x-self._minx) / self._dx)
-        x_ind = x_ind if x_ind > 0 else 0
-        x_ind = x_ind if x_ind < len(self._x)-1 else len(self._x)-1
+        x_ind = x_ind if x_ind > min_ind else min_ind
+        x_ind = x_ind if x_ind < max_ind else max_ind
         return x_ind
 
     def __call__(self, x):
-        xi0 = self.get_index(x[0])
-        xi1 = self.get_index(x[1])
+        xi0 = self.get_index(x[0], 0, len(self._x)-1)
+        xi1 = self.get_index(x[1], 0, len(self._x)-1)
         offset0 = x[0]-self._x[xi0]
         offset1 = x[1]-self._x[xi1]
-        return self._y[xi0, xi1,:] + offset0*self._grad0[xi0, xi1,:] + offset1*self._grad1[xi0, xi1,:] 
-    
+        
+        if x[1] < self._minx:
+            return self._y[xi0, xi1,:] + offset0*self._grad0[xi0, xi1,:] + offset1*self._grad1_bottom[xi0,:]               
+        elif x[1] >= self._minx + self._dx*(len(self._x)-1):
+            return self._y[xi0, xi1,:] + offset0*self._grad0[xi0, xi1,:] + offset1*self._grad1_top[xi0,:]              
+        else:            
+            a = self._y[xi0, xi1,:] + offset0*self._grad0[xi0, xi1,:]
+            b = self._y[xi0, xi1+1,:] + offset0*self._grad0[xi0, xi1+1,:]
+            frac1 = offset1 / self._dx;
+            return a + frac1*(b-a)
         
 
 class Neurons(object):
