@@ -25,7 +25,7 @@ class EnsembleArray(nengo.Network):
                 else:
                     ens_neurons.n_neurons = each_neurons
 
-                e = nengo.Ensemble(ens_neurons, dimensions_per_ensemble)
+                e = nengo.Ensemble(ens_neurons, dimensions_per_ensemble, **ens_args)
                 trans = transform[i * dimensions_per_ensemble:
                                   (i + 1) * dimensions_per_ensemble, :]
                 nengo.Connection(self.input, e, transform=trans, filter=None)
