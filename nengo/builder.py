@@ -756,6 +756,76 @@ class SimFilterSynapse(Operator):
         return step
 
 
+class SimBCM(Operator):
+    """Change the transform according to the BCM rule."""
+    def __init__(self, transform, delta,
+                 pre_filtered, post_filtered, theta, learning_rate):
+        self.transform = transform
+        self.delta = delta
+        self.post_filtered = post_filtered
+        self.pre_filtered = pre_filtered
+        self.theta = theta
+        self.learning_rate = learning_rate
+
+        self.reads = [theta, pre_filtered, post_filtered]
+        self.updates = [transform, delta]
+        self.sets = []
+        self.incs = []
+
+    def make_step(self, signals, dt):
+        transform = signals[self.transform]
+        delta = signals[self.delta]
+        pre_filtered = signals[self.pre_filtered]
+        post_filtered = signals[self.post_filtered]
+        theta = signals[self.theta]
+        learning_rate = self.learning_rate
+
+        def step():
+            delta[...] = np.outer(post_filtered * (post_filtered - theta),
+                                  pre_filtered) * learning_rate
+
+            transform[...] += delta * dt
+        return step
+
+
+class SimOja(Operator):
+    """
+    Change the transform according to the OJA rule
+    """
+    def __init__(self, transform, delta,
+                 pre_filtered, post_filtered, oja, learning_rate, oja_scale):
+        self.transform = transform
+        self.delta = delta
+        self.post_filtered = post_filtered
+        self.pre_filtered = pre_filtered
+        self.oja = oja
+        self.learning_rate = learning_rate
+        self.oja_scale = oja_scale
+
+        self.reads = [pre_filtered, post_filtered]
+        self.updates = [transform, delta, oja]
+        self.sets = []
+        self.incs = []
+
+    def make_step(self, signals, dt):
+        transform = signals[self.transform]
+        delta = signals[self.delta]
+        pre_filtered = signals[self.pre_filtered]
+        post_filtered = signals[self.post_filtered]
+        oja = signals[self.oja]
+        learning_rate = self.learning_rate
+        oja_scale = self.oja_scale
+
+        def step():
+            post_squared = learning_rate * post_filtered * post_filtered
+            for i in range(len(post_squared)):
+                oja[i, :] = transform[i, :] * post_squared[i]
+
+            delta[...] = np.outer(post_filtered, pre_filtered) * learning_rate
+            transform[...] += delta - oja_scale * oja * dt
+        return step
+
+
 class Model(object):
     """Output of the Builder, used by the Simulator."""
 
@@ -1072,15 +1142,11 @@ def synapse_probe(sig, probe, model, config):
     # We can use probe.conn_args here because we don't modify synapse
     synapse = probe.conn_args.get('synapse', None)
 
-    if is_number(synapse):
-        synapse = nengo.synapses.Lowpass(synapse)
-
     if synapse is None:
         model.sig[probe]['in'] = sig
     else:
-        assert isinstance(synapse, nengo.synapses.Synapse)
-        Builder.build(synapse, probe, sig, model=model, config=config)
-        model.sig[probe]['in'] = model.sig[probe]['synapse_out']
+        model.sig[probe]['in'] = filtered_signal(
+            probe, sig, synapse, model=model, config=config)
 
 
 def probe_ensemble(probe, conn_args, model, config):
@@ -1240,17 +1306,7 @@ def build_connection(conn, model, config):  # noqa: C901
 
     # Add operator for filtering
     if conn.synapse is not None:
-        # Note: we add a filter here even if synapse < dt,
-        # in order to avoid cycles in the op graph. If the filter
-        # is explicitly set to None (e.g. for a passthrough node)
-        # then cycles can still occur.
-        synapse = (nengo.synapses.Lowpass(conn.synapse)
-                   if is_number(conn.synapse) else conn.synapse)
-        assert isinstance(synapse, nengo.synapses.Synapse)
-        Builder.build(synapse, conn, signal, model=model, config=config)
-        signal = model.sig[conn]['synapse_out']
-    else:
-        synapse = None
+        signal = filtered_signal(conn, signal, conn.synapse, model, config)
 
     if conn.modulatory:
         # Make a new signal, effectively detaching from post
@@ -1270,7 +1326,9 @@ def build_connection(conn, model, config):  # noqa: C901
                                    conn, conn.post))
         transform *= model.params[conn.post.ensemble].gain[:, np.newaxis]
 
-    model.add_op(DotInc(Signal(transform, name="%s.transform" % conn.label),
+    model.sig[conn]['transform'] = Signal(transform,
+                                          name="%s.transform" % conn.label)
+    model.add_op(DotInc(model.sig[conn]['transform'],
                         signal,
                         model.sig[conn]['out'],
                         tag=conn.label))
@@ -1281,6 +1339,18 @@ def build_connection(conn, model, config):  # noqa: C901
                                          solver_info=solver_info)
 
 Builder.register_builder(build_connection, nengo.objects.Connection)
+
+
+def filtered_signal(owner, sig, synapse, model, config):
+    # Note: we add a filter here even if synapse < dt,
+    # in order to avoid cycles in the op graph. If the filter
+    # is explicitly set to None (e.g. for a passthrough node)
+    # then cycles can still occur.
+    if is_number(synapse):
+        synapse = nengo.synapses.Lowpass(synapse)
+    assert isinstance(synapse, nengo.synapses.Synapse)
+    Builder.build(synapse, owner, sig, model=model, config=config)
+    return model.sig[owner]['synapse_out']
 
 
 def build_pyfunc(fn, t_in, n_in, n_out, label, model):
@@ -1375,3 +1445,46 @@ def build_pes(pes, conn, model, config):
     model.params[pes] = None
 
 Builder.register_builder(build_pes, nengo.learning_rules.PES)
+
+
+def build_bcm(bcm, model, config):
+    pre_activities = model.sig[bcm.connection.pre]['out']
+    post_activities = model.sig[bcm.connection.post]['out']
+
+    delta = Signal(np.zeros((bcm.connection.post.n_neurons,
+                             bcm.connection.pre.n_neurons)), name='delta')
+
+    pre_filtered = filtered_signal(
+        bcm, pre_activities, bcm.pre_tau, model, config)
+    post_filtered = filtered_signal(
+        bcm, post_activities, bcm.post_tau, model, config)
+    theta = filtered_signal(bcm, bcm.post_filtered, bcm.tau, model, config)
+
+    model.add_op(SimBCM(transform=model.sig[bcm.connection]['transform'],
+                        delta=delta,
+                        pre_filtered=pre_filtered,
+                        post_filtered=post_filtered,
+                        theta=theta,
+                        learning_rate=bcm.learning_rate))
+
+Builder.register_builder(build_bcm, nengo.learning_rules.BCM)
+
+
+def build_oja(oja, model, config):
+    pre_activities = model.sig[oja.connection.pre]['out']
+    post_activities = model.sig[oja.connection.post]['out']
+    pre_filtered = filtered_signal(
+        oja, pre_activities, oja.pre_tau, model, config)
+    post_filtered = filtered_signal(
+        oja, post_activities, oja.post_tau, model, config)
+    omega_shape = (oja.connection.post.n_neurons,
+                   oja.connection.pre.n_neurons)
+
+    model.add_op(SimOja(transform=model.sig['transform'][oja.connection],
+                        delta=Signal(np.zeros(omega_shape), name='delta'),
+                        pre_filtered=pre_filtered,
+                        post_filtered=post_filtered,
+                        oja=Signal(np.zeros(omega_shape), name='oja'),
+                        learning_rate=oja.learning_rate))
+
+Builder.register_builder(build_oja, nengo.learning_rules.Oja)
