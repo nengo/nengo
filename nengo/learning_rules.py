@@ -63,6 +63,35 @@ class PES(LearningRule):
         The modulatory connection created to project the error signal.
     """
 
-    def __init__(self, error_connection, learning_rate=1e-5, label=None):
+    def __init__(self, error_connection, learning_rate=1.0, label=None):
         self.error_connection = error_connection
         super(PES, self).__init__(learning_rate, label)
+
+
+class BCM(LearningRule):
+    def __init__(self, tau, pre_tau=None, post_tau=None, learning_rate=1.0,
+                 label=None):
+        self.tau = tau
+
+        self.pre_tau = pre_tau if pre_tau is not None else tau
+        self.post_tau = post_tau if post_tau is not None else tau
+
+        self.learning_rate = learning_rate
+
+        if label is None:
+            label = "<BCM %d>" % id(self)
+        self.label = label
+
+
+class Oja(LearningRule):
+    def __init__(self, pre_tau=0.005, post_tau=0.005, learning_rate=1.0,
+                 oja_scale=1.0, label=None):
+        self.pre_tau = pre_tau
+        self.post_tau = post_tau
+
+        self.learning_rate = learning_rate
+        self.oja_scale = oja_scale
+
+        if label is None:
+            label = "<OJA %d>" % id(self)
+        self.label = label
