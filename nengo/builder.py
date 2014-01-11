@@ -723,31 +723,6 @@ class SimFilterSynapse(Operator):
         return step
 
 
-class SimPES(Operator):
-    """Set output to the change in decoders of the PES rule."""
-    def __init__(self, output, error, activities, learning_rate):
-        self.output = output
-        self.error = error
-        self.activities = activities
-        self.learning_rate = learning_rate
-
-        self.reads = [error, activities]
-
-        self.updates = [output]
-        self.sets = []
-        self.incs = []
-
-    def make_step(self, signals, dt):
-        output = signals[self.output]
-        error = signals[self.error]
-        activities = signals[self.activities]
-        learning_rate = self.learning_rate
-
-        def step():
-            output[...] += learning_rate * np.outer(error, activities) * dt
-        return step
-
-
 class Model(object):
     """Output of the Builder, used by the Simulator."""
 
@@ -1333,10 +1308,25 @@ def build_alpha_synapse(synapse, owner, input_signal, model, config):
 Builder.register_builder(build_alpha_synapse, nengo.synapses.Alpha)
 
 
-def build_pes(pes, model):
-    model.add_op(SimPES(output=model.sig[pes.connection]['decoders'],
-                        error=model.sig[pes.error_connection]['out'],
-                        activities=model.sig[pes.connection.pre]['neuron_out'],
-                        learning_rate=pes.learning_rate))
+def build_pes(pes, model, config):
+    activities = model.sig[pes.connection.pre]['neuron_out']
+    error = model.sig[pes.error_connection]['out']
+    scaled_error = Signal(np.zeros(error.shape), name="PES:scaled_error")
+    model.add_op(Reset(scaled_error))
+
+    scaled_error_view = SignalView(scaled_error, (error.size, 1), (1, 1), 0,
+                                   name="PES:scaled_error_view")
+    activities_view = SignalView(activities, (1, activities.size), (1, 1), 0,
+                                 name="PES:activities_view")
+
+    decoders = model.sig[pes.connection]['decoders']
+    lr_sig = Signal(pes.learning_rate * model.dt, name="PES:learning_rate")
+
+    model.add_op(DotInc(lr_sig, error, scaled_error, tag="PES:scale error"))
+    model.add_op(ProdUpdate(scaled_error_view,
+                            activities_view,
+                            Signal(1, name="ONE"),
+                            decoders,
+                            tag="PES:Update Decoder"))
 
 Builder.register_builder(build_pes, nengo.learning_rules.PES)
