@@ -29,7 +29,7 @@ class BasalGanglia(nengo.Network):
 
         encoders = np.ones((n_neurons_per_ensemble, 1))
         ea_params = {
-            'neurons': nengo.LIF(n_neurons_per_ensemble * dimensions),
+            'neurons': nengo.LIF(n_neurons_per_ensemble),
             'n_ensembles': dimensions,
             'radius': radius,
             'encoders': encoders,
