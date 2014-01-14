@@ -236,6 +236,10 @@ class Simulator(object):
             probe = self.model.probemap[probe]
         return np.asarray(self.probe_outputs[probe])
 
+    def plot(self, probe, *args, **kwargs):
+        import nengo.matplotlib
+        nengo.matplotlib.plot(self, probe, *args, **kwargs)
+
     def step(self):
         """Advance the simulator by `self.model.dt` seconds.
         """

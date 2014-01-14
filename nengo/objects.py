@@ -397,8 +397,17 @@ class Probe(object):
     sample_rate
     """
 
-    def __init__(self, target, attr,
+    def __init__(self, target, attr=None,
                  sample_every=0.001, filter=None, dimensions=None):
+        if attr is None:
+            if isinstance(target, Node):
+                attr = 'output'
+            elif isinstance(target, Ensemble):
+                attr = 'decoded_output'
+            else:
+                raise ValueError("Must provide 'attr' parameter for probes "
+                                 "on %s objects" % type(target).__name__)
+
         self.target = target
         self.attr = attr
         self.label = "Probe(" + target.label + "." + attr + ")"
