@@ -1,8 +1,17 @@
 
+from __future__ import absolute_import
 
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+def plot(sim, probe, *args, **kwargs):
+    ax = kwargs.pop('ax', plt.gca())
+    label = kwargs.pop('label', getattr(probe.target, "label", ""))
+
+    t = sim.trange(probe.sample_every)
+    data = sim.data(probe)
+    ax.plot(t, data, *args, label=label, **kwargs)
 
 def rasterplot(time, spikes, ax=None, **kwargs):
     '''Generate a raster plot of the provided spike data
