@@ -44,9 +44,8 @@ class TestCircularConv(SimulatorTestCase):
     def _test_circularconv(self, dims=5, neurons_per_product=128):
         rng = np.random.RandomState(42342)
 
-        n_neurons = neurons_per_product * dims
-        n_neurons_d = 2 * neurons_per_product * (
-            2*dims - (2 if dims % 2 == 0 else 1))
+        n_neurons = neurons_per_product
+        n_neurons_d = 2 * neurons_per_product
         radius = 1
 
         a = rng.normal(scale=np.sqrt(1./dims), size=dims)

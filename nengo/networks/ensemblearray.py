@@ -6,28 +6,19 @@ import nengo
 
 
 class EnsembleArray(nengo.Network):
-    def make(self, neurons, n_ensembles, dimensions_per_ensemble=1, **ens_args):
+    def make(self, neurons, n_ensembles, **ens_args):
         self.n_ensembles = n_ensembles
-        self.dimensions_per_ensemble = dimensions_per_ensemble
+        self.dimensions_per_ensemble = ens_args.pop('dimensions', 1)
         self.ensembles = []
         transform = np.eye(self.dimensions)
-        each_neurons = neurons.n_neurons // n_ensembles
-        extra_neurons = neurons.n_neurons % n_ensembles
 
         with self:
             self.input = nengo.Node(dimensions=self.dimensions)
 
             for i in range(n_ensembles):
-                ens_neurons = copy.deepcopy(neurons)
-                if extra_neurons > 0:
-                    ens_neurons.n_neurons = each_neurons + 1
-                    extra_neurons -= 1
-                else:
-                    ens_neurons.n_neurons = each_neurons
-
-                e = nengo.Ensemble(ens_neurons, dimensions_per_ensemble, **ens_args)
-                trans = transform[i * dimensions_per_ensemble:
-                                  (i + 1) * dimensions_per_ensemble, :]
+                e = nengo.Ensemble(copy.deepcopy(neurons), self.dimensions_per_ensemble, **ens_args)
+                trans = transform[i * self.dimensions_per_ensemble:
+                                  (i + 1) * self.dimensions_per_ensemble, :]
                 nengo.Connection(self.input, e, transform=trans, filter=None)
                 self.ensembles.append(e)
 
