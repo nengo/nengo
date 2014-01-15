@@ -45,7 +45,7 @@ class CircularConvolution(nengo.Network):
             self.B = nengo.Node(dimensions=dimensions)
             self.ensemble = EnsembleArray(neurons,
                                           self.transformC.shape[1],
-                                          dimensions_per_ensemble=2,
+                                          dimensions=2,
                                           radius=radius)
             self.output = nengo.Node(dimensions=dimensions)
 

@@ -10,28 +10,11 @@ from nengo.tests.helpers import Plotter, SimulatorTestCase, unittest
 
 logger = logging.getLogger(__name__)
 
-
-class TestEnsembleArrayCreation(unittest.TestCase):
-    def test_neuron_parititoning(self):
-        nengo.Model()
-        ea_even = EnsembleArray(nengo.LIF(10), 5)
-        for ens in ea_even.ensembles:
-            self.assertEqual(ens.n_neurons, 2)
-
-        ea_odd = EnsembleArray(nengo.LIF(19), 4)
-
-        # Order of the sizes shouldn't matter
-        sizes = [5, 5, 5, 4]
-        for ens in ea_odd.ensembles:
-            sizes.remove(ens.n_neurons)
-        self.assertEqual(len(sizes), 0)
-
-
 class TestEnsembleArray(SimulatorTestCase):
     def test_multidim(self):
         """Test an ensemble array with multiple dimensions per ensemble"""
         dims = 3
-        n_neurons = 3 * 60
+        n_neurons = 60
         radius = 1.5
 
         rng = np.random.RandomState(523887)
@@ -51,7 +34,7 @@ class TestEnsembleArray(SimulatorTestCase):
             A = EnsembleArray(nengo.LIF(n_neurons), dims, radius=radius)
             B = EnsembleArray(nengo.LIF(n_neurons), dims, radius=radius)
             C = EnsembleArray(nengo.LIF(n_neurons * 2), dims,
-                              dimensions_per_ensemble=2,
+                              dimensions=2,
                               radius=radius, label="C")
 
             nengo.Connection(inputA, A.input)
@@ -104,9 +87,9 @@ class TestEnsembleArray(SimulatorTestCase):
 
         model = nengo.Model('Matrix Multiplication', seed=123)
         with model:
-            A = EnsembleArray(nengo.LIF(N * Amat.size),
+            A = EnsembleArray(nengo.LIF(N),
                               Amat.size, radius=radius)
-            B = EnsembleArray(nengo.LIF(N * Bmat.size),
+            B = EnsembleArray(nengo.LIF(N),
                               Bmat.size, radius=radius)
 
             inputA = nengo.Node(output=Amat.ravel())
@@ -118,9 +101,9 @@ class TestEnsembleArray(SimulatorTestCase):
             B_p = nengo.Probe(
                 B.output, 'output', sample_every=0.01, filter=0.01)
 
-            C = EnsembleArray(nengo.LIF(N * Amat.size * Bmat.shape[1] * 2),
+            C = EnsembleArray(nengo.LIF(N),
                               Amat.size * Bmat.shape[1],
-                              dimensions_per_ensemble=2,
+                              dimensions=2,
                               radius=1.5 * radius)
 
             for ens in C.ensembles:
@@ -142,7 +125,7 @@ class TestEnsembleArray(SimulatorTestCase):
             C_p = nengo.Probe(
                 C.output, 'output', sample_every=0.01, filter=0.01)
 
-            D = EnsembleArray(nengo.LIF(N * Amat.shape[0] * Bmat.shape[1]),
+            D = EnsembleArray(nengo.LIF(N),
                               Amat.shape[0] * Bmat.shape[1], radius=radius)
 
             def product(x):
