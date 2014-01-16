@@ -1,15 +1,31 @@
 language: python
 python:
-  - "2.6"
-  - "2.7"
-  - "3.3"
+  - 2.6
+  - 2.7
+  - 3.3
+env:
+  global:
+    - PIP_WHEEL_COMMAND="pip install --find-links http://wheels.astropy.org/ --find-links http://wheels2.astropy.org/ --use-wheel --use-mirrors"  # Thanks astropy!
+matrix:
+  include:
+    - python: 2.7
+      env: TOXENV=pep8
+before_install:
+  - pip install --upgrade pip setuptools  # For wheel support
+  - if [[ "$TOXENV" != "pep8" ]]; then sudo apt-get update -qq; fi
+  - if [[ "$TOXENV" != "pep8" ]]; then sudo apt-get install -qq libzmq3-dev; fi
 install:
-  - pip install numpy --use-mirrors
-  - pip install networkx --use-mirrors
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install --use-mirrors unittest2; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install --use-mirrors ordereddict; fi
+  - if [[ "$TOXENV" == "pep8" ]]; then pip install tox; fi
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.6" ]]; then pip install ordereddict; fi
+  - if [[ "$TOXENV" != "pep8" ]]; then $PIP_WHEEL_COMMAND -r requirements.txt; fi
+  - if [[ "$TOXENV" != "pep8" ]]; then $PIP_WHEEL_COMMAND -r requirements-test.txt; fi
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TOXENV" != "pep8" ]]; then pip install coverage pytest-cov coveralls; fi
 script:
-  - python setup.py test
+  - if [[ "$TOXENV" == "pep8" ]]; then tox; fi
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TOXENV" != "pep8" ]]; then py.test --cov-config .coveragerc --cov nengo -n 2; fi
+  - if [[ "$TRAVIS_PYTHON_VERSION" != "2.7" ]]; then py.test -n 2; fi
+after_success:
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TOXENV" != "pep8" ]]; then coveralls; fi
 notifications:
   email:
     - tbekolay@gmail.com

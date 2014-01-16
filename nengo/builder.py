@@ -131,7 +131,7 @@ class SignalView(object):
         else:
             return self.transpose()
 
-    def __getitem__(self, item):
+    def __getitem__(self, item):  # noqa
         # -- copy the shape and strides
         shape = list(self.shape)
         elemstrides = list(self.elemstrides)
@@ -188,40 +188,26 @@ class SignalView(object):
     def name(self, value):
         self._name = value
 
-    def is_contiguous(self, return_range=False):
-        def ret_false():
-            if return_range:
-                return False, None, None
-            else:
-                return False
+    def is_contiguous(self):
         shape, strides, offset = self.structure
-        if not shape:
-            if return_range:
-                return True, offset, offset + 1
-            else:
-                return True
-        if len(shape) == 1:
+        if len(shape) == 0:
+            return True, offset, offset + 1
+        elif len(shape) == 1:
             if strides[0] == 1:
-                if return_range:
-                    return True, offset, offset + shape[0]
-                else:
-                    return True
+                return True, offset, offset + shape[0]
             else:
-                return ret_false()
-        if len(shape) == 2:
+                return False, None, None
+        elif len(shape) == 2:
             if strides == (1, shape[0]) or strides == (shape[1], 1):
-                if return_range:
-                    return True, offset, offset + shape[0] * shape[1]
-                else:
-                    return True
+                return True, offset, offset + shape[0] * shape[1]
             else:
-                return ret_false()
-
-        raise NotImplementedError()
+                return False, None, None
+        else:
+            raise NotImplementedError()
         # if self.ndim == 1 and self.elemstrides[0] == 1:
             # return self.offset, self.offset + self.size
 
-    def shares_memory_with(self, other):
+    def shares_memory_with(self, other):  # noqa
         # XXX: WRITE SOME UNIT TESTS FOR THIS FUNCTION !!!
         # Terminology: two arrays *overlap* if the lowermost memory addressed
         # touched by upper one is higher than the uppermost memory address
@@ -231,14 +217,12 @@ class SignalView(object):
         # Overlap is a necessary but insufficient condition for *aliasing*.
         #
         # Aliasing is when two ndarrays refer a common memory location.
-        if self.base is not other.base:
+        if self.base is not other.base or self.size == 0 or other.size == 0:
             return False
-        if self is other or self.same_view_as(other):
+        elif self is other or self.same_view_as(other):
             return True
-        if self.ndim < other.ndim:
+        elif self.ndim < other.ndim:
             return other.shares_memory_with(self)
-        if self.size == 0 or other.size == 0:
-            return False
 
         assert self.ndim > 0
         if self.ndim == 1:
@@ -250,11 +234,9 @@ class SignalView(object):
             amax = amin + self.shape[0] * ae0
             bmin = other.offset
             bmax = bmin + other.shape[0] * be0
-            if amin <= amax <= bmin <= bmax:
+            if amin <= amax <= bmin <= bmax or bmin <= bmax <= amin <= amax:
                 return False
-            elif bmin <= bmax <= amin <= amax:
-                return False
-            if ae0 == be0 == 1:
+            elif ae0 == be0 == 1:
                 # -- strides are equal, and we've already checked for
                 #    non-overlap. They do overlap, so they are aliased.
                 return True
@@ -263,25 +245,22 @@ class SignalView(object):
         elif self.ndim == 2:
             # -- self is a matrix view
             #    and other is either a scalar, vector or matrix view
-            a_contig, amin, amax = self.is_contiguous(return_range=True)
-            if a_contig:
-                # -- self has a contiguous memory layout,
-                #    from amin up to but not including amax
-                b_contig, bmin, bmax = other.is_contiguous(return_range=True)
-                if b_contig:
-                    # -- other is also contiguous
-                    if amin <= amax <= bmin <= bmax:
-                        return False
-                    elif bmin <= bmax <= amin <= amax:
-                        return False
-                    else:
-                        return True
-                raise NotImplementedError(
-                    '2d self:contig, other:discontig',
-                    (self.structure, other.structure))
-            raise NotImplementedError('2d', (self.structure, other.structure))
-        else:
-            raise NotImplementedError()
+            a_contig, amin, amax = self.is_contiguous()
+            b_contig, bmin, bmax = other.is_contiguous()
+
+            if a_contig and b_contig:
+                # -- both have a contiguous memory layout,
+                #    from min up to but not including max
+                return (not (amin <= amax <= bmin <= bmax)
+                        and not (bmin <= bmax <= amin <= amax))
+            elif a_contig:
+                # -- only a contiguous
+                raise NotImplementedError('2d self:contig, other:discontig',
+                                          (self.structure, other.structure))
+            else:
+                raise NotImplementedError('2d',
+                                          (self.structure, other.structure))
+        raise NotImplementedError()
 
 
 class Signal(SignalView):
@@ -773,12 +752,8 @@ class Builder(object):
 
         return self.model
 
-    @builds(nengo.Ensemble)
-    def build_ensemble(self, ens, signal=None):
-        if ens.dimensions <= 0:
-            raise ValueError(
-                'Number of dimensions (%d) must be positive' % ens.dimensions)
-
+    @builds(nengo.Ensemble)  # noqa
+    def build_ensemble(self, ens):
         # Create random number generator
         if ens.seed is None:
             ens.seed = self.model._get_new_seed()
@@ -794,20 +769,9 @@ class Builder(object):
                 ens.eval_points.shape = (-1, 1)
 
         # Set up signal
-        if signal is None:
-            ens.input_signal = Signal(np.zeros(ens.dimensions),
-                                      name=ens.label + ".signal")
-        else:
-            # Assume that a provided signal is already in the model
-            ens.input_signal = signal
-            ens.dimensions = ens.input_signal.size
-
-        # reset input signal to 0 each timestep (unless this ensemble has
-        # a view of a larger signal -- generally meaning it is an ensemble
-        # in an ensemble array -- in which case something else will be
-        # responsible for resetting)
-        if ens.input_signal.base == ens.input_signal:
-            self.model.operators.append(Reset(ens.input_signal))
+        ens.input_signal = Signal(np.zeros(ens.dimensions),
+                                  name=ens.label + ".signal")
+        self.model.operators.append(Reset(ens.input_signal))
 
         # Set up neurons
         if ens.neurons.gain is None or ens.neurons.bias is None:
@@ -842,10 +806,11 @@ class Builder(object):
         else:
             ens._scaled_encoders = ens.encoders * (
                 ens.neurons.gain / ens.radius)[:, np.newaxis]
-        self.model.operators.append(DotInc(Signal(ens._scaled_encoders),
-                                           ens.input_signal,
-                                           ens.neurons.input_signal,
-                                           tag=ens.label + '.encoder'))
+        self.model.operators.append(DotInc(
+            Signal(ens._scaled_encoders, name=ens.label + ".scaled_encoders"),
+            ens.input_signal,
+            ens.neurons.input_signal,
+            tag=ens.label + ' encoding'))
 
         # Output is neural output
         ens.output_signal = ens.neurons.output_signal
@@ -888,10 +853,9 @@ class Builder(object):
             if node.dimensions:
                 self.model.operators.append(DotInc(
                     node.input_signal,
-                    Signal(1.0),
+                    Signal(1.0, name="1"),
                     node.pyfn.input_signal,
-                    tag=node.label + '.unclear'
-                    ))
+                    tag=node.label + " input"))
             node.output_signal = node.pyfn.output_signal
 
         # Set up probes
@@ -922,7 +886,11 @@ class Builder(object):
         filtered = Signal(np.zeros(signal.size), name=name)
         o_coef, n_coef = self.filter_coefs(pstc=filter, dt=self.model.dt)
         self.model.operators.append(ProdUpdate(
-            Signal(n_coef), signal, Signal(o_coef), filtered))
+            Signal(n_coef, name="n_coef"),
+            signal,
+            Signal(o_coef, name="o_coef"),
+            filtered,
+            tag=name + " filtering"))
         return filtered
 
     def _direct_pyfunc(self, input_signal, function, label):
@@ -930,15 +898,23 @@ class Builder(object):
             fn=function, n_in=input_signal.size, label=label)
         self.build_pyfunc(pyfunc)
         self.model.operators.append(DotInc(
-            input_signal, Signal(1.0), pyfunc.input_signal))
+            input_signal,
+            Signal(1.0, name="1"),
+            pyfunc.input_signal,
+            tag=label + " input"))
         return pyfunc
 
-    @builds(nengo.Connection)
+    @builds(nengo.Connection)  # noqa
     def build_connection(self, conn):
         rng = np.random.RandomState(self.model._get_new_seed())
 
         conn.input_signal = conn.pre.output_signal
         conn.output_signal = conn.post.input_signal
+        if conn.modulatory:
+            # Make a new signal, effectively detaching from post
+            conn.output_signal = Signal(np.zeros(conn.output_signal.size),
+                                        name=conn.label + ".mod_output")
+            # Add reset operator?
         dt = self.model.dt
 
         # Figure out the signal going across this connection
@@ -972,14 +948,19 @@ class Builder(object):
 
             if conn.filter is not None and conn.filter > dt:
                 o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
-                conn.decoder_signal = Signal(conn._decoders * n_coef)
+                conn.decoder_signal = Signal(
+                    conn._decoders * n_coef,
+                    name=conn.label + ".decoders * n_coef")
             else:
-                conn.decoder_signal = Signal(conn._decoders)
+                conn.decoder_signal = Signal(conn._decoders,
+                                             name=conn.label + '.decoders')
                 o_coef = 0
-            self.model.operators.append(ProdUpdate(conn.decoder_signal,
-                                                   conn.input_signal,
-                                                   Signal(o_coef),
-                                                   conn.signal))
+            self.model.operators.append(ProdUpdate(
+                conn.decoder_signal,
+                conn.input_signal,
+                Signal(o_coef, name="o_coef"),
+                conn.signal,
+                tag=conn.label + " filtering"))
         elif conn.filter is not None and conn.filter > self.model.dt:
             # 4. Filtered connection
             conn.signal = self._filtered_signal(conn.input_signal, conn.filter)
@@ -991,14 +972,11 @@ class Builder(object):
         conn.transform = np.asarray(conn.transform, dtype=np.float64)
         if isinstance(conn.post, nengo.nonlinearities.Neurons):
             conn.transform *= conn.post.gain[:, np.newaxis]
-        if conn.modulatory:
-            # Make a new signal, effectively detaching from post
-            conn.output_signal = Signal(np.zeros(conn.output_signal.size),
-                                        name=conn.label + ".mod_output")
         self.model.operators.append(
-            DotInc(
-                Signal(conn.transform), conn.signal, conn.output_signal,
-                tag=str(conn)))
+            DotInc(Signal(conn.transform, name=conn.label + ".transform"),
+                   conn.signal,
+                   conn.output_signal,
+                   tag=conn.label))
 
         # Set up probes
         for probe in conn.probes['signal']:
@@ -1055,8 +1033,10 @@ class Builder(object):
             raise ValueError(
                 'Number of neurons (%d) must be non-negative' % lif.n_neurons)
         self.build_neurons(lif)
-        lif.voltage = Signal(np.zeros(lif.n_neurons))
-        lif.refractory_time = Signal(np.zeros(lif.n_neurons))
+        lif.voltage = Signal(np.zeros(lif.n_neurons),
+                             name=lif.label + ".voltage")
+        lif.refractory_time = Signal(np.zeros(lif.n_neurons),
+                                     name=lif.label + ".refractory_time")
         self.model.operators.append(
             SimLIF(output=lif.output_signal,
                    J=lif.input_signal,

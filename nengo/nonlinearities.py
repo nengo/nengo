@@ -80,7 +80,7 @@ class Direct(Neurons):
         Neurons.__init__(self, 0, label=label)
 
     def default_encoders(self, dimensions, rng):
-        return np.eye(dimensions)
+        return np.identity(dimensions)
 
     def rates(self, J_without_bias):
         return J_without_bias

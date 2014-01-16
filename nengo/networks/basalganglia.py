@@ -55,56 +55,68 @@ class BasalGanglia(nengo.Network):
             self.output = nengo.Node(label="output", dimensions=dimensions)
 
             # spread the input to StrD1, StrD2, and STN
-            nengo.Connection(self.input,
-                strD1.input, filter=None,
+            nengo.Connection(
+                self.input, strD1.input, filter=None,
                 transform=np.eye(dimensions) * self.ws * (1 + self.lg))
-            nengo.Connection(self.input,
-                strD2.input, filter=None,
+            nengo.Connection(
+                self.input, strD2.input, filter=None,
                 transform=np.eye(dimensions) * self.ws * (1 - self.le))
-            nengo.Connection(self.input,
-                stn.input, filter=None,
+            nengo.Connection(
+                self.input, stn.input, filter=None,
                 transform=np.eye(dimensions) * self.wt)
 
             # connect the striatum to the GPi and GPe (inhibitory)
-            def func_str(x):
-                if x[0] < self.e:
-                    return 0
-                return self.mm * (x[0] - self.e)
-            nengo.Connection(strD1.add_output('func_str', func_str),
+            nengo.Connection(strD1.add_output('func_str', self.str()),
                              gpi.input, filter=tau_gaba,
                              transform=-np.eye(dimensions) * self.wm)
-            nengo.Connection(strD2.add_output('func_str', func_str),
+            nengo.Connection(strD2.add_output('func_str', self.str()),
                              gpe.input, filter=tau_gaba,
                              transform=-np.eye(dimensions) * self.wm)
 
             # connect the STN to GPi and GPe (broad and excitatory)
-            def func_stn(x):
-                if x[0] < self.ep:
-                    return 0
-                return self.mp * (x[0] - self.ep)
             tr = np.ones((dimensions, dimensions)) * self.wp
-            stn_output = stn.add_output('func_stn', func_stn)
+            stn_output = stn.add_output('func_stn', self.stn())
             nengo.Connection(stn_output, gpi.input,
                              transform=tr, filter=tau_ampa)
             nengo.Connection(stn_output, gpe.input,
                              transform=tr, filter=tau_ampa)
 
             # connect the GPe to GPi and STN (inhibitory)
-            def func_gpe(x):
-                if x[0] < self.ee:
-                    return 0
-                return self.me * (x[0] - self.ee)
-            gpe_output = gpe.add_output('func_gpe', func_gpe)
+            gpe_output = gpe.add_output('func_gpe', self.gpe())
             nengo.Connection(gpe_output, gpi.input, filter=tau_gaba,
                              transform=-np.eye(dimensions) * self.we)
             nengo.Connection(gpe_output, stn.input, filter=tau_gaba,
                              transform=-np.eye(dimensions) * self.wg)
 
             #connect GPi to output (inhibitory)
-            def func_gpi(x):
-                if x[0] < self.eg:
-                    return 0
-                return self.mg * (x[0] - self.eg)
-            nengo.Connection(gpi.add_output('func_gpi', func_gpi),
+            nengo.Connection(gpi.add_output('func_gpi', self.gpi()),
                              self.output, filter=None,
                              transform=np.eye(dimensions) * output_weight)
+
+    def str(self):
+        def func_str(x):
+            if x[0] < self.e:
+                return 0
+            return self.mm * (x[0] - self.e)
+        return func_str
+
+    def stn(self):
+        def func_stn(x):
+            if x[0] < self.ep:
+                return 0
+            return self.mp * (x[0] - self.ep)
+        return func_stn
+
+    def gpe(self):
+        def func_gpe(x):
+            if x[0] < self.ee:
+                return 0
+            return self.me * (x[0] - self.ee)
+        return func_gpe
+
+    def gpi(self):
+        def func_gpi(x):
+            if x[0] < self.eg:
+                return 0
+            return self.mg * (x[0] - self.eg)
+        return func_gpi

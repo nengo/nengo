@@ -1,15 +1,33 @@
 #!/usr/bin/env python
-
+import sys
 try:
     from setuptools import setup
+    from setuptools.command.test import test as TestCommand
 except ImportError:
     try:
         from ez_setup import use_setuptools
         use_setuptools()
         from setuptools import setup
+        from setuptools.command.test import test as TestCommand
     except Exception as e:
         print("Forget setuptools, trying distutils...")
         from distutils.core import setup
+
+try:
+    class Tox(TestCommand):
+        def finalize_options(self):
+            TestCommand.finalize_options(self)
+            self.test_args = []
+            self.test_suite = True
+
+        def run_tests(self):
+            #import here, cause outside the eggs aren't loaded
+            import tox
+            errno = tox.cmdline(self.test_args)
+            sys.exit(errno)
+    testing = {'tests_require': ['tox'], 'cmdclass': {'test': Tox}}
+except NameError:
+    testing = {}
 
 
 description = ("Tools for making neural simulations using the methods "
@@ -27,6 +45,7 @@ setup(
     long_description=open('README.rst').read(),
     requires=[
         "numpy (>=1.5.0)",
+        "networkx",
     ],
-    test_suite='nengo.tests',
+    **testing
 )
