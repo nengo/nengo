@@ -19,11 +19,16 @@ def pytest_generate_tests(metafunc):
 
 
 def pytest_addoption(parser):
+    parser.addoption('--benchmark', action='store_true', default=False,
+                     help='Also run benchmarking tests')
     parser.addoption('--noexamples', action='store_true', default=False,
                      help='Do not run examples')
 
 
 def pytest_runtest_setup(item):
+    if (getattr(item.obj, 'benchmark', None)
+            and not item.config.getvalue('benchmark')):
+        pytest.skip('benchmarks not requested')
     if (getattr(item.obj, 'example', None)
             and item.config.getvalue('noexamples')):
         pytest.skip('examples not requested')

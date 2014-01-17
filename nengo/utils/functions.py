@@ -164,6 +164,65 @@ def whitenoise(step, high, rms=0.5, seed=None, dimensions=None):
 
     # create a function that computes the bases and weights them by amplitude
     def whitenoise_function(t, f=frequencies, a=amplitude, p=phase):
-        return np.dot(a, np.sin((f * t) + p))
+        return np.dot(np.sin(f * t[..., np.newaxis] + p), a)
 
     return whitenoise_function
+
+
+def filtfilt(x, tau, axis=0):
+    """Zero-phase second-order non-causal lowpass filter, implemented by
+    filtering the input in forward and reverse directions.
+
+    This function is equivalent to scipy's or Matlab's filtfilt function
+    with the first-order lowpass filter
+                         1
+        T(s) = ----------------------
+               tau_in_seconds * s + 1
+    as the filter. The resulting equivalent filter has zero phase distortion
+    and a transfer function magnitude equal to the square of T(s),
+    discretized using the zero-order hold method.
+
+    Parameters
+    ----------
+    x : array_like
+        The signal to filter.
+    tau : float
+        The dimensionless filter time constant (tau = tau_in_seconds / dt).
+    axis : integer
+        The axis along which to filter.
+    """
+
+    x = np.array(x)                # copy, so that we can work in-place
+    y = np.rollaxis(x, axis=axis)  # y is rolled view on x
+
+    ### buffer method
+    d = -np.expm1(-1. / tau)
+
+    # filter forwards
+    yy = np.zeros_like(y[0])  # yy is our buffer for the current filter state
+    for i, yi in enumerate(y):
+        yy += d * (yi - yy)
+        y[i] = yy
+
+    # filter backwards
+    z = y[::-1]  # z is a flipped view on y
+    for i, zi in enumerate(z):
+        yy += d * (zi - yy)
+        z[i] = yy
+
+    return x
+
+    ### in-place method (slightly faster, but slightly less numerically stable)
+    # d = np.exp(-1. / tau)
+
+    # # filter forwards
+    # y[0] *= d
+    # for i, yy in enumerate(y[1:]):
+    #     yy -= d * (yy - y[i])
+
+    # # filter backwards (note that z is a view on y)
+    # z = y[::-1]
+    # for i, zz in enumerate(z[1:]):
+    #     zz -= d * (zz - z[i])
+
+    # return x
