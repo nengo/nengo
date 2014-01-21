@@ -774,6 +774,7 @@ class Builder(object):
         self.model.operators.append(Reset(ens.input_signal))
 
         # Set up neurons
+        ens.neurons.dimensions = ens.dimensions
         if ens.neurons.gain is None or ens.neurons.bias is None:
             # if max_rates and intercepts are distributions,
             # turn them into fixed samples.
