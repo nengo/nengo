@@ -666,7 +666,7 @@ class Connection(NengoObject):
 
     @property
     def label(self):
-        label = "%s>%s" % (self._pre.label, self._post.label)
+        label = "%s->%s" % (self._pre.label, self._post.label)
         if self.function is not None:
             return "%s:%s" % (label, self.function.__name__)
         return label
