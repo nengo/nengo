@@ -39,7 +39,7 @@ def test_connected(Simulator):
 
     input = nengo.Node(output=np.sin, label='input')
     output = nengo.Node(output=lambda t, x: np.square(x),
-                        dimensions=1,
+                        size_in=1,
                         label='output')
     nengo.Connection(input, output, filter=None)  # Direct connection
     p_in = nengo.Probe(input, 'output')
@@ -75,8 +75,8 @@ def test_passthrough(Simulator):
 
     in1 = nengo.Node(output=np.sin)
     in2 = nengo.Node(output=lambda t: t)
-    passthrough = nengo.Node(dimensions=1)
-    out = nengo.Node(output=lambda t, x: x, dimensions=1)
+    passthrough = nengo.Node(size_in=1)
+    out = nengo.Node(output=lambda t, x: x, size_in=1)
 
     nengo.Connection(in1, passthrough, filter=None)
     nengo.Connection(in2, passthrough, filter=None)
@@ -106,8 +106,8 @@ def test_passthrough(Simulator):
 def test_circular(Simulator):
     m = nengo.Model("test_circular", seed=0)
 
-    a = nengo.Node(output=lambda t, x: x+1, dimensions=1)
-    b = nengo.Node(output=lambda t, x: x+1, dimensions=1)
+    a = nengo.Node(output=lambda t, x: x+1, size_in=1)
+    b = nengo.Node(output=lambda t, x: x+1, size_in=1)
     nengo.Connection(a, b, filter=None)
     nengo.Connection(b, a, filter=None)
 
@@ -119,6 +119,16 @@ def test_circular(Simulator):
     sim.run(runtime)
 
     assert np.allclose(sim.data(a_p), sim.data(b_p))
+
+
+def test_function_args_error(Simulator):
+    m = nengo.Model("test_dimensionality_error", seed=0)
+    with pytest.raises(ValueError):
+        a = nengo.Node(output=lambda t, x: x+1)
+    with pytest.raises(ValueError):
+        b = nengo.Node(output=lambda t: t+1, size_in=1)
+    with pytest.raises(ValueError):
+        c = nengo.Node(output=lambda t, x, y: t+1, size_in=2)
 
 
 if __name__ == "__main__":

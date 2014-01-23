@@ -13,16 +13,17 @@ def test_multidim(Simulator, nl):
     """Test an ensemble array with multiple dimensions per ensemble"""
     dims = 3
     n_neurons = 60
-    radius = 1.5
+    radius = 1.0
 
     rng = np.random.RandomState(523887)
     a = rng.uniform(low=-0.7, high=0.7, size=dims)
     b = rng.uniform(low=-0.7, high=0.7, size=dims)
 
-    ta = np.zeros((6, 3))
-    ta[[0, 2, 4], [0, 1, 2]] = 1
-    tb = np.zeros((6, 3))
-    tb[[1, 3, 5], [0, 1, 2]] = 1
+    drange = np.arange(dims)
+    ta = np.zeros((2*dims, dims))
+    ta[2*drange, drange] = 1
+    tb = np.zeros((2*dims, dims))
+    tb[2*drange + 1, drange] = 1
     c = np.dot(ta, a) + np.dot(tb, b)
 
     model = nengo.Model('Multidim', seed=123)
@@ -52,8 +53,8 @@ def test_multidim(Simulator, nl):
             a_sim = sim.data(p)
             colors = ['b', 'g', 'r', 'c', 'm', 'y']
             for i in range(a_sim.shape[1]):
-                plt.plot(t, a_ref[:, i], '--', color=colors[i])
-                plt.plot(t, a_sim[:, i], '-', color=colors[i])
+                plt.plot(t, a_ref[:, i], '--', color=colors[i % 6])
+                plt.plot(t, a_sim[:, i], '-', color=colors[i % 6])
             plt.title(title)
 
         plt.subplot(131)

@@ -1,9 +1,12 @@
+import collections
 import copy
 import logging
 import numpy as np
+import re
 
 import nengo
 import nengo.decoders
+from nengo.nonlinearities import Neurons
 
 logger = logging.getLogger(__name__)
 
@@ -207,23 +210,52 @@ class Node(object):
     ----------
     name : str
         An arbitrary name for the object.
-    output : callable
-        Function that transforms the Node inputs into outputs.
-    dimensions : int, optional
+    output : callable or array_like
+        Function that transforms the Node inputs into outputs, or
+        a constant output value. If output is None, this Node simply acts
+        as a placeholder and will be optimized out of the final model.
+    size_in : int, optional
         The number of input dimensions.
+    size_out : int, optional
+        The size of the output signal
 
     Attributes
     ----------
     name : str
         The name of the object.
-    dimensions : int
+    size_in : int
         The number of input dimensions.
     """
 
-    def __init__(self, output=None, dimensions=0, label="Node"):
+    def __init__(self, output=None, size_in=0, size_out=None, label="Node"):
+        if output is not None and not isinstance(output, collections.Callable):
+            output = np.asarray(output)
         self.output = output
         self.label = label
-        self.dimensions = dimensions
+        self._size_in = size_in
+
+        if size_out is None:
+            if isinstance(output, collections.Callable):
+                try:
+                    if size_in > 0:
+                        result = output(np.asarray(0.0), np.zeros(size_in))
+                    else:
+                        result = output(np.asarray(0.0))
+                    size_out = np.asarray(result).size
+                except TypeError as e:
+                    match = re.match('(.*) takes exactly ([0-9]+) argument[s]? '
+                                     '\(([0-9]+) given\)', e.message)
+                    if match is not None:
+                        name, n_args, n_given = match.groups()
+                        raise ValueError(
+                            "The function '%s' provided to '%s' takes "
+                            "%s argument(s), where a function for this type "
+                            "of node is expected to take %s argument(s)"
+                            % (name, str(self), n_args, n_given))
+                    raise e
+            elif isinstance(output, np.ndarray):
+                size_out = output.size
+        self._size_out = size_out
 
         # Set up probes
         self.probes = {'output': []}
@@ -252,6 +284,14 @@ class Node(object):
                 else:
                     rval.__dict__[k] = copy.deepcopy(v, memo)
             return rval
+
+    @property
+    def size_in(self):
+        return self._size_in
+
+    @property
+    def size_out(self):
+        return self._size_out
 
     def probe(self, probe):
         """TODO"""
@@ -282,6 +322,10 @@ class Connection(object):
 
     """
 
+    _decoders = None
+    _eval_points = None
+    _function = None
+
     def __init__(self, pre, post,
                  filter=0.005, transform=1.0, modulatory=False, **kwargs):
         self.pre = pre
@@ -299,6 +343,63 @@ class Connection(object):
             self.eval_points = kwargs.pop('eval_points', None)
             self.function = kwargs.pop('function', None)
 
+            if self.decoders is not None:
+                dimensions = self.decoders.shape[1]
+                dim_src = "Decoder"
+                if self.decoders.shape[0] != self.pre.n_neurons:
+                    raise ValueError(
+                        "First dimension of provided decoders matrix (%d) "
+                        "must match pre population neurons (%d)" %
+                        (self.decoders.shape[0], self.pre.n_neurons))
+            elif self.function is not None:
+                x = (self._eval_points[0] if self._eval_points is not None else
+                     np.zeros(self.pre.dimensions))
+                dimensions = np.asarray(self.function(x)).size
+                dim_src = "Function"
+            else:
+                dimensions = self.pre.dimensions
+                dim_src = "Pre population"
+        elif isinstance(self.pre, Neurons):
+            dimensions = self.pre.n_neurons
+            dim_src = "Neurons"
+        elif isinstance(self.pre, Node):
+            dimensions = self.pre.size_out
+            dim_src = "Node"
+        else:
+            raise ValueError("Objects of type '%s' cannot serve as connection "
+                             "'pre'" % self.pre.__class__.__name__)
+
+        self._dimensions = dimensions
+
+        post_dims = None
+        if isinstance(self.post, Ensemble):
+            post_dims, post_str = self.post.dimensions, "population dimensions"
+        elif isinstance(self.post, Neurons):
+            post_dims, post_str = self.post.n_neurons, "number of neurons"
+        elif isinstance(self.post, Node):
+            post_dims, post_str = self.post.size_in, "node input size"
+
+        if self.transform.ndim == 0:
+            # check input dimensionality matches output dimensionality
+            if (dimensions is not None and post_dims is not None
+                    and dimensions != post_dims):
+                raise ValueError("%s output size (%d) not equal to "
+                                 "post %s (%d)" %
+                                 (dim_src, dimensions, post_str, post_dims))
+        else:
+            # check input dimensionality matches transform
+            if dimensions is not None and dimensions != self.transform.shape[1]:
+                raise ValueError("%s output size (%d) not equal to "
+                                 "transform input size (%d)" %
+                                 (dim_src, dimensions, self.transform.shape[1]))
+
+            # check output dimensionality matches transform
+            if post_dims is not None and post_dims != self.transform.shape[0]:
+                raise ValueError("Transform output size (%d) not equal to "
+                                 "post %s (%d)" %
+                                 (self.transform.shape[0], post_str, post_dims))
+
+        # check that we've used all user-provided arguments
         if len(kwargs) > 0:
             raise TypeError("__init__() got an unexpected keyword argument '"
                             + next(iter(kwargs)) + "'")
@@ -354,17 +455,7 @@ class Connection(object):
 
     @property
     def dimensions(self):
-        if self.decoders is not None:
-            return self.decoders.shape[1]
-
-        if not hasattr(self, 'function') or self.function is None:
-            return self.pre.dimensions
-
-        if self._eval_points is not None:
-            val = self._eval_points[0]
-        else:
-            val = np.zeros(self.pre.dimensions)
-        return np.array(self.function(val)).size
+        return self._dimensions
 
     @property
     def eval_points(self):
@@ -379,6 +470,17 @@ class Connection(object):
             if _eval_points.ndim == 1:
                 _eval_points.shape = 1, _eval_points.shape[0]
         self._eval_points = _eval_points
+
+    @property
+    def function(self):
+        return self._function
+
+    @function.setter
+    def function(self, _function):
+        if _function is not None and self.decoders is not None:
+            logger.warning("Setting decoders on a connection with a specified "
+                           "function. May not actually compute that function.")
+        self._function = _function
 
 
 class Probe(object):
