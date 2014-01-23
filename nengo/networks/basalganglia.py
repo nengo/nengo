@@ -51,8 +51,8 @@ class BasalGanglia(nengo.Network):
             gpe = EnsembleArray(label='Globus pallidus externus',
                                 intercepts=Uniform(self.ee, 1), **ea_params)
 
-            self.input = nengo.Node(label="input", dimensions=dimensions)
-            self.output = nengo.Node(label="output", dimensions=dimensions)
+            self.input = nengo.Node(label="input", size_in=dimensions)
+            self.output = nengo.Node(label="output", size_in=dimensions)
 
             # spread the input to StrD1, StrD2, and STN
             nengo.Connection(

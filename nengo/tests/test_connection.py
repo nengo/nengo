@@ -117,7 +117,7 @@ def test_neurons_to_node(Simulator, nl_nodirect):
 
     m = nengo.Model(name, seed=123)
     a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
-    out = nengo.Node(lambda t, x: x, dimensions=N)
+    out = nengo.Node(lambda t, x: x, size_in=N)
     nengo.Connection(a.neurons, out, filter=None)
 
     a_spikes = nengo.Probe(a, 'spikes')
@@ -170,6 +170,39 @@ def test_neurons_to_neurons(Simulator, nl_nodirect):
 
     assert np.allclose(sim.data(a_p)[-10:], 1, atol=.1, rtol=.01)
     assert np.allclose(sim.data(b_p)[-10:], 0, atol=.1, rtol=.01)
+
+
+def test_dimensionality_errors(Simulator, nl_nodirect):
+    m = nengo.Model("test_dimensionality_error", seed=0)
+    N = 10
+
+    n01 = nengo.Node(output=[1])
+    n02 = nengo.Node(output=[1, 1])
+    n21 = nengo.Node(output=[1], size_in=2)
+    e1 = nengo.Ensemble(nl_nodirect(N), 1)
+    e2 = nengo.Ensemble(nl_nodirect(N), 2)
+
+    # these should work
+    nengo.Connection(n01, e1)
+    nengo.Connection(n02, e2)
+    nengo.Connection(e2, n21)
+    nengo.Connection(n21, e1)
+    nengo.Connection(e1, n21, decoders=np.random.randn(N, 2))
+    nengo.Connection(e2, e1, function=lambda x: x[0])
+
+    # these should not work
+    with pytest.raises(ValueError):
+        nengo.Connection(n02, e1)
+    with pytest.raises(ValueError):
+        nengo.Connection(e1, e2)
+    with pytest.raises(ValueError):
+        nengo.Connection(e2, e1, decoders=np.random.randn(N+1, 1))
+    with pytest.raises(ValueError):
+        nengo.Connection(e2, e1, decoders=np.random.randn(N, 2))
+    with pytest.raises(ValueError):
+        nengo.Connection(e2, e1, function=lambda x: x, transform=[[1]])
+    with pytest.raises(ValueError):
+        nengo.Connection(n21, e2, transform=np.ones((2,2)))
 
 
 if __name__ == "__main__":

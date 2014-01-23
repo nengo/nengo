@@ -830,8 +830,8 @@ class Builder(object):
         # Get input
         if (node.output is None
                 or isinstance(node.output, collections.Callable)):
-            if node.dimensions:
-                node.input_signal = Signal(np.zeros(node.dimensions),
+            if node.size_in > 0:
+                node.input_signal = Signal(np.zeros(node.size_in),
                                            name=node.label + ".signal")
                 # reset input signal to 0 each timestep
                 self.model.operators.append(Reset(node.input_signal))
@@ -840,17 +840,14 @@ class Builder(object):
         if node.output is None:
             node.output_signal = node.input_signal
         elif not isinstance(node.output, collections.Callable):
-            if isinstance(node.output, (int, float, complex)):
-                node.output_signal = Signal([node.output], name=node.label)
-            else:
-                node.output_signal = Signal(node.output, name=node.label)
+            node.output_signal = Signal(node.output, name=node.label)
         else:
-
             node.pyfn = nengo.PythonFunction(fn=node.output,
-                                             n_in=node.dimensions,
+                                             n_in=node.size_in,
+                                             n_out=node.size_out,
                                              label=node.label + ".pyfn")
             self.build_pyfunc(node.pyfn)
-            if node.dimensions:
+            if node.size_in > 0:
                 self.model.operators.append(DotInc(
                     node.input_signal,
                     Signal(1.0, name="1"),
@@ -893,9 +890,9 @@ class Builder(object):
             tag=name + " filtering"))
         return filtered
 
-    def _direct_pyfunc(self, input_signal, function, label):
+    def _direct_pyfunc(self, input_signal, function, n_out, label):
         pyfunc = nengo.PythonFunction(
-            fn=function, n_in=input_signal.size, label=label)
+            fn=function, n_in=input_signal.size, n_out=n_out, label=label)
         self.build_pyfunc(pyfunc)
         self.model.operators.append(DotInc(
             input_signal,
@@ -927,6 +924,7 @@ class Builder(object):
                 conn.pyfunc = self._direct_pyfunc(
                     conn.input_signal,
                     lambda t, x: conn.function(x),
+                    conn.dimensions,
                     conn.label)
                 conn.signal = conn.pyfunc.output_signal
 

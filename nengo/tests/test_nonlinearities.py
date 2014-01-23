@@ -56,7 +56,7 @@ def test_pyfunc():
 
         m = nengo.Model("")
         ins = builder.Signal(x, name='ins')
-        pop = nengo.PythonFunction(fn=fn, n_in=d)
+        pop = nengo.PythonFunction(fn=fn, n_in=d, n_out=d)
         m.operators = []
         b = builder.Builder()
         b.model = m
