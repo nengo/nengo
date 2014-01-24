@@ -100,9 +100,6 @@ class Ensemble(object):
         # Set up probes
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
 
-        # objects created at build time
-        self._scaled_encoders = None  # encoders * neuron-gains / radius
-
         # add self to current context
         nengo.context.add_to_current(self)
 
@@ -138,26 +135,6 @@ class Ensemble(object):
 
         _neurons.dimensions = self.dimensions
         self._neurons = _neurons
-
-    def activities(self, eval_points=None):
-        """Determine the neuron firing rates at the given points.
-
-        Parameters
-        ----------
-        eval_points : array_like (n_points, `self.dimensions`), optional
-            The points at which to measure the firing rates
-            (``None`` uses `self.eval_points`).
-
-        Returns
-        -------
-        activities : array (n_points, `self.n_neurons`)
-            Firing rates (in Hz) for each neuron at each point.
-        """
-        if eval_points is None:
-            eval_points = self.eval_points
-
-        return self.neurons.rates(
-            np.dot(eval_points, self.encoders.T / self.radius))
 
     def probe(self, probe):
         """Probe a signal in this ensemble.
@@ -531,6 +508,7 @@ class Probe(object):
         self.sample_every = sample_every
         self.dimensions = dimensions  # None?
         self.filter = filter
+        self.sig = None  # XXX temp, until better probes
 
         target.probe(self)
 
@@ -541,6 +519,10 @@ class Probe(object):
     def sample_rate(self):
         """TODO"""
         return 1.0 / self.sample_every
+
+    @property
+    def dt(self):
+        return self.sample_every
 
     def add_to_model(self, model):
         model.probed[(self.target, self.attr)] = self

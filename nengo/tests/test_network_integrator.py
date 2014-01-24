@@ -31,14 +31,14 @@ def test_integrator(Simulator, nl):
 
     with Plotter(Simulator, nl) as plt:
         t = sim.trange()
-        plt.plot(t, sim.data(A_p), label='Manual')
-        plt.plot(t, sim.data(T_p), label='Template')
-        plt.plot(t, sim.data(input_p), 'k', label='Input')
+        plt.plot(t, sim.data[A_p], label='Manual')
+        plt.plot(t, sim.data[T_p], label='Template')
+        plt.plot(t, sim.data[input_p], 'k', label='Input')
         plt.legend(loc=0)
         plt.savefig('test_integrator.test_integrator.pdf')
         plt.close()
 
-    assert rmse(sim.data(A_p), sim.data(T_p)) < 0.2
+    assert rmse(sim.data[A_p], sim.data[T_p]) < 0.2
 
 
 if __name__ == "__main__":

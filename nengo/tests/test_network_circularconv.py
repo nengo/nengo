@@ -90,7 +90,7 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
     with Plotter(Simulator, nl) as plt:
         def plot(sim, a, A, title=""):
             a_ref = np.tile(a, (len(t), 1))
-            a_sim = sim.data(A_p)
+            a_sim = sim.data[A_p]
             colors = ['b', 'g', 'r', 'c', 'm', 'y']
             for i in range(min(dims, len(colors))):
                 plt.plot(t, a_ref[:, i], '--', color=colors[i])
@@ -109,12 +109,12 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
         plt.close()
 
     ### results
-    tmask = t > (0.5 + sim.model.dt/2)
-    assert sim.data(A_p)[tmask].shape == (499, dims)
-    a_sim = sim.data(A_p)[tmask].mean(axis=0)
-    b_sim = sim.data(B_p)[tmask].mean(axis=0)
-    c_sim = sim.data(C_p)[tmask].mean(axis=0)
-    d_sim = sim.data(D_p)[tmask].mean(axis=0)
+    tmask = t > (0.5 + sim.dt/2)
+    assert sim.data[A_p][tmask].shape == (499, dims)
+    a_sim = sim.data[A_p][tmask].mean(axis=0)
+    b_sim = sim.data[B_p][tmask].mean(axis=0)
+    c_sim = sim.data[C_p][tmask].mean(axis=0)
+    d_sim = sim.data[D_p][tmask].mean(axis=0)
 
     rtol, atol = 0.1, 0.05
     assert np.allclose(a, a_sim, rtol=rtol, atol=atol)

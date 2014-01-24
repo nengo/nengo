@@ -50,7 +50,7 @@ def test_multidim(Simulator, nl):
     with Plotter(Simulator, nl) as plt:
         def plot(sim, a, p, title=""):
             a_ref = np.tile(a, (len(t), 1))
-            a_sim = sim.data(p)
+            a_sim = sim.data[p]
             colors = ['b', 'g', 'r', 'c', 'm', 'y']
             for i in range(a_sim.shape[1]):
                 plt.plot(t, a_ref[:, i], '--', color=colors[i % 6])
@@ -66,9 +66,9 @@ def test_multidim(Simulator, nl):
         plt.savefig('test_ensemble_array.test_multidim.pdf')
         plt.close()
 
-    a_sim = sim.data(A_p)[t > 0.5].mean(axis=0)
-    b_sim = sim.data(B_p)[t > 0.5].mean(axis=0)
-    c_sim = sim.data(C_p)[t > 0.5].mean(axis=0)
+    a_sim = sim.data[A_p][t > 0.5].mean(axis=0)
+    b_sim = sim.data[B_p][t > 0.5].mean(axis=0)
+    c_sim = sim.data[C_p][t > 0.5].mean(axis=0)
 
     rtol, atol = 0.1, 0.05
     assert np.allclose(a, a_sim, atol=atol, rtol=rtol)
@@ -145,26 +145,26 @@ def test_matrix_mul(Simulator, nl):
 
     with Plotter(Simulator, nl) as plt:
         t = sim.trange(dt=0.01)
-        plt.plot(t, sim.data(D_p))
+        plt.plot(t, sim.data[D_p])
         for d in np.dot(Amat, Bmat).flatten():
             plt.axhline(d, color='k')
         plt.savefig('test_ensemble_array.test_matrix_mul.pdf')
         plt.close()
 
     atol, rtol = .1, .01
-    assert np.allclose(sim.data(A_p)[50:, 0], 0.5, atol=atol, rtol=rtol)
-    assert np.allclose(sim.data(A_p)[50:, 1], -0.5, atol=atol, rtol=rtol)
+    assert np.allclose(sim.data[A_p][50:, 0], 0.5, atol=atol, rtol=rtol)
+    assert np.allclose(sim.data[A_p][50:, 1], -0.5, atol=atol, rtol=rtol)
 
-    assert np.allclose(sim.data(B_p)[50:, 0], 0, atol=atol, rtol=rtol)
-    assert np.allclose(sim.data(B_p)[50:, 1], -1, atol=atol, rtol=rtol)
-    assert np.allclose(sim.data(B_p)[50:, 2], .7, atol=atol, rtol=rtol)
-    assert np.allclose(sim.data(B_p)[50:, 3], 0, atol=atol, rtol=rtol)
+    assert np.allclose(sim.data[B_p][50:, 0], 0, atol=atol, rtol=rtol)
+    assert np.allclose(sim.data[B_p][50:, 1], -1, atol=atol, rtol=rtol)
+    assert np.allclose(sim.data[B_p][50:, 2], .7, atol=atol, rtol=rtol)
+    assert np.allclose(sim.data[B_p][50:, 3], 0, atol=atol, rtol=rtol)
 
     Dmat = np.dot(Amat, Bmat)
     for i in range(Amat.shape[0]):
         for k in range(Bmat.shape[1]):
             assert np.allclose(
-                sim.data(D_p)[-10:, i * Bmat.shape[1] + k],
+                sim.data[D_p][-10:, i * Bmat.shape[1] + k],
                 Dmat[i, k],
                 atol=atol, rtol=rtol)
 
