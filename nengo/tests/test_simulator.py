@@ -5,6 +5,7 @@ import pytest
 
 import nengo
 from nengo.builder import Builder, ProdUpdate, Copy, Reset, DotInc, Signal
+import nengo.simulator
 
 logger = logging.getLogger(__name__)
 
@@ -14,11 +15,11 @@ def pytest_funcarg__RefSimulator(request):
 
 
 def mybuilder(model, dt):
-    model.dt = dt
-    model.seed = 0
-    if not hasattr(model, 'probes'):
-        model.probes = []
-    return model
+    return {'probes': [] if not hasattr(model, 'probes') else model.probes,
+            'operators': ([] if not hasattr(model, 'operators')
+                          else model.operators),
+            '_data': {},
+            'dt': dt, 'seed': 0}
 
 
 def test_signal_init_values(RefSimulator):
@@ -108,9 +109,10 @@ def test_simple_pyfunc(RefSimulator):
     b.build_pyfunc(pop)
     m.operators += [
         ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
-        DotInc(Signal([[1.0]]), time, pop.input_signal),
-        ProdUpdate(Signal([[1.0]]), pop.output_signal, Signal(0), sig),
+        DotInc(Signal([[1.0]]), time, b.sig_in[pop]),
+        ProdUpdate(Signal([[1.0]]), b.sig_out[pop], Signal(0), sig),
     ]
+    m.operators.extend(b.operators)
 
     sim = RefSimulator(m, dt=dt, builder=mybuilder)
     sim.step()
@@ -138,9 +140,10 @@ def test_encoder_decoder_pathway(RefSimulator):
     b.model = m
     b.build_pyfunc(pop)
     m.operators += [
-        DotInc(Signal([[1.0], [2.0]]), foo, pop.input_signal),
-        ProdUpdate(decs, pop.output_signal, Signal(0.2), foo)
+        DotInc(Signal([[1.0], [2.0]]), foo, b.sig_in[pop]),
+        ProdUpdate(decs, b.sig_out[pop], Signal(0.2), foo)
     ]
+    m.operators.extend(b.operators)
 
     def check(sig, target):
         assert np.allclose(sim.signals[sig], target)
@@ -148,16 +151,16 @@ def test_encoder_decoder_pathway(RefSimulator):
     sim = RefSimulator(m, dt=dt, builder=mybuilder)
 
     check(foo, 1.0)
-    check(pop.input_signal, 0)
-    check(pop.output_signal, 0)
+    check(b.sig_in[pop], 0)
+    check(b.sig_out[pop], 0)
 
     sim.step()
     #DotInc to pop.input_signal (input=[1.0,2.0])
     #produpdate updates foo (foo=[0.2])
     #pop updates pop.output_signal (output=[2,3])
 
-    check(pop.input_signal, [1, 2])
-    check(pop.output_signal, [2, 3])
+    check(b.sig_in[pop], [1, 2])
+    check(b.sig_out[pop], [2, 3])
     check(foo, .2)
     check(decs, [.1, .05])
 
@@ -168,8 +171,8 @@ def test_encoder_decoder_pathway(RefSimulator):
     #pop updates pop.output_signal (output=[1.2,1.4])
 
     check(decs, [.1, .05])
-    check(pop.input_signal, [0.2, 0.4])
-    check(pop.output_signal, [1.2, 1.4])
+    check(b.sig_in[pop], [0.2, 0.4])
+    check(b.sig_out[pop], [1.2, 1.4])
     # -- foo is computed as a prodUpdate of the *previous* output signal
     #    foo <- .2 * foo + dot(decoders * .5, output_signal)
     #           .2 * .2  + dot([.2, .1] * .5, [2, 3])
@@ -191,10 +194,10 @@ def test_encoder_decoder_with_views(RefSimulator):
     b.model = m
     b.build_pyfunc(pop)
     m.operators += [
-        DotInc(Signal([[1.0], [2.0]]), foo[:], pop.input_signal),
-        ProdUpdate(
-            Signal(decoders * 0.5), pop.output_signal, Signal(0.2), foo[:])
+        DotInc(Signal([[1.0], [2.0]]), foo[:], b.sig_in[pop]),
+        ProdUpdate(Signal(decoders * 0.5), b.sig_out[pop], Signal(0.2), foo[:])
     ]
+    m.operators.extend(b.operators)
 
     def check(sig, target):
         assert np.allclose(sim.signals[sig], target)
@@ -207,8 +210,8 @@ def test_encoder_decoder_with_views(RefSimulator):
     #pop updates pop.output_signal (output=[2,3])
 
     check(foo, .2)
-    check(pop.input_signal, [1, 2])
-    check(pop.output_signal, [2, 3])
+    check(b.sig_in[pop], [1, 2])
+    check(b.sig_out[pop], [2, 3])
 
     sim.step()
     #DotInc to pop.input_signal (input=[0.2,0.4])
@@ -217,8 +220,16 @@ def test_encoder_decoder_with_views(RefSimulator):
     #pop updates pop.output_signal (output=[1.2,1.4])
 
     check(foo, .39)
-    check(pop.input_signal, [0.2, 0.4])
-    check(pop.output_signal, [1.2, 1.4])
+    check(b.sig_in[pop], [0.2, 0.4])
+    check(b.sig_out[pop], [1.2, 1.4])
+
+
+def test_probedict():
+    raw = {'scalar': 5,
+           'list': [2, 4, 6]}
+    probedict = nengo.simulator.ProbeDict(raw)
+    assert np.all(probedict['scalar'] == np.asarray(raw['scalar']))
+    assert np.all(probedict.get('list') == np.asarray(raw.get('list')))
 
 
 if __name__ == "__main__":

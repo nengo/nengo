@@ -68,7 +68,8 @@ def test_nooutput(nb_path):
     for ws in nb.worksheets:
         for cell in ws.cells:
             if cell.cell_type == 'code':
-                assert cell.outputs == []
+                assert cell.outputs == [], (
+                    "Clear all cell outputs in " + nb_path)
 
 
 if __name__ == "__main__":
