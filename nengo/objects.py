@@ -88,8 +88,8 @@ class Ensemble(nengo.params.Parameterized):
             raise ValueError(
                 'Number of dimensions (%d) must be positive' % dimensions)
 
-        self.dimensions = dimensions  # Must be set before neurons
         self.neurons = neurons
+        self.dimensions = dimensions
         self.radius = radius
         self.encoders = encoders
         self.intercepts = intercepts

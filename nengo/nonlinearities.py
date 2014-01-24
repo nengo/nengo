@@ -60,7 +60,7 @@ class Neurons(nengo.params.Parameterized):
     def __str__(self):
         r = self.__class__.__name__ + "("
         r += self.label if hasattr(self, 'label') else "id " + str(id(self))
-        r += ", %dN)" % self.n_neurons if hasattr(self, 'n_neurons') else ")"
+        r += ", %dN)" % self._n_neurons
         return r
 
     def __repr__(self):

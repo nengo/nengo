@@ -25,15 +25,6 @@ class Parameter(object):
         self.doc = doc
         self.name = None
 
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        self._name = value
-        self._internal_name = "_%s_value" % value
-
     def __get__(self, instance, owner):
         """Return the value for the instance, or the Parameter itself.
 
@@ -45,9 +36,7 @@ class Parameter(object):
         normally) we'll return the value, or the default if one
         hasn't been set yet.
         """
-        if instance is None:
-            return self
-        return instance.__dict__.get(self._internal_name, self.default)
+        return self
 
     def __set__(self, instance, value):
         """Set the value for the parameter instance.
@@ -60,14 +49,17 @@ class Parameter(object):
         If called with an instance, then it sets an instance
         specific value, as you would expect.
         """
-        if instance is None:
-            self.default = value
-        else:
-            instance.__dict__[self._internal_name] = value
+        instance.__dict__['_' + self.name] = value
 
     def __delete__(self, instance):
-        raise TypeError("Cannot delete %s: Parameter deletion not allowed." % (
+        raise TypeError("Cannot delete %s: Cannot delete parameters." % (
             self._attrib_name))
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return self.name + " parameter. Current value in _" + self.name + "."
 
 
 class Parameterized(object):
@@ -82,19 +74,13 @@ class Parameterized(object):
     replaces their default value.
     """
     def __new__(cls, *args, **kwargs):
+        params = []
         for k in dir(cls):
             v = getattr(cls, k)
             if isinstance(v, Parameter):
+                params.append(k)
                 v.name = k
-        return object.__new__(cls)
-
-    def __setattr__(self, name, value):
-        try:
-            attr = getattr(self, name)
-        except AttributeError:
-            object.__setattr__(self, name, value)
-        else:
-            if isinstance(attr, Parameter):
-                attr.__set__(None, value)
-            else:
-                object.__setattr__(self, name, value)
+        inst = object.__new__(cls)
+        for param in params:
+            inst.__dict__["_" + param] = getattr(inst, param).default
+        return inst
