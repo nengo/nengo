@@ -6,8 +6,6 @@ import logging
 import pickle
 import os.path
 
-import numpy as np
-
 import nengo
 
 logger = logging.getLogger(__name__)
@@ -70,21 +68,12 @@ class Model(object):
         self.label = label + ''  # -- make self.name a string, raise error otw
         self.seed = seed
 
-        self._rng = None
-
         #make this the default context
         nengo.context.clear()
         nengo.context.append(self)
 
     def __str__(self):
         return "Model: " + self.label
-
-    def _get_new_seed(self):
-        if self._rng is None:
-            # never create rng without knowing the seed
-            assert self.seed is not None
-            self._rng = np.random.RandomState(self.seed)
-        return self._rng.randint(np.iinfo(np.int32).max)
 
     ### I/O
 

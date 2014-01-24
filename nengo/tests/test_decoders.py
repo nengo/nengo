@@ -61,8 +61,8 @@ def _get_AB(m, n, d, rng=np.random):
     B = sample_hypersphere(d, m, rng=rng)                  # eval points
 
     a = nengo.LIF(n)
-    a.set_gain_bias(rng.uniform(50, 100, n), rng.uniform(-1, 1, n))
-    A = a.rates(np.dot(B, E))
+    gain, bias = a.gain_bias(rng.uniform(50, 100, n), rng.uniform(-1, 1, n))
+    A = a.rates(np.dot(B, E), gain, bias)
     return A, B
 
 
@@ -114,13 +114,13 @@ def test_weights():
     n_samples = 1000
 
     a = nengo.LIF(m)  # population, for generating LIF tuning curves
-    a.set_gain_bias(rng.uniform(50, 100, m), rng.uniform(-1, 1, m))
+    gain, bias = a.gain_bias(rng.uniform(50, 100, m), rng.uniform(-1, 1, m))
 
     ea = sample_hypersphere(d, m, rng=rng, surface=True).T  # pre encoders
     eb = sample_hypersphere(d, n, rng=rng, surface=True).T  # post encoders
 
     p = sample_hypersphere(d, n_samples, rng=rng)  # training eval points
-    A = a.rates(np.dot(p, ea))                     # training activations
+    A = a.rates(np.dot(p, ea), gain, bias)         # training activations
     X = p                                          # training targets
 
     # find decoders and multiply by encoders to get weights
@@ -132,7 +132,7 @@ def test_weights():
 
     # assert that post inputs are close on test points
     pt = sample_hypersphere(d, n_samples, rng=rng)  # testing eval points
-    At = a.rates(np.dot(pt, ea))                    # testing activations
+    At = a.rates(np.dot(pt, ea), gain, bias)        # testing activations
     Y1 = np.dot(At, W1)                             # post inputs from decoders
     Y2 = np.dot(At, W2)                             # post inputs from weights
     assert np.allclose(Y1, Y2)
@@ -175,9 +175,9 @@ def test_solvers(Simulator, nl_nodirect):
     sim.run(tfinal)
     t = sim.trange()
 
-    # ref = sim.data(up)
-    ref = filtfilt(sim.data(ap), 20)
-    outputs = np.array([sim.data(probe) for probe in probes])
+    # ref = sim.data[up]
+    ref = filtfilt(sim.data[ap], 20)
+    outputs = np.array([sim.data[probe] for probe in probes])
     outputs_f = filtfilt(outputs, 20, axis=1)
 
     close = allclose(t, ref, outputs_f,
@@ -230,11 +230,11 @@ def test_regularization(Simulator, nl_nodirect):
     sim.run(tfinal)
     t = sim.trange()
 
-    ref = sim.data(up)
+    ref = sim.data[up]
     rmse_buf = lambda a, b: rms(a[t > buf] - b[t > buf])
     rmses = np.zeros(probes.shape)
     for i, probe in enumerate(probes.flat):
-        rmses.flat[i] = rmse_buf(sim.data(probe), ref)
+        rmses.flat[i] = rmse_buf(sim.data[probe], ref)
     rmses = rmses - rmses[:, :, [0], :]
 
     with Plotter(Simulator, nl_nodirect) as plt:

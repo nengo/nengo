@@ -44,11 +44,11 @@ class Neurons(object):
     def default_encoders(self, dimensions, rng):
         raise NotImplementedError("Neurons must provide default_encoders")
 
-    def rates(self, x):
+    def rates(self, x, gain, bias):
         raise NotImplementedError("Neurons must provide rates")
 
-    def set_gain_bias(self, max_rates, intercepts):
-        raise NotImplementedError("Neurons must provide set_gain_bias")
+    def gain_bias(self, max_rates, intercepts):
+        raise NotImplementedError("Neurons must provide gain_bias")
 
     def probe(self, probe):
         self.probes[probe.attr].append(probe)
@@ -120,9 +120,6 @@ class Ensemble(object):
         # Set up probes
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
 
-        # objects created at build time
-        self._scaled_encoders = None  # encoders * neuron-gains / radius
-
         # add self to current context
         nengo.context.add_to_current(self)
 
@@ -161,26 +158,6 @@ class Ensemble(object):
 
         _neurons.dimensions = self.dimensions
         self._neurons = _neurons
-
-    def activities(self, eval_points=None):
-        """Determine the neuron firing rates at the given points.
-
-        Parameters
-        ----------
-        eval_points : array_like (n_points, `self.dimensions`), optional
-            The points at which to measure the firing rates
-            (``None`` uses `self.eval_points`).
-
-        Returns
-        -------
-        activities : array (n_points, `self.n_neurons`)
-            Firing rates (in Hz) for each neuron at each point.
-        """
-        if eval_points is None:
-            eval_points = self.eval_points
-
-        return self.neurons.rates(
-            np.dot(eval_points, self.encoders.T / self.radius))
 
     def probe(self, probe, **kwargs):
         """Probe a signal in this ensemble.
@@ -626,11 +603,21 @@ class Probe(object):
         self.dimensions = dimensions  # None?
         self.filter = filter
         self.kwargs = kwargs
+        self.sig = None  # XXX temp, until better probes
 
         target.probe(self, **kwargs)
 
         # add self to current context
         nengo.context.add_to_current(self)
+
+    @property
+    def sample_rate(self):
+        """TODO"""
+        return 1.0 / self.sample_every
+
+    @property
+    def dt(self):
+        return self.sample_every
 
     def add_to_model(self, model):
         model.probed[id(self)] = self
