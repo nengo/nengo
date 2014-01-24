@@ -4,6 +4,7 @@ import pytest
 import nengo
 
 
+@pytest.mark.skipif("True", reason="The model doesn't change anymore...")
 def test_seeding():
     """Test that setting the model seed fixes everything"""
 

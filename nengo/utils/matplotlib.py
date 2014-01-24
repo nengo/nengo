@@ -29,7 +29,7 @@ def rasterplot(time, spikes, ax=None, **kwargs):
     >>> A_spikes = nengo.Probe(A, "spikes")
     >>> sim = nengo.Simulator(model)
     >>> sim.run(1)
-    >>> rasterplot(sim.trange(), sim.data(A_spikes))
+    >>> rasterplot(sim.trange(), sim.data[A_spikes])
     '''
 
     if ax is None:

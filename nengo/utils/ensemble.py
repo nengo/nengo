@@ -3,10 +3,13 @@ import numpy as np
 import nengo.utils.numpy as npext
 
 
-def tuning_curves(sim_ens):
-    eval_points = np.array(sim_ens.eval_points)
+def tuning_curves(ens, data):
+    eval_points = np.array(data['eval_points'][ens])
     eval_points.sort(axis=0)
-    activities = sim_ens.activities(eval_points)
+    activities = ens.neurons.rates(
+        eval_points * data['encoders'][ens].T,
+        data['gain'][ens.neurons],
+        data['bias'][ens.neurons])
     return eval_points, activities
 
 
@@ -45,7 +48,7 @@ def _similarity(encoders, index, rows, cols=1):
     return sim / count
 
 
-def sorted_neurons(ensemble, iterations=100, seed=None):
+def sorted_neurons(ensemble, sim, iterations=100, seed=None):
     '''Sort neurons in an ensemble by encoder and intercept.
 
     Parameters
@@ -73,7 +76,7 @@ def sorted_neurons(ensemble, iterations=100, seed=None):
 
     >>>indices = sorted_neurons(simulator, 'My neurons')
     >>>plt.figure()
-    >>>rasterplot(sim.data('My neurons.spikes')[:,indices])
+    >>>rasterplot(sim.data['My neurons.spikes'][:,indices])
 
     Algorithm
     ---------
@@ -89,7 +92,7 @@ def sorted_neurons(ensemble, iterations=100, seed=None):
     '''
 
     # Normalize all the neurons
-    encoders = np.array(ensemble.encoders)
+    encoders = np.array(sim.data['encoders'][ensemble])
     encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     # Make an array with the starting order of the neurons

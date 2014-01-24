@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 import nengo
-import nengo.simulator
 from nengo.builder import Builder, ProdUpdate, Copy, Reset, DotInc, Signal
+import nengo.simulator
 
 logger = logging.getLogger(__name__)
 
@@ -15,11 +15,11 @@ def pytest_funcarg__RefSimulator(request):
 
 
 def mybuilder(model, dt):
-    model.dt = dt
-    model.seed = 0
-    if not hasattr(model, 'probes'):
-        model.probes = []
-    return model
+    return {'probes': [] if not hasattr(model, 'probes') else model.probes,
+            'operators': ([] if not hasattr(model, 'operators')
+                          else model.operators),
+            '_data': {},
+            'dt': dt, 'seed': 0}
 
 
 def test_signal_init_values(RefSimulator):
@@ -112,6 +112,7 @@ def test_simple_pyfunc(RefSimulator):
         DotInc(Signal([[1.0]]), time, sig_in),
         ProdUpdate(Signal([[1.0]]), sig_out, Signal(0), sig),
     ]
+    m.operators.extend(b.operators)
 
     sim = RefSimulator(m, dt=dt, builder=mybuilder)
     sim.step()
@@ -141,6 +142,7 @@ def test_encoder_decoder_pathway(RefSimulator):
         DotInc(Signal([[1.0], [2.0]]), foo, sig_in),
         ProdUpdate(decs, sig_out, Signal(0.2), foo)
     ]
+    m.operators.extend(b.operators)
 
     def check(sig, target):
         assert np.allclose(sim.signals[sig], target)
@@ -191,9 +193,9 @@ def test_encoder_decoder_with_views(RefSimulator):
         lambda t, x: x + 1, t_in=True, n_in=2, n_out=2, label='pop')
     m.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo[:], sig_in),
-        ProdUpdate(
-            Signal(decoders * 0.5), sig_out, Signal(0.2), foo[:])
+        ProdUpdate(Signal(decoders * 0.5), sig_out, Signal(0.2), foo[:])
     ]
+    m.operators.extend(b.operators)
 
     def check(sig, target):
         assert np.allclose(sim.signals[sig], target)
@@ -218,6 +220,14 @@ def test_encoder_decoder_with_views(RefSimulator):
     check(foo, .39)
     check(sig_in, [0.2, 0.4])
     check(sig_out, [1.2, 1.4])
+
+
+def test_probedict():
+    raw = {'scalar': 5,
+           'list': [2, 4, 6]}
+    probedict = nengo.simulator.ProbeDict(raw)
+    assert np.all(probedict['scalar'] == np.asarray(raw['scalar']))
+    assert np.all(probedict.get('list') == np.asarray(raw.get('list')))
 
 
 if __name__ == "__main__":
