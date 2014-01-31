@@ -39,7 +39,7 @@ DEFAULT_RCOND = 0.01
 def lstsq_L2(activities, targets, rng, noise_amp=0.1):
     """Least-squares with L2 regularization."""
     sigma = noise_amp * activities.max()
-    return _cholesky1(activities, targets, sigma).T
+    return _cholesky1(activities, targets, sigma)
 
 
 def lstsq_L2nz(activities, targets, rng, noise_amp=0.1):
@@ -55,7 +55,7 @@ def lstsq_L2nz(activities, targets, rng, noise_amp=0.1):
     sigma[sigma == 0] = 1
 
     # Solve the LS problem using the Cholesky decomposition
-    return _cholesky1(activities, targets, sigma).T
+    return _cholesky1(activities, targets, sigma)
 
 
 def _cholesky1(A, b, sigma):
