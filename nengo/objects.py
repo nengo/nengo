@@ -4,6 +4,7 @@ import numpy as np
 
 import nengo
 import nengo.decoders
+import nengo.params
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ class Gaussian(object):
         return rng.normal(loc=self.mean, scale=self.std, size=n)
 
 
-class Ensemble(object):
+class Ensemble(nengo.params.Parameterized):
     """A group of neurons that collectively represent a vector.
 
     Parameters
@@ -70,6 +71,15 @@ class Ensemble(object):
     """
 
     EVAL_POINTS = 500
+    neurons = nengo.params.Parameter(None, "Neurons")
+    dimensions = nengo.params.Parameter(None, "Dimensions")
+    radius = nengo.params.Parameter(1.0, "Radius")
+    encoders = nengo.params.Parameter(None, "Encoders")
+    intercepts = nengo.params.Parameter(Uniform(-1.0, 1.0), "Intercepts")
+    max_rates = nengo.params.Parameter(Uniform(200, 400),
+                                       "Maximum firing rates")
+    eval_points = nengo.params.Parameter(None, "Evaluation points")
+    seed = nengo.params.Parameter(None, "Seed")
 
     def __init__(self, neurons, dimensions, radius=1.0, encoders=None,
                  intercepts=Uniform(-1.0, 1.0), max_rates=Uniform(200, 400),
@@ -78,8 +88,8 @@ class Ensemble(object):
             raise ValueError(
                 'Number of dimensions (%d) must be positive' % dimensions)
 
-        self.dimensions = dimensions  # Must be set before neurons
         self.neurons = neurons
+        self.dimensions = dimensions
         self.radius = radius
         self.encoders = encoders
         self.intercepts = intercepts
@@ -108,27 +118,10 @@ class Ensemble(object):
         -------
         ~ : int
         """
-        return self.neurons.n_neurons
-
-    @property
-    def neurons(self):
-        """The neurons that make up the ensemble.
-
-        Returns
-        -------
-        ~ : Neurons
-        """
-        return self._neurons
-
-    @neurons.setter
-    def neurons(self, _neurons):
-        if isinstance(_neurons, int):
-            logger.warning(("neurons should be an instance of a Neuron type, "
-                            "not an int. Defaulting to LIF."))
-            _neurons = nengo.LIF(_neurons)
-
-        _neurons.dimensions = self.dimensions
-        self._neurons = _neurons
+        try:
+            return self.neurons.n_neurons
+        except AttributeError:
+            return None
 
     def activities(self, eval_points=None):
         """Determine the neuron firing rates at the given points.
@@ -191,7 +184,7 @@ class Ensemble(object):
         model.objs += [self]
 
 
-class Node(object):
+class Node(nengo.params.Parameterized):
     """Provides arbitrary data to Nengo objects.
 
     It can also accept input, and perform arbitrary computations
@@ -219,6 +212,9 @@ class Node(object):
     dimensions : int
         The number of input dimensions.
     """
+
+    output = nengo.params.Parameter(None, "Output")
+    dimensions = nengo.params.Parameter(0, "Dimensions")
 
     def __init__(self, output=None, dimensions=0, label="Node"):
         self.output = output
@@ -264,7 +260,7 @@ class Node(object):
         model.objs += [self]
 
 
-class Connection(object):
+class Connection(nengo.params.Parameterized):
     """A Connection connects two objects together.
 
     Attributes
@@ -281,6 +277,14 @@ class Connection(object):
         description
 
     """
+    filter = nengo.params.Parameter(0.005, "Filter time constant")
+    transform = nengo.params.Parameter(1.0, "Transformation matrix")
+    modulatory = nengo.params.Parameter(False, "Modulatory")
+    _decoders = nengo.params.Parameter(None, "Decoders")
+    decoder_solver = nengo.params.Parameter(
+        nengo.decoders.lstsq_L2, "Decoder solver")
+    _eval_points = nengo.params.Parameter(None, "Evaluation points")
+    function = nengo.params.Parameter(None, "Function")
 
     def __init__(self, pre, post,
                  filter=0.005, transform=1.0, modulatory=False, **kwargs):

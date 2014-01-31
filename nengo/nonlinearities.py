@@ -3,7 +3,8 @@ import logging
 
 import numpy as np
 
-from . import decoders
+import nengo.decoders
+import nengo.params
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,10 @@ class PythonFunction(object):
         return 2 if self.n_in > 0 else 1
 
 
-class Neurons(object):
+class Neurons(nengo.params.Parameterized):
+    n_neurons = nengo.params.Parameter(None, "Number of neurons")
+    bias = nengo.params.Parameter(None, "Bias current")
+    gain = nengo.params.Parameter(None, "Gain on input current")
 
     def __init__(self, n_neurons, bias=None, gain=None, label=None):
         self.n_neurons = n_neurons
@@ -56,7 +60,7 @@ class Neurons(object):
     def __str__(self):
         r = self.__class__.__name__ + "("
         r += self.label if hasattr(self, 'label') else "id " + str(id(self))
-        r += ", %dN)" if hasattr(self, 'n_neurons') else ")"
+        r += ", %dN)" % self._n_neurons
         return r
 
     def __repr__(self):
@@ -95,6 +99,8 @@ class Direct(Neurons):
 
 
 class _LIFBase(Neurons):
+    tau_rc = nengo.params.Parameter(0.02, "RC time constant")
+    tau_ref = nengo.params.Parameter(0.002, "Refractory time period")
 
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, label=None):
         self.tau_rc = tau_rc
@@ -110,7 +116,7 @@ class _LIFBase(Neurons):
         return self.n_neurons
 
     def default_encoders(self, dimensions, rng):
-        return decoders.sample_hypersphere(
+        return nengo.decoders.sample_hypersphere(
             dimensions, self.n_neurons, rng, surface=True)
 
     def rates(self, J_without_bias):
