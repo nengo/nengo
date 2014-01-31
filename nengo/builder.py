@@ -944,13 +944,14 @@ class Builder(object):
                         targets.shape = targets.shape[0], 1
                 conn._decoders = conn.decoder_solver(activities, targets, rng)
 
+            decoders = conn._decoders.T
             if conn.filter is not None and conn.filter > dt:
                 o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
                 conn.decoder_signal = Signal(
-                    conn._decoders * n_coef,
+                    decoders * n_coef,
                     name=conn.label + ".decoders * n_coef")
             else:
-                conn.decoder_signal = Signal(conn._decoders,
+                conn.decoder_signal = Signal(decoders,
                                              name=conn.label + '.decoders')
                 o_coef = 0
             self.model.operators.append(ProdUpdate(
