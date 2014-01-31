@@ -173,7 +173,7 @@ def test_neurons_to_neurons(Simulator, nl_nodirect):
 
 
 def test_dimensionality_errors(Simulator, nl_nodirect):
-    m = nengo.Model("test_dimensionality_error", seed=0)
+    nengo.Model("test_dimensionality_error", seed=0)
     N = 10
 
     n01 = nengo.Node(output=[1])
@@ -202,7 +202,7 @@ def test_dimensionality_errors(Simulator, nl_nodirect):
     with pytest.raises(ValueError):
         nengo.Connection(e2, e1, function=lambda x: x, transform=[[1]])
     with pytest.raises(ValueError):
-        nengo.Connection(n21, e2, transform=np.ones((2,2)))
+        nengo.Connection(n21, e2, transform=np.ones((2, 2)))
 
 
 if __name__ == "__main__":

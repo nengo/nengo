@@ -122,13 +122,13 @@ def test_circular(Simulator):
 
 
 def test_function_args_error(Simulator):
-    m = nengo.Model("test_dimensionality_error", seed=0)
+    nengo.Model("test_dimensionality_error", seed=0)
     with pytest.raises(TypeError):
-        a = nengo.Node(output=lambda t, x: x+1)
+        nengo.Node(output=lambda t, x: x+1)
     with pytest.raises(TypeError):
-        b = nengo.Node(output=lambda t: t+1, size_in=1)
+        nengo.Node(output=lambda t: t+1, size_in=1)
     with pytest.raises(TypeError):
-        c = nengo.Node(output=lambda t, x, y: t+1, size_in=2)
+        nengo.Node(output=lambda t, x, y: t+1, size_in=2)
 
 
 if __name__ == "__main__":
