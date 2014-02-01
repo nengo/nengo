@@ -243,25 +243,18 @@ class Node(object):
 
         if size_out is None:
             if isinstance(output, collections.Callable):
+                t, x = np.asarray(0.0), np.zeros(size_in)
+                args = [t, x] if size_in > 0 else [t]
                 try:
-                    if size_in > 0:
-                        result = output(np.asarray(0.0), np.zeros(size_in))
-                    else:
-                        result = output(np.asarray(0.0))
-                    size_out = np.asarray(result).size
+                    result = output(*args)
                 except TypeError as e:
-                    if hasattr(e, 'message'): # only works in python 2
-                        match = re.match(
-                            '(.*) takes exactly ([0-9]+) argument[s]? '
-                            '\(([0-9]+) given\)', e.message)
-                        if match is not None:
-                            name, n_args, n_given = match.groups()
-                            raise TypeError(
-                                ("The function '%s' provided to '%s' takes %s "
-                                 "argument(s), where a function for this type "
-                                 "of node is expected to take %s argument(s)")
-                                % (name, str(self), n_args, n_given))
-                    raise
+                    raise TypeError(
+                        ("The function '%s' provided to '%s' takes %d "
+                         "argument(s), where a function for this type "
+                         "of node is expected to take %d argument(s)")
+                        % (output.__name__, self,
+                           output.__code__.co_argcount, len(args)))
+                size_out = np.asarray(result).size
             elif isinstance(output, np.ndarray):
                 size_out = output.size
         self._size_out = size_out
