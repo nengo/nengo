@@ -154,16 +154,11 @@ class Ensemble(object):
         activities : array (n_points, `self.n_neurons`)
             Firing rates (in Hz) for each neuron at each point.
         """
-        assert self._scaled_encoders is not None, (
-            "Cannot get neuron activities before ensemble has been built")
         if eval_points is None:
             eval_points = self.eval_points
 
         return self.neurons.rates(
-            np.dot(eval_points, self._scaled_encoders.T))
-            # note: this assumes that self.encoders has already been
-            # processed in the build function (i.e., had the radius
-            # and gain mixed in)
+            np.dot(eval_points, self.encoders.T / self.radius))
 
     def probe(self, probe):
         """Probe a signal in this ensemble.
