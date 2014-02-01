@@ -58,7 +58,7 @@ class Neurons(object):
     def default_encoders(self, dimensions, rng):
         raise NotImplementedError("Neurons must provide default_encoders")
 
-    def rates(self, J_without_bias):
+    def rates(self, x):
         raise NotImplementedError("Neurons must provide rates")
 
     def set_gain_bias(self, max_rates, intercepts):
@@ -75,8 +75,8 @@ class Direct(Neurons):
     def default_encoders(self, dimensions, rng):
         return np.identity(dimensions)
 
-    def rates(self, J_without_bias):
-        return J_without_bias
+    def rates(self, x):
+        return x
 
     def set_gain_bias(self, max_rates, intercepts):
         pass
@@ -106,25 +106,26 @@ class _LIFBase(Neurons):
         return decoders.sample_hypersphere(
             dimensions, self.n_neurons, rng, surface=True)
 
-    def rates(self, J_without_bias):
-        """LIF firing rates in Hz
+    def rates_from_current(self, J):
+        """LIF firing rates in Hz for input current (incl. bias)"""
+        old = np.seterr(divide='ignore')
+        try:
+            j = np.maximum(J - 1, 0.)
+            r = 1. / (self.tau_ref + self.tau_rc * np.log1p(1. / j))
+        finally:
+            np.seterr(**old)
+        return r
+
+    def rates(self, x):
+        """LIF firing rates in Hz for vector space
 
         Parameters
         ---------
-        J_without_bias: ndarray of any shape
-            membrane currents, without bias voltage
+        x: ndarray of any shape
+            vector-space inputs
         """
-        old = np.seterr(divide='ignore', invalid='ignore')
-        try:
-            J = J_without_bias + self.bias
-            A = self.tau_ref - self.tau_rc * np.log(
-                1 - 1.0 / np.maximum(J, 0))
-            # if input current is enough to make neuron spike,
-            # calculate firing rate, else return 0
-            A = np.where(J > 1, 1 / A, 0)
-        finally:
-            np.seterr(**old)
-        return A
+        J = self.gain * x  + self.bias
+        return self.rates_from_current(J)
 
     def set_gain_bias(self, max_rates, intercepts):
         """Compute the alpha and bias needed to get the given max_rate
@@ -153,13 +154,7 @@ class LIFRate(_LIFBase):
 
     def math(self, dt, J):
         """Compute rates for input current (incl. bias)"""
-        old = np.seterr(divide='ignore')
-        try:
-            j = np.maximum(J - 1, 0.)
-            r = dt / (self.tau_ref + self.tau_rc * np.log(1 + 1. / j))
-        finally:
-            np.seterr(**old)
-        return r
+        return dt * self.rates_from_current(J)
 
 
 class LIF(_LIFBase):
