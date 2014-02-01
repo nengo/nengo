@@ -2,7 +2,6 @@ import collections
 import copy
 import logging
 import numpy as np
-import re
 
 import nengo
 import nengo.decoders
