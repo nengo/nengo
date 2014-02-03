@@ -9,6 +9,7 @@ from nengo.tests.helpers import Plotter
 
 logger = logging.getLogger(__name__)
 
+
 def test_args(nl):
     N = 10
     d1, d2 = 3, 2
@@ -22,6 +23,7 @@ def test_args(nl):
         filter=0.01,
         function=np.sin,
         transform=np.random.normal(size=(d2, d1)))
+
 
 def test_node_to_neurons(Simulator, nl_nodirect):
     name = 'node_to_neurons'
