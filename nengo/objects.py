@@ -307,21 +307,32 @@ class Node(object):
 
 
 class Connection(object):
-    """A Connection connects two objects together.
+    """Connects two objects together.
 
     Attributes
     ----------
-    name
-    pre
-    post
+    pre : Ensemble or Neurons or Node
+        The source object for the connection.
+    post : Ensemble or Neurons or Node or Probe
+        The destination object for the connection.
 
-    filter : type
-        description
-    transform
-
-    probes : type
-        description
-
+    label : string
+        A descriptive label for the connection.
+    dimensions : int
+        The number of output dimensions of the pre object, including
+        `function`, but not including `transform`.
+    decoder_solver : callable
+        Function to compute decoders (see `nengo.decoders`).
+    eval_points : array_like, shape (n_eval_points, pre_size)
+        Points at which to evaluate `function` when computing decoders.
+    filter : float
+        Post-synaptic time constant (PSTC) to use for filtering.
+    function : callable
+        Function to compute using the pre population (pre must be Ensemble).
+    probes : dict
+        description TODO
+    transform : array_like, shape (post_size, pre_size)
+        Linear transform mapping the pre output to the post input.
     """
 
     _decoders = None
@@ -340,7 +351,6 @@ class Connection(object):
         self.modulatory = modulatory
 
         if isinstance(self.pre, Ensemble):
-            self.decoders = kwargs.pop('decoders', None)
             self.decoder_solver = kwargs.pop(
                 'decoder_solver', nengo.decoders.lstsq_L2)
             self.eval_points = kwargs.pop('eval_points', None)
@@ -359,11 +369,6 @@ class Connection(object):
 
         # add self to current context
         nengo.context.add_to_current(self)
-
-    def _check_decoders_function(self):
-        if self.function is not None and self.decoders is not None:
-            logger.warning(("Both decoders and function are set on '%s'. "
-                            "Function will be ignored.") % (self))
 
     def _check_pre_ensemble(self, prop_name):
         if not isinstance(self.pre, Ensemble):
@@ -399,9 +404,7 @@ class Connection(object):
 
     def _get_input_dimensions(self):
         if isinstance(self.pre, Ensemble):
-            if self.decoders is not None:
-                dims, src = self.decoders.shape[1], "Decoder"
-            elif self.function is not None:
+            if self.function is not None:
                 dims, src = self._function[1], "Function"
             else:
                 dims, src = self.pre.dimensions, "Pre population"
@@ -431,31 +434,9 @@ class Connection(object):
     @property
     def label(self):
         label = self.pre.label + ">" + self.post.label
-        if hasattr(self, 'function') and self.function is not None:
+        if self.function is not None:
             return label + ":" + self.function.__name__
         return label
-
-    @property
-    def decoders(self):
-        return self._decoders
-
-    @decoders.setter
-    def decoders(self, _decoders):
-        if _decoders is not None:
-            self._check_pre_ensemble('decoders')
-
-            _decoders = np.asarray(_decoders)
-            if _decoders.ndim != 2:
-                raise ValueError("Decoders must be a matrix")
-            if _decoders.shape[0] != self.pre.n_neurons:
-                raise ValueError(("Decoders axis 0 must be %d; in this case it"
-                                  " is %d. (shape=%s)") % (
-                    self.pre.n_neurons, _decoders.shape[0],
-                    _decoders.shape))
-
-        self._decoders = _decoders
-        self._check_decoders_function()
-        self._check_shapes()
 
     @property
     def dimensions(self):
@@ -490,7 +471,6 @@ class Connection(object):
             size = 0
 
         self._function = (_function, size)
-        self._check_decoders_function()
         self._check_shapes()
 
     @property
@@ -503,7 +483,6 @@ class Connection(object):
 
     @property
     def transform(self):
-        """TODO"""
         return self._transform
 
     @transform.setter
