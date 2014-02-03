@@ -9,6 +9,7 @@ from nengo.nonlinearities import Neurons
 
 logger = logging.getLogger(__name__)
 
+
 def _in_stack(function):
     """Check whether the given function is in the call stack"""
     import inspect
@@ -246,7 +247,7 @@ class Node(object):
                 args = [t, x] if size_in > 0 else [t]
                 try:
                     result = output(*args)
-                except TypeError as e:
+                except TypeError:
                     raise TypeError(
                         ("The function '%s' provided to '%s' takes %d "
                          "argument(s), where a function for this type "
@@ -325,7 +326,7 @@ class Connection(object):
 
     _decoders = None
     _eval_points = None
-    _function = (None, 0) # (handle, n_outputs)
+    _function = (None, 0)  # (handle, n_outputs)
     _transform = None
 
     def __init__(self, pre, post,
@@ -371,7 +372,7 @@ class Connection(object):
 
     def _check_shapes(self, check_in_init=False):
         if not check_in_init and _in_stack(self.__init__):
-            return # skip automatic checks if we're in the init function
+            return  # skip automatic checks if we're in the init function
 
         in_dims, in_src = self._get_input_dimensions()
         out_dims, out_src = self._get_output_dimensions()
@@ -449,8 +450,8 @@ class Connection(object):
             if _decoders.shape[0] != self.pre.n_neurons:
                 raise ValueError(("Decoders axis 0 must be %d; in this case it"
                                   " is %d. (shape=%s)") % (
-                            self.pre.n_neurons, _decoders.shape[0],
-                            _decoders.shape))
+                    self.pre.n_neurons, _decoders.shape[0],
+                    _decoders.shape))
 
         self._decoders = _decoders
         self._check_decoders_function()
