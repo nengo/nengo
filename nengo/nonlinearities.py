@@ -124,7 +124,7 @@ class _LIFBase(Neurons):
         x: ndarray of any shape
             vector-space inputs
         """
-        J = self.gain * x  + self.bias
+        J = self.gain * x + self.bias
         return self.rates_from_current(J)
 
     def set_gain_bias(self, max_rates, intercepts):
