@@ -10,6 +10,21 @@ from nengo.tests.helpers import Plotter
 logger = logging.getLogger(__name__)
 
 
+def test_args(nl):
+    N = 10
+    d1, d2 = 3, 2
+
+    nengo.Model('test_args')
+    A = nengo.Ensemble(nl(N), dimensions=d1)
+    B = nengo.Ensemble(nl(N), dimensions=d2)
+    nengo.Connection(
+        A, B,
+        eval_points=np.random.normal(size=(500, d1)),
+        filter=0.01,
+        function=np.sin,
+        transform=np.random.normal(size=(d2, d1)))
+
+
 def test_node_to_neurons(Simulator, nl_nodirect):
     name = 'node_to_neurons'
     N = 30
@@ -117,7 +132,7 @@ def test_neurons_to_node(Simulator, nl_nodirect):
 
     m = nengo.Model(name, seed=123)
     a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
-    out = nengo.Node(lambda t, x: x, dimensions=N)
+    out = nengo.Node(lambda t, x: x, size_in=N)
     nengo.Connection(a.neurons, out, filter=None)
 
     a_spikes = nengo.Probe(a, 'spikes')
@@ -170,6 +185,39 @@ def test_neurons_to_neurons(Simulator, nl_nodirect):
 
     assert np.allclose(sim.data(a_p)[-10:], 1, atol=.1, rtol=.01)
     assert np.allclose(sim.data(b_p)[-10:], 0, atol=.1, rtol=.01)
+
+
+def test_dimensionality_errors(nl_nodirect):
+    nengo.Model("test_dimensionality_error", seed=0)
+    N = 10
+
+    n01 = nengo.Node(output=[1])
+    n02 = nengo.Node(output=[1, 1])
+    n21 = nengo.Node(output=[1], size_in=2)
+    e1 = nengo.Ensemble(nl_nodirect(N), 1)
+    e2 = nengo.Ensemble(nl_nodirect(N), 2)
+
+    # these should work
+    nengo.Connection(n01, e1)
+    nengo.Connection(n02, e2)
+    nengo.Connection(e2, n21)
+    nengo.Connection(n21, e1)
+    nengo.Connection(e1.neurons, n21, transform=np.random.randn(2, N))
+    nengo.Connection(e2, e1, function=lambda x: x[0])
+
+    # these should not work
+    with pytest.raises(ValueError):
+        nengo.Connection(n02, e1)
+    with pytest.raises(ValueError):
+        nengo.Connection(e1, e2)
+    with pytest.raises(ValueError):
+        nengo.Connection(e2.neurons, e1, transform=np.random.randn(1, N+1))
+    with pytest.raises(ValueError):
+        nengo.Connection(e2.neurons, e1, transform=np.random.randn(2, N))
+    with pytest.raises(ValueError):
+        nengo.Connection(e2, e1, function=lambda x: x, transform=[[1]])
+    with pytest.raises(ValueError):
+        nengo.Connection(n21, e2, transform=np.ones((2, 2)))
 
 
 if __name__ == "__main__":

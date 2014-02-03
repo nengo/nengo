@@ -41,13 +41,13 @@ class CircularConvolution(nengo.Network):
         self.transformC = self._output_transform(dimensions)
 
         with self:
-            self.A = nengo.Node(dimensions=dimensions)
-            self.B = nengo.Node(dimensions=dimensions)
+            self.A = nengo.Node(size_in=dimensions)
+            self.B = nengo.Node(size_in=dimensions)
             self.ensemble = EnsembleArray(neurons,
                                           self.transformC.shape[1],
                                           dimensions=2,
                                           radius=radius)
-            self.output = nengo.Node(dimensions=dimensions)
+            self.output = nengo.Node(size_in=dimensions)
 
             for ens in self.ensemble.ensembles:
                 if not isinstance(neurons, nengo.Direct):

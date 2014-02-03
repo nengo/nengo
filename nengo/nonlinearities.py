@@ -10,20 +10,13 @@ logger = logging.getLogger(__name__)
 
 class PythonFunction(object):
 
-    def __init__(self, fn, n_in, n_out=None, label=None):
+    def __init__(self, fn, n_in, n_out, label=None):
+        self.fn = fn
+        self.n_in = n_in
+        self.n_out = n_out
         if label is None:
             label = "<Direct%d>" % id(self)
         self.label = label
-        self.n_in = n_in
-        self.fn = fn
-        self.n_out = n_out
-
-        if n_out is None:
-            if self.n_args == 1:
-                res = fn(np.asarray(0.0))
-            elif self.n_args == 2:
-                res = fn(np.asarray(0.0), np.zeros(n_in))
-            self.n_out = np.asarray(res).size
 
     def __deepcopy__(self, memo):
         try:

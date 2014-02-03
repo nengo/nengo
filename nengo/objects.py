@@ -1,11 +1,21 @@
+import collections
 import copy
 import logging
 import numpy as np
 
 import nengo
 import nengo.decoders
+from nengo.nonlinearities import Neurons
 
 logger = logging.getLogger(__name__)
+
+
+def _in_stack(function):
+    """Check whether the given function is in the call stack"""
+    import inspect
+    stack = inspect.stack()
+    codes = map(lambda record: record[0].f_code, stack)
+    return function.__code__ in codes
 
 
 class Uniform(object):
@@ -207,23 +217,47 @@ class Node(object):
     ----------
     name : str
         An arbitrary name for the object.
-    output : callable
-        Function that transforms the Node inputs into outputs.
-    dimensions : int, optional
+    output : callable or array_like
+        Function that transforms the Node inputs into outputs, or
+        a constant output value. If output is None, this Node simply acts
+        as a placeholder and will be optimized out of the final model.
+    size_in : int, optional
         The number of input dimensions.
+    size_out : int, optional
+        The size of the output signal
 
     Attributes
     ----------
     name : str
         The name of the object.
-    dimensions : int
+    size_in : int
         The number of input dimensions.
     """
 
-    def __init__(self, output=None, dimensions=0, label="Node"):
+    def __init__(self, output=None, size_in=0, size_out=None, label="Node"):
+        if output is not None and not isinstance(output, collections.Callable):
+            output = np.asarray(output)
         self.output = output
         self.label = label
-        self.dimensions = dimensions
+        self._size_in = size_in
+
+        if size_out is None:
+            if isinstance(output, collections.Callable):
+                t, x = np.asarray(0.0), np.zeros(size_in)
+                args = [t, x] if size_in > 0 else [t]
+                try:
+                    result = output(*args)
+                except TypeError:
+                    raise TypeError(
+                        ("The function '%s' provided to '%s' takes %d "
+                         "argument(s), where a function for this type "
+                         "of node is expected to take %d argument(s)")
+                        % (output.__name__, self,
+                           output.__code__.co_argcount, len(args)))
+                size_out = np.asarray(result).size
+            elif isinstance(output, np.ndarray):
+                size_out = output.size
+        self._size_out = size_out
 
         # Set up probes
         self.probes = {'output': []}
@@ -253,6 +287,14 @@ class Node(object):
                     rval.__dict__[k] = copy.deepcopy(v, memo)
             return rval
 
+    @property
+    def size_in(self):
+        return self._size_in
+
+    @property
+    def size_out(self):
+        return self._size_out
+
     def probe(self, probe):
         """TODO"""
         self.probes[probe.attr].append(probe)
@@ -265,27 +307,43 @@ class Node(object):
 
 
 class Connection(object):
-    """A Connection connects two objects together.
+    """Connects two objects together.
 
     Attributes
     ----------
-    name
-    pre
-    post
+    pre : Ensemble or Neurons or Node
+        The source object for the connection.
+    post : Ensemble or Neurons or Node or Probe
+        The destination object for the connection.
 
-    filter : type
-        description
-    transform
-
-    probes : type
-        description
-
+    label : string
+        A descriptive label for the connection.
+    dimensions : int
+        The number of output dimensions of the pre object, including
+        `function`, but not including `transform`.
+    decoder_solver : callable
+        Function to compute decoders (see `nengo.decoders`).
+    eval_points : array_like, shape (n_eval_points, pre_size)
+        Points at which to evaluate `function` when computing decoders.
+    filter : float
+        Post-synaptic time constant (PSTC) to use for filtering.
+    function : callable
+        Function to compute using the pre population (pre must be Ensemble).
+    probes : dict
+        description TODO
+    transform : array_like, shape (post_size, pre_size)
+        Linear transform mapping the pre output to the post input.
     """
+
+    _decoders = None
+    _eval_points = None
+    _function = (None, 0)  # (handle, n_outputs)
+    _transform = None
 
     def __init__(self, pre, post,
                  filter=0.005, transform=1.0, modulatory=False, **kwargs):
-        self.pre = pre
-        self.post = post
+        self._pre = pre
+        self._post = post
         self.probes = {'signal': []}
 
         self.filter = filter
@@ -293,18 +351,79 @@ class Connection(object):
         self.modulatory = modulatory
 
         if isinstance(self.pre, Ensemble):
-            self.decoders = kwargs.pop('decoders', None)
             self.decoder_solver = kwargs.pop(
                 'decoder_solver', nengo.decoders.lstsq_L2)
             self.eval_points = kwargs.pop('eval_points', None)
             self.function = kwargs.pop('function', None)
+        elif not isinstance(self.pre, (Neurons, Node)):
+            raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
+                             (self.pre.__class__.__name__))
 
+        # check that we've used all user-provided arguments
         if len(kwargs) > 0:
             raise TypeError("__init__() got an unexpected keyword argument '"
                             + next(iter(kwargs)) + "'")
 
+        # check that shapes match up
+        self._check_shapes(check_in_init=True)
+
         # add self to current context
         nengo.context.add_to_current(self)
+
+    def _check_pre_ensemble(self, prop_name):
+        if not isinstance(self.pre, Ensemble):
+            raise ValueError("'%s' can only be set if 'pre' is an Ensemble" %
+                             (prop_name))
+
+    def _check_shapes(self, check_in_init=False):
+        if not check_in_init and _in_stack(self.__init__):
+            return  # skip automatic checks if we're in the init function
+
+        in_dims, in_src = self._get_input_dimensions()
+        out_dims, out_src = self._get_output_dimensions()
+
+        if self.transform.ndim == 0:
+            # check input dimensionality matches output dimensionality
+            if (in_dims is not None and out_dims is not None
+                    and in_dims != out_dims):
+                raise ValueError("%s output size (%d) not equal to "
+                                 "post %s (%d)" %
+                                 (in_src, in_dims, out_src, out_dims))
+        else:
+            # check input dimensionality matches transform
+            if in_dims is not None and in_dims != self.transform.shape[1]:
+                raise ValueError("%s output size (%d) not equal to "
+                                 "transform input size (%d)" %
+                                 (in_src, in_dims, self.transform.shape[1]))
+
+            # check output dimensionality matches transform
+            if out_dims is not None and out_dims != self.transform.shape[0]:
+                raise ValueError("Transform output size (%d) not equal to "
+                                 "post %s (%d)" %
+                                 (self.transform.shape[0], out_src, out_dims))
+
+    def _get_input_dimensions(self):
+        if isinstance(self.pre, Ensemble):
+            if self.function is not None:
+                dims, src = self._function[1], "Function"
+            else:
+                dims, src = self.pre.dimensions, "Pre population"
+        elif isinstance(self.pre, Neurons):
+            dims, src = self.pre.n_neurons, "Neurons"
+        elif isinstance(self.pre, Node):
+            dims, src = self.pre.size_out, "Node"
+        return dims, src
+
+    def _get_output_dimensions(self):
+        if isinstance(self.post, Ensemble):
+            dims, src = self.post.dimensions, "population dimensions"
+        elif isinstance(self.post, Neurons):
+            dims, src = self.post.n_neurons, "number of neurons"
+        elif isinstance(self.post, Node):
+            dims, src = self.post.size_in, "node input size"
+        else:
+            dims, src = None, str(self.post)
+        return dims, src
 
     def __str__(self):
         return self.label + " (" + self.__class__.__name__ + ")"
@@ -315,56 +434,13 @@ class Connection(object):
     @property
     def label(self):
         label = self.pre.label + ">" + self.post.label
-        if hasattr(self, 'function') and self.function is not None:
+        if self.function is not None:
             return label + ":" + self.function.__name__
         return label
 
     @property
-    def transform(self):
-        """TODO"""
-        return self._transform
-
-    @transform.setter
-    def transform(self, _transform):
-        self._transform = np.asarray(_transform)
-
-    def add_to_model(self, model):
-        model.connections.append(self)
-
-    @property
-    def decoders(self):
-        return None if self._decoders is None else self._decoders.T
-
-    @decoders.setter
-    def decoders(self, _decoders):
-        if _decoders is not None and self.function is not None:
-            logger.warning("Setting decoders on a connection with a specified "
-                           "function. May not actually compute that function.")
-
-        if _decoders is not None:
-            _decoders = np.asarray(_decoders)
-            if _decoders.shape[0] != self.pre.n_neurons:
-                msg = ("Decoders axis 0 must be %d; in this case it is "
-                       "%d. (shape=%s)" % (self.pre.n_neurons,
-                                           _decoders.shape[0],
-                                           _decoders.shape))
-                raise ValueError(msg)
-
-        self._decoders = None if _decoders is None else _decoders.T
-
-    @property
     def dimensions(self):
-        if self.decoders is not None:
-            return self.decoders.shape[1]
-
-        if not hasattr(self, 'function') or self.function is None:
-            return self.pre.dimensions
-
-        if self._eval_points is not None:
-            val = self._eval_points[0]
-        else:
-            val = np.zeros(self.pre.dimensions)
-        return np.array(self.function(val)).size
+        return self._get_input_dimensions()[0]
 
     @property
     def eval_points(self):
@@ -379,6 +455,43 @@ class Connection(object):
             if _eval_points.ndim == 1:
                 _eval_points.shape = 1, _eval_points.shape[0]
         self._eval_points = _eval_points
+
+    @property
+    def function(self):
+        return self._function[0]
+
+    @function.setter
+    def function(self, _function):
+        if _function is not None:
+            self._check_pre_ensemble('function')
+            x = (self._eval_points[0] if self._eval_points is not None else
+                 np.zeros(self.pre.dimensions))
+            size = np.asarray(_function(x)).size
+        else:
+            size = 0
+
+        self._function = (_function, size)
+        self._check_shapes()
+
+    @property
+    def pre(self):
+        return self._pre
+
+    @property
+    def post(self):
+        return self._post
+
+    @property
+    def transform(self):
+        return self._transform
+
+    @transform.setter
+    def transform(self, _transform):
+        self._transform = np.asarray(_transform)
+        self._check_shapes()
+
+    def add_to_model(self, model):
+        model.connections.append(self)
 
 
 class Probe(object):
