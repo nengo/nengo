@@ -9,6 +9,19 @@ from nengo.tests.helpers import Plotter
 
 logger = logging.getLogger(__name__)
 
+def test_args(nl):
+    N = 10
+    d1, d2 = 3, 2
+
+    nengo.Model('test_args')
+    A = nengo.Ensemble(nl(N), dimensions=d1)
+    B = nengo.Ensemble(nl(N), dimensions=d2)
+    nengo.Connection(
+        A, B,
+        eval_points=np.random.normal(size=(500, d1)),
+        filter=0.01,
+        function=np.sin,
+        transform=np.random.normal(size=(d2, d1)))
 
 def test_node_to_neurons(Simulator, nl_nodirect):
     name = 'node_to_neurons'
@@ -172,7 +185,7 @@ def test_neurons_to_neurons(Simulator, nl_nodirect):
     assert np.allclose(sim.data(b_p)[-10:], 0, atol=.1, rtol=.01)
 
 
-def test_dimensionality_errors(Simulator, nl_nodirect):
+def test_dimensionality_errors(nl_nodirect):
     nengo.Model("test_dimensionality_error", seed=0)
     N = 10
 
@@ -187,7 +200,7 @@ def test_dimensionality_errors(Simulator, nl_nodirect):
     nengo.Connection(n02, e2)
     nengo.Connection(e2, n21)
     nengo.Connection(n21, e1)
-    nengo.Connection(e1, n21, decoders=np.random.randn(N, 2))
+    nengo.Connection(e1.neurons, n21, transform=np.random.randn(2, N))
     nengo.Connection(e2, e1, function=lambda x: x[0])
 
     # these should not work
@@ -196,9 +209,9 @@ def test_dimensionality_errors(Simulator, nl_nodirect):
     with pytest.raises(ValueError):
         nengo.Connection(e1, e2)
     with pytest.raises(ValueError):
-        nengo.Connection(e2, e1, decoders=np.random.randn(N+1, 1))
+        nengo.Connection(e2.neurons, e1, transform=np.random.randn(1, N+1))
     with pytest.raises(ValueError):
-        nengo.Connection(e2, e1, decoders=np.random.randn(N, 2))
+        nengo.Connection(e2.neurons, e1, transform=np.random.randn(2, N))
     with pytest.raises(ValueError):
         nengo.Connection(e2, e1, function=lambda x: x, transform=[[1]])
     with pytest.raises(ValueError):
