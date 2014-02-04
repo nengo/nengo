@@ -47,7 +47,7 @@ setup(
     packages=['nengo', 'nengo.tests', 'nengo.networks'],
     scripts=[],
     url="https://github.com/ctn-waterloo/nengo",
-    license="GPLv3",
+    license="See LICENSE.rst",
     description=description,
     long_description=long_description,
     requires=[

@@ -18,9 +18,9 @@
   :target: https://pypi.python.org/pypi/nengo
   :alt: Number of PyPI downloads
 
-============================================
+********************************************
 Nengo: Large-scale brain modelling in Python
-============================================
+********************************************
 
 .. image:: http://c431376.r76.cf2.rackcdn.com/71388/fninf-07-00048-r2/image_m/fninf-07-00048-g001.jpg
   :alt: An illustration of the three principles of the NEF
