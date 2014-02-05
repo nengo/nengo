@@ -3,6 +3,7 @@ import logging
 
 import numpy as np
 
+import nengo
 from . import decoders
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,8 @@ class Neurons(object):
             label = "<%s%d>" % (self.__class__.__name__, id(self))
         self.label = label
 
+        self.probes = {'output': []}
+
     def __str__(self):
         r = self.__class__.__name__ + "("
         r += self.label if hasattr(self, 'label') else "id " + str(id(self))
@@ -63,6 +66,19 @@ class Neurons(object):
 
     def set_gain_bias(self, max_rates, intercepts):
         raise NotImplementedError("Neurons must provide set_gain_bias")
+
+    def probe(self, probe):
+        self.probes[probe.attr].append(probe)
+
+        if probe.attr == 'output':
+            nengo.Connection(self, probe, filter=probe.filter)
+        else:
+            raise NotImplementedError(
+                "Probe target '%s' is not probable" % probe.attr)
+        return probe
+
+    def add_to_model(self, model):
+        model.objs.append(self)
 
 
 class Direct(Neurons):

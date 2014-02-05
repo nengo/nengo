@@ -193,7 +193,7 @@ class Ensemble(object):
         return probe
 
     def add_to_model(self, model):
-        model.objs += [self]
+        model.objs.append(self)
 
 
 class Node(object):
@@ -298,7 +298,7 @@ class Node(object):
         return probe
 
     def add_to_model(self, model):
-        model.objs += [self]
+        model.objs.append(self)
 
 
 class Connection(object):
