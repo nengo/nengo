@@ -537,7 +537,8 @@ class Network(object):
     def __init__(self, *args, **kwargs):
         self.label = kwargs.pop("label", "Network")
         self.objects = []
-        self.make(*args, **kwargs)
+        with self:
+            self.make(*args, **kwargs)
 
         # add self to current context
         nengo.context.add_to_current(self)

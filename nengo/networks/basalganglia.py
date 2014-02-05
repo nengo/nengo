@@ -35,63 +35,62 @@ class BasalGanglia(nengo.Network):
             'encoders': encoders,
         }
 
-        with self:
-            strD1 = EnsembleArray(label='Striatal D1 neurons',
-                                  intercepts=Uniform(self.e, 1), **ea_params)
+        strD1 = EnsembleArray(label='Striatal D1 neurons',
+                              intercepts=Uniform(self.e, 1), **ea_params)
 
-            strD2 = EnsembleArray(label='Striatal D2 neurons',
-                                  intercepts=Uniform(self.e, 1), **ea_params)
+        strD2 = EnsembleArray(label='Striatal D2 neurons',
+                              intercepts=Uniform(self.e, 1), **ea_params)
 
-            stn = EnsembleArray(label='Subthalamic nucleus',
-                                intercepts=Uniform(self.ep, 1), **ea_params)
+        stn = EnsembleArray(label='Subthalamic nucleus',
+                            intercepts=Uniform(self.ep, 1), **ea_params)
 
-            gpi = EnsembleArray(label='Globus pallidus internus',
-                                intercepts=Uniform(self.eg, 1), **ea_params)
+        gpi = EnsembleArray(label='Globus pallidus internus',
+                            intercepts=Uniform(self.eg, 1), **ea_params)
 
-            gpe = EnsembleArray(label='Globus pallidus externus',
-                                intercepts=Uniform(self.ee, 1), **ea_params)
+        gpe = EnsembleArray(label='Globus pallidus externus',
+                            intercepts=Uniform(self.ee, 1), **ea_params)
 
-            self.input = nengo.Node(label="input", size_in=dimensions)
-            self.output = nengo.Node(label="output", size_in=dimensions)
+        self.input = nengo.Node(label="input", size_in=dimensions)
+        self.output = nengo.Node(label="output", size_in=dimensions)
 
-            # spread the input to StrD1, StrD2, and STN
-            nengo.Connection(
-                self.input, strD1.input, filter=None,
-                transform=np.eye(dimensions) * self.ws * (1 + self.lg))
-            nengo.Connection(
-                self.input, strD2.input, filter=None,
-                transform=np.eye(dimensions) * self.ws * (1 - self.le))
-            nengo.Connection(
-                self.input, stn.input, filter=None,
-                transform=np.eye(dimensions) * self.wt)
+        # spread the input to StrD1, StrD2, and STN
+        nengo.Connection(
+            self.input, strD1.input, filter=None,
+            transform=np.eye(dimensions) * self.ws * (1 + self.lg))
+        nengo.Connection(
+            self.input, strD2.input, filter=None,
+            transform=np.eye(dimensions) * self.ws * (1 - self.le))
+        nengo.Connection(
+            self.input, stn.input, filter=None,
+            transform=np.eye(dimensions) * self.wt)
 
-            # connect the striatum to the GPi and GPe (inhibitory)
-            nengo.Connection(strD1.add_output('func_str', self.str()),
-                             gpi.input, filter=tau_gaba,
-                             transform=-np.eye(dimensions) * self.wm)
-            nengo.Connection(strD2.add_output('func_str', self.str()),
-                             gpe.input, filter=tau_gaba,
-                             transform=-np.eye(dimensions) * self.wm)
+        # connect the striatum to the GPi and GPe (inhibitory)
+        nengo.Connection(strD1.add_output('func_str', self.str()),
+                         gpi.input, filter=tau_gaba,
+                         transform=-np.eye(dimensions) * self.wm)
+        nengo.Connection(strD2.add_output('func_str', self.str()),
+                         gpe.input, filter=tau_gaba,
+                         transform=-np.eye(dimensions) * self.wm)
 
-            # connect the STN to GPi and GPe (broad and excitatory)
-            tr = np.ones((dimensions, dimensions)) * self.wp
-            stn_output = stn.add_output('func_stn', self.stn())
-            nengo.Connection(stn_output, gpi.input,
-                             transform=tr, filter=tau_ampa)
-            nengo.Connection(stn_output, gpe.input,
-                             transform=tr, filter=tau_ampa)
+        # connect the STN to GPi and GPe (broad and excitatory)
+        tr = np.ones((dimensions, dimensions)) * self.wp
+        stn_output = stn.add_output('func_stn', self.stn())
+        nengo.Connection(stn_output, gpi.input,
+                         transform=tr, filter=tau_ampa)
+        nengo.Connection(stn_output, gpe.input,
+                         transform=tr, filter=tau_ampa)
 
-            # connect the GPe to GPi and STN (inhibitory)
-            gpe_output = gpe.add_output('func_gpe', self.gpe())
-            nengo.Connection(gpe_output, gpi.input, filter=tau_gaba,
-                             transform=-np.eye(dimensions) * self.we)
-            nengo.Connection(gpe_output, stn.input, filter=tau_gaba,
-                             transform=-np.eye(dimensions) * self.wg)
+        # connect the GPe to GPi and STN (inhibitory)
+        gpe_output = gpe.add_output('func_gpe', self.gpe())
+        nengo.Connection(gpe_output, gpi.input, filter=tau_gaba,
+                         transform=-np.eye(dimensions) * self.we)
+        nengo.Connection(gpe_output, stn.input, filter=tau_gaba,
+                         transform=-np.eye(dimensions) * self.wg)
 
-            #connect GPi to output (inhibitory)
-            nengo.Connection(gpi.add_output('func_gpi', self.gpi()),
-                             self.output, filter=None,
-                             transform=np.eye(dimensions) * output_weight)
+        #connect GPi to output (inhibitory)
+        nengo.Connection(gpi.add_output('func_gpi', self.gpi()),
+                         self.output, filter=None,
+                         transform=np.eye(dimensions) * output_weight)
 
     def str(self):
         def func_str(x):
