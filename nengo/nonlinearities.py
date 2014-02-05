@@ -183,39 +183,25 @@ class LIF(_LIFBase):
         if self.upsample != 1:
             raise NotImplementedError()
 
-        # N.B. J here *includes* bias
+        # update voltage using Euler's method
+        dV = (dt / self.tau_rc) * (J - voltage)
+        voltage += dV
+        voltage[voltage < 0] = 0  # clip values below zero
 
-        # Euler's method
-        dV = dt / self.tau_rc * (J - voltage)
+        # update refractory period assuming no spikes for now
+        refractory_time -= dt
 
-        # increase the voltage, ignore values below 0
-        v = np.maximum(voltage + dV, 0)
+        # set voltages of neurons still in their refractory period to 0
+        # and reduce voltage of neurons partway out of their ref. period
+        voltage *= (1 - refractory_time / dt).clip(0, 1)
 
-        # handle refractory period
-        post_ref = 1.0 - (refractory_time - dt) / dt
+        # determine which neurons spike (if v > 1 set spiked = 1, else 0)
+        spiked[:] = (voltage > 1)
 
-        # set any post_ref elements < 0 = 0, and > 1 = 1
-        v *= np.clip(post_ref, 0, 1)
+        # linearly approximate time since neuron crossed spike threshold
+        overshoot = (voltage[spiked > 0] - 1) / dV[spiked > 0]
+        spiketime = dt * (1 - overshoot)
 
-        old = np.seterr(all='ignore')
-        try:
-            # determine which neurons spike
-            # if v > 1 set spiked = 1, else 0
-            spiked[:] = (v > 1) * 1.0
-
-            # linearly approximate time since neuron crossed spike threshold
-            overshoot = (v - 1) / dV
-            spiketime = dt * (1.0 - overshoot)
-
-            # adjust refractory time (neurons that spike get a new
-            # refractory time set, all others get it reduced by dt)
-            new_refractory_time = (spiked * (spiketime + self.tau_ref)
-                                   + (1 - spiked) * (refractory_time - dt))
-        finally:
-            np.seterr(**old)
-
-        # return an ordered dictionary of internal variables to update
-        # (including setting a neuron that spikes to a voltage of 0)
-
-        voltage[:] = v * (1 - spiked)
-        refractory_time[:] = new_refractory_time
+        # set spiking neurons' voltages to zero, and ref. time to tau_ref
+        voltage[spiked > 0] = 0
+        refractory_time[spiked > 0] = self.tau_ref + spiketime
