@@ -1009,6 +1009,10 @@ class Builder(object):
         self.model.operators.append(
             Copy(src=neurons.bias_signal, dst=neurons.input_signal))
 
+        # Set up probes
+        for probe in neurons.probes['output']:
+            probe.dimensions = neurons.n_neurons
+
     @builds(nengo.Direct)
     def build_direct(self, direct):
         direct.input_signal = Signal(np.zeros(direct.dimensions),
