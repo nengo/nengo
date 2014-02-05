@@ -40,28 +40,27 @@ class CircularConvolution(nengo.Network):
             dimensions, first=False, invert=invert_b)
         self.transformC = self._output_transform(dimensions)
 
-        with self:
-            self.A = nengo.Node(size_in=dimensions)
-            self.B = nengo.Node(size_in=dimensions)
-            self.ensemble = EnsembleArray(neurons,
-                                          self.transformC.shape[1],
-                                          dimensions=2,
-                                          radius=radius)
-            self.output = nengo.Node(size_in=dimensions)
+        self.A = nengo.Node(size_in=dimensions)
+        self.B = nengo.Node(size_in=dimensions)
+        self.ensemble = EnsembleArray(neurons,
+                                      self.transformC.shape[1],
+                                      dimensions=2,
+                                      radius=radius)
+        self.output = nengo.Node(size_in=dimensions)
 
-            for ens in self.ensemble.ensembles:
-                if not isinstance(neurons, nengo.Direct):
-                    ens.encoders = np.tile(
-                        [[1, 1], [-1, 1], [1, -1], [-1, -1]],
-                        (ens.n_neurons // 4, 1))
-            nengo.Connection(
-                self.A, self.ensemble.input, transform=self.transformA)
-            nengo.Connection(
-                self.B, self.ensemble.input, transform=self.transformB)
-            nengo.Connection(self.ensemble.add_output('product', self.product),
-                             self.output,
-                             filter=0.02,
-                             transform=self.transformC)
+        for ens in self.ensemble.ensembles:
+            if not isinstance(neurons, nengo.Direct):
+                ens.encoders = np.tile(
+                    [[1, 1], [-1, 1], [1, -1], [-1, -1]],
+                    (ens.n_neurons // 4, 1))
+        nengo.Connection(
+            self.A, self.ensemble.input, transform=self.transformA)
+        nengo.Connection(
+            self.B, self.ensemble.input, transform=self.transformB)
+        nengo.Connection(self.ensemble.add_output('product', self.product),
+                         self.output,
+                         filter=0.02,
+                         transform=self.transformC)
 
     @staticmethod
     def _input_transform(dims, first, invert=False):

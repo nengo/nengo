@@ -12,19 +12,18 @@ class EnsembleArray(nengo.Network):
         self.ensembles = []
         transform = np.eye(self.dimensions)
 
-        with self:
-            self.input = nengo.Node(size_in=self.dimensions)
+        self.input = nengo.Node(size_in=self.dimensions)
 
-            for i in range(n_ensembles):
-                e = nengo.Ensemble(copy.deepcopy(neurons),
-                                   self.dimensions_per_ensemble,
-                                   **ens_args)
-                trans = transform[i * self.dimensions_per_ensemble:
-                                  (i + 1) * self.dimensions_per_ensemble, :]
-                nengo.Connection(self.input, e, transform=trans, filter=None)
-                self.ensembles.append(e)
+        for i in range(n_ensembles):
+            e = nengo.Ensemble(copy.deepcopy(neurons),
+                               self.dimensions_per_ensemble,
+                               **ens_args)
+            trans = transform[i * self.dimensions_per_ensemble:
+                              (i + 1) * self.dimensions_per_ensemble, :]
+            nengo.Connection(self.input, e, transform=trans, filter=None)
+            self.ensembles.append(e)
 
-            self.add_output('output', function=None)
+        self.add_output('output', function=None)
 
     def add_output(self, name, function):
         if function is None:
