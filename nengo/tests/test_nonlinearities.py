@@ -21,21 +21,25 @@ def test_lif_builtin():
     """Test that the dynamic model approximately matches the rates."""
     rng = np.random.RandomState(85243)
 
-    lif = nengo.LIF(10)
-    lif.set_gain_bias(rng.uniform(80, 100, (10,)), rng.uniform(-1, 1, (10,)))
-    J = np.arange(0, 5, .5)
-    voltage = np.zeros(10)
-    reftime = np.zeros(10)
+    dt = 1e-3
+    t_final = 1.0
 
-    spikes = []
-    spikes_ii = np.zeros(10)
+    N = 10
+    lif = nengo.LIF(N)
+    lif.set_gain_bias(rng.uniform(80, 100, size=N), rng.uniform(-1, 1, size=N))
 
-    for ii in range(1000):
-        lif.step_math0(.001, J + lif.bias, voltage, reftime, spikes_ii)
-        spikes.append(spikes_ii.copy())
+    x = np.arange(-2, 2, .1).reshape(-1, 1)
+    J = lif.gain * x + lif.bias
 
-    sim_rates = np.sum(spikes, axis=0)
-    math_rates = lif.rates(J)
+    voltage = np.zeros_like(J)
+    reftime = np.zeros_like(J)
+
+    spikes = np.zeros((t_final / dt,) + J.shape)
+    for i, spikes_i in enumerate(spikes):
+        lif.step_math0(dt, J, voltage, reftime, spikes_i)
+
+    math_rates = lif.rates(x)
+    sim_rates = spikes.sum(0)
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 
 
@@ -87,30 +91,26 @@ def test_lif_base(nl_nodirect):
     rng = np.random.RandomState(85243)
 
     dt = 0.001
-    d = 1
     n = 5000
+    x = 0.5
 
     m = nengo.Model("")
-    ins = builder.Signal(0.5 * np.ones(d), name='ins')
+
+    ins = nengo.Node(x)
     lif = nl_nodirect(n)
     lif.set_gain_bias(max_rates=rng.uniform(low=10, high=200, size=n),
                       intercepts=rng.uniform(low=-1, high=1, size=n))
-    m.operators = []
-    b = builder.Builder()
-    b.model = m
-    b._builders[nl_nodirect](lif)
-    m.operators.append(builder.DotInc(
-        builder.Signal(np.ones((n, d))), ins, lif.input_signal))
+    lif.add_to_model(m)
+    nengo.Connection(ins, lif, transform=np.ones((n, 1)))
+    spike_probe = nengo.Probe(lif, 'output')
 
-    sim = nengo.Simulator(m, dt=dt, builder=mybuilder)
+    sim = nengo.Simulator(m, dt=dt)
 
     t_final = 1.0
-    spikes = np.zeros(n)
-    for i in range(int(np.round(t_final / dt))):
-        sim.step()
-        spikes += sim.signals[lif.output_signal]
+    sim.run(t_final)
+    spikes = sim.data(spike_probe).sum(0)
 
-    math_rates = lif.rates(sim.signals[lif.input_signal] - lif.bias)
+    math_rates = lif.rates(x)
     sim_rates = spikes / t_final
     logger.debug("ME = %f", (sim_rates - math_rates).mean())
     logger.debug("RMSE = %f",
