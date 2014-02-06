@@ -508,10 +508,25 @@ class Probe(object):
     ----------
     sample_rate
     """
+    DEFAULTS = {
+        Ensemble: 'decoded_output',
+        Node: 'output',
+    }
 
-    def __init__(self, target, attr,
+    def __init__(self, target, attr=None,
                  sample_every=0.001, filter=None, dimensions=None):
         self.target = target
+        if attr is None:
+            try:
+                attr = self.DEFAULTS[target.__class__]
+            except KeyError:
+                for k in self.DEFAULTS:
+                    if issubclass(target.__class__, k):
+                        attr = self.DEFAULTS[k]
+                        break
+                else:
+                    raise TypeError("Type " + target.__class__.__name__
+                                    + " has no default probe.")
         self.attr = attr
         self.label = "Probe(" + target.label + "." + attr + ")"
         self.sample_every = sample_every

@@ -115,6 +115,23 @@ def test_large(Simulator):
         assert np.allclose(y[1:], x[:-1])  # 1-step delay
 
 
+def test_defaults(Simulator):
+    """Tests that probing with no attr sets the right attr."""
+    model = nengo.Model('test_defaults')
+    node = nengo.Node(output=0.5)
+    ens = nengo.Ensemble(nengo.LIF(20), 1)
+    conn = nengo.Connection(node, ens)
+    node_p = nengo.Probe(node)
+    assert node_p.attr == 'output'
+    ens_p = nengo.Probe(ens)
+    assert ens_p.attr == 'decoded_output'
+    with pytest.raises(TypeError):
+        nengo.Probe(conn)
+    # Let's just make sure it runs too...
+    sim = Simulator(model)
+    sim.run(0.01)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
