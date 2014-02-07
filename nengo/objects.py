@@ -106,6 +106,11 @@ class Ensemble(object):
         # add self to current context
         nengo.context.add_to_current(self)
 
+    def __getitem__(self, key):
+        dims = np.zeros(self.dimensions, dtype=bool)
+        dims[key] = True
+        return View(self, dims)
+
     def __str__(self):
         return "Ensemble: " + self.label
 
@@ -262,6 +267,11 @@ class Node(object):
     def __str__(self):
         return "Node: " + self.label
 
+    def __getitem__(self, key):
+        dims = np.zeros(self.dimensions, dtype=bool)
+        dims[key] = True
+        return View(self, dims)
+
     def __deepcopy__(self, memo):
         try:
             return memo[id(self)]
@@ -336,6 +346,12 @@ class Connection(object):
 
     def __init__(self, pre, post,
                  filter=0.005, transform=1.0, modulatory=False, **kwargs):
+        if isinstance(pre, View):
+            pre_dim = pre.viewdims
+            pre = pre.base
+        if instance(post, View):
+            post_dim = post.viewdims
+            post = post.base
         self._pre = pre
         self._post = post
         self.probes = {'signal': []}
@@ -575,3 +591,15 @@ class Network(object):
 
     def __exit__(self, exception_type, exception_value, traceback):
         nengo.context.pop()
+
+
+class View(object):
+    def __init__(self, base=None, viewdims=None):
+        self.base = base
+        self.viewdims = viewdims
+
+    def __getattr__(self, key):
+        return getattr(self.base, key)
+
+    def __setattr__(self, key, value):
+        setattr(self.base, key, value)
