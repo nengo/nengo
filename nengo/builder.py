@@ -22,6 +22,34 @@ up in a model.
 assert_named_signals = False
 
 
+class PythonFunction(object):
+
+    def __init__(self, fn, n_in, n_out, label=None):
+        self.fn = fn
+        self.n_in = n_in
+        self.n_out = n_out
+        if label is None:
+            label = "<Direct%d>" % id(self)
+        self.label = label
+
+    def __deepcopy__(self, memo):
+        try:
+            return memo[id(self)]
+        except KeyError:
+            rval = self.__class__.__new__(self.__class__)
+            memo[id(self)] = rval
+            for k, v in self.__dict__.items():
+                if k == 'fn':
+                    rval.fn = v
+                else:
+                    rval.__dict__[k] = copy.deepcopy(v, memo)
+            return rval
+
+    @property
+    def n_args(self):
+        return 2 if self.n_in > 0 else 1
+
+
 class ShapeMismatch(ValueError):
     pass
 
@@ -843,10 +871,10 @@ class Builder(object):
         elif not isinstance(node.output, collections.Callable):
             node.output_signal = Signal(node.output, name=node.label)
         else:
-            node.pyfn = nengo.PythonFunction(fn=node.output,
-                                             n_in=node.size_in,
-                                             n_out=node.size_out,
-                                             label=node.label + ".pyfn")
+            node.pyfn = PythonFunction(fn=node.output,
+                                       n_in=node.size_in,
+                                       n_out=node.size_out,
+                                       label=node.label + ".pyfn")
             self.build_pyfunc(node.pyfn)
             if node.size_in > 0:
                 self.model.operators.append(DotInc(
@@ -895,7 +923,7 @@ class Builder(object):
         return filtered
 
     def _direct_pyfunc(self, input_signal, function, n_out, label):
-        pyfunc = nengo.PythonFunction(
+        pyfunc = PythonFunction(
             fn=function, n_in=input_signal.size, n_out=n_out, label=label)
         self.build_pyfunc(pyfunc)
         self.model.operators.append(DotInc(
@@ -986,7 +1014,7 @@ class Builder(object):
             probe.dimensions = conn.output_signal.size
             self.model.add(probe)
 
-    @builds(nengo.PythonFunction)
+    @builds(PythonFunction)
     def build_pyfunc(self, pyfn):
         if pyfn.n_in:
             pyfn.input_signal = Signal(np.zeros(pyfn.n_in),
