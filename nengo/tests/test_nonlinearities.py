@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo import builder
 from nengo.utils.testing import rms
 
 import logging
@@ -41,49 +40,6 @@ def test_lif_builtin():
     math_rates = lif.rates(x)
     sim_rates = spikes.sum(0)
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
-
-
-def test_pyfunc():
-    """Test Python Function nonlinearity"""
-    dt = 0.001
-    d = 3
-    n_steps = 3
-    n_trials = 3
-
-    rng = np.random.RandomState(seed=987)
-
-    for i in range(n_trials):
-        A = rng.normal(size=(d, d))
-        fn = lambda t, x: np.cos(np.dot(A, x))
-
-        x = np.random.normal(size=d)
-
-        m = nengo.Model("")
-        ins = builder.Signal(x, name='ins')
-        pop = nengo.PythonFunction(fn=fn, n_in=d, n_out=d)
-        m.operators = []
-        b = builder.Builder()
-        b.model = m
-        b.build_pyfunc(pop)
-        m.operators += [
-            builder.DotInc(builder.Signal(np.eye(d)), ins, pop.input_signal),
-            builder.ProdUpdate(builder.Signal(np.eye(d)),
-                               pop.output_signal,
-                               builder.Signal(0),
-                               ins)
-        ]
-
-        sim = nengo.Simulator(m, dt=dt, builder=mybuilder)
-
-        p0 = np.zeros(d)
-        s0 = np.array(x)
-        for j in range(n_steps):
-            tmp = p0
-            p0 = fn(0, s0)
-            s0 = tmp
-            sim.step()
-            assert np.allclose(s0, sim.signals[ins])
-            assert np.allclose(p0, sim.signals[pop.output_signal])
 
 
 def test_lif_base(nl_nodirect):

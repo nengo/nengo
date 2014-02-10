@@ -1,6 +1,8 @@
+import numpy as np
 import pytest
 
 import nengo
+import nengo.builder
 
 node_attrs = ('output',)
 ens_attrs = ('label', 'dimensions', 'radius')
@@ -19,6 +21,58 @@ def compare(orig, copy):
         assert getattr(orig, attr) == getattr(copy, attr)
     for p_o, p_c in zip(orig.probes.values(), copy.probes.values()):
         assert len(p_o) == len(p_c)
+
+
+def mybuilder(model, dt):
+    model.dt = dt
+    model.seed = 0
+    if not hasattr(model, 'probes'):
+        model.probes = []
+    return model
+
+
+def test_pyfunc():
+    """Test Python Function nonlinearity"""
+    dt = 0.001
+    d = 3
+    n_steps = 3
+    n_trials = 3
+
+    rng = np.random.RandomState(seed=987)
+
+    for i in range(n_trials):
+        A = rng.normal(size=(d, d))
+        fn = lambda t, x: np.cos(np.dot(A, x))
+
+        x = np.random.normal(size=d)
+
+        m = nengo.Model("")
+        ins = nengo.builder.Signal(x, name='ins')
+        pop = nengo.builder.PythonFunction(fn=fn, n_in=d, n_out=d)
+        m.operators = []
+        b = nengo.builder.Builder()
+        b.model = m
+        b.build_pyfunc(pop)
+        m.operators += [
+            nengo.builder.DotInc(
+                nengo.builder.Signal(np.eye(d)), ins, pop.input_signal),
+            nengo.builder.ProdUpdate(nengo.builder.Signal(np.eye(d)),
+                                     pop.output_signal,
+                                     nengo.builder.Signal(0),
+                                     ins)
+        ]
+
+        sim = nengo.Simulator(m, dt=dt, builder=mybuilder)
+
+        p0 = np.zeros(d)
+        s0 = np.array(x)
+        for j in range(n_steps):
+            tmp = p0
+            p0 = fn(0, s0)
+            s0 = tmp
+            sim.step()
+            assert np.allclose(s0, sim.signals[ins])
+            assert np.allclose(p0, sim.signals[pop.output_signal])
 
 
 def test_build():

@@ -1,4 +1,3 @@
-import copy
 import logging
 
 import numpy as np
@@ -7,34 +6,6 @@ from nengo.objects import Neurons
 from nengo.utils.distributions import UniformHypersphere
 
 logger = logging.getLogger(__name__)
-
-
-class PythonFunction(object):
-
-    def __init__(self, fn, n_in, n_out, label=None):
-        self.fn = fn
-        self.n_in = n_in
-        self.n_out = n_out
-        if label is None:
-            label = "<Direct%d>" % id(self)
-        self.label = label
-
-    def __deepcopy__(self, memo):
-        try:
-            return memo[id(self)]
-        except KeyError:
-            rval = self.__class__.__new__(self.__class__)
-            memo[id(self)] = rval
-            for k, v in self.__dict__.items():
-                if k == 'fn':
-                    rval.fn = v
-                else:
-                    rval.__dict__[k] = copy.deepcopy(v, memo)
-            return rval
-
-    @property
-    def n_args(self):
-        return 2 if self.n_in > 0 else 1
 
 
 class Direct(Neurons):

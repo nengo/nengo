@@ -4,7 +4,9 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.builder import Builder, ProdUpdate, Copy, Reset, DotInc, Signal
+import nengo.simulator
+from nengo.builder import (
+    Builder, ProdUpdate, Copy, Reset, DotInc, Signal, PythonFunction)
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +103,7 @@ def test_simple_pyfunc(RefSimulator):
 
     time = Signal(np.zeros(1), name='time')
     sig = Signal(np.zeros(1), name='sig')
-    pop = nengo.PythonFunction(fn=lambda t, x: np.sin(x), n_in=1, n_out=1)
+    pop = PythonFunction(fn=lambda t, x: np.sin(x), n_in=1, n_out=1)
     m.operators = []
     b = Builder()
     b.model = m
@@ -128,8 +130,7 @@ def test_encoder_decoder_pathway(RefSimulator):
     m = nengo.Model("")
     dt = 0.001
     foo = Signal([1.0], name='foo')
-    pop = nengo.PythonFunction(
-        fn=lambda t, x: x + 1, n_in=2, n_out=2, label='pop')
+    pop = PythonFunction(fn=lambda t, x: x + 1, n_in=2, n_out=2, label='pop')
     decoders = np.asarray([.2, .1])
     decs = Signal(decoders * 0.5)
 
@@ -182,8 +183,7 @@ def test_encoder_decoder_with_views(RefSimulator):
     m = nengo.Model("")
     dt = 0.001
     foo = Signal([1.0], name='foo')
-    pop = nengo.PythonFunction(
-        fn=lambda t, x: x + 1, n_in=2, n_out=2, label='pop')
+    pop = PythonFunction(fn=lambda t, x: x + 1, n_in=2, n_out=2, label='pop')
     decoders = np.asarray([.2, .1])
 
     m.operators = []
