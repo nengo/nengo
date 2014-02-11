@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import sys
+import imp
+
 try:
     from setuptools import setup
     from setuptools.command.test import test as TestCommand
@@ -29,12 +31,13 @@ try:
 except NameError:
     testing = {}
 
+version_module = imp.load_source('version', 'nengo/version.py')
 
 description = ("Tools for making neural simulations using the methods "
                + "of the Neural Engineering Framework")
 setup(
     name="nengo",
-    version="2.0.0",
+    version=version_module.version,
     author="CNRGlab at UWaterloo",
     author_email="celiasmith@uwaterloo.ca",
     packages=['nengo', 'nengo.tests', 'nengo.networks'],
