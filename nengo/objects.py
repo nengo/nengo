@@ -13,8 +13,7 @@ logger = logging.getLogger(__name__)
 def _in_stack(function):
     """Check whether the given function is in the call stack"""
     import inspect
-    stack = inspect.stack()
-    codes = map(lambda record: record[0].f_code, stack)
+    codes = [record[0].f_code for record in inspect.stack()]
     return function.__code__ in codes
 
 
