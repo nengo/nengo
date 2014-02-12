@@ -69,7 +69,7 @@ def test_dts(Simulator):
 
     for i, p in enumerate(probes):
         t = dt * np.arange(int(np.ceil(simtime / dts[i])))
-        x = np.asarray(list(map(input_fn, t)))
+        x = np.asarray([input_fn(tt) for tt in t])
         y = sim.data(p)
         assert len(x) == len(y)
         assert np.allclose(y[1:], x[:-1])  # 1-step delay
@@ -80,12 +80,8 @@ def test_large(Simulator):
 
     n = 10
 
-    # rng = np.random.RandomState(48392)
-    # input_val = rng.normal(size=100).tolist()
     def input_fn(t):
         return list(range(1, 10))
-        # return input_val
-        # return [np.sin(t), np.cos(t)]
 
     model = nengo.Model('test_large_probes', seed=3249)
 
@@ -93,9 +89,6 @@ def test_large(Simulator):
     for i in range(n):
         xi = nengo.Node(label='x%d' % i, output=input_fn)
         probes.append(nengo.Probe(xi, 'output'))
-        # Ai = m.make_ensemble('A%d' % i, nengo.LIF(n_neurons), 1)
-        # m.connect(xi, Ai)
-        # m.probe(Ai, filter=0.1)
 
     sim = Simulator(model)
     simtime = 2.483
@@ -109,7 +102,7 @@ def test_large(Simulator):
         % locals())
 
     t = dt * np.arange(int(np.round(simtime / dt)))
-    x = np.asarray(list(map(input_fn, t)))
+    x = np.asarray([input_fn(ti) for ti in t])
     for p in probes:
         y = sim.data(p)
         assert np.allclose(y[1:], x[:-1])  # 1-step delay
