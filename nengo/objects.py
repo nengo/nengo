@@ -386,29 +386,30 @@ class Connection(object):
     def _pad_transform(self, transform):
         """Pads the transform with zeros according to the pre/post slices."""
         if self._preslice == slice(None) and self._postslice == slice(None):
-            # default case when unsliced objects are passed to __init__
+            # Default case when unsliced objects are passed to __init__
             return transform
         
         # Get the required input/output sizes for the new transform
         in_dims, in_src = self._get_input_dimensions()
         out_dims, out_src = self._get_output_dimensions()
         
-        # Leverage numpy's slice syntax to see which dimensions were sliced
-        pre_sliced = np.zeros(in_dims, dtype=bool)
-        pre_sliced[self._preslice] = True
-        pre_sliced_size = len(filter(None, pre_sliced))
-        
-        post_sliced = np.zeros(out_dims, dtype=bool)
-        post_sliced[self._postslice] = True
-        post_sliced_size = len(filter(None, post_sliced))
-        
-        # Check that the given transform matches the pre/post slices
+        # Leverage numpy's slice syntax to determine sizes of slices
+        pre_sliced_size = np.asarray(np.zeros(in_dims)[self._preslice]).size
+        post_sliced_size = np.asarray(np.zeros(out_dims)[self._postslice]).size
+
+        # Check that the given transform matches the pre/post slices sizes
         self._check_transform(
             transform, pre_sliced_size, in_src, post_sliced_size, out_src)
+
+        # Cast scalar transforms to the identity
+        if transform.ndim == 0:
+            # following assertion should be guaranteed by _check_transform
+            assert pre_sliced_size == post_sliced_size
+            transform = transform*np.eye(pre_sliced_size)
         
         # Create the new transform matching the pre/post dimensions
         new_transform = np.zeros((out_dims, in_dims))
-        new_transform[post_sliced, pre_sliced] = transform
+        new_transform[self._postslice, self._preslice] = transform
         
         # Note: Calling _check_shapes after this, is (or, should be) redundant
         return new_transform
