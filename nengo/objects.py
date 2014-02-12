@@ -6,6 +6,7 @@ import numpy as np
 import nengo
 import nengo.decoders
 from nengo.nonlinearities import Neurons
+from nengo.helpers import ObjSlice
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,9 @@ class Ensemble(object):
 
         # add self to current context
         nengo.context.add_to_current(self)
+
+    def __getitem__(self, key):
+        return ObjSlice(self, key)
 
     def __str__(self):
         return "Ensemble: " + self.label
@@ -277,6 +281,9 @@ class Node(object):
     def __str__(self):
         return "Node: " + self.label
 
+    def __getitem__(self, key):
+        return ObjSlice(self, key)
+
     def __deepcopy__(self, memo):
         try:
             return memo[id(self)]
@@ -355,8 +362,14 @@ class Connection(object):
 
     def __init__(self, pre, post,
                  filter=0.005, transform=1.0, modulatory=False, **kwargs):
-        self._pre = pre
-        self._post = post
+        if not isinstance(pre, ObjSlice):
+            pre = ObjSlice(pre)
+        if not isinstance(post, ObjSlice):
+            post = ObjSlice(post)
+        self._pre = pre.obj
+        self._post = post.obj
+        self._preslice = pre.slice
+        self._postslice = post.slice
         self.probes = {'signal': []}
 
         self.filter = filter
@@ -388,32 +401,44 @@ class Connection(object):
             raise ValueError("'%s' can only be set if 'pre' is an Ensemble" %
                              (prop_name))
 
-    def _check_shapes(self, check_in_init=False):
-        if not check_in_init and _in_stack(self.__init__):
-            return  # skip automatic checks if we're in the init function
+    def _pad_transform(self, transform):
+        """Pads the transform with zeros according to the pre/post slices."""
+        if self._preslice == slice(None) and self._postslice == slice(None):
+            # Default case when unsliced objects are passed to __init__
+            return transform
 
+        # Get the required input/output sizes for the new transform
         in_dims, in_src = self._get_input_dimensions()
         out_dims, out_src = self._get_output_dimensions()
 
-        if self.transform.ndim == 0:
-            # check input dimensionality matches output dimensionality
-            if (in_dims is not None and out_dims is not None
-                    and in_dims != out_dims):
-                raise ValueError("%s output size (%d) not equal to "
-                                 "post %s (%d)" %
-                                 (in_src, in_dims, out_src, out_dims))
-        else:
-            # check input dimensionality matches transform
-            if in_dims is not None and in_dims != self.transform.shape[1]:
-                raise ValueError("%s output size (%d) not equal to "
-                                 "transform input size (%d)" %
-                                 (in_src, in_dims, self.transform.shape[1]))
+        # Leverage numpy's slice syntax to determine sizes of slices
+        pre_sliced_size = np.asarray(np.zeros(in_dims)[self._preslice]).size
+        post_sliced_size = np.asarray(np.zeros(out_dims)[self._postslice]).size
 
-            # check output dimensionality matches transform
-            if out_dims is not None and out_dims != self.transform.shape[0]:
-                raise ValueError("Transform output size (%d) not equal to "
-                                 "post %s (%d)" %
-                                 (self.transform.shape[0], out_src, out_dims))
+        # Check that the given transform matches the pre/post slices sizes
+        self._check_transform(
+            transform, pre_sliced_size, in_src, post_sliced_size, out_src)
+
+        # Cast scalar transforms to the identity
+        if transform.ndim == 0:
+            # following assertion should be guaranteed by _check_transform
+            assert pre_sliced_size == post_sliced_size
+            transform = transform*np.eye(pre_sliced_size)
+
+        # Create the new transform matching the pre/post dimensions
+        new_transform = np.zeros((out_dims, in_dims))
+        new_transform[self._postslice, self._preslice] = transform
+
+        # Note: Calling _check_shapes after this, is (or, should be) redundant
+        return new_transform
+
+    def _check_shapes(self, check_in_init=False):
+        if not check_in_init and _in_stack(self.__init__):
+            return  # skip automatic checks if we're in the init function
+        in_dims, in_src = self._get_input_dimensions()
+        out_dims, out_src = self._get_output_dimensions()
+        self._check_transform(
+            self.transform, in_dims, in_src, out_dims, out_src)
 
     def _get_input_dimensions(self):
         if isinstance(self.pre, Ensemble):
@@ -437,6 +462,27 @@ class Connection(object):
         else:
             dims, src = None, str(self.post)
         return dims, src
+
+    def _check_transform(self, transform, in_dims, in_src, out_dims, out_src):
+        if transform.ndim == 0:
+            # check input dimensionality matches output dimensionality
+            if (in_dims is not None and out_dims is not None
+                    and in_dims != out_dims):
+                raise ValueError("%s output size (%d) not equal to "
+                                 "post %s (%d)" %
+                                 (in_src, in_dims, out_src, out_dims))
+        else:
+            # check input dimensionality matches transform
+            if in_dims is not None and in_dims != transform.shape[1]:
+                raise ValueError("%s output size (%d) not equal to "
+                                 "transform input size (%d)" %
+                                 (in_src, in_dims, transform.shape[1]))
+
+            # check output dimensionality matches transform
+            if out_dims is not None and out_dims != transform.shape[0]:
+                raise ValueError("Transform output size (%d) not equal to "
+                                 "post %s (%d)" %
+                                 (transform.shape[0], out_src, out_dims))
 
     def __str__(self):
         return self.label + " (" + self.__class__.__name__ + ")"
@@ -500,7 +546,7 @@ class Connection(object):
 
     @transform.setter
     def transform(self, _transform):
-        self._transform = np.asarray(_transform)
+        self._transform = self._pad_transform(np.asarray(_transform))
         self._check_shapes()
 
     def add_to_model(self, model):
