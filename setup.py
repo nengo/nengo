@@ -32,10 +32,13 @@ try:
 except NameError:
     testing = {}
 
+root = os.path.dirname(os.path.realpath(__file__))
 version_module = imp.load_source(
-    'version', os.path.realpath(os.path.join('nengo', 'version.py')))
+    'version', os.path.join(root, 'nengo', 'version.py'))
 description = ("Tools for making neural simulations using the methods "
                + "of the Neural Engineering Framework")
+with open(os.path.join(root, 'README.rst')) as readme:
+    long_description = readme.read()
 setup(
     name="nengo",
     version=version_module.version,
@@ -46,7 +49,7 @@ setup(
     url="https://github.com/ctn-waterloo/nengo",
     license="GPLv3",
     description=description,
-    long_description=open('README.rst').read(),
+    long_description=long_description,
     requires=[
         "numpy (>=1.5.0)",
         "networkx",
