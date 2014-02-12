@@ -298,7 +298,7 @@ class Signal(SignalView):
     @property
     def elemstrides(self):
         s = np.asarray(self.value.strides)
-        return tuple(map(int, s / self.dtype.itemsize))
+        return tuple(int(si / self.dtype.itemsize) for si in s)
 
     @property
     def offset(self):
