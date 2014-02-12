@@ -4,7 +4,7 @@ import logging
 import numpy as np
 
 import nengo.decoders
-import nengo.objects
+from nengo.helpers import ObjSlice
 
 logger = logging.getLogger(__name__)
 
@@ -59,9 +59,7 @@ class Neurons(object):
         return str(self)
 
     def __getitem__(self, key):
-        dims = np.zeros(self.n_neurons, dtype=bool)
-        dims[key] = True
-        return nengo.objects.View(self, dims)
+        return ObjSlice(self, key)
 
     def default_encoders(self, dimensions, rng):
         raise NotImplementedError("Neurons must provide default_encoders")
