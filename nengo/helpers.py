@@ -285,3 +285,16 @@ def whitenoise(step, high, rms=0.5, seed=None, dimensions=None):
         return np.dot(a, np.sin((f * t) + p))
 
     return whitenoise_function
+
+
+class ObjSlice(object):
+    """Container for a slice with respect to some object.
+    
+    This is used by the __getitem__ of Neurons, Node, and Ensemble, in order
+    to pass slices of those objects to Connect. This is a notational convenience
+    for creating transforms. See Connect for details.
+    """
+    
+    def __init__(self, obj, key=slice(None)):
+        self.obj = obj
+        self.slice = key

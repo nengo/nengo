@@ -220,6 +220,31 @@ def test_dimensionality_errors(nl_nodirect):
         nengo.Connection(n21, e2, transform=np.ones((2, 2)))
 
 
+def test_connection_slicing(Simulator, nl_nodirect):
+    name = 'connection_slicing'
+    
+    m = nengo.Model(name, seed=123)
+    
+    neurons1 = nl_nodirect(1)
+    neurons2 = nl_nodirect(2)
+    neurons3 = nl_nodirect(3)
+    ens1 = nengo.Ensemble(neurons1, dimensions=1)
+    ens2 = nengo.Ensemble(neurons2, dimensions=2)
+    ens3 = nengo.Ensemble(neurons3, dimensions=3)
+    node1 = nengo.Node(output=[0])
+    node2 = nengo.Node(output=[0,0])
+    node3 = nengo.Node(output=[0,0,0])
+        
+    conn = nengo.Connection(node3[2], ens1)
+    assert np.all(conn.transform == np.array([[0,0,1]]))
+    
+    conn = nengo.Connection(node2[0], ens1, transform=-2)
+    assert np.all(conn.transform == np.array([[-2,0]]))
+    
+    conn = nengo.Connection(node1, ens3[0:3:2], transform=[[1],[2]])
+    assert np.all(conn.transform == np.array([[1],[0],[2]]))
+    
+    
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
