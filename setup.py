@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import os
 import imp
 
 try:
@@ -31,8 +32,8 @@ try:
 except NameError:
     testing = {}
 
-version_module = imp.load_source('version', 'nengo/version.py')
-
+version_module = imp.load_source(
+    'version', os.path.realpath(os.path.join('nengo', 'version.py')))
 description = ("Tools for making neural simulations using the methods "
                + "of the Neural Engineering Framework")
 setup(
