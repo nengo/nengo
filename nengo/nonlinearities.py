@@ -3,8 +3,8 @@ import logging
 
 import numpy as np
 
-import nengo
-from . import decoders
+import nengo.decoders
+from nengo.helpers import ObjSlice
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +57,9 @@ class Neurons(object):
 
     def __repr__(self):
         return str(self)
+
+    def __getitem__(self, key):
+        return ObjSlice(self, key)
 
     def default_encoders(self, dimensions, rng):
         raise NotImplementedError("Neurons must provide default_encoders")
@@ -119,7 +122,7 @@ class _LIFBase(Neurons):
         return self.n_neurons
 
     def default_encoders(self, dimensions, rng):
-        return decoders.sample_hypersphere(
+        return nengo.decoders.sample_hypersphere(
             dimensions, self.n_neurons, rng, surface=True)
 
     def rates_from_current(self, J):
