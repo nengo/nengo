@@ -297,4 +297,8 @@ class ObjSlice(object):
     
     def __init__(self, obj, key=slice(None)):
         self.obj = obj
+        if isinstance(key, int):
+            # single slices of the form [i] should be cast into
+            # slice objects for convenience
+            key = slice(key, key+1)
         self.slice = key
