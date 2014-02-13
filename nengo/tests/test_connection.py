@@ -260,7 +260,7 @@ def test_connection_slicing(Simulator, nl_nodirect):
     assert np.all(conn.transform == np.array([[1], [0], [2]]))
 
     # Both slices with 2x1 transform -> 3x2 transform
-    conn = nengo.Connection(ens2[0], neurons3[1:], transform=[[1],[2]])
+    conn = nengo.Connection(ens2[0], neurons3[1:], transform=[[1], [2]])
     assert np.all(conn.transform == np.array([[0, 0], [1, 0], [2, 0]]))
 
     # Full slices that can be optimized away
@@ -269,7 +269,7 @@ def test_connection_slicing(Simulator, nl_nodirect):
 
     # Pre slice with 1x1 transform on 2x2 slices -> 2x3 transform
     conn = nengo.Connection(neurons3[:2], ens2, transform=-1)
-    assert np.all(conn.transform == np.array([[-1, 0 ,0], [0, -1, 0]]))
+    assert np.all(conn.transform == np.array([[-1, 0, 0], [0, -1, 0]]))
 
     # Both slices with 1x1 transform on 2x2 slices -> 3x3 transform
     conn = nengo.Connection(neurons3[1:], neurons3[::2], transform=-1)
@@ -278,7 +278,7 @@ def test_connection_slicing(Simulator, nl_nodirect):
 
     # Both slices with 2x2 transform -> 3x3 transform
     conn = nengo.Connection(node3[[0, 2]], neurons3[1:],
-                            transform=[[1,2],[3,4]])
+                            transform=[[1, 2], [3, 4]])
     assert np.all(conn.transform == np.array(
         [[0, 0, 0], [1, 0, 2], [3, 0, 4]]))
 
