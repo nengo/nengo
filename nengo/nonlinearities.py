@@ -4,7 +4,6 @@ import logging
 import numpy as np
 
 import nengo.decoders
-from nengo.helpers import ObjSlice
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +36,25 @@ class PythonFunction(object):
         return 2 if self.n_in > 0 else 1
 
 
+class ObjView(object):
+    """Container for a slice with respect to some object.
+
+    This is used by the __getitem__ of Neurons, Node, and Ensemble, in order
+    to pass slices of those objects to Connect. This is a notational
+    convenience for creating transforms. See Connect for details.
+
+    Does not currently support any other view-like operations.
+    """
+
+    def __init__(self, obj, key=slice(None)):
+        self.obj = obj
+        if isinstance(key, int):
+            # single slices of the form [i] should be cast into
+            # slice objects for convenience
+            key = slice(key, key+1)
+        self.slice = key
+
+
 class Neurons(object):
 
     def __init__(self, n_neurons, bias=None, gain=None, label=None):
@@ -59,7 +77,7 @@ class Neurons(object):
         return str(self)
 
     def __getitem__(self, key):
-        return ObjSlice(self, key)
+        return ObjView(self, key)
 
     def default_encoders(self, dimensions, rng):
         raise NotImplementedError("Neurons must provide default_encoders")

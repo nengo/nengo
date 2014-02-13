@@ -5,8 +5,7 @@ import numpy as np
 
 import nengo
 import nengo.decoders
-from nengo.nonlinearities import Neurons
-from nengo.helpers import ObjSlice
+from nengo.nonlinearities import Neurons, ObjView
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +107,7 @@ class Ensemble(object):
         nengo.context.add_to_current(self)
 
     def __getitem__(self, key):
-        return ObjSlice(self, key)
+        return ObjView(self, key)
 
     def __str__(self):
         return "Ensemble: " + self.label
@@ -267,7 +266,7 @@ class Node(object):
         return "Node: " + self.label
 
     def __getitem__(self, key):
-        return ObjSlice(self, key)
+        return ObjView(self, key)
 
     def __deepcopy__(self, memo):
         try:
@@ -343,10 +342,10 @@ class Connection(object):
 
     def __init__(self, pre, post,
                  filter=0.005, transform=1.0, modulatory=False, **kwargs):
-        if not isinstance(pre, ObjSlice):
-            pre = ObjSlice(pre)
-        if not isinstance(post, ObjSlice):
-            post = ObjSlice(post)
+        if not isinstance(pre, ObjView):
+            pre = ObjView(pre)
+        if not isinstance(post, ObjView):
+            post = ObjView(post)
         self._pre = pre.obj
         self._post = post.obj
         self._preslice = pre.slice
@@ -387,11 +386,20 @@ class Connection(object):
         if self._preslice == slice(None) and self._postslice == slice(None):
             # Default case when unsliced objects are passed to __init__
             return transform
-        
+
         # Get the required input/output sizes for the new transform
         in_dims, in_src = self._get_input_dimensions()
         out_dims, out_src = self._get_output_dimensions()
-        
+
+        # Check that these dimensions are defined. This can currently happen
+        # for Nodes, and _check_transform allows this.
+        if in_dims is None:
+            raise ValueError("%s output size must be defined in order to "
+                               "slice it.", in_src)
+        if out_dims is None:
+            raise ValueError("%s input size must be defined in order to "
+                               "slice it.", out_src)
+
         # Leverage numpy's slice syntax to determine sizes of slices
         pre_sliced_size = np.asarray(np.zeros(in_dims)[self._preslice]).size
         post_sliced_size = np.asarray(np.zeros(out_dims)[self._postslice]).size
@@ -405,14 +413,14 @@ class Connection(object):
             # following assertion should be guaranteed by _check_transform
             assert pre_sliced_size == post_sliced_size
             transform = transform*np.eye(pre_sliced_size)
-        
+
         # Create the new transform matching the pre/post dimensions
         new_transform = np.zeros((out_dims, in_dims))
         new_transform[self._postslice, self._preslice] = transform
-        
+
         # Note: Calling _check_shapes after this, is (or, should be) redundant
         return new_transform
-                                 
+
     def _check_shapes(self, check_in_init=False):
         if not check_in_init and _in_stack(self.__init__):
             return  # skip automatic checks if we're in the init function
@@ -464,7 +472,7 @@ class Connection(object):
                 raise ValueError("Transform output size (%d) not equal to "
                                  "post %s (%d)" %
                                  (transform.shape[0], out_src, out_dims))
-                                 
+
     def __str__(self):
         return self.label + " (" + self.__class__.__name__ + ")"
 

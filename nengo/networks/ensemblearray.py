@@ -33,7 +33,8 @@ class EnsembleArray(nengo.Network):
             function_d = np.asarray(func_output).size
         transform = np.identity(self.n_ensembles * function_d)
 
-        output = nengo.Node(size_in=self.n_ensembles * function_d, label=name)
+        output = nengo.Node(size_out=self.n_ensembles * function_d,
+                            size_in=self.n_ensembles * function_d, label=name)
         setattr(self, name, output)
 
         for i, e in enumerate(self.ensembles):
