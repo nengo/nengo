@@ -66,7 +66,7 @@ class Neurons(object):
         return str(self)
 
     def __getitem__(self, key):
-        return ObjSlice(self, key)
+        return ObjView(self, key)
 
     def default_encoders(self, dimensions, rng):
         raise NotImplementedError("Neurons must provide default_encoders")
@@ -77,14 +77,14 @@ class Neurons(object):
     def set_gain_bias(self, max_rates, intercepts):
         raise NotImplementedError("Neurons must provide set_gain_bias")
 
-    def probe(self, probe, **kwargs):
+    def probe(self, probe):
+        self.probes[probe.attr].append(probe)
+
         if probe.attr == 'output':
-            nengo.Connection(self, probe, filter=probe.filter, **kwargs)
+            nengo.Connection(self, probe, filter=probe.filter)
         else:
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % probe.attr)
-
-        self.probes[probe.attr].append(probe)
         return probe
 
     def add_to_model(self, model):
@@ -153,7 +153,7 @@ class Ensemble(object):
         nengo.context.add_to_current(self)
 
     def __getitem__(self, key):
-        return ObjSlice(self, key)
+        return ObjView(self, key)
 
     def __str__(self):
         return "Ensemble: " + self.label
@@ -266,7 +266,7 @@ class Node(object):
     size_in : int, optional
         The number of input dimensions.
     size_out : int, optional
-        The size of the output signal
+        The size of the output signal. If not specified, then size_in.
 
     Attributes
     ----------
@@ -274,6 +274,8 @@ class Node(object):
         The name of the object.
     size_in : int
         The number of input dimensions.
+    size_out : int
+        The number of output dimensions.
     """
 
     def __init__(self, output=None, size_in=0, size_out=None, label="Node"):
@@ -314,6 +316,8 @@ class Node(object):
                     % (size_out_new, size_out))
 
             size_out = size_out_new
+        else:  # output is None
+            size_out = size_in
 
         self._size_out = size_out
 
@@ -327,7 +331,7 @@ class Node(object):
         return "Node: " + self.label
 
     def __getitem__(self, key):
-        return ObjSlice(self, key)
+        return ObjView(self, key)
 
     def __deepcopy__(self, memo):
         try:
@@ -407,10 +411,10 @@ class Connection(object):
 
     def __init__(self, pre, post,
                  filter=0.005, transform=1.0, modulatory=False, **kwargs):
-        if not isinstance(pre, ObjSlice):
-            pre = ObjSlice(pre)
-        if not isinstance(post, ObjSlice):
-            post = ObjSlice(post)
+        if not isinstance(pre, ObjView):
+            pre = ObjView(pre)
+        if not isinstance(post, ObjView):
+            post = ObjView(post)
         self._pre = pre.obj
         self._post = post.obj
         self._preslice = pre.slice
@@ -453,16 +457,14 @@ class Connection(object):
             return transform
 
         # Get the required input/output sizes for the new transform
-        in_dims, in_src = self._get_input_dimensions()
-        out_dims, out_src = self._get_output_dimensions()
+        out_dims, in_dims = self._required_transform_shape()
 
         # Leverage numpy's slice syntax to determine sizes of slices
         pre_sliced_size = np.asarray(np.zeros(in_dims)[self._preslice]).size
         post_sliced_size = np.asarray(np.zeros(out_dims)[self._postslice]).size
 
         # Check that the given transform matches the pre/post slices sizes
-        self._check_transform(
-            transform, pre_sliced_size, in_src, post_sliced_size, out_src)
+        self._check_transform(transform, (post_sliced_size, pre_sliced_size))
 
         # Cast scalar transforms to the identity
         if transform.ndim == 0:
@@ -480,71 +482,68 @@ class Connection(object):
     def _check_shapes(self, check_in_init=False):
         if not check_in_init and _in_stack(self.__init__):
             return  # skip automatic checks if we're in the init function
-        in_dims, in_src = self._get_input_dimensions()
-        out_dims, out_src = self._get_output_dimensions()
-        self._check_transform(
-            self.transform, in_dims, in_src, out_dims, out_src)
+        self._check_transform(self.transform, self._required_transform_shape())
 
-    def _get_input_dimensions(self):
-        if isinstance(self.pre, Ensemble):
-            if self.function is not None:
-                dims, src = self._function[1], "Function"
-            else:
-                dims, src = self.pre.dimensions, "Pre population"
+    def _required_transform_shape(self):
+        if isinstance(self.pre, Ensemble) and self.function is not None:
+            in_dims = self._function[1]
+        elif isinstance(self.pre, Ensemble):
+            in_dims = self.pre.dimensions
         elif isinstance(self.pre, Neurons):
-            dims, src = self.pre.n_neurons, "Neurons"
-        elif isinstance(self.pre, Node):
-            dims, src = self.pre.size_out, "Node"
-        return dims, src
+            in_dims = self.pre.n_neurons
+        else:  # Node
+            in_dims = self.pre.size_out
 
-    def _get_output_dimensions(self):
         if isinstance(self.post, Ensemble):
-            dims, src = self.post.dimensions, "population dimensions"
+            out_dims = self.post.dimensions
         elif isinstance(self.post, Neurons):
-            dims, src = self.post.n_neurons, "number of neurons"
-        elif isinstance(self.post, Node):
-            dims, src = self.post.size_in, "node input size"
-        else:
-            dims, src = None, str(self.post)
-        return dims, src
+            out_dims = self.post.n_neurons
+        elif isinstance(self.post, Probe):
+            out_dims = in_dims
+        else:  # Node
+            out_dims = self.post.size_in
 
-    def _check_transform(self, transform, in_dims, in_src, out_dims, out_src):
+        return (out_dims, in_dims)
+
+    def _check_transform(self, transform, required_shape):
+        in_src = self._pre.__class__.__name__
+        out_src = self._post.__class__.__name__
+        out_dims, in_dims = required_shape
         if transform.ndim == 0:
             # check input dimensionality matches output dimensionality
-            if (in_dims is not None and out_dims is not None
-                    and in_dims != out_dims):
+            if in_dims != out_dims:
                 raise ValueError("%s output size (%d) not equal to "
-                                 "post %s (%d)" %
+                                 "%s input size (%d)" %
                                  (in_src, in_dims, out_src, out_dims))
         else:
             # check input dimensionality matches transform
-            if in_dims is not None and in_dims != transform.shape[1]:
+            if in_dims != transform.shape[1]:
                 raise ValueError("%s output size (%d) not equal to "
                                  "transform input size (%d)" %
                                  (in_src, in_dims, transform.shape[1]))
 
             # check output dimensionality matches transform
-            if out_dims is not None and out_dims != transform.shape[0]:
+            if out_dims != transform.shape[0]:
                 raise ValueError("Transform output size (%d) not equal to "
-                                 "post %s (%d)" %
+                                 "%s input size (%d)" %
                                  (transform.shape[0], out_src, out_dims))
 
     def __str__(self):
-        return self.label + " (" + self.__class__.__name__ + ")"
+        return "%s (%s)" % (self.label, self.__class__.__name__)
 
     def __repr__(self):
         return str(self)
 
     @property
     def label(self):
-        label = self.pre.label + ">" + self.post.label
+        label = "%s>%s" % (self.pre.label, self.post.label)
         if self.function is not None:
-            return label + ":" + self.function.__name__
+            return "%s:%s" % (label, self.function.__name__)
         return label
 
     @property
     def dimensions(self):
-        return self._get_input_dimensions()[0]
+        return self._required_transform_shape()[1]
 
     @property
     def eval_points(self):
@@ -679,12 +678,14 @@ class Network(object):
         nengo.context.pop()
 
 
-class ObjSlice(object):
+class ObjView(object):
     """Container for a slice with respect to some object.
 
     This is used by the __getitem__ of Neurons, Node, and Ensemble, in order
     to pass slices of those objects to Connect. This is a notational
     convenience for creating transforms. See Connect for details.
+
+    Does not currently support any other view-like operations.
     """
 
     def __init__(self, obj, key=slice(None)):

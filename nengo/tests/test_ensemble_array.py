@@ -19,13 +19,6 @@ def test_multidim(Simulator, nl):
     a = rng.uniform(low=-0.7, high=0.7, size=dims)
     b = rng.uniform(low=-0.7, high=0.7, size=dims)
 
-    drange = np.arange(dims)
-    ta = np.zeros((2*dims, dims))
-    ta[2*drange, drange] = 1
-    tb = np.zeros((2*dims, dims))
-    tb[2*drange + 1, drange] = 1
-    c = np.dot(ta, a) + np.dot(tb, b)
-
     model = nengo.Model('Multidim', seed=123)
     inputA = nengo.Node(output=a)
     inputB = nengo.Node(output=b)
@@ -36,8 +29,9 @@ def test_multidim(Simulator, nl):
                                      radius=radius, label="C")
     nengo.Connection(inputA, A.input)
     nengo.Connection(inputB, B.input)
-    nengo.Connection(A.output, C.input, transform=ta)
-    nengo.Connection(B.output, C.input, transform=tb)
+    ta = nengo.Connection(A.output, C.input[::2]).transform
+    tb = nengo.Connection(B.output, C.input[1::2]).transform
+    c = np.dot(ta, a) + np.dot(tb, b)
 
     A_p = nengo.Probe(A.output, 'output', filter=0.03)
     B_p = nengo.Probe(B.output, 'output', filter=0.03)
