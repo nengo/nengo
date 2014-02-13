@@ -4,6 +4,7 @@ import logging
 import numpy as np
 
 import nengo.decoders
+from nengo.objects import Neurons
 
 logger = logging.getLogger(__name__)
 
@@ -34,72 +35,6 @@ class PythonFunction(object):
     @property
     def n_args(self):
         return 2 if self.n_in > 0 else 1
-
-
-class ObjView(object):
-    """Container for a slice with respect to some object.
-
-    This is used by the __getitem__ of Neurons, Node, and Ensemble, in order
-    to pass slices of those objects to Connect. This is a notational
-    convenience for creating transforms. See Connect for details.
-
-    Does not currently support any other view-like operations.
-    """
-
-    def __init__(self, obj, key=slice(None)):
-        self.obj = obj
-        if isinstance(key, int):
-            # single slices of the form [i] should be cast into
-            # slice objects for convenience
-            key = slice(key, key+1)
-        self.slice = key
-
-
-class Neurons(object):
-
-    def __init__(self, n_neurons, bias=None, gain=None, label=None):
-        self.n_neurons = n_neurons
-        self.bias = bias
-        self.gain = gain
-        if label is None:
-            label = "<%s%d>" % (self.__class__.__name__, id(self))
-        self.label = label
-
-        self.probes = {'output': []}
-
-    def __str__(self):
-        r = self.__class__.__name__ + "("
-        r += self.label if hasattr(self, 'label') else "id " + str(id(self))
-        r += ", %dN)" if hasattr(self, 'n_neurons') else ")"
-        return r
-
-    def __repr__(self):
-        return str(self)
-
-    def __getitem__(self, key):
-        return ObjView(self, key)
-
-    def default_encoders(self, dimensions, rng):
-        raise NotImplementedError("Neurons must provide default_encoders")
-
-    def rates(self, x):
-        raise NotImplementedError("Neurons must provide rates")
-
-    def set_gain_bias(self, max_rates, intercepts):
-        raise NotImplementedError("Neurons must provide set_gain_bias")
-
-    def probe(self, probe):
-        self.probes[probe.attr].append(probe)
-
-        if probe.attr == 'output':
-            nengo.Connection(self, probe, filter=probe.filter)
-        else:
-            raise NotImplementedError(
-                "Probe target '%s' is not probable" % probe.attr)
-        return probe
-
-    def add_to_model(self, model):
-        model.objs.append(self)
 
 
 class Direct(Neurons):

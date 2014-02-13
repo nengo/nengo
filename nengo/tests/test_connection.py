@@ -225,7 +225,7 @@ def test_dimensionality_errors(nl_nodirect):
     with pytest.raises(ValueError):
         nengo.Connection(n02, e2[0])
     with pytest.raises(ValueError):
-        nengo.Connection(n02[1], e2[0], transform=[[1, 2],[3, 4]])
+        nengo.Connection(n02[1], e2[0], transform=[[1, 2], [3, 4]])
     with pytest.raises(ValueError):
         nengo.Connection(n02, e2[0], transform=[[1], [2]])
     with pytest.raises(ValueError):

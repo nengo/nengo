@@ -968,11 +968,11 @@ class Builder(object):
             conn.signal = conn.input_signal
 
         # Set up transform
-        conn.transform = np.asarray(conn.transform, dtype=np.float64)
+        transform = np.asarray(conn.transform, dtype=np.float64)
         if isinstance(conn.post, nengo.nonlinearities.Neurons):
-            conn.transform *= conn.post.gain[:, np.newaxis]
+            transform *= conn.post.gain[:, np.newaxis]
         self.model.operators.append(
-            DotInc(Signal(conn.transform, name=conn.label + ".transform"),
+            DotInc(Signal(transform, name=conn.label + ".transform"),
                    conn.signal,
                    conn.output_signal,
                    tag=conn.label))
