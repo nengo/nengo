@@ -236,7 +236,8 @@ def test_connection_slicing(Simulator, nl_nodirect):
     name = 'connection_slicing'
     N = 30
 
-    nengo.Model(name, seed=123)
+    m = nengo.Model(name, seed=123)
+    assert m
 
     neurons3 = nl_nodirect(3)
     ens1 = nengo.Ensemble(nl_nodirect(N), dimensions=1)
