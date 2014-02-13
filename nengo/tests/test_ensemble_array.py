@@ -19,13 +19,6 @@ def test_multidim(Simulator, nl):
     a = rng.uniform(low=-0.7, high=0.7, size=dims)
     b = rng.uniform(low=-0.7, high=0.7, size=dims)
 
-    #drange = np.arange(dims)
-    #ta = np.zeros((2*dims, dims))
-    #ta[2*drange, drange] = 1
-    #tb = np.zeros((2*dims, dims))
-    #tb[2*drange + 1, drange] = 1
-    #c = np.dot(ta, a) + np.dot(tb, b)
-
     model = nengo.Model('Multidim', seed=123)
     inputA = nengo.Node(output=a)
     inputB = nengo.Node(output=b)
