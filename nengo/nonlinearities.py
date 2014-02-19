@@ -124,7 +124,7 @@ class _LIFBase(Neurons):
 
     def rates_from_current(self, J):
         """LIF firing rates in Hz for input current (incl. bias)"""
-        old = np.seterr(divide='ignore')
+        old = np.seterr(divide='ignore', invalid='ignore')
         try:
             j = J - 1    # because we're using log1p instead of log
             r = 1. / (self.tau_ref + self.tau_rc * np.log1p(1. / j))
