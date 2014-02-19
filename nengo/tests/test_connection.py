@@ -219,6 +219,75 @@ def test_dimensionality_errors(nl_nodirect):
     with pytest.raises(ValueError):
         nengo.Connection(n21, e2, transform=np.ones((2, 2)))
 
+    # these should not work because of indexing mismatches
+    with pytest.raises(ValueError):
+        nengo.Connection(n02[0], e2)
+    with pytest.raises(ValueError):
+        nengo.Connection(n02, e2[0])
+    with pytest.raises(ValueError):
+        nengo.Connection(n02[1], e2[0], transform=[[1, 2], [3, 4]])
+    with pytest.raises(ValueError):
+        nengo.Connection(n02, e2[0], transform=[[1], [2]])
+    with pytest.raises(ValueError):
+        nengo.Connection(e2[0], e2, transform=[[1, 2]])
+
+
+def test_connection_slicing(Simulator, nl_nodirect):
+    name = 'connection_slicing'
+    N = 30
+
+    m = nengo.Model(name, seed=123)
+    assert m
+
+    neurons3 = nl_nodirect(3)
+    ens1 = nengo.Ensemble(nl_nodirect(N), dimensions=1)
+    ens2 = nengo.Ensemble(nl_nodirect(N), dimensions=2)
+    ens3 = nengo.Ensemble(nl_nodirect(N), dimensions=3)
+    node1 = nengo.Node(output=[0])
+    node2 = nengo.Node(output=[0, 0])
+    node3 = nengo.Node(output=[0, 0, 0])
+
+    # Pre slice with default transform -> 1x3 transform
+    conn = nengo.Connection(node3[2], ens1)
+    assert np.all(conn.transform == np.array([[0, 0, 1]]))
+
+    # Post slice with 1x1 transform -> 1x2 transform
+    conn = nengo.Connection(node2[0], ens1, transform=-2)
+    assert np.all(conn.transform == np.array([[-2, 0]]))
+
+    # Post slice with 2x1 tranfsorm -> 3x1 transform
+    conn = nengo.Connection(node1, ens3[::2], transform=[[1], [2]])
+    assert np.all(conn.transform == np.array([[1], [0], [2]]))
+
+    # Both slices with 2x1 transform -> 3x2 transform
+    conn = nengo.Connection(ens2[0], neurons3[1:], transform=[[1], [2]])
+    assert np.all(conn.transform == np.array([[0, 0], [1, 0], [2, 0]]))
+
+    # Full slices that can be optimized away
+    conn = nengo.Connection(ens3[:], ens3, transform=2)
+    assert np.all(conn.transform == np.array(2))
+
+    # Pre slice with 1x1 transform on 2x2 slices -> 2x3 transform
+    conn = nengo.Connection(neurons3[:2], ens2, transform=-1)
+    assert np.all(conn.transform == np.array([[-1, 0, 0], [0, -1, 0]]))
+
+    # Both slices with 1x1 transform on 2x2 slices -> 3x3 transform
+    conn = nengo.Connection(neurons3[1:], neurons3[::2], transform=-1)
+    assert np.all(conn.transform == np.array(
+        [[0, -1, 0], [0, 0, 0], [0, 0, -1]]))
+
+    # Both slices with 2x2 transform -> 3x3 transform
+    conn = nengo.Connection(node3[[0, 2]], neurons3[1:],
+                            transform=[[1, 2], [3, 4]])
+    assert np.all(conn.transform == np.array(
+        [[0, 0, 0], [1, 0, 2], [3, 0, 4]]))
+
+    # Both slices with 2x3 transform -> 3x3 transform... IN REVERSE!
+    conn = nengo.Connection(neurons3[::-1], neurons3[[2, 0]],
+                            transform=[[1, 2, 3], [4, 5, 6]])
+    assert np.all(conn.transform == np.array(
+        [[6, 5, 4], [0, 0, 0], [3, 2, 1]]))
+
 
 if __name__ == "__main__":
     nengo.log(debug=True)

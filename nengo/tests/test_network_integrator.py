@@ -19,8 +19,8 @@ def test_integrator(Simulator, nl):
     nengo.Connection(input, T.input, filter=tau)
 
     A = nengo.Ensemble(nl(100), dimensions=1)
-    nengo.Connection(A, A, transform=[[1]], filter=tau)
-    nengo.Connection(input, A, transform=[[tau]], filter=tau)
+    nengo.Connection(A, A, filter=tau)
+    nengo.Connection(input, A, transform=tau, filter=tau)
 
     input_p = nengo.Probe(input, 'output')
     A_p = nengo.Probe(A, 'decoded_output', filter=0.01)

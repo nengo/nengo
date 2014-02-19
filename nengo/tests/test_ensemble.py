@@ -172,8 +172,8 @@ def test_product(Simulator, nl):
             [[1, 1], [-1, 1], [1, -1], [-1, -1]],
             (factors.n_neurons // 4, 1))
     product = nengo.Ensemble(nl(N), dimensions=1)
-    nengo.Connection(sin, factors, transform=[[1], [0]])
-    nengo.Connection(cons, factors, transform=[[0], [1]])
+    nengo.Connection(sin, factors[0])
+    nengo.Connection(cons, factors[1])
     nengo.Connection(
         factors, product, function=lambda x: x[0] * x[1], filter=0.01)
 
