@@ -126,8 +126,11 @@ class _LIFBase(Neurons):
         """LIF firing rates in Hz for input current (incl. bias)"""
         old = np.seterr(divide='ignore')
         try:
-            j = np.maximum(J - 1, 0.)
+            j = J - 1    # because we're using log1p instead of log
             r = 1. / (self.tau_ref + self.tau_rc * np.log1p(1. / j))
+            # NOTE: There is a known bug in numpy that np.log1p(inf) returns
+            #   NaN instead of inf: https://github.com/numpy/numpy/issues/4225
+            r[j <= 0] = 0
         finally:
             np.seterr(**old)
         return r
