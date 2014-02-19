@@ -12,11 +12,11 @@ class EnsembleArray(nengo.Network):
         self.ensembles = []
         transform = np.eye(self.dimensions)
 
-        self.input = nengo.Node(size_in=self.dimensions)
+        self.input = nengo.Node(size_in=self.dimensions, label='input')
 
         for i in range(n_ensembles):
             e = nengo.Ensemble(copy.deepcopy(neurons),
-                               self.dimensions_per_ensemble,
+                               self.dimensions_per_ensemble, label='%d'%i,
                                **ens_args)
             trans = transform[i * self.dimensions_per_ensemble:
                               (i + 1) * self.dimensions_per_ensemble, :]
