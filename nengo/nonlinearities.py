@@ -67,14 +67,14 @@ class Neurons(object):
     def gain_bias(self, max_rates, intercepts):
         raise NotImplementedError("Neurons must provide gain_bias")
 
-    def probe(self, probe):
-        self.probes[probe.attr].append(probe)
-
+    def probe(self, probe, **kwargs):
         if probe.attr == 'output':
-            nengo.Connection(self, probe, filter=probe.filter)
+            nengo.Connection(self, probe, filter=probe.filter, **kwargs)
         else:
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % probe.attr)
+
+        self.probes[probe.attr].append(probe)
         return probe
 
     def add_to_model(self, model):
