@@ -159,7 +159,7 @@ class Ensemble(object):
         return self.neurons.rates(
             np.dot(eval_points, self.encoders.T / self.radius))
 
-    def probe(self, probe):
+    def probe(self, probe, **kwargs):
         """Probe a signal in this ensemble.
 
         Parameters
@@ -176,19 +176,18 @@ class Ensemble(object):
         probe : Probe
             The new Probe object.
         """
-
-        self.probes[probe.attr].append(probe)
-
         if probe.attr == 'decoded_output':
-            Connection(self, probe, filter=probe.filter)
+            Connection(self, probe, filter=probe.filter, **kwargs)
         elif probe.attr == 'spikes':
             Connection(self.neurons, probe, filter=probe.filter,
-                       transform=np.eye(self.n_neurons))
+                       transform=np.eye(self.n_neurons), **kwargs)
         elif probe.attr == 'voltages':
-            Connection(self.neurons.voltage, probe, filter=None)
+            Connection(self.neurons.voltage, probe, filter=None, **kwargs)
         else:
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % probe.attr)
+
+        self.probes[probe.attr].append(probe)
         return probe
 
     def add_to_model(self, model):
@@ -289,11 +288,15 @@ class Node(object):
     def size_out(self):
         return self._size_out
 
-    def probe(self, probe):
+    def probe(self, probe, **kwargs):
         """TODO"""
-        self.probes[probe.attr].append(probe)
         if probe.attr == 'output':
-            Connection(self, probe, filter=probe.filter)
+            Connection(self, probe, filter=probe.filter, **kwargs)
+        else:
+            raise NotImplementedError(
+                "Probe target '%s' is not probable" % probe.attr)
+
+        self.probes[probe.attr].append(probe)
         return probe
 
     def add_to_model(self, model):
@@ -502,10 +505,6 @@ class Probe(object):
         Sampling period in seconds.
     dimensions : int, optional
         Number of dimensions.
-
-    Attributes
-    ----------
-    sample_rate
     """
     DEFAULTS = {
         Ensemble: 'decoded_output',
@@ -513,7 +512,7 @@ class Probe(object):
     }
 
     def __init__(self, target, attr=None,
-                 sample_every=0.001, filter=None, dimensions=None):
+                 sample_every=None, filter=None, dimensions=None, **kwargs):
         self.target = target
         if attr is None:
             try:
@@ -531,19 +530,15 @@ class Probe(object):
         self.sample_every = sample_every
         self.dimensions = dimensions  # None?
         self.filter = filter
+        self.kwargs = kwargs
 
-        target.probe(self)
+        target.probe(self, **kwargs)
 
         # add self to current context
         nengo.context.add_to_current(self)
 
-    @property
-    def sample_rate(self):
-        """TODO"""
-        return 1.0 / self.sample_every
-
     def add_to_model(self, model):
-        model.probed[(self.target, self.attr)] = self
+        model.probed[id(self)] = self
 
 
 class Network(object):
