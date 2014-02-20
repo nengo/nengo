@@ -434,6 +434,10 @@ class Connection(object):
             raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
                              (self.pre.__class__.__name__))
 
+        if not isinstance(self.post, (Ensemble, Neurons, Node, Probe)):
+            raise ValueError("Objects of type '%s' cannot serve as 'post'" %
+                             (self.post.__class__.__name__))
+
         # check that we've used all user-provided arguments
         if len(kwargs) > 0:
             raise TypeError("__init__() got an unexpected keyword argument '"
