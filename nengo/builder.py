@@ -869,7 +869,10 @@ class Builder(object):
         self.model.operators.append(Reset(probe.input_signal))
 
         # Set up probe
-        probe.probe = SimulatorProbe(probe.input_signal, probe.sample_every)
+        probe.probe = SimulatorProbe(
+            probe.input_signal,
+            self.model.dt if probe.sample_every is None
+            else probe.sample_every)
         self.model.probes.append(probe.probe)
 
     @staticmethod
