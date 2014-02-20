@@ -486,7 +486,8 @@ class Connection(object):
     def _check_shapes(self, check_in_init=False):
         if not check_in_init and _in_stack(self.__init__):
             return  # skip automatic checks if we're in the init function
-        self._check_transform(self.transform, self._required_transform_shape())
+        self._check_transform(self.transform_full,
+                              self._required_transform_shape())
 
     def _required_transform_shape(self):
         if isinstance(self.pre, Ensemble) and self.function is not None:
@@ -594,7 +595,8 @@ class Connection(object):
 
     @transform.setter
     def transform(self, _transform):
-        self._transform = self._pad_transform(np.asarray(_transform))
+        self._transform = _transform
+        self.transform_full = self._pad_transform(np.asarray(_transform))
         self._check_shapes()
 
     def add_to_model(self, model):

@@ -29,8 +29,8 @@ def test_multidim(Simulator, nl):
                                      radius=radius, label="C")
     nengo.Connection(inputA, A.input)
     nengo.Connection(inputB, B.input)
-    ta = nengo.Connection(A.output, C.input[::2]).transform
-    tb = nengo.Connection(B.output, C.input[1::2]).transform
+    ta = nengo.Connection(A.output, C.input[::2]).transform_full
+    tb = nengo.Connection(B.output, C.input[1::2]).transform_full
     c = np.dot(ta, a) + np.dot(tb, b)
 
     A_p = nengo.Probe(A.output, 'output', filter=0.03)

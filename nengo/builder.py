@@ -971,7 +971,7 @@ class Builder(object):
             conn.signal = conn.input_signal
 
         # Set up transform
-        transform = np.asarray(conn.transform, dtype=np.float64)
+        transform = np.asarray(conn.transform_full, dtype=np.float64)
         if isinstance(conn.post, nengo.nonlinearities.Neurons):
             transform *= conn.post.gain[:, np.newaxis]
         self.model.operators.append(
