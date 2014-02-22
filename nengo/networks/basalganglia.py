@@ -1,11 +1,11 @@
 import numpy as np
 
 import nengo
-from ..objects import Uniform
+from nengo.objects import Uniform
 from .ensemblearray import EnsembleArray
 
 
-class BasalGanglia(nengo.Network):
+class BasalGanglia(object):
     # connection weights from (Gurney, Prescott, & Redgrave, 2001)
     mm = 1
     mp = 1
@@ -24,9 +24,11 @@ class BasalGanglia(nengo.Network):
     le = 0.2
     lg = 0.2
 
-    def make(self, dimensions, n_neurons_per_ensemble=100, radius=1.5,
-             tau_ampa=0.002, tau_gaba=0.008, output_weight=-3):
+    def __init__(self, dimensions, n_neurons_per_ensemble=100, radius=1.5,
+                 tau_ampa=0.002, tau_gaba=0.008, output_weight=-3,
+                 label='Basal Ganglia'):
 
+        self.label = label
         encoders = np.ones((n_neurons_per_ensemble, 1))
         ea_params = {
             'neurons': nengo.LIF(n_neurons_per_ensemble),
@@ -35,85 +37,85 @@ class BasalGanglia(nengo.Network):
             'encoders': encoders,
         }
 
-        strD1 = EnsembleArray(label='Striatal D1 neurons',
-                              intercepts=Uniform(self.e, 1), **ea_params)
+        self.strD1 = EnsembleArray(label=label + '.Striatal D1 neurons',
+                                   intercepts=Uniform(self.e, 1), **ea_params)
 
-        strD2 = EnsembleArray(label='Striatal D2 neurons',
-                              intercepts=Uniform(self.e, 1), **ea_params)
+        self.strD2 = EnsembleArray(label=label + '.Striatal D2 neurons',
+                                   intercepts=Uniform(self.e, 1), **ea_params)
 
-        stn = EnsembleArray(label='Subthalamic nucleus',
-                            intercepts=Uniform(self.ep, 1), **ea_params)
+        self.stn = EnsembleArray(label=label + '.Subthalamic nucleus',
+                                 intercepts=Uniform(self.ep, 1), **ea_params)
 
-        gpi = EnsembleArray(label='Globus pallidus internus',
-                            intercepts=Uniform(self.eg, 1), **ea_params)
+        self.gpi = EnsembleArray(label=label + '.Globus pallidus internus',
+                                 intercepts=Uniform(self.eg, 1), **ea_params)
 
-        gpe = EnsembleArray(label='Globus pallidus externus',
-                            intercepts=Uniform(self.ee, 1), **ea_params)
+        self.gpe = EnsembleArray(label=label + '.Globus pallidus externus',
+                                 intercepts=Uniform(self.ee, 1), **ea_params)
 
-        self.input = nengo.Node(label="input", size_in=dimensions)
-        self.output = nengo.Node(label="output", size_in=dimensions)
+        self.input = nengo.Node(label=label + ".input", size_in=dimensions)
+        self.output = nengo.Node(label=label + ".output", size_in=dimensions)
 
         # spread the input to StrD1, StrD2, and STN
         nengo.Connection(
-            self.input, strD1.input, filter=None,
+            self.input, self.strD1.input, filter=None,
             transform=np.eye(dimensions) * self.ws * (1 + self.lg))
         nengo.Connection(
-            self.input, strD2.input, filter=None,
+            self.input, self.strD2.input, filter=None,
             transform=np.eye(dimensions) * self.ws * (1 - self.le))
         nengo.Connection(
-            self.input, stn.input, filter=None,
+            self.input, self.stn.input, filter=None,
             transform=np.eye(dimensions) * self.wt)
 
         # connect the striatum to the GPi and GPe (inhibitory)
-        nengo.Connection(strD1.add_output('func_str', self.str()),
-                         gpi.input, filter=tau_gaba,
+        nengo.Connection(self.strD1.add_output('func_str', self.str_f()),
+                         self.gpi.input, filter=tau_gaba,
                          transform=-np.eye(dimensions) * self.wm)
-        nengo.Connection(strD2.add_output('func_str', self.str()),
-                         gpe.input, filter=tau_gaba,
+        nengo.Connection(self.strD2.add_output('func_str', self.str_f()),
+                         self.gpe.input, filter=tau_gaba,
                          transform=-np.eye(dimensions) * self.wm)
 
         # connect the STN to GPi and GPe (broad and excitatory)
         tr = np.ones((dimensions, dimensions)) * self.wp
-        stn_output = stn.add_output('func_stn', self.stn())
-        nengo.Connection(stn_output, gpi.input,
+        stn_output = self.stn.add_output('func_stn', self.stn_f())
+        nengo.Connection(stn_output, self.gpi.input,
                          transform=tr, filter=tau_ampa)
-        nengo.Connection(stn_output, gpe.input,
+        nengo.Connection(stn_output, self.gpe.input,
                          transform=tr, filter=tau_ampa)
 
         # connect the GPe to GPi and STN (inhibitory)
-        gpe_output = gpe.add_output('func_gpe', self.gpe())
-        nengo.Connection(gpe_output, gpi.input, filter=tau_gaba,
+        gpe_output = self.gpe.add_output('func_gpe', self.gpe_f())
+        nengo.Connection(gpe_output, self.gpi.input, filter=tau_gaba,
                          transform=-np.eye(dimensions) * self.we)
-        nengo.Connection(gpe_output, stn.input, filter=tau_gaba,
+        nengo.Connection(gpe_output, self.stn.input, filter=tau_gaba,
                          transform=-np.eye(dimensions) * self.wg)
 
         #connect GPi to output (inhibitory)
-        nengo.Connection(gpi.add_output('func_gpi', self.gpi()),
+        nengo.Connection(self.gpi.add_output('func_gpi', self.gpi_f()),
                          self.output, filter=None,
                          transform=np.eye(dimensions) * output_weight)
 
-    def str(self):
+    def str_f(self):
         def func_str(x):
             if x[0] < self.e:
                 return 0
             return self.mm * (x[0] - self.e)
         return func_str
 
-    def stn(self):
+    def stn_f(self):
         def func_stn(x):
             if x[0] < self.ep:
                 return 0
             return self.mp * (x[0] - self.ep)
         return func_stn
 
-    def gpe(self):
+    def gpe_f(self):
         def func_gpe(x):
             if x[0] < self.ee:
                 return 0
             return self.me * (x[0] - self.ee)
         return func_gpe
 
-    def gpi(self):
+    def gpi_f(self):
         def func_gpi(x):
             if x[0] < self.eg:
                 return 0

@@ -41,6 +41,20 @@ def test_integrator(Simulator, nl):
     assert rmse(sim.data(A_p), sim.data(T_p)) < 0.2
 
 
+def test_labels():
+    nengo.Model('test_labels')
+    integrator = nengo.networks.Integrator(
+        0.1, neurons=nengo.LIF(10), dimensions=1)
+    assert integrator.label == 'Integrator'
+    assert integrator.input.label == 'Integrator.input'
+    assert integrator.ensemble.label == 'Integrator.ensemble'
+    integrator_short = nengo.networks.Integrator(
+        0.1, neurons=nengo.LIF(10), dimensions=1, label="Int")
+    assert integrator_short.label == 'Int'
+    assert integrator_short.input.label == 'Int.input'
+    assert integrator_short.ensemble.label == 'Int.ensemble'
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

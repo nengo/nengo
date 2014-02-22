@@ -169,6 +169,28 @@ def test_matrix_mul(Simulator, nl):
                 atol=atol, rtol=rtol)
 
 
+def test_labels():
+    nengo.Model('test_labels')
+    n_ensembles = 3
+    ea = nengo.networks.EnsembleArray(nengo.LIF(10), n_ensembles)
+    assert ea.label == 'EnsembleArray'
+    assert ea.input.label == 'EnsembleArray.input'
+    for i in range(n_ensembles):
+        assert ea.ensembles[i].label == "EnsembleArray.%d" % i
+    assert ea.output.label == 'EnsembleArray.output'
+    o = ea.add_output('Test', None)
+    assert o.label == 'EnsembleArray.Test'
+    ea_short = nengo.networks.EnsembleArray(nengo.LIF(10), n_ensembles,
+                                            label='EA')
+    assert ea_short.label == 'EA'
+    assert ea_short.input.label == 'EA.input'
+    for i in range(n_ensembles):
+        assert ea_short.ensembles[i].label == "EA.%d" % i
+    assert ea_short.output.label == 'EA.output'
+    o = ea_short.add_output('Test', None)
+    assert o.label == 'EA.Test'
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

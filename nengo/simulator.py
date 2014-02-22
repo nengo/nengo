@@ -56,7 +56,10 @@ class SignalDict(dict):
 class Simulator(object):
     """Reference simulator for models."""
 
-    def __init__(self, model, dt=0.001, seed=None, builder=None):
+    def __init__(self, model=None, dt=0.001, seed=None, builder=None):
+        if model is None:
+            model = nengo.context.model
+
         if builder is None:
             # By default, we'll use builder.Builder and copy the model.
             builder = Builder(copy=True)

@@ -27,26 +27,28 @@ def _dft_half_cached(n):
     return _dft_half_cache[n]
 
 
-class CircularConvolution(nengo.Network):
+class CircularConvolution(object):
     """
     CircularConvolution docs XXX
     """
 
-    def make(self, neurons, dimensions, radius=1,
-             invert_a=False, invert_b=False):
+    def __init__(self, neurons, dimensions, radius=1,
+                 invert_a=False, invert_b=False, label="Circular Convolution"):
+        self.label = label
         self.transformA = self._input_transform(
             dimensions, first=True, invert=invert_a)
         self.transformB = self._input_transform(
             dimensions, first=False, invert=invert_b)
         self.transformC = self._output_transform(dimensions)
 
-        self.A = nengo.Node(size_in=dimensions)
-        self.B = nengo.Node(size_in=dimensions)
+        self.A = nengo.Node(size_in=dimensions, label=label + ".A")
+        self.B = nengo.Node(size_in=dimensions, label=label + ".B")
         self.ensemble = EnsembleArray(neurons,
                                       self.transformC.shape[1],
                                       dimensions=2,
-                                      radius=radius)
-        self.output = nengo.Node(size_in=dimensions)
+                                      radius=radius,
+                                      label=label + ".Ensemble")
+        self.output = nengo.Node(size_in=dimensions, label=label + ".output")
 
         for ens in self.ensemble.ensembles:
             if not isinstance(neurons, nengo.Direct):

@@ -59,6 +59,23 @@ def test_time(Simulator):
     assert np.allclose(sim.trange(), [0.00, .001, .002])
 
 
+def test_multiple_models():
+    m1 = nengo.Model('1', set_context=False)
+    m2 = nengo.Model('2')
+    o1 = nengo.Ensemble(nengo.LIF(10), 1)
+    assert o1 in m2.objs
+    o2 = nengo.Ensemble(nengo.LIF(10), 1, model=m2)
+    assert o2 in m2.objs
+    o3 = nengo.Node(0.5, model=m1)
+    assert o3 in m1.objs
+    # Ensure we can make simulators for each
+    s1 = nengo.Simulator(model=m1)
+    s2 = nengo.Simulator()  # Should default to m2
+    assert len(s1.signals) != len(s2.signals)
+    s3 = nengo.Simulator(model=m2)
+    assert len(s2.signals) == len(s3.signals)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

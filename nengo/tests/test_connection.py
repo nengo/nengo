@@ -1,3 +1,4 @@
+import gc
 import logging
 
 import numpy as np
@@ -218,6 +219,54 @@ def test_dimensionality_errors(nl_nodirect):
         nengo.Connection(e2, e1, function=lambda x: x, transform=[[1]])
     with pytest.raises(ValueError):
         nengo.Connection(n21, e2, transform=np.ones((2, 2)))
+
+
+def test_nested_labels():
+    e1 = nengo.Ensemble(nengo.LIF(10), 1, label='1')
+    e2 = nengo.Ensemble(nengo.LIF(10), 1, label='2')
+    c = nengo.Connection(e1, e2)
+    assert c.label == '1>2'
+
+    e1_1 = nengo.Ensemble(nengo.LIF(10), 1, label='1.1')
+    c = nengo.Connection(e1, e1_1)
+    assert c.label == '1>1.1'
+
+    e1_2 = nengo.Ensemble(nengo.LIF(10), 1, label='1.2')
+    c = nengo.Connection(e1_1, e1_2)
+    assert c.label == '1/1>2'
+
+    e2_1 = nengo.Ensemble(nengo.LIF(10), 1, label='2.1')
+    c = nengo.Connection(e1_1, e2_1)
+    assert c.label == '1.1>2.1'
+
+    e1_1_1 = nengo.Ensemble(nengo.LIF(10), 1, label='1.1.1')
+    c = nengo.Connection(e1_1, e1_1_1)
+    assert c.label == '1/1>1.1'
+
+    e1_1_2 = nengo.Ensemble(nengo.LIF(10), 1, label='1.1.2')
+    c = nengo.Connection(e1_1_1, e1_1_2)
+    assert c.label == '1.1/1>2'
+
+
+def test_different_models():
+    m1 = nengo.Model('1', set_context=False)
+    m2 = nengo.Model('2', set_context=False)
+    e1 = nengo.Ensemble(nengo.LIF(10), 1, model=m1)
+    e2 = nengo.Ensemble(nengo.LIF(10), 1, model=m2)
+    with pytest.raises(ValueError) as e:
+        nengo.Connection(e1, e2)
+    assert "Cannot connect two objects in different models." in str(e.value)
+
+
+def test_deleted_model():
+    m1 = nengo.Model('1', set_context=False)
+    e1 = nengo.Ensemble(nengo.LIF(10), 1, model=m1)
+    e2 = nengo.Ensemble(nengo.LIF(10), 1, model=m1)
+    del m1
+    gc.collect()
+    with pytest.raises(ValueError) as e:
+        nengo.Connection(e1, e2)
+    assert "model that has been deleted" in str(e.value)
 
 
 if __name__ == "__main__":

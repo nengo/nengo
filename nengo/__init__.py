@@ -14,12 +14,15 @@ __license__ = "http://www.gnu.org/licenses/gpl.html"
 from .version import version as __version__
 
 import collections
+import copy
 import logging
 import sys
+import threading
+import weakref
 
 from .model import Model
 from .nonlinearities import PythonFunction, LIF, LIFRate, Direct
-from .objects import Ensemble, Node, Connection, Probe, Network
+from .objects import Ensemble, Node, Connection, Probe
 from . import networks
 from .simulator import Simulator
 
@@ -61,17 +64,23 @@ def log(debug=False, path=None):
     logging.root.addHandler(handler)
 
 
-class ContextStack(collections.deque):
-    def add_to_current(self, obj):
-        try:
-            curr = self.__getitem__(-1)
-        except IndexError:
-            raise IndexError("Context has not been set")
+def monkeypatch_deepcopy():
+    """Monkey-patch for deepcopying weakrefs.
 
-        if not hasattr(curr, "add"):
-            raise AttributeError("Current context has no add function")
+    Python 2.6 and below had an issue in which you couldn't deepcopy weakrefs.
+    This monkeypatch fixes the issue for Python 2.6.
+    Note that this only patches weakref.ref, since that's all we use.
+    This patch, and the rest of the weakref patches if necessary,
+    were taken from coopr.pyomo:
+      https://projects.coin-or.org/Coopr/browser/coopr.pyomo/
+        trunk/coopr/pyomo/base/PyomoModel.py
+    """
+    assert sys.version_info[0] == 2 and sys.version_info[1] <= 6
+    copy._copy_dispatch[weakref.ref] = copy._copy_immutable
+    copy._deepcopy_dispatch[weakref.ref] = copy._deepcopy_atomic
 
-        curr.add(obj)
+if sys.version_info[0] == 2 and sys.version_info[1] <= 6:
+    monkeypatch_deepcopy()
 
-
-context = ContextStack(maxlen=100)
+context = threading.local()
+context.model = Model('default')
