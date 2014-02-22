@@ -12,6 +12,7 @@ import logging
 import numpy as np
 
 from nengo.builder import Builder
+from nengo.utils.compat import StringIO
 from nengo.utils.graphs import toposort
 from nengo.utils.simulator import operator_depencency_graph
 
@@ -19,13 +20,11 @@ logger = logging.getLogger(__name__)
 
 
 class SignalDict(dict):
-    """
-    Map from Signal -> ndarray
+    """Map from Signal -> ndarray
 
     SignalDict overrides __getitem__ for two reasons:
     1. so that scalars are returned as 0-d ndarrays
     2. so that a SignalView lookup returns a views of its base
-
     """
 
     def __getitem__(self, obj):
@@ -141,10 +140,9 @@ class Simulator(object):
                 return self._sigdict.__len__()
 
             def __str__(_):
-                import io
-                sio = io.StringIO()
+                sio = StringIO()
                 for k in self._sigdict:
-                    print_function(k, self._sigdict[k], file=sio)
+                    sio.write("%s %s\n" % (repr(k), repr(self._sigdict[k])))
                 return sio.getvalue()
 
         return Accessor()
