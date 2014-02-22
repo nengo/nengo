@@ -4,17 +4,16 @@ Simulator.py
 Reference simulator for nengo models.
 """
 
-from __future__ import print_function
-
 from collections import defaultdict
 import itertools
+import io
 import logging
 
 import networkx as nx
 import numpy as np
 
 import nengo
-from .builder import Builder
+from nengo.builder import Builder
 
 logger = logging.getLogger(__name__)
 
@@ -198,10 +197,9 @@ class Simulator(object):
                 return self._sigdict.__len__()
 
             def __str__(_):
-                import io
                 sio = io.StringIO()
                 for k in self._sigdict:
-                    print_function(k, self._sigdict[k], file=sio)
+                    sio.write(repr(k) + u' ' + repr(self._sigdict[k]) + u'\n')
                 return sio.getvalue()
 
         return Accessor()
