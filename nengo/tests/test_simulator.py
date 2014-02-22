@@ -7,6 +7,7 @@ import nengo
 import nengo.simulator
 from nengo.builder import (Model, ProdUpdate, Copy, Reset, DotInc, Signal,
                            SimPyFunc)
+from nengo.utils.compat import is_string
 
 logger = logging.getLogger(__name__)
 
@@ -227,6 +228,18 @@ def test_probedict():
     probedict = nengo.simulator.ProbeDict(raw)
     assert np.all(probedict["scalar"] == np.asarray(raw["scalar"]))
     assert np.all(probedict.get("list") == np.asarray(raw.get("list")))
+
+
+def test_str(Simulator):
+    """Make sure __str__ runs."""
+    m = nengo.Network(label="test_str")
+    with m:
+        input = nengo.Node(output=0.5, label='input')
+        A = nengo.Ensemble(nengo.LIF(5), 1)
+        nengo.Connection(input, A)
+        nengo.Probe(A, 'decoded_output', filter=0.1)
+    sim = Simulator(m)
+    assert is_string(str(sim.signals))
 
 
 if __name__ == "__main__":
