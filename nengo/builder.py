@@ -6,6 +6,7 @@ import numpy as np
 
 import nengo
 import nengo.decoders
+import nengo.objects
 import nengo.nonlinearities
 
 logger = logging.getLogger(__name__)
@@ -657,19 +658,58 @@ class SimLIFRate(Operator):
         return step
 
 
-def builds(cls):
-    """A decorator that adds a _builds attribute to a function,
-    denoting that that function is used to build
-    a certain high-level Nengo object.
-
-    This is used by the Builder class to associate its own methods
-    with the objects that those methods build.
-
-    """
+def register(callback):
+    """A decorator that registers the wrapped function with callback(func)."""
+    # TODO: Move to a generic utilities file.
     def wrapper(func):
-        func._builds = cls
+        callback(func)
         return func
     return wrapper
+
+
+def random_maxint(rng):
+    # TODO: Move to a generic utilities file.
+    return rng.randint(np.iinfo(np.int32).max)
+
+
+class BuiltModel(object):
+
+    def __init__(self, dt, label, seed=None):
+        self.probes = []
+        self.operators = []
+        self.probemap = {}
+
+        self.dt = dt
+        self.label = label
+        self.seed = random_maxint(np.random) if seed is None else seed
+
+        self._rng = np.random.RandomState(self.seed)
+
+    def __str__(self):
+        return "Model: %s" % self.label
+
+    def _get_new_seed(self):
+        return random_maxint(self._rng)
+
+
+class BuildSpace(object):
+    """Artifacts of the build process. Lives only throughout the build scope."""
+
+    def __init__(self):
+        self._has_built = set()
+        self._eval_points = dict()
+
+    def has_built(self, obj):
+        return obj.uid in self._has_built
+
+    def mark_built(self, obj):
+        self._has_built.add(obj.uid)
+
+    def set_eval_points(self, ens, eval_points):
+        self._eval_points[ens.uid] = eval_points
+
+    def get_eval_points(self, ens):
+        return self._eval_points[ens.uid]
 
 
 class Builder(object):
@@ -682,75 +722,51 @@ class Builder(object):
       1. Ensembles and Nodes
       2. Probes
       3. Connections
-
     """
 
-    def __init__(self):
-        # Build up a dictionary mapping from high-level object
-        # to builder method, so that we don't have to use a lame
-        # if/elif chain to call the right method.
-        self.builders = {}
-        for methodname in dir(self):
-            method = getattr(self, methodname)
-            if hasattr(method, '_builds'):
-                self.builders[method._builds] = method
-        self._data = {}
-        self.probes = []
-        self.operators = []
-        self.sig_in = {}
-        self.sig_out = {}
+    _builders = {}  # Nengo object -> builder method; set by @builds(...)
+
+    # A decorator that registers the given Nengo object class with the function
+    builds = lambda cls: register(lambda f: _builders[cls] = f)
 
     def __call__(self, model, dt):
-        self.model = model  # This model does not get changed!!
+        out = BuiltModel(dt, "%s, dt=%f" % (model.label, dt), model.seed)
+        self.build(model, out, BuildSpace())
+        return out
 
-        self.dt = dt
-        self.label = self.model.label + ", dt=%f" % dt
-        self._rng = None
-        self.seed = (np.random.randint(np.iinfo(np.int32).max)
-                     if self.model.seed is None else self.model.seed)
-        # XXX temporary, until better probes
-        self._data = {'gain': {},
-                      'bias': {},
-                      'encoders': {}}
-        self.probes = []
-        self.operators = []
-        self.sig_in = {}
-        self.sig_out = {}
+    @classmethod
+    def build(cls, obj, out, build_space):
+        if not build_space.has_built(out):
+            cls._builders[obj.__class__](obj, out, build_space)
 
-        # 1. Build objects
-        logger.info("Building objects")
-        for obj in self.model.objs:
-            self.builders[obj.__class__](obj)
+    @classmethod
+    @builds(nengo.Model)
+    def build_model(cls, model, out, build_space):
+        # 1. Build ensembles and nodes
+        logger.info("Building neurons, ensembles and nodes")
+        for obj in model.neurons + model.ensembles + models.nodes:
+            cls.build(obj, out, build_space)
 
         # 2. Then probes
         logger.info("Building probes")
-        for target in model.probed:
-            probe = self.model.probed[target]
-            self.builders[nengo.Probe](probe)
-            self.sig_in[probe] = probe.sig
+        for probe in model.probes:
+            cls.build(probe, out, build_space)
 
-        # 3. Then connections
+        # 3. Then networks
+        logger.info("Building networks")
+        for network in model.models:
+            cls.build(network, out, build_space)
+
+        # 4. Then connections
         logger.info("Building connections")
-        for c in self.model.connections:
-            self.builders[c.__class__](c)
+        for conn in model.connections:
+            cls.build(conn, out, build_space)
 
-        return {"dt": self.dt,
-                "_data": self._data,
-                "label": self.label,
-                "seed": self.seed,
-                "probes": self.probes,
-                "operators": self.operators}
-
-    def _get_new_seed(self):
-        if self._rng is None:
-            # never create rng without knowing the seed
-            assert self.seed is not None
-            self._rng = np.random.RandomState(self.seed)
-        return self._rng.randint(np.iinfo(np.int32).max)
-
-    @builds(nengo.Ensemble)  # noqa
-    def build_ensemble(self, ens):
+    @classmethod
+    @builds(nengo.Ensemble)
+    def build_ensemble(cls, ens, out, build_space):
         # Create random number generator
+<<<<<<< HEAD
         seed = ens.seed
         if seed is None:
             seed = self._get_new_seed()
@@ -789,6 +805,30 @@ class Builder(object):
             self._data['gain'][ens.neurons], self._data['bias'][ens.neurons] = (
                 ens.neurons.gain_bias(max_rates, intercepts))
         self.builders[ens.neurons.__class__](ens.neurons)
+=======
+        seed = out._get_new_seed() if ens.seed is None else ens.seed
+        rng = np.random.RandomState(seed)
+
+        # Generate eval points
+        if ens.eval_points is None:
+            eval_points = nengo.decoders.sample_hypersphere(
+                ens.dimensions, ens.EVAL_POINTS, rng) * ens.radius
+        else:
+            eval_points = np.array(ens.eval_points, dtype=np.float64)
+            if ens.eval_points.ndim == 1:
+                ens.eval_points.shape = (-1, 1)
+
+        # Remember eval_points for when connections are built
+        build_space.set_eval_points(ens, eval_points)
+
+        # Set up signal
+        input_signal = Signal(np.zeros(ens.dimensions),
+                              name="%s.signal" % ens.label)
+        out.model.operators.append(Reset(input_signal))
+
+        # Set up neurons.
+        cls.build(ens.neurons, out, build_space)
+>>>>>>> Builder/objects decoupling before rebasing builder_nochange
 
         # Set up encoders
         encoders = ens.encoders
@@ -1002,6 +1042,17 @@ class Builder(object):
                       n_args=pyfn.n_args))
 
     def build_neurons(self, neurons):
+        if ens.neurons.gain is None or ens.neurons.bias is None:
+            # if max_rates and intercepts are distributions,
+            # turn them into fixed samples.
+            if isinstance(ens.max_rates, nengo.objects.Sampler):
+                ens.max_rates = ens.max_rates.sample(
+                    ens.neurons.n_neurons, rng=rng)
+            if isinstance(ens.intercepts, nengo.objects.Sampler):
+                ens.intercepts = ens.intercepts.sample(
+                    ens.neurons.n_neurons, rng=rng)
+            ens.neurons.set_gain_bias(ens.max_rates, ens.intercepts)
+
         self.sig_in[neurons] = Signal(np.zeros(neurons.n_in),
                                       name=neurons.label + '.input')
         self.sig_out[neurons] = Signal(np.zeros(neurons.n_out),

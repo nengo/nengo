@@ -102,17 +102,16 @@ class Simulator(object):
             builder = Builder()
 
         # Call the builder to build the model
-        self.model = model
-        self.__dict__.update(builder(model, dt))
+        self.model = builder(model, dt)
 
+        # Use model seed as simulator seed if the seed is not provided
         # Note: seed is not used right now, but one day...
-        if seed is not None:
-            self.seed = seed  # Use simulator seed instead of model seed
+        self.seed = self.model.seed if seed is None else seed
 
         # -- map from Signal.base -> ndarray
         self._sigdict = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
         for op in self.operators:
-            op.init_sigdict(self._sigdict, self.dt)
+            op.init_sigdict(self._sigdict, dt)
 
         self.dg = self._init_dg()
         self._step_order = [node

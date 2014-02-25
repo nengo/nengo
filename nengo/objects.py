@@ -1,6 +1,7 @@
 import collections
 import copy
 import logging
+import json
 import numpy as np
 
 import nengo
@@ -17,35 +18,115 @@ def _in_stack(function):
     return function.__code__ in codes
 
 
-class Uniform(object):
+class NengoObject(object):
+
+    def __init__(self, uid=None, is_root=False):
+        self.uid = id(self) if uid is None else uid
+        if not is_root:
+            nengo.context.add_to_current(self)
+
+    @classmethod
+    def from_json(cls, s):
+        return cls.from_dict(json.loads(s))
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(**d)
+
+    @classmethod
+    def from_listof_dict(cls, lst):
+        return map(cls.from_dict, lst)
+
+    def to_dict(self):
+        d = {}
+        for key in sorted(self.__dict__):
+            if not key.startswith('_'):
+                value = self.__dict__[key]
+                if isinstance(value, NengoObject):
+                    value = value.to_dict()
+                d[key] = value
+        return d
+
+    def add_to_model(self, model):
+        raise NotImplemented("Nengo objects must implement add_to_model.")
+
+
+class Sampler(NengoObject):
+
+    def __eq__(self, other):
+        if not isinstance(other, Sampler):
+            raise ValueError('Cannot compare type %s with %s' % (
+                self.__class__.__name__, other.__class__.__name__))
+        return self.__dict__ == other.__dict__
+
+    def sample(self, *args, **kwargs):
+        raise NotImplemented('sample function not implemented')
+
+
+class Uniform(Sampler):
 
     def __init__(self, low, high):
         self.low = low
         self.high = high
-
-    def __eq__(self, other):
-        return self.low == other.low and self.high == other.high
 
     def sample(self, n, rng=None):
         rng = np.random if rng is None else rng
         return rng.uniform(low=self.low, high=self.high, size=n)
 
 
-class Gaussian(object):
+class Gaussian(Sampler):
 
     def __init__(self, mean, std):
         self.mean = mean
         self.std = std
-
-    def __eq__(self, other):
-        return self.mean == other.mean and self.std == other.std
 
     def sample(self, n, rng=None):
         rng = np.random if rng is None else rng
         return rng.normal(loc=self.mean, scale=self.std, size=n)
 
 
-class Ensemble(object):
+class Neurons(object):
+
+    def __init__(self, n_neurons, bias=None, gain=None, label=None):
+        self.n_neurons = n_neurons
+        self.bias = bias
+        self.gain = gain
+        if label is None:
+            label = "<%s%d>" % (self.__class__.__name__, id(self))
+        self.label = label
+
+        self.probes = {'output': []}
+
+    def __str__(self):
+        r = self.__class__.__name__ + "("
+        r += self.label if hasattr(self, 'label') else "id " + str(id(self))
+        r += ", %dN)" if hasattr(self, 'n_neurons') else ")"
+        return r
+
+    def __repr__(self):
+        return str(self)
+
+    def default_encoders(self, dimensions, rng):
+        raise NotImplementedError("Neurons must provide default_encoders")
+
+    def rates(self, x):
+        raise NotImplementedError("Neurons must provide rates")
+
+    def set_gain_bias(self, max_rates, intercepts):
+        raise NotImplementedError("Neurons must provide set_gain_bias")
+
+    def probe(self, probe, **kwargs):
+        if probe.attr == 'output':
+            nengo.Connection(self, probe, filter=probe.filter, **kwargs)
+        else:
+            raise NotImplementedError(
+                "Probe target '%s' is not probable" % probe.attr)
+
+        self.probes[probe.attr].append(probe)
+        return probe
+
+
+class Ensemble(NengoObject):
     """A group of neurons that collectively represent a vector.
 
     Parameters
@@ -100,8 +181,7 @@ class Ensemble(object):
         # Set up probes
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
 
-        # add self to current context
-        nengo.context.add_to_current(self)
+        super(Ensemble, self).__init__()
 
     def __str__(self):
         return "Ensemble: " + self.label
@@ -168,10 +248,10 @@ class Ensemble(object):
         return probe
 
     def add_to_model(self, model):
-        model.objs.append(self)
+        model.ensembles.append(self)
 
 
-class Node(object):
+class Node(NengoObject):
     """Provides arbitrary data to Nengo objects.
 
     It can also accept input, and perform arbitrary computations
@@ -232,8 +312,7 @@ class Node(object):
         # Set up probes
         self.probes = {'output': []}
 
-        # add self to current context
-        nengo.context.add_to_current(self)
+        super(Node, self).__init__()
 
     def __str__(self):
         return "Node: " + self.label
@@ -249,7 +328,7 @@ class Node(object):
                     try:
                         rval.__dict__[k] = copy.deepcopy(v, memo)
                     except TypeError:
-                        # XXX some callable things aren't serializable
+                        # XXX some callable things aren't NengoObject
                         #     is it worth crashing over?
                         #     .... we're going to guess not.
                         rval.__dict__[k] = v
@@ -277,10 +356,10 @@ class Node(object):
         return probe
 
     def add_to_model(self, model):
-        model.objs.append(self)
+        model.nodes.append(self)
 
 
-class Connection(object):
+class Connection(NengoObject):
     """Connects two objects together.
 
     Attributes
@@ -341,8 +420,7 @@ class Connection(object):
         # check that shapes match up
         self._check_shapes(check_in_init=True)
 
-        # add self to current context
-        nengo.context.add_to_current(self)
+        super(Connection, self).__init__()
 
     def _check_pre_ensemble(self, prop_name):
         if not isinstance(self.pre, Ensemble):
@@ -468,7 +546,7 @@ class Connection(object):
         model.connections.append(self)
 
 
-class Probe(object):
+class Probe(NengoObject):
     """A probe is a dummy object that only has an input signal and probe.
 
     It is used as a target for a connection so that probe logic can
@@ -511,40 +589,107 @@ class Probe(object):
 
         target.probe(self, **kwargs)
 
-        # add self to current context
-        nengo.context.add_to_current(self)
+        super(Probe, self).__init__()
 
     @property
     def dt(self):
         return self.sample_every
 
     def add_to_model(self, model):
-        model.probed[id(self)] = self
+        model.probes.append(self)
 
 
-class Network(object):
+class Model(NengoObject):
+    """A model contains ensembles, nodes, connections, probes, and other models.
 
-    def __init__(self, *args, **kwargs):
-        self.label = kwargs.pop("label", "Network")
-        self.objects = []
+    # TODO: Example usage.
+
+    Parameters
+    ----------
+    label : basestring
+        Name of the model.
+    seed : int, optional
+        Random number seed that will be fed to the random number generator.
+        Setting this seed makes the creation of the model
+        a deterministic process; however, each new ensemble
+        in the network advances the random number generator,
+        so if the network creation code changes, the entire model changes.
+
+    Attributes
+    ----------
+    label : basestring
+        Name of the model
+    seed : int
+        Random seed used by the model.
+    """
+
+    def __init__(self, label="Model", seed=None, *args, **kwargs):
+        if not isinstance(label, basestring):
+            raise ValueError('Label (%s) must be str or unicode.' % label)
+
+        if not len(nengo.context):
+            # make this the default context
+            nengo.context.append(self)
+            is_root = True
+        else:
+            is_root = False
+
+        self.label = label
+        self.seed = seed
+        self.neurons = []
+        self.ensembles = []
+        self.nodes = []
+        self.connections = []
+        self.probes = []
+        self.models = []
+
         with self:
             self.make(*args, **kwargs)
 
-        # add self to current context
-        nengo.context.add_to_current(self)
+        super(Model, self).__init__(is_root=is_root)
 
-    def add(self, obj):
-        self.objects.append(obj)
+    @classmethod
+    def from_dict(cls, d):
+        obj = cls(**d)
+        obj.neurons = Ensemble.from_listof_dict(d["neurons"])
+        obj.ensembles = Ensemble.from_listof_dict(d["ensembles"])
+        obj.nodes = Node.from_listof_dict(d["nodes"])
+        obj.connections = Connection.from_listof_dict(d["connections"])
+        obj.probes = Probe.from_listof_dict(d["probes"])
+        obj.models = Model.from_listof_dict(d["models"])
         return obj
 
     def make(self, *args, **kwargs):
-        raise NotImplementedError("Networks should implement this function.")
+        return
 
     def add_to_model(self, model):
-        for obj in self.objects:
-            if not isinstance(obj, nengo.Connection):
-                obj.label = self.label + '.' + obj.label
-            model.add(obj)
+        model.models.append(self)
+
+    def add(self, obj):
+        """Adds a Nengo object to this model.
+
+        This is generally only used for manually created nodes, not ones
+        created by calling :func:`nef.Model.make_ensemble()` or
+        :func:`nef.Model.make_node()`, as these are automatically added.
+        A common usage is with user created subclasses, as in the following::
+
+          node = net.add(MyNode('name'))
+
+        Parameters
+        ----------
+        obj : Nengo object
+            The Nengo object to add.
+
+        Returns
+        -------
+        obj : Nengo object
+            The Nengo object that was added.
+        """
+        if not isinstance(obj, NengoObject):
+            raise ValueError('Object of type (%s) is not a NengoObject.' %
+                               obj.__class__.__name__)
+        obj.add_to_model(self)
+        return obj
 
     def __enter__(self):
         nengo.context.append(self)
