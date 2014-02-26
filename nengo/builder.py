@@ -102,7 +102,7 @@ class Builder(object):
         else:
             cls = obj.__class__
 
-        if not cls in _buildstate_func_dict.has_key:
+        if not cls in _buildstate_func_dict:
             raise ValueError("Cannot build object of type '%s'." %
                              obj.__class__.__name__)
 
@@ -136,7 +136,7 @@ class Builder(object):
         for conn in model.connections:
             self.build(conn)
 
-    @builds(nengo.api.Ensemble)
+    @builds(nengo.api.Ensemble)  # noqa
     def _build_ensemble(self, ens):
         # Create random number generator
         seed = self.next_seed() if ens.seed is None else ens.seed
@@ -296,7 +296,7 @@ class Builder(object):
             tag="%s input" % label))
         return pyfunc
 
-    @builds(nengo.api.Connection)
+    @builds(nengo.api.Connection)  # noqa
     def _build_connection(self, conn):
         rng = np.random.RandomState(self.next_seed())
 
