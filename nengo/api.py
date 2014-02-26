@@ -1,23 +1,21 @@
+"""The API for specifying a pre-built model in Nengo."""
+
 import collections
-import inspect
 import logging
+
 import numpy as np
 
-import nengo.decoders
+import nengo  # Note: only nengo.context is used
+import nengo.util
+from nengo.decoders import lstsq_L2
 
 logger = logging.getLogger(__name__)
 
 
-def _in_stack(function):
-    """Check whether the given function is in the call stack"""
-    # TODO: Move to a generic utilities file.
-    codes = [record[0].f_code for record in inspect.stack()]
-    return function.__code__ in codes
-
-
 class NengoObject(object):
+    """Base class for every non-builtin object in the pre-built Model."""
 
-    def __init__(self, uid=None, add_to_model=True):
+    def __init__(self, add_to_model=True):
         if add_to_model:
             nengo.context.add_to_current(self)
 
@@ -37,7 +35,8 @@ class NengoObject(object):
         return d
 
     def add_to_model(self, model):
-        raise NotImplemented("Nengo objects must implement add_to_model.")
+        raise NotImplementedError(
+            "Nengo objects must implement add_to_model.")
 
 
 class Sampler(NengoObject):
@@ -52,7 +51,7 @@ class Sampler(NengoObject):
         return self.__dict__ == other.__dict__
 
     def sample(self, *args, **kwargs):
-        raise NotImplemented("sample function not implemented.")
+        raise NotImplementedError("sample function not implemented.")
 
 
 class Uniform(Sampler):
@@ -86,8 +85,7 @@ class Neurons(NengoObject):
         self.label = label
         self.probes = {"output": []}
 
-        # Neurons must be associated with an Ensemble in order to be built
-        # into the model.
+        # Neurons are added to Ensembles in order to be built into the model.
         super(Neurons, self).__init__(add_to_model=False)
 
     def __str__(self):
@@ -97,12 +95,12 @@ class Neurons(NengoObject):
     def __repr__(self):
         return str(self)
 
-    def rates(self, x):
+    def rates(self, x, gain, bias):
         raise NotImplementedError("Neurons must provide rates.")
 
     def probe(self, probe, **kwargs):
         if probe.attr == "output":
-            nengo.Connection(self, probe, filter=probe.filter, **kwargs)
+            Connection(self, probe, filter=probe.filter, **kwargs)
         else:
             raise NotImplementedError(
                 "Probe target '%s' is not probable." % probe.attr)
@@ -118,15 +116,17 @@ class Direct(Neurons):
         # with other neuron types
         super(Direct, self).__init__(0, label=label)
 
-    def rates(self, x, gain, bias):
+    def rates(self, x, dummy_gain, dummy_bias):
         return x
 
-    def gain_bias(self, max_rates, intercepts):
+    def gain_bias(self, dummy_max_rates, dummy_intercepts):
         return None, None
 
 # TODO: class BasisFunctions or Population or Express;
 #       uses non-neural basis functions to emulate neuron saturation,
 #       but still simulate very fast
+
+# TODO: Move all math implementation out of the API.
 
 
 class _LIFBase(Neurons):
@@ -423,8 +423,7 @@ class Connection(NengoObject):
         self.modulatory = modulatory
 
         if isinstance(self.pre, Ensemble):
-            self.decoder_solver = kwargs.pop(
-                "decoder_solver", nengo.decoders.lstsq_L2)
+            self.decoder_solver = kwargs.pop("decoder_solver", lstsq_L2)
             self.eval_points = kwargs.pop("eval_points", None)
             self.function = kwargs.pop("function", None)
         elif not isinstance(self.pre, (Neurons, Node)):
@@ -453,7 +452,7 @@ class Connection(NengoObject):
                              (prop_name))
 
     def _check_shapes(self, check_in_init=False):
-        if not check_in_init and _in_stack(self.__init__):
+        if not check_in_init and nengo.util.in_stack(self.__init__):
             return  # skip automatic checks if we're in the init function
 
         in_dims, in_src = self._get_input_dimensions()
@@ -586,6 +585,9 @@ class Probe(NengoObject):
         self.filter = filter
 
         target.probe(self, **kwargs)
+
+        # Probes add themselves to an object through target.probe in
+        # order to be built into the model.
         super(Probe, self).__init__(add_to_model=False)
 
 
@@ -687,7 +689,7 @@ class Model(NengoObject):
     def __enter__(self):
         nengo.context.append(self)
 
-    def __exit__(self, exception_type, exception_value, traceback):
+    def __exit__(self, dummy_exc_type, dummy_exc_value, dummy_tb):
         try:
             model = nengo.context.pop()
         except IndexError:
