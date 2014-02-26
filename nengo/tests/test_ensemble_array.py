@@ -107,8 +107,8 @@ def test_matrix_mul(Simulator, nl):
     inputB = nengo.Node(output=Bmat.ravel())
     nengo.Connection(inputA, A.input)
     nengo.Connection(inputB, B.input)
-    A_p = nengo.Probe(A.output, 'output', sample_every=0.01, filter=0.01)
-    B_p = nengo.Probe(B.output, 'output', sample_every=0.01, filter=0.01)
+    A_p = nengo.Probe(A.output, 'output', dt=0.01, filter=0.01)
+    B_p = nengo.Probe(B.output, 'output', dt=0.01, filter=0.01)
 
     C = nengo.networks.EnsembleArray(nl(N),
                                      Amat.size * Bmat.shape[1],
@@ -138,7 +138,7 @@ def test_matrix_mul(Simulator, nl):
     prod = C.add_output("product", lambda x: x[0] * x[1])
 
     nengo.Connection(prod, D.input, transform=transformC)
-    D_p = nengo.Probe(D.output, 'output', sample_every=0.01, filter=0.01)
+    D_p = nengo.Probe(D.output, 'output', dt=0.01, filter=0.01)
 
     sim = Simulator(model)
     sim.run(1)

@@ -106,7 +106,7 @@ def test_simple_pyfunc(RefSimulator):
     m.operators = []
     b = Builder()
     b.model = m
-    b.build_pyfunc(pop)
+    b.build(pop)
     m.operators += [
         ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
         DotInc(Signal([[1.0]]), time, b.sig_in[pop]),
@@ -138,7 +138,7 @@ def test_encoder_decoder_pathway(RefSimulator):
     m.operators = []
     b = Builder()
     b.model = m
-    b.build_pyfunc(pop)
+    b.build(pop)
     m.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo, b.sig_in[pop]),
         ProdUpdate(decs, b.sig_out[pop], Signal(0.2), foo)
@@ -192,7 +192,7 @@ def test_encoder_decoder_with_views(RefSimulator):
     m.operators = []
     b = Builder()
     b.model = m
-    b.build_pyfunc(pop)
+    b.build(pop)
     m.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo[:], b.sig_in[pop]),
         ProdUpdate(Signal(decoders * 0.5), b.sig_out[pop], Signal(0.2), foo[:])

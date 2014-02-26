@@ -22,22 +22,22 @@ def test_default(Simulator):
 
     e = nengo.Ensemble(nengo.LIF(1), 1)
     n = nengo.Node([0])
-    assert e in model.objs
-    assert n in model.objs
+    assert e in model.ensembles
+    assert n in model.nodes
 
     con = MyContext()
     with con:
         e2 = nengo.Ensemble(nengo.LIF(1), 1)
     assert e2 in con.objs
-    assert not e2 in model.objs
+    assert not e2 in model.connections
 
     e3 = nengo.Ensemble(nengo.LIF(1), 1)
-    assert e3 in model.objs
+    assert e3 in model.ensembles
 
     model2 = nengo.Model("test")
     e4 = nengo.Ensemble(nengo.LIF(1), 1)
-    assert not e4 in model.objs
-    assert e4 in model2.objs
+    assert not e4 in model.ensembles
+    assert e4 in model2.ensembles
 
 
 def test_with(Simulator):

@@ -9,17 +9,17 @@ https://www.github.com/ctn-waterloo/nengo. Examples of models can be found
 in the `examples` directory of the source code repository.
 """
 
-__copyright__ = "2013, Nengo contributors"
+__title__ = "nengo"
+__author__ = "CNRGlab UWaterloo"
 __license__ = "http://www.gnu.org/licenses/gpl.html"
+__copyright__ = "Copyrigt 2013, Nengo Contributors"
 from .version import version as __version__
 
 import collections
 import logging
 import sys
 
-from .model import Model
-from .nonlinearities import PythonFunction, LIF, LIFRate, Direct
-from .objects import Ensemble, Node, Connection, Probe, Network
+from .api import LIF, LIFRate, Direct, Ensemble, Node, Connection, Probe, Model
 from . import networks
 from .simulator import Simulator
 

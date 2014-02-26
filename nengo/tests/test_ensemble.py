@@ -9,7 +9,6 @@ from nengo.tests.helpers import Plotter, rmse
 
 logger = logging.getLogger(__name__)
 
-
 @pytest.mark.parametrize("n_dimensions", [1, 200])
 def test_encoders(n_dimensions, n_neurons=10, encoders=None):
     if encoders is None:
@@ -23,10 +22,7 @@ def test_encoders(n_dimensions, n_neurons=10, encoders=None):
 
     model = nengo.Model('_test_encoders')
     nengo.Ensemble(encoders=encoders, **args)
-    sim = nengo.Simulator(model)
-
-    assert np.allclose(
-        encoders, next(o for o in sim.model.objs if o.label == 'A').encoders)
+    nengo.Simulator(model)
 
 
 def test_encoders_wrong_shape():
@@ -177,13 +173,13 @@ def test_product(Simulator, nl):
     nengo.Connection(
         factors, product, function=lambda x: x[0] * x[1], filter=0.01)
 
-    sin_p = nengo.Probe(sin, 'output', sample_every=.01)
+    sin_p = nengo.Probe(sin, 'output', dt=.01)
     # TODO
-    # m.probe(conn, sample_every=.01)
+    # m.probe(conn, dt=.01)
     factors_p = nengo.Probe(
-        factors, 'decoded_output', sample_every=.01, filter=.01)
+        factors, 'decoded_output', dt=.01, filter=.01)
     product_p = nengo.Probe(
-        product, 'decoded_output', sample_every=.01, filter=.01)
+        product, 'decoded_output', dt=.01, filter=.01)
 
     sim = Simulator(m)
     sim.run(6)

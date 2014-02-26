@@ -5,7 +5,7 @@ import numpy as np
 import nengo
 
 
-class EnsembleArray(nengo.Network):
+class EnsembleArray(nengo.Model):
     def make(self, neurons, n_ensembles, **ens_args):
         self.n_ensembles = n_ensembles
         self.dimensions_per_ensemble = ens_args.pop('dimensions', 1)

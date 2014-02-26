@@ -1,7 +1,7 @@
 import nengo
 
 
-class Integrator(nengo.Network):
+class Integrator(nengo.Model):
     def make(self, recurrent_tau, **ens_args):
         dimensions = ens_args.get('dimensions', 1)
         self.input = nengo.Node(size_in=dimensions)

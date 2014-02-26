@@ -8,12 +8,12 @@ from __future__ import print_function
 
 from collections import defaultdict, Mapping
 import itertools
+import io
 import logging
 
 import networkx as nx
 import numpy as np
 
-import nengo
 from .builder import Builder
 
 logger = logging.getLogger(__name__)
@@ -103,6 +103,7 @@ class Simulator(object):
 
         # Call the builder to build the model
         self.model = builder(model, dt)
+        self.dt = dt
 
         # Use model seed as simulator seed if the seed is not provided
         # Note: seed is not used right now, but one day...
@@ -110,8 +111,8 @@ class Simulator(object):
 
         # -- map from Signal.base -> ndarray
         self._sigdict = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
-        for op in self.operators:
-            op.init_sigdict(self._sigdict, dt)
+        for op in self.model.operators:
+            op.init_sigdict(self._sigdict, self.dt)
 
         self.dg = self._init_dg()
         self._step_order = [node
@@ -121,11 +122,12 @@ class Simulator(object):
                        for node in self._step_order]
 
         self.n_steps = 0
-        self._data.update(dict((probe, []) for probe in self.probes))
-        self.data = ProbeDict(self._data)
+        self._probe_outputs = dict((probe, []) for probe in self.model.probes)
+        print(self._probe_outputs)
+        self.data = ProbeDict(self._probe_outputs)
 
     def _init_dg(self, verbose=False):  # noqa
-        operators = self.operators
+        operators = self.model.operators
         dg = nx.DiGraph()
 
         for op in operators:
@@ -238,7 +240,6 @@ class Simulator(object):
                 return self._sigdict.__len__()
 
             def __str__(_):
-                import io
                 sio = io.StringIO()
                 for k in self._sigdict:
                     print_function(k, self._sigdict[k], file=sio)
@@ -247,17 +248,16 @@ class Simulator(object):
         return Accessor()
 
     def step(self):
-        """Advance the simulator by `self.dt` seconds.
-        """
+        """Advance the simulator by `self.dt` seconds."""
         for step_fn in self._steps:
             step_fn()
 
         # -- probes signals -> probe buffers
-        for probe in self.probes:
-            period = int(probe.dt / self.dt)
+        for probe in self.model.probes:
+            period = 1 if probe.dt is None else int(probe.dt / self.dt)
             if self.n_steps % period == 0:
-                tmp = self._sigdict[probe.sig].copy()
-                self._data[probe].append(tmp)
+                tmp = self._sigdict[self.model.sig_in[probe]].copy()
+                self._probe_outputs[probe].append(tmp)
 
         self._sigdict['__time__'] += self.dt
         self.n_steps += 1
@@ -266,7 +266,7 @@ class Simulator(object):
         """Simulate for the given length of time."""
         steps = int(np.round(float(time_in_seconds) / self.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
-                     self.label, time_in_seconds, steps)
+                     self.model.label, time_in_seconds, steps)
         self.run_steps(steps)
 
     def run_steps(self, steps):
