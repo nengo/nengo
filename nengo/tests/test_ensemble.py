@@ -9,6 +9,7 @@ from nengo.tests.helpers import Plotter, rmse
 
 logger = logging.getLogger(__name__)
 
+
 @pytest.mark.parametrize("n_dimensions", [1, 200])
 def test_encoders(n_dimensions, n_neurons=10, encoders=None):
     if encoders is None:

@@ -104,7 +104,7 @@ class Simulator(object):
 
         # Add a public method which allows users to get BuildNeuronsState
         # TODO: Do not expose the build state outside of the builder. Currently
-        #     this is only used by helpers.tuning_curves and many_neurons.ipynb.
+        #     this is only used by helpers.tuning_curves and many_neurons.ipynb
         self.neurons = build_state.get_neurons_state
 
         # Use model seed as simulator seed if the seed is not provided

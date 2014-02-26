@@ -30,13 +30,6 @@ def mock_builder(b):
     return builder
 
 
-def test_time(Simulator):
-    m = nengo.Model('test_time', seed=123)
-    sim = Simulator(m)
-    sim.run(0.003)
-    assert np.allclose(sim.trange(), [0.00, .001, .002])
-
-
 def test_pyfunc(RefSimulator):
     """Test Python Function nonlinearity"""
     dt = 0.001
@@ -112,14 +105,21 @@ def test_steps(RefSimulator):
     assert sim.n_steps == 2
 
 
-def test_time(RefSimulator):
-    m = nengo.Model("test_time")
+def test_time_steps(RefSimulator):
+    m = nengo.Model("test_time_steps")
     sim = RefSimulator(m)
     assert np.allclose(sim.signals["__time__"], 0.00)
     sim.step()
     assert np.allclose(sim.signals["__time__"], 0.001)
     sim.step()
     assert np.allclose(sim.signals["__time__"], 0.002)
+
+
+def test_time_absolute(Simulator):
+    m = nengo.Model("test_time_absolute", seed=123)
+    sim = Simulator(m)
+    sim.run(0.003)
+    assert np.allclose(sim.trange(), [0.00, .001, .002])
 
 
 def test_signal_indexing_1(RefSimulator):

@@ -4,6 +4,7 @@ import collections
 import logging
 
 import numpy as np
+import six
 
 import nengo  # Note: only nengo.context is used
 import nengo.util
@@ -354,10 +355,10 @@ class Node(NengoObject):
                         "The function '%s' provided to '%s' takes %d "
                         "argument(s), where a function for this type "
                         "of node is expected to take %d argument(s)." % (
-                        output.__name__,
-                        self,
-                        output.__code__.co_argcount,
-                        len(args)))
+                            output.__name__,
+                            self,
+                            output.__code__.co_argcount,
+                            len(args)))
                 size_out = np.asarray(result).size
             elif isinstance(output, np.ndarray):
                 size_out = output.size
@@ -428,7 +429,7 @@ class Connection(NengoObject):
             self.function = kwargs.pop("function", None)
         elif not isinstance(self.pre, (Neurons, Node)):
             raise ValueError("Objects of type '%s' cannot serve as 'pre'." %
-                               self.pre.__class__.__name__)
+                             self.pre.__class__.__name__)
         else:
             self.decoder_solver = None
             self.eval_points = None
@@ -437,7 +438,7 @@ class Connection(NengoObject):
         # Check that we've used all user-provided arguments
         if len(kwargs) > 0:
             raise TypeError("__init__() got an unexpected keyword argument "
-                              "'%s'." % next(iter(kwargs)))
+                            "'%s'." % next(iter(kwargs)))
 
         # Check that shapes match up
         self._check_shapes(check_in_init=True)
@@ -578,7 +579,7 @@ class Probe(NengoObject):
                         break
                 else:
                     raise TypeError("Type %s has no default probe." %
-                                      target.__class__.__name__)
+                                    target.__class__.__name__)
         self.attr = attr
         self.label = "Probe(%s.%s)" % (target.label, attr)
         self.dt = dt
@@ -592,13 +593,13 @@ class Probe(NengoObject):
 
 
 class Model(NengoObject):
-    """A model contains ensembles, nodes, connections, probes, and other models.
+    """A model contains ensembles, nodes, connections, and other models.
 
     # TODO: Example usage.
 
     Parameters
     ----------
-    label : basestring, optional
+    label : str, optional
         Name of the model. Defaults to Model.
     seed : int, optional
         Random number seed that will be fed to the random number generator.
@@ -607,13 +608,13 @@ class Model(NengoObject):
         in the network advances the random number generator,
         so if the network creation code changes, the entire model changes.
     use_as_default_context : bool, optional
-        Set to True if you want all subsequent Nengo objects to be automatically
-        added to this Model, when not inside a 'with' block. Cannot be True if
-        already inside a 'with' block. Defaults to True.
+        Set to True if you want all subsequent Nengo objects to be
+        automatically added to this Model, when not inside a 'with' block.
+        Cannot be True if already inside a 'with' block. Defaults to True.
 
     Attributes
     ----------
-    label : basestring
+    label : str
         Name of the model
     seed : int
         Random seed used by the model.
@@ -621,7 +622,7 @@ class Model(NengoObject):
 
     def __init__(self, label="Model", seed=None, use_as_default_context=True,
                  *args, **kwargs):
-        if not isinstance(label, basestring):
+        if not isinstance(label, six.string_types):
             raise ValueError("Label '%s' must be str or unicode." % label)
 
         if not len(nengo.context):
@@ -631,10 +632,10 @@ class Model(NengoObject):
         elif use_as_default_context:
             # Make this the default context.
             if len(nengo.context) > 1:
-                # Detects if inside a "with" block. Note that the above enforces
-                # that the context is never empty.
+                # Detects if inside a "with" block. Note that the above
+                # enforces that the context is never empty.
                 raise RuntimeError("Cannot initialize a top-level model "
-                                     "while inside a 'with' block.")
+                                   "while inside a 'with' block.")
             nengo.context.clear()
             nengo.context.append(self)
 
@@ -654,7 +655,7 @@ class Model(NengoObject):
         """Called at object initialization time with remaining arguments.
 
         This is intended to be overriden by subclasses of Models, as a
-        convenience to obtain working space for model population via the API."""
+        convenience to obtain working space for model population via the API"""
         return
 
     def add_to_model(self, model):
@@ -682,7 +683,7 @@ class Model(NengoObject):
         """
         if not isinstance(obj, NengoObject):
             raise ValueError("Object of type '%s' is not a NengoObject." %
-                               obj.__class__.__name__)
+                             obj.__class__.__name__)
         obj.add_to_model(self)
         return obj
 
@@ -694,11 +695,11 @@ class Model(NengoObject):
             model = nengo.context.pop()
         except IndexError:
             raise RuntimeError("Model context in bad state; was empty when "
-                                 "exiting from a 'with' block.")
+                               "exiting from a 'with' block.")
         if not model is self:
             raise RuntimeError("Model context in bad state; was expecting "
-                                 "current context to be '%s' but instead got "
-                                 "'%s'." % (self, model))
+                               "current context to be '%s' but instead got "
+                               "'%s'." % (self, model))
 
 
 class Network(Model):

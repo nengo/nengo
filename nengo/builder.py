@@ -102,9 +102,9 @@ class Builder(object):
         else:
             cls = obj.__class__
 
-        if not _buildstate_func_dict.has_key(cls):
+        if not cls in _buildstate_func_dict.has_key:
             raise ValueError("Cannot build object of type '%s'." %
-                obj.__class__.__name__)
+                             obj.__class__.__name__)
 
         if not self.has_built(obj):
             _buildstate_func_dict[cls](self, obj, *args, **kwargs)
@@ -116,7 +116,8 @@ class Builder(object):
             # case the same neuron would need two different tuning curves.
             # TODO: Prevent this at pre-build validation time.
             logger.warning("Object (%s) with id=%d has been referenced twice "
-                           "within the model.", obj.__class__.__name__, id(obj))
+                           "within the model.",
+                           obj.__class__.__name__, id(obj))
 
     @builds(nengo.api.Model)
     def _build_model(self, model):
@@ -182,7 +183,7 @@ class Builder(object):
             norm = np.sum(encoders * encoders, axis=1)[:, np.newaxis]
             encoders /= np.sqrt(norm)
 
-        # Store the values that we need to recall for Connection/Neuron building
+        # Store the values that we need to recall to build Connection/Neuron
         self.set_neurons_state(
             ens.neurons, NeuronsBuildState(eval_points, gain, bias, encoders))
 
@@ -353,7 +354,8 @@ class Builder(object):
                 o_coef, n_coef = self._filter_coefs(
                     pstc=conn.filter, dt=self.output.dt)
                 decoder_signal = Signal(
-                    decoders * n_coef, name="%s.decoders * n_coef" % conn.label)
+                    decoders * n_coef,
+                    name="%s.decoders * n_coef" % conn.label)
             else:
                 o_coef = 0
                 decoder_signal = Signal(
@@ -380,8 +382,8 @@ class Builder(object):
                 # which is most likely because the Neurons weren't associated
                 # with an Ensemble.
                 raise RuntimeError("Connection '%s' refers to Neurons '%s' "
-                                     "that are not a part of any Ensemble." % (
-                                     conn, conn.post))
+                                   "that are not a part of any Ensemble." % (
+                                       conn, conn.post))
             transform *= self.get_neurons_state(conn.post).gain[:, np.newaxis]
 
         self.output.operators.append(
@@ -423,7 +425,9 @@ class Builder(object):
                 "Number of neurons (%d) must be positive." % lif.n_neurons)
         self._build_neurons(lif, bias)
         self.output.operators.append(SimLIFRate(
-            output=self.output.sig_out[lif], J=self.output.sig_in[lif], nl=lif))
+            output=self.output.sig_out[lif],
+            J=self.output.sig_in[lif],
+            nl=lif))
 
     @builds(nengo.api.LIF)
     def _build_lif(self, lif, bias, dummy_dimensions):
@@ -431,7 +435,8 @@ class Builder(object):
             raise ValueError(
                 "Number of neurons (%d) must be positive." % lif.n_neurons)
         self._build_neurons(lif, bias)
-        voltage = Signal(np.zeros(lif.n_neurons), name="%s.voltage" % lif.label)
+        voltage = Signal(np.zeros(lif.n_neurons),
+                         name="%s.voltage" % lif.label)
         refractory_time = Signal(np.zeros(lif.n_neurons),
                                  name="%s.refractory_time" % lif.label)
         self.output.operators.append(SimLIF(output=self.output.sig_out[lif],
