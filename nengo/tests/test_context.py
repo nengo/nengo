@@ -36,11 +36,13 @@ def test_default(Simulator):
 
     model2 = nengo.Model("test")
     e4 = nengo.Ensemble(nengo.LIF(1), 1)
-    assert not e4 in model.ensembles
-    assert e4 in model2.ensembles
+    assert e4 in model.ensembles
+    assert not e4 in model2.ensembles
 
 
 def test_with(Simulator):
+    model = nengo.Model("test")
+
     con1 = MyContext()
     con2 = MyContext()
     con3 = MyContext()
@@ -67,7 +69,7 @@ def test_with(Simulator):
         assert e5 in con1.objs
 
     e6 = nengo.Ensemble(nengo.LIF(1), 1)
-    assert not e6 in con1.objs
+    assert e6 in model.ensembles
 
 
 def test_networks(Simulator):

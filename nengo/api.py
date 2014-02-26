@@ -3,9 +3,7 @@ import inspect
 import logging
 import numpy as np
 
-import nengo
 import nengo.decoders
-from nengo.nonlinearities import Neurons
 
 logger = logging.getLogger(__name__)
 

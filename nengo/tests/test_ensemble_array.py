@@ -119,7 +119,7 @@ def test_matrix_mul(Simulator, nl):
     if nl != nengo.Direct:
         for ens in C.ensembles:
             ens.encoders = np.tile([[1, 1], [-1, 1], [1, -1], [-1, -1]],
-                                   (ens.n_neurons // 4, 1))
+                                   (ens.neurons.n_neurons // 4, 1))
 
     transformA, transformB = _mmul_transforms(
         Amat.shape, Bmat.shape, C.dimensions)

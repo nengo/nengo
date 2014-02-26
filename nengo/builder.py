@@ -3,10 +3,8 @@ import logging
 
 import numpy as np
 
-import nengo
 import nengo.api
 import nengo.decoders
-import nengo.nonlinearities
 
 logger = logging.getLogger(__name__)
 
@@ -674,7 +672,7 @@ def random_maxint(rng):
 class BuiltModel(object):
     """Output of the Builder, used by the Simulator."""
 
-    def __init__(self, dt, label, seed=None):
+    def __init__(self, dt, label="Model", seed=None):
         self.operators = []
         self.probes = []
         self.sig_in = {}
@@ -688,8 +686,8 @@ class BuiltModel(object):
         return "Model: %s" % self.label
 
 
-class EnsembleBuildState(object):
-    """Encapsulates the state associated with building an ensemble for Model."""
+class NeuronsBuildState(object):
+    """Encapsulates the state associated with building Neurons for Model."""
 
     def __init__(self, eval_points, gain, bias, encoders):
         self.eval_points = eval_points
@@ -714,7 +712,7 @@ class BuildState(object):
 
         # Artifacts of the build process. Needed only in the build scope.
         self._has_built = set()
-        self._ens_state = {}
+        self._neurons_state = {}
         self._rng = np.random.RandomState(self.output.seed)
 
     def has_built(self, obj):
@@ -723,18 +721,24 @@ class BuildState(object):
     def mark_built(self, obj):
         self._has_built.add(obj)
 
-    def set_ensemble_state(self, ens, state):
-        self._ens_state[ens] = state
+    def set_neurons_state(self, neurons, state):
+        self._neurons_state[neurons] = state
 
-    def get_ensemble_state(self, ens):
-        return self._ens_state[ens]
+    def get_neurons_state(self, neurons):
+        return self._neurons_state[neurons]
 
     def next_seed(self):
         return random_maxint(self._rng)
 
     def build(self, obj, *args, **kwargs):
+        if isinstance(obj, nengo.api.Model):
+            # Hack to support arbitrary subclasses of Model
+            cls = nengo.api.Model
+        else:
+            cls = obj.__class__
+
         if not self.has_built(obj):
-            _buildstate_func_dict[obj.__class__](self, obj, *args, **kwargs)
+            _buildstate_func_dict[cls](self, obj, *args, **kwargs)
             self.mark_built(obj)
         else:
             # This means the Model object contained two objects with the same
@@ -745,7 +749,7 @@ class BuildState(object):
             logger.warning("Object (%s) with id=%d has been referenced twice "
                            "within the model.", obj.__class__.__name__, id(obj))
 
-    @builds(nengo.Model)
+    @builds(nengo.api.Model)
     def _build_model(self, model):
         # 1. Build ensembles and nodes
         logger.info("Building ensembles and nodes")
@@ -762,7 +766,7 @@ class BuildState(object):
         for conn in model.connections:
             self.build(conn)
 
-    @builds(nengo.Ensemble)
+    @builds(nengo.api.Ensemble)
     def _build_ensemble(self, ens):
         # Create random number generator
         seed = self.next_seed() if ens.seed is None else ens.seed
@@ -783,14 +787,18 @@ class BuildState(object):
         if isinstance(ens.max_rates, nengo.api.Sampler):
             max_rates = ens.max_rates.sample(
                 ens.neurons.n_neurons, rng=rng)
+        else:
+            max_rates = ens.max_rates
         if isinstance(ens.intercepts, nengo.api.Sampler):
             intercepts = ens.intercepts.sample(
                 ens.neurons.n_neurons, rng=rng)
+        else:
+            intercepts = ens.intercepts
         gain, bias = ens.neurons.gain_bias(max_rates, intercepts)
 
         # Set up encoders
         if ens.encoders is None:
-            if isinstance(ens.neurons, nengo.Direct):
+            if isinstance(ens.neurons, nengo.api.Direct):
                 encoders = np.identity(ens.dimensions)
             else:
                 encoders = nengo.decoders.sample_hypersphere(
@@ -806,14 +814,14 @@ class BuildState(object):
             encoders /= np.sqrt(norm)
 
         # Store the values that we need to recall for Connection/Neuron building
-        self.set_ensemble_state(
-            ens, EnsembleBuildState(eval_points, gain, bias, encoders))
+        self.set_neurons_state(
+            ens.neurons, NeuronsBuildState(eval_points, gain, bias, encoders))
 
         # Build the neurons
-        self.build(ens.neurons, bias)
+        self.build(ens.neurons, bias, ens.dimensions)
 
         # Scale the encoders
-        if isinstance(ens.neurons, nengo.Direct):
+        if isinstance(ens.neurons, nengo.api.Direct):
             scaled_encoders = encoders
         else:
             scaled_encoders = encoders * (gain / ens.radius)[:, np.newaxis]
@@ -834,7 +842,7 @@ class BuildState(object):
         for probe in ens.probes["spikes"] + ens.probes["voltages"]:
             self.build(probe, dimensions=ens.neurons.n_neurons)
 
-    @builds(nengo.Node)
+    @builds(nengo.api.Node)
     def _build_node(self, node):
         # Get input
         if (node.output is None
@@ -851,10 +859,10 @@ class BuildState(object):
         elif not isinstance(node.output, collections.Callable):
             self.output.sig_out[node] = Signal(node.output, name=node.label)
         else:
-            pyfn = nengo.PythonFunction(fn=node.output,
-                                        n_in=node.size_in,
-                                        n_out=node.size_out,
-                                        label="%s.pyfn" % node.label)
+            pyfn = nengo.api.PythonFunction(fn=node.output,
+                                            n_in=node.size_in,
+                                            n_out=node.size_out,
+                                            label="%s.pyfn" % node.label)
             self.build(pyfn)
             if node.size_in > 0:
                 self.output.operators.append(DotInc(
@@ -868,7 +876,7 @@ class BuildState(object):
         for probe in node.probes["output"]:
             self.build(probe, dimensions=self.output.sig_out[node].shape)
 
-    @builds(nengo.Probe)
+    @builds(nengo.api.Probe)
     def _build_probe(self, probe, dimensions):
         probe_signal = Signal(np.zeros(dimensions), name=probe.label)
         self.output.sig_in[probe] = probe_signal
@@ -895,7 +903,7 @@ class BuildState(object):
         return filtered
 
     def _direct_pyfunc(self, input_signal, function, n_out, label):
-        pyfunc = nengo.PythonFunction(
+        pyfunc = nengo.api.PythonFunction(
             fn=function, n_in=input_signal.size, n_out=n_out, label=label)
         self.build(pyfunc)
         self.output.operators.append(DotInc(
@@ -905,7 +913,7 @@ class BuildState(object):
             tag="%s input" % label))
         return pyfunc
 
-    @builds(nengo.Connection)
+    @builds(nengo.api.Connection)
     def _build_connection(self, conn):
         rng = np.random.RandomState(self.next_seed())
 
@@ -920,8 +928,8 @@ class BuildState(object):
             # XXX add unit test
 
         # Figure out the signal going across this connection
-        if (isinstance(conn.pre, nengo.Ensemble)
-                and isinstance(conn.pre.neurons, nengo.Direct)):
+        if (isinstance(conn.pre, nengo.api.Ensemble)
+                and isinstance(conn.pre.neurons, nengo.api.Direct)):
             # 1. Decoded connection in directmode
             if conn.function is None:
                 signal = self.output.sig_in[conn]
@@ -935,9 +943,9 @@ class BuildState(object):
 
             if conn.filter is not None and conn.filter > self.output.dt:
                 signal = self._filtered_signal(signal, conn.filter)
-        elif isinstance(conn.pre, nengo.Ensemble):
+        elif isinstance(conn.pre, nengo.api.Ensemble):
             # 2. Normal decoded connection
-            pre_state = self.get_ensemble_state(conn.pre)
+            pre_state = self.get_neurons_state(conn.pre.neurons)
 
             # Use Connection's eval_points, or built Ensemble's eval_points
             eval_points = conn.eval_points if pre_state.eval_points is None \
@@ -984,8 +992,8 @@ class BuildState(object):
 
         # Set up transform
         transform = np.asarray(conn.transform, dtype=np.float64)
-        if isinstance(conn.post, nengo.nonlinearities.Neurons):
-            transform *= self.get_ensemble_state(conn.post).gain[:, np.newaxis]
+        if isinstance(conn.post, nengo.api.Neurons):
+            transform *= self.get_neurons_state(conn.post).gain[:, np.newaxis]
         self.output.operators.append(
             DotInc(Signal(transform, name="%s.transform" % conn.label),
                    signal,
@@ -996,7 +1004,7 @@ class BuildState(object):
         for probe in conn.probes["signal"]:
             logger.error("Connection probes not yet implemented")
 
-    @builds(nengo.PythonFunction)
+    @builds(nengo.api.PythonFunction)
     def _build_pyfunc(self, pyfn):
         if pyfn.n_in > 0:
             self.output.sig_in[pyfn] = Signal(np.zeros(pyfn.n_in),
@@ -1010,10 +1018,10 @@ class BuildState(object):
                       fn=pyfn.fn,
                       n_args=pyfn.n_args))
 
-    @builds(nengo.Direct)
-    def _build_direct(self, direct, bias):
+    @builds(nengo.api.Direct)
+    def _build_direct(self, direct, bias, dimensions):
         assert bias is None
-        self.output.sig_in[direct] = Signal(np.zeros(direct.dimensions),
+        self.output.sig_in[direct] = Signal(np.zeros(dimensions),
                                             name=direct.label)
         self.output.sig_out[direct] = self.output.sig_in[direct]
         self.output.operators.append(Reset(self.output.sig_in[direct]))
@@ -1032,8 +1040,8 @@ class BuildState(object):
         for probe in neurons.probes["output"]:
             self.build(probe, dimensions=neurons.n_neurons)
 
-    @builds(nengo.LIFRate)
-    def _build_lifrate(self, lif, bias):
+    @builds(nengo.api.LIFRate)
+    def _build_lifrate(self, lif, bias, dimensions):
         if lif.n_neurons <= 0:
             raise ValueError(
                 "Number of neurons (%d) must be positive." % lif.n_neurons)
@@ -1042,8 +1050,8 @@ class BuildState(object):
                                                 J=self.output.sig_in[lif],
                                                 nl=lif))
 
-    @builds(nengo.LIF)
-    def _build_lif(self, lif, bias):
+    @builds(nengo.api.LIF)
+    def _build_lif(self, lif, bias, dimensions):
         if lif.n_neurons <= 0:
             raise ValueError(
                 "Number of neurons (%d) must be positive." % lif.n_neurons)
@@ -1072,7 +1080,6 @@ class Builder(object):
     """
 
     def __call__(self, model, dt):
-        print model.to_dict()
         output = BuiltModel(dt, "%s, dt=%f" % (model.label, dt), model.seed)
         BuildState(output).build(model)
         return output

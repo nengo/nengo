@@ -55,7 +55,6 @@ def test_node_to_neurons(Simulator, nl_nodirect):
         plt.savefig('test_connection.test_' + name + '.pdf')
         plt.close()
 
-    print(sim.data[a_p][-10:])
     assert np.allclose(sim.data[a_p][-10:], 0, atol=.1, rtol=.01)
 
 

@@ -1,7 +1,8 @@
 import numpy as np
 
 import nengo
-from ..objects import Uniform
+from nengo.api import Uniform
+
 from .ensemblearray import EnsembleArray
 
 

@@ -51,7 +51,7 @@ def test_dts(Simulator):
     probes = []
     for i, dt in enumerate(dts):
         xi = nengo.Node(label='x%d' % i, output=input_fn)
-        p = nengo.Probe(xi, 'output', sample_every=dt)
+        p = nengo.Probe(xi, 'output', dt=dt)
         probes.append(p)
 
     sim = Simulator(model)
