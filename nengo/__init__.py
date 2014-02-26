@@ -19,8 +19,8 @@ import collections
 import logging
 import sys
 
-from .api import PythonFunction, LIF, LIFRate, Direct, Ensemble, Node, \
-    Connection, Probe, Model, Gaussian, Uniform
+from .api import LIF, LIFRate, Direct, Ensemble, Node, Connection, Probe, \
+    Model, Network, Gaussian, Uniform
 from . import networks
 from .simulator import Simulator
 

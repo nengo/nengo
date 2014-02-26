@@ -7,13 +7,12 @@ except ImportError:
 import numpy as np
 
 
-def tuning_curves(sim_ens, data):
-    eval_points = np.array(sim_ens.eval_points)
+def tuning_curves(ens, sim):
+    neurons = sim.neurons(ens.neurons)
+    eval_points = np.array(neurons.eval_points)
     eval_points.sort(axis=0)
-    activities = sim_ens.neurons.rates(
-        eval_points * data['encoders'][sim_ens].T,
-        data['gain'][sim_ens.neurons],
-        data['bias'][sim_ens.neurons])
+    activities = ens.neurons.rates(
+        eval_points * neurons.encoders.T, neurons.gain, neurons.bias)
     return eval_points, activities
 
 

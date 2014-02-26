@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.builder import BuiltModel, BuildState, ProdUpdate, Copy, Reset, \
-    DotInc, Signal
+from nengo.builder import PythonFunction, BuiltModel, Builder, ProdUpdate, \
+    Copy, Reset, DotInc, Signal
 import nengo.simulator
 
 logger = logging.getLogger(__name__)
@@ -15,10 +15,66 @@ def pytest_funcarg__RefSimulator(request):
     return nengo.Simulator
 
 
-def mybuilder(b):
+class MockBuilder(object):
+
+    def __init__(self, built_model):
+        self.output = built_model
+
+    def get_neurons_state(self, neurons):
+        pass
+
+
+def mock_builder(b):
     def builder(*args, **kwargs):
-        return b
+        return MockBuilder(b)
     return builder
+
+
+def test_time(Simulator):
+    m = nengo.Model('test_time', seed=123)
+    sim = Simulator(m)
+    sim.run(0.003)
+    assert np.allclose(sim.trange(), [0.00, .001, .002])
+
+
+def test_pyfunc(RefSimulator):
+    """Test Python Function nonlinearity"""
+    dt = 0.001
+    d = 3
+    n_steps = 3
+    n_trials = 3
+
+    rng = np.random.RandomState(seed=987)
+
+    for i in range(n_trials):
+        A = rng.normal(size=(d, d))
+        fn = lambda t, x: np.cos(np.dot(A, x))
+
+        x = np.random.normal(size=d)
+
+        m = nengo.Model("")
+        ins = Signal(x, name='ins')
+        pop = PythonFunction(fn=fn, n_in=d, n_out=d)
+        m.operators = []
+        build_state = Builder(m, dt)
+        build_state._build_pyfunc(pop)
+        b = build_state.output
+        b.operators += [
+            DotInc(Signal(np.eye(d)), ins, b.sig_in[pop]),
+            ProdUpdate(Signal(np.eye(d)), b.sig_out[pop], Signal(0), ins)
+        ]
+
+        sim = RefSimulator(m, dt, builder=mock_builder(b))
+
+        p0 = np.zeros(d)
+        s0 = np.array(x)
+        for j in range(n_steps):
+            tmp = p0
+            p0 = fn(0, s0)
+            s0 = tmp
+            sim.step()
+            assert np.allclose(s0, sim.signals[ins])
+            assert np.allclose(p0, sim.signals[b.sig_out[pop]])
 
 
 def test_signal_init_values(RefSimulator):
@@ -34,7 +90,7 @@ def test_signal_init_values(RefSimulator):
     b.operators += [ProdUpdate(zero, zero, one, five),
                     ProdUpdate(zeroarray, one, one, array)]
 
-    sim = RefSimulator(m, builder=mybuilder(b))
+    sim = RefSimulator(m, builder=mock_builder(b))
     assert sim.signals[zero][0] == 0
     assert sim.signals[one][0] == 1
     assert sim.signals[five][0] == 5.0
@@ -67,6 +123,7 @@ def test_time(RefSimulator):
 
 
 def test_signal_indexing_1(RefSimulator):
+    dt = 0.001
     m = nengo.Model("test_signal_indexing_1")
 
     one = Signal(np.zeros(1), name="a")
@@ -74,7 +131,7 @@ def test_signal_indexing_1(RefSimulator):
     three = Signal(np.zeros(3), name="c")
     tmp = Signal(np.zeros(3), name="tmp")
 
-    b = BuiltModel(0)
+    b = Builder(m, dt).output
     b.operators += [
         ProdUpdate(
             Signal(1, name="A1"), three[:1], Signal(0, name="Z0"), one),
@@ -86,7 +143,7 @@ def test_signal_indexing_1(RefSimulator):
         Copy(src=tmp, dst=three, as_update=True),
     ]
 
-    sim = RefSimulator(m, builder=mybuilder(b))
+    sim = RefSimulator(m, builder=mock_builder(b))
     sim.signals[three] = np.asarray([1, 2, 3])
     sim.step()
     assert np.all(sim.signals[one] == 1)
@@ -104,18 +161,18 @@ def test_simple_pyfunc(RefSimulator):
 
     time = Signal(np.zeros(1), name="time")
     sig = Signal(np.zeros(1), name="sig")
-    pop = nengo.PythonFunction(fn=lambda t, x: np.sin(x), n_in=1, n_out=1)
+    pop = PythonFunction(fn=lambda t, x: np.sin(x), n_in=1, n_out=1)
 
-    b = BuiltModel(dt)
-    s = BuildState(b)
-    s.build(pop)
+    builder = Builder(m, dt)
+    builder._build_pyfunc(pop)
+    b = builder.output
     b.operators += [
         ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
         DotInc(Signal([[1.0]]), time, b.sig_in[pop]),
         ProdUpdate(Signal([[1.0]]), b.sig_out[pop], Signal(0), sig),
     ]
 
-    sim = RefSimulator(m, dt=dt, builder=mybuilder(b))
+    sim = RefSimulator(m, dt=dt, builder=mock_builder(b))
     sim.step()
     for i in range(5):
         sim.step()
@@ -128,17 +185,16 @@ def test_encoder_decoder_pathway(RefSimulator):
     """Verifies (like by hand) that the simulator does the right
     things in the right order."""
 
-    m = nengo.Model("")
+    m = nengo.Model()
     dt = 0.001
     foo = Signal([1.0], name="foo")
-    pop = nengo.PythonFunction(
-        fn=lambda t, x: x + 1, n_in=2, n_out=2, label="pop")
+    pop = PythonFunction(fn=lambda t, x: x + 1, n_in=2, n_out=2, label="pop")
     decoders = np.asarray([.2, .1])
     decs = Signal(decoders * 0.5)
 
-    b = BuiltModel(dt)
-    s = BuildState(b)
-    s.build(pop)
+    builder = Builder(m, dt)
+    builder._build_pyfunc(pop)
+    b = builder.output
     b.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo, b.sig_in[pop]),
         ProdUpdate(decs, b.sig_out[pop], Signal(0.2), foo)
@@ -147,7 +203,7 @@ def test_encoder_decoder_pathway(RefSimulator):
     def check(sig, target):
         assert np.allclose(sim.signals[sig], target)
 
-    sim = RefSimulator(m, dt=dt, builder=mybuilder(b))
+    sim = RefSimulator(m, dt=dt, builder=mock_builder(b))
 
     check(foo, 1.0)
     check(b.sig_in[pop], 0)
@@ -184,13 +240,12 @@ def test_encoder_decoder_with_views(RefSimulator):
     m = nengo.Model("")
     dt = 0.001
     foo = Signal([1.0], name="foo")
-    pop = nengo.PythonFunction(
-        fn=lambda t, x: x + 1, n_in=2, n_out=2, label="pop")
+    pop = PythonFunction(fn=lambda t, x: x + 1, n_in=2, n_out=2, label="pop")
     decoders = np.asarray([.2, .1])
 
-    b = BuiltModel(dt)
-    s = BuildState(b)
-    s.build(pop)
+    builder = Builder(m, dt)
+    builder._build_pyfunc(pop)
+    b = builder.output
     b.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo[:], b.sig_in[pop]),
         ProdUpdate(Signal(decoders * 0.5), b.sig_out[pop], Signal(0.2), foo[:])
@@ -199,7 +254,7 @@ def test_encoder_decoder_with_views(RefSimulator):
     def check(sig, target):
         assert np.allclose(sim.signals[sig], target)
 
-    sim = RefSimulator(m, dt=dt, builder=mybuilder(b))
+    sim = RefSimulator(m, dt=dt, builder=mock_builder(b))
 
     sim.step()
     #DotInc to pop.input_signal (input=[1.0,2.0])

@@ -27,7 +27,7 @@ def _dft_half_cached(n):
     return _dft_half_cache[n]
 
 
-class CircularConvolution(nengo.Model):
+class CircularConvolution(nengo.Network):
     """
     CircularConvolution docs XXX
     """

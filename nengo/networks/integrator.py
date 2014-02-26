@@ -1,9 +1,9 @@
 import nengo
 
 
-class Integrator(nengo.Model):
+class Integrator(nengo.Network):
     def make(self, recurrent_tau, **ens_args):
-        dimensions = ens_args.get('dimensions', 1)
+        dimensions = ens_args.get("dimensions", 1)
         self.input = nengo.Node(size_in=dimensions)
         self.ensemble = nengo.Ensemble(**ens_args)
         nengo.Connection(self.ensemble, self.ensemble, filter=recurrent_tau)

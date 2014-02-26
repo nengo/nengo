@@ -34,10 +34,15 @@ def test_default(Simulator):
     e3 = nengo.Ensemble(nengo.LIF(1), 1)
     assert e3 in model.ensembles
 
-    model2 = nengo.Model("test")
+    model2 = nengo.Model("test")  # new default
     e4 = nengo.Ensemble(nengo.LIF(1), 1)
-    assert e4 in model.ensembles
-    assert not e4 in model2.ensembles
+    assert e4 in model2.ensembles
+    assert not e4 in model.ensembles
+
+    model3 = nengo.Model("test", use_as_default_context=False)
+    e5 = nengo.Ensemble(nengo.LIF(1), 1)
+    assert e5 in model2.ensembles
+    assert not e5 in model3.ensembles
 
 
 def test_with(Simulator):

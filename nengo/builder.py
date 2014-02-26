@@ -555,6 +555,21 @@ class ProdUpdate(Operator):
         return step
 
 
+class PythonFunction(object):
+
+    def __init__(self, fn, n_in, n_out, label=None):
+        self.fn = fn
+        self.n_in = n_in
+        self.n_out = n_out
+        if label is None:
+            label = "<Direct%d>" % id(self)
+        self.label = label
+
+    @property
+    def n_args(self):
+        return 2 if self.n_in > 0 else 1
+
+
 class SimPyFunc(Operator):
     """Set signal `output` by some non-linear function of J
     (and possibly other things too.)
@@ -680,7 +695,7 @@ class BuiltModel(object):
 
         self.dt = dt
         self.label = label
-        self.seed = random_maxint(np.random) if seed is None else seed
+        self.seed = seed
 
     def __str__(self):
         return "Model: %s" % self.label
@@ -700,20 +715,35 @@ class NeuronsBuildState(object):
 _buildstate_func_dict = {}
 
 
-class BuildState(object):
-    """Encapsulates the state associated with building a single Model."""
+class Builder(object):
+    """Takes a Model object and returns a BuiltModel.
+
+    This determines the signals and operators necessary to simulate that model.
+
+    Builder does this by mapping each high-level object to its associated
+    signals and operators one-by-one, in the following order:
+
+      1. Ensembles, Nodes, Neurons, Probes
+      2. Networks/Models (recursive)
+      3. Connections
+    """
 
     # A decorator that registers the given Nengo object class with the function
     builds = lambda cls: register(
         lambda f: _buildstate_func_dict.__setitem__(cls, f))
 
-    def __init__(self, output):
-        self.output = output  # BuiltModel
-
+    def __init__(self, model, dt, do_build=True):
         # Artifacts of the build process. Needed only in the build scope.
         self._has_built = set()
         self._neurons_state = {}
-        self._rng = np.random.RandomState(self.output.seed)
+
+        # Resources used by the build process.
+        seed = random_maxint(np.random) if model.seed is None else model.seed
+        self._rng = np.random.RandomState(seed)
+
+        # Build the entire model into output attribute.
+        self.output = BuiltModel(dt, "%s, dt=%f" % (model.label, dt), seed)
+        self.build(model)
 
     def has_built(self, obj):
         return obj in self._has_built
@@ -842,6 +872,19 @@ class BuildState(object):
         for probe in ens.probes["spikes"] + ens.probes["voltages"]:
             self.build(probe, dimensions=ens.neurons.n_neurons)
 
+    def _build_pyfunc(self, pyfn):
+        if pyfn.n_in > 0:
+            self.output.sig_in[pyfn] = Signal(np.zeros(pyfn.n_in),
+                                              name="%s.input" % pyfn.label)
+            self.output.operators.append(Reset(self.output.sig_in[pyfn]))
+        self.output.sig_out[pyfn] = Signal(np.zeros(pyfn.n_out),
+                                           name="%s.output" % pyfn.label)
+        self.output.operators.append(
+            SimPyFunc(output=self.output.sig_out[pyfn],
+                      J=self.output.sig_in[pyfn] if pyfn.n_in > 0 else None,
+                      fn=pyfn.fn,
+                      n_args=pyfn.n_args))
+
     @builds(nengo.api.Node)
     def _build_node(self, node):
         # Get input
@@ -859,11 +902,11 @@ class BuildState(object):
         elif not isinstance(node.output, collections.Callable):
             self.output.sig_out[node] = Signal(node.output, name=node.label)
         else:
-            pyfn = nengo.api.PythonFunction(fn=node.output,
-                                            n_in=node.size_in,
-                                            n_out=node.size_out,
-                                            label="%s.pyfn" % node.label)
-            self.build(pyfn)
+            pyfn = PythonFunction(fn=node.output,
+                                  n_in=node.size_in,
+                                  n_out=node.size_out,
+                                  label="%s.pyfn" % node.label)
+            self._build_pyfunc(pyfn)
             if node.size_in > 0:
                 self.output.operators.append(DotInc(
                     self.output.sig_in[node],
@@ -903,9 +946,9 @@ class BuildState(object):
         return filtered
 
     def _direct_pyfunc(self, input_signal, function, n_out, label):
-        pyfunc = nengo.api.PythonFunction(
+        pyfunc = PythonFunction(
             fn=function, n_in=input_signal.size, n_out=n_out, label=label)
-        self.build(pyfunc)
+        self._build_pyfunc(pyfunc)
         self.output.operators.append(DotInc(
             input_signal,
             Signal(1.0, name="1"),
@@ -993,7 +1036,15 @@ class BuildState(object):
         # Set up transform
         transform = np.asarray(conn.transform, dtype=np.float64)
         if isinstance(conn.post, nengo.api.Neurons):
+            if not self.has_built(conn.post):
+                # Since it hasn't been built, it wasn't added to the model,
+                # which is most likely because the Neurons weren't associated
+                # with an Ensemble.
+                raise RuntimeError("Connection '%s' refers to Neurons '%s' "
+                                     "that are not a part of any Ensemble." % (
+                                     conn, conn.post))
             transform *= self.get_neurons_state(conn.post).gain[:, np.newaxis]
+
         self.output.operators.append(
             DotInc(Signal(transform, name="%s.transform" % conn.label),
                    signal,
@@ -1003,20 +1054,6 @@ class BuildState(object):
         # Set up probes
         for probe in conn.probes["signal"]:
             logger.error("Connection probes not yet implemented")
-
-    @builds(nengo.api.PythonFunction)
-    def _build_pyfunc(self, pyfn):
-        if pyfn.n_in > 0:
-            self.output.sig_in[pyfn] = Signal(np.zeros(pyfn.n_in),
-                                              name="%s.input" % pyfn.label)
-            self.output.operators.append(Reset(self.output.sig_in[pyfn]))
-        self.output.sig_out[pyfn] = Signal(np.zeros(pyfn.n_out),
-                                           name="%s.output" % pyfn.label)
-        self.output.operators.append(
-            SimPyFunc(output=self.output.sig_out[pyfn],
-                      J=self.output.sig_in[pyfn] if pyfn.n_in > 0 else None,
-                      fn=pyfn.fn,
-                      n_args=pyfn.n_args))
 
     @builds(nengo.api.Direct)
     def _build_direct(self, direct, bias, dimensions):
@@ -1064,22 +1101,3 @@ class BuildState(object):
                                             nl=lif,
                                             voltage=voltage,
                                      refractory_time=refractory_time))
-
-
-class Builder(object):
-    """A callable class that takes a Model object and returns a BuiltModel.
-
-    This determines the signals and operators necessary to simulate that model.
-
-    Builder does this by mapping each high-level object to its associated
-    signals and operators one-by-one, in the following order:
-
-      1. Ensembles, Nodes, Neurons, Probes
-      2. Networks/Models (recursive)
-      3. Connections
-    """
-
-    def __call__(self, model, dt):
-        output = BuiltModel(dt, "%s, dt=%f" % (model.label, dt), model.seed)
-        BuildState(output).build(model)
-        return output

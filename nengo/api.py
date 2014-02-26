@@ -22,13 +22,18 @@ class NengoObject(object):
             nengo.context.add_to_current(self)
 
     def to_dict(self):
+        def encode_value(value):
+            if isinstance(value, NengoObject):
+                return value.to_dict()
+            if isinstance(value, list):
+                return map(encode_value, value)
+            if isinstance(value, dict):
+                return dict((k, encode_value(v)) for k, v in value.items())
+            return value
         d = {}
         for key in sorted(self.__dict__):
             if not key.startswith("_"):
-                value = self.__dict__[key]
-                if isinstance(value, NengoObject):
-                    value = value.to_dict()
-                d[key] = value
+                d[key] = encode_value(self.__dict__[key])
         return d
 
     def add_to_model(self, model):
@@ -57,8 +62,7 @@ class Uniform(Sampler):
         self.high = high
         super(Uniform, self).__init__()
 
-    def sample(self, n, rng=None):
-        rng = np.random if rng is None else rng
+    def sample(self, n, rng=np.random):
         return rng.uniform(low=self.low, high=self.high, size=n)
 
 
@@ -69,25 +73,8 @@ class Gaussian(Sampler):
         self.std = std
         super(Gaussian, self).__init__()
 
-    def sample(self, n, rng=None):
-        rng = np.random if rng is None else rng
+    def sample(self, n, rng=np.random):
         return rng.normal(loc=self.mean, scale=self.std, size=n)
-
-
-class PythonFunction(NengoObject):
-
-    def __init__(self, fn, n_in, n_out, label=None):
-        self.fn = fn
-        self.n_in = n_in
-        self.n_out = n_out
-        if label is None:
-            label = "<Direct%d>" % id(self)
-        self.label = label
-        super(PythonFunction, self).__init__(add_to_model=False)
-
-    @property
-    def n_args(self):
-        return 2 if self.n_in > 0 else 1
 
 
 class Neurons(NengoObject):
@@ -98,6 +85,9 @@ class Neurons(NengoObject):
             label = "<%s%d>" % (self.__class__.__name__, id(self))
         self.label = label
         self.probes = {"output": []}
+
+        # Neurons must be associated with an Ensemble in order to be built
+        # into the model.
         super(Neurons, self).__init__(add_to_model=False)
 
     def __str__(self):
@@ -378,7 +368,7 @@ class Node(NengoObject):
         super(Node, self).__init__()
 
     def __str__(self):
-        return "Node: " + self.label
+        return "Node: %s" % self.label
 
     def probe(self, probe, **kwargs):
         if probe.attr == "output":
@@ -423,11 +413,6 @@ class Connection(NengoObject):
         Linear transform mapping the pre output to the post input.
     """
 
-    _decoders = None
-    _eval_points = None
-    _function = (None, 0)  # (handle, n_outputs)
-    _transform = None
-
     def __init__(self, pre, post,
                  filter=0.005, transform=1.0, modulatory=False, **kwargs):
         self.pre = pre
@@ -445,6 +430,10 @@ class Connection(NengoObject):
         elif not isinstance(self.pre, (Neurons, Node)):
             raise ValueError("Objects of type '%s' cannot serve as 'pre'." %
                                self.pre.__class__.__name__)
+        else:
+            self.decoder_solver = None
+            self.eval_points = None
+            self._function = (None, 0)
 
         # Check that we've used all user-provided arguments
         if len(kwargs) > 0:
@@ -514,16 +503,16 @@ class Connection(NengoObject):
         return dims, src
 
     def __str__(self):
-        return self.label + " (" + self.__class__.__name__ + ")"
+        return "%s (%s)" % (self.label, self.__class__.__name__)
 
     def __repr__(self):
         return str(self)
 
     @property
     def label(self):
-        label = self.pre.label + ">" + self.post.label
+        label = "%s>%s" % (self.pre.label, self.post.label)
         if self.function is not None:
-            return label + ":" + self.function.__name__
+            return "%s:%s" % (label, self.function.__name__)
         return label
 
     @property
@@ -538,7 +527,7 @@ class Connection(NengoObject):
     def function(self, _function):
         if _function is not None:
             self._check_pre_ensemble("function")
-            x = (self._eval_points[0] if self._eval_points is not None else
+            x = (self.eval_points[0] if self.eval_points is not None else
                  np.zeros(self.pre.dimensions))
             size = np.asarray(_function(x)).size
         else:
@@ -580,7 +569,6 @@ class Probe(NengoObject):
     }
 
     def __init__(self, target, attr=None, dt=None, filter=None, **kwargs):
-        self.target = target
         if attr is None:
             try:
                 attr = self.DEFAULTS[target.__class__]
@@ -608,14 +596,18 @@ class Model(NengoObject):
 
     Parameters
     ----------
-    label : basestring
-        Name of the model.
+    label : basestring, optional
+        Name of the model. Defaults to Model.
     seed : int, optional
         Random number seed that will be fed to the random number generator.
         Setting this seed makes the creation of the model
         a deterministic process; however, each new ensemble
         in the network advances the random number generator,
         so if the network creation code changes, the entire model changes.
+    use_as_default_context : bool, optional
+        Set to True if you want all subsequent Nengo objects to be automatically
+        added to this Model, when not inside a 'with' block. Cannot be True if
+        already inside a 'with' block. Defaults to True.
 
     Attributes
     ----------
@@ -625,19 +617,24 @@ class Model(NengoObject):
         Random seed used by the model.
     """
 
-    def __init__(self, *args, **kwargs):
-        label = kwargs.pop("label", "Model")
-        seed = kwargs.pop("seed", None)
-
+    def __init__(self, label="Model", seed=None, use_as_default_context=True,
+                 *args, **kwargs):
         if not isinstance(label, basestring):
             raise ValueError("Label '%s' must be str or unicode." % label)
 
         if not len(nengo.context):
-            # Make this the default context
+            # Force this to be the default context. Makes it easier to detect
+            # if we are inside a 'with' block.
             nengo.context.append(self)
-            is_root = True
-        else:
-            is_root = False
+        elif use_as_default_context:
+            # Make this the default context.
+            if len(nengo.context) > 1:
+                # Detects if inside a "with" block. Note that the above enforces
+                # that the context is never empty.
+                raise RuntimeError("Cannot initialize a top-level model "
+                                     "while inside a 'with' block.")
+            nengo.context.clear()
+            nengo.context.append(self)
 
         self.label = label
         self.seed = seed
@@ -649,9 +646,13 @@ class Model(NengoObject):
         with self:
             self.make(*args, **kwargs)
 
-        super(Model, self).__init__(add_to_model=not is_root)
+        super(Model, self).__init__(add_to_model=not use_as_default_context)
 
     def make(self, *args, **kwargs):
+        """Called at object initialization time with remaining arguments.
+
+        This is intended to be overriden by subclasses of Models, as a
+        convenience to obtain working space for model population via the API."""
         return
 
     def add_to_model(self, model):
@@ -687,4 +688,21 @@ class Model(NengoObject):
         nengo.context.append(self)
 
     def __exit__(self, exception_type, exception_value, traceback):
-        nengo.context.pop()
+        try:
+            model = nengo.context.pop()
+        except IndexError:
+            raise RuntimeError("Model context in bad state; was empty when "
+                                 "exiting from a 'with' block.")
+        if not model is self:
+            raise RuntimeError("Model context in bad state; was expecting "
+                                 "current context to be '%s' but instead got "
+                                 "'%s'." % (self, model))
+
+
+class Network(Model):
+    """A Network is a Model that is not used as the default context."""
+
+    def __init__(self, *args, **kwargs):
+        label = kwargs.pop("label", self.__class__.__name__)
+        seed = kwargs.pop("seed", None)
+        super(Network, self).__init__(label, seed, False, *args, **kwargs)

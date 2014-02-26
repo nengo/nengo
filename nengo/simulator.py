@@ -96,14 +96,16 @@ class ProbeDict(Mapping):
 class Simulator(object):
     """Reference simulator for models."""
 
-    def __init__(self, model, dt=0.001, seed=None, builder=None):
-        if builder is None:
-            # By default, we'll use builder.Builder and copy the model.
-            builder = Builder()
-
+    def __init__(self, model, dt=0.001, seed=None, builder=Builder):
         # Call the builder to build the model
-        self.model = builder(model, dt)
+        build_state = builder(model, dt)
+        self.model = build_state.output
         self.dt = dt
+
+        # Add a public method which allows users to get BuildNeuronsState
+        # TODO: Do not expose the build state outside of the builder. Currently
+        #     this is only used by helpers.tuning_curves and many_neurons.ipynb.
+        self.neurons = build_state.get_neurons_state
 
         # Use model seed as simulator seed if the seed is not provided
         # Note: seed is not used right now, but one day...
@@ -123,7 +125,6 @@ class Simulator(object):
 
         self.n_steps = 0
         self._probe_outputs = dict((probe, []) for probe in self.model.probes)
-        print(self._probe_outputs)
         self.data = ProbeDict(self._probe_outputs)
 
     def _init_dg(self, verbose=False):  # noqa

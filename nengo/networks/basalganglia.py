@@ -6,7 +6,7 @@ from nengo.api import Uniform
 from .ensemblearray import EnsembleArray
 
 
-class BasalGanglia(nengo.Model):
+class BasalGanglia(nengo.Network):
     # connection weights from (Gurney, Prescott, & Redgrave, 2001)
     mm = 1
     mp = 1
