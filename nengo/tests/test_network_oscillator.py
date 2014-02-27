@@ -46,6 +46,18 @@ def test_oscillator(Simulator, nl):
     assert rmse(sim.data(A_probe), sim.data(T_probe)) < 0.3
 
 
+def test_labels():
+    nengo.Model('test_labels')
+    osc = nengo.networks.Oscillator(0.1, 1, neurons=nengo.LIF(10))
+    assert osc.label == 'Oscillator'
+    assert osc.input.label == 'Oscillator.input'
+    assert osc.ensemble.label == 'Oscillator.ensemble'
+    osc_short = nengo.networks.Oscillator(0.1, 1, neurons=nengo.LIF(10),
+                                          label='Osc')
+    assert osc_short.label == 'Osc'
+    assert osc_short.input.label == 'Osc.input'
+    assert osc_short.ensemble.label == 'Osc.ensemble'
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

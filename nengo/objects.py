@@ -1,6 +1,8 @@
 import collections
 import copy
 import logging
+import weakref
+
 import numpy as np
 
 import nengo
@@ -82,7 +84,7 @@ class Ensemble(object):
 
     def __init__(self, neurons, dimensions, radius=1.0, encoders=None,
                  intercepts=Uniform(-1.0, 1.0), max_rates=Uniform(200, 400),
-                 eval_points=None, seed=None, label="Ensemble"):
+                 eval_points=None, seed=None, label="Ensemble", model=None):
         if dimensions <= 0:
             raise ValueError(
                 'Number of dimensions (%d) must be positive' % dimensions)
@@ -103,8 +105,11 @@ class Ensemble(object):
         # objects created at build time
         self._scaled_encoders = None  # encoders * neuron-gains / radius
 
-        # add self to current context
-        nengo.context.add_to_current(self)
+        # add self to model
+        if model is None:
+            model = nengo.context.model
+        model.add(self)
+        self.model = weakref.ref(model)
 
     def __str__(self):
         return "Ensemble: " + self.label
@@ -227,7 +232,8 @@ class Node(object):
         The number of input dimensions.
     """
 
-    def __init__(self, output=None, size_in=0, size_out=None, label="Node"):
+    def __init__(self, output=None, size_in=0, size_out=None,
+                 label="Node", model=None):
         if output is not None and not isinstance(output, collections.Callable):
             output = np.asarray(output)
         self.output = output
@@ -239,7 +245,7 @@ class Node(object):
                 shape_out = output.shape
             elif size_out is None and isinstance(output, collections.Callable):
                 t, x = np.asarray(0.0), np.zeros(size_in)
-                args = [t, x] if size_in > 0 else [t]
+                args = (t, x) if size_in > 0 else (t,)
                 try:
                     result = output(*args)
                 except TypeError:
@@ -271,8 +277,11 @@ class Node(object):
         # Set up probes
         self.probes = {'output': []}
 
-        # add self to current context
-        nengo.context.add_to_current(self)
+        # add self to model
+        if model is None:
+            model = nengo.context.model
+        model.add(self)
+        self.model = weakref.ref(model)
 
     def __str__(self):
         return "Node: " + self.label
@@ -380,8 +389,24 @@ class Connection(object):
         # check that shapes match up
         self._check_shapes(check_in_init=True)
 
-        # add self to current context
-        nengo.context.add_to_current(self)
+        # make sure pre and post are in the same model
+        premodel = self._pre.model()
+        postmodel = self._post.model()
+
+        # if any model is now destroyed, raise an error
+        if premodel is None:
+            raise ValueError("Cannot connect from " + str(self._pre) + "; "
+                             + "it is part of a model that has been deleted.")
+        if postmodel is None:
+            raise ValueError("Cannot connect to " + str(self._post) + "; "
+                             + "it is part of a model that has been deleted.")
+
+        # usually they'll be the same
+        if premodel != postmodel:
+            raise ValueError("Cannot connect two objects in different models.")
+
+        premodel.add(self)
+        self.model = weakref.ref(premodel)
 
     def _check_pre_ensemble(self, prop_name):
         if not isinstance(self.pre, Ensemble):
@@ -439,14 +464,30 @@ class Connection(object):
         return dims, src
 
     def __str__(self):
-        return self.label + " (" + self.__class__.__name__ + ")"
+        return "Connection: " + self.label
 
     def __repr__(self):
         return str(self)
 
     @property
     def label(self):
-        label = self.pre.label + ">" + self.post.label
+        # We'll split up the labels so the connection is in the right place
+        label = ''
+        pre = self.pre.label.split('.')
+        post = self.post.label.split('.')
+
+        # Find common parents
+        while pre[0] == post[0] and len(pre) > 1 and len(post) > 1:
+            label += pre[0] if label == '' else '.' + pre[0]
+            pre = pre[1:]
+            post = post[1:]
+
+        # Demarcate network part if there is one
+        if label != '':
+            label += '/'
+
+        # Then append the unique part
+        label += '.'.join(pre) + ">" + '.'.join(post)
         if self.function is not None:
             return label + ":" + self.function.__name__
         return label
@@ -527,8 +568,8 @@ class Probe(object):
         Node: 'output',
     }
 
-    def __init__(self, target, attr=None,
-                 sample_every=None, filter=None, dimensions=None, **kwargs):
+    def __init__(self, target, attr=None, sample_every=None, filter=None,
+                 dimensions=None, model=None, **kwargs):
         self.target = target
         if attr is None:
             try:
@@ -548,41 +589,13 @@ class Probe(object):
         self.filter = filter
         self.kwargs = kwargs
 
-        target.probe(self, **kwargs)
+        # add self to model
+        if model is None:
+            model = nengo.context.model
+        self.model = weakref.ref(model)
+        model.add(self)
 
-        # add self to current context
-        nengo.context.add_to_current(self)
+        target.probe(self, **kwargs)
 
     def add_to_model(self, model):
         model.probed[id(self)] = self
-
-
-class Network(object):
-
-    def __init__(self, *args, **kwargs):
-        self.label = kwargs.pop("label", "Network")
-        self.objects = []
-        with self:
-            self.make(*args, **kwargs)
-
-        # add self to current context
-        nengo.context.add_to_current(self)
-
-    def add(self, obj):
-        self.objects.append(obj)
-        return obj
-
-    def make(self, *args, **kwargs):
-        raise NotImplementedError("Networks should implement this function.")
-
-    def add_to_model(self, model):
-        for obj in self.objects:
-            if not isinstance(obj, nengo.Connection):
-                obj.label = self.label + '.' + obj.label
-            model.add(obj)
-
-    def __enter__(self):
-        nengo.context.append(self)
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        nengo.context.pop()

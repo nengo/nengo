@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def test_simple(Simulator):
     m = nengo.Model('test_simple', seed=123)
 
-    input = nengo.Node(output=np.sin)
+    input = nengo.Node(output=lambda t: np.sin(t))
     p = nengo.Probe(input, 'output')
 
     sim = Simulator(m)

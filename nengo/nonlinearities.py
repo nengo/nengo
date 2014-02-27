@@ -1,5 +1,6 @@
 import copy
 import logging
+import weakref
 
 import numpy as np
 
@@ -39,7 +40,8 @@ class PythonFunction(object):
 
 class Neurons(object):
 
-    def __init__(self, n_neurons, bias=None, gain=None, label=None):
+    def __init__(self, n_neurons, bias=None, gain=None,
+                 label=None, model=None):
         self.n_neurons = n_neurons
         self.bias = bias
         self.gain = gain
@@ -47,6 +49,10 @@ class Neurons(object):
             label = "<%s%d>" % (self.__class__.__name__, id(self))
         self.label = label
 
+        if model is None:
+            # Using a weak reference so the model can be deleted
+            model = nengo.context.model
+        self.model = weakref.ref(model)
         self.probes = {'output': []}
 
     def __str__(self):
@@ -83,10 +89,10 @@ class Neurons(object):
 
 class Direct(Neurons):
 
-    def __init__(self, n_neurons=None, label=None):
+    def __init__(self, n_neurons=None, label=None, model=None):
         # n_neurons is ignored, but accepted to maintain compatibility
         # with other neuron types
-        Neurons.__init__(self, 0, label=label)
+        Neurons.__init__(self, 0, label=label, model=model)
 
     def default_encoders(self, dimensions, rng):
         return np.identity(dimensions)
@@ -105,10 +111,11 @@ class Direct(Neurons):
 
 class _LIFBase(Neurons):
 
-    def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, label=None):
+    def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002,
+                 label=None, model=None):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
-        Neurons.__init__(self, n_neurons, label=label)
+        Neurons.__init__(self, n_neurons, label=label, model=model)
 
     @property
     def n_in(self):

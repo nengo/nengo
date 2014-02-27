@@ -61,7 +61,7 @@ class Model(object):
 
     """
 
-    def __init__(self, label="Model", seed=None):
+    def __init__(self, label="Model", seed=None, set_context=True):
         self.objs = []
         self.probed = OrderedDict()
         self.connections = []
@@ -72,9 +72,8 @@ class Model(object):
 
         self._rng = None
 
-        #make this the default context
-        nengo.context.clear()
-        nengo.context.append(self)
+        if set_context:
+            nengo.context.model = self
 
     def __str__(self):
         return "Model: " + self.label
@@ -172,9 +171,3 @@ class Model(object):
 
         self.objs = [o for o in self.objs if o != target]
         logger.info("%s removed.", target)
-
-    def __enter__(self):
-        nengo.context.append(self)
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        nengo.context.pop()

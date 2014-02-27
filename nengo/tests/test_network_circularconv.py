@@ -123,6 +123,23 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
     assert rmse(c, c_sim) < 0.075
 
 
+def test_labels():
+    nengo.Model("test_labels")
+    cconv = nengo.networks.CircularConvolution(
+        neurons=nengo.LIF(100), dimensions=4)
+    assert cconv.label == "Circular Convolution"
+    assert cconv.A.label == "Circular Convolution.A"
+    assert cconv.B.label == "Circular Convolution.B"
+    assert cconv.ensemble.label == "Circular Convolution.Ensemble"
+    assert cconv.output.label == "Circular Convolution.output"
+    cconv_short = nengo.networks.CircularConvolution(
+        neurons=nengo.LIF(100), dimensions=4, label="CConv")
+    assert cconv_short.label == "CConv"
+    assert cconv_short.A.label == "CConv.A"
+    assert cconv_short.B.label == "CConv.B"
+    assert cconv_short.ensemble.label == "CConv.Ensemble"
+    assert cconv_short.output.label == "CConv.output"
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
