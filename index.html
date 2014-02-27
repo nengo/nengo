@@ -10,6 +10,12 @@
         bottom: 0;
         left: 50%;
     }
+    
+    .highlight {
+        background: yellow;
+        opacity: 0.2;
+        position: absolute;
+        }
     div#graph { 
         position: absolute;
         top: 0;
@@ -42,6 +48,9 @@
 <body>
 
 <script src="/ace/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+var aceRange = ace.require('ace/range').Range;
+</script>
 <script src="d3.min.js", type="text/javascript" charset="utf-8"></script>
 
 <div id="editor">import nengo
@@ -84,6 +93,19 @@ with model:
     function dblclick(d) {
       d3.select(this).classed("fixed", d.fixed = false);
     }    
+    
+    var marker = null;
+    function mouseover(d) {
+        marker = editor.getSession().addMarker(new aceRange(d.line, 0, d.line, 10), 'highlight', 'fullLine', true);
+        editor.getSession().setAnnotations([{row: d.line, type:'info'}]);
+        }
+    function mouseout(d) {
+        if (marker!=null) {
+            editor.getSession().removeMarker(marker);
+            marker = null;
+            }
+        editor.getSession().clearAnnotations();
+        }
         
     d3.json('graph.json', function(graph) {
 
@@ -129,6 +151,8 @@ with model:
             .append('g')
             .classed('gnode', true)
             .on("dblclick", dblclick)
+            .on('mouseover', mouseover)
+            .on('mouseout', mouseout)
             .call(force.drag);
         
             

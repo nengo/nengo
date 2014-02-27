@@ -31,10 +31,10 @@ class NengoGui(swi.SimpleWebInterface):
         
     def swi_graph_json(self):
         nodes = [
-            dict(label='a'),
-            dict(label='b'),
-            dict(label='c'),
-            dict(label='d'),
+            dict(label='a', line=4),
+            dict(label='b', line=5),
+            dict(label='c', line=6),
+            dict(label='d', line=7),
             ]
         links = [
             dict(source=0, target=1),
