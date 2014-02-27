@@ -234,8 +234,10 @@ class Node(object):
         self.label = label
         self._size_in = size_in
 
-        if size_out is None and output is not None:
-            if isinstance(output, collections.Callable):
+        if output is not None:
+            if isinstance(output, np.ndarray):
+                shape_out = output.shape
+            elif size_out is None and isinstance(output, collections.Callable):
                 t, x = np.asarray(0.0), np.zeros(size_in)
                 args = [t, x] if size_in > 0 else [t]
                 try:
@@ -248,15 +250,21 @@ class Node(object):
                         % (output.__name__, self,
                            output.__code__.co_argcount, len(args)))
                 shape_out = np.asarray(result).shape
-            else:  # must be np.ndarray
-                shape_out = output.shape
+            else:  # callable and size_out is not None
+                shape_out = (size_out,)  # assume `size_out` is correct
 
             if len(shape_out) > 1:
                 raise ValueError(
                     "Node output must be a vector (got array shape %s)"
                     % str(shape_out))
 
-            size_out = shape_out[0]  # since len(shape_out) == 1
+            size_out_new = shape_out[0] if len(shape_out) == 1 else 1
+            if size_out is not None and size_out != size_out_new:
+                raise ValueError(
+                    "Size of Node output (%d) does not match `size_out` (%d)"
+                    % (size_out_new, size_out))
+
+            size_out = size_out_new
 
         self._size_out = size_out
 
