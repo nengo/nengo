@@ -32,13 +32,14 @@
         marker-mid: url(#TriangleMarker);
     }
     
-    svg .node {
+    svg g.node circle{
         stroke: #444;
         stroke-width: 0px;
+        fill: #ddd;
         
     }
     
-    svg g.gnode text {
+    svg g.node text {
         fill: black;
         font-family: sans-serif;
         text-anchor: middle;
@@ -86,23 +87,31 @@ with model:
 </div>    
 
 <script>
-    var editor = ace.edit("editor");
-    editor.setTheme("ace/theme/monokai");
-    editor.getSession().setMode("ace/mode/python");
-    
-    editor.on('change', editorChange);
-    
-    var svg = d3.select("svg");
-    
-    var force = d3.layout.force()
-        .charge(-120)
-        .linkDistance(100)
-        .size([100, 100]);
-    
-    var drag = force.drag()
-        .on('dragstart', dragstart);
+var editor = ace.edit("editor");
+editor.setTheme("ace/theme/monokai");
+editor.getSession().setMode("ace/mode/python");
+
+editor.on('change', function(e) {reload_graph_data();});
+</script>
+
+
+<script>
         
-    function editorChange(e) {
+var svg = d3.select("svg");
+var force = d3.layout.force();
+
+var nodes = force.nodes();
+var links = force.links();
+       
+    
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};    
+    
+    
+    function reload_graph_data() {
         var data = new FormData();
         data.append('code', editor.getValue());
 
@@ -111,6 +120,12 @@ with model:
         xhr.onload = update_graph;
         xhr.send(data);    
     }    
+
+    
+        
+            
+    var drag = force.drag()
+        .on('dragstart', dragstart);
         
         
     function dragstart(d) {
@@ -138,20 +153,13 @@ with model:
         editor.getSession().clearAnnotations();
         }
         
-        
-    var data = new FormData();
-    data.append('code', editor.getValue());
-
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/graph.json', true);
-    xhr.onload = update_graph;
-    xhr.send(data);
-
+    
+    reload_graph_data();
     
         
     function update_graph() {
         graph = JSON.parse(this.responseText);
-        
+
         if (graph.error_line != undefined) {
             if (marker!=null) {
                 editor.getSession().removeMarker(marker);
@@ -167,23 +175,104 @@ with model:
                 }
             editor.getSession().clearAnnotations();
         }
-
+        
+        for (var i = 0; i<graph.nodes.length; i++) {
+            found = false;
+            for (var j = 0; j<nodes.length; j++) {
+                if (nodes[j].id == graph.nodes[i].id) {
+                    found = true;
+                    nodes[j].label = graph.nodes[i].label;
+                }
+            }
+            if (!found) {
+                nodes.push(graph.nodes[i]);
+            }            
+        }    
+        for (var j = 0; j<nodes.length; j++) {
+            found = false;
+            for (var i = 0; i<graph.nodes.length; i++) {
+                if (nodes[j].id == graph.nodes[i].id) {
+                    found = true;
+                }
+            }
+            if (!found) {
+                nodes.splice(j, 1);
+                j -= 1;
+            }
+        }    
+                
+        
+        links.splice(0, links.length)
+        for (var i = 0; i<graph.links.length; i++) {
+            links.push(graph.links[i]);
+        }
+        
+        
         
 
-        function tick() {        
+
+        var link = svg.selectAll('.link')
+            .data(links, function(d) {
+                return d.id; 
+                });
+            
+        link.enter().append('polyline')
+                .attr('class', 'link')
+                .attr("id",function(d){return d.id;});
+        link.exit().remove();        
+        
+
+        var node = svg.selectAll('g.node')
+            .data(nodes, function(d) {return d.id});
+            
+        var nodeEnter = node
+            .enter()
+            .append('g')
+            .attr('class', 'node')
+            .on("dblclick", dblclick)
+            //.on('mouseover', mouseover)
+            //.on('mouseout', mouseout)
+            .call(force.drag);
+        
+        
+        nodeEnter.append('circle')
+            .attr('r', '20')
+            .attr('id', function(d) {return 'Node;'+d.id;})
+            
+        nodeEnter.append('text')
+            .text(function(d) {return d.label;});
+            
+        node.exit().remove();
+            
+        svg.selectAll('g.node')
+            .data(nodes, function(d) {return d.id})
+            .selectAll('text')
+            .text(function(d) {return d.label;});
+        
+        svg.selectAll('g.node')
+            .data(nodes, function(d) {return d.id})
+            .moveToFront();
+        
+        
+        
+        
+
+        force.on('tick', function() {
+        
+
             link.attr("points", function (d) {
                  return ""+d.source.x+","+d.source.y+" "+
                            (d.source.x*0.45+d.target.x*0.55)+","+
                            (d.source.y*0.45+d.target.y*0.55)+" "+
                            d.target.x+","+d.target.y});
                 
-                
-            gnodes.attr('transform', function(d) {
+            node.attr('transform', function(d) {
                 return 'translate('+[d.x, d.y]+')';
                 });
             
-            node.attr("fill", function(d) { if (d.fixed) {return '#ccc';} else {return '#ddd';}})
-        }                
+            //node.attr("fill", function(d) { if (d.fixed) {return '#ccc';} else {return '#ddd';}})
+        });                
+        
         
         function resize() {
             width = window.innerWidth/2;
@@ -195,44 +284,10 @@ with model:
         resize();
         d3.select(window).on("resize", resize);
         
-        force.nodes(graph.nodes)
-             .links(graph.links)
-             .on('tick', tick)
+        
+        force.linkDistance(100)
              .start();
-        
-        var link = svg.selectAll('.link')
-            .data(graph.links)
-            .enter().append('polyline')
-                .attr('class', 'link')
-                
-        svg.selectAll('.link')
-            .data(graph.links)        
-            .exit().remove();    
-                
-
-                
-        var gnodes = svg.selectAll('g.gnode')
-            .data(graph.nodes)
-            .enter()
-            .append('g')
-            .classed('gnode', true)
-            .on("dblclick", dblclick)
-            .on('mouseover', mouseover)
-            .on('mouseout', mouseout)
-            .call(force.drag);
-        
-            
-        var node = gnodes.append('circle')
-                .attr('class', 'node')
-                .attr('r', '20')
-                
-                
-        var labels = gnodes.append('text')
-            .text(function(d) {return d.label;});
-                
-
-
-                
+             
     }  
 
         
