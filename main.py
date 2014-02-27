@@ -33,9 +33,14 @@ class NengoGui(swi.SimpleWebInterface):
         nodes = [
             dict(label='a'),
             dict(label='b'),
+            dict(label='c'),
+            dict(label='d'),
             ]
         links = [
             dict(source=0, target=1),
+            dict(source=1, target=2),
+            dict(source=2, target=3),
+            dict(source=1, target=3),
             ]
         return json.dumps(dict(nodes=nodes, links=links))
         

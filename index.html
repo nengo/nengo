@@ -29,6 +29,13 @@
         stroke-width: 2px;
     }
     
+    svg g.gnode text {
+        fill: blue;
+        font-family: sans-serif;
+        text-anchor: middle;
+        alignment-baseline: middle;
+        }
+    
     
 </style>
 </head>
@@ -43,7 +50,12 @@ model = nengo.Model()
 with model:
     a = nengo.Ensemble(neurons=100, dimensions=2)
     b = nengo.Ensemble(neurons=80, dimensions=2)
+    c = nengo.Ensemble(neurons=80, dimensions=2)
+    d = nengo.Ensemble(neurons=80, dimensions=2)
     nengo.Connection(a, b, filter=0.01)
+    nengo.Connection(b, c, filter=0.01)
+    nengo.Connection(c, d, filter=0.01)
+    nengo.Connection(b, d, filter=0.01)
 </div>
     
 <div id="graph"></div>    
@@ -81,9 +93,11 @@ with model:
                 .attr("x2", function(d) { return d.target.x; })
                 .attr("y2", function(d) { return d.target.y; });
 
-            node.attr("cx", function(d) { return d.x; })
-                .attr("cy", function(d) { return d.y; })
-                .attr("fill", function(d) { if (d.fixed) {return '#ccc';} else {return '#ddd';}})
+            gnodes.attr('transform', function(d) {
+                return 'translate('+[d.x, d.y]+')';
+                });
+            
+            node.attr("fill", function(d) { if (d.fixed) {return '#ccc';} else {return '#ddd';}})
         }                
         
         function resize() {
@@ -109,13 +123,22 @@ with model:
 
 
                 
-        var node = svg.selectAll('.node')
+        var gnodes = svg.selectAll('g.gnode')
             .data(graph.nodes)
-            .enter().append('circle')
+            .enter()
+            .append('g')
+            .classed('gnode', true)
+            .on("dblclick", dblclick)
+            .call(force.drag);
+        
+            
+        var node = gnodes.append('circle')
                 .attr('class', 'node')
                 .attr('r', '20')
-                .on("dblclick", dblclick)
-                .call(force.drag);
+                
+                
+        var labels = gnodes.append('text')
+            .text(function(d) {return d.label;});
                 
 
 
