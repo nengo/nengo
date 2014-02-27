@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Nengo</title>
+<style type="text/css" media="screen">
+    #editor { 
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 50%;
+    }
+    div#graph { 
+        position: absolute;
+        top: 0;
+        right: 50%;
+        bottom: 0;
+        left: 0;
+        background-color: white;
+    }
+    
+    svg .link {
+        stroke: #333;
+        stroke-opacity: .6;
+    }
+    
+    svg .node {
+        stroke: #444;
+        stroke-width: 2px;
+    }
+    
+    
+</style>
+</head>
+<body>
+
+<script src="/ace/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="d3.min.js", type="text/javascript" charset="utf-8"></script>
+
+<div id="editor">import nengo
+
+model = nengo.Model()
+with model:
+    a = nengo.Ensemble(neurons=100, dimensions=2)
+    b = nengo.Ensemble(neurons=80, dimensions=2)
+    nengo.Connection(a, b, filter=0.01)
+</div>
+    
+<div id="graph"></div>    
+
+<script>
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/monokai");
+    editor.getSession().setMode("ace/mode/python");
+    
+    var graph = d3.select("div#graph");
+    
+    var svg = graph.append("svg");
+    
+    var force = d3.layout.force()
+        .charge(-120)
+        .linkDistance(50)
+        .size([100, 100]);
+    
+    var drag = force.drag()
+        .on('dragstart', dragstart);
+        
+    function dragstart(d) {
+      d3.select(this).classed("fixed", d.fixed = true);
+    }    
+
+    function dblclick(d) {
+      d3.select(this).classed("fixed", d.fixed = false);
+    }    
+        
+    d3.json('graph.json', function(graph) {
+
+        function tick() {        
+            link.attr("x1", function(d) { return d.source.x; })
+                .attr("y1", function(d) { return d.source.y; })
+                .attr("x2", function(d) { return d.target.x; })
+                .attr("y2", function(d) { return d.target.y; });
+
+            node.attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .attr("fill", function(d) { if (d.fixed) {return '#ccc';} else {return '#ddd';}})
+        }                
+        
+        function resize() {
+            width = window.innerWidth/2;
+            height = window.innerHeight;
+            svg.attr("width", width).attr("height", height);
+            force.size([width, height]).resume();            
+        }    
+            
+        resize();
+        d3.select(window).on("resize", resize);
+        
+        force.nodes(graph.nodes)
+             .links(graph.links)
+             .on('tick', tick)
+             .start();
+        
+        var link = svg.selectAll('.link')
+            .data(graph.links)
+            .enter().append('line')
+                .attr('class', 'link')
+                .style('stroke-width', 2);
+
+
+                
+        var node = svg.selectAll('.node')
+            .data(graph.nodes)
+            .enter().append('circle')
+                .attr('class', 'node')
+                .attr('r', '20')
+                .on("dblclick", dblclick)
+                .call(force.drag);
+                
+
+
+                
+    });  
+
+        
+</script>
+</body>
+</html>
