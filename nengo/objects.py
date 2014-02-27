@@ -234,7 +234,7 @@ class Node(object):
         self.label = label
         self._size_in = size_in
 
-        if size_out is None:
+        if size_out is None and output is not None:
             if isinstance(output, collections.Callable):
                 t, x = np.asarray(0.0), np.zeros(size_in)
                 args = [t, x] if size_in > 0 else [t]
@@ -247,9 +247,17 @@ class Node(object):
                          "of node is expected to take %d argument(s)")
                         % (output.__name__, self,
                            output.__code__.co_argcount, len(args)))
-                size_out = np.asarray(result).size
-            elif isinstance(output, np.ndarray):
-                size_out = output.size
+                shape_out = np.asarray(result).shape
+            else:  # must be np.ndarray
+                shape_out = output.shape
+
+            if len(shape_out) > 1:
+                raise ValueError(
+                    "Node output must be a vector (got array shape %s)"
+                    % str(shape_out))
+
+            size_out = shape_out[0]  # since len(shape_out) == 1
+
         self._size_out = size_out
 
         # Set up probes
