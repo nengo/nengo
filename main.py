@@ -1,6 +1,8 @@
 import swi
 import os.path
 import json
+import traceback
+import sys
 
 class NengoGui(swi.SimpleWebInterface):
     def swi_ace(self, *path):
@@ -29,7 +31,44 @@ class NengoGui(swi.SimpleWebInterface):
             html = f.read()
         return html
         
-    def swi_graph_json(self):
+    def swi_graph_json(self, code):
+    
+        try:
+            c = compile(code, '<editor>', 'exec')
+            exec(c)
+        except (SyntaxError, Exception):
+            try:
+                e_type, e_value, e_traceback = sys.exc_info()
+                tb = traceback.extract_tb(e_traceback)
+                
+                for (fn, line, funcname, text) in reversed(tb):
+                    if fn == '<editor>':
+                        error_line = line
+                        break
+                else:
+                    print 'syntax error?'
+                    error_line = 2    #TODO: figure out the line this happens on
+
+                print tb
+                traceback.print_exc()
+                
+                return json.dumps(dict(error_line=error_line, text=str(e_value)))
+            except:
+                traceback.print_exc()
+                
+        
+        nodes = []
+        node_map = {}
+        links = []
+        for obj in model.objs:
+            node_map[obj] = len(nodes)
+            nodes.append(dict(label=obj.label, line=3))
+        for c in model.connections:
+            links.append(dict(source=node_map[c.pre], target=node_map[c.post]))
+            
+        
+        '''
+        print 'code', code
         nodes = [
             dict(label='a', line=4),
             dict(label='b', line=5),
@@ -42,6 +81,9 @@ class NengoGui(swi.SimpleWebInterface):
             dict(source=2, target=3),
             dict(source=1, target=3),
             ]
+        '''    
+        print 'nodes', nodes
+        print 'links', links
         return json.dumps(dict(nodes=nodes, links=links))
         
 
