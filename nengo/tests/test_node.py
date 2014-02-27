@@ -137,6 +137,10 @@ def test_output_shape_error(Simulator):
         nengo.Node(output=[[1, 2], [3, 4]])
     with pytest.raises(ValueError):
         nengo.Node(output=lambda t: [[t, t+1]])
+    with pytest.raises(ValueError):
+        nengo.Node(output=[[3, 1], [2, 9]], size_out=4)
+    with pytest.raises(ValueError):
+        nengo.Node(output=[1, 2, 3, 4, 5], size_out=4)
 
 
 if __name__ == "__main__":
