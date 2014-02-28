@@ -44,13 +44,16 @@ class NengoGui(swi.SimpleWebInterface):
                 e_type, e_value, e_traceback = sys.exc_info()
                 tb = traceback.extract_tb(e_traceback)
                 
-                for (fn, line, funcname, text) in reversed(tb):
-                    if fn == '<editor>':
-                        error_line = line
-                        break
-                else:
-                    print 'syntax error?'
-                    error_line = 2    #TODO: figure out the line this happens on
+                if e_type is SyntaxError:
+                    error_line = e_value.lineno
+                else:    
+                    for (fn, line, funcname, text) in reversed(tb):
+                        if fn == '<editor>':
+                            error_line = line
+                            break
+                    else:
+                        print 'Unknown Error'
+                        error_line = 0
 
                 print tb
                 traceback.print_exc()
