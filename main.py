@@ -4,6 +4,8 @@ import json
 import traceback
 import sys
 
+import nengo_helper
+
 class NengoGui(swi.SimpleWebInterface):
     def swi_ace(self, *path):
         """Serve the contents of the ace directory"""
@@ -69,7 +71,7 @@ class NengoGui(swi.SimpleWebInterface):
             links = []
             for obj in model.objs:
                 node_map[obj] = len(nodes)
-                nodes.append(dict(label=obj.label, line=3, id=len(nodes)))
+                nodes.append(dict(label=obj.label, line=obj._created_line_number-1, id=len(nodes)))
             for c in model.connections:
                 links.append(dict(source=node_map[c.pre], target=node_map[c.post], id=len(links)))
         except:
