@@ -5,6 +5,14 @@ import traceback
 import sys
 
 import nengo_helper
+import nengo
+
+import re
+import keyword
+def isidentifier(s):
+    if s in keyword.kwlist:
+        return False
+    return re.match(r'^[a-z_][a-z0-9_]*$', s, re.I) is not None
 
 class NengoGui(swi.SimpleWebInterface):
     def swi_ace(self, *path):
@@ -71,6 +79,18 @@ class NengoGui(swi.SimpleWebInterface):
             links = []
             for obj in model.objs:
                 node_map[obj] = len(nodes)
+                
+                label = obj.label
+                if ((isinstance(obj, nengo.Ensemble) and label=='Ensemble') or
+                      (isinstance(obj, nengo.Node) and label=='Node') or
+                      (isinstance(obj, nengo.Network) and label=='Network')):
+                      
+                    text = code.splitlines()[obj._created_line_number-1]
+                    if '=' in text:
+                        text = text.split('=', 1)[0].strip()
+                        if isidentifier(text):
+                            obj.label = text
+                
                 nodes.append(dict(label=obj.label, line=obj._created_line_number-1, id=len(nodes)))
             for c in model.connections:
                 links.append(dict(source=node_map[c.pre], target=node_map[c.post], id=len(links)))

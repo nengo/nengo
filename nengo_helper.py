@@ -8,6 +8,9 @@ class ModelHelper(nengo.Model):
         for fn, line, function, code in reversed(traceback.extract_stack()):
             if fn == '<editor>':
                 obj._created_line_number = line
+                break
+        else:
+            obj._created_line_number = 0
         
 nengo.Model = ModelHelper        
 
