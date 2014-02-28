@@ -6,7 +6,7 @@ class ModelHelper(nengo.Model):
         super(ModelHelper, nengo.Model).add(self, obj)
         
         for fn, line, function, code in reversed(traceback.extract_stack()):
-            if fn == '<editor>':
+            if fn == 'nengo_gui_temp.py':
                 obj._created_line_number = line
                 break
         else:

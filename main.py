@@ -43,9 +43,11 @@ class NengoGui(swi.SimpleWebInterface):
         
     def swi_graph_json(self, code):
     
+        with open('nengo_gui_temp.py', 'w') as f:
+            f.write(code.replace('\r\n', '\n'))
         
         try:
-            c = compile(code, '<editor>', 'exec')
+            c = compile(code, 'nengo_gui_temp.py', 'exec')
             locals = {}
             globals = {}
             exec c in globals, locals
@@ -60,7 +62,7 @@ class NengoGui(swi.SimpleWebInterface):
                     error_line = e_value.lineno
                 else:    
                     for (fn, line, funcname, text) in reversed(tb):
-                        if fn == '<editor>':
+                        if fn == 'nengo_gui_temp.py':
                             error_line = line
                             break
                     else:

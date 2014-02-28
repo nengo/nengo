@@ -101,6 +101,8 @@ editor.on('change', function(e) {reload_graph_data();});
         
 var svg = d3.select("svg");
 var force = d3.layout.force();
+force.charge(-100);
+
 
 var nodes = force.nodes();
 var links = force.links();
@@ -184,6 +186,7 @@ d3.selection.prototype.moveToFront = function() {
                 if (nodes[j].id == graph.nodes[i].id) {
                     found = true;
                     nodes[j].label = graph.nodes[i].label;
+                    nodes[j].line = graph.nodes[i].line;
                 }
             }
             if (!found) {
