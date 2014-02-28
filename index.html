@@ -65,10 +65,12 @@ with model:
     b = nengo.Ensemble(neurons=80, dimensions=2)
     c = nengo.Ensemble(neurons=80, dimensions=2)
     d = nengo.Ensemble(neurons=80, dimensions=2)
+    e = nengo.networks.EnsembleArray(80,2)
     nengo.Connection(a, b, filter=0.01)
     nengo.Connection(b, c, filter=0.01)
     nengo.Connection(c, d, filter=0.01)
     nengo.Connection(b, d, filter=0.01)
+    nengo.Connection(d, e.input, filter=0.01)
 </div>
     
 <div id="graph">
@@ -230,8 +232,8 @@ d3.selection.prototype.moveToFront = function() {
             .append('g')
             .attr('class', 'node')
             .on("dblclick", dblclick)
-            //.on('mouseover', mouseover)
-            //.on('mouseout', mouseout)
+            .on('mouseover', mouseover)
+            .on('mouseout', mouseout)
             .call(force.drag);
         
         
@@ -270,7 +272,7 @@ d3.selection.prototype.moveToFront = function() {
                 return 'translate('+[d.x, d.y]+')';
                 });
             
-            //node.attr("fill", function(d) { if (d.fixed) {return '#ccc';} else {return '#ddd';}})
+            node.attr("fill", function(d) { if (d.fixed) {return '#ccc';} else {return '#ddd';}})
         });                
         
         

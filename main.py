@@ -33,9 +33,12 @@ class NengoGui(swi.SimpleWebInterface):
         
     def swi_graph_json(self, code):
     
+        
         try:
             c = compile(code, '<editor>', 'exec')
-            exec(c)
+            locals = {}
+            globals = {}
+            exec c in globals, locals
         except (SyntaxError, Exception):
             try:
                 e_type, e_value, e_traceback = sys.exc_info()
@@ -57,6 +60,7 @@ class NengoGui(swi.SimpleWebInterface):
                 traceback.print_exc()
                 
         try:
+            model = locals['model']
             nodes = []
             node_map = {}
             links = []
@@ -70,26 +74,9 @@ class NengoGui(swi.SimpleWebInterface):
             return json.dumps(dict(error_line=2, text='Unknown'))
             
         
-        '''
-        print 'code', code
-        nodes = [
-            dict(label='a', line=4),
-            dict(label='b', line=5),
-            dict(label='c', line=6),
-            dict(label='d', line=7),
-            ]
-        links = [
-            dict(source=0, target=1),
-            dict(source=1, target=2),
-            dict(source=2, target=3),
-            dict(source=1, target=3),
-            ]
-        '''    
-        print 'nodes', nodes
-        print 'links', links
         return json.dumps(dict(nodes=nodes, links=links))
         
 
 if __name__=='__main__':
-    swi.start(NengoGui, 8080)
+    swi.start(NengoGui, 8080, asynch=False)
     #swi.browser(8080)
