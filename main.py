@@ -56,6 +56,8 @@ class NengoGui(swi.SimpleWebInterface):
                 
                 if e_type is SyntaxError:
                     error_line = e_value.lineno
+                elif e_type is IndentationError:
+                    error_line = e_value.lineno
                 else:    
                     for (fn, line, funcname, text) in reversed(tb):
                         if fn == '<editor>':
