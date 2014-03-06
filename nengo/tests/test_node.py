@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def test_simple(Simulator):
     m = nengo.Model('test_simple', seed=123)
 
-    input = nengo.Node(output=np.sin)
+    input = nengo.Node(output=lambda t: np.sin(t))
     p = nengo.Probe(input, 'output')
 
     sim = Simulator(m)
@@ -37,7 +37,7 @@ def test_simple(Simulator):
 def test_connected(Simulator):
     m = nengo.Model('test_connected', seed=123)
 
-    input = nengo.Node(output=np.sin, label='input')
+    input = nengo.Node(output=lambda t: np.sin(t), label='input')
     output = nengo.Node(output=lambda t, x: np.square(x),
                         size_in=1,
                         label='output')
@@ -73,7 +73,7 @@ def test_connected(Simulator):
 def test_passthrough(Simulator):
     m = nengo.Model("test_passthrough", seed=0)
 
-    in1 = nengo.Node(output=np.sin)
+    in1 = nengo.Node(output=lambda t: np.sin(t))
     in2 = nengo.Node(output=lambda t: t)
     passthrough = nengo.Node(size_in=1)
     out = nengo.Node(output=lambda t, x: x, size_in=1)

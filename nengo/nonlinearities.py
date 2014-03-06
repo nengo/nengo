@@ -4,7 +4,7 @@ import logging
 import numpy as np
 
 import nengo.decoders
-from nengo.helpers import ObjSlice
+from nengo.objects import Neurons
 
 logger = logging.getLogger(__name__)
 
@@ -35,53 +35,6 @@ class PythonFunction(object):
     @property
     def n_args(self):
         return 2 if self.n_in > 0 else 1
-
-
-class Neurons(object):
-
-    def __init__(self, n_neurons, bias=None, gain=None, label=None):
-        self.n_neurons = n_neurons
-        self.bias = bias
-        self.gain = gain
-        if label is None:
-            label = "<%s%d>" % (self.__class__.__name__, id(self))
-        self.label = label
-
-        self.probes = {'output': []}
-
-    def __str__(self):
-        r = self.__class__.__name__ + "("
-        r += self.label if hasattr(self, 'label') else "id " + str(id(self))
-        r += ", %dN)" if hasattr(self, 'n_neurons') else ")"
-        return r
-
-    def __repr__(self):
-        return str(self)
-
-    def __getitem__(self, key):
-        return ObjSlice(self, key)
-
-    def default_encoders(self, dimensions, rng):
-        raise NotImplementedError("Neurons must provide default_encoders")
-
-    def rates(self, x):
-        raise NotImplementedError("Neurons must provide rates")
-
-    def set_gain_bias(self, max_rates, intercepts):
-        raise NotImplementedError("Neurons must provide set_gain_bias")
-
-    def probe(self, probe, **kwargs):
-        if probe.attr == 'output':
-            nengo.Connection(self, probe, filter=probe.filter, **kwargs)
-        else:
-            raise NotImplementedError(
-                "Probe target '%s' is not probable" % probe.attr)
-
-        self.probes[probe.attr].append(probe)
-        return probe
-
-    def add_to_model(self, model):
-        model.objs.append(self)
 
 
 class Direct(Neurons):
