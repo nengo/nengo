@@ -41,6 +41,8 @@ def test_default(Simulator):
 
 
 def test_with(Simulator):
+    model = nengo.Model('default')
+    assert nengo.context[-1] == model
     con1 = MyContext()
     con2 = MyContext()
     con3 = MyContext()
