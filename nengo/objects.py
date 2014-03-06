@@ -266,7 +266,9 @@ class Node(object):
     size_in : int, optional
         The number of input dimensions.
     size_out : int, optional
-        The size of the output signal. If not specified, then size_in.
+        The size of the output signal.
+        Optional; if not specified, it will be determined based on
+        the values of ``output`` and ``size_in``.
 
     Attributes
     ----------
