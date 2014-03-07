@@ -67,9 +67,9 @@ def remove_passthrough_nodes(objs, connections):
     Nodes.
     
     """
-    c_removed = set()  # connections we are removing
-    c_new = set()      # connections we are adding    
-    obj_removed = set()  # objects we are removing
+    c_removed = []    # connections we are removing
+    c_new = []        # connections we are adding    
+    obj_removed = []  # objects we are removing
     
     # these hold all of the inputs to and outputs from each object
     inputs = {obj:[] for obj in objs}
@@ -81,14 +81,14 @@ def remove_passthrough_nodes(objs, connections):
     # look for passthrough Nodes to remove
     for obj in objs:
         if isinstance(obj, objects.Node) and obj.output is None:
-            obj_removed.add(obj)
+            obj_removed.append(obj)
             
             # get rid of the connections to and from this Node
             for c in inputs[obj]:
-                c_removed.add(c)
+                c_removed.append(c)
                 outputs[c.pre].remove(c)
             for c in outputs[obj]:
-                c_removed.add(c)
+                c_removed.append(c)
                 inputs[c.post].remove(c)
             
             # replace those connections with equivalent ones
@@ -127,7 +127,7 @@ def remove_passthrough_nodes(objs, connections):
                             c = objects.Connection(c_in.pre, c_out.post, 
                                     filter=filter, transform=transform, **args)
                                     
-                        c_new.add(c)
+                        c_new.append(c)
                         outputs[c.pre].append(c)  # put this in the list, since
                         inputs[c.post].append(c)  #  it might be used another
                                                   #  time through the loop
