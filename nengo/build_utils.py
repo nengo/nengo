@@ -72,8 +72,11 @@ def remove_passthrough_nodes(objs, connections):
     obj_removed = []  # objects we are removing
     
     # these hold all of the inputs to and outputs from each object
-    inputs = {obj:[] for obj in objs}
-    outputs = {obj:[] for obj in objs}
+    inputs = {}
+    outputs = {}
+    for obj in objs:
+        inputs[obj] = []
+        outputs[obj] = []
     for c in connections:
         inputs[c.post].append(c)
         outputs[c.pre].append(c)
