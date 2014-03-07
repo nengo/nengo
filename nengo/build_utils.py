@@ -102,37 +102,8 @@ def remove_passthrough_nodes(objs, connections):
                     raise Exception('Cannot remove a Node with feedback')
 
                 for c_out in outputs[obj]:
-
-                    # determine the filter for the new Connection
-                    if c_in.filter is None:
-                        filter = c_out.filter
-                    elif c_out.filter is None:
-                        filter = c_in.filter
-                    else:
-                        raise NotImplementedError('Cannot merge two filters')
-                        # Note: the algorithm below is in the right ballpark,
-                        #  but isn't exactly the same as two low-pass filters
-                        #filter = c_out.filter + c_in.filter
-
-                    function = c_in.function
-                    if c_out.function is not None:
-                        raise Exception('Cannot remove a Node with a' +
-                                        'function being computed on it')
-
-                    # compute the combined transform
-                    transform = np.dot(c_out.transform, c_in.transform)
-                    # check if the transform is 0 (this happens a lot
-                    #  with things like identity transforms)
-                    if not np.all(transform == 0):
-                        dummy = model.Model()  # need a dummy model so these
-                        with dummy:            # connections don't get added
-                            args = {}
-                            if function is not None:
-                                args['function'] = function
-                            c = objects.Connection(c_in.pre, c_out.post,
-                                                   filter=filter,
-                                                   transform=transform, **args)
-
+                    c = _create_replacement_connection(c_in, c_out)
+                    if c is not None:
                         c_new.append(c)
                         outputs[c.pre].append(c)  # put this in the list, since
                         inputs[c.post].append(c)  # it might be used another
@@ -149,3 +120,42 @@ def remove_passthrough_nodes(objs, connections):
         objs.remove(obj)
 
     return objs, connections
+
+
+def _create_replacement_connection(c_in, c_out):
+    """Generate a new Connection to replace two through a passthrough Node"""
+    assert c_in.post is c_out.pre
+    assert c_in.post.output is None
+
+    # determine the filter for the new Connection
+    if c_in.filter is None:
+        filter = c_out.filter
+    elif c_out.filter is None:
+        filter = c_in.filter
+    else:
+        raise NotImplementedError('Cannot merge two filters')
+        # Note: the algorithm below is in the right ballpark,
+        #  but isn't exactly the same as two low-pass filters
+        #filter = c_out.filter + c_in.filter
+
+    function = c_in.function
+    if c_out.function is not None:
+        raise Exception('Cannot remove a Node with a' +
+                        'function being computed on it')
+
+    # compute the combined transform
+    transform = np.dot(c_out.transform, c_in.transform)
+    # check if the transform is 0 (this happens a lot
+    #  with things like identity transforms)
+    if np.all(transform == 0):
+        return None
+
+    dummy = model.Model()  # need a dummy model so these
+    with dummy:            # connections don't get added
+        args = {}
+        if function is not None:
+            args['function'] = function
+        c = objects.Connection(c_in.pre, c_out.post,
+                               filter=filter,
+                               transform=transform, **args)
+    return c
