@@ -6,7 +6,7 @@ import numpy as np
 
 import nengo
 import nengo.decoders
-import nengo.nonlinearities
+import nengo.objects
 from nengo.utils.distributions import UniformHypersphere
 
 logger = logging.getLogger(__name__)
@@ -406,7 +406,7 @@ class Operator(object):
     def init_sigdict(self, sigdict, dt):
         """
         Install any buffers into the signals view that
-        this operator will need. Classes for nonlinearities
+        this operator will need. Classes for neurons
         that use extra buffers should create them here.
         """
         for sig in self.all_signals:
@@ -966,7 +966,7 @@ class Builder(object):
 
         # Set up transform
         transform = np.array(conn.transform_full, dtype=np.float64, copy=True)
-        if isinstance(conn.post, nengo.nonlinearities.Neurons):
+        if isinstance(conn.post, nengo.objects.Neurons):
             transform *= conn.post.gain[:, np.newaxis]
         self.model.operators.append(
             DotInc(Signal(transform, name=conn.label + ".transform"),
