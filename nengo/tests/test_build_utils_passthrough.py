@@ -42,7 +42,7 @@ def test_remove_passthrough_bg():
         input = nengo.Node([1]*D, label='input')
 
         def printout(t, x):
-            print t, x
+            print(t, x)
         output = nengo.Node(printout, size_in=D, label='output')
         bg = nengo.networks.BasalGanglia(D, 20, label='BG')
         nengo.Connection(input, bg.input, filter=0.01)
