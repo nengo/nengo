@@ -16,7 +16,7 @@ class EnsembleArray(nengo.Network):
 
         for i in range(n_ensembles):
             e = nengo.Ensemble(copy.deepcopy(neurons),
-                               self.dimensions_per_ensemble, label='%d'%i,
+                               self.dimensions_per_ensemble, label='%d' % i,
                                **ens_args)
             trans = transform[i * self.dimensions_per_ensemble:
                               (i + 1) * self.dimensions_per_ensemble, :]
