@@ -938,7 +938,6 @@ class Builder(object):
             conn.signal = Signal(np.zeros(conn.dimensions), name=conn.label)
             if conn._decoders is None:
                 activities = conn.pre.activities(conn.eval_points) * dt
-                print conn.eval_points
                 if conn.function is None:
                     targets = conn.eval_points
                 else:
