@@ -69,31 +69,23 @@ def remove_passthrough_nodes(objs, connections):
     Nodes.
 
     """
-    c_removed = []    # connections we are removing
-    c_new = []        # connections we are adding
-    obj_removed = []  # objects we are removing
-
     # these hold all of the inputs to and outputs from each object
-    inputs = {}
-    outputs = {}
-    for obj in objs:
-        inputs[obj] = []
-        outputs[obj] = []
-    for c in connections:
-        inputs[c.post].append(c)
-        outputs[c.pre].append(c)
+
+    inputs, outputs = find_all_io(objs, connections)
+    result_conn = list(connections)
+    result_objs = list(objs)
 
     # look for passthrough Nodes to remove
     for obj in objs:
         if isinstance(obj, objects.Node) and obj.output is None:
-            obj_removed.append(obj)
+            result_objs.remove(obj)
 
             # get rid of the connections to and from this Node
             for c in inputs[obj]:
-                c_removed.append(c)
+                result_conn.remove(c)
                 outputs[c.pre].remove(c)
             for c in outputs[obj]:
-                c_removed.append(c)
+                result_conn.remove(c)
                 inputs[c.post].remove(c)
 
             # replace those connections with equivalent ones
@@ -104,22 +96,25 @@ def remove_passthrough_nodes(objs, connections):
                 for c_out in outputs[obj]:
                     c = _create_replacement_connection(c_in, c_out)
                     if c is not None:
-                        c_new.append(c)
+                        result_conn.append(c)
                         outputs[c.pre].append(c)  # put this in the list, since
                         inputs[c.post].append(c)  # it might be used another
                                                   # time through the loop
 
-    # build up the resulting lists
-    for c in c_new:
-        if c not in c_removed:
-            connections.append(c)
-    for c in c_removed:
-        if c not in c_new:
-            connections.remove(c)
-    for obj in obj_removed:
-        objs.remove(obj)
+    return result_objs, result_conn
 
-    return objs, connections
+
+def find_all_io(objs, connections):
+    """Build up a list of all inputs and outputs for each object"""
+    inputs = {}
+    outputs = {}
+    for obj in objs:
+        inputs[obj] = []
+        outputs[obj] = []
+    for c in connections:
+        inputs[c.post].append(c)
+        outputs[c.pre].append(c)
+    return inputs, outputs
 
 
 def _create_replacement_connection(c_in, c_out):
