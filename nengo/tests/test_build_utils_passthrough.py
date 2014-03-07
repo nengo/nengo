@@ -16,7 +16,7 @@ def test_remove_passthrough():
         b = nengo.networks.EnsembleArray(50, D, label='b')
 
         def printout(t, x):
-            print t, x
+            print(t, x)
         output = nengo.Node(printout, size_in=D, label='output')
 
         nengo.Connection(input, a.input, filter=0.01)
