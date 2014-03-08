@@ -40,7 +40,7 @@ def generate_dot(objs, connections):
     return '\n'.join(text)
 
 
-def remove_passthrough_nodes(objs, connections):
+def remove_passthrough_nodes(objs, connections):  # noqa: C901
     """Returns a version of the model without passthrough Nodes
 
     For some backends (such as SpiNNaker), it is useful to remove Nodes that
