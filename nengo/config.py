@@ -13,11 +13,14 @@ can be found at
 """
 
 import weakref
+import inspect
 
 
 class Parameter(object):
+    """Simple decorator for storing configuration parameters"""
     def __init__(self, default):
         self.default = default
+        # use a WeakKey dictionary so items can still be garbage collected
         self.data = weakref.WeakKeyDictionary()
 
     def __get__(self, instance, owner):
@@ -27,7 +30,16 @@ class Parameter(object):
         self.data[instance] = value
 
 
+def configures(nengo_class):
+    """Decorator to mark ConfigItems as to what class they configure"""
+    def set_config_nengo_class(klass):
+        klass.nengo_class = nengo_class
+        return klass
+    return set_config_nengo_class
+
+
 class ConfigItem(object):
+    """Base class for defining sets of parameters to configure"""
     def __setattr__(self, key, value):
         if key not in dir(self):
             raise AttributeError('Unknown config parameter "%s"' % key)
@@ -35,17 +47,33 @@ class ConfigItem(object):
 
 
 class Config(object):
-    def __init__(self, item_classes):
+    """Base class for backends to define their own Config.
+
+    Subclasses are expected to set a class variable config_items
+    to be a list of ConfigItem subclasses, each decorated with a
+    @configures to indicate what nengo class these parameters are for.
+    """
+
+    def __init__(self):
         self.items = {}
-        self.item_classes = item_classes
+        if not hasattr(self, 'config_items'):
+            raise AttributeError('Config must have config_items ' +
+                                 'set to be a list of ConfigItems')
+        for config_item in self.config_items:
+            if not (inspect.isclass(config_item) and
+                    issubclass(config_item, ConfigItem) and
+                    hasattr(config_item, 'nengo_class')):
+                raise AttributeError('config_items must be a list of ' +
+                                     'ConfigItem subclasses, each with ' +
+                                     '@configures decorators ' +
+                                     'indicating what class it configures')
 
     def __getitem__(self, key):
         item = self.items.get(key, None)
         if item is None:
-            # TODO: what if these classes are subclasses of each other?
-            for (klass, item_class) in self.item_classes.items():
-                if isinstance(key, klass):
-                    item = item_class()
+            for config_item in self.config_items:
+                if isinstance(key, config_item.nengo_class):
+                    item = config_item()
                     self.items[key] = item
                     break
             else:
