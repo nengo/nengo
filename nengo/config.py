@@ -12,11 +12,13 @@ can be found at
 
 """
 
+import weakref
+
 
 class Parameter(object):
     def __init__(self, default):
         self.default = default
-        self.data = {}
+        self.data = weakref.WeakKeyDictionary()
 
     def __get__(self, instance, owner):
         return self.data.get(instance, self.default)
