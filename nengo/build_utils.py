@@ -6,8 +6,8 @@ import nengo
 import numpy as np
 
 
-def generate_dot(objs, connections):
-    """Create a .dot file with this set of objects and connections
+def generate_graphviz(objs, connections):
+    """Create a .gv file with this set of objects and connections
 
     Parameters
     ----------
