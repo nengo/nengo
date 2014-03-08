@@ -2,8 +2,7 @@
 generating their own Builder system.
 """
 
-from . import objects
-from . import model
+import nengo
 import numpy as np
 
 
@@ -77,7 +76,7 @@ def remove_passthrough_nodes(objs, connections):  # noqa: C901
 
     # look for passthrough Nodes to remove
     for obj in objs:
-        if isinstance(obj, objects.Node) and obj.output is None:
+        if isinstance(obj, nengo.Node) and obj.output is None:
             result_objs.remove(obj)
 
             # get rid of the connections to and from this Node
@@ -145,12 +144,12 @@ def _create_replacement_connection(c_in, c_out):
     if np.all(transform == 0):
         return None
 
-    dummy = model.Model()  # need a dummy model so these
+    dummy = nengo.Model()  # need a dummy model so these
     with dummy:            # connections don't get added
         args = {}
         if function is not None:
             args['function'] = function
-        c = objects.Connection(c_in.pre, c_out.post,
-                               filter=filter,
-                               transform=transform, **args)
+        c = nengo.Connection(c_in.pre, c_out.post,
+                             filter=filter,
+                             transform=transform, **args)
     return c
