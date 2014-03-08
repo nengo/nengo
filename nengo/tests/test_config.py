@@ -5,20 +5,17 @@ import nengo.config
 
 
 def test_config():
+    @nengo.config.configures(nengo.Ensemble)
     class TestConfigEnsemble(nengo.config.ConfigItem):
         something = nengo.config.Parameter(None)
         other = nengo.config.Parameter(0)
 
+    @nengo.config.configures(nengo.Connection)
     class TestConfigConnection(nengo.config.ConfigItem):
         something_else = nengo.config.Parameter(None)
 
     class TestConfig(nengo.config.Config):
-        def __init__(self):
-            config = {
-                nengo.Ensemble: TestConfigEnsemble,
-                nengo.Connection: TestConfigConnection
-                }
-            super(TestConfig, self).__init__(config)
+        config_items = [TestConfigEnsemble, TestConfigConnection]
 
     model = nengo.Model()
     with model:
@@ -61,6 +58,7 @@ def test_parameter_checking():
                 raise AttributeError('value must be positive')
             super(PositiveParameter, self).__set__(instance, value)
 
+    @nengo.config.configures(nengo.Ensemble)
     class TestConfigEnsemble(nengo.config.ConfigItem):
         number = PositiveParameter(1)
 
@@ -69,7 +67,9 @@ def test_parameter_checking():
         a = nengo.Ensemble(50, 1)
         b = nengo.Ensemble(90, 1)
 
-    config = nengo.config.Config({nengo.Ensemble: TestConfigEnsemble})
+    class TestConfig(nengo.config.Config):
+        config_items = [TestConfigEnsemble]
+    config = TestConfig()
 
     config[a].number = 3
     with pytest.raises(AttributeError):
@@ -77,6 +77,32 @@ def test_parameter_checking():
     with pytest.raises(AttributeError):
         config[b].number = 'a'
 
+
+def test_invalid_config():
+
+    @nengo.config.configures(nengo.Ensemble)
+    class TestConfigEnsemble(nengo.config.ConfigItem):
+        number = nengo.config.Parameter(1)
+
+    class TestBadConfigConnection(nengo.config.ConfigItem):
+        number = nengo.config.Parameter(1)
+
+    with pytest.raises(AttributeError):
+        class TestConfig(nengo.config.Config):
+            pass
+        TestConfig()
+    with pytest.raises(AttributeError):
+        class TestConfig(nengo.config.Config):
+            config_items = [1, 2, 3]
+        TestConfig()
+    with pytest.raises(AttributeError):
+        class TestConfig(nengo.config.Config):
+            config_items = [TestBadConfigConnection]
+        TestConfig()
+    with pytest.raises(AttributeError):
+        class TestConfig(nengo.config.Config):
+            config_items = [TestConfigEnsemble, TestBadConfigConnection]
+        TestConfig()
 
 if __name__ == '__main__':
     nengo.log(debug=True)
