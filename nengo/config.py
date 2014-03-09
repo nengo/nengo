@@ -87,10 +87,12 @@ class Config(object):
     def __getitem__(self, key):
         item = self.items.get(key, None)
         if item is None:
-            try:
-                item = self.configurable[key.__class__]()
-                self.items[key] = item
-            except KeyError as e:
-                raise KeyError('No parameters for %s objects\n%s' % (
-                    key.__class__.__name__, e))
+            for cls in key.__class__.__mro__:
+                if cls in self.configurable:
+                    item = self.configurable[cls]()
+                    self.items[key] = item
+                    break
+            else:
+                raise KeyError('No parameters for %s objects' %
+                               key.__class__.__name__)
         return item
