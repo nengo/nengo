@@ -180,10 +180,8 @@ class Ensemble(object):
 
     @neurons.setter
     def neurons(self, _neurons):
-        if isinstance(_neurons, int):
-            logger.warning(("neurons should be an instance of a Neuron type, "
-                            "not an int. Defaulting to LIF."))
-            _neurons = nengo.LIF(_neurons)
+        if not isinstance(_neurons, Neurons):
+            raise TypeError('neurons must be a subclass of Neurons.')
 
         _neurons.dimensions = self.dimensions
         self._neurons = _neurons
