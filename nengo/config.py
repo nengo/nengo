@@ -13,7 +13,6 @@ can be found at
 """
 
 import weakref
-import inspect
 
 
 class Parameter(object):
@@ -39,7 +38,16 @@ def configures(nengo_class):
 
 
 class ConfigItem(object):
-    """Base class for defining sets of parameters to configure"""
+    """Base class for defining sets of parameters to configure
+
+    Example
+    -------
+
+    @nengo.config.configures(nengo.Connection)
+    class TestConfigConnection(nengo.config.ConfigItem):
+        my_param = nengo.config.Parameter(None)
+
+    """
     def __setattr__(self, key, value):
         if key not in dir(self):
             raise AttributeError('Unknown config parameter "%s"' % key)
@@ -52,31 +60,37 @@ class Config(object):
     Subclasses are expected to set a class variable config_items
     to be a list of ConfigItem subclasses, each decorated with a
     @configures to indicate what nengo class these parameters are for.
+
+    Example
+    -------
+
+    @nengo.config.configures(nengo.Connection)
+    class TestConfigConnection(nengo.config.ConfigItem):
+        my_param = nengo.config.Parameter(None)
+
+    class TestConfig(nengo.config.Config):
+        config_items = [TestConfigConnection]
     """
 
     def __init__(self):
         self.items = {}
-        if not hasattr(self, 'config_items'):
-            raise AttributeError('Config must have config_items ' +
-                                 'set to be a list of ConfigItems')
-        for config_item in self.config_items:
-            if not (inspect.isclass(config_item) and
-                    issubclass(config_item, ConfigItem) and
-                    hasattr(config_item, 'nengo_class')):
-                raise AttributeError('config_items must be a list of ' +
-                                     'ConfigItem subclasses, each with ' +
-                                     '@configures decorators ' +
-                                     'indicating what class it configures')
+        self.configurable = {}
+        try:
+            for config_item in self.config_items:
+                self.configurable[config_item.nengo_class] = config_item
+        except AttributeError as e:
+            raise AttributeError(
+                "config_items doesn't exist, or contains a non-decorated "
+                "ConfigItem. See help(nengo.config.Config) for an example."
+                "\n%s" % e)
 
     def __getitem__(self, key):
         item = self.items.get(key, None)
         if item is None:
-            for config_item in self.config_items:
-                if isinstance(key, config_item.nengo_class):
-                    item = config_item()
-                    self.items[key] = item
-                    break
-            else:
-                raise KeyError('No parameters for %s objects' %
-                               key.__class__.__name__)
+            try:
+                item = self.configurable[key.__class__]()
+                self.items[key] = item
+            except KeyError as e:
+                raise KeyError('No parameters for %s objects\n%s' % (
+                    key.__class__.__name__, e))
         return item
