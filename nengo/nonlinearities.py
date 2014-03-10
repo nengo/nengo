@@ -1,9 +1,7 @@
-import copy
 import logging
 
 import numpy as np
 
-import nengo.decoders
 from nengo.objects import Neurons
 
 logger = logging.getLogger(__name__)
@@ -19,19 +17,6 @@ class PythonFunction(object):
             label = "<Direct%d>" % id(self)
         self.label = label
 
-    def __deepcopy__(self, memo):
-        try:
-            return memo[id(self)]
-        except KeyError:
-            rval = self.__class__.__new__(self.__class__)
-            memo[id(self)] = rval
-            for k, v in self.__dict__.items():
-                if k == 'fn':
-                    rval.fn = v
-                else:
-                    rval.__dict__[k] = copy.deepcopy(v, memo)
-            return rval
-
     @property
     def n_args(self):
         return 2 if self.n_in > 0 else 1
@@ -44,14 +29,11 @@ class Direct(Neurons):
         # with other neuron types
         Neurons.__init__(self, 0, label=label)
 
-    def default_encoders(self, dimensions, rng):
-        return np.identity(dimensions)
-
-    def rates(self, x):
+    def rates(self, x, gain, bias):
         return x
 
-    def set_gain_bias(self, max_rates, intercepts):
-        pass
+    def gain_bias(self, max_rates, intercepts):
+        return None, None
 
 
 # TODO: class BasisFunctions or Population or Express;
@@ -74,10 +56,6 @@ class _LIFBase(Neurons):
     def n_out(self):
         return self.n_neurons
 
-    def default_encoders(self, dimensions, rng):
-        return nengo.decoders.sample_hypersphere(
-            dimensions, self.n_neurons, rng, surface=True)
-
     def rates_from_current(self, J):
         """LIF firing rates in Hz for input current (incl. bias)"""
         old = np.seterr(divide='ignore', invalid='ignore')
@@ -91,7 +69,7 @@ class _LIFBase(Neurons):
             np.seterr(**old)
         return r
 
-    def rates(self, x):
+    def rates(self, x, gain, bias):
         """LIF firing rates in Hz for vector space
 
         Parameters
@@ -99,10 +77,10 @@ class _LIFBase(Neurons):
         x: ndarray of any shape
             vector-space inputs
         """
-        J = self.gain * x + self.bias
+        J = gain * x + bias
         return self.rates_from_current(J)
 
-    def set_gain_bias(self, max_rates, intercepts):
+    def gain_bias(self, max_rates, intercepts):
         """Compute the alpha and bias needed to get the given max_rate
         and intercept values.
 
@@ -121,8 +99,9 @@ class _LIFBase(Neurons):
         intercepts = np.asarray(intercepts)
         x = 1.0 / (1 - np.exp(
             (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
-        self.gain = (1 - x) / (intercepts - 1.0)
-        self.bias = 1 - self.gain * intercepts
+        gain = (1 - x) / (intercepts - 1.0)
+        bias = 1 - gain * intercepts
+        return gain, bias
 
 
 class LIFRate(_LIFBase):

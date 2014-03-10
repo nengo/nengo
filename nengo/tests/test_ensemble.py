@@ -22,11 +22,10 @@ def test_encoders(n_dimensions, n_neurons=10, encoders=None):
             'dimensions': n_dimensions}
 
     model = nengo.Model('_test_encoders')
-    nengo.Ensemble(encoders=encoders, **args)
+    ens = nengo.Ensemble(encoders=encoders, **args)
     sim = nengo.Simulator(model)
 
-    assert np.allclose(
-        encoders, next(o for o in sim.model.objs if o.label == 'A').encoders)
+    assert np.allclose(encoders, sim.neurons(ens.neurons).encoders)
 
 
 def test_encoders_wrong_shape():
@@ -63,14 +62,14 @@ def test_constant_scalar(Simulator, nl):
 
     with Plotter(Simulator, nl) as plt:
         t = sim.trange()
-        plt.plot(t, sim.data(in_p), label='Input')
-        plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.1')
+        plt.plot(t, sim.data[in_p], label='Input')
+        plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.1')
         plt.legend(loc=0)
         plt.savefig('test_ensemble.test_constant_scalar.pdf')
         plt.close()
 
-    assert np.allclose(sim.data(in_p).ravel(), val, atol=.1, rtol=.01)
-    assert np.allclose(sim.data(A_p)[-10:], val, atol=.1, rtol=.01)
+    assert np.allclose(sim.data[in_p].ravel(), val, atol=.1, rtol=.01)
+    assert np.allclose(sim.data[A_p][-10:], val, atol=.1, rtol=.01)
 
 
 def test_constant_vector(Simulator, nl):
@@ -90,14 +89,14 @@ def test_constant_vector(Simulator, nl):
 
     with Plotter(Simulator, nl) as plt:
         t = sim.trange()
-        plt.plot(t, sim.data(in_p), label='Input')
-        plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.1')
+        plt.plot(t, sim.data[in_p], label='Input')
+        plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.1')
         plt.legend(loc=0, prop={'size': 10})
         plt.savefig('test_ensemble.test_constant_vector.pdf')
         plt.close()
 
-    assert np.allclose(sim.data(in_p)[-10:], vals, atol=.1, rtol=.01)
-    assert np.allclose(sim.data(A_p)[-10:], vals, atol=.1, rtol=.01)
+    assert np.allclose(sim.data[in_p][-10:], vals, atol=.1, rtol=.01)
+    assert np.allclose(sim.data[A_p][-10:], vals, atol=.1, rtol=.01)
 
 
 def test_scalar(Simulator, nl):
@@ -116,18 +115,18 @@ def test_scalar(Simulator, nl):
 
     with Plotter(Simulator, nl) as plt:
         t = sim.trange()
-        plt.plot(t, sim.data(in_p), label='Input')
-        plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.02')
+        plt.plot(t, sim.data[in_p], label='Input')
+        plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.02')
         plt.legend(loc=0)
         plt.savefig('test_ensemble.test_scalar.pdf')
         plt.close()
 
     target = np.sin(np.arange(5000) / 1000.)
     target.shape = (-1, 1)
-    logger.debug("[New API] input RMSE: %f", rmse(target, sim.data(in_p)))
-    logger.debug("[New API] A RMSE: %f", rmse(target, sim.data(A_p)))
-    assert rmse(target, sim.data(in_p)) < 0.001
-    assert rmse(target, sim.data(A_p)) < 0.1
+    logger.debug("[New API] input RMSE: %f", rmse(target, sim.data[in_p]))
+    logger.debug("[New API] A RMSE: %f", rmse(target, sim.data[A_p]))
+    assert rmse(target, sim.data[in_p]) < 0.001
+    assert rmse(target, sim.data[A_p]) < 0.1
 
 
 def test_vector(Simulator, nl):
@@ -146,8 +145,8 @@ def test_vector(Simulator, nl):
 
     with Plotter(Simulator, nl) as plt:
         t = sim.trange()
-        plt.plot(t, sim.data(in_p), label='Input')
-        plt.plot(t, sim.data(A_p), label='Neuron approximation, pstc=0.02')
+        plt.plot(t, sim.data[in_p], label='Input')
+        plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.02')
         plt.legend(loc='best', prop={'size': 10})
         plt.savefig('test_ensemble.test_vector.pdf')
         plt.close()
@@ -155,9 +154,9 @@ def test_vector(Simulator, nl):
     target = np.vstack((np.sin(np.arange(5000) / 1000.),
                         np.cos(np.arange(5000) / 1000.),
                         np.arctan(np.arange(5000) / 1000.))).T
-    logger.debug("In RMSE: %f", rmse(target, sim.data(in_p)))
-    assert rmse(target, sim.data(in_p)) < 0.01
-    assert rmse(target, sim.data(A_p)) < 0.1
+    logger.debug("In RMSE: %f", rmse(target, sim.data[in_p]))
+    assert rmse(target, sim.data[in_p]) < 0.01
+    assert rmse(target, sim.data[A_p]) < 0.1
 
 
 def test_product(Simulator, nl):
@@ -191,23 +190,23 @@ def test_product(Simulator, nl):
     with Plotter(Simulator, nl) as plt:
         t = sim.trange(dt=.01)
         plt.subplot(211)
-        plt.plot(t, sim.data(factors_p))
+        plt.plot(t, sim.data[factors_p])
         plt.plot(t, np.sin(np.arange(0, 6, .01)))
-        plt.plot(t, sim.data(sin_p))
+        plt.plot(t, sim.data[sin_p])
         plt.subplot(212)
-        plt.plot(t, sim.data(product_p))
+        plt.plot(t, sim.data[product_p])
         # TODO
-        # plt.plot(sim.data(conn))
+        # plt.plot(sim.data[conn])
         plt.plot(t, -.5 * np.sin(np.arange(0, 6, .01)))
         plt.savefig('test_ensemble.test_prod.pdf')
         plt.close()
 
     sin = np.sin(np.arange(0, 6, .01))
-    assert rmse(sim.data(factors_p)[:, 0], sin) < 0.1
-    assert rmse(sim.data(factors_p)[20:, 1], -0.5) < 0.1
+    assert rmse(sim.data[factors_p][:, 0], sin) < 0.1
+    assert rmse(sim.data[factors_p][20:, 1], -0.5) < 0.1
 
-    assert rmse(sim.data(product_p)[:, 0], -0.5 * sin) < 0.1
-    # assert rmse(sim.data(conn)[:, 0], -0.5 * sin) < 0.1
+    assert rmse(sim.data[product_p][:, 0], -0.5 * sin) < 0.1
+    # assert rmse(sim.data[conn][:, 0], -0.5 * sin) < 0.1
 
 
 if __name__ == "__main__":

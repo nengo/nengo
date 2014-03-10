@@ -6,15 +6,14 @@ Reference simulator for nengo models.
 
 from __future__ import print_function
 
-from collections import defaultdict
+from collections import defaultdict, Mapping
 import itertools
 import logging
 
 import networkx as nx
 import numpy as np
 
-import nengo
-from .builder import Builder
+from nengo.builder import Builder
 
 logger = logging.getLogger(__name__)
 
@@ -54,35 +53,69 @@ class SignalDict(dict):
             raise KeyError(obj)
 
 
+class ProbeDict(Mapping):
+    """Map from Probe -> ndarray
+
+    This is more like a view on the dict that the simulator manipulates.
+    However, for speed reasons, the simulator uses Python lists,
+    and we want to return NumPy arrays. Additionally, this mapping
+    is readonly, which is more appropriate for its purpose.
+    """
+
+    def __init__(self, raw):
+        self.raw = raw
+
+    def __getitem__(self, key):
+        rval = np.asarray(self.raw[key])
+        rval.flags.writeable = False
+        return rval
+
+    def __str__(self):
+        return str(self.raw)
+
+    def __repr__(self):
+        return repr(self.raw)
+
+    def __iter__(self):
+        return iter(self.raw)
+
+    def __len__(self):
+        return len(self.raw)
+
+
 class Simulator(object):
     """Reference simulator for models."""
 
-    def __init__(self, model, dt=0.001, seed=None, builder=None):
-        if builder is None:
-            # By default, we'll use builder.Builder and copy the model.
-            builder = Builder(copy=True)
-
+    def __init__(self, model, dt=0.001, seed=None, builder=Builder):
         # Call the builder to build the model
-        self.model = builder(model, dt)
+        build_state = builder(model, dt)
+        self.model = build_state.output
+        self.dt = dt
 
+        # Add a public method which allows users to get BuildNeuronsState
+        # TODO: Do not expose the build state outside of the builder. Currently
+        #     this is only used by helpers.tuning_curves and many_neurons.ipynb
+        self.neurons = build_state.get_neurons_state
+
+        # Use model seed as simulator seed if the seed is not provided
         # Note: seed is not used right now, but one day...
-        if seed is None:
-            seed = self.model._get_new_seed()  # generate simulator seed
+        self.seed = self.model.seed if seed is None else seed
 
         # -- map from Signal.base -> ndarray
         self._sigdict = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
         for op in self.model.operators:
-            op.init_sigdict(self._sigdict, self.model.dt)
+            op.init_sigdict(self._sigdict, self.dt)
 
         self.dg = self._init_dg()
         self._step_order = [node
                             for node in nx.topological_sort(self.dg)
                             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self._sigdict, self.model.dt)
+        self._steps = [node.make_step(self._sigdict, self.dt)
                        for node in self._step_order]
 
         self.n_steps = 0
-        self.probe_outputs = dict((probe, []) for probe in self.model.probes)
+        self._probe_outputs = dict((probe, []) for probe in self.model.probes)
+        self.data = ProbeDict(self._probe_outputs)
 
     def _init_dg(self, verbose=False):  # noqa
         operators = self.model.operators
@@ -206,43 +239,26 @@ class Simulator(object):
 
         return Accessor()
 
-    def data(self, probe):
-        """Get data from signals that have been probed.
-
-        Parameters
-        ----------
-        probe : Probe
-            TODO
-
-        Returns
-        -------
-        data : ndarray
-            TODO: what are the dimensions?
-        """
-        if isinstance(probe, nengo.Probe):
-            #then map it to the simulator probe
-            probe = self.model.probemap[probe]
-        return np.asarray(self.probe_outputs[probe])
-
     def step(self):
-        """Advance the simulator by `self.model.dt` seconds.
+        """Advance the simulator by `self.dt` seconds.
         """
         for step_fn in self._steps:
             step_fn()
 
         # -- probes signals -> probe buffers
         for probe in self.model.probes:
-            period = int(probe.dt / self.model.dt)
+            period = 1 if probe.sample_every is None \
+                else int(probe.sample_every / self.dt)
             if self.n_steps % period == 0:
-                tmp = self._sigdict[probe.sig].copy()
-                self.probe_outputs[probe].append(tmp)
+                tmp = self._sigdict[self.model.sig_in[probe]].copy()
+                self._probe_outputs[probe].append(tmp)
 
-        self._sigdict['__time__'] += self.model.dt
+        self._sigdict['__time__'] += self.dt
         self.n_steps += 1
 
     def run(self, time_in_seconds):
         """Simulate for the given length of time."""
-        steps = int(np.round(float(time_in_seconds) / self.model.dt))
+        steps = int(np.round(float(time_in_seconds) / self.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.model.label, time_in_seconds, steps)
         self.run_steps(steps)
@@ -255,8 +271,8 @@ class Simulator(object):
             self.step()
 
     def trange(self, dt=None):
-        dt = self.model.dt if dt is None else dt
-        last_t = self._sigdict['__time__'] - self.model.dt
+        dt = self.dt if dt is None else dt
+        last_t = self._sigdict['__time__'] - self.dt
         n_steps = self.n_steps if dt is None else int(
-            self.n_steps / (dt / self.model.dt))
+            self.n_steps / (dt / self.dt))
         return np.linspace(0, last_t, n_steps)

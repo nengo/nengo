@@ -1,12 +1,6 @@
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
 import logging
 import pickle
 import os.path
-
-import numpy as np
 
 import nengo
 
@@ -63,14 +57,10 @@ class Model(object):
 
     def __init__(self, label="Model", seed=None):
         self.objs = []
-        self.probed = OrderedDict()
         self.connections = []
-        self.signal_probes = []
 
         self.label = label + ''  # -- make self.name a string, raise error otw
         self.seed = seed
-
-        self._rng = None
 
         #make this the default context
         nengo.context.clear()
@@ -78,13 +68,6 @@ class Model(object):
 
     def __str__(self):
         return "Model: " + self.label
-
-    def _get_new_seed(self):
-        if self._rng is None:
-            # never create rng without knowing the seed
-            assert self.seed is not None
-            self._rng = np.random.RandomState(self.seed)
-        return self._rng.randint(np.iinfo(np.int32).max)
 
     ### I/O
 

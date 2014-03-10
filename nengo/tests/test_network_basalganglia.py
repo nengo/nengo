@@ -15,7 +15,7 @@ def test_basic(Simulator):
     sim = Simulator(model)
     sim.run(0.2)
 
-    output = np.mean(sim.data(p)[50:], axis=0)
+    output = np.mean(sim.data[p][50:], axis=0)
 
     assert output[0] > -0.15
     assert np.all(output[1:] < -0.8)

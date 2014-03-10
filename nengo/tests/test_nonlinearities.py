@@ -2,19 +2,13 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo import builder
+from nengo.builder import DotInc, ProdUpdate, Signal, Builder
+from nengo.nonlinearities import PythonFunction
 from nengo.tests.helpers import rms
+from nengo.tests.test_simulator import mock_builder
 
 import logging
 logger = logging.getLogger(__name__)
-
-
-def mybuilder(model, dt):
-    model.dt = dt
-    model.seed = 0
-    if not hasattr(model, 'probes'):
-        model.probes = []
-    return model
 
 
 def test_lif_builtin():
@@ -26,10 +20,11 @@ def test_lif_builtin():
 
     N = 10
     lif = nengo.LIF(N)
-    lif.set_gain_bias(rng.uniform(80, 100, size=N), rng.uniform(-1, 1, size=N))
+    gain, bias = lif.gain_bias(
+        rng.uniform(80, 100, size=N), rng.uniform(-1, 1, size=N))
 
     x = np.arange(-2, 2, .1).reshape(-1, 1)
-    J = lif.gain * x + lif.bias
+    J = gain * x + bias
 
     voltage = np.zeros_like(J)
     reftime = np.zeros_like(J)
@@ -38,7 +33,7 @@ def test_lif_builtin():
     for i, spikes_i in enumerate(spikes):
         lif.step_math0(dt, J, voltage, reftime, spikes_i)
 
-    math_rates = lif.rates(x)
+    math_rates = lif.rates(x, gain, bias)
     sim_rates = spikes.sum(0)
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 
@@ -59,21 +54,18 @@ def test_pyfunc():
         x = np.random.normal(size=d)
 
         m = nengo.Model("")
-        ins = builder.Signal(x, name='ins')
-        pop = nengo.PythonFunction(fn=fn, n_in=d, n_out=d)
+        ins = Signal(x, name='ins')
+        pop = PythonFunction(fn=fn, n_in=d, n_out=d)
         m.operators = []
-        b = builder.Builder()
-        b.model = m
-        b.build_pyfunc(pop)
-        m.operators += [
-            builder.DotInc(builder.Signal(np.eye(d)), ins, pop.input_signal),
-            builder.ProdUpdate(builder.Signal(np.eye(d)),
-                               pop.output_signal,
-                               builder.Signal(0),
-                               ins)
+        build_state = Builder(m, dt)
+        build_state._build_pyfunc(pop)
+        b = build_state.output
+        b.operators += [
+            DotInc(Signal(np.eye(d)), ins, b.sig_in[pop]),
+            ProdUpdate(Signal(np.eye(d)), b.sig_out[pop], Signal(0), ins)
         ]
 
-        sim = nengo.Simulator(m, dt=dt, builder=mybuilder)
+        sim = nengo.Simulator(m, dt, builder=mock_builder(b))
 
         p0 = np.zeros(d)
         s0 = np.array(x)
@@ -83,7 +75,7 @@ def test_pyfunc():
             s0 = tmp
             sim.step()
             assert np.allclose(s0, sim.signals[ins])
-            assert np.allclose(p0, sim.signals[pop.output_signal])
+            assert np.allclose(p0, sim.signals[b.sig_out[pop]])
 
 
 def test_lif_base(nl_nodirect):
@@ -93,24 +85,25 @@ def test_lif_base(nl_nodirect):
     dt = 0.001
     n = 5000
     x = 0.5
+    max_rates = rng.uniform(low=10, high=200, size=n)
+    intercepts = rng.uniform(low=-1, high=1, size=n)
 
-    m = nengo.Model("")
+    m = nengo.Model()
 
     ins = nengo.Node(x)
-    lif = nl_nodirect(n)
-    lif.set_gain_bias(max_rates=rng.uniform(low=10, high=200, size=n),
-                      intercepts=rng.uniform(low=-1, high=1, size=n))
-    lif.add_to_model(m)
-    nengo.Connection(ins, lif, transform=np.ones((n, 1)))
-    spike_probe = nengo.Probe(lif, 'output')
+    ens = nengo.Ensemble(
+        nl_nodirect(n), 1, max_rates=max_rates, intercepts=intercepts)
+    nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)))
+    spike_probe = nengo.Probe(ens.neurons, "output")
 
     sim = nengo.Simulator(m, dt=dt)
 
     t_final = 1.0
     sim.run(t_final)
-    spikes = sim.data(spike_probe).sum(0)
+    spikes = sim.data[spike_probe].sum(0)
 
-    math_rates = lif.rates(x)
+    math_rates = ens.neurons.rates(
+        x, *ens.neurons.gain_bias(max_rates, intercepts))
     sim_rates = spikes / t_final
     logger.debug("ME = %f", (sim_rates - math_rates).mean())
     logger.debug("RMSE = %f",
