@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
-import nengo.build_utils
+from nengo.utils.builder import generate_graphviz, remove_passthrough_nodes
 
 
 def test_create_dot():
@@ -23,14 +23,13 @@ def test_create_dot():
                          transform=np.ones((D, D)))
         nengo.Connection(b.output, output, filter=0.01)
 
-    dot = nengo.build_utils.generate_graphviz(model.objs, model.connections)
+    dot = generate_graphviz(model.objs, model.connections)
     assert len(dot.splitlines()) == 31
     # not sure what else to check here
 
-    objs, conns = nengo.build_utils.remove_passthrough_nodes(model.objs,
-                                                             model.connections)
+    objs, conns = remove_passthrough_nodes(model.objs, model.connections)
 
-    dot = nengo.build_utils.generate_graphviz(objs, conns)
+    dot = generate_graphviz(objs, conns)
     assert len(dot.splitlines()) == 27
     # not sure what else to check here
 

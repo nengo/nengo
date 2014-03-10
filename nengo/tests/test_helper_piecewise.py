@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.helpers import piecewise
+from nengo.utils.helpers import piecewise
 
 
 def test_basic():
