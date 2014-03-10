@@ -2,19 +2,13 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo import builder
+from nengo.builder import DotInc, ProdUpdate, Signal, Builder
+from nengo.nonlinearities import PythonFunction
 from nengo.tests.helpers import rms
+from nengo.tests.test_simulator import mock_builder
 
 import logging
 logger = logging.getLogger(__name__)
-
-
-def mybuilder(model, dt):
-    return {'probes': [] if not hasattr(model, 'probes') else model.probes,
-            'operators': ([] if not hasattr(model, 'operators')
-                          else model.operators),
-            '_data': {},
-            'dt': dt, 'seed': 0}
 
 
 def test_lif_builtin():
@@ -44,7 +38,6 @@ def test_lif_builtin():
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 
 
-@pytest.mark.skipif("True", reason="Need to figure out a way to get sig_out")
 def test_pyfunc():
     """Test Python Function nonlinearity"""
     dt = 0.001
@@ -61,22 +54,18 @@ def test_pyfunc():
         x = np.random.normal(size=d)
 
         m = nengo.Model("")
-        ins = builder.Signal(x, name='ins')
-        pop = nengo.PythonFunction(fn=fn, n_in=d, n_out=d)
+        ins = Signal(x, name='ins')
+        pop = PythonFunction(fn=fn, n_in=d, n_out=d)
         m.operators = []
-        b = builder.Builder()
-        b.model = m
-        b.build_pyfunc(pop)
-        m.operators += [
-            builder.DotInc(builder.Signal(np.eye(d)), ins, b.sig_in[pop]),
-            builder.ProdUpdate(builder.Signal(np.eye(d)),
-                               b.sig_out[pop],
-                               builder.Signal(0),
-                               ins)
+        build_state = Builder(m, dt)
+        build_state._build_pyfunc(pop)
+        b = build_state.output
+        b.operators += [
+            DotInc(Signal(np.eye(d)), ins, b.sig_in[pop]),
+            ProdUpdate(Signal(np.eye(d)), b.sig_out[pop], Signal(0), ins)
         ]
-        m.operators.extend(b.operators)
 
-        sim = nengo.Simulator(m, dt=dt, builder=mybuilder)
+        sim = nengo.Simulator(m, dt, builder=mock_builder(b))
 
         p0 = np.zeros(d)
         s0 = np.array(x)
@@ -86,10 +75,9 @@ def test_pyfunc():
             s0 = tmp
             sim.step()
             assert np.allclose(s0, sim.signals[ins])
-            assert np.allclose(p0, sim.signals[pop.output_signal])
+            assert np.allclose(p0, sim.signals[b.sig_out[pop]])
 
 
-@pytest.mark.skipif("True", reason="Need to figure out a way to get sig_out")
 def test_lif_base(nl_nodirect):
     """Test that the dynamic model approximately matches the rates"""
     rng = np.random.RandomState(85243)
@@ -97,16 +85,16 @@ def test_lif_base(nl_nodirect):
     dt = 0.001
     n = 5000
     x = 0.5
+    max_rates = rng.uniform(low=10, high=200, size=n)
+    intercepts = rng.uniform(low=-1, high=1, size=n)
 
-    m = nengo.Model("")
+    m = nengo.Model()
 
     ins = nengo.Node(x)
-    lif = nl_nodirect(n)
-    gain, bias = lif.gain_bias(max_rates=rng.uniform(low=10, high=200, size=n),
-                               intercepts=rng.uniform(low=-1, high=1, size=n))
-    lif.add_to_model(m)
-    nengo.Connection(ins, lif, transform=np.ones((n, 1)))
-    spike_probe = nengo.Probe(lif, 'output')
+    ens = nengo.Ensemble(
+        nl_nodirect(n), 1, max_rates=max_rates, intercepts=intercepts)
+    nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)))
+    spike_probe = nengo.Probe(ens.neurons, "output")
 
     sim = nengo.Simulator(m, dt=dt)
 
@@ -114,7 +102,8 @@ def test_lif_base(nl_nodirect):
     sim.run(t_final)
     spikes = sim.data[spike_probe].sum(0)
 
-    math_rates = lif.rates(x, bias)
+    math_rates = ens.neurons.rates(
+        x, *ens.neurons.gain_bias(max_rates, intercepts))
     sim_rates = spikes / t_final
     logger.debug("ME = %f", (sim_rates - math_rates).mean())
     logger.debug("RMSE = %f",

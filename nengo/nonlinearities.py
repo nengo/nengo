@@ -1,9 +1,7 @@
-import copy
 import logging
 
 import numpy as np
 
-import nengo.decoders
 from nengo.objects import Neurons
 
 logger = logging.getLogger(__name__)
@@ -19,19 +17,6 @@ class PythonFunction(object):
             label = "<Direct%d>" % id(self)
         self.label = label
 
-    def __deepcopy__(self, memo):
-        try:
-            return memo[id(self)]
-        except KeyError:
-            rval = self.__class__.__new__(self.__class__)
-            memo[id(self)] = rval
-            for k, v in self.__dict__.items():
-                if k == 'fn':
-                    rval.fn = v
-                else:
-                    rval.__dict__[k] = copy.deepcopy(v, memo)
-            return rval
-
     @property
     def n_args(self):
         return 2 if self.n_in > 0 else 1
@@ -43,9 +28,6 @@ class Direct(Neurons):
         # n_neurons is ignored, but accepted to maintain compatibility
         # with other neuron types
         Neurons.__init__(self, 0, label=label)
-
-    def default_encoders(self, dimensions, rng):
-        return np.identity(dimensions)
 
     def rates(self, x, gain, bias):
         return x
@@ -73,10 +55,6 @@ class _LIFBase(Neurons):
     @property
     def n_out(self):
         return self.n_neurons
-
-    def default_encoders(self, dimensions, rng):
-        return nengo.decoders.sample_hypersphere(
-            dimensions, self.n_neurons, rng, surface=True)
 
     def rates_from_current(self, J):
         """LIF firing rates in Hz for input current (incl. bias)"""

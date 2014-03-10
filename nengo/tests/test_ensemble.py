@@ -22,11 +22,10 @@ def test_encoders(n_dimensions, n_neurons=10, encoders=None):
             'dimensions': n_dimensions}
 
     model = nengo.Model('_test_encoders')
-    nengo.Ensemble(encoders=encoders, **args)
+    ens = nengo.Ensemble(encoders=encoders, **args)
     sim = nengo.Simulator(model)
 
-    assert np.allclose(
-        encoders, next(o for o in sim.model.objs if o.label == 'A').encoders)
+    assert np.allclose(encoders, sim.neurons(ens.neurons).encoders)
 
 
 def test_encoders_wrong_shape():
