@@ -3,7 +3,7 @@ import logging
 import pytest
 
 import nengo
-import nengo.helpers
+from nengo.utils.helpers import piecewise
 from nengo.tests.helpers import Plotter, rmse
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 def test_integrator(Simulator, nl):
     model = nengo.Model('Integrator')
     inputs = {0: 0, 0.2: 1, 1: 0, 2: -2, 3: 0, 4: 1, 5: 0}
-    input = nengo.Node(nengo.helpers.piecewise(inputs))
+    input = nengo.Node(piecewise(inputs))
 
     tau = 0.1
     T = nengo.networks.Integrator(tau, neurons=nl(100), dimensions=1)
