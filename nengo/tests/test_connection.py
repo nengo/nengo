@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.utils.helpers import piecewise
+from nengo.utils.functions import piecewise
 from nengo.tests.helpers import Plotter
 
 logger = logging.getLogger(__name__)

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.utils.helpers import whitenoise
+from nengo.utils.functions import whitenoise
 
 
 def test_rms():
