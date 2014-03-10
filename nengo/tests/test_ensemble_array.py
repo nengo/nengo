@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.tests.helpers import Plotter
+from nengo.utils.testing import Plotter
 
 logger = logging.getLogger(__name__)
 
