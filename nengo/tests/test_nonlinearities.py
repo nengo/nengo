@@ -3,7 +3,7 @@ import pytest
 
 import nengo
 from nengo import builder
-from nengo.tests.helpers import rms
+from nengo.utils.testing import rms
 
 import logging
 logger = logging.getLogger(__name__)

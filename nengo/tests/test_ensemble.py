@@ -5,7 +5,7 @@ import pytest
 
 import nengo
 from nengo.builder import ShapeMismatch
-from nengo.tests.helpers import Plotter, rmse
+from nengo.utils.testing import Plotter, rmse
 
 logger = logging.getLogger(__name__)
 
