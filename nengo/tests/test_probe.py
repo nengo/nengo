@@ -16,7 +16,7 @@ def test_multirun(Simulator):
     # set rtol a bit higher, since OCL model.t accumulates error over time
     rtol = 0.0001
 
-    model = nengo.Model("Multi-run")
+    model = nengo.Network(label="Multi-run")
 
     sim = Simulator(model)
 
@@ -46,13 +46,13 @@ def test_dts(Simulator):
     def input_fn(t):
         return list(range(1, 10))
 
-    model = nengo.Model('test_probe_dts', seed=2891)
-
-    probes = []
-    for i, dt in enumerate(dts):
-        xi = nengo.Node(label='x%d' % i, output=input_fn)
-        p = nengo.Probe(xi, 'output', sample_every=dt)
-        probes.append(p)
+    model = nengo.Network(label='test_probe_dts', seed=2891)
+    with model:
+        probes = []
+        for i, dt in enumerate(dts):
+            xi = nengo.Node(label='x%d' % i, output=input_fn)
+            p = nengo.Probe(xi, 'output', sample_every=dt)
+            probes.append(p)
 
     sim = Simulator(model)
     simtime = 2.483
@@ -81,12 +81,12 @@ def test_large(Simulator):
     def input_fn(t):
         return list(range(1, 10))
 
-    model = nengo.Model('test_large_probes', seed=3249)
-
-    probes = []
-    for i in range(n):
-        xi = nengo.Node(label='x%d' % i, output=input_fn)
-        probes.append(nengo.Probe(xi, 'output'))
+    model = nengo.Network(label='test_large_probes', seed=3249)
+    with model:
+        probes = []
+        for i in range(n):
+            xi = nengo.Node(label='x%d' % i, output=input_fn)
+            probes.append(nengo.Probe(xi, 'output'))
 
     sim = Simulator(model)
     simtime = 2.483
@@ -107,16 +107,17 @@ def test_large(Simulator):
 
 def test_defaults(Simulator):
     """Tests that probing with no attr sets the right attr."""
-    model = nengo.Model('test_defaults')
-    node = nengo.Node(output=0.5)
-    ens = nengo.Ensemble(nengo.LIF(20), 1)
-    conn = nengo.Connection(node, ens)
-    node_p = nengo.Probe(node)
-    assert node_p.attr == 'output'
-    ens_p = nengo.Probe(ens)
-    assert ens_p.attr == 'decoded_output'
-    with pytest.raises(TypeError):
-        nengo.Probe(conn)
+    model = nengo.Network(label='test_defaults')
+    with model:
+        node = nengo.Node(output=0.5)
+        ens = nengo.Ensemble(nengo.LIF(20), 1)
+        conn = nengo.Connection(node, ens)
+        node_p = nengo.Probe(node)
+        assert node_p.attr == 'output'
+        ens_p = nengo.Probe(ens)
+        assert ens_p.attr == 'decoded_output'
+        with pytest.raises(TypeError):
+            nengo.Probe(conn)
     # Let's just make sure it runs too...
     sim = Simulator(model)
     sim.run(0.01)

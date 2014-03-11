@@ -11,12 +11,13 @@ def test_seeding():
     #   Are there other objects with random parameters that should be
     #   tested? (Perhaps initial weights of learned connections)
 
-    m = nengo.Model('test_seeding')
-    input = nengo.Node(output=1, label='input')
-    A = nengo.Ensemble(nengo.LIF(40), 1, label='A')
-    B = nengo.Ensemble(nengo.LIF(20), 1, label='B')
-    nengo.Connection(input, A)
-    C = nengo.Connection(A, B, function=lambda x: x ** 2)
+    m = nengo.Network(label='test_seeding')
+    with m:
+        input = nengo.Node(output=1, label='input')
+        A = nengo.Ensemble(nengo.LIF(40), 1, label='A')
+        B = nengo.Ensemble(nengo.LIF(20), 1, label='B')
+        nengo.Connection(input, A)
+        C = nengo.Connection(A, B, function=lambda x: x ** 2)
 
     m.seed = 872
     m1 = nengo.Simulator(m).model.params
@@ -26,7 +27,7 @@ def test_seeding():
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
-            check = (np.all(getattr(obj1, attr) == getattr(obj2, attr))
+            check = (np.allclose(getattr(obj1, attr), getattr(obj2, attr))
                      if equal else
                      np.any(getattr(obj1, attr) != getattr(obj2, attr)))
             if not check:

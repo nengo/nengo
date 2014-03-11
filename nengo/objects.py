@@ -1,12 +1,12 @@
+import collections
 import inspect
 import logging
-import weakref
+import os
+import pickle
 
 import numpy as np
 
-import nengo
-import nengo.decoders
-from nengo.utils.compat import is_callable
+from nengo.utils.compat import is_callable, is_string
 from nengo.utils.distributions import Uniform
 
 logger = logging.getLogger(__name__)
@@ -16,6 +16,86 @@ def _in_stack(function):
     """Check whether the given function is in the call stack"""
     codes = [record[0].f_code for record in inspect.stack()]
     return function.__code__ in codes
+
+
+class NengoObject(object):
+    """Base class for all non-builtin model objects.
+
+    Inheriting from this class means that self.add_to_network(network) will be
+    invoked after initializing the object, where 'network' is the Network
+    object associated with the current context. This callback can then be used
+    to automatically add the object to the current network.
+
+    If add_to_network=False is passed to __init__, then the current Network
+    will not be determined and the callback will not be invoked.
+
+    initialize(*args, **kwargs) can be overridden to avoid writing
+    super(cls, self).__init__(*args, **kwargs) in the subclass's __init__.
+    """
+
+    context = collections.deque(maxlen=100)  # static stack of Network objects
+
+    def __init__(self, *args, **kwargs):
+        add_to_network = kwargs.pop('add_to_network', True)
+        self.initialize(*args, **kwargs)
+        if add_to_network:
+            if not len(self.context):
+                raise RuntimeError("NengoObject '%s' must either be created "
+                                   "inside a `with network:` block, or set "
+                                   "add_to_network=False in the object's "
+                                   "constructor." % self)
+
+            network = self.context[-1]
+            if not isinstance(network, Network):
+                raise RuntimeError("Current context is not a network: %s" %
+                                   network)
+            self._key = network.generate_key()
+            self.add_to_network(network)
+
+        else:
+            self._key = None
+
+    def initialize(self, *args, **kwargs):
+        """Hook for subclass initialization; invoked by __init__."""
+        pass
+
+    def add_to_network(self, network):
+        """Callback to add object to current network after __init__."""
+        pass
+
+    def __hash__(self):
+        if self._key is None:
+            return super(NengoObject, self).__hash__()
+        return hash((self.__class__, self._key))
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
+
+    def __str__(self):
+        # TODO: Don't simply assume that subclasses define a label attribute.
+        return "%s: %s" % (self.__class__, self.label)
+
+    def __repr__(self):
+        return str(self)
+
+
+class ObjView(object):
+    """Container for a slice with respect to some object.
+
+    This is used by the __getitem__ of Neurons, Node, and Ensemble, in order
+    to pass slices of those objects to Connect. This is a notational
+    convenience for creating transforms. See Connect for details.
+
+    Does not currently support any other view-like operations.
+    """
+
+    def __init__(self, obj, key=slice(None)):
+        self.obj = obj
+        if isinstance(key, int):
+            # single slices of the form [i] should be cast into
+            # slice objects for convenience
+            key = slice(key, key+1)
+        self.slice = key
 
 
 class Neurons(object):
@@ -31,10 +111,8 @@ class Neurons(object):
         self.probes = {'output': []}
 
     def __str__(self):
-        r = self.__class__.__name__ + "("
-        r += self.label if hasattr(self, 'label') else "id " + str(id(self))
-        r += ", %dN)" if hasattr(self, 'n_neurons') else ")"
-        return r
+        return "%s(%s, %dN)" % (
+            self.__class__.__name__, self.label, self.n_neurons)
 
     def __repr__(self):
         return str(self)
@@ -52,14 +130,14 @@ class Neurons(object):
         self.probes[probe.attr].append(probe)
 
         if probe.attr == 'output':
-            nengo.Connection(self, probe, filter=probe.filter)
+            Connection(self, probe, filter=probe.filter)
         else:
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % probe.attr)
         return probe
 
 
-class Ensemble(object):
+class Ensemble(NengoObject):
     """A group of neurons that collectively represent a vector.
 
     Parameters
@@ -95,12 +173,12 @@ class Ensemble(object):
 
     EVAL_POINTS = 500
 
-    def __init__(self, neurons, dimensions, radius=1.0, encoders=None,
-                 intercepts=Uniform(-1.0, 1.0), max_rates=Uniform(200, 400),
-                 eval_points=None, seed=None, label="Ensemble"):
+    def initialize(self, neurons, dimensions, radius=1.0, encoders=None,
+                   intercepts=Uniform(-1.0, 1.0), max_rates=Uniform(200, 400),
+                   eval_points=None, seed=None, label="Ensemble"):
         if dimensions <= 0:
             raise ValueError(
-                'Number of dimensions (%d) must be positive' % dimensions)
+                "Number of dimensions (%d) must be positive" % dimensions)
 
         self.dimensions = dimensions  # Must be set before neurons
         self.neurons = neurons
@@ -115,20 +193,11 @@ class Ensemble(object):
         # Set up probes
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
 
-        # add self to current context
-        self.key = nengo.context.add_to_current(self)
+    def add_to_network(self, network):
+        network.ensembles.append(self)
 
     def __getitem__(self, key):
         return ObjView(self, key)
-
-    def __str__(self):
-        return "Ensemble: " + self.label
-
-    def __hash__(self):
-        return self.key
-
-    def __eq__(self, other):
-        return self.__class__ == other.__class__ and self.key == other.key
 
     @property
     def n_neurons(self):
@@ -172,7 +241,7 @@ class Ensemble(object):
         return probe
 
 
-class Node(object):
+class Node(NengoObject):
     """Provides arbitrary data to Nengo objects.
 
     It can also accept input, and perform arbitrary computations
@@ -209,7 +278,7 @@ class Node(object):
         The number of output dimensions.
     """
 
-    def __init__(self, output=None, size_in=0, size_out=None, label="Node"):
+    def initialize(self, output=None, size_in=0, size_out=None, label="Node"):
         if output is not None and not is_callable(output):
             output = np.asarray(output)
         self.output = output
@@ -226,25 +295,25 @@ class Node(object):
                     result = output(*args)
                 except TypeError:
                     raise TypeError(
-                        ("The function '%s' provided to '%s' takes %d "
-                         "argument(s), where a function for this type "
-                         "of node is expected to take %d argument(s)")
-                        % (output.__name__, self,
-                           output.__code__.co_argcount, len(args)))
+                        "The function '%s' provided to '%s' takes %d "
+                        "argument(s), where a function for this type "
+                        "of node is expected to take %d argument(s)" % (
+                            output.__name__, self,
+                            output.__code__.co_argcount, len(args)))
                 shape_out = np.asarray(result).shape
             else:  # callable and size_out is not None
                 shape_out = (size_out,)  # assume `size_out` is correct
 
             if len(shape_out) > 1:
                 raise ValueError(
-                    "Node output must be a vector (got array shape %s)"
-                    % str(shape_out))
+                    "Node output must be a vector (got array shape %s)" %
+                    (shape_out,))
 
             size_out_new = shape_out[0] if len(shape_out) == 1 else 1
             if size_out is not None and size_out != size_out_new:
                 raise ValueError(
-                    "Size of Node output (%d) does not match `size_out` (%d)"
-                    % (size_out_new, size_out))
+                    "Size of Node output (%d) does not match `size_out` (%d)" %
+                    (size_out_new, size_out))
 
             size_out = size_out_new
         else:  # output is None
@@ -255,17 +324,8 @@ class Node(object):
         # Set up probes
         self.probes = {'output': []}
 
-        # add self to current context
-        self.key = nengo.context.add_to_current(self)
-
-    def __str__(self):
-        return "Node: " + self.label
-
-    def __hash__(self):
-        return self.key
-
-    def __eq__(self, other):
-        return self.__class__ == other.__class__ and self.key == other.key
+    def add_to_network(self, network):
+        network.nodes.append(self)
 
     def __getitem__(self, key):
         return ObjView(self, key)
@@ -282,7 +342,7 @@ class Node(object):
         return probe
 
 
-class Connection(object):
+class Connection(NengoObject):
     """Connects two objects together.
 
     Attributes
@@ -315,8 +375,8 @@ class Connection(object):
         `decoder_solver`, but more general. See `nengo.decoders`.
     """
 
-    def __init__(self, pre, post,
-                 filter=0.005, transform=1.0, modulatory=False, **kwargs):
+    def initialize(self, pre, post, filter=0.005, transform=1.0,
+                   modulatory=False, **kwargs):
         if not isinstance(pre, ObjView):
             pre = ObjView(pre)
         if not isinstance(post, ObjView):
@@ -340,7 +400,7 @@ class Connection(object):
             self.function = kwargs.pop('function', None)
         elif not isinstance(self._pre, (Neurons, Node)):
             raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
-                             (self._pre.__class__.__name__))
+                             self._pre.__class__.__name__)
         else:
             self.decoder_solver = None
             self.eval_points = None
@@ -348,24 +408,24 @@ class Connection(object):
 
         if not isinstance(self._post, (Ensemble, Neurons, Node, Probe)):
             raise ValueError("Objects of type '%s' cannot serve as 'post'" %
-                             (self._post.__class__.__name__))
+                             self._post.__class__.__name__)
 
         # check that we've used all user-provided arguments
         if len(kwargs) > 0:
-            raise TypeError("__init__() got an unexpected keyword argument '"
-                            + next(iter(kwargs)) + "'")
+            raise TypeError("__init__() received an unexpected keyword "
+                            "argument '%s'" % next(iter(kwargs)))
 
         # check that shapes match up
         self.transform = transform
         self._check_shapes(check_in_init=True)
 
-        # add self to current context
-        self.key = nengo.context.add_to_current(self)
+    def add_to_network(self, network):
+        network.connections.append(self)
 
     def _check_pre_ensemble(self, prop_name):
         if not isinstance(self._pre, Ensemble):
             raise ValueError("'%s' can only be set if 'pre' is an Ensemble" %
-                             (prop_name))
+                             prop_name)
 
     def _pad_transform(self, transform):
         """Pads the transform with zeros according to the pre/post slices."""
@@ -451,18 +511,6 @@ class Connection(object):
                                  "%s input size (%d)" %
                                  (transform.shape[0], out_src, out_dims))
 
-    def __hash__(self):
-        return self.key
-
-    def __eq__(self, other):
-        return self.__class__ == other.__class__ and self.key == other.key
-
-    def __str__(self):
-        return "%s (%s)" % (self.label, self.__class__.__name__)
-
-    def __repr__(self):
-        return str(self)
-
     @property
     def label(self):
         label = "%s>%s" % (self._pre.label, self._post.label)
@@ -528,8 +576,8 @@ class Probe(object):
         Node: 'output',
     }
 
-    def __init__(self, target, attr=None,
-                 sample_every=None, filter=None, **kwargs):
+    def __init__(self, target, attr=None, sample_every=None, filter=None,
+                 **kwargs):
         if attr is None:
             try:
                 attr = self.DEFAULTS[target.__class__]
@@ -539,58 +587,146 @@ class Probe(object):
                         attr = self.DEFAULTS[k]
                         break
                 else:
-                    raise TypeError("Type " + target.__class__.__name__
-                                    + " has no default probe.")
+                    raise TypeError("Type '%s' has no default probe." %
+                                    target.__class__.__name__)
         self.attr = attr
         self.label = "Probe(%s.%s)" % (target.label, attr)
         self.sample_every = sample_every
         self.filter = filter
 
+        # Probes add themselves to an object through target.probe in order to
+        # be built into the model.
         target.probe(self, **kwargs)
 
     def __str__(self):
         return self.label
 
+    def __repr__(self):
+        return str(self)
 
-class Network(object):
+
+class Network(NengoObject):
+    """A network contains ensembles, nodes, connections, and other networks.
+
+    TODO: Example usage and documentation on how to subclass.
+
+    Parameters
+    ----------
+    label : str, optional
+        Name of the model. Defaults to None.
+    seed : int, optional
+        Random number seed that will be fed to the random number generator.
+        Setting this seed makes the creation of the model
+        a deterministic process; however, each new ensemble
+        in the network advances the random number generator,
+        so if the network creation code changes, the entire model changes.
+    add_to_network : bool, optional
+        Determines if this Network will be added to the current Network.
+        Defaults to true iff currently with a Network.
+
+    Attributes
+    ----------
+    label : str
+        Name of the Network.
+    seed : int
+        Random seed used by the Network.
+    ensembles : list
+        List of nengo.Ensemble objects in this Network.
+    nodes : list
+        List of nengo.Node objects in this Network.
+    connections : list
+        List of nengo.Connection objects in this Network.
+    networks : list
+        List of nengo.BaseNetwork objects in this Network.
+    """
 
     def __init__(self, *args, **kwargs):
-        self.label = kwargs.pop("label", "Network")
-        self.objects = []
-        self.model = weakref.ref(nengo.context[-1])
+        # Pop the label, seed, and add_to_network, so that they are not passed
+        # to self.initialize or self.make.
+        self.label = kwargs.pop('label', None)
+        self.seed = kwargs.pop('seed', None)
+        add_to_network = kwargs.pop(
+            'add_to_network', len(NengoObject.context) > 0)
+
+        if not (self.label is None or is_string(self.label)):
+            raise ValueError("Label '%s' must be None, str, or unicode." %
+                             self.label)
+
+        self.ensembles = []
+        self.nodes = []
+        self.connections = []
+        self.networks = []
+
+        super(Network, self).__init__(
+            add_to_network=add_to_network, *args, **kwargs)
+
+        # Start object keys with the model hash.
+        # We use the hash because it's deterministic, though this
+        # may be confusing if models use the same label.
+        self._next_key = hash(self)
+
         with self:
             self.make(*args, **kwargs)
 
-    def add(self, obj):
-        self.objects.append(obj)
-        if not isinstance(obj, nengo.Connection):
-            obj.label = self.label + '.' + obj.label
-        return self.model().add(obj)
+    def generate_key(self):
+        """Returns a new key for a NengoObject to be added to this Network."""
+        self._next_key += 1
+        return self._next_key
+
+    def save(self, fname, fmt=None):
+        """Save this model to a file.
+
+        So far, Pickle is the only implemented format.
+        """
+        if fmt is None:
+            fmt = os.path.splitext(fname)[1]
+
+        # Default to pickle
+        with open(fname, 'wb') as f:
+            pickle.dump(self, f)
+            logger.info("Saved %s successfully.", fname)
+
+    @classmethod
+    def load(cls, fname, fmt=None):
+        """Load a model from a file.
+
+        So far, Pickle is the only implemented format.
+        """
+        if fmt is None:
+            fmt = os.path.splitext(fname)[1]
+
+        # Default to pickle
+        with open(fname, 'rb') as f:
+            return pickle.load(f)
+
+        raise IOError("Could not load %s" % fname)
 
     def make(self, *args, **kwargs):
-        raise NotImplementedError("Networks should implement this function.")
+        """Hook for subclass network creation inside of a `with self:` block.
+
+        This is as a convenience to obtain working space to create the
+        network's objects within the context of self. Called after initialize.
+        Given all of the unused Network args and kwargs.
+        """
+        pass
+
+    def add_to_network(self, network):
+        network.networks.append(self)
+
+    def __hash__(self):
+        return hash((self._key, self.label))
 
     def __enter__(self):
-        nengo.context.append(self)
+        NengoObject.context.append(self)
+        return self
 
-    def __exit__(self, exception_type, exception_value, traceback):
-        nengo.context.pop()
-
-
-class ObjView(object):
-    """Container for a slice with respect to some object.
-
-    This is used by the __getitem__ of Neurons, Node, and Ensemble, in order
-    to pass slices of those objects to Connect. This is a notational
-    convenience for creating transforms. See Connect for details.
-
-    Does not currently support any other view-like operations.
-    """
-
-    def __init__(self, obj, key=slice(None)):
-        self.obj = obj
-        if isinstance(key, int):
-            # single slices of the form [i] should be cast into
-            # slice objects for convenience
-            key = slice(key, key+1)
-        self.slice = key
+    def __exit__(self, dummy_exc_type, dummy_exc_value, dummy_tb):
+        try:
+            model = NengoObject.context.pop()
+        except IndexError:
+            raise RuntimeError("Network context in bad state; was empty when "
+                               "exiting from a 'with' block.")
+        if model is not self:
+            raise RuntimeError("Network context in bad state; was expecting "
+                               "current context to be '%s' but instead got "
+                               "'%s'." % (self, model))

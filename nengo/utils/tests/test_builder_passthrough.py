@@ -2,13 +2,14 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.utils.builder import remove_passthrough_nodes
+from nengo.utils.builder import (remove_passthrough_nodes,
+                                 objs_and_connections)
 
 
 def test_remove_passthrough():
     """Test scanning through a model and removing Nodes with output=None"""
 
-    model = nengo.Model()
+    model = nengo.Network()
     with model:
         D = 3
         input = nengo.Node([1]*D, label='input')
@@ -26,8 +27,7 @@ def test_remove_passthrough():
                          transform=np.ones((D, D)))
         nengo.Connection(b.output, output, filter=0.01)
 
-    objs, conns = remove_passthrough_nodes(model.objs.values(),
-                                           model.connections.values())
+    objs, conns = remove_passthrough_nodes(*objs_and_connections(model))
 
     assert len(objs) == 8
     assert len(conns) == 21
@@ -36,7 +36,7 @@ def test_remove_passthrough():
 def test_remove_passthrough_bg():
     """Test scanning through a model and removing Nodes with output=None"""
 
-    model = nengo.Model()
+    model = nengo.Network()
     with model:
         D = 3
         input = nengo.Node([1]*D, label='input')
@@ -48,8 +48,7 @@ def test_remove_passthrough_bg():
         nengo.Connection(input, bg.input, filter=0.01)
         nengo.Connection(bg.output, output, filter=0.01)
 
-    objs, conns = remove_passthrough_nodes(model.objs.values(),
-                                           model.connections.values())
+    objs, conns = remove_passthrough_nodes(*objs_and_connections(model))
 
     assert len(objs) == 17
     assert len(conns) == 42
@@ -58,7 +57,7 @@ def test_remove_passthrough_bg():
 def test_passthrough_errors():
     """Test errors removing Nodes with output=None"""
 
-    model = nengo.Model()
+    model = nengo.Network()
     with model:
         a = nengo.Ensemble(10, 1)
         b = nengo.Ensemble(10, 1)
@@ -66,16 +65,14 @@ def test_passthrough_errors():
         nengo.Connection(a, node, filter=0.01)
         nengo.Connection(node, b, filter=0.01)
     with pytest.raises(NotImplementedError):
-        remove_passthrough_nodes(model.objs.values(),
-                                 model.connections.values())
+        remove_passthrough_nodes(*objs_and_connections(model))
 
-    model = nengo.Model()
+    model = nengo.Network()
     with model:
         node = nengo.Node(None, size_in=1)
         nengo.Connection(node, node, filter=0.01)
     with pytest.raises(Exception):
-        remove_passthrough_nodes(model.objs.values(),
-                                 model.connections.values())
+        remove_passthrough_nodes(*objs_and_connections(model))
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ class Direct(Neurons):
     def __init__(self, n_neurons=None, label=None):
         # n_neurons is ignored, but accepted to maintain compatibility
         # with other neuron types
-        Neurons.__init__(self, 0, label=label)
+        super(Direct, self).__init__(0, label=label)
 
     def rates(self, x, gain, bias):
         return x
@@ -31,7 +31,7 @@ class _LIFBase(Neurons):
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, label=None):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
-        Neurons.__init__(self, n_neurons, label=label)
+        super(_LIFBase, self).__init__(n_neurons, label=label)
 
     @property
     def n_in(self):
@@ -104,8 +104,8 @@ class LIFRate(_LIFBase):
 
 class LIF(_LIFBase):
 
-    def __init__(self, n_neurons, **kwargs):
-        _LIFBase.__init__(self, n_neurons, **kwargs)
+    def __init__(self, n_neurons, upsample=1, **kwargs):
+        super(LIF, self).__init__(n_neurons, **kwargs)
 
     def step_math(self, dt, J, voltage, refractory_time, spiked):
 
