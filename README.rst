@@ -36,8 +36,20 @@ For now, you can do the following::
 
 Nengo supports Python 2.6, 2.7, and 3.3+ in a single codebase.
 
-Running unit tests
-==================
+Usage
+=====
+
+TODO
+
+Documentation & Examples
+========================
+
+Documentation and examples can be found at
+`ReadTheDocs <https://nengo.readthedocs.org/en/latest/>`_.
+
+
+Testing
+=======
 
 One way to verify that your installation is working correctly
 is to run the unit tests. We use ``py.test``,
@@ -50,13 +62,32 @@ so we recommend install the ``pytest-xdist`` plugin
 and running ``py.test --pyargs nengo -n 4``
 or however many free CPU cores you have available.
 
-Usage
-=====
+Running individual tests
+------------------------
 
-TODO
+Tests in a specific test file can be run by calling ``py.test`` on that file.
+For example::
 
-Documentation & Examples
-========================
+  py.test nengo/tests/test_node.py
 
-Documentation and examples can be found at
-`ReadTheDocs <https://nengo.readthedocs.org/en/latest/>`_.
+will run all the tests in ``test_node.py``.
+
+Individual tests can be run using the ``-k EXPRESSION`` argument. Only tests
+that match the given substring expression are run. For example::
+
+  py.test nengo/tests/test_node.py -k test_circular
+
+will run any tests with `test_circular` in the name, in the file
+``test_node.py``.
+
+Plotting the results of tests
+-----------------------------
+
+Many Nengo test routines have the built-in ability to plot test results
+for easier debugging. To enable this feature, set the environment variable
+``NENGO_TEST_PLOT=1``, for example::
+
+  NENGO_TEST_PLOT=1 py.test --pyargs nengo
+
+Plots are placed in ``nengo.simulator.plots`` in whatever directory
+``py.test`` is invoked from.
