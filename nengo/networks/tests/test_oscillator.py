@@ -3,8 +3,8 @@ import logging
 import pytest
 
 import nengo
-import nengo.helpers
-from nengo.tests.helpers import Plotter, rmse
+from nengo.utils.functions import piecewise
+from nengo.utils.testing import Plotter, rmse
 
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ def test_oscillator(Simulator, nl):
     model = nengo.Model('Oscillator')
 
     inputs = {0: [1, 0], 0.5: [0, 0]}
-    input = nengo.Node(nengo.helpers.piecewise(inputs), label='Input')
+    input = nengo.Node(piecewise(inputs), label='Input')
 
     tau = 0.1
     freq = 5
