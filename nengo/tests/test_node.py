@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 def test_simple(Simulator):
-    m = nengo.Model('test_simple', seed=123)
-
-    input = nengo.Node(output=lambda t: np.sin(t))
-    p = nengo.Probe(input, 'output')
+    m = nengo.Network(label='test_simple', seed=123)
+    with m:
+        input = nengo.Node(output=lambda t: np.sin(t))
+        p = nengo.Probe(input, 'output')
 
     sim = Simulator(m)
     runtime = 0.5
@@ -36,15 +36,15 @@ def test_simple(Simulator):
 
 
 def test_connected(Simulator):
-    m = nengo.Model('test_connected', seed=123)
-
-    input = nengo.Node(output=lambda t: np.sin(t), label='input')
-    output = nengo.Node(output=lambda t, x: np.square(x),
-                        size_in=1,
-                        label='output')
-    nengo.Connection(input, output, filter=None)  # Direct connection
-    p_in = nengo.Probe(input, 'output')
-    p_out = nengo.Probe(output, 'output')
+    m = nengo.Network(label='test_connected', seed=123)
+    with m:
+        input = nengo.Node(output=lambda t: np.sin(t), label='input')
+        output = nengo.Node(output=lambda t, x: np.square(x),
+                            size_in=1,
+                            label='output')
+        nengo.Connection(input, output, filter=None)  # Direct connection
+        p_in = nengo.Probe(input, 'output')
+        p_out = nengo.Probe(output, 'output')
 
     sim = Simulator(m)
     runtime = 0.5
@@ -72,20 +72,20 @@ def test_connected(Simulator):
 
 
 def test_passthrough(Simulator):
-    m = nengo.Model("test_passthrough", seed=0)
+    m = nengo.Network(label="test_passthrough", seed=0)
+    with m:
+        in1 = nengo.Node(output=lambda t: np.sin(t))
+        in2 = nengo.Node(output=lambda t: t)
+        passthrough = nengo.Node(size_in=1)
+        out = nengo.Node(output=lambda t, x: x, size_in=1)
 
-    in1 = nengo.Node(output=lambda t: np.sin(t))
-    in2 = nengo.Node(output=lambda t: t)
-    passthrough = nengo.Node(size_in=1)
-    out = nengo.Node(output=lambda t, x: x, size_in=1)
+        nengo.Connection(in1, passthrough, filter=None)
+        nengo.Connection(in2, passthrough, filter=None)
+        nengo.Connection(passthrough, out, filter=None)
 
-    nengo.Connection(in1, passthrough, filter=None)
-    nengo.Connection(in2, passthrough, filter=None)
-    nengo.Connection(passthrough, out, filter=None)
-
-    in1_p = nengo.Probe(in1, 'output')
-    in2_p = nengo.Probe(in2, 'output')
-    out_p = nengo.Probe(out, 'output')
+        in1_p = nengo.Probe(in1, 'output')
+        in2_p = nengo.Probe(in2, 'output')
+        out_p = nengo.Probe(out, 'output')
 
     sim = Simulator(m)
     runtime = 0.5
@@ -105,19 +105,19 @@ def test_passthrough(Simulator):
 
 
 def test_passthrough_filter(Simulator):
-    m = nengo.Model("test_passthrough", seed=0)
+    m = nengo.Network(label="test_passthrough", seed=0)
+    with m:
+        omega = 2 * np.pi * 5
+        u = nengo.Node(output=lambda t: np.sin(omega * t))
+        passthrough = nengo.Node(size_in=1)
+        v = nengo.Node(output=lambda t, x: x, size_in=1)
 
-    omega = 2 * np.pi * 5
-    u = nengo.Node(output=lambda t: np.sin(omega * t))
-    passthrough = nengo.Node(size_in=1)
-    v = nengo.Node(output=lambda t, x: x, size_in=1)
+        synapse = 0.3
+        nengo.Connection(u, passthrough, filter=None)
+        nengo.Connection(passthrough, v, filter=synapse)
 
-    synapse = 0.3
-    nengo.Connection(u, passthrough, filter=None)
-    nengo.Connection(passthrough, v, filter=synapse)
-
-    up = nengo.Probe(u)
-    vp = nengo.Probe(v)
+        up = nengo.Probe(u)
+        vp = nengo.Probe(v)
 
     dt = 0.001
     sim = Simulator(m, dt=dt)
@@ -141,15 +141,15 @@ def test_passthrough_filter(Simulator):
 
 
 def test_circular(Simulator):
-    m = nengo.Model("test_circular", seed=0)
+    m = nengo.Network(label="test_circular", seed=0)
+    with m:
+        a = nengo.Node(output=lambda t, x: x+1, size_in=1)
+        b = nengo.Node(output=lambda t, x: x+1, size_in=1)
+        nengo.Connection(a, b, filter=None)
+        nengo.Connection(b, a, filter=None)
 
-    a = nengo.Node(output=lambda t, x: x+1, size_in=1)
-    b = nengo.Node(output=lambda t, x: x+1, size_in=1)
-    nengo.Connection(a, b, filter=None)
-    nengo.Connection(b, a, filter=None)
-
-    a_p = nengo.Probe(a, 'output')
-    b_p = nengo.Probe(b, 'output')
+        a_p = nengo.Probe(a, 'output')
+        b_p = nengo.Probe(b, 'output')
 
     sim = Simulator(m)
     runtime = 0.5
@@ -159,30 +159,30 @@ def test_circular(Simulator):
 
 
 def test_function_args_error(Simulator):
-    nengo.Model("test_function_args_error", seed=0)
-    with pytest.raises(TypeError):
-        nengo.Node(output=lambda t, x: x+1)
-    with pytest.raises(TypeError):
-        nengo.Node(output=lambda t: t+1, size_in=1)
-    with pytest.raises(TypeError):
-        nengo.Node(output=lambda t, x, y: t+1, size_in=2)
+    with nengo.Network(label="test_function_args_error", seed=0):
+        with pytest.raises(TypeError):
+            nengo.Node(output=lambda t, x: x+1)
+        with pytest.raises(TypeError):
+            nengo.Node(output=lambda t: t+1, size_in=1)
+        with pytest.raises(TypeError):
+            nengo.Node(output=lambda t, x, y: t+1, size_in=2)
 
 
 def test_output_shape_error(Simulator):
-    nengo.Model("test_output_shape_error", seed=0)
-    with pytest.raises(ValueError):
-        nengo.Node(output=[[1, 2], [3, 4]])
-    with pytest.raises(ValueError):
-        nengo.Node(output=lambda t: [[t, t+1]])
-    with pytest.raises(ValueError):
-        nengo.Node(output=[[3, 1], [2, 9]], size_out=4)
-    with pytest.raises(ValueError):
-        nengo.Node(output=[1, 2, 3, 4, 5], size_out=4)
+    with nengo.Network(label="test_output_shape_error", seed=0):
+        with pytest.raises(ValueError):
+            nengo.Node(output=[[1, 2], [3, 4]])
+        with pytest.raises(ValueError):
+            nengo.Node(output=lambda t: [[t, t+1]])
+        with pytest.raises(ValueError):
+            nengo.Node(output=[[3, 1], [2, 9]], size_out=4)
+        with pytest.raises(ValueError):
+            nengo.Node(output=[1, 2, 3, 4, 5], size_out=4)
 
 
 def test_none(Simulator, nl_nodirect):
     """Ensure that a node which outputs `None` raises an error"""
-    model = nengo.Model("test_none", seed=89234)
+    model = nengo.Network(label="test_none", seed=89234)
 
     def input_function(t):
         if 0.1 < t < 1:

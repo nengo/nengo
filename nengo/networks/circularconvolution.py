@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from .ensemblearray import EnsembleArray
+from nengo.networks.ensemblearray import EnsembleArray
 
 
 def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
@@ -28,9 +28,7 @@ def _dft_half_cached(n):
 
 
 class CircularConvolution(nengo.Network):
-    """
-    CircularConvolution docs XXX
-    """
+    """CircularConvolution docs XXX"""
 
     def make(self, neurons, dimensions, radius=1,
              invert_a=False, invert_b=False):

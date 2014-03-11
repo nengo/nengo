@@ -13,12 +13,9 @@ __copyright__ = "2013, Nengo contributors"
 __license__ = "http://www.gnu.org/licenses/gpl.html"
 from .version import version as __version__
 
-import collections
 import logging
-import sys
 
 # Nengo namespace (API)
-from .model import Model
 from .neurons import LIF, LIFRate, Direct
 from .objects import Ensemble, Node, Connection, Probe, Network
 from . import networks
@@ -31,19 +28,3 @@ try:
     logger.addHandler(logging.NullHandler())
 except AttributeError:
     pass
-
-
-class ContextStack(collections.deque):
-    def add_to_current(self, obj):
-        try:
-            curr = self.__getitem__(-1)
-        except IndexError:
-            raise IndexError("Context has not been set")
-
-        if not hasattr(curr, "add"):
-            raise AttributeError("Current context has no add function")
-
-        # cur.add should return a unique key
-        return curr.add(obj)
-
-context = ContextStack(maxlen=100)
