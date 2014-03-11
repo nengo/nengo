@@ -55,31 +55,31 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
     assert np.abs(c).max() < radius
 
     ### model
-    model = nengo.Model("circular convolution")
+    model = nengo.Network("circular convolution")
+    with model:
+        inputA = nengo.Node(output=a)
+        inputB = nengo.Node(output=b)
+        A = EnsembleArray(nl(n_neurons), dims, radius=radius)
+        B = EnsembleArray(nl(n_neurons), dims, radius=radius)
+        C = EnsembleArray(nl(n_neurons), dims, radius=radius)
+        D = nengo.networks.CircularConvolution(
+            neurons=nl(n_neurons_d),
+            dimensions=A.dimensions, radius=radius)
 
-    inputA = nengo.Node(output=a)
-    inputB = nengo.Node(output=b)
-    A = EnsembleArray(nl(n_neurons), dims, radius=radius)
-    B = EnsembleArray(nl(n_neurons), dims, radius=radius)
-    C = EnsembleArray(nl(n_neurons), dims, radius=radius)
-    D = nengo.networks.CircularConvolution(
-        neurons=nl(n_neurons_d),
-        dimensions=A.dimensions, radius=radius)
+        nengo.Connection(inputA, A.input)
+        nengo.Connection(inputB, B.input)
+        nengo.Connection(A.output, D.A)
+        nengo.Connection(B.output, D.B)
+        nengo.Connection(D.output, C.input)
 
-    nengo.Connection(inputA, A.input)
-    nengo.Connection(inputB, B.input)
-    nengo.Connection(A.output, D.A)
-    nengo.Connection(B.output, D.B)
-    nengo.Connection(D.output, C.input)
+        A_p = nengo.Probe(A.output, 'output', filter=0.03)
+        B_p = nengo.Probe(B.output, 'output', filter=0.03)
+        C_p = nengo.Probe(C.output, 'output', filter=0.03)
+        D_p = nengo.Probe(D.ensemble.output, 'output', filter=0.03)
 
-    A_p = nengo.Probe(A.output, 'output', filter=0.03)
-    B_p = nengo.Probe(B.output, 'output', filter=0.03)
-    C_p = nengo.Probe(C.output, 'output', filter=0.03)
-    D_p = nengo.Probe(D.ensemble.output, 'output', filter=0.03)
-
-    # check FFT magnitude
-    d = np.dot(D.transformA, a) + np.dot(D.transformB, b)
-    assert np.abs(d).max() < radius
+        # check FFT magnitude
+        d = np.dot(D.transformA, a) + np.dot(D.transformB, b)
+        assert np.abs(d).max() < radius
 
     ### simulation
     sim = Simulator(model)

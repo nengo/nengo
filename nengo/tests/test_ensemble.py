@@ -17,15 +17,14 @@ def test_encoders(n_dimensions, n_neurons=10, encoders=None):
         magnitudes = np.sqrt((encoders * encoders).sum(axis=-1))
         encoders = encoders / magnitudes[..., np.newaxis]
 
-    args = {'label': 'A',
-            'neurons': nengo.LIF(n_neurons),
-            'dimensions': n_dimensions}
+    with nengo.Network('_test_encoders') as model:
+        args = {'label': 'A',
+                'neurons': nengo.LIF(n_neurons),
+                'dimensions': n_dimensions}
+        ens = nengo.Ensemble(encoders=encoders, **args)
+        sim = nengo.Simulator(model)
 
-    model = nengo.Model('_test_encoders')
-    ens = nengo.Ensemble(encoders=encoders, **args)
-    sim = nengo.Simulator(model)
-
-    assert np.allclose(encoders, sim.neurons(ens.neurons).encoders)
+        assert np.allclose(encoders, sim.neurons(ens.neurons).encoders)
 
 
 def test_encoders_wrong_shape():
@@ -50,12 +49,13 @@ def test_constant_scalar(Simulator, nl):
     N = 30
     val = 0.5
 
-    m = nengo.Model('test_constant_scalar', seed=123)
-    input = nengo.Node(output=val, label='input')
-    A = nengo.Ensemble(nl(N), 1)
-    nengo.Connection(input, A)
-    in_p = nengo.Probe(input, 'output')
-    A_p = nengo.Probe(A, 'decoded_output', filter=0.1)
+    m = nengo.Network('test_constant_scalar', seed=123)
+    with m:
+        input = nengo.Node(output=val, label='input')
+        A = nengo.Ensemble(nl(N), 1)
+        nengo.Connection(input, A)
+        in_p = nengo.Probe(input, 'output')
+        A_p = nengo.Probe(A, 'decoded_output', filter=0.1)
 
     sim = Simulator(m, dt=0.001)
     sim.run(1.0)
@@ -77,12 +77,13 @@ def test_constant_vector(Simulator, nl):
     N = 30
     vals = [0.6, 0.1, -0.5]
 
-    m = nengo.Model('test_constant_vector', seed=123)
-    input = nengo.Node(output=vals)
-    A = nengo.Ensemble(nl(N * len(vals)), len(vals))
-    nengo.Connection(input, A)
-    in_p = nengo.Probe(input, 'output')
-    A_p = nengo.Probe(A, 'decoded_output', filter=0.1)
+    m = nengo.Network('test_constant_vector', seed=123)
+    with m:
+        input = nengo.Node(output=vals)
+        A = nengo.Ensemble(nl(N * len(vals)), len(vals))
+        nengo.Connection(input, A)
+        in_p = nengo.Probe(input, 'output')
+        A_p = nengo.Probe(A, 'decoded_output', filter=0.1)
 
     sim = Simulator(m)
     sim.run(1.0)
@@ -103,12 +104,13 @@ def test_scalar(Simulator, nl):
     """A network that represents sin(t)."""
     N = 30
 
-    m = nengo.Model('test_scalar', seed=123)
-    input = nengo.Node(output=np.sin, label='input')
-    A = nengo.Ensemble(nl(N), 1, label='A')
-    nengo.Connection(input, A)
-    in_p = nengo.Probe(input, 'output')
-    A_p = nengo.Probe(A, 'decoded_output', filter=0.02)
+    m = nengo.Network('test_scalar', seed=123)
+    with m:
+        input = nengo.Node(output=np.sin, label='input')
+        A = nengo.Ensemble(nl(N), 1, label='A')
+        nengo.Connection(input, A)
+        in_p = nengo.Probe(input, 'output')
+        A_p = nengo.Probe(A, 'decoded_output', filter=0.02)
 
     sim = Simulator(m)
     sim.run(5.0)
@@ -133,12 +135,14 @@ def test_vector(Simulator, nl):
     """A network that represents sin(t), cos(t), arctan(t)."""
     N = 40
 
-    m = nengo.Model('test_vector', seed=123)
-    input = nengo.Node(output=lambda t: [np.sin(t), np.cos(t), np.arctan(t)])
-    A = nengo.Ensemble(nl(N * 3), 3, radius=2)
-    nengo.Connection(input, A)
-    in_p = nengo.Probe(input, 'output')
-    A_p = nengo.Probe(A, 'decoded_output', filter=0.02)
+    m = nengo.Network('test_vector', seed=123)
+    with m:
+        input = nengo.Node(
+            output=lambda t: [np.sin(t), np.cos(t), np.arctan(t)])
+        A = nengo.Ensemble(nl(N * 3), 3, radius=2)
+        nengo.Connection(input, A)
+        in_p = nengo.Probe(input, 'output')
+        A_p = nengo.Probe(A, 'decoded_output', filter=0.02)
 
     sim = Simulator(m)
     sim.run(5)
@@ -162,27 +166,28 @@ def test_vector(Simulator, nl):
 def test_product(Simulator, nl):
     N = 80
 
-    m = nengo.Model('test_product', seed=124)
-    sin = nengo.Node(output=np.sin)
-    cons = nengo.Node(output=-.5)
-    factors = nengo.Ensemble(nl(2 * N), dimensions=2, radius=1.5)
-    if nl != nengo.Direct:
-        factors.encoders = np.tile(
-            [[1, 1], [-1, 1], [1, -1], [-1, -1]],
-            (factors.n_neurons // 4, 1))
-    product = nengo.Ensemble(nl(N), dimensions=1)
-    nengo.Connection(sin, factors[0])
-    nengo.Connection(cons, factors[1])
-    nengo.Connection(
-        factors, product, function=lambda x: x[0] * x[1], filter=0.01)
+    m = nengo.Network('test_product', seed=124)
+    with m:
+        sin = nengo.Node(output=np.sin)
+        cons = nengo.Node(output=-.5)
+        factors = nengo.Ensemble(nl(2 * N), dimensions=2, radius=1.5)
+        if nl != nengo.Direct:
+            factors.encoders = np.tile(
+                [[1, 1], [-1, 1], [1, -1], [-1, -1]],
+                (factors.n_neurons // 4, 1))
+        product = nengo.Ensemble(nl(N), dimensions=1)
+        nengo.Connection(sin, factors[0])
+        nengo.Connection(cons, factors[1])
+        nengo.Connection(
+            factors, product, function=lambda x: x[0] * x[1], filter=0.01)
 
-    sin_p = nengo.Probe(sin, 'output', sample_every=.01)
-    # TODO
-    # m.probe(conn, sample_every=.01)
-    factors_p = nengo.Probe(
-        factors, 'decoded_output', sample_every=.01, filter=.01)
-    product_p = nengo.Probe(
-        product, 'decoded_output', sample_every=.01, filter=.01)
+        sin_p = nengo.Probe(sin, 'output', sample_every=.01)
+        # TODO
+        # m.probe(conn, sample_every=.01)
+        factors_p = nengo.Probe(
+            factors, 'decoded_output', sample_every=.01, filter=.01)
+        product_p = nengo.Probe(
+            product, 'decoded_output', sample_every=.01, filter=.01)
 
     sim = Simulator(m)
     sim.run(6)

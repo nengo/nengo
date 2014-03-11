@@ -5,7 +5,7 @@ import pytest
 
 import nengo
 import nengo.simulator
-from nengo.builder import BuiltModel, Builder, ProdUpdate, Copy, Reset, \
+from nengo.builder import Model, Builder, ProdUpdate, Copy, Reset, \
     DotInc, Signal
 from nengo.nonlinearities import PythonFunction
 
@@ -19,14 +19,14 @@ def pytest_funcarg__RefSimulator(request):
 class MockBuilder(object):
 
     def __init__(self, built_model):
-        self.output = built_model
+        self.model = built_model
 
     def get_neurons_state(self, neurons):
         pass
 
 
 def mock_builder(b):
-    """Mocks out nengo.Builder to have a specified BuiltModel output."""
+    """Mocks out nengo.Builder to have a specified Model output."""
     def builder(*args, **kwargs):
         return MockBuilder(b)
     return builder
@@ -34,14 +34,14 @@ def mock_builder(b):
 
 def test_signal_init_values(RefSimulator):
     """Tests that initial values are not overwritten."""
-    m = nengo.Model("test_signal_init_values")
+    m = nengo.Network("test_signal_init_values")
     zero = Signal([0])
     one = Signal([1])
     five = Signal([5.0])
     zeroarray = Signal([[0], [0], [0]])
     array = Signal([1, 2, 3])
 
-    b = BuiltModel(0)
+    b = Model(0)
     b.operators += [ProdUpdate(zero, zero, one, five),
                     ProdUpdate(zeroarray, one, one, array)]
 
@@ -58,7 +58,7 @@ def test_signal_init_values(RefSimulator):
 
 
 def test_steps(RefSimulator):
-    m = nengo.Model("test_steps")
+    m = nengo.Network("test_steps")
     sim = RefSimulator(m)
     assert sim.n_steps == 0
     sim.step()
@@ -68,7 +68,7 @@ def test_steps(RefSimulator):
 
 
 def test_time_steps(RefSimulator):
-    m = nengo.Model("test_time_steps")
+    m = nengo.Network("test_time_steps")
     sim = RefSimulator(m)
     assert np.allclose(sim.signals["__time__"], 0.00)
     sim.step()
@@ -78,7 +78,7 @@ def test_time_steps(RefSimulator):
 
 
 def test_time_absolute(Simulator):
-    m = nengo.Model("test_time_absolute", seed=123)
+    m = nengo.Network("test_time_absolute", seed=123)
     sim = Simulator(m)
     sim.run(0.003)
     assert np.allclose(sim.trange(), [0.00, .001, .002])
@@ -86,14 +86,14 @@ def test_time_absolute(Simulator):
 
 def test_signal_indexing_1(RefSimulator):
     dt = 0.001
-    m = nengo.Model("test_signal_indexing_1")
+    m = nengo.Network("test_signal_indexing_1")
 
     one = Signal(np.zeros(1), name="a")
     two = Signal(np.zeros(2), name="b")
     three = Signal(np.zeros(3), name="c")
     tmp = Signal(np.zeros(3), name="tmp")
 
-    b = Builder(m, dt).output
+    b = Builder(m, dt).model
     b.operators += [
         ProdUpdate(
             Signal(1, name="A1"), three[:1], Signal(0, name="Z0"), one),
@@ -119,7 +119,7 @@ def test_signal_indexing_1(RefSimulator):
 
 def test_simple_pyfunc(RefSimulator):
     dt = 0.001
-    m = nengo.Model("test_simple_pyfunc")
+    m = nengo.Network("test_simple_pyfunc")
 
     time = Signal(np.zeros(1), name="time")
     sig = Signal(np.zeros(1), name="sig")
@@ -127,7 +127,7 @@ def test_simple_pyfunc(RefSimulator):
 
     builder = Builder(m, dt)
     builder._build_pyfunc(pop)
-    b = builder.output
+    b = builder.model
     b.operators += [
         ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
         DotInc(Signal([[1.0]]), time, b.sig_in[pop]),
@@ -147,7 +147,7 @@ def test_encoder_decoder_pathway(RefSimulator):
     """Verifies (like by hand) that the simulator does the right
     things in the right order."""
 
-    m = nengo.Model()
+    m = nengo.Network()
     dt = 0.001
     foo = Signal([1.0], name="foo")
     pop = PythonFunction(fn=lambda t, x: x + 1, n_in=2, n_out=2, label="pop")
@@ -156,7 +156,7 @@ def test_encoder_decoder_pathway(RefSimulator):
 
     builder = Builder(m, dt)
     builder._build_pyfunc(pop)
-    b = builder.output
+    b = builder.model
     b.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo, b.sig_in[pop]),
         ProdUpdate(decs, b.sig_out[pop], Signal(0.2), foo)
@@ -199,7 +199,7 @@ def test_encoder_decoder_pathway(RefSimulator):
 
 
 def test_encoder_decoder_with_views(RefSimulator):
-    m = nengo.Model("")
+    m = nengo.Network("")
     dt = 0.001
     foo = Signal([1.0], name="foo")
     pop = PythonFunction(fn=lambda t, x: x + 1, n_in=2, n_out=2, label="pop")
@@ -207,7 +207,7 @@ def test_encoder_decoder_with_views(RefSimulator):
 
     builder = Builder(m, dt)
     builder._build_pyfunc(pop)
-    b = builder.output
+    b = builder.model
     b.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo[:], b.sig_in[pop]),
         ProdUpdate(Signal(decoders * 0.5), b.sig_out[pop], Signal(0.2), foo[:])

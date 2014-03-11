@@ -9,7 +9,6 @@ class EnsembleArray(nengo.Network):
     def make(self, neurons, n_ensembles, **ens_args):
         self.n_ensembles = n_ensembles
         self.dimensions_per_ensemble = ens_args.pop('dimensions', 1)
-        self.ensembles = []
         transform = np.eye(self.dimensions)
 
         self.input = nengo.Node(size_in=self.dimensions)
@@ -21,7 +20,6 @@ class EnsembleArray(nengo.Network):
             trans = transform[i * self.dimensions_per_ensemble:
                               (i + 1) * self.dimensions_per_ensemble, :]
             nengo.Connection(self.input, e, transform=trans, filter=None)
-            self.ensembles.append(e)
 
         self.add_output('output', function=None)
 

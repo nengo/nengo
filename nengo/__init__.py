@@ -17,9 +17,8 @@ import collections
 import logging
 import sys
 
-from .model import Model
 from .nonlinearities import PythonFunction, LIF, LIFRate, Direct
-from .objects import Ensemble, Node, Connection, Probe, Network
+from .objects import NengoObject, Ensemble, Node, Connection, Probe, Network
 from . import networks
 from .simulator import Simulator
 
@@ -61,17 +60,5 @@ def log(debug=False, path=None):
     logging.root.addHandler(handler)
 
 
-class ContextStack(collections.deque):
-    def add_to_current(self, obj):
-        try:
-            curr = self.__getitem__(-1)
-        except IndexError:
-            raise IndexError("Context has not been set")
-
-        if not hasattr(curr, "add"):
-            raise AttributeError("Current context has no add function")
-
-        curr.add(obj)
-
-
-context = ContextStack(maxlen=100)
+# TODO: Don't use a global variable for this
+context = collections.deque(maxlen=100)  # stack of nengo.Network objects

@@ -19,7 +19,7 @@ def test_lif_builtin():
     t_final = 1.0
 
     N = 10
-    lif = nengo.LIF(N)
+    lif = nengo.LIF(N, add_to_network=False)
     gain, bias = lif.gain_bias(
         rng.uniform(80, 100, size=N), rng.uniform(-1, 1, size=N))
 
@@ -53,13 +53,13 @@ def test_pyfunc():
 
         x = np.random.normal(size=d)
 
-        m = nengo.Model("")
+        m = nengo.Network()
         ins = Signal(x, name='ins')
         pop = PythonFunction(fn=fn, n_in=d, n_out=d)
         m.operators = []
         build_state = Builder(m, dt)
         build_state._build_pyfunc(pop)
-        b = build_state.output
+        b = build_state.model
         b.operators += [
             DotInc(Signal(np.eye(d)), ins, b.sig_in[pop]),
             ProdUpdate(Signal(np.eye(d)), b.sig_out[pop], Signal(0), ins)
@@ -88,13 +88,13 @@ def test_lif_base(nl_nodirect):
     max_rates = rng.uniform(low=10, high=200, size=n)
     intercepts = rng.uniform(low=-1, high=1, size=n)
 
-    m = nengo.Model()
-
-    ins = nengo.Node(x)
-    ens = nengo.Ensemble(
-        nl_nodirect(n), 1, max_rates=max_rates, intercepts=intercepts)
-    nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)))
-    spike_probe = nengo.Probe(ens.neurons, "output")
+    m = nengo.Network()
+    with m:
+        ins = nengo.Node(x)
+        ens = nengo.Ensemble(
+            nl_nodirect(n), 1, max_rates=max_rates, intercepts=intercepts)
+        nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)))
+        spike_probe = nengo.Probe(ens.neurons, "output")
 
     sim = nengo.Simulator(m, dt=dt)
 

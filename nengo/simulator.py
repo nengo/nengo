@@ -89,7 +89,7 @@ class Simulator(object):
     def __init__(self, model, dt=0.001, seed=None, builder=Builder):
         # Call the builder to build the model
         build_state = builder(model, dt)
-        self.model = build_state.output
+        self.model = build_state.model
         self.dt = dt
 
         # Add a public method which allows users to get BuildNeuronsState
