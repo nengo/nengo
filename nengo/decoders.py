@@ -75,7 +75,7 @@ def lstsq_L2(A, Y, rng=np.random, E=None, noise_amp=0.1):
     return _cholesky(A, Y, sigma)
 
 
-def lstsq_L2nz(A, Y, rng, E=None, noise_amp=0.1):
+def lstsq_L2nz(A, Y, rng=np.random, E=None, noise_amp=0.1):
     """Least-squares with L2 regularization on non-zero components."""
     Y = np.dot(Y, E) if E is not None else Y
 
@@ -94,7 +94,7 @@ def lstsq_L2nz(A, Y, rng, E=None, noise_amp=0.1):
     return _cholesky(A, Y, sigma)
 
 
-def lstsq_L1(A, Y, rng, E=None, l1=1e-4, l2=1e-6):
+def lstsq_L1(A, Y, rng=np.random, E=None, l1=1e-4, l2=1e-6):
     """Least-squares with L1 and L2 regularization (elastic net).
 
     This method is well suited for creating sparse decoders or weight matrices.
@@ -121,6 +121,23 @@ def lstsq_L1(A, Y, rng, E=None, l1=1e-4, l2=1e-6):
     model.fit(A, Y)
     X = model.coef_.T
     return X
+
+
+# def lstsq_L1b(A, Y, rng=np.random, E=None, l1=1e-4):
+#     """Least-squares with L1 regularization."""
+#     if scipy is None:
+#         raise RuntimeError(
+#             "'lstsq_L1' requires the 'scipy' package to be installed")
+
+#     a = l1 * A.max()      # L1 regularization
+
+#     ### solve least-squares A * X = Y
+#     if E is not None:
+#         Y = np.dot(Y, E)
+
+#     X, iters = _nonlinear_cg_L1(A, Y, a)
+#     print "iters", iters
+#     return X
 
 
 def lstsq_drop(A, Y, rng, E=None, noise_amp=0.1, drop=0.25, solver=lstsq_L2nz):
@@ -154,10 +171,7 @@ def lstsq_drop(A, Y, rng, E=None, noise_amp=0.1, drop=0.25, solver=lstsq_L2nz):
 
 
 def _cholesky(A, b, sigma, transpose=None):
-    """
-    Find the least-squares solution of the given linear system(s)
-    using the Cholesky decomposition.
-    """
+    """Solve the least-squares system using the Cholesky decomposition."""
     m, n = A.shape
     transpose = m < n if transpose is None else transpose
     if transpose:
@@ -180,3 +194,206 @@ def _cholesky(A, b, sigma, transpose=None):
         x = np.dot(L, np.dot(L.T, b))
 
     return np.dot(A.T, x) if transpose else x
+
+
+def _conjgrad_iters(calcAx, b, x, maxiters=None, rtol=1e-6):
+    """Solve the single-RHS linear system using conjugate gradient."""
+
+    if maxiters is None:
+        maxiters = b.shape[0]
+
+    r = b - calcAx(x)
+    p = r.copy()
+    rsold = np.dot(r, r)
+
+    for i in range(maxiters):
+        Ap = calcAx(p)
+        alpha = rsold / np.dot(p, Ap)
+        x += alpha * p
+        r -= alpha * Ap
+
+        rsnew = np.dot(r, r)
+        beta = rsnew / rsold
+
+        if np.sqrt(rsnew) < rtol:
+            break
+
+        if beta < 1e-12:  # no perceptible change in p
+            break
+
+        # p = r + beta*p
+        p *= beta
+        p += r
+        rsold = rsnew
+
+    return x, i+1
+
+
+def _conjgrad(A, B, sigma, X0=None, maxiters=None, tol=1e-2):
+    """Solve the least-squares system using conjugate gradient."""
+
+    m, n = A.shape
+    damp = m * sigma**2
+
+    G = lambda x: np.dot(A.T, np.dot(A, x)) + damp*x
+    B = np.dot(A.T, B)
+
+    rtol = tol * np.sqrt(m)
+
+    if B.ndim == 1:
+        x = np.zeros(n) if X0 is None else np.array(X0).reshape(n)
+        x, iters = _conjgrad_iters(G, B, x, maxiters=maxiters, rtol=rtol)
+        return x, iters
+    elif B.ndim == 2:
+        d = B.shape[1]
+        X = np.zeros((n, d)) if X0 is None else np.array(X0).reshape((n, d))
+        iters = -np.ones(d, dtype='int')
+
+        for i in range(d):
+            X[:, i], iters[i] = _conjgrad_iters(
+                G, B[:, i], X[:, i], maxiters=maxiters, rtol=rtol)
+
+        return X, iters
+    else:
+        raise ValueError("B must be vector or matrix")
+
+
+def _block_conjgrad(A, B, sigma, X0=None, tol=1e-2):
+    """Solve a least-squares system with multiple-RHS."""
+
+    m, n = A.shape
+    matrix_in = B.ndim > 1
+    d = B.shape[1] if matrix_in else 1
+    # if d == 1:
+    #     return conjgrad(A, B, sigma, X0)
+
+    if not matrix_in:
+        B = B.reshape((-1, 1))
+
+    # G = lambda X: (np.dot(A.T, np.dot(A, X)) + (m * sigma**2) * X)
+    G = lambda X: (np.dot(np.dot(A, X).T, A).T + (m * sigma**2) * X)  # faster
+    B = np.dot(A.T, B)
+
+    rtol = tol * np.sqrt(m)
+
+    ### conjugate gradient
+    X = np.zeros((n, d)) if X0 is None else np.array(X0).reshape((n, d))
+    R = B - G(X)
+    P = np.array(R)
+    Rsold = np.dot(R.T, R)
+    AP = np.zeros((n, d))
+
+    maxiters = int(n / d)
+    for i in range(maxiters):
+        # AP = G(P)
+        for j in range(d):  # why is this loop faster than matrix-multiply?
+            AP[:, j] = G(P[:, j])
+
+        alpha = np.linalg.solve(np.dot(P.T, AP), Rsold)
+        X += np.dot(P, alpha)
+        R -= np.dot(AP, alpha)
+
+        Rsnew = np.dot(R.T, R)
+        if (np.diag(Rsnew) < rtol**2).all():
+            break
+
+        beta = np.linalg.solve(Rsold, Rsnew)
+        P = R + np.dot(P, beta)
+        Rsold = Rsnew.copy()
+
+    if matrix_in:
+        return X, i+1
+    else:
+        return X.flatten(), i+1
+
+
+# def _nonlinear_cg_L1(A, B, sigma, x0=None):
+
+#     m, n = A.shape
+#     matrix_in = B.ndim > 1
+#     d = B.shape[1] if matrix_in else 1
+
+#     damp = np.sqrt(m) * sigma
+
+#     X = np.zeros((n, d)) if x0 is None else np.array(x0)
+#     X.shape = (n, d)
+#     iters = np.zeros(d, dtype='int')
+
+#     for i in xrange(d):
+#         X[:, i], iters[i] = _nonlinear_cg_L1_iters(A, B[:, i], X[:, i], damp)
+
+#     if matrix_in:
+#         return X, i+1
+#     else:
+#         return X.flatten(), i+1
+
+
+# def _nonlinear_cg_L1_iters(A, b, x, damp, maxiters=1000):
+
+#     def vnorm(v):
+#         return np.sqrt(np.dot(v, v))
+
+#     p = None
+#     calcAAx = lambda x: np.dot(A.T, np.dot(A, x))
+#     bA = np.dot(b, A)
+#     bs = np.dot(b, b)
+
+#     for i in xrange(maxiters):
+
+#         AAx = calcAAx(x)
+#         r = bA - AAx
+#         # print np.dot(r, r)
+
+
+#         ### L1 norm
+#         # dx = 2*np.dot(b - np.dot(A,x),A) + np.sqrt(m)*sigma*np.sign(x)
+#         # dx = 2*(bA - np.dot(G,x)) - damp * np.sign(x)
+#         # dx = 2 * (bA - calcAAx(x)) - damp * np.sign(x)
+#         dx = 2 * (bA - AAx) - damp * np.sign(x)
+
+#         if p is None:
+#             p = np.array(dx)
+#         else:
+#             beta = np.dot(dx, dx - dx0) / np.dot(dx0, dx0)
+#             beta = max(beta, 0)
+#             p = dx + beta * p
+
+#         # perform line search to find alpha (using secant method)
+#         bAp = np.dot(bA, p)
+#         AAp = calcAAx(p)
+#         xAAp = np.dot(x, AAp)
+#         pAAp = np.dot(p, AAp)
+#         xp = np.dot(x, p)
+#         pp = np.dot(p, p)
+
+#         ### L1 norm
+#         def fa(alpha):
+#             return 2*pAAp*alpha + 2*(xAAp - bAp) + damp * np.dot(
+#                 np.sign(x + alpha*p), p)
+
+
+#         alpha0 = -1e-3 / vnorm(p)
+#         alpha1 = 1e-3 / vnorm(p)
+#         f0 = fa(alpha0)
+#         f1 = fa(alpha1)
+
+#         j = 0
+#         while f0*f1 > 0:
+#             # alpha0 *= 2
+#             alpha1 *= 2
+#             # f0, f1 = fa(alpha0), fa(alpha1)
+#             f1 = fa(alpha1)
+#             if j > 99:
+#                 raise Exception('could not find starting point')
+#             j += 1
+
+#         alpha = scipy.optimize.brentq(fa, alpha0, alpha1)
+
+#         x += alpha*p
+#         dx0 = dx.copy()
+#         # dx0 = dx
+
+#         if vnorm(alpha*p) / vnorm(x) < 1e-8:
+#             break
+
+#     return x, i+1
