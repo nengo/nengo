@@ -7,6 +7,7 @@ import numpy as np
 import nengo
 import nengo.decoders
 import nengo.nonlinearities
+from nengo.utils.distributions import UniformHypersphere
 
 logger = logging.getLogger(__name__)
 
@@ -761,8 +762,8 @@ class Builder(object):
 
         # Generate eval points
         if ens.eval_points is None:
-            ens.eval_points = nengo.decoders.sample_hypersphere(
-                ens.dimensions, ens.EVAL_POINTS, rng) * ens.radius
+            ens.eval_points = UniformHypersphere(ens.dimensions).sample(
+                ens.EVAL_POINTS, rng=rng) * ens.radius
         else:
             ens.eval_points = np.array(ens.eval_points, dtype=np.float64)
             if ens.eval_points.ndim == 1:
