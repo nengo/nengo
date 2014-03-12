@@ -1,5 +1,5 @@
 import collections
-import copy
+import inspect
 import logging
 import numpy as np
 
@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 def _in_stack(function):
     """Check whether the given function is in the call stack"""
-    import inspect
     codes = [record[0].f_code for record in inspect.stack()]
     return function.__code__ in codes
 
@@ -41,9 +40,6 @@ class Neurons(object):
     def __getitem__(self, key):
         return ObjView(self, key)
 
-    def default_encoders(self, dimensions, rng):
-        raise NotImplementedError("Neurons must provide default_encoders")
-
     def rates(self, x, gain, bias):
         raise NotImplementedError("Neurons must provide rates")
 
@@ -61,7 +57,8 @@ class Neurons(object):
         return probe
 
     def add_to_model(self, model):
-        model.objs.append(self)
+        # Neurons are added to Ensembles in order to be built into the model.
+        pass
 
 
 class Ensemble(object):
@@ -138,26 +135,6 @@ class Ensemble(object):
         ~ : int
         """
         return self.neurons.n_neurons
-
-    @property
-    def neurons(self):
-        """The neurons that make up the ensemble.
-
-        Returns
-        -------
-        ~ : Neurons
-        """
-        return self._neurons
-
-    @neurons.setter
-    def neurons(self, _neurons):
-        if isinstance(_neurons, int):
-            logger.warning(("neurons should be an instance of a Neuron type, "
-                            "not an int. Defaulting to LIF."))
-            _neurons = nengo.LIF(_neurons)
-
-        _neurons.dimensions = self.dimensions
-        self._neurons = _neurons
 
     def probe(self, probe, **kwargs):
         """Probe a signal in this ensemble.
@@ -236,7 +213,7 @@ class Node(object):
             output = np.asarray(output)
         self.output = output
         self.label = label
-        self._size_in = size_in
+        self.size_in = size_in
 
         if output is not None:
             if isinstance(output, np.ndarray):
@@ -272,7 +249,7 @@ class Node(object):
         else:  # output is None
             size_out = size_in
 
-        self._size_out = size_out
+        self.size_out = size_out
 
         # Set up probes
         self.probes = {'output': []}
@@ -285,33 +262,6 @@ class Node(object):
 
     def __getitem__(self, key):
         return ObjView(self, key)
-
-    def __deepcopy__(self, memo):
-        try:
-            return memo[id(self)]
-        except KeyError:
-            rval = self.__class__.__new__(self.__class__)
-            memo[id(self)] = rval
-            for k, v in self.__dict__.items():
-                if k == 'output':
-                    try:
-                        rval.__dict__[k] = copy.deepcopy(v, memo)
-                    except TypeError:
-                        # XXX some callable things aren't serializable
-                        #     is it worth crashing over?
-                        #     .... we're going to guess not.
-                        rval.__dict__[k] = v
-                else:
-                    rval.__dict__[k] = copy.deepcopy(v, memo)
-            return rval
-
-    @property
-    def size_in(self):
-        return self._size_in
-
-    @property
-    def size_out(self):
-        return self._size_out
 
     def probe(self, probe, **kwargs):
         """TODO"""
@@ -361,11 +311,6 @@ class Connection(object):
         `decoder_solver`, but more general. See `nengo.decoders`.
     """
 
-    _decoders = None
-    _eval_points = None
-    _function = (None, 0)  # (handle, n_outputs)
-    _transform = None
-
     def __init__(self, pre, post,
                  filter=0.005, transform=1.0, modulatory=False, **kwargs):
         if not isinstance(pre, ObjView):
@@ -379,24 +324,27 @@ class Connection(object):
         self.probes = {'signal': []}
 
         self.filter = filter
-        self.transform = transform
         self.modulatory = modulatory
 
-        if isinstance(self.pre, Ensemble):
-            if isinstance(self.post, Ensemble):
+        if isinstance(self._pre, Ensemble):
+            if isinstance(self._post, Ensemble):
                 self.weight_solver = kwargs.pop('weight_solver', None)
             else:
                 self.weight_solver = None
             self.decoder_solver = kwargs.pop('decoder_solver', None)
             self.eval_points = kwargs.pop('eval_points', None)
             self.function = kwargs.pop('function', None)
-        elif not isinstance(self.pre, (Neurons, Node)):
+        elif not isinstance(self._pre, (Neurons, Node)):
             raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
-                             (self.pre.__class__.__name__))
+                             (self._pre.__class__.__name__))
+        else:
+            self.decoder_solver = None
+            self.eval_points = None
+            self._function = (None, 0)
 
-        if not isinstance(self.post, (Ensemble, Neurons, Node, Probe)):
+        if not isinstance(self._post, (Ensemble, Neurons, Node, Probe)):
             raise ValueError("Objects of type '%s' cannot serve as 'post'" %
-                             (self.post.__class__.__name__))
+                             (self._post.__class__.__name__))
 
         # check that we've used all user-provided arguments
         if len(kwargs) > 0:
@@ -404,13 +352,14 @@ class Connection(object):
                             + next(iter(kwargs)) + "'")
 
         # check that shapes match up
+        self.transform = transform
         self._check_shapes(check_in_init=True)
 
         # add self to current context
         nengo.context.add_to_current(self)
 
     def _check_pre_ensemble(self, prop_name):
-        if not isinstance(self.pre, Ensemble):
+        if not isinstance(self._pre, Ensemble):
             raise ValueError("'%s' can only be set if 'pre' is an Ensemble" %
                              (prop_name))
 
@@ -450,23 +399,23 @@ class Connection(object):
                               self._required_transform_shape())
 
     def _required_transform_shape(self):
-        if isinstance(self.pre, Ensemble) and self.function is not None:
+        if isinstance(self._pre, Ensemble) and self.function is not None:
             in_dims = self._function[1]
-        elif isinstance(self.pre, Ensemble):
-            in_dims = self.pre.dimensions
-        elif isinstance(self.pre, Neurons):
-            in_dims = self.pre.n_neurons
+        elif isinstance(self._pre, Ensemble):
+            in_dims = self._pre.dimensions
+        elif isinstance(self._pre, Neurons):
+            in_dims = self._pre.n_neurons
         else:  # Node
-            in_dims = self.pre.size_out
+            in_dims = self._pre.size_out
 
-        if isinstance(self.post, Ensemble):
-            out_dims = self.post.dimensions
-        elif isinstance(self.post, Neurons):
-            out_dims = self.post.n_neurons
-        elif isinstance(self.post, Probe):
+        if isinstance(self._post, Ensemble):
+            out_dims = self._post.dimensions
+        elif isinstance(self._post, Neurons):
+            out_dims = self._post.n_neurons
+        elif isinstance(self._post, Probe):
             out_dims = in_dims
         else:  # Node
-            out_dims = self.post.size_in
+            out_dims = self._post.size_in
 
         return (out_dims, in_dims)
 
@@ -501,7 +450,7 @@ class Connection(object):
 
     @property
     def label(self):
-        label = "%s>%s" % (self.pre.label, self.post.label)
+        label = "%s>%s" % (self._pre.label, self._post.label)
         if self.function is not None:
             return "%s:%s" % (label, self.function.__name__)
         return label
@@ -511,20 +460,6 @@ class Connection(object):
         return self._required_transform_shape()[1]
 
     @property
-    def eval_points(self):
-        if self._eval_points is None:
-            return self.pre.eval_points
-        return self._eval_points
-
-    @eval_points.setter
-    def eval_points(self, _eval_points):
-        if _eval_points is not None:
-            _eval_points = np.asarray(_eval_points)
-            if _eval_points.ndim == 1:
-                _eval_points.shape = 1, _eval_points.shape[0]
-        self._eval_points = _eval_points
-
-    @property
     def function(self):
         return self._function[0]
 
@@ -532,8 +467,8 @@ class Connection(object):
     def function(self, _function):
         if _function is not None:
             self._check_pre_ensemble('function')
-            x = (self._eval_points[0] if self._eval_points is not None else
-                 np.zeros(self.pre.dimensions))
+            x = (self.eval_points[0] if self.eval_points is not None else
+                 np.zeros(self._pre.dimensions))
             size = np.asarray(_function(x)).size
         else:
             size = 0
@@ -575,8 +510,6 @@ class Probe(object):
         An arbitrary name for the object.
     sample_every : float
         Sampling period in seconds.
-    dimensions : int, optional
-        Number of dimensions.
     """
     DEFAULTS = {
         Ensemble: 'decoded_output',
@@ -584,8 +517,7 @@ class Probe(object):
     }
 
     def __init__(self, target, attr=None,
-                 sample_every=None, filter=None, dimensions=None, **kwargs):
-        self.target = target
+                 sample_every=None, filter=None, **kwargs):
         if attr is None:
             try:
                 attr = self.DEFAULTS[target.__class__]
@@ -598,12 +530,9 @@ class Probe(object):
                     raise TypeError("Type " + target.__class__.__name__
                                     + " has no default probe.")
         self.attr = attr
-        self.label = "Probe(" + target.label + "." + attr + ")"
+        self.label = "Probe(%s.%s)" % (target.label, attr)
         self.sample_every = sample_every
-        self.dimensions = dimensions  # None?
         self.filter = filter
-        self.kwargs = kwargs
-        self.sig = None  # XXX temp, until better probes
 
         target.probe(self, **kwargs)
 

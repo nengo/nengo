@@ -3,7 +3,6 @@ import logging
 import numpy as np
 
 from nengo.objects import Neurons
-from nengo.utils.distributions import UniformHypersphere
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +13,6 @@ class Direct(Neurons):
         # n_neurons is ignored, but accepted to maintain compatibility
         # with other neuron types
         Neurons.__init__(self, 0, label=label)
-
-    def default_encoders(self, dimensions, rng):
-        return np.identity(dimensions)
 
     def rates(self, x, gain, bias):
         return x
@@ -44,10 +40,6 @@ class _LIFBase(Neurons):
     @property
     def n_out(self):
         return self.n_neurons
-
-    def default_encoders(self, dimensions, rng):
-        sphere = UniformHypersphere(dimensions, surface=True)
-        return sphere.sample(self.n_neurons, rng=rng)
 
     def rates_from_current(self, J):
         """LIF firing rates in Hz for input current (incl. bias)"""
