@@ -5,6 +5,7 @@ import numpy as np
 
 import nengo
 import nengo.decoders
+from nengo.utils.distributions import Uniform
 
 logger = logging.getLogger(__name__)
 
@@ -14,34 +15,6 @@ def _in_stack(function):
     import inspect
     codes = [record[0].f_code for record in inspect.stack()]
     return function.__code__ in codes
-
-
-class Uniform(object):
-
-    def __init__(self, low, high):
-        self.low = low
-        self.high = high
-
-    def __eq__(self, other):
-        return self.low == other.low and self.high == other.high
-
-    def sample(self, n, rng=None):
-        rng = np.random if rng is None else rng
-        return rng.uniform(low=self.low, high=self.high, size=n)
-
-
-class Gaussian(object):
-
-    def __init__(self, mean, std):
-        self.mean = mean
-        self.std = std
-
-    def __eq__(self, other):
-        return self.mean == other.mean and self.std == other.std
-
-    def sample(self, n, rng=None):
-        rng = np.random if rng is None else rng
-        return rng.normal(loc=self.mean, scale=self.std, size=n)
 
 
 class Neurons(object):
