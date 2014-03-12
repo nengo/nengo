@@ -254,9 +254,10 @@ class Simulator(object):
 
         # -- probes signals -> probe buffers
         for probe in self.probes:
-            period = int(probe.dt / self.dt)
+            period = (1 if probe.sample_every is None
+                      else int(probe.sample_every / self.dt))
             if self.n_steps % period == 0:
-                tmp = self._sigdict[probe.sig].copy()
+                tmp = self._sigdict[self.sig_in[probe]].copy()
                 self._data[probe].append(tmp)
 
         self._sigdict['__time__'] += self.dt

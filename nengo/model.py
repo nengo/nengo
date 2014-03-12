@@ -1,7 +1,3 @@
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
 import logging
 import pickle
 import os.path
@@ -61,9 +57,7 @@ class Model(object):
 
     def __init__(self, label="Model", seed=None):
         self.objs = []
-        self.probed = OrderedDict()
         self.connections = []
-        self.signal_probes = []
 
         self.label = label + ''  # -- make self.name a string, raise error otw
         self.seed = seed
