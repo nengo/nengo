@@ -14,8 +14,10 @@ from nengo.utils.distributions import UniformHypersphere
 from nengo.utils.functions import filtfilt
 from nengo.utils.numpy import rms
 from nengo.utils.testing import Plotter, allclose
-from nengo.decoders import (_cholesky, lstsq, lstsq_noise, lstsq_L2,
-                            lstsq_L2nz, lstsq_L1, lstsq_drop)
+from nengo.decoders import (
+    _cholesky, _conjgrad, _block_conjgrad,
+    lstsq, lstsq_noise, lstsq_L2, lstsq_L2nz,
+    lstsq_L1, lstsq_drop)
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ def sample_hypersphere(dimensions, n_samples, rng=np.random, surface=False):
         dimensions, surface=surface).sample(n_samples, rng=rng)
 
 
-def test_cholesky(Simulator):
+def test_cholesky():
     rng = np.random.RandomState(4829)
 
     m, n = 100, 100
@@ -35,12 +37,76 @@ def test_cholesky(Simulator):
     x0, _, _, _ = np.linalg.lstsq(A, b)
     x1 = _cholesky(A, b, 0, transpose=False)
     x2 = _cholesky(A, b, 0, transpose=True)
-
     assert np.allclose(x0, x1)
     assert np.allclose(x0, x2)
 
 
-def test_weights(Simulator):
+def test_conjgrad():
+    rng = np.random.RandomState(4829)
+
+    m, n = 100, 100
+    d = 1
+    A = rng.normal(size=(m, n))
+    b = rng.normal(size=(m, d))
+
+    sigma = 1
+    x0 = _cholesky(A, b, sigma)
+    x1, i = _conjgrad(A, b, sigma, tol=1e-3)
+    # assert np.allclose(x0, x1, atol=1e-3, rtol=1e-5)
+    assert np.allclose(x0, x1, atol=1e-5, rtol=1e-3)
+
+
+def _get_AB(m, n, d, rng=np.random):
+    """Return a system of LIF tuning curves."""
+    E = sample_hypersphere(d, n, rng=rng, surface=True).T  # encoders
+    B = sample_hypersphere(d, m, rng=rng)                  # eval points
+
+    a = nengo.LIF(n)
+    a.set_gain_bias(rng.uniform(50, 100, n), rng.uniform(-1, 1, n))
+    A = a.rates(np.dot(B, E))
+    return A, B
+
+
+@pytest.mark.benchmark
+def test_base_solvers_L2():
+    rng = np.random.RandomState(39408)
+    A, B = _get_AB(m=5000, n=3000, d=3, rng=rng)
+    sigma = 0.1 * A.max()
+
+    def time_solver(solver, *args, **kwargs):
+        import time
+        t = time.time()
+        output = solver(*args, **kwargs)
+        t = time.time() - t
+        return output, t
+
+    x1, t1 = time_solver(_cholesky, A, B, sigma)
+    [x2, i2], t2 = time_solver(_conjgrad, A, B, sigma, tol=1e-2)
+    [x3, i3], t3 = time_solver(_block_conjgrad, A, B, sigma, tol=1e-2)
+    print(t1, t2, t3)
+    print(i2, i3)
+
+    assert np.allclose(x1, x2, atol=1e-5, rtol=1e-3)
+
+
+@pytest.mark.benchmark
+def test_base_solvers_L1():
+    rng = np.random.RandomState(39408)
+    A, B = _get_AB(m=500, n=100, d=1, rng=rng)
+
+    def time_solver(solver, *args, **kwargs):
+        import time
+        t = time.time()
+        output = solver(*args, **kwargs)
+        t = time.time() - t
+        return output, t
+
+    l1 = 1e-4
+    x0, t0 = time_solver(lstsq_L1, A, B, l1=l1, l2=0)
+    print(t0)
+
+
+def test_weights():
     solver = lstsq_L2
     rng = np.random.RandomState(39408)
 
