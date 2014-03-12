@@ -8,14 +8,6 @@ from nengo.utils.numpy import rms
 logger = logging.getLogger(__name__)
 
 
-def mybuilder(model, dt):
-    return {'probes': [] if not hasattr(model, 'probes') else model.probes,
-            'operators': ([] if not hasattr(model, 'operators')
-                          else model.operators),
-            '_data': {},
-            'dt': dt, 'seed': 0}
-
-
 def test_lif_builtin():
     """Test that the dynamic model approximately matches the rates."""
     rng = np.random.RandomState(85243)
@@ -43,7 +35,6 @@ def test_lif_builtin():
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 
 
-@pytest.mark.skipif("True", reason="Need to figure out a way to get sig_out")
 def test_lif_base(nl_nodirect):
     """Test that the dynamic model approximately matches the rates"""
     rng = np.random.RandomState(85243)
@@ -51,16 +42,16 @@ def test_lif_base(nl_nodirect):
     dt = 0.001
     n = 5000
     x = 0.5
+    max_rates = rng.uniform(low=10, high=200, size=n)
+    intercepts = rng.uniform(low=-1, high=1, size=n)
 
-    m = nengo.Model("")
+    m = nengo.Model()
 
     ins = nengo.Node(x)
-    lif = nl_nodirect(n)
-    gain, bias = lif.gain_bias(max_rates=rng.uniform(low=10, high=200, size=n),
-                               intercepts=rng.uniform(low=-1, high=1, size=n))
-    lif.add_to_model(m)
-    nengo.Connection(ins, lif, transform=np.ones((n, 1)))
-    spike_probe = nengo.Probe(lif, 'output')
+    ens = nengo.Ensemble(
+        nl_nodirect(n), 1, max_rates=max_rates, intercepts=intercepts)
+    nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)))
+    spike_probe = nengo.Probe(ens.neurons, "output")
 
     sim = nengo.Simulator(m, dt=dt)
 
@@ -68,7 +59,8 @@ def test_lif_base(nl_nodirect):
     sim.run(t_final)
     spikes = sim.data[spike_probe].sum(0)
 
-    math_rates = lif.rates(x, bias)
+    math_rates = ens.neurons.rates(
+        x, *ens.neurons.gain_bias(max_rates, intercepts))
     sim_rates = spikes / t_final
     logger.debug("ME = %f", (sim_rates - math_rates).mean())
     logger.debug("RMSE = %f",

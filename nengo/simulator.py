@@ -13,7 +13,7 @@ import logging
 import networkx as nx
 import numpy as np
 
-import nengo.builder
+from nengo.builder import Builder
 
 logger = logging.getLogger(__name__)
 
@@ -54,14 +54,12 @@ class SignalDict(dict):
 
 
 class ProbeDict(Mapping):
-    """
-    Map from Probe -> ndarray
+    """Map from Probe -> ndarray
 
     This is more like a view on the dict that the simulator manipulates.
     However, for speed reasons, the simulator uses Python lists,
     and we want to return NumPy arrays. Additionally, this mapping
     is readonly, which is more appropriate for its purpose.
-
     """
 
     def __init__(self, raw):
@@ -91,22 +89,24 @@ class ProbeDict(Mapping):
 class Simulator(object):
     """Reference simulator for models."""
 
-    def __init__(self, model, dt=0.001, seed=None, builder=None):
-        if builder is None:
-            # By default, we'll use builder.Builder and copy the model.
-            builder = nengo.builder.Builder()
-
+    def __init__(self, model, dt=0.001, seed=None, builder=Builder):
         # Call the builder to build the model
-        self.model = model
-        self.__dict__.update(builder(model, dt))
+        build_state = builder(model, dt)
+        self.model = build_state.output
+        self.dt = dt
 
+        # Add a public method which allows users to get BuildNeuronsState
+        # TODO: Do not expose the build state outside of the builder. Currently
+        #     this is only used by helpers.tuning_curves and many_neurons.ipynb
+        self.neurons = build_state.get_neurons_state
+
+        # Use model seed as simulator seed if the seed is not provided
         # Note: seed is not used right now, but one day...
-        if seed is not None:
-            self.seed = seed  # Use simulator seed instead of model seed
+        self.seed = self.model.seed if seed is None else seed
 
         # -- map from Signal.base -> ndarray
         self._sigdict = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
-        for op in self.operators:
+        for op in self.model.operators:
             op.init_sigdict(self._sigdict, self.dt)
 
         self.dg = self._init_dg()
@@ -117,11 +117,11 @@ class Simulator(object):
                        for node in self._step_order]
 
         self.n_steps = 0
-        self._data.update(dict((probe, []) for probe in self.probes))
-        self.data = ProbeDict(self._data)
+        self._probe_outputs = dict((probe, []) for probe in self.model.probes)
+        self.data = ProbeDict(self._probe_outputs)
 
     def _init_dg(self, verbose=False):  # noqa
-        operators = self.operators
+        operators = self.model.operators
         dg = nx.DiGraph()
 
         for op in operators:
@@ -253,12 +253,12 @@ class Simulator(object):
             np.seterr(**old_err)
 
         # -- probes signals -> probe buffers
-        for probe in self.probes:
+        for probe in self.model.probes:
             period = (1 if probe.sample_every is None
                       else int(probe.sample_every / self.dt))
             if self.n_steps % period == 0:
-                tmp = self._sigdict[self.sig_in[probe]].copy()
-                self._data[probe].append(tmp)
+                tmp = self._sigdict[self.model.sig_in[probe]].copy()
+                self._probe_outputs[probe].append(tmp)
 
         self._sigdict['__time__'] += self.dt
         self.n_steps += 1
@@ -267,7 +267,7 @@ class Simulator(object):
         """Simulate for the given length of time."""
         steps = int(np.round(float(time_in_seconds) / self.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
-                     self.label, time_in_seconds, steps)
+                     self.model.label, time_in_seconds, steps)
         self.run_steps(steps)
 
     def run_steps(self, steps):
