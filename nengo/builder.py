@@ -685,9 +685,8 @@ class Builder(object):
     Builder does this by mapping each high-level object to its associated
     signals and operators one-by-one, in the following order:
 
-      1. Ensembles and Nodes
-      2. Probes
-      3. Connections
+      1. Objects
+      2. Connections
 
     """
 
@@ -731,14 +730,7 @@ class Builder(object):
         for obj in self.model.objs:
             self.builders[obj.__class__](obj)
 
-        # 2. Then probes
-        logger.info("Building probes")
-        for target in model.probed:
-            probe = self.model.probed[target]
-            self.builders[nengo.Probe](probe)
-            self.sig_in[probe] = probe.sig
-
-        # 3. Then connections
+        # 2. Then connections
         logger.info("Building connections")
         for c in self.model.connections:
             self.builders[c.__class__](c)
@@ -748,6 +740,7 @@ class Builder(object):
                 "label": self.model.label + ", dt=%f" % self.dt,
                 "seed": self.seed,
                 "probes": self.probes,
+                "sig_in": self.sig_in,
                 "operators": self.operators}
 
     def _get_new_seed(self):
@@ -799,20 +792,19 @@ class Builder(object):
         self.builders[ens.neurons.__class__](ens.neurons)
 
         # Set up encoders
-        encoders = ens.encoders
-        if encoders is None:
+        if ens.encoders is None:
             if isinstance(ens.neurons, nengo.Direct):
                 encoders = np.identity(ens.dimensions)
             else:
                 sphere = dists.UniformHypersphere(ens.dimensions, surface=True)
                 encoders = sphere.sample(ens.neurons.n_neurons, rng=rng)
         else:
-            encoders = np.array(encoders, dtype=np.float64)
+            encoders = np.array(ens.encoders, dtype=np.float64)
             enc_shape = (ens.neurons.n_neurons, ens.dimensions)
             if encoders.shape != enc_shape:
                 raise ShapeMismatch(
-                    "Encoder shape is %s. Should be (n_neurons, dimensions);"
-                    " in this case %s." % (encoders.shape, enc_shape))
+                    "Encoder shape is %s. Should be (n_neurons, dimensions); "
+                    "in this case %s." % (encoders.shape, enc_shape))
 
             encoders /= npext.norm(encoders, axis=1, keepdims=True)
         self._data['encoders'][ens] = encoders
@@ -836,11 +828,9 @@ class Builder(object):
         # Note: Have to set it up here because we only know these things
         #       (dimensions, n_neurons) at build time.
         for probe in ens.probes['decoded_output']:
-            probe.dimensions = ens.dimensions
-        for probe in ens.probes['spikes']:
-            probe.dimensions = ens.n_neurons
-        for probe in ens.probes['voltages']:
-            probe.dimensions = ens.n_neurons
+            self.build_probe(probe, dimensions=ens.dimensions)
+        for probe in ens.probes['spikes'] + ens.probes['voltages']:
+            self.build_probe(probe, dimensions=ens.neurons.n_neurons)
 
     @builds(nengo.Node)
     def build_node(self, node):
@@ -875,17 +865,14 @@ class Builder(object):
 
         # Set up probes
         for probe in node.probes['output']:
-            probe.dimensions = self.sig_out[node].shape
+            self.build_probe(probe, dimensions=self.sig_out[node].shape)
 
     @builds(nengo.Probe)
-    def build_probe(self, probe):
-        # Set up probe
-        if probe.sample_every is None:
-            probe.sample_every = self.dt
-        probe.sig = Signal(np.zeros(probe.dimensions),
-                           name=probe.label)
+    def build_probe(self, probe, dimensions):
+        probe_signal = Signal(np.zeros(dimensions), name=probe.label)
+        self.sig_in[probe] = probe_signal
         # reset input signal to 0 each timestep
-        self.operators.append(Reset(probe.sig))
+        self.operators.append(Reset(probe_signal))
         self.probes.append(probe)
 
     @staticmethod
@@ -1019,9 +1006,7 @@ class Builder(object):
 
         # Set up probes
         for probe in conn.probes['signal']:
-            probe.dimensions = self.sig_out[conn].size
-            # XXX this should be done in model?
-            self.model.add(probe)
+            self.build_probe(probe, self.sig_out[conn].size)
 
     def build_pyfunc(self, fn, t_in, n_in, n_out, label):
         if n_in:
@@ -1045,7 +1030,7 @@ class Builder(object):
 
         # Set up probes
         for probe in neurons.probes['output']:
-            probe.dimensions = neurons.n_neurons
+            self.build_probe(probe, dimensions=neurons.n_neurons)
 
     @builds(nengo.Direct)
     def build_direct(self, direct):

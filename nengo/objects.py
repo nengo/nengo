@@ -536,21 +536,6 @@ class Probe(object):
 
         target.probe(self, **kwargs)
 
-        # add self to current context
-        nengo.context.add_to_current(self)
-
-    @property
-    def sample_rate(self):
-        """TODO"""
-        return 1.0 / self.sample_every
-
-    @property
-    def dt(self):
-        return self.sample_every
-
-    def add_to_model(self, model):
-        model.probed[id(self)] = self
-
 
 class Network(object):
 
