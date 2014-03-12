@@ -27,16 +27,22 @@ All solvers return the following:
     if E is not none.
 """
 
+import logging
 import numpy as np
+
+logger = logging.getLogger(__name__)
+
 try:
     import scipy.linalg
     import scipy.optimize
 except ImportError:
+    logger.info("Failed to import 'scipy'")
     scipy = None
 
 try:
     import sklearn.linear_model
 except ImportError:
+    logger.info("Failed to import 'sklearn'")
     sklearn = None
 
 
