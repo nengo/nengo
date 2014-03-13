@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def test_oscillator(Simulator, nl):
-    model = nengo.Model('Oscillator')
+    model = nengo.Model('Oscillator', seed=987)
 
     inputs = {0: [1, 0], 0.5: [0, 0]}
     input = nengo.Node(piecewise(inputs), label='Input')
