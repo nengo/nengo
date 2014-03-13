@@ -22,8 +22,8 @@ install:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TOXENV" != "pep8" ]]; then pip install coverage pytest-cov coveralls; fi
 script:
   - if [[ "$TOXENV" == "pep8" ]]; then tox; fi
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TOXENV" != "pep8" ]]; then py.test --cov-config .coveragerc --cov nengo -n 2; fi
-  - if [[ "$TRAVIS_PYTHON_VERSION" != "2.7" ]]; then py.test -n 2; fi
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TOXENV" != "pep8" ]]; then py.test --cov-config .coveragerc --cov nengo -n 2 -v; fi
+  - if [[ "$TRAVIS_PYTHON_VERSION" != "2.7" ]]; then py.test -n 2 -v; fi
 after_success:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TOXENV" != "pep8" ]]; then coveralls; fi
 notifications:
