@@ -9,30 +9,6 @@ the associated functions will be placed here.
 
 import numpy as np
 
-
-def sample_hypersphere(dimensions, n_samples, rng, surface=False):
-    """Generate sample points from a hypersphere.
-
-    Returns float array of sample points: dimensions x n_samples
-
-    """
-    samples = rng.randn(n_samples, dimensions)
-
-    # normalize magnitude of sampled points to be of unit length
-    norm = np.sum(samples * samples, axis=1)
-    samples /= np.sqrt(norm)[:, np.newaxis]
-
-    if surface:
-        return samples
-
-    # generate magnitudes for vectors from uniform distribution
-    scale = rng.rand(n_samples, 1) ** (1.0 / dimensions)
-
-    # scale sample points
-    samples *= scale
-
-    return samples
-
 DEFAULT_RCOND = 0.01
 
 
