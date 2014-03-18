@@ -227,8 +227,12 @@ class Simulator(object):
     def step(self):
         """Advance the simulator by `self.model.dt` seconds.
         """
-        for step_fn in self._steps:
-            step_fn()
+        old_err = np.seterr(invalid='raise', divide='ignore')
+        try:
+            for step_fn in self._steps:
+                step_fn()
+        finally:
+            np.seterr(**old_err)
 
         # -- probes signals -> probe buffers
         for probe in self.model.probes:

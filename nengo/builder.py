@@ -597,16 +597,14 @@ class SimPyFunc(Operator):
         t = dct['__time__']
         output = dct[self.output]
         fn = self.fn
+        args = (t, dct[self.J]) if self.n_args == 2 else (t, )
 
-        if self.n_args == 1:
+        def step():
+            output[...] = fn(*args)
+            if np.isnan(output).any():
+                raise FloatingPointError(
+                    "Function '%s' returned invalid value" % fn.__name__)
 
-            def step():
-                output[...] = fn(t)
-        elif self.n_args == 2:
-            J = dct[self.J]
-
-            def step():
-                output[...] = fn(t, J)
         return step
 
 
@@ -641,10 +639,9 @@ class SimLIF(Operator):
         output = dct[self.output]
         v = dct[self.voltage]
         rt = dct[self.refractory_time]
-        fn = self.nl.step_math0
 
         def step():
-            fn(dt, J, v, rt, output)
+            self.nl.step_math(dt, J, v, rt, output)
         return step
 
 
@@ -666,10 +663,9 @@ class SimLIFRate(Operator):
     def make_step(self, dct, dt):
         J = dct[self.J]
         output = dct[self.output]
-        rates_fn = self.nl.math
 
         def step():
-            output[...] = rates_fn(dt, J)
+            self.nl.step_math(dt, J, output)
         return step
 
 
