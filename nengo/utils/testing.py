@@ -3,8 +3,6 @@ from __future__ import absolute_import
 import os
 import os.path
 
-import numpy as np
-
 
 class Plotter(object):
     class Mock(object):
@@ -55,11 +53,3 @@ class Plotter(object):
             if self.nl is not None:
                 fname = self.nl.__name__ + '.' + fname
             return self.oldsavefig(os.path.join(self.dirname, fname), **kwargs)
-
-
-def rms(x, axis=None):
-    return np.sqrt(np.mean(x**2, axis=axis))
-
-
-def rmse(a, b):
-    return rms(a - b)
