@@ -227,6 +227,33 @@ def test_weights(Simulator, nl):
                     atol=0.1, rtol=0, buf=100, delay=10)
 
 
+def test_pes_learning_rule(Simulator, nl_nodirect):
+    n = 200
+    learned_vector = [0.5, -0.5]
+
+    m = nengo.Network(seed=3902)
+    with m:
+        u = nengo.Node(output=learned_vector)
+        a = nengo.Ensemble(nl_nodirect(n), dimensions=2)
+        u_learned = nengo.Ensemble(nl_nodirect(n), dimensions=2)
+        e = nengo.Ensemble(nl_nodirect(n), dimensions=2)
+
+        nengo.Connection(u, a)
+        nengo.Connection(a, u_learned, learning_rule=nengo.PES(e))
+        nengo.Connection(u_learned, e, transform=-1)
+        nengo.Connection(u, e)
+
+        u_learned_p = nengo.Probe(u_learned, synapse=0.1)
+        e_p = nengo.Probe(e, synapse=0.1)
+
+    sim = Simulator(m)
+    sim.run(1.)
+
+    assert np.allclose(sim.data[u_learned_p][-1], learned_vector, atol=0.05)
+    assert np.allclose(
+        sim.data[e_p][-1], np.zeros(len(learned_vector)), atol=0.05)
+
+
 def test_dimensionality_errors(nl_nodirect):
     N = 10
     with nengo.Network(label="test_dimensionality_error"):
