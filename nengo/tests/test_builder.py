@@ -1,6 +1,7 @@
 import pytest
 
 import nengo
+import nengo.builder
 
 node_attrs = ('output',)
 ens_attrs = ('label', 'dimensions', 'radius')
@@ -19,6 +20,14 @@ def compare(orig, copy):
         assert getattr(orig, attr) == getattr(copy, attr)
     for p_o, p_c in zip(orig.probes.values(), copy.probes.values()):
         assert len(p_o) == len(p_c)
+
+
+def mybuilder(model, dt):
+    model.dt = dt
+    model.seed = 0
+    if not hasattr(model, 'probes'):
+        model.probes = []
+    return model
 
 
 def test_build():
