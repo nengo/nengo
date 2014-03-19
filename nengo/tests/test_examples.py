@@ -19,6 +19,7 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("nb_path", examples)
 
 
+@pytest.mark.example
 def test_noexceptions(nb_path):
     """Ensure that no cells raise an exception."""
     with open(nb_path) as f:
@@ -59,6 +60,7 @@ def test_noexceptions(nb_path):
     assert True
 
 
+@pytest.mark.example
 def test_nooutput(nb_path):
     """Ensure that no cells have output."""
     # Inspired by gist.github.com/minrk/3719849

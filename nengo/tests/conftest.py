@@ -1,3 +1,4 @@
+import pytest
 import nengo
 
 
@@ -15,3 +16,14 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("nl", [nengo.LIF, nengo.LIFRate, nengo.Direct])
     if "nl_nodirect" in metafunc.funcargnames:
         metafunc.parametrize("nl_nodirect", [nengo.LIF, nengo.LIFRate])
+
+
+def pytest_addoption(parser):
+    parser.addoption('--noexamples', action='store_true', default=False,
+                     help='Do not run examples')
+
+
+def pytest_runtest_setup(item):
+    if (getattr(item.obj, 'example', None)
+            and item.config.getvalue('noexamples')):
+        pytest.skip('examples not requested')
