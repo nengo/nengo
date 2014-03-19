@@ -22,34 +22,6 @@ up in a model.
 assert_named_signals = False
 
 
-class PythonFunction(object):
-
-    def __init__(self, fn, n_in, n_out, label=None):
-        self.fn = fn
-        self.n_in = n_in
-        self.n_out = n_out
-        if label is None:
-            label = "<Direct%d>" % id(self)
-        self.label = label
-
-    def __deepcopy__(self, memo):
-        try:
-            return memo[id(self)]
-        except KeyError:
-            rval = self.__class__.__new__(self.__class__)
-            memo[id(self)] = rval
-            for k, v in self.__dict__.items():
-                if k == 'fn':
-                    rval.fn = v
-                else:
-                    rval.__dict__[k] = copy.deepcopy(v, memo)
-            return rval
-
-    @property
-    def n_args(self):
-        return 2 if self.n_in > 0 else 1
-
-
 class ShapeMismatch(ValueError):
     pass
 
@@ -871,18 +843,18 @@ class Builder(object):
         elif not isinstance(node.output, collections.Callable):
             node.output_signal = Signal(node.output, name=node.label)
         else:
-            node.pyfn = PythonFunction(fn=node.output,
-                                       n_in=node.size_in,
-                                       n_out=node.size_out,
-                                       label=node.label + ".pyfn")
-            self.build_pyfunc(node.pyfn)
+            sig_in, sig_out = self.build_pyfunc(
+                fn=node.output,
+                n_in=node.size_in,
+                n_out=node.size_out,
+                label="%s.pyfn" % node.label)
             if node.size_in > 0:
                 self.model.operators.append(DotInc(
                     node.input_signal,
                     Signal(1.0, name="1"),
-                    node.pyfn.input_signal,
+                    sig_in,
                     tag=node.label + " input"))
-            node.output_signal = node.pyfn.output_signal
+            node.output_signal = sig_out
 
         # Set up probes
         for probe in node.probes['output']:
@@ -922,17 +894,6 @@ class Builder(object):
             tag=name + " filtering"))
         return filtered
 
-    def _direct_pyfunc(self, input_signal, function, n_out, label):
-        pyfunc = PythonFunction(
-            fn=function, n_in=input_signal.size, n_out=n_out, label=label)
-        self.build_pyfunc(pyfunc)
-        self.model.operators.append(DotInc(
-            input_signal,
-            Signal(1.0, name="1"),
-            pyfunc.input_signal,
-            tag=label + " input"))
-        return pyfunc
-
     @builds(nengo.Connection)  # noqa
     def build_connection(self, conn):
         rng = np.random.RandomState(self.model._get_new_seed())
@@ -953,12 +914,16 @@ class Builder(object):
             if conn.function is None:
                 conn.signal = conn.input_signal
             else:
-                conn.pyfunc = self._direct_pyfunc(
+                sig_in, conn.signal = self.build_pyfunc(
+                    fn=lambda t, x: conn.function(x),
+                    n_in=conn.input_signal.size,
+                    n_out=conn.dimensions,
+                    label=conn.label)
+                self.model.operators.append(DotInc(
                     conn.input_signal,
-                    lambda t, x: conn.function(x),
-                    conn.dimensions,
-                    conn.label)
-                conn.signal = conn.pyfunc.output_signal
+                    Signal(1.0, name="1"),
+                    sig_in,
+                    tag="%s input" % conn.label))
 
             if conn.filter is not None and conn.filter > dt:
                 conn.signal = self._filtered_signal(conn.signal, conn.filter)
@@ -1014,22 +979,17 @@ class Builder(object):
             probe.dimensions = conn.output_signal.size
             self.model.add(probe)
 
-    @builds(PythonFunction)
-    def build_pyfunc(self, pyfn):
-        if pyfn.n_in:
-            pyfn.input_signal = Signal(np.zeros(pyfn.n_in),
-                                       name=pyfn.label + '.input')
-            pyfn.operators = [Reset(pyfn.input_signal)]
+    def build_pyfunc(self, fn, n_in, n_out, label):
+        if n_in:
+            sig_in = Signal(np.zeros(n_in), name=label + '.input')
+            self.model.operators.append(Reset(sig_in))
         else:
-            pyfn.operators = []
-        pyfn.output_signal = Signal(np.zeros(pyfn.n_out),
-                                    name=pyfn.label + '.output')
-        pyfn.operators.append(
-            SimPyFunc(output=pyfn.output_signal,
-                      J=pyfn.input_signal if pyfn.n_in else None,
-                      fn=pyfn.fn,
-                      n_args=pyfn.n_args))
-        self.model.operators.extend(pyfn.operators)
+            sig_in = None
+        sig_out = Signal(np.zeros(n_out), name=label + '.output')
+        self.model.operators.append(
+            SimPyFunc(
+                output=sig_out, J=sig_in, fn=fn, n_args=2 if n_in > 0 else 1))
+        return sig_in, sig_out
 
     def build_neurons(self, neurons):
         neurons.input_signal = Signal(np.zeros(neurons.n_in),
