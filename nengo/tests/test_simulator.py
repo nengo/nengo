@@ -5,8 +5,7 @@ import pytest
 
 import nengo
 import nengo.simulator
-from nengo.builder import (
-    Builder, ProdUpdate, Copy, Reset, DotInc, Signal, PythonFunction)
+from nengo.builder import Builder, ProdUpdate, Copy, Reset, DotInc, Signal
 
 logger = logging.getLogger(__name__)
 
@@ -103,15 +102,14 @@ def test_simple_pyfunc(RefSimulator):
 
     time = Signal(np.zeros(1), name='time')
     sig = Signal(np.zeros(1), name='sig')
-    pop = PythonFunction(fn=lambda t, x: np.sin(x), n_in=1, n_out=1)
     m.operators = []
     b = Builder()
     b.model = m
-    b.build_pyfunc(pop)
+    sig_in, sig_out = b.build_pyfunc(lambda t, x: np.sin(x), 1, 1, "")
     m.operators += [
         ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
-        DotInc(Signal([[1.0]]), time, pop.input_signal),
-        ProdUpdate(Signal([[1.0]]), pop.output_signal, Signal(0), sig),
+        DotInc(Signal([[1.0]]), time, sig_in),
+        ProdUpdate(Signal([[1.0]]), sig_out, Signal(0), sig),
     ]
 
     sim = RefSimulator(m, dt=dt, builder=mybuilder)
@@ -130,17 +128,16 @@ def test_encoder_decoder_pathway(RefSimulator):
     m = nengo.Model("")
     dt = 0.001
     foo = Signal([1.0], name='foo')
-    pop = PythonFunction(fn=lambda t, x: x + 1, n_in=2, n_out=2, label='pop')
     decoders = np.asarray([.2, .1])
     decs = Signal(decoders * 0.5)
 
     m.operators = []
     b = Builder()
     b.model = m
-    b.build_pyfunc(pop)
+    sig_in, sig_out = b.build_pyfunc(lambda t, x: x + 1, 2, 2, 'pop')
     m.operators += [
-        DotInc(Signal([[1.0], [2.0]]), foo, pop.input_signal),
-        ProdUpdate(decs, pop.output_signal, Signal(0.2), foo)
+        DotInc(Signal([[1.0], [2.0]]), foo, sig_in),
+        ProdUpdate(decs, sig_out, Signal(0.2), foo)
     ]
 
     def check(sig, target):
@@ -149,16 +146,16 @@ def test_encoder_decoder_pathway(RefSimulator):
     sim = RefSimulator(m, dt=dt, builder=mybuilder)
 
     check(foo, 1.0)
-    check(pop.input_signal, 0)
-    check(pop.output_signal, 0)
+    check(sig_in, 0)
+    check(sig_out, 0)
 
     sim.step()
     #DotInc to pop.input_signal (input=[1.0,2.0])
     #produpdate updates foo (foo=[0.2])
     #pop updates pop.output_signal (output=[2,3])
 
-    check(pop.input_signal, [1, 2])
-    check(pop.output_signal, [2, 3])
+    check(sig_in, [1, 2])
+    check(sig_out, [2, 3])
     check(foo, .2)
     check(decs, [.1, .05])
 
@@ -169,8 +166,8 @@ def test_encoder_decoder_pathway(RefSimulator):
     #pop updates pop.output_signal (output=[1.2,1.4])
 
     check(decs, [.1, .05])
-    check(pop.input_signal, [0.2, 0.4])
-    check(pop.output_signal, [1.2, 1.4])
+    check(sig_in, [0.2, 0.4])
+    check(sig_out, [1.2, 1.4])
     # -- foo is computed as a prodUpdate of the *previous* output signal
     #    foo <- .2 * foo + dot(decoders * .5, output_signal)
     #           .2 * .2  + dot([.2, .1] * .5, [2, 3])
@@ -183,17 +180,16 @@ def test_encoder_decoder_with_views(RefSimulator):
     m = nengo.Model("")
     dt = 0.001
     foo = Signal([1.0], name='foo')
-    pop = PythonFunction(fn=lambda t, x: x + 1, n_in=2, n_out=2, label='pop')
     decoders = np.asarray([.2, .1])
 
     m.operators = []
     b = Builder()
     b.model = m
-    b.build_pyfunc(pop)
+    sig_in, sig_out = b.build_pyfunc(lambda t, x: x + 1, 2, 2, 'pop')
     m.operators += [
-        DotInc(Signal([[1.0], [2.0]]), foo[:], pop.input_signal),
+        DotInc(Signal([[1.0], [2.0]]), foo[:], sig_in),
         ProdUpdate(
-            Signal(decoders * 0.5), pop.output_signal, Signal(0.2), foo[:])
+            Signal(decoders * 0.5), sig_out, Signal(0.2), foo[:])
     ]
 
     def check(sig, target):
@@ -207,8 +203,8 @@ def test_encoder_decoder_with_views(RefSimulator):
     #pop updates pop.output_signal (output=[2,3])
 
     check(foo, .2)
-    check(pop.input_signal, [1, 2])
-    check(pop.output_signal, [2, 3])
+    check(sig_in, [1, 2])
+    check(sig_out, [2, 3])
 
     sim.step()
     #DotInc to pop.input_signal (input=[0.2,0.4])
@@ -217,8 +213,8 @@ def test_encoder_decoder_with_views(RefSimulator):
     #pop updates pop.output_signal (output=[1.2,1.4])
 
     check(foo, .39)
-    check(pop.input_signal, [0.2, 0.4])
-    check(pop.output_signal, [1.2, 1.4])
+    check(sig_in, [0.2, 0.4])
+    check(sig_out, [1.2, 1.4])
 
 
 if __name__ == "__main__":
