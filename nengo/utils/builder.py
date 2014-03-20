@@ -1,6 +1,7 @@
 """These are helper functions that various backends may find useful for
 generating their own Builder system.
 """
+from __future__ import absolute_import
 import numpy as np
 
 import nengo

@@ -8,7 +8,7 @@ import nengo
 import nengo.decoders
 import nengo.objects
 import nengo.utils.distributions as distributions
-import nengo.utils.internals as internals
+import nengo.utils.numpy as npext
 
 logger = logging.getLogger(__name__)
 
@@ -800,7 +800,7 @@ class Builder(object):
                     "Encoder shape is %s. Should be (n_neurons, dimensions);"
                     " in this case %s." % (ens.encoders.shape, enc_shape))
 
-            ens.encoders /= internals.norm(ens.encoders, axis=1, keepdims=True)
+            ens.encoders /= npext.norm(ens.encoders, axis=1, keepdims=True)
 
         if isinstance(ens.neurons, nengo.Direct):
             ens._scaled_encoders = ens.encoders
