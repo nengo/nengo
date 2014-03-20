@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 import numpy as np
+import nengo.utils.numpy as npext
 
 
 def tuning_curves(sim_ens):
@@ -88,8 +90,7 @@ def sorted_neurons(ensemble, iterations=100, seed=None):
 
     # Normalize all the neurons
     encoders = np.array(ensemble.encoders)
-    for i in np.arange(encoders.shape[0]):
-        encoders[i, :] = encoders[i, :] / np.linalg.norm(encoders[i, :])
+    encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     # Make an array with the starting order of the neurons
     N = encoders.shape[0]

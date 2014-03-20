@@ -5,7 +5,8 @@ import pytest
 
 import nengo
 from nengo.builder import ShapeMismatch
-from nengo.utils.testing import Plotter, rmse
+from nengo.utils.numpy import rmse, norm
+from nengo.utils.testing import Plotter
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +14,8 @@ logger = logging.getLogger(__name__)
 @pytest.mark.parametrize("n_dimensions", [1, 200])
 def test_encoders(n_dimensions, n_neurons=10, encoders=None):
     if encoders is None:
-        encoders = np.random.standard_normal(size=(n_neurons, n_dimensions))
-        magnitudes = np.sqrt((encoders * encoders).sum(axis=-1))
-        encoders = encoders / magnitudes[..., np.newaxis]
+        encoders = np.random.normal(size=(n_neurons, n_dimensions))
+        encoders /= norm(encoders, axis=-1, keepdims=True)
 
     args = {'label': 'A',
             'neurons': nengo.LIF(n_neurons),
@@ -31,7 +31,7 @@ def test_encoders(n_dimensions, n_neurons=10, encoders=None):
 
 def test_encoders_wrong_shape():
     n_dimensions = 3
-    encoders = np.random.randn(n_dimensions)
+    encoders = np.random.normal(size=n_dimensions)
     with pytest.raises(ShapeMismatch):
         test_encoders(n_dimensions, encoders=encoders)
 

@@ -7,7 +7,8 @@ import numpy as np
 import nengo
 import nengo.decoders
 import nengo.objects
-from nengo.utils.distributions import UniformHypersphere
+import nengo.utils.distributions as distributions
+import nengo.utils.numpy as npext
 
 logger = logging.getLogger(__name__)
 
@@ -762,8 +763,8 @@ class Builder(object):
 
         # Generate eval points
         if ens.eval_points is None:
-            ens.eval_points = UniformHypersphere(ens.dimensions).sample(
-                ens.EVAL_POINTS, rng=rng) * ens.radius
+            ens.eval_points = distributions.UniformHypersphere(
+                ens.dimensions).sample(ens.EVAL_POINTS, rng=rng) * ens.radius
         else:
             ens.eval_points = np.array(ens.eval_points, dtype=np.float64)
             if ens.eval_points.ndim == 1:
@@ -799,8 +800,7 @@ class Builder(object):
                     "Encoder shape is %s. Should be (n_neurons, dimensions);"
                     " in this case %s." % (ens.encoders.shape, enc_shape))
 
-            norm = np.sum(ens.encoders * ens.encoders, axis=1)[:, np.newaxis]
-            ens.encoders /= np.sqrt(norm)
+            ens.encoders /= npext.norm(ens.encoders, axis=1, keepdims=True)
 
         if isinstance(ens.neurons, nengo.Direct):
             ens._scaled_encoders = ens.encoders

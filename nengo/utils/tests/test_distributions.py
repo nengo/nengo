@@ -1,9 +1,9 @@
 import numpy as np
-import numpy.linalg  # noqa: F401
 import pytest
 
 import nengo
 import nengo.utils.distributions as dists
+import nengo.utils.numpy as npext
 
 
 @pytest.mark.parametrize("low,high", [(-2, -1), (-1, 1), (1, 2), (1, -1)])
@@ -56,7 +56,7 @@ def test_hypersphere_surface(dimensions):
     dist = dists.UniformHypersphere(dimensions, surface=True)
     samples = dist.sample(n, np.random.RandomState(1))
     assert samples.shape == (n, dimensions)
-    assert np.allclose(np.linalg.norm(samples, axis=1), 1)
+    assert np.allclose(npext.norm(samples, axis=1), 1)
     assert np.allclose(
         np.mean(samples, axis=0), np.zeros(dimensions), atol=0.1)
 

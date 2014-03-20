@@ -1,10 +1,10 @@
+import logging
 import numpy as np
 import pytest
 
 import nengo
-from nengo.utils.testing import rms
+from nengo.utils.numpy import rms
 
-import logging
 logger = logging.getLogger(__name__)
 
 
