@@ -11,8 +11,7 @@ import pytest
 
 import nengo
 from nengo.utils.distributions import UniformHypersphere
-from nengo.utils.functions import filtfilt
-from nengo.utils.numpy import rms
+from nengo.utils.numpy import filtfilt, rms
 from nengo.utils.testing import Plotter, allclose
 from nengo.decoders import (
     _cholesky, _conjgrad, _block_conjgrad,

@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.utils.functions import piecewise, filtfilt
+from nengo.utils.functions import piecewise
+from nengo.utils.numpy import filtfilt
 from nengo.utils.testing import Plotter, allclose
 
 logger = logging.getLogger(__name__)
