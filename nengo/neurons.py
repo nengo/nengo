@@ -98,20 +98,23 @@ class _LIFBase(Neurons):
 
 class LIFRate(_LIFBase):
 
-    def math(self, dt, J):
+    def step_math(self, dt, J, output):
         """Compute rates for input current (incl. bias)"""
-        return dt * self.rates_from_current(J)
+
+        j = J - 1
+        output[:] = 0  # faster than output[j <= 0] = 0
+        output[j > 0] = dt / (
+            self.tau_ref + self.tau_rc * np.log1p(1. / j[j > 0]))
+        # the above line is designed to throw an error if any j is nan
+        # (nan > 0 -> error), and not pass x < -1 to log1p
 
 
 class LIF(_LIFBase):
 
-    def __init__(self, n_neurons, upsample=1, **kwargs):
+    def __init__(self, n_neurons, **kwargs):
         _LIFBase.__init__(self, n_neurons, **kwargs)
-        self.upsample = upsample
 
-    def step_math0(self, dt, J, voltage, refractory_time, spiked):
-        if self.upsample != 1:
-            raise NotImplementedError()
+    def step_math(self, dt, J, voltage, refractory_time, spiked):
 
         # update voltage using Euler's method
         dV = (dt / self.tau_rc) * (J - voltage)

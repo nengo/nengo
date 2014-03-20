@@ -35,7 +35,7 @@ def test_lif_builtin():
 
     spikes = np.zeros((t_final / dt,) + J.shape)
     for i, spikes_i in enumerate(spikes):
-        lif.step_math0(dt, J, voltage, reftime, spikes_i)
+        lif.step_math(dt, J, voltage, reftime, spikes_i)
 
     math_rates = lif.rates(x)
     sim_rates = spikes.sum(0)

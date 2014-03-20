@@ -143,6 +143,25 @@ def test_output_shape_error(Simulator):
         nengo.Node(output=[1, 2, 3, 4, 5], size_out=4)
 
 
+def test_none(Simulator, nl_nodirect):
+    """Ensure that a node which outputs `None` raises an error"""
+    model = nengo.Model("test_none", seed=89234)
+
+    def input_function(t):
+        if 0.1 < t < 1:
+            return [1]
+        #  oops, didn't handle cases outside this range
+
+    with model:
+        u = nengo.Node(output=input_function)
+        a = nengo.Ensemble(neurons=nl_nodirect(10), dimensions=1)
+        nengo.Connection(u, a)
+
+    sim = nengo.Simulator(model)
+    with pytest.raises(ValueError):
+        sim.run(1.)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
