@@ -5,6 +5,51 @@ from __future__ import absolute_import
 import numpy as np
 
 
+def filtfilt(x, tau, axis=0, copy=True):
+    """Zero-phase second-order non-causal lowpass filter, implemented by
+    filtering the input in forward and reverse directions.
+
+    This function is equivalent to scipy's or Matlab's filtfilt function
+    with the first-order lowpass filter
+                         1
+        T(s) = ----------------------
+               tau_in_seconds * s + 1
+    as the filter. The resulting equivalent filter has zero phase distortion
+    and a transfer function magnitude equal to the square of T(s),
+    discretized using the zero-order hold method.
+
+    Parameters
+    ----------
+    x : array_like
+        The signal to filter.
+    tau : float
+        The dimensionless filter time constant (tau = tau_in_seconds / dt).
+    axis : integer
+        The axis along which to filter.
+    copy : boolean
+        Whether to copy the input data, or simply work in-place.
+    """
+    x = np.array(x, copy=copy)
+    y = np.rollaxis(x, axis=axis)  # y is rolled view on x
+
+    ### buffer method
+    d = -np.expm1(-1. / tau)
+
+    # filter forwards
+    yy = np.zeros_like(y[0])  # yy is our buffer for the current filter state
+    for i, yi in enumerate(y):
+        yy += d * (yi - yy)
+        y[i] = yy
+
+    # filter backwards
+    z = y[::-1]  # z is a flipped view on y
+    for i, zi in enumerate(z):
+        yy += d * (zi - yy)
+        z[i] = yy
+
+    return x
+
+
 def norm(x, axis=None, keepdims=False):
     """Euclidean norm
 
