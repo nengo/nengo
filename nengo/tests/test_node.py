@@ -158,7 +158,7 @@ def test_none(Simulator, nl_nodirect):
         nengo.Connection(u, a)
 
     sim = nengo.Simulator(model)
-    with pytest.raises(FloatingPointError):
+    with pytest.raises(ValueError):
         sim.run(1.)
 
 

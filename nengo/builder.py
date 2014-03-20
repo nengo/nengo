@@ -578,32 +578,33 @@ class SimPyFunc(Operator):
     (and possibly other things too.)
     """
 
-    def __init__(self, output, J, fn, n_args):
+    def __init__(self, output, fn, t_in, x):
         self.output = output
-        self.J = J
         self.fn = fn
-        self.n_args = n_args
+        self.t_in = t_in
+        self.x = x
 
-        self.reads = [] if J is None else [J]
+        self.reads = [] if x is None else [x]
         self.updates = [output]
         self.sets = []
         self.incs = []
 
     def __str__(self):
         return 'SimPyFunc(%s -> %s "%s")' % (
-            str(self.J), str(self.output), str(self.fn))
+            str(self.x), str(self.output), str(self.fn))
 
     def make_step(self, dct, dt):
-        t = dct['__time__']
         output = dct[self.output]
         fn = self.fn
-        args = (t, dct[self.J]) if self.n_args == 2 else (t, )
+        args = [dct['__time__']] if self.t_in else []
+        args += [dct[self.x]] if self.x is not None else []
 
         def step():
-            output[...] = fn(*args)
-            if np.isnan(output).any():
-                raise FloatingPointError(
+            y = fn(*args)
+            if y is None:
+                raise ValueError(
                     "Function '%s' returned invalid value" % fn.__name__)
+            output[...] = y
 
         return step
 
@@ -841,6 +842,7 @@ class Builder(object):
         else:
             sig_in, sig_out = self.build_pyfunc(
                 fn=node.output,
+                t_in=True,
                 n_in=node.size_in,
                 n_out=node.size_out,
                 label="%s.pyfn" % node.label)
@@ -911,7 +913,8 @@ class Builder(object):
                 conn.signal = conn.input_signal
             else:
                 sig_in, conn.signal = self.build_pyfunc(
-                    fn=lambda t, x: conn.function(x),
+                    fn=conn.function,
+                    t_in=False,
                     n_in=conn.input_signal.size,
                     n_out=conn.dimensions,
                     label=conn.label)
@@ -975,7 +978,7 @@ class Builder(object):
             probe.dimensions = conn.output_signal.size
             self.model.add(probe)
 
-    def build_pyfunc(self, fn, n_in, n_out, label):
+    def build_pyfunc(self, fn, t_in, n_in, n_out, label):
         if n_in:
             sig_in = Signal(np.zeros(n_in), name=label + '.input')
             self.model.operators.append(Reset(sig_in))
@@ -983,8 +986,7 @@ class Builder(object):
             sig_in = None
         sig_out = Signal(np.zeros(n_out), name=label + '.output')
         self.model.operators.append(
-            SimPyFunc(
-                output=sig_out, J=sig_in, fn=fn, n_args=2 if n_in > 0 else 1))
+            SimPyFunc(output=sig_out, fn=fn, t_in=t_in, x=sig_in))
         return sig_in, sig_out
 
     def build_neurons(self, neurons):
