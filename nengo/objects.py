@@ -88,7 +88,8 @@ class Ensemble(object):
         to neuron space. Each row is a neuron's encoder, each column is a
         representational dimension.
     eval_points : ndarray (n_eval_points, `dimensions`)
-        The evaluation points used for decoder solving.
+        The evaluation points used for decoder solving, spanning the interval
+        (-radius, radius) in each dimension.
     n_neurons
     neurons
     radius : float
@@ -368,7 +369,8 @@ class Connection(object):
     decoder_solver : callable
         Function to compute decoders (see `nengo.decoders`).
     eval_points : array_like, shape (n_eval_points, pre_size)
-        Points at which to evaluate `function` when computing decoders.
+        Points at which to evaluate `function` when computing decoders,
+        spanning the interval (-pre.radius, pre.radius) in each dimension.
     filter : float
         Post-synaptic time constant (PSTC) to use for filtering.
     function : callable
@@ -377,6 +379,9 @@ class Connection(object):
         description TODO
     transform : array_like, shape (post_size, pre_size)
         Linear transform mapping the pre output to the post input.
+    weight_solver : callable
+        Function to compute a full connection weight matrix. Similar to
+        `decoder_solver`, but more general. See `nengo.decoders`.
     """
 
     _decoders = None
@@ -401,8 +406,11 @@ class Connection(object):
         self.modulatory = modulatory
 
         if isinstance(self.pre, Ensemble):
-            self.decoder_solver = kwargs.pop(
-                'decoder_solver', nengo.decoders.lstsq_L2)
+            if isinstance(self.post, Ensemble):
+                self.weight_solver = kwargs.pop('weight_solver', None)
+            else:
+                self.weight_solver = None
+            self.decoder_solver = kwargs.pop('decoder_solver', None)
             self.eval_points = kwargs.pop('eval_points', None)
             self.function = kwargs.pop('function', None)
         elif not isinstance(self.pre, (Neurons, Node)):

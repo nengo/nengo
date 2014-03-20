@@ -23,6 +23,14 @@ up in a model.
 assert_named_signals = False
 
 
+def _array2d(x, **kwargs):
+    """Ensure an array is two-dimensional"""
+    x = np.array(x, **kwargs)
+    if x.ndim < 2:
+        x.shape = x.size, 1
+    return x
+
+
 class ShapeMismatch(ValueError):
     pass
 
@@ -763,9 +771,7 @@ class Builder(object):
             ens.eval_points = distributions.UniformHypersphere(
                 ens.dimensions).sample(ens.EVAL_POINTS, rng=rng) * ens.radius
         else:
-            ens.eval_points = np.array(ens.eval_points, dtype=np.float64)
-            if ens.eval_points.ndim == 1:
-                ens.eval_points.shape = (-1, 1)
+            ens.eval_points = _array2d(ens.eval_points, dtype=np.float64)
 
         # Set up signal
         ens.input_signal = Signal(np.zeros(ens.dimensions),
@@ -894,21 +900,19 @@ class Builder(object):
 
     @builds(nengo.Connection)  # noqa
     def build_connection(self, conn):
+        dt = self.model.dt
         rng = np.random.RandomState(self.model._get_new_seed())
 
         conn.input_signal = conn.pre.output_signal
         conn.output_signal = conn.post.input_signal
-        if conn.modulatory:
-            # Make a new signal, effectively detaching from post
-            conn.output_signal = Signal(np.zeros(conn.output_signal.size),
-                                        name=conn.label + ".mod_output")
-            # Add reset operator?
-        dt = self.model.dt
+
+        decoders = None
+        transform = np.array(conn.transform_full, dtype=np.float64)
 
         # Figure out the signal going across this connection
         if (isinstance(conn.pre, nengo.Ensemble)
                 and isinstance(conn.pre.neurons, nengo.Direct)):
-            # 1. Decoded connection in directmode
+            # Decoded connection in directmode
             if conn.function is None:
                 conn.signal = conn.input_signal
             else:
@@ -923,24 +927,39 @@ class Builder(object):
                     Signal(1.0, name="1"),
                     sig_in,
                     tag="%s input" % conn.label))
-
-            if conn.filter is not None and conn.filter > dt:
-                conn.signal = self._filtered_signal(conn.signal, conn.filter)
         elif isinstance(conn.pre, nengo.Ensemble):
-            # 2. Normal decoded connection
-            conn.signal = Signal(np.zeros(conn.dimensions), name=conn.label)
-            if conn._decoders is None:
-                activities = conn.pre.activities(conn.eval_points) * dt
-                if conn.function is None:
-                    targets = conn.eval_points
-                else:
-                    targets = np.array(
-                        [conn.function(ep) for ep in conn.eval_points])
-                    if targets.ndim < 2:
-                        targets.shape = targets.shape[0], 1
-                conn._decoders = conn.decoder_solver(activities, targets, rng)
+            # Normal decoded connection
+            activities = conn.pre.activities(conn.eval_points) * dt
+            if conn.function is None:
+                targets = conn.eval_points
+            else:
+                targets = _array2d(
+                    [conn.function(ep) for ep in conn.eval_points])
 
-            decoders = conn._decoders.T
+            if conn.weight_solver is not None:
+                if conn.decoder_solver is not None:
+                    raise ValueError("Cannot specify both 'weight_solver' "
+                                     "and 'decoder_solver'.")
+
+                # account for transform
+                targets = np.dot(targets, transform.T)
+                transform = np.array(1., dtype=np.float64)
+
+                decoders = conn.weight_solver(
+                    activities, targets, rng=rng,
+                    E=conn.post._scaled_encoders.T)
+                conn.output_signal = conn.post.neurons.input_signal
+                signal_size = conn.output_signal.size
+            else:
+                solver = (conn.decoder_solver if conn.decoder_solver is
+                          not None else nengo.decoders.lstsq_L2nz)
+                decoders = solver(activities, targets, rng=rng)
+                signal_size = conn.dimensions
+
+            conn._decoders = decoders
+
+            # Add operator for decoders and filtering
+            decoders = decoders.T
             if conn.filter is not None and conn.filter > dt:
                 o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
                 conn.decoder_signal = Signal(
@@ -950,21 +969,29 @@ class Builder(object):
                 conn.decoder_signal = Signal(decoders,
                                              name=conn.label + '.decoders')
                 o_coef = 0
+
+            conn.signal = Signal(np.zeros(signal_size), name=conn.label)
             self.model.operators.append(ProdUpdate(
                 conn.decoder_signal,
                 conn.input_signal,
                 Signal(o_coef, name="o_coef"),
                 conn.signal,
                 tag=conn.label + " filtering"))
-        elif conn.filter is not None and conn.filter > self.model.dt:
-            # 4. Filtered connection
-            conn.signal = self._filtered_signal(conn.input_signal, conn.filter)
         else:
-            # 5. Direct connection
+            # Direct connection
             conn.signal = conn.input_signal
 
-        # Set up transform
-        transform = np.array(conn.transform_full, dtype=np.float64, copy=True)
+        # Add operator for filtering
+        if decoders is None and conn.filter is not None and conn.filter > dt:
+            conn.signal = self._filtered_signal(conn.signal, conn.filter)
+
+        if conn.modulatory:
+            # Make a new signal, effectively detaching from post
+            conn.output_signal = Signal(np.zeros(conn.output_signal.size),
+                                        name=conn.label + ".mod_output")
+            # Add reset operator?
+
+        # Add operator for transform
         if isinstance(conn.post, nengo.objects.Neurons):
             transform *= conn.post.gain[:, np.newaxis]
         self.model.operators.append(
@@ -972,6 +999,7 @@ class Builder(object):
                    conn.signal,
                    conn.output_signal,
                    tag=conn.label))
+        conn._transform = transform
 
         # Set up probes
         for probe in conn.probes['signal']:

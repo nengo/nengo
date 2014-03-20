@@ -164,6 +164,6 @@ def whitenoise(step, high, rms=0.5, seed=None, dimensions=None):
 
     # create a function that computes the bases and weights them by amplitude
     def whitenoise_function(t, f=frequencies, a=amplitude, p=phase):
-        return np.dot(a, np.sin((f * t) + p))
+        return np.dot(np.sin(f * t[..., np.newaxis] + p), a)
 
     return whitenoise_function
