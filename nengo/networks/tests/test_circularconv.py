@@ -6,7 +6,7 @@ import pytest
 import nengo
 from nengo.networks import EnsembleArray
 from nengo.networks.circularconvolution import circconv
-from nengo.utils.internals import rmse
+from nengo.utils.numpy import rmse
 from nengo.utils.testing import Plotter
 
 logger = logging.getLogger(__name__)
