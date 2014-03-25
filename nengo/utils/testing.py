@@ -143,14 +143,12 @@ def find_modules(root_path, prefix=[], pattern='^test_.*\\.py$'):
         raise TypeError("Invalid prefix type '%s'" % type(prefix).__name__)
 
     modules = []
-    for name in os.listdir(root_path):
-        path = os.path.join(root_path, name)
-        if os.path.isdir(path):
-            modules.extend(
-                find_modules(path, prefix=prefix + [name], pattern=pattern))
-        elif re.search(pattern, name):
-            name, ext = os.path.splitext(name)
-            modules.append(prefix + [name])
+    for path, dirs, files in os.walk(root_path):
+        base = prefix + os.path.relpath(path, root_path).split(os.sep)
+        for filename in files:
+            if re.search(pattern, filename):
+                name, ext = os.path.splitext(filename)
+                modules.append(base + [name])
 
     return modules
 
