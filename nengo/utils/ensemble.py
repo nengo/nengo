@@ -4,11 +4,11 @@ import nengo.utils.numpy as npext
 
 
 def tuning_curves(ens, sim):
-    neurons = sim.neurons(ens.neurons)
-    eval_points = np.array(neurons.eval_points)
+    eval_points = np.array(sim.data[ens].eval_points)
     eval_points.sort(axis=0)
-    activities = ens.neurons.rates(
-        eval_points * neurons.encoders.T, neurons.gain, neurons.bias)
+    activities = ens.neurons.rates(eval_points * sim.data[ens].encoders.T,
+                                   sim.data[ens.neurons].gain,
+                                   sim.data[ens.neurons].bias)
     return eval_points, activities
 
 
@@ -91,8 +91,7 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
     '''
 
     # Normalize all the encoders
-    neurons = sim.neurons(ensemble.neurons)
-    encoders = np.array(neurons.encoders)
+    encoders = np.array(sim.data[ensemble].encoders)
     encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     # Make an array with the starting order of the neurons

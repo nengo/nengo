@@ -67,10 +67,9 @@ class ProbeDict(Mapping):
 
     def __getitem__(self, key):
         rval = self.raw[key]
-        if isinstance(rval, dict):
-            return rval
-        rval = np.asarray(self.raw[key])
-        rval.flags.writeable = False
+        if isinstance(rval, list):
+            rval = np.asarray(rval)
+            rval.flags.writeable = False
         return rval
 
     def __str__(self):
@@ -89,16 +88,10 @@ class ProbeDict(Mapping):
 class Simulator(object):
     """Reference simulator for models."""
 
-    def __init__(self, model, dt=0.001, seed=None, builder=Builder):
+    def __init__(self, model, dt=0.001, seed=None, builder=Builder()):
         # Call the builder to build the model
-        build_state = builder(model, dt)
-        self.model = build_state.output
+        self.model = builder(model, dt)
         self.dt = dt
-
-        # Add a public method which allows users to get BuildNeuronsState
-        # TODO: Do not expose the build state outside of the builder. Currently
-        #     this is only used by helpers.tuning_curves and many_neurons.ipynb
-        self.neurons = build_state.get_neurons_state
 
         # Use model seed as simulator seed if the seed is not provided
         # Note: seed is not used right now, but one day...
@@ -117,7 +110,11 @@ class Simulator(object):
                        for node in self._step_order]
 
         self.n_steps = 0
-        self._probe_outputs = dict((probe, []) for probe in self.model.probes)
+
+        # Add built states to the probe dictionary
+        self._probe_outputs = self.model.params
+
+        # Provide a nicer interface to probe outputs
         self.data = ProbeDict(self._probe_outputs)
 
     def _init_dg(self, verbose=False):  # noqa
