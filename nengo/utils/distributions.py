@@ -29,7 +29,7 @@ class Uniform(Distribution):
         The closed lower bound of the uniform distribution; samples >= low
     high : Number
         The open upper bound of the uniform distribution; samples < high
-    integer : boolean
+    integer : boolean, optional
         If true, sample from a uniform distribution of integers. In this case,
         low and high should be integers.
     """

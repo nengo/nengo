@@ -1,11 +1,6 @@
 from __future__ import absolute_import
-import collections
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
-
 import numpy as np
+from nengo.utils.compat import is_callable, is_number, OrderedDict
 
 
 def piecewise(data):
@@ -77,12 +72,12 @@ def piecewise(data):
     # when calling the function)
     output_length = None  # the dimensionality of the returned values
     for time in data.keys():
-        if not isinstance(time, (float, int)):
+        if not is_number(time):
             raise TypeError('Keys must be times (floats or ints), not "%s"'
                             % repr(time.__class__))
 
         # figure out the length of this item
-        if isinstance(data[time], collections.Callable):
+        if is_callable(data[time]):
             length = np.asarray(data[time](0.0)).size
         else:
             data[time] = np.asarray(data[time])
@@ -106,7 +101,7 @@ def piecewise(data):
             out_t = time
 
         # if it's a function, call it
-        if isinstance(data[out_t], collections.Callable):
+        if is_callable(data[out_t]):
             return np.asarray(data[out_t](t))
         return data[out_t]
     return piecewise_function
