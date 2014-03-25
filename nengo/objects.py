@@ -401,10 +401,6 @@ class Connection(object):
         self._postslice = post.slice
         self.probes = {'signal': []}
 
-        self.filter = filter
-        self.transform = transform
-        self.modulatory = modulatory
-
         if isinstance(self.pre, Ensemble):
             if isinstance(self.post, Ensemble):
                 self.weight_solver = kwargs.pop('weight_solver', None)
@@ -416,6 +412,10 @@ class Connection(object):
         elif not isinstance(self.pre, (Neurons, Node)):
             raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
                              (self.pre.__class__.__name__))
+
+        self.filter = filter
+        self.transform = transform
+        self.modulatory = modulatory
 
         if not isinstance(self.post, (Ensemble, Neurons, Node, Probe)):
             raise ValueError("Objects of type '%s' cannot serve as 'post'" %
