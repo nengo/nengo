@@ -72,6 +72,14 @@ class Model(object):
         nengo.context.clear()
         nengo.context.append(self)
 
+    def __eq__(self, other):
+        if self.__class__ != other.__class__:
+            return False
+        return (self.objs == other.objs
+                and self.connections == other.connections
+                and self.label == other.label
+                and self.seed == other.seed)
+
     def __hash__(self):
         return hash(self.label)
 
@@ -84,28 +92,29 @@ class Model(object):
 
     ### I/O
 
-    def save(self, fname, format=None):
+    def save(self, fname, fmt=None):
         """Save this model to a file.
 
         So far, Pickle is the only implemented format.
 
         """
-        if format is None:
-            format = os.path.splitext(fname)[1]
+        if fmt is None:
+            fmt = os.path.splitext(fname)[1]
 
+        # Default to pickle
         with open(fname, 'wb') as f:
             pickle.dump(self, f)
             logger.info("Saved %s successfully.", fname)
 
     @staticmethod
-    def load(self, fname, format=None):
-        """Load this model from a file.
+    def load(fname, fmt=None):
+        """Load a model from a file.
 
-        So far, JSON and Pickle are the possible formats.
+        So far, Pickle is the only implemented format.
 
         """
-        # if format is None:
-        #     format = os.path.splitext(fname)[1]
+        if fmt is None:
+            fmt = os.path.splitext(fname)[1]
 
         # Default to pickle
         with open(fname, 'rb') as f:
