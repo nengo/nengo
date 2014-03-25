@@ -536,6 +536,9 @@ class Probe(object):
 
         target.probe(self, **kwargs)
 
+    def __str__(self):
+        return self.label
+
 
 class Network(object):
 

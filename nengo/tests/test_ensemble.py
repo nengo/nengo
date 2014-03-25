@@ -25,7 +25,7 @@ def test_encoders(n_dimensions, n_neurons=10, encoders=None):
     ens = nengo.Ensemble(encoders=encoders, **args)
     sim = nengo.Simulator(model)
 
-    assert np.allclose(encoders, sim.neurons(ens.neurons).encoders)
+    assert np.allclose(encoders, sim.data[ens].encoders)
 
 
 def test_encoders_wrong_shape():
