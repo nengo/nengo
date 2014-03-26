@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.utils.numpy import filt
 from nengo.utils.testing import Plotter
 
 
@@ -101,6 +102,42 @@ def test_passthrough(Simulator):
     sim_in = sim.data[in1_p][:-1] + sim.data[in2_p][:-1]
     sim_out = sim.data[out_p][1:]
     assert np.allclose(sim_in, sim_out)
+
+
+def test_passthrough_filter(Simulator):
+    m = nengo.Model("test_passthrough", seed=0)
+
+    omega = 2 * np.pi * 5
+    u = nengo.Node(output=lambda t: np.sin(omega * t))
+    passthrough = nengo.Node(size_in=1)
+    v = nengo.Node(output=lambda t, x: x, size_in=1)
+
+    synapse = 0.3
+    nengo.Connection(u, passthrough, filter=None)
+    nengo.Connection(passthrough, v, filter=synapse)
+
+    up = nengo.Probe(u)
+    vp = nengo.Probe(v)
+
+    dt = 0.001
+    sim = Simulator(m, dt=dt)
+    sim.run(1.0)
+
+    t = sim.trange()
+    x = sim.data[up]
+    y = filt(x, synapse / dt)
+    z = sim.data[vp]
+
+    with Plotter(Simulator) as plt:
+        plt.plot(t, x)
+        plt.plot(t, y)
+        plt.plot(t, z)
+        plt.savefig("test_node.test_passthrough_filter.pdf")
+        plt.close()
+
+    # TODO: we have a two-step delay here since the passthrough node is not
+    #   actually optimized out. We should look into doing this.
+    assert np.allclose(y[:-2], z[2:])
 
 
 def test_circular(Simulator):
