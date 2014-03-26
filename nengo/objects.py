@@ -1,6 +1,8 @@
 import collections
 import inspect
 import logging
+import weakref
+
 import numpy as np
 
 import nengo
@@ -55,10 +57,6 @@ class Neurons(object):
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % probe.attr)
         return probe
-
-    def add_to_model(self, model):
-        # Neurons are added to Ensembles in order to be built into the model.
-        pass
 
 
 class Ensemble(object):
@@ -118,13 +116,19 @@ class Ensemble(object):
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
 
         # add self to current context
-        nengo.context.add_to_current(self)
+        self.key = nengo.context.add_to_current(self)
 
     def __getitem__(self, key):
         return ObjView(self, key)
 
     def __str__(self):
         return "Ensemble: " + self.label
+
+    def __hash__(self):
+        return self.key
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.key == other.key
 
     @property
     def n_neurons(self):
@@ -166,9 +170,6 @@ class Ensemble(object):
 
         self.probes[probe.attr].append(probe)
         return probe
-
-    def add_to_model(self, model):
-        model.objs.append(self)
 
 
 class Node(object):
@@ -255,10 +256,16 @@ class Node(object):
         self.probes = {'output': []}
 
         # add self to current context
-        nengo.context.add_to_current(self)
+        self.key = nengo.context.add_to_current(self)
 
     def __str__(self):
         return "Node: " + self.label
+
+    def __hash__(self):
+        return self.key
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.key == other.key
 
     def __getitem__(self, key):
         return ObjView(self, key)
@@ -273,9 +280,6 @@ class Node(object):
 
         self.probes[probe.attr].append(probe)
         return probe
-
-    def add_to_model(self, model):
-        model.objs.append(self)
 
 
 class Connection(object):
@@ -356,7 +360,7 @@ class Connection(object):
         self._check_shapes(check_in_init=True)
 
         # add self to current context
-        nengo.context.add_to_current(self)
+        self.key = nengo.context.add_to_current(self)
 
     def _check_pre_ensemble(self, prop_name):
         if not isinstance(self._pre, Ensemble):
@@ -442,6 +446,12 @@ class Connection(object):
                                  "%s input size (%d)" %
                                  (transform.shape[0], out_src, out_dims))
 
+    def __hash__(self):
+        return self.key
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.key == other.key
+
     def __str__(self):
         return "%s (%s)" % (self.label, self.__class__.__name__)
 
@@ -494,9 +504,6 @@ class Connection(object):
         self.transform_full = self._pad_transform(np.asarray(_transform))
         self._check_shapes()
 
-    def add_to_model(self, model):
-        model.connections.append(self)
-
 
 class Probe(object):
     """A probe is a dummy object that only has an input signal and probe.
@@ -545,24 +552,18 @@ class Network(object):
     def __init__(self, *args, **kwargs):
         self.label = kwargs.pop("label", "Network")
         self.objects = []
+        self.model = weakref.ref(nengo.context[-1])
         with self:
             self.make(*args, **kwargs)
 
-        # add self to current context
-        nengo.context.add_to_current(self)
-
     def add(self, obj):
         self.objects.append(obj)
-        return obj
+        if not isinstance(obj, nengo.Connection):
+            obj.label = self.label + '.' + obj.label
+        return self.model().add(obj)
 
     def make(self, *args, **kwargs):
         raise NotImplementedError("Networks should implement this function.")
-
-    def add_to_model(self, model):
-        for obj in self.objects:
-            if not isinstance(obj, nengo.Connection):
-                obj.label = self.label + '.' + obj.label
-            model.add(obj)
 
     def __enter__(self):
         nengo.context.append(self)

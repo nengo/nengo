@@ -23,11 +23,12 @@ def test_create_dot():
                          transform=np.ones((D, D)))
         nengo.Connection(b.output, output, filter=0.01)
 
-    dot = generate_graphviz(model.objs, model.connections)
+    dot = generate_graphviz(model.objs.values(), model.connections.values())
     assert len(dot.splitlines()) == 31
     # not sure what else to check here
 
-    objs, conns = remove_passthrough_nodes(model.objs, model.connections)
+    objs, conns = remove_passthrough_nodes(model.objs.values(),
+                                           model.connections.values())
 
     dot = generate_graphviz(objs, conns)
     assert len(dot.splitlines()) == 27
