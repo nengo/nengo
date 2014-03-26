@@ -735,12 +735,12 @@ class Builder(object):
 
         # 1. Build objects
         logger.info("Building objects")
-        for obj in model.objs:
+        for obj in model.objs.values():
             self.build(obj)
 
         # 2. Then connections
         logger.info("Building connections")
-        for c in model.connections:
+        for c in model.connections.values():
             self.build(c)
 
         self.output.params = self.built

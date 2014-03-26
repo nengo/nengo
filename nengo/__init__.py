@@ -43,6 +43,7 @@ class ContextStack(collections.deque):
         if not hasattr(curr, "add"):
             raise AttributeError("Current context has no add function")
 
-        curr.add(obj)
+        # cur.add should return a unique key
+        return curr.add(obj)
 
 context = ContextStack(maxlen=100)

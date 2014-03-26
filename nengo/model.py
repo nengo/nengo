@@ -56,18 +56,31 @@ class Model(object):
     """
 
     def __init__(self, label="Model", seed=None):
-        self.objs = []
-        self.connections = []
-
-        self.label = label + ''  # -- make self.name a string, raise error otw
+        self.objs = {}
+        self.connections = {}
         self.seed = seed
+
+        # We disallow changing the label after initialization
+        self._label = label + ''  # Make self.name a string, raise error otw
+
+        # Start object keys with the model hash.
+        # We use the hash because it's deterministic, though this
+        # may be confusing if models use the same label.
+        self.nextkey = hash(self)
 
         #make this the default context
         nengo.context.clear()
         nengo.context.append(self)
 
+    def __hash__(self):
+        return hash(self.label)
+
     def __str__(self):
         return "Model: " + self.label
+
+    @property
+    def label(self):
+        return self._label
 
     ### I/O
 
@@ -127,11 +140,17 @@ class Model(object):
         Network.add : The same function for Networks
 
         """
-        try:
-            obj.add_to_model(self)
-            return obj
-        except AttributeError as ae:
-            raise TypeError("Error in %s.add_to_model.\n%s" % (obj, ae))
+        key = self.nextkey
+        if isinstance(obj, (nengo.Ensemble, nengo.Node)):
+            self.objs[key] = obj
+        elif isinstance(obj, nengo.Connection):
+            self.connections[key] = obj
+        else:
+            raise TypeError("Can't add object of type %s to model" % (
+                obj.__class__.__name__))
+
+        self.nextkey += 1
+        return key
 
     def remove(self, target):
         """Removes a Nengo object from the model.
@@ -149,12 +168,10 @@ class Model(object):
             The Nengo object removed.
 
         """
-        if not target in self.objs:
-            logger.warning("%s is not in model %s.", str(target), self.label)
-            return
-
-        self.objs = [o for o in self.objs if o != target]
-        logger.info("%s removed.", target)
+        if isinstance(target, (nengo.Ensemble, nengo.Node)):
+            del self.objs[target.key]
+        elif isinstance(target, nengo.Connection):
+            del self.connections[target.key]
 
     def __enter__(self):
         nengo.context.append(self)
