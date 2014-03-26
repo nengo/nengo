@@ -144,7 +144,7 @@ def lstsq_drop(A, Y, rng, E=None, noise_amp=0.1, drop=0.25, solver=lstsq_L2nz):
     if E is not None:
         Y = np.dot(Y, E)
 
-    for i in xrange(X.shape[1]):
+    for i in range(X.shape[1]):
         nonzero = X[:, i] != 0
         if nonzero.sum() > 0:
             X[nonzero, i] = solver(A[:, nonzero], Y[:, i],
