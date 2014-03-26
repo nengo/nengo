@@ -1,14 +1,18 @@
 from glob import glob
-# import os
 import os.path
 
-try:
-    from IPython.kernel import KernelManager
-except ImportError:
-    from IPython.zmq.blockingkernelmanager import (
-        BlockingKernelManager as KernelManager)
-from IPython.nbformat import current
 import pytest
+
+# Monkeypatch _pytest.capture.DontReadFromInput
+#  If we don't do this, importing IPython will choke as it reads the current
+#  sys.stdin to figure out the encoding it will use; pytest installs
+#  DontReadFromInput as sys.stdin to capture output.
+#  Running with -s option doesn't have this issue, but this monkeypatch
+#  doesn't have any side effects, so it's fine.
+import _pytest.capture
+_pytest.capture.DontReadFromInput.encoding = "utf-8"
+
+from nengo.utils.ipython import export_py, load_notebook
 
 
 def pytest_generate_tests(metafunc):
@@ -20,52 +24,21 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.mark.example
-def test_noexceptions(nb_path):
+def test_noexceptions(nb_path, tmpdir):
     """Ensure that no cells raise an exception."""
-    with open(nb_path) as f:
-        nb = current.reads(f.read(), 'json')
-
-    km = KernelManager()
-    km.start_kernel(stderr=open(os.devnull, 'w'))
-    try:
-        kc = km.client()
-    except AttributeError:
-        # IPython 0.13
-        kc = km
-    kc.start_channels()
-    shell = kc.shell_channel
-    # Simple ping
-    shell.execute("pass")
-    shell.get_msg()
-
-    for ws in nb.worksheets:
-        for cell in ws.cells:
-            if cell.cell_type != 'code':
-                continue
-            shell.execute(cell.input)
-            # wait for finish, maximum 2 minutes
-            reply = shell.get_msg(timeout=120)['content']
-            if reply['status'] == 'error':
-                err_msg = ("\nFAILURE:" + cell.input + "\n"
-                           "-----\nraised:\n"
-                           + "\n".join(reply['traceback']))
-                kc.stop_channels()
-                km.shutdown_kernel()
-                del km
-                assert False, err_msg
-
-    kc.stop_channels()
-    km.shutdown_kernel()  # noqa
-    del km  # noqa
-    assert True
+    nb = load_notebook(nb_path)
+    pyfile = "%s.py" % str(
+        tmpdir.join(os.path.splitext(os.path.basename(nb_path))[0]))
+    export_py(nb, pyfile)
+    ns = {}
+    # This is essentially execfile that works on Python 2 and 3
+    exec(compile(open(pyfile, "rb").read(), pyfile, 'exec'), ns, ns)
 
 
 @pytest.mark.example
 def test_nooutput(nb_path):
     """Ensure that no cells have output."""
-    # Inspired by gist.github.com/minrk/3719849
-    with open(nb_path) as f:
-        nb = current.reads(f.read(), 'json')
+    nb = load_notebook(nb_path)
 
     for ws in nb.worksheets:
         for cell in ws.cells:
