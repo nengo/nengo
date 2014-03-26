@@ -391,7 +391,12 @@ class Connection(object):
 
         # Create the new transform matching the pre/post dimensions
         new_transform = np.zeros((out_dims, in_dims))
-        new_transform[self._postslice, self._preslice] = transform
+        rows_transform = np.array(new_transform[self._postslice])
+        rows_transform[:, self._preslice] = transform
+        new_transform[self._postslice] = rows_transform
+        # Note: the above is a little obscure, but we do it so that lists of
+        #  indices can specify selections of rows and columns, rather than
+        #  just individual items
 
         # Note: Calling _check_shapes after this, is (or, should be) redundant
         return new_transform

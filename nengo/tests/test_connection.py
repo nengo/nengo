@@ -265,7 +265,7 @@ def test_dimensionality_errors(nl_nodirect):
         nengo.Connection(e2[0], e2, transform=[[1, 2]])
 
 
-def test_connection_slicing(Simulator, nl_nodirect):
+def test_slicing(Simulator, nl_nodirect):
     name = 'connection_slicing'
     N = 30
 
@@ -332,6 +332,14 @@ def test_connection_slicing(Simulator, nl_nodirect):
     assert np.all(conn.transform_full == np.array([[6, 5, 4],
                                                    [0, 0, 0],
                                                    [3, 2, 1]]))
+
+    # Both slices using lists
+    conn = nengo.Connection(neurons3[[1, 0, 2]], neurons3[[2, 1]],
+                            transform=[[1, 2, 3], [4, 5, 6]])
+    assert np.all(conn.transform == np.array([[1, 2, 3], [4, 5, 6]]))
+    assert np.all(conn.transform_full == np.array([[0, 0, 0],
+                                                   [5, 4, 6],
+                                                   [2, 1, 3]]))
 
 
 if __name__ == "__main__":
