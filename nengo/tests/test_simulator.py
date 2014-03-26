@@ -157,9 +157,9 @@ def test_encoder_decoder_pathway(RefSimulator):
     check(sig_out, 0)
 
     sim.step()
-    #DotInc to pop.input_signal (input=[1.0,2.0])
-    #produpdate updates foo (foo=[0.2])
-    #pop updates pop.output_signal (output=[2,3])
+    # DotInc to pop.input_signal (input=[1.0,2.0])
+    # produpdate updates foo (foo=[0.2])
+    # pop updates pop.output_signal (output=[2,3])
 
     check(sig_in, [1, 2])
     check(sig_out, [2, 3])
@@ -167,10 +167,10 @@ def test_encoder_decoder_pathway(RefSimulator):
     check(decs, [.1, .05])
 
     sim.step()
-    #DotInc to pop.input_signal (input=[0.2,0.4])
-    # (note that pop resets its own input signal each timestep)
-    #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
-    #pop updates pop.output_signal (output=[1.2,1.4])
+    # DotInc to pop.input_signal (input=[0.2,0.4])
+    #  (note that pop resets its own input signal each timestep)
+    # produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
+    # pop updates pop.output_signal (output=[1.2,1.4])
 
     check(decs, [.1, .05])
     check(sig_in, [0.2, 0.4])
@@ -200,19 +200,19 @@ def test_encoder_decoder_with_views(RefSimulator):
     sim = RefSimulator(None, builder=mock_builder(b))
 
     sim.step()
-    #DotInc to pop.input_signal (input=[1.0,2.0])
-    #produpdate updates foo (foo=[0.2])
-    #pop updates pop.output_signal (output=[2,3])
+    # DotInc to pop.input_signal (input=[1.0,2.0])
+    # produpdate updates foo (foo=[0.2])
+    # pop updates pop.output_signal (output=[2,3])
 
     check(foo, .2)
     check(sig_in, [1, 2])
     check(sig_out, [2, 3])
 
     sim.step()
-    #DotInc to pop.input_signal (input=[0.2,0.4])
-    # (note that pop resets its own input signal each timestep)
-    #produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
-    #pop updates pop.output_signal (output=[1.2,1.4])
+    # DotInc to pop.input_signal (input=[0.2,0.4])
+    #  (note that pop resets its own input signal each timestep)
+    # produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
+    # pop updates pop.output_signal (output=[1.2,1.4])
 
     check(foo, .39)
     check(sig_in, [0.2, 0.4])

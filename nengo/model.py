@@ -68,7 +68,7 @@ class Model(object):
         # may be confusing if models use the same label.
         self.nextkey = hash(self)
 
-        #make this the default context
+        # Make this the default context
         nengo.context.clear()
         nengo.context.append(self)
 
@@ -90,7 +90,7 @@ class Model(object):
     def label(self):
         return self._label
 
-    ### I/O
+    # --- I/O
 
     def save(self, fname, fmt=None):
         """Save this model to a file.
@@ -122,7 +122,7 @@ class Model(object):
 
         raise IOError("Could not load {}".format(fname))
 
-    ### Model manipulation
+    # --- Model manipulation
 
     def add(self, obj):
         """Adds a Nengo object to this model.

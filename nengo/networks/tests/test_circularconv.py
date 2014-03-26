@@ -55,7 +55,7 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
     assert np.abs(b).max() < radius
     assert np.abs(c).max() < radius
 
-    ### model
+    # --- model
     model = nengo.Model("circular convolution")
 
     inputA = nengo.Node(output=a)
@@ -82,7 +82,7 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
     d = np.dot(D.transformA, a) + np.dot(D.transformB, b)
     assert np.abs(d).max() < radius
 
-    ### simulation
+    # --- simulation
     sim = Simulator(model)
     sim.run(1.0)
 
@@ -109,7 +109,7 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
         plt.savefig('test_circularconv.test_circularconv_%d.pdf' % dims)
         plt.close()
 
-    ### results
+    # --- results
     tmask = t > (0.5 + sim.dt/2)
     assert sim.data[A_p][tmask].shape == (499, dims)
     a_sim = sim.data[A_p][tmask].mean(axis=0)

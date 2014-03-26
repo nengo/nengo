@@ -32,7 +32,7 @@ def filtfilt(x, tau, axis=0, copy=True):
     x = np.array(x, copy=copy)
     y = np.rollaxis(x, axis=axis)  # y is rolled view on x
 
-    ### buffer method
+    # --- buffer method
     d = -np.expm1(-1. / tau)
 
     # filter forwards

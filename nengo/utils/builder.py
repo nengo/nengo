@@ -97,9 +97,10 @@ def remove_passthrough_nodes(objs, connections):  # noqa: C901
                     c = _create_replacement_connection(c_in, c_out)
                     if c is not None:
                         result_conn.append(c)
-                        outputs[c.pre].append(c)  # put this in the list, since
-                        inputs[c.post].append(c)  # it might be used another
-                                                  # time through the loop
+                        # put this in the list, since it might be used
+                        # another time through the loop
+                        outputs[c.pre].append(c)
+                        inputs[c.post].append(c)
 
     return result_objs, result_conn
 
@@ -131,7 +132,7 @@ def _create_replacement_connection(c_in, c_out):
         raise NotImplementedError('Cannot merge two filters')
         # Note: the algorithm below is in the right ballpark,
         #  but isn't exactly the same as two low-pass filters
-        #filter = c_out.filter + c_in.filter
+        # filter = c_out.filter + c_in.filter
 
     function = c_in.function
     if c_out.function is not None:

@@ -7,9 +7,9 @@ import nengo
 def test_seeding():
     """Test that setting the model seed fixes everything"""
 
-    ### TODO: this really just checks random parameters in ensembles.
-    ###   Are there other objects with random parameters that should be
-    ###   tested? (Perhaps initial weights of learned connections)
+    #  TODO: this really just checks random parameters in ensembles.
+    #   Are there other objects with random parameters that should be
+    #   tested? (Perhaps initial weights of learned connections)
 
     m = nengo.Model('test_seeding')
     input = nengo.Node(output=1, label='input')

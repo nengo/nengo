@@ -75,7 +75,7 @@ class CircularConvolution(nengo.Network):
             else:
                 T[i, 1] = row.real if i % 4 == 0 or i % 4 == 3 else row.imag
 
-        ### Throw away rows that we don't need (b/c they're zero)
+        # --- Throw away rows that we don't need (b/c they're zero)
         i = np.arange(dims2)
         if dims % 2 == 0:
             T = T[(i == 0) | (i > 3) & (i < len(i) - 3)]
@@ -99,7 +99,7 @@ class CircularConvolution(nengo.Network):
 
         T = T.reshape(4*dims2, dims)
 
-        ### Throw away rows that we don't need (b/c they're zero)
+        # --- Throw away rows that we don't need (b/c they're zero)
         i = np.arange(4*dims2)
         if dims % 2 == 0:
             T = T[(i == 0) | (i > 3) & (i < len(i) - 3)]

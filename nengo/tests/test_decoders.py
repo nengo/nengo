@@ -192,7 +192,7 @@ def test_solvers(Simulator, nl_nodirect):
 @pytest.mark.benchmark  # noqa: C901
 def test_regularization(Simulator, nl_nodirect):
 
-    ### TODO: multiple trials per parameter set, with different seeds
+    # TODO: multiple trials per parameter set, with different seeds
 
     solvers = [lstsq_L2, lstsq_L2nz]
     neurons = np.array([10, 20, 50, 100])

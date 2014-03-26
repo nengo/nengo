@@ -112,7 +112,7 @@ def lstsq_L1(A, Y, rng=np.random, E=None, l1=1e-4, l2=1e-6):
     alpha = a + b
     l1_ratio = a / (a + b)
 
-    ### solve least-squares A * X = Y
+    # --- solve least-squares A * X = Y
     if E is not None:
         Y = np.dot(Y, E)
 
@@ -259,7 +259,7 @@ def _block_conjgrad(A, B, sigma, X0=None, tol=1e-2):
 
     rtol = tol * np.sqrt(m)
 
-    ### conjugate gradient
+    # --- conjugate gradient
     X = np.zeros((n, d)) if X0 is None else np.array(X0).reshape((n, d))
     R = B - G(X)
     P = np.array(R)
