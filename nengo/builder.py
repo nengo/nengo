@@ -10,6 +10,7 @@ import nengo.decoders
 import nengo.objects
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
+from nengo.utils.compat import is_callable
 
 logger = logging.getLogger(__name__)
 
@@ -856,8 +857,7 @@ class Builder(object):
     @builds(nengo.objects.Node)
     def build_node(self, node):
         # Get input
-        if (node.output is None
-                or isinstance(node.output, collections.Callable)):
+        if node.output is None or is_callable(node.output):
             if node.size_in > 0:
                 self.output.sig_in[node] = Signal(
                     np.zeros(node.size_in), name="%s.signal" % node.label)
@@ -867,7 +867,7 @@ class Builder(object):
         # Provide output
         if node.output is None:
             self.output.sig_out[node] = self.output.sig_in[node]
-        elif not isinstance(node.output, collections.Callable):
+        elif not is_callable(node.output):
             self.output.sig_out[node] = Signal(node.output, name=node.label)
         else:
             sig_in, sig_out = self.build_pyfunc(fn=node.output,

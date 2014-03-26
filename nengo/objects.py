@@ -1,4 +1,3 @@
-import collections
 import inspect
 import logging
 import weakref
@@ -7,6 +6,7 @@ import numpy as np
 
 import nengo
 import nengo.decoders
+from nengo.utils.compat import is_callable
 from nengo.utils.distributions import Uniform
 
 logger = logging.getLogger(__name__)
@@ -210,7 +210,7 @@ class Node(object):
     """
 
     def __init__(self, output=None, size_in=0, size_out=None, label="Node"):
-        if output is not None and not isinstance(output, collections.Callable):
+        if output is not None and not is_callable(output):
             output = np.asarray(output)
         self.output = output
         self.label = label
@@ -219,7 +219,7 @@ class Node(object):
         if output is not None:
             if isinstance(output, np.ndarray):
                 shape_out = output.shape
-            elif size_out is None and isinstance(output, collections.Callable):
+            elif size_out is None and is_callable(output):
                 t, x = np.asarray(0.0), np.zeros(size_in)
                 args = [t, x] if size_in > 0 else [t]
                 try:

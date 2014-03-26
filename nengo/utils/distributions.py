@@ -29,18 +29,26 @@ class Uniform(Distribution):
         The closed lower bound of the uniform distribution; samples >= low
     high : Number
         The open upper bound of the uniform distribution; samples < high
-
+    integer : boolean, optional
+        If true, sample from a uniform distribution of integers. In this case,
+        low and high should be integers.
     """
 
-    def __init__(self, low, high):
+    def __init__(self, low, high, integer=False):
         self.low = low
         self.high = high
+        self.integer = integer
 
     def __eq__(self, other):
-        return self.low == other.low and self.high == other.high
+        return (self.low == other.low
+                and self.high == other.high
+                and self.integer == other.integer)
 
     def sample(self, n, rng=np.random):
-        return rng.uniform(low=self.low, high=self.high, size=n)
+        if self.integer:
+            return rng.randint(low=self.low, high=self.high, size=n)
+        else:
+            return rng.uniform(low=self.low, high=self.high, size=n)
 
 
 class Gaussian(Distribution):
