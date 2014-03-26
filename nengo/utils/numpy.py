@@ -5,6 +5,39 @@ from __future__ import absolute_import
 import numpy as np
 
 
+def filt(x, tau, axis=0, copy=True):
+    """First-order causal lowpass filter.
+
+    This performs standard first-order lowpass filtering with transfer function
+                         1
+        T(s) = ----------------------
+               tau_in_seconds * s + 1
+    discretized using the zero-order hold method.
+
+    Parameters
+    ----------
+    x : array_like
+        The signal to filter.
+    tau : float
+        The dimensionless filter time constant (tau = tau_in_seconds / dt).
+    axis : integer
+        The axis along which to filter.
+    copy : boolean
+        Whether to copy the input data, or simply work in-place.
+    """
+    x = np.array(x, copy=copy)
+    y = np.rollaxis(x, axis=axis)  # y is rolled view on x
+
+    # --- buffer method
+    d = -np.expm1(-1. / tau)
+    yy = np.zeros_like(y[0])  # yy is our buffer for the current filter state
+    for i, yi in enumerate(y):
+        yy += d * (yi - yy)
+        y[i] = yy
+
+    return x
+
+
 def filtfilt(x, tau, axis=0, copy=True):
     """Zero-phase second-order non-causal lowpass filter, implemented by
     filtering the input in forward and reverse directions.
