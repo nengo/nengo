@@ -391,7 +391,10 @@ class Connection(object):
 
         # Create the new transform matching the pre/post dimensions
         new_transform = np.zeros((out_dims, in_dims))
-        new_transform[self._postslice, self._preslice] = transform
+        if type(self._postslice) is list and type(self._preslice) is list:
+            new_transform[self._postslice, self._preslice] = np.diag(transform)
+        else:
+            new_transform[self._postslice, self._preslice] = transform
 
         # Note: Calling _check_shapes after this, is (or, should be) redundant
         return new_transform
