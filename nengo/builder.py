@@ -756,7 +756,7 @@ class Builder(object):
 
     def build(self, obj, *args, **kwargs):
         """Builds the given object with the associated builder method."""
-        if not obj.__class__ in _builder_func_dict:
+        if obj.__class__ not in _builder_func_dict:
             raise ValueError("Cannot build object of type '%s'." %
                              obj.__class__.__name__)
 

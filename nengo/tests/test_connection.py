@@ -206,7 +206,6 @@ def test_weights(Simulator, nl):
     nengo.Connection(u, a)
     nengo.Connection(a, b, transform=transform,
                      weight_solver=nengo.decoders.lstsq_L2nz)
-                     # weight_solver=nengo.decoders.lstsq_lasso)
 
     sim = Simulator(m)
     sim.run(2.)
