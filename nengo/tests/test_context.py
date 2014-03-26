@@ -4,11 +4,14 @@ import nengo
 
 
 class MyContext():
-    def __init__(self):
-        self.objs = []
+    def __init__(self, offset=0):
+        self.objs = {}
+        self.offset = offset
 
     def add(self, obj):
-        self.objs += [obj]
+        key = len(self.objs) + self.offset
+        self.objs[key] = obj
+        return key
 
     def __enter__(self):
         nengo.context.append(self)
@@ -22,54 +25,55 @@ def test_default(Simulator):
 
     e = nengo.Ensemble(nengo.LIF(1), 1)
     n = nengo.Node([0])
-    assert e in model.objs
-    assert n in model.objs
+    assert e in model.objs.values()
+    assert n in model.objs.values()
 
     con = MyContext()
     with con:
         e2 = nengo.Ensemble(nengo.LIF(1), 1)
-    assert e2 in con.objs
-    assert not e2 in model.objs
+    assert e2 in con.objs.values()
+    assert e2 not in model.objs.values()
 
     e3 = nengo.Ensemble(nengo.LIF(1), 1)
-    assert e3 in model.objs
+    assert e3 in model.objs.values()
 
-    model2 = nengo.Model("test")
+    model2 = nengo.Model("test2")
     e4 = nengo.Ensemble(nengo.LIF(1), 1)
-    assert not e4 in model.objs
-    assert e4 in model2.objs
+    assert e4 not in model.objs.values()
+    assert e4 in model2.objs.values()
 
 
 def test_with(Simulator):
     model = nengo.Model('default')
     assert nengo.context[-1] == model
     con1 = MyContext()
-    con2 = MyContext()
-    con3 = MyContext()
+    con2 = MyContext(offset=20)
+    con3 = MyContext(offset=40)
 
     with con1:
         e1 = nengo.Ensemble(nengo.LIF(1), 1)
-        assert e1 in con1.objs
+        assert e1 in con1.objs.values()
 
         with con2:
             e2 = nengo.Ensemble(nengo.LIF(1), 1)
-            assert e2 in con2.objs
-            assert not e2 in con1.objs
+            assert e2 in con2.objs.values()
+            assert e2 not in con1.objs.values()
 
             with con3:
                 e3 = nengo.Ensemble(nengo.LIF(1), 1)
-                assert e3 in con3.objs
-                assert not e3 in con2.objs and not e3 in con1.objs
+                assert e3 in con3.objs.values()
+                assert e3 not in con2.objs.values()
+                assert e3 not in con1.objs.values()
 
             e4 = nengo.Ensemble(nengo.LIF(1), 1)
-            assert e4 in con2.objs
-            assert not e4 in con3.objs
+            assert e4 in con2.objs.values()
+            assert e4 not in con3.objs.values()
 
         e5 = nengo.Ensemble(nengo.LIF(1), 1)
-        assert e5 in con1.objs
+        assert e5 in con1.objs.values()
 
     e6 = nengo.Ensemble(nengo.LIF(1), 1)
-    assert not e6 in con1.objs
+    assert e6 not in con1.objs.values()
 
 
 def test_networks(Simulator):

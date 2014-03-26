@@ -48,15 +48,15 @@ def test_node_to_neurons(Simulator, nl_nodirect):
     ideal[t >= 2.5] = 0
 
     with Plotter(Simulator, nl_nodirect) as plt:
-        plt.plot(t, sim.data(inn_p), label='Input')
-        plt.plot(t, sim.data(a_p), label='Neuron approx, filter=0.1')
-        plt.plot(t, sim.data(inh_p), label='Inhib signal')
+        plt.plot(t, sim.data[inn_p], label='Input')
+        plt.plot(t, sim.data[a_p], label='Neuron approx, filter=0.1')
+        plt.plot(t, sim.data[inh_p], label='Inhib signal')
         plt.plot(t, ideal, label='Ideal output')
         plt.legend(loc=0, prop={'size': 10})
         plt.savefig('test_connection.test_' + name + '.pdf')
         plt.close()
 
-    assert np.allclose(sim.data(a_p)[-10:], 0, atol=.1, rtol=.01)
+    assert np.allclose(sim.data[a_p][-10:], 0, atol=.1, rtol=.01)
 
 
 def test_ensemble_to_neurons(Simulator, nl_nodirect):
@@ -84,18 +84,18 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect):
     ideal[t >= 2.5] = 0
 
     with Plotter(Simulator, nl_nodirect) as plt:
-        plt.plot(t, sim.data(inn_p), label='Input')
-        plt.plot(t, sim.data(a_p), label='Neuron approx, pstc=0.1')
+        plt.plot(t, sim.data[inn_p], label='Input')
+        plt.plot(t, sim.data[a_p], label='Neuron approx, pstc=0.1')
         plt.plot(
-            t, sim.data(b_p), label='Neuron approx of inhib sig, pstc=0.1')
-        plt.plot(t, sim.data(inh_p), label='Inhib signal')
+            t, sim.data[b_p], label='Neuron approx of inhib sig, pstc=0.1')
+        plt.plot(t, sim.data[inh_p], label='Inhib signal')
         plt.plot(t, ideal, label='Ideal output')
         plt.legend(loc=0, prop={'size': 10})
         plt.savefig('test_connection.test_' + name + '.pdf')
         plt.close()
 
-    assert np.allclose(sim.data(a_p)[-10:], 0, atol=.1, rtol=.01)
-    assert np.allclose(sim.data(b_p)[-10:], 1, atol=.1, rtol=.01)
+    assert np.allclose(sim.data[a_p][-10:], 0, atol=.1, rtol=.01)
+    assert np.allclose(sim.data[b_p][-10:], 1, atol=.1, rtol=.01)
 
 
 def test_neurons_to_ensemble(Simulator, nl_nodirect):
@@ -118,13 +118,13 @@ def test_neurons_to_ensemble(Simulator, nl_nodirect):
     t = sim.trange()
 
     with Plotter(Simulator, nl_nodirect) as plt:
-        plt.plot(t, sim.data(a_p), label='A')
-        plt.plot(t, sim.data(b_p), label='B')
-        plt.plot(t, sim.data(c_p), label='C')
+        plt.plot(t, sim.data[a_p], label='A')
+        plt.plot(t, sim.data[b_p], label='B')
+        plt.plot(t, sim.data[c_p], label='C')
         plt.savefig('test_connection.test_' + name + '.pdf')
         plt.close()
 
-    assert np.all(sim.data(b_p)[-10:] < 0)
+    assert np.all(sim.data[b_p][-10:] < 0)
 
 
 def test_neurons_to_node(Simulator, nl_nodirect):
@@ -147,14 +147,14 @@ def test_neurons_to_node(Simulator, nl_nodirect):
         ax = plt.subplot(111)
         try:
             from nengo.matplotlib import rasterplot
-            rasterplot(t, sim.data(a_spikes), ax=ax)
-            rasterplot(t, sim.data(out_p), ax=ax)
+            rasterplot(t, sim.data[a_spikes], ax=ax)
+            rasterplot(t, sim.data[out_p], ax=ax)
         except ImportError:
             pass
         plt.savefig('test_connection.test_' + name + '.pdf')
         plt.close()
 
-    assert np.allclose(sim.data(a_spikes)[:-1], sim.data(out_p)[1:])
+    assert np.allclose(sim.data[a_spikes][:-1], sim.data[out_p][1:])
 
 
 def test_neurons_to_neurons(Simulator, nl_nodirect):
@@ -177,15 +177,15 @@ def test_neurons_to_neurons(Simulator, nl_nodirect):
     t = sim.trange()
 
     with Plotter(Simulator, nl_nodirect) as plt:
-        plt.plot(t, sim.data(inp_p), label='Input')
-        plt.plot(t, sim.data(a_p), label='A, represents input')
-        plt.plot(t, sim.data(b_p), label='B, should be 0')
+        plt.plot(t, sim.data[inp_p], label='Input')
+        plt.plot(t, sim.data[a_p], label='A, represents input')
+        plt.plot(t, sim.data[b_p], label='B, should be 0')
         plt.legend(loc=0, prop={'size': 10})
         plt.savefig('test_connection.test_' + name + '.pdf')
         plt.close()
 
-    assert np.allclose(sim.data(a_p)[-10:], 1, atol=.1, rtol=.01)
-    assert np.allclose(sim.data(b_p)[-10:], 0, atol=.1, rtol=.01)
+    assert np.allclose(sim.data[a_p][-10:], 1, atol=.1, rtol=.01)
+    assert np.allclose(sim.data[b_p][-10:], 0, atol=.1, rtol=.01)
 
 
 def test_weights(Simulator, nl):
@@ -206,7 +206,6 @@ def test_weights(Simulator, nl):
     nengo.Connection(u, a)
     nengo.Connection(a, b, transform=transform,
                      weight_solver=nengo.decoders.lstsq_L2nz)
-                     # weight_solver=nengo.decoders.lstsq_lasso)
 
     sim = Simulator(m)
     sim.run(2.)
@@ -214,7 +213,7 @@ def test_weights(Simulator, nl):
     t = sim.trange()
     x = func(t).T
     y = np.dot(x, transform.T)
-    z = filtfilt(sim.data(bp), 10, axis=0)
+    z = filtfilt(sim.data[bp], 10, axis=0)
     assert allclose(t, y.flatten(), z.flatten(),
                     plotter=Plotter(Simulator, nl),
                     filename='test_connection.' + name + '.pdf',

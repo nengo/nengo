@@ -21,13 +21,13 @@ def test_simple(Simulator):
     sim.run(runtime)
 
     with Plotter(Simulator) as plt:
-        plt.plot(sim.trange(), sim.data(p), label='sin')
+        plt.plot(sim.trange(), sim.data[p], label='sin')
         plt.legend(loc='best')
         plt.savefig('test_node.test_simple.pdf')
         plt.close()
 
     sim_t = sim.trange()
-    sim_in = sim.data(p).ravel()
+    sim_in = sim.data[p].ravel()
     t = 0.001 * np.arange(len(sim_t))
     assert np.allclose(sim_t, t)
     # 1-step delay
@@ -51,8 +51,8 @@ def test_connected(Simulator):
 
     with Plotter(Simulator) as plt:
         t = sim.trange()
-        plt.plot(t, sim.data(p_in), label='sin')
-        plt.plot(t, sim.data(p_out), label='sin squared')
+        plt.plot(t, sim.data[p_in], label='sin')
+        plt.plot(t, sim.data[p_out], label='sin squared')
         plt.plot(t, np.sin(t), label='ideal sin')
         plt.plot(t, np.sin(t) ** 2, label='ideal squared')
         plt.legend(loc='best')
@@ -60,8 +60,8 @@ def test_connected(Simulator):
         plt.close()
 
     sim_t = sim.trange()
-    sim_sin = sim.data(p_in).ravel()
-    sim_sq = sim.data(p_out).ravel()
+    sim_sin = sim.data[p_in].ravel()
+    sim_sq = sim.data[p_out].ravel()
     t = 0.001 * np.arange(len(sim_t))
 
     assert np.allclose(sim_t, t)
@@ -91,15 +91,15 @@ def test_passthrough(Simulator):
     sim.run(runtime)
 
     with Plotter(Simulator) as plt:
-        plt.plot(sim.trange(), sim.data(in1_p)+sim.data(in2_p), label='in+in2')
-        plt.plot(sim.trange()[:-2], sim.data(out_p)[2:], label='out')
+        plt.plot(sim.trange(), sim.data[in1_p]+sim.data[in2_p], label='in+in2')
+        plt.plot(sim.trange()[:-2], sim.data[out_p][2:], label='out')
         plt.legend(loc='best')
         plt.savefig('test_node.test_passthrough.pdf')
         plt.close()
 
     # One-step delay between first and second nonlinearity
-    sim_in = sim.data(in1_p)[:-1] + sim.data(in2_p)[:-1]
-    sim_out = sim.data(out_p)[1:]
+    sim_in = sim.data[in1_p][:-1] + sim.data[in2_p][:-1]
+    sim_out = sim.data[out_p][1:]
     assert np.allclose(sim_in, sim_out)
 
 
@@ -118,7 +118,7 @@ def test_circular(Simulator):
     runtime = 0.5
     sim.run(runtime)
 
-    assert np.allclose(sim.data(a_p), sim.data(b_p))
+    assert np.allclose(sim.data[a_p], sim.data[b_p])
 
 
 def test_function_args_error(Simulator):

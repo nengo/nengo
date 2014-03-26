@@ -19,20 +19,19 @@ def test_multirun(Simulator):
     model = nengo.Model("Multi-run")
 
     sim = Simulator(model)
-    dt = sim.model.dt
 
     # t_stops = [0.123, 0.283, 0.821, 0.921]
-    t_stops = dt * rng.randint(low=100, high=2000, size=10)
+    t_stops = sim.dt * rng.randint(low=100, high=2000, size=10)
 
     t_sum = 0
     for ti in t_stops:
         sim.run(ti)
         sim_t = sim.trange()
-        t = dt * np.arange(len(sim_t))
+        t = sim.dt * np.arange(len(sim_t))
         assert np.allclose(sim_t, t, rtol=rtol)
 
         t_sum += ti
-        assert np.allclose(sim_t[-1], t_sum - dt, rtol=rtol)
+        assert np.allclose(sim_t[-1], t_sum - sim.dt, rtol=rtol)
 
 
 def test_dts(Simulator):
@@ -58,7 +57,6 @@ def test_dts(Simulator):
     sim = Simulator(model)
     simtime = 2.483
     # simtime = 2.484
-    dt = sim.model.dt
 
     timer = time.time()
     sim.run(simtime)
@@ -68,9 +66,9 @@ def test_dts(Simulator):
         % locals())
 
     for i, p in enumerate(probes):
-        t = dt * np.arange(int(np.ceil(simtime / dts[i])))
+        t = sim.dt * np.arange(int(np.ceil(simtime / dts[i])))
         x = np.asarray([input_fn(tt) for tt in t])
-        y = sim.data(p)
+        y = sim.data[p]
         assert len(x) == len(y)
         assert np.allclose(y[1:], x[:-1])  # 1-step delay
 
@@ -92,7 +90,6 @@ def test_large(Simulator):
 
     sim = Simulator(model)
     simtime = 2.483
-    dt = sim.model.dt
 
     timer = time.time()
     sim.run(simtime)
@@ -101,10 +98,10 @@ def test_large(Simulator):
         "Ran %(n)s probes for %(simtime)s sec simtime in %(timer)0.3f sec"
         % locals())
 
-    t = dt * np.arange(int(np.round(simtime / dt)))
+    t = sim.dt * np.arange(int(np.round(simtime / sim.dt)))
     x = np.asarray([input_fn(ti) for ti in t])
     for p in probes:
-        y = sim.data(p)
+        y = sim.data[p]
         assert np.allclose(y[1:], x[:-1])  # 1-step delay
 
 
