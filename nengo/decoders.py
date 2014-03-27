@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 try:
     import scipy.linalg
     import scipy.optimize
+    import scipy.sparse.linalg
 except ImportError:
     logger.info("Failed to import 'scipy'")
     scipy = None
@@ -82,16 +83,14 @@ def lstsq_L2nz(A, Y, rng=np.random, E=None, noise_amp=0.1):
     # Compute the equivalent noise standard deviation. This equals the
     # base amplitude (noise_amp times the overall max activation) times
     # the square-root of the fraction of non-zero components.
-    m, n = A.shape
-    sigma = (noise_amp * A.max()) * np.sqrt(
-        (A > 0).mean(axis=1 if m < n else 0))
+    sigma = (noise_amp * A.max()) * np.sqrt((A > 0).mean(axis=0))
 
     # sigma == 0 means the neuron is never active, so won't be used, but
     # we have to make sigma != 0 for numeric reasons.
     sigma[sigma == 0] = 1
 
     # Solve the LS problem using the Cholesky decomposition
-    return _cholesky(A, Y, sigma)
+    return _cholesky(A, Y, sigma, transpose=False)
 
 
 def lstsq_L1(A, Y, rng=np.random, E=None, l1=1e-4, l2=1e-6):
@@ -177,6 +176,44 @@ def _cholesky(A, b, sigma, transpose=None):
         x = np.dot(L, np.dot(L.T, b))
 
     return np.dot(A.T, x) if transpose else x
+
+
+def _conjgrad_scipy(A, B, sigma, tol=1e-4):
+    m, n = A.shape
+    vector_in = B.ndim < 2
+    if vector_in:
+        B = B.reshape((-1, 1))
+    d = B.shape[1]
+
+    reglambda = sigma ** 2 * m  # regularization parameter lambda
+    calcAA = lambda x: np.dot(A.T, np.dot(A, x)) + reglambda * x
+    G = scipy.sparse.linalg.LinearOperator(
+        (n, n), matvec=calcAA, matmat=calcAA, dtype=A.dtype)
+    B = np.dot(A.T, B)
+
+    X = np.zeros((n, d), dtype=B.dtype)
+    infos = np.zeros(d, dtype='int')
+    for i in range(d):
+        X[:, i], infos[i] = scipy.sparse.linalg.cg(G, B[:, i], tol=tol)
+
+    return X.flatten() if vector_in else X, infos
+
+
+def _lsmr_scipy(A, B, sigma, tol=1e-4):
+    m, n = A.shape
+    vector_in = B.ndim < 2
+    if vector_in:
+        B = B.reshape((-1, 1))
+    d = B.shape[1]
+
+    damp = sigma * np.sqrt(m)
+    X = np.zeros((n, d), dtype=B.dtype)
+    itns = np.zeros(d, dtype='int')
+    for i in range(d):
+        X[:, i], _, itns[i], _, _, _, _, _ = scipy.sparse.linalg.lsmr(
+            A, B[:, i], damp=damp, atol=tol, btol=tol)
+
+    return X.flatten() if vector_in else X, itns
 
 
 def _conjgrad_iters(calcAx, b, x, maxiters=None, rtol=1e-6):

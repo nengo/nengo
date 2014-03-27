@@ -14,7 +14,7 @@ from nengo.utils.distributions import UniformHypersphere
 from nengo.utils.numpy import filtfilt, rms
 from nengo.utils.testing import Plotter, allclose
 from nengo.decoders import (
-    _cholesky, _conjgrad, _block_conjgrad,
+    _cholesky, _conjgrad, _block_conjgrad, _conjgrad_scipy, _lsmr_scipy,
     lstsq, lstsq_noise, lstsq_L2, lstsq_L2nz,
     lstsq_L1, lstsq_drop)
 
@@ -55,6 +55,23 @@ def test_conjgrad():
     assert np.allclose(x0, x1, atol=1e-5, rtol=1e-3)
 
 
+def test_conjgrad_scipy():
+    from nengo.decoders import _conjgrad_scipy
+    import time
+    rng = np.random.RandomState(4829)
+
+    m, n = 10000, 2000
+    d = 1
+    A = rng.normal(size=(m, n))
+    b = rng.normal(size=(m, d))
+
+    sigma = 1
+    x0 = _cholesky(A, b, sigma)
+    x1, info = _conjgrad_scipy(A, b, sigma)
+    x1.shape = x0.shape
+    assert np.allclose(x0, x1, atol=1e-7, rtol=1e-5)
+
+
 def _get_AB(m, n, d, rng=np.random):
     """Return a system of LIF tuning curves."""
     E = sample_hypersphere(d, n, rng=rng, surface=True).T  # encoders
@@ -82,10 +99,15 @@ def test_base_solvers_L2():
     x1, t1 = time_solver(_cholesky, A, B, sigma)
     [x2, i2], t2 = time_solver(_conjgrad, A, B, sigma, tol=1e-2)
     [x3, i3], t3 = time_solver(_block_conjgrad, A, B, sigma, tol=1e-2)
-    print(t1, t2, t3)
-    print(i2, i3)
+    [x4, i4], t4 = time_solver(_conjgrad_scipy, A, B, sigma, tol=1e-4)
+    [x5, i5], t5 = time_solver(_lsmr_scipy, A, B, sigma, tol=1e-4)
+    print(t1, t2, t3, t4, t5)
+    print(i2, i3, i4, i5)
 
     assert np.allclose(x1, x2, atol=1e-5, rtol=1e-3)
+    assert np.allclose(x1, x3, atol=1e-5, rtol=1e-3)
+    assert np.allclose(x1, x4, atol=1e-5, rtol=1e-3)
+    assert np.allclose(x1, x5, atol=1e-5, rtol=1e-3)
 
 
 @pytest.mark.benchmark
