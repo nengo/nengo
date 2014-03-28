@@ -21,14 +21,17 @@ def pytest_generate_tests(metafunc):
 def pytest_addoption(parser):
     parser.addoption('--benchmarks', action='store_true', default=False,
                      help='Also run benchmarking tests')
-    parser.addoption('--noexamples', action='store_true', default=False,
+    parser.addoption('--noexamples', action='store_false', default=True,
                      help='Do not run examples')
+    parser.addoption(
+        '--optional', action='store_true', default=False,
+        help='Also run optional tests that may use optional packages')
 
 
 def pytest_runtest_setup(item):
-    if (getattr(item.obj, 'benchmark', None)
-            and not item.config.getvalue('benchmarks')):
-        pytest.skip('benchmarks not requested')
-    if (getattr(item.obj, 'example', None)
-            and item.config.getvalue('noexamples')):
-        pytest.skip('examples not requested')
+    for mark, option, message in [
+            ('benchmark', 'benchmarks', "benchmarks not requested"),
+            ('example', 'noexamples', "examples not requested"),
+            ('optional', 'optional', "optional tests not requested")]:
+        if getattr(item.obj, mark, None) and not item.config.getvalue(option):
+            pytest.skip(message)

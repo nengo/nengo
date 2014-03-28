@@ -11,7 +11,7 @@ import pytest
 
 import nengo
 from nengo.utils.distributions import UniformHypersphere
-from nengo.utils.numpy import filtfilt, rms
+from nengo.utils.numpy import filtfilt, rms, norm
 from nengo.utils.testing import Plotter, allclose
 from nengo.decoders import (
     _cholesky, _conjgrad, _block_conjgrad, _conjgrad_scipy, _lsmr_scipy,
@@ -19,6 +19,17 @@ from nengo.decoders import (
     lstsq_L1, lstsq_drop)
 
 logger = logging.getLogger(__name__)
+
+
+def get_system(m, n, d, rng=np.random):
+    """Get a system of LIF tuning curves and the corresponding eval points."""
+    encoders = sample_hypersphere(d, n, rng=rng, surface=True)
+    eval_points = sample_hypersphere(d, m, rng=rng)
+
+    a = nengo.LIF(n)
+    gain, bias = a.gain_bias(rng.uniform(50, 100, n), rng.uniform(-1, 1, n))
+    activities = a.rates(np.dot(eval_points, encoders.T), gain, bias)
+    return activities, eval_points
 
 
 def sample_hypersphere(dimensions, n_samples, rng=np.random, surface=False):
@@ -42,51 +53,31 @@ def test_cholesky():
 
 def test_conjgrad():
     rng = np.random.RandomState(4829)
+    A, b = get_system(1000, 100, 2, rng=rng)
+    sigma = 0.1 * A.max()
 
-    m, n = 100, 100
-    d = 1
-    A = rng.normal(size=(m, n))
-    b = rng.normal(size=(m, d))
-
-    sigma = 1
     x0 = _cholesky(A, b, sigma)
     x1, i = _conjgrad(A, b, sigma, tol=1e-3)
-    # assert np.allclose(x0, x1, atol=1e-3, rtol=1e-5)
     assert np.allclose(x0, x1, atol=1e-5, rtol=1e-3)
 
 
-def test_conjgrad_scipy():
-    from nengo.decoders import _conjgrad_scipy
-    import time
+@pytest.mark.optional  # uses scipy
+def test_scipy_solvers():
     rng = np.random.RandomState(4829)
+    A, b = get_system(1000, 100, 2, rng=rng)
+    sigma = 0.1 * A.max()
 
-    m, n = 10000, 2000
-    d = 1
-    A = rng.normal(size=(m, n))
-    b = rng.normal(size=(m, d))
-
-    sigma = 1
     x0 = _cholesky(A, b, sigma)
-    x1, info = _conjgrad_scipy(A, b, sigma)
-    x1.shape = x0.shape
-    assert np.allclose(x0, x1, atol=1e-7, rtol=1e-5)
-
-
-def _get_AB(m, n, d, rng=np.random):
-    """Return a system of LIF tuning curves."""
-    E = sample_hypersphere(d, n, rng=rng, surface=True).T  # encoders
-    B = sample_hypersphere(d, m, rng=rng)                  # eval points
-
-    a = nengo.LIF(n)
-    gain, bias = a.gain_bias(rng.uniform(50, 100, n), rng.uniform(-1, 1, n))
-    A = a.rates(np.dot(B, E), gain, bias)
-    return A, B
+    x1, i1 = _conjgrad_scipy(A, b, sigma)
+    x2, i2 = _lsmr_scipy(A, b, sigma)
+    assert np.allclose(x0, x1, atol=1e-5, rtol=1e-3)
+    assert np.allclose(x0, x2, atol=1e-5, rtol=1e-3)
 
 
 @pytest.mark.benchmark
 def test_base_solvers_L2():
     rng = np.random.RandomState(39408)
-    A, B = _get_AB(m=5000, n=3000, d=3, rng=rng)
+    A, B = get_system(m=5000, n=3000, d=3, rng=rng)
     sigma = 0.1 * A.max()
 
     def time_solver(solver, *args, **kwargs):
@@ -113,7 +104,7 @@ def test_base_solvers_L2():
 @pytest.mark.benchmark
 def test_base_solvers_L1():
     rng = np.random.RandomState(39408)
-    A, B = _get_AB(m=500, n=100, d=1, rng=rng)
+    A, B = get_system(m=500, n=100, d=1, rng=rng)
 
     def time_solver(solver, *args, **kwargs):
         import time
