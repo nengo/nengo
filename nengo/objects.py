@@ -6,7 +6,8 @@ import pickle
 import numpy as np
 
 import nengo.utils.numpy as npext
-from nengo.utils.compat import is_callable, with_metaclass
+from nengo.utils.compat import (
+    is_callable, is_iterable, is_string, with_metaclass)
 from nengo.utils.distributions import Uniform
 
 logger = logging.getLogger(__name__)
@@ -275,9 +276,12 @@ class Ensemble(NengoObject):
         The encoders, used to transform from representational space
         to neuron space. Each row is a neuron's encoder, each column is a
         representational dimension.
-    eval_points : ndarray (n_eval_points, `dimensions`)
+    eval_points : ndarray (n_eval_points, `dimensions`) or int
         The evaluation points used for decoder solving, spanning the interval
-        (-radius, radius) in each dimension.
+        (-radius, radius) in each dimension. If an int is provided, this
+        sets the number of evaluation points to be drawn from a hypersphere.
+        If None, then a heuristic is used to determine the number of
+        evaluation points.
     n_neurons
     neurons
     radius : float
@@ -285,8 +289,6 @@ class Ensemble(NengoObject):
     seed : int
         The seed used for random number generation.
     """
-
-    EVAL_POINTS = 500
 
     def __init__(self, neurons, dimensions, radius=1.0, encoders=None,
                  intercepts=Uniform(-1.0, 1.0), max_rates=Uniform(200, 400),
@@ -468,7 +470,7 @@ class Connection(NengoObject):
         `function`, but not including `transform`.
     decoder_solver : callable
         Function to compute decoders (see `nengo.decoders`).
-    eval_points : array_like, shape (n_eval_points, pre_size)
+    eval_points : (n_eval_points, pre_size) array_like or int
         Points at which to evaluate `function` when computing decoders,
         spanning the interval (-pre.radius, pre.radius) in each dimension.
     filter : float
@@ -477,7 +479,7 @@ class Connection(NengoObject):
         Function to compute using the pre population (pre must be Ensemble).
     probes : dict
         description TODO
-    transform : array_like, shape (post_size, pre_size)
+    transform : (post_size, pre_size) array_like
         Linear transform mapping the pre output to the post input.
     weight_solver : callable
         Function to compute a full connection weight matrix. Similar to
@@ -640,7 +642,7 @@ class Connection(NengoObject):
     def function(self, _function):
         if _function is not None:
             self._check_pre_ensemble('function')
-            x = (self.eval_points[0] if self.eval_points is not None else
+            x = (self.eval_points[0] if is_iterable(self.eval_points) else
                  np.zeros(self._pre.dimensions))
             size = np.asarray(_function(x)).size
         else:
