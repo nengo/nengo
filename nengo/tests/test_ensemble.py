@@ -215,6 +215,31 @@ def test_product(Simulator, nl):
     # assert rmse(sim.data[conn][:, 0], -0.5 * sin) < 0.1
 
 
+@pytest.mark.parametrize('dims, points', [(1, 528), (2, 823), (3, 937)])
+def test_eval_points_number(Simulator, nl, dims, points):
+    model = nengo.Network(seed=123)
+    with model:
+        A = nengo.Ensemble(nl(5), dims, eval_points=points)
+
+    sim = Simulator(model)
+    assert sim.data[A].eval_points.shape == (points, dims)
+
+
+@pytest.mark.parametrize('neurons, dims', [
+        (10, 1), (392, 1), (2108, 1), (100, 2), (1290, 4), (20, 9)])
+def test_eval_points_heuristic(Simulator, nl_nodirect, neurons, dims):
+    def heuristic(neurons, dims):
+        return max(np.clip(500 * dims, 750, 2500), 2 * neurons)
+
+    model = nengo.Network(seed=123)
+    with model:
+        A = nengo.Ensemble(nl_nodirect(neurons), dims)
+
+    sim = Simulator(model)
+    points = sim.data[A].eval_points
+    assert points.shape == (heuristic(neurons, dims), dims)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
