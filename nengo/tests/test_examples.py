@@ -12,6 +12,7 @@ import pytest
 import _pytest.capture
 _pytest.capture.DontReadFromInput.encoding = "utf-8"
 
+from nengo.utils.compat import execfile
 from nengo.utils.ipython import export_py, load_notebook
 
 
@@ -30,9 +31,7 @@ def test_noexceptions(nb_path, tmpdir):
     pyfile = "%s.py" % str(
         tmpdir.join(os.path.splitext(os.path.basename(nb_path))[0]))
     export_py(nb, pyfile)
-    ns = {}
-    # This is essentially execfile that works on Python 2 and 3
-    exec(compile(open(pyfile, "rb").read(), pyfile, 'exec'), ns, ns)
+    execfile(pyfile, {})
 
 
 @pytest.mark.example
