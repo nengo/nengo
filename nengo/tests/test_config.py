@@ -17,7 +17,7 @@ def test_config():
     class TestConfig(nengo.config.Config):
         config_items = [TestConfigEnsemble, TestConfigConnection]
 
-    model = nengo.Model()
+    model = nengo.Network()
     with model:
         a = nengo.Ensemble(nengo.LIF(50), 1)
         b = nengo.Ensemble(nengo.LIF(90), 1)
@@ -62,7 +62,7 @@ def test_parameter_checking():
     class TestConfigEnsemble(nengo.config.ConfigItem):
         number = PositiveParameter(1)
 
-    model = nengo.Model()
+    model = nengo.Network()
     with model:
         a = nengo.Ensemble(50, 1)
         b = nengo.Ensemble(90, 1)

@@ -1,10 +1,24 @@
 """These are helper functions that various backends may find useful for
 generating their own Builder system.
 """
+
 from __future__ import absolute_import
+import collections
+
 import numpy as np
 
 import nengo
+
+
+def objs_and_connections(network):
+    """Given a Network, returns all (ensembles + nodes, connections)."""
+    objs = list(network.ensembles + network.nodes)
+    connections = list(network.connections)
+    for subnetwork in network.networks:
+        subobjs, subconnections = objs_and_connections(subnetwork)
+        objs.extend(subobjs)
+        connections.extend(subconnections)
+    return objs, connections
 
 
 def generate_graphviz(objs, connections):
@@ -68,10 +82,9 @@ def remove_passthrough_nodes(objs, connections):  # noqa: C901
     Nodes will be removed, and the Connections that interact with those Nodes
     will be replaced with equivalent Connections that don't interact with those
     Nodes.
-
     """
 
-    inputs, outputs = find_all_io(objs, connections)
+    inputs, outputs = find_all_io(connections)
     result_conn = list(connections)
     result_objs = list(objs)
 
@@ -105,13 +118,10 @@ def remove_passthrough_nodes(objs, connections):  # noqa: C901
     return result_objs, result_conn
 
 
-def find_all_io(objs, connections):
+def find_all_io(connections):
     """Build up a list of all inputs and outputs for each object"""
-    inputs = {}
-    outputs = {}
-    for obj in objs:
-        inputs[obj] = []
-        outputs[obj] = []
+    inputs = collections.defaultdict(list)
+    outputs = collections.defaultdict(list)
     for c in connections:
         inputs[c.post].append(c)
         outputs[c.pre].append(c)
@@ -146,8 +156,7 @@ def _create_replacement_connection(c_in, c_out):
     if np.all(transform == 0):
         return None
 
-    dummy = nengo.Model()  # need a dummy model so these
-    with dummy:            # connections don't get added
+    with nengo.Network():  # dummy model so connections don't get added
         args = {}
         if function is not None:
             args['function'] = function

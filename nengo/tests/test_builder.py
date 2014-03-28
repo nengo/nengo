@@ -11,12 +11,13 @@ def test_seeding():
     #   Are there other objects with random parameters that should be
     #   tested? (Perhaps initial weights of learned connections)
 
-    m = nengo.Model('test_seeding')
-    input = nengo.Node(output=1, label='input')
-    A = nengo.Ensemble(nengo.LIF(40), 1, label='A')
-    B = nengo.Ensemble(nengo.LIF(20), 1, label='B')
-    nengo.Connection(input, A)
-    C = nengo.Connection(A, B, function=lambda x: x ** 2)
+    m = nengo.Network(label="test_seeding")
+    with m:
+        input = nengo.Node(output=1, label="input")
+        A = nengo.Ensemble(nengo.LIF(40), 1, label="A")
+        B = nengo.Ensemble(nengo.LIF(20), 1, label="B")
+        nengo.Connection(input, A)
+        C = nengo.Connection(A, B, function=lambda x: x ** 2)
 
     m.seed = 872
     m1 = nengo.Simulator(m).model.params
@@ -26,16 +27,14 @@ def test_seeding():
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
-            check = (np.all(getattr(obj1, attr) == getattr(obj2, attr))
-                     if equal else
-                     np.any(getattr(obj1, attr) != getattr(obj2, attr)))
+            check = (np.allclose(getattr(obj1, attr), getattr(obj2, attr)) ==
+                     equal)
             if not check:
                 print(attr, getattr(obj1, attr))
                 print(attr, getattr(obj2, attr))
             assert check
 
-    ens_attrs = ('encoders', 'eval_points', 'max_rates',
-                 'intercepts', 'scaled_encoders')
+    ens_attrs = nengo.builder.BuiltEnsemble._fields
     As = [mi[A] for mi in [m1, m2, m3]]
     Bs = [mi[B] for mi in [m1, m2, m3]]
     compare_objs(As[0], As[1], ens_attrs)
@@ -43,7 +42,7 @@ def test_seeding():
     compare_objs(As[0], As[2], ens_attrs, equal=False)
     compare_objs(Bs[0], Bs[2], ens_attrs, equal=False)
 
-    neur_attrs = ('gain', 'bias')
+    neur_attrs = nengo.builder.BuiltNeurons._fields
     As = [mi[A.neurons] for mi in [m1, m2, m3]]
     Bs = [mi[B.neurons] for mi in [m1, m2, m3]]
     compare_objs(As[0], As[1], neur_attrs)
@@ -51,11 +50,12 @@ def test_seeding():
     compare_objs(As[0], As[2], neur_attrs, equal=False)
     compare_objs(Bs[0], Bs[2], neur_attrs, equal=False)
 
-    conn_attrs = ('decoders', 'eval_points')
+    conn_attrs = ('decoders', 'eval_points')  # transform is static, unchecked
     Cs = [mi[C] for mi in [m1, m2, m3]]
     compare_objs(Cs[0], Cs[1], conn_attrs)
     compare_objs(Cs[0], Cs[2], conn_attrs, equal=False)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

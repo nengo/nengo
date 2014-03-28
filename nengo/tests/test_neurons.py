@@ -45,13 +45,13 @@ def test_lif_base(nl_nodirect):
     max_rates = rng.uniform(low=10, high=200, size=n)
     intercepts = rng.uniform(low=-1, high=1, size=n)
 
-    m = nengo.Model()
-
-    ins = nengo.Node(x)
-    ens = nengo.Ensemble(
-        nl_nodirect(n), 1, max_rates=max_rates, intercepts=intercepts)
-    nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)))
-    spike_probe = nengo.Probe(ens.neurons, "output")
+    m = nengo.Network()
+    with m:
+        ins = nengo.Node(x)
+        ens = nengo.Ensemble(
+            nl_nodirect(n), 1, max_rates=max_rates, intercepts=intercepts)
+        nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)))
+        spike_probe = nengo.Probe(ens.neurons, "output")
 
     sim = nengo.Simulator(m, dt=dt)
 

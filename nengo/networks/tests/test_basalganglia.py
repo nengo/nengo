@@ -5,14 +5,13 @@ import nengo
 
 
 def test_basic(Simulator):
-    model = nengo.Model('test_basalganglia_basic')
-
     bg = nengo.networks.BasalGanglia(dimensions=5, label='BG')
-    input = nengo.Node([0.8, 0.4, 0.4, 0.4, 0.4], label='input')
-    nengo.Connection(input, bg.input)
-    p = nengo.Probe(bg.output, 'output')
+    with bg:
+        input = nengo.Node([0.8, 0.4, 0.4, 0.4, 0.4], label='input')
+        nengo.Connection(input, bg.input)
+        p = nengo.Probe(bg.output, 'output')
 
-    sim = Simulator(model)
+    sim = Simulator(bg)
     sim.run(0.2)
 
     output = np.mean(sim.data[p][50:], axis=0)
