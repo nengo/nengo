@@ -1,6 +1,12 @@
 from __future__ import absolute_import
-import numpy as np
+
+import sys
+import unicodedata
+
 from IPython.display import HTML
+from IPython.nbconvert import PythonExporter
+from IPython.nbformat import current
+import numpy as np
 
 
 def hide_input():
@@ -64,3 +70,18 @@ def hide_input():
     """ % dict(uuid=uuid)
 
     return HTML(script)
+
+
+def export_py(nb, dst_path):
+    export = PythonExporter()
+    body, resources = export.from_notebook_node(nb)
+    if sys.version_info[0] == 2:
+        body = unicodedata.normalize('NFKD', body).encode('ascii', 'ignore')
+    with open(dst_path, 'w') as f:
+        f.write(body)
+
+
+def load_notebook(nb_path):
+    with open(nb_path) as f:
+        nb = current.reads(f.read(), 'json')
+    return nb
