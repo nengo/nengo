@@ -79,7 +79,7 @@ class _LIFBase(Neurons):
             X-intercepts of neurons.
 
         """
-        logging.debug("Setting gain and bias on %s", self.label)
+        logger.debug("Setting gain and bias on %s", self.label)
         max_rates = np.asarray(max_rates)
         intercepts = np.asarray(intercepts)
         x = 1.0 / (1 - np.exp(
