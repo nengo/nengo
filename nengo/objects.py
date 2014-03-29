@@ -82,10 +82,11 @@ class Network(with_metaclass(NengoObjectContainer)):
 
     def __new__(cls, *args, **kwargs):
         inst = super(Network, cls).__new__(cls)
-        inst.ensembles = []
-        inst.nodes = []
-        inst.connections = []
-        inst.networks = []
+        inst.objects = {Ensemble: [], Node: [], Connection: [], Network: []}
+        inst.ensembles = inst.objects[Ensemble]
+        inst.nodes = inst.objects[Node]
+        inst.connections = inst.objects[Connection]
+        inst.networks = inst.objects[Network]
         return inst
 
     context = collections.deque(maxlen=100)  # static stack of Network objects
@@ -108,12 +109,13 @@ class Network(with_metaclass(NengoObjectContainer)):
             raise RuntimeError("Current context is not a network: %s" %
                                network)
         obj._key = network.generate_key()
-
-        if not isinstance(obj, (NengoObject, Network)):
-            raise RuntimeError("%s must define an add_to_network function "
-                               "in order to be added to a network."
-                               % obj.__class__.__name__)
-        obj.add_to_network(network)
+        for cls in obj.__class__.__mro__:
+            if cls in network.objects:
+                network.objects[cls].append(obj)
+                break
+        else:
+            raise TypeError("Objects of type '%s' cannot be added to "
+                            "networks." % obj.__class__.__name__)
 
     def save(self, fname, fmt=None):
         """Save this model to a file.
@@ -142,9 +144,6 @@ class Network(with_metaclass(NengoObjectContainer)):
             return pickle.load(f)
 
         raise IOError("Could not load %s" % fname)
-
-    def add_to_network(self, network):
-        network.networks.append(self)
 
     def __hash__(self):
         return hash((self._key, self.label))
@@ -276,9 +275,6 @@ class Ensemble(NengoObject):
         # Set up probes
         self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
 
-    def add_to_network(self, network):
-        network.ensembles.append(self)
-
     def __getitem__(self, key):
         return ObjView(self, key)
 
@@ -407,9 +403,6 @@ class Node(NengoObject):
         # Set up probes
         self.probes = {'output': []}
 
-    def add_to_network(self, network):
-        network.nodes.append(self)
-
     def __getitem__(self, key):
         return ObjView(self, key)
 
@@ -506,9 +499,6 @@ class Connection(NengoObject):
         # check that shapes match up
         self._skip_check_shapes = False
         self._check_shapes()
-
-    def add_to_network(self, network):
-        network.connections.append(self)
 
     def _check_pre_ensemble(self, prop_name):
         if not isinstance(self._pre, Ensemble):
