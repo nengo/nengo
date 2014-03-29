@@ -3,9 +3,11 @@ import copy
 import numpy as np
 
 import nengo
+from nengo.utils.network import with_self
 
 
 class EnsembleArray(nengo.Network):
+
     def __init__(self, neurons, n_ensembles, **ens_args):
         self.n_ensembles = n_ensembles
         self.dimensions_per_ensemble = ens_args.pop('dimensions', 1)
@@ -23,6 +25,7 @@ class EnsembleArray(nengo.Network):
 
         self.add_output('output', function=None)
 
+    @with_self
     def add_output(self, name, function):
         if function is None:
             function_d = self.dimensions_per_ensemble
