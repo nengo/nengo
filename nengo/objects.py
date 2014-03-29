@@ -48,7 +48,38 @@ class NengoObjectContainer(type):
 class Network(with_metaclass(NengoObjectContainer)):
     """A network contains ensembles, nodes, connections, and other networks.
 
-    TODO: Example usage and documentation on how to subclass.
+    A network is primarily used for grouping together related
+    objects and connections for visualization purposes.
+    However, you can also use networks as a nice way to reuse
+    network creation code.
+
+    To grouping together related objects that you do not need to reuse,
+    you can create a new ``Network`` and add objects in a ``with`` block.
+    For example::
+
+        network = nengo.Network()
+        with network:
+            with nengo.Network(label="Vision"):
+                v1 = nengo.Ensemble(nengo.LIF(100), dimensions=2)
+            with nengo.Network(label="Motor"):
+                sma = nengo.Ensemble(nengo.LIF(100), dimensions=2)
+            nengo.Connection(v1, sma)
+
+    To reuse a group of related objects, you can create a new subclass
+    of ``Network``, and add objects in the ``__init__`` method.
+    For example::
+
+        class OcularDominance(nengo.Network):
+            def __init__(self):
+                self.column = nengo.Ensemble(nengo.LIF(100), dimensions=2)
+        network = nengo.Network()
+        with network:
+            left_eye = OcularDominance()
+            right_eye = OcularDominance()
+            nengo.Connection(left_eye.column, right_eye.column)
+
+    For more information and advanced usage, please see the Nengo
+    documentation at http://nengo.readthedocs.org/.
 
     Parameters
     ----------
@@ -168,7 +199,9 @@ class Network(with_metaclass(NengoObjectContainer)):
         return hash((self._key, self.label))
 
     def __str__(self):
-        return "%s: %s" % (self.__class__.__name__, self.label)
+        return "%s: %s" % (
+            self.__class__.__name__,
+            self.label if self.label is not None else str(self._key))
 
     def __repr__(self):
         return str(self)
