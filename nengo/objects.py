@@ -91,11 +91,6 @@ class Network(with_metaclass(NengoObjectContainer)):
 
     context = collections.deque(maxlen=100)  # static stack of Network objects
 
-    def generate_key(self):
-        """Returns a new key for a NengoObject to be added to this Network."""
-        self._next_key += 1
-        return self._next_key
-
     @classmethod
     def add(cls, obj):
         """Add the passed object to the current Network.context."""
@@ -116,6 +111,11 @@ class Network(with_metaclass(NengoObjectContainer)):
         else:
             raise TypeError("Objects of type '%s' cannot be added to "
                             "networks." % obj.__class__.__name__)
+
+    def generate_key(self):
+        """Returns a new key for a NengoObject to be added to this Network."""
+        self._next_key += 1
+        return self._next_key
 
     def save(self, fname, fmt=None):
         """Save this model to a file.
@@ -145,17 +145,8 @@ class Network(with_metaclass(NengoObjectContainer)):
 
         raise IOError("Could not load %s" % fname)
 
-    def __hash__(self):
-        return hash((self._key, self.label))
-
     def __eq__(self, other):
         return hash(self) == hash(other)
-
-    def __str__(self):
-        return "%s: %s" % (self.__class__.__name__, self.label)
-
-    def __repr__(self):
-        return str(self)
 
     def __enter__(self):
         Network.context.append(self)
@@ -172,6 +163,15 @@ class Network(with_metaclass(NengoObjectContainer)):
             raise RuntimeError("Network.context in bad state; was expecting "
                                "current context to be '%s' but instead got "
                                "'%s'." % (self, network))
+
+    def __hash__(self):
+        return hash((self._key, self.label))
+
+    def __str__(self):
+        return "%s: %s" % (self.__class__.__name__, self.label)
+
+    def __repr__(self):
+        return str(self)
 
 
 class NetworkMember(type):
