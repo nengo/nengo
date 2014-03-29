@@ -7,7 +7,7 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.utils.compat import (
-    is_callable, is_iterable, is_string, with_metaclass)
+    is_callable, is_iterable, with_metaclass)
 from nengo.utils.distributions import Uniform
 
 logger = logging.getLogger(__name__)

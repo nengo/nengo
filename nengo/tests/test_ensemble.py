@@ -226,7 +226,7 @@ def test_eval_points_number(Simulator, nl, dims, points):
 
 
 @pytest.mark.parametrize('neurons, dims', [
-        (10, 1), (392, 1), (2108, 1), (100, 2), (1290, 4), (20, 9)])
+    (10, 1), (392, 1), (2108, 1), (100, 2), (1290, 4), (20, 9)])
 def test_eval_points_heuristic(Simulator, nl_nodirect, neurons, dims):
     def heuristic(neurons, dims):
         return max(np.clip(500 * dims, 750, 2500), 2 * neurons)
