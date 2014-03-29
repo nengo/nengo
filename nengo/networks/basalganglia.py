@@ -24,9 +24,8 @@ class BasalGanglia(nengo.Network):
     le = 0.2
     lg = 0.2
 
-    def make(self, dimensions, n_neurons_per_ensemble=100, radius=1.5,
-             tau_ampa=0.002, tau_gaba=0.008, output_weight=-3):
-
+    def __init__(self, dimensions, n_neurons_per_ensemble=100, radius=1.5,
+                 tau_ampa=0.002, tau_gaba=0.008, output_weight=-3):
         encoders = np.ones((n_neurons_per_ensemble, 1))
         ea_params = {
             'neurons': nengo.LIF(n_neurons_per_ensemble),

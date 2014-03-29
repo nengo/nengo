@@ -2,7 +2,7 @@ import nengo
 
 
 class Oscillator(nengo.Network):
-    def make(self, recurrent_tau, frequency, **ens_args):
+    def __init__(self, recurrent_tau, frequency, **ens_args):
         self.input = nengo.Node(label="In", size_in=2)
         self.ensemble = nengo.Ensemble(
             label="Oscillator", dimensions=2, **ens_args)

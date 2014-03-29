@@ -107,9 +107,9 @@ def test_context_errors(Simulator):
     with pytest.raises(RuntimeError):
         add_something()
 
-    # Okay if add_to_network=False
-    nengo.Ensemble(nengo.LIF(1), 1, add_to_network=False)
-    nengo.Node(output=[0], add_to_network=False)
+    # Okay if add_to_container=False
+    nengo.Ensemble(nengo.LIF(1), 1, add_to_container=False)
+    nengo.Node(output=[0], add_to_container=False)
 
 
 if __name__ == '__main__':

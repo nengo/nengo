@@ -30,8 +30,8 @@ def _dft_half_cached(n):
 class CircularConvolution(nengo.Network):
     """CircularConvolution docs XXX"""
 
-    def make(self, neurons, dimensions, radius=1,
-             invert_a=False, invert_b=False):
+    def __init__(self, neurons, dimensions, radius=1,
+                 invert_a=False, invert_b=False):
         self.transformA = self._input_transform(
             dimensions, first=True, invert=invert_a)
         self.transformB = self._input_transform(

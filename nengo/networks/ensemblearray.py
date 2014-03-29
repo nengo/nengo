@@ -6,7 +6,7 @@ import nengo
 
 
 class EnsembleArray(nengo.Network):
-    def make(self, neurons, n_ensembles, **ens_args):
+    def __init__(self, neurons, n_ensembles, **ens_args):
         self.n_ensembles = n_ensembles
         self.dimensions_per_ensemble = ens_args.pop('dimensions', 1)
         transform = np.eye(self.dimensions)
