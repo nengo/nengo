@@ -5,6 +5,15 @@ from __future__ import absolute_import
 import numpy as np
 
 
+def array(x, min_dims=0, **kwargs):
+    y = np.array(x, **kwargs)
+    if y.ndim <= min_dims:
+        shape = np.ones(min_dims)
+        shape[:y.ndim] = y.shape
+        y.shape = shape
+    return y
+
+
 def filt(x, tau, axis=0, copy=True):
     """First-order causal lowpass filter.
 
