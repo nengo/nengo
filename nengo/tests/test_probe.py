@@ -123,6 +123,20 @@ def test_defaults(Simulator):
     sim.run(0.01)
 
 
+def test_simulator_dt(Simulator):
+    """Changing the simulator dt should change the default probe dt."""
+    model = nengo.Network()
+    with model:
+        a = nengo.Ensemble(nengo.LIF(10), 1)
+        b = nengo.Ensemble(nengo.LIF(10), 1)
+        nengo.Connection(a, b)
+        bp = nengo.Probe(b)
+
+    sim = nengo.Simulator(model, dt=0.01)
+    sim.run(1.)
+    assert sim.data[bp].shape == (100, 1)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
