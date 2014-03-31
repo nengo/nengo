@@ -22,12 +22,19 @@ logger = logging.getLogger(__name__)
 class SignalDict(dict):
     """Map from Signal -> ndarray
 
-    SignalDict overrides __getitem__ for two reasons:
-    1. so that scalars are returned as 0-d ndarrays
-    2. so that a SignalView lookup returns a views of its base
+    This dict subclass ensures that the ndarray values aren't overwritten,
+    and instead data are written into them, which ensures that
+    these arrays never get copied, which wastes time and space.
+
+    Use ``init`` to set the ndarray initially.
     """
 
     def __getitem__(self, obj):
+        """SignalDict overrides __getitem__ for two reasons.
+
+        1. so that scalars are returned as 0-d ndarrays
+        2. so that a SignalView lookup returns a views of its base
+        """
         if obj in self:
             return dict.__getitem__(self, obj)
         elif obj.base in self:
@@ -49,7 +56,29 @@ class SignalDict(dict):
                               strides=bytestrides)
             return view
         else:
-            raise KeyError(obj)
+            raise KeyError("%s has not been initialized. Please call "
+                           "SignalDict.init first." % (str(obj)))
+
+    def __setitem__(self, key, val):
+        """Ensures that ndarrays stay in the same place in memory.
+
+        Unlike normal dicts, this means that you cannot add a new key
+        to a SignalDict using __setitem__. This is by design, to avoid
+        silent typos when debugging Simulator. Every key must instead
+        be explicitly initialized with SignalDict.init.
+        """
+        self.__getitem__(key)[...] = val
+
+    def __str__(self):
+        """Pretty-print the signals and current values."""
+        sio = StringIO()
+        for k in self:
+            sio.write("%s %s\n" % (repr(k), repr(self[k])))
+        return sio.getvalue()
+
+    def init(self, signal, ndarray):
+        """Set up a permanent mapping from signal -> ndarray."""
+        dict.__setitem__(self, signal, ndarray)
 
 
 class ProbeDict(Mapping):
@@ -97,14 +126,14 @@ class Simulator(object):
         self.seed = self.model.seed if seed is None else seed
 
         # -- map from Signal.base -> ndarray
-        self._sigdict = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
+        self.signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
         for op in self.model.operators:
-            op.init_sigdict(self._sigdict, self.dt)
+            op.init_signals(self.signals, self.dt)
 
         self.dg = operator_depencency_graph(self.model.operators)
         self._step_order = [node for node in toposort(self.dg)
                             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self._sigdict, self.dt)
+        self._steps = [node.make_step(self.signals, self.dt)
                        for node in self._step_order]
 
         self.n_steps = 0
@@ -114,38 +143,6 @@ class Simulator(object):
 
         # Provide a nicer interface to probe outputs
         self.data = ProbeDict(self._probe_outputs)
-
-    @property
-    def signals(self):
-        """Support access to current ndarrays via `self.signals[sig]`.
-
-        Here `sig` can be a signal within the model used to generate this
-        simulator, even though that model was deepcopied in the process of
-        generating the simulator.
-
-        This property is also used to implement a pretty-printing algorithm so
-        that `print sim.signals` returns a multiline string.
-        """
-        class Accessor(object):
-            def __getitem__(_, item):
-                return self._sigdict[item]
-
-            def __setitem__(_, item, val):
-                self._sigdict[item][...] = val
-
-            def __iter__(_):
-                return self._sigdict.__iter__()
-
-            def __len__(_):
-                return self._sigdict.__len__()
-
-            def __str__(_):
-                sio = StringIO()
-                for k in self._sigdict:
-                    sio.write("%s %s\n" % (repr(k), repr(self._sigdict[k])))
-                return sio.getvalue()
-
-        return Accessor()
 
     def step(self):
         """Advance the simulator by `self.dt` seconds.
@@ -162,10 +159,10 @@ class Simulator(object):
             period = (1 if probe.sample_every is None
                       else int(probe.sample_every / self.dt))
             if self.n_steps % period == 0:
-                tmp = self._sigdict[self.model.sig_in[probe]].copy()
+                tmp = self.signals[self.model.sig_in[probe]].copy()
                 self._probe_outputs[probe].append(tmp)
 
-        self._sigdict['__time__'] += self.dt
+        self.signals['__time__'] += self.dt
         self.n_steps += 1
 
     def run(self, time_in_seconds):
@@ -184,7 +181,7 @@ class Simulator(object):
 
     def trange(self, dt=None):
         dt = self.dt if dt is None else dt
-        last_t = self._sigdict['__time__'] - self.dt
+        last_t = self.signals['__time__'] - self.dt
         n_steps = self.n_steps if dt is None else int(
             self.n_steps / (dt / self.dt))
         return np.linspace(0, last_t, n_steps)

@@ -7,7 +7,6 @@ import nengo
 import nengo.simulator
 from nengo.builder import (Model, ProdUpdate, Copy, Reset, DotInc, Signal,
                            SimPyFunc)
-from nengo.utils.compat import is_string
 
 logger = logging.getLogger(__name__)
 
@@ -222,24 +221,67 @@ def test_encoder_decoder_with_views(RefSimulator):
     check(sig_out, [1.2, 1.4])
 
 
+def test_signaldict():
+    """Tests simulator.SignalDict's dict overrides."""
+    signaldict = nengo.simulator.SignalDict()
+
+    scalar = Signal(1)
+
+    # Both __getitem__ and __setitem__ raise KeyError
+    with pytest.raises(KeyError):
+        signaldict[scalar]
+    with pytest.raises(KeyError):
+        signaldict[scalar] = np.array(1.)
+
+    signaldict.init(scalar, scalar.value)
+    assert np.allclose(signaldict[scalar], np.array(1.))
+    # __getitem__ handles scalars
+    assert signaldict[scalar].shape == ()
+
+    one_d = Signal([1])
+    signaldict.init(one_d, one_d.value)
+    assert np.allclose(signaldict[one_d], np.array([1.]))
+    assert signaldict[one_d].shape == (1,)
+
+    two_d = Signal([[1], [1]])
+    signaldict.init(two_d, two_d.value)
+    assert np.allclose(signaldict[two_d], np.array([[1.], [1.]]))
+    assert signaldict[two_d].shape == (2, 1)
+
+    # __getitem__ handles views
+    two_d_view = two_d[0, :]
+    assert np.allclose(signaldict[two_d_view], np.array([1.]))
+    assert signaldict[two_d_view].shape == (1,)
+
+    # __setitem__ ensures memory location stays the same
+    memloc = signaldict[scalar].__array_interface__['data'][0]
+    signaldict[scalar] = np.array(0.)
+    assert np.allclose(signaldict[scalar], np.array(0.))
+    assert signaldict[scalar].__array_interface__['data'][0] == memloc
+
+    memloc = signaldict[one_d].__array_interface__['data'][0]
+    signaldict[one_d] = np.array([0.])
+    assert np.allclose(signaldict[one_d], np.array([0.]))
+    assert signaldict[one_d].__array_interface__['data'][0] == memloc
+
+    memloc = signaldict[two_d].__array_interface__['data'][0]
+    signaldict[two_d] = np.array([[0.], [0.]])
+    assert np.allclose(signaldict[two_d], np.array([[0.], [0.]]))
+    assert signaldict[two_d].__array_interface__['data'][0] == memloc
+
+    # __str__ pretty-prints signals and current values
+    # Order not guaranteed for dicts, so we have to loop
+    for k in signaldict:
+        assert "%s %s" % (repr(k), repr(signaldict[k])) in str(signaldict)
+
+
 def test_probedict():
+    """Tests simulator.ProbeDict's implementation."""
     raw = {"scalar": 5,
            "list": [2, 4, 6]}
     probedict = nengo.simulator.ProbeDict(raw)
     assert np.all(probedict["scalar"] == np.asarray(raw["scalar"]))
     assert np.all(probedict.get("list") == np.asarray(raw.get("list")))
-
-
-def test_str(Simulator):
-    """Make sure __str__ runs."""
-    m = nengo.Network(label="test_str")
-    with m:
-        input = nengo.Node(output=0.5, label='input')
-        A = nengo.Ensemble(nengo.LIF(5), 1)
-        nengo.Connection(input, A)
-        nengo.Probe(A, 'decoded_output', filter=0.1)
-    sim = Simulator(m)
-    assert is_string(str(sim.signals))
 
 
 if __name__ == "__main__":
