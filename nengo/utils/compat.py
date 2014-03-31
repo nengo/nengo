@@ -8,6 +8,11 @@ import sys
 
 IS_PYTHON3 = sys.version_info[0] == 3
 
+if IS_PYTHON3:
+    from io import StringIO  # noqa: F401
+else:
+    from StringIO import StringIO  # noqa: F401
+
 
 def is_callable(obj):
     return isinstance(obj, collections.Callable)
