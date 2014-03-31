@@ -6,6 +6,7 @@ import pickle
 
 import numpy as np
 
+import nengo.utils.numpy as npext
 from nengo.utils.compat import is_callable, is_string
 from nengo.utils.distributions import Uniform
 
@@ -280,7 +281,7 @@ class Node(NengoObject):
 
     def initialize(self, output=None, size_in=0, size_out=None, label="Node"):
         if output is not None and not is_callable(output):
-            output = np.asarray(output)
+            output = npext.array(output, min_dims=1, copy=False)
         self.output = output
         self.label = label
         self.size_in = size_in

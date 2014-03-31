@@ -25,14 +25,6 @@ up in a model.
 assert_named_signals = False
 
 
-def _array2d(x, **kwargs):
-    """Ensure an array is two-dimensional"""
-    x = np.array(x, **kwargs)
-    if x.ndim < 2:
-        x.shape = x.size, 1
-    return x
-
-
 class ShapeMismatch(ValueError):
     pass
 
@@ -801,7 +793,8 @@ class Builder(object):
             eval_points = dists.UniformHypersphere(ens.dimensions).sample(
                 ens.EVAL_POINTS, rng=rng) * ens.radius
         else:
-            eval_points = _array2d(ens.eval_points, dtype=np.float64)
+            eval_points = npext.array(
+                ens.eval_points, dtype=np.float64, min_dims=2)
 
         # Set up signal
         self.model.sig_in[ens] = Signal(np.zeros(ens.dimensions),
@@ -967,16 +960,18 @@ class Builder(object):
             gain = self.built[conn.pre.neurons].gain
             bias = self.built[conn.pre.neurons].bias
 
-            eval_points = _array2d(
+            eval_points = npext.array(
                 conn.eval_points if conn.eval_points is not None
-                else self.built[conn.pre].eval_points)
+                else self.built[conn.pre].eval_points,
+                min_dims=2)
 
             x = np.dot(eval_points, encoders.T / conn.pre.radius)
             activities = dt * conn.pre.neurons.rates(x, gain, bias)
             if conn.function is None:
                 targets = eval_points
             else:
-                targets = _array2d([conn.function(ep) for ep in eval_points])
+                targets = npext.array(
+                    [conn.function(ep) for ep in eval_points], min_dims=2)
 
             if conn.weight_solver is not None:
                 if conn.decoder_solver is not None:
