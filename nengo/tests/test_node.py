@@ -199,6 +199,21 @@ def test_none(Simulator, nl_nodirect):
         sim.run(1.)
 
 
+def test_scalar(Simulator):
+    model = nengo.Network()
+    with model:
+        a = nengo.Node(output=1)
+        b = nengo.Ensemble(nengo.LIF(100), dimensions=1)
+        nengo.Connection(a, b)
+        ap = nengo.Probe(a)
+        bp = nengo.Probe(b)
+
+    sim = nengo.Simulator(model)
+    sim.run(1)
+    assert sim.data[ap].shape == (1000, 1)
+    assert sim.data[bp].shape == (1000, 1)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
