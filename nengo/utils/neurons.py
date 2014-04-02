@@ -19,9 +19,8 @@ def spikes2events(t, spikes):
     spikes = npext.array(spikes, copy=False, min_dims=2)
     if spikes.ndim > 2:
         raise ValueError("Cannot handle %d-dimensional arrays" % spikes.ndim)
-
-    # assert last dimension is time
-    assert spikes.shape[-1] == len(t)
+    if spikes.shape[-1] != len(t):
+        raise ValueError("Last dimension of `spikes` must equal `len(t)`")
 
     # find nonzero elements (spikes) in each row, and translate to times
     return [t[spike != 0] for spike in spikes]
@@ -62,7 +61,7 @@ def rates_isi(t, spikes, midpoint=False, interp='zero'):
     rates : (M, N) array_like
         The estimated neuron firing rates.
     """
-    if scipy is None:
+    if scipy is None:  # _rates_isi_events requires scipy
         raise RuntimeError(
             "'rates_isi' requires the 'scipy' package to be installed")
 
@@ -91,6 +90,8 @@ def lowpass_filter(x, tau, kind='expon'):
         t = np.arange(0, 5 * tau)
         kern = alpha**2 * t * np.exp(-alpha * t)
         delay = tau
+    else:
+        raise ValueError("Unrecognized filter kind '%s'" % kind)
 
     delay = int(np.round(delay))
     return np.array(
@@ -120,9 +121,10 @@ def rates_kernel(t, spikes, kind='gauss', tau=0.04):
     spikes = npext.array(spikes, copy=False, min_dims=2)
     if spikes.ndim > 2:
         raise ValueError("Cannot handle %d-dimensional arrays" % spikes.ndim)
+    if spikes.shape[-1] != len(t):
+        raise ValueError("Last dimension of `spikes` must equal `len(t)`")
 
     n, nt = spikes.shape
-    assert len(t) == nt
     dt = t[1] - t[0]
 
     tau_i = tau / dt
