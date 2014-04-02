@@ -32,8 +32,6 @@
         marker-mid: url(#TriangleMarker);
     }
     svg .link_net {
-        stroke: blue;
-        stroke-opacity: .6;
         stroke-width: 0px;
     }
     
@@ -42,15 +40,15 @@
         stroke-width: 0px;
         fill: #ddd;
     }
-    svg g.node_nde circle{
+    svg g.node_nde rect{
         stroke: #444;
         stroke-width: 0px;
-        fill: red;
+        fill: #ddd;
     }
-    svg g.node_net circle{
+    svg g.node_net rect{
         stroke: #444;
         stroke-width: 0px;
-        fill: blue;
+        fill: #888;
         opacity: 0.5;
     }
     
@@ -256,10 +254,27 @@ d3.selection.prototype.moveToFront = function() {
             .on('mouseover', mouseover)
             .on('mouseout', mouseout)
             .call(force.drag);
+
         
-        
-        nodeEnter.append('circle')
+        nodeEnter.filter(function(d) {return d.type=='ens';})
+            .append('circle')
             .attr('r', '20')
+            .attr('id', function(d) {return 'Node;'+d.id;})
+
+        nodeEnter.filter(function(d) {return d.type=='nde';})
+            .append('rect')
+            .attr('x', '-20')
+            .attr('y', '-20')
+            .attr('width', '40')
+            .attr('height', '40')
+            .attr('id', function(d) {return 'Node;'+d.id;})
+
+        nodeEnter.filter(function(d) {return d.type=='net';})
+            .append('rect')
+            .attr('x', '-50')
+            .attr('y', '-50')
+            .attr('width', '100')
+            .attr('height', '100')
             .attr('id', function(d) {return 'Node;'+d.id;})
             
         nodeEnter.append('text')
@@ -289,25 +304,39 @@ d3.selection.prototype.moveToFront = function() {
                            (d.source.y*0.45+d.target.y*0.55)+" "+
                            d.target.x+","+d.target.y});
 
-            // find the distance from each network to the farthest of its components
-            dist = {};
+            bounds = {};
             link.each(function (d) {
                 if (d.type=='net') {
-                    distance = Math.pow(d.source.x-d.target.x,2) + Math.pow(d.source.y-d.target.y, 2);
-                    if (dist[d.source.id]==undefined || distance>dist[d.source.id]) 
-                        dist[d.source.id] = distance;
+                    if (bounds[d.source.id]==undefined) {
+                        bounds[d.source.id] = {'x0':d.target.x, 'x1':d.target.x,
+                                               'y0':d.target.y, 'y1':d.target.y  
+                                               };
+                    } else {
+                        bounds[d.source.id].x0 = Math.min(bounds[d.source.id].x0, d.target.x);
+                        bounds[d.source.id].x1 = Math.max(bounds[d.source.id].x1, d.target.x);
+                        bounds[d.source.id].y0 = Math.min(bounds[d.source.id].y0, d.target.y);
+                        bounds[d.source.id].y1 = Math.max(bounds[d.source.id].y1, d.target.y);
                     }
-                });
+                }
+            });
                 
+            border = 30;
+            nets = svg.selectAll('g.node_net rect')
+            nets.attr('x', function(d) {return -border-(bounds[d.id].x1-bounds[d.id].x0)/2;})
+            nets.attr('y', function(d) {return -border-(bounds[d.id].y1-bounds[d.id].y0)/2;})
+            nets.attr('width', function(d) {return (bounds[d.id].x1-bounds[d.id].x0+border*2);})
+            nets.attr('height', function(d) {return (bounds[d.id].y1-bounds[d.id].y0+border*2);})
+            nets = svg.selectAll('g.node_net')
+
+            nets = svg.selectAll('g.node_net').each(function(d) {
+                d.x = (bounds[d.id].x1+bounds[d.id].x0)/2;
+                d.y = (bounds[d.id].y1+bounds[d.id].y0)/2;
+                });
+
+
             node.attr('transform', function(d) {
                 return 'translate('+[d.x, d.y]+')';
                 });
-
-            nets = svg.selectAll('g.node_net circle')
-            nets.attr('r', function (d) {
-                return Math.sqrt(dist[d.id])+20;
-                } );
-
         });                
         
         
