@@ -25,18 +25,33 @@
         background-color: white;
     }
     
-    svg .link {
+    svg .link_std {
         stroke: #333;
         stroke-opacity: .6;
         stroke-width: 2px;
         marker-mid: url(#TriangleMarker);
     }
+    svg .link_net {
+        stroke: blue;
+        stroke-opacity: .6;
+        stroke-width: 0px;
+    }
     
-    svg g.node circle{
+    svg g.node_ens circle{
         stroke: #444;
         stroke-width: 0px;
         fill: #ddd;
-        
+    }
+    svg g.node_nde circle{
+        stroke: #444;
+        stroke-width: 0px;
+        fill: red;
+    }
+    svg g.node_net circle{
+        stroke: #444;
+        stroke-width: 0px;
+        fill: blue;
+        opacity: 0.5;
     }
     
     svg g.node text {
@@ -45,7 +60,11 @@
         text-anchor: middle;
         alignment-baseline: middle;
         }
-    
+
+    svg rect.network {
+        fill: blue;
+        opacity: 0.5;
+    }
     
 </style>
 </head>
@@ -211,9 +230,8 @@ d3.selection.prototype.moveToFront = function() {
         for (var i = 0; i<graph.links.length; i++) {
             links.push(graph.links[i]);
         }
-        
-        
-        
+
+
 
 
         var link = svg.selectAll('.link')
@@ -222,7 +240,7 @@ d3.selection.prototype.moveToFront = function() {
                 });
             
         link.enter().append('polyline')
-                .attr('class', 'link')
+                .attr('class', function(d) {return 'link link_'+d.type;})
                 .attr("id",function(d){return d.id;});
         link.exit().remove();        
         
@@ -233,7 +251,7 @@ d3.selection.prototype.moveToFront = function() {
         var nodeEnter = node
             .enter()
             .append('g')
-            .attr('class', 'node')
+            .attr('class', function(d) {return 'node node_'+d.type;})
             .on("dblclick", dblclick)
             .on('mouseover', mouseover)
             .on('mouseout', mouseout)
@@ -270,11 +288,26 @@ d3.selection.prototype.moveToFront = function() {
                            (d.source.x*0.45+d.target.x*0.55)+","+
                            (d.source.y*0.45+d.target.y*0.55)+" "+
                            d.target.x+","+d.target.y});
+
+            // find the distance from each network to the farthest of its components
+            dist = {};
+            link.each(function (d) {
+                if (d.type=='net') {
+                    distance = Math.pow(d.source.x-d.target.x,2) + Math.pow(d.source.y-d.target.y, 2);
+                    if (dist[d.source.id]==undefined || distance>dist[d.source.id]) 
+                        dist[d.source.id] = distance;
+                    }
+                });
                 
             node.attr('transform', function(d) {
                 return 'translate('+[d.x, d.y]+')';
                 });
-            
+
+            nets = svg.selectAll('g.node_net circle')
+            nets.attr('r', function (d) {
+                return Math.sqrt(dist[d.id])+20;
+                } );
+
         });                
         
         

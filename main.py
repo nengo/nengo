@@ -81,58 +81,68 @@ class NengoGui(swi.SimpleWebInterface):
             nodes = []
             node_map = {}
             links = []
+            networks = []
 
             def handle(network):
-                for obj in network.ensembles + network.nodes:
-                    node_map[obj] = len(nodes)
+
+                for obj in network.ensembles:
                     label = obj.label
-
-                    if ((isinstance(obj, nengo.Ensemble) and label=='Ensemble') or
-                            (isinstance(obj, nengo.Node) and label=='Node')):
-
+                    if label == 'Ensemble':
                         text = code.splitlines()[obj._created_line_number-1]
                         if '=' in text:
                             text = text.split('=', 1)[0].strip()
                             if isidentifier(text):
                                 label = text
-                    nodes.append(dict(label=label, line=obj._created_line_number-1, id=len(nodes)))
+                    nodes.append(dict(label=label, line=obj._created_line_number-1,
+                                      id=len(nodes), type='ens'))
+                    node_map[obj] = nodes[-1]['id']
+                for obj in network.nodes:
+                    label = obj.label
+                    if label == 'Node':
+                        text = code.splitlines()[obj._created_line_number-1]
+                        if '=' in text:
+                            text = text.split('=', 1)[0].strip()
+                            if isidentifier(text):
+                                label = text
+                    nodes.append(dict(label=label, line=obj._created_line_number-1,
+                                      id=len(nodes), type='nde'))
+                    node_map[obj] = nodes[-1]['id']
                 for net in network.networks:
+                    if not hasattr(net, '_created_line_number'):
+                        for obj in net.ensembles + net.nodes + net.connections:
+                            net._created_line_number = obj._created_line_number
+                            break
+                        else:
+                            net._created_line_number = 0
+                    label = net.label
+                    if label == None:
+                        text = code.splitlines()[obj._created_line_number-1]
+                        if '=' in text:
+                            text = text.split('=', 1)[0].strip()
+                            if isidentifier(text):
+                                label = text
+
+                    nodes.append(dict(label=label, line=net._created_line_number-1,
+                                      id=len(nodes), type='net'))
+                    node_map[net] = nodes[-1]['id']
                     handle(net)
+                    for obj in net.ensembles + net.nodes:
+                        links.append(dict(source=node_map[net], target=node_map[obj],
+                            line=0, id=len(links), type='net'))
                 for c in network.connections:
-                    links.append(dict(source=node_map[c.pre], target=node_map[c.post], id=len(links)))
+                    links.append(dict(source=node_map[c.pre], target=node_map[c.post],
+                                      line=obj._created_line_number-1,
+                                      id=len(links), type='std'))
+                items = [node_map[obj] for obj in network.ensembles + network.nodes]
+                networks.append(dict(label=network.label, items=items))
             handle(model)
 
-            """
-            for obj in model.ensembles + model.nodes:
-                node_map[obj] = len(nodes)
-
-                label = obj.label
-
-                if ((isinstance(obj, nengo.Ensemble) and label=='Ensemble') or
-                      (isinstance(obj, nengo.Node) and label=='Node') or
-                      (isinstance(obj, nengo.Network) and label=='Network')):
-
-                    text = code.splitlines()[obj._created_line_number-1]
-                    if '=' in text:
-                        text = text.split('=', 1)[0].strip()
-                        if isidentifier(text):
-                            obj.label = text
-
-
-                #nodes.append(dict(label=obj.label, line=obj._created_line_number-1, id=len(nodes)))
-                nodes.append(dict(label=obj.label, line=0, id=len(nodes)))
-            print node_map
-            print model.ensembles
-            print model.nodes
-            for c in model.connections:
-                links.append(dict(source=node_map[c.pre], target=node_map[c.post], id=len(links)))
-            """
         except:
             traceback.print_exc()
             return json.dumps(dict(error_line=2, text='Unknown'))
 
 
-        return json.dumps(dict(nodes=nodes, links=links))
+        return json.dumps(dict(nodes=nodes, links=links, networks=networks))
 
 
 if __name__=='__main__':
