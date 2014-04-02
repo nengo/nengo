@@ -1,0 +1,7 @@
+-e git://github.com/matplotlib/matplotlib.git#egg=matplotlib
+IPython==1.2.1
+jinja2
+ordereddict
+pygments
+pytest
+pytest-xdist
