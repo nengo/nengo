@@ -13,14 +13,12 @@ matrix:
       env: TOXENV=pep8
 before_install:
   - pip install --upgrade pip setuptools  # For wheel support
-  - if [[ "$TOXENV" != "pep8" ]]; then sudo apt-get update -qq; fi
-  - if [[ "$TOXENV" != "pep8" ]]; then sudo apt-get install -qq libzmq3-dev; fi
 install:
   - if [[ "$TOXENV" == "pep8" ]]; then pip install tox; fi
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.6" ]]; then pip install ordereddict; fi
   - if [[ "$TOXENV" != "pep8" ]]; then $PIP_WHEEL_COMMAND -r requirements.txt; fi
-  - if [[ "$TOXENV" != "pep8" ]]; then $PIP_WHEEL_COMMAND -r requirements-test.txt; fi
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TOXENV" != "pep8" ]]; then pip install coverage pytest-cov coveralls; fi
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.6" && "$TOXENV" != "pep8" ]]; then $PIP_WHEEL_COMMAND -r requirements-test-py26.txt; fi
+  - if [[ "$TRAVIS_PYTHON_VERSION" != "2.6" && "$TOXENV" != "pep8" ]]; then $PIP_WHEEL_COMMAND -r requirements-test.txt; fi
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TOXENV" != "pep8" ]]; then $PIP_WHEEL_COMMAND coverage pytest-cov coveralls; fi
 script:
   - if [[ "$TOXENV" == "pep8" ]]; then tox; fi
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TOXENV" != "pep8" ]]; then py.test --cov-config .coveragerc --cov nengo -n 2 -v; fi
