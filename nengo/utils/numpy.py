@@ -8,7 +8,7 @@ import numpy as np
 def array(x, min_dims=0, **kwargs):
     y = np.array(x, **kwargs)
     if y.ndim <= min_dims:
-        shape = np.ones(min_dims)
+        shape = np.ones(min_dims, dtype='int')
         shape[:y.ndim] = y.shape
         y.shape = shape
     return y
