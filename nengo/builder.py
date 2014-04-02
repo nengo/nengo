@@ -392,19 +392,19 @@ class Operator(object):
     def all_signals(self):
         return self.reads + self.sets + self.incs + self.updates
 
-    def init_sigdict(self, sigdict, dt):
+    def init_signals(self, signals, dt):
         """
         Install any buffers into the signals view that
         this operator will need. Classes for neurons
         that use extra buffers should create them here.
         """
         for sig in self.all_signals:
-            if sig.base not in sigdict:
-                sigdict[sig.base] = np.asarray(
-                    np.zeros(
-                        sig.base.shape,
-                        dtype=sig.base.dtype,
-                    ) + getattr(sig.base, 'value', 0))
+            if sig.base not in signals:
+                signals.init(sig.base,
+                             np.asarray(
+                                 np.zeros(sig.base.shape,
+                                          dtype=sig.base.dtype)
+                                 + sig.base.value))
 
 
 class Reset(Operator):
@@ -613,14 +613,12 @@ class SimLIF(Operator):
         self.sets = []
         self.incs = []
 
-    def init_sigdict(self, sigdict, dt):
-        Operator.init_sigdict(self, sigdict, dt)
-        sigdict[self.voltage] = np.zeros(
-            self.nl.n_in,
-            dtype=self.voltage.dtype)
-        sigdict[self.refractory_time] = np.zeros(
-            self.nl.n_in,
-            dtype=self.refractory_time.dtype)
+    def init_signals(self, signals, dt):
+        Operator.init_signals(self, signals, dt)
+        signals.init(self.voltage,
+                     np.zeros(self.nl.n_in, dtype=self.voltage.dtype))
+        signals.init(self.refractory_time,
+                     np.zeros(self.nl.n_in, dtype=self.refractory_time.dtype))
 
     def make_step(self, dct, dt):
         J = dct[self.J]

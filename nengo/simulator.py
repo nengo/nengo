@@ -6,29 +6,35 @@ Reference simulator for nengo models.
 
 from __future__ import print_function
 
-from collections import defaultdict, Mapping
-import itertools
+from collections import Mapping
 import logging
 
-import networkx as nx
 import numpy as np
 
 from nengo.builder import Builder
+from nengo.utils.compat import StringIO
+from nengo.utils.graphs import toposort
+from nengo.utils.simulator import operator_depencency_graph
 
 logger = logging.getLogger(__name__)
 
 
 class SignalDict(dict):
-    """
-    Map from Signal -> ndarray
+    """Map from Signal -> ndarray
 
-    SignalDict overrides __getitem__ for two reasons:
-    1. so that scalars are returned as 0-d ndarrays
-    2. so that a SignalView lookup returns a views of its base
+    This dict subclass ensures that the ndarray values aren't overwritten,
+    and instead data are written into them, which ensures that
+    these arrays never get copied, which wastes time and space.
 
+    Use ``init`` to set the ndarray initially.
     """
 
     def __getitem__(self, obj):
+        """SignalDict overrides __getitem__ for two reasons.
+
+        1. so that scalars are returned as 0-d ndarrays
+        2. so that a SignalView lookup returns a views of its base
+        """
         if obj in self:
             return dict.__getitem__(self, obj)
         elif obj.base in self:
@@ -50,7 +56,29 @@ class SignalDict(dict):
                               strides=bytestrides)
             return view
         else:
-            raise KeyError(obj)
+            raise KeyError("%s has not been initialized. Please call "
+                           "SignalDict.init first." % (str(obj)))
+
+    def __setitem__(self, key, val):
+        """Ensures that ndarrays stay in the same place in memory.
+
+        Unlike normal dicts, this means that you cannot add a new key
+        to a SignalDict using __setitem__. This is by design, to avoid
+        silent typos when debugging Simulator. Every key must instead
+        be explicitly initialized with SignalDict.init.
+        """
+        self.__getitem__(key)[...] = val
+
+    def __str__(self):
+        """Pretty-print the signals and current values."""
+        sio = StringIO()
+        for k in self:
+            sio.write("%s %s\n" % (repr(k), repr(self[k])))
+        return sio.getvalue()
+
+    def init(self, signal, ndarray):
+        """Set up a permanent mapping from signal -> ndarray."""
+        dict.__setitem__(self, signal, ndarray)
 
 
 class ProbeDict(Mapping):
@@ -98,15 +126,14 @@ class Simulator(object):
         self.seed = self.model.seed if seed is None else seed
 
         # -- map from Signal.base -> ndarray
-        self._sigdict = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
+        self.signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
         for op in self.model.operators:
-            op.init_sigdict(self._sigdict, self.dt)
+            op.init_signals(self.signals, self.dt)
 
-        self.dg = self._init_dg()
-        self._step_order = [node
-                            for node in nx.topological_sort(self.dg)
+        self.dg = operator_depencency_graph(self.model.operators)
+        self._step_order = [node for node in toposort(self.dg)
                             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self._sigdict, self.dt)
+        self._steps = [node.make_step(self.signals, self.dt)
                        for node in self._step_order]
 
         self.n_steps = 0
@@ -116,128 +143,6 @@ class Simulator(object):
 
         # Provide a nicer interface to probe outputs
         self.data = ProbeDict(self._probe_outputs)
-
-    def _init_dg(self, verbose=False):  # noqa
-        operators = self.model.operators
-        dg = nx.DiGraph()
-
-        for op in operators:
-            dg.add_edges_from(itertools.product(op.reads + op.updates, [op]))
-            dg.add_edges_from(itertools.product([op], op.sets + op.incs))
-
-        # -- all views of a base object in a particular dictionary
-        by_base_writes = defaultdict(list)
-        by_base_reads = defaultdict(list)
-        reads = defaultdict(list)
-        sets = defaultdict(list)
-        incs = defaultdict(list)
-        ups = defaultdict(list)
-
-        for op in operators:
-            for node in op.sets + op.incs:
-                by_base_writes[node.base].append(node)
-
-            for node in op.reads:
-                by_base_reads[node.base].append(node)
-
-            for node in op.reads:
-                reads[node].append(op)
-
-            for node in op.sets:
-                sets[node].append(op)
-
-            for node in op.incs:
-                incs[node].append(op)
-
-            for node in op.updates:
-                ups[node].append(op)
-
-        # -- assert that only one op sets any particular view
-        for node in sets:
-            assert len(sets[node]) == 1, (node, sets[node])
-
-        # -- assert that only one op updates any particular view
-        for node in ups:
-            assert len(ups[node]) == 1, (node, ups[node])
-
-        # --- assert that any node that is incremented is also set/updated
-        for node in incs:
-            assert len(sets[node] + ups[node]) > 0, (node)
-
-        # -- assert that no two views are both set and aliased
-        if len(sets) >= 2:
-            for node, other in itertools.combinations(sets, 2):
-                assert not node.shares_memory_with(other), \
-                    ("%s shares memory with %s" % (node, other))
-
-        # -- assert that no two views are both updated and aliased
-        if len(ups) >= 2:
-            for node, other in itertools.combinations(ups, 2):
-                assert not node.shares_memory_with(other), (node, other)
-
-        # -- Scheduling algorithm for serial evaluation:
-        #    1) All sets on a given base signal
-        #    2) All incs on a given base signal
-        #    3) All reads on a given base signal
-        #    4) All updates on a given base signal
-
-        # -- incs depend on sets
-        for node, post_ops in incs.items():
-            pre_ops = list(sets[node])
-            for other in by_base_writes[node.base]:
-                pre_ops += sets[other]
-            dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
-
-        # -- reads depend on writes (sets and incs)
-        for node, post_ops in reads.items():
-            pre_ops = sets[node] + incs[node]
-            for other in by_base_writes[node.base]:
-                pre_ops += sets[other] + incs[other]
-            dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
-
-        # -- updates depend on reads, sets, and incs.
-        for node, post_ops in ups.items():
-            pre_ops = sets[node] + incs[node] + reads[node]
-            for other in by_base_writes[node.base]:
-                pre_ops += sets[other] + incs[other] + reads[other]
-            for other in by_base_reads[node.base]:
-                pre_ops += sets[other] + incs[other] + reads[other]
-            dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
-
-        return dg
-
-    @property
-    def signals(self):
-        """Support access to current ndarrays via `self.signals[sig]`.
-
-        Here `sig` can be a signal within the model used to generate this
-        simulator, even though that model was deepcopied in the process of
-        generating the simulator.
-
-        This property is also used to implement a pretty-printing algorithm so
-        that `print sim.signals` returns a multiline string.
-        """
-        class Accessor(object):
-            def __getitem__(_, item):
-                return self._sigdict[item]
-
-            def __setitem__(_, item, val):
-                self._sigdict[item][...] = val
-
-            def __iter__(_):
-                return self._sigdict.__iter__()
-
-            def __len__(_):
-                return self._sigdict.__len__()
-
-            def __str__(_):
-                import io
-                sio = io.StringIO()
-                for k in self._sigdict:
-                    print_function(k, self._sigdict[k], file=sio)
-                return sio.getvalue()
-
-        return Accessor()
 
     def step(self):
         """Advance the simulator by `self.dt` seconds.
@@ -254,10 +159,10 @@ class Simulator(object):
             period = (1 if probe.sample_every is None
                       else int(probe.sample_every / self.dt))
             if self.n_steps % period == 0:
-                tmp = self._sigdict[self.model.sig_in[probe]].copy()
+                tmp = self.signals[self.model.sig_in[probe]].copy()
                 self._probe_outputs[probe].append(tmp)
 
-        self._sigdict['__time__'] += self.dt
+        self.signals['__time__'] += self.dt
         self.n_steps += 1
 
     def run(self, time_in_seconds):
@@ -276,7 +181,7 @@ class Simulator(object):
 
     def trange(self, dt=None):
         dt = self.dt if dt is None else dt
-        last_t = self._sigdict['__time__'] - self.dt
+        last_t = self.signals['__time__'] - self.dt
         n_steps = self.n_steps if dt is None else int(
             self.n_steps / (dt / self.dt))
         return np.linspace(0, last_t, n_steps)
