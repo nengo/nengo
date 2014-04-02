@@ -4,6 +4,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
+    ax = plt.gca() if ax is None else ax
+
+    def is_linear(x):
+        diff = np.diff(x)
+        return np.allclose(diff, diff[0])
+
+    assert is_linear(x) and is_linear(y)
+    image = ax.imshow(Z, aspect='auto', extent=(x[0], x[-1], y[-1], y[0]))
+    if colorbar:
+        plt.colorbar(image, ax=ax)
+
+
 def rasterplot(time, spikes, ax=None, **kwargs):
     '''Generate a raster plot of the provided spike data
 
