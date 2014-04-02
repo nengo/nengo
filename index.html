@@ -118,7 +118,7 @@ editor.on('change', function(e) {reload_graph_data();});
         
 var svg = d3.select("svg");
 var force = d3.layout.force();
-force.charge(-100);
+force.charge(-1000);
 
 
 var nodes = force.nodes();
@@ -146,15 +146,20 @@ d3.selection.prototype.moveToFront = function() {
         
             
     var drag = force.drag()
-        .on('dragstart', dragstart);
+        .on('dragstart', dragstart)
+        .on('dragend', dragend);
         
         
     function dragstart(d) {
-      d3.select(this).classed("fixed", d.fixed = true);
+        d.fixed = true;
+        d.dragging = true;
+    }    
+    function dragend(d) {
+        d.dragging = false;
     }    
 
     function dblclick(d) {
-      d3.select(this).classed("fixed", d.fixed = false);
+        d.fixed = false;
     }    
     
     var marker = null;
@@ -230,17 +235,13 @@ d3.selection.prototype.moveToFront = function() {
         }
 
 
-
+        svg.selectAll('.link').remove();
 
         var link = svg.selectAll('.link')
-            .data(links, function(d) {
-                return d.id; 
-                });
+            .data(links);
             
         link.enter().append('polyline')
-                .attr('class', function(d) {return 'link link_'+d.type;})
-                .attr("id",function(d){return d.id;});
-        link.exit().remove();        
+                .attr('class', function(d) {return 'link link_'+d.type;});
         
 
         var node = svg.selectAll('g.node')
@@ -329,9 +330,26 @@ d3.selection.prototype.moveToFront = function() {
             nets = svg.selectAll('g.node_net')
 
             nets = svg.selectAll('g.node_net').each(function(d) {
-                d.x = (bounds[d.id].x1+bounds[d.id].x0)/2;
-                d.y = (bounds[d.id].y1+bounds[d.id].y0)/2;
-                });
+
+                x = (bounds[d.id].x1+bounds[d.id].x0)/2;
+                y = (bounds[d.id].y1+bounds[d.id].y0)/2;
+
+                if (x!=d.x || y!=d.y) {
+                    if (d.dragging || d.fixed) {
+                        link.filter(function(d){return d.type=='net'})
+                            .filter(function(dd){return dd.source.id==d.id})
+                            .each(function(dd){
+                                dd.target.x += d.x-x;
+                                dd.target.y += d.y-y;
+                                dd.target.px += d.x-x;
+                                dd.target.py += d.y-y;
+                                });
+                    } else {
+                        d.x = x;
+                        d.y = y;
+                    }
+                }
+            });
 
 
             node.attr('transform', function(d) {
