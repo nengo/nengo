@@ -1,3 +1,5 @@
+from __future__ import division
+
 import logging
 
 import numpy as np
@@ -8,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class Direct(Neurons):
+    """Direct mode. Functions are computed explicitly, instead of in neurons.
+    """
 
     def __init__(self, n_neurons=None, label=None):
         # n_neurons is ignored, but accepted to maintain compatibility
@@ -27,6 +31,7 @@ class Direct(Neurons):
 
 
 class _LIFBase(Neurons):
+    """Abstract base class for LIF neuron types."""
 
     def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, label=None):
         self.tau_rc = tau_rc
@@ -90,6 +95,7 @@ class _LIFBase(Neurons):
 
 
 class LIFRate(_LIFBase):
+    """Rate version of the leaky integrate-and-fire (LIF) neuron model."""
 
     def step_math(self, dt, J, output):
         """Compute rates for input current (incl. bias)"""
@@ -103,11 +109,9 @@ class LIFRate(_LIFBase):
 
 
 class LIF(_LIFBase):
+    """Spiking version of the leaky integrate-and-fire (LIF) neuron model."""
 
-    def __init__(self, n_neurons, upsample=1, **kwargs):
-        super(LIF, self).__init__(n_neurons, **kwargs)
-
-    def step_math(self, dt, J, voltage, refractory_time, spiked):
+    def step_math(self, dt, J, spiked, voltage, refractory_time):
 
         # update voltage using Euler's method
         dV = (dt / self.tau_rc) * (J - voltage)
@@ -131,3 +135,33 @@ class LIF(_LIFBase):
         # set spiking neurons' voltages to zero, and ref. time to tau_ref
         voltage[spiked > 0] = 0
         refractory_time[spiked > 0] = self.tau_ref + spiketime
+
+
+class AdaptiveLIFRate(LIFRate):
+    """Adaptive rate version of the LIF neuron model."""
+
+    def __init__(self, n_neurons, tau_n=1, inc_n=10e-3, **kwargs):
+        super(AdaptiveLIFRate, self).__init__(n_neurons, **kwargs)
+        self.tau_n = tau_n
+        self.inc_n = inc_n
+
+    def step_math(self, dt, J, output, adaptation):
+        """Compute rates for input current (incl. bias)"""
+        n = adaptation
+        LIFRate.step_math(self, dt, J - n, output)
+        n += (dt / self.tau_n) * ((self.inc_n / dt) * output - n)
+
+
+class AdaptiveLIF(LIF):
+    """Adaptive spiking version of the LIF neuron model."""
+
+    def __init__(self, n_neurons, tau_n=1, inc_n=10e-3, **kwargs):
+        super(AdaptiveLIF, self).__init__(n_neurons, **kwargs)
+        self.tau_n = tau_n
+        self.inc_n = inc_n
+
+    def step_math(self, dt, J, output, voltage, ref, adaptation):
+        """Compute rates for input current (incl. bias)"""
+        n = adaptation
+        LIF.step_math(self, dt, J - n, output, voltage, ref)
+        n += (dt / self.tau_n) * ((self.inc_n / dt) * output - n)
