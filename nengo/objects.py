@@ -1,5 +1,4 @@
 import collections
-import inspect
 import logging
 import os
 import pickle
@@ -11,12 +10,6 @@ from nengo.utils.compat import is_callable, is_string
 from nengo.utils.distributions import Uniform
 
 logger = logging.getLogger(__name__)
-
-
-def _in_stack(function):
-    """Check whether the given function is in the call stack"""
-    codes = [record[0].f_code for record in inspect.stack()]
-    return function.__code__ in codes
 
 
 class NengoObject(object):
@@ -391,6 +384,9 @@ class Connection(NengoObject):
         self.filter = filter
         self.modulatory = modulatory
 
+        # don't check shapes until we've set all parameters
+        self._skip_check_shapes = True
+
         if isinstance(self._pre, Ensemble):
             if isinstance(self._post, Ensemble):
                 self.weight_solver = kwargs.pop('weight_solver', None)
@@ -416,9 +412,11 @@ class Connection(NengoObject):
             raise TypeError("__init__() received an unexpected keyword "
                             "argument '%s'" % next(iter(kwargs)))
 
+        self.transform = transform  # set after `function` for correct padding
+
         # check that shapes match up
-        self.transform = transform
-        self._check_shapes(check_in_init=True)
+        self._skip_check_shapes = False
+        self._check_shapes()
 
     def add_to_network(self, network):
         network.connections.append(self)
@@ -462,9 +460,9 @@ class Connection(NengoObject):
         # Note: Calling _check_shapes after this, is (or, should be) redundant
         return new_transform
 
-    def _check_shapes(self, check_in_init=False):
-        if not check_in_init and _in_stack(self.__init__):
-            return  # skip automatic checks if we're in the init function
+    def _check_shapes(self):
+        if self._skip_check_shapes:
+            return
         self._check_transform(self.transform_full,
                               self._required_transform_shape())
 
