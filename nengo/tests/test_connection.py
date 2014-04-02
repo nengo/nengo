@@ -30,7 +30,7 @@ def test_node_to_neurons(Simulator, nl_nodirect):
     name = 'node_to_neurons'
     N = 30
 
-    m = nengo.Network(name, seed=123)
+    m = nengo.Network(label=name, seed=123)
     with m:
         a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
         inn = nengo.Node(output=np.sin)
@@ -64,7 +64,7 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect):
     name = 'ensemble_to_neurons'
     N = 30
 
-    m = nengo.Network(name, seed=123)
+    m = nengo.Network(label=name, seed=123)
     with m:
         a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
         b = nengo.Ensemble(nl_nodirect(N), dimensions=1)
@@ -104,7 +104,7 @@ def test_neurons_to_ensemble(Simulator, nl_nodirect):
     name = 'neurons_to_ensemble'
     N = 20
 
-    m = nengo.Network(name, seed=123)
+    m = nengo.Network(label=name, seed=123)
     with m:
         a = nengo.Ensemble(nl_nodirect(N * 2), dimensions=2)
         b = nengo.Ensemble(nl_nodirect(N * 3), dimensions=3)
@@ -134,7 +134,7 @@ def test_neurons_to_node(Simulator, nl_nodirect):
     name = 'neurons_to_node'
     N = 30
 
-    m = nengo.Network(name, seed=123)
+    m = nengo.Network(label=name, seed=123)
     with m:
         a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
         out = nengo.Node(lambda t, x: x, size_in=N)
@@ -165,7 +165,7 @@ def test_neurons_to_neurons(Simulator, nl_nodirect):
     name = 'neurons_to_neurons'
     N1, N2 = 30, 50
 
-    m = nengo.Network(name, seed=123)
+    m = nengo.Network(label=name, seed=123)
     with m:
         a = nengo.Ensemble(nl_nodirect(N1), dimensions=1)
         b = nengo.Ensemble(nl_nodirect(N2), dimensions=1)
@@ -203,7 +203,7 @@ def test_weights(Simulator, nl):
 
     transform = np.array([[0.6, -0.4]])
 
-    m = nengo.Network(name, seed=3902)
+    m = nengo.Network(label=name, seed=3902)
     with m:
         u = nengo.Node(output=func)
         a = nengo.Ensemble(nl(n1), dimensions=2, radius=1.5)
@@ -275,7 +275,7 @@ def test_slicing(Simulator, nl_nodirect):
     name = 'connection_slicing'
     N = 30
 
-    with nengo.Network(name):
+    with nengo.Network(label=name):
         neurons3 = nl_nodirect(3)
         ens1 = nengo.Ensemble(nl_nodirect(N), dimensions=1)
         ens2 = nengo.Ensemble(nl_nodirect(N), dimensions=2)
