@@ -359,7 +359,7 @@ def test_shortfilter(Simulator, nl):
         nengo.Connection(a, b)
         nengo.Connection(b, a)
 
-    Simulator(model=m, dt=.01)
+    Simulator(m, dt=.01)
     # This test passes if there are no cycles in the op graph
 
     # We will still get a cycle if the user explicitly sets the
@@ -368,7 +368,7 @@ def test_shortfilter(Simulator, nl):
         d = nengo.Ensemble(neurons=nengo.Direct(10), dimensions=1)
         nengo.Connection(d, d, synapse=None)
     with pytest.raises(ValueError):
-        Simulator(model=m, dt=.01)
+        Simulator(m, dt=.01)
 
 if __name__ == "__main__":
     nengo.log(debug=True)

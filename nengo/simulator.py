@@ -11,7 +11,7 @@ import logging
 
 import numpy as np
 
-from nengo.builder import Builder
+from nengo.builder import Model, Builder
 from nengo.utils.compat import StringIO
 from nengo.utils.graphs import toposort
 from nengo.utils.simulator import operator_depencency_graph
@@ -114,12 +114,58 @@ class ProbeDict(Mapping):
 
 
 class Simulator(object):
-    """Reference simulator for models."""
+    """Reference simulator for Nengo models."""
 
-    def __init__(self, model, dt=0.001, seed=None, builder=Builder()):
-        # Call the builder to build the model
-        self.model = builder(model, dt)
+    def __init__(self, network, dt=0.001, seed=None, model=None):
+        """Initialize the simulator with a network and (optionally) a model.
+
+        Most of the time, you will pass in a network and sometimes a dt::
+
+            sim1 = nengo.Simulator(my_network)  # Uses default 0.001s dt
+            sim2 = nengo.Simulator(my_network, dt=0.01)  # Uses 0.01s dt
+
+        For more advanced use cases, you can initialize the model yourself,
+        and also pass in a network that will be built into the same model
+        that you pass in::
+
+            sim = nengo.Simulator(my_network, model=my_model)
+
+        If you want full control over the build process, then you can build
+        your network into the model manually. If you do this, then you must
+        explicitly pass in ``None`` for the network::
+
+            sim = nengo.Simulator(None, model=my_model)
+
+        Parameters
+        ----------
+        network : nengo.Network instance or None
+            A network object to the built and then simulated.
+            If a fully built ``model`` is passed in, then you can skip
+            building the network by passing in network=None.
+        dt : float
+            The length of a simulator timestep, in seconds.
+        seed : int
+            A seed for all stochastic operators used in this simulator.
+            Note that there are not stochastic operators implemented
+            currently, so this parameters does nothing.
+        model : nengo.builder.Model instance or None
+            A model object that contains build artifacts to be simulated.
+            Usually the simulator will build this model for you; however,
+            if you want to build the network manually, or to inject some
+            build artifacts in the Model before building the network,
+            then you can pass in a ``nengo.builder.Model`` instance.
+        """
         self.dt = dt
+        if model is None:
+            self.model = Model(dt=self.dt,
+                               label="%s, dt=%f" % (network.label, dt),
+                               seed=network.seed)
+        else:
+            self.model = model
+
+        if network is not None:
+            # Build the network into the model
+            Builder.build(network, model=self.model)
 
         # Use model seed as simulator seed if the seed is not provided
         # Note: seed is not used right now, but one day...
