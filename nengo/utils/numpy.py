@@ -4,6 +4,8 @@ Extra functions to extend the capabilities of Numpy.
 from __future__ import absolute_import
 import numpy as np
 
+maxint = np.iinfo(np.int32).max
+
 
 def array(x, min_dims=0, **kwargs):
     y = np.array(x, **kwargs)
@@ -126,5 +128,19 @@ def rms(x, axis=None, keepdims=False):
     return np.expand_dims(y, axis=axis) if keepdims else y
 
 
-def rmse(a, b):
-    return rms(a - b)
+def rmse(x, y, axis=None, keepdims=False):
+    """Root-mean-square error amplitude
+
+    Equivalent to rms(x - y, axis=axis, keepdims=keepdims).
+
+    Parameters
+    ----------
+    x, y : array_like
+        Arrays to compute RMS amplitude over.
+    axis : None or int or tuple of ints, optional
+        Axis or axes to sum across. `None` sums all axes. See `np.sum`.
+    keepdims : bool, optional
+        If True, the reduced axes are left in the result. See `np.sum` in
+        newer versions of Numpy (>= 1.7).
+    """
+    return rms(x - y, axis=axis, keepdims=keepdims)
