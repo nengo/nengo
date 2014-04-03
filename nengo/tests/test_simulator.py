@@ -5,28 +5,14 @@ import pytest
 
 import nengo
 import nengo.simulator
-from nengo.builder import (Model, ProdUpdate, Copy, Reset, DotInc, Signal,
-                           SimPyFunc)
+from nengo.builder import (
+    Model, ProdUpdate, Copy, Reset, DotInc, Signal, build_pyfunc)
 
 logger = logging.getLogger(__name__)
 
 
 def pytest_funcarg__RefSimulator(request):
     return nengo.Simulator
-
-
-def mock_builder(built_model):
-    def builder(model, dt):
-        return built_model
-    return builder
-
-
-def build_pyfunc(fn, n_in, n_out):
-    sig_in = Signal(np.zeros(n_in), name="pyfunc.input")
-    sig_out = Signal(np.zeros(n_out), name="pyfunc.output")
-    ops = [Reset(sig_in),
-           SimPyFunc(output=sig_out, fn=fn, t_in=True, x=sig_in)]
-    return sig_in, sig_out, ops
 
 
 def test_signal_init_values(RefSimulator):
@@ -37,11 +23,11 @@ def test_signal_init_values(RefSimulator):
     zeroarray = Signal([[0], [0], [0]])
     array = Signal([1, 2, 3])
 
-    b = Model(dt=0)
-    b.operators += [ProdUpdate(zero, zero, one, five),
+    m = Model(dt=0)
+    m.operators += [ProdUpdate(zero, zero, one, five),
                     ProdUpdate(zeroarray, one, one, array)]
 
-    sim = RefSimulator(None, builder=mock_builder(b))
+    sim = RefSimulator(None, model=m)
     assert sim.signals[zero][0] == 0
     assert sim.signals[one][0] == 1
     assert sim.signals[five][0] == 5.0
@@ -86,8 +72,8 @@ def test_signal_indexing_1(RefSimulator):
     three = Signal(np.zeros(3), name="c")
     tmp = Signal(np.zeros(3), name="tmp")
 
-    b = Model(dt=0.001)
-    b.operators += [
+    m = Model(dt=0.001)
+    m.operators += [
         ProdUpdate(
             Signal(1, name="A1"), three[:1], Signal(0, name="Z0"), one),
         ProdUpdate(
@@ -98,7 +84,7 @@ def test_signal_indexing_1(RefSimulator):
         Copy(src=tmp, dst=three, as_update=True),
     ]
 
-    sim = RefSimulator(None, builder=mock_builder(b))
+    sim = RefSimulator(None, model=m)
     sim.signals[three] = np.asarray([1, 2, 3])
     sim.step()
     assert np.all(sim.signals[one] == 1)
@@ -114,17 +100,15 @@ def test_simple_pyfunc(RefSimulator):
     dt = 0.001
     time = Signal(np.zeros(1), name="time")
     sig = Signal(np.zeros(1), name="sig")
-    sig_in, sig_out, ops = build_pyfunc(lambda t, x: np.sin(x), 1, 1)
-
-    b = Model(dt=dt)
-    b.operators += ops
-    b.operators += [
+    m = Model(dt=dt)
+    sig_in, sig_out = build_pyfunc(lambda t, x: np.sin(x), True, 1, 1, None, m)
+    m.operators += [
         ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
         DotInc(Signal([[1.0]]), time, sig_in),
         ProdUpdate(Signal([[1.0]]), sig_out, Signal(0), sig),
     ]
 
-    sim = RefSimulator(None, builder=mock_builder(b))
+    sim = RefSimulator(None, model=m)
     sim.step()
     for i in range(5):
         sim.step()
@@ -139,11 +123,9 @@ def test_encoder_decoder_pathway(RefSimulator):
     foo = Signal([1.0], name="foo")
     decoders = np.asarray([.2, .1])
     decs = Signal(decoders * 0.5)
-    sig_in, sig_out, ops = build_pyfunc(lambda t, x: x + 1, 2, 2)
-
-    b = Model(dt=0.001)
-    b.operators += ops
-    b.operators += [
+    m = Model(dt=0.001)
+    sig_in, sig_out = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
+    m.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo, sig_in),
         ProdUpdate(decs, sig_out, Signal(0.2), foo)
     ]
@@ -151,7 +133,7 @@ def test_encoder_decoder_pathway(RefSimulator):
     def check(sig, target):
         assert np.allclose(sim.signals[sig], target)
 
-    sim = RefSimulator(None, builder=mock_builder(b))
+    sim = RefSimulator(None, model=m)
 
     check(foo, 1.0)
     check(sig_in, 0)
@@ -187,11 +169,9 @@ def test_encoder_decoder_pathway(RefSimulator):
 def test_encoder_decoder_with_views(RefSimulator):
     foo = Signal([1.0], name="foo")
     decoders = np.asarray([.2, .1])
-    sig_in, sig_out, ops = build_pyfunc(lambda t, x: x + 1, 2, 2)
-
-    b = Model(dt=0.001)
-    b.operators += ops
-    b.operators += [
+    m = Model(dt=0.001)
+    sig_in, sig_out = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
+    m.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo[:], sig_in),
         ProdUpdate(Signal(decoders * 0.5), sig_out, Signal(0.2), foo[:])
     ]
@@ -199,7 +179,7 @@ def test_encoder_decoder_with_views(RefSimulator):
     def check(sig, target):
         assert np.allclose(sim.signals[sig], target)
 
-    sim = RefSimulator(None, builder=mock_builder(b))
+    sim = RefSimulator(None, model=m)
 
     sim.step()
     # DotInc to pop.input_signal (input=[1.0,2.0])
