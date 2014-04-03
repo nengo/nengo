@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
-import nengo.builder
+from nengo.builder import Builder
 
 
 def test_seeding():
@@ -58,7 +58,7 @@ def test_seeding():
 
 
 def test_signal():
-    # Make sure assert_named_signals works
+    """Make sure assert_named_signals works"""
     nengo.builder.Signal(np.array(0.))
     nengo.builder.Signal.assert_named_signals = True
     with pytest.raises(AssertionError):
@@ -66,6 +66,46 @@ def test_signal():
 
     # So that other tests that build signals don't fail...
     nengo.builder.Signal.assert_named_signals = False
+
+
+def test_builder_registration():
+    """Test that registering functions works."""
+    class BuilderError(Exception):
+        pass
+
+    def fail(obj, model):
+        raise BuilderError
+
+    net = nengo.Network()
+
+    # Pre-validation
+    Builder.register_validator(fail, object)
+    with pytest.raises(BuilderError):
+        Builder.build(net)
+    Builder.reset()
+    Builder.build(net)
+
+    # Pre-optimization
+    Builder.register_optimizer(fail, object)
+    with pytest.raises(BuilderError):
+        Builder.build(net)
+    Builder.reset()
+    Builder.build(net)
+
+    # Post-validation
+    Builder.register_validator(fail, object, after_build=True)
+    with pytest.raises(BuilderError):
+        Builder.build(net)
+    Builder.reset()
+    Builder.build(net)
+
+    # Post-optimization
+    Builder.register_optimizer(fail, object, after_build=True)
+    with pytest.raises(BuilderError):
+        Builder.build(net)
+    Builder.reset()
+    Builder.build(net)
+
 
 if __name__ == '__main__':
     nengo.log(debug=True)

@@ -669,37 +669,113 @@ BuiltEnsemble = collections.namedtuple(
 
 class Builder(object):
     builders = {}
+    pre_validators = collections.defaultdict(list)
+    pre_optimizers = collections.defaultdict(list)
+    post_validators = collections.defaultdict(list)
+    post_optimizers = collections.defaultdict(list)
 
     @classmethod
     def register_builder(cls, build_fn, nengo_class):
         cls.builders[nengo_class] = build_fn
 
     @classmethod
+    def register_validator(cls, validator_fn, nengo_class, after_build=False):
+        if after_build:
+            cls.post_validators[nengo_class].append(validator_fn)
+        else:
+            cls.pre_validators[nengo_class].append(validator_fn)
+
+    @classmethod
+    def register_optimizer(cls, optimizer_fn, nengo_class, after_build=False):
+        if after_build:
+            cls.post_optimizers[nengo_class].append(optimizer_fn)
+        else:
+            cls.pre_optimizers[nengo_class].append(optimizer_fn)
+
+    @classmethod
     def build(cls, obj, *args, **kwargs):
+        # Make a new model if one isn't passed, but put it in kwargs
         model = kwargs['model'] = kwargs.pop('model', Model())
 
-        if model.has_built(obj):
-            # If we've already built the obj, we'll ignore it.
-            # This is most likely the result of Neurons being used in
-            # two different Ensembles, which is unlikely to be desired.
-
-            # TODO: Prevent this at pre-build validation time.
-            logger.warning("Object '%s' has already been built in model "
-                           "'%s'." % (str(obj), model.label))
-            return
-
+        # Pre-validate and pre-optimize
         for obj_cls in obj.__class__.__mro__:
+            for validator in cls.pre_validators[obj_cls]:
+                validator(obj, model)
+            for optimizer in cls.pre_optimizers[obj_cls]:
+                optimizer(obj, model)
             if obj_cls in cls.builders:
-                break
-        else:
-            raise TypeError("Cannot build object of type '%s'." %
-                            cls.__name__)
-        cls.builders[obj_cls](obj, *args, **kwargs)
-        if obj not in model.params:
-            raise RuntimeError(
-                "Build function '%s' did not add '%s' to model.params"
-                % (cls.builders[obj_cls].__name__, str(obj)))
-        return model.params[obj]
+                builder = cls.builders[obj_cls]
+
+        # Build
+        builder(obj, *args, **kwargs)
+
+        # Post-validate and post-optimize
+        for obj_cls in obj.__class__.__mro__:
+            for validator in cls.post_validators[obj_cls]:
+                validator(obj, model)
+            for optimizer in cls.post_optimizers[obj_cls]:
+                optimizer(obj, model)
+
+        return model
+
+    @classmethod
+    def reset(cls):
+        cls.reset_builders()
+        cls.reset_validators()
+        cls.reset_optimizers()
+
+    @classmethod
+    def reset_builders(cls):
+        cls.builders.clear()
+        cls.register_builder(build_network, nengo.objects.Network)
+        cls.register_builder(build_ensemble, nengo.objects.Ensemble)
+        cls.register_builder(build_node, nengo.objects.Node)
+        cls.register_builder(build_probe, nengo.objects.Probe)
+        cls.register_builder(build_connection, nengo.objects.Connection)
+        cls.register_builder(build_direct, nengo.neurons.Direct)
+        cls.register_builder(build_lifrate, nengo.neurons.LIFRate)
+        cls.register_builder(build_lif, nengo.neurons.LIF)
+
+    @classmethod
+    def reset_validators(cls):
+        cls.pre_validators.clear()
+        cls.post_validators.clear()
+        cls.register_validator(obj_already_built, object)
+        cls.register_validator(obj_has_builder, object)
+        cls.register_validator(obj_in_model_params, object, after_build=True)
+
+    @classmethod
+    def reset_optimizers(cls):
+        cls.pre_optimizers.clear()
+        cls.post_optimizers.clear()
+
+
+def obj_already_built(obj, model):
+    if model.has_built(obj):
+        label = "label=None" if model.label is None else model.label
+        raise RuntimeError("Object '%'s has already been built in model "
+                           "'%s'." % (str(obj), label))
+
+Builder.register_validator(obj_already_built, object)
+
+
+def obj_has_builder(obj, model):
+    for obj_cls in obj.__class__.__mro__:
+        if obj_cls in Builder.builders:
+            break
+    else:
+        raise TypeError("Cannot build object of type '%s'."
+                        % obj.__class__.__name__)
+
+Builder.register_validator(obj_has_builder, object)
+
+
+def obj_in_model_params(obj, model):
+    if obj not in model.params:
+        raise RuntimeError(
+            "Builder did not add '%s' to model.params" % str(obj))
+
+Builder.register_validator(obj_in_model_params, object, after_build=True)
 
 
 def build_network(network, model):
@@ -778,9 +854,10 @@ def build_ensemble(ens, model):  # noqa: C901
 
     # Build the neurons
     if isinstance(ens.neurons, nengo.Direct):
-        bn = Builder.build(ens.neurons, ens.dimensions, model=model)
+        Builder.build(ens.neurons, ens.dimensions, model=model)
     else:
-        bn = Builder.build(ens.neurons, max_rates, intercepts, model=model)
+        Builder.build(ens.neurons, max_rates, intercepts, model=model)
+    bn = model.params[ens.neurons]
 
     # Scale the encoders
     if isinstance(ens.neurons, nengo.Direct):
@@ -1010,7 +1087,7 @@ def build_connection(conn, model):  # noqa: C901
                                          eval_points=eval_points,
                                          transform=transform)
 
-Builder.register_builder(build_connection, nengo.Connection)  # noqa
+Builder.register_builder(build_connection, nengo.objects.Connection)
 
 
 def build_pyfunc(fn, t_in, n_in, n_out, label, model):
