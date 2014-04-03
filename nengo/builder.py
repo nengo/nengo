@@ -624,11 +624,6 @@ class SimNeurons(Operator):
         return step
 
 
-def random_maxint(rng):
-    """Returns rng.randint(x) where x is the maximum 32-bit integer."""
-    return rng.randint(np.iinfo(np.int32).max)
-
-
 _builder_func_dict = {}  # Nengo object -> builder method; set by @builds
 
 
@@ -688,7 +683,7 @@ class Builder(object):
         self.built = {}
 
         # Resources used by the build process.
-        seed = (random_maxint(np.random) if network.seed is None
+        seed = (np.random.randint(npext.maxint) if network.seed is None
                 else network.seed)
         self.rng = np.random.RandomState(seed)
 
@@ -704,7 +699,7 @@ class Builder(object):
 
     def next_seed(self):
         """Yields a seed to use for RNG during build computations."""
-        return random_maxint(self.rng)
+        return self.rng.randint(npext.maxint)
 
     def build(self, obj, *args, **kwargs):
         """Builds the given object with the associated builder method."""
