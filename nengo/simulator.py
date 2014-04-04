@@ -11,7 +11,7 @@ import logging
 
 import numpy as np
 
-from nengo.builder import Builder
+from nengo.builder import Model, Builder
 from nengo.utils.compat import StringIO
 from nengo.utils.graphs import toposort
 from nengo.utils.simulator import operator_depencency_graph
@@ -116,10 +116,18 @@ class ProbeDict(Mapping):
 class Simulator(object):
     """Reference simulator for models."""
 
-    def __init__(self, model, dt=0.001, seed=None, builder=Builder()):
-        # Call the builder to build the model
-        self.model = builder(model, dt)
+    def __init__(self, network, dt=0.001, seed=None, model=None):
         self.dt = dt
+        if model is None:
+            self.model = Model(dt=self.dt,
+                               label="%s, dt=%f" % (network.label, dt),
+                               seed=network.seed)
+        else:
+            self.model = model
+
+        if network is not None:
+            # Build the network into the model
+            Builder.build(network, model=self.model)
 
         # Use model seed as simulator seed if the seed is not provided
         # Note: seed is not used right now, but one day...
