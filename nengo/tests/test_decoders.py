@@ -11,19 +11,39 @@ import pytest
 
 import nengo
 from nengo.utils.distributions import UniformHypersphere
-from nengo.utils.numpy import filtfilt, rms
+from nengo.utils.numpy import filtfilt, rms, norm
 from nengo.utils.testing import Plotter, allclose
 from nengo.decoders import (
-    _cholesky, _conjgrad, _block_conjgrad,
+    _cholesky, _conjgrad, _block_conjgrad, _conjgrad_scipy, _lsmr_scipy,
     lstsq, lstsq_noise, lstsq_L2, lstsq_L2nz,
     lstsq_L1, lstsq_drop)
 
 logger = logging.getLogger(__name__)
 
 
-def sample_hypersphere(dimensions, n_samples, rng=np.random, surface=False):
-    return UniformHypersphere(
-        dimensions, surface=surface).sample(n_samples, rng=rng)
+def get_encoders(n_neurons, dims, rng=None):
+    return UniformHypersphere(dims, surface=True).sample(n_neurons, rng=rng).T
+
+
+def get_eval_points(n_points, dims, rng=None, sort=False):
+    points = UniformHypersphere(dims, surface=False).sample(n_points, rng=rng)
+    return points[np.argsort(points[:, 0])] if sort else points
+
+
+def get_rate_function(n_neurons, dims, neuron_type=nengo.LIF, rng=None):
+    neurons = neuron_type(n_neurons)
+    gain, bias = neurons.gain_bias(
+        rng.uniform(50, 100, n_neurons), rng.uniform(-1, 1, n_neurons))
+    rates = lambda x: neurons.rates(x, gain, bias)
+    return rates
+
+
+def get_system(m, n, d, rng=None):
+    """Get a system of LIF tuning curves and the corresponding eval points."""
+    eval_points = get_eval_points(m, d, rng=rng)
+    encoders = get_encoders(n, d, rng=rng)
+    rates = get_rate_function(n, d, rng=rng)
+    return rates(np.dot(eval_points, encoders)), eval_points
 
 
 def test_cholesky():
@@ -42,34 +62,107 @@ def test_cholesky():
 
 def test_conjgrad():
     rng = np.random.RandomState(4829)
+    A, b = get_system(1000, 100, 2, rng=rng)
+    sigma = 0.1 * A.max()
 
-    m, n = 100, 100
-    d = 1
-    A = rng.normal(size=(m, n))
-    b = rng.normal(size=(m, d))
-
-    sigma = 1
     x0 = _cholesky(A, b, sigma)
-    x1, i = _conjgrad(A, b, sigma, tol=1e-3)
-    # assert np.allclose(x0, x1, atol=1e-3, rtol=1e-5)
+    x1, _ = _conjgrad(A, b, sigma, tol=1e-3)
+    x2, _ = _block_conjgrad(A, b, sigma, tol=1e-3)
+    assert np.allclose(x0, x1, atol=1e-6, rtol=1e-3)
+    assert np.allclose(x0, x2, atol=1e-6, rtol=1e-3)
+
+
+@pytest.mark.parametrize('solver', [
+    lstsq, lstsq_noise, lstsq_L2, lstsq_L2nz, lstsq_drop])
+def test_decoder_solver(solver):
+    rng = np.random.RandomState(39408)
+
+    dims = 1
+    n_neurons = 100
+    n_points = 500
+
+    rates = get_rate_function(n_neurons, dims, rng=rng)
+    E = get_encoders(n_neurons, dims, rng=rng)
+
+    train = get_eval_points(n_points, dims, rng=rng)
+    Atrain = rates(np.dot(train, E))
+
+    D = solver(Atrain, train, rng=rng)
+
+    test = get_eval_points(n_points, dims, rng=rng, sort=True)
+    Atest = rates(np.dot(test, E))
+    est = np.dot(Atest, D)
+    rel_rmse = rms(est - test) / rms(test)
+
+    with Plotter(nengo.Simulator) as plt:
+        plt.plot(test, np.zeros_like(test), 'k--')
+        plt.plot(test, test - est)
+        plt.title("relative RMSE: %0.2e" % rel_rmse)
+        plt.savefig('test_decoders.test_decoder_solver.%s.pdf'
+                    % solver.__name__)
+        plt.close()
+
+    assert np.allclose(test, est, atol=3e-2, rtol=1e-3)
+    assert rel_rmse < 0.02
+
+
+@pytest.mark.optional
+@pytest.mark.parametrize('solver', [lstsq_L1])
+def test_decoder_solver_extra(solver):
+    test_decoder_solver(solver)
+
+
+@pytest.mark.parametrize('solver', [lstsq, lstsq_L2, lstsq_L2nz])
+def test_weight_solver(solver):
+    rng = np.random.RandomState(39408)
+
+    dims = 2
+    a_neurons, b_neurons = 100, 101
+    n_points = 1000
+
+    rates = get_rate_function(a_neurons, dims, rng=rng)
+    Ea = get_encoders(a_neurons, dims, rng=rng)  # pre encoders
+    Eb = get_encoders(b_neurons, dims, rng=rng)  # post encoders
+
+    train = get_eval_points(n_points, dims, rng=rng)  # training eval points
+    Atrain = rates(np.dot(train, Ea))                 # training activations
+    Xtrain = train                                    # training targets
+
+    # find decoders and multiply by encoders to get weights
+    D = solver(Atrain, Xtrain, rng=rng)
+    W1 = np.dot(D, Eb)
+
+    # find weights directly
+    W2 = solver(Atrain, Xtrain, rng=rng, E=Eb)
+
+    # assert that post inputs are close on test points
+    test = get_eval_points(n_points, dims, rng=rng)  # testing eval points
+    Atest = rates(np.dot(test, Ea))
+    Y1 = np.dot(Atest, W1)                         # post inputs from decoders
+    Y2 = np.dot(Atest, W2)                         # post inputs from weights
+    assert np.allclose(Y1, Y2)
+
+    # assert that weights themselves are close (this is true for L2 weights)
+    assert np.allclose(W1, W2)
+
+
+@pytest.mark.optional  # uses scipy
+def test_scipy_solvers():
+    rng = np.random.RandomState(4829)
+    A, b = get_system(1000, 100, 2, rng=rng)
+    sigma = 0.1 * A.max()
+
+    x0 = _cholesky(A, b, sigma)
+    x1, i1 = _conjgrad_scipy(A, b, sigma)
+    x2, i2 = _lsmr_scipy(A, b, sigma)
     assert np.allclose(x0, x1, atol=1e-5, rtol=1e-3)
-
-
-def _get_AB(m, n, d, rng=np.random):
-    """Return a system of LIF tuning curves."""
-    E = sample_hypersphere(d, n, rng=rng, surface=True).T  # encoders
-    B = sample_hypersphere(d, m, rng=rng)                  # eval points
-
-    a = nengo.LIF(n)
-    gain, bias = a.gain_bias(rng.uniform(50, 100, n), rng.uniform(-1, 1, n))
-    A = a.rates(np.dot(B, E), gain, bias)
-    return A, B
+    assert np.allclose(x0, x2, atol=1e-5, rtol=1e-3)
 
 
 @pytest.mark.benchmark
 def test_base_solvers_L2():
     rng = np.random.RandomState(39408)
-    A, B = _get_AB(m=5000, n=3000, d=3, rng=rng)
+    A, B = get_system(m=5000, n=3000, d=3, rng=rng)
     sigma = 0.1 * A.max()
 
     def time_solver(solver, *args, **kwargs):
@@ -82,16 +175,21 @@ def test_base_solvers_L2():
     x1, t1 = time_solver(_cholesky, A, B, sigma)
     [x2, i2], t2 = time_solver(_conjgrad, A, B, sigma, tol=1e-2)
     [x3, i3], t3 = time_solver(_block_conjgrad, A, B, sigma, tol=1e-2)
-    print(t1, t2, t3)
-    print(i2, i3)
+    [x4, i4], t4 = time_solver(_conjgrad_scipy, A, B, sigma, tol=1e-4)
+    [x5, i5], t5 = time_solver(_lsmr_scipy, A, B, sigma, tol=1e-4)
+    print(t1, t2, t3, t4, t5)
+    print(i2, i3, i4, i5)
 
     assert np.allclose(x1, x2, atol=1e-5, rtol=1e-3)
+    assert np.allclose(x1, x3, atol=1e-5, rtol=1e-3)
+    assert np.allclose(x1, x4, atol=1e-5, rtol=1e-3)
+    assert np.allclose(x1, x5, atol=1e-5, rtol=1e-3)
 
 
 @pytest.mark.benchmark
 def test_base_solvers_L1():
     rng = np.random.RandomState(39408)
-    A, B = _get_AB(m=500, n=100, d=1, rng=rng)
+    A, B = get_system(m=500, n=100, d=1, rng=rng)
 
     def time_solver(solver, *args, **kwargs):
         import time
@@ -103,42 +201,6 @@ def test_base_solvers_L1():
     l1 = 1e-4
     x0, t0 = time_solver(lstsq_L1, A, B, l1=l1, l2=0)
     print(t0)
-
-
-def test_weights():
-    solver = lstsq_L2
-    rng = np.random.RandomState(39408)
-
-    d = 2
-    m, n = 100, 101
-    n_samples = 1000
-
-    a = nengo.LIF(m)  # population, for generating LIF tuning curves
-    gain, bias = a.gain_bias(rng.uniform(50, 100, m), rng.uniform(-1, 1, m))
-
-    ea = sample_hypersphere(d, m, rng=rng, surface=True).T  # pre encoders
-    eb = sample_hypersphere(d, n, rng=rng, surface=True).T  # post encoders
-
-    p = sample_hypersphere(d, n_samples, rng=rng)  # training eval points
-    A = a.rates(np.dot(p, ea), gain, bias)         # training activations
-    X = p                                          # training targets
-
-    # find decoders and multiply by encoders to get weights
-    D = solver(A, X, rng=rng)
-    W1 = np.dot(D, eb)
-
-    # find weights directly
-    W2 = solver(A, X, rng=rng, E=eb)
-
-    # assert that post inputs are close on test points
-    pt = sample_hypersphere(d, n_samples, rng=rng)  # testing eval points
-    At = a.rates(np.dot(pt, ea), gain, bias)        # testing activations
-    Y1 = np.dot(At, W1)                             # post inputs from decoders
-    Y2 = np.dot(At, W2)                             # post inputs from weights
-    assert np.allclose(Y1, Y2)
-
-    # assert that weights themselves are close (this is true for L2 weights)
-    assert np.allclose(W1, W2)
 
 
 @pytest.mark.benchmark
@@ -154,22 +216,23 @@ def test_solvers(Simulator, nl_nodirect):
     def input_function(t):
         return np.interp(t, [1, 3], [-1, 1], left=-1, right=1)
 
-    model = nengo.Model('test_solvers', seed=290)
-    u = nengo.Node(output=input_function)
-    # up = nengo.Probe(u)
+    model = nengo.Network('test_solvers', seed=290)
+    with model:
+        u = nengo.Node(output=input_function)
+        # up = nengo.Probe(u)
 
-    a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
-    ap = nengo.Probe(a)
-    nengo.Connection(u, a)
+        a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
+        ap = nengo.Probe(a)
+        nengo.Connection(u, a)
 
-    probes = []
-    names = []
-    for solver, arg in ([(s, 'decoder_solver') for s in decoder_solvers] +
-                        [(s, 'weight_solver') for s in weight_solvers]):
-        b = nengo.Ensemble(nl_nodirect(N), dimensions=1, seed=99)
-        nengo.Connection(a, b, **{arg: solver})
-        probes.append(nengo.Probe(b))
-        names.append(solver.__name__ + (" (%s)" % arg[0]))
+        probes = []
+        names = []
+        for solver, arg in ([(s, 'decoder_solver') for s in decoder_solvers] +
+                            [(s, 'weight_solver') for s in weight_solvers]):
+            b = nengo.Ensemble(nl_nodirect(N), dimensions=1, seed=99)
+            nengo.Connection(a, b, **{arg: solver})
+            probes.append(nengo.Probe(b))
+            names.append(solver.__name__ + (" (%s)" % arg[0]))
 
     sim = nengo.Simulator(model, dt=dt)
     sim.run(tfinal)
@@ -206,25 +269,26 @@ def test_regularization(Simulator, nl_nodirect):
     def input_function(t):
         return np.interp(t, [1, 3], [-1, 1], left=-1, right=1)
 
-    # model = nengo.Model('test_solvers', seed=290)
-    model = nengo.Model('test_regularization')
-    u = nengo.Node(output=input_function)
-    up = nengo.Probe(u)
+    model = nengo.Network('test_regularization')
+    with model:
+        u = nengo.Node(output=input_function)
+        up = nengo.Probe(u)
 
-    probes = np.zeros(
-        (len(solvers), len(neurons), len(regs), len(filters)), dtype='object')
+        probes = np.zeros(
+            (len(solvers), len(neurons), len(regs), len(filters)),
+            dtype='object')
 
-    for j, n_neurons in enumerate(neurons):
-        a = nengo.Ensemble(nl_nodirect(n_neurons), dimensions=1)
-        nengo.Connection(u, a)
+        for j, n_neurons in enumerate(neurons):
+            a = nengo.Ensemble(nl_nodirect(n_neurons), dimensions=1)
+            nengo.Connection(u, a)
 
-        for i, solver in enumerate(solvers):
-            for k, reg in enumerate(regs):
-                reg_solver = lambda a, t, rng, reg=reg: solver(
-                    a, t, rng=rng, noise_amp=reg)
-                for l, filter in enumerate(filters):
-                    probes[i, j, k, l] = nengo.Probe(
-                        a, decoder_solver=reg_solver, filter=filter)
+            for i, solver in enumerate(solvers):
+                for k, reg in enumerate(regs):
+                    reg_solver = lambda a, t, rng, reg=reg: solver(
+                        a, t, rng=rng, noise_amp=reg)
+                    for l, filter in enumerate(filters):
+                        probes[i, j, k, l] = nengo.Probe(
+                            a, decoder_solver=reg_solver, filter=filter)
 
     sim = nengo.Simulator(model, dt=dt)
     sim.run(tfinal)
@@ -252,6 +316,141 @@ def test_regularization(Simulator, nl_nodirect):
 
         plt.tight_layout()
         plt.savefig('test_decoders.test_regularization.pdf')
+        plt.close()
+
+
+@pytest.mark.benchmark
+def test_eval_points_static(Simulator):
+    solver = lstsq_L2
+
+    rng = np.random.RandomState(0)
+    n = 100
+    d = 5
+
+    eval_points = np.logspace(np.log10(300), np.log10(5000), 21)
+    eval_points = np.round(eval_points).astype('int')
+    max_points = eval_points.max()
+    n_trials = 25
+    # n_trials = 100
+
+    rmses = np.nan * np.zeros((len(eval_points), n_trials))
+
+    for trial in range(n_trials):
+        # make a population for generating LIF tuning curves
+        a = nengo.LIF(n)
+        gain, bias = a.gain_bias(
+            # rng.uniform(50, 100, n), rng.uniform(-1, 1, n))
+            rng.uniform(50, 100, n), rng.uniform(-0.9, 0.9, n))
+
+        e = get_encoders(n, d, rng=rng)
+
+        # make one activity matrix with the max number of eval points
+        train = get_eval_points(max_points, d, rng=rng)
+        test = get_eval_points(max_points, d, rng=rng)
+        Atrain = a.rates(np.dot(train, e), gain, bias)
+        Atest = a.rates(np.dot(test, e), gain, bias)
+
+        for i, n_points in enumerate(eval_points):
+            Di = solver(Atrain[:n_points], train[:n_points], rng=rng)
+            rmses[i, trial] = rms(np.dot(Atest, Di) - test)
+
+    rmses_norm1 = rmses - rmses.mean(0, keepdims=True)
+    rmses_norm2 = (rmses - rmses.mean(0, keepdims=True)
+                   ) / rmses.std(0, keepdims=True)
+
+    with Plotter(Simulator) as plt:
+        def make_plot(rmses):
+            mean = rmses.mean(1)
+            low = rmses.min(1)
+            high = rmses.max(1)
+            std = rmses.std(1)
+            plt.semilogx(eval_points, mean, 'k-')
+            plt.semilogx(eval_points, mean - std, 'k--')
+            plt.semilogx(eval_points, mean + std, 'k--')
+            plt.semilogx(eval_points, high, 'r-')
+            plt.semilogx(eval_points, low, 'b-')
+            plt.xlim([eval_points[0], eval_points[-1]])
+            # plt.xticks(eval_points, eval_points)
+
+        plt.figure(figsize=(12, 8))
+        plt.subplot(3, 1, 1)
+        make_plot(rmses)
+        plt.subplot(3, 1, 2)
+        make_plot(rmses_norm1)
+        plt.subplot(3, 1, 3)
+        make_plot(rmses_norm2)
+        plt.savefig('test_decoders.test_eval_points_static.pdf')
+        plt.close()
+
+
+@pytest.mark.benchmark
+def test_eval_points(Simulator, nl_nodirect):
+    import time
+
+    rng = np.random.RandomState(0)
+    n = 100
+    d = 5
+    # d = 2
+    filter = 0.08
+    dt = 1e-3
+
+    eval_points = np.logspace(np.log10(300), np.log10(5000), 11)
+    eval_points = np.round(eval_points).astype('int')
+    max_points = eval_points.max()
+    n_trials = 1
+
+    rmses = np.nan * np.zeros((len(eval_points), n_trials))
+    for j in range(n_trials):
+        points = rng.normal(size=(max_points, d))
+        points *= (rng.uniform(size=max_points)
+                   / norm(points, axis=-1))[:, None]
+
+        rng_j = np.random.RandomState(348 + j)
+        seed = 903824 + j
+
+        # generate random input in unit hypersphere
+        x = rng_j.normal(size=d)
+        x *= rng_j.uniform() / norm(x)
+
+        for i, n_points in enumerate(eval_points):
+            model = nengo.Network(
+                'test_eval_points(%d,%d)' % (i, j), seed=seed)
+            with model:
+                u = nengo.Node(output=x)
+                a = nengo.Ensemble(nl_nodirect(n * d), d,
+                                   eval_points=points[:n_points])
+                nengo.Connection(u, a, filter=0)
+                up = nengo.Probe(u)
+                ap = nengo.Probe(a)
+
+            timer = time.time()
+            sim = Simulator(model, dt=dt)
+            timer = time.time() - timer
+            sim.run(10 * filter)
+
+            t = sim.trange()
+            xt = filtfilt(sim.data[up], filter / dt)
+            yt = filtfilt(sim.data[ap], filter / dt)
+            t0 = 5 * filter
+            t1 = 7 * filter
+            tmask = (t > t0) & (t < t1)
+
+            rmses[i, j] = rms(yt[tmask] - xt[tmask])
+            # print "done %d (%d) in %0.3f s" % (n_points, j, timer)
+
+    # subtract out mean for each model
+    rmses_norm = rmses - rmses.mean(0, keepdims=True)
+
+    with Plotter(Simulator, nl_nodirect) as plt:
+        mean = rmses_norm.mean(1)
+        low = rmses_norm.min(1)
+        high = rmses_norm.max(1)
+        plt.semilogx(eval_points, mean, 'k-')
+        plt.semilogx(eval_points, high, 'r-')
+        plt.semilogx(eval_points, low, 'b-')
+        plt.xlim([eval_points[0], eval_points[-1]])
+        plt.xticks(eval_points, eval_points)
+        plt.savefig('test_decoders.test_eval_points.pdf')
         plt.close()
 
 

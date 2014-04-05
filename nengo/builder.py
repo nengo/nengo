@@ -10,7 +10,7 @@ import nengo.neurons
 import nengo.objects
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
-from nengo.utils.compat import is_callable
+from nengo.utils.compat import is_callable, is_integer
 
 logger = logging.getLogger(__name__)
 
@@ -787,9 +787,9 @@ class Builder(object):
         rng = np.random.RandomState(seed)
 
         # Generate eval points
-        if ens.eval_points is None:
-            eval_points = dists.UniformHypersphere(ens.dimensions).sample(
-                ens.EVAL_POINTS, rng=rng) * ens.radius
+        if ens.eval_points is None or is_integer(ens.eval_points):
+            eval_points = self.generate_eval_points(
+                ens=ens, n_points=ens.eval_points, rng=rng)
         else:
             eval_points = npext.array(
                 ens.eval_points, dtype=np.float64, min_dims=2)
@@ -958,13 +958,24 @@ class Builder(object):
             gain = self.built[conn.pre.neurons].gain
             bias = self.built[conn.pre.neurons].bias
 
-            eval_points = npext.array(
-                conn.eval_points if conn.eval_points is not None
-                else self.built[conn.pre].eval_points,
-                min_dims=2)
+            eval_points = conn.eval_points
+            if eval_points is None:
+                eval_points = npext.array(
+                    self.built[conn.pre].eval_points, min_dims=2)
+            elif is_integer(eval_points):
+                eval_points = self.generate_eval_points(
+                    ens=conn.pre, n_points=eval_points, rng=rng)
+            else:
+                eval_points = npext.array(eval_points, min_dims=2)
 
             x = np.dot(eval_points, encoders.T / conn.pre.radius)
             activities = dt * conn.pre.neurons.rates(x, gain, bias)
+            if np.count_nonzero(activities) == 0:
+                raise RuntimeError(
+                    "In '%s', for '%s', 'activities' matrix is all zero. "
+                    "This is because no evaluation points fall in the firing "
+                    "ranges of any neurons." % (str(conn), str(conn.pre)))
+
             if conn.function is None:
                 targets = eval_points
             else:
@@ -1112,3 +1123,12 @@ class Builder(object):
                                            voltage=voltage,
                                            refractory_time=refractory_time))
         return rval
+
+    def generate_eval_points(self, ens, n_points, rng):
+        if n_points is None:
+            # use a heuristic to pick the number of points
+            dims, neurons = ens.dimensions, ens.neurons.n_neurons
+            n_points = max(np.clip(500 * dims, 750, 2500), 2 * neurons)
+
+        return dists.UniformHypersphere(ens.dimensions).sample(
+            n_points, rng=rng) * ens.radius
