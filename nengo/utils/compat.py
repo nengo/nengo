@@ -19,7 +19,7 @@ def is_callable(obj):
 
 
 def is_integer(obj):
-    return isinstance(obj, int if IS_PYTHON3 else (int, long))
+    return isinstance(obj, int if IS_PYTHON3 else (int, long))  # noqa: F821
 
 
 def is_iterable(obj):
@@ -32,7 +32,7 @@ def is_number(obj, check_complex=False):
 
 
 def is_string(obj):
-    types = str if IS_PYTHON3 else basestring
+    types = str if IS_PYTHON3 else basestring  # noqa: F821
     return isinstance(obj, types)
 
 
