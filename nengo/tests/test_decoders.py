@@ -66,8 +66,10 @@ def test_conjgrad():
     sigma = 0.1 * A.max()
 
     x0 = _cholesky(A, b, sigma)
-    x1, i = _conjgrad(A, b, sigma, tol=1e-3)
-    assert np.allclose(x0, x1, atol=1e-5, rtol=1e-3)
+    x1, _ = _conjgrad(A, b, sigma, tol=1e-3)
+    x2, _ = _block_conjgrad(A, b, sigma, tol=1e-3)
+    assert np.allclose(x0, x1, atol=1e-6, rtol=1e-3)
+    assert np.allclose(x0, x2, atol=1e-6, rtol=1e-3)
 
 
 @pytest.mark.parametrize('solver', [
