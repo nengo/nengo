@@ -4,7 +4,7 @@ Nengo models are essentially graphs where ensembles, nodes, and networks
 are graph vertices, and connections are edges. We make use of this fact
 in some places in the code; this file contains functions to help with that.
 
-toposort and reverse_dict are adapted from Theano (theano/gof/sched.py).
+toposort and reverse_edges are adapted from Theano (theano/gof/sched.py).
 This modified code is included under the terms of their license:
 
 Theano is copyright (c) 2008--2013 Theano Development Team.
@@ -106,7 +106,7 @@ def reverse_edges(edges):
     -------
 
     >>> d = {'a': (1, 2), 'b': (2, 3), 'c':()}
-    >>> reverse_dict(d)
+    >>> reverse_edges(d)
     {1: ('a',), 2: ('a', 'b'), 3: ('b',)}
 
     :note: dict order are not deterministic. As we iterate on the
