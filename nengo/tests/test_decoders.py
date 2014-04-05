@@ -21,20 +21,29 @@ from nengo.decoders import (
 logger = logging.getLogger(__name__)
 
 
-def get_system(m, n, d, rng=np.random):
+def get_encoders(n_neurons, dims, rng=None):
+    return UniformHypersphere(dims, surface=True).sample(n_neurons, rng=rng).T
+
+
+def get_eval_points(n_points, dims, rng=None, sort=False):
+    points = UniformHypersphere(dims, surface=False).sample(n_points, rng=rng)
+    return points[np.argsort(points[:, 0])] if sort else points
+
+
+def get_rate_function(n_neurons, dims, neuron_type=nengo.LIF, rng=None):
+    neurons = neuron_type(n_neurons)
+    gain, bias = neurons.gain_bias(
+        rng.uniform(50, 100, n_neurons), rng.uniform(-1, 1, n_neurons))
+    rates = lambda x: neurons.rates(x, gain, bias)
+    return rates
+
+
+def get_system(m, n, d, rng=None):
     """Get a system of LIF tuning curves and the corresponding eval points."""
-    encoders = sample_hypersphere(d, n, rng=rng, surface=True)
-    eval_points = sample_hypersphere(d, m, rng=rng)
-
-    a = nengo.LIF(n)
-    gain, bias = a.gain_bias(rng.uniform(50, 100, n), rng.uniform(-1, 1, n))
-    activities = a.rates(np.dot(eval_points, encoders.T), gain, bias)
-    return activities, eval_points
-
-
-def sample_hypersphere(dimensions, n_samples, rng=np.random, surface=False):
-    return UniformHypersphere(
-        dimensions, surface=surface).sample(n_samples, rng=rng)
+    eval_points = get_eval_points(m, d, rng=rng)
+    encoders = get_encoders(n, d, rng=rng)
+    rates = get_rate_function(n, d, rng=rng)
+    return rates(np.dot(eval_points, encoders)), eval_points
 
 
 def test_cholesky():
@@ -59,6 +68,80 @@ def test_conjgrad():
     x0 = _cholesky(A, b, sigma)
     x1, i = _conjgrad(A, b, sigma, tol=1e-3)
     assert np.allclose(x0, x1, atol=1e-5, rtol=1e-3)
+
+
+@pytest.mark.parametrize('solver', [
+    lstsq, lstsq_noise, lstsq_L2, lstsq_L2nz, lstsq_drop])
+def test_decoder_solver(solver):
+    rng = np.random.RandomState(39408)
+
+    dims = 1
+    n_neurons = 100
+    n_points = 500
+
+    rates = get_rate_function(n_neurons, dims, rng=rng)
+    E = get_encoders(n_neurons, dims, rng=rng)
+
+    train = get_eval_points(n_points, dims, rng=rng)
+    Atrain = rates(np.dot(train, E))
+
+    D = solver(Atrain, train, rng=rng)
+
+    test = get_eval_points(n_points, dims, rng=rng, sort=True)
+    Atest = rates(np.dot(test, E))
+    est = np.dot(Atest, D)
+    rel_rmse = rms(est - test) / rms(test)
+
+    with Plotter(nengo.Simulator) as plt:
+        plt.plot(test, np.zeros_like(test), 'k--')
+        plt.plot(test, test - est)
+        plt.title("relative RMSE: %0.2e" % rel_rmse)
+        plt.savefig('test_decoders.test_decoder_solver.%s.pdf'
+                    % solver.__name__)
+        plt.close()
+
+    assert np.allclose(test, est, atol=3e-2, rtol=1e-3)
+    assert rel_rmse < 0.02
+
+
+@pytest.mark.optional
+@pytest.mark.parametrize('solver', [lstsq_L1])
+def test_decoder_solver_extra(solver):
+    test_decoder_solver(solver)
+
+
+@pytest.mark.parametrize('solver', [lstsq, lstsq_L2, lstsq_L2nz])
+def test_weight_solver(solver):
+    rng = np.random.RandomState(39408)
+
+    dims = 2
+    a_neurons, b_neurons = 100, 101
+    n_points = 1000
+
+    rates = get_rate_function(a_neurons, dims, rng=rng)
+    Ea = get_encoders(a_neurons, dims, rng=rng)  # pre encoders
+    Eb = get_encoders(b_neurons, dims, rng=rng)  # post encoders
+
+    train = get_eval_points(n_points, dims, rng=rng)  # training eval points
+    Atrain = rates(np.dot(train, Ea))                 # training activations
+    Xtrain = train                                    # training targets
+
+    # find decoders and multiply by encoders to get weights
+    D = solver(Atrain, Xtrain, rng=rng)
+    W1 = np.dot(D, Eb)
+
+    # find weights directly
+    W2 = solver(Atrain, Xtrain, rng=rng, E=Eb)
+
+    # assert that post inputs are close on test points
+    test = get_eval_points(n_points, dims, rng=rng)  # testing eval points
+    Atest = rates(np.dot(test, Ea))
+    Y1 = np.dot(Atest, W1)                         # post inputs from decoders
+    Y2 = np.dot(Atest, W2)                         # post inputs from weights
+    assert np.allclose(Y1, Y2)
+
+    # assert that weights themselves are close (this is true for L2 weights)
+    assert np.allclose(W1, W2)
 
 
 @pytest.mark.optional  # uses scipy
@@ -116,42 +199,6 @@ def test_base_solvers_L1():
     l1 = 1e-4
     x0, t0 = time_solver(lstsq_L1, A, B, l1=l1, l2=0)
     print(t0)
-
-
-def test_weights():
-    solver = lstsq_L2
-    rng = np.random.RandomState(39408)
-
-    d = 2
-    m, n = 100, 101
-    n_samples = 1000
-
-    a = nengo.LIF(m)  # population, for generating LIF tuning curves
-    gain, bias = a.gain_bias(rng.uniform(50, 100, m), rng.uniform(-1, 1, m))
-
-    ea = sample_hypersphere(d, m, rng=rng, surface=True).T  # pre encoders
-    eb = sample_hypersphere(d, n, rng=rng, surface=True).T  # post encoders
-
-    p = sample_hypersphere(d, n_samples, rng=rng)  # training eval points
-    A = a.rates(np.dot(p, ea), gain, bias)         # training activations
-    X = p                                          # training targets
-
-    # find decoders and multiply by encoders to get weights
-    D = solver(A, X, rng=rng)
-    W1 = np.dot(D, eb)
-
-    # find weights directly
-    W2 = solver(A, X, rng=rng, E=eb)
-
-    # assert that post inputs are close on test points
-    pt = sample_hypersphere(d, n_samples, rng=rng)  # testing eval points
-    At = a.rates(np.dot(pt, ea), gain, bias)        # testing activations
-    Y1 = np.dot(At, W1)                             # post inputs from decoders
-    Y2 = np.dot(At, W2)                             # post inputs from weights
-    assert np.allclose(Y1, Y2)
-
-    # assert that weights themselves are close (this is true for L2 weights)
-    assert np.allclose(W1, W2)
 
 
 @pytest.mark.benchmark
@@ -293,11 +340,11 @@ def test_eval_points_static(Simulator):
             # rng.uniform(50, 100, n), rng.uniform(-1, 1, n))
             rng.uniform(50, 100, n), rng.uniform(-0.9, 0.9, n))
 
-        e = sample_hypersphere(d, n, rng=rng, surface=True).T
+        e = get_encoders(n, d, rng=rng)
 
         # make one activity matrix with the max number of eval points
-        train = sample_hypersphere(d, max_points, rng=rng)
-        test = sample_hypersphere(d, max_points, rng=rng)
+        train = get_eval_points(max_points, d, rng=rng)
+        test = get_eval_points(max_points, d, rng=rng)
         Atrain = a.rates(np.dot(train, e), gain, bias)
         Atest = a.rates(np.dot(test, e), gain, bias)
 
