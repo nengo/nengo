@@ -119,6 +119,7 @@ def lstsq_L1(A, Y, rng=np.random, E=None, l1=1e-4, l2=1e-6):
         alpha=alpha, l1_ratio=l1_ratio, fit_intercept=False, max_iter=1000)
     model.fit(A, Y)
     X = model.coef_.T
+    X.shape = (A.shape[1], Y.shape[1]) if Y.ndim > 1 else (A.shape[1],)
     return X
 
 
