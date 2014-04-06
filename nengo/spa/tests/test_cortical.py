@@ -7,18 +7,14 @@ from nengo import spa
 
 def test_connect(Simulator):
     class SPA(spa.SPA):
-        class CorticalRules:
-            def rule1():
-                effect(buffer2=buffer1)   # noqa
-
         def __init__(self):
-            super(SPA, self).__init__()
+            super(SPA, self).__init__(rng=np.random.RandomState(1))
             self.buffer1 = spa.Buffer(dimensions=16)
             self.buffer2 = spa.Buffer(dimensions=16)
-            self.cortical = spa.Cortical(self.CorticalRules)
+            self.cortical = spa.Cortical(spa.Actions('buffer2=buffer1'))
             self.input = spa.Input(buffer1='A')
 
-    model = SPA(seed=123)
+    model = SPA(seed=124)
 
     output, vocab = model.get_module_output('buffer2')
 
@@ -29,20 +25,16 @@ def test_connect(Simulator):
     sim.run(0.2)
 
     match = np.dot(sim.data[p], vocab.parse('A').v)
-    assert match[199] > 0.9
+    assert match[199] > 0.94
 
 
 def test_transform(Simulator):
     class SPA(spa.SPA):
-        class CorticalRules:
-            def rule1():
-                effect(buffer2=buffer1*'B')   # noqa
-
         def __init__(self):
-            super(SPA, self).__init__()
+            super(SPA, self).__init__(rng=np.random.RandomState(3))
             self.buffer1 = spa.Buffer(dimensions=16)
             self.buffer2 = spa.Buffer(dimensions=16)
-            self.cortical = spa.Cortical(self.CorticalRules)
+            self.cortical = spa.Cortical(spa.Actions('buffer2=buffer1*B'))
             self.input = spa.Input(buffer1='A')
 
     model = SPA(seed=123)
@@ -61,16 +53,12 @@ def test_transform(Simulator):
 
 def test_translate(Simulator):
     class SPA(spa.SPA):
-        class CorticalRules:
-            def rule1():
-                effect(buffer2=buffer1)   # noqa : F821
-
         def __init__(self):
-            super(SPA, self).__init__()
+            super(SPA, self).__init__(rng=np.random.RandomState(1))
             self.buffer1 = spa.Buffer(dimensions=16)
             self.buffer2 = spa.Buffer(dimensions=32)
             self.input = spa.Input(buffer1='A')
-            self.cortical = spa.Cortical(self.CorticalRules)
+            self.cortical = spa.Cortical(spa.Actions('buffer2=buffer1'))
 
     model = SPA(seed=123)
 
@@ -83,55 +71,39 @@ def test_translate(Simulator):
     sim.run(0.2)
 
     match = np.dot(sim.data[p], vocab.parse('A').v)
-    assert match[199] > 0.7
+    assert match[199] > 0.8
 
 
 def test_errors():
     class SPA(spa.SPA):
-        class CorticalRules:
-            def rule1():
-                match(buffer='A')     # noqa : F821
-                effect(buffer=buffer)     # noqa : F821
-
         def __init__(self):
             super(SPA, self).__init__()
             self.buffer = spa.Buffer(dimensions=16)
-            self.cortical = spa.Cortical(self.CorticalRules)
+            self.cortical = spa.Cortical(spa.Actions(
+                'dot(buffer,A) --> buffer=buffer'))
 
-    with pytest.raises(TypeError):
+    with pytest.raises(NotImplementedError):
         SPA()
 
     class SPA(spa.SPA):
-        class CorticalRules:
-            def rule1():
-                effect(buffer2=buffer)     # noqa : F821
-
         def __init__(self):
             super(SPA, self).__init__()
             self.buffer = spa.Buffer(dimensions=16)
-            self.cortical = spa.Cortical(self.CorticalRules)
+            self.cortical = spa.Cortical(spa.Actions('buffer2=buffer'))
 
-    with pytest.raises(KeyError):
+    with pytest.raises(NameError):
         SPA()
 
 
 def test_direct(Simulator):
     class SPA(spa.SPA):
-        class CorticalRules:
-            def rule1():
-                effect(buffer1='A')     # noqa : F821
-
-            def rule2():
-                effect(buffer2='B')     # noqa : F821
-
-            def rule3():
-                effect(buffer1='C', buffer2='C')     # noqa : F821
-
         def __init__(self):
-            super(SPA, self).__init__()
+            super(SPA, self).__init__(rng=np.random.RandomState(2))
             self.buffer1 = spa.Buffer(dimensions=16)
             self.buffer2 = spa.Buffer(dimensions=32)
-            self.cortical = spa.Cortical(self.CorticalRules)
+            self.cortical = spa.Cortical(spa.Actions(
+                'buffer1=A', 'buffer2=B',
+                'buffer1=C, buffer2=C'))
 
     model = SPA(seed=123)
 
@@ -147,8 +119,8 @@ def test_direct(Simulator):
 
     match1 = np.dot(sim.data[p1], vocab1.parse('A+C').v)
     match2 = np.dot(sim.data[p2], vocab2.parse('A+C').v)
-    assert match1[199] > 0.3
-    assert match2[199] > 0.3
+    assert match1[199] > 0.5
+    assert match2[199] > 0.5
 
 if __name__ == '__main__':
     nengo.log(debug=True)

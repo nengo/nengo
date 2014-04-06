@@ -1,8 +1,8 @@
 import numpy as np
 
 import nengo
+from nengo.spa.action_objects import Symbol, Source
 from nengo.spa.module import Module
-from nengo.spa.rules import Rules
 from nengo.utils.compat import iteritems
 
 
@@ -11,64 +11,85 @@ class Cortical(Module):
 
     Parameters
     ----------
-    rules : object or class
-        The methods on this object define connection rules using the
-        spa.Rules syntax
+    actions : spa.Actions
+        The actions to implement
     synapse : float
-        The synapse to use for the connections
+        The synaptic filter to use for the connections
     """
-    def __init__(self, rules, synapse=0.01):
+    def __init__(self, actions, synapse=0.01):
         super(Cortical, self).__init__()
-        self.rules = Rules(rules)
+        self.actions = actions
         self.synapse = synapse
-        self.direct = []
+        self._bias = None
 
     def on_add(self, spa):
         Module.on_add(self, spa)
+        self.spa = spa
 
         # parse the provided class and match it up with the spa model
-        self.rules.process(spa)
-        for rule in self.rules.rules:
-            if len(rule.matches) > 0:
-                raise TypeError('Cortical rules cannot contain match() rules')
+        self.actions.process(spa)
+        for action in self.actions.actions:
+            if action.condition is not None:
+                raise NotImplementedError(
+                    'Cannot handle conditions on cortical actions yet.')
+            for name, effects in iteritems(action.effect.effect):
+                for effect in effects.items:
+                    if isinstance(effect, Symbol):
+                        self.add_direct_effect(name, effect.symbol)
+                    elif isinstance(effect, Source):
+                        self.add_route_effect(name, effect.name,
+                                              effect.transform.symbol)
+                    else:
+                        raise NotImplementedError(
+                            'Unknown effect %s' % effect)
 
-        self.create_direct(spa)
-        self.create_routed(spa)
-
-    def create_direct(self, spa):
-        """Create direct fixed inputs that never change."""
-        for output, transform in iteritems(self.rules.get_outputs_direct()):
-            transform = np.sum(transform, axis=1)
-
+    @property
+    def bias(self):
+        """Return a bias node; create it if needed."""
+        if self._bias is None:
             with self:
-                node = nengo.Node(transform)
-                self.direct.append(node)
-            with spa:
-                nengo.Connection(node, output, synapse=None)
+                self._bias = nengo.Node([1])
+        return self._bias
 
-    def create_routed(self, spa):
-        """Create routing connections from one module to another."""
-        for index, route in self.rules.get_outputs_route():
-            target, source = route
+    def add_direct_effect(self, target_name, value):
+        """Make a fixed constant input to a module.
 
-            if hasattr(source, 'convolve'):
-                raise NotImplementedError('Cortical convolution not ' +
-                                          'implemented yet')
-            else:
-                if source.invert:
-                    raise NotImplementedError('Inverting on a communication' +
-                                              ' channel not supported yet')
+        Parameters
+        ----------
+        target_name : string
+            The name of the module input to use
+        value : string
+            A semantic pointer to be sent to the module input
+        """
+        sink, vocab = self.spa.get_module_input(target_name)
+        transform = np.array([vocab.parse(value).v]).T
 
-                if target.vocab is source.vocab:
-                    transform = 1
-                else:
-                    transform = source.vocab.transform_to(target.vocab)
+        with self.spa:
+            nengo.Connection(self.bias, sink, transform=transform,
+                             synapse=self.synapse)
 
-                if hasattr(source, 'transform'):
-                    trans = source.vocab.parse(source.transform)
-                    t2 = trans.get_convolution_matrix()
-                    transform = np.dot(transform, t2)
+    def add_route_effect(self, target_name, source_name, transform):
+        """Connect a module outtput to a module input
 
-                with spa:
-                    nengo.Connection(source.obj, target.obj,
-                                     transform=transform, synapse=self.synapse)
+        Parameters
+        ----------
+        target_name : string
+            The name of the module input to affect
+        source_name : string
+            The name of the module output to read from.  If this output uses
+            a different Vocabulary than the target, a linear transform
+            will be applied to convert from one to the other.
+        transform : string
+            A semantic point to convolve with the source value before
+            sending it into the target.  This transform takes
+            place in the source Vocabulary.
+        """
+        target, target_vocab = self.spa.get_module_input(target_name)
+        source, source_vocab = self.spa.get_module_output(source_name)
+
+        t = source_vocab.parse(transform).get_convolution_matrix()
+        if target_vocab is not source_vocab:
+            t = np.dot(source_vocab.transform_to(target_vocab), t)
+
+        with self.spa:
+            nengo.Connection(source, target, transform=t, synapse=self.synapse)

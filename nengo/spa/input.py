@@ -32,12 +32,12 @@ class Input(Module):
         for name, value in iteritems(self.kwargs):
             target, vocab = spa.get_module_input(name)
             if callable(value):
-                val = lambda t: vocab.parse(value(t)).v
+                val = lambda t, value=value: vocab.parse(value(t)).v
             else:
                 val = vocab.parse(value).v
 
             with self:
-                node = nengo.Node(val, label='input')
+                node = nengo.Node(val, label='input_%s' % name)
             self.input_nodes[name] = node
 
             with spa:

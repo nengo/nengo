@@ -30,25 +30,41 @@ class SPA(nengo.Network):
     between these modules in ways that are aware of semantic pointers:
 
     class Example(spa.SPA):
-        class CorticalRules:
-            def rule1():
-                effect(b=a*'CAT')
-            def rule2():
-                effect(c=b*'~CAT')
-
         def __init__(self):
             super(Example, self).__init__()
             self.a = spa.Buffer(dimensions=8)
             self.b = spa.Buffer(dimensions=16)
             self.c = spa.Memory(dimensions=8)
-            self.cortical = spa.Cortical(CorticalRules)
+            self.cortical = spa.Cortical(spa.Actions(
+                'b=a*CAT', 'c=b*~CAT'))
+
+    For complex cognitive control, the key modules are the BasalGangla
+    and the Thalamus.  Together, these allow us to define complex actions
+    using the Action syntax:
+
+    class SequenceExample(spa.SPA):
+        def __init__(self):
+            super(SequenceExample, self).__init__()
+            self.state = spa.Memory(dimensions=32)
+
+            actions = spa.Actions('dot(state, A) --> state=B',
+                                  'dot(state, B) --> state=C',
+                                  'dot(state, C) --> state=D',
+                                  'dot(state, D) --> state=E',
+                                  'dot(state, E) --> state=A',
+                                  )
+
+            self.bg = spa.BasalGanglia(actions=actions)
+            self.thal = spa.Thalamus(self.bg)
     """
 
-    def __init__(self):
+    def __init__(self, rng=None):
         # the set of known modules
         self._modules = {}
         # the Vocabulary to use by default for a given dimensionality
         self._default_vocabs = {}
+        # the random number generator to use for Vocabularies
+        self.rng = rng
 
     def __setattr__(self, key, value):
         """A setattr that handles Modules being added specially.
@@ -56,17 +72,17 @@ class SPA(nengo.Network):
         This is so that we can use the variable name for the Module as
         the name that all of the SPA system will use to access that module.
         """
-        nengo.Network.__setattr__(self, key, value)
+        super(SPA, self).__setattr__(key, value)
         if isinstance(value, Module):
             value.label = key
             self._modules[value.label] = value
-            value.on_add(self)
             for k, (obj, v) in iteritems(value.inputs):
                 if type(v) == int:
                     value.inputs[k] = (obj, self.get_default_vocab(v))
             for k, (obj, v) in iteritems(value.outputs):
                 if type(v) == int:
                     value.outputs[k] = (obj, self.get_default_vocab(v))
+            value.on_add(self)
 
     def get_default_vocab(self, dimensions):
         """Return a Vocabulary with the desired dimensions.
@@ -74,7 +90,8 @@ class SPA(nengo.Network):
         This will create a new default Vocabulary if one doesn't exist.
         """
         if dimensions not in self._default_vocabs:
-            self._default_vocabs[dimensions] = Vocabulary(dimensions)
+            self._default_vocabs[dimensions] = Vocabulary(
+                dimensions, rng=self.rng)
         return self._default_vocabs[dimensions]
 
     def get_module_input(self, name):
@@ -89,6 +106,17 @@ class SPA(nengo.Network):
             module, name = name.rsplit('_', 1)
             return self._modules[module].inputs[name]
 
+    def get_module_inputs(self):
+        for name, module in iteritems(self._modules):
+            for input in module.inputs.keys():
+                if input == 'default':
+                    yield name
+                else:
+                    yield '%s_%s' % (name, input)
+
+    def get_input_vocab(self, name):
+        return self.get_module_input(name)[1]
+
     def get_module_output(self, name):
         """Return the object to connect into for the given name.
 
@@ -100,3 +128,14 @@ class SPA(nengo.Network):
         elif '_' in name:
             module, name = name.rsplit('_', 1)
             return self._modules[module].outputs[name]
+
+    def get_module_outputs(self):
+        for name, module in iteritems(self._modules):
+            for output in module.outputs.keys():
+                if output == 'default':
+                    yield name
+                else:
+                    yield '%s_%s' % (name, output)
+
+    def get_output_vocab(self, name):
+        return self.get_module_output(name)[1]
