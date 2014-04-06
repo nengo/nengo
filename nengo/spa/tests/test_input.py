@@ -29,6 +29,7 @@ def test_time_varying():
         def __init__(self):
             super(SPA, self).__init__()
             self.buffer = spa.Buffer(dimensions=16)
+            self.buffer2 = spa.Buffer(dimensions=16)
 
             def input(t):
                 if t < 0.1:
@@ -38,7 +39,7 @@ def test_time_varying():
                 else:
                     return '0'
 
-            self.input = spa.Input(buffer=input)
+            self.input = spa.Input(buffer=input, buffer2='B')
 
     model = SPA()
 
