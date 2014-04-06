@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 from nengo.spa import pointer
-from nengo.utils.compat import is_iterable, is_number, range
+from nengo.utils.compat import is_iterable, is_number, is_integer, range
 
 
 class Vocabulary(object):
@@ -62,6 +62,11 @@ class Vocabulary(object):
 
     def __init__(self, dimensions, randomize=True, unitary=False,
                  max_similarity=0.1, include_pairs=False, rng=None):
+
+        if not is_integer(dimensions):
+            raise TypeError('dimensions must be an integer')
+        if dimensions < 1:
+            raise ValueError('dimensions must be positive')
         self.dimensions = dimensions
         self.randomize = randomize
         self.unitary = unitary
@@ -114,8 +119,12 @@ class Vocabulary(object):
     def __getitem__(self, key):
         """Return the semantic pointer with the requested name.
 
-        If one does not exist, automatically create one.
+        If one does not exist, automatically create one.  The key must be
+        a valid semantic pointer name, which is any Python identifier starting
+        with a capital letter.
         """
+        if not key[0].isupper():
+            raise KeyError('Semantic pointers must begin with a capital')
         value = self.pointers.get(key, None)
         if value is None:
             if is_iterable(self.unitary):
@@ -131,6 +140,8 @@ class Vocabulary(object):
 
         The pointer value can be a SemanticPointer or a vector.
         """
+        if not key[0].isupper():
+            raise KeyError('Semantic pointers must begin with a capital')
         if not isinstance(p, pointer.SemanticPointer):
             p = pointer.SemanticPointer(p)
 
@@ -181,7 +192,8 @@ class Vocabulary(object):
         This uses the Python eval() function, so any Python operators that
         have been defined for SemanticPointers are valid (+, -, *, ~, ()).
         Any terms do not exist in the vocabulary will be automatically
-        generated.
+        generated.  Valid semantic pointer terms must start with a capital
+        letter.
 
         If the expression returns a scalar (int or float), a scaled version
         of the identity SemanticPointer will be returned.
@@ -191,7 +203,10 @@ class Vocabulary(object):
         # passed in as the locals dictionary, and thanks to the __getitem__
         # implementation, this will automatically create new semantic
         # pointers as needed.
-        value = eval(text, {}, self)
+        try:
+            value = eval(text, {}, self)
+        except NameError:
+            raise KeyError('Semantic pointers must start with a capital')
 
         if is_number(value):
             value = value * self.identity
