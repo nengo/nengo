@@ -16,7 +16,8 @@ from nengo.utils.testing import Plotter, allclose
 from nengo.decoders import (
     _cholesky, _conjgrad, _block_conjgrad, _conjgrad_scipy, _lsmr_scipy,
     lstsq, lstsq_noise, lstsq_L2, lstsq_L2nz,
-    lstsq_L1, lstsq_drop)
+    lstsq_L1, lstsq_drop,
+    nnls, nnls_L2, nnls_L2nz)
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +39,9 @@ def get_rate_function(n_neurons, dims, neuron_type=nengo.LIF, rng=None):
     return rates
 
 
-def get_system(m, n, d, rng=None):
+def get_system(m, n, d, rng=None, sort=False):
     """Get a system of LIF tuning curves and the corresponding eval points."""
-    eval_points = get_eval_points(m, d, rng=rng)
+    eval_points = get_eval_points(m, d, rng=rng, sort=sort)
     encoders = get_encoders(n, d, rng=rng)
     rates = get_rate_function(n, d, rng=rng)
     return rates(np.dot(eval_points, encoders)), eval_points
@@ -157,6 +158,32 @@ def test_scipy_solvers():
     x2, i2 = _lsmr_scipy(A, b, sigma)
     assert np.allclose(x0, x1, atol=1e-5, rtol=1e-3)
     assert np.allclose(x0, x2, atol=1e-5, rtol=1e-3)
+
+
+@pytest.mark.optional  # uses scipy
+@pytest.mark.parametrize('solver', [nnls, nnls_L2, nnls_L2nz])
+def test_nnls(solver):
+    rng = np.random.RandomState(39408)
+    A, x = get_system(500, 100, 1, rng=rng, sort=True)
+    y = x**2
+
+    d = solver(A, y, rng)
+    yest = np.dot(A, d)
+    rel_rmse = rms(yest - y) / rms(y)
+
+    with Plotter(nengo.Simulator) as plt:
+        plt.subplot(211)
+        plt.plot(x, y, 'k--')
+        plt.plot(x, yest)
+        plt.ylim([-0.1, 1.1])
+        plt.subplot(212)
+        plt.plot(x, np.zeros_like(x), 'k--')
+        plt.plot(x, yest - y)
+        plt.savefig('test_decoders.test_nnls.%s.pdf' % solver.__name__)
+        plt.close()
+
+    assert np.allclose(yest, y, atol=3e-2, rtol=1e-3)
+    assert rel_rmse < 0.02
 
 
 @pytest.mark.benchmark

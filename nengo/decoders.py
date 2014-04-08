@@ -153,6 +153,46 @@ def lstsq_drop(A, Y, rng, E=None, noise_amp=0.1, drop=0.25, solver=lstsq_L2nz):
     return X
 
 
+def nnls(A, Y, rng, E=None):
+    """Non-negative least-squares without regularization.
+
+    Similar to `lstsq`, except the output values are non-negative.
+    """
+    Y = np.dot(Y, E) if E is not None else Y
+    X = np.zeros((A.shape[1], Y.shape[1]))
+    for i in range(X.shape[1]):
+        X[:, i], _ = scipy.optimize.nnls(A, Y[:, i])
+    return X
+
+
+def nnls_L2(A, Y, rng, E=None, noise_amp=0.1):
+    """Non-negative least-squares with L2 regularization.
+
+    Similar to `lstsq_L2`, except the output values are non-negative.
+    """
+    # form Gram matrix so we can add regularization
+    sigma = noise_amp * A.max()
+    G = np.dot(A.T, A)
+    Y = np.dot(A.T, Y)
+    np.fill_diagonal(G, G.diagonal() + sigma)
+    return nnls(G, Y, rng, E=E)
+
+
+def nnls_L2nz(A, Y, rng, E=None, noise_amp=0.1):
+    """Non-negative least-squares with L2 regularization on nonzero components.
+
+    Similar to `lstsq_L2nz`, except the output values are non-negative.
+    """
+    sigma = (noise_amp * A.max()) * np.sqrt((A > 0).mean(axis=0))
+    sigma[sigma == 0] = 1
+
+    # form Gram matrix so we can add regularization
+    G = np.dot(A.T, A)
+    Y = np.dot(A.T, Y)
+    np.fill_diagonal(G, G.diagonal() + sigma)
+    return nnls(G, Y, rng, E=E)
+
+
 def _cholesky(A, b, sigma, transpose=None):
     """Solve the least-squares system using the Cholesky decomposition."""
     m, n = A.shape
