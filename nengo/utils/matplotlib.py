@@ -4,6 +4,40 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
+    """
+    Image plot of general data (like imshow but with non-pixel axes).
+
+    Parameters
+    ----------
+    plt : plot object
+        Plot object, typically `matplotlib.pyplot`.
+    x : (M,) array_like
+        Vector of x-axis points, must be linear (equally spaced).
+    y : (N,) array_like
+        Vector of y-axis points, must be linear (equally spaced).
+    Z : (M, N) array_like
+        Matrix of data to be displayed, the value at each (x, y) point.
+    ax : axis object (optional)
+        A specific axis to plot on (defaults to `plt.gca()`).
+    colorbar: boolean (optional)
+        Whether to plot a colorbar.
+    **kwargs
+        Additional arguments for `ax.imshow`.
+    """
+    ax = plt.gca() if ax is None else ax
+
+    def is_linear(x):
+        diff = np.diff(x)
+        return np.allclose(diff, diff[0])
+
+    assert is_linear(x) and is_linear(y)
+    image = ax.imshow(Z, aspect='auto', extent=(x[0], x[-1], y[-1], y[0]),
+                      **kwargs)
+    if colorbar:
+        plt.colorbar(image, ax=ax)
+
+
 def rasterplot(time, spikes, ax=None, **kwargs):
     '''Generate a raster plot of the provided spike data
 
