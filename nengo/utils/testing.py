@@ -1,11 +1,12 @@
 from __future__ import absolute_import
 
 import inspect
-import numpy as np
 import os
 import re
-import time
 import sys
+import time
+
+import numpy as np
 
 from nengo.utils.compat import is_string
 

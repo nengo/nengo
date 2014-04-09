@@ -638,7 +638,7 @@ class Model(object):
 
 
 BuiltConnection = collections.namedtuple(
-    'BuiltConnection', ['decoders', 'eval_points', 'transform'])
+    'BuiltConnection', ['decoders', 'eval_points', 'transform', 'solver_info'])
 BuiltNeurons = collections.namedtuple('BuiltNeurons', ['gain', 'bias'])
 BuiltEnsemble = collections.namedtuple(
     'BuiltEnsemble',
@@ -878,6 +878,7 @@ def build_connection(conn, model):  # noqa: C901
 
     decoders = None
     eval_points = None
+    solver_info = None
     transform = np.array(conn.transform_full, dtype=np.float64)
 
     # Figure out the signal going across this connection
@@ -938,7 +939,7 @@ def build_connection(conn, model):  # noqa: C901
             targets = np.dot(targets, transform.T)
             transform = np.array(1., dtype=np.float64)
 
-            decoders = conn.weight_solver(
+            decoders, solver_info = conn.weight_solver(
                 activities, targets, rng=rng,
                 E=model.params[conn.post].scaled_encoders.T)
             model.sig_out[conn] = model.sig_in[conn.post.neurons]
@@ -946,7 +947,7 @@ def build_connection(conn, model):  # noqa: C901
         else:
             solver = (conn.decoder_solver if conn.decoder_solver is
                       not None else nengo.decoders.lstsq_L2nz)
-            decoders = solver(activities, targets, rng=rng)
+            decoders, solver_info = solver(activities, targets, rng=rng)
             signal_size = conn.dimensions
 
         # Add operator for decoders and filtering
@@ -1012,7 +1013,8 @@ def build_connection(conn, model):  # noqa: C901
 
     model.params[conn] = BuiltConnection(decoders=decoders,
                                          eval_points=eval_points,
-                                         transform=transform)
+                                         transform=transform,
+                                         solver_info=solver_info)
 
 Builder.register_builder(build_connection, nengo.Connection)  # noqa
 
