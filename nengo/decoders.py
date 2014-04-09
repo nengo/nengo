@@ -29,6 +29,7 @@ All solvers return the following:
 
 import logging
 import numpy as np
+import nengo.utils.numpy as npext
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +51,11 @@ except ImportError:
 def lstsq(A, Y, rng=np.random, E=None, rcond=0.01):
     """Unregularized least-squares."""
     Y = np.dot(Y, E) if E is not None else Y
-    X, res, rank, s = np.linalg.lstsq(A, Y, rcond=rcond)
-    return X
+    X, residuals2, rank, s = np.linalg.lstsq(A, Y, rcond=rcond)
+    return X, {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+               'residuals': np.sqrt(residuals2),
+               'rank': rank,
+               'singular_values': s}
 
 
 def lstsq_noise(A, Y, rng=np.random, E=None, noise_amp=0.1):
@@ -120,7 +124,8 @@ def lstsq_L1(A, Y, rng=np.random, E=None, l1=1e-4, l2=1e-6):
     model.fit(A, Y)
     X = model.coef_.T
     X.shape = (A.shape[1], Y.shape[1]) if Y.ndim > 1 else (A.shape[1],)
-    return X
+    infos = {'rmses': npext.rms(Y - np.dot(A, X), axis=0)}
+    return X, infos
 
 
 def lstsq_drop(A, Y, rng, E=None, noise_amp=0.1, drop=0.25, solver=lstsq_L2nz):
@@ -129,9 +134,10 @@ def lstsq_drop(A, Y, rng, E=None, noise_amp=0.1, drop=0.25, solver=lstsq_L2nz):
     This solver first solves for coefficients (decoders/weights) with
     L2 regularization, drops those nearest to zero, and retrains remaining.
     """
+    Y, m, n, d, matrix_in = _format_system(A, Y)
 
     # solve for coefficients using standard solver
-    X = solver(A, Y, rng=rng, noise_amp=noise_amp)
+    X, info0 = solver(A, Y, rng=rng, noise_amp=noise_amp)
     if E is not None:
         X = np.dot(X, E)
 
@@ -147,10 +153,12 @@ def lstsq_drop(A, Y, rng, E=None, noise_amp=0.1, drop=0.25, solver=lstsq_L2nz):
     for i in range(X.shape[1]):
         nonzero = X[:, i] != 0
         if nonzero.sum() > 0:
-            X[nonzero, i] = solver(A[:, nonzero], Y[:, i],
-                                   rng=rng, noise_amp=0.1 * noise_amp)
+            X[nonzero, i], info1 = solver(
+                A[:, nonzero], Y[:, i], rng=rng, noise_amp=0.1 * noise_amp)
 
-    return X
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+            'info0': info0, 'info1': info1}
+    return X if matrix_in else X.flatten(), info
 
 
 def nnls(A, Y, rng, E=None):
@@ -158,11 +166,16 @@ def nnls(A, Y, rng, E=None):
 
     Similar to `lstsq`, except the output values are non-negative.
     """
+    Y, m, n, d, matrix_in = _format_system(A, Y)
     Y = np.dot(Y, E) if E is not None else Y
-    X = np.zeros((A.shape[1], Y.shape[1]))
-    for i in range(X.shape[1]):
-        X[:, i], _ = scipy.optimize.nnls(A, Y[:, i])
-    return X
+    X = np.zeros((n, d))
+    residuals = np.zeros(d)
+    for i in range(d):
+        X[:, i], residuals[i] = scipy.optimize.nnls(A, Y[:, i])
+
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+            'residuals': residuals}
+    return X if matrix_in else X.flatten(), info
 
 
 def nnls_L2(A, Y, rng, E=None, noise_amp=0.1):
@@ -193,20 +206,21 @@ def nnls_L2nz(A, Y, rng, E=None, noise_amp=0.1):
     return nnls(G, Y, rng, E=E)
 
 
-def _cholesky(A, b, sigma, transpose=None):
+def _cholesky(A, y, sigma, transpose=None):
     """Solve the least-squares system using the Cholesky decomposition."""
     m, n = A.shape
     transpose = m < n if transpose is None else transpose
     if transpose:
         # substitution: x = A'*xbar, G*xbar = b where G = A*A' + lambda*I
         G = np.dot(A, A.T)
+        b = y
     else:
         # multiplication by A': G*x = A'*b where G = A'*A + lambda*I
         G = np.dot(A.T, A)
-        b = np.dot(A.T, b)
+        b = np.dot(A.T, y)
 
-    reglambda = sigma ** 2 * m  # regularization parameter lambda
-    np.fill_diagonal(G, G.diagonal() + reglambda)
+    # add L2 regularization term 'lambda' = m * sigma**2
+    np.fill_diagonal(G, G.diagonal() + m * sigma**2)
 
     if scipy is not None:
         factor = scipy.linalg.cho_factor(G, overwrite_a=True)
@@ -216,45 +230,43 @@ def _cholesky(A, b, sigma, transpose=None):
         L = np.linalg.inv(L.T)
         x = np.dot(L, np.dot(L.T, b))
 
-    return np.dot(A.T, x) if transpose else x
+    x = np.dot(A.T, x) if transpose else x
+    info = {'rmses': npext.rms(y - np.dot(A, x), axis=0)}
+    return x, info
 
 
-def _conjgrad_scipy(A, B, sigma, tol=1e-4):
-    m, n = A.shape
-    vector_in = B.ndim < 2
-    if vector_in:
-        B = B.reshape((-1, 1))
-    d = B.shape[1]
+def _conjgrad_scipy(A, Y, sigma, tol=1e-4):
+    Y, m, n, d, matrix_in = _format_system(A, Y)
 
-    reglambda = sigma ** 2 * m  # regularization parameter lambda
-    calcAA = lambda x: np.dot(A.T, np.dot(A, x)) + reglambda * x
+    damp = m * sigma**2
+    calcAA = lambda x: np.dot(A.T, np.dot(A, x)) + damp * x
     G = scipy.sparse.linalg.LinearOperator(
         (n, n), matvec=calcAA, matmat=calcAA, dtype=A.dtype)
-    B = np.dot(A.T, B)
+    B = np.dot(A.T, Y)
 
     X = np.zeros((n, d), dtype=B.dtype)
     infos = np.zeros(d, dtype='int')
     for i in range(d):
         X[:, i], infos[i] = scipy.sparse.linalg.cg(G, B[:, i], tol=tol)
 
-    return X.flatten() if vector_in else X, infos
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+            'info': infos}
+    return X if matrix_in else X.flatten(), info
 
 
-def _lsmr_scipy(A, B, sigma, tol=1e-4):
-    m, n = A.shape
-    vector_in = B.ndim < 2
-    if vector_in:
-        B = B.reshape((-1, 1))
-    d = B.shape[1]
+def _lsmr_scipy(A, Y, sigma, tol=1e-4):
+    Y, m, n, d, matrix_in = _format_system(A, Y)
 
     damp = sigma * np.sqrt(m)
-    X = np.zeros((n, d), dtype=B.dtype)
+    X = np.zeros((n, d), dtype=Y.dtype)
     itns = np.zeros(d, dtype='int')
     for i in range(d):
         X[:, i], _, itns[i], _, _, _, _, _ = scipy.sparse.linalg.lsmr(
-            A, B[:, i], damp=damp, atol=tol, btol=tol)
+            A, Y[:, i], damp=damp, atol=tol, btol=tol)
 
-    return X.flatten() if vector_in else X, itns
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+            'iterations': itns}
+    return X if matrix_in else X.flatten(), info
 
 
 def _conjgrad_iters(calcAx, b, x, maxiters=None, rtol=1e-6):
@@ -290,52 +302,35 @@ def _conjgrad_iters(calcAx, b, x, maxiters=None, rtol=1e-6):
     return x, i+1
 
 
-def _conjgrad(A, B, sigma, X0=None, maxiters=None, tol=1e-2):
+def _conjgrad(A, Y, sigma, X0=None, maxiters=None, tol=1e-2):
     """Solve the least-squares system using conjugate gradient."""
+    Y, m, n, d, matrix_in = _format_system(A, Y)
 
-    m, n = A.shape
     damp = m * sigma**2
-
-    G = lambda x: np.dot(A.T, np.dot(A, x)) + damp*x
-    B = np.dot(A.T, B)
-
     rtol = tol * np.sqrt(m)
+    G = lambda x: np.dot(A.T, np.dot(A, x)) + damp * x
+    B = np.dot(A.T, Y)
 
-    if B.ndim == 1:
-        x = np.zeros(n) if X0 is None else np.array(X0).reshape(n)
-        x, iters = _conjgrad_iters(G, B, x, maxiters=maxiters, rtol=rtol)
-        return x, iters
-    elif B.ndim == 2:
-        d = B.shape[1]
-        X = np.zeros((n, d)) if X0 is None else np.array(X0).reshape((n, d))
-        iters = -np.ones(d, dtype='int')
+    X = np.zeros((n, d)) if X0 is None else np.array(X0).reshape((n, d))
+    iters = -np.ones(d, dtype='int')
+    for i in range(d):
+        X[:, i], iters[i] = _conjgrad_iters(
+            G, B[:, i], X[:, i], maxiters=maxiters, rtol=rtol)
 
-        for i in range(d):
-            X[:, i], iters[i] = _conjgrad_iters(
-                G, B[:, i], X[:, i], maxiters=maxiters, rtol=rtol)
-
-        return X, iters
-    else:
-        raise ValueError("B must be vector or matrix")
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+            'iterations': iters}
+    return X if matrix_in else X.flatten(), info
 
 
-def _block_conjgrad(A, B, sigma, X0=None, tol=1e-2):
+def _block_conjgrad(A, Y, sigma, X0=None, tol=1e-2):
     """Solve a least-squares system with multiple-RHS."""
+    Y, m, n, d, matrix_in = _format_system(A, Y)
 
-    m, n = A.shape
-    matrix_in = B.ndim > 1
-    d = B.shape[1] if matrix_in else 1
-    # if d == 1:
-    #     return conjgrad(A, B, sigma, X0)
-
-    if not matrix_in:
-        B = B.reshape((-1, 1))
-
-    # G = lambda X: (np.dot(A.T, np.dot(A, X)) + (m * sigma**2) * X)
-    G = lambda X: (np.dot(np.dot(A, X).T, A).T + (m * sigma**2) * X)  # faster
-    B = np.dot(A.T, B)
-
+    damp = m * sigma**2
     rtol = tol * np.sqrt(m)
+    # G = lambda x: np.dot(A.T, np.dot(A, x)) + damp * x
+    G = lambda x: np.dot(np.dot(A, x).T, A).T + damp * x  # faster
+    B = np.dot(A.T, Y)
 
     # --- conjugate gradient
     X = np.zeros((n, d)) if X0 is None else np.array(X0).reshape((n, d))
@@ -362,7 +357,14 @@ def _block_conjgrad(A, B, sigma, X0=None, tol=1e-2):
         P = R + np.dot(P, beta)
         Rsold = Rsnew.copy()
 
-    if matrix_in:
-        return X, i+1
-    else:
-        return X.flatten(), i+1
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+            'iterations': i + 1}
+    return X if matrix_in else X.flatten(), info
+
+
+def _format_system(A, Y):
+    m, n = A.shape
+    matrix_in = Y.ndim > 1
+    d = Y.shape[1] if matrix_in else 1
+    Y = Y.reshape((Y.shape[0], d))
+    return Y, m, n, d, matrix_in
