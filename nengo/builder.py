@@ -996,8 +996,13 @@ class Builder(object):
             # Direct connection
             signal = self.model.sig_in[conn]
 
-        # Add operator for filtering
-        if decoders is None and conn.filter is not None and conn.filter > dt:
+        # Add operator for filtering (in the case filter wasn't already
+        # added, when pre.neurons is a non-direct Ensemble)
+        if decoders is None and conn.filter is not None:
+            # Note: we add a filter here even if filter < dt,
+            # in order to avoid cycles in the op graph. If the filter
+            # is explicitly set to None (e.g. for a passthrough node)
+            # then cycles can still occur.
             signal = self.filtered_signal(signal, conn.filter)
 
         if conn.modulatory:
