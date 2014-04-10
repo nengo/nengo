@@ -2,21 +2,30 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.utils.testing import Plotter
 
 
+@pytest.mark.optional  # uses scipy
 def test_basic(Simulator):
-    bg = nengo.networks.BasalGanglia(dimensions=5, label='BG')
+    bg = nengo.networks.BasalGanglia(dimensions=5, label="BG")
     with bg:
-        input = nengo.Node([0.8, 0.4, 0.4, 0.4, 0.4], label='input')
-        nengo.Connection(input, bg.input)
-        p = nengo.Probe(bg.output, 'output')
+        input = nengo.Node([0.8, 0.4, 0.4, 0.4, 0.4], label="input")
+        nengo.Connection(input, bg.input, synapse=None)
+        p = nengo.Probe(bg.output, 'output', synapse=0.01)
 
-    sim = Simulator(bg)
+    sim = Simulator(bg, seed=123)
     sim.run(0.2)
 
-    output = np.mean(sim.data[p][50:], axis=0)
+    t = sim.trange()
+    output = np.mean(sim.data[p][t > 0.1], axis=0)
 
-    assert output[0] > -0.15
+    with Plotter(Simulator) as plt:
+        plt.plot(t, sim.data[p])
+        plt.ylabel("Output")
+        plt.savefig('test_basalganglia.test_basic.pdf')
+        plt.close()
+
+    assert output[0] > -0.1
     assert np.all(output[1:] < -0.8)
 
 
