@@ -107,6 +107,22 @@ def test_decoder_solver(solver):
     assert rel_rmse < 0.02
 
 
+@pytest.mark.parametrize('solver', [
+    lstsq_noise, lstsq_L2, lstsq_L2nz])
+def test_subsolvers(solver, tol=1e-2):
+    rng = np.random.RandomState(89)
+    get_rng = lambda: np.random.RandomState(87)
+
+    A, b = get_system(500, 100, 50, rng=rng)
+    x0, _ = solver(A, b, rng=get_rng(), solver=_cholesky)
+
+    subsolvers = [_conjgrad, _block_conjgrad]
+    for subsolver in subsolvers:
+        x, info = solver(A, b, rng=get_rng(), solver=subsolver, tol=tol)
+        rel_rmse = rms(x - x0) / rms(x0)
+        assert rel_rmse < 2 * tol
+
+
 @pytest.mark.optional
 @pytest.mark.parametrize('solver', [lstsq_L1])
 def test_decoder_solver_extra(solver):
