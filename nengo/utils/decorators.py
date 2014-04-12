@@ -262,3 +262,17 @@ def decorator(wrapper):
             return FunctionWrapper(wrapped, target_wrapper)
         return _execute(*args, **kwargs)
     return FunctionWrapper(wrapper, _wrapper)
+
+
+def memoize(func):
+    """Memoizes a function based on the given args."""
+    # Does not currently support passing of kwargs
+    _cache = {}
+
+    def wrapped_func(*args):
+        if args in _cache:
+            return _cache[args]
+        value = func(*args)
+        _cache[args] = value
+        return value
+    return wrapped_func

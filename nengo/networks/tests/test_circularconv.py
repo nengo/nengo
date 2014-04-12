@@ -76,7 +76,7 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
         A_p = nengo.Probe(A.output, 'output', synapse=0.03)
         B_p = nengo.Probe(B.output, 'output', synapse=0.03)
         C_p = nengo.Probe(C.output, 'output', synapse=0.03)
-        D_p = nengo.Probe(D.ensemble.output, 'output', synapse=0.03)
+        D_p = nengo.Probe(D.product.product.output, 'output', synapse=0.03)
 
         # check FFT magnitude
         d = np.dot(D.transformA, a) + np.dot(D.transformB, b)
@@ -105,7 +105,7 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
         plt.subplot(223)
         plot(sim, c, C, title="C")
         plt.subplot(224)
-        plot(sim, d, D.ensemble, title="D")
+        plot(sim, d, D.product, title="D")
         plt.savefig('test_circularconv.test_circularconv_%d.pdf' % dims)
         plt.close()
 

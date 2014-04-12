@@ -6,10 +6,10 @@ from nengo.utils.numpy import rmse
 from nengo.utils.testing import Plotter
 
 
-def test_sine_waves(Simulator, nl_nodirect):
+def test_sine_waves(Simulator, nl):
     radius = 2
     dim = 5
-    product = nengo.networks.Product(nl_nodirect(200), dim, radius)
+    product = nengo.networks.Product(nl(200), dim, radius)
 
     func_A = lambda t: radius*np.sin(np.arange(1, dim+1)*2*np.pi*t)
     func_B = lambda t: radius*np.sin(np.arange(dim, 0, -1)*2*np.pi*t)

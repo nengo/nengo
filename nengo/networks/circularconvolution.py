@@ -1,7 +1,8 @@
 import numpy as np
 
 import nengo
-from nengo.networks.ensemblearray import EnsembleArray
+from nengo.networks.product import Product
+from nengo.utils.decorators import memoize
 
 
 def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
@@ -13,18 +14,6 @@ def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
     if invert_b:
         B = B.conj()
     return np.fft.ifft(A * B, axis=axis).real
-
-_dft_half_cache = {}
-
-
-def _dft_half_cached(n):
-    if n not in _dft_half_cache:
-        x = np.arange(n)
-        w = np.arange(n // 2 + 1)
-        D = ((1. / np.sqrt(n))
-             * np.exp((-2.j * np.pi / n) * (w[:, None] * x[None, :])))
-        _dft_half_cache[n] = D
-    return _dft_half_cache[n]
 
 
 class CircularConvolution(nengo.Network):
@@ -38,35 +27,29 @@ class CircularConvolution(nengo.Network):
             dimensions, first=False, invert=invert_b)
         self.transformC = self._output_transform(dimensions)
 
-        self.A = nengo.Node(size_in=dimensions, label='A')
-        self.B = nengo.Node(size_in=dimensions, label='B')
-        self.ensemble = EnsembleArray(neurons,
-                                      self.transformC.shape[1],
-                                      dimensions=2,
-                                      radius=radius, label='conv')
-        self.output = nengo.Node(size_in=dimensions, label='output')
+        self.A = nengo.Node(size_in=dimensions, label="A")
+        self.B = nengo.Node(size_in=dimensions, label="B")
+        self.product = Product(neurons, self.transformC.shape[1], label="conv")
+        self.output = nengo.Node(size_in=dimensions, label="output")
 
-        for ens in self.ensemble.ensembles:
-            if not isinstance(neurons, nengo.Direct):
-                ens.encoders = np.tile(
-                    [[1, 1], [-1, 1], [1, -1], [-1, -1]],
-                    (ens.n_neurons // 4, 1))
+        # Connect into product.product.input rather than product.A and
+        # product.B in order to avoid writing the transforms in terms ot the
+        # partioned dimensions.
         nengo.Connection(
-            self.A, self.ensemble.input, transform=self.transformA,
+            self.A, self.product.product.input, transform=self.transformA,
             synapse=None)
         nengo.Connection(
-            self.B, self.ensemble.input, transform=self.transformB,
+            self.B, self.product.product.input, transform=self.transformB,
             synapse=None)
-        nengo.Connection(self.ensemble.add_output('product', self.product),
-                         self.output,
-                         synapse=None,
-                         transform=self.transformC)
+        nengo.Connection(
+            self.product.output, self.output, transform=self.transformC,
+            synapse=None)
 
-    @staticmethod
-    def _input_transform(dims, first, invert=False):
+    @classmethod
+    def _input_transform(cls, dims, first, invert=False):
         dims2 = 4 * (dims // 2 + 1)
         T = np.zeros((dims2, 2, dims))
-        dft = _dft_half_cached(dims)
+        dft = cls.dft_half(dims)
 
         for i in range(dims2):
             row = dft[i // 4] if not invert else dft[i // 4].conj()
@@ -84,11 +67,11 @@ class CircularConvolution(nengo.Network):
 
         return T.reshape((-1, dims))
 
-    @staticmethod
-    def _output_transform(dims):
+    @classmethod
+    def _output_transform(cls, dims):
         dims2 = (dims // 2 + 1)
         T = np.zeros((dims2, 4, dims))
-        idft = _dft_half_cached(dims).conj()
+        idft = cls.dft_half(dims).conj()
 
         for i in range(dims2):
             row = idft[i] if i == 0 or 2*i == dims else 2*idft[i]
@@ -111,6 +94,10 @@ class CircularConvolution(nengo.Network):
 
         return T.T
 
-    @staticmethod
-    def product(x):
-        return x[0] * x[1]
+    @classmethod
+    @memoize
+    def dft_half(cls, n):
+        x = np.arange(n)
+        w = np.arange(n // 2 + 1)
+        return ((1. / np.sqrt(n)) *
+                np.exp((-2.j * np.pi / n) * (w[:, None] * x[None, :])))
