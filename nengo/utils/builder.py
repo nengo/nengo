@@ -50,7 +50,7 @@ def generate_graphviz(objs, connections):
 
     for c in connections:
         text.append('  "%d" -> "%d" [label="%s"];' % (
-            id(c.pre), id(c.post), label(c.transform)))
+            id(c.pre), id(c.post), label(c.transform_full)))
     text.append('}')
     return '\n'.join(text)
 
@@ -150,7 +150,7 @@ def _create_replacement_connection(c_in, c_out):
                         'function being computed on it')
 
     # compute the combined transform
-    transform = np.dot(c_out.transform, c_in.transform)
+    transform = np.dot(c_out.transform_full, c_in.transform_full)
     # check if the transform is 0 (this happens a lot
     #  with things like identity transforms)
     if np.all(transform == 0):

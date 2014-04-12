@@ -30,9 +30,6 @@ class EnsembleArray(nengo.Network):
 
     @with_self
     def add_output(self, name, function, synapse=None, **conn_kwargs):
-        if 'transform' in conn_kwargs:
-            raise ValueError("Cannot specify a transform.")
-
         if function is None:
             function_d = self.dimensions_per_ensemble
         else:
@@ -40,15 +37,12 @@ class EnsembleArray(nengo.Network):
             function_d = np.asarray(func_output).size
 
         dim = self.n_ensembles * function_d
-        transform = np.identity(dim)
-
         output = nengo.Node(size_in=dim, label=name)
         setattr(self, name, output)
 
         for i, e in enumerate(self.ensembles):
-            trans = transform[:, i * function_d:(i + 1) * function_d]
             nengo.Connection(
-                e, output, transform=trans, function=function,
+                e, output[i*function_d:(i+1)*function_d], function=function,
                 synapse=synapse, **conn_kwargs)
         return output
 
