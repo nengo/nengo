@@ -8,17 +8,20 @@ from nengo.utils.network import with_self
 
 class EnsembleArray(nengo.Network):
 
-    def __init__(self, neurons, n_ensembles, **ens_args):
+    def __init__(self, neurons, n_ensembles, dimensions=1, label=None,
+                 **ens_kwargs):
+        label_prefix = "" if label is None else label + "_"
+
         self.n_ensembles = n_ensembles
-        self.dimensions_per_ensemble = ens_args.pop('dimensions', 1)
+        self.dimensions_per_ensemble = dimensions
         transform = np.eye(self.dimensions)
 
         self.input = nengo.Node(size_in=self.dimensions, label="input")
 
         for i in range(n_ensembles):
-            e = nengo.Ensemble(copy.deepcopy(neurons),
-                               self.dimensions_per_ensemble, label=str(i),
-                               **ens_args)
+            e = nengo.Ensemble(
+                copy.deepcopy(neurons), self.dimensions_per_ensemble,
+                label=label_prefix + str(i), **ens_kwargs)
             trans = transform[i * self.dimensions_per_ensemble:
                               (i + 1) * self.dimensions_per_ensemble, :]
             nengo.Connection(self.input, e, transform=trans, synapse=None)
@@ -45,8 +48,8 @@ class EnsembleArray(nengo.Network):
         for i, e in enumerate(self.ensembles):
             trans = transform[:, i * function_d:(i + 1) * function_d]
             nengo.Connection(
-                e, output, transform=trans, synapse=None, function=function,
-                **conn_kwargs)
+                e, output, transform=trans, function=function,
+                synapse=synapse, **conn_kwargs)
         return output
 
     @property

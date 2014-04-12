@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from nengo.decoders import nnls_L2nz as decoder_solver
+from nengo.decoders import nnls_L2nz
 from nengo.objects import Uniform
 from nengo.networks.ensemblearray import EnsembleArray
 
@@ -27,8 +27,9 @@ class BasalGanglia(nengo.Network):
     le = 0.2
     lg = 0.2
 
-    def __init__(self, dimensions, n_neurons_per_ensemble=100, radius=1.0,
-                 tau_ampa=0.002, tau_gaba=0.008, output_weight=-1):
+    def __init__(self, dimensions, n_neurons_per_ensemble=100, radius=1.5,
+                 tau_ampa=0.002, tau_gaba=0.008, output_weight=-3,
+                 decoder_solver=nnls_L2nz):
         encoders = np.ones((n_neurons_per_ensemble, 1))
         ea_params = {
             'neurons': nengo.LIF(n_neurons_per_ensemble),
