@@ -573,7 +573,7 @@ class SimPyFunc(Operator):
         self.x = x
 
         self.reads = [] if x is None else [x]
-        self.updates = [output]
+        self.updates = [] if output is None else [output]
         self.sets = []
         self.incs = []
 
@@ -581,17 +581,19 @@ class SimPyFunc(Operator):
         return "SimPyFunc(%s -> %s '%s')" % (self.x, self.output, self.fn)
 
     def make_step(self, dct, dt):
-        output = dct[self.output]
+        if self.output is not None:
+            output = dct[self.output]
         fn = self.fn
         args = [dct['__time__']] if self.t_in else []
         args += [dct[self.x]] if self.x is not None else []
 
         def step():
             y = fn(*args)
-            if y is None:
-                raise ValueError(
-                    "Function '%s' returned invalid value" % fn.__name__)
-            output[...] = y
+            if self.output is not None:
+                if y is None:
+                    raise ValueError(
+                        "Function '%s' returned invalid value" % fn.__name__)
+                output[...] = y
 
         return step
 
@@ -848,13 +850,14 @@ class Builder(object):
                                                 n_in=node.size_in,
                                                 n_out=node.size_out,
                                                 label="%s.pyfn" % node.label)
-            if node.size_in > 0:
+            if sig_in is not None:
                 self.model.operators.append(DotInc(
                     self.model.sig_in[node],
                     Signal(1.0, name="1"),
                     sig_in,
                     tag="%s input" % node.label))
-            self.model.sig_out[node] = sig_out
+            if sig_out is not None:
+                self.model.sig_out[node] = sig_out
 
         for probe in node.probes["output"]:
             self.build(probe, dimensions=self.model.sig_out[node].shape)
@@ -1036,9 +1039,15 @@ class Builder(object):
             self.model.operators.append(Reset(sig_in))
         else:
             sig_in = None
-        sig_out = Signal(np.zeros(n_out), name="%s.output" % label)
+
+        if n_out > 0:
+            sig_out = Signal(np.zeros(n_out), name="%s.output" % label)
+        else:
+            sig_out = None
+
         self.model.operators.append(
             SimPyFunc(output=sig_out, fn=fn, t_in=t_in, x=sig_in))
+
         return sig_in, sig_out
 
     @builds(nengo.neurons.Direct)

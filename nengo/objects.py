@@ -414,8 +414,10 @@ class Node(NengoObject):
                         "of node is expected to take %d argument(s)" % (
                             output.__name__, self,
                             output.__code__.co_argcount, len(args)))
-                shape_out = np.asarray(result).shape
-            else:  # callable and size_out is not None
+
+                shape_out = (0,) if result is None \
+                    else np.asarray(result).shape
+            else:
                 shape_out = (size_out,)  # assume `size_out` is correct
 
             if len(shape_out) > 1:
@@ -424,6 +426,7 @@ class Node(NengoObject):
                     (shape_out,))
 
             size_out_new = shape_out[0] if len(shape_out) == 1 else 1
+
             if size_out is not None and size_out != size_out_new:
                 raise ValueError(
                     "Size of Node output (%d) does not match `size_out` (%d)" %

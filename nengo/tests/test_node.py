@@ -181,13 +181,16 @@ def test_output_shape_error(Simulator):
 
 
 def test_none(Simulator, nl_nodirect):
-    """Ensure that a node which outputs `None` raises an error"""
+    """Test for nodes that output None."""
+
     model = nengo.Network(label="test_none", seed=89234)
 
+    # This function will fail, because at build time it will be
+    # detected as producing output (func is called with 0 input)
+    # but during the run it will produce None when t >=0.5
     def input_function(t):
-        if 0.1 < t < 1:
+        if t < 0.5:
             return [1]
-        #  oops, didn't handle cases outside this range
 
     with model:
         u = nengo.Node(output=input_function)
@@ -197,6 +200,19 @@ def test_none(Simulator, nl_nodirect):
     sim = nengo.Simulator(model)
     with pytest.raises(ValueError):
         sim.run(1.)
+
+    # This function will pass (with a warning), because it will
+    # be determined at run time that the output function
+    # returns None
+    def none_function(t):
+        pass
+
+    model2 = nengo.Network()
+    with model2:
+        nengo.Node(output=none_function)
+
+    sim = nengo.Simulator(model2)
+    sim.run(1)
 
 
 def test_scalar(Simulator):
