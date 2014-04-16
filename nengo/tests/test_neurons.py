@@ -88,8 +88,8 @@ def test_alif_rate(Simulator):
                            max_rates=max_rates,
                            intercepts=intercepts,
                            encoders=encoders)
-        nengo.Connection(u, a, filter=0)
-        ap = nengo.Probe(a.neurons, "output", filter=0.001)
+        nengo.Connection(u, a, filter=None)
+        ap = nengo.Probe(a.neurons, "output", filter=None)
 
     dt = 1e-3
     sim = Simulator(model, dt=dt)

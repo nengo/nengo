@@ -348,6 +348,28 @@ def test_slicing(Simulator, nl_nodirect):
                                                        [2, 1, 3]]))
 
 
+def test_shortfilter(Simulator, nl):
+    # Testing the case where the connection filter is < dt
+    m = nengo.Network()
+    with m:
+        a = nengo.Ensemble(neurons=nl(10), dimensions=1)
+        nengo.Connection(a, a)
+
+        b = nengo.Ensemble(neurons=nl(10), dimensions=1)
+        nengo.Connection(a, b)
+        nengo.Connection(b, a)
+
+    Simulator(model=m, dt=.01)
+    # This test passes if there are no cycles in the op graph
+
+    # We will still get a cycle if the user explicitly sets the
+    # filter to None
+    with m:
+        d = nengo.Ensemble(neurons=nengo.Direct(10), dimensions=1)
+        nengo.Connection(d, d, filter=None)
+    with pytest.raises(ValueError):
+        Simulator(model=m, dt=.01)
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
