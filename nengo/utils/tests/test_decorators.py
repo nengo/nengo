@@ -257,27 +257,27 @@ def test_memoize():
         assert f(a, b=b) == a + b
         assert (state == 'run') == should_run
 
-    inst = Test()  # noqa: F841
+    inst = Test()
 
     # First run should actually run
-    # check_run(True, f)
-    # check_run(True, inst.inst_f)
-    # check_run(True, Test.cls_f)
-    # check_run(True, Test.static_f)
-    # check_run_f_args(True, f_args, 1)
-    # check_run_f_args(True, f_args, a=10)
-    # check_run_f_args(True, f_args, 1, 2)
-    # check_run_f_args(True, f_args, 1, b=100)
+    check_run(True, f)
+    check_run(True, inst.inst_f)
+    check_run(True, Test.cls_f)
+    check_run(True, Test.static_f)
+    check_run_f_args(True, f_args, 1)
+    check_run_f_args(True, f_args, a=10)
+    check_run_f_args(True, f_args, 1, 2)
+    check_run_f_args(True, f_args, 1, b=100)
 
     # Second run should not run
-    # check_run(False, f)
-    # check_run(False, inst.inst_f)
-    # check_run(False, Test.cls_f)
-    # check_run(False, Test.static_f)
-    # check_run_f_args(False, f_args, 1)
-    # check_run_f_args(False, f_args, a=10)
-    # check_run_f_args(False, f_args, 1, 2)
-    # check_run_f_args(False, f_args, 1, b=100)
+    check_run(False, f)
+    check_run(False, inst.inst_f)
+    check_run(False, Test.cls_f)
+    check_run(False, Test.static_f)
+    check_run_f_args(False, f_args, 1)
+    check_run_f_args(False, f_args, a=10)
+    check_run_f_args(False, f_args, 1, 2)
+    check_run_f_args(False, f_args, 1, b=100)
 
 
 if __name__ == "__main__":
