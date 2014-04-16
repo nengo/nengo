@@ -4,7 +4,7 @@ import logging
 import pytest
 
 import nengo
-from nengo.utils.decorators import decorator
+from nengo.utils.decorators import decorator, memoize
 
 logger = logging.getLogger(__name__)
 state = None  # Used to make sure decorators are running
@@ -208,6 +208,76 @@ def test_class():
                                     '        def __init__(self, a, b):\n'
                                     '            self.a = a\n'
                                     '            self.b = b\n')
+
+
+def test_memoize():
+    """Test that the memoize decorator works in several contexts."""
+    @memoize
+    def f():
+        global state
+        state = 'run'
+        return 'f'
+
+    @memoize
+    def f_args(a, b=5):
+        global state
+        state = 'run'
+        return a + b
+
+    class Test(object):
+        @memoize
+        def inst_f(self):
+            global state
+            state = 'run'
+            return 'inst_f'
+
+        @memoize
+        @classmethod
+        def cls_f(cls):
+            global state
+            state = 'run'
+            return 'cls_f'
+
+        @memoize
+        @staticmethod
+        def static_f():
+            global state
+            state = 'run'
+            return 'static_f'
+
+    def check_run(should_run, f):
+        global state
+        state = 'not run'
+        assert f() == f.__name__
+        assert (state == 'run') == should_run
+
+    def check_run_f_args(should_run, f, a, b=5):
+        global state
+        state = 'not run'
+        assert f(a, b=b) == a + b
+        assert (state == 'run') == should_run
+
+    inst = Test()  # noqa: F841
+
+    # First run should actually run
+    # check_run(True, f)
+    # check_run(True, inst.inst_f)
+    # check_run(True, Test.cls_f)
+    # check_run(True, Test.static_f)
+    # check_run_f_args(True, f_args, 1)
+    # check_run_f_args(True, f_args, a=10)
+    # check_run_f_args(True, f_args, 1, 2)
+    # check_run_f_args(True, f_args, 1, b=100)
+
+    # Second run should not run
+    # check_run(False, f)
+    # check_run(False, inst.inst_f)
+    # check_run(False, Test.cls_f)
+    # check_run(False, Test.static_f)
+    # check_run_f_args(False, f_args, 1)
+    # check_run_f_args(False, f_args, a=10)
+    # check_run_f_args(False, f_args, 1, 2)
+    # check_run_f_args(False, f_args, 1, b=100)
 
 
 if __name__ == "__main__":
