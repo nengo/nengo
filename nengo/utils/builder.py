@@ -134,10 +134,10 @@ def _create_replacement_connection(c_in, c_out):
     assert c_in.post.output is None
 
     # determine the filter for the new Connection
-    if c_in.filter is None:
-        filter = c_out.filter
-    elif c_out.filter is None:
-        filter = c_in.filter
+    if c_in.synapse is None:
+        synapse = c_out.synapse
+    elif c_out.synapse is None:
+        synapse = c_in.synapse
     else:
         raise NotImplementedError('Cannot merge two filters')
         # Note: the algorithm below is in the right ballpark,
@@ -161,6 +161,6 @@ def _create_replacement_connection(c_in, c_out):
         if function is not None:
             args['function'] = function
         c = nengo.Connection(c_in.pre, c_out.post,
-                             filter=filter,
+                             synapse=synapse,
                              transform=transform, **args)
     return c

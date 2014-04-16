@@ -53,13 +53,13 @@ class CircularConvolution(nengo.Network):
                     (ens.n_neurons // 4, 1))
         nengo.Connection(
             self.A, self.ensemble.input, transform=self.transformA,
-            filter=None)
+            synapse=None)
         nengo.Connection(
             self.B, self.ensemble.input, transform=self.transformB,
-            filter=None)
+            synapse=None)
         nengo.Connection(self.ensemble.add_output('product', self.product),
                          self.output,
-                         filter=None,
+                         synapse=None,
                          transform=self.transformC)
 
     @staticmethod

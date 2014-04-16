@@ -180,7 +180,7 @@ def test_product(Simulator, nl):
         nengo.Connection(sin, factors[0])
         nengo.Connection(cons, factors[1])
         nengo.Connection(
-            factors, product, function=lambda x: x[0] * x[1], filter=0.01)
+            factors, product, function=lambda x: x[0] * x[1], synapse=0.01)
 
         sin_p = nengo.Probe(sin, 'output', sample_every=.01)
         # TODO

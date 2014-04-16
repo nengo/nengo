@@ -42,7 +42,7 @@ def test_connected(Simulator):
         output = nengo.Node(output=lambda t, x: np.square(x),
                             size_in=1,
                             label='output')
-        nengo.Connection(input, output, filter=None)  # Direct connection
+        nengo.Connection(input, output, synapse=None)  # Direct connection
         p_in = nengo.Probe(input, 'output')
         p_out = nengo.Probe(output, 'output')
 
@@ -79,9 +79,9 @@ def test_passthrough(Simulator):
         passthrough = nengo.Node(size_in=1)
         out = nengo.Node(output=lambda t, x: x, size_in=1)
 
-        nengo.Connection(in1, passthrough, filter=None)
-        nengo.Connection(in2, passthrough, filter=None)
-        nengo.Connection(passthrough, out, filter=None)
+        nengo.Connection(in1, passthrough, synapse=None)
+        nengo.Connection(in2, passthrough, synapse=None)
+        nengo.Connection(passthrough, out, synapse=None)
 
         in1_p = nengo.Probe(in1, 'output')
         in2_p = nengo.Probe(in2, 'output')
@@ -113,8 +113,8 @@ def test_passthrough_filter(Simulator):
         v = nengo.Node(output=lambda t, x: x, size_in=1)
 
         synapse = 0.3
-        nengo.Connection(u, passthrough, filter=None)
-        nengo.Connection(passthrough, v, filter=synapse)
+        nengo.Connection(u, passthrough, synapse=None)
+        nengo.Connection(passthrough, v, synapse=synapse)
 
         up = nengo.Probe(u)
         vp = nengo.Probe(v)
@@ -145,8 +145,8 @@ def test_circular(Simulator):
     with m:
         a = nengo.Node(output=lambda t, x: x+1, size_in=1)
         b = nengo.Node(output=lambda t, x: x+1, size_in=1)
-        nengo.Connection(a, b, filter=None)
-        nengo.Connection(b, a, filter=None)
+        nengo.Connection(a, b, synapse=None)
+        nengo.Connection(b, a, synapse=None)
 
         a_p = nengo.Probe(a, 'output')
         b_p = nengo.Probe(b, 'output')
