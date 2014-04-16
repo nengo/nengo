@@ -446,7 +446,7 @@ def test_eval_points(Simulator, nl_nodirect):
                 u = nengo.Node(output=x)
                 a = nengo.Ensemble(nl_nodirect(n * d), d,
                                    eval_points=points[:n_points])
-                nengo.Connection(u, a, filter=0)
+                nengo.Connection(u, a, synapse=0)
                 up = nengo.Probe(u)
                 ap = nengo.Probe(a)
 

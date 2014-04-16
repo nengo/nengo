@@ -21,7 +21,7 @@ class EnsembleArray(nengo.Network):
                                **ens_args)
             trans = transform[i * self.dimensions_per_ensemble:
                               (i + 1) * self.dimensions_per_ensemble, :]
-            nengo.Connection(self.input, e, transform=trans, filter=None)
+            nengo.Connection(self.input, e, transform=trans, synapse=None)
 
         self.add_output('output', function=None)
 
@@ -43,7 +43,7 @@ class EnsembleArray(nengo.Network):
             trans = transform[:, i * function_d:(i + 1) * function_d]
             nengo.Connection(e, output,
                              transform=trans,
-                             filter=None,
+                             synapse=None,
                              function=function)
         return output
 

@@ -21,7 +21,7 @@ def test_args(nl):
         nengo.Connection(
             A, B,
             eval_points=np.random.normal(size=(500, d1)),
-            filter=0.01,
+            synapse=0.01,
             function=np.sin,
             transform=np.random.normal(size=(d2, d1)))
 
@@ -138,7 +138,7 @@ def test_neurons_to_node(Simulator, nl_nodirect):
     with m:
         a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
         out = nengo.Node(lambda t, x: x, size_in=N)
-        nengo.Connection(a.neurons, out, filter=None)
+        nengo.Connection(a.neurons, out, synapse=None)
 
         a_spikes = nengo.Probe(a, 'spikes')
         out_p = nengo.Probe(out, 'output')
@@ -366,7 +366,7 @@ def test_shortfilter(Simulator, nl):
     # filter to None
     with m:
         d = nengo.Ensemble(neurons=nengo.Direct(10), dimensions=1)
-        nengo.Connection(d, d, filter=None)
+        nengo.Connection(d, d, synapse=None)
     with pytest.raises(ValueError):
         Simulator(model=m, dt=.01)
 

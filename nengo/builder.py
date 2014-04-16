@@ -975,8 +975,8 @@ class Builder(object):
 
             # Add operator for decoders and filtering
             decoders = decoders.T
-            if conn.filter is not None and conn.filter > dt:
-                o_coef, n_coef = self.filter_coefs(pstc=conn.filter, dt=dt)
+            if conn.synapse is not None and conn.synapse > dt:
+                o_coef, n_coef = self.filter_coefs(pstc=conn.synapse, dt=dt)
                 decoder_signal = Signal(
                     decoders * n_coef,
                     name="%s.decoders * n_coef" % conn.label)
@@ -998,12 +998,12 @@ class Builder(object):
 
         # Add operator for filtering (in the case filter wasn't already
         # added, when pre.neurons is a non-direct Ensemble)
-        if decoders is None and conn.filter is not None:
-            # Note: we add a filter here even if filter < dt,
+        if decoders is None and conn.synapse is not None:
+            # Note: we add a filter here even if synapse < dt,
             # in order to avoid cycles in the op graph. If the filter
             # is explicitly set to None (e.g. for a passthrough node)
             # then cycles can still occur.
-            signal = self.filtered_signal(signal, conn.filter)
+            signal = self.filtered_signal(signal, conn.synapse)
 
         if conn.modulatory:
             # Make a new signal, effectively detaching from post

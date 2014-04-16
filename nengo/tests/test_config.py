@@ -21,7 +21,7 @@ def test_config():
     with model:
         a = nengo.Ensemble(nengo.LIF(50), 1)
         b = nengo.Ensemble(nengo.LIF(90), 1)
-        a2b = nengo.Connection(a, b, filter=0.01)
+        a2b = nengo.Connection(a, b, synapse=0.01)
 
     config = TestConfig()
 
