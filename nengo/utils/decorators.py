@@ -1,4 +1,4 @@
-"""Functions and classes for making better decorators.
+"""Some generic decorators and a decorator for making better decorators.
 
 Decorators implemented as function closures have important flaws:
     - __name__ and __doc__ are wrong
@@ -6,16 +6,16 @@ Decorators implemented as function closures have important flaws:
     - function source code cannot be retrieved
     - cannot be applied on top of decorators implemented as descriptors
 
-The classes in this file solve these problems. They are used by the
-``decorator`` function, which is itself a decorator, which should be
-applied to all decorator functions in Nengo. This makes decorators
-easy to write, while avoiding the issues above.
+The ``decorator`` decorator in this file solves these problems.
+``@decorator`` should be applied to all decorator functions in Nengo.
+This makes decorators easy to write, while avoiding the issues above.
 
-The code in this file is a modified subset of the wrapt package,
+Some of the code in this file is a modified subset of the wrapt package,
 available at https://pypi.python.org/pypi/wrapt.
 For more details on the implementations herein, see the code comments
 in the wrapt source at https://github.com/GrahamDumpleton/wrapt.
-The code is included here under the terms of wrapt's BSD license.
+The code is included here under the terms of wrapt's BSD license
+(copied below).
 
 ----
 
