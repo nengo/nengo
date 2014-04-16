@@ -56,7 +56,7 @@ def test_constant_scalar(Simulator, nl):
         A = nengo.Ensemble(nl(N), 1)
         nengo.Connection(input, A)
         in_p = nengo.Probe(input, 'output')
-        A_p = nengo.Probe(A, 'decoded_output', filter=0.1)
+        A_p = nengo.Probe(A, 'decoded_output', synapse=0.1)
 
     sim = Simulator(m, dt=0.001)
     sim.run(1.0)
@@ -84,7 +84,7 @@ def test_constant_vector(Simulator, nl):
         A = nengo.Ensemble(nl(N * len(vals)), len(vals))
         nengo.Connection(input, A)
         in_p = nengo.Probe(input, 'output')
-        A_p = nengo.Probe(A, 'decoded_output', filter=0.1)
+        A_p = nengo.Probe(A, 'decoded_output', synapse=0.1)
 
     sim = Simulator(m)
     sim.run(1.0)
@@ -111,7 +111,7 @@ def test_scalar(Simulator, nl):
         A = nengo.Ensemble(nl(N), 1, label='A')
         nengo.Connection(input, A)
         in_p = nengo.Probe(input, 'output')
-        A_p = nengo.Probe(A, 'decoded_output', filter=0.02)
+        A_p = nengo.Probe(A, 'decoded_output', synapse=0.02)
 
     sim = Simulator(m)
     sim.run(5.0)
@@ -143,7 +143,7 @@ def test_vector(Simulator, nl):
         A = nengo.Ensemble(nl(N * 3), 3, radius=2)
         nengo.Connection(input, A)
         in_p = nengo.Probe(input, 'output')
-        A_p = nengo.Probe(A, 'decoded_output', filter=0.02)
+        A_p = nengo.Probe(A, 'decoded_output', synapse=0.02)
 
     sim = Simulator(m)
     sim.run(5)
@@ -186,9 +186,9 @@ def test_product(Simulator, nl):
         # TODO
         # m.probe(conn, sample_every=.01)
         factors_p = nengo.Probe(
-            factors, 'decoded_output', sample_every=.01, filter=.01)
+            factors, 'decoded_output', sample_every=.01, synapse=.01)
         product_p = nengo.Probe(
-            product, 'decoded_output', sample_every=.01, filter=.01)
+            product, 'decoded_output', sample_every=.01, synapse=.01)
 
     sim = Simulator(m)
     sim.run(6)

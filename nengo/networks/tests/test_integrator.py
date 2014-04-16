@@ -25,8 +25,8 @@ def test_integrator(Simulator, nl):
         nengo.Connection(input, A, transform=tau, synapse=tau)
 
         input_p = nengo.Probe(input, 'output')
-        A_p = nengo.Probe(A, 'decoded_output', filter=0.01)
-        T_p = nengo.Probe(T.ensemble, 'decoded_output', filter=0.01)
+        A_p = nengo.Probe(A, 'decoded_output', synapse=0.01)
+        T_p = nengo.Probe(T.ensemble, 'decoded_output', synapse=0.01)
 
     sim = Simulator(model, dt=0.001)
     sim.run(6.0)

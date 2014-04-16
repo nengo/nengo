@@ -34,9 +34,9 @@ def test_multidim(Simulator, nl):
         tb = nengo.Connection(B.output, C.input[1::2]).transform_full
         c = np.dot(ta, a) + np.dot(tb, b)
 
-        A_p = nengo.Probe(A.output, 'output', filter=0.03)
-        B_p = nengo.Probe(B.output, 'output', filter=0.03)
-        C_p = nengo.Probe(C.output, 'output', filter=0.03)
+        A_p = nengo.Probe(A.output, 'output', synapse=0.03)
+        B_p = nengo.Probe(B.output, 'output', synapse=0.03)
+        C_p = nengo.Probe(C.output, 'output', synapse=0.03)
 
     sim = Simulator(model)
     sim.run(1.0)
@@ -103,8 +103,8 @@ def test_matrix_mul(Simulator, nl):
         inputB = nengo.Node(output=Bmat.ravel())
         nengo.Connection(inputA, A.input)
         nengo.Connection(inputB, B.input)
-        A_p = nengo.Probe(A.output, 'output', sample_every=0.01, filter=0.01)
-        B_p = nengo.Probe(B.output, 'output', sample_every=0.01, filter=0.01)
+        A_p = nengo.Probe(A.output, 'output', sample_every=0.01, synapse=0.01)
+        B_p = nengo.Probe(B.output, 'output', sample_every=0.01, synapse=0.01)
 
         C = nengo.networks.EnsembleArray(nl(N),
                                          Amat.size * Bmat.shape[1],
@@ -134,7 +134,7 @@ def test_matrix_mul(Simulator, nl):
         prod = C.add_output("product", lambda x: x[0] * x[1])
 
         nengo.Connection(prod, D.input, transform=transformC)
-        D_p = nengo.Probe(D.output, 'output', sample_every=0.01, filter=0.01)
+        D_p = nengo.Probe(D.output, 'output', sample_every=0.01, synapse=0.01)
 
     sim = Simulator(model)
     sim.run(1)

@@ -341,9 +341,9 @@ class Ensemble(NengoObject):
             The new Probe object.
         """
         if probe.attr == 'decoded_output':
-            Connection(self, probe, synapse=probe.filter, **kwargs)
+            Connection(self, probe, synapse=probe.synapse, **kwargs)
         elif probe.attr == 'spikes':
-            Connection(self.neurons, probe, synapse=probe.filter,
+            Connection(self.neurons, probe, synapse=probe.synapse,
                        transform=np.eye(self.n_neurons), **kwargs)
         elif probe.attr == 'voltages':
             Connection(self.neurons.voltage, probe, synapse=None, **kwargs)
@@ -447,7 +447,7 @@ class Node(NengoObject):
     def probe(self, probe, **kwargs):
         """TODO"""
         if probe.attr == 'output':
-            Connection(self, probe, synapse=probe.filter, **kwargs)
+            Connection(self, probe, synapse=probe.synapse, **kwargs)
         else:
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % probe.attr)
@@ -705,7 +705,7 @@ class Neurons(object):
         self.probes[probe.attr].append(probe)
 
         if probe.attr == 'output':
-            Connection(self, probe, synapse=probe.filter)
+            Connection(self, probe, synapse=probe.synapse)
         else:
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % probe.attr)
@@ -724,13 +724,15 @@ class Probe(object):
         An arbitrary name for the object.
     sample_every : float
         Sampling period in seconds.
+    synapse : float
+        Post-synaptic time constant (PSTC) to use for filtering.
     """
     DEFAULTS = {
         Ensemble: 'decoded_output',
         Node: 'output',
     }
 
-    def __init__(self, target, attr=None, sample_every=None, filter=None,
+    def __init__(self, target, attr=None, sample_every=None, synapse=None,
                  **kwargs):
         if attr is None:
             try:
@@ -746,7 +748,7 @@ class Probe(object):
         self.attr = attr
         self.label = "Probe(%s.%s)" % (target.label, attr)
         self.sample_every = sample_every
-        self.filter = filter
+        self.synapse = synapse
 
         # Probes add themselves to an object through target.probe in order to
         # be built into the model.
