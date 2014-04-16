@@ -24,13 +24,13 @@ def test_oscillator(Simulator, nl):
         nengo.Connection(input, T.input)
 
         A = nengo.Ensemble(nl(100), label='A', dimensions=2)
-        nengo.Connection(A, A, filter=tau,
+        nengo.Connection(A, A, synapse=tau,
                          transform=[[1, -freq*tau], [freq*tau, 1]])
         nengo.Connection(input, A)
 
         in_probe = nengo.Probe(input, "output")
-        A_probe = nengo.Probe(A, "decoded_output", filter=0.01)
-        T_probe = nengo.Probe(T.ensemble, "decoded_output", filter=0.01)
+        A_probe = nengo.Probe(A, "decoded_output", synapse=0.01)
+        T_probe = nengo.Probe(T.ensemble, "decoded_output", synapse=0.01)
 
     sim = Simulator(model)
     sim.run(3.0)

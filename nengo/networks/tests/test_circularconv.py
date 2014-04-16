@@ -73,10 +73,10 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
         nengo.Connection(B.output, D.B)
         nengo.Connection(D.output, C.input)
 
-        A_p = nengo.Probe(A.output, 'output', filter=0.03)
-        B_p = nengo.Probe(B.output, 'output', filter=0.03)
-        C_p = nengo.Probe(C.output, 'output', filter=0.03)
-        D_p = nengo.Probe(D.ensemble.output, 'output', filter=0.03)
+        A_p = nengo.Probe(A.output, 'output', synapse=0.03)
+        B_p = nengo.Probe(B.output, 'output', synapse=0.03)
+        C_p = nengo.Probe(C.output, 'output', synapse=0.03)
+        D_p = nengo.Probe(D.ensemble.output, 'output', synapse=0.03)
 
         # check FFT magnitude
         d = np.dot(D.transformA, a) + np.dot(D.transformB, b)

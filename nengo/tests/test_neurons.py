@@ -88,8 +88,8 @@ def test_alif_rate(Simulator):
                            max_rates=max_rates,
                            intercepts=intercepts,
                            encoders=encoders)
-        nengo.Connection(u, a, filter=None)
-        ap = nengo.Probe(a.neurons, "output", filter=None)
+        nengo.Connection(u, a, synapse=None)
+        ap = nengo.Probe(a.neurons, "output", synapse=None)
 
     dt = 1e-3
     sim = Simulator(model, dt=dt)
@@ -135,10 +135,10 @@ def test_alif(Simulator):
         u = nengo.Node(output=0.5)
         a = nengo.Ensemble(nengo.AdaptiveLIFRate(**nparams), 1, **eparams)
         b = nengo.Ensemble(nengo.AdaptiveLIF(**nparams), 1, **eparams)
-        nengo.Connection(u, a, filter=0)
-        nengo.Connection(u, b, filter=0)
-        ap = nengo.Probe(a.neurons, "output", filter=0)
-        bp = nengo.Probe(b.neurons, "output", filter=0)
+        nengo.Connection(u, a, synapse=0)
+        nengo.Connection(u, b, synapse=0)
+        ap = nengo.Probe(a.neurons, "output", synapse=0)
+        bp = nengo.Probe(b.neurons, "output", synapse=0)
 
     dt = 1e-3
     sim = Simulator(model, dt=dt)

@@ -20,12 +20,12 @@ def test_remove_passthrough():
             print(t, x)
         output = nengo.Node(printout, size_in=D, label='output')
 
-        nengo.Connection(input, a.input, filter=0.01)
-        nengo.Connection(a.output, b.input, filter=0.01)
-        nengo.Connection(b.output, b.input, filter=0.01, transform=0.9)
-        nengo.Connection(a.output, a.input, filter=0.01,
+        nengo.Connection(input, a.input, synapse=0.01)
+        nengo.Connection(a.output, b.input, synapse=0.01)
+        nengo.Connection(b.output, b.input, synapse=0.01, transform=0.9)
+        nengo.Connection(a.output, a.input, synapse=0.01,
                          transform=np.ones((D, D)))
-        nengo.Connection(b.output, output, filter=0.01)
+        nengo.Connection(b.output, output, synapse=0.01)
 
     objs, conns = remove_passthrough_nodes(*objs_and_connections(model))
 
@@ -45,8 +45,8 @@ def test_remove_passthrough_bg():
             print(t, x)
         output = nengo.Node(printout, size_in=D, label='output')
         bg = nengo.networks.BasalGanglia(D, 20, label='BG')
-        nengo.Connection(input, bg.input, filter=0.01)
-        nengo.Connection(bg.output, output, filter=0.01)
+        nengo.Connection(input, bg.input, synapse=0.01)
+        nengo.Connection(bg.output, output, synapse=0.01)
 
     objs, conns = remove_passthrough_nodes(*objs_and_connections(model))
 
@@ -62,15 +62,15 @@ def test_passthrough_errors():
         a = nengo.Ensemble(10, 1)
         b = nengo.Ensemble(10, 1)
         node = nengo.Node(None, size_in=1)
-        nengo.Connection(a, node, filter=0.01)
-        nengo.Connection(node, b, filter=0.01)
+        nengo.Connection(a, node, synapse=0.01)
+        nengo.Connection(node, b, synapse=0.01)
     with pytest.raises(NotImplementedError):
         remove_passthrough_nodes(*objs_and_connections(model))
 
     model = nengo.Network()
     with model:
         node = nengo.Node(None, size_in=1)
-        nengo.Connection(node, node, filter=0.01)
+        nengo.Connection(node, node, synapse=0.01)
     with pytest.raises(Exception):
         remove_passthrough_nodes(*objs_and_connections(model))
 

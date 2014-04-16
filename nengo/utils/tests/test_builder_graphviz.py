@@ -17,12 +17,12 @@ def test_create_dot():
         b = nengo.networks.EnsembleArray(50, D, label='b')
         output = nengo.Node(None, size_in=D, label='output')
 
-        nengo.Connection(input, a.input, filter=0.01)
-        nengo.Connection(a.output, b.input, filter=0.01)
-        nengo.Connection(b.output, b.input, filter=0.01, transform=0.9)
-        nengo.Connection(a.output, a.input, filter=0.01,
+        nengo.Connection(input, a.input, synapse=0.01)
+        nengo.Connection(a.output, b.input, synapse=0.01)
+        nengo.Connection(b.output, b.input, synapse=0.01, transform=0.9)
+        nengo.Connection(a.output, a.input, synapse=0.01,
                          transform=np.ones((D, D)))
-        nengo.Connection(b.output, output, filter=0.01)
+        nengo.Connection(b.output, output, synapse=0.01)
 
     dot = generate_graphviz(*objs_and_connections(model))
     assert len(dot.splitlines()) == 31

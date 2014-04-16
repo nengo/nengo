@@ -21,7 +21,7 @@ def test_args(nl):
         nengo.Connection(
             A, B,
             eval_points=np.random.normal(size=(500, d1)),
-            filter=0.01,
+            synapse=0.01,
             function=np.sin,
             transform=np.random.normal(size=(d2, d1)))
 
@@ -39,7 +39,7 @@ def test_node_to_neurons(Simulator, nl_nodirect):
         nengo.Connection(inh, a.neurons, transform=[[-2.5]]*N)
 
         inn_p = nengo.Probe(inn, 'output')
-        a_p = nengo.Probe(a, 'decoded_output', filter=0.1)
+        a_p = nengo.Probe(a, 'decoded_output', synapse=0.1)
         inh_p = nengo.Probe(inh, 'output')
 
     sim = Simulator(m)
@@ -50,7 +50,7 @@ def test_node_to_neurons(Simulator, nl_nodirect):
 
     with Plotter(Simulator, nl_nodirect) as plt:
         plt.plot(t, sim.data[inn_p], label='Input')
-        plt.plot(t, sim.data[a_p], label='Neuron approx, filter=0.1')
+        plt.plot(t, sim.data[a_p], label='Neuron approx, synapse=0.1')
         plt.plot(t, sim.data[inh_p], label='Inhib signal')
         plt.plot(t, ideal, label='Ideal output')
         plt.legend(loc=0, prop={'size': 10})
@@ -75,8 +75,8 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect):
         nengo.Connection(b, a.neurons, transform=[[-2.5]]*N)
 
         inn_p = nengo.Probe(inn, 'output')
-        a_p = nengo.Probe(a, 'decoded_output', filter=0.1)
-        b_p = nengo.Probe(b, 'decoded_output', filter=0.1)
+        a_p = nengo.Probe(a, 'decoded_output', synapse=0.1)
+        b_p = nengo.Probe(b, 'decoded_output', synapse=0.1)
         inh_p = nengo.Probe(inh, 'output')
 
     sim = Simulator(m)
@@ -112,9 +112,9 @@ def test_neurons_to_ensemble(Simulator, nl_nodirect):
         nengo.Connection(a.neurons, b, transform=-10 * np.ones((3, N*2)))
         nengo.Connection(a.neurons, c)
 
-        a_p = nengo.Probe(a, 'decoded_output', filter=0.01)
-        b_p = nengo.Probe(b, 'decoded_output', filter=0.01)
-        c_p = nengo.Probe(c, 'decoded_output', filter=0.01)
+        a_p = nengo.Probe(a, 'decoded_output', synapse=0.01)
+        b_p = nengo.Probe(b, 'decoded_output', synapse=0.01)
+        c_p = nengo.Probe(c, 'decoded_output', synapse=0.01)
 
     sim = Simulator(m)
     sim.run(5.0)
@@ -138,7 +138,7 @@ def test_neurons_to_node(Simulator, nl_nodirect):
     with m:
         a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
         out = nengo.Node(lambda t, x: x, size_in=N)
-        nengo.Connection(a.neurons, out, filter=None)
+        nengo.Connection(a.neurons, out, synapse=None)
 
         a_spikes = nengo.Probe(a, 'spikes')
         out_p = nengo.Probe(out, 'output')
@@ -175,8 +175,8 @@ def test_neurons_to_neurons(Simulator, nl_nodirect):
             a.neurons, b.neurons, transform=-1 * np.ones((N2, N1)))
 
         inp_p = nengo.Probe(inp, 'output')
-        a_p = nengo.Probe(a, 'decoded_output', filter=0.1)
-        b_p = nengo.Probe(b, 'decoded_output', filter=0.1)
+        a_p = nengo.Probe(a, 'decoded_output', synapse=0.1)
+        b_p = nengo.Probe(b, 'decoded_output', synapse=0.1)
 
     sim = Simulator(m)
     sim.run(5.0)
@@ -366,7 +366,7 @@ def test_shortfilter(Simulator, nl):
     # filter to None
     with m:
         d = nengo.Ensemble(neurons=nengo.Direct(10), dimensions=1)
-        nengo.Connection(d, d, filter=None)
+        nengo.Connection(d, d, synapse=None)
     with pytest.raises(ValueError):
         Simulator(model=m, dt=.01)
 

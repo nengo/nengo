@@ -18,10 +18,10 @@ def test_io(tmpdir):
         nengo.Connection(sin, factors[0])
         nengo.Connection(cons, factors[1])
         factors_p = nengo.Probe(
-            factors, 'decoded_output', sample_every=.01, filter=.01)
+            factors, 'decoded_output', sample_every=.01, synapse=.01)
         assert factors_p  # To suppress F841
         product_p = nengo.Probe(
-            product, 'decoded_output', sample_every=.01, filter=.01)
+            product, 'decoded_output', sample_every=.01, synapse=.01)
         assert product_p  # To suppress F841
     m1.save(tmpfile)
     m2 = nengo.Network.load(tmpfile)
