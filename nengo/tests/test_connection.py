@@ -39,7 +39,7 @@ def test_node_to_neurons(Simulator, nl_nodirect):
         nengo.Connection(inh, a.neurons, transform=[[-2.5]]*N)
 
         inn_p = nengo.Probe(inn, 'output')
-        a_p = nengo.Probe(a, 'decoded_output', filter=0.1)
+        a_p = nengo.Probe(a, 'decoded_output', synapse=0.1)
         inh_p = nengo.Probe(inh, 'output')
 
     sim = Simulator(m)
@@ -50,7 +50,7 @@ def test_node_to_neurons(Simulator, nl_nodirect):
 
     with Plotter(Simulator, nl_nodirect) as plt:
         plt.plot(t, sim.data[inn_p], label='Input')
-        plt.plot(t, sim.data[a_p], label='Neuron approx, filter=0.1')
+        plt.plot(t, sim.data[a_p], label='Neuron approx, synapse=0.1')
         plt.plot(t, sim.data[inh_p], label='Inhib signal')
         plt.plot(t, ideal, label='Ideal output')
         plt.legend(loc=0, prop={'size': 10})
@@ -75,8 +75,8 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect):
         nengo.Connection(b, a.neurons, transform=[[-2.5]]*N)
 
         inn_p = nengo.Probe(inn, 'output')
-        a_p = nengo.Probe(a, 'decoded_output', filter=0.1)
-        b_p = nengo.Probe(b, 'decoded_output', filter=0.1)
+        a_p = nengo.Probe(a, 'decoded_output', synapse=0.1)
+        b_p = nengo.Probe(b, 'decoded_output', synapse=0.1)
         inh_p = nengo.Probe(inh, 'output')
 
     sim = Simulator(m)
@@ -112,9 +112,9 @@ def test_neurons_to_ensemble(Simulator, nl_nodirect):
         nengo.Connection(a.neurons, b, transform=-10 * np.ones((3, N*2)))
         nengo.Connection(a.neurons, c)
 
-        a_p = nengo.Probe(a, 'decoded_output', filter=0.01)
-        b_p = nengo.Probe(b, 'decoded_output', filter=0.01)
-        c_p = nengo.Probe(c, 'decoded_output', filter=0.01)
+        a_p = nengo.Probe(a, 'decoded_output', synapse=0.01)
+        b_p = nengo.Probe(b, 'decoded_output', synapse=0.01)
+        c_p = nengo.Probe(c, 'decoded_output', synapse=0.01)
 
     sim = Simulator(m)
     sim.run(5.0)
@@ -175,8 +175,8 @@ def test_neurons_to_neurons(Simulator, nl_nodirect):
             a.neurons, b.neurons, transform=-1 * np.ones((N2, N1)))
 
         inp_p = nengo.Probe(inp, 'output')
-        a_p = nengo.Probe(a, 'decoded_output', filter=0.1)
-        b_p = nengo.Probe(b, 'decoded_output', filter=0.1)
+        a_p = nengo.Probe(a, 'decoded_output', synapse=0.1)
+        b_p = nengo.Probe(b, 'decoded_output', synapse=0.1)
 
     sim = Simulator(m)
     sim.run(5.0)
