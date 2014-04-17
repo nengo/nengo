@@ -14,16 +14,13 @@ def test_config():
     class TestConfigConnection(nengo.config.ConfigItem):
         something_else = nengo.config.Parameter(None)
 
-    class TestConfig(nengo.config.Config):
-        config_items = [TestConfigEnsemble, TestConfigConnection]
-
     model = nengo.Network()
     with model:
         a = nengo.Ensemble(nengo.LIF(50), 1)
         b = nengo.Ensemble(nengo.LIF(90), 1)
         a2b = nengo.Connection(a, b, synapse=0.01)
 
-    config = TestConfig()
+    config = nengo.config.Config([TestConfigEnsemble, TestConfigConnection])
 
     assert config[a].something is None
     assert config[b].something is None
@@ -67,9 +64,7 @@ def test_parameter_checking():
         a = nengo.Ensemble(50, 1)
         b = nengo.Ensemble(90, 1)
 
-    class TestConfig(nengo.config.Config):
-        config_items = [TestConfigEnsemble]
-    config = TestConfig()
+    config = nengo.config.Config([TestConfigEnsemble])
 
     config[a].number = 3
     with pytest.raises(AttributeError):
@@ -87,22 +82,34 @@ def test_invalid_config():
     class TestBadConfigConnection(nengo.config.ConfigItem):
         number = nengo.config.Parameter(1)
 
+    with pytest.raises(TypeError):
+        nengo.config.Config(None)
     with pytest.raises(AttributeError):
-        class TestConfig(nengo.config.Config):
-            pass
-        TestConfig()
+        nengo.config.Config([1, 2, 3])
     with pytest.raises(AttributeError):
-        class TestConfig(nengo.config.Config):
-            config_items = [1, 2, 3]
-        TestConfig()
+        nengo.config.Config([TestBadConfigConnection])
     with pytest.raises(AttributeError):
-        class TestConfig(nengo.config.Config):
-            config_items = [TestBadConfigConnection]
-        TestConfig()
-    with pytest.raises(AttributeError):
-        class TestConfig(nengo.config.Config):
-            config_items = [TestConfigEnsemble, TestBadConfigConnection]
-        TestConfig()
+        nengo.config.Config([TestConfigEnsemble, TestBadConfigConnection])
+
+
+def test_defaults():
+
+    b = nengo.Ensemble(nengo.LIF(10), 1, radius=nengo.Default,
+                       add_to_container=False)
+
+    assert b.radius == nengo.defaultconfig[nengo.Ensemble].radius
+
+    with nengo.Network():
+        c = nengo.Ensemble(nengo.LIF(10), 1, radius=nengo.Default)
+
+        with nengo.Network() as net2:
+            net2.config.add_config(nengo.objects.EnsembleDefaults)
+            net2.config[nengo.Ensemble].radius = 2.0
+
+            a = nengo.Ensemble(nengo.LIF(50), 1, radius=nengo.Default)
+
+    assert c.radius == nengo.defaultconfig[nengo.Ensemble].radius
+    assert a.radius == 2.0
 
 if __name__ == '__main__':
     nengo.log(debug=True)

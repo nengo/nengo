@@ -15,8 +15,13 @@ can be found at
 import weakref
 
 
+class DefaultType:
+    pass
+Default = DefaultType()
+
+
 class Parameter(object):
-    """Simple decorator for storing configuration parameters"""
+    """Simple descriptor for storing configuration parameters"""
     def __init__(self, default):
         self.default = default
         # use a WeakKey dictionary so items can still be garbage collected
@@ -72,22 +77,19 @@ class Config(object):
         config_items = [TestConfigConnection]
     """
 
-    def __init__(self):
+    def __init__(self, config_items=[]):
         self.items = {}
         self.configurable = {}
-        try:
-            for config_item in self.config_items:
-                self.configurable[config_item.nengo_class] = config_item
-        except AttributeError as e:
-            raise AttributeError(
-                "config_items doesn't exist, or contains a non-decorated "
-                "ConfigItem. See help(nengo.config.Config) for an example."
-                "\n%s" % e)
+
+        for config_item in config_items:
+            self.add_config(config_item)
 
     def __getitem__(self, key):
         item = self.items.get(key, None)
         if item is None:
-            for cls in key.__class__.__mro__:
+            mro = [key] if isinstance(key, type) else []
+            mro.extend(list(key.__class__.__mro__))
+            for cls in mro:
                 if cls in self.configurable:
                     item = self.configurable[cls]()
                     self.items[key] = item
@@ -96,3 +98,13 @@ class Config(object):
                 raise KeyError('No parameters for %s objects' %
                                key.__class__.__name__)
         return item
+
+    def add_config(self, config_item):
+        if not hasattr(config_item, "nengo_class"):
+            raise AttributeError(
+                "%s is not a decorated ConfigItem" % config_item)
+#        if self.configurable.has_key(config_item.nengo_class):
+#            self.configurable[config_item.nengo_class] += [config_item]
+#        else:
+#            self.configurable[config_item.nengo_class] = [config_item]
+        self.configurable[config_item.nengo_class] = config_item
