@@ -5,10 +5,11 @@ import pickle
 
 import numpy as np
 
+import nengo
 import nengo.utils.numpy as npext
-from nengo.utils.compat import (
-    is_callable, is_iterable, with_metaclass)
+from nengo.utils.compat import is_callable, is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
+from nengo.config import Config, ConfigItem, configures, Default
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,8 @@ class Network(with_metaclass(NengoObjectContainer)):
         inst.nodes = inst.objects[Node]
         inst.connections = inst.objects[Connection]
         inst.networks = inst.objects[Network]
+        inst.config = Config()
+
         return inst
 
     context = collections.deque(maxlen=100)  # static stack of Network objects
@@ -252,6 +255,21 @@ class NengoObject(with_metaclass(NetworkMember)):
     def __repr__(self):
         return str(self)
 
+    def __setattr__(self, name, val):
+        if val is Default:
+            for conf in reversed([nengo.defaultconfig] +
+                                 [n.config for n in Network.context]):
+                try:
+                    val = getattr(conf[type(self)], name)
+                    break
+                except (KeyError, AttributeError):
+                    # either there is no config for that object type,
+                    # or the config item has no entry for that attribute
+                    pass
+            else:
+                raise AttributeError("No config value found for %s" % name)
+        super(NengoObject, self).__setattr__(name, val)
+
 
 class Ensemble(NengoObject):
     """A group of neurons that collectively represent a vector.
@@ -290,14 +308,16 @@ class Ensemble(NengoObject):
         The seed used for random number generation.
     """
 
-    def __init__(self, neurons, dimensions, radius=1.0, encoders=None,
-                 intercepts=Uniform(-1.0, 1.0), max_rates=Uniform(200, 400),
-                 eval_points=None, seed=None, label="Ensemble"):
-        if dimensions <= 0:
+    def __init__(self, neurons, dimensions, radius=Default, encoders=Default,
+                 intercepts=Default, max_rates=Default, eval_points=Default,
+                 seed=Default, label=Default):
+
+        self.dimensions = dimensions  # Must be set before neurons
+
+        if self.dimensions <= 0:
             raise ValueError(
                 "Number of dimensions (%d) must be positive" % dimensions)
 
-        self.dimensions = dimensions  # Must be set before neurons
         self.neurons = neurons
         self.radius = radius
         self.encoders = encoders
@@ -355,6 +375,17 @@ class Ensemble(NengoObject):
         return probe
 
 
+@configures(Ensemble)
+class EnsembleDefaults(ConfigItem):
+    radius = 1.0
+    encoders = None
+    intercepts = Uniform(-1.0, 1.0)
+    max_rates = Uniform(200, 400)
+    eval_points = None
+    seed = None
+    label = "Ensemble"
+
+
 class Node(NengoObject):
     """Provides arbitrary data to Nengo objects.
 
@@ -392,33 +423,37 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
-    def __init__(self, output=None, size_in=0, size_out=None, label="Node"):
-        if output is not None and not is_callable(output):
-            output = npext.array(output, min_dims=1, copy=False)
+    def __init__(self, output=Default,
+                 size_in=Default, size_out=Default, label=Default):
+
         self.output = output
         self.label = label
         self.size_in = size_in
+        self.size_out = size_out
 
-        if output is not None:
-            if isinstance(output, np.ndarray):
-                shape_out = output.shape
-            elif size_out is None and is_callable(output):
-                t, x = np.asarray(0.0), np.zeros(size_in)
-                args = [t, x] if size_in > 0 else [t]
+        if self.output is not None and not is_callable(self.output):
+            self.output = npext.array(self.output, min_dims=1, copy=False)
+
+        if self.output is not None:
+            if isinstance(self.output, np.ndarray):
+                shape_out = self.output.shape
+            elif self.size_out is None and is_callable(self.output):
+                t, x = np.asarray(0.0), np.zeros(self.size_in)
+                args = [t, x] if self.size_in > 0 else [t]
                 try:
-                    result = output(*args)
+                    result = self.output(*args)
                 except TypeError:
                     raise TypeError(
                         "The function '%s' provided to '%s' takes %d "
                         "argument(s), where a function for this type "
                         "of node is expected to take %d argument(s)" % (
-                            output.__name__, self,
-                            output.__code__.co_argcount, len(args)))
+                            self.output.__name__, self,
+                            self.output.__code__.co_argcount, len(args)))
 
-                shape_out = (0,) if result is None \
-                    else np.asarray(result).shape
+                shape_out = ((0,) if result is None
+                             else np.asarray(result).shape)
             else:
-                shape_out = (size_out,)  # assume `size_out` is correct
+                shape_out = (self.size_out,)  # assume `size_out` is correct
 
             if len(shape_out) > 1:
                 raise ValueError(
@@ -427,16 +462,14 @@ class Node(NengoObject):
 
             size_out_new = shape_out[0] if len(shape_out) == 1 else 1
 
-            if size_out is not None and size_out != size_out_new:
+            if self.size_out is not None and self.size_out != size_out_new:
                 raise ValueError(
                     "Size of Node output (%d) does not match `size_out` (%d)" %
-                    (size_out_new, size_out))
+                    (size_out_new, self.size_out))
 
-            size_out = size_out_new
+            self.size_out = size_out_new
         else:  # output is None
-            size_out = size_in
-
-        self.size_out = size_out
+            self.size_out = self.size_in
 
         # Set up probes
         self.probes = {'output': []}
@@ -454,6 +487,14 @@ class Node(NengoObject):
 
         self.probes[probe.attr].append(probe)
         return probe
+
+
+@configures(Node)
+class NodeDefaults(ConfigItem):
+    output = None
+    size_in = 0
+    size_out = None
+    label = "Node"
 
 
 class Connection(NengoObject):
@@ -489,8 +530,8 @@ class Connection(NengoObject):
         `decoder_solver`, but more general. See `nengo.decoders`.
     """
 
-    def __init__(self, pre, post, synapse=0.005, transform=1.0,
-                 modulatory=False, **kwargs):
+    def __init__(self, pre, post, synapse=Default, transform=Default,
+                 modulatory=Default, **kwargs):
         if not isinstance(pre, ObjView):
             pre = ObjView(pre)
         if not isinstance(post, ObjView):
@@ -509,19 +550,19 @@ class Connection(NengoObject):
 
         if isinstance(self._pre, Ensemble):
             if isinstance(self._post, Ensemble):
-                self.weight_solver = kwargs.pop('weight_solver', None)
+                self.weight_solver = kwargs.pop('weight_solver', Default)
             else:
                 self.weight_solver = None
-            self.decoder_solver = kwargs.pop('decoder_solver', None)
-            self.eval_points = kwargs.pop('eval_points', None)
-            self.function = kwargs.pop('function', None)
-        elif not isinstance(self._pre, (Neurons, Node)):
-            raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
-                             self._pre.__class__.__name__)
-        else:
+            self.decoder_solver = kwargs.pop('decoder_solver', Default)
+            self.eval_points = kwargs.pop('eval_points', Default)
+            self.function = kwargs.pop('function', Default)
+        elif isinstance(self._pre, (Neurons, Node)):
             self.decoder_solver = None
             self.eval_points = None
             self._function = (None, 0)
+        else:
+            raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
+                             self._pre.__class__.__name__)
 
         if not isinstance(self._post, (Ensemble, Neurons, Node, Probe)):
             raise ValueError("Objects of type '%s' cannot serve as 'post'" %
@@ -677,13 +718,24 @@ class Connection(NengoObject):
         self._check_shapes()
 
 
+@configures(Connection)
+class ConnectionDefaults(ConfigItem):
+    synapse = 0.005
+    transform = 1.0
+    modulatory = False
+    weight_solver = None
+    decoder_solver = None
+    function = None
+    eval_points = None
+
+
 class Neurons(object):
 
-    def __init__(self, n_neurons, bias=None, gain=None, label=None):
+    def __init__(self, n_neurons, bias=Default, gain=Default, label=Default):
         self.n_neurons = n_neurons
         self.bias = bias
         self.gain = gain
-        if label is None:
+        if label is Default:
             label = "<%s%d>" % (self.__class__.__name__, id(self))
         self.label = label
 
@@ -716,6 +768,13 @@ class Neurons(object):
         return probe
 
 
+@configures(Neurons)
+class NeuronDefaults(ConfigItem):
+    bias = None
+    gain = None
+    label = None
+
+
 class Probe(object):
     """A probe is a dummy object that only has an input signal and probe.
 
@@ -736,21 +795,24 @@ class Probe(object):
         Node: 'output',
     }
 
-    def __init__(self, target, attr=None, sample_every=None, synapse=None,
-                 **kwargs):
+    def __init__(self, target, attr=None, sample_every=None,
+                 synapse=None, **kwargs):
+
         if attr is None:
             try:
-                attr = self.DEFAULTS[target.__class__]
+                self.attr = self.DEFAULTS[target.__class__]
             except KeyError:
                 for k in self.DEFAULTS:
                     if issubclass(target.__class__, k):
-                        attr = self.DEFAULTS[k]
+                        self.attr = self.DEFAULTS[k]
                         break
                 else:
                     raise TypeError("Type '%s' has no default probe." %
                                     target.__class__.__name__)
-        self.attr = attr
-        self.label = "Probe(%s.%s)" % (target.label, attr)
+        else:
+            self.attr = attr
+
+        self.label = "Probe(%s.%s)" % (target.label, self.attr)
         self.sample_every = sample_every
         self.synapse = synapse
 

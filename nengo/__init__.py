@@ -16,11 +16,18 @@ from .version import version as __version__
 import logging
 
 # Nengo namespace (API)
+from .config import Config, Default
+from .objects import (
+    Ensemble, Node, Connection, Probe, Network, EnsembleDefaults,
+    NodeDefaults, ConnectionDefaults, NeuronDefaults)
+
 from .neurons import Direct, LIF, LIFRate, AdaptiveLIF, AdaptiveLIFRate
-from .objects import Ensemble, Node, Connection, Probe, Network
 from . import networks
 from .simulator import Simulator
 from .utils.logging import log
+
+defaultconfig = Config([EnsembleDefaults, NodeDefaults, ConnectionDefaults,
+                        NeuronDefaults])
 
 logger = logging.getLogger(__name__)
 try:
