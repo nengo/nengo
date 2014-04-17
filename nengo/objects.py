@@ -2,10 +2,10 @@ import collections
 import logging
 import os
 import pickle
+import copy
 
 import numpy as np
 
-import nengo
 import nengo.utils.numpy as npext
 from nengo.utils.compat import is_callable, is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
@@ -120,8 +120,7 @@ class Network(with_metaclass(NengoObjectContainer)):
         inst.nodes = inst.objects[Node]
         inst.connections = inst.objects[Connection]
         inst.networks = inst.objects[Network]
-        inst.config = Config()
-
+        inst.config = copy.deepcopy(Config.context[-1])
         return inst
 
     context = collections.deque(maxlen=100)  # static stack of Network objects
@@ -185,6 +184,7 @@ class Network(with_metaclass(NengoObjectContainer)):
 
     def __enter__(self):
         Network.context.append(self)
+        Config.context.append(self.config)
         return self
 
     def __exit__(self, dummy_exc_type, dummy_exc_value, dummy_tb):
@@ -193,6 +193,7 @@ class Network(with_metaclass(NengoObjectContainer)):
                                "exiting from a 'with' block.")
 
         network = Network.context.pop()
+        Config.context.pop()
 
         if network is not self:
             raise RuntimeError("Network.context in bad state; was expecting "
@@ -257,17 +258,7 @@ class NengoObject(with_metaclass(NetworkMember)):
 
     def __setattr__(self, name, val):
         if val is Default:
-            for conf in reversed([nengo.defaultconfig] +
-                                 [n.config for n in Network.context]):
-                try:
-                    val = getattr(conf[type(self)], name)
-                    break
-                except (KeyError, AttributeError):
-                    # either there is no config for that object type,
-                    # or the config item has no entry for that attribute
-                    pass
-            else:
-                raise AttributeError("No config value found for %s" % name)
+            val = Config.lookup(name, type(self))
         super(NengoObject, self).__setattr__(name, val)
 
 

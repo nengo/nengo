@@ -26,8 +26,8 @@ from . import networks
 from .simulator import Simulator
 from .utils.logging import log
 
-defaultconfig = Config([EnsembleDefaults, NodeDefaults, ConnectionDefaults,
-                        NeuronDefaults])
+Config.context.append(Config([EnsembleDefaults, NodeDefaults,
+                              ConnectionDefaults, NeuronDefaults]))
 
 logger = logging.getLogger(__name__)
 try:
