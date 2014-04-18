@@ -22,8 +22,8 @@ class Product(nengo.Network):
             encoders = None
 
         self.product = EnsembleArray(
-            neurons, dimensions, dimensions=2, encoders=encoders,
-            radius=np.sqrt(2) * radius, **ens_kwargs)
+            neurons, n_ensembles=dimensions, ens_dimensions=2,
+            encoders=encoders, radius=np.sqrt(2) * radius, **ens_kwargs)
 
         nengo.Connection(
             self.A, self.product.input[::2], synapse=None)

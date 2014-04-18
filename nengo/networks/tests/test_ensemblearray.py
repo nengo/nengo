@@ -26,7 +26,7 @@ def test_multidim(Simulator, nl):
         A = nengo.networks.EnsembleArray(nl(n_neurons), dims, radius=radius)
         B = nengo.networks.EnsembleArray(nl(n_neurons), dims, radius=radius)
         C = nengo.networks.EnsembleArray(nl(n_neurons * 2), dims,
-                                         dimensions=2,
+                                         ens_dimensions=2,
                                          radius=radius, label="C")
         nengo.Connection(inputA, A.input)
         nengo.Connection(inputB, B.input)
@@ -108,7 +108,7 @@ def test_matrix_mul(Simulator, nl):
 
         C = nengo.networks.EnsembleArray(nl(N),
                                          Amat.size * Bmat.shape[1],
-                                         dimensions=2,
+                                         ens_dimensions=2,
                                          radius=1.5 * radius,
                                          label="C")
 

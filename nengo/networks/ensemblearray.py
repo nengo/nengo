@@ -8,12 +8,12 @@ from nengo.utils.network import with_self
 
 class EnsembleArray(nengo.Network):
 
-    def __init__(self, neurons, n_ensembles, dimensions=1, label=None,
+    def __init__(self, neurons, n_ensembles, ens_dimensions=1, label=None,
                  **ens_kwargs):
         label_prefix = "" if label is None else label + "_"
 
         self.n_ensembles = n_ensembles
-        self.dimensions_per_ensemble = dimensions
+        self.dimensions_per_ensemble = ens_dimensions
         transform = np.eye(self.dimensions)
 
         self.input = nengo.Node(size_in=self.dimensions, label="input")
