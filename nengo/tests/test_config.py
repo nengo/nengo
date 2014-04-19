@@ -1,94 +1,116 @@
 import pytest
 
-import nengo.config
+import nengo
+from nengo.config import Parameter
 
 
-def test_config():
-    @nengo.config.configures(nengo.Ensemble)
-    class TestConfigEnsemble(nengo.config.ConfigItem):
-        something = nengo.config.Parameter(None)
-        other = nengo.config.Parameter(0)
-
-    @nengo.config.configures(nengo.Connection)
-    class TestConfigConnection(nengo.config.ConfigItem):
-        something_else = nengo.config.Parameter(None)
-
+def test_config_basic():
     model = nengo.Network()
+    model.config[nengo.Ensemble].set_param('something', Parameter(None))
+    model.config[nengo.Ensemble].set_param('other', Parameter(default=0))
+    model.config[nengo.Connection].set_param('something_else', Parameter(None))
+
+    with pytest.raises(TypeError):
+        model.config[nengo.Ensemble].set_param('fails', 1.0)
+
     with model:
         a = nengo.Ensemble(nengo.LIF(50), 1)
         b = nengo.Ensemble(nengo.LIF(90), 1)
         a2b = nengo.Connection(a, b, synapse=0.01)
 
-    config = nengo.config.Config([TestConfigEnsemble, TestConfigConnection])
+    with pytest.raises(ValueError):
+        model.config[a].set_param('thing', Parameter(None))
 
-    assert config[a].something is None
-    assert config[b].something is None
-    assert config[a].other == 0
-    assert config[b].other == 0
-    assert config[a2b].something_else is None
+    assert model.config[a].something is None
+    assert model.config[b].something is None
+    assert model.config[a].other == 0
+    assert model.config[b].other == 0
+    assert model.config[a2b].something_else is None
 
-    config[a].something = 'hello'
-    assert config[a].something == 'hello'
-    config[a].something = 'world'
-    assert config[a].something == 'world'
+    model.config[a].something = 'hello'
+    assert model.config[a].something == 'hello'
+    model.config[a].something = 'world'
+    assert model.config[a].something == 'world'
 
     with pytest.raises(AttributeError):
-        config[a].something_else
-        config[a2b].something
+        model.config[a].something_else
+        model.config[a2b].something
     with pytest.raises(AttributeError):
-        config[a].something_else = 1
-        config[a2b].something = 1
+        model.config[a].something_else = 1
+        model.config[a2b].something = 1
+    with pytest.raises(AttributeError):
+        model.config[model].something
 
     with pytest.raises(KeyError):
-        config['a'].something
+        model.config['a'].something
     with pytest.raises(KeyError):
-        config[None].something
-    with pytest.raises(KeyError):
-        config[model].something
+        model.config[None].something
 
 
 def test_parameter_checking():
-    class PositiveParameter(nengo.config.Parameter):
+    class PositiveParameter(Parameter):
         def __set__(self, instance, value):
             if not isinstance(value, (int, float)) or value <= 0:
                 raise AttributeError('value must be positive')
             super(PositiveParameter, self).__set__(instance, value)
 
-    @nengo.config.configures(nengo.Ensemble)
-    class TestConfigEnsemble(nengo.config.ConfigItem):
-        number = PositiveParameter(1)
-
     model = nengo.Network()
+    model.config[nengo.Ensemble].set_param(
+        'number', PositiveParameter(default=1))
     with model:
         a = nengo.Ensemble(50, 1)
         b = nengo.Ensemble(90, 1)
 
-    config = nengo.config.Config([TestConfigEnsemble])
-
-    config[a].number = 3
+    model.config[a].number = 3
     with pytest.raises(AttributeError):
-        config[a].number = 0
+        model.config[a].number = 0
     with pytest.raises(AttributeError):
-        config[b].number = 'a'
+        model.config[b].number = 'a'
 
 
-def test_invalid_config():
+def test_network_nesting():
+    """Make sure nested networks inherit configs."""
+    with nengo.Network() as net1:
+        # We'll change radius and seed. Make sure we have the right defaults.
+        assert nengo.Ensemble.radius.default == 1.0
+        assert nengo.Ensemble.seed.default is None
 
-    @nengo.config.configures(nengo.Ensemble)
-    class TestConfigEnsemble(nengo.config.ConfigItem):
-        number = nengo.config.Parameter(1)
+        # Before = default; after = what we set
+        assert net1.config[nengo.Ensemble].radius == 1.0
+        assert net1.config[nengo.Ensemble].seed is None
+        net1.config[nengo.Ensemble].radius = 3.0
+        net1.config[nengo.Ensemble].seed = 10
+        assert net1.config[nengo.Ensemble].radius == 3.0
+        assert net1.config[nengo.Ensemble].seed == 10
 
-    class TestBadConfigConnection(nengo.config.ConfigItem):
-        number = nengo.config.Parameter(1)
+        # If we make an ensemble, it uses what we set, of the config default
+        ens1 = nengo.Ensemble(nengo.LIF(10), 1, radius=2.0)
+        assert ens1.seed == 10
+        assert ens1.radius == 2.0
 
-    with pytest.raises(TypeError):
-        nengo.config.Config(None)
-    with pytest.raises(AttributeError):
-        nengo.config.Config([1, 2, 3])
-    with pytest.raises(AttributeError):
-        nengo.config.Config([TestBadConfigConnection])
-    with pytest.raises(AttributeError):
-        nengo.config.Config([TestConfigEnsemble, TestBadConfigConnection])
+        # It's an error to configure an actual param with the config
+        with pytest.raises(AttributeError):
+            net1.config[ens1].radius = 3.0
+
+        with nengo.Network() as net2:
+            # We'll just change radius in net2.
+
+            # Before = default; after = what we set
+            assert net2.config[nengo.Ensemble].radius == 1.0
+            net2.config[nengo.Ensemble].radius = 5.0
+            assert net2.config[nengo.Ensemble].radius == 5.0
+
+            # If we make an ensemble, it traverses the context stack
+            ens2 = nengo.Ensemble(nengo.LIF(10), 1)
+            assert ens2.radius == 5.0
+            assert ens2.seed == 10
+
+            with nengo.Network() as net3:
+                # Works for > 1 levels
+                net3.config[nengo.Ensemble].seed = 20
+                ens3 = nengo.Ensemble(nengo.LIF(10), 1)
+                assert ens3.seed == 20
+                assert ens3.radius == 5.0
 
 
 def test_defaults():
@@ -96,7 +118,7 @@ def test_defaults():
     b = nengo.Ensemble(nengo.LIF(10), 1, radius=nengo.Default,
                        add_to_container=False)
 
-    assert b.radius == nengo.Config.context[0][nengo.Ensemble].radius
+    assert b.radius == nengo.Ensemble.radius.default
 
     with nengo.Network():
         c = nengo.Ensemble(nengo.LIF(10), 1, radius=nengo.Default)
@@ -104,25 +126,26 @@ def test_defaults():
             net2.config[nengo.Ensemble].radius = 2.0
             a = nengo.Ensemble(nengo.LIF(50), 1, radius=nengo.Default)
 
-    assert c.radius == nengo.Config.context[0][nengo.Ensemble].radius
+    assert c.radius == nengo.Ensemble.radius.default
     assert a.radius == 2.0
 
 
 def test_configstack():
     """Test that setting defaults with bare configs works."""
-    @nengo.config.configures(nengo.Connection)
-    class InhibitoryConnection(nengo.config.ConfigItem):
-        synapse = nengo.config.Parameter(0.00848)
-
-    inhib = nengo.Config([InhibitoryConnection])
-    with nengo.Network():
+    inhib = nengo.Config()
+    inhib.configures(nengo.Connection)
+    inhib[nengo.Connection].synapse = 0.00848
+    with nengo.Network() as net:
+        net.config[nengo.Connection].modulatory = True
         e1 = nengo.Ensemble(nengo.LIF(5), 1)
         e2 = nengo.Ensemble(nengo.LIF(6), 1)
         excite = nengo.Connection(e1, e2)
         with inhib:
             inhibit = nengo.Connection(e1, e2)
-    assert excite.synapse == nengo.Config.context[0][nengo.Connection].synapse
+    assert excite.synapse == nengo.Connection.synapse.default
+    assert excite.modulatory
     assert inhibit.synapse == inhib[nengo.Connection].synapse
+    assert inhibit.modulatory
 
 
 def test_config_property():
@@ -133,29 +156,46 @@ def test_config_property():
         with pytest.raises(AttributeError):
             del net.config
         assert nengo.config.Config.context[-1] is net.config
-    assert nengo.config.Config.context[-1] is not net.config
+    assert len(nengo.config.Config.context) == 0
 
 
-def test_copy_depth():
-    """Test that copy is deep enough"""
+def test_config_str():
+    """Ensure that string representations are nice."""
     with nengo.Network() as net1:
-        net1.config[nengo.Ensemble].encoders = [[0]]
+        assert net1.config[nengo.Ensemble].params == list(
+            nengo.Ensemble.param_list())
+
+        net1.config[nengo.Ensemble].radius = 3.0
+        net1.config[nengo.Ensemble].seed = 10
+        assert str(net1.config[nengo.Ensemble]) == (
+            "All parameters for Ensemble:\n"
+            "  radius: 3.0\n"
+            "  seed: 10")
+
+        ens = nengo.Ensemble(nengo.LIF(10), 1, radius=2.0, label="A")
+        assert str(net1.config[ens]) == (
+            "Parameters set for Ensemble: A:")
+
         with nengo.Network() as net2:
-            net2.config[nengo.Ensemble].encoders = [[1]]
+            assert str(net2.config[nengo.Ensemble]) == (
+                "All parameters for Ensemble:")
+            net2.config[nengo.Ensemble].radius = 5.0
+            assert str(net2.config[nengo.Ensemble]) == (
+                "All parameters for Ensemble:\n"
+                "  radius: 5.0")
 
-    assert net1.config[nengo.Ensemble].encoders == [[0]]
-
-
-def test_copy_shallowness():
-    """Test that copy is not too deep"""
-    with nengo.Network() as net1:
-        encoders = [[0]]
-        net1.config[nengo.Ensemble].encoders = encoders
-        with nengo.Network() as net2:
-            encoders[0][0] = 1
-
-    assert net1.config[nengo.Ensemble].encoders == [[1]]
-    assert net2.config[nengo.Ensemble].encoders == [[1]]
+            with nengo.Network() as net3:
+                net3.config[nengo.Ensemble].set_param(
+                    "extra", Parameter(default="20"))
+                net3.config[nengo.Ensemble].seed = 20
+                assert str(net3.config[nengo.Ensemble]) == (
+                    "All parameters for Ensemble:\n"
+                    "  seed: 20\n"
+                    "  extra: 20")
+                net3.config[ens].extra = 50
+                assert str(net3.config[ens]) == (
+                    "Parameters set for Ensemble: A:\n"
+                    "  extra: 50")
 
 
 if __name__ == '__main__':

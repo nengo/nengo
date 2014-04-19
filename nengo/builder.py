@@ -126,7 +126,7 @@ class SignalView(object):
         else:
             return self.transpose()
 
-    def __getitem__(self, item):  # noqa
+    def __getitem__(self, item):  # noqa: C901
         # -- copy the shape and strides
         shape = list(self.shape)
         elemstrides = list(self.elemstrides)
@@ -202,7 +202,7 @@ class SignalView(object):
         # if self.ndim == 1 and self.elemstrides[0] == 1:
             # return self.offset, self.offset + self.size
 
-    def shares_memory_with(self, other):  # noqa
+    def shares_memory_with(self, other):  # noqa: C901
         # TODO: WRITE SOME UNIT TESTS FOR THIS FUNCTION !!!
         # Terminology: two arrays *overlap* if the lowermost memory addressed
         # touched by upper one is higher than the uppermost memory address
@@ -613,6 +613,9 @@ class Model(object):
     """Output of the Builder, used by the Simulator."""
 
     def __init__(self, dt=0.001, label=None, seed=None):
+        # We want to keep track of the toplevel network
+        self.toplevel = None
+
         # Resources used by the build process.
         self.operators = []
         self.params = {}
@@ -692,9 +695,12 @@ def build_network(network, model):
     2) Subnetworks (recursively)
     3) Connections
     """
+    if model.toplevel is None:
+        model.toplevel = network
+
     logger.info("Network step 1: Building ensembles and nodes")
     for obj in network.ensembles + network.nodes:
-        Builder.build(obj, model=model)
+        Builder.build(obj, model=model, config=network.config)
 
     logger.info("Network step 2: Building subnetworks")
     for subnetwork in network.networks:
@@ -702,8 +708,9 @@ def build_network(network, model):
 
     logger.info("Network step 3: Building connections")
     for conn in network.connections:
-        Builder.build(conn, model=model)
+        Builder.build(conn, model=model, config=network.config)
     model.params[network] = None
+
 
 Builder.register_builder(build_network, nengo.objects.Network)
 
@@ -717,7 +724,7 @@ def pick_eval_points(ens, n_points, rng):
         n_points, rng=rng) * ens.radius
 
 
-def build_ensemble(ens, model):  # noqa: C901
+def build_ensemble(ens, model, config):  # noqa: C901
     # Create random number generator
     seed = model.next_seed() if ens.seed is None else ens.seed
     rng = np.random.RandomState(seed)
@@ -737,7 +744,7 @@ def build_ensemble(ens, model):  # noqa: C901
 
     # Set up encoders
     if ens.encoders is None:
-        if isinstance(ens.neurons, nengo.Direct):
+        if isinstance(ens.neurons, nengo.neurons.Direct):
             encoders = np.identity(ens.dimensions)
         else:
             sphere = dists.UniformHypersphere(ens.dimensions, surface=True)
@@ -764,14 +771,14 @@ def build_ensemble(ens, model):  # noqa: C901
         intercepts = np.array(ens.intercepts)
 
     # Build the neurons
-    if isinstance(ens.neurons, nengo.Direct):
+    if isinstance(ens.neurons, nengo.neurons.Direct):
         Builder.build(ens.neurons, ens.dimensions, model=model)
     else:
         Builder.build(ens.neurons, max_rates, intercepts, model=model)
     bn = model.params[ens.neurons]
 
     # Scale the encoders
-    if isinstance(ens.neurons, nengo.Direct):
+    if isinstance(ens.neurons, nengo.neurons.Direct):
         scaled_encoders = encoders
     else:
         scaled_encoders = encoders * (bn.gain / ens.radius)[:, np.newaxis]
@@ -800,7 +807,7 @@ def build_ensemble(ens, model):  # noqa: C901
 Builder.register_builder(build_ensemble, nengo.objects.Ensemble)
 
 
-def build_node(node, model):
+def build_node(node, model, config):
     # Get input
     if node.output is None or is_callable(node.output):
         if node.size_in > 0:
@@ -870,7 +877,7 @@ def filtered_signal(signal, pstc, model):
     return filtered
 
 
-def build_connection(conn, model):  # noqa: C901
+def build_connection(conn, model, config):  # noqa: C901
     rng = np.random.RandomState(model.next_seed())
 
     model.sig_in[conn] = model.sig_out[conn.pre]
@@ -882,8 +889,8 @@ def build_connection(conn, model):  # noqa: C901
     transform = np.array(conn.transform_full, dtype=np.float64)
 
     # Figure out the signal going across this connection
-    if (isinstance(conn.pre, nengo.Ensemble)
-            and isinstance(conn.pre.neurons, nengo.Direct)):
+    if (isinstance(conn.pre, nengo.objects.Ensemble)
+            and isinstance(conn.pre.neurons, nengo.neurons.Direct)):
         # Decoded connection in directmode
         if conn.function is None:
             signal = model.sig_in[conn]
@@ -900,7 +907,7 @@ def build_connection(conn, model):  # noqa: C901
                 Signal(1.0, name="1"),
                 sig_in,
                 tag="%s input" % conn.label))
-    elif isinstance(conn.pre, nengo.Ensemble):
+    elif isinstance(conn.pre, nengo.objects.Ensemble):
         # Normal decoded connection
         encoders = model.params[conn.pre].encoders
         gain = model.params[conn.pre.neurons].gain
@@ -1017,7 +1024,7 @@ def build_connection(conn, model):  # noqa: C901
                                          transform=transform,
                                          solver_info=solver_info)
 
-Builder.register_builder(build_connection, nengo.Connection)  # noqa
+Builder.register_builder(build_connection, nengo.objects.Connection)
 
 
 def build_pyfunc(fn, t_in, n_in, n_out, label, model):
