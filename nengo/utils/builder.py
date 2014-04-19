@@ -146,7 +146,7 @@ def _create_replacement_connection(c_in, c_out):
 
     function = c_in.function
     if c_out.function is not None:
-        raise Exception('Cannot remove a Node with a' +
+        raise Exception('Cannot remove a Node with a '
                         'function being computed on it')
 
     # compute the combined transform
@@ -156,11 +156,9 @@ def _create_replacement_connection(c_in, c_out):
     if np.all(transform == 0):
         return None
 
-    with nengo.Network():  # dummy model so connections don't get added
-        args = {}
-        if function is not None:
-            args['function'] = function
-        c = nengo.Connection(c_in.pre, c_out.post,
-                             synapse=synapse,
-                             transform=transform, **args)
+    c = nengo.Connection(c_in.pre, c_out.post,
+                         synapse=synapse,
+                         transform=transform,
+                         function=function,
+                         add_to_container=False)
     return c

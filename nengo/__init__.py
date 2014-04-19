@@ -17,17 +17,11 @@ import logging
 
 # Nengo namespace (API)
 from .config import Config, Default
-from .objects import (
-    Ensemble, Node, Connection, Probe, Network, EnsembleDefaults,
-    NodeDefaults, ConnectionDefaults, NeuronDefaults)
-
+from .objects import Ensemble, Node, Connection, Probe, Network, Neurons
 from .neurons import Direct, LIF, LIFRate, AdaptiveLIF, AdaptiveLIFRate
 from . import networks
 from .simulator import Simulator
 from .utils.logging import log
-
-Config.context.append(Config([EnsembleDefaults, NodeDefaults,
-                              ConnectionDefaults, NeuronDefaults]))
 
 logger = logging.getLogger(__name__)
 try:

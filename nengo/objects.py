@@ -1,15 +1,12 @@
 import collections
-import copy
 import logging
-import os
-import pickle
 
 import numpy as np
 
-import nengo.utils.numpy as npext
+from nengo.config import Config, Default, is_param, Parameter
 from nengo.utils.compat import is_callable, is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
-from nengo.config import Config, ConfigItem, configures, Default
+import nengo.utils.numpy as npext
 
 logger = logging.getLogger(__name__)
 
@@ -115,12 +112,12 @@ class Network(with_metaclass(NengoObjectContainer)):
 
     def __new__(cls, *args, **kwargs):
         inst = super(Network, cls).__new__(cls)
+        inst._config = cls.default_config()
         inst.objects = {Ensemble: [], Node: [], Connection: [], Network: []}
         inst.ensembles = inst.objects[Ensemble]
         inst.nodes = inst.objects[Node]
         inst.connections = inst.objects[Connection]
         inst.networks = inst.objects[Network]
-        inst._config = copy.copy(Config.context[-1])
         return inst
 
     context = collections.deque(maxlen=100)  # static stack of Network objects
@@ -146,6 +143,16 @@ class Network(with_metaclass(NengoObjectContainer)):
             raise TypeError("Objects of type '%s' cannot be added to "
                             "networks." % obj.__class__.__name__)
 
+    @staticmethod
+    def default_config():
+        config = Config()
+        config.configures(Connection)
+        config.configures(Ensemble)
+        config.configures(Network)
+        config.configures(Neurons)
+        config.configures(Node)
+        return config
+
     def generate_key(self):
         """Returns a new key for a NengoObject to be added to this Network."""
         self._next_key += 1
@@ -160,40 +167,12 @@ class Network(with_metaclass(NengoObjectContainer)):
         raise AttributeError("config cannot be overwritten. See help("
                              "nengo.Config) for help on modifying configs.")
 
-    def save(self, fname, fmt=None):
-        """Save this model to a file.
-
-        So far, Pickle is the only implemented format.
-        """
-        if fmt is None:
-            fmt = os.path.splitext(fname)[1]
-
-        # Default to pickle
-        with open(fname, 'wb') as f:
-            pickle.dump(self, f)
-            logger.info("Saved %s successfully.", fname)
-
-    @classmethod
-    def load(cls, fname, fmt=None):
-        """Load a model from a file.
-
-        So far, Pickle is the only implemented format.
-        """
-        if fmt is None:
-            fmt = os.path.splitext(fname)[1]
-
-        # Default to pickle
-        with open(fname, 'rb') as f:
-            return pickle.load(f)
-
-        raise IOError("Could not load %s" % fname)
-
     def __eq__(self, other):
         return hash(self) == hash(other)
 
     def __enter__(self):
         Network.context.append(self)
-        Config.context.append(self._config)
+        self._config.__enter__()
         return self
 
     def __exit__(self, dummy_exc_type, dummy_exc_value, dummy_tb):
@@ -201,21 +180,22 @@ class Network(with_metaclass(NengoObjectContainer)):
             raise RuntimeError("Network.context in bad state; was empty when "
                                "exiting from a 'with' block.")
 
-        network = Network.context.pop()
-        config = Config.context.pop()
-
-        if network is not self:
-            raise RuntimeError("Network.context in bad state; was expecting "
-                               "current context to be '%s' but instead got "
-                               "'%s'." % (self, network))
-
+        config = Config.context[-1]
         if config is not self._config:
             raise RuntimeError("Config.context in bad state; was expecting "
                                "current context to be '%s' but instead got "
                                "'%s'." % (self._config, config))
 
+        network = Network.context.pop()
+
+        if network is not self:
+            raise RuntimeError("Network.context in bad state; was expecting "
+                               "current context to be '%s' but instead got "
+                               "'%s'." % (self, network))
+        self._config.__exit__(dummy_exc_type, dummy_exc_value, dummy_tb)
+
     def __hash__(self):
-        return hash((self._key, self.label))
+        return hash((self.__class__, id(self.config), self._key, self.label))
 
     def __str__(self):
         return "%s: %s" % (
@@ -237,11 +217,11 @@ class NetworkMember(type):
         """Override default __call__ behavior so that Network.add is called."""
         inst = cls.__new__(cls)
         add_to_container = kwargs.pop('add_to_container', True)
-        inst.__init__(*args, **kwargs)
         if add_to_container:
             Network.add(inst)
         else:
             inst._key = None
+        inst.__init__(*args, **kwargs)
         return inst
 
 
@@ -264,16 +244,28 @@ class NengoObject(with_metaclass(NetworkMember)):
     def __str__(self):
         if hasattr(self, 'label') and self.label is not None:
             return "%s: %s" % (self.__class__.__name__, self.label)
-        else:
+        elif hasattr(self, '_key'):
             return "%s: key=%d" % (self.__class__.__name__, self._key)
+        else:
+            return "%s: id=%d" % (self.__class__.__name__, id(self))
 
     def __repr__(self):
         return str(self)
 
     def __setattr__(self, name, val):
         if val is Default:
-            val = Config.lookup(name, type(self))
+            val = Config.default(type(self), name)
         super(NengoObject, self).__setattr__(name, val)
+
+    @classmethod
+    def param_list(cls):
+        """Returns a list of parameter names that can be set."""
+        return (attr for attr in dir(cls) if is_param(getattr(cls, attr)))
+
+    @property
+    def params(self):
+        """Returns a list of parameter names that can be set."""
+        return self.param_list()
 
 
 class Ensemble(NengoObject):
@@ -313,11 +305,19 @@ class Ensemble(NengoObject):
         The seed used for random number generation.
     """
 
+    radius = Parameter(default=1.0)
+    encoders = Parameter(default=None)
+    intercepts = Parameter(default=Uniform(-1.0, 1.0))
+    max_rates = Parameter(default=Uniform(200, 400))
+    eval_points = Parameter(default=None)
+    seed = Parameter(default=None)
+    label = Parameter(default="Ensemble")
+
     def __init__(self, neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
                  seed=Default, label=Default):
 
-        self.dimensions = dimensions  # Must be set before neurons
+        self.dimensions = dimensions
 
         if self.dimensions <= 0:
             raise ValueError(
@@ -380,17 +380,6 @@ class Ensemble(NengoObject):
         return probe
 
 
-@configures(Ensemble)
-class EnsembleDefaults(ConfigItem):
-    radius = 1.0
-    encoders = None
-    intercepts = Uniform(-1.0, 1.0)
-    max_rates = Uniform(200, 400)
-    eval_points = None
-    seed = None
-    label = "Ensemble"
-
-
 class Node(NengoObject):
     """Provides arbitrary data to Nengo objects.
 
@@ -428,9 +417,13 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
+    output = Parameter(default=None)
+    size_in = Parameter(default=0)
+    size_out = Parameter(default=None)
+    label = Parameter(default="Node")
+
     def __init__(self, output=Default,
                  size_in=Default, size_out=Default, label=Default):
-
         self.output = output
         self.label = label
         self.size_in = size_in
@@ -494,14 +487,6 @@ class Node(NengoObject):
         return probe
 
 
-@configures(Node)
-class NodeDefaults(ConfigItem):
-    output = None
-    size_in = 0
-    size_out = None
-    label = "Node"
-
-
 class Connection(NengoObject):
     """Connects two objects together.
 
@@ -535,8 +520,17 @@ class Connection(NengoObject):
         `decoder_solver`, but more general. See `nengo.decoders`.
     """
 
-    def __init__(self, pre, post, synapse=Default, transform=Default,
-                 modulatory=Default, **kwargs):
+    synapse = Parameter(default=0.005)
+    _transform = Parameter(default=1.0)
+    weight_solver = Parameter(default=None)
+    decoder_solver = Parameter(default=None)
+    _function = Parameter(default=(None, 0))
+    modulatory = Parameter(default=False)
+    eval_points = Parameter(default=None)
+
+    def __init__(self, pre, post, synapse=Default, transform=1.0,
+                 weight_solver=Default, decoder_solver=Default,
+                 function=None, modulatory=Default, eval_points=Default):
         if not isinstance(pre, ObjView):
             pre = ObjView(pre)
         if not isinstance(post, ObjView):
@@ -555,12 +549,12 @@ class Connection(NengoObject):
 
         if isinstance(self._pre, Ensemble):
             if isinstance(self._post, Ensemble):
-                self.weight_solver = kwargs.pop('weight_solver', Default)
+                self.weight_solver = weight_solver
             else:
                 self.weight_solver = None
-            self.decoder_solver = kwargs.pop('decoder_solver', Default)
-            self.eval_points = kwargs.pop('eval_points', Default)
-            self.function = kwargs.pop('function', Default)
+            self.decoder_solver = decoder_solver
+            self.eval_points = eval_points
+            self.function = function
         elif isinstance(self._pre, (Neurons, Node)):
             self.decoder_solver = None
             self.eval_points = None
@@ -573,16 +567,11 @@ class Connection(NengoObject):
             raise ValueError("Objects of type '%s' cannot serve as 'post'" %
                              self._post.__class__.__name__)
 
-        # check that we've used all user-provided arguments
-        if len(kwargs) > 0:
-            raise TypeError("__init__() received an unexpected keyword "
-                            "argument '%s'" % next(iter(kwargs)))
-
-        self.transform = transform  # set after `function` for correct padding
-
         # check that shapes match up
         self._skip_check_shapes = False
-        self._check_shapes()
+
+        # set after `function` for correct padding
+        self.transform = transform
 
     def _check_pre_ensemble(self, prop_name):
         if not isinstance(self._pre, Ensemble):
@@ -723,26 +712,19 @@ class Connection(NengoObject):
         self._check_shapes()
 
 
-@configures(Connection)
-class ConnectionDefaults(ConfigItem):
-    synapse = 0.005
-    transform = 1.0
-    modulatory = False
-    weight_solver = None
-    decoder_solver = None
-    function = None
-    eval_points = None
-
-
 class Neurons(object):
+
+    bias = Parameter(default=None)
+    gain = Parameter(default=None)
+    label = Parameter(default=None)
 
     def __init__(self, n_neurons, bias=Default, gain=Default, label=Default):
         self.n_neurons = n_neurons
         self.bias = bias
         self.gain = gain
-        if label is Default:
-            label = "<%s%d>" % (self.__class__.__name__, id(self))
         self.label = label
+        if self.label is None:
+            self.label = "<%s%d>" % (self.__class__.__name__, id(self))
 
         self.probes = {'output': []}
 
@@ -771,13 +753,6 @@ class Neurons(object):
             raise NotImplementedError(
                 "Probe target '%s' is not probable" % probe.attr)
         return probe
-
-
-@configures(Neurons)
-class NeuronDefaults(ConfigItem):
-    bias = None
-    gain = None
-    label = None
 
 
 class Probe(object):
