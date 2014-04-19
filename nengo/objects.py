@@ -1,14 +1,12 @@
 import collections
 import logging
-import os
-import pickle
 
 import numpy as np
 
-import nengo.utils.numpy as npext
-from nengo.utils.compat import (
-    is_callable, is_iterable, with_metaclass)
+from nengo.config import Config, Parameter
+from nengo.utils.compat import is_callable, is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
+import nengo.utils.numpy as npext
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +35,7 @@ class NengoObjectContainer(type):
         if add_to_container:
             cls.add(inst)
         else:
+            inst.config = Config(parent=toplevel_config)
             inst._key = None
         inst.label = kwargs.pop('label', None)
         inst.seed = kwargs.pop('seed', None)
@@ -135,6 +134,7 @@ class Network(with_metaclass(NengoObjectContainer)):
         if not isinstance(network, Network):
             raise RuntimeError("Current context is not a network: %s" %
                                network)
+        obj.config = Config(parent=network.config)
         obj._key = network.generate_key()
         for cls in obj.__class__.__mro__:
             if cls in network.objects:
@@ -148,34 +148,6 @@ class Network(with_metaclass(NengoObjectContainer)):
         """Returns a new key for a NengoObject to be added to this Network."""
         self._next_key += 1
         return self._next_key
-
-    def save(self, fname, fmt=None):
-        """Save this model to a file.
-
-        So far, Pickle is the only implemented format.
-        """
-        if fmt is None:
-            fmt = os.path.splitext(fname)[1]
-
-        # Default to pickle
-        with open(fname, 'wb') as f:
-            pickle.dump(self, f)
-            logger.info("Saved %s successfully.", fname)
-
-    @classmethod
-    def load(cls, fname, fmt=None):
-        """Load a model from a file.
-
-        So far, Pickle is the only implemented format.
-        """
-        if fmt is None:
-            fmt = os.path.splitext(fname)[1]
-
-        # Default to pickle
-        with open(fname, 'rb') as f:
-            return pickle.load(f)
-
-        raise IOError("Could not load %s" % fname)
 
     def __eq__(self, other):
         return hash(self) == hash(other)
@@ -219,11 +191,11 @@ class NetworkMember(type):
         """Override default __call__ behavior so that Network.add is called."""
         inst = cls.__new__(cls)
         add_to_container = kwargs.pop('add_to_container', True)
-        inst.__init__(*args, **kwargs)
         if add_to_container:
             Network.add(inst)
         else:
             inst._key = None
+        inst.__init__(*args, **kwargs)
         return inst
 
 
@@ -246,11 +218,19 @@ class NengoObject(with_metaclass(NetworkMember)):
     def __str__(self):
         if hasattr(self, 'label') and self.label is not None:
             return "%s: %s" % (self.__class__.__name__, self.label)
-        else:
+        elif hasattr(self, '_key'):
             return "%s: key=%d" % (self.__class__.__name__, self._key)
+        else:
+            return "%s: id=%d" % (self.__class__.__name__, id(self))
 
     def __repr__(self):
         return str(self)
+
+    @property
+    def params(self):
+        """Returns a list of parameter names that can be set."""
+        return [attr for attr in dir(self)
+                if isinstance(getattr(self.__class__, attr), Parameter)]
 
 
 class Ensemble(NengoObject):
@@ -290,6 +270,14 @@ class Ensemble(NengoObject):
         The seed used for random number generation.
     """
 
+    radius = Parameter(default=1.0)
+    encoders = Parameter(default=None)
+    intercepts = Parameter(default=Uniform(-1.0, 1.0))
+    max_rates = Parameter(default=Uniform(200, 400))
+    eval_points = Parameter(default=None)
+    seed = Parameter(default=None)
+    label = Parameter(default="Ensemble")
+
     def __init__(self, neurons, dimensions, radius=1.0, encoders=None,
                  intercepts=Uniform(-1.0, 1.0), max_rates=Uniform(200, 400),
                  eval_points=None, seed=None, label="Ensemble"):
@@ -297,8 +285,8 @@ class Ensemble(NengoObject):
             raise ValueError(
                 "Number of dimensions (%d) must be positive" % dimensions)
 
-        self.dimensions = dimensions  # Must be set before neurons
         self.neurons = neurons
+        self.dimensions = dimensions
         self.radius = radius
         self.encoders = encoders
         self.intercepts = intercepts
@@ -392,33 +380,40 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
+    output = Parameter(default=None)
+    size_in = Parameter(default=0)
+    size_out = Parameter(default=None)
+    label = Parameter(default="Node")
+
     def __init__(self, output=None, size_in=0, size_out=None, label="Node"):
-        if output is not None and not is_callable(output):
-            output = npext.array(output, min_dims=1, copy=False)
         self.output = output
         self.label = label
         self.size_in = size_in
+        self.size_out = size_out
 
-        if output is not None:
-            if isinstance(output, np.ndarray):
-                shape_out = output.shape
-            elif size_out is None and is_callable(output):
-                t, x = np.asarray(0.0), np.zeros(size_in)
-                args = [t, x] if size_in > 0 else [t]
+        if self.output is not None and not is_callable(self.output):
+            self.output = npext.array(self.output, min_dims=1, copy=False)
+
+        if self.output is not None:
+            if isinstance(self.output, np.ndarray):
+                shape_out = self.output.shape
+            elif self.size_out is None and is_callable(self.output):
+                t, x = np.asarray(0.0), np.zeros(self.size_in)
+                args = [t, x] if self.size_in > 0 else [t]
                 try:
-                    result = output(*args)
+                    result = self.output(*args)
                 except TypeError:
                     raise TypeError(
                         "The function '%s' provided to '%s' takes %d "
                         "argument(s), where a function for this type "
                         "of node is expected to take %d argument(s)" % (
-                            output.__name__, self,
-                            output.__code__.co_argcount, len(args)))
+                            self.output.__name__, self,
+                            self.output.__code__.co_argcount, len(args)))
 
                 shape_out = (0,) if result is None \
                     else np.asarray(result).shape
             else:
-                shape_out = (size_out,)  # assume `size_out` is correct
+                shape_out = (self.size_out,)  # assume `size_out` is correct
 
             if len(shape_out) > 1:
                 raise ValueError(
@@ -427,16 +422,14 @@ class Node(NengoObject):
 
             size_out_new = shape_out[0] if len(shape_out) == 1 else 1
 
-            if size_out is not None and size_out != size_out_new:
+            if self.size_out is not None and self.size_out != size_out_new:
                 raise ValueError(
                     "Size of Node output (%d) does not match `size_out` (%d)" %
-                    (size_out_new, size_out))
+                    (size_out_new, self.size_out))
 
-            size_out = size_out_new
+            self.size_out = size_out_new
         else:  # output is None
-            size_out = size_in
-
-        self.size_out = size_out
+            self.size_out = self.size_in
 
         # Set up probes
         self.probes = {'output': []}
@@ -489,8 +482,15 @@ class Connection(NengoObject):
         `decoder_solver`, but more general. See `nengo.decoders`.
     """
 
+    synapse = Parameter(default=0.005)
+    modulatory = Parameter(default=False)
+    weight_solver = Parameter(default=None)
+    decoder_solver = Parameter(default=None)
+    eval_points = Parameter(default=None)
+
     def __init__(self, pre, post, synapse=0.005, transform=1.0,
-                 modulatory=False, **kwargs):
+                 weight_solver=None, decoder_solver=None,
+                 function=None, modulatory=False, eval_points=None):
         if not isinstance(pre, ObjView):
             pre = ObjView(pre)
         if not isinstance(post, ObjView):
@@ -509,12 +509,12 @@ class Connection(NengoObject):
 
         if isinstance(self._pre, Ensemble):
             if isinstance(self._post, Ensemble):
-                self.weight_solver = kwargs.pop('weight_solver', None)
+                self.weight_solver = weight_solver
             else:
                 self.weight_solver = None
-            self.decoder_solver = kwargs.pop('decoder_solver', None)
-            self.eval_points = kwargs.pop('eval_points', None)
-            self.function = kwargs.pop('function', None)
+            self.decoder_solver = decoder_solver
+            self.eval_points = eval_points
+            self.function = function
         elif not isinstance(self._pre, (Neurons, Node)):
             raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
                              self._pre.__class__.__name__)
@@ -526,11 +526,6 @@ class Connection(NengoObject):
         if not isinstance(self._post, (Ensemble, Neurons, Node, Probe)):
             raise ValueError("Objects of type '%s' cannot serve as 'post'" %
                              self._post.__class__.__name__)
-
-        # check that we've used all user-provided arguments
-        if len(kwargs) > 0:
-            raise TypeError("__init__() received an unexpected keyword "
-                            "argument '%s'" % next(iter(kwargs)))
 
         self.transform = transform  # set after `function` for correct padding
 
@@ -675,6 +670,9 @@ class Connection(NengoObject):
 
 class Neurons(object):
 
+    bias = Parameter(default=None)
+    gain = Parameter(default=None)
+
     def __init__(self, n_neurons, bias=None, gain=None, label=None):
         self.n_neurons = n_neurons
         self.bias = bias
@@ -778,3 +776,10 @@ class ObjView(object):
             # slice objects for convenience
             key = slice(key, key+1)
         self.slice = key
+
+
+toplevel_config = Config()
+toplevel_config.configure(Ensemble)
+toplevel_config.configure(Node)
+toplevel_config.configure(Connection)
+toplevel_config.configure(Network)
