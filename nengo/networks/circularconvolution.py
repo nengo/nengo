@@ -17,7 +17,71 @@ def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
 
 
 class CircularConvolution(nengo.Network):
-    """CircularConvolution docs XXX"""
+    """Compute the circular convolution of two vectors.
+
+    The circular convolution `c` of vectors `a` and `b` is given by
+
+        c[i] = sum_j a[j] * b[i - j]
+
+    where the indices on `b` are assumed to wrap around as required.
+
+    This computation can also be done in the Fourier domain,
+
+        c = DFT^{-1}( DFT(a) * DFT(b) )
+
+    where `DFT` is the Discrete Fourier Transform operator, and
+    `DFT^{-1}` is its inverse. This network uses this method.
+
+    Parameters
+    ----------
+    neurons : Neurons
+        A Neurons object, defining both the number of neurons per
+        dimension and the neuron model.
+    dimensions : int
+        The number of dimensions of the input and output vectors.
+    invert_a, invert_b : bool
+        Whether to reverse the order of elements in either
+        the first input (`invert_a`) or the second input (`invert_b`).
+        Flipping the second input will make the network perform circular
+        correlation instead of circular convolution.
+
+    Examples
+    --------
+
+        A = EnsembleArray(nengo.LIF(50), 10)
+        B = EnsembleArray(nengo.LIF(50), 10)
+        C = EnsembleArray(nengo.LIF(50), 10)
+        cconv = nengo.networks.CircularConvolution(nengo.LIF(50), 10)
+
+        nengo.Connection(A.output, cconv.A)
+        nengo.Connection(B.output, cconv.B)
+        nengo.Connection(cconv.output, C.input)
+
+    Notes
+    -----
+    The network maps the input vectors `a` and `b` of length N into
+    the Fourier domain and aligns them for complex multiplication.
+    Letting `F = DFT(a)` and `G = DFT(b)`, this is given by:
+
+        [ F[i].real ]     [ G[i].real ]     [ w[i] ]
+        [ F[i].imag ]  *  [ G[i].imag ]  =  [ x[i] ]
+        [ F[i].real ]     [ G[i].imag ]     [ y[i] ]
+        [ F[i].imag ]     [ G[i].real ]     [ z[i] ]
+
+    where `i` only ranges over the lower half of the spectrum, since
+    the upper half of the spectrum is the flipped complex conjugate of
+    the lower half, and therefore redundant. The input transforms are
+    used to perform the DFT on the inputs and align them correctly for
+    complex multiplication.
+
+    The complex product `H = F * G` is then
+
+        H[i] = (w[i] - x[i]) + (y[i] + z[i]) * I
+
+    where `I = sqrt(-1)`. We can perform this addition along with the
+    inverse DFT `c = DFT^{-1}(H)` in a single output transform, finding
+    only the real part of `c` since the imaginary part is analytically zero.
+    """
 
     def __init__(self, neurons, dimensions, invert_a=False, invert_b=False):
         self.dimensions = dimensions
