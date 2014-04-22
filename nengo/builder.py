@@ -14,16 +14,6 @@ from nengo.utils.compat import is_callable, is_integer
 
 logger = logging.getLogger(__name__)
 
-"""
-Set assert_named_signals True to raise an Exception
-if model.signal is used to create a signal with no name.
-
-This can help to identify code that's creating un-named signals,
-if you are trying to track down mystery signals that are showing
-up in a model.
-"""
-assert_named_signals = False
-
 
 class ShapeMismatch(ValueError):
     pass
@@ -268,13 +258,20 @@ class SignalView(object):
 
 
 class Signal(SignalView):
-    """Interpretable, vector-valued quantity within NEF"""
+    """Interpretable, vector-valued quantity within Nengo"""
+
+    # Set assert_named_signals True to raise an Exception
+    # if model.signal is used to create a signal with no name.
+    # This can help to identify code that's creating un-named signals,
+    # if you are trying to track down mystery signals that are showing
+    # up in a model.
+    assert_named_signals = False
 
     def __init__(self, value, name=None):
         self.value = np.asarray(value, dtype=np.float64)
         if name is not None:
             self._name = name
-        if assert_named_signals:
+        if Signal.assert_named_signals:
             assert name
 
     def __str__(self):
@@ -314,31 +311,30 @@ class Signal(SignalView):
 
 
 class Operator(object):
-    """
-    Base class for operator instances understood by the reference simulator.
-    """
+    """Base class for operator instances understood by nengo.Simulator.
 
-    # The lifetime of a Signal during one simulator timestep:
-    # 0) at most one set operator (optional)
-    # 1) any number of increments
-    # 2) any number of reads
-    # 3) at most one update
-    #
-    # A signal that is only read can be considered a "constant"
-    #
-    # A signal that is both set *and* updated can be a problem: since
-    # reads must come after the set, and the set will destroy
-    # whatever were the contents of the update, it can be the case
-    # that the update is completely hidden and rendered irrelevant.
-    # There are however at least two reasons to use both a set and an update:
-    # (a) to use a signal as scratch space (updating means destroying it)
-    # (b) to use sets and updates on partly overlapping views of the same
-    #     memory.
-    #
-    # N.B. It is done on purpose that there are no default values for
-    # reads, sets, incs, and updates.
-    #
-    # Each operator should explicitly set each of these properties.
+    The lifetime of a Signal during one simulator timestep:
+    0) at most one set operator (optional)
+    1) any number of increments
+    2) any number of reads
+    3) at most one update
+
+    A signal that is only read can be considered a "constant".
+
+    A signal that is both set *and* updated can be a problem:
+    since reads must come after the set, and the set will destroy
+    whatever were the contents of the update, it can be the case
+    that the update is completely hidden and rendered irrelevant.
+    There are however at least two reasons to use both a set and an update:
+    (a) to use a signal as scratch space (updating means destroying it)
+    (b) to use sets and updates on partly overlapping views of the same
+        memory.
+
+    N.B.: It is done on purpose that there are no default values for
+    reads, sets, incs, and updates.
+
+    Each operator should explicitly set each of these properties.
+    """
 
     @property
     def reads(self):
@@ -393,7 +389,8 @@ class Operator(object):
         return self.reads + self.sets + self.incs + self.updates
 
     def init_signals(self, signals, dt):
-        """
+        """Initialize simulator.signals
+
         Install any buffers into the signals view that
         this operator will need. Classes for neurons
         that use extra buffers should create them here.
@@ -408,9 +405,7 @@ class Operator(object):
 
 
 class Reset(Operator):
-    """
-    Assign a constant value to a Signal.
-    """
+    """Assign a constant value to a Signal."""
 
     def __init__(self, dst, value=0):
         self.dst = dst
@@ -434,9 +429,7 @@ class Reset(Operator):
 
 
 class Copy(Operator):
-    """
-    Assign the value of one signal to another
-    """
+    """Assign the value of one signal to another."""
 
     def __init__(self, dst, src, as_update=False, tag=None):
         self.dst = dst
@@ -453,9 +446,9 @@ class Copy(Operator):
         return 'Copy(%s -> %s, as_update=%s)' % (
             str(self.src), str(self.dst), self.as_update)
 
-    def make_step(self, dct, dt):
-        dst = dct[self.dst]
-        src = dct[self.src]
+    def make_step(self, signals, dt):
+        dst = signals[self.dst]
+        src = signals[self.src]
 
         def step():
             dst[...] = src
@@ -466,7 +459,6 @@ def reshape_dot(A, X, Y, tag=None):
     """Checks if the dot product needs to be reshaped.
 
     Also does a bunch of error checking based on the shapes of A and X.
-
     """
     badshape = False
     ashape = (1,) if A.shape == () else A.shape
@@ -491,9 +483,7 @@ def reshape_dot(A, X, Y, tag=None):
 
 
 class DotInc(Operator):
-    """
-    Increment signal Y by dot(A, X)
-    """
+    """Increment signal Y by dot(A, X)"""
 
     def __init__(self, A, X, Y, tag=None):
         self.A = A
@@ -510,10 +500,10 @@ class DotInc(Operator):
         return 'DotInc(%s, %s -> %s "%s")' % (
             str(self.A), str(self.X), str(self.Y), self.tag)
 
-    def make_step(self, dct, dt):
-        X = dct[self.X]
-        A = dct[self.A]
-        Y = dct[self.Y]
+    def make_step(self, signals, dt):
+        X = signals[self.X]
+        A = signals[self.A]
+        Y = signals[self.Y]
         reshape = reshape_dot(A, X, Y, self.tag)
 
         def step():
@@ -525,9 +515,7 @@ class DotInc(Operator):
 
 
 class ProdUpdate(Operator):
-    """
-    Sets Y <- dot(A, X) + B * Y
-    """
+    """Sets Y <- dot(A, X) + B * Y"""
 
     def __init__(self, A, X, B, Y, tag=None):
         self.A = A
@@ -545,11 +533,11 @@ class ProdUpdate(Operator):
         return 'ProdUpdate(%s, %s, %s, -> %s "%s")' % (
             str(self.A), str(self.X), str(self.B), str(self.Y), self.tag)
 
-    def make_step(self, dct, dt):
-        X = dct[self.X]
-        A = dct[self.A]
-        Y = dct[self.Y]
-        B = dct[self.B]
+    def make_step(self, signals, dt):
+        X = signals[self.X]
+        A = signals[self.A]
+        Y = signals[self.Y]
+        B = signals[self.B]
         reshape = reshape_dot(A, X, Y, self.tag)
 
         def step():
@@ -562,9 +550,7 @@ class ProdUpdate(Operator):
 
 
 class SimPyFunc(Operator):
-    """Set signal `output` by some non-linear function of J
-    (and possibly other things too.)
-    """
+    """Set signal `output` by some non-linear function of x, possibly t"""
 
     def __init__(self, output, fn, t_in, x):
         self.output = output
@@ -580,12 +566,12 @@ class SimPyFunc(Operator):
     def __str__(self):
         return "SimPyFunc(%s -> %s '%s')" % (self.x, self.output, self.fn)
 
-    def make_step(self, dct, dt):
+    def make_step(self, signals, dt):
         if self.output is not None:
-            output = dct[self.output]
+            output = signals[self.output]
         fn = self.fn
-        args = [dct['__time__']] if self.t_in else []
-        args += [dct[self.x]] if self.x is not None else []
+        args = [signals['__time__']] if self.t_in else []
+        args += [signals[self.x]] if self.x is not None else []
 
         def step():
             y = fn(*args)
@@ -599,9 +585,7 @@ class SimPyFunc(Operator):
 
 
 class SimNeurons(Operator):
-    """
-    Set output to neuron model output for the given input current.
-    """
+    """Set output to neuron model output for the given input current."""
 
     def __init__(self, neurons, J, output, states=[]):
         self.neurons = neurons
@@ -614,40 +598,43 @@ class SimNeurons(Operator):
         self.sets = []
         self.incs = []
 
-    def make_step(self, dct, dt):
-        J = dct[self.J]
-        output = dct[self.output]
-        states = [dct[state] for state in self.states]
+    def make_step(self, signals, dt):
+        J = signals[self.J]
+        output = signals[self.output]
+        states = [signals[state] for state in self.states]
 
         def step():
             self.neurons.step_math(dt, J, output, *states)
         return step
 
 
-def random_maxint(rng):
-    """Returns rng.randint(x) where x is the maximum 32-bit integer."""
-    return rng.randint(np.iinfo(np.int32).max)
-
-
-_builder_func_dict = {}  # Nengo object -> builder method; set by @builds
-
-
 class Model(object):
     """Output of the Builder, used by the Simulator."""
 
-    def __init__(self, dt, label="Model", seed=None):
+    def __init__(self, dt=0.001, label=None, seed=None):
+        # Resources used by the build process.
         self.operators = []
+        self.params = {}
         self.probes = []
         self.sig_in = {}
         self.sig_out = {}
 
         self.dt = dt
         self.label = label
-        self.seed = seed
-        self.params = None
+        self.seed = np.random.randint(npext.maxint) if seed is None else seed
+
+        self.rng = np.random.RandomState(self.seed)
 
     def __str__(self):
         return "Model: %s" % self.label
+
+    def has_built(self, obj):
+        """Returns true iff obj has been processed by build."""
+        return obj in self.params
+
+    def next_seed(self):
+        """Yields a seed to use for RNG during build computations."""
+        return self.rng.randint(npext.maxint)
 
 
 BuiltConnection = collections.namedtuple(
@@ -658,15 +645,42 @@ BuiltEnsemble = collections.namedtuple(
     ['eval_points', 'encoders', 'intercepts', 'max_rates', 'scaled_encoders'])
 
 
-def register(callback):
-    """A decorator that registers the wrapped function with callback(func)."""
-    def wrapper(func):
-        callback(func)
-        return func
-    return wrapper
-
-
 class Builder(object):
+    builders = {}
+
+    @classmethod
+    def register_builder(cls, build_fn, nengo_class):
+        cls.builders[nengo_class] = build_fn
+
+    @classmethod
+    def build(cls, obj, *args, **kwargs):
+        model = kwargs.setdefault('model', Model())
+
+        if model.has_built(obj):
+            # If we've already built the obj, we'll ignore it.
+            # This is most likely the result of Neurons being used in
+            # two different Ensembles, which is unlikely to be desired.
+
+            # TODO: Prevent this at pre-build validation time.
+            logger.warning("Object '%s' has already been built in model "
+                           "'%s'." % (str(obj), model.label))
+            return
+
+        for obj_cls in obj.__class__.__mro__:
+            if obj_cls in cls.builders:
+                break
+        else:
+            raise TypeError("Cannot build object of type '%s'." %
+                            cls.__name__)
+        cls.builders[obj_cls](obj, *args, **kwargs)
+        if obj not in model.params:
+            raise RuntimeError(
+                "Build function '%s' did not add '%s' to model.params"
+                % (cls.builders[obj_cls].__name__, str(obj)))
+        return model
+
+
+def build_network(network, model):
     """Takes a Network object and returns a Model.
 
     This determines the signals and operators necessary to simulate that model.
@@ -674,470 +688,427 @@ class Builder(object):
     Builder does this by mapping each high-level object to its associated
     signals and operators one-by-one, in the following order:
 
-      1. Ensembles, Nodes, Neurons, Probes
-      2. Subnetworks (recursively)
-      3. Connections
+    1) Ensembles, Nodes, Neurons, Probes
+    2) Subnetworks (recursively)
+    3) Connections
     """
+    logger.info("Network step 1: Building ensembles and nodes")
+    for obj in network.ensembles + network.nodes:
+        Builder.build(obj, model=model)
 
-    # A decorator that registers the given Nengo object class with the function
-    builds = lambda cls: register(
-        lambda f: _builder_func_dict.__setitem__(cls, f))
+    logger.info("Network step 2: Building subnetworks")
+    for subnetwork in network.networks:
+        Builder.build(subnetwork, model=model)
 
-    def __call__(self, network, dt):
-        # Artifacts of the build process.
-        self.built = {}
+    logger.info("Network step 3: Building connections")
+    for conn in network.connections:
+        Builder.build(conn, model=model)
+    model.params[network] = None
 
-        # Resources used by the build process.
-        seed = (random_maxint(np.random) if network.seed is None
-                else network.seed)
-        self.rng = np.random.RandomState(seed)
+Builder.register_builder(build_network, nengo.objects.Network)
 
-        # Build the entire Network into Model output attribute.
-        self.model = Model(dt, "%s, dt=%f" % (network.label, dt), seed)
-        self.build(network)
-        self.model.params = self.built
-        return self.model
 
-    def has_built(self, obj):
-        """Returns true iff obj has been processed by build."""
-        return obj in self.built
+def pick_eval_points(ens, n_points, rng):
+    if n_points is None:
+        # use a heuristic to pick the number of points
+        dims, neurons = ens.dimensions, ens.neurons.n_neurons
+        n_points = max(np.clip(500 * dims, 750, 2500), 2 * neurons)
+    return dists.UniformHypersphere(ens.dimensions).sample(
+        n_points, rng=rng) * ens.radius
 
-    def next_seed(self):
-        """Yields a seed to use for RNG during build computations."""
-        return random_maxint(self.rng)
 
-    def build(self, obj, *args, **kwargs):
-        """Builds the given object with the associated builder method."""
-        if isinstance(obj, nengo.objects.Network):
-            # Use build_network for arbitrary subclasses of Network
-            cls = nengo.objects.Network
+def build_ensemble(ens, model):  # noqa: C901
+    # Create random number generator
+    seed = model.next_seed() if ens.seed is None else ens.seed
+    rng = np.random.RandomState(seed)
+
+    # Generate eval points
+    if ens.eval_points is None or is_integer(ens.eval_points):
+        eval_points = pick_eval_points(
+            ens=ens, n_points=ens.eval_points, rng=rng)
+    else:
+        eval_points = npext.array(
+            ens.eval_points, dtype=np.float64, min_dims=2)
+
+    # Set up signal
+    model.sig_in[ens] = Signal(np.zeros(ens.dimensions),
+                               name="%s.signal" % ens.label)
+    model.operators.append(Reset(model.sig_in[ens]))
+
+    # Set up encoders
+    if ens.encoders is None:
+        if isinstance(ens.neurons, nengo.Direct):
+            encoders = np.identity(ens.dimensions)
         else:
-            cls = obj.__class__
+            sphere = dists.UniformHypersphere(ens.dimensions, surface=True)
+            encoders = sphere.sample(ens.neurons.n_neurons, rng=rng)
+    else:
+        encoders = np.array(ens.encoders, dtype=np.float64)
+        enc_shape = (ens.neurons.n_neurons, ens.dimensions)
+        if encoders.shape != enc_shape:
+            raise ShapeMismatch(
+                "Encoder shape is %s. Should be (n_neurons, dimensions); "
+                "in this case %s." % (encoders.shape, enc_shape))
+        encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
-        if cls not in _builder_func_dict:
-            raise ValueError("Cannot build object of type '%s'." %
-                             cls.__name__)
+    # Determine max_rates and intercepts
+    if isinstance(ens.max_rates, dists.Distribution):
+        max_rates = ens.max_rates.sample(
+            ens.neurons.n_neurons, rng=rng)
+    else:
+        max_rates = np.array(ens.max_rates)
+    if isinstance(ens.intercepts, dists.Distribution):
+        intercepts = ens.intercepts.sample(
+            ens.neurons.n_neurons, rng=rng)
+    else:
+        intercepts = np.array(ens.intercepts)
 
-        if not self.has_built(obj):
-            self.built[obj] = _builder_func_dict[cls](
-                self, obj, *args, **kwargs)
+    # Build the neurons
+    if isinstance(ens.neurons, nengo.Direct):
+        Builder.build(ens.neurons, ens.dimensions, model=model)
+    else:
+        Builder.build(ens.neurons, max_rates, intercepts, model=model)
+    bn = model.params[ens.neurons]
+
+    # Scale the encoders
+    if isinstance(ens.neurons, nengo.Direct):
+        scaled_encoders = encoders
+    else:
+        scaled_encoders = encoders * (bn.gain / ens.radius)[:, np.newaxis]
+
+    # Create output signal, using built Neurons
+    model.operators.append(DotInc(
+        Signal(scaled_encoders, name="%s.scaled_encoders" % ens.label),
+        model.sig_in[ens],
+        model.sig_in[ens.neurons],
+        tag="%s encoding" % ens.label))
+
+    # Output is neural output
+    model.sig_out[ens] = model.sig_out[ens.neurons]
+
+    for probe in ens.probes["decoded_output"]:
+        Builder.build(probe, dimensions=ens.dimensions, model=model)
+    for probe in ens.probes["spikes"] + ens.probes["voltages"]:
+        Builder.build(probe, dimensions=ens.neurons.n_neurons, model=model)
+
+    model.params[ens] = BuiltEnsemble(eval_points=eval_points,
+                                      encoders=encoders,
+                                      intercepts=intercepts,
+                                      max_rates=max_rates,
+                                      scaled_encoders=scaled_encoders)
+
+Builder.register_builder(build_ensemble, nengo.objects.Ensemble)
+
+
+def build_node(node, model):
+    # Get input
+    if node.output is None or is_callable(node.output):
+        if node.size_in > 0:
+            model.sig_in[node] = Signal(
+                np.zeros(node.size_in), name="%s.signal" % node.label)
+            # Reset input signal to 0 each timestep
+            model.operators.append(Reset(model.sig_in[node]))
+
+    # Provide output
+    if node.output is None:
+        model.sig_out[node] = model.sig_in[node]
+    elif not is_callable(node.output):
+        model.sig_out[node] = Signal(node.output, name=node.label)
+    else:
+        sig_in, sig_out = build_pyfunc(fn=node.output,
+                                       t_in=True,
+                                       n_in=node.size_in,
+                                       n_out=node.size_out,
+                                       label="%s.pyfn" % node.label,
+                                       model=model)
+        if sig_in is not None:
+            model.operators.append(DotInc(
+                model.sig_in[node],
+                Signal(1.0, name="1"),
+                sig_in,
+                tag="%s input" % node.label))
+        if sig_out is not None:
+            model.sig_out[node] = sig_out
+
+    for probe in node.probes["output"]:
+        Builder.build(probe, dimensions=model.sig_out[node].shape, model=model)
+
+    model.params[node] = None
+
+Builder.register_builder(build_node, nengo.objects.Node)
+
+
+def build_probe(probe, dimensions, model):
+    model.sig_in[probe] = Signal(np.zeros(dimensions), name=probe.label)
+
+    # Reset input signal to 0 each timestep
+    model.operators.append(Reset(model.sig_in[probe]))
+    model.probes.append(probe)
+
+    # We put a list here so that the simulator can fill it
+    # as it simulates the model
+    model.params[probe] = []
+
+Builder.register_builder(build_probe, nengo.objects.Probe)
+
+
+def filter_coefs(pstc, dt):
+    pstc = max(pstc, dt)
+    decay = np.exp(-dt / pstc)
+    return decay, (1.0 - decay)
+
+
+def filtered_signal(signal, pstc, model):
+    name = "%s.filtered(%f)" % (signal.name, pstc)
+    filtered = Signal(np.zeros(signal.size), name=name)
+    o_coef, n_coef = filter_coefs(pstc=pstc, dt=model.dt)
+    model.operators.append(ProdUpdate(
+        Signal(n_coef, name="n_coef"),
+        signal,
+        Signal(o_coef, name="o_coef"),
+        filtered,
+        tag="%s filtering" % name))
+    return filtered
+
+
+def build_connection(conn, model):  # noqa: C901
+    rng = np.random.RandomState(model.next_seed())
+
+    model.sig_in[conn] = model.sig_out[conn.pre]
+    model.sig_out[conn] = model.sig_in[conn.post]
+
+    decoders = None
+    eval_points = None
+    transform = np.array(conn.transform_full, dtype=np.float64)
+
+    # Figure out the signal going across this connection
+    if (isinstance(conn.pre, nengo.Ensemble)
+            and isinstance(conn.pre.neurons, nengo.Direct)):
+        # Decoded connection in directmode
+        if conn.function is None:
+            signal = model.sig_in[conn]
         else:
-            # This means the Network object contained two objects with the same
-            # id, which gives undefined behaviour. This is most likely the
-            # result of Neurons being used in two different Ensembles, in which
-            # case the same neuron would need two different tuning curves.
-            # TODO: Prevent this at pre-build validation time.
-            logger.warning("Object (%s) with id=%d has been referenced twice "
-                           "within the Network.",
-                           obj.__class__.__name__, id(obj))
-        return self.built[obj]
+            sig_in, signal = build_pyfunc(
+                fn=conn.function,
+                t_in=False,
+                n_in=model.sig_in[conn].size,
+                n_out=conn.dimensions,
+                label=conn.label,
+                model=model)
+            model.operators.append(DotInc(
+                model.sig_in[conn],
+                Signal(1.0, name="1"),
+                sig_in,
+                tag="%s input" % conn.label))
+    elif isinstance(conn.pre, nengo.Ensemble):
+        # Normal decoded connection
+        encoders = model.params[conn.pre].encoders
+        gain = model.params[conn.pre.neurons].gain
+        bias = model.params[conn.pre.neurons].bias
 
-    @builds(nengo.objects.Network)
-    def build_network(self, network):
-        # 1. Build ensembles and nodes
-        logger.info("Building ensembles and nodes")
-        for obj in network.ensembles + network.nodes:
-            self.build(obj)
-
-        # 2. Then subnetworks
-        logger.info("Building subnetworks")
-        for subnetwork in network.networks:
-            self.build(subnetwork)
-
-        # 3. Then connections
-        logger.info("Building connections")
-        for conn in network.connections:
-            self.build(conn)
-
-    @builds(nengo.objects.Ensemble)  # noqa
-    def build_ensemble(self, ens):
-        # Create random number generator
-        seed = self.next_seed() if ens.seed is None else ens.seed
-        rng = np.random.RandomState(seed)
-
-        # Generate eval points
-        if ens.eval_points is None or is_integer(ens.eval_points):
-            eval_points = self.generate_eval_points(
-                ens=ens, n_points=ens.eval_points, rng=rng)
-        else:
+        eval_points = conn.eval_points
+        if eval_points is None:
             eval_points = npext.array(
-                ens.eval_points, dtype=np.float64, min_dims=2)
-
-        # Set up signal
-        self.model.sig_in[ens] = Signal(np.zeros(ens.dimensions),
-                                        name="%s.signal" % ens.label)
-        self.model.operators.append(Reset(self.model.sig_in[ens]))
-
-        # Set up encoders
-        if ens.encoders is None:
-            if isinstance(ens.neurons, nengo.Direct):
-                encoders = np.identity(ens.dimensions)
-            else:
-                sphere = dists.UniformHypersphere(ens.dimensions, surface=True)
-                encoders = sphere.sample(ens.neurons.n_neurons, rng=rng)
+                model.params[conn.pre].eval_points, min_dims=2)
+        elif is_integer(eval_points):
+            eval_points = pick_eval_points(
+                ens=conn.pre, n_points=eval_points, rng=rng)
         else:
-            encoders = np.array(ens.encoders, dtype=np.float64)
-            enc_shape = (ens.neurons.n_neurons, ens.dimensions)
-            if encoders.shape != enc_shape:
-                raise ShapeMismatch(
-                    "Encoder shape is %s. Should be (n_neurons, dimensions); "
-                    "in this case %s." % (encoders.shape, enc_shape))
-            encoders /= npext.norm(encoders, axis=1, keepdims=True)
+            eval_points = npext.array(eval_points, min_dims=2)
 
-        # Determine max_rates and intercepts
-        if isinstance(ens.max_rates, dists.Distribution):
-            max_rates = ens.max_rates.sample(
-                ens.neurons.n_neurons, rng=rng)
+        x = np.dot(eval_points, encoders.T / conn.pre.radius)
+        activities = model.dt * conn.pre.neurons.rates(x, gain, bias)
+        if np.count_nonzero(activities) == 0:
+            raise RuntimeError(
+                "In '%s', for '%s', 'activites' matrix is all zero. "
+                "This is because no evaluation points fall in the firing "
+                "ranges of any neurons." % (str(conn), str(conn.pre)))
+
+        if conn.function is None:
+            targets = eval_points
         else:
-            max_rates = np.array(ens.max_rates)
-        if isinstance(ens.intercepts, dists.Distribution):
-            intercepts = ens.intercepts.sample(
-                ens.neurons.n_neurons, rng=rng)
+            targets = npext.array(
+                [conn.function(ep) for ep in eval_points], min_dims=2)
+
+        if conn.weight_solver is not None:
+            if conn.decoder_solver is not None:
+                raise ValueError("Cannot specify both 'weight_solver' "
+                                 "and 'decoder_solver'.")
+
+            # account for transform
+            targets = np.dot(targets, transform.T)
+            transform = np.array(1., dtype=np.float64)
+
+            decoders = conn.weight_solver(
+                activities, targets, rng=rng,
+                E=model.params[conn.post].scaled_encoders.T)
+            model.sig_out[conn] = model.sig_in[conn.post.neurons]
+            signal_size = model.sig_out[conn].size
         else:
-            intercepts = np.array(ens.intercepts)
+            solver = (conn.decoder_solver if conn.decoder_solver is
+                      not None else nengo.decoders.lstsq_L2nz)
+            decoders = solver(activities, targets, rng=rng)
+            signal_size = conn.dimensions
 
-        # Build the neurons
-        if isinstance(ens.neurons, nengo.Direct):
-            bn = self.build(ens.neurons, ens.dimensions)
+        # Add operator for decoders and filtering
+        decoders = decoders.T
+        if conn.synapse is not None and conn.synapse > model.dt:
+            o_coef, n_coef = filter_coefs(pstc=conn.synapse, dt=model.dt)
+            decoder_signal = Signal(
+                decoders * n_coef,
+                name="%s.decoders * n_coef" % conn.label)
         else:
-            bn = self.build(ens.neurons, max_rates, intercepts)
+            decoder_signal = Signal(decoders,
+                                    name="%s.decoders" % conn.label)
+            o_coef = 0
 
-        # Scale the encoders
-        if isinstance(ens.neurons, nengo.Direct):
-            scaled_encoders = encoders
-        else:
-            scaled_encoders = encoders * (bn.gain / ens.radius)[:, np.newaxis]
-
-        # Create output signal, using built Neurons
-        self.model.operators.append(DotInc(
-            Signal(scaled_encoders, name="%s.scaled_encoders" % ens.label),
-            self.model.sig_in[ens],
-            self.model.sig_in[ens.neurons],
-            tag="%s encoding" % ens.label))
-
-        # Output is neural output
-        self.model.sig_out[ens] = self.model.sig_out[ens.neurons]
-
-        for probe in ens.probes["decoded_output"]:
-            self.build(probe, dimensions=ens.dimensions)
-        for probe in ens.probes["spikes"] + ens.probes["voltages"]:
-            self.build(probe, dimensions=ens.neurons.n_neurons)
-
-        return BuiltEnsemble(eval_points=eval_points,
-                             encoders=encoders,
-                             intercepts=intercepts,
-                             max_rates=max_rates,
-                             scaled_encoders=scaled_encoders)
-
-    @builds(nengo.objects.Node)
-    def build_node(self, node):
-        # Get input
-        if node.output is None or is_callable(node.output):
-            if node.size_in > 0:
-                self.model.sig_in[node] = Signal(
-                    np.zeros(node.size_in), name="%s.signal" % node.label)
-                # Reset input signal to 0 each timestep
-                self.model.operators.append(Reset(self.model.sig_in[node]))
-
-        # Provide output
-        if node.output is None:
-            self.model.sig_out[node] = self.model.sig_in[node]
-        elif not is_callable(node.output):
-            self.model.sig_out[node] = Signal(node.output, name=node.label)
-        else:
-            sig_in, sig_out = self.build_pyfunc(fn=node.output,
-                                                t_in=True,
-                                                n_in=node.size_in,
-                                                n_out=node.size_out,
-                                                label="%s.pyfn" % node.label)
-            if sig_in is not None:
-                self.model.operators.append(DotInc(
-                    self.model.sig_in[node],
-                    Signal(1.0, name="1"),
-                    sig_in,
-                    tag="%s input" % node.label))
-            if sig_out is not None:
-                self.model.sig_out[node] = sig_out
-
-        for probe in node.probes["output"]:
-            self.build(probe, dimensions=self.model.sig_out[node].shape)
-
-    @builds(nengo.objects.Probe)
-    def build_probe(self, probe, dimensions):
-        self.model.sig_in[probe] = Signal(np.zeros(dimensions),
-                                          name=probe.label)
-        # Reset input signal to 0 each timestep
-        self.model.operators.append(Reset(self.model.sig_in[probe]))
-        self.model.probes.append(probe)
-
-        # We return a list here because the simulator initializes
-        # its probedict with the values returned from the built functions.
-        return []
-
-    @staticmethod
-    def filter_coefs(pstc, dt):
-        pstc = max(pstc, dt)
-        decay = np.exp(-dt / pstc)
-        return decay, (1.0 - decay)
-
-    def filtered_signal(self, signal, pstc):
-        name = "%s.filtered(%f)" % (signal.name, pstc)
-        filtered = Signal(np.zeros(signal.size), name=name)
-        o_coef, n_coef = self.filter_coefs(pstc=pstc, dt=self.model.dt)
-        self.model.operators.append(ProdUpdate(
-            Signal(n_coef, name="n_coef"),
-            signal,
+        signal = Signal(np.zeros(signal_size), name=conn.label)
+        model.operators.append(ProdUpdate(
+            decoder_signal,
+            model.sig_in[conn],
             Signal(o_coef, name="o_coef"),
-            filtered,
-            tag="%s filtering" % name))
-        return filtered
+            signal,
+            tag="%s decoding" % conn.label))
+    else:
+        # Direct connection
+        signal = model.sig_in[conn]
 
-    @builds(nengo.Connection)  # noqa
-    def build_connection(self, conn):
-        dt = self.model.dt
-        rng = np.random.RandomState(self.next_seed())
+    # Add operator for filtering (in the case filter wasn't already
+    # added, when pre.neurons is a non-direct Ensemble)
+    if decoders is None and conn.synapse is not None:
+        # Note: we add a filter here even if synapse < dt,
+        # in order to avoid cycles in the op graph. If the filter
+        # is explicitly set to None (e.g. for a passthrough node)
+        # then cycles can still occur.
+        signal = filtered_signal(signal, conn.synapse, model=model)
 
-        self.model.sig_in[conn] = self.model.sig_out[conn.pre]
-        self.model.sig_out[conn] = self.model.sig_in[conn.post]
+    if conn.modulatory:
+        # Make a new signal, effectively detaching from post
+        model.sig_out[conn] = Signal(
+            np.zeros(model.sig_out[conn].size),
+            name="%s.mod_output" % conn.label)
+        # Add reset operator?
+        # TODO: add unit test
 
-        decoders = None
-        eval_points = None
-        transform = np.array(conn.transform_full, dtype=np.float64)
+    # Add operator for transform
+    if isinstance(conn.post, nengo.objects.Neurons):
+        if not model.has_built(conn.post):
+            # Since it hasn't been built, it wasn't added to the Network,
+            # which is most likely because the Neurons weren't associated
+            # with an Ensemble.
+            raise RuntimeError("Connection '%s' refers to Neurons '%s' "
+                               "that are not a part of any Ensemble." % (
+                                   conn, conn.post))
+        transform *= model.params[conn.post].gain[:, np.newaxis]
 
-        # Figure out the signal going across this connection
-        if (isinstance(conn.pre, nengo.Ensemble)
-                and isinstance(conn.pre.neurons, nengo.Direct)):
-            # Decoded connection in directmode
-            if conn.function is None:
-                signal = self.model.sig_in[conn]
-            else:
-                sig_in, signal = self.build_pyfunc(
-                    fn=conn.function,
-                    t_in=False,
-                    n_in=self.model.sig_in[conn].size,
-                    n_out=conn.dimensions,
-                    label=conn.label)
-                self.model.operators.append(DotInc(
-                    self.model.sig_in[conn],
-                    Signal(1.0, name="1"),
-                    sig_in,
-                    tag="%s input" % conn.label))
-        elif isinstance(conn.pre, nengo.Ensemble):
-            # Normal decoded connection
-            encoders = self.built[conn.pre].encoders
-            gain = self.built[conn.pre.neurons].gain
-            bias = self.built[conn.pre.neurons].bias
+    model.operators.append(
+        DotInc(Signal(transform, name="%s.transform" % conn.label),
+               signal,
+               model.sig_out[conn],
+               tag=conn.label))
 
-            eval_points = conn.eval_points
-            if eval_points is None:
-                eval_points = npext.array(
-                    self.built[conn.pre].eval_points, min_dims=2)
-            elif is_integer(eval_points):
-                eval_points = self.generate_eval_points(
-                    ens=conn.pre, n_points=eval_points, rng=rng)
-            else:
-                eval_points = npext.array(eval_points, min_dims=2)
+    # Set up probes
+    for probe in conn.probes["signal"]:
+        Builder.build(probe, dimensions=model.sig_out[conn].size, model=model)
 
-            x = np.dot(eval_points, encoders.T / conn.pre.radius)
-            activities = dt * conn.pre.neurons.rates(x, gain, bias)
-            if np.count_nonzero(activities) == 0:
-                raise RuntimeError(
-                    "In '%s', for '%s', 'activities' matrix is all zero. "
-                    "This is because no evaluation points fall in the firing "
-                    "ranges of any neurons." % (str(conn), str(conn.pre)))
+    model.params[conn] = BuiltConnection(decoders=decoders,
+                                         eval_points=eval_points,
+                                         transform=transform)
 
-            if conn.function is None:
-                targets = eval_points
-            else:
-                targets = npext.array(
-                    [conn.function(ep) for ep in eval_points], min_dims=2)
+Builder.register_builder(build_connection, nengo.Connection)  # noqa
 
-            if conn.weight_solver is not None:
-                if conn.decoder_solver is not None:
-                    raise ValueError("Cannot specify both 'weight_solver' "
-                                     "and 'decoder_solver'.")
 
-                # account for transform
-                targets = np.dot(targets, transform.T)
-                transform = np.array(1., dtype=np.float64)
+def build_pyfunc(fn, t_in, n_in, n_out, label, model):
+    if n_in:
+        sig_in = Signal(np.zeros(n_in), name="%s.input" % label)
+        model.operators.append(Reset(sig_in))
+    else:
+        sig_in = None
 
-                decoders = conn.weight_solver(
-                    activities, targets, rng=rng,
-                    E=self.built[conn.post].scaled_encoders.T)
-                self.model.sig_out[conn] = self.model.sig_in[
-                    conn.post.neurons]
-                signal_size = self.model.sig_out[conn].size
-            else:
-                solver = (conn.decoder_solver if conn.decoder_solver is
-                          not None else nengo.decoders.lstsq_L2nz)
-                decoders = solver(activities, targets, rng=rng)
-                signal_size = conn.dimensions
+    if n_out > 0:
+        sig_out = Signal(np.zeros(n_out), name="%s.output" % label)
+    else:
+        sig_out = None
 
-            # Add operator for decoders and filtering
-            decoders = decoders.T
-            if conn.synapse is not None and conn.synapse > dt:
-                o_coef, n_coef = self.filter_coefs(pstc=conn.synapse, dt=dt)
-                decoder_signal = Signal(
-                    decoders * n_coef,
-                    name="%s.decoders * n_coef" % conn.label)
-            else:
-                decoder_signal = Signal(decoders,
-                                        name="%s.decoders" % conn.label)
-                o_coef = 0
+    model.operators.append(
+        SimPyFunc(output=sig_out, fn=fn, t_in=t_in, x=sig_in))
 
-            signal = Signal(np.zeros(signal_size), name=conn.label)
-            self.model.operators.append(ProdUpdate(
-                decoder_signal,
-                self.model.sig_in[conn],
-                Signal(o_coef, name="o_coef"),
-                signal,
-                tag="%s decoding" % conn.label))
-        else:
-            # Direct connection
-            signal = self.model.sig_in[conn]
+    return sig_in, sig_out
 
-        # Add operator for filtering (in the case filter wasn't already
-        # added, when pre.neurons is a non-direct Ensemble)
-        if decoders is None and conn.synapse is not None:
-            # Note: we add a filter here even if synapse < dt,
-            # in order to avoid cycles in the op graph. If the filter
-            # is explicitly set to None (e.g. for a passthrough node)
-            # then cycles can still occur.
-            signal = self.filtered_signal(signal, conn.synapse)
 
-        if conn.modulatory:
-            # Make a new signal, effectively detaching from post
-            self.model.sig_out[conn] = Signal(
-                np.zeros(self.model.sig_out[conn].size),
-                name="%s.mod_output" % conn.label)
-            # Add reset operator?
-            # TODO: add unit test
+def build_direct(direct, dimensions, model):
+    model.sig_in[direct] = Signal(np.zeros(dimensions), name=direct.label)
+    model.sig_out[direct] = model.sig_in[direct]
+    model.operators.append(Reset(model.sig_in[direct]))
+    model.params[direct] = BuiltNeurons(gain=None, bias=None)
 
-        # Add operator for transform
-        if isinstance(conn.post, nengo.objects.Neurons):
-            if not self.has_built(conn.post):
-                # Since it hasn't been built, it wasn't added to the Network,
-                # which is most likely because the Neurons weren't associated
-                # with an Ensemble.
-                raise RuntimeError("Connection '%s' refers to Neurons '%s' "
-                                   "that are not a part of any Ensemble." % (
-                                       conn, conn.post))
-            transform *= self.built[conn.post].gain[:, np.newaxis]
+Builder.register_builder(build_direct, nengo.neurons.Direct)
 
-        self.model.operators.append(
-            DotInc(Signal(transform, name="%s.transform" % conn.label),
-                   signal,
-                   self.model.sig_out[conn],
-                   tag=conn.label))
 
-        # Set up probes
-        for probe in conn.probes["signal"]:
-            self.build(probe, dimensions=self.model.sig_out[conn].size)
+def build_neurons(neurons, max_rates, intercepts, model):
+    if neurons.n_neurons <= 0:
+        raise ValueError(
+            "Number of neurons (%d) must be positive." % neurons.n_neurons)
+    gain, bias = neurons.gain_bias(max_rates, intercepts)
+    model.sig_in[neurons] = Signal(
+        np.zeros(neurons.n_neurons), name="%s.input" % neurons.label)
+    model.sig_out[neurons] = Signal(
+        np.zeros(neurons.n_neurons), name="%s.output" % neurons.label)
 
-        return BuiltConnection(decoders=decoders,
-                               eval_points=eval_points,
-                               transform=transform)
+    model.operators.append(Copy(
+        src=Signal(bias, name="%s.bias" % neurons.label),
+        dst=model.sig_in[neurons]))
 
-    def build_pyfunc(self, fn, t_in, n_in, n_out, label):
-        if n_in:
-            sig_in = Signal(np.zeros(n_in), name="%s.input" % label)
-            self.model.operators.append(Reset(sig_in))
-        else:
-            sig_in = None
+    for probe in neurons.probes["output"]:
+        Builder.build(probe, dimensions=neurons.n_neurons, model=model)
 
-        if n_out > 0:
-            sig_out = Signal(np.zeros(n_out), name="%s.output" % label)
-        else:
-            sig_out = None
+    model.params[neurons] = BuiltNeurons(gain=gain, bias=bias)
 
-        self.model.operators.append(
-            SimPyFunc(output=sig_out, fn=fn, t_in=t_in, x=sig_in))
 
-        return sig_in, sig_out
+def build_lifrate(lif, max_rates, intercepts, model):
+    build_neurons(lif, max_rates, intercepts, model=model)
+    model.operators.append(SimNeurons(
+        neurons=lif, J=model.sig_in[lif], output=model.sig_out[lif]))
 
-    @builds(nengo.neurons.Direct)
-    def build_direct(self, direct, dimensions):
-        self.model.sig_in[direct] = Signal(np.zeros(dimensions),
-                                           name=direct.label)
-        self.model.sig_out[direct] = self.model.sig_in[direct]
-        self.model.operators.append(Reset(self.model.sig_in[direct]))
-        return BuiltNeurons(gain=None, bias=None)
+Builder.register_builder(build_lifrate, nengo.neurons.LIFRate)
 
-    def build_neurons(self, neurons, max_rates, intercepts):
-        if neurons.n_neurons <= 0:
-            raise ValueError(
-                "Number of neurons (%d) must be positive." % neurons.n_neurons)
-        gain, bias = neurons.gain_bias(max_rates, intercepts)
-        self.model.sig_in[neurons] = Signal(
-            np.zeros(neurons.n_neurons), name="%s.input" % neurons.label)
-        self.model.sig_out[neurons] = Signal(
-            np.zeros(neurons.n_neurons), name="%s.output" % neurons.label)
 
-        self.model.operators.append(Copy(
-            src=Signal(bias, name="%s.bias" % neurons.label),
-            dst=self.model.sig_in[neurons]))
+def build_lif(lif, max_rates, intercepts, model):
+    build_neurons(lif, max_rates, intercepts, model=model)
+    voltage = Signal(np.zeros(lif.n_neurons), name="%s.voltage" % lif.label)
+    refractory_time = Signal(
+        np.zeros(lif.n_neurons), name="%s.refractory_time" % lif.label)
+    model.operators.append(SimNeurons(neurons=lif,
+                                      J=model.sig_in[lif],
+                                      output=model.sig_out[lif],
+                                      states=[voltage, refractory_time]))
 
-        for probe in neurons.probes["output"]:
-            self.build(probe, dimensions=neurons.n_neurons)
+Builder.register_builder(build_lif, nengo.neurons.LIF)
 
-        return BuiltNeurons(gain=gain, bias=bias)
 
-    @builds(nengo.neurons.LIFRate)
-    def build_lifrate(self, lif, max_rates, intercepts):
-        rval = self.build_neurons(lif, max_rates, intercepts)
-        self.model.operators.append(SimNeurons(
-            neurons=lif,
-            J=self.model.sig_in[lif],
-            output=self.model.sig_out[lif]))
-        return rval
+def build_alifrate(alif, max_rates, intercepts, model):
+    build_neurons(alif, max_rates, intercepts, model=model)
+    adaptation = Signal(np.zeros(alif.n_neurons),
+                        name="%s.adaptation" % alif.label)
+    model.operators.append(SimNeurons(neurons=alif,
+                                      J=model.sig_in[alif],
+                                      output=model.sig_out[alif],
+                                      states=[adaptation]))
 
-    @builds(nengo.neurons.LIF)
-    def build_lif(self, lif, max_rates, intercepts):
-        rval = self.build_neurons(lif, max_rates, intercepts)
-        voltage = Signal(np.zeros(lif.n_neurons),
-                         name="%s.voltage" % lif.label)
-        refractory_time = Signal(np.zeros(lif.n_neurons),
-                                 name="%s.refractory_time" % lif.label)
-        self.model.operators.append(SimNeurons(
-            neurons=lif,
-            J=self.model.sig_in[lif],
-            output=self.model.sig_out[lif],
-            states=[voltage, refractory_time]))
-        return rval
+Builder.register_builder(build_alifrate, nengo.neurons.AdaptiveLIFRate)
 
-    @builds(nengo.neurons.AdaptiveLIFRate)
-    def build_alifrate(self, lif, max_rates, intercepts):
-        rval = self.build_neurons(lif, max_rates, intercepts)
-        adaptation = Signal(np.zeros(lif.n_neurons),
-                            name="%s.adaptation" % lif.label)
-        self.model.operators.append(SimNeurons(
-            neurons=lif,
-            J=self.model.sig_in[lif],
-            output=self.model.sig_out[lif],
-            states=[adaptation]))
-        return rval
 
-    @builds(nengo.neurons.AdaptiveLIF)
-    def build_alif(self, lif, max_rates, intercepts):
-        rval = self.build_neurons(lif, max_rates, intercepts)
-        voltage = Signal(np.zeros(lif.n_neurons),
-                         name="%s.voltage" % lif.label)
-        refractory_time = Signal(np.zeros(lif.n_neurons),
-                                 name="%s.refractory_time" % lif.label)
-        adaptation = Signal(np.zeros(lif.n_neurons),
-                            name="%s.adaptation" % lif.label)
-        self.model.operators.append(SimNeurons(
-            neurons=lif,
-            J=self.model.sig_in[lif],
-            output=self.model.sig_out[lif],
-            states=[voltage, refractory_time, adaptation]))
-        return rval
+def build_alif(alif, max_rates, intercepts, model):
+    build_neurons(alif, max_rates, intercepts, model=model)
+    voltage = Signal(np.zeros(alif.n_neurons), name="%s.voltage" % alif.label)
+    refractory_time = Signal(np.zeros(alif.n_neurons),
+                             name="%s.refractory_time" % alif.label)
+    adaptation = Signal(np.zeros(alif.n_neurons),
+                        name="%s.adaptation" % alif.label)
+    model.operators.append(SimNeurons(
+        neurons=alif,
+        J=model.sig_in[alif],
+        output=model.sig_out[alif],
+        states=[voltage, refractory_time, adaptation]))
 
-    def generate_eval_points(self, ens, n_points, rng):
-        if n_points is None:
-            # use a heuristic to pick the number of points
-            dims, neurons = ens.dimensions, ens.neurons.n_neurons
-            n_points = max(np.clip(500 * dims, 750, 2500), 2 * neurons)
-
-        return dists.UniformHypersphere(ens.dimensions).sample(
-            n_points, rng=rng) * ens.radius
+Builder.register_builder(build_alif, nengo.neurons.AdaptiveLIF)

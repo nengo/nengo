@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
+import nengo.builder
 
 
 def test_seeding():
@@ -55,6 +56,16 @@ def test_seeding():
     compare_objs(Cs[0], Cs[1], conn_attrs)
     compare_objs(Cs[0], Cs[2], conn_attrs, equal=False)
 
+
+def test_signal():
+    # Make sure assert_named_signals works
+    nengo.builder.Signal(np.array(0.))
+    nengo.builder.Signal.assert_named_signals = True
+    with pytest.raises(AssertionError):
+        nengo.builder.Signal(np.array(0.))
+
+    # So that other tests that build signals don't fail...
+    nengo.builder.Signal.assert_named_signals = False
 
 if __name__ == '__main__':
     nengo.log(debug=True)
