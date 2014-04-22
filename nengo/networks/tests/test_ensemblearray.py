@@ -165,6 +165,12 @@ def test_matrix_mul(Simulator, nl):
                 atol=atol, rtol=rtol)
 
 
+def test_arguments():
+    """Make sure EnsembleArray accepts the right arguments."""
+    with pytest.raises(TypeError):
+        nengo.networks.EnsembleArray(nengo.LIF(10), 1, dimensions=2)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

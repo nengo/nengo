@@ -10,6 +10,12 @@ class EnsembleArray(nengo.Network):
 
     def __init__(self, neurons, n_ensembles, ens_dimensions=1, label=None,
                  **ens_kwargs):
+        if "dimensions" in ens_kwargs:
+            raise TypeError(
+                "'dimensions' is not a valid argument to EnsembleArray. "
+                "To set the number of ensembles, use 'n_ensembles'. To set "
+                "the number of dimensions per ensemble, use 'ens_dimensions'.")
+
         label_prefix = "" if label is None else label + "_"
 
         self.n_ensembles = n_ensembles
