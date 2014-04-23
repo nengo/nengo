@@ -212,72 +212,62 @@ def test_class():
 
 def test_memoize():
     """Test that the memoize decorator works in several contexts."""
+    cache_info = {'misses': 0}  # must be a dict so that closure happens
+
     @memoize
     def f():
-        global state
-        state = 'run'
+        cache_info['misses'] += 1
         return 'f'
 
     @memoize
     def f_args(a, b=5):
-        global state
-        state = 'run'
+        cache_info['misses'] += 1
         return a + b
 
     class Test(object):
         @memoize
         def inst_f(self):
-            global state
-            state = 'run'
+            cache_info['misses'] += 1
             return 'inst_f'
 
         @memoize
         @classmethod
         def cls_f(cls):
-            global state
-            state = 'run'
+            cache_info['misses'] += 1
             return 'cls_f'
 
         @memoize
         @staticmethod
         def static_f():
-            global state
-            state = 'run'
+            cache_info['misses'] += 1
             return 'static_f'
 
-    def check_run(should_run, f):
-        global state
-        state = 'not run'
-        assert f() == f.__name__
-        assert (state == 'run') == should_run
+        @property
+        @memoize
+        def prop(self):
+            cache_info['misses'] += 1
+            return 'prop'
 
-    def check_run_f_args(should_run, f, a, b=5):
-        global state
-        state = 'not run'
-        assert f(a, b=b) == a + b
-        assert (state == 'run') == should_run
+    def check_all(inst):
+        assert f() == f.__name__
+        assert inst.inst_f() == inst.inst_f.__name__
+        assert Test.cls_f() == Test.cls_f.__name__
+        assert Test.static_f() == Test.static_f.__name__
+        assert inst.prop == 'prop'
+        assert f_args(1) == 6
+        assert f_args(a=10) == 15
+        assert f_args(1, 2) == 3
+        assert f_args(1, b=100) == 101
 
     inst = Test()
 
-    # First run should actually run
-    check_run(True, f)
-    check_run(True, inst.inst_f)
-    check_run(True, Test.cls_f)
-    check_run(True, Test.static_f)
-    check_run_f_args(True, f_args, 1)
-    check_run_f_args(True, f_args, a=10)
-    check_run_f_args(True, f_args, 1, 2)
-    check_run_f_args(True, f_args, 1, b=100)
+    # First run should be all misses
+    check_all(inst)
+    assert cache_info['misses'] == 9
 
-    # Second run should not run
-    check_run(False, f)
-    check_run(False, inst.inst_f)
-    check_run(False, Test.cls_f)
-    check_run(False, Test.static_f)
-    check_run_f_args(False, f_args, 1)
-    check_run_f_args(False, f_args, a=10)
-    check_run_f_args(False, f_args, 1, 2)
-    check_run_f_args(False, f_args, 1, b=100)
+    # Second run should be all hits
+    check_all(inst)
+    assert cache_info['misses'] == 9
 
 
 if __name__ == "__main__":
