@@ -109,6 +109,29 @@ def test_defaults():
     assert c.radius == nengo.Config.context[0][nengo.Ensemble].radius
     assert a.radius == 2.0
 
+
+def test_copy_depth():
+    """Test that copy is deep enough"""
+    with nengo.Network() as net1:
+        net1.config[nengo.Ensemble].encoders = [[0]]
+        with nengo.Network() as net2:
+            net2.config[nengo.Ensemble].encoders = [[1]]
+
+    assert net1.config[nengo.Ensemble].encoders == [[0]]
+
+
+def test_copy_shallowness():
+    """Test that copy is not too deep"""
+    with nengo.Network() as net1:
+        encoders = [[0]]
+        net1.config[nengo.Ensemble].encoders = encoders
+        with nengo.Network() as net2:
+            encoders[0][0] = 1
+
+    assert net1.config[nengo.Ensemble].encoders == [[1]]
+    assert net2.config[nengo.Ensemble].encoders == [[1]]
+
+
 if __name__ == '__main__':
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
