@@ -26,7 +26,7 @@ def test_multidim(Simulator, nl):
         A = nengo.networks.EnsembleArray(nl(n_neurons), dims, radius=radius)
         B = nengo.networks.EnsembleArray(nl(n_neurons), dims, radius=radius)
         C = nengo.networks.EnsembleArray(nl(n_neurons * 2), dims,
-                                         dimensions=2,
+                                         ens_dimensions=2,
                                          radius=radius, label="C")
         nengo.Connection(inputA, A.input)
         nengo.Connection(inputB, B.input)
@@ -108,7 +108,7 @@ def test_matrix_mul(Simulator, nl):
 
         C = nengo.networks.EnsembleArray(nl(N),
                                          Amat.size * Bmat.shape[1],
-                                         dimensions=2,
+                                         ens_dimensions=2,
                                          radius=1.5 * radius,
                                          label="C")
 
@@ -163,6 +163,12 @@ def test_matrix_mul(Simulator, nl):
                 sim.data[D_p][-10:, i * Bmat.shape[1] + k],
                 Dmat[i, k],
                 atol=atol, rtol=rtol)
+
+
+def test_arguments():
+    """Make sure EnsembleArray accepts the right arguments."""
+    with pytest.raises(TypeError):
+        nengo.networks.EnsembleArray(nengo.LIF(10), 1, dimensions=2)
 
 
 if __name__ == "__main__":

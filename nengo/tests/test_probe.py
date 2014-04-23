@@ -1,10 +1,10 @@
 import logging
-import time
 
 import numpy as np
 import pytest
 
 import nengo
+from nengo.utils.testing import Timer
 
 logger = logging.getLogger(__name__)
 
@@ -58,12 +58,10 @@ def test_dts(Simulator):
     simtime = 2.483
     # simtime = 2.484
 
-    timer = time.time()
-    sim.run(simtime)
-    timer = time.time() - timer
-    logger.debug(
-        "Ran %(n)s probes for %(simtime)s sec simtime in %(timer)0.3f sec"
-        % locals())
+    with Timer() as timer:
+        sim.run(simtime)
+    logger.debug("Ran %d probes for %f sec simtime in %0.3f sec",
+                 n, simtime, timer.duration)
 
     for i, p in enumerate(probes):
         t = sim.dt * np.arange(int(np.ceil(simtime / dts[i])))
@@ -91,12 +89,10 @@ def test_large(Simulator):
     sim = Simulator(model)
     simtime = 2.483
 
-    timer = time.time()
-    sim.run(simtime)
-    timer = time.time() - timer
-    logger.debug(
-        "Ran %(n)s probes for %(simtime)s sec simtime in %(timer)0.3f sec"
-        % locals())
+    with Timer() as timer:
+        sim.run(simtime)
+    logger.debug("Ran %d probes for %f sec simtime in %0.3f sec",
+                 n, simtime, timer.duration)
 
     t = sim.dt * np.arange(int(np.round(simtime / sim.dt)))
     x = np.asarray([input_fn(ti) for ti in t])

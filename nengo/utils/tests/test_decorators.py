@@ -4,7 +4,7 @@ import logging
 import pytest
 
 import nengo
-from nengo.utils.decorators import decorator
+from nengo.utils.decorators import decorator, memoize
 
 logger = logging.getLogger(__name__)
 state = None  # Used to make sure decorators are running
@@ -208,6 +208,66 @@ def test_class():
                                     '        def __init__(self, a, b):\n'
                                     '            self.a = a\n'
                                     '            self.b = b\n')
+
+
+def test_memoize():
+    """Test that the memoize decorator works in several contexts."""
+    cache_info = {'misses': 0}  # must be a dict so that closure happens
+
+    @memoize
+    def f():
+        cache_info['misses'] += 1
+        return 'f'
+
+    @memoize
+    def f_args(a, b=5):
+        cache_info['misses'] += 1
+        return a + b
+
+    class Test(object):
+        @memoize
+        def inst_f(self):
+            cache_info['misses'] += 1
+            return 'inst_f'
+
+        @memoize
+        @classmethod
+        def cls_f(cls):
+            cache_info['misses'] += 1
+            return 'cls_f'
+
+        @memoize
+        @staticmethod
+        def static_f():
+            cache_info['misses'] += 1
+            return 'static_f'
+
+        @property
+        @memoize
+        def prop(self):
+            cache_info['misses'] += 1
+            return 'prop'
+
+    def check_all(inst):
+        assert f() == f.__name__
+        assert inst.inst_f() == inst.inst_f.__name__
+        assert Test.cls_f() == Test.cls_f.__name__
+        assert Test.static_f() == Test.static_f.__name__
+        assert inst.prop == 'prop'
+        assert f_args(1) == 6
+        assert f_args(a=10) == 15
+        assert f_args(1, 2) == 3
+        assert f_args(1, b=100) == 101
+
+    inst = Test()
+
+    # First run should be all misses
+    check_all(inst)
+    assert cache_info['misses'] == 9
+
+    # Second run should be all hits
+    check_all(inst)
+    assert cache_info['misses'] == 9
 
 
 if __name__ == "__main__":
