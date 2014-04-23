@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import collections
 import logging
+import warnings
 
 import numpy as np
 
@@ -694,8 +695,7 @@ class Builder(object):
             # two different Ensembles, which is unlikely to be desired.
 
             # TODO: Prevent this at pre-build validation time.
-            logger.warning("Object '%s' has already been built in model "
-                           "'%s'." % (str(obj), model.label))
+            warnings.warn("Object '%s' has already been built." % obj)
             return
 
         for obj_cls in obj.__class__.__mro__:

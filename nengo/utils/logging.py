@@ -47,3 +47,4 @@ def log(debug=False, path=None):
             handler.setFormatter(file_formatter)
             logging.root.addHandler(handler)
     handler.setLevel(level)
+    logging.captureWarnings(True)
