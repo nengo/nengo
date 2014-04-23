@@ -852,20 +852,19 @@ def build_probe(probe, dimensions, model):
 Builder.register_builder(build_probe, nengo.objects.Probe)
 
 
-def filter_coefs(pstc, dt):
+def decay_coef(pstc, dt):
     pstc = max(pstc, dt)
-    decay = np.exp(-dt / pstc)
-    return decay, (1.0 - decay)
+    return np.exp(-dt / pstc)
 
 
 def filtered_signal(signal, pstc, model):
     name = "%s.filtered(%f)" % (signal.name, pstc)
     filtered = Signal(np.zeros(signal.size), name=name)
-    o_coef, n_coef = filter_coefs(pstc=pstc, dt=model.dt)
+    decay = decay_coef(pstc=pstc, dt=model.dt)
     model.operators.append(ProdUpdate(
-        Signal(n_coef, name="n_coef"),
+        Signal(1.0 - decay, name="1 - decay"),
         signal,
-        Signal(o_coef, name="o_coef"),
+        Signal(decay, name="decay"),
         filtered,
         tag="%s filtering" % name))
     return filtered
@@ -953,20 +952,20 @@ def build_connection(conn, model):  # noqa: C901
         # Add operator for decoders and filtering
         decoders = decoders.T
         if conn.synapse is not None and conn.synapse > model.dt:
-            o_coef, n_coef = filter_coefs(pstc=conn.synapse, dt=model.dt)
+            decay = decay_coef(pstc=conn.synapse, dt=model.dt)
             decoder_signal = Signal(
-                decoders * n_coef,
-                name="%s.decoders * n_coef" % conn.label)
+                decoders * (1.0 - decay),
+                name="%s.decoders * (1 - decay)" % conn.label)
         else:
             decoder_signal = Signal(decoders,
                                     name="%s.decoders" % conn.label)
-            o_coef = 0
+            decay = 0
 
         signal = Signal(np.zeros(signal_size), name=conn.label)
         model.operators.append(ProdUpdate(
             decoder_signal,
             model.sig_in[conn],
-            Signal(o_coef, name="o_coef"),
+            Signal(decay, name="decay"),
             signal,
             tag="%s decoding" % conn.label))
     else:
