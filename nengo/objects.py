@@ -120,7 +120,7 @@ class Network(with_metaclass(NengoObjectContainer)):
         inst.nodes = inst.objects[Node]
         inst.connections = inst.objects[Connection]
         inst.networks = inst.objects[Network]
-        inst.config = copy.deepcopy(Config.context[-1])
+        inst.config = copy.copy(Config.context[-1])
         return inst
 
     context = collections.deque(maxlen=100)  # static stack of Network objects

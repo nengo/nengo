@@ -14,6 +14,7 @@ can be found at
 """
 
 import collections
+import copy
 import inspect
 import weakref
 
@@ -97,6 +98,14 @@ class Config(object):
         for config_item in config_items:
             self.add_config(config_item)
 
+    def __copy__(self):
+        new = type(self)()
+        new.configurable = dict(self.configurable)
+        for key, value in self.items.items():
+            new.items[key] = copy.copy(value)  # shallow-copy each ConfigItem
+
+        return new
+
     def __getitem__(self, key):
         item = self.items.get(key, None)
         if item is None:
@@ -104,9 +113,9 @@ class Config(object):
             mro.extend(list(key.__class__.__mro__))
             for cls in mro:
                 if cls in self.configurable:
+                    # Get the ConfigItem template from self.configurable
                     item = self.configurable[cls]
-                    if inspect.isclass(item):
-                        item = item()
+                    item = item() if inspect.isclass(item) else copy.copy(item)
                     self.items[key] = item
                     break
             else:
