@@ -7,12 +7,18 @@ import numpy as np
 maxint = np.iinfo(np.int32).max
 
 
-def array(x, min_dims=0, **kwargs):
+def array(x, dims=None, min_dims=0, **kwargs):
     y = np.array(x, **kwargs)
-    if y.ndim <= min_dims:
-        shape = np.ones(min_dims, dtype='int')
+    dims = max(min_dims, y.ndim) if dims is None else dims
+
+    if y.ndim < dims:
+        shape = np.ones(dims, dtype='int')
         shape[:y.ndim] = y.shape
         y.shape = shape
+    elif y.ndim > dims:
+        raise ValueError(
+            "Input cannot be cast to array with %d dimensions" % dims)
+
     return y
 
 
