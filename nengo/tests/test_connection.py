@@ -370,6 +370,37 @@ def test_shortfilter(Simulator, nl):
     with pytest.raises(ValueError):
         Simulator(m, dt=.01)
 
+
+def test_function_output_size(Simulator, nl_nodirect):
+    """Try a function that outputs both 0-d and 1-d arrays"""
+    def bad_function(x):
+        return x if x > 0 else 0
+
+    model = nengo.Network(seed=9)
+    with model:
+        u = nengo.Node(output=lambda t: t - 1)
+        a = nengo.Ensemble(neurons=nl_nodirect(100), dimensions=1)
+        b = nengo.Ensemble(neurons=nl_nodirect(100), dimensions=1)
+        nengo.Connection(u, a)
+        nengo.Connection(a, b, function=bad_function)
+        up = nengo.Probe(u, synapse=None)
+        bp = nengo.Probe(b, synapse=0.03)
+
+    sim = Simulator(model)
+    sim.run(2.)
+    t = sim.trange()
+    x = nengo.utils.numpy.filt(sim.data[up].clip(0, np.inf), 0.03 / sim.dt)
+    y = sim.data[bp]
+
+    with Plotter(Simulator, nl_nodirect) as plt:
+        plt.plot(t, x, 'k')
+        plt.plot(t, y)
+        plt.savefig('test_connection.test_function_output_size.pdf')
+        plt.close()
+
+    assert np.allclose(x, y, atol=0.1)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

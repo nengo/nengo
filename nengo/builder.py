@@ -927,8 +927,9 @@ def build_connection(conn, model):  # noqa: C901
         if conn.function is None:
             targets = eval_points
         else:
-            targets = npext.array(
-                [conn.function(ep) for ep in eval_points], min_dims=2)
+            targets = np.zeros((len(eval_points), conn.function_size))
+            for i, ep in enumerate(eval_points):
+                targets[i] = conn.function(ep)
 
         if conn.weight_solver is not None:
             if conn.decoder_solver is not None:
