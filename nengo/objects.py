@@ -584,7 +584,7 @@ class Connection(NengoObject):
 
     def _required_transform_shape(self):
         if isinstance(self._pre, Ensemble) and self.function is not None:
-            in_dims = self._function[1]
+            in_dims = self.function_size
         elif isinstance(self._pre, Ensemble):
             in_dims = self._pre.dimensions
         elif isinstance(self._pre, Neurons):
@@ -640,6 +640,10 @@ class Connection(NengoObject):
     @property
     def function(self):
         return self._function[0]
+
+    @property
+    def function_size(self):
+        return self._function[1]
 
     @function.setter
     def function(self, _function):

@@ -3,7 +3,7 @@ TODO:
   - add a test to test each solver many times on different populations,
     and record the error.
 """
-
+from __future__ import print_function
 import logging
 
 import numpy as np
@@ -55,8 +55,8 @@ def test_cholesky():
     b = rng.normal(size=(m, ))
 
     x0, _, _, _ = np.linalg.lstsq(A, b)
-    x1 = _cholesky(A, b, 0, transpose=False)
-    x2 = _cholesky(A, b, 0, transpose=True)
+    x1, _ = _cholesky(A, b, 0, transpose=False)
+    x2, _ = _cholesky(A, b, 0, transpose=True)
     assert np.allclose(x0, x1)
     assert np.allclose(x0, x2)
 
@@ -66,7 +66,7 @@ def test_conjgrad():
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
-    x0 = _cholesky(A, b, sigma)
+    x0, _ = _cholesky(A, b, sigma)
     x1, _ = _conjgrad(A, b, sigma, tol=1e-3)
     x2, _ = _block_conjgrad(A, b, sigma, tol=1e-3)
     assert np.allclose(x0, x1, atol=1e-6, rtol=1e-3)
@@ -88,7 +88,7 @@ def test_decoder_solver(solver):
     train = get_eval_points(n_points, dims, rng=rng)
     Atrain = rates(np.dot(train, E))
 
-    D = solver(Atrain, train, rng=rng)
+    D, _ = solver(Atrain, train, rng=rng)
 
     test = get_eval_points(n_points, dims, rng=rng, sort=True)
     Atest = rates(np.dot(test, E))
@@ -105,6 +105,25 @@ def test_decoder_solver(solver):
 
     assert np.allclose(test, est, atol=3e-2, rtol=1e-3)
     assert rel_rmse < 0.02
+
+
+@pytest.mark.parametrize('solver', [
+    lstsq_noise, lstsq_L2, lstsq_L2nz])
+def test_subsolvers(solver, tol=1e-2):
+    rng = np.random.RandomState(89)
+    get_rng = lambda: np.random.RandomState(87)
+
+    A, b = get_system(500, 100, 5, rng=rng)
+    x0, _ = solver(A, b, rng=get_rng(), solver=_cholesky)
+
+    subsolvers = [_conjgrad, _block_conjgrad]
+    for subsolver in subsolvers:
+        x, info = solver(A, b, rng=get_rng(), solver=subsolver, tol=tol)
+        rel_rmse = rms(x - x0) / rms(x0)
+        assert rel_rmse < 3 * tol
+        # the above 3 * tol is just a heuristic; the main purpose of this
+        # test is to make sure that the subsolvers don't throw errors
+        # in-situ. They are tested more robustly elsewhere.
 
 
 @pytest.mark.optional
@@ -130,11 +149,11 @@ def test_weight_solver(solver):
     Xtrain = train                                    # training targets
 
     # find decoders and multiply by encoders to get weights
-    D = solver(Atrain, Xtrain, rng=rng)
+    D, _ = solver(Atrain, Xtrain, rng=rng)
     W1 = np.dot(D, Eb)
 
     # find weights directly
-    W2 = solver(Atrain, Xtrain, rng=rng, E=Eb)
+    W2, _ = solver(Atrain, Xtrain, rng=rng, E=Eb)
 
     # assert that post inputs are close on test points
     test = get_eval_points(n_points, dims, rng=rng)  # testing eval points
@@ -153,9 +172,9 @@ def test_scipy_solvers():
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
-    x0 = _cholesky(A, b, sigma)
-    x1, i1 = _conjgrad_scipy(A, b, sigma)
-    x2, i2 = _lsmr_scipy(A, b, sigma)
+    x0, _ = _cholesky(A, b, sigma)
+    x1, _ = _conjgrad_scipy(A, b, sigma)
+    x2, _ = _lsmr_scipy(A, b, sigma)
     assert np.allclose(x0, x1, atol=1e-5, rtol=1e-3)
     assert np.allclose(x0, x2, atol=1e-5, rtol=1e-3)
 
@@ -167,7 +186,7 @@ def test_nnls(solver):
     A, x = get_system(500, 100, 1, rng=rng, sort=True)
     y = x**2
 
-    d = solver(A, y, rng)
+    d, _ = solver(A, y, rng)
     yest = np.dot(A, d)
     rel_rmse = rms(yest - y) / rms(y)
 
@@ -188,34 +207,27 @@ def test_nnls(solver):
 
 @pytest.mark.benchmark
 def test_base_solvers_L2():
+    ref_solver = _cholesky
+    solvers = [_conjgrad, _block_conjgrad, _conjgrad_scipy, _lsmr_scipy]
+
     rng = np.random.RandomState(39408)
     A, B = get_system(m=5000, n=3000, d=3, rng=rng)
     sigma = 0.1 * A.max()
 
-    with Timer() as t:
-        x1 = _cholesky(A, B, sigma)
-    print("_cholesky: %.3fs" % t.duration)
+    with Timer() as t0:
+        x0, _ = ref_solver(A, B, sigma)
 
-    with Timer() as t:
-        x2, iters = _conjgrad(A, B, sigma, tol=1e-2)
-    print("_conjgrad: %.3fs, %s iters" % (t.duration, iters))
+    xs = np.zeros((len(solvers),) + x0.shape)
+    print()
+    for i, solver in enumerate(solvers):
+        with Timer() as t:
+            xs[i], info = solver(A, B, sigma)
+        print("%s: %0.3f (%0.2f) %s" % (
+            solver.__name__, t.duration, t.duration / t0.duration, info))
 
-    with Timer() as t:
-        x3, iters = _block_conjgrad(A, B, sigma, tol=1e-2)
-    print("_block_conjgrad: %.3fs, %s iters" % (t.duration, iters))
-
-    with Timer() as t:
-        x4, iters = _conjgrad_scipy(A, B, sigma, tol=1e-4)
-    print("_conjgrad_scipy: %.3fs, %s iters" % (t.duration, iters))
-
-    with Timer() as t:
-        x5, iters = _lsmr_scipy(A, B, sigma, tol=1e-4)
-    print("_lsmr_scipy: %.3fs, %s iters" % (t.duration, iters))
-
-    assert np.allclose(x1, x2, atol=1e-5, rtol=1e-3)
-    assert np.allclose(x1, x3, atol=1e-5, rtol=1e-3)
-    assert np.allclose(x1, x4, atol=1e-5, rtol=1e-3)
-    assert np.allclose(x1, x5, atol=1e-5, rtol=1e-3)
+    for solver, x in zip(solvers, xs):
+        assert np.allclose(x0, x, atol=1e-5, rtol=1e-3), (
+            "Solver %s" % solver.__name__)
 
 
 @pytest.mark.benchmark
@@ -312,9 +324,9 @@ def test_regularization(Simulator, nl_nodirect):
                 for k, reg in enumerate(regs):
                     reg_solver = lambda a, t, rng, reg=reg: solver(
                         a, t, rng=rng, noise_amp=reg)
-                    for l, filter in enumerate(filters):
+                    for l, synapse in enumerate(filters):
                         probes[i, j, k, l] = nengo.Probe(
-                            a, decoder_solver=reg_solver, filter=filter)
+                            a, decoder_solver=reg_solver, synapse=synapse)
 
     sim = nengo.Simulator(model, dt=dt)
     sim.run(tfinal)
@@ -377,7 +389,7 @@ def test_eval_points_static(Simulator):
         Atest = a.rates(np.dot(test, e), gain, bias)
 
         for i, n_points in enumerate(eval_points):
-            Di = solver(Atrain[:n_points], train[:n_points], rng=rng)
+            Di, _ = solver(Atrain[:n_points], train[:n_points], rng=rng)
             rmses[i, trial] = rms(np.dot(Atest, Di) - test)
 
     rmses_norm1 = rmses - rmses.mean(0, keepdims=True)
@@ -414,7 +426,6 @@ def test_eval_points(Simulator, nl_nodirect):
     rng = np.random.RandomState(0)
     n = 100
     d = 5
-    # d = 2
     filter = 0.08
     dt = 1e-3
 
