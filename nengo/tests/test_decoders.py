@@ -113,14 +113,17 @@ def test_subsolvers(solver, tol=1e-2):
     rng = np.random.RandomState(89)
     get_rng = lambda: np.random.RandomState(87)
 
-    A, b = get_system(500, 100, 50, rng=rng)
+    A, b = get_system(500, 100, 5, rng=rng)
     x0, _ = solver(A, b, rng=get_rng(), solver=_cholesky)
 
     subsolvers = [_conjgrad, _block_conjgrad]
     for subsolver in subsolvers:
         x, info = solver(A, b, rng=get_rng(), solver=subsolver, tol=tol)
         rel_rmse = rms(x - x0) / rms(x0)
-        assert rel_rmse < 2 * tol
+        assert rel_rmse < 3 * tol
+        # the above 3 * tol is just a heuristic; the main purpose of this
+        # test is to make sure that the subsolvers don't throw errors
+        # in-situ. They are tested more robustly elsewhere.
 
 
 @pytest.mark.optional
