@@ -7,12 +7,6 @@ import nengo.utils.numpy as npext
 
 logger = logging.getLogger(__name__)
 
-try:
-    import scipy.interpolate
-except ImportError:
-    logger.info("Failed to import 'scipy'")
-    scipy = None
-
 
 def spikes2events(t, spikes):
     """Return an event-based representation of spikes (i.e. spike times)"""
@@ -27,6 +21,8 @@ def spikes2events(t, spikes):
 
 
 def _rates_isi_events(t, events, midpoint, interp):
+    import scipy.interpolate
+
     isis = np.diff(events)
 
     rt = np.zeros(len(isis) + 2)
@@ -61,10 +57,6 @@ def rates_isi(t, spikes, midpoint=False, interp='zero'):
     rates : (M, N) array_like
         The estimated neuron firing rates.
     """
-    if scipy is None:  # _rates_isi_events requires scipy
-        raise RuntimeError(
-            "'rates_isi' requires the 'scipy' package to be installed")
-
     spike_times = spikes2events(t, spikes.T)
     rates = np.zeros(spikes.shape)
     for i, st in enumerate(spike_times):
