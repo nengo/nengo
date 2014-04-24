@@ -193,12 +193,17 @@ class Network(with_metaclass(NengoObjectContainer)):
                                "exiting from a 'with' block.")
 
         network = Network.context.pop()
-        Config.context.pop()
+        config = Config.context.pop()
 
         if network is not self:
             raise RuntimeError("Network.context in bad state; was expecting "
                                "current context to be '%s' but instead got "
                                "'%s'." % (self, network))
+
+        if config is not self.config:
+            raise RuntimeError("Config.context in bad state; was expecting "
+                               "current context to be '%s' but instead got "
+                               "'%s'." % (self.config, config))
 
     def __hash__(self):
         return hash((self._key, self.label))

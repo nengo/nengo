@@ -92,7 +92,7 @@ def test_invalid_config():
 
 
 def test_defaults():
-
+    """Test that settings defaults propagates appropriately."""
     b = nengo.Ensemble(nengo.LIF(10), 1, radius=nengo.Default,
                        add_to_container=False)
 
@@ -100,14 +100,29 @@ def test_defaults():
 
     with nengo.Network():
         c = nengo.Ensemble(nengo.LIF(10), 1, radius=nengo.Default)
-
         with nengo.Network() as net2:
             net2.config[nengo.Ensemble].radius = 2.0
-
             a = nengo.Ensemble(nengo.LIF(50), 1, radius=nengo.Default)
 
     assert c.radius == nengo.Config.context[0][nengo.Ensemble].radius
     assert a.radius == 2.0
+
+
+def test_configstack():
+    """Test that setting defaults with bare configs works."""
+    @nengo.config.configures(nengo.Connection)
+    class InhibitoryConnection(nengo.config.ConfigItem):
+        synapse = nengo.config.Parameter(0.00848)
+
+    inhib = nengo.Config([InhibitoryConnection])
+    with nengo.Network():
+        e1 = nengo.Ensemble(nengo.LIF(5), 1)
+        e2 = nengo.Ensemble(nengo.LIF(6), 1)
+        excite = nengo.Connection(e1, e2)
+        with inhib:
+            inhibit = nengo.Connection(e1, e2)
+    assert excite.synapse == nengo.Config.context[0][nengo.Connection].synapse
+    assert inhibit.synapse == inhib[nengo.Connection].synapse
 
 
 def test_copy_depth():

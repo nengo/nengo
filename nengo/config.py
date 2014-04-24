@@ -153,6 +153,10 @@ class Config(object):
 
         config = Config.context.pop()
 
+        if len(Config.context) == 0:
+            raise RuntimeError("Config.context in bad state; no default "
+                               "context is currently set.")
+
         if config is not self:
             raise RuntimeError("Config.context in bad state; was expecting "
                                "current context to be '%s' but instead got "
