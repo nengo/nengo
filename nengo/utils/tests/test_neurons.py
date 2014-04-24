@@ -36,8 +36,8 @@ def _test_rates(Simulator, rates, name=None):
         nengo.Connection(u, a, synapse=0)
         nengo.Connection(u, b, synapse=0)
         up = nengo.Probe(u)
-        ap = nengo.Probe(a.neurons, "output", synapse=0)
-        bp = nengo.Probe(b.neurons, "output", synapse=0)
+        ap = nengo.Probe(a.neurons, "output", synapse=None)
+        bp = nengo.Probe(b.neurons, "output", synapse=None)
 
     dt = 1e-3
     sim = Simulator(model, dt=dt)
