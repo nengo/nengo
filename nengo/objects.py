@@ -1,8 +1,8 @@
 import collections
+import copy
 import logging
 import os
 import pickle
-import copy
 
 import numpy as np
 
@@ -120,7 +120,7 @@ class Network(with_metaclass(NengoObjectContainer)):
         inst.nodes = inst.objects[Node]
         inst.connections = inst.objects[Connection]
         inst.networks = inst.objects[Network]
-        inst.config = copy.copy(Config.context[-1])
+        inst._config = copy.copy(Config.context[-1])
         return inst
 
     context = collections.deque(maxlen=100)  # static stack of Network objects
@@ -150,6 +150,15 @@ class Network(with_metaclass(NengoObjectContainer)):
         """Returns a new key for a NengoObject to be added to this Network."""
         self._next_key += 1
         return self._next_key
+
+    @property
+    def config(self):
+        return self._config
+
+    @config.setter
+    def config(self, dummy):
+        raise AttributeError("config cannot be overwritten. See help("
+                             "nengo.Config) for help on modifying configs.")
 
     def save(self, fname, fmt=None):
         """Save this model to a file.
@@ -184,7 +193,7 @@ class Network(with_metaclass(NengoObjectContainer)):
 
     def __enter__(self):
         Network.context.append(self)
-        Config.context.append(self.config)
+        Config.context.append(self._config)
         return self
 
     def __exit__(self, dummy_exc_type, dummy_exc_value, dummy_tb):
@@ -200,10 +209,10 @@ class Network(with_metaclass(NengoObjectContainer)):
                                "current context to be '%s' but instead got "
                                "'%s'." % (self, network))
 
-        if config is not self.config:
+        if config is not self._config:
             raise RuntimeError("Config.context in bad state; was expecting "
                                "current context to be '%s' but instead got "
-                               "'%s'." % (self.config, config))
+                               "'%s'." % (self._config, config))
 
     def __hash__(self):
         return hash((self._key, self.label))
