@@ -371,6 +371,24 @@ def test_shortfilter(Simulator, nl):
         Simulator(m, dt=.01)
 
 
+def test_zerofilter(Simulator):
+    # Testing the case where the connection filter is zero
+    m = nengo.Network(seed=8)
+    with m:
+        # Ensure no cycles in the op graph.
+        a = nengo.Ensemble(nengo.Direct(0), 1)
+        nengo.Connection(a, a, synapse=0)
+
+        # Ensure that spikes are not filtered
+        b = nengo.Ensemble(nengo.LIF(3), 1, intercepts=[-.9, -.8, -.7])
+        bp = nengo.Probe(b.neurons, "output", synapse=0)
+
+    sim = Simulator(m)
+    sim.run(1.)
+    # assert that we have spikes (binary)
+    assert np.unique(sim.data[bp]).size == 2
+
+
 def test_function_output_size(Simulator, nl_nodirect):
     """Try a function that outputs both 0-d and 1-d arrays"""
     def bad_function(x):

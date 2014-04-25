@@ -853,8 +853,8 @@ Builder.register_builder(build_probe, nengo.objects.Probe)
 
 
 def decay_coef(pstc, dt):
-    pstc = max(pstc, dt)
-    return np.exp(-dt / pstc)
+    return np.exp(-dt / pstc) if pstc > 0.03 * dt else 0.
+    # if pstc < 0.03 * dt, exp(-dt / pstc) < 1e-14, so just make it zero
 
 
 def filtered_signal(signal, pstc, model):
