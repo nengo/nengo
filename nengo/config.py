@@ -77,7 +77,10 @@ class ConfigItem(object):
 
 
 class Config(object):
-    """A class containing a set of ConfigItems.
+    """Network-level configuration options.
+
+    TODO: this is going to be user facing, so add in some explanation of
+    how to interact with and modify network.config.
 
     Example
     -------

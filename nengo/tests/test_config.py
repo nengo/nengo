@@ -125,6 +125,17 @@ def test_configstack():
     assert inhibit.synapse == inhib[nengo.Connection].synapse
 
 
+def test_config_property():
+    """Test that config can't be easily modified."""
+    with nengo.Network() as net:
+        with pytest.raises(AttributeError):
+            net.config = nengo.config.Config()
+        with pytest.raises(AttributeError):
+            del net.config
+        assert nengo.config.Config.context[-1] is net.config
+    assert nengo.config.Config.context[-1] is not net.config
+
+
 def test_copy_depth():
     """Test that copy is deep enough"""
     with nengo.Network() as net1:
