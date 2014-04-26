@@ -31,7 +31,7 @@ class NengoGui(swi.SimpleWebInterface):
         return ('image/ico', icon)
 
     def swi(self):
-        with open('index.html') as f:
+        with open('templates/index.html') as f:
             html = f.read()
         return html
 
