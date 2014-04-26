@@ -83,11 +83,11 @@ with model:
     c = nengo.Ensemble(neurons=80, dimensions=2)
     d = nengo.Ensemble(neurons=80, dimensions=2)
     e = nengo.networks.EnsembleArray(80,2)
-    nengo.Connection(a, b, filter=0.01)
-    nengo.Connection(b, c, filter=0.01)
-    nengo.Connection(c, d, filter=0.01)
-    nengo.Connection(b, d, filter=0.01)
-    nengo.Connection(d, e.input, filter=0.01)
+    nengo.Connection(a, b, synapse=0.01)
+    nengo.Connection(b, c, synapse=0.01)
+    nengo.Connection(c, d, synapse=0.01)
+    nengo.Connection(b, d, synapse=0.01)
+    nengo.Connection(d, e.input, synapse=0.01)
 </div>
     
 <div id="graph">
