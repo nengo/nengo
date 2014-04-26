@@ -9,24 +9,14 @@ import nengo_helper
 import nengo
 
 class NengoGui(swi.SimpleWebInterface):
-    def swi_ace(self, *path):
-        """Serve the contents of the ace directory"""
-
-        p = os.path.join('ace', *path)
-        # TODO: confirm this only allows us to read things inside the ace
-        #       directory
-        with open(p) as f:
+    def swi_static(self, *path):
+        fn = os.path.join('static', *path)
+        with open(fn) as f:
             js = f.read()
         return ('text/javascript', js)
-
-    def swi_d3_min_js(self):
-        with open('d3.min.js') as f:
-            js = f.read()
-        return ('text/javascript', js)
-
 
     def swi_favicon_ico(self):
-        with open('favicon.ico','rb') as f:
+        with open('static/favicon.ico','rb') as f:
             icon = f.read()
         return ('image/ico', icon)
 
