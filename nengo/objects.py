@@ -495,7 +495,7 @@ class Connection(NengoObject):
     """
 
     def __init__(self, pre, post, synapse=0.005, transform=1.0,
-                 modulatory=False, **kwargs):
+                 modulatory=False, learning_rule=None, **kwargs):
         if not isinstance(pre, ObjView):
             pre = ObjView(pre)
         if not isinstance(post, ObjView):
@@ -508,7 +508,7 @@ class Connection(NengoObject):
 
         self.synapse = synapse
         self.modulatory = modulatory
-        self.learning_rule = kwargs.pop('learning_rule', None)
+        self.learning_rule = learning_rule
 
         # don't check shapes until we've set all parameters
         self._skip_check_shapes = True
