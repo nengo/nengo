@@ -20,6 +20,13 @@ def pytest_generate_tests(metafunc):
     tests = os.path.dirname(os.path.realpath(__file__))
     examples = os.path.realpath(os.path.join(tests, '..', '..', 'examples'))
     examples = glob(examples + '/*.ipynb')
+
+    # if `--optional` is not set, filter out optional notebooks
+    ignores = [] if metafunc.config.option.optional else [
+        'lorenz_attractor.ipynb']
+    examples = [path for path in examples
+                if os.path.split(path)[1] not in ignores]
+
     if "nb_path" in metafunc.funcargnames:
         metafunc.parametrize("nb_path", examples)
 
