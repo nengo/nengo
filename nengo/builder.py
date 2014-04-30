@@ -44,7 +44,8 @@ import nengo.objects
 import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
-from nengo.utils.compat import is_callable, is_integer, is_number, StringIO
+from nengo.utils.compat import (
+    is_callable, is_integer, is_iterable, is_number, StringIO)
 from nengo.utils.filter_design import cont2discrete
 
 logger = logging.getLogger(__name__)
@@ -768,6 +769,9 @@ class Model(object):
         self.probes = []
         self.sig = collections.defaultdict(dict)
 
+        # Signals needed to build learning rules
+        self.sig_decoder = {}  # Connection -> decoder signal
+
         self.dt = dt
         self.label = label
         self.seed = np.random.randint(npext.maxint) if seed is None else seed
@@ -832,7 +836,7 @@ class Builder(object):
         return model
 
 
-def build_network(network, model):
+def build_network(network, model):  # noqa: C901
     """Takes a Network object and returns a Model.
 
     This determines the signals and operators necessary to simulate that model.
@@ -843,7 +847,8 @@ def build_network(network, model):
     1) Ensembles, Nodes, Neurons
     2) Subnetworks (recursively)
     3) Connections
-    4) Probes
+    4) Learning Rules
+    5) Probes
     """
     if model.toplevel is None:
         model.toplevel = network
@@ -860,7 +865,17 @@ def build_network(network, model):
     for conn in network.connections:
         Builder.build(conn, model=model, config=network.config)
 
-    logger.info("Network step 4: Building probes")
+    logger.info("Network step 4: Building learning rules")
+    for conn in network.connections:
+        if is_iterable(conn.learning_rule):
+            for learning_rule in conn.learning_rule:
+                Builder.build(learning_rule, conn,
+                              model=model, config=network.config)
+        elif conn.learning_rule is not None:
+            Builder.build(conn.learning_rule, conn,
+                          model=model, config=network.config)
+
+    logger.info("Network step 5: Building probes")
     for probe in network.probes:
         Builder.build(probe, model=model, config=network.config)
 
@@ -1260,10 +1275,6 @@ def build_connection(conn, model, config):  # noqa: C901
                         model.sig[conn]['out'],
                         tag=conn.label))
 
-    # Set up learning rules
-    for learning_rule in conn.learning_rules:
-        Builder.build(learning_rule, model=model)
-
     model.params[conn] = BuiltConnection(decoders=decoders,
                                          eval_points=eval_points,
                                          transform=transform,
@@ -1340,8 +1351,8 @@ def build_alpha_synapse(synapse, owner, input_signal, model, config):
 Builder.register_builder(build_alpha_synapse, nengo.synapses.Alpha)
 
 
-def build_pes(pes, model, config):
-    activities = model.sig[pes.connection.pre]['neuron_out']
+def build_pes(pes, conn, model, config):
+    activities = model.sig[conn.pre]['out']
     error = model.sig[pes.error_connection]['out']
     scaled_error = Signal(np.zeros(error.shape), name="PES:scaled_error")
     model.add_op(Reset(scaled_error))
@@ -1351,14 +1362,16 @@ def build_pes(pes, model, config):
     activities_view = SignalView(activities, (1, activities.size), (1, 1), 0,
                                  name="PES:activities_view")
 
-    decoders = model.sig[pes.connection]['decoders']
+    decoders = model.sig[conn]['decoders']
     lr_sig = Signal(pes.learning_rate * model.dt, name="PES:learning_rate")
 
     model.add_op(DotInc(lr_sig, error, scaled_error, tag="PES:scale error"))
     model.add_op(ProdUpdate(scaled_error_view,
                             activities_view,
-                            Signal(1, name="ONE"),
+                            Signal(1, name="PES:one"),
                             decoders,
                             tag="PES:Update Decoder"))
+
+    model.params[pes] = None
 
 Builder.register_builder(build_pes, nengo.learning_rules.PES)
