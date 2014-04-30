@@ -514,6 +514,11 @@ class Connection(NengoObject):
         Post-synaptic time constant (PSTC) to use for filtering.
     function : callable
         Function to compute using the pre population (pre must be Ensemble).
+    learning_rule : LearningRule
+        Method of modifying the connection weights during simulation.
+    modulatory : bool
+        Specifies whether the connection is modulatory (does not physically
+        connect to post, for use by learning rules), or not (default).
     probes : dict
         description TODO
     transform : (post_size, pre_size) array_like
@@ -534,7 +539,8 @@ class Connection(NengoObject):
 
     def __init__(self, pre, post, synapse=Default, transform=1.0,
                  weight_solver=Default, decoder_solver=Default,
-                 function=None, modulatory=Default, eval_points=Default):
+                 function=None, modulatory=Default, eval_points=Default,
+                 learning_rule=None):
         if not isinstance(pre, ObjView):
             pre = ObjView(pre)
         if not isinstance(post, ObjView):
@@ -547,7 +553,7 @@ class Connection(NengoObject):
 
         self.synapse = synapse
         self.modulatory = modulatory
-        self.learning_rules = []
+        self.learning_rule = learning_rule
 
         # don't check shapes until we've set all parameters
         self._skip_check_shapes = True
