@@ -205,7 +205,7 @@ class Simulator(object):
             period = (1 if probe.sample_every is None
                       else int(probe.sample_every / self.dt))
             if self.n_steps % period == 0:
-                tmp = self.signals[self.model.sig_in[probe]].copy()
+                tmp = self.signals[self.model.sig[probe]['in']].copy()
                 self._probe_outputs[probe].append(tmp)
 
         self.signals['__time__'] += self.dt
