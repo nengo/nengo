@@ -113,11 +113,14 @@ class Network(with_metaclass(NengoObjectContainer)):
     def __new__(cls, *args, **kwargs):
         inst = super(Network, cls).__new__(cls)
         inst._config = cls.default_config()
-        inst.objects = {Ensemble: [], Node: [], Connection: [], Network: []}
+        inst.objects = {
+            Ensemble: [], Node: [], Connection: [], Network: [], Probe: [],
+        }
         inst.ensembles = inst.objects[Ensemble]
         inst.nodes = inst.objects[Node]
         inst.connections = inst.objects[Connection]
         inst.networks = inst.objects[Network]
+        inst.probes = inst.objects[Probe]
         return inst
 
     context = collections.deque(maxlen=100)  # static stack of Network objects
@@ -312,6 +315,7 @@ class Ensemble(NengoObject):
     eval_points = Parameter(default=None)
     seed = Parameter(default=None)
     label = Parameter(default="Ensemble")
+    probeable = Parameter(default=['decoded_output', 'spikes', 'voltages'])
 
     def __init__(self, neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
@@ -332,8 +336,7 @@ class Ensemble(NengoObject):
         self.eval_points = eval_points
         self.seed = seed
 
-        # Set up probes
-        self.probes = {'decoded_output': [], 'spikes': [], 'voltages': []}
+        self.probeable = Default
 
     def __getitem__(self, key):
         return ObjView(self, key)
@@ -347,37 +350,6 @@ class Ensemble(NengoObject):
         ~ : int
         """
         return self.neurons.n_neurons
-
-    def probe(self, probe, **kwargs):
-        """Probe a signal in this ensemble.
-
-        Parameters
-        ----------
-        to_probe : {'decoded_output'}, optional
-            The signal to probe.
-        sample_every : float, optional
-            The sampling period, in seconds.
-        filter : float, optional
-            The low-pass filter time constant of the probe, in seconds.
-
-        Returns
-        -------
-        probe : Probe
-            The new Probe object.
-        """
-        if probe.attr == 'decoded_output':
-            Connection(self, probe, synapse=probe.synapse, **kwargs)
-        elif probe.attr == 'spikes':
-            Connection(self.neurons, probe, synapse=probe.synapse,
-                       transform=np.eye(self.n_neurons), **kwargs)
-        elif probe.attr == 'voltages':
-            Connection(self.neurons.voltage, probe, synapse=None, **kwargs)
-        else:
-            raise NotImplementedError(
-                "Probe target '%s' is not probable" % probe.attr)
-
-        self.probes[probe.attr].append(probe)
-        return probe
 
 
 class Node(NengoObject):
@@ -421,6 +393,7 @@ class Node(NengoObject):
     size_in = Parameter(default=0)
     size_out = Parameter(default=None)
     label = Parameter(default="Node")
+    probeable = Parameter(default=['output'])
 
     def __init__(self, output=Default,
                  size_in=Default, size_out=Default, label=Default):
@@ -428,6 +401,7 @@ class Node(NengoObject):
         self.label = label
         self.size_in = size_in
         self.size_out = size_out
+        self.probeable = Default
 
         if self.output is not None and not is_callable(self.output):
             self.output = npext.array(self.output, min_dims=1, copy=False)
@@ -469,22 +443,8 @@ class Node(NengoObject):
         else:  # output is None
             self.size_out = self.size_in
 
-        # Set up probes
-        self.probes = {'output': []}
-
     def __getitem__(self, key):
         return ObjView(self, key)
-
-    def probe(self, probe, **kwargs):
-        """TODO"""
-        if probe.attr == 'output':
-            Connection(self, probe, synapse=probe.synapse, **kwargs)
-        else:
-            raise NotImplementedError(
-                "Probe target '%s' is not probable" % probe.attr)
-
-        self.probes[probe.attr].append(probe)
-        return probe
 
 
 class Connection(NengoObject):
@@ -527,6 +487,7 @@ class Connection(NengoObject):
     _function = Parameter(default=(None, 0))
     modulatory = Parameter(default=False)
     eval_points = Parameter(default=None)
+    probeable = Parameter(default=['signal'])
 
     def __init__(self, pre, post, synapse=Default, transform=1.0,
                  weight_solver=Default, decoder_solver=Default,
@@ -539,7 +500,7 @@ class Connection(NengoObject):
         self._post = post.obj
         self._preslice = pre.slice
         self._postslice = post.slice
-        self.probes = {'signal': []}
+        self.probeable = Default
 
         self.synapse = synapse
         self.modulatory = modulatory
@@ -717,6 +678,7 @@ class Neurons(object):
     bias = Parameter(default=None)
     gain = Parameter(default=None)
     label = Parameter(default=None)
+    probeable = Parameter(default=['output'])
 
     def __init__(self, n_neurons, bias=Default, gain=Default, label=Default):
         self.n_neurons = n_neurons
@@ -726,7 +688,7 @@ class Neurons(object):
         if self.label is None:
             self.label = "<%s%d>" % (self.__class__.__name__, id(self))
 
-        self.probes = {'output': []}
+        self.probeable = Default
 
     def __str__(self):
         return "%s(%s, %dN)" % (
@@ -744,18 +706,8 @@ class Neurons(object):
     def gain_bias(self, max_rates, intercepts):
         raise NotImplementedError("Neurons must provide gain_bias")
 
-    def probe(self, probe):
-        self.probes[probe.attr].append(probe)
 
-        if probe.attr == 'output':
-            Connection(self, probe, synapse=probe.synapse)
-        else:
-            raise NotImplementedError(
-                "Probe target '%s' is not probable" % probe.attr)
-        return probe
-
-
-class Probe(object):
+class Probe(NengoObject):
     """A probe is a dummy object that only has an input signal and probe.
 
     It is used as a target for a connection so that probe logic can
@@ -767,44 +719,32 @@ class Probe(object):
         An arbitrary name for the object.
     sample_every : float
         Sampling period in seconds.
-    synapse : float
-        Post-synaptic time constant (PSTC) to use for filtering.
+
+    Notes
+    -----
+
+    You can also pass in the same arguments that you would pass into
+    a connection in order to do things like filtering.
     """
-    DEFAULTS = {
-        Ensemble: 'decoded_output',
-        Node: 'output',
-    }
 
-    def __init__(self, target, attr=None, sample_every=None,
-                 synapse=None, **kwargs):
+    def __init__(self, target, attr=None, sample_every=None, **conn_args):
+        if not hasattr(target, 'probeable') or len(target.probeable) == 0:
+            raise TypeError(
+                "Type '%s' is not probeable" % target.__class__.__name__)
 
-        if attr is None:
-            try:
-                self.attr = self.DEFAULTS[target.__class__]
-            except KeyError:
-                for k in self.DEFAULTS:
-                    if issubclass(target.__class__, k):
-                        self.attr = self.DEFAULTS[k]
-                        break
-                else:
-                    raise TypeError("Type '%s' has no default probe." %
-                                    target.__class__.__name__)
-        else:
-            self.attr = attr
+        conn_args.setdefault('synapse', None)
 
+        # We'll use the first in the list as default
+        self.attr = attr if attr is not None else target.probeable[0]
+
+        if self.attr not in target.probeable:
+            raise ValueError(
+                "'%s' is not probeable for '%s'" % (self.attr, target))
+
+        self.target = target
         self.label = "Probe(%s.%s)" % (target.label, self.attr)
         self.sample_every = sample_every
-        self.synapse = synapse
-
-        # Probes add themselves to an object through target.probe in order to
-        # be built into the model.
-        target.probe(self, **kwargs)
-
-    def __str__(self):
-        return self.label
-
-    def __repr__(self):
-        return str(self)
+        self.conn_args = conn_args
 
 
 class ObjView(object):

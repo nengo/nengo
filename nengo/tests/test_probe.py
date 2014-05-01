@@ -112,8 +112,8 @@ def test_defaults(Simulator):
         assert node_p.attr == 'output'
         ens_p = nengo.Probe(ens)
         assert ens_p.attr == 'decoded_output'
-        with pytest.raises(TypeError):
-            nengo.Probe(conn)
+        conn_p = nengo.Probe(conn)
+        assert conn_p.attr == 'signal'
     # Let's just make sure it runs too...
     sim = Simulator(model)
     sim.run(0.01)
