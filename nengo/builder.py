@@ -12,8 +12,7 @@ import nengo.objects
 import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
-from nengo.utils.compat import (
-    is_callable, is_integer, is_iterable, is_number, StringIO)
+from nengo.utils.compat import is_callable, is_integer, is_number, StringIO
 from nengo.utils.filter_design import cont2discrete
 
 logger = logging.getLogger(__name__)
@@ -727,9 +726,8 @@ class SimFilterSynapse(Operator):
 
 class SimBCM(Operator):
     """Change the transform according to the BCM rule."""
-    def __init__(self, transform, delta,
+    def __init__(self, delta,
                  pre_filtered, post_filtered, theta, learning_rate):
-        self.transform = transform
         self.delta = delta
         self.post_filtered = post_filtered
         self.pre_filtered = pre_filtered
@@ -737,12 +735,11 @@ class SimBCM(Operator):
         self.learning_rate = learning_rate
 
         self.reads = [theta, pre_filtered, post_filtered]
-        self.updates = [transform, delta]
+        self.updates = [delta]
         self.sets = []
         self.incs = []
 
     def make_step(self, signals, dt):
-        transform = signals[self.transform]
         delta = signals[self.delta]
         pre_filtered = signals[self.pre_filtered]
         post_filtered = signals[self.post_filtered]
@@ -751,9 +748,7 @@ class SimBCM(Operator):
 
         def step():
             delta[...] = np.outer(post_filtered * (post_filtered - theta),
-                                  pre_filtered) * learning_rate
-
-            transform[...] += delta * dt
+                                  pre_filtered) * learning_rate * dt
         return step
 
 
@@ -761,18 +756,17 @@ class SimOja(Operator):
     """
     Change the transform according to the OJA rule
     """
-    def __init__(self, transform, delta,
-                 pre_filtered, post_filtered, oja, learning_rate, oja_scale):
+    def __init__(self, transform, delta, pre_filtered, post_filtered,
+                 forgetting, learning_rate):
         self.transform = transform
         self.delta = delta
         self.post_filtered = post_filtered
         self.pre_filtered = pre_filtered
-        self.oja = oja
+        self.forgetting = forgetting
         self.learning_rate = learning_rate
-        self.oja_scale = oja_scale
 
-        self.reads = [pre_filtered, post_filtered]
-        self.updates = [transform, delta, oja]
+        self.reads = [transform, pre_filtered, post_filtered]
+        self.updates = [delta, forgetting]
         self.sets = []
         self.incs = []
 
@@ -781,17 +775,15 @@ class SimOja(Operator):
         delta = signals[self.delta]
         pre_filtered = signals[self.pre_filtered]
         post_filtered = signals[self.post_filtered]
-        oja = signals[self.oja]
+        forgetting = signals[self.forgetting]
         learning_rate = self.learning_rate
-        oja_scale = self.oja_scale
 
         def step():
             post_squared = learning_rate * post_filtered * post_filtered
             for i in range(len(post_squared)):
-                oja[i, :] = transform[i, :] * post_squared[i]
+                forgetting[i, :] = transform[i, :] * post_squared[i]
 
             delta[...] = np.outer(post_filtered, pre_filtered) * learning_rate
-            transform[...] += delta - oja_scale * oja * dt
         return step
 
 
@@ -807,9 +799,6 @@ class Model(object):
         self.params = {}
         self.probes = []
         self.sig = collections.defaultdict(dict)
-
-        # Signals needed to build learning rules
-        self.sig_decoder = {}  # Connection -> decoder signal
 
         self.dt = dt
         self.label = label
@@ -906,12 +895,8 @@ def build_network(network, model):  # noqa: C901
 
     logger.info("Network step 4: Building learning rules")
     for conn in network.connections:
-        if is_iterable(conn.learning_rule):
-            for learning_rule in conn.learning_rule:
-                Builder.build(learning_rule, conn,
-                              model=model, config=network.config)
-        elif conn.learning_rule is not None:
-            Builder.build(conn.learning_rule, conn,
+        for learning_rule in conn.learning_rule:
+            Builder.build(learning_rule, conn,
                           model=model, config=network.config)
 
     logger.info("Network step 5: Building probes")
@@ -1302,6 +1287,28 @@ def build_connection(conn, model, config):  # noqa: C901
                         model.sig[conn]['out'],
                         tag=conn.label))
 
+    if conn.learning_rule:
+        # Forcing update of signal that is modified by learning rules.
+        # Learning rules themselves apply DotIncs.
+
+        if isinstance(conn.pre, nengo.objects.Neurons):
+            modified_signal = model.sig[conn]['transform']
+        elif isinstance(conn.pre, nengo.objects.Ensemble):
+            modified_signal = model.sig[conn]['decoders']
+        else:
+            raise TypeError("Can't apply learning rules to connections of "
+                            "this type. pre type: %s, post type: %s"
+                            % (type(conn.pre).__name__,
+                               type(conn.post).__name__))
+
+        zero_signal = Signal(0, "PES: 0")
+        one_signal = Signal(1, "PES: 1")
+        model.add_op(ProdUpdate(zero_signal,
+                                zero_signal,
+                                one_signal,
+                                modified_signal,
+                                tag="Learning Rule Dummy Update"))
+
     model.params[conn] = BuiltConnection(decoders=decoders,
                                          eval_points=eval_points,
                                          transform=transform,
@@ -1391,7 +1398,10 @@ Builder.register_builder(build_alpha_synapse, nengo.synapses.Alpha)
 
 
 def build_pes(pes, conn, model, config):
-    activities = model.sig[conn.pre]['out']
+    if isinstance(conn.pre, nengo.objects.Neurons):
+        activities = model.sig[conn.pre.ensemble]['neuron_out']
+    else:
+        activities = model.sig[conn.pre]['out']
     error = model.sig[pes.error_connection]['out']
     scaled_error = Signal(np.zeros(error.shape), name="PES:scaled_error")
     model.add_op(Reset(scaled_error))
@@ -1405,32 +1415,34 @@ def build_pes(pes, conn, model, config):
     lr_sig = Signal(pes.learning_rate * model.dt, name="PES:learning_rate")
 
     model.add_op(DotInc(lr_sig, error, scaled_error, tag="PES:scale error"))
-    model.add_op(ProdUpdate(scaled_error_view,
-                            activities_view,
-                            Signal(1, name="PES:one"),
-                            decoders,
-                            tag="PES:Update Decoder"))
+    model.add_op(DotInc(scaled_error_view, activities_view, decoders,
+                        tag="PES:Inc Decoder"))
 
     model.params[pes] = None
 
 Builder.register_builder(build_pes, nengo.learning_rules.PES)
 
 
-def build_bcm(bcm, model, config):
-    pre_activities = model.sig[bcm.connection.pre]['out']
-    post_activities = model.sig[bcm.connection.post]['out']
+def build_bcm(bcm, conn, model, config):
+    pre_activities = model.sig[conn.pre.ensemble]['neuron_out']
+    post_activities = model.sig[conn.post.ensemble]['neuron_out']
 
-    delta = Signal(np.zeros((bcm.connection.post.n_neurons,
-                             bcm.connection.pre.n_neurons)), name='delta')
+    delta = Signal(np.zeros((conn.post.ensemble.n_neurons,
+                             conn.pre.ensemble.n_neurons)), name='delta')
 
     pre_filtered = filtered_signal(
         bcm, pre_activities, bcm.pre_tau, model, config)
     post_filtered = filtered_signal(
         bcm, post_activities, bcm.post_tau, model, config)
-    theta = filtered_signal(bcm, bcm.post_filtered, bcm.tau, model, config)
+    theta = filtered_signal(
+        bcm, post_filtered, bcm.theta_tau, model, config)
 
-    model.add_op(SimBCM(transform=model.sig[bcm.connection]['transform'],
-                        delta=delta,
+    transform = model.sig[conn]['transform']
+
+    model.add_op(DotInc(
+        Signal(1, "BCM: 1"), delta, transform, tag="BCM: DotInc"))
+
+    model.add_op(SimBCM(delta=delta,
                         pre_filtered=pre_filtered,
                         post_filtered=post_filtered,
                         theta=theta,
@@ -1439,21 +1451,32 @@ def build_bcm(bcm, model, config):
 Builder.register_builder(build_bcm, nengo.learning_rules.BCM)
 
 
-def build_oja(oja, model, config):
-    pre_activities = model.sig[oja.connection.pre]['out']
-    post_activities = model.sig[oja.connection.post]['out']
+def build_oja(oja, conn, model, config):
+    pre_activities = model.sig[conn.pre.ensemble]['neuron_out']
+    post_activities = model.sig[conn.post.ensemble]['neuron_out']
     pre_filtered = filtered_signal(
         oja, pre_activities, oja.pre_tau, model, config)
     post_filtered = filtered_signal(
         oja, post_activities, oja.post_tau, model, config)
-    omega_shape = (oja.connection.post.n_neurons,
-                   oja.connection.pre.n_neurons)
+    omega_shape = (conn.post.ensemble.n_neurons, conn.pre.ensemble.n_neurons)
 
-    model.add_op(SimOja(transform=model.sig['transform'][oja.connection],
-                        delta=Signal(np.zeros(omega_shape), name='delta'),
+    transform = model.sig[conn]['transform']
+    delta = Signal(np.zeros(omega_shape), name='Oja: Delta')
+    forgetting = Signal(np.zeros(omega_shape), name='Oja: Forgetting')
+
+    model.add_op(DotInc(
+        Signal(1, "Oja: 1"), delta, transform, tag="Oja: Delta DotInc"))
+
+    model.add_op(DotInc(Signal(-oja.beta, "Oja: Negative oja scale"),
+                        forgetting,
+                        transform,
+                        tag="Oja: Forgetting DotInc"))
+
+    model.add_op(SimOja(transform=transform,
+                        delta=delta,
                         pre_filtered=pre_filtered,
                         post_filtered=post_filtered,
-                        oja=Signal(np.zeros(omega_shape), name='oja'),
+                        forgetting=forgetting,
                         learning_rate=oja.learning_rate))
 
 Builder.register_builder(build_oja, nengo.learning_rules.Oja)

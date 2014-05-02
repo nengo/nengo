@@ -42,9 +42,6 @@ class PES(LearningRule):
         The Node, Ensemble, or Neurons providing the error signal. Must be
         connectable to the post-synaptic object that is being used for this
         learning rule.
-    synapse : float, optional
-        Post-synaptic time constant (PSTC) to use for filtering on the
-        modulatory error connection. Defaults to 0.005.
     learning_rate : float, optional
         A scalar indicating the rate at which decoders will be adjusted.
         Defaults to 1e-5.
@@ -55,13 +52,13 @@ class PES(LearningRule):
     ----------
     label : string
         The given label.
-    error : NengoObject
-        The given error Node, Ensemble, or Neurons.
     learning_rate : float
         The given learning rate.
     error_connection : Connection
         The modulatory connection created to project the error signal.
     """
+
+    modifies = ['Ensemble', 'Neurons']
 
     def __init__(self, error_connection, learning_rate=1.0, label=None):
         self.error_connection = error_connection
@@ -69,29 +66,83 @@ class PES(LearningRule):
 
 
 class BCM(LearningRule):
-    def __init__(self, tau, pre_tau=None, post_tau=None, learning_rate=1.0,
-                 label=None):
-        self.tau = tau
+    """Bienenstock-Cooper-Munroe learning rule
 
-        self.pre_tau = pre_tau if pre_tau is not None else tau
-        self.post_tau = post_tau if post_tau is not None else tau
+    Modifies connection weights.
+
+    Parameters
+    ----------
+    learning_rate : float, optional
+        A scalar indicating the rate at which decoders will be adjusted.
+        Defaults to 1e-5.
+
+    theta_tau : float, optional
+        A scalar indicating the time constant for theta integration.
+
+    pre_tau : float, optional
+        Filter constant on activities of neurons in pre population.
+
+    post_tau : float, optional
+        Filter constant on activities of neurons in post population.
+
+    label : string, optional
+        A name for the learning rule. Defaults to None.
+
+    Attributes
+    ----------
+    TODO
+    """
+
+    modifies = ['Neurons']
+
+    def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
+                 learning_rate=1.0, label=""):
+        self.theta_tau = theta_tau
+
+        self.pre_tau = pre_tau
+        self.post_tau = post_tau if post_tau is not None else pre_tau
 
         self.learning_rate = learning_rate
 
-        if label is None:
-            label = "<BCM %d>" % id(self)
         self.label = label
 
 
 class Oja(LearningRule):
-    def __init__(self, pre_tau=0.005, post_tau=0.005, learning_rate=1.0,
-                 oja_scale=1.0, label=None):
+    """Oja's learning rule
+
+    Modifies connection weights.
+
+    Parameters
+    ----------
+    learning_rate : float, optional
+        A scalar indicating the rate at which decoders will be adjusted.
+        Defaults to 1e-5.
+
+    beta : float, optional
+        A scalar governing the amount of forgetting. Larger => more forgetting.
+
+    pre_tau : float, optional
+        Filter constant on activities of neurons in pre population.
+
+    post_tau : float, optional
+        Filter constant on activities of neurons in post population.
+
+    label : string, optional
+        A name for the learning rule. Defaults to None.
+
+    Attributes
+    ----------
+    TODO
+    """
+
+    modifies = ['Neurons']
+
+    def __init__(self, pre_tau=0.005, post_tau=None, beta=1.0,
+                 learning_rate=1.0, label=""):
         self.pre_tau = pre_tau
-        self.post_tau = post_tau
+        self.post_tau = post_tau if post_tau is not None else pre_tau
 
         self.learning_rate = learning_rate
-        self.oja_scale = oja_scale
+        self.beta = beta
 
-        if label is None:
-            label = "<OJA %d>" % id(self)
         self.label = label

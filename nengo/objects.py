@@ -4,6 +4,7 @@ import logging
 import numpy as np
 
 from nengo.config import Config, Default, is_param, Parameter
+from nengo.learning_rules import LearningRule
 from nengo.neurons import LIF
 from nengo.utils.compat import is_callable, is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
@@ -540,7 +541,7 @@ class Connection(NengoObject):
     def __init__(self, pre, post, synapse=Default, transform=1.0,
                  weight_solver=Default, decoder_solver=Default,
                  function=None, modulatory=Default, eval_points=Default,
-                 learning_rule=None):
+                 learning_rule=[]):
         if not isinstance(pre, ObjView):
             pre = ObjView(pre)
         if not isinstance(post, ObjView):
@@ -712,6 +713,22 @@ class Connection(NengoObject):
         self._transform = _transform
         self.transform_full = self._pad_transform(np.asarray(_transform))
         self._check_shapes()
+
+    @property
+    def learning_rule(self):
+        return self._learning_rule
+
+    @learning_rule.setter
+    def learning_rule(self, _learning_rule):
+
+        if not isinstance(_learning_rule, list):
+            _learning_rule = [_learning_rule]
+
+        self._learning_rule = _learning_rule
+
+        for lr in self._learning_rule:
+            assert isinstance(lr, LearningRule)
+            assert type(self.pre).__name__ in lr.modifies
 
 
 class Probe(NengoObject):

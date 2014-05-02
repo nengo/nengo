@@ -263,6 +263,75 @@ def test_pes_learning_rule(Simulator, nl_nodirect):
         sim.data[e_p][-1], np.zeros(len(learned_vector)), atol=0.05)
 
 
+def test_bcm_learning_rule(Simulator, nl_nodirect):
+    n = 200
+    learned_vector = [0.5, -0.5]
+
+    m = nengo.Network(seed=3902)
+    with m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        u = nengo.Node(output=learned_vector)
+        a = nengo.Ensemble(n, dimensions=2)
+        u_learned = nengo.Ensemble(n, dimensions=2)
+
+        initial_weights = np.random.random((a.n_neurons,
+                                            u_learned.n_neurons))
+
+        nengo.Connection(u, a)
+        nengo.Connection(a.neurons, u_learned.neurons,
+                         transform=initial_weights,
+                         learning_rule=nengo.BCM())
+
+    sim = Simulator(m)
+    sim.run(1.)
+
+
+def test_oja_learning_rule(Simulator, nl_nodirect):
+    n = 200
+    learned_vector = [0.5, -0.5]
+
+    m = nengo.Network(seed=3902)
+    with m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        u = nengo.Node(output=learned_vector)
+        a = nengo.Ensemble(n, dimensions=2)
+        u_learned = nengo.Ensemble(n, dimensions=2)
+
+        initial_weights = np.random.random((a.n_neurons,
+                                            u_learned.n_neurons))
+
+        nengo.Connection(u, a)
+        nengo.Connection(a.neurons, u_learned.neurons,
+                         transform=initial_weights,
+                         learning_rule=nengo.Oja())
+
+    sim = Simulator(m)
+    sim.run(1.)
+
+
+def test_bcm_oja_learning_rule(Simulator, nl_nodirect):
+    n = 200
+    learned_vector = [0.5, -0.5]
+
+    m = nengo.Network(seed=3902)
+    with m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        u = nengo.Node(output=learned_vector)
+        a = nengo.Ensemble(n, dimensions=2)
+        u_learned = nengo.Ensemble(n, dimensions=2)
+
+        initial_weights = np.random.random((a.n_neurons,
+                                            u_learned.n_neurons))
+
+        nengo.Connection(u, a)
+        nengo.Connection(a.neurons, u_learned.neurons,
+                         transform=initial_weights,
+                         learning_rule=[nengo.Oja(), nengo.BCM()])
+
+    sim = Simulator(m)
+    sim.run(1.)
+
+
 def test_dimensionality_errors(nl_nodirect):
     N = 10
     with nengo.Network(label="test_dimensionality_error") as m:
