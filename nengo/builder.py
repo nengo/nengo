@@ -747,12 +747,11 @@ def build_ensemble(ens, model, config):  # noqa: C901
     model.operators.append(Reset(model.sig[ens]['in']))
 
     # Set up encoders
-    if ens.encoders is None:
-        if isinstance(ens.neurons, nengo.neurons.Direct):
-            encoders = np.identity(ens.dimensions)
-        else:
-            sphere = dists.UniformHypersphere(ens.dimensions, surface=True)
-            encoders = sphere.sample(ens.neurons.n_neurons, rng=rng)
+    if isinstance(ens.neurons, nengo.Direct):
+        encoders = np.identity(ens.dimensions)
+    elif ens.encoders is None:
+        sphere = dists.UniformHypersphere(ens.dimensions, surface=True)
+        encoders = sphere.sample(ens.neurons.n_neurons, rng=rng)
     else:
         encoders = np.array(ens.encoders, dtype=np.float64)
         enc_shape = (ens.neurons.n_neurons, ens.dimensions)
