@@ -9,9 +9,10 @@ import numpy as np
 import nengo.decoders
 import nengo.neurons
 import nengo.objects
+import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
-from nengo.utils.compat import is_callable, is_integer, StringIO
+from nengo.utils.compat import is_callable, is_integer, is_number, StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -671,6 +672,37 @@ class SimNeurons(Operator):
         return step
 
 
+class SimFilterSynapse(Operator):
+    def __init__(self, input, output, num, den):
+        self.input = input
+        self.output = output
+        self.num = num
+        self.den = den
+        self.x = collections.deque(maxlen=len(num))
+        self.y = collections.deque(maxlen=len(den))
+
+        self.reads = [input]
+        self.updates = [output]
+        self.sets = []
+        self.incs = []
+
+    def make_step(self, signals, dt):
+        input = signals[self.input]
+        output = signals[self.output]
+
+        def step(input=input, output=output):
+            output[:] = 0
+
+            self.x.appendleft(np.array(input))
+            for k, xk in enumerate(self.x):
+                output += self.num[k] * xk
+            for k, yk in enumerate(self.y):
+                output -= self.den[k] * yk
+            self.y.appendleft(np.array(output))
+
+        return step
+
+
 class Model(object):
     """Output of the Builder, used by the Simulator."""
 
@@ -965,38 +997,44 @@ def build_node(node, model, config):
 Builder.register_builder(build_node, nengo.objects.Node)
 
 
+def conn_probe(pre, probe, **conn_args):
+    return nengo.Connection(pre, probe, **conn_args)
+
+
+def synapse_probe(sig, probe, model, config):
+    # We can use probe.conn_args here because we don't modify synapse
+    synapse = probe.conn_args.get('synapse', None)
+
+    if is_number(synapse):
+        synapse = nengo.synapses.Lowpass(synapse)
+
+    if synapse is None:
+        model.sig[probe]['in'] = sig
+    else:
+        assert isinstance(synapse, nengo.synapses.Synapse)
+        Builder.build(synapse, probe, sig, model=model, config=config)
+        model.sig[probe]['in'] = model.sig[probe]['synapse_out']
+
+
 def probe_ensemble(probe, conn_args, model, config):
     ens = probe.target
     if probe.attr == 'decoded_output':
-        return nengo.Connection(ens, probe, **conn_args)
-
-    if probe.attr in ('neuron_output', 'spikes'):
-        return nengo.Connection(ens.neurons, probe, transform=1.0, **conn_args)
-
-    if probe.attr == 'voltage':
-        voltage = model.sig[ens]['voltage']
-        synapse = conn_args.get('synapse', None)
-        if synapse is not None:
-            model.sig[probe]['in'] = filtered_signal(voltage, synapse, model)
-        else:
-            model.sig[probe]['in'] = voltage
-        return
+        return conn_probe(ens, probe, **conn_args)
+    elif probe.attr in ('neuron_output', 'spikes'):
+        return conn_probe(ens.neurons, probe, transform=1.0, **conn_args)
+    elif probe.attr == 'voltage':
+        return synapse_probe(model.sig[ens]['voltage'], probe, model, config)
 
 
 def probe_node(probe, conn_args, model, config):
     if probe.attr == 'output':
-        return nengo.Connection(probe.target, probe,  **conn_args)
+        return conn_probe(probe.target, probe,  **conn_args)
 
 
 def probe_connection(probe, conn_args, model, config):
     if probe.attr == 'signal':
-        signal = model.sig[probe.target]['out']
-        synapse = conn_args.get('synapse', None)
-        if synapse is not None:
-            model.sig[probe]['in'] = filtered_signal(signal, synapse, model)
-        else:
-            model.sig[probe]['in'] = signal
-        return
+        sig_out = model.sig[probe.target]['out']
+        return synapse_probe(sig_out, probe, model, config)
 
 
 def build_probe(probe, model, config):
@@ -1031,23 +1069,6 @@ def build_probe(probe, model, config):
 Builder.register_builder(build_probe, nengo.objects.Probe)
 
 
-def decay_coef(pstc, dt):
-    return np.exp(-dt / pstc) if pstc > 0.03 * dt else 0.
-    # if pstc < 0.03 * dt, exp(-dt / pstc) < 1e-14, so just make it zero
-
-
-def filtered_signal(signal, pstc, model):
-    name = "%s.filtered(%f)" % (signal.name, pstc)
-    filtered = Signal(np.zeros(signal.size), name=name)
-    decay = decay_coef(pstc=pstc, dt=model.dt)
-    model.add_op(ProdUpdate(Signal(1.0 - decay, name="1 - decay"),
-                            signal,
-                            Signal(decay, name="decay"),
-                            filtered,
-                            tag="%s filtering" % name))
-    return filtered
-
-
 def build_connection(conn, model, config):  # noqa: C901
     rng = np.random.RandomState(model.next_seed())
 
@@ -1067,10 +1088,7 @@ def build_connection(conn, model, config):  # noqa: C901
     transform = np.array(conn.transform_full, dtype=np.float64)
 
     # Figure out the signal going across this connection
-    if isinstance(conn.pre, (nengo.objects.Neurons, nengo.objects.Node)):
-        # Direct connection
-        signal = model.sig[conn]['in']
-    elif (isinstance(conn.pre, nengo.objects.Ensemble)
+    if (isinstance(conn.pre, nengo.objects.Ensemble)
             and isinstance(conn.pre.neuron_type, nengo.neurons.Direct)):
         # Decoded connection in directmode
         if conn.function is None:
@@ -1140,34 +1158,31 @@ def build_connection(conn, model, config):  # noqa: C901
 
         # Add operator for decoders and filtering
         decoders = decoders.T
-        if conn.synapse is not None and conn.synapse > model.dt:
-            decay = decay_coef(pstc=conn.synapse, dt=model.dt)
-            decoder_signal = Signal(
-                decoders * (1.0 - decay),
-                name="%s.decoders * (1 - decay)" % conn.label)
-        else:
-            decoder_signal = Signal(decoders,
-                                    name="%s.decoders" % conn.label)
-            decay = 0
 
+        decoder_signal = Signal(decoders, name="%s.decoders" % conn.label)
         signal = Signal(np.zeros(signal_size), name=conn.label)
         model.add_op(ProdUpdate(decoder_signal,
                                 model.sig[conn]['in'],
-                                Signal(decay, name="decay"),
+                                Signal(0, name="decay"),
                                 signal,
                                 tag="%s decoding" % conn.label))
     else:
         # Direct connection
         signal = model.sig[conn]['in']
 
-    # Add operator for filtering (in the case filter wasn't already
-    # added, when pre.neurons is a non-direct Ensemble)
-    if decoders is None and conn.synapse is not None:
+    # Add operator for filtering
+    if conn.synapse is not None:
         # Note: we add a filter here even if synapse < dt,
         # in order to avoid cycles in the op graph. If the filter
         # is explicitly set to None (e.g. for a passthrough node)
         # then cycles can still occur.
-        signal = filtered_signal(signal, conn.synapse, model=model)
+        synapse = (nengo.synapses.Lowpass(conn.synapse)
+                   if is_number(conn.synapse) else conn.synapse)
+        assert isinstance(synapse, nengo.synapses.Synapse)
+        Builder.build(synapse, conn, signal, model=model, config=config)
+        signal = model.sig[conn]['synapse_out']
+    else:
+        synapse = None
 
     if conn.modulatory:
         # Make a new signal, effectively detaching from post
@@ -1215,3 +1230,40 @@ def build_pyfunc(fn, t_in, n_in, n_out, label, model):
     model.add_op(SimPyFunc(output=sig_out, fn=fn, t_in=t_in, x=sig_in))
 
     return sig_in, sig_out
+
+
+def build_discrete_filter_synapse(
+        synapse, owner, input_signal, num, den, model, config):
+    model.sig[owner]['synapse_in'] = input_signal
+    model.sig[owner]['synapse_out'] = Signal(
+        np.zeros(input_signal.size),
+        name="%s.%s" % (input_signal.name, synapse))
+
+    model.add_op(SimFilterSynapse(input=model.sig[owner]['synapse_in'],
+                                  output=model.sig[owner]['synapse_out'],
+                                  num=num, den=den))
+
+
+def build_filter_synapse(synapse, owner, input_signal, model, config):
+    import scipy.signal
+    num, den, _ = scipy.signal.cont2discrete(
+        (synapse.num, synapse.den), model.dt, method='zoh')
+    num = num.flatten()
+    num = num[1:] if num[0] == 0 else num
+    den = den[1:]  # drop first element (equal to 1)
+    build_discrete_filter_synapse(
+        synapse, owner, input_signal, num, den, model, config)
+
+Builder.register_builder(build_filter_synapse, nengo.synapses.LinearFilter)
+
+
+def build_lowpass_synapse(synapse, owner, input_signal, model, config):
+    d = (-np.expm1(-model.dt / synapse.tau)
+         if synapse.tau > 0.03 * model.dt else 1.)
+    # ^^ if pstc < 0.03 * dt, exp(-dt / pstc) < 1e-14, so just make it zero
+    num = [d]
+    den = [d - 1]
+    build_discrete_filter_synapse(
+        synapse, owner, input_signal, num, den, model, config)
+
+Builder.register_builder(build_lowpass_synapse, nengo.synapses.Lowpass)
