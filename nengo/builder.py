@@ -561,6 +561,7 @@ def reshape_dot(A, X, Y, tag=None):
     badshape = False
     ashape = (1,) if A.shape == () else A.shape
     xshape = (1,) if X.shape == () else X.shape
+
     if A.shape == ():
         incshape = X.shape
     elif X.shape == ():
@@ -576,8 +577,8 @@ def reshape_dot(A, X, Y, tag=None):
         raise ValueError('shape mismatch in %s: %s x %s -> %s' % (
             tag, A.shape, X.shape, Y.shape))
 
-    # If the result is scalar, we'll reshape it so Y[...] += inc works
-    return incshape == ()
+    # Reshape to handle case when np.dot(A, X) and Y are both scalars
+    return (np.dot(A, X)).size == Y.size == 1
 
 
 class DotInc(Operator):
