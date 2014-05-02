@@ -1,11 +1,15 @@
 import hashlib
+import logging
 import os
 import os.path
 import struct
+import warnings
 
 import numpy as np
 
 from nengo.utils.compat import pickle
+
+logger = logging.getLogger(__name__)
 
 
 class DecoderCache(object):
@@ -27,17 +31,23 @@ class DecoderCache(object):
             decoder_path = self._get_decoder_path(key)
             solver_info_path = self._get_solver_info_path(key)
             if os.path.exists(decoder_path):
-                # TODO log hit
+                logger.info(
+                    "Cache hit [{0}]: Loading stored decoders.".format(key))
                 decoders = np.load(decoder_path)
                 if os.path.exists(solver_info_path):
-                    # TODO log hit
+                    logger.info(
+                        "Cache hit [{0}]: Loading stored solver info.".format(
+                            key))
                     with open(solver_info_path, 'rb') as f:
                         solver_info = pickle.load(f)
                 else:
-                    # TODO warn
+                    warnings.warn(
+                        "Loaded cached decoders [{0}], but could not find "
+                        "cached solver info. It will be empty.".format(key),
+                        RuntimeWarning)
                     solver_info = {}
             else:
-                # TODO log miss
+                logger.info("Cache miss [{0}].".format(key))
                 decoders, solver_info = solver(
                     activities, targets, rng=rng, E=E)
                 np.save(decoder_path, decoders)
