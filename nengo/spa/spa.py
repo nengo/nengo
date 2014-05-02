@@ -79,9 +79,12 @@ class SPA(nengo.Network):
             for k, (obj, v) in iteritems(value.inputs):
                 if type(v) == int:
                     value.inputs[k] = (obj, self.get_default_vocab(v))
+                obj.vocab = value.inputs[k][1]
             for k, (obj, v) in iteritems(value.outputs):
                 if type(v) == int:
                     value.outputs[k] = (obj, self.get_default_vocab(v))
+                obj.vocab = value.outputs[k][1]
+
             value.on_add(self)
 
     def get_default_vocab(self, dimensions):
