@@ -159,10 +159,10 @@ Representation examples
 
 .. toctree::
 
-   A single neurons <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/singleneuron.ipynb>
-   Two neurons <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/twoneurons.ipynb>
-   Many neurons <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/manyneurons.ipynb>
-   2D representation <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/2drepresentation.ipynb>
+   A single neuron <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/single_neuron.ipynb>
+   Two neurons <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/two_neurons.ipynb>
+   Many neurons <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/many_neurons.ipynb>
+   2D representation <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/2d_representation.ipynb>
 
 =======================
 Transformation examples
@@ -170,7 +170,7 @@ Transformation examples
 
 .. toctree::
 
-   Communication channel <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/singleneuron.ipynb>
+   Communication channel <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/communication_channel.ipynb>
    Squaring the input <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/squaring.ipynb>
    Addition <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/addition.ipynb>
    Combining 1D representations into a 2D representation <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/combining.ipynb>
@@ -184,10 +184,10 @@ Dynamics examples
 .. toctree::
 
    Simple integrator <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/integrator.ipynb>
-   Controlled integrator <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/controlledintegrator.ipynb>
-   Controlled integrator 2 <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/controlledintegrator2.ipynb>
+   Controlled integrator <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/controlled_integrator.ipynb>
+   Controlled integrator 2 <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/controlled_integrator2.ipynb>
    Simple harmonic oscillator <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/oscillator.ipynb>
-   Controlled oscillator <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/controlledoscillator.ipynb>
+   Controlled oscillator <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/controlled_oscillator.ipynb>
 
 =================
 Learning examples
@@ -195,6 +195,6 @@ Learning examples
 
 .. toctree::
 
-   Learning a communication channel <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/learn_communicationchannel.ipynb>
-   Learning multiplication <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/learn_multiplication.ipynb>
+   Learning a communication channel <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/learn_communication_channel.ipynb>
+   Learning multiplication <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/learn_product.ipynb>
    Learning element-wise square <http://nbviewer.ipython.org/urls/raw.github.com/ctn-waterloo/nengo/master/examples/learn_square.ipynb>
