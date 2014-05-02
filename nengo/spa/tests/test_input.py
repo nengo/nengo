@@ -8,7 +8,6 @@ from nengo import spa
 def test_fixed():
     class SPA(spa.SPA):
         def __init__(self):
-            super(SPA, self).__init__()
             self.buffer1 = spa.Buffer(dimensions=16)
             self.buffer2 = spa.Buffer(dimensions=8, subdimensions=2)
             self.input = spa.Input(buffer1='A', buffer2='B')
@@ -27,7 +26,6 @@ def test_fixed():
 def test_time_varying():
     class SPA(spa.SPA):
         def __init__(self):
-            super(SPA, self).__init__()
             self.buffer = spa.Buffer(dimensions=16)
             self.buffer2 = spa.Buffer(dimensions=16)
 

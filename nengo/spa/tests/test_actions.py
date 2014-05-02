@@ -50,7 +50,6 @@ def test_actions():
 
     class Test(spa.SPA):
         def __init__(self):
-            super(Test, self).__init__()
             self.state = spa.Buffer(16)
 
     model = Test()

@@ -8,7 +8,6 @@ from nengo import spa
 def test_basic():
     class Basic(spa.SPA):
         def __init__(self):
-            super(Basic, self).__init__()
             self.buffer = spa.Buffer(dimensions=16)
 
     model = Basic()
@@ -24,7 +23,6 @@ def test_basic():
 def test_neurons():
     class Basic(spa.SPA):
         def __init__(self):
-            super(Basic, self).__init__()
             self.buffer = spa.Buffer(dimensions=16, neurons_per_dimension=2)
 
     model = Basic()
@@ -33,7 +31,6 @@ def test_neurons():
 
     class Basic(spa.SPA):
         def __init__(self):
-            super(Basic, self).__init__()
             self.buffer = spa.Buffer(dimensions=16, subdimensions=1,
                                      neurons_per_dimension=2)
 
@@ -45,7 +42,6 @@ def test_neurons():
 def test_exception():
     class Basic(spa.SPA):
         def __init__(self):
-            super(Basic, self).__init__()
             self.buffer = spa.Buffer(dimensions=12)
 
     with pytest.raises(Exception):
@@ -53,7 +49,6 @@ def test_exception():
 
     class Basic(spa.SPA):
         def __init__(self):
-            super(Basic, self).__init__()
             self.buffer = spa.Buffer(dimensions=12, subdimensions=3)
     Basic()
 
@@ -61,7 +56,6 @@ def test_exception():
 def test_run(Simulator):
     class Basic(spa.SPA):
         def __init__(self):
-            super(Basic, self).__init__()
             self.buffer = spa.Buffer(dimensions=32)
 
             def input(t):
