@@ -1,4 +1,5 @@
 import hashlib
+import inspect
 import logging
 import os
 import struct
@@ -21,11 +22,14 @@ class DecoderCache(object):
             os.mkdir(self.cache_dir)
 
     def wrap_solver(self, solver):
-        # TODO can the default arguments be copied from the function wrapped?
-        # This shouldn't use *args and **kwargs, because this should raise an
-        # exception for arguments which do not get hashed and might lead to
-        # wrong cache hits.
-        def cached_solver(activities, targets, rng=np.random, E=None):
+        def cached_solver(activities, targets, rng=None, E=None):
+            args, _, _, defaults = inspect.getargspec(solver)
+            args = args[-len(defaults):]
+            if rng is None and 'rng' in args:
+                rng = defaults[args.index('rng')]
+            if E is None and 'E' in args:
+                E = defaults[args.index('E')]
+
             key = self._get_cache_key(solver, activities, targets, rng, E)
             decoder_path = self._get_decoder_path(key)
             solver_info_path = self._get_solver_info_path(key)
