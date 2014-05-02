@@ -16,11 +16,21 @@ logger = logging.getLogger(__name__)
 class DecoderCache(object):
     _DECODER_EXT = '.npy'
     _SOLVER_INFO_EXT = '.pkl'
+    DEFAULT_DIR = os.path.expanduser(os.path.join('~', '.nengo-cache'))
 
-    def __init__(self, cache_dir):
+    def __init__(self, read_only=False, cache_dir=None):
+        self.read_only = read_only
+        if cache_dir is None:
+            cache_dir = self.DEFAULT_DIR
         self.cache_dir = cache_dir
         if not os.path.exists(self.cache_dir):
             os.mkdir(self.cache_dir)
+
+    def get_size(self):
+        return 0
+
+    def shrink(self, limit=0):
+        pass
 
     # TODO test this function
     def invalidate(self):
@@ -32,7 +42,10 @@ class DecoderCache(object):
 
     def wrap_solver(self, solver):
         def cached_solver(activities, targets, rng=None, E=None):
-            args, _, _, defaults = inspect.getargspec(solver)
+            try:
+                args, _, _, defaults = inspect.getargspec(solver)
+            except TypeError:
+                args, _, _, defaults = inspect.getargspec(solver.__call__)
             args = args[-len(defaults):]
             if rng is None and 'rng' in args:
                 rng = defaults[args.index('rng')]
@@ -62,20 +75,23 @@ class DecoderCache(object):
                 logger.info("Cache miss [{0}].".format(key))
                 decoders, solver_info = solver(
                     activities, targets, rng=rng, E=E)
-                np.save(decoder_path, decoders)
-                with open(solver_info_path, 'wb') as f:
-                    pickle.dump(solver_info, f)
+                if not self.read_only:
+                    np.save(decoder_path, decoders)
+                    with open(solver_info_path, 'wb') as f:
+                        pickle.dump(solver_info, f)
             return decoders, solver_info
         return cached_solver
 
     def _get_cache_key(self, solver, activities, targets, rng, E):
         h = hashlib.sha1()
 
+        if not inspect.isfunction(solver):
+            solver = solver.__call__
         h.update(solver.__module__.encode())
         h.update(solver.__name__.encode())
 
-        h.update(activities.data)
-        h.update(targets.data)
+        h.update(np.ascontiguousarray(activities).data)
+        h.update(np.ascontiguousarray(targets).data)
 
         # rng format doc:
         # noqa <http://docs.scipy.org/doc/numpy/reference/generated/numpy.random.RandomState.get_state.html#numpy.random.RandomState.get_state>
@@ -87,7 +103,7 @@ class DecoderCache(object):
         h.update(struct.pack('d', state[4]))  # float cached_gaussian
 
         if E is not None:
-            h.update(E.data)
+            h.update(np.ascontiguousarray(E).data)
         return h.hexdigest()
 
     def _get_decoder_path(self, key):
@@ -95,3 +111,17 @@ class DecoderCache(object):
 
     def _get_solver_info_path(self, key):
         return os.path.join(self.cache_dir, key + self._SOLVER_INFO_EXT)
+
+
+class NoDecoderCache(object):
+    def wrap_solver(self, solver):
+        return solver
+
+    def get_size(self):
+        return 0
+
+    def shrink(self, limit=0):
+        pass
+
+    def invalidate(self):
+        pass

@@ -8,11 +8,13 @@ from __future__ import print_function
 
 from collections import Mapping
 import logging
+import sys
 
 import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder import Model, Builder, SignalDict
+from nengo.cache import DecoderCache, NoDecoderCache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
 from nengo.utils.simulator import operator_depencency_graph
@@ -55,7 +57,7 @@ class ProbeDict(Mapping):
 class Simulator(object):
     """Reference simulator for Nengo models."""
 
-    def __init__(self, network, dt=0.001, seed=None, model=None):
+    def __init__(self, network, dt=0.001, seed=None, model=None, caching=None):
         """Initialize the simulator with a network and (optionally) a model.
 
         Most of the time, you will pass in a network and sometimes a dt::
@@ -93,16 +95,33 @@ class Simulator(object):
             if you want to build the network manually, or to inject some
             build artifacts in the Model before building the network,
             then you can pass in a ``nengo.builder.Model`` instance.
+        caching : bool or 'ro' or None
+            Whether to use decoder caching. If 'ro' is passed, the cache will
+            only be read, but no new entries will be written. ``None`` enables
+            the cache only if a network seed is set and the simulator is not
+            created from a unit test.
         """
         if model is None:
-            self.model = Model(
-                dt=dt, label="%s, dt=%f" % (network, dt))
+            in_test = hasattr(sys, '_called_from_test')
+            network_seed_set = network is not None and network.seed is not None
+            if caching:
+                decoder_cache = DecoderCache(caching == 'ro')
+            elif caching is None and network_seed_set and not in_test:
+                decoder_cache = DecoderCache()
+            else:
+                decoder_cache = NoDecoderCache()
+
+            self.model = Model(dt=dt,
+                               label="%s, dt=%f" % (network, dt),
+                               decoder_cache=decoder_cache)
         else:
             self.model = model
 
         if network is not None:
             # Build the network into the model
             Builder.build(network, model=self.model)
+
+        self.model.decoder_cache.shrink()
 
         # Note: seed is not used right now, but one day...
         assert seed is None, "Simulator seed not yet implemented"

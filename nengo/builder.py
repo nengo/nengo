@@ -7,6 +7,7 @@ import warnings
 
 import numpy as np
 
+from nengo.cache import NoDecoderCache
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble, Neurons
 from nengo.learning_rules import BCM, Oja, PES
@@ -849,7 +850,7 @@ class SimOja(Operator):
 class Model(object):
     """Output of the Builder, used by the Simulator."""
 
-    def __init__(self, dt=0.001, label=None):
+    def __init__(self, dt=0.001, label=None, decoder_cache=NoDecoderCache()):
         # We want to keep track of the toplevel network
         self.toplevel = None
 
@@ -862,6 +863,7 @@ class Model(object):
 
         self.dt = dt
         self.label = label
+        self.decoder_cache = decoder_cache
 
     def __str__(self):
         return "Model: %s" % self.label
@@ -1308,18 +1310,20 @@ def build_connection(conn, model, config):  # noqa: C901
         # Normal decoded connection
         eval_points, activities, targets = build_linear_system(conn, model)
 
+        # Use cached solver, if configured
+        solver = model.decoder_cache.wrap_solver(conn.solver)
         if conn.solver.weights:
             # account for transform
             targets = np.dot(targets, transform.T)
             transform = np.array(1., dtype=np.float64)
 
-            decoders, solver_info = conn.solver(
+            decoders, solver_info = solver(
                 activities, targets, rng=rng,
                 E=model.params[conn.post_obj].scaled_encoders.T)
             model.sig[conn]['out'] = model.sig[conn.post_obj.neurons]['in']
             signal_size = model.sig[conn]['out'].size
         else:
-            decoders, solver_info = conn.solver(activities, targets, rng=rng)
+            decoders, solver_info = solver(activities, targets, rng=rng)
             signal_size = conn.size_mid
 
         # Add operator for decoders
