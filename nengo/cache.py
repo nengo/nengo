@@ -4,9 +4,12 @@ import struct
 
 import numpy as np
 
+from nengo.utils.compat import pickle
+
 
 class DecoderCache(object):
-    _FILE_EXTENSION = '.npy'
+    _DECODER_EXT = '.npy'
+    _SOLVER_INFO_EXT = '.pkl'
 
     def __init__(self, cache_dir):
         self.cache_dir = cache_dir
@@ -20,18 +23,26 @@ class DecoderCache(object):
         # wrong cache hits.
         def cached_solver(activities, targets, rng=np.random, E=None):
             key = self._get_cache_key(solver, activities, targets, rng, E)
-            path = self._get_path(key)
-            if os.path.exists(path):
+            decoder_path = self._get_decoder_path(key)
+            solver_info_path = self._get_solver_info_path(key)
+            if os.path.exists(decoder_path):
                 # TODO log hit
-                # FIXME no solver_info restored
-                return np.load(path), {}
+                decoders = np.load(decoder_path)
+                if os.path.exists(solver_info_path):
+                    # TODO log hit
+                    with open(solver_info_path, 'rb') as f:
+                        solver_info = pickle.load(f)
+                else:
+                    # TODO warn
+                    solver_info = {}
             else:
                 # TODO log miss
-                # FIXME no solver_info stored
                 decoders, solver_info = solver(
                     activities, targets, rng=rng, E=E)
-                np.save(path, decoders)
-                return decoders, solver_info
+                np.save(decoder_path, decoders)
+                with open(solver_info_path, 'wb') as f:
+                    pickle.dump(solver_info, f)
+            return decoders, solver_info
         return cached_solver
 
     def _get_cache_key(self, solver, activities, targets, rng, E):
@@ -56,5 +67,8 @@ class DecoderCache(object):
             h.update(E.data)
         return h.hexdigest()
 
-    def _get_path(self, key):
-        return os.path.join(self.cache_dir, key + self._FILE_EXTENSION)
+    def _get_decoder_path(self, key):
+        return os.path.join(self.cache_dir, key + self._DECODER_EXT)
+
+    def _get_solver_info_path(self, key):
+        return os.path.join(self.cache_dir, key + self._SOLVER_INFO_EXT)

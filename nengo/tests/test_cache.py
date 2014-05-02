@@ -42,8 +42,7 @@ def test_decoder_cache(tmpdir):
         activities, targets, rng)
     assert solver_mock.n_calls == 1  # check the result is read from cache
     assert_equal(decoders1, decoders2)
-    # FIXME solver_info not stored yet
-    # assert solver_info1 == solver_info2
+    assert solver_info1 == solver_info2
 
     another_solver = DecoderSolverMock('another_solver')
     cache.wrap_solver(another_solver.get_solver_fn())(activities, targets, rng)
