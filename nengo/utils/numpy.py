@@ -2,6 +2,9 @@
 Extra functions to extend the capabilities of Numpy.
 """
 from __future__ import absolute_import
+
+import collections
+
 import numpy as np
 
 maxint = np.iinfo(np.int32).max
@@ -22,7 +25,7 @@ def array(x, dims=None, min_dims=0, **kwargs):
     return y
 
 
-def filt(x, tau, axis=0, copy=True):
+def filt(x, tau, axis=0, x0=None, copy=True):
     """First-order causal lowpass filter.
 
     This performs standard first-order lowpass filtering with transfer function
@@ -46,8 +49,16 @@ def filt(x, tau, axis=0, copy=True):
     y = np.rollaxis(x, axis=axis)  # y is rolled view on x
 
     # --- buffer method
-    d = -np.expm1(-1. / tau)
-    yy = np.zeros_like(y[0])  # yy is our buffer for the current filter state
+    if x0 is not None:
+        if x0.shape != y[0].shape:
+            raise ValueError("'x0' %s must have same shape as y[0] %s" %
+                             x0.shape, y[0].shape)
+        yy = np.array(x0)
+    else:
+        # yy is our buffer for the current filter state
+        yy = np.zeros_like(y[0])
+
+    d = -np.expm1(-1. / tau)  # zero-order hold filtering
     for i, yi in enumerate(y):
         yy += d * (yi - yy)
         y[i] = yy
@@ -98,6 +109,52 @@ def filtfilt(x, tau, axis=0, copy=True):
         z[i] = yy
 
     return x
+
+
+def lti(signals, transfer_fn, axis=0):
+    """Linear time-invariant (LTI) system simulation.
+
+    Uses the transfer function description of an LTI system
+    to filter an input signal.
+
+    Parameters
+    ----------
+    signals : array_like
+        An array of signals to apply the LTI system to.
+    transfer_fn : (num, den)
+        A tuple of the transfer function numerator and denominator,
+        both of which should be array_like.
+    axis : int
+        The axis along which to filter.
+    """
+    outputs = np.zeros_like(signals)
+
+    signalsr = np.rollaxis(signals, axis)
+    outputsr = np.rollaxis(outputs, axis)
+
+    a, b = transfer_fn
+    a = np.asarray(a).flatten()
+    b = np.asarray(b).flatten()
+    na, nb = len(a), len(b)
+    # assert a.ndim == 1, b.ndim == 1
+
+    if b[0] != 1.:
+        a = a / b[0]
+        b = b / b[0]
+
+    b = b[1:]  # drop first element (equal to 1)
+
+    x = collections.deque(maxlen=len(a))
+    y = collections.deque(maxlen=len(b))
+    for i, si in enumerate(signalsr):
+        x.appendleft(si)
+        for k, xk in enumerate(x):
+            outputsr[i] += a[k] * xk
+        for k, yk in enumerate(y):
+            outputsr[i] -= b[k] * yk
+        y.appendleft(outputsr[i])
+
+    return outputs
 
 
 def norm(x, axis=None, keepdims=False):
