@@ -15,6 +15,7 @@ assert OrderedDict
 
 # If something's changed from Python 2 to 3, we handle that here
 if PY2:
+    import cPickle as pickle
     from StringIO import StringIO
     string_types = (str, unicode)
     int_types = (int, long)
@@ -28,6 +29,7 @@ if PY2:
     exec('def reraise(tp, value, tb):\n raise tp, value, tb')
 
 else:
+    import pickle
     from io import StringIO
     string_types = (str,)
     int_types = (int,)
@@ -40,6 +42,7 @@ else:
     def reraise(tp, value, tb):
         raise value.with_traceback(tb)
 
+assert pickle
 assert StringIO
 
 
