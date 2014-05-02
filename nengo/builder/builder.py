@@ -4,14 +4,16 @@ import warnings
 import numpy as np
 
 from nengo.builder.signal import SignalDict
+from nengo.cache import NoDecoderCache
 
 
 class Model(object):
     """Output of the Builder, used by the Simulator."""
 
-    def __init__(self, dt=0.001, label=None):
+    def __init__(self, dt=0.001, label=None, decoder_cache=NoDecoderCache()):
         self.dt = dt
         self.label = label
+        self.decoder_cache = decoder_cache
 
         # We want to keep track of the toplevel network
         self.toplevel = None

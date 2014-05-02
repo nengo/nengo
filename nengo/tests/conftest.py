@@ -1,4 +1,5 @@
 import hashlib
+import sys
 
 import numpy as np
 import pytest
@@ -10,6 +11,15 @@ from nengo.utils.compat import ensure_bytes
 from nengo.utils.testing import Plotter
 
 test_seed = 0  # changing this will change seeds for all tests
+
+
+def pytest_configure(config):
+    sys._called_from_test = True
+
+
+def pytest_unconfigure(config):
+    if hasattr(sys, '_called_from_test'):
+        del sys._called_from_test
 
 
 @pytest.fixture(scope="session")

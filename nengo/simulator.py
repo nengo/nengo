@@ -8,12 +8,14 @@ from __future__ import print_function
 
 from collections import Mapping
 import logging
+import sys
 
 import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder import Model
 from nengo.builder.signal import SignalDict
+from nengo.cache import DecoderCache, NoDecoderCache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
 from nengo.utils.simulator import operator_depencency_graph
@@ -96,14 +98,24 @@ class Simulator(object):
             then you can pass in a ``nengo.builder.Model`` instance.
         """
         if model is None:
-            self.model = Model(
-                dt=dt, label="%s, dt=%f" % (network, dt))
+            in_test = hasattr(sys, '_called_from_test')
+            network_seed_set = network is not None and network.seed is not None
+            if network_seed_set and not in_test:
+                decoder_cache = DecoderCache()
+            else:
+                decoder_cache = NoDecoderCache()
+
+            self.model = Model(dt=dt,
+                               label="%s, dt=%f" % (network, dt),
+                               decoder_cache=decoder_cache)
         else:
             self.model = model
 
         if network is not None:
             # Build the network into the model
             self.model.build(network)
+
+        self.model.decoder_cache.shrink()
 
         self.seed = np.random.randint(npext.maxint) if seed is None else seed
         self.rng = np.random.RandomState(self.seed)
