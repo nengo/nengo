@@ -36,7 +36,7 @@ class NengoObjectContainer(type):
     """
 
     def __call__(cls, *args, **kwargs):
-        inst = cls.__new__(cls)
+        inst = cls.__new__(cls, *args, **kwargs)
         add_to_container = kwargs.pop(
             'add_to_container', len(Network.context) > 0)
         if add_to_container:

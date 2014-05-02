@@ -8,13 +8,12 @@ from nengo import spa
 def test_connect(Simulator):
     class SPA(spa.SPA):
         def __init__(self):
-            super(SPA, self).__init__(rng=np.random.RandomState(1))
             self.buffer1 = spa.Buffer(dimensions=16)
             self.buffer2 = spa.Buffer(dimensions=16)
             self.cortical = spa.Cortical(spa.Actions('buffer2=buffer1'))
             self.input = spa.Input(buffer1='A')
 
-    model = SPA(seed=124)
+    model = SPA(seed=122)
 
     output, vocab = model.get_module_output('buffer2')
 
@@ -31,7 +30,6 @@ def test_connect(Simulator):
 def test_transform(Simulator):
     class SPA(spa.SPA):
         def __init__(self):
-            super(SPA, self).__init__(rng=np.random.RandomState(3))
             self.buffer1 = spa.Buffer(dimensions=16)
             self.buffer2 = spa.Buffer(dimensions=16)
             self.cortical = spa.Cortical(spa.Actions('buffer2=buffer1*B'))
@@ -54,7 +52,6 @@ def test_transform(Simulator):
 def test_translate(Simulator):
     class SPA(spa.SPA):
         def __init__(self):
-            super(SPA, self).__init__(rng=np.random.RandomState(1))
             self.buffer1 = spa.Buffer(dimensions=16)
             self.buffer2 = spa.Buffer(dimensions=32)
             self.input = spa.Input(buffer1='A')
@@ -77,7 +74,6 @@ def test_translate(Simulator):
 def test_errors():
     class SPA(spa.SPA):
         def __init__(self):
-            super(SPA, self).__init__()
             self.buffer = spa.Buffer(dimensions=16)
             self.cortical = spa.Cortical(spa.Actions(
                 'dot(buffer,A) --> buffer=buffer'))
@@ -87,7 +83,6 @@ def test_errors():
 
     class SPA(spa.SPA):
         def __init__(self):
-            super(SPA, self).__init__()
             self.buffer = spa.Buffer(dimensions=16)
             self.cortical = spa.Cortical(spa.Actions('buffer2=buffer'))
 
@@ -98,7 +93,6 @@ def test_errors():
 def test_direct(Simulator):
     class SPA(spa.SPA):
         def __init__(self):
-            super(SPA, self).__init__(rng=np.random.RandomState(2))
             self.buffer1 = spa.Buffer(dimensions=16)
             self.buffer2 = spa.Buffer(dimensions=32)
             self.cortical = spa.Cortical(spa.Actions(

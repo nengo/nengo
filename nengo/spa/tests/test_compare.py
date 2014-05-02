@@ -8,7 +8,6 @@ from nengo import spa
 def test_basic():
     class Basic(spa.SPA):
         def __init__(self):
-            super(Basic, self).__init__()
             self.compare = spa.Compare(dimensions=16)
 
     model = Basic()
@@ -27,7 +26,6 @@ def test_basic():
 def test_run(Simulator):
     class Basic(spa.SPA):
         def __init__(self):
-            super(Basic, self).__init__()
             self.compare = spa.Compare(dimensions=16)
 
             def inputA(t):

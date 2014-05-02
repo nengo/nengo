@@ -8,7 +8,6 @@ from nengo import spa
 def test_basal_ganglia(Simulator):
     class SPA(spa.SPA):
         def __init__(self):
-            super(SPA, self).__init__(rng=np.random.RandomState(2))
             self.vision = spa.Buffer(dimensions=16)
             self.motor = spa.Buffer(dimensions=16)
 
@@ -32,7 +31,7 @@ def test_basal_ganglia(Simulator):
                     return '0'
             self.input = spa.Input(vision=input)
 
-    model = SPA(seed=123)
+    model = SPA(seed=128)
 
     with model:
         p = nengo.Probe(model.bg.input, 'output', synapse=0.03)
@@ -51,7 +50,6 @@ def test_basal_ganglia(Simulator):
 def test_errors():
     class SPA(spa.SPA):
         def __init__(self):
-            super(SPA, self).__init__()
             self.vision = spa.Buffer(dimensions=16)
             self.motor = spa.Buffer(dimensions=16)
 

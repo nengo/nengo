@@ -1,3 +1,5 @@
+import numpy as np
+
 import nengo
 from nengo.spa.vocab import Vocabulary
 from nengo.spa.module import Module
@@ -58,13 +60,11 @@ class SPA(nengo.Network):
             self.thal = spa.Thalamus(self.bg)
     """
 
-    def __init__(self, rng=None):
-        # the set of known modules
-        self._modules = {}
-        # the Vocabulary to use by default for a given dimensionality
-        self._default_vocabs = {}
-        # the random number generator to use for Vocabularies
-        self.rng = rng
+    def __new__(cls, *args, **kwargs):
+        inst = super(SPA, cls).__new__(cls)
+        inst._modules = {}
+        inst._default_vocabs = {}
+        return inst
 
     def __setattr__(self, key, value):
         """A setattr that handles Modules being added specially.
@@ -92,9 +92,13 @@ class SPA(nengo.Network):
 
         This will create a new default Vocabulary if one doesn't exist.
         """
+
+        # If seed is set, create rng based off that seed.
+        # Otherwise, just use the default NumPy rng.
+        rng = None if self.seed is None else np.random.RandomState(self.seed)
+
         if dimensions not in self._default_vocabs:
-            self._default_vocabs[dimensions] = Vocabulary(
-                dimensions, rng=self.rng)
+            self._default_vocabs[dimensions] = Vocabulary(dimensions, rng=rng)
         return self._default_vocabs[dimensions]
 
     def get_module_input(self, name):
