@@ -210,45 +210,39 @@ def test_class():
                                     '            self.b = b\n')
 
 
-def test_memoize():
+def test_memoize():  # noqa: C901
     """Test that the memoize decorator works in several contexts."""
-    cache_info = {'misses': 0}  # must be a dict so that closure happens
 
     @memoize
     def f():
-        cache_info['misses'] += 1
         return 'f'
 
     @memoize
     def f_args(a, b=5):
-        cache_info['misses'] += 1
         return a + b
 
     class Test(object):
         @memoize
         def inst_f(self):
-            cache_info['misses'] += 1
             return 'inst_f'
 
         @memoize
         @classmethod
         def cls_f(cls):
-            cache_info['misses'] += 1
             return 'cls_f'
 
         @memoize
         @staticmethod
         def static_f():
-            cache_info['misses'] += 1
             return 'static_f'
 
         @property
         @memoize
         def prop(self):
-            cache_info['misses'] += 1
             return 'prop'
 
-    def check_all(inst):
+    def check_all(inst, hits, misses):
+        # Check return values
         assert f() == f.__name__
         assert inst.inst_f() == inst.inst_f.__name__
         assert Test.cls_f() == Test.cls_f.__name__
@@ -259,15 +253,20 @@ def test_memoize():
         assert f_args(1, 2) == 3
         assert f_args(1, b=100) == 101
 
+        # Check hits and misses
+        for func in f, inst.inst_f, Test.cls_f, Test.static_f, Test.prop.fget:
+            assert func.wrapper.hits == hits
+            assert func.wrapper.misses == misses
+        assert f_args.wrapper.hits == 4 * hits
+        assert f_args.wrapper.misses == 4 * misses
+
     inst = Test()
 
     # First run should be all misses
-    check_all(inst)
-    assert cache_info['misses'] == 9
+    check_all(inst, 0, 1)
 
     # Second run should be all hits
-    check_all(inst)
-    assert cache_info['misses'] == 9
+    check_all(inst, 1, 1)
 
 
 if __name__ == "__main__":
