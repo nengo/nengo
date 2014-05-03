@@ -295,21 +295,21 @@ class LstsqNoise(_LstsqNoiseSolver):
     """Least-squares with additive Gaussian white noise."""
 
     def __call__(self, A, Y, rng=None, E=None):
-        Y = self.mul_encoders(Y, E)
         rng = np.random if rng is None else rng
         sigma = self.noise * A.max()
         A = A + rng.normal(scale=sigma, size=A.shape)
-        return self.solver(A, Y, 0, **self.kwargs)
+        X, info = self.solver(A, Y, 0, **self.kwargs)
+        return self.mul_encoders(X, E), info
 
 
 class LstsqMultNoise(_LstsqNoiseSolver):
     """Least-squares with multiplicative white noise."""
 
     def __call__(self, A, Y, rng=None, E=None):
-        Y = self.mul_encoders(Y, E)
         rng = np.random if rng is None else rng
         A = A + rng.normal(scale=self.noise, size=A.shape) * A
-        return self.solver(A, Y, 0, **self.kwargs)
+        X, info = self.solver(A, Y, 0, **self.kwargs)
+        return self.mul_encoders(X, E), info
 
 
 class _LstsqL2Solver(Solver):
@@ -336,17 +336,15 @@ class LstsqL2(_LstsqL2Solver):
     """Least-squares with L2 regularization."""
 
     def __call__(self, A, Y, rng=None, E=None):
-        Y = self.mul_encoders(Y, E)
         sigma = self.reg * A.max()
-        return self.solver(A, Y, sigma, **self.kwargs)
+        X, info = self.solver(A, Y, sigma, **self.kwargs)
+        return self.mul_encoders(X, E), info
 
 
 class LstsqL2nz(_LstsqL2Solver):
     """Least-squares with L2 regularization on non-zero components."""
 
     def __call__(self, A, Y, rng=None, E=None):
-        Y = self.mul_encoders(Y, E)
-
         # Compute the equivalent noise standard deviation. This equals the
         # base amplitude (noise_amp times the overall max activation) times
         # the square-root of the fraction of non-zero components.
@@ -356,7 +354,8 @@ class LstsqL2nz(_LstsqL2Solver):
         # we have to make sigma != 0 for numeric reasons.
         sigma[sigma == 0] = sigma.max()
 
-        return self.solver(A, Y, sigma, **self.kwargs)
+        X, info = self.solver(A, Y, sigma, **self.kwargs)
+        return self.mul_encoders(X, E), info
 
 
 class LstsqL1(Solver):
