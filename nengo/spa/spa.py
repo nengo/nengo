@@ -22,7 +22,6 @@ class SPA(nengo.Network):
 
     class Example(spa.SPA):
         def __init__(self):
-            super(Example, self).__init__()
             self.a = spa.Buffer(dimensions=8)
             self.b = spa.Buffer(dimensions=16)
             self.c = spa.Memory(dimensions=8)
@@ -33,7 +32,6 @@ class SPA(nengo.Network):
 
     class Example(spa.SPA):
         def __init__(self):
-            super(Example, self).__init__()
             self.a = spa.Buffer(dimensions=8)
             self.b = spa.Buffer(dimensions=16)
             self.c = spa.Memory(dimensions=8)
@@ -46,7 +44,6 @@ class SPA(nengo.Network):
 
     class SequenceExample(spa.SPA):
         def __init__(self):
-            super(SequenceExample, self).__init__()
             self.state = spa.Memory(dimensions=32)
 
             actions = spa.Actions('dot(state, A) --> state=B',

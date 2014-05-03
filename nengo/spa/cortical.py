@@ -38,7 +38,8 @@ class Cortical(Module):
                         self.add_direct_effect(name, effect.symbol)
                     elif isinstance(effect, Source):
                         self.add_route_effect(name, effect.name,
-                                              effect.transform.symbol)
+                                              effect.transform.symbol,
+                                              effect.inverted)
                     else:
                         raise NotImplementedError(
                             'Unknown effect %s' % effect)
@@ -68,7 +69,7 @@ class Cortical(Module):
             nengo.Connection(self.bias, sink, transform=transform,
                              synapse=self.synapse)
 
-    def add_route_effect(self, target_name, source_name, transform):
+    def add_route_effect(self, target_name, source_name, transform, inverted):
         """Connect a module output to a module input
 
         Parameters
@@ -80,7 +81,7 @@ class Cortical(Module):
             a different Vocabulary than the target, a linear transform
             will be applied to convert from one to the other.
         transform : string
-            A semantic point to convolve with the source value before
+            A semantic pointer to convolve with the source value before
             sending it into the target.  This transform takes
             place in the source Vocabulary.
         """
@@ -88,6 +89,10 @@ class Cortical(Module):
         source, source_vocab = self.spa.get_module_output(source_name)
 
         t = source_vocab.parse(transform).get_convolution_matrix()
+        if inverted:
+            D = source_vocab.dimensions
+            t = np.dot(t, np.eye(D)[-np.arange(D)])
+
         if target_vocab is not source_vocab:
             t = np.dot(source_vocab.transform_to(target_vocab), t)
 
