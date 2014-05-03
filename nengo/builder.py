@@ -1258,24 +1258,18 @@ def build_connection(conn, model, config):  # noqa: C901
             for i, ep in enumerate(eval_points):
                 targets[i] = conn.function(ep)
 
-        if conn.weight_solver is not None:
-            if conn.decoder_solver is not None:
-                raise ValueError("Cannot specify both 'weight_solver' "
-                                 "and 'decoder_solver'.")
-
+        if conn.solver.weights:
             # account for transform
             targets = np.dot(targets, transform.T)
             transform = np.array(1., dtype=np.float64)
 
-            decoders, solver_info = conn.weight_solver(
+            decoders, solver_info = conn.solver(
                 activities, targets, rng=rng,
                 E=model.params[conn.post].scaled_encoders.T)
             model.sig[conn]['out'] = model.sig[conn.post]['neuron_in']
             signal_size = model.sig[conn]['out'].size
         else:
-            solver = (conn.decoder_solver if conn.decoder_solver is
-                      not None else nengo.decoders.lstsq_L2nz)
-            decoders, solver_info = solver(activities, targets, rng=rng)
+            decoders, solver_info = conn.solver(activities, targets, rng=rng)
             signal_size = conn.dimensions
 
         # Add operator for decoders and filtering
@@ -1329,11 +1323,11 @@ def build_connection(conn, model, config):  # noqa: C901
         if isinstance(conn.pre, nengo.objects.Neurons):
             modified_signal = model.sig[conn]['transform']
         elif isinstance(conn.pre, nengo.objects.Ensemble):
-            if conn.weight_solver is not None:
+            if conn.solver.weights:
                 # TODO: make less hacky.
                 # Have to do this because when a weight_solver
                 # is provided, then learning rules should operators on
-                # "decoders", which is really the weight matrix.
+                # "decoders" which is really the weight matrix.
                 model.sig[conn]['transform'] = model.sig[conn]['decoders']
                 modified_signal = model.sig[conn]['transform']
             else:
@@ -1459,8 +1453,7 @@ def build_pes(pes, conn, model, config):
     model.add_op(Reset(scaled_error))
     model.add_op(DotInc(lr_sig, error, scaled_error, tag="PES:scale error"))
 
-    if (conn.weight_solver is not None
-            or isinstance(conn.pre, nengo.objects.Neurons)):
+    if conn.solver.weights or isinstance(conn.pre, nengo.objects.Neurons):
         outer_product = Signal(np.zeros((error.size, activities.size)),
                                name="PES: outer prod")
         transform = model.sig[conn]['transform']

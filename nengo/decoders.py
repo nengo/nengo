@@ -31,182 +31,17 @@ All solvers return the following:
     (N, D) array of decoders if E is none, or (N, N2) array of weights
     if E is not none.
 """
-
+import copy
 import logging
+
 import numpy as np
+
 import nengo.utils.numpy as npext
 
 logger = logging.getLogger(__name__)
 
 
-def _get_solver():
-    # NOTE: this should be settable by a defaults manager
-    return _cholesky
-
-
-def lstsq(A, Y, rng=np.random, E=None, rcond=0.01):
-    """Unregularized least-squares."""
-    Y = np.dot(Y, E) if E is not None else Y
-    X, residuals2, rank, s = np.linalg.lstsq(A, Y, rcond=rcond)
-    return X, {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
-               'residuals': np.sqrt(residuals2),
-               'rank': rank,
-               'singular_values': s}
-
-
-def lstsq_noise(
-        A, Y, rng=np.random, E=None, noise_amp=0.1, solver=None, **kwargs):
-    """Least-squares with additive white noise."""
-    sigma = noise_amp * A.max()
-    A = A + rng.normal(scale=sigma, size=A.shape)
-    Y = np.dot(Y, E) if E is not None else Y
-    solver = _get_solver() if solver is None else solver
-    return solver(A, Y, 0, **kwargs)
-
-
-def lstsq_multnoise(
-        A, Y, rng=np.random, E=None, noise_amp=0.1, solver=None, **kwargs):
-    """Least-squares with multiplicative white noise."""
-    A = A + rng.normal(scale=noise_amp, size=A.shape) * A
-    Y = np.dot(Y, E) if E is not None else Y
-    solver = _get_solver() if solver is None else solver
-    return solver(A, Y, 0, **kwargs)
-
-
-def lstsq_L2(
-        A, Y, rng=np.random, E=None, noise_amp=0.1, solver=None, **kwargs):
-    """Least-squares with L2 regularization."""
-    Y = np.dot(Y, E) if E is not None else Y
-    sigma = noise_amp * A.max()
-    solver = _get_solver() if solver is None else solver
-    return solver(A, Y, sigma, **kwargs)
-
-
-def lstsq_L2nz(
-        A, Y, rng=np.random, E=None, noise_amp=0.1, solver=None, **kwargs):
-    """Least-squares with L2 regularization on non-zero components."""
-    Y = np.dot(Y, E) if E is not None else Y
-
-    # Compute the equivalent noise standard deviation. This equals the
-    # base amplitude (noise_amp times the overall max activation) times
-    # the square-root of the fraction of non-zero components.
-    sigma = (noise_amp * A.max()) * np.sqrt((A > 0).mean(axis=0))
-
-    # sigma == 0 means the neuron is never active, so won't be used, but
-    # we have to make sigma != 0 for numeric reasons.
-    sigma[sigma == 0] = sigma.max()
-
-    solver = _get_solver() if solver is None else solver
-    return solver(A, Y, sigma, **kwargs)
-
-
-def lstsq_L1(A, Y, rng=np.random, E=None, l1=1e-4, l2=1e-6):
-    """Least-squares with L1 and L2 regularization (elastic net).
-
-    This method is well suited for creating sparse decoders or weight matrices.
-    """
-    import sklearn.linear_model
-
-    # TODO: play around with these regularization constants (I just guessed).
-    #   Do we need to scale regularization by number of neurons, to get same
-    #   level of sparsity? esp. with weights? Currently, setting l1=1e-3 works
-    #   well with weights when connecting 1D populations with 100 neurons each.
-    a = l1 * A.max()      # L1 regularization
-    b = l2 * A.max()**2   # L2 regularization
-    alpha = a + b
-    l1_ratio = a / (a + b)
-
-    # --- solve least-squares A * X = Y
-    if E is not None:
-        Y = np.dot(Y, E)
-
-    model = sklearn.linear_model.ElasticNet(
-        alpha=alpha, l1_ratio=l1_ratio, fit_intercept=False, max_iter=1000)
-    model.fit(A, Y)
-    X = model.coef_.T
-    X.shape = (A.shape[1], Y.shape[1]) if Y.ndim > 1 else (A.shape[1],)
-    infos = {'rmses': npext.rms(Y - np.dot(A, X), axis=0)}
-    return X, infos
-
-
-def lstsq_drop(A, Y, rng, E=None, noise_amp=0.1, drop=0.25, solver=lstsq_L2nz):
-    """Find sparser decoders/weights by dropping small values.
-
-    This solver first solves for coefficients (decoders/weights) with
-    L2 regularization, drops those nearest to zero, and retrains remaining.
-    """
-    Y, m, n, d, matrix_in = _format_system(A, Y)
-
-    # solve for coefficients using standard solver
-    X, info0 = solver(A, Y, rng=rng, noise_amp=noise_amp)
-    X = np.dot(X, E) if E is not None else X
-
-    # drop weights close to zero, based on `drop` ratio
-    Xabs = np.sort(np.abs(X.flat))
-    threshold = Xabs[int(np.round(drop * Xabs.size))]
-    X[np.abs(X) < threshold] = 0
-
-    # retrain nonzero weights
-    Y = np.dot(Y, E) if E is not None else Y
-    for i in range(X.shape[1]):
-        nonzero = X[:, i] != 0
-        if nonzero.sum() > 0:
-            X[nonzero, i], info1 = solver(
-                A[:, nonzero], Y[:, i], rng=rng, noise_amp=0.1 * noise_amp)
-
-    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
-            'info0': info0, 'info1': info1}
-    return X if matrix_in else X.flatten(), info
-
-
-def nnls(A, Y, rng, E=None):
-    """Non-negative least-squares without regularization.
-
-    Similar to `lstsq`, except the output values are non-negative.
-    """
-    import scipy.optimize
-
-    Y, m, n, d, matrix_in = _format_system(A, Y)
-    Y = np.dot(Y, E) if E is not None else Y
-    X = np.zeros((n, d))
-    residuals = np.zeros(d)
-    for i in range(d):
-        X[:, i], residuals[i] = scipy.optimize.nnls(A, Y[:, i])
-
-    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
-            'residuals': residuals}
-    return X if matrix_in else X.flatten(), info
-
-
-def nnls_L2(A, Y, rng, E=None, noise_amp=0.1):
-    """Non-negative least-squares with L2 regularization.
-
-    Similar to `lstsq_L2`, except the output values are non-negative.
-    """
-    # form Gram matrix so we can add regularization
-    sigma = noise_amp * A.max()
-    G = np.dot(A.T, A)
-    Y = np.dot(A.T, Y)
-    np.fill_diagonal(G, G.diagonal() + sigma)
-    return nnls(G, Y, rng, E=E)
-
-
-def nnls_L2nz(A, Y, rng, E=None, noise_amp=0.1):
-    """Non-negative least-squares with L2 regularization on nonzero components.
-
-    Similar to `lstsq_L2nz`, except the output values are non-negative.
-    """
-    sigma = (noise_amp * A.max()) * np.sqrt((A > 0).mean(axis=0))
-    sigma[sigma == 0] = 1
-
-    # form Gram matrix so we can add regularization
-    G = np.dot(A.T, A)
-    Y = np.dot(A.T, Y)
-    np.fill_diagonal(G, G.diagonal() + sigma)
-    return nnls(G, Y, rng, E=E)
-
-
-def _cholesky(A, y, sigma, transpose=None):
+def cholesky(A, y, sigma, transpose=None):
     """Solve the least-squares system using the Cholesky decomposition."""
     m, n = A.shape
     if transpose is None:
@@ -239,7 +74,7 @@ def _cholesky(A, y, sigma, transpose=None):
     return x, info
 
 
-def _conjgrad_scipy(A, Y, sigma, tol=1e-4):
+def conjgrad_scipy(A, Y, sigma, tol=1e-4):
     import scipy.sparse.linalg
     Y, m, n, d, matrix_in = _format_system(A, Y)
 
@@ -265,7 +100,7 @@ def _conjgrad_scipy(A, Y, sigma, tol=1e-4):
     return X if matrix_in else X.flatten(), info
 
 
-def _lsmr_scipy(A, Y, sigma, tol=1e-4):
+def lsmr_scipy(A, Y, sigma, tol=1e-4):
     import scipy.sparse.linalg
     Y, m, n, d, matrix_in = _format_system(A, Y)
 
@@ -314,7 +149,7 @@ def _conjgrad_iters(calcAx, b, x, maxiters=None, rtol=1e-6):
     return x, i+1
 
 
-def _conjgrad(A, Y, sigma, X0=None, maxiters=None, tol=1e-2):
+def conjgrad(A, Y, sigma, X0=None, maxiters=None, tol=1e-2):
     """Solve the least-squares system using conjugate gradient."""
     Y, m, n, d, matrix_in = _format_system(A, Y)
 
@@ -334,7 +169,7 @@ def _conjgrad(A, Y, sigma, X0=None, maxiters=None, tol=1e-2):
     return X if matrix_in else X.flatten(), info
 
 
-def _block_conjgrad(A, Y, sigma, X0=None, tol=1e-2):
+def block_conjgrad(A, Y, sigma, X0=None, tol=1e-2):
     """Solve a least-squares system with multiple-RHS."""
     Y, m, n, d, matrix_in = _format_system(A, Y)
     sigma = np.asarray(sigma, dtype='float')
@@ -378,3 +213,263 @@ def _format_system(A, Y):
     d = Y.shape[1] if matrix_in else 1
     Y = Y.reshape((Y.shape[0], d))
     return Y, m, n, d, matrix_in
+
+
+class Solver(object):
+    """
+    Decoder or weight solver.
+    """
+    weights = False
+
+    def __call__(self, A, Y, rng=np.random, E=None):
+        """Call the solver.
+
+        Parameters
+        ----------
+        A : array_like (M, N)
+            Matrix of the N neurons' activities at the M evaluation points
+        Y : array_like (M, D)
+            Matrix of the target decoded values for each of the D dimensions,
+            at each of the M evaluation points.
+        rng : numpy.RandomState, optional
+            A random number generator to use as required. If none is provided,
+            numpy.random will be used.
+        E : array_like (D, N2), optional
+            Array of post-population encoders. Providing this tells the solver
+            to return an array of connection weights rather than decoders.
+        """
+        raise NotImplementedError("Solvers must implement '__call__'")
+
+    def mul_encoders(self, Y, E):
+        if self.weights:
+            if E is None:
+                raise ValueError("Encoders must be provided for weight solver")
+            return np.dot(Y, E)
+        else:
+            if E is not None:
+                raise ValueError("Encoders must be 'None' for decoder solver")
+            return Y
+
+    def copy(self):
+        return copy.copy(self)
+
+    def __str__(self):
+        return "%s(%s)" % (
+            self.__class__.__name__,
+            ', '.join("%s=%s" % (k, v) for k, v in self.__dict__.items()))
+
+
+class Lstsq(Solver):
+    """Unregularized least-squares."""
+
+    def __init__(self, weights=False, rcond=0.01):
+        self.rcond = rcond
+        self.weights = weights
+
+    def __call__(self, A, Y, rng=np.random, E=None):
+        Y = self.mul_encoders(Y, E)
+        X, residuals2, rank, s = np.linalg.lstsq(A, Y, rcond=self.rcond)
+        return X, {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+                   'residuals': np.sqrt(residuals2),
+                   'rank': rank,
+                   'singular_values': s}
+
+
+class _LstsqNoiseSolver(Solver):
+    """Base for least-squares solvers with noise"""
+    def __init__(self, weights=False, noise=0.1, solver=cholesky, **kwargs):
+        self.weights = weights
+        self.noise = noise
+        self.solver = solver
+        self.kwargs = kwargs
+
+
+class LstsqNoise(_LstsqNoiseSolver):
+    """Least-squares with additive Gaussian white noise."""
+    def __call__(self, A, Y, rng=np.random, E=None):
+        Y = self.mul_encoders(Y, E)
+        sigma = self.noise * A.max()
+        A = A + rng.normal(scale=sigma, size=A.shape)
+        return self.solver(A, Y, 0, **self.kwargs)
+
+
+class LstsqMultNoise(_LstsqNoiseSolver):
+    """Least-squares with multiplicative white noise."""
+    def __call__(self, A, Y, rng=np.random, E=None):
+        Y = self.mul_encoders(Y, E)
+        A = A + rng.normal(scale=self.noise, size=A.shape) * A
+        return self.solver(A, Y, 0, **self.kwargs)
+
+
+class _LstsqL2Solver(Solver):
+    """Base for L2-regularized least-squares solvers"""
+    def __init__(self, weights=False, reg=0.1, solver=cholesky, **kwargs):
+        self.weights = weights
+        self.reg = reg
+        self.solver = solver
+        self.kwargs = kwargs
+
+
+class LstsqL2(_LstsqL2Solver):
+    """Least-squares with L2 regularization."""
+    def __call__(self, A, Y, rng=np.random, E=None):
+        Y = self.mul_encoders(Y, E)
+        sigma = self.reg * A.max()
+        return self.solver(A, Y, sigma, **self.kwargs)
+
+
+class LstsqL2nz(_LstsqL2Solver):
+    """Least-squares with L2 regularization on non-zero components."""
+    def __call__(self, A, Y, rng=np.random, E=None):
+        Y = self.mul_encoders(Y, E)
+
+        # Compute the equivalent noise standard deviation. This equals the
+        # base amplitude (noise_amp times the overall max activation) times
+        # the square-root of the fraction of non-zero components.
+        sigma = (self.reg * A.max()) * np.sqrt((A > 0).mean(axis=0))
+
+        # sigma == 0 means the neuron is never active, so won't be used, but
+        # we have to make sigma != 0 for numeric reasons.
+        sigma[sigma == 0] = sigma.max()
+
+        return self.solver(A, Y, sigma, **self.kwargs)
+
+
+class LstsqL1(Solver):
+    """Least-squares with L1 and L2 regularization (elastic net).
+
+    This method is well suited for creating sparse decoders or weight matrices.
+    """
+    def __init__(self, weights=False, l1=1e-4, l2=1e-6):
+        import sklearn.linear_model  # import here too to throw error early
+        assert sklearn.linear_model
+        self.weights = weights
+        self.l1 = l1
+        self.l2 = l2
+
+    def __call__(self, A, Y, rng=np.random, E=None):
+        import sklearn.linear_model
+        Y = self.mul_encoders(Y, E)
+
+        # TODO: play around with these regularization constants (I guessed).
+        #   Do we need to scale regularization by number of neurons, to get
+        #   same level of sparsity? esp. with weights? Currently, setting
+        #   l1=1e-3 works well with weights when connecting 1D populations
+        #   with 100 neurons each.
+        a = self.l1 * A.max()      # L1 regularization
+        b = self.l2 * A.max()**2   # L2 regularization
+        alpha = a + b
+        l1_ratio = a / (a + b)
+
+        # --- solve least-squares A * X = Y
+        model = sklearn.linear_model.ElasticNet(
+            alpha=alpha, l1_ratio=l1_ratio, fit_intercept=False, max_iter=1000)
+        model.fit(A, Y)
+        X = model.coef_.T
+        X.shape = (A.shape[1], Y.shape[1]) if Y.ndim > 1 else (A.shape[1],)
+        infos = {'rmses': npext.rms(Y - np.dot(A, X), axis=0)}
+        return X, infos
+
+
+class LstsqDrop(Solver):
+    """Find sparser decoders/weights by dropping small values.
+
+    This solver first solves for coefficients (decoders/weights) with
+    L2 regularization, drops those nearest to zero, and retrains remaining.
+    """
+
+    def __init__(self, weights=False, drop=0.25, solver=LstsqL2nz()):
+        self.weights = weights
+        self.drop = drop
+        self.solver = solver
+
+    def __call__(self, A, Y, rng=np.random, E=None):
+        Y, m, n, d, matrix_in = _format_system(A, Y)
+
+        # solve for coefficients using standard solver
+        X, info0 = self.solver(A, Y, rng=rng)
+        X = self.mul_encoders(X, E)
+
+        # drop weights close to zero, based on `drop` ratio
+        Xabs = np.sort(np.abs(X.flat))
+        threshold = Xabs[int(np.round(self.drop * Xabs.size))]
+        X[np.abs(X) < threshold] = 0
+
+        # retrain nonzero weights
+        solver2 = self.solver.copy()
+        solver2.reg = 0.1 * self.solver.reg
+        assert solver2.reg == 0.1 * self.solver.reg
+
+        Y = self.mul_encoders(Y, E)
+        for i in range(X.shape[1]):
+            nonzero = X[:, i] != 0
+            if nonzero.sum() > 0:
+                X[nonzero, i], info1 = solver2(A[:, nonzero], Y[:, i], rng=rng)
+
+        info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+                'info0': info0, 'info1': info1}
+        return X if matrix_in else X.flatten(), info
+
+
+class Nnls(Solver):
+    """Non-negative least-squares without regularization.
+
+    Similar to `lstsq`, except the output values are non-negative.
+    """
+    def __init__(self, weights=False):
+        import scipy.optimize  # import here too to throw error early
+        assert scipy.optimize
+        self.weights = weights
+
+    def __call__(self, A, Y, rng=np.random, E=None):
+        import scipy.optimize
+
+        Y, m, n, d, matrix_in = _format_system(A, Y)
+        Y = self.mul_encoders(Y, E)
+
+        X = np.zeros((n, d))
+        residuals = np.zeros(d)
+        for i in range(d):
+            X[:, i], residuals[i] = scipy.optimize.nnls(A, Y[:, i])
+
+        info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+                'residuals': residuals}
+        return X if matrix_in else X.flatten(), info
+
+
+class NnlsL2(Nnls):
+    """Non-negative least-squares with L2 regularization.
+
+    Similar to `lstsq_L2`, except the output values are non-negative.
+    """
+    def __init__(self, weights=False, reg=0.1):
+        super(NnlsL2, self).__init__(weights)
+        self.reg = reg
+
+    def __call__(self, A, Y, rng=np.random, E=None):
+        # form Gram matrix so we can add regularization
+        sigma = self.reg * A.max()
+        G = np.dot(A.T, A)
+        Y = np.dot(A.T, Y)
+        np.fill_diagonal(G, G.diagonal() + sigma)
+        return super(NnlsL2, self).__call__(G, Y, rng=rng, E=E)
+
+
+class NnlsL2nz(Nnls):
+    """Non-negative least-squares with L2 regularization on nonzero components.
+
+    Similar to `lstsq_L2nz`, except the output values are non-negative.
+    """
+    def __init__(self, weights=False, reg=0.1):
+        super(NnlsL2nz, self).__init__(weights)
+        self.reg = reg
+
+    def __call__(self, A, Y, rng=np.random, E=None):
+        sigma = (self.reg * A.max()) * np.sqrt((A > 0).mean(axis=0))
+        sigma[sigma == 0] = 1
+
+        # form Gram matrix so we can add regularization
+        G = np.dot(A.T, A)
+        Y = np.dot(A.T, Y)
+        np.fill_diagonal(G, G.diagonal() + sigma)
+        return super(NnlsL2nz, self).__call__(G, Y, rng=rng, E=E)
