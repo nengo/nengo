@@ -14,6 +14,7 @@ represents a release version. Commits for which the version doesn't have
 
 """
 
+name = "nengo"
 version_info = (2, 0, 0)  # (major, minor, patch)
 rc = None
 dev = True
