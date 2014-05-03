@@ -43,7 +43,6 @@ def test_lowpass(Simulator):
                     filename='test_synapse.test_lowpass.pdf')
 
 
-@pytest.mark.optional
 def test_alpha(Simulator):
     dt = 1e-3
     tau = 0.03
@@ -76,7 +75,7 @@ def test_decoders(Simulator, nl):
                     filename='test_synapse.test_decoders.pdf')
 
 
-@pytest.mark.optional
+@pytest.mark.optional  # the test requires scipy
 def test_general(Simulator):
     import scipy.signal
 

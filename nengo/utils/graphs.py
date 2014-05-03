@@ -4,6 +4,8 @@ Nengo models are essentially graphs where ensembles, nodes, and networks
 are graph vertices, and connections are edges. We make use of this fact
 in some places in the code; this file contains functions to help with that.
 
+----
+
 toposort and reverse_edges are adapted from Theano (theano/gof/sched.py).
 This modified code is included under the terms of their license:
 

@@ -58,8 +58,6 @@ class Alpha(Synapse):
         in neocortical neurons. Science (New York, NY), 268(5216):1503-6.
     """
     def __init__(self, tau):
-        import scipy.signal  # Fail early (instead of at builder)
-        assert scipy.signal
         self.tau = tau
 
     def __repr__(self):

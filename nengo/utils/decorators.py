@@ -10,14 +10,13 @@ The ``decorator`` decorator in this file solves these problems.
 ``@decorator`` should be applied to all decorator functions in Nengo.
 This makes decorators easy to write, while avoiding the issues above.
 
+----
+
 Some of the code in this file is a modified subset of the wrapt package,
 available at https://pypi.python.org/pypi/wrapt.
 For more details on the implementations herein, see the code comments
 in the wrapt source at https://github.com/GrahamDumpleton/wrapt.
-The code is included here under the terms of wrapt's BSD license
-(copied below).
-
-----
+The code is included here under the terms of wrapt's BSD license:
 
 Copyright (c) 2013, Graham Dumpleton. All rights reserved.
 
