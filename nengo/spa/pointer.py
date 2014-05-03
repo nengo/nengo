@@ -155,7 +155,7 @@ class SemanticPointer:
 
         For the vector [1,2,3,4,5], the inverse is [1,5,4,3,2].
         """
-        return SemanticPointer(data=np.hstack((self.v[0], self.v[:0:-1])))
+        return SemanticPointer(data=self.v[-np.arange(len(self))])
 
     def __len__(self):
         """Return the number of dimensions in the vector."""

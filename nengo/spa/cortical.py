@@ -69,7 +69,7 @@ class Cortical(Module):
                              synapse=self.synapse)
 
     def add_route_effect(self, target_name, source_name, transform):
-        """Connect a module outtput to a module input
+        """Connect a module output to a module input
 
         Parameters
         ----------
