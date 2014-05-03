@@ -13,6 +13,7 @@ import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
 from nengo.utils.compat import is_callable, is_integer, is_number, StringIO
+from nengo.utils.filter_design import cont2discrete
 
 logger = logging.getLogger(__name__)
 
@@ -1245,8 +1246,7 @@ def build_discrete_filter_synapse(
 
 
 def build_filter_synapse(synapse, owner, input_signal, model, config):
-    import scipy.signal
-    num, den, _ = scipy.signal.cont2discrete(
+    num, den, _ = cont2discrete(
         (synapse.num, synapse.den), model.dt, method='zoh')
     num = num.flatten()
     num = num[1:] if num[0] == 0 else num
@@ -1276,8 +1276,6 @@ def build_alpha_synapse(synapse, owner, input_signal, model, config):
         ea = np.exp(-a)
         # num, den = [d**2], [2 * (d - 1), (d - 1)**2]
         num, den = [-a*ea + (1 - ea), ea*(a + ea - 1)], [-2 * ea, ea**2]
-
-        from scipy.signal import cont2discrete
         tau = synapse.tau
         num1, den1, _ = cont2discrete(([1], [tau**2, 2*tau, 1]), model.dt)
     else:
