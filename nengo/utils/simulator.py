@@ -8,6 +8,8 @@ def operator_depencency_graph(operators):  # noqa: C901
     dg = defaultdict(set)
 
     for op in operators:
+        if not dg.has_key(op):
+            dg[op] = set()
         add_edges(dg, itertools.product(op.reads + op.updates, [op]))
         add_edges(dg, itertools.product([op], op.sets + op.incs))
 
