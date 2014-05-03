@@ -5,8 +5,9 @@ from numpy.testing import assert_equal
 import pytest
 
 import nengo
-from nengo.cache import DecoderCache, Fingerprint
+from nengo.cache import DecoderCache, Fingerprint, NoDecoderCache
 from nengo.utils.compat import int_types
+from nengo.utils.testing import Timer
 
 
 class SolverMock(object):
@@ -204,6 +205,45 @@ def test_fingerprinting(reference, equal, different):
 def test_fails_for_lambda_expression():
     with pytest.raises(ValueError):
         Fingerprint(lambda x: x)
+
+
+def test_cache_works(tmpdir, Simulator):
+    cache_dir = str(tmpdir)
+
+    model = nengo.Network(seed=1)
+    with model:
+        nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
+
+    assert len(os.listdir(cache_dir)) == 0
+    Simulator(model, model=nengo.builder.Model(
+        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
+    assert len(os.listdir(cache_dir)) == 2
+
+
+def calc_relative_timer_diff(t1, t2):
+    return (t2.duration - t1.duration) / (t2.duration + t1.duration)
+
+
+@pytest.mark.benchmark
+def test_cache_performance(tmpdir, Simulator):
+    cache_dir = str(tmpdir)
+
+    model = nengo.Network(seed=1)
+    with model:
+        nengo.Connection(nengo.Ensemble(2000, 10), nengo.Ensemble(2000, 10))
+
+    with Timer() as t_no_cache:
+        Simulator(model, model=nengo.builder.Model(
+            dt=0.001, decoder_cache=NoDecoderCache()))
+    with Timer() as t_cache_miss:
+        Simulator(model, model=nengo.builder.Model(
+            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
+    with Timer() as t_cache_hit:
+        Simulator(model, model=nengo.builder.Model(
+            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
+
+    assert calc_relative_timer_diff(t_no_cache, t_cache_miss) < 0.1
+    assert calc_relative_timer_diff(t_cache_hit, t_no_cache) > 0.4
 
 
 if __name__ == "__main__":
