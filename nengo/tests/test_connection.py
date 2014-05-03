@@ -219,7 +219,7 @@ def test_weights(Simulator, nl):
 
         nengo.Connection(u, a)
         nengo.Connection(a, b, transform=transform,
-                         weight_solver=nengo.decoders.lstsq_L2nz)
+                         solver=nengo.decoders.LstsqL2(weights=True))
 
     sim = Simulator(m)
     sim.run(2.)
@@ -283,7 +283,7 @@ def test_pes_learning_rule_nef_weights(Simulator, nl_nodirect):
         err_conn = nengo.Connection(e, u_learned, modulatory=True)
         nengo.Connection(a, u_learned,
                          learning_rule=nengo.PES(err_conn, 5),
-                         weight_solver=nengo.decoders.lstsq_L2nz)
+                         solver=nengo.decoders.LstsqL2nz(weights=True))
 
         nengo.Connection(u_learned, e, transform=-1)
         nengo.Connection(u, e)

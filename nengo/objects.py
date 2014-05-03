@@ -3,12 +3,13 @@ import logging
 
 import numpy as np
 
+import nengo.decoders
+import nengo.utils.numpy as npext
 from nengo.config import Config, Default, is_param, Parameter
 from nengo.learning_rules import LearningRule
 from nengo.neurons import LIF
 from nengo.utils.compat import is_callable, is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
-import nengo.utils.numpy as npext
 
 logger = logging.getLogger(__name__)
 
@@ -506,8 +507,10 @@ class Connection(NengoObject):
     dimensions : int
         The number of output dimensions of the pre object, including
         `function`, but not including `transform`.
-    decoder_solver : callable
-        Function to compute decoders (see `nengo.decoders`).
+    solver : Solver
+        Instance of a Solver class to compute decoders or weights
+        (see `nengo.decoders`). If solver.weights is True, a full
+        connection weight matrix is computed instead of decoders.
     eval_points : (n_eval_points, pre_size) array_like or int
         Points at which to evaluate `function` when computing decoders,
         spanning the interval (-pre.radius, pre.radius) in each dimension.
@@ -524,22 +527,18 @@ class Connection(NengoObject):
         description TODO
     transform : (post_size, pre_size) array_like
         Linear transform mapping the pre output to the post input.
-    weight_solver : callable
-        Function to compute a full connection weight matrix. Similar to
-        `decoder_solver`, but more general. See `nengo.decoders`.
     """
 
     synapse = Parameter(default=0.005)
     _transform = Parameter(default=1.0)
-    weight_solver = Parameter(default=None)
-    decoder_solver = Parameter(default=None)
+    solver = Parameter(default=nengo.decoders.LstsqL2())
     _function = Parameter(default=(None, 0))
     modulatory = Parameter(default=False)
     eval_points = Parameter(default=None)
     probeable = Parameter(default=['signal'])
 
     def __init__(self, pre, post, synapse=Default, transform=1.0,
-                 weight_solver=Default, decoder_solver=Default,
+                 solver=Default,
                  function=None, modulatory=Default, eval_points=Default,
                  learning_rule=[]):
         if not isinstance(pre, ObjView):
@@ -560,18 +559,16 @@ class Connection(NengoObject):
         self._skip_check_shapes = True
 
         if isinstance(self._pre, (Neurons, Node)):
-            self.decoder_solver = None
             self.eval_points = None
             self._function = (None, 0)
-            self.weight_solver = weight_solver
+            self.solver = solver
         elif isinstance(self._pre, Ensemble):
-            if isinstance(self._post, Ensemble):
-                self.weight_solver = weight_solver
-            else:
-                self.weight_solver = None
-            self.decoder_solver = decoder_solver
             self.eval_points = eval_points
             self.function = function
+            self.solver = solver
+            if self.solver.weights and not isinstance(self._post, Ensemble):
+                raise ValueError("Cannot specify weight solver "
+                                 "when 'post' is not an Ensemble")
         else:
             raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
                              self._pre.__class__.__name__)

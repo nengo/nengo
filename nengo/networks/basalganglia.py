@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from nengo.decoders import nnls_L2nz
+from nengo.decoders import NnlsL2nz
 from nengo.objects import Uniform
 from nengo.networks.ensemblearray import EnsembleArray
 
@@ -29,7 +29,8 @@ class BasalGanglia(nengo.Network):
 
     def __init__(self, dimensions, n_neurons_per_ensemble=100, radius=1.5,
                  tau_ampa=0.002, tau_gaba=0.008, output_weight=-3,
-                 decoder_solver=nnls_L2nz):
+                 solver=None):
+        solver = NnlsL2nz() if solver is None else solver
         encoders = np.ones((n_neurons_per_ensemble, 1))
         ea_params = {
             'n_neurons': n_neurons_per_ensemble,
@@ -66,12 +67,12 @@ class BasalGanglia(nengo.Network):
 
         # connect the striatum to the GPi and GPe (inhibitory)
         strD1_output = strD1.add_output(
-            'func_str', self.str, decoder_solver=decoder_solver)
+            'func_str', self.str, solver=solver)
         nengo.Connection(strD1_output,
                          gpi.input, synapse=tau_gaba,
                          transform=-np.eye(dimensions) * self.wm)
         strD2_output = strD2.add_output(
-            'func_str', self.str, decoder_solver=decoder_solver)
+            'func_str', self.str, solver=solver)
         nengo.Connection(strD2_output,
                          gpe.input, synapse=tau_gaba,
                          transform=-np.eye(dimensions) * self.wm)
@@ -79,7 +80,7 @@ class BasalGanglia(nengo.Network):
         # connect the STN to GPi and GPe (broad and excitatory)
         tr = self.wp * np.ones((dimensions, dimensions))
         stn_output = stn.add_output(
-            'func_stn', self.stn, decoder_solver=decoder_solver)
+            'func_stn', self.stn, solver=solver)
         nengo.Connection(stn_output, gpi.input,
                          transform=tr, synapse=tau_ampa)
         nengo.Connection(stn_output, gpe.input,
@@ -87,7 +88,7 @@ class BasalGanglia(nengo.Network):
 
         # connect the GPe to GPi and STN (inhibitory)
         gpe_output = gpe.add_output(
-            'func_gpe', self.gpe, decoder_solver=decoder_solver)
+            'func_gpe', self.gpe, solver=solver)
         nengo.Connection(gpe_output, gpi.input, synapse=tau_gaba,
                          transform=-self.we)
         nengo.Connection(gpe_output, stn.input, synapse=tau_gaba,
@@ -95,7 +96,7 @@ class BasalGanglia(nengo.Network):
 
         # connect GPi to output (inhibitory)
         gpi_output = gpi.add_output(
-            'func_gpi', self.gpi, decoder_solver=decoder_solver)
+            'func_gpi', self.gpi, solver=solver)
         nengo.Connection(gpi_output, self.output, synapse=None,
                          transform=output_weight)
 
