@@ -5,38 +5,15 @@ Many of the solvers in this file can solve for decoders or weight matrices,
 depending on whether the post-population encoders `E` are provided (see below).
 Solvers that are only intended to solve for either decoders or weights can
 remove the `E` parameter or make it manditory as they see fit.
-
-All solvers take following arguments:
-  A : array_like (M, N)
-    Matrix of the N neurons' activities at the M evaluation points
-  Y : array_like (M, D)
-    Matrix of the target decoded values for each of the D dimensions,
-    at each of the M evaluation points.
-
-All solvers have the following optional keyword parameters:
-  rng : numpy.RandomState
-    A random number generator to use as required. If none is provided,
-    numpy.random will be used.
-  E : array_like (D, N2)
-    Array of post-population encoders. Providing this tells the solver
-    to return an array of connection weights rather than decoders.
-
-Many solvers have the following optional keyword parameters:
-  noise_amp : float
-    This generally governs the amount of L2 regularization, as a fraction
-    of the maximum firing rate of the population.
-
-All solvers return the following:
-  X : np.ndarray (N, D) or (N, N2)
-    (N, D) array of decoders if E is none, or (N, N2) array of weights
-    if E is not none.
 """
 import copy
 import logging
 
 import numpy as np
 
+from nengo.utils.compat import with_metaclass
 import nengo.utils.numpy as npext
+from nengo.utils.decorators import DocstringInheritor
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +52,7 @@ def cholesky(A, y, sigma, transpose=None):
 
 
 def conjgrad_scipy(A, Y, sigma, tol=1e-4):
+    """Solve the least-squares system using Scipy's conjugate gradient."""
     import scipy.sparse.linalg
     Y, m, n, d, matrix_in = _format_system(A, Y)
 
@@ -101,6 +79,7 @@ def conjgrad_scipy(A, Y, sigma, tol=1e-4):
 
 
 def lsmr_scipy(A, Y, sigma, tol=1e-4):
+    """Solve the least-squares system using Scipy's LSMR."""
     import scipy.sparse.linalg
     Y, m, n, d, matrix_in = _format_system(A, Y)
 
@@ -170,7 +149,8 @@ def conjgrad(A, Y, sigma, X0=None, maxiters=None, tol=1e-2):
 
 
 def block_conjgrad(A, Y, sigma, X0=None, tol=1e-2):
-    """Solve a least-squares system with multiple-RHS."""
+    """Solve a multiple-RHS least-squares system using block conjuate gradient.
+    """
     Y, m, n, d, matrix_in = _format_system(A, Y)
     sigma = np.asarray(sigma, dtype='float')
     sigma = sigma.reshape(sigma.size, 1)
@@ -215,13 +195,13 @@ def _format_system(A, Y):
     return Y, m, n, d, matrix_in
 
 
-class Solver(object):
+class Solver(with_metaclass(DocstringInheritor)):
     """
     Decoder or weight solver.
     """
     weights = False
 
-    def __call__(self, A, Y, rng=np.random, E=None):
+    def __call__(self, A, Y, rng=None, E=None):
         """Call the solver.
 
         Parameters
@@ -237,6 +217,16 @@ class Solver(object):
         E : array_like (D, N2), optional
             Array of post-population encoders. Providing this tells the solver
             to return an array of connection weights rather than decoders.
+
+        Returns
+        -------
+        X : np.ndarray (N, D) or (N, N2)
+            (N, D) array of decoders (if solver.weights == False) or
+            (N, N2) array of weights (if solver.weights == True).
+        info : dict
+            A dictionary of information about the solve. All dictionaries have
+            an 'rmses' key that contains RMS errors of the solve. Other keys
+            are unique to particular solvers.
         """
         raise NotImplementedError("Solvers must implement '__call__'")
 
@@ -260,13 +250,19 @@ class Solver(object):
 
 
 class Lstsq(Solver):
-    """Unregularized least-squares."""
+    """Unregularized least-squares"""
 
     def __init__(self, weights=False, rcond=0.01):
+        """
+        weights : boolean, optional
+            If false solve for decoders (default), otherwise solve for weights.
+        rcond : float, optional
+            Cut-off ratio for small singular values (see `numpy.linalg.lstsq`).
+        """
         self.rcond = rcond
         self.weights = weights
 
-    def __call__(self, A, Y, rng=np.random, E=None):
+    def __call__(self, A, Y, rng=None, E=None):
         Y = self.mul_encoders(Y, E)
         X, residuals2, rank, s = np.linalg.lstsq(A, Y, rcond=self.rcond)
         return X, {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
@@ -277,7 +273,18 @@ class Lstsq(Solver):
 
 class _LstsqNoiseSolver(Solver):
     """Base for least-squares solvers with noise"""
+
     def __init__(self, weights=False, noise=0.1, solver=cholesky, **kwargs):
+        """
+        weights : boolean, optional
+            If false solve for decoders (default), otherwise solve for weights.
+        noise : float, optional
+            Amount of noise, as a fraction of the neuron activity.
+        solver : callable, optional
+            Subsolver to use for solving the least-squares problem.
+        kwargs
+            Additional arguments passed to `solver`.
+        """
         self.weights = weights
         self.noise = noise
         self.solver = solver
@@ -286,8 +293,10 @@ class _LstsqNoiseSolver(Solver):
 
 class LstsqNoise(_LstsqNoiseSolver):
     """Least-squares with additive Gaussian white noise."""
-    def __call__(self, A, Y, rng=np.random, E=None):
+
+    def __call__(self, A, Y, rng=None, E=None):
         Y = self.mul_encoders(Y, E)
+        rng = np.random if rng is None else rng
         sigma = self.noise * A.max()
         A = A + rng.normal(scale=sigma, size=A.shape)
         return self.solver(A, Y, 0, **self.kwargs)
@@ -295,15 +304,28 @@ class LstsqNoise(_LstsqNoiseSolver):
 
 class LstsqMultNoise(_LstsqNoiseSolver):
     """Least-squares with multiplicative white noise."""
-    def __call__(self, A, Y, rng=np.random, E=None):
+
+    def __call__(self, A, Y, rng=None, E=None):
         Y = self.mul_encoders(Y, E)
+        rng = np.random if rng is None else rng
         A = A + rng.normal(scale=self.noise, size=A.shape) * A
         return self.solver(A, Y, 0, **self.kwargs)
 
 
 class _LstsqL2Solver(Solver):
     """Base for L2-regularized least-squares solvers"""
+
     def __init__(self, weights=False, reg=0.1, solver=cholesky, **kwargs):
+        """
+        weights : boolean, optional
+            If false solve for decoders (default), otherwise solve for weights.
+        reg : float, optional
+            Amount of regularization, as a fraction of the neuron activity.
+        solver : callable, optional
+            Subsolver to use for solving the least-squares problem.
+        kwargs
+            Additional arguments passed to `solver`.
+        """
         self.weights = weights
         self.reg = reg
         self.solver = solver
@@ -312,7 +334,8 @@ class _LstsqL2Solver(Solver):
 
 class LstsqL2(_LstsqL2Solver):
     """Least-squares with L2 regularization."""
-    def __call__(self, A, Y, rng=np.random, E=None):
+
+    def __call__(self, A, Y, rng=None, E=None):
         Y = self.mul_encoders(Y, E)
         sigma = self.reg * A.max()
         return self.solver(A, Y, sigma, **self.kwargs)
@@ -320,7 +343,8 @@ class LstsqL2(_LstsqL2Solver):
 
 class LstsqL2nz(_LstsqL2Solver):
     """Least-squares with L2 regularization on non-zero components."""
-    def __call__(self, A, Y, rng=np.random, E=None):
+
+    def __call__(self, A, Y, rng=None, E=None):
         Y = self.mul_encoders(Y, E)
 
         # Compute the equivalent noise standard deviation. This equals the
@@ -341,17 +365,25 @@ class LstsqL1(Solver):
     This method is well suited for creating sparse decoders or weight matrices.
     """
     def __init__(self, weights=False, l1=1e-4, l2=1e-6):
-        import sklearn.linear_model  # import here too to throw error early
+        """
+        weights : boolean, optional
+            If false solve for decoders (default), otherwise solve for weights.
+        l1 : float, optional
+            Amount of L1 regularization.
+        l2 : float, optional
+            Amount of L2 regularization.
+        """
+        import sklearn.linear_model  # noqa F401, import to check existence
         assert sklearn.linear_model
         self.weights = weights
         self.l1 = l1
         self.l2 = l2
 
-    def __call__(self, A, Y, rng=np.random, E=None):
+    def __call__(self, A, Y, rng=None, E=None):
         import sklearn.linear_model
         Y = self.mul_encoders(Y, E)
 
-        # TODO: play around with these regularization constants (I guessed).
+        # TODO: play around with regularization constants (I just guessed).
         #   Do we need to scale regularization by number of neurons, to get
         #   same level of sparsity? esp. with weights? Currently, setting
         #   l1=1e-3 works well with weights when connecting 1D populations
@@ -379,11 +411,23 @@ class LstsqDrop(Solver):
     """
 
     def __init__(self, weights=False, drop=0.25, solver=LstsqL2nz()):
+        """
+        weights : boolean, optional
+            If false solve for decoders (default), otherwise solve for weights.
+        drop : float, optional
+            Fraction of decoders or weights to set to zero.
+        solver : Solver, optional
+            L2 solver used for solving for the initial weights. Must be an
+            instance of either `LstsqL2` or `LstsqL2nz`.
+        """
+        if not isinstance(solver, _LstsqL2Solver):
+            raise ValueError(
+                "'solver' must be a descendant of `_LstsqL2Solver`")
         self.weights = weights
         self.drop = drop
         self.solver = solver
 
-    def __call__(self, A, Y, rng=np.random, E=None):
+    def __call__(self, A, Y, rng=None, E=None):
         Y, m, n, d, matrix_in = _format_system(A, Y)
 
         # solve for coefficients using standard solver
@@ -417,11 +461,15 @@ class Nnls(Solver):
     Similar to `lstsq`, except the output values are non-negative.
     """
     def __init__(self, weights=False):
+        """
+        weights : boolean, optional
+            If false solve for decoders (default), otherwise solve for weights.
+        """
         import scipy.optimize  # import here too to throw error early
         assert scipy.optimize
         self.weights = weights
 
-    def __call__(self, A, Y, rng=np.random, E=None):
+    def __call__(self, A, Y, rng=None, E=None):
         import scipy.optimize
 
         Y, m, n, d, matrix_in = _format_system(A, Y)
@@ -443,10 +491,16 @@ class NnlsL2(Nnls):
     Similar to `lstsq_L2`, except the output values are non-negative.
     """
     def __init__(self, weights=False, reg=0.1):
+        """
+        weights : boolean, optional
+            If false solve for decoders (default), otherwise solve for weights.
+        reg : float, optional
+            Amount of regularization, as a fraction of the neuron activity.
+        """
         super(NnlsL2, self).__init__(weights)
         self.reg = reg
 
-    def __call__(self, A, Y, rng=np.random, E=None):
+    def __call__(self, A, Y, rng=None, E=None):
         # form Gram matrix so we can add regularization
         sigma = self.reg * A.max()
         G = np.dot(A.T, A)
@@ -461,10 +515,16 @@ class NnlsL2nz(Nnls):
     Similar to `lstsq_L2nz`, except the output values are non-negative.
     """
     def __init__(self, weights=False, reg=0.1):
+        """
+        weights : boolean, optional
+            If false solve for decoders (default), otherwise solve for weights.
+        reg : float, optional
+            Amount of regularization, as a fraction of the neuron activity.
+        """
         super(NnlsL2nz, self).__init__(weights)
         self.reg = reg
 
-    def __call__(self, A, Y, rng=np.random, E=None):
+    def __call__(self, A, Y, rng=None, E=None):
         sigma = (self.reg * A.max()) * np.sqrt((A > 0).mean(axis=0))
         sigma[sigma == 0] = 1
 
