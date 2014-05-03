@@ -22,6 +22,14 @@ class DecoderCache(object):
         if not os.path.exists(self.cache_dir):
             os.mkdir(self.cache_dir)
 
+    # TODO test this function
+    def invalidate(self):
+        for filename in os.listdir(self.cache_dir):
+            is_cache_file = filename.endswith(self._DECODER_EXT) or \
+                filename.endswith(self._SOLVER_INFO_EXT)
+            if is_cache_file:
+                os.unlink(os.path.join(self.cache_dir, filename))
+
     def wrap_solver(self, solver):
         def cached_solver(activities, targets, rng=None, E=None):
             args, _, _, defaults = inspect.getargspec(solver)
