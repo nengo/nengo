@@ -983,9 +983,12 @@ def build_ensemble(ens, model, config):  # noqa: C901
     else:
         scaled_encoders = encoders * (gain / ens.radius)[:, np.newaxis]
 
+    model.sig[ens]['encoders'] = Signal(
+        scaled_encoders, name="%s.scaled_encoders" % ens.label)
+
     # Create output signal, using built Neurons
     model.add_op(DotInc(
-        Signal(scaled_encoders, name="%s.scaled_encoders" % ens.label),
+        model.sig[ens]['encoders'],
         model.sig[ens]['in'],
         model.sig[ens]['neuron_in'],
         tag="%s encoding" % ens.label))
@@ -1294,7 +1297,15 @@ def build_connection(conn, model, config):  # noqa: C901
         if isinstance(conn.pre, nengo.objects.Neurons):
             modified_signal = model.sig[conn]['transform']
         elif isinstance(conn.pre, nengo.objects.Ensemble):
-            modified_signal = model.sig[conn]['decoders']
+            if conn.weight_solver is not None:
+                # TODO: make less hacky.
+                # Have to do this because when a weight_solver
+                # is provided, then learning rules should operators on
+                # "decoders", which is really the weight matrix.
+                model.sig[conn]['transform'] = model.sig[conn]['decoders']
+                modified_signal = model.sig[conn]['transform']
+            else:
+                modified_signal = model.sig[conn]['decoders']
         else:
             raise TypeError("Can't apply learning rules to connections of "
                             "this type. pre type: %s, post type: %s"
@@ -1399,24 +1410,45 @@ Builder.register_builder(build_alpha_synapse, nengo.synapses.Alpha)
 
 def build_pes(pes, conn, model, config):
     if isinstance(conn.pre, nengo.objects.Neurons):
-        activities = model.sig[conn.pre.ensemble]['neuron_out']
+        activities = model.sig[conn.pre.ensemble]['out']
     else:
         activities = model.sig[conn.pre]['out']
     error = model.sig[pes.error_connection]['out']
-    scaled_error = Signal(np.zeros(error.shape), name="PES:scaled_error")
-    model.add_op(Reset(scaled_error))
 
+    scaled_error = Signal(np.zeros(error.shape),
+                          name="PES:error * learning rate")
     scaled_error_view = SignalView(scaled_error, (error.size, 1), (1, 1), 0,
                                    name="PES:scaled_error_view")
     activities_view = SignalView(activities, (1, activities.size), (1, 1), 0,
                                  name="PES:activities_view")
 
-    decoders = model.sig[conn]['decoders']
     lr_sig = Signal(pes.learning_rate * model.dt, name="PES:learning_rate")
 
+    model.add_op(Reset(scaled_error))
     model.add_op(DotInc(lr_sig, error, scaled_error, tag="PES:scale error"))
-    model.add_op(DotInc(scaled_error_view, activities_view, decoders,
-                        tag="PES:Inc Decoder"))
+
+    if (conn.weight_solver is not None
+            or isinstance(conn.pre, nengo.objects.Neurons)):
+        outer_product = Signal(np.zeros((error.size, activities.size)),
+                               name="PES: outer prod")
+        transform = model.sig[conn]['transform']
+        if isinstance(conn.post, nengo.objects.Neurons):
+            encoders = model.sig[conn.post.ensemble]['encoders']
+        else:
+            encoders = model.sig[conn.post]['encoders']
+
+        model.add_op(Reset(outer_product))
+        model.add_op(DotInc(scaled_error_view, activities_view, outer_product,
+                            tag="PES:Outer Prod"))
+        model.add_op(DotInc(encoders, outer_product, transform,
+                            tag="PES:Inc Decoder"))
+
+    else:
+        assert isinstance(conn.pre, nengo.objects.Ensemble)
+        decoders = model.sig[conn]['decoders']
+
+        model.add_op(DotInc(scaled_error_view, activities_view, decoders,
+                            tag="PES:Inc Decoder"))
 
     model.params[pes] = None
 

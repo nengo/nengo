@@ -563,6 +563,7 @@ class Connection(NengoObject):
             self.decoder_solver = None
             self.eval_points = None
             self._function = (None, 0)
+            self.weight_solver = weight_solver
         elif isinstance(self._pre, Ensemble):
             if isinstance(self._post, Ensemble):
                 self.weight_solver = weight_solver
