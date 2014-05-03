@@ -10,21 +10,27 @@ def test_connect(Simulator):
         def __init__(self):
             self.buffer1 = spa.Buffer(dimensions=16)
             self.buffer2 = spa.Buffer(dimensions=16)
-            self.cortical = spa.Cortical(spa.Actions('buffer2=buffer1'))
+            self.buffer3 = spa.Buffer(dimensions=16)
+            self.cortical = spa.Cortical(spa.Actions('buffer2=buffer1',
+                                                     'buffer3=~buffer1'))
             self.input = spa.Input(buffer1='A')
 
     model = SPA(seed=122)
 
-    output, vocab = model.get_module_output('buffer2')
+    output2, vocab = model.get_module_output('buffer2')
+    output3, vocab = model.get_module_output('buffer3')
 
     with model:
-        p = nengo.Probe(output, 'output', synapse=0.03)
+        p2 = nengo.Probe(output2, 'output', synapse=0.03)
+        p3 = nengo.Probe(output3, 'output', synapse=0.03)
 
     sim = Simulator(model)
     sim.run(0.2)
 
-    match = np.dot(sim.data[p], vocab.parse('A').v)
-    assert match[199] > 0.94
+    match = np.dot(sim.data[p2], vocab.parse('A').v)
+    assert match[199] > 0.95
+    match = np.dot(sim.data[p3], vocab.parse('~A').v)
+    assert match[199] > 0.95
 
 
 def test_transform(Simulator):
