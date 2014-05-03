@@ -7,10 +7,10 @@ import warnings
 import numpy as np
 
 import nengo.decoders
-import nengo.utils.numpy as npext
-from nengo.config import Config, Default, is_param, Parameter
+from nengo.config import Config, Default, is_param
 from nengo.learning_rules import LearningRule
 from nengo.neurons import LIF
+from nengo import params
 from nengo.utils.compat import is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
 from nengo.utils.inspect import checked_call
@@ -286,7 +286,14 @@ class NengoObject(with_metaclass(NetworkMember)):
                 SyntaxWarning)
         if val is Default:
             val = Config.default(type(self), name)
-        super(NengoObject, self).__setattr__(name, val)
+        try:
+            super(NengoObject, self).__setattr__(name, val)
+        except Exception as e:
+            arg0 = '' if len(e.args) == 0 else e.args[0]
+            arg0 = ("Validation error when setting '%s.%s': %s"
+                    % (self.__class__.__name__, name, arg0))
+            e.args = (arg0,) + e.args[1:]
+            raise
 
     @classmethod
     def param_list(cls):
@@ -366,36 +373,29 @@ class Ensemble(NengoObject):
         A name for the ensemble. Used for debugging and visualization.
     """
 
-    radius = Parameter(default=1.0)
-    encoders = Parameter(default=None)
-    intercepts = Parameter(default=Uniform(-1.0, 1.0))
-    max_rates = Parameter(default=Uniform(200, 400))
-    eval_points = Parameter(default=None)
-    seed = Parameter(default=None)
-    label = Parameter(default=None)
-    bias = Parameter(default=None)
-    gain = Parameter(default=None)
-    neuron_type = Parameter(default=LIF())
-    probeable = Parameter(default=['decoded_output',
-                                   'input',
-                                   'neuron_output',
-                                   'spikes',
-                                   'voltage'])
+    n_neurons = params.IntParam(default=None, low=1, mandatory=True)
+    dimensions = params.IntParam(default=None, low=1, mandatory=True)
+    radius = params.NumberParam(default=1.0, low=0.0, mandatory=True)
+    encoders = params.Parameter(default=None)
+    intercepts = params.Parameter(default=Uniform(-1.0, 1.0))
+    max_rates = params.Parameter(default=Uniform(200, 400))
+    eval_points = params.Parameter(default=None)
+    seed = params.IntParam(default=None)
+    label = params.StringParam(default=None)
+    bias = params.Parameter(default=None)
+    gain = params.Parameter(default=None)
+    neuron_type = params.Parameter(default=LIF())
+    probeable = params.ListParam(default=['decoded_output',
+                                          'neuron_output',
+                                          'spikes',
+                                          'voltage'], mandatory=True)
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
                  neuron_type=Default, seed=Default, label=Default):
 
         self.dimensions = dimensions
-        if self.dimensions <= 0:
-            raise ValueError(
-                "Number of dimensions (%d) must be positive" % dimensions)
-
         self.n_neurons = n_neurons
-        if self.n_neurons <= 0:
-            raise ValueError(
-                "Number of neurons (%d) must be positive." % n_neurons)
-
         self.radius = radius
         self.encoders = encoders
         self.intercepts = intercepts
@@ -470,54 +470,19 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
-    output = Parameter(default=None)
-    size_in = Parameter(default=0)
-    size_out = Parameter(default=None)
-    label = Parameter(default=None)
-    probeable = Parameter(default=['output'])
+    output = params.NodeOutput(default=None, modifies='size_out')
+    size_in = params.IntParam(default=0, low=0, mandatory=True)
+    size_out = params.IntParam(default=None, low=0)
+    label = params.StringParam(default=None)
+    probeable = params.ListParam(default=['output'], mandatory=True)
 
     def __init__(self, output=Default,  # noqa: C901
                  size_in=Default, size_out=Default, label=Default):
-        self.output = output
-        self.label = label
         self.size_in = size_in
         self.size_out = size_out
+        self.label = label
+        self.output = output  # Must be set after size_out; may modify size_out
         self.probeable = Default
-
-        if self.output is not None and not callable(self.output):
-            self.output = npext.array(self.output, min_dims=1, copy=False)
-
-        if self.output is not None:
-            if self.size_in != 0 and not callable(self.output):
-                raise TypeError("output must be callable if size_in != 0")
-            if isinstance(self.output, np.ndarray):
-                shape_out = self.output.shape
-            elif self.size_out is None and callable(self.output):
-                t, x = np.asarray(0.0), np.zeros(self.size_in)
-                args = [t, x] if self.size_in > 0 else [t]
-                value, invoked = checked_call(self.output, *args)
-                if not invoked:
-                    raise TypeError("output function '%s' must accept "
-                                    "%d arguments" % (self.output, len(args)))
-                shape_out = (0,) if value is None else np.asarray(value).shape
-            else:
-                shape_out = (self.size_out,)  # assume `size_out` is correct
-
-            if len(shape_out) > 1:
-                raise ValueError(
-                    "Node output must be a vector (got array shape %s)" %
-                    (shape_out,))
-
-            size_out_new = shape_out[0] if len(shape_out) == 1 else 1
-
-            if self.size_out is not None and self.size_out != size_out_new:
-                raise ValueError(
-                    "Size of Node output (%d) does not match `size_out` (%d)" %
-                    (size_out_new, self.size_out))
-
-            self.size_out = size_out_new
-        else:  # output is None
-            self.size_out = self.size_in
 
     def __getitem__(self, key):
         return ObjView(self, key)
@@ -593,13 +558,13 @@ class Connection(NengoObject):
         The seed used for random number generation.
     """
 
-    synapse = Parameter(default=0.005)
-    _transform = Parameter(default=np.array(1.0))
-    solver = Parameter(default=nengo.decoders.LstsqL2())
-    _function = Parameter(default=(None, 0))
-    modulatory = Parameter(default=False)
-    eval_points = Parameter(default=None)
-    probeable = Parameter(default=['signal'])
+    synapse = params.Parameter(default=0.005)
+    _transform = params.Parameter(default=np.array(1.0), mandatory=True)
+    solver = params.Parameter(default=nengo.decoders.LstsqL2())
+    _function = params.Parameter(default=(None, 0))
+    modulatory = params.BoolParam(default=False, mandatory=True)
+    eval_points = params.Parameter(default=None)
+    probeable = params.ListParam(default=['signal'], mandatory=True)
 
     def __init__(self, pre, post, synapse=Default, transform=1.0,
                  solver=Default,

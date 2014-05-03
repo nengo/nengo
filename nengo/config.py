@@ -29,8 +29,10 @@ def is_param(obj):
 
 class Parameter(object):
     """Simple descriptor for storing configuration parameters"""
-    def __init__(self, default):
+    def __init__(self, default, mandatory=False, modifies=None):
         self.default = default
+        self.mandatory = mandatory
+        self.modifies = modifies
         # use a WeakKey dictionary so items can still be garbage collected
         self.data = weakref.WeakKeyDictionary()
 
@@ -48,12 +50,20 @@ class Parameter(object):
 
     def __set__(self, instance, value):
         if value is Default:
-            # NB: If default is overridden, value will not be updated
             value = self.default
+
+        if self.mandatory and value is None:
+            raise ValueError("Mandatory; cannot set to None")
+
+        if value is not None and not self.validate(instance, value):
+            raise ValueError("Cannot set to '%s'; validation failed." % value)
         self.data[instance] = value
 
     def __repr__(self):
         return "%s(default=%s)" % (self.__class__.__name__, self.default)
+
+    def validate(self, instance, value):
+        return True
 
 
 class ClassParams(object):
