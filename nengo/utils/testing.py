@@ -62,18 +62,27 @@ class Plotter(object):
             return self.oldsavefig(os.path.join(self.dirname, fname), **kwargs)
 
 
-def allclose(t, target, signals, plotter=None, filename=None, labels=None,
-             atol=1e-8, rtol=1e-5, buf=0, delay=0):
+def allclose(t, target, signals, plotter=None, filename=None,  # noqa:C901
+             labels=None, atol=1e-8, rtol=1e-5, buf=0, delay=0):
     """Perform an allclose check between two signals, with the potential to
     buffer both ends of the signal, account for a delay, and make a plot."""
+    target = target.squeeze()
+    if target.ndim > 1:
+        raise ValueError("Can only pass one target signal")
 
     signals = np.asarray(signals)
     vector_in = signals.ndim < 2
-    if vector_in:
+    if signals.ndim > 2:
+        raise ValueError("'signals' cannot have more than two dimensions")
+    elif vector_in:
         signals.shape = (1, -1)
 
-    slice1 = slice(buf, -buf - delay)
-    slice2 = slice(buf + delay, -buf)
+    nt = t.size
+    if signals.shape[1] != nt:
+        raise ValueError("'signals' must have time along the second axis")
+
+    slice1 = slice(buf, nt - buf - delay)
+    slice2 = slice(buf + delay, nt - buf)
 
     if plotter is not None:
         with plotter as plt:
