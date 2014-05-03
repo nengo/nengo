@@ -7,6 +7,7 @@ import warnings
 
 import numpy as np
 
+import nengo.utils.paths
 from nengo.utils.compat import pickle
 
 logger = logging.getLogger(__name__)
@@ -15,15 +16,14 @@ logger = logging.getLogger(__name__)
 class DecoderCache(object):
     _DECODER_EXT = '.npy'
     _SOLVER_INFO_EXT = '.pkl'
-    DEFAULT_DIR = os.path.expanduser(os.path.join('~', '.nengo-cache'))
 
     def __init__(self, read_only=False, cache_dir=None):
         self.read_only = read_only
         if cache_dir is None:
-            cache_dir = self.DEFAULT_DIR
+            cache_dir = self.get_default_dir()
         self.cache_dir = cache_dir
         if not os.path.exists(self.cache_dir):
-            os.mkdir(self.cache_dir)
+            os.makedirs(self.cache_dir)
 
     def get_size(self):
         return 0
@@ -38,6 +38,10 @@ class DecoderCache(object):
                              filename.endswith(self._SOLVER_INFO_EXT))
             if is_cache_file:
                 os.remove(os.path.join(self.cache_dir, filename))
+
+    @staticmethod
+    def get_default_dir():
+        return nengo.utils.paths.decoder_cache_dir
 
     def wrap_solver(self, solver):
         def cached_solver(activities, targets, rng=None, E=None):
