@@ -105,7 +105,8 @@ class Thalamus(Module):
                         self.add_direct_effect(i, name, effect.symbol)
                     elif isinstance(effect, Source):
                         self.add_route_effect(i, name, effect.name,
-                                              effect.transform.symbol)
+                                              effect.transform.symbol,
+                                              effect.inverted)
                     elif isinstance(effect, CombinedSource):
                         self.add_conv_effect(i, name, effect)
                     else:
@@ -155,7 +156,8 @@ class Thalamus(Module):
                 self.gates[index] = gate
         return self.gates[index]
 
-    def add_route_effect(self, index, target_name, source_name, transform):
+    def add_route_effect(self,
+                         index, target_name, source_name, transform, inverted):
         """Set an action to send source to target with the given transform
 
         Parameters
@@ -199,6 +201,9 @@ class Thalamus(Module):
         with self.spa:
             # compute the requested transform
             t = source_vocab.parse(transform).get_convolution_matrix()
+            if inverted:
+                D = source_vocab.dimensions
+                t = np.dot(t, np.eye(D)[-np.arange(D)])
             # handle conversion between different Vocabularies
             if target_vocab is not source_vocab:
                 t = np.dot(source_vocab.transform_to(target_vocab), t)
@@ -222,7 +227,7 @@ class Thalamus(Module):
         with self:
             channel = nengo.networks.CircularConvolution(
                 self.neurons_cconv, s1_vocab.dimensions,
-                invert_a=False,  # TODO: handle ~ for Source objects
+                invert_a=False,
                 invert_b=False,
                 label='cconv_%d_%s' % (index, str(effect)))
 
@@ -244,11 +249,18 @@ class Thalamus(Module):
 
             t1 = s1_vocab.parse(
                 source1.transform.symbol).get_convolution_matrix()
+            if source1.inverted:
+                D = s1_vocab.dimensions
+                t1 = np.dot(t1, np.eye(D)[-np.arange(D)])
+
             nengo.Connection(s1_output, channel.A, transform=t1,
                              synapse=self.synapse_channel)
 
             t2 = s2_vocab.parse(
                 source2.transform.symbol).get_convolution_matrix()
+            if source2.inverted:
+                D = s2_vocab.dimensions
+                t2 = np.dot(t2, np.eye(D)[-np.arange(D)])
             if s1_vocab is not s2_vocab:
                 t2 = np.dot(s2_vocab.transform_to(s1_vocab), t2)
             nengo.Connection(s2_output, channel.B, transform=t2,

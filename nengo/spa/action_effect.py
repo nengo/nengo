@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import re
+
 from nengo.spa.action_objects import Symbol, Source
 from nengo.utils.compat import is_number, iteritems
 
@@ -11,6 +13,10 @@ class SourceWithAddition(Source):
     but we do not support this for conditions, as it is not clear what
     "dot(vision + memory + B, A)" should mean.
     """
+    def __init__(self, name, transform=Symbol('1'), inverted=False):
+        super(SourceWithAddition, self).__init__(name, transform)
+        self.inverted = inverted
+
     def __add__(self, other):
         if is_number(other):
             other = Symbol('%g' % other)
@@ -18,6 +24,11 @@ class SourceWithAddition(Source):
             return VectorList([self, other])
         else:
             return NotImplemented
+
+    def __invert__(self):
+        if self.transform.symbol != '1':
+            raise TypeError('You can only invert sources without transforms')
+        return SourceWithAddition(self.name, self.transform, not self.inverted)
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -28,11 +39,28 @@ class SourceWithAddition(Source):
     def __rsub__(self, other):
         return (-self).__add__(other)
 
+    def __neg__(self):
+        return SourceWithAddition(self.name, transform=-self.transform,
+                                  inverted=self.inverted)
+
     def __mul__(self, other):
         if isinstance(other, SourceWithAddition):
             return CombinedSource(self, other)
+        elif isinstance(other, (Symbol, int, float)):
+            return SourceWithAddition(self.name,
+                                      transform=self.transform * other,
+                                      inverted=self.inverted)
         else:
-            return super(SourceWithAddition, self).__mul__(other)
+            return NotImplemented
+
+    def __str__(self):
+        if self.transform.symbol == '1':
+            trans_text = ''
+        else:
+            trans_text = '%s * ' % self.transform
+        if self.inverted:
+            trans_text += '~'
+        return '%s%s' % (trans_text, self.name)
 
 
 class CombinedSource(object):
@@ -66,6 +94,12 @@ class CombinedSource(object):
             return VectorList([self, other])
         else:
             return NotImplemented
+
+    def __invert__(self):
+        if self.symbol.startswith('~'):
+            return Symbol(self.symbol[1:])
+        else:
+            return Symbol('~%s' % self.symbol)
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -159,6 +193,7 @@ class Effect(object):
         # called 'dict'.  So we use '__effect_dictionary' instead of 'dict'.
         self.objects['__effect_dictionary'] = dict
 
+        self.validate_string(effect)
         # do the parsing
         self.effect = eval('__effect_dictionary(%s)' % effect, {}, self)
 
@@ -184,21 +219,8 @@ class Effect(object):
     def __str__(self):
         return ', '.join(['%s=%s' % x for x in iteritems(self.effect)])
 
-
-if __name__ == '__main__':
-    e = Effect(['state1', 'state2'], 'motor=A')
-    print(e)
-    e = Effect(['state1', 'state2'], 'motor=A*B+C')
-    print(e)
-    e = Effect(['state1', 'state2'], 'motor=state1')
-    print(e)
-    e = Effect(['state1', 'state2'], 'motor=state1*A')
-    print(e)
-    e = Effect(['state1', 'state2'], 'motor=state1*A+B')
-    print(e)
-    e = Effect(['state1', 'state2'], 'motor=C*(state1*(A-D)+B)-.5*Q')
-    print(e)
-    e = Effect(['state1', 'state2'], 'motor=-state2-(-state1)')
-    print(e)
-    e = Effect(['state1', 'state2'], 'motor=-A*(state2-A)')
-    print(e)
+    def validate_string(self, text):
+        m = re.search('~[^a-zA-Z]', text)
+        if m is not None:
+            raise TypeError('~ is only permitted before names (e.g., DOG) or '
+                            'modules (e.g., vision)')

@@ -107,6 +107,22 @@ def test_effect():
         Effect(['a', 'b'], 'q=z')
 
 
+def test_inverted():
+    assert str(~x) == '~x'
+    assert str(A*~x) == 'A * ~x'
+    assert str(~x*y) == '((~x) * (y)) * 1'
+    assert str(~x*~y) == '((~x) * (~y)) * 1'
+    assert str(x*~y) == '((x) * (~y)) * 1'
+    with pytest.raises(TypeError):
+        ~(2*x)
+    with pytest.raises(TypeError):
+        ~(A*x)
+    with pytest.raises(TypeError):
+        Effect(['a', 'b'], 'a = ~2*b')
+    with pytest.raises(TypeError):
+        Effect(['a', 'b'], 'a = ~2*C*b')
+
+
 if __name__ == '__main__':
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
