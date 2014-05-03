@@ -57,7 +57,7 @@ def execfile(path, globals, locals=None):
 
 
 def with_metaclass(meta, *bases):
-    """Class decorator for creating a class with a metaclass.
+    """Function for creating a class with a metaclass.
 
     The syntax for this changed between Python 2 and 3.
     Code snippet from Armin Ronacher:
