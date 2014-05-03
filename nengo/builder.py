@@ -1290,12 +1290,32 @@ Builder.register_builder(build_filter_synapse, nengo.synapses.LinearFilter)
 
 
 def build_lowpass_synapse(synapse, owner, input_signal, model, config):
-    d = (-np.expm1(-model.dt / synapse.tau)
-         if synapse.tau > 0.03 * model.dt else 1.)
-    # ^^ if pstc < 0.03 * dt, exp(-dt / pstc) < 1e-14, so just make it zero
-    num = [d]
-    den = [d - 1]
+    if synapse.tau > 0.03 * model.dt:
+        d = -np.expm1(-model.dt / synapse.tau)
+        num, den = [d], [d - 1]
+    else:
+        num, den = [1.], []
+
     build_discrete_filter_synapse(
         synapse, owner, input_signal, num, den, model, config)
 
 Builder.register_builder(build_lowpass_synapse, nengo.synapses.Lowpass)
+
+
+def build_alpha_synapse(synapse, owner, input_signal, model, config):
+    if synapse.tau > 0.03 * model.dt:
+        a = model.dt / synapse.tau
+        ea = np.exp(-a)
+        # num, den = [d**2], [2 * (d - 1), (d - 1)**2]
+        num, den = [-a*ea + (1 - ea), ea*(a + ea - 1)], [-2 * ea, ea**2]
+
+        from scipy.signal import cont2discrete
+        tau = synapse.tau
+        num1, den1, _ = cont2discrete(([1], [tau**2, 2*tau, 1]), model.dt)
+    else:
+        num, den = [1.], []
+
+    build_discrete_filter_synapse(
+        synapse, owner, input_signal, num, den, model, config)
+
+Builder.register_builder(build_alpha_synapse, nengo.synapses.Alpha)
