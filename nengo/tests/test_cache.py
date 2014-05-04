@@ -58,6 +58,26 @@ def test_decoder_cache(tmpdir):
     assert another_solver.n_calls == 1
 
 
+def test_decoder_cache_invalidation(tmpdir):
+    cache_dir = str(tmpdir)
+    solver_mock = DecoderSolverMock()
+
+    M = 100
+    N = 10
+    D = 2
+    activities = np.ones((M, D))
+    targets = np.ones((M, N))
+    rng = np.random.RandomState(42)
+
+    # Basic test, that results are cached.
+    cache = DecoderCache(cache_dir=cache_dir)
+    cache.wrap_solver(solver_mock.get_solver_fn())(activities, targets, rng)
+    assert solver_mock.n_calls == 1
+    cache.invalidate()
+    cache.wrap_solver(solver_mock.get_solver_fn())(activities, targets, rng)
+    assert solver_mock.n_calls == 2
+
+
 def test_decoder_cache_shrinking(tmpdir):
     cache_dir = str(tmpdir)
     solver_mock = DecoderSolverMock()

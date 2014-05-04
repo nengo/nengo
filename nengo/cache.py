@@ -90,7 +90,6 @@ class DecoderCache(object):
             if os.path.exists(solver_info_path):
                 os.unlink(solver_info_path)
 
-    # TODO test this function
     def invalidate(self):
         """Invalidates the cache (i.e. removes all stored decoder matrices)."""
         for filename in os.listdir(self.cache_dir):
