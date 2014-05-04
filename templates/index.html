@@ -175,6 +175,8 @@ var node;
 
         node = container.selectAll('g.node')
             .data(graph.nodes, function(d) {return d.id})
+        container.selectAll('g.node text')
+            .data(graph.nodes, function(d) {return d.id})            
             
         var nodeEnter = node
             .enter()
@@ -208,10 +210,9 @@ var node;
             
         node.exit().remove();
             
-        container.selectAll('g.node')
-            .selectAll('text')
+        container.selectAll('g.node text')
             .text(function(d) {return d.label;});
-        
+                    
         container.selectAll('g.node').filter(function(d) {return d.type!='net';})
             .moveToFront();
         
@@ -245,20 +246,19 @@ function update_line_locations() {
 function update_net_sizes() {
     node.filter(function(d) {return d.type=='net';})
         .each(update_net_size)
-        .attr('transform', function(d) {
-            return 'translate('+[d.x, d.y]+')';
-            })
         .selectAll('rect')
-            .attr('x', function(d) {return -d.width/2;})
-            .attr('y', function(d) {return -d.height/2;})
-            .attr('width', function(d) {return d.width;})
-            .attr('height', function(d) {return d.height;})
+            .attr('x', function(d) {return -net_widths[d.id]/2;})
+            .attr('y', function(d) {return -net_heights[d.id]/2;})
+            .attr('width', function(d) {return net_widths[d.id];})
+            .attr('height', function(d) {return net_heights[d.id];})
             ;
     node.attr('transform', function(d) {
         return 'translate('+[d.x, d.y]+')';
         });
 }
 
+var net_widths = {};
+var net_heights = {};
 function update_net_size(d) {
     x0 = graph.nodes[d.contains[0]].x;
     x1 = x0;
@@ -273,11 +273,11 @@ function update_net_size(d) {
     border = 25;
     d.x = (x0+x1)/2;
     d.y = (y0+y1)/2;
-    d.width = x1 - x0+2*border;
-    d.height = y1 - y0+2*border;
-
+    net_widths[d.id] = x1 - x0+2*border;
+    net_heights[d.id] = y1 - y0+2*border;
+    
     function isin(x, y) {
-        return (x<d.x+d.width/2) && (x>d.x-d.width/2) && (y<d.y+d.height/2) && (y>d.y-d.height/2);
+        return (x<d.x+net_widths[d.id]/2) && (x>d.x-net_widths[d.id]/2) && (y<d.y+net_heights[d.id]/2) && (y>d.y-net_heights[d.id]/2);
     }
 
     for (var i=0; i<graph.nodes.length; i++) {
@@ -287,11 +287,11 @@ function update_net_size(d) {
                 dx = n.x-d.x;
                 dy = n.y-d.y;
                 if (Math.abs(dx)>Math.abs(dy)) {
-                    if (dx>0) { n.x = Math.max(n.x, d.x+d.width/2+border); }
-                    else      { n.x = Math.min(n.x, d.x-d.width/2-border); }
+                    if (dx>0) { n.x = Math.max(n.x, d.x+net_widths[d.id]/2+border); }
+                    else      { n.x = Math.min(n.x, d.x-net_widths[d.id]/2-border); }
                 } else {
-                    if (dy>0) { n.y = Math.max(n.y, d.y+d.height/2+border); }
-                    else      { n.y = Math.min(n.y, d.y-d.height/2-border); }
+                    if (dy>0) { n.y = Math.max(n.y, d.y+net_heights[d.id]/2+border); }
+                    else      { n.y = Math.min(n.y, d.y-net_heights[d.id]/2-border); }
                 }
             }
         }

@@ -75,7 +75,6 @@ class NengoGui(swi.SimpleWebInterface):
             traceback.print_exc()
             return json.dumps(dict(error_line=2, text='Unknown'))
 
-        print conv.to_json()
         return conv.to_json()
 
 
