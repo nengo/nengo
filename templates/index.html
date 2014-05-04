@@ -274,16 +274,20 @@ function update_net_size(d) {
     net_heights[d.id] = y1 - y0+2*border;
     
     function isin(x, y) {
-        return (x<d.x+net_widths[d.id]/2) && (x>d.x-net_widths[d.id]/2) && (y<d.y+net_heights[d.id]/2) && (y>d.y-net_heights[d.id]/2);
+        return (x<d.x+net_widths[d.id]/2) && 
+               (x>d.x-net_widths[d.id]/2) && 
+               (y<d.y+net_heights[d.id]/2) && 
+               (y>d.y-net_heights[d.id]/2);
     }
 
+    
     for (var i=0; i<graph.nodes.length; i++) {
         n = graph.nodes[i];
         if (!(n===d) && d.contains.indexOf(i)==-1) {
             if (isin(d.x, d.y)) {
                 dx = n.x-d.x;
                 dy = n.y-d.y;
-                if (Math.abs(dx)>Math.abs(dy)) {
+                if (Math.abs(dx)-net_widths[d.id]/2>Math.abs(dy)-net_heights[d.id]/2) {
                     if (dx>0) { n.x = Math.max(n.x, d.x+net_widths[d.id]/2+border); }
                     else      { n.x = Math.min(n.x, d.x-net_widths[d.id]/2-border); }
                 } else {
@@ -293,6 +297,7 @@ function update_net_size(d) {
             }
         }
     }
+    
 }
     
 function update_net_position(d, dx, dy) {
