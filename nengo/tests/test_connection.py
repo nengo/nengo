@@ -103,6 +103,44 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect):
     assert np.allclose(sim.data[b_p][-10:], 1, atol=.1, rtol=.01)
 
 
+def test_node_to_ensemble(Simulator, nl_nodirect):
+    name = 'node_to_ensemble'
+    N = 50
+
+    m = nengo.Network(label=name, seed=123)
+    with m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        input_node = nengo.Node(output=lambda t: [np.sin(t), np.cos(t)])
+        a = nengo.Ensemble(N * 1, dimensions=1)
+        b = nengo.Ensemble(N * 2, dimensions=2)
+        c = nengo.Ensemble(N, neuron_type=nengo.Direct(), dimensions=3)
+
+        nengo.Connection(input_node, a, function=lambda x: -x[0])
+        nengo.Connection(input_node, b, function=lambda x: -(x**2))
+        nengo.Connection(input_node, c,
+                         function=lambda x: [-x[0], -(x[0]**2), -(x[1]**2)])
+
+        a_p = nengo.Probe(a, 'decoded_output', synapse=0.01)
+        b_p = nengo.Probe(b, 'decoded_output', synapse=0.01)
+        c_p = nengo.Probe(c, 'decoded_output', synapse=0.01)
+
+    sim = Simulator(m)
+    sim.run(5.0)
+    t = sim.trange()
+
+    with Plotter(Simulator, nl_nodirect) as plt:
+        plt.plot(t, sim.data[a_p], label='A')
+        plt.plot(t, sim.data[b_p], label='B')
+        plt.plot(t, sim.data[c_p], label='C')
+        plt.savefig('test_connection.test_%s.pdf' % name)
+        plt.close()
+
+    assert np.allclose(sim.data[a_p][-10:], sim.data[c_p][-10:][:, 0],
+                       atol=0.1, rtol=0.01)
+    assert np.allclose(sim.data[b_p][-10:], sim.data[c_p][-10:][:, 1:3],
+                       atol=0.1, rtol=0.01)
+
+
 def test_neurons_to_ensemble(Simulator, nl_nodirect):
     name = 'neurons_to_ensemble'
     N = 20

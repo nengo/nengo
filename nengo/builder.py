@@ -1214,9 +1214,10 @@ def build_connection(conn, model, config):  # noqa: C901
     transform = np.array(conn.transform_full, dtype=np.float64)
 
     # Figure out the signal going across this connection
-    if (isinstance(conn.pre, nengo.objects.Ensemble)
-            and isinstance(conn.pre.neuron_type, nengo.neurons.Direct)):
-        # Decoded connection in directmode
+    if (isinstance(conn.pre, nengo.objects.Node) or
+            (isinstance(conn.pre, nengo.Ensemble) and
+             isinstance(conn.pre.neuron_type, nengo.neurons.Direct))):
+        # Node or Decoded connection in directmode
         if conn.function is None:
             signal = model.sig[conn]['in']
         else:

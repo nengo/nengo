@@ -558,14 +558,16 @@ class Connection(NengoObject):
         # don't check shapes until we've set all parameters
         self._skip_check_shapes = True
 
-        if isinstance(self._pre, (Neurons, Node)):
+        self.solver = solver
+        if isinstance(self._pre, Neurons):
             self.eval_points = None
             self._function = (None, 0)
-            self.solver = solver
-        elif isinstance(self._pre, Ensemble):
+        elif isinstance(self._pre, Node):
+            self.eval_points = None
+            self.function = function
+        elif isinstance(self._pre, (Ensemble, Node)):
             self.eval_points = eval_points
             self.function = function
-            self.solver = solver
             if self.solver.weights and not isinstance(self._post, Ensemble):
                 raise ValueError("Cannot specify weight solver "
                                  "when 'post' is not an Ensemble")
@@ -582,11 +584,6 @@ class Connection(NengoObject):
 
         # set after `function` for correct padding
         self.transform = transform
-
-    def _check_pre_ensemble(self, prop_name):
-        if not isinstance(self._pre, Ensemble):
-            raise ValueError("'%s' can only be set if 'pre' is an Ensemble" %
-                             prop_name)
 
     def _pad_transform(self, transform):
         """Pads the transform with zeros according to the pre/post slices."""
@@ -628,7 +625,8 @@ class Connection(NengoObject):
                                   self._required_transform_shape())
 
     def _required_transform_shape(self):
-        if isinstance(self._pre, Ensemble) and self.function is not None:
+        if (isinstance(self._pre, (Ensemble, Node))
+                and self.function is not None):
             in_dims = self.function_size
         else:
             in_dims = self._pre.size_out
@@ -684,14 +682,18 @@ class Connection(NengoObject):
     @function.setter
     def function(self, _function):
         if _function is not None:
-            self._check_pre_ensemble('function')
-            x = (self.eval_points[0] if is_iterable(self.eval_points) else
-                 np.zeros(self._pre.dimensions))
-            size = np.asarray(_function(x)).size
-        else:
-            size = 0
+            if not isinstance(self._pre, (Node, Ensemble)):
+                raise ValueError("'function' can only be set if 'pre' "
+                                 "is an Ensemble or Node")
 
-        self._function = (_function, size)
+            x = (self.eval_points[0] if is_iterable(self.eval_points) else
+                 np.zeros(self._pre.size_out))
+
+            size_out = np.asarray(_function(x)).size
+        else:
+            size_out = 0
+
+        self._function = (_function, size_out)
         self._check_shapes()
 
     @property
