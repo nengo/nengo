@@ -1,6 +1,7 @@
 import json
 import re
 import keyword
+import namefinder
 
 import random
 import pprint
@@ -12,8 +13,9 @@ def isidentifier(s):
 
 
 class Converter(object):
-    def __init__(self, model, codelines):
+    def __init__(self, model, codelines, locals):
         self.model = model
+        self.namefinder = namefinder.NameFinder(locals, model)
         self.codelines = codelines
         self.objects = []
         self.links = []
@@ -35,9 +37,7 @@ class Converter(object):
             label = ens.label
             if label == 'Ensemble':
                 label = self.find_identifier(line, label)
-            id = 'e%d' % i
-            if id_prefix is not None:
-                id = '%s.%s'%(id_prefix, id)
+            id = self.namefinder.name(ens)
 
 
             obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
@@ -49,9 +49,7 @@ class Converter(object):
             label = nde.label
             if label == 'Node':
                 label = self.find_identifier(line, label)
-            id = 'd%d' % i
-            if id_prefix is not None:
-                id = '%s.%s'%(id_prefix, id)
+            id = self.namefinder.name(nde)
             obj = {'label':label, 'line':line, 'id':id, 'type':'nde',
                    'x':random.uniform(0,300), 'y':random.uniform(0,300)}
             self.object_index[nde] = len(self.objects)
@@ -67,9 +65,7 @@ class Converter(object):
             label = net.label
             if label == 'Node':
                 label = self.find_identifier(line, label)
-            id = 'n%d' % i
-            if id_prefix is not None:
-                id = '%s.%s'%(id_prefix, id)
+            id = self.namefinder.name(net)
 
             self.process(net, id_prefix=id)
 
@@ -83,9 +79,7 @@ class Converter(object):
 
 
         for i, conn in enumerate(network.connections):
-            id = 'c%d' % i
-            if id_prefix is not None:
-                id = '%s.%s'%(id_prefix, id)
+            id = self.namefinder.name(conn)
             self.links.append({'source':self.object_index[conn.pre],
                                'target':self.object_index[conn.post],
                                'id':id,

@@ -95,7 +95,7 @@ class NengoGui(swi.SimpleWebInterface):
         try:
             model = locals['model']
 
-            conv = converter.Converter(model, code.splitlines())
+            conv = converter.Converter(model, code.splitlines(), locals)
 
         except:
             traceback.print_exc()
