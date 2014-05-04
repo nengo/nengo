@@ -7,7 +7,6 @@ Solvers that are only intended to solve for either decoders or weights can
 remove the `E` parameter or make it manditory as they see fit.
 """
 import collections
-import copy
 import logging
 
 import numpy as np
@@ -70,8 +69,8 @@ def conjgrad_scipy(A, Y, sigma, tol=1e-4):
         def callback(x):
             itns[i] += 1  # use the callback to count the number of iterations
 
-        X[:, i], infos[i] = scipy.sparse.linalg.cg(G, B[:, i], tol=tol,
-                                                   callback=callback)
+        X[:, i], infos[i] = scipy.sparse.linalg.cg(
+            G, B[:, i], tol=tol, callback=callback)
 
     info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
             'iterations': itns,
@@ -240,9 +239,6 @@ class Solver(with_metaclass(DocstringInheritor)):
             if E is not None:
                 raise ValueError("Encoders must be 'None' for decoder solver")
             return Y
-
-    def copy(self):
-        return copy.copy(self)
 
     def __hash__(self):
         items = list(self.__dict__.items())
@@ -432,28 +428,28 @@ class LstsqDrop(Solver):
     L2 regularization, drops those nearest to zero, and retrains remaining.
     """
 
-    def __init__(self, weights=False, drop=0.25, solver=LstsqL2nz()):
+    def __init__(self, weights=False, drop=0.25,
+                 solver1=LstsqL2nz(reg=0.1), solver2=LstsqL2nz(reg=0.01)):
         """
         weights : boolean, optional
             If false solve for decoders (default), otherwise solve for weights.
         drop : float, optional
             Fraction of decoders or weights to set to zero.
-        solver : Solver, optional
-            L2 solver used for solving for the initial weights. Must be an
-            instance of either `LstsqL2` or `LstsqL2nz`.
+        solver1 : Solver, optional
+            Solver for finding the initial decoders.
+        solver2 : Solver, optional
+            Used for re-solving for the decoders after dropout.
         """
-        if not isinstance(solver, _LstsqL2Solver):
-            raise ValueError(
-                "'solver' must be a descendant of `_LstsqL2Solver`")
         self.weights = weights
         self.drop = drop
-        self.solver = solver
+        self.solver1 = solver1
+        self.solver2 = solver2
 
     def __call__(self, A, Y, rng=None, E=None):
         Y, m, n, d, matrix_in = _format_system(A, Y)
 
         # solve for coefficients using standard solver
-        X, info0 = self.solver(A, Y, rng=rng)
+        X, info0 = self.solver1(A, Y, rng=rng)
         X = self.mul_encoders(X, E)
 
         # drop weights close to zero, based on `drop` ratio
@@ -462,15 +458,12 @@ class LstsqDrop(Solver):
         X[np.abs(X) < threshold] = 0
 
         # retrain nonzero weights
-        solver2 = self.solver.copy()
-        solver2.reg = 0.1 * self.solver.reg
-        assert solver2.reg == 0.1 * self.solver.reg
-
         Y = self.mul_encoders(Y, E)
         for i in range(X.shape[1]):
             nonzero = X[:, i] != 0
             if nonzero.sum() > 0:
-                X[nonzero, i], info1 = solver2(A[:, nonzero], Y[:, i], rng=rng)
+                X[nonzero, i], info1 = self.solver2(
+                    A[:, nonzero], Y[:, i], rng=rng)
 
         info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
                 'info0': info0, 'info1': info1}
