@@ -10,6 +10,47 @@ import numpy as np
 import nengo
 
 
+def full_transform(conn, allow_scalars=True):
+    """Compute the full transform for a connection.
+
+    Parameters
+    ----------
+    conn : Connection
+        The connection for which to compute the full transform.
+    allow_scalars : boolean, optional
+        If true (default), will not make scalars into full transforms when
+        not using slicing, since these work fine in the reference builder.
+        If false, these scalars will be turned into scaled identity matrices.
+    """
+    transform = np.asarray(conn.transform)
+
+    if conn._preslice == slice(None) and conn._postslice == slice(None):
+        if transform.ndim == 2:
+            # transform is already full, so return a copy
+            return np.array(transform)
+        elif transform.size == 1 and allow_scalars:
+            return np.array(transform)
+
+    # Create the new transform matching the pre/post dimensions
+    out_dims, in_dims = conn._required_transform_shape()
+    new_transform = np.zeros((out_dims, in_dims))
+    if transform.ndim < 2:
+        slice_to_list = lambda s, d: (
+            np.arange(d)[s] if isinstance(s, slice) else s)
+        preslice = slice_to_list(conn._preslice, in_dims)
+        postslice = slice_to_list(conn._postslice, out_dims)
+        new_transform[postslice, preslice] = transform
+    else:  # if transform.ndim == 2:
+        rows_transform = np.array(new_transform[conn._postslice])
+        rows_transform[:, conn._preslice] = transform
+        new_transform[conn._postslice] = rows_transform
+        # Note: the above is a little obscure, but we do it so that lists of
+        #  indices can specify selections of rows and columns, rather than
+        #  just individual items
+
+    return new_transform
+
+
 def objs_and_connections(network):
     """Given a Network, returns all (ensembles + nodes, connections)."""
     objs = list(network.ensembles + network.nodes)
@@ -50,7 +91,7 @@ def generate_graphviz(objs, connections):
 
     for c in connections:
         text.append('  "%d" -> "%d" [label="%s"];' % (
-            id(c.pre), id(c.post), label(c.transform_full)))
+            id(c.pre), id(c.post), label(c.transform)))
     text.append('}')
     return '\n'.join(text)
 
@@ -150,7 +191,7 @@ def _create_replacement_connection(c_in, c_out):
                         'function being computed on it')
 
     # compute the combined transform
-    transform = np.dot(c_out.transform_full, c_in.transform_full)
+    transform = np.dot(full_transform(c_out), full_transform(c_in))
     # check if the transform is 0 (this happens a lot
     #  with things like identity transforms)
     if np.all(transform == 0):

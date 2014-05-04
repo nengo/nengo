@@ -14,6 +14,7 @@ import nengo.objects
 import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
+from nengo.utils.builder import full_transform
 from nengo.utils.compat import is_integer, is_number, range, StringIO
 from nengo.utils.filter_design import cont2discrete
 
@@ -1163,6 +1164,39 @@ def build_probe(probe, model, config):
 Builder.register_builder(build_probe, nengo.objects.Probe)
 
 
+def build_linear_system(conn, model, rng):
+    encoders = model.params[conn.pre].encoders
+    gain = model.params[conn.pre].gain
+    bias = model.params[conn.pre].bias
+
+    eval_points = conn.eval_points
+    if eval_points is None:
+        eval_points = npext.array(
+            model.params[conn.pre].eval_points, min_dims=2)
+    elif is_integer(eval_points):
+        eval_points = pick_eval_points(
+            ens=conn.pre, n_points=eval_points, rng=rng)
+    else:
+        eval_points = npext.array(eval_points, min_dims=2)
+
+    x = np.dot(eval_points, encoders.T / conn.pre.radius)
+    activities = model.dt * conn.pre.neuron_type.rates(x, gain, bias)
+    if np.count_nonzero(activities) == 0:
+        raise RuntimeError(
+            "In '%s', for '%s', 'activites' matrix is all zero. "
+            "This is because no evaluation points fall in the firing "
+            "ranges of any neurons." % (str(conn), str(conn.pre)))
+
+    if conn.function is None:
+        targets = eval_points
+    else:
+        targets = np.zeros((len(eval_points), conn.function_size))
+        for i, ep in enumerate(eval_points):
+            targets[i] = conn.function(ep)
+
+    return eval_points, activities, targets
+
+
 def build_connection(conn, model, config):  # noqa: C901
     rng = np.random.RandomState(model.next_seed())
 
@@ -1179,7 +1213,7 @@ def build_connection(conn, model, config):  # noqa: C901
     decoders = None
     eval_points = None
     solver_info = None
-    transform = np.array(conn.transform_full, dtype=np.float64)
+    transform = full_transform(conn)
 
     # Figure out the signal going across this connection
     if (isinstance(conn.pre, nengo.objects.Node) or
@@ -1202,34 +1236,8 @@ def build_connection(conn, model, config):  # noqa: C901
                                 tag="%s input" % conn.label))
     elif isinstance(conn.pre, nengo.objects.Ensemble):
         # Normal decoded connection
-        encoders = model.params[conn.pre].encoders
-        gain = model.params[conn.pre].gain
-        bias = model.params[conn.pre].bias
-
-        eval_points = conn.eval_points
-        if eval_points is None:
-            eval_points = npext.array(
-                model.params[conn.pre].eval_points, min_dims=2)
-        elif is_integer(eval_points):
-            eval_points = pick_eval_points(
-                ens=conn.pre, n_points=eval_points, rng=rng)
-        else:
-            eval_points = npext.array(eval_points, min_dims=2)
-
-        x = np.dot(eval_points, encoders.T / conn.pre.radius)
-        activities = model.dt * conn.pre.neuron_type.rates(x, gain, bias)
-        if np.count_nonzero(activities) == 0:
-            raise RuntimeError(
-                "In '%s', for '%s', 'activites' matrix is all zero. "
-                "This is because no evaluation points fall in the firing "
-                "ranges of any neurons." % (str(conn), str(conn.pre)))
-
-        if conn.function is None:
-            targets = eval_points
-        else:
-            targets = np.zeros((len(eval_points), conn.function_size))
-            for i, ep in enumerate(eval_points):
-                targets[i] = conn.function(ep)
+        eval_points, activities, targets = build_linear_system(
+            conn, model, rng=rng)
 
         if conn.solver.weights:
             # account for transform
@@ -1245,7 +1253,7 @@ def build_connection(conn, model, config):  # noqa: C901
             decoders, solver_info = conn.solver(activities, targets, rng=rng)
             signal_size = conn.dimensions
 
-        # Add operator for decoders and filtering
+        # Add operator for decoders
         decoders = decoders.T
 
         model.sig[conn]['decoders'] = Signal(
