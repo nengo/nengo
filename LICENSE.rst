@@ -65,7 +65,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------
 
-The file ``nengo/utils/decorators.py`` contains code with the
+The file ``nengo/utils/magic.py`` contains code with the
 following license:
 
 Copyright (c) 2013, Graham Dumpleton. All rights reserved.

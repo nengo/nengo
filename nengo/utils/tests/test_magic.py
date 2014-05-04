@@ -4,7 +4,7 @@ import logging
 import pytest
 
 import nengo
-from nengo.utils.decorators import decorator, memoize
+from nengo.utils.magic import decorator, memoize
 
 logger = logging.getLogger(__name__)
 state = None  # Used to make sure decorators are running

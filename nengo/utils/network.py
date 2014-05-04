@@ -1,4 +1,4 @@
-from nengo.utils.decorators import decorator
+from nengo.utils.magic import decorator
 
 
 @decorator
