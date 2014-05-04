@@ -29,7 +29,7 @@ class Converter(object):
         return default
 
     def process(self, network, id_prefix=None):
-        random.seed(3)
+        random.seed(4)
         for i, ens in enumerate(network.ensembles):
             line = ens._created_line_number-1
             label = ens.label
