@@ -1,6 +1,7 @@
 import numpy as np
 
 from nengo.config import Parameter
+from nengo.neurons import NeuronType
 from nengo.utils.compat import is_integer, is_number, is_string
 from nengo.utils.distributions import Distribution
 from nengo.utils.inspect import checked_call
@@ -141,3 +142,27 @@ class DistributionParam(Parameter):
 
     def validate_distribution(self, instance, dist):
         assert 0 < len(self.sample_shape) <= 2
+
+
+class NeuronTypeParam(Parameter):
+    def __set__(self, ens, neurons):
+        self.validate_none(ens, neurons)
+        self.validate(ens, neurons)
+
+        # --- Update the probeable list
+        # We could use a set instead and this would be easier, but we use
+        # the first member of the list as the default probeable
+        if hasattr(ens, 'neuron_type') and ens.neuron_type is not None:
+            for attr in ens.neuron_type.probeable:
+                if attr in ens.probeable:
+                    ens.probeable.remove(attr)
+
+        for attr in neurons.probeable:
+            if attr not in ens.probeable:
+                ens.probeable.append(attr)
+
+        self.data[ens] = neurons
+
+    def validate(self, ens, neurons):
+        if not isinstance(neurons, NeuronType):
+            raise ValueError("'%s%' is not a neuron type" % neurons)

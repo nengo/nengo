@@ -376,7 +376,7 @@ class Ensemble(NengoObject):
     n_neurons = params.IntParam(default=None, low=1)
     dimensions = params.IntParam(default=None, low=1)
     radius = params.NumberParam(default=1.0, low=0.0)
-    neuron_type = params.Parameter(default=LIF())
+    neuron_type = params.NeuronTypeParam(default=LIF(), modifies=['probeable'])
     encoders = params.DistributionParam(
         default=UniformHypersphere(surface=True),
         sample_shape=('n_neurons', 'dimensions'))
@@ -390,11 +390,7 @@ class Ensemble(NengoObject):
     label = params.StringParam(default=None, optional=True)
     bias = params.Parameter(default=None, optional=True)
     gain = params.Parameter(default=None, optional=True)
-    probeable = params.ListParam(default=['decoded_output',
-                                          'input',
-                                          'neuron_output',
-                                          'spikes',
-                                          'voltage'])
+    probeable = params.ListParam(default=['decoded_output', 'input'])
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
