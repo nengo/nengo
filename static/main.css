@@ -1,0 +1,61 @@
+#editor { 
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 50%;
+}
+
+.highlight {
+    background: yellow;
+    opacity: 0.2;
+    position: absolute;
+    }
+div#graph { 
+    position: absolute;
+    top: 0;
+    right: 50%;
+    bottom: 0;
+    left: 0;
+    background-color: white;
+}
+
+svg .link_std {
+    stroke: #333;
+    stroke-opacity: .6;
+    stroke-width: 2px;
+    marker-mid: url(#TriangleMarker);
+}
+svg .link_net {
+    stroke-width: 0px;
+}
+
+svg g.node_ens circle{
+    stroke: #444;
+    stroke-width: 0px;
+    fill: #ddd;
+}
+svg g.node_nde rect{
+    stroke: #444;
+    stroke-width: 0px;
+    fill: #ddd;
+}
+svg g.node_net rect{
+    stroke: #444;
+    stroke-width: 0px;
+    fill: #888;
+    opacity: 0.5;
+}
+
+svg g.node text {
+    fill: black;
+    font-family: sans-serif;
+    text-anchor: middle;
+    alignment-baseline: middle;
+    }
+
+svg rect.network {
+    fill: blue;
+    opacity: 0.5;
+}
+

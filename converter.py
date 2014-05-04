@@ -1,6 +1,9 @@
 import json
 import re
 import keyword
+
+import random
+
 def isidentifier(s):
     if s in keyword.kwlist:
         return False
@@ -34,7 +37,8 @@ class Converter(object):
             if id_prefix is not None:
                 id = '%s.%s'%(id_prefix, id)
 
-            obj = {'label':label, 'line':line, 'id':id, 'type':'ens'}
+            obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
+                   'x':random.uniform(0,300), 'y':random.uniform(0,300)}
             self.object_index[ens] = len(self.objects)
             self.objects.append(obj)
         for i, nde in enumerate(network.nodes):
@@ -45,7 +49,8 @@ class Converter(object):
             id = 'd%d' % i
             if id_prefix is not None:
                 id = '%s.%s'%(id_prefix, id)
-            obj = {'label':label, 'line':line, 'id':id, 'type':'nde'}
+            obj = {'label':label, 'line':line, 'id':id, 'type':'nde',
+                   'x':random.uniform(0,300), 'y':random.uniform(0,300)}
             self.object_index[nde] = len(self.objects)
             self.objects.append(obj)
         for i, net in enumerate(network.networks):
@@ -62,17 +67,18 @@ class Converter(object):
             id = 'n%d' % i
             if id_prefix is not None:
                 id = '%s.%s'%(id_prefix, id)
-            obj = {'label':label, 'line':line, 'id':id, 'type':'net'}
-            self.object_index[net] = len(self.objects)
-            self.objects.append(obj)
 
             self.process(net, id_prefix=id)
 
-            for j, obj in enumerate(net.ensembles + net.nodes + net.networks):
-                self.links.append({'source':self.object_index[net],
-                                   'target':self.object_index[obj],
-                                   'id':'%s_%d' % (id, j),
-                                   'type':'net'})
+            contains = [self.object_index[obj] for obj in
+                net.ensembles + net.nodes + net.networks]
+            obj = {'label':label, 'line':line, 'id':id, 'type':'net',
+                   'contains':contains,
+                   'x':random.uniform(0,300), 'y':random.uniform(0,300)}
+            self.object_index[net] = len(self.objects)
+            self.objects.append(obj)
+
+
         for i, conn in enumerate(network.connections):
             id = 'c%d' % i
             if id_prefix is not None:

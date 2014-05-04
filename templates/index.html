@@ -1,70 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Nengo Editor</title>
-<style type="text/css" media="screen">
-    #editor { 
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 50%;
-    }
-    
-    .highlight {
-        background: yellow;
-        opacity: 0.2;
-        position: absolute;
-        }
-    div#graph { 
-        position: absolute;
-        top: 0;
-        right: 50%;
-        bottom: 0;
-        left: 0;
-        background-color: white;
-    }
-    
-    svg .link_std {
-        stroke: #333;
-        stroke-opacity: .6;
-        stroke-width: 2px;
-        marker-mid: url(#TriangleMarker);
-    }
-    svg .link_net {
-        stroke-width: 0px;
-    }
-    
-    svg g.node_ens circle{
-        stroke: #444;
-        stroke-width: 0px;
-        fill: #ddd;
-    }
-    svg g.node_nde rect{
-        stroke: #444;
-        stroke-width: 0px;
-        fill: #ddd;
-    }
-    svg g.node_net rect{
-        stroke: #444;
-        stroke-width: 0px;
-        fill: #888;
-        opacity: 0.5;
-    }
-    
-    svg g.node text {
-        fill: black;
-        font-family: sans-serif;
-        text-anchor: middle;
-        alignment-baseline: middle;
-        }
-
-    svg rect.network {
-        fill: blue;
-        opacity: 0.5;
-    }
-    
-</style>
+    <title>Nengo Editor</title>
+    <link rel="stylesheet" type="text/css" href="/static/main.css">
 </head>
 <body>
 
@@ -110,58 +48,79 @@ var editor = ace.edit("editor");
 editor.setTheme("ace/theme/monokai");
 editor.getSession().setMode("ace/mode/python");
 
-editor.on('change', function(e) {reload_graph_data();});
+editor.on('change', function(event) {reload_graph_data();});
 </script>
 
 
 <script>
+
+var zoom = d3.behavior.zoom()
+    .scaleExtent([1, 10])
+    .on('zoom', zoomed);
         
 var svg = d3.select("svg");
-var force = d3.layout.force();
-force.charge(-1000);
+var container = svg.append('g');
 
+zoom(svg);  // set up zooming on the graph
 
-var nodes = force.nodes();
-var links = force.links();
-       
-    
+// helper function to move objects to be drawn on top    
 d3.selection.prototype.moveToFront = function() {
   return this.each(function(){
     this.parentNode.appendChild(this);
   });
 };    
-    
-    
-    function reload_graph_data() {
-        var data = new FormData();
-        data.append('code', editor.getValue());
 
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', '/graph.json', true);
-        xhr.onload = update_graph;
-        xhr.send(data);    
-    }    
+
+var drag = d3.behavior.drag()
+    .origin(function(d){return d})
+    .on('dragstart', dragstarted)
+    .on('drag', dragged)
+    .on('dragend', dragended);
+
+function zoomed() {
+    container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+        node.attr('transform', function(d) {
+            //return 'translate('+[d.x, d.y]+')scale('+(1.0/d3.event.scale)+')';
+            return 'translate('+[d.x, d.y]+')';
+            });
+}
+
+function dragstarted(d) {
+      d3.event.sourceEvent.stopPropagation();
+      d3.select(this).classed("dragging", true);
+}
+
+function dragged(d) {
+    d.x = d3.event.x;
+    d.y = d3.event.y;
+
+    d3.select(this).attr('transform', "translate("+d.x+","+d.y+")");
+    update_line_locations();
+    update_net_sizes();
+}
+
+function dragended(d) {
+      d3.select(this).classed("dragging", false);
+}
+    
+// editor -> server -> graph loop
+function reload_graph_data() {
+    var data = new FormData();
+    data.append('code', editor.getValue());
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/graph.json', true);
+    xhr.onload = update_graph;
+    xhr.send(data);    
+}    
+
+var graph;
+var link;
+var node;
 
     
         
-            
-    var drag = force.drag()
-        .on('dragstart', dragstart)
-        .on('dragend', dragend);
-        
-        
-    function dragstart(d) {
-        d.fixed = true;
-        d.dragging = true;
-    }    
-    function dragend(d) {
-        d.dragging = false;
-    }    
-
-    function dblclick(d) {
-        d.fixed = false;
-    }    
-    
+// line highlighting when over objects in graph
     var marker = null;
     function mouseover(d) {
         if (marker!=null) {
@@ -186,6 +145,7 @@ d3.selection.prototype.moveToFront = function() {
     function update_graph() {
         graph = JSON.parse(this.responseText);
 
+        // was there a parsing error?
         if (graph.error_line != undefined) {
             if (marker!=null) {
                 editor.getSession().removeMarker(marker);
@@ -201,66 +161,33 @@ d3.selection.prototype.moveToFront = function() {
                 }
             editor.getSession().clearAnnotations();
         }
-        
-        for (var i = 0; i<graph.nodes.length; i++) {
-            found = false;
-            for (var j = 0; j<nodes.length; j++) {
-                if (nodes[j].id == graph.nodes[i].id) {
-                    found = true;
-                    nodes[j].label = graph.nodes[i].label;
-                    nodes[j].line = graph.nodes[i].line;
-                }
-            }
-            if (!found) {
-                nodes.push(graph.nodes[i]);
-            }            
-        }    
-        for (var j = 0; j<nodes.length; j++) {
-            found = false;
-            for (var i = 0; i<graph.nodes.length; i++) {
-                if (nodes[j].id == graph.nodes[i].id) {
-                    found = true;
-                }
-            }
-            if (!found) {
-                nodes.splice(j, 1);
-                j -= 1;
-            }
-        }    
-                
-        
-        links.splice(0, links.length)
-        for (var i = 0; i<graph.links.length; i++) {
-            links.push(graph.links[i]);
-        }
 
 
-        svg.selectAll('.link').remove();
 
-        var link = svg.selectAll('.link')
-            .data(links);
+        container.selectAll('.link').remove();
+
+        link = container.selectAll('.link')
+            .data(graph.links);
             
         link.enter().append('polyline')
-                .attr('class', function(d) {return 'link link_'+d.type;});
+            .attr('class', function(d) {return 'link link_'+d.type;});
         
 
-        var node = svg.selectAll('g.node')
-            .data(nodes, function(d) {return d.id});
+        node = container.selectAll('g.node')
+            .data(graph.nodes, function(d) {return d.id})
             
         var nodeEnter = node
             .enter()
             .append('g')
             .attr('class', function(d) {return 'node node_'+d.type;})
-            .on("dblclick", dblclick)
             .on('mouseover', mouseover)
             .on('mouseout', mouseout)
-            .call(force.drag);
+            .call(drag);
 
         
         nodeEnter.filter(function(d) {return d.type=='ens';})
             .append('circle')
             .attr('r', '20')
-            .attr('id', function(d) {return 'Node;'+d.id;})
 
         nodeEnter.filter(function(d) {return d.type=='nde';})
             .append('rect')
@@ -268,7 +195,6 @@ d3.selection.prototype.moveToFront = function() {
             .attr('y', '-20')
             .attr('width', '40')
             .attr('height', '40')
-            .attr('id', function(d) {return 'Node;'+d.id;})
 
         nodeEnter.filter(function(d) {return d.type=='net';})
             .append('rect')
@@ -276,103 +202,91 @@ d3.selection.prototype.moveToFront = function() {
             .attr('y', '-50')
             .attr('width', '100')
             .attr('height', '100')
-            .attr('id', function(d) {return 'Node;'+d.id;})
             
         nodeEnter.append('text')
             .text(function(d) {return d.label;});
             
         node.exit().remove();
             
-        svg.selectAll('g.node')
-            .data(nodes, function(d) {return d.id})
+        container.selectAll('g.node')
             .selectAll('text')
             .text(function(d) {return d.label;});
         
-        svg.selectAll('g.node')
-            .data(nodes, function(d) {return d.id})
+        container.selectAll('g.node').filter(function(d) {return d.type!='net';})
             .moveToFront();
         
-        
-        
-        
-
-        force.on('tick', function() {
+    
         
 
-            link.attr("points", function (d) {
-                 return ""+d.source.x+","+d.source.y+" "+
-                           (d.source.x*0.45+d.target.x*0.55)+","+
-                           (d.source.y*0.45+d.target.y*0.55)+" "+
-                           d.target.x+","+d.target.y});
+        update_net_sizes();
 
-            bounds = {};
-            link.each(function (d) {
-                if (d.type=='net') {
-                    if (bounds[d.source.id]==undefined) {
-                        bounds[d.source.id] = {'x0':d.target.x, 'x1':d.target.x,
-                                               'y0':d.target.y, 'y1':d.target.y  
-                                               };
-                    } else {
-                        bounds[d.source.id].x0 = Math.min(bounds[d.source.id].x0, d.target.x);
-                        bounds[d.source.id].x1 = Math.max(bounds[d.source.id].x1, d.target.x);
-                        bounds[d.source.id].y0 = Math.min(bounds[d.source.id].y0, d.target.y);
-                        bounds[d.source.id].y1 = Math.max(bounds[d.source.id].y1, d.target.y);
-                    }
-                }
-            });
-                
-            border = 30;
-            nets = svg.selectAll('g.node_net rect')
-            nets.attr('x', function(d) {return -border-(bounds[d.id].x1-bounds[d.id].x0)/2;})
-            nets.attr('y', function(d) {return -border-(bounds[d.id].y1-bounds[d.id].y0)/2;})
-            nets.attr('width', function(d) {return (bounds[d.id].x1-bounds[d.id].x0+border*2);})
-            nets.attr('height', function(d) {return (bounds[d.id].y1-bounds[d.id].y0+border*2);})
-            nets = svg.selectAll('g.node_net')
-
-            nets = svg.selectAll('g.node_net').each(function(d) {
-
-                x = (bounds[d.id].x1+bounds[d.id].x0)/2;
-                y = (bounds[d.id].y1+bounds[d.id].y0)/2;
-
-                if (x!=d.x || y!=d.y) {
-                    if (d.dragging || d.fixed) {
-                        link.filter(function(d){return d.type=='net'})
-                            .filter(function(dd){return dd.source.id==d.id})
-                            .each(function(dd){
-                                dd.target.x += d.x-x;
-                                dd.target.y += d.y-y;
-                                dd.target.px += d.x-x;
-                                dd.target.py += d.y-y;
-                                });
-                    } else {
-                        d.x = x;
-                        d.y = y;
-                    }
-                }
+        node.attr('transform', function(d) {
+            return 'translate('+[d.x, d.y]+')';
             });
 
+        update_line_locations();
 
-            node.attr('transform', function(d) {
-                return 'translate('+[d.x, d.y]+')';
-                });
-        });                
         
+    }
+
+
+function update_line_locations() {
+    link.filter(function(d) {return d.type=='std';})
+        .attr('points', function(d) {
+            x0 = graph.nodes[d.source].x;
+            y0 = graph.nodes[d.source].y;
+            x1 = graph.nodes[d.target].x;
+            y1 = graph.nodes[d.target].y;
+            return ""+x0+","+y0+" "+(x0*0.45+x1*0.55)+","+(y0*0.45+y1*0.55)+" "+
+                      x1+","+y1;
+        });
+}
+
+function update_net_sizes() {
+    node.filter(function(d) {return d.type=='net';})
+        .each(update_net_size)
+        .attr('transform', function(d) {
+            return 'translate('+[d.x, d.y]+')';
+            })
+        .selectAll('rect')
+            .attr('x', function(d) {return -d.width/2;})
+            .attr('y', function(d) {return -d.height/2;})
+            .attr('width', function(d) {return d.width;})
+            .attr('height', function(d) {return d.height;})
+            ;
+}
+
+function update_net_size(d) {
+    x0 = graph.nodes[d.contains[0]].x;
+    x1 = x0;
+    y0 = graph.nodes[d.contains[0]].y;
+    y1 = y0;
+    for (obj in d.contains) {
+        console.log(obj, graph.nodes[d.contains[obj]]);
+        x0 = Math.min(graph.nodes[d.contains[obj]].x, x0);
+        x1 = Math.max(graph.nodes[d.contains[obj]].x, x1);
+        y0 = Math.min(graph.nodes[d.contains[obj]].y, y0);
+        y1 = Math.max(graph.nodes[d.contains[obj]].y, y1);
+    }
+    border = 15;
+    d.x = (x0+x1)/2-border;
+    d.y = (y0+y1)/2-border;
+    d.width = x1 - x0+2*border;
+    d.height = y1 - y0+2*border;
+}
+    
+
         
-        function resize() {
-            width = window.innerWidth/2;
-            height = window.innerHeight;
-            svg.attr("width", width).attr("height", height);
-            force.size([width, height]).resume();            
-        }    
-            
-        resize();
-        d3.select(window).on("resize", resize);
+    function resize() {
+        width = window.innerWidth/2;
+        height = window.innerHeight;
+        svg.attr("width", width).attr("height", height);
+    }    
         
+    d3.select(window).on("resize", resize);
+    
         
-        force.linkDistance(100)
-             .start();
-             
-    }  
+
 
         
 </script>

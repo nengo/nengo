@@ -13,7 +13,13 @@ class NengoGui(swi.SimpleWebInterface):
         fn = os.path.join('static', *path)
         with open(fn) as f:
             js = f.read()
-        return ('text/javascript', js)
+        if fn.endswith('.js'):
+            mimetype = 'text/javascript'
+        elif fn.endswith('.css'):
+            mimetype = 'text/css'
+        else:
+            raise Exception('unknown extenstion for %s' % fn)
+        return (mimetype, js)
 
     def swi_favicon_ico(self):
         with open('static/favicon.ico','rb') as f:
