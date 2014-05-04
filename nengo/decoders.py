@@ -6,6 +6,7 @@ depending on whether the post-population encoders `E` are provided (see below).
 Solvers that are only intended to solve for either decoders or weights can
 remove the `E` parameter or make it manditory as they see fit.
 """
+import collections
 import copy
 import logging
 
@@ -242,6 +243,28 @@ class Solver(with_metaclass(DocstringInheritor)):
 
     def copy(self):
         return copy.copy(self)
+
+    def __hash__(self):
+        items = list(self.__dict__.items())
+        items.sort(key=lambda item: item[0])
+
+        hashes = []
+        for k, v in items:
+            if isinstance(v, np.ndarray):
+                if v.size < 1e5:
+                    a = v[:]
+                    a.setflags(write=False)
+                    hashes.append(hash(a))
+                else:
+                    raise ValueError("array is too large to hash")
+            elif isinstance(v, collections.Iterable):
+                hashes.append(hash(tuple(v)))
+            elif isinstance(v, collections.Callable):
+                hashes.append(hash(v.__code__))
+            else:
+                hashes.append(hash(v))
+
+        return hash(tuple(hashes))
 
     def __str__(self):
         return "%s(%s)" % (
