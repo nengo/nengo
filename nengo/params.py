@@ -1,9 +1,9 @@
 import numpy as np
 
-from nengo.config import Default, Parameter
+from nengo.config import Parameter
 from nengo.utils.compat import is_integer, is_number, is_string
-from nengo.utils.inspect import checked_call
 from nengo.utils.distributions import Distribution
+from nengo.utils.inspect import checked_call
 import nengo.utils.numpy as npext
 
 
@@ -53,9 +53,6 @@ class NodeOutput(Parameter):
         super(NodeOutput, self).__init__(default, optional, modifies)
 
     def __set__(self, node, output):
-        if output is Default:
-            output = self.default
-
         # --- Validate and set the new size_out
         if output is None:
             node.size_out = node.size_in
@@ -114,9 +111,6 @@ class DistributionParam(Parameter):
         super(DistributionParam, self).__init__(default, optional, modifies)
 
     def __set__(self, instance, dist):
-        if dist is Default:
-            dist = self.default
-
         self.validate_none(instance, dist)
 
         if isinstance(dist, Distribution):

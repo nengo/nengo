@@ -50,8 +50,7 @@ class Parameter(object):
         return self.data.get(instance, self.default)
 
     def __set__(self, instance, value):
-        if value is Default:
-            value = self.default
+        assert value is not Default
         self.validate_none(instance, value)
         if value is not None:
             self.validate(instance, value)
