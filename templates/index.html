@@ -102,9 +102,9 @@ function dragged(d) {
 
     d3.select(this).attr('transform', "translate("+d.x+","+d.y+")");
     update_net_position(d, d3.event.dx, d3.event.dy);
-    update_line_locations();
     update_node_positions(d, d3.event.dx, d3.event.dy);
     update_net_sizes();
+    update_line_locations();
 }
 
 function dragended(d) {
