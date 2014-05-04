@@ -913,6 +913,10 @@ def build_network(network, model):  # noqa: C901
     if model.toplevel is None:
         model.toplevel = network
 
+    if model.toplevel == network:
+        model.sig['common'][0] = Signal(0.0, name='Common: Zero')
+        model.sig['common'][1] = Signal(1.0, name='Common: One')
+
     logger.info("Network step 1: Building ensembles and nodes")
     for obj in network.ensembles + network.nodes:
         Builder.build(obj, model=model, config=network.config)
@@ -1112,7 +1116,7 @@ def build_node(node, model, config):
                                        model=model)
         if sig_in is not None:
             model.add_op(DotInc(model.sig[node]['in'],
-                                Signal(1.0, name="1"),
+                                model.sig['common'][1],
                                 sig_in,
                                 tag="%s input" % node.label))
         if sig_out is not None:
@@ -1224,7 +1228,7 @@ def build_connection(conn, model, config):  # noqa: C901
                 label=conn.label,
                 model=model)
             model.add_op(DotInc(model.sig[conn]['in'],
-                                Signal(1.0, name="1"),
+                                model.sig['common'][1],
                                 sig_in,
                                 tag="%s input" % conn.label))
     elif isinstance(conn.pre, nengo.objects.Ensemble):
@@ -1280,7 +1284,7 @@ def build_connection(conn, model, config):  # noqa: C901
         signal = Signal(np.zeros(signal_size), name=conn.label)
         model.add_op(ProdUpdate(model.sig[conn]['decoders'],
                                 model.sig[conn]['in'],
-                                Signal(0, name="decay"),
+                                model.sig['common'][0],
                                 signal,
                                 tag="%s decoding" % conn.label))
     else:
@@ -1338,11 +1342,9 @@ def build_connection(conn, model, config):  # noqa: C901
                             % (type(conn.pre).__name__,
                                type(conn.post).__name__))
 
-        zero_signal = Signal(0, "PES: 0")
-        one_signal = Signal(1, "PES: 1")
-        model.add_op(ProdUpdate(zero_signal,
-                                zero_signal,
-                                one_signal,
+        model.add_op(ProdUpdate(model.sig['common'][0],
+                                model.sig['common'][0],
+                                model.sig['common'][1],
                                 modified_signal,
                                 tag="Learning Rule Dummy Update"))
 
@@ -1497,7 +1499,7 @@ def build_bcm(bcm, conn, model, config):
     transform = model.sig[conn]['transform']
 
     model.add_op(DotInc(
-        Signal(1, "BCM: 1"), delta, transform, tag="BCM: DotInc"))
+        model.sig['common'][1], delta, transform, tag="BCM: DotInc"))
 
     model.add_op(SimBCM(delta=delta,
                         pre_filtered=pre_filtered,
@@ -1522,7 +1524,7 @@ def build_oja(oja, conn, model, config):
     forgetting = Signal(np.zeros(omega_shape), name='Oja: Forgetting')
 
     model.add_op(DotInc(
-        Signal(1, "Oja: 1"), delta, transform, tag="Oja: Delta DotInc"))
+        model.sig['common'][1], delta, transform, tag="Oja: Delta DotInc"))
 
     model.add_op(DotInc(Signal(-oja.beta, "Oja: Negative oja scale"),
                         forgetting,
@@ -1535,5 +1537,7 @@ def build_oja(oja, conn, model, config):
                         post_filtered=post_filtered,
                         forgetting=forgetting,
                         learning_rate=oja.learning_rate))
+
+    model.params[oja] = None
 
 Builder.register_builder(build_oja, nengo.learning_rules.Oja)
