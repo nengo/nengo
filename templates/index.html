@@ -55,7 +55,7 @@ editor.on('change', function(event) {reload_graph_data();});
 <script>
 
 var zoom = d3.behavior.zoom()
-    .scaleExtent([1, 10])
+    .scaleExtent([0.1, 10])
     .on('zoom', zoomed);
         
 var svg = d3.select("svg");
@@ -254,6 +254,9 @@ function update_net_sizes() {
             .attr('width', function(d) {return d.width;})
             .attr('height', function(d) {return d.height;})
             ;
+    node.attr('transform', function(d) {
+        return 'translate('+[d.x, d.y]+')';
+        });
 }
 
 function update_net_size(d) {
@@ -262,17 +265,37 @@ function update_net_size(d) {
     y0 = graph.nodes[d.contains[0]].y;
     y1 = y0;
     for (obj in d.contains) {
-        console.log(obj, graph.nodes[d.contains[obj]]);
         x0 = Math.min(graph.nodes[d.contains[obj]].x, x0);
         x1 = Math.max(graph.nodes[d.contains[obj]].x, x1);
         y0 = Math.min(graph.nodes[d.contains[obj]].y, y0);
         y1 = Math.max(graph.nodes[d.contains[obj]].y, y1);
     }
-    border = 15;
-    d.x = (x0+x1)/2-border;
-    d.y = (y0+y1)/2-border;
+    border = 25;
+    d.x = (x0+x1)/2;
+    d.y = (y0+y1)/2;
     d.width = x1 - x0+2*border;
     d.height = y1 - y0+2*border;
+
+    function isin(x, y) {
+        return (x<d.x+d.width/2) && (x>d.x-d.width/2) && (y<d.y+d.height/2) && (y>d.y-d.height/2);
+    }
+
+    for (var i=0; i<graph.nodes.length; i++) {
+        n = graph.nodes[i];
+        if (!(n===d) && d.contains.indexOf(i)==-1) {
+            if (isin(d.x, d.y)) {
+                dx = n.x-d.x;
+                dy = n.y-d.y;
+                if (Math.abs(dx)>Math.abs(dy)) {
+                    if (dx>0) { n.x = Math.max(n.x, d.x+d.width/2+border); }
+                    else      { n.x = Math.min(n.x, d.x-d.width/2-border); }
+                } else {
+                    if (dy>0) { n.y = Math.max(n.y, d.y+d.height/2+border); }
+                    else      { n.y = Math.min(n.y, d.y-d.height/2-border); }
+                }
+            }
+        }
+    }
 }
     
 
