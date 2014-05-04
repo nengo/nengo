@@ -3,6 +3,7 @@ import re
 import keyword
 
 import random
+import pprint
 
 def isidentifier(s):
     if s in keyword.kwlist:
@@ -28,6 +29,7 @@ class Converter(object):
         return default
 
     def process(self, network, id_prefix=None):
+        random.seed(1)
         for i, ens in enumerate(network.ensembles):
             line = ens._created_line_number-1
             label = ens.label
@@ -36,6 +38,7 @@ class Converter(object):
             id = 'e%d' % i
             if id_prefix is not None:
                 id = '%s.%s'%(id_prefix, id)
+
 
             obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
                    'x':random.uniform(0,300), 'y':random.uniform(0,300)}
@@ -89,8 +92,7 @@ class Converter(object):
                                'type':'std'})
 
     def to_json(self):
-        return json.dumps({'nodes':self.objects,
-                           'links':self.links,
-                           })
-
+        data = dict(nodes=self.objects, links=self.links)
+        pprint.pprint(data)
+        return json.dumps(data)
 
