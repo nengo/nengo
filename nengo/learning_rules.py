@@ -20,8 +20,9 @@ class LearningRule(object):
     label : string
         Given label, or None.
     """
-    learning_rate = Parameter(default=1e-5)
-    label = Parameter(default=None)
+
+    learning_rate = Parameter(default=1.0, optional=True)
+    label = Parameter(default=None, optional=True)
 
     def __init__(self, learning_rate=Default, label=Default):
         self.learning_rate = learning_rate

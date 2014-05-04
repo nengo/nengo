@@ -29,9 +29,9 @@ def is_param(obj):
 
 class Parameter(object):
     """Simple descriptor for storing configuration parameters"""
-    def __init__(self, default, mandatory=False, modifies=None):
+    def __init__(self, default, optional=False, modifies=None):
         self.default = default
-        self.mandatory = mandatory
+        self.optional = optional
         self.modifies = modifies
         # use WeakKey dictionaries so items can still be garbage collected
         self.defaults = weakref.WeakKeyDictionary()
@@ -64,7 +64,7 @@ class Parameter(object):
         pass
 
     def validate_none(self, instance, value):
-        if self.mandatory and value is None:
+        if not self.optional and value is None:
             raise ValueError("Mandatory; cannot set to None")
 
 

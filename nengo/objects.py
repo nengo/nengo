@@ -373,31 +373,28 @@ class Ensemble(NengoObject):
         A name for the ensemble. Used for debugging and visualization.
     """
 
-    n_neurons = params.IntParam(default=None, low=1, mandatory=True)
-    dimensions = params.IntParam(default=None, low=1, mandatory=True)
-    radius = params.NumberParam(default=1.0, low=0.0, mandatory=True)
+    n_neurons = params.IntParam(default=None, low=1)
+    dimensions = params.IntParam(default=None, low=1)
+    radius = params.NumberParam(default=1.0, low=0.0)
+    neuron_type = params.Parameter(default=LIF())
     encoders = params.DistributionParam(
         default=UniformHypersphere(surface=True),
-        mandatory=True,
         sample_shape=('n_neurons', 'dimensions'))
     intercepts = params.DistributionParam(default=Uniform(-1.0, 1.0),
-                                          mandatory=True,
                                           sample_shape=('n_neurons',))
     max_rates = params.DistributionParam(default=Uniform(200, 400),
-                                         mandatory=True,
                                          sample_shape=('n_neurons',))
     eval_points = params.DistributionParam(default=UniformHypersphere(),
-                                           mandatory=True,
                                            sample_shape=('*', 'dimensions'))
-    seed = params.IntParam(default=None)
-    label = params.StringParam(default=None)
-    bias = params.Parameter(default=None)
-    gain = params.Parameter(default=None)
-    neuron_type = params.Parameter(default=LIF())
+    seed = params.IntParam(default=None, optional=True)
+    label = params.StringParam(default=None, optional=True)
+    bias = params.Parameter(default=None, optional=True)
+    gain = params.Parameter(default=None, optional=True)
     probeable = params.ListParam(default=['decoded_output',
+                                          'input',
                                           'neuron_output',
                                           'spikes',
-                                          'voltage'], mandatory=True)
+                                          'voltage'])
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
@@ -480,10 +477,10 @@ class Node(NengoObject):
     """
 
     output = params.NodeOutput(default=None, modifies='size_out')
-    size_in = params.IntParam(default=0, low=0, mandatory=True)
-    size_out = params.IntParam(default=None, low=0)
-    label = params.StringParam(default=None)
-    probeable = params.ListParam(default=['output'], mandatory=True)
+    size_in = params.IntParam(default=0, low=0)
+    size_out = params.IntParam(default=None, low=0, optional=True)
+    label = params.StringParam(default=None, optional=True)
+    probeable = params.ListParam(default=['output'])
 
     def __init__(self, output=Default,  # noqa: C901
                  size_in=Default, size_out=Default, label=Default):
@@ -567,14 +564,16 @@ class Connection(NengoObject):
         The seed used for random number generation.
     """
 
-    synapse = params.Parameter(default=0.005)
-    _transform = params.Parameter(default=np.array(1.0), mandatory=True)
+    synapse = params.Parameter(default=0.005, optional=True)
+    _transform = params.Parameter(default=np.array(1.0))
     solver = params.Parameter(default=nengo.decoders.LstsqL2())
-    _function = params.Parameter(default=(None, 0))
-    modulatory = params.BoolParam(default=False, mandatory=True)
+    _function = params.Parameter(default=(None, 0), optional=True)
+    modulatory = params.BoolParam(default=False)
     # TODO: sample_shape should be ('pre_size',)
-    eval_points = params.DistributionParam(default=None, sample_shape=('*',))
-    probeable = params.ListParam(default=['signal'], mandatory=True)
+    eval_points = params.DistributionParam(default=None,
+                                           sample_shape=('*',),
+                                           optional=True)
+    probeable = params.ListParam(default=['signal'])
 
     def __init__(self, pre, post, synapse=Default, transform=1.0,
                  solver=Default,

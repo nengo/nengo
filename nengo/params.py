@@ -14,10 +14,10 @@ class BoolParam(Parameter):
 
 
 class NumberParam(Parameter):
-    def __init__(self, default, low=None, high=None, mandatory=False):
+    def __init__(self, default, low=None, high=None, optional=False):
         self.low = low
         self.high = high
-        super(NumberParam, self).__init__(default, mandatory)
+        super(NumberParam, self).__init__(default, optional)
 
     def validate(self, instance, num):
         if not is_number(num):
@@ -48,9 +48,9 @@ class ListParam(Parameter):
 
 
 class NodeOutput(Parameter):
-    def __init__(self, default, mandatory=False, modifies=None):
-        assert not mandatory  # None means passthrough node
-        super(NodeOutput, self).__init__(default, mandatory, modifies)
+    def __init__(self, default, optional=True, modifies=None):
+        assert optional  # None has meaning (passthrough node)
+        super(NodeOutput, self).__init__(default, optional, modifies)
 
     def __set__(self, node, output):
         if output is Default:
@@ -107,11 +107,11 @@ class NodeOutput(Parameter):
 class DistributionParam(Parameter):
     """Can be a Distribution or samples from a distribution."""
 
-    def __init__(self, default,  mandatory=False, modifies=None,
+    def __init__(self, default, optional=False, modifies=None,
                  sample_shape=None, scalar_ok=True):
         self.sample_shape = sample_shape
         self.scalar_ok = scalar_ok
-        super(DistributionParam, self).__init__(default, mandatory, modifies)
+        super(DistributionParam, self).__init__(default, optional, modifies)
 
     def __set__(self, instance, dist):
         if dist is Default:
