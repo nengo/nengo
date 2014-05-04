@@ -381,15 +381,21 @@ class Ensemble(NengoObject):
         default=UniformHypersphere(surface=True),
         sample_shape=('n_neurons', 'dimensions'))
     intercepts = params.DistributionParam(default=Uniform(-1.0, 1.0),
+                                          optional=True,
                                           sample_shape=('n_neurons',))
     max_rates = params.DistributionParam(default=Uniform(200, 400),
+                                         optional=True,
                                          sample_shape=('n_neurons',))
     eval_points = params.DistributionParam(default=UniformHypersphere(),
                                            sample_shape=('*', 'dimensions'))
+    bias = params.DistributionParam(default=None,
+                                    optional=True,
+                                    sample_shape=('n_neurons',))
+    gain = params.DistributionParam(default=None,
+                                    optional=True,
+                                    sample_shape=('n_neurons',))
     seed = params.IntParam(default=None, optional=True)
     label = params.StringParam(default=None, optional=True)
-    bias = params.Parameter(default=None, optional=True)
-    gain = params.Parameter(default=None, optional=True)
     probeable = params.ListParam(default=['decoded_output', 'input'])
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,

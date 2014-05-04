@@ -951,6 +951,12 @@ def pick_eval_points(ens, rng, dist=None, n_points=None):
     return dist.sample(n_points, dims, rng=rng) * ens.radius
 
 
+def sample(dist, n_samples, rng):
+    if isinstance(dist, dists.Distribution):
+        return dist.sample(n_samples, rng=rng)
+    return np.array(dist)
+
+
 def build_ensemble(ens, model, config):  # noqa: C901
     # Create random number generator
     rng = np.random.RandomState(model.seeds[ens])
@@ -980,17 +986,21 @@ def build_ensemble(ens, model, config):  # noqa: C901
         encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     # Determine max_rates and intercepts
-    if isinstance(ens.max_rates, dists.Distribution):
-        max_rates = ens.max_rates.sample(ens.n_neurons, rng=rng)
-    else:
-        max_rates = np.array(ens.max_rates)
-    if isinstance(ens.intercepts, dists.Distribution):
-        intercepts = ens.intercepts.sample(ens.n_neurons, rng=rng)
-    else:
-        intercepts = np.array(ens.intercepts)
+    max_rates = sample(ens.max_rates, ens.n_neurons, rng=rng)
+    intercepts = sample(ens.intercepts, ens.n_neurons, rng=rng)
 
     # Build the neurons
-    gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
+    if ens.gain is not None and ens.bias is not None:
+        gain = sample(ens.gain, ens.n_neurons, rng=rng)
+        bias = sample(ens.bias, ens.n_neurons, rng=rng)
+    elif ens.gain is not None or ens.bias is not None:
+        # TODO: address this warning
+        warnings.warn("gain or bias set for %s, but not both. Solving for one "
+                      "given the other is not implemented yet." % ens)
+        gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
+    else:
+        gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
+
     if isinstance(ens.neuron_type, nengo.neurons.Direct):
         model.sig[ens]['neuron_in'] = Signal(
             np.zeros(ens.dimensions), name='%s.neuron_in' % ens.label)
