@@ -7,18 +7,24 @@ import sys
 import converter
 import nengo_helper
 import nengo
+import os
+import urllib
 
 class NengoGui(swi.SimpleWebInterface):
     def swi_static(self, *path):
         fn = os.path.join('static', *path)
-        with open(fn) as f:
-            js = f.read()
         if fn.endswith('.js'):
             mimetype = 'text/javascript'
         elif fn.endswith('.css'):
             mimetype = 'text/css'
+        elif fn.endswith('.png'):
+            mimetype = 'image/png'
+        elif fn.endswith('.gif'):
+            mimetype = 'image/gif'
         else:
             raise Exception('unknown extenstion for %s' % fn)
+        with open(fn, 'rb') as f:
+            js = f.read()
         return (mimetype, js)
 
     def swi_favicon_ico(self):
@@ -31,6 +37,27 @@ class NengoGui(swi.SimpleWebInterface):
             html = f.read()
         return html
 
+    def swi_browse(self, dir):
+        r = ['<ul class="jqueryFileTree" style="display: none;">']
+        r.append('<li class="directory collapsed"><a href="#" rel="../">..</a></li>')
+        d = urllib.unquote(dir)
+        for f in os.listdir(d):
+                ff = os.path.join(d,f)
+                if os.path.isdir(ff):
+                    r.append('<li class="directory collapsed"><a href="#" rel="%s/">%s</a></li>' % (ff,f))
+                else:
+                    e = os.path.splitext(f)[1][1:] # get .ext and remove dot
+                    if e == 'py':
+                        r.append('<li class="file ext_%s"><a href="#" rel="%s">%s</a></li>' % (e,ff,f))
+        r.append('</ul>')
+        return ''.join(r)
+
+    def swi_openfile(self, filename):
+        print 'open', filename
+        with open(filename, 'r') as f:
+            text = f.read()
+        return text
+
     def swi_graph_json(self, code):
 
         with open('nengo_gui_temp.py', 'w') as f:
@@ -39,8 +66,7 @@ class NengoGui(swi.SimpleWebInterface):
         try:
             c = compile(code, 'nengo_gui_temp.py', 'exec')
             locals = {}
-            globals = {}
-            exec c in globals, locals
+            exec c in globals(), locals
         except (SyntaxError, Exception):
             try:
                 e_type, e_value, e_traceback = sys.exc_info()
