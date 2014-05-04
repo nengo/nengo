@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from nengo.spa.action_condition import DotProduct, Source
+from nengo.spa.action_objects import DotProduct, Source
 from nengo.spa.module import Module
 from nengo.utils.compat import is_number
 
@@ -45,7 +45,7 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
         self.actions.process(spa)   # parse the actions
 
         for i, action in enumerate(self.actions.actions):
-            cond = action.condition.condition
+            cond = action.condition.expression
             # the basal ganglia hangles the condition part of the action;
             # the effect is handled by the thalamus
 
@@ -54,6 +54,12 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
 
             for c in cond.items:
                 if isinstance(c, DotProduct):
+                    if ((isinstance(c.item1, Source) and c.item1.inverted) or
+                       (isinstance(c.item1, Source) and c.item1.inverted)):
+                        raise NotImplementedError(
+                            "Inversion in subexpression '%s' from action '%s' "
+                            "is not supported by the Basal Ganglia." %
+                            (c, action))
                     if isinstance(c.item1, Source):
                         if isinstance(c.item2, Source):
                             # dot product between two different sources
@@ -62,12 +68,15 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
                         else:
                             self.add_dot_input(i, c.item1, c.item2, c.scale)
                     else:
+                        # enforced in DotProduct constructor
                         assert isinstance(c.item2, Source)
                         self.add_dot_input(i, c.item2, c.item1, c.scale)
-                else:
-                    # Just a fixed scalar input
-                    assert is_number(c)
+                elif is_number(c):
                     self.add_bias_input(i, c)
+                else:
+                    raise NotImplementedError(
+                        "Subexpression '%s' from action '%s' is not supported "
+                        "by the Basal Ganglia." % (c, action))
 
     def add_bias_input(self, index, value):
         """Make an input that is just a fixed scalar value.

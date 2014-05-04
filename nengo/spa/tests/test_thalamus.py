@@ -63,13 +63,21 @@ def test_errors():
     class SPA(spa.SPA):
         def __init__(self):
             self.vision = spa.Buffer(dimensions=16)
-
-            actions = spa.Actions(
-                '0.5 --> motor=A'
-                )
+            actions = spa.Actions('0.5 --> motor=A')
             self.bg = spa.BasalGanglia(actions)
+
     with pytest.raises(NameError):
-        SPA()
+        SPA()  # motor does not exist
+
+    class SPA(spa.SPA):
+        def __init__(self):
+            self.scalar = spa.Buffer(dimensions=16, subdimensions=1)
+            actions = spa.Actions('0.5 --> scalar=dot(scalar, FOO)')
+            self.bg = spa.BasalGanglia(actions)
+            self.thalamus = spa.Thalamus(self.bg)
+
+    with pytest.raises(NotImplementedError):
+        SPA()  # dot products not implemented
 
 
 if __name__ == '__main__':
