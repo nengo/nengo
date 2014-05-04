@@ -21,6 +21,17 @@ with model:
     c = nengo.Ensemble(neurons=80, dimensions=2)
     d = nengo.Ensemble(neurons=80, dimensions=2)
     e = nengo.networks.EnsembleArray(80,2)
+    
+    vis = nengo.Network()
+    with vis:
+#        v1 = nengo.Network()
+#        with v1:
+#            n = nengo.Ensemble(neurons=80, dimensions=2)
+         r = nengo.Ensemble(neurons=80, dimensions=2)
+         t = nengo.Ensemble(neurons=80, dimensions=2)
+         nengo.Connection(r, t)
+
+
     nengo.Connection(a, b, synapse=0.01)
     nengo.Connection(b, c, synapse=0.01)
     nengo.Connection(c, d, synapse=0.01)
@@ -70,7 +81,6 @@ d3.selection.prototype.moveToFront = function() {
   });
 };    
 
-
 var drag = d3.behavior.drag()
     .origin(function(d){return d})
     .on('dragstart', dragstarted)
@@ -79,10 +89,6 @@ var drag = d3.behavior.drag()
 
 function zoomed() {
     container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-        node.attr('transform', function(d) {
-            //return 'translate('+[d.x, d.y]+')scale('+(1.0/d3.event.scale)+')';
-            return 'translate('+[d.x, d.y]+')';
-            });
 }
 
 function dragstarted(d) {
@@ -95,7 +101,9 @@ function dragged(d) {
     d.y = d3.event.y;
 
     d3.select(this).attr('transform', "translate("+d.x+","+d.y+")");
+    update_net_position(d, d3.event.dx, d3.event.dy);
     update_line_locations();
+    update_node_positions(d, d3.event.dx, d3.event.dy);
     update_net_sizes();
 }
 
@@ -138,7 +146,6 @@ var node;
         editor.getSession().clearAnnotations();
         }
         
-    
     reload_graph_data();
     
         
@@ -162,8 +169,7 @@ var node;
             editor.getSession().clearAnnotations();
         }
 
-
-
+        //delete all the links and redraw them
         container.selectAll('.link').remove();
 
         link = container.selectAll('.link')
@@ -171,8 +177,8 @@ var node;
             
         link.enter().append('polyline')
             .attr('class', function(d) {return 'link link_'+d.type;});
-        
 
+        //get all the nodes, make the new ones delete the old
         node = container.selectAll('g.node')
             .data(graph.nodes, function(d) {return d.id})
             
@@ -183,7 +189,6 @@ var node;
             .on('mouseover', mouseover)
             .on('mouseout', mouseout)
             .call(drag);
-
         
         nodeEnter.filter(function(d) {return d.type=='ens';})
             .append('circle')
@@ -207,28 +212,19 @@ var node;
             .text(function(d) {return d.label;});
             
         node.exit().remove();
-            
+        
+        //label everything    
         container.selectAll('g.node')
             .selectAll('text')
             .text(function(d) {return d.label;});
-        
+        //redraw so nodes are on top
         container.selectAll('g.node').filter(function(d) {return d.type!='net';})
             .moveToFront();
-        
-    
-        
 
         update_net_sizes();
 
-        node.attr('transform', function(d) {
-            return 'translate('+[d.x, d.y]+')';
-            });
-
-        update_line_locations();
-
-        
+        update_line_locations();        
     }
-
 
 function update_line_locations() {
     link.filter(function(d) {return d.type=='std';})
@@ -298,15 +294,44 @@ function update_net_size(d) {
     }
 }
     
-
+function update_net_position(d, dx, dy) {
+    if (d.type == 'net') {
+        for (obj in d.contains) {
+            graph.nodes[d.contains[obj]].x += dx
+            graph.nodes[d.contains[obj]].y += dy
+        }
+    }
+    //not needed?
+    node.attr('transform', function(d) {
+            return 'translate('+[d.x, d.y]+')';
+        });
+}      
+       
+function update_node_positions(d, dx, dy) {
+    margin = 25;
+    for (var i=0; i<graph.nodes.length; i++) {
+        n = graph.nodes[i];
+        console.log(n)
+        if (!(n===d)) {
+            if (Math.abs(d.x-n.x)<margin && Math.abs(d.y-n.y)<margin) {
+                    n.x += dx
+                    n.y += dy
+            }
+        }
+    }          
+    //not needed?
+    node.attr('transform', function(d) {
+            return 'translate('+[d.x, d.y]+')';
+        });
+}   
         
-    function resize() {
-        width = window.innerWidth/2;
-        height = window.innerHeight;
-        svg.attr("width", width).attr("height", height);
-    }    
-        
-    d3.select(window).on("resize", resize);
+function resize() {
+    width = window.innerWidth/2;
+    height = window.innerHeight;
+    svg.attr("width", width).attr("height", height);
+}    
+    
+d3.select(window).on("resize", resize);
     
         
 
