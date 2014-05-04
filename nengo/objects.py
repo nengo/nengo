@@ -546,6 +546,9 @@ class Connection(NengoObject):
                  solver=Default,
                  function=None, modulatory=Default, eval_points=Default,
                  learning_rule=[]):
+        # don't check shapes until we've set all parameters
+        self._skip_check_shapes = True
+
         if not isinstance(pre, ObjView):
             pre = ObjView(pre)
         if not isinstance(post, ObjView):
@@ -556,12 +559,10 @@ class Connection(NengoObject):
         self._postslice = post.slice
         self.probeable = Default
 
-        self.synapse = synapse
-        self.modulatory = modulatory
         self.learning_rule = learning_rule
-
-        # don't check shapes until we've set all parameters
-        self._skip_check_shapes = True
+        self.modulatory = modulatory
+        self.synapse = synapse
+        self.transform = transform
 
         self.solver = solver
         if isinstance(self._pre, Neurons):
@@ -586,74 +587,25 @@ class Connection(NengoObject):
 
         # check that shapes match up
         self._skip_check_shapes = False
+        self._check_shapes()
 
-        # set after `function` for correct padding
-        self.transform = transform
+    def _check_shapes(self):  # noqa: C901
+        if self._skip_check_shapes:
+            return
 
-    def _pad_transform(self, transform):
-        """Pads the transform with zeros according to the pre/post slices."""
-        if (self._preslice == slice(None) and self._postslice == slice(None)
-                and transform.ndim != 1):
-            # Default case when unsliced objects are passed to __init__
-            return transform
+        transform = np.asarray(self.transform)
 
         # Get the required input/output sizes for the new transform
-        out_dims, in_dims = self._required_transform_shape()
+        post_dims, pre_dims = self._required_transform_shape()
 
         # Leverage numpy's slice syntax to determine sizes of slices
-        pre_sliced_size = np.asarray(np.zeros(in_dims)[self._preslice]).size
-        post_sliced_size = np.asarray(np.zeros(out_dims)[self._postslice]).size
+        in_dims = np.asarray(np.zeros(pre_dims)[self._preslice]).size
+        out_dims = np.asarray(np.zeros(post_dims)[self._postslice]).size
 
         # Check that the given transform matches the pre/post slices sizes
-        self._check_transform(transform, (post_sliced_size, pre_sliced_size))
-
-        # Create the new transform matching the pre/post dimensions
-        new_transform = np.zeros((out_dims, in_dims))
-        if transform.ndim < 2:
-            slice_to_list = lambda s, d: (
-                np.arange(d)[s] if isinstance(s, slice) else s)
-            preslice = slice_to_list(self._preslice, in_dims)
-            postslice = slice_to_list(self._postslice, out_dims)
-            new_transform[postslice, preslice] = transform
-        else:  # if transform.ndim == 2:
-            repeated_inds = lambda x: (
-                not isinstance(x, slice) and np.unique(x).size != len(x))
-            if repeated_inds(self._preslice) or repeated_inds(self._postslice):
-                raise ValueError("%s object selection has repeated indices" %
-                                 ("Input" if repeated_inds(self._preslice)
-                                  else "Output"))
-            rows_transform = np.array(new_transform[self._postslice])
-            rows_transform[:, self._preslice] = transform
-            new_transform[self._postslice] = rows_transform
-            # Note: the above is a little obscure, but we do it so that lists
-            #  of indices can specify selections of rows and columns,
-            #  rather than just individual items
-
-        # Note: Calling _check_shapes after this, is (or, should be) redundant
-        return new_transform
-
-    def _check_shapes(self):
-        if not self._skip_check_shapes:
-            self._check_transform(self.transform_full,
-                                  self._required_transform_shape())
-
-    def _required_transform_shape(self):
-        if (isinstance(self._pre, (Ensemble, Node))
-                and self.function is not None):
-            in_dims = self.function_size
-        else:
-            in_dims = self._pre.size_out
-
-        out_dims = self._post.size_in
-        return out_dims, in_dims
-
-    def _check_transform(self, transform, required_shape):
         in_src = self._pre.__class__.__name__
         out_src = self._post.__class__.__name__
-        # This is a bit of a hack as probe sizes aren't known until build time.
-        if out_src == "Probe":
-            return
-        out_dims, in_dims = required_shape
+
         if transform.ndim < 2:
             if transform.ndim == 1 and transform.size != out_dims:
                 raise ValueError("Transform length (%d) not equal to "
@@ -677,9 +629,28 @@ class Connection(NengoObject):
                 raise ValueError("Transform output size (%d) not equal to "
                                  "%s input size (%d)" %
                                  (transform.shape[0], out_src, out_dims))
+
+            # check for repeated dimensions in lists, as these don't work
+            # for two-dimensional transforms
+            repeated_inds = lambda x: (
+                not isinstance(x, slice) and np.unique(x).size != len(x))
+            if repeated_inds(self._preslice) or repeated_inds(self._postslice):
+                raise ValueError("%s object selection has repeated indices" %
+                                 ("Input" if repeated_inds(self._preslice)
+                                  else "Output"))
         else:
             raise ValueError("Cannot handle transform tensors "
                              "with dimensions > 2")
+
+    def _required_transform_shape(self):
+        if (isinstance(self._pre, (Ensemble, Node))
+                and self.function is not None):
+            in_dims = self.function_size
+        else:
+            in_dims = self._pre.size_out
+
+        out_dims = self._post.size_in
+        return out_dims, in_dims
 
     @property
     def label(self):
@@ -736,7 +707,6 @@ class Connection(NengoObject):
     @transform.setter
     def transform(self, _transform):
         self._transform = _transform
-        self.transform_full = self._pad_transform(np.asarray(_transform))
         self._check_shapes()
 
     @property
@@ -807,6 +777,9 @@ class Probe(NengoObject):
 
     @property
     def size_in(self):
+        # TODO: A bit of a hack; make less hacky.
+        if isinstance(self.target, Ensemble) and self.attr != "decoded_output":
+            return self.target.neurons.size_out
         return self.target.size_out
 
 
