@@ -11,7 +11,7 @@ import logging
 
 import numpy as np
 
-from nengo.builder import Model, Builder, SignalDict
+from nengo.builder import Model, Builder, SignalDict, rebuild_node_output
 from nengo.utils.graphs import toposort
 from nengo.utils.simulator import operator_depencency_graph
 
@@ -161,6 +161,14 @@ class Simulator(object):
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
             self.step()
+
+    def rebuild_node(self, node, output):
+        # Rebuilds a node with a new output source
+        node.output = output
+        node.init()
+        if (node.outputOp):
+            self.model.operators.remove(node.outputOp)
+        rebuild_node_output(node, self.model)
 
     def trange(self, dt=None):
         dt = self.dt if dt is None else dt

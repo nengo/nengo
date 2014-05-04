@@ -447,7 +447,11 @@ class Node(NengoObject):
         self.size_in = size_in
         self.size_out = size_out
         self.probeable = Default
+        self.outputOp = None
 
+        self.init()
+
+    def init(self):
         if self.output is not None and not is_callable(self.output):
             self.output = npext.array(self.output, min_dims=1, copy=False)
 
