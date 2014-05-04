@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from nengo.spa.action_effect import Symbol, Source, CombinedSource
+from nengo.spa.action_objects import Symbol, Source, Convolution
 from nengo.spa.module import Module
 from nengo.utils.compat import iteritems
 
@@ -100,17 +100,21 @@ class Thalamus(Module):
         # implement the various effects
         for i, action in enumerate(self.bg.actions.actions):
             for name, effects in iteritems(action.effect.effect):
-                for effect in effects.items:
+                for effect in effects.expression.items:
+                    if isinstance(effect, (int, float)):
+                        effect = Symbol('%g' % effect)
                     if isinstance(effect, Symbol):
                         self.add_direct_effect(i, name, effect.symbol)
                     elif isinstance(effect, Source):
                         self.add_route_effect(i, name, effect.name,
                                               effect.transform.symbol,
                                               effect.inverted)
-                    elif isinstance(effect, CombinedSource):
+                    elif isinstance(effect, Convolution):
                         self.add_conv_effect(i, name, effect)
                     else:
-                        raise NotImplementedError('Cannot handle %s' % effect)
+                        raise NotImplementedError(
+                            "Subexpression '%s' from action '%s' is not "
+                            "supported by the Thalamus." % (effect, action))
 
     def add_direct_effect(self, index, target_name, value):
         """Cause an action to drive a particular module input to value.
@@ -174,6 +178,8 @@ class Thalamus(Module):
             A semantic point to convolve with the source value before
             sending it into the target.  This transform takes
             place in the source Vocabulary.
+        inverted : bool
+            Whether to perform inverse convolution on the source.
         """
         with self:
             gate = self.get_gate(index)

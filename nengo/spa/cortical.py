@@ -30,10 +30,11 @@ class Cortical(Module):
         self.actions.process(spa)
         for action in self.actions.actions:
             if action.condition is not None:
-                raise NotImplementedError(
-                    'Cannot handle conditions on cortical actions yet.')
+                raise NotImplementedError("Cortical actions do not support "
+                                          "conditional expressions: %s." %
+                                          action.condition)
             for name, effects in iteritems(action.effect.effect):
-                for effect in effects.items:
+                for effect in effects.expression.items:
                     if isinstance(effect, Symbol):
                         self.add_direct_effect(name, effect.symbol)
                     elif isinstance(effect, Source):
@@ -42,7 +43,8 @@ class Cortical(Module):
                                               effect.inverted)
                     else:
                         raise NotImplementedError(
-                            'Unknown effect %s' % effect)
+                            "Subexpression '%s' from action '%s' is not "
+                            "supported by the cortex." % (effect, action))
 
     @property
     def bias(self):

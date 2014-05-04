@@ -1,3 +1,4 @@
+"""Syntactic parsing of the subexpressions of all action expressions."""
 from nengo.utils.compat import is_number
 
 
@@ -16,6 +17,7 @@ class Symbol(object):
 
     This is used by the spa.Action parsing system.
     """
+
     def __init__(self, symbol):
         self.symbol = symbol
 
@@ -24,14 +26,12 @@ class Symbol(object):
             other = Symbol('%g' % other)
         if isinstance(other, Symbol):
             return Symbol('(%s + %s)' % (self.symbol, other.symbol))
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __sub__(self, other):
         if isinstance(other, Symbol):
             return Symbol('(%s - %s)' % (self.symbol, other.symbol))
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __mul__(self, other):
         if isinstance(other, Symbol):
@@ -40,14 +40,13 @@ class Symbol(object):
             if self.symbol == '1':
                 return other
             return Symbol('(%s * %s)' % (self.symbol, other.symbol))
-        elif is_number(other):
+        if is_number(other):
             if other == 1:
                 return self
             if self.symbol == '1':
                 return Symbol('%g' % other)
             return Symbol('(%s * %g)' % (self.symbol, other))
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -65,7 +64,7 @@ class Symbol(object):
             return Symbol('-%s' % self.symbol)
 
     def __str__(self):
-        return self.symbol
+        return str(self.symbol)
 
 
 class Source(object):
@@ -79,25 +78,196 @@ class Source(object):
 
     This is used by the spa.Action parsing system.
     """
-    def __init__(self, name, transform=Symbol('1')):
+
+    def __init__(self, name, transform=Symbol('1'), inverted=False):
         self.name = name            # the name of the module output
         self.transform = transform  # the Symbol for the transformation
+        self.inverted = inverted
+
+    def __invert__(self):
+        if self.transform.symbol != '1':
+            raise ValueError("You can only invert sources without transforms")
+        return Source(self.name, self.transform, not self.inverted)
 
     def __mul__(self, other):
-        if is_number(other) or isinstance(other, Symbol):
-            return self.__class__(self.name, transform=self.transform*other)
-        else:
-            return NotImplemented
+        if isinstance(other, Source):
+            return Convolution(self, other)
+        elif is_number(other) or isinstance(other, Symbol):
+            return Source(self.name, self.transform*other, self.inverted)
+        return NotImplemented
 
     def __rmul__(self, other):
         return self.__mul__(other)
 
     def __neg__(self):
-        return self.__class__(self.name, transform=-self.transform)
+        return Source(self.name, -self.transform, self.inverted)
+
+    def __add__(self, other):
+        return Summation([self]).__add__(other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        return self.__add__(-other)
+
+    def __rsub__(self, other):
+        return (-self).__add__(other)
 
     def __str__(self):
         if self.transform.symbol == '1':
-            trans_text = ''
+            trans_text = ""
         else:
-            trans_text = '%s * ' % self.transform
-        return '%s%s' % (trans_text, self.name)
+            trans_text = "%s * " % self.transform
+        if self.inverted:
+            trans_text += "~"
+        return "%s%s" % (trans_text, self.name)
+
+
+class DotProduct(object):
+    """The dot product of a Source and a Source or a Source and a Symbol.
+
+    This represents a similarity measure for computing the utility of
+    and action.  It also maintains a scaling factor on the result,
+    so that the 0.5 in "0.5*DotProduct(Source('vision'), Symbol('DOG'))"
+    can be correctly tracked.
+
+    This class is meant to be used with an eval-based parsing system in the
+    Condition class, so that the above DotProduct can also be created with
+    "0.5*dot(vision,DOG)".
+    """
+
+    def __init__(self, item1, item2, scale=1.0):
+        if isinstance(item1, (int, float)):
+            item1 = Symbol(item1)
+        if isinstance(item2, (int, float)):
+            item2 = Symbol(item2)
+        if not isinstance(item1, (Source, Symbol)):
+            raise TypeError("The first item in the dot product is not a "
+                            "semantic pointer or a spa.Module output.")
+        if not isinstance(item2, (Source, Symbol)):
+            raise TypeError("The second item in the dot product is not a "
+                            "semantic pointer or a spa.Module output.")
+        if not isinstance(item1, Source) and not isinstance(item2, Source):
+            raise TypeError("One of the two terms for the dot product "
+                            "must be a spa.Module output.")
+        self.item1 = item1
+        self.item2 = item2
+        self.scale = float(scale)
+
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            return DotProduct(self.item1, self.item2, self.scale * other)
+        return NotImplemented
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __div__(self, other):
+        return self.__mul__(1.0 / other)
+
+    def __truediv__(self, other):
+        return self.__div__(other)
+
+    def __neg__(self):
+        return DotProduct(self.item1, self.item2, -self.scale)
+
+    def __add__(self, other):
+        return Summation([self]).__add__(other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        return self.__add__(-other)
+
+    def __rsub__(self, other):
+        return (-self).__add__(other)
+
+    def __str__(self):
+        if self.scale == 1:
+            scale_text = ""
+        elif self.scale == -1:
+            scale_text = "-"
+        else:
+            scale_text = "%g * " % self.scale
+        return "%sdot(%s, %s)" % (scale_text, self.item1, self.item2)
+
+
+class Convolution(object):
+    """The convolution of two sources together."""
+
+    def __init__(self, source1, source2, transform=Symbol('1')):
+        self.source1 = source1
+        self.source2 = source2
+        self.transform = transform
+
+    def __mul__(self, other):
+        if isinstance(other, (Symbol, int, float)):
+            return Convolution(
+                self.source1, self.source2, self.transform * other)
+        return NotImplemented
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __neg__(self):
+        return Convolution(self.source1, self.source2, -self.transform)
+
+    def __add__(self, other):
+        return Summation([self]).__add__(other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        return self.__add__(-other)
+
+    def __rsub__(self, other):
+        return (-self).__add__(other)
+
+    def __str__(self):
+        return "((%s) * (%s)) * %s" % (
+            self.source1, self.source2, self.transform)
+
+
+class Summation(object):
+    """A summation over all subexpressions."""
+
+    def __init__(self, items):
+        self.items = items
+
+    def __mul__(self, other):
+        return Summation([x*other for x in self.items])
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __div__(self, other):
+        return self.__mul__(1.0 / other)
+
+    def __truediv__(self, other):
+        return self.__div__(other)
+
+    def __add__(self, other):
+        if isinstance(other,
+                      (int, float, Source, Symbol, DotProduct, Convolution)):
+            return Summation(self.items + [other])
+        if isinstance(other, Summation):
+            return Summation(self.items + other.items)
+        return NotImplemented
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        return self.__add__(-other)
+
+    def __rsub__(self, other):
+        return (-self).__add__(other)
+
+    def __neg__(self):
+        return Summation([-x for x in self.items])
+
+    def __str__(self):
+        return " + ".join(str(v) for v in self.items)

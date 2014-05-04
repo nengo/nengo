@@ -52,13 +52,40 @@ def test_errors():
         def __init__(self):
             self.vision = spa.Buffer(dimensions=16)
             self.motor = spa.Buffer(dimensions=16)
-
-            actions = spa.Actions(
-                'dot(vision, motor) --> motor=A'
-                )
+            actions = spa.Actions('dot(vision, motor) --> motor=A')
             self.bg = spa.BasalGanglia(actions)
+
     with pytest.raises(NotImplementedError):
-        SPA()
+        SPA()  # dot products between two sources not implemented
+
+    class SPA(spa.SPA):
+        def __init__(self):
+            self.vision = spa.Buffer(dimensions=16)
+            self.motor = spa.Buffer(dimensions=16)
+            actions = spa.Actions('dot(~vision, FOO) --> motor=A')
+            self.bg = spa.BasalGanglia(actions)
+
+    with pytest.raises(NotImplementedError):
+        SPA()  # inversion of sources not implemented
+
+    class SPA(spa.SPA):
+        def __init__(self):
+            self.scalar = spa.Buffer(dimensions=1, subdimensions=1)
+            actions = spa.Actions('scalar*scalar --> scalar=1')
+            self.bg = spa.BasalGanglia(actions)
+
+    with pytest.raises(NotImplementedError):
+        SPA()  # convolution not implemented
+
+    class SPA(spa.SPA):
+        def __init__(self):
+            self.scalar = spa.Buffer(dimensions=1, subdimensions=1)
+            self.motor = spa.Buffer(dimensions=16)
+            actions = spa.Actions('scalar --> motor=A')
+            self.bg = spa.BasalGanglia(actions)
+
+    with pytest.raises(NotImplementedError):
+        SPA()  # bias source inputs not implemented
 
 
 if __name__ == '__main__':

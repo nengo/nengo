@@ -2,7 +2,71 @@ import pytest
 
 import nengo
 from nengo import spa
-from nengo.spa.actions import Action, Actions
+from nengo.spa.actions import Expression, Effect, Action, Actions
+
+
+def test_expression():
+    c = Expression(['a', 'b'], 'dot(a, A)')
+    assert str(c.expression) == 'dot(a, A)'
+
+    c = Expression(['a', 'b'], '0.5*(2*dot(a, A)-dot(b,B))-2')
+    assert str(c.expression) == 'dot(a, A) + -0.5 * dot(b, B) + -2'
+
+    c = Expression(['a'], '1')
+    assert str(c.expression) == '1'
+
+    with pytest.raises(NameError):
+        c = Expression(['a', 'b'], 'dot(c, C)')
+
+
+def test_scalars():
+    c = Expression([], '1')
+    assert str(c.expression) == '1'
+
+    c = Expression([], '1 - 1')
+    assert str(c.expression) == '0'
+
+    c = Expression(['x'], 'dot(1, x)')
+    assert str(c.expression) == 'dot(1, x)'
+
+    c = Expression(['x'], 'dot(x, -1) + 1')
+    assert str(c.expression) == 'dot(x, -1) + 1'
+
+    c = Expression(['a', 'b'], '2*dot(a, 1) - dot(b, -1) + dot(a, b)')
+    assert str(c.expression) == '2 * dot(a, 1) + -dot(b, -1) + dot(a, b)'
+
+    c = Expression(['a', 'b'], 'a*b - 1 + 2*b')
+    assert str(c.expression) == '((a) * (b)) * 1 + -1 + 2 * b'
+
+
+def test_effect():
+    e = Effect(['a', 'b'], ['m'], 'm=A')
+    assert str(e) == 'm=A'
+    e = Effect(['a', 'b'], ['m', 'n'], 'm=A, n=B')
+    assert str(e) == 'm=A, n=B'
+    e = Effect(['a', 'b'], ['m', 'n'], 'm=a, n=b*2*A')
+    assert str(e) == 'm=a, n=(2 * A) * b'
+    e = Effect(['a', 'b'], ['m'], 'm=0')
+    assert str(e) == 'm=0'
+
+    # Check that multiple lvalue=rvalue parsing is working with commas
+    e = Effect(['a', 'b'], ['x', 'y', 'z'], 'x=a,y=dot(a,b),z=b')
+    assert str(e) == 'x=a, y=dot(a, b), z=b'
+    e = Effect(['a', 'b'], ['foo', 'bar'], '  foo = dot(a, b)  , bar = b')
+    assert str(e) == 'foo=dot(a, b), bar=b'
+
+    with pytest.raises(NameError):
+        Effect(['a', 'b'], ['q'], 'q=z')
+
+    with pytest.raises(ValueError):
+        Effect(['a', 'b'], ['q'], 'q=a, q=b')  # lvalue appears twice
+
+
+def test_inverted():
+    with pytest.raises(ValueError):
+        Effect(['b'], ['a'], 'a = ~2*b')
+    with pytest.raises(ValueError):
+        Effect(['b'], ['a'], 'a = ~2*C*b')
 
 
 def test_action():
