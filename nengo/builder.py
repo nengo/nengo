@@ -1076,12 +1076,14 @@ def build_node(node, model, config):
     elif not is_callable(node.output):
         model.sig[node]['out'] = Signal(node.output, name=node.label)
     else:
-        sig_in, sig_out = build_pyfunc(fn=node.output,
-                                       t_in=True,
-                                       n_in=node.size_in,
-                                       n_out=node.size_out,
-                                       label="%s.pyfn" % node.label,
-                                       model=model)
+        sig_in, sig_out, outOp = build_pyfunc(fn=node.output,
+                                              t_in=True,
+                                              n_in=node.size_in,
+                                              n_out=node.size_out,
+                                              label="%s.pyfn" % node.label,
+                                              model=model)
+        node.outputOp = outOp
+
         if sig_in is not None:
             model.add_op(DotInc(model.sig[node]['in'],
                                 model.sig['common'][1],
@@ -1093,6 +1095,15 @@ def build_node(node, model, config):
     model.params[node] = None
 
 Builder.register_builder(build_node, nengo.objects.Node)
+
+def rebuild_node_output(node, model):
+    # Provide output
+    if is_callable(node.output):
+        #Do we need to create an input signal?
+        node.outputOp = SimPyFunc(output=model.sig['out'][node], fn=node.output, t_in=True, x=None)
+        model.operators.append(node.outputOp)
+    else:
+        model.sig['out'][node].value = np.asarray(node.output, dtype=np.float64)
 
 
 def conn_probe(pre, probe, **conn_args):
@@ -1189,7 +1200,7 @@ def build_connection(conn, model, config):  # noqa: C901
         if conn.function is None:
             signal = model.sig[conn]['in']
         else:
-            sig_in, signal = build_pyfunc(
+            sig_in, signal, _ = build_pyfunc(
                 fn=conn.function,
                 t_in=False,
                 n_in=model.sig[conn]['in'].size,
@@ -1349,9 +1360,10 @@ def build_pyfunc(fn, t_in, n_in, n_out, label, model):
     else:
         sig_out = None
 
-    model.add_op(SimPyFunc(output=sig_out, fn=fn, t_in=t_in, x=sig_in))
+    outOp = SimPyFunc(output=sig_out, fn=fn, t_in=t_in, x=sig_in)
+    model.add_op(outOp)
 
-    return sig_in, sig_out
+    return sig_in, sig_out, outOp
 
 
 def build_discrete_filter_synapse(

@@ -11,6 +11,46 @@ from nengo.builder import (
 logger = logging.getLogger(__name__)
 
 
+def test_reset(RefSimulator):
+    """Tests the ability to restart the simulator without rebuilding"""
+    m = nengo.Network(label='test_reset')
+    with m:
+        sin = nengo.Node(output=np.sin)
+        sin_p = nengo.Probe(sin, 'output', sample_every=.01)
+    sim = RefSimulator(m)
+    sim.run(1)
+    d1 = sim.data[sin_p]
+    sim.reset()
+    sim.run(1)
+    d2 = sim.data[sin_p]
+    assert np.all(d1 == d2)
+
+
+def test_change_input(RefSimulator):
+    """Tests the ability to reset the simulator and rebuild input nodes without rebuilding everything"""
+    m = nengo.Network(label='test_change_input')
+    with m:
+        m.config[nengo.Ensemble].neuron_type = nengo.Direct()
+        inputNode1 = nengo.Node(output=np.cos, label="TestNode")
+        inputNode2 = nengo.Node(output=0.5, label="TestNode")
+        e1 = nengo.Ensemble(1, 1)
+        e2 = nengo.Ensemble(1, 1)
+        c1 = nengo.Connection(inputNode1, e1)
+        c2 = nengo.Connection(inputNode2, e2)
+        p1 = nengo.Probe(e, 'decoded_output', sample_every=.01)
+        p2 = nengo.Probe(e2, 'decoded_output', sample_every=.01)
+    sim = RefSimulator(m)
+    sim.run(1)
+    d1 = sim.data[p1]
+    print d1[0:10]
+    sim.rebuild_node(inputNode, output=1)
+    sim.reset()
+    sim.run(1)
+    d2 = sim.data[p1]
+    print d2[0:10]
+    assert np.all(d1 != d2)
+
+
 def test_steps(RefSimulator):
     m = nengo.Network(label="test_steps")
     sim = RefSimulator(m)
@@ -87,7 +127,7 @@ def test_simple_pyfunc(RefSimulator):
     time = Signal(np.zeros(1), name="time")
     sig = Signal(np.zeros(1), name="sig")
     m = Model(dt=dt)
-    sig_in, sig_out = build_pyfunc(lambda t, x: np.sin(x), True, 1, 1, None, m)
+    sig_in, sig_out, _ = build_pyfunc(lambda t, x: np.sin(x), True, 1, 1, None, m)
     m.operators += [
         ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
         DotInc(Signal([[1.0]]), time, sig_in),
@@ -110,7 +150,7 @@ def test_encoder_decoder_pathway(RefSimulator):
     decoders = np.asarray([.2, .1])
     decs = Signal(decoders * 0.5)
     m = Model(dt=0.001)
-    sig_in, sig_out = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
+    sig_in, sig_out, _ = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
     m.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo, sig_in),
         ProdUpdate(decs, sig_out, Signal(0.2), foo)
@@ -156,7 +196,7 @@ def test_encoder_decoder_with_views(RefSimulator):
     foo = Signal([1.0], name="foo")
     decoders = np.asarray([.2, .1])
     m = Model(dt=0.001)
-    sig_in, sig_out = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
+    sig_in, sig_out, _ = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
     m.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo[:], sig_in),
         ProdUpdate(Signal(decoders * 0.5), sig_out, Signal(0.2), foo[:])
