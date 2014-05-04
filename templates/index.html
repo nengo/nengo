@@ -312,19 +312,20 @@ function update_node_positions(d, dx, dy) {
     margin = 25;
     for (var i=0; i<graph.nodes.length; i++) {
         n = graph.nodes[i];
-        console.log(n)
-        if (!(n===d)) {
-            if (Math.abs(d.x-n.x)<margin && Math.abs(d.y-n.y)<margin) {
-                    n.x += dx
-                    n.y += dy
-            }
+        if (n===d) {return};
+        if (n.type == 'net') {
+            //do stuff
+        }
+        else if (Math.abs(d.x-n.x)<margin && Math.abs(d.y-n.y)<margin) {
+                n.x += dx
+                n.y += dy
         }
     }          
     //not needed?
     node.attr('transform', function(d) {
             return 'translate('+[d.x, d.y]+')';
         });
-}   
+}  
         
 function resize() {
     width = window.innerWidth/2;
