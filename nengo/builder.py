@@ -405,9 +405,14 @@ class SignalDict(dict):
             sio.write("%s %s\n" % (repr(k), repr(self[k])))
         return sio.getvalue()
 
-    def init(self, signal, ndarray):
+    def init(self, signal):
         """Set up a permanent mapping from signal -> ndarray."""
-        dict.__setitem__(self, signal, ndarray)
+        # Make a copy of base.value to start
+        dict.__setitem__(self, signal.base, np.array(signal.base.value))
+
+    def reset(self, signal):
+        """Reset ndarray to the base value of the signal that maps to it"""
+        self[signal] = signal.value
 
 
 class Operator(object):
@@ -497,11 +502,7 @@ class Operator(object):
         """
         for sig in self.all_signals:
             if sig.base not in signals:
-                signals.init(sig.base,
-                             np.asarray(
-                                 np.zeros(sig.base.shape,
-                                          dtype=sig.base.dtype)
-                                 + sig.base.value))
+                signals.init(sig.base)
 
 
 class Reset(Operator):

@@ -133,18 +133,18 @@ def test_signaldict():
     with pytest.raises(KeyError):
         signaldict[scalar] = np.array(1.)
 
-    signaldict.init(scalar, scalar.value)
+    signaldict.init(scalar)
     assert np.allclose(signaldict[scalar], np.array(1.))
     # __getitem__ handles scalars
     assert signaldict[scalar].shape == ()
 
     one_d = nengo.builder.Signal([1])
-    signaldict.init(one_d, one_d.value)
+    signaldict.init(one_d)
     assert np.allclose(signaldict[one_d], np.array([1.]))
     assert signaldict[one_d].shape == (1,)
 
     two_d = nengo.builder.Signal([[1], [1]])
-    signaldict.init(two_d, two_d.value)
+    signaldict.init(two_d)
     assert np.allclose(signaldict[two_d], np.array([[1.], [1.]]))
     assert signaldict[two_d].shape == (2, 1)
 
