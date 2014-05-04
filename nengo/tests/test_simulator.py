@@ -5,6 +5,7 @@ import pytest
 
 import nengo
 import nengo.simulator
+from nengo.utils.numpy import rmse
 from nengo.builder import (
     Model, ProdUpdate, Copy, Reset, DotInc, Signal, build_pyfunc)
 
@@ -31,24 +32,36 @@ def test_change_input(RefSimulator):
     m = nengo.Network(label='test_change_input')
     with m:
         m.config[nengo.Ensemble].neuron_type = nengo.Direct()
-        inputNode1 = nengo.Node(output=np.cos, label="TestNode")
+        inputNode1 = nengo.Node(output=np.sin, label="TestNode")
         inputNode2 = nengo.Node(output=0.5, label="TestNode")
         e1 = nengo.Ensemble(1, 1)
         e2 = nengo.Ensemble(1, 1)
         c1 = nengo.Connection(inputNode1, e1)
         c2 = nengo.Connection(inputNode2, e2)
-        p1 = nengo.Probe(e, 'decoded_output', sample_every=.01)
+        p1 = nengo.Probe(e1, 'decoded_output', sample_every=.01)
         p2 = nengo.Probe(e2, 'decoded_output', sample_every=.01)
     sim = RefSimulator(m)
     sim.run(1)
     d1 = sim.data[p1]
-    print d1[0:10]
-    sim.rebuild_node(inputNode, output=1)
+    d2 = sim.data[p2]
+    sim.rebuild_node(inputNode1, output=-0.5)
+    sim.rebuild_node(inputNode2, output=np.sin)
     sim.reset()
     sim.run(1)
-    d2 = sim.data[p1]
-    print d2[0:10]
-    assert np.all(d1 != d2)
+    d3 = sim.data[p1]
+    d4 = sim.data[p2]
+    t1 = np.sin(np.arange(100) / 100.)
+    t2 = np.ones(100) * 0.5
+    t3 = np.ones(100) * -0.5
+    t4 = np.sin(np.arange(100) / 100.)
+    t1.shape = (-1, 1)
+    t2.shape = (-1, 1)
+    t3.shape = (-1, 1)
+    t4.shape = (-1, 1)
+    assert rmse(d1, t1) < 0.1
+    assert rmse(d2, t2) < 0.1
+    assert rmse(d3, t3) < 0.1
+    assert rmse(d4, t4) < 0.1
 
 
 def test_steps(RefSimulator):
