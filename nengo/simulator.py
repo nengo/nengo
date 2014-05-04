@@ -171,6 +171,19 @@ class Simulator(object):
                 logger.debug("Step %d", i)
             self.step()
 
+    def reset(self):
+        """Reset the simulator state."""
+
+        self.signals['__time__'][...] = 0.0
+        self.n_steps = 0
+
+        for key in self.signals:
+            if key != '__time__':
+                self.signals.reset(key)
+
+        for probe in self.model.probes:
+            self._probe_outputs[probe] = []
+
     def trange(self, dt=None):
         dt = self.dt if dt is None else dt
         n_steps = int(np.ceil(self.n_steps * self.dt / dt))
