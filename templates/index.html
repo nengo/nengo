@@ -309,13 +309,18 @@ function update_net_position(d, dx, dy) {
 }      
        
 function update_node_positions(d, dx, dy) {
-    margin = 25;
+    margin = 40;
     for (var i=0; i<graph.nodes.length; i++) {
         n = graph.nodes[i];
         if (n===d) {return};
         if (n.type == 'net') {
-            //do stuff
+            if (Math.abs(d.x-n.x)<(margin+n.width/2) && 
+                    Math.abs(d.y-n.y)<(margin+n.height/2)) {
+                n.x += dx
+                n.y += dy
+            }
         }
+        //???Only 
         else if (Math.abs(d.x-n.x)<margin && Math.abs(d.y-n.y)<margin) {
                 n.x += dx
                 n.y += dy
