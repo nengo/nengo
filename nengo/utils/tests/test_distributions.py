@@ -10,7 +10,7 @@ import nengo.utils.numpy as npext
 def test_uniform(low, high):
     n = 100
     dist = dists.Uniform(low, high)
-    samples = dist.sample(n, np.random.RandomState(1))
+    samples = dist.sample(n, rng=np.random.RandomState(1))
     if low < high:
         assert np.all(samples >= low)
         assert np.all(samples < high)
@@ -29,7 +29,7 @@ def test_gaussian(mean, std):
             dist = dists.Gaussian(mean, std)
     else:
         dist = dists.Gaussian(mean, std)
-        samples = dist.sample(n, np.random.RandomState(1))
+        samples = dist.sample(n, rng=np.random.RandomState(1))
         assert abs(np.mean(samples) - mean) < std * 0.1
         assert abs(np.std(samples) - std) < 1
 
@@ -39,10 +39,10 @@ def test_hypersphere(dimensions):
     n = 100 * dimensions
     if dimensions < 1:
         with pytest.raises(ValueError):
-            dist = dists.UniformHypersphere(dimensions)
+            dist = dists.UniformHypersphere().sample(1, dimensions)
     else:
-        dist = dists.UniformHypersphere(dimensions)
-        samples = dist.sample(n, np.random.RandomState(1))
+        dist = dists.UniformHypersphere()
+        samples = dist.sample(n, dimensions, np.random.RandomState(1))
         assert samples.shape == (n, dimensions)
         assert np.allclose(
             np.mean(samples, axis=0), np.zeros(dimensions), atol=0.1)
@@ -53,8 +53,8 @@ def test_hypersphere(dimensions):
 @pytest.mark.parametrize("dimensions", [1, 2, 5])
 def test_hypersphere_surface(dimensions):
     n = 100 * dimensions
-    dist = dists.UniformHypersphere(dimensions, surface=True)
-    samples = dist.sample(n, np.random.RandomState(1))
+    dist = dists.UniformHypersphere(surface=True)
+    samples = dist.sample(n, dimensions, np.random.RandomState(1))
     assert samples.shape == (n, dimensions)
     assert np.allclose(npext.norm(samples, axis=1), 1)
     assert np.allclose(

@@ -4,8 +4,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.builder import ShapeMismatch
-from nengo.utils.numpy import rmse, norm
+import nengo.utils.numpy as npext
 from nengo.utils.testing import Plotter, warns
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,8 @@ def test_missing_attribute():
 def test_encoders(n_dimensions, n_neurons=10, encoders=None):
     if encoders is None:
         encoders = np.random.normal(size=(n_neurons, n_dimensions))
-        encoders /= norm(encoders, axis=-1, keepdims=True)
+        encoders = npext.array(encoders, min_dims=2, dtype=np.float64)
+        encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     model = nengo.Network(label="_test_encoders")
     with model:
@@ -39,7 +39,7 @@ def test_encoders(n_dimensions, n_neurons=10, encoders=None):
 def test_encoders_wrong_shape():
     n_dimensions = 3
     encoders = np.random.normal(size=n_dimensions)
-    with pytest.raises(ShapeMismatch):
+    with pytest.raises(ValueError):
         test_encoders(n_dimensions, encoders=encoders)
 
 
@@ -137,10 +137,10 @@ def test_scalar(Simulator, nl):
 
     target = np.sin(np.arange(5000) / 1000.)
     target.shape = (-1, 1)
-    logger.debug("[New API] input RMSE: %f", rmse(target, sim.data[in_p]))
-    logger.debug("[New API] A RMSE: %f", rmse(target, sim.data[A_p]))
-    assert rmse(target, sim.data[in_p]) < 0.001
-    assert rmse(target, sim.data[A_p]) < 0.1
+    logger.debug("Input RMSE: %f", npext.rmse(target, sim.data[in_p]))
+    logger.debug("A RMSE: %f", npext.rmse(target, sim.data[A_p]))
+    assert npext.rmse(target, sim.data[in_p]) < 0.001
+    assert npext.rmse(target, sim.data[A_p]) < 0.1
 
 
 def test_vector(Simulator, nl):
@@ -171,9 +171,9 @@ def test_vector(Simulator, nl):
     target = np.vstack((np.sin(np.arange(5000) / 1000.),
                         np.cos(np.arange(5000) / 1000.),
                         np.arctan(np.arange(5000) / 1000.))).T
-    logger.debug("In RMSE: %f", rmse(target, sim.data[in_p]))
-    assert rmse(target, sim.data[in_p]) < 0.01
-    assert rmse(target, sim.data[A_p]) < 0.1
+    logger.debug("In RMSE: %f", npext.rmse(target, sim.data[in_p]))
+    assert npext.rmse(target, sim.data[in_p]) < 0.01
+    assert npext.rmse(target, sim.data[A_p]) < 0.1
 
 
 def test_product(Simulator, nl):
@@ -220,11 +220,11 @@ def test_product(Simulator, nl):
         plt.close()
 
     sin = np.sin(np.arange(0, 6, .01))
-    assert rmse(sim.data[factors_p][:, 0], sin) < 0.1
-    assert rmse(sim.data[factors_p][20:, 1], -0.5) < 0.1
+    assert npext.rmse(sim.data[factors_p][:, 0], sin) < 0.1
+    assert npext.rmse(sim.data[factors_p][20:, 1], -0.5) < 0.1
 
-    assert rmse(sim.data[product_p][:, 0], -0.5 * sin) < 0.1
-    # assert rmse(sim.data[conn][:, 0], -0.5 * sin) < 0.1
+    assert npext.rmse(sim.data[product_p][:, 0], -0.5 * sin) < 0.1
+    # assert npext.rmse(sim.data[conn][:, 0], -0.5 * sin) < 0.1
 
 
 @pytest.mark.parametrize('dims, points', [(1, 528), (2, 823), (3, 937)])

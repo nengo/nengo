@@ -25,11 +25,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_encoders(n_neurons, dims, rng=None):
-    return UniformHypersphere(dims, surface=True).sample(n_neurons, rng=rng).T
+    return UniformHypersphere(surface=True).sample(n_neurons, dims, rng=rng).T
 
 
 def get_eval_points(n_points, dims, rng=None, sort=False):
-    points = UniformHypersphere(dims, surface=False).sample(n_points, rng=rng)
+    points = UniformHypersphere(surface=False).sample(n_points, dims, rng=rng)
     return points[np.argsort(points[:, 0])] if sort else points
 
 

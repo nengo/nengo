@@ -14,14 +14,10 @@ import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
 from nengo.utils.builder import full_transform
-from nengo.utils.compat import is_integer, is_number, range, StringIO
+from nengo.utils.compat import is_number, range, StringIO
 from nengo.utils.filter_design import cont2discrete
 
 logger = logging.getLogger(__name__)
-
-
-class ShapeMismatch(ValueError):
-    pass
 
 
 class SignalView(object):
@@ -85,7 +81,7 @@ class SignalView(object):
         if self.elemstrides == (1,):
             size = int(np.prod(shape))
             if size != self.size:
-                raise ShapeMismatch(shape, self.shape)
+                raise ValueError(shape, self.shape)
             elemstrides = [1]
             for si in reversed(shape[1:]):
                 elemstrides = [si * elemstrides[0]] + elemstrides
@@ -98,7 +94,7 @@ class SignalView(object):
             # -- scalars can be reshaped to any number of (1, 1, 1...)
             size = int(np.prod(shape))
             if size != self.size:
-                raise ShapeMismatch(shape, self.shape)
+                raise ValueError(shape, self.shape)
             elemstrides = [1] * len(shape)
             return SignalView(
                 base=self.base,
@@ -944,13 +940,15 @@ def build_network(network, model):  # noqa: C901
 Builder.register_builder(build_network, nengo.objects.Network)
 
 
-def pick_eval_points(ens, n_points, rng):
+def pick_eval_points(ens, rng, dist=None, n_points=None):
+    dims, neurons = ens.dimensions, ens.n_neurons
+    if dist is None:
+        # Use nengo.Ensemble default
+        dist = ens.__class__.eval_points.default
     if n_points is None:
-        # use a heuristic to pick the number of points
-        dims, neurons = ens.dimensions, ens.n_neurons
+        # Use a heuristic
         n_points = max(np.clip(500 * dims, 750, 2500), 2 * neurons)
-    return dists.UniformHypersphere(ens.dimensions).sample(
-        n_points, rng=rng) * ens.radius
+    return dist.sample(n_points, dims, rng=rng) * ens.radius
 
 
 def build_ensemble(ens, model, config):  # noqa: C901
@@ -958,9 +956,11 @@ def build_ensemble(ens, model, config):  # noqa: C901
     rng = np.random.RandomState(model.seeds[ens])
 
     # Generate eval points
-    if ens.eval_points is None or is_integer(ens.eval_points):
+    if isinstance(ens.eval_points, dists.Distribution):
+        eval_points = pick_eval_points(ens=ens, rng=rng, dist=ens.eval_points)
+    elif ens.eval_points.size == 1:
         eval_points = pick_eval_points(
-            ens=ens, n_points=ens.eval_points, rng=rng)
+            ens=ens, rng=rng, n_points=ens.eval_points)
     else:
         eval_points = npext.array(
             ens.eval_points, dtype=np.float64, min_dims=2)
@@ -973,16 +973,10 @@ def build_ensemble(ens, model, config):  # noqa: C901
     # Set up encoders
     if isinstance(ens.neuron_type, nengo.neurons.Direct):
         encoders = np.identity(ens.dimensions)
-    elif ens.encoders is None:
-        sphere = dists.UniformHypersphere(ens.dimensions, surface=True)
-        encoders = sphere.sample(ens.n_neurons, rng=rng)
+    elif isinstance(ens.encoders, dists.Distribution):
+        encoders = ens.encoders.sample(ens.n_neurons, ens.dimensions, rng=rng)
     else:
-        encoders = np.array(ens.encoders, dtype=np.float64)
-        enc_shape = (ens.n_neurons, ens.dimensions)
-        if encoders.shape != enc_shape:
-            raise ShapeMismatch(
-                "Encoder shape is %s. Should be (n_neurons, dimensions); "
-                "in this case %s." % (encoders.shape, enc_shape))
+        encoders = npext.array(ens.encoders, min_dims=2, dtype=np.float64)
         encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     # Determine max_rates and intercepts
@@ -1207,7 +1201,7 @@ def build_linear_system(conn, model, rng):
     if eval_points is None:
         eval_points = npext.array(
             model.params[conn.pre].eval_points, min_dims=2)
-    elif is_integer(eval_points):
+    elif eval_points.size == 1:
         eval_points = pick_eval_points(
             ens=conn.pre, n_points=eval_points, rng=rng)
     else:

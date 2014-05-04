@@ -33,11 +33,12 @@ class Parameter(object):
         self.default = default
         self.mandatory = mandatory
         self.modifies = modifies
-        # use a WeakKey dictionary so items can still be garbage collected
+        # use WeakKey dictionaries so items can still be garbage collected
+        self.defaults = weakref.WeakKeyDictionary()
         self.data = weakref.WeakKeyDictionary()
 
     def __contains__(self, key):
-        return key in self.data
+        return key in self.data or key in self.defaults
 
     def __delete__(self, instance):
         del self.data[instance]
@@ -51,19 +52,20 @@ class Parameter(object):
     def __set__(self, instance, value):
         if value is Default:
             value = self.default
-
-        if self.mandatory and value is None:
-            raise ValueError("Mandatory; cannot set to None")
-
-        if value is not None and not self.validate(instance, value):
-            raise ValueError("Cannot set to '%s'; validation failed." % value)
+        self.validate_none(instance, value)
+        if value is not None:
+            self.validate(instance, value)
         self.data[instance] = value
 
     def __repr__(self):
         return "%s(default=%s)" % (self.__class__.__name__, self.default)
 
     def validate(self, instance, value):
-        return True
+        pass
+
+    def validate_none(self, instance, value):
+        if self.mandatory and value is None:
+            raise ValueError("Mandatory; cannot set to None")
 
 
 class ClassParams(object):
@@ -85,7 +87,8 @@ class ClassParams(object):
             return super(ClassParams, self).__getattribute__(key)
         except AttributeError:
             # get_param gives a good error message, so this is sufficient
-            return self.get_param(key).__get__(self, self.__class__)
+            param = self.get_param(key)
+            return param.defaults[self] if self in param else param.default
 
     def __setattr__(self, key, value):
         """Overridden to handle instance descriptors manually.
@@ -95,7 +98,7 @@ class ClassParams(object):
         if key.startswith("_"):
             super(ClassParams, self).__setattr__(key, value)
         else:
-            self.get_param(key).__set__(self, value)
+            self.get_param(key).defaults[self] = value
 
     def __str__(self):
         lines = ["All parameters for %s:" % self._configures.__name__]

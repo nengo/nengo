@@ -12,7 +12,7 @@ from nengo.learning_rules import LearningRule
 from nengo.neurons import LIF
 from nengo import params
 from nengo.utils.compat import is_iterable, with_metaclass
-from nengo.utils.distributions import Uniform
+from nengo.utils.distributions import Uniform, UniformHypersphere
 from nengo.utils.inspect import checked_call
 
 logger = logging.getLogger(__name__)
@@ -376,10 +376,19 @@ class Ensemble(NengoObject):
     n_neurons = params.IntParam(default=None, low=1, mandatory=True)
     dimensions = params.IntParam(default=None, low=1, mandatory=True)
     radius = params.NumberParam(default=1.0, low=0.0, mandatory=True)
-    encoders = params.Parameter(default=None)
-    intercepts = params.Parameter(default=Uniform(-1.0, 1.0))
-    max_rates = params.Parameter(default=Uniform(200, 400))
-    eval_points = params.Parameter(default=None)
+    encoders = params.DistributionParam(
+        default=UniformHypersphere(surface=True),
+        mandatory=True,
+        sample_shape=('n_neurons', 'dimensions'))
+    intercepts = params.DistributionParam(default=Uniform(-1.0, 1.0),
+                                          mandatory=True,
+                                          sample_shape=('n_neurons',))
+    max_rates = params.DistributionParam(default=Uniform(200, 400),
+                                         mandatory=True,
+                                         sample_shape=('n_neurons',))
+    eval_points = params.DistributionParam(default=UniformHypersphere(),
+                                           mandatory=True,
+                                           sample_shape=('*', 'dimensions'))
     seed = params.IntParam(default=None)
     label = params.StringParam(default=None)
     bias = params.Parameter(default=None)
@@ -394,8 +403,8 @@ class Ensemble(NengoObject):
                  intercepts=Default, max_rates=Default, eval_points=Default,
                  neuron_type=Default, seed=Default, label=Default):
 
-        self.dimensions = dimensions
         self.n_neurons = n_neurons
+        self.dimensions = dimensions
         self.radius = radius
         self.encoders = encoders
         self.intercepts = intercepts
@@ -563,7 +572,8 @@ class Connection(NengoObject):
     solver = params.Parameter(default=nengo.decoders.LstsqL2())
     _function = params.Parameter(default=(None, 0))
     modulatory = params.BoolParam(default=False, mandatory=True)
-    eval_points = params.Parameter(default=None)
+    # TODO: sample_shape should be ('pre_size',)
+    eval_points = params.DistributionParam(default=None, sample_shape=('*',))
     probeable = params.ListParam(default=['signal'], mandatory=True)
 
     def __init__(self, pre, post, synapse=Default, transform=1.0,

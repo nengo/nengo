@@ -3,6 +3,7 @@ import numpy as np
 from nengo.config import Default, Parameter
 from nengo.utils.compat import is_integer, is_number, is_string
 from nengo.utils.inspect import checked_call
+from nengo.utils.distributions import Distribution
 import nengo.utils.numpy as npext
 
 
@@ -10,7 +11,6 @@ class BoolParam(Parameter):
     def validate(self, instance, boolean):
         if not isinstance(boolean, bool):
             raise ValueError("Must be a boolean; got '%s'" % boolean)
-        return True
 
 
 class NumberParam(Parameter):
@@ -26,31 +26,32 @@ class NumberParam(Parameter):
             raise ValueError("Number must be greater than %s" % self.low)
         if self.high is not None and num > self.high:
             raise ValueError("Number must be less than %s" % self.high)
-        return True
 
 
 class IntParam(NumberParam):
     def validate(self, instance, num):
         if not is_integer(num):
             raise ValueError("Must be an integer; got '%s'" % num)
-        return super(NumberParam, self).validate(instance, num)
+        super(NumberParam, self).validate(instance, num)
 
 
 class StringParam(Parameter):
     def validate(self, instance, string):
         if not is_string(string):
             raise ValueError("Must be a string; got '%s'" % string)
-        return True
 
 
 class ListParam(Parameter):
     def validate(self, instance, lst):
         if not isinstance(lst, list):
             raise ValueError("Must be a list; got '%s'" % lst)
-        return True
 
 
 class NodeOutput(Parameter):
+    def __init__(self, default, mandatory=False, modifies=None):
+        assert not mandatory  # None means passthrough node
+        super(NodeOutput, self).__init__(default, mandatory, modifies)
+
     def __set__(self, node, output):
         if output is Default:
             output = self.default
@@ -101,3 +102,48 @@ class NodeOutput(Parameter):
         if node.size_out is not None and node.size_out != output.size:
             raise ValueError("Size of Node output (%d) does not match size_out"
                              "(%d)" % (output.size, node.size_out))
+
+
+class DistributionParam(Parameter):
+    """Can be a Distribution or samples from a distribution."""
+
+    def __init__(self, default,  mandatory=False, modifies=None,
+                 sample_shape=None, scalar_ok=True):
+        self.sample_shape = sample_shape
+        self.scalar_ok = scalar_ok
+        super(DistributionParam, self).__init__(default, mandatory, modifies)
+
+    def __set__(self, instance, dist):
+        if dist is Default:
+            dist = self.default
+
+        self.validate_none(instance, dist)
+
+        if isinstance(dist, Distribution):
+            self.validate_distribution(instance, dist)
+        elif dist is not None:
+            dist = self.validate_ndarray(instance, dist)
+
+        self.data[instance] = dist
+
+    def validate_ndarray(self, instance, dist):
+        try:
+            dist = np.asarray(dist, dtype=np.float64)
+        except ValueError:
+            raise ValueError("Must be a Distribution or %dD array"
+                             % len(self.sample_shape))
+
+        if self.scalar_ok and dist.size == 1:
+            dist.shape = ()
+        else:
+            for i, attr in enumerate(self.sample_shape):
+                if attr == '*':
+                    continue
+                desired = getattr(instance, attr)
+                if dist.shape[i] != desired:
+                    raise ValueError("Shape[%d] should be %d (got %d)"
+                                     % (i, desired, dist.shape[i]))
+        return dist
+
+    def validate_distribution(self, instance, dist):
+        assert 0 < len(self.sample_shape) <= 2
