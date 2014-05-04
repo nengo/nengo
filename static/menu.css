@@ -1,0 +1,28 @@
+div#menubar {
+    background-color: #777;
+    padding-left: 10px;
+}
+
+
+#menubar img {
+    bacground-color: red;
+    margin:0;
+    padding: 5px;
+    margin-top:3px;
+}
+
+
+#menubar img:hover {
+    background-color: #888;
+}
+
+#filebrowser {
+    position: absolute;
+    top:32px;
+    left: 40px;
+    width: 400px;
+    height: 200px;
+    background-color: #999;
+    z-index: 1000;
+    overflow: auto;
+}

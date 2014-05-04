@@ -3,6 +3,8 @@
 <head>
     <title>Nengo Editor</title>
     <link rel="stylesheet" type="text/css" href="/static/main.css">
+    <link rel="stylesheet" type="text/css" href="/static/menu.css">
+    <link rel="stylesheet" type="text/css" href="/static/js/jqueryFileTree/jqueryFileTree.css">
 </head>
 <body>
 
@@ -11,6 +13,8 @@
 var aceRange = ace.require('ace/range').Range;
 </script>
 <script src="/static/js/d3.min.js", type="text/javascript" charset="utf-8"></script>
+<script src="/static/js/jquery-1.11.0.min.js", type="text/javascript" charset="utf-8"></script>
+<script src="/static/js/jqueryFileTree/jqueryFileTree.js", type="text/javascript" charset="utf-8"></script>
 
 <div id="editor">import nengo
 
@@ -53,6 +57,34 @@ with model:
         </defs>    
     </svg>
 </div>    
+
+<div id="menubar">
+    <img id="menu_open" src="/static/img/open.png" title="open model"/>
+    <img id="menu_save" src="/static/img/savefile.png" title="save model"/>
+</div>
+
+<div id="filebrowser"></div>
+<script>
+$('#filebrowser').hide()
+$('#menu_open').click(function() {$('#filebrowser').toggle(200);})
+$('#filebrowser').fileTree({ root: '.', script: '/browse' }, open_file);
+
+function open_file(file) {
+    $('#filebrowser').hide();
+    
+    container.selectAll('.link').remove();
+    container.selectAll('.node').remove();
+    editor.setValue('');
+    
+    var data = new FormData();
+    data.append('filename', file);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/openfile', true);
+    xhr.onload = function(event) {editor.setValue(this.responseText);};
+    xhr.send(data);    
+}
+</script>
 
 <script>
 var editor = ace.edit("editor");
@@ -347,10 +379,7 @@ function resize() {
     
 d3.select(window).on("resize", resize);
     
-        
-
-
-        
 </script>
+
 </body>
 </html>
