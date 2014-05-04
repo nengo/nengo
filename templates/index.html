@@ -111,7 +111,7 @@ function dragged(d) {
 
     d3.select(this).attr('transform', "translate("+d.x+","+d.y+")");
     update_net_position(d, d3.event.dx, d3.event.dy);
-    update_node_positions(d, d3.event.dx, d3.event.dy);
+    update_node_positions(d, d3.event.dx, d3.event.dy, node_margin, net_margin);
     update_net_sizes();
     update_line_locations();
 }
@@ -268,30 +268,29 @@ function update_net_sizes() {
 var net_widths = {};
 var net_heights = {};
 function update_net_size(d) {
-    x0 = graph.nodes[d.contains[0]].x;
+    x0 = graph.nodes[d.contains[0]].x; //first item in net x,y
     x1 = x0;
     y0 = graph.nodes[d.contains[0]].y;
     y1 = y0;
-    for (obj in d.contains) {
+    for (obj in d.contains) {  //min/max of y and x of nodes in net
         x0 = Math.min(graph.nodes[d.contains[obj]].x, x0);
         x1 = Math.max(graph.nodes[d.contains[obj]].x, x1);
         y0 = Math.min(graph.nodes[d.contains[obj]].y, y0);
         y1 = Math.max(graph.nodes[d.contains[obj]].y, y1);
     }
     border = 25;
-    d.x = (x0+x1)/2;
+    d.x = (x0+x1)/2;  // x, y mid
     d.y = (y0+y1)/2;
-    net_widths[d.id] = x1 - x0+2*border;
+    net_widths[d.id] = x1 - x0+2*border; //track heights/widths
     net_heights[d.id] = y1 - y0+2*border;
     
-    function isin(x, y) {
+    function isin(x, y) { // is the point x, y inside the net
         return (x<d.x+net_widths[d.id]/2) && 
                (x>d.x-net_widths[d.id]/2) && 
                (y<d.y+net_heights[d.id]/2) && 
                (y>d.y-net_heights[d.id]/2);
     }
 
-    
     for (var i=0; i<graph.nodes.length; i++) {
         n = graph.nodes[i];
         if (!(n===d) && d.contains.indexOf(i)==-1) {
@@ -318,36 +317,47 @@ function update_net_position(d, dx, dy) {
             graph.nodes[d.contains[obj]].y += dy
         }
     }
-    //not needed?
-    node.attr('transform', function(d) {
-            return 'translate('+[d.x, d.y]+')';
-        });
 }      
        
-function update_node_positions(d, dx, dy) {
-    margin = 40;
+var node_margin = 30; 
+var net_margin = 20;  
+function update_node_positions(d, dx, dy, node_margin, net_margin) {
     for (var i=0; i<graph.nodes.length; i++) {
         n = graph.nodes[i];
-        if (n===d) {return};
-        if (n.type == 'net') {
-            if (Math.abs(d.x-n.x)<(margin+n.width/2) && 
-                    Math.abs(d.y-n.y)<(margin+n.height/2)) {
-                n.x += dx
-                n.y += dy
+        if (n===d) {}
+        else if (n.type == 'net' && d.type == 'net' && !net_contains(n,d)) {
+            if (Math.abs(d.x-n.x) < (net_margin+net_widths[n.id]/2+net_widths[d.id]/2) 
+                && Math.abs(d.y-n.y)<(net_margin+net_heights[n.id]/2
+                                                    +net_heights[n.id]/2)) {
+                update_net_position(n, dx, dy)
+                update_node_positions(n,dx,dy,node_margin-1,net_margin-1)
+            }        
+        }
+        else if (n.type == 'net' && !net_contains(n,d)) {
+            if (Math.abs(d.x-n.x) < (net_margin+net_widths[n.id]/2) && 
+                    Math.abs(d.y-n.y) < (net_margin+net_heights[n.id]/2)) {
+                update_net_position(n, dx, dy)
+                update_node_positions(n,dx,dy,node_margin-1,net_margin-1)
             }
         }
-        //???Only 
-        else if (Math.abs(d.x-n.x)<margin && Math.abs(d.y-n.y)<margin) {
+        else if (Math.abs(d.x-n.x) < node_margin && Math.abs(d.y-n.y) < node_margin) {
                 n.x += dx
                 n.y += dy
+                update_node_positions(n,dx,dy,node_margin-1,net_margin-1)
         }
     }          
-    //not needed?
-    node.attr('transform', function(d) {
-            return 'translate('+[d.x, d.y]+')';
-        });
 }  
-        
+
+function net_contains(net, node) {
+    contain_bool = false
+    for (var i in net.contains) { 
+        if (graph.nodes[net.contains[i]].id == node.id) {
+            contain_bool = true
+        }
+    }
+    return contain_bool
+}
+
 function resize() {
     width = window.innerWidth/2;
     height = window.innerHeight;
