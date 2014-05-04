@@ -2,7 +2,7 @@ import numpy as np
 
 import nengo
 from nengo.networks.product import Product
-from nengo.utils.decorators import memoize
+from nengo.utils.magic import memoize
 
 
 def circconv(a, b, invert_a=False, invert_b=False, axis=-1):

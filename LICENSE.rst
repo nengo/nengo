@@ -33,7 +33,7 @@ Nengo also includes code modified from other libraries.
 
 ------------
 
-The file ``nengo/utils/decorators.py`` contains code with the
+The file ``nengo/utils/magic.py`` contains code with the
 following license:
 
 Copyright (c) 2013, Graham Dumpleton. All rights reserved.
