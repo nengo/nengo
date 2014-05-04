@@ -11,6 +11,7 @@ from nengo.config import Config, Default, is_param
 from nengo.learning_rules import LearningRule
 from nengo.neurons import LIF
 from nengo import params
+from nengo.synapses import Lowpass
 from nengo.utils.compat import is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform, UniformHypersphere
 from nengo.utils.inspect import checked_call
@@ -566,7 +567,7 @@ class Connection(NengoObject):
         The seed used for random number generation.
     """
 
-    synapse = params.Parameter(default=0.005, optional=True)
+    synapse = params.SynapseParam(default=Lowpass(0.005))
     _transform = params.Parameter(default=np.array(1.0))
     solver = params.Parameter(default=nengo.decoders.LstsqL2())
     _function = params.Parameter(default=(None, 0), optional=True)

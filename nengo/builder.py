@@ -857,12 +857,12 @@ class Builder(object):
     def build(cls, obj, *args, **kwargs):
         model = kwargs.setdefault('model', Model())
 
-        if model.has_built(obj):
-            # If we've already built the obj, we'll ignore it.
+        # Actually, turns out we want to do this sometimes
 
-            # TODO: Prevent this at pre-build validation time.
-            warnings.warn("Object '%s' has already been built." % obj)
-            return
+        # if model.has_built(obj):
+        #     # TODO: Prevent this at pre-build validation time.
+        #     warnings.warn("Object '%s' has already been built." % obj)
+        #     return
 
         for obj_cls in obj.__class__.__mro__:
             if obj_cls in cls.builders:
@@ -1131,6 +1131,7 @@ Builder.register_builder(build_node, nengo.objects.Node)
 
 
 def conn_probe(pre, probe, **conn_args):
+    # TODO: make this connection in the network config context
     return nengo.Connection(pre, probe, **conn_args)
 
 

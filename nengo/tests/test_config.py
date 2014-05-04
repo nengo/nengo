@@ -1,6 +1,7 @@
 import pytest
 
 import nengo
+import nengo.synapses
 from nengo.config import Parameter
 
 
@@ -134,7 +135,7 @@ def test_configstack():
     """Test that setting defaults with bare configs works."""
     inhib = nengo.Config()
     inhib.configures(nengo.Connection)
-    inhib[nengo.Connection].synapse = 0.00848
+    inhib[nengo.Connection].synapse = nengo.synapses.Lowpass(0.00848)
     with nengo.Network() as net:
         net.config[nengo.Connection].modulatory = True
         e1 = nengo.Ensemble(5, dimensions=1)

@@ -2,6 +2,7 @@ import numpy as np
 
 from nengo.config import Parameter
 from nengo.neurons import NeuronType
+from nengo.synapses import Lowpass, Synapse
 from nengo.utils.compat import is_integer, is_number, is_string
 from nengo.utils.distributions import Distribution
 from nengo.utils.inspect import checked_call
@@ -165,4 +166,20 @@ class NeuronTypeParam(Parameter):
 
     def validate(self, ens, neurons):
         if not isinstance(neurons, NeuronType):
-            raise ValueError("'%s%' is not a neuron type" % neurons)
+            raise ValueError("'%s' is not a neuron type" % neurons)
+
+
+class SynapseParam(Parameter):
+    def __init__(self, default, optional=True, modifies=None):
+        assert optional  # None has meaning (no filtering)
+        super(SynapseParam, self).__init__(default, optional, modifies)
+
+    def __set__(self, conn, synapse):
+        if is_number(synapse):
+            synapse = Lowpass(synapse)
+        self.validate(conn, synapse)
+        self.data[conn] = synapse
+
+    def validate(self, conn, synapse):
+        if synapse is not None and not isinstance(synapse, Synapse):
+            raise ValueError("'%s' is not a synapse type" % synapse)
