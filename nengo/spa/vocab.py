@@ -377,3 +377,32 @@ class Vocabulary(object):
 
         pcorrect = (1 - perror1) ** vocab_size
         return pcorrect
+
+    def create_subset(self, keys):
+        """Returns the subset of this vocabulary.
+
+        Creates and returns a subset of the current vocabulary that contains
+        all the semantic pointers found in keys.
+
+        Parameters
+        ----------
+        keys : list of strings
+            List of semantic pointer names to be copied over to the
+            new vocabulary.
+
+        """
+
+        # Make new vocabulary object
+        result = Vocabulary(self.dimensions,
+                            self.randomize,
+                            self.unitary,
+                            self.max_similarity,
+                            self.include_pairs,
+                            self.rng)
+
+        # Make a copy of the desired keys
+        for key in keys:
+            result.add(key, self[key])
+
+        # Return the result
+        return result
