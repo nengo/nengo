@@ -175,8 +175,8 @@ def test_scipy_solvers():
     x0, _ = cholesky(A, b, sigma)
     x1, _ = conjgrad_scipy(A, b, sigma)
     x2, _ = lsmr_scipy(A, b, sigma)
-    assert np.allclose(x0, x1, atol=1e-5, rtol=1e-3)
-    assert np.allclose(x0, x2, atol=1e-5, rtol=1e-3)
+    assert np.allclose(x0, x1, atol=2e-5, rtol=1e-3)
+    assert np.allclose(x0, x2, atol=2e-5, rtol=1e-3)
 
 
 @pytest.mark.optional  # uses scipy
