@@ -34,6 +34,7 @@ def test_connect(Simulator):
 
 
 def test_transform(Simulator):
+
     class SPA(spa.SPA):
         def __init__(self):
             self.buffer1 = spa.Buffer(dimensions=16)
@@ -81,22 +82,41 @@ def test_errors():
     class SPA(spa.SPA):
         def __init__(self):
             self.buffer = spa.Buffer(dimensions=16)
-            self.cortical = spa.Cortical(spa.Actions(
-                'dot(buffer,A) --> buffer=buffer'))
+            self.cortical = spa.Cortical(spa.Actions('buffer2=buffer'))
 
-    with pytest.raises(NotImplementedError):
-        SPA()
+    with pytest.raises(NameError):
+        SPA()  # buffer2 does not exist
 
     class SPA(spa.SPA):
         def __init__(self):
             self.buffer = spa.Buffer(dimensions=16)
-            self.cortical = spa.Cortical(spa.Actions('buffer2=buffer'))
+            self.cortical = spa.Cortical(spa.Actions(
+                'dot(buffer,A) --> buffer=buffer'))
 
-    with pytest.raises(NameError):
-        SPA()
+    with pytest.raises(NotImplementedError):
+        SPA()  # conditional expressions not implemented
+
+    class SPA(spa.SPA):
+        def __init__(self):
+            self.scalar = spa.Buffer(dimensions=1, subdimensions=1)
+            self.cortical = spa.Cortical(spa.Actions(
+                'scalar=dot(scalar, FOO)'))
+
+    with pytest.raises(NotImplementedError):
+        SPA()  # dot products not implemented
+
+    class SPA(spa.SPA):
+        def __init__(self):
+            self.unitary = spa.Buffer(dimensions=16)
+            self.cortical = spa.Cortical(spa.Actions(
+                'unitary=unitary*unitary'))
+
+    with pytest.raises(NotImplementedError):
+        SPA()  # convolution not implemented
 
 
 def test_direct(Simulator):
+
     class SPA(spa.SPA):
         def __init__(self):
             self.buffer1 = spa.Buffer(dimensions=16)
