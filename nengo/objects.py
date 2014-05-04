@@ -535,7 +535,7 @@ class Connection(NengoObject):
     """
 
     synapse = Parameter(default=0.005)
-    _transform = Parameter(default=1.0)
+    _transform = Parameter(default=np.array(1.0))
     solver = Parameter(default=nengo.decoders.LstsqL2())
     _function = Parameter(default=(None, 0))
     modulatory = Parameter(default=False)
@@ -593,7 +593,7 @@ class Connection(NengoObject):
         if self._skip_check_shapes:
             return
 
-        transform = np.asarray(self.transform)
+        transform = self.transform
 
         # Get the required input/output sizes for the new transform
         post_dims, pre_dims = self._required_transform_shape()
@@ -706,7 +706,7 @@ class Connection(NengoObject):
 
     @transform.setter
     def transform(self, _transform):
-        self._transform = _transform
+        self._transform = np.asarray(_transform)
         self._check_shapes()
 
     @property
