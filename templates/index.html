@@ -6,7 +6,7 @@
     <link rel="stylesheet" type="text/css" href="/static/menu.css">
     <link rel="stylesheet" type="text/css" href="/static/js/jqueryFileTree/jqueryFileTree.css">
 </head>
-<body>
+<body onload="open_file('scripts/default.py');">
 
 <script src="/static/js/ace/ace.js" type="text/javascript" charset="utf-8"></script>
 <script>
@@ -16,31 +16,7 @@ var aceRange = ace.require('ace/range').Range;
 <script src="/static/js/jquery-1.11.0.min.js", type="text/javascript" charset="utf-8"></script>
 <script src="/static/js/jqueryFileTree/jqueryFileTree.js", type="text/javascript" charset="utf-8"></script>
 
-<div id="editor">import nengo
-
-model = nengo.Network()
-with model:
-    a = nengo.Ensemble(neurons=100, dimensions=2, label='a')
-    b = nengo.Ensemble(neurons=80, dimensions=2, label='b')
-    c = nengo.Ensemble(neurons=80, dimensions=2)
-    d = nengo.Ensemble(neurons=80, dimensions=2)
-    e = nengo.networks.EnsembleArray(80,2)
-    
-    vis = nengo.Network()
-    with vis:
-#        v1 = nengo.Network()
-#        with v1:
-#            n = nengo.Ensemble(neurons=80, dimensions=2)
-         r = nengo.Ensemble(neurons=80, dimensions=2)
-         t = nengo.Ensemble(neurons=80, dimensions=2)
-         nengo.Connection(r, t)
-
-
-    nengo.Connection(a, b, synapse=0.01)
-    nengo.Connection(b, c, synapse=0.01)
-    nengo.Connection(c, d, synapse=0.01)
-    nengo.Connection(b, d, synapse=0.01)
-    nengo.Connection(d, e.input, synapse=0.01)
+<div id="editor">
 </div>
     
 <div id="graph">
@@ -84,6 +60,7 @@ function open_file(file) {
     xhr.onload = function(event) {editor.setValue(this.responseText);};
     xhr.send(data);    
 }
+
 </script>
 
 <script>

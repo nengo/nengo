@@ -39,16 +39,16 @@ class NengoGui(swi.SimpleWebInterface):
 
     def swi_browse(self, dir):
         r = ['<ul class="jqueryFileTree" style="display: none;">']
-        r.append('<li class="directory collapsed"><a href="#" rel="../">..</a></li>')
-        d = urllib.unquote(dir)
+        # r.append('<li class="directory collapsed"><a href="#" rel="../">..</a></li>')
+        d = 'scripts/' + urllib.unquote(dir)
         for f in os.listdir(d):
-                ff = os.path.join(d,f)
-                if os.path.isdir(ff):
-                    r.append('<li class="directory collapsed"><a href="#" rel="%s/">%s</a></li>' % (ff,f))
-                else:
-                    e = os.path.splitext(f)[1][1:] # get .ext and remove dot
-                    if e == 'py':
-                        r.append('<li class="file ext_%s"><a href="#" rel="%s">%s</a></li>' % (e,ff,f))
+            ff = os.path.join(d,f)
+            if os.path.isdir(ff):
+                r.append('<li class="directory collapsed"><a href="#" rel="%s/">%s</a></li>' % (ff,f))
+            else:
+                e = os.path.splitext(f)[1][1:] # get .ext and remove dot
+                if e == 'py':
+                    r.append('<li class="file ext_%s"><a href="#" rel="%s">%s</a></li>' % (e,ff,f))
         r.append('</ul>')
         return ''.join(r)
 
