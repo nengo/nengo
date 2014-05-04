@@ -22,7 +22,7 @@ if PY2:
     import cPickle as pickle
     from StringIO import StringIO
     string_types = (str, unicode)
-    int_types = (int, long, np.integer)
+    int_types = (int, long)
     range = xrange
 
     # No iterkeys; use ``for key in dict:`` instead
@@ -42,7 +42,7 @@ else:
     import pickle
     from io import StringIO
     string_types = (str,)
-    int_types = (int, np.integer)
+    int_types = (int,)
     range = range
 
     # No iterkeys; use ``for key in dict:`` instead
@@ -64,7 +64,7 @@ assert StringIO
 
 
 def is_integer(obj):
-    return isinstance(obj, int_types)
+    return isinstance(obj, int_types + (np.integer,))
 
 
 def is_iterable(obj):

@@ -10,9 +10,37 @@ import warnings
 import numpy as np
 
 import nengo.utils.paths
-from nengo.utils.compat import pickle
+from nengo.utils.compat import pickle, PY2
 
 logger = logging.getLogger(__name__)
+
+
+class Fingerprint(object):
+    """Fingerprint of an object instance.
+
+    A finger print is equal for two instances if and only if they are of the
+    same type and have the same attributes.
+
+    The fingerprint will be used as identification for caching.
+
+    Parameters
+    ----------
+    obj : object
+        Object to fingerprint.
+    """
+
+    __slots__ = ['fingerprint']
+
+    def __init__(self, obj):
+        self.fingerprint = hashlib.sha1()
+        try:
+            self.fingerprint.update(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL))
+        except (pickle.PicklingError, TypeError) as err:
+            raise ValueError("Cannot create fingerprint: {msg}".format(
+                msg=str(err)))
+
+    def __str__(self):
+        return self.fingerprint.hexdigest()
 
 
 class DecoderCache(object):
@@ -20,6 +48,10 @@ class DecoderCache(object):
 
     Hashes the arguments to the decoder solver and stores the result in a file
     which will be reused in later calls with the same arguments.
+
+    Be aware that decoders should not use any global state, but only values
+    passed and attributes of the object instance. Otherwise the wrong solver
+    results might get loaded from the cache.
 
     Parameters
     ----------
@@ -163,10 +195,10 @@ class DecoderCache(object):
     def _get_cache_key(self, solver, activities, targets, rng, E):
         h = hashlib.sha1()
 
-        if not inspect.isfunction(solver):
-            solver = solver.__call__
-        h.update(solver.__module__.encode())
-        h.update(solver.__name__.encode())
+        if PY2:
+            h.update(str(Fingerprint(solver)))
+        else:
+            h.update(str(Fingerprint(solver)).encode('utf-8'))
 
         h.update(np.ascontiguousarray(activities).data)
         h.update(np.ascontiguousarray(targets).data)
