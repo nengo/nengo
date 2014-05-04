@@ -22,7 +22,7 @@ def full_transform(conn, allow_scalars=True):
         not using slicing, since these work fine in the reference builder.
         If false, these scalars will be turned into scaled identity matrices.
     """
-    transform = np.asarray(conn.transform)
+    transform = conn.transform
 
     if conn._preslice == slice(None) and conn._postslice == slice(None):
         if transform.ndim == 2:
