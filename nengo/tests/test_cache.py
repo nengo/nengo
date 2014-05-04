@@ -55,6 +55,9 @@ def test_decoder_cache(tmpdir):
     cache.wrap_solver(another_solver.get_solver_fn())(activities, targets, rng)
     assert another_solver.n_calls == 1
 
+    # Test get_size
+    assert cache.get_size() > 0
+
 
 def test_decoder_cache_with_E_argument_to_solver(tmpdir):
     cache_dir = str(tmpdir)

@@ -28,7 +28,10 @@ class DecoderCache(object):
             os.makedirs(self.cache_dir)
 
     def get_size(self):
-        return 0
+        size = 0
+        for filename in os.listdir(self.cache_dir):
+            size += os.stat(os.path.join(self.cache_dir, filename)).st_size
+        return size
 
     def shrink(self, limit=0):
         pass
