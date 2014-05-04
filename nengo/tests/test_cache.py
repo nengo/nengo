@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from numpy.testing import assert_equal
 import pytest
@@ -55,8 +57,42 @@ def test_decoder_cache(tmpdir):
     cache.wrap_solver(another_solver.get_solver_fn())(activities, targets, rng)
     assert another_solver.n_calls == 1
 
-    # Test get_size
+
+def test_decoder_cache_shrinking(tmpdir):
+    cache_dir = str(tmpdir)
+    solver_mock = DecoderSolverMock()
+    another_solver = DecoderSolverMock('another_solver')
+
+    M = 100
+    N = 10
+    D = 2
+    activities = np.ones((M, D))
+    targets = np.ones((M, N))
+    rng = np.random.RandomState(42)
+
+    cache = DecoderCache(cache_dir=cache_dir)
+    cache.wrap_solver(solver_mock.get_solver_fn())(activities, targets, rng)
+
+    # Ensure differing time stamps (depending on the file system the timestamp
+    # resolution might be as bad as 1 day).
+    for filename in os.listdir(cache.cache_dir):
+        path = os.path.join(cache.cache_dir, filename)
+        timestamp = os.stat(path).st_atime
+        timestamp -= 60 * 60 * 24 * 2  # 2 days
+        os.utime(path, (timestamp, timestamp))
+
+    cache.wrap_solver(another_solver.get_solver_fn())(activities, targets, rng)
+
     assert cache.get_size() > 0
+
+    cache.shrink(1)
+
+    # check that older cached result was removed
+    assert solver_mock.n_calls == 1
+    cache.wrap_solver(another_solver.get_solver_fn())(activities, targets, rng)
+    cache.wrap_solver(solver_mock.get_solver_fn())(activities, targets, rng)
+    assert solver_mock.n_calls == 2
+    assert another_solver.n_calls == 1
 
 
 def test_decoder_cache_with_E_argument_to_solver(tmpdir):

@@ -33,8 +33,31 @@ class DecoderCache(object):
             size += os.stat(os.path.join(self.cache_dir, filename)).st_size
         return size
 
-    def shrink(self, limit=0):
-        pass
+    def shrink(self, limit=100):
+        filelist = []
+        for filename in os.listdir(self.cache_dir):
+            key, ext = os.path.splitext(filename)
+            if ext == self._SOLVER_INFO_EXT:
+                continue
+            path = os.path.join(self.cache_dir, filename)
+            stat = os.stat(path)
+            filelist.append((stat.st_atime, key))
+        filelist.sort()
+
+        excess = len(filelist) - limit
+        for _, key in filelist:
+            if excess <= 0:
+                break
+            excess -= 1
+
+            decoder_path = os.path.join(
+                self.cache_dir, key + self._DECODER_EXT)
+            solver_info_path = os.path.join(
+                self.cache_dir, key + self._SOLVER_INFO_EXT)
+
+            os.unlink(decoder_path)
+            if os.path.exists(solver_info_path):
+                os.unlink(solver_info_path)
 
     # TODO test this function
     def invalidate(self):
