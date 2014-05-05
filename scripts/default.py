@@ -2,19 +2,19 @@ import nengo
 
 model = nengo.Network()
 with model:
-    a = nengo.Ensemble(neurons=100, dimensions=2, label='a')
-    b = nengo.Ensemble(neurons=80, dimensions=2, label='b')
-    c = nengo.Ensemble(neurons=80, dimensions=2)
-    d = nengo.Ensemble(neurons=80, dimensions=2)
+    a = nengo.Ensemble(n_neurons=100, dimensions=2, label='a')
+    b = nengo.Ensemble(n_neurons=80, dimensions=2, label='b')
+    c = nengo.Ensemble(n_neurons=80, dimensions=2)
+    d = nengo.Ensemble(n_neurons=80, dimensions=2)
     e = nengo.networks.EnsembleArray(80,2)
     
     vis = nengo.Network()
     with vis:
 #        v1 = nengo.Network()
 #        with v1:
-#            n = nengo.Ensemble(neurons=80, dimensions=2)
-         r = nengo.Ensemble(neurons=80, dimensions=2)
-         t = nengo.Ensemble(neurons=80, dimensions=2)
+#            n = nengo.Ensemble(n_neurons=80, dimensions=2)
+         r = nengo.Ensemble(n_neurons=80, dimensions=2)
+         t = nengo.Ensemble(n_neurons=80, dimensions=2)
          nengo.Connection(r, t)
 
 

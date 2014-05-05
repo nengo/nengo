@@ -268,8 +268,9 @@ function update_net_sizes() {
 
 var net_widths = {};
 var net_heights = {};
-var node_margin = 30; 
-var net_margin = 25;  
+var node_margin = 35; 
+var net_inner_margin = 25;  
+var net_margin = 15;
 function update_net_size(d) {
 	xstart = d.x
 	ystart = d.y
@@ -287,8 +288,8 @@ function update_net_size(d) {
     d.y = (y0+y1)/2;
     dx = d.x - xstart;
     dy = d.y - ystart;
-    net_widths[d.id] = x1 - x0+2*net_margin; //track heights/widths
-    net_heights[d.id] = y1 - y0+2*net_margin;
+    net_widths[d.id] = x1 - x0+2*net_inner_margin; //track heights/widths
+    net_heights[d.id] = y1 - y0+2*net_inner_margin;
 
     var node_list = []; //make a list of the indices of all nodes
     for (i in graph.nodes){node_list.push(i)}
@@ -310,7 +311,7 @@ function update_node_positions(d, dx, dy, node_list) {
         n = graph.nodes[node_list[i]];
         if (close_to(n,d)) {
         	move_node(n, dx, dy)
-        	update_node_positions(n, dx, dy, node_list)
+        	update_node_positions(n, dx, dy, node_list.slice(0))
         }
     }
 }        
@@ -337,8 +338,8 @@ function close_to(n, o) { //n is node, o is origin
             }
         }
         else { //if node is net
-            if (Math.abs(o.x-n.x) < (net_margin+net_widths[n.id]/2+net_widths[o.id]/2) 
-                && Math.abs(o.y-n.y)<(net_margin+net_heights[n.id]/2
+            if (Math.abs(o.x-n.x) < (net_widths[n.id]/2+net_widths[o.id]/2) 
+                && Math.abs(o.y-n.y)<(net_heights[n.id]/2
                                                     +net_heights[o.id]/2)) {
                 //console.log('true 2')
             	return true
