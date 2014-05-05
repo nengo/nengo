@@ -7,6 +7,7 @@ import pytest
 import nengo
 from nengo.cache import DecoderCache, Fingerprint
 from nengo.utils.compat import int_types
+from nengo.utils.testing import Timer
 
 
 class SolverMock(object):
@@ -181,6 +182,29 @@ def test_fingerprinting(reference, equal, different):
 def test_fails_for_lambda_expression():
     with pytest.raises(ValueError):
         Fingerprint(lambda x: x)
+
+
+def calc_relative_timer_diff(t1, t2):
+    return (t2.duration - t1.duration) / (t2.duration + t1.duration)
+
+
+@pytest.mark.benchmark
+def test_cache_performance(tmpdir, Simulator):
+    cache_dir = str(tmpdir)
+
+    model = nengo.Network(seed=1)
+    with model:
+        nengo.Connection(nengo.Ensemble(1500, 10), nengo.Ensemble(1500, 10))
+    built_model = nengo.builder.Model(dt=0.001,
+                                      decoder_cache=DecoderCache(cache_dir))
+    with Timer() as t_no_cache:
+        nengo.Simulator(model, caching=False)
+    with Timer() as t_cache_miss:
+        nengo.Simulator(model, model=built_model, caching=True)
+    with Timer() as t_cache_hit:
+        nengo.Simulator(model, model=built_model, caching=True)
+    assert calc_relative_timer_diff(t_no_cache, t_cache_miss) < 0.1
+    assert calc_relative_timer_diff(t_cache_hit, t_no_cache) > 0.75
 
 
 if __name__ == "__main__":
