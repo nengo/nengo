@@ -110,7 +110,7 @@ function dragged(d) {
     d.y = d3.event.y;
 
     d3.select(this).attr('transform', "translate("+d.x+","+d.y+")");
-    var node_list = []; //make a list of the indeces of all nodes
+    var node_list = []; //make a list of the indices of all nodes
     for (i in graph.nodes){node_list.push(i)}
     update_node_positions(d, d3.event.dx, d3.event.dy, node_list);
     update_net_position(d, d3.event.dx, d3.event.dy);
@@ -235,8 +235,8 @@ function update_graph() {
 	//redraw so nodes are on top
 	container.selectAll('g.node').filter(function(d) {return d.type!='net';})
 		.moveToFront();
-
-	update_net_sizes();
+		
+    update_net_sizes();
 	update_line_locations();        
 }
 
@@ -290,7 +290,7 @@ function update_net_size(d) {
     net_widths[d.id] = x1 - x0+2*net_margin; //track heights/widths
     net_heights[d.id] = y1 - y0+2*net_margin;
 
-    var node_list = []; //make a list of the indeces of all nodes
+    var node_list = []; //make a list of the indices of all nodes
     for (i in graph.nodes){node_list.push(i)}
     update_node_positions(d, 2*dx, 2*dy, node_list)
 }
