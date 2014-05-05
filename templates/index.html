@@ -18,21 +18,21 @@ var aceRange = ace.require('ace/range').Range;
 
 <div id="editor">
 </div>
-    
+
 <div id="graph">
     <svg>
         <defs>
             // the arrow on the links
             <marker id="TriangleMarker"
-              viewBox="0 0 10 10" refX="0" refY="5" 
+              viewBox="0 0 10 10" refX="0" refY="5"
               markerUnits="strokeWidth"
               markerWidth="6" markerHeight="4"
               orient="auto">
               <path d="M 0 0 L 10 5 L 0 10 z" />
-            </marker>    
-        </defs>    
+            </marker>
+        </defs>
     </svg>
-</div>    
+</div>
 
 <div id="menubar">
     <img id="menu_open" src="/static/img/open.png" title="open model"/>
@@ -47,18 +47,18 @@ $('#filebrowser').fileTree({ root: '.', script: '/browse' }, open_file);
 
 function open_file(file) {
     $('#filebrowser').hide();
-    
+
     container.selectAll('.link').remove();
     container.selectAll('.node').remove();
     editor.setValue('');
-    
+
     var data = new FormData();
     data.append('filename', file);
 
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/openfile', true);
     xhr.onload = function(event) {editor.setValue(this.responseText);};
-    xhr.send(data);    
+    xhr.send(data);
 }
 
 </script>
@@ -77,18 +77,18 @@ editor.on('change', function(event) {reload_graph_data();});
 var zoom = d3.behavior.zoom()
     .scaleExtent([0.1, 10])
     .on('zoom', zoomed);
-        
+
 var svg = d3.select("svg");
 var container = svg.append('g');
 
 zoom(svg);  // set up zooming on the graph
 
-// helper function to move objects to be drawn on top    
+// helper function to move objects to be drawn on top
 d3.selection.prototype.moveToFront = function() {
   return this.each(function(){
     this.parentNode.appendChild(this);
   });
-};    
+};
 
 var drag = d3.behavior.drag()
     .origin(function(d){return d})
@@ -121,7 +121,7 @@ function dragged(d) {
 function dragended(d) {
       d3.select(this).classed("dragging", false);
 }
-    
+
 // editor -> server -> graph loop
 function reload_graph_data() {
     var data = new FormData();
@@ -130,15 +130,15 @@ function reload_graph_data() {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/graph.json', true);
     xhr.onload = update_graph;
-    xhr.send(data);    
-}    
+    xhr.send(data);
+}
 
 var graph;
 var link;
 var node;
 
-    
-        
+
+
 // line highlighting when over objects in graph
 var marker = null;
 function mouseover(d) {
@@ -156,10 +156,10 @@ function mouseout(d) {
 		}
 	editor.getSession().clearAnnotations();
 	}
-	
+
 reload_graph_data();
-    
-        
+
+
 function update_graph() {
 	graph = JSON.parse(this.responseText);
 
@@ -185,7 +185,7 @@ function update_graph() {
 
 	link = container.selectAll('.link')
 		.data(graph.links);
-		
+
 	link.enter().append('polyline')
 		.attr('class', function(d) {return 'link link_'+d.type;});
 
@@ -193,8 +193,8 @@ function update_graph() {
 	node = container.selectAll('g.node')
 		.data(graph.nodes, function(d) {return d.id})
 	container.selectAll('g.node text')
-		.data(graph.nodes, function(d) {return d.id})            
-		
+		.data(graph.nodes, function(d) {return d.id})
+
 	var nodeEnter = node
 		.enter()
 		.append('g')
@@ -202,7 +202,7 @@ function update_graph() {
 		.on('mouseover', mouseover)
 		.on('mouseout', mouseout)
 		.call(drag);
-	
+
 	nodeEnter.filter(function(d) {return d.type=='ens';})
 		.append('circle')
 		.attr('r', '20')
@@ -222,22 +222,22 @@ function update_graph() {
 		.attr('ry', '15')
 		.attr('width', '100')
 		.attr('height', '100')
-		
+
 	nodeEnter.append('text')
 		.text(function(d) {return d.label;});
-		
+
 	node.exit().remove();
-	
-	//label everything    
+
+	//label everything
 	container.selectAll('g.node')
 		.selectAll('text')
 		.text(function(d) {return d.label;});
 	//redraw so nodes are on top
 	container.selectAll('g.node').filter(function(d) {return d.type!='net';})
 		.moveToFront();
-		
+
     update_net_sizes();
-	update_line_locations();        
+	update_line_locations();
 }
 
 function update_line_locations() {
@@ -268,8 +268,8 @@ function update_net_sizes() {
 
 var net_widths = {};
 var net_heights = {};
-var node_margin = 35; 
-var net_inner_margin = 25;  
+var node_margin = 35;
+var net_inner_margin = 25;
 var net_margin = 15;
 function update_net_size(d) {
 	xstart = d.x
@@ -297,16 +297,15 @@ function update_net_size(d) {
 }
 
 function isin(d, x, y) { // is the point x, y inside the net
-	return (x<d.x+net_widths[d.id]/2) && 
-		   (x>d.x-net_widths[d.id]/2) && 
-		   (y<d.y+net_heights[d.id]/2) && 
+	return (x<d.x+net_widths[d.id]/2) &&
+		   (x>d.x-net_widths[d.id]/2) &&
+		   (y<d.y+net_heights[d.id]/2) &&
 		   (y>d.y-net_heights[d.id]/2);
-}         
+}
 
 function update_node_positions(d, dx, dy, node_list) {
 	ind = graph.nodes.indexOf(d)
 	node_list.splice(node_list.indexOf(ind.toString()),1) //remove d from node_list
-	console.log(node_list)
     for (var i=0; i<node_list.length; i++) {
         n = graph.nodes[node_list[i]];
         if (close_to(n,d)) {
@@ -314,8 +313,8 @@ function update_node_positions(d, dx, dy, node_list) {
         	update_node_positions(n, dx, dy, node_list.slice(0))
         }
     }
-}        
-        
+}
+
 function move_node(node, dx, dy) {
 	if (node.type == "net") { //move a network
 		update_net_position(node, dx,dy)
@@ -325,12 +324,12 @@ function move_node(node, dx, dy) {
 		node.y += dy
 	}
 }
-        
+
 function close_to(n, o) { //n is node, o is origin
 	if (o.type == "net") { //if origin is net
 		if (!(n.type == "net")) { //if node is nde or ens
         	if (!net_contains(o, n)) {
-            	if (Math.abs(o.x-n.x) < (net_margin+net_widths[o.id]/2) && 
+            	if (Math.abs(o.x-n.x) < (net_margin+net_widths[o.id]/2) &&
                     Math.abs(o.y-n.y) < (net_margin+net_heights[o.id]/2)) {
                 	//console.log('true 1')
                 	return true
@@ -338,7 +337,7 @@ function close_to(n, o) { //n is node, o is origin
             }
         }
         else { //if node is net
-            if (Math.abs(o.x-n.x) < (net_widths[n.id]/2+net_widths[o.id]/2) 
+            if (Math.abs(o.x-n.x) < (net_widths[n.id]/2+net_widths[o.id]/2)
                 && Math.abs(o.y-n.y)<(net_heights[n.id]/2
                                                     +net_heights[o.id]/2)) {
                 //console.log('true 2')
@@ -348,7 +347,7 @@ function close_to(n, o) { //n is node, o is origin
     }
     if (!(o.type == "net")) { //if origin is nde or ens
 		if (!(n.type == "net")) { //if node nde or ens
-			if (Math.abs(o.x-n.x) < node_margin 
+			if (Math.abs(o.x-n.x) < node_margin
 			   && Math.abs(o.y-n.y) < node_margin) {
              	//console.log('true 3')
 				return true
@@ -356,8 +355,8 @@ function close_to(n, o) { //n is node, o is origin
 		}
         else { //if node is net
         	if(!net_contains(n, o)) {
-            	if (Math.abs(o.x-n.x) < (net_margin+net_widths[n.id]/2) && 
-                    Math.abs(o.y-n.y) < (net_margin+net_heights[n.id]/2)) { 
+            	if (Math.abs(o.x-n.x) < (net_margin+net_widths[n.id]/2) &&
+                    Math.abs(o.y-n.y) < (net_margin+net_heights[n.id]/2)) {
                 	//console.log('true 4')
                 	return true
                 }
@@ -365,12 +364,12 @@ function close_to(n, o) { //n is node, o is origin
         }
     }
     return false
-}        
+}
 
 //True if net contains node
 function net_contains(net, node) {
     contain_bool = false
-    for (var i in net.contains) { 
+    for (var i in net.contains) {
         if (graph.nodes[net.contains[i]].id == node.id) {
             contain_bool = true
         }
@@ -386,16 +385,16 @@ function update_net_position(d, dx, dy) {
             graph.nodes[d.contains[obj]].y += dy
         }
     }
-} 
+}
 
 function resize() {
     width = window.innerWidth/2;
     height = window.innerHeight;
     svg.attr("width", width).attr("height", height);
-}    
-    
+}
+
 d3.select(window).on("resize", resize);
-    
+
 </script>
 
 </body>
