@@ -12,4 +12,3 @@ with model:
 		with v1:
 			c = nengo.Ensemble(n_neurons=80, dimensions=2)
 
-
