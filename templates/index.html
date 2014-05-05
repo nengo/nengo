@@ -110,8 +110,10 @@ function dragged(d) {
     d.y = d3.event.y;
 
     d3.select(this).attr('transform', "translate("+d.x+","+d.y+")");
+    var node_list = []; //make a list of the indeces of all nodes
+    for (i in graph.nodes){node_list.push(i)}
+    update_node_positions(d, d3.event.dx, d3.event.dy, node_list);
     update_net_position(d, d3.event.dx, d3.event.dy);
-    update_node_positions(d, d3.event.dx, d3.event.dy, node_margin, net_margin);
     update_net_sizes();
     update_line_locations();
 }
@@ -138,106 +140,105 @@ var node;
     
         
 // line highlighting when over objects in graph
-    var marker = null;
-    function mouseover(d) {
-        if (marker!=null) {
-            editor.getSession().removeMarker(marker);
-            marker = null;
-            }
-        marker = editor.getSession().addMarker(new aceRange(d.line, 0, d.line, 10), 'highlight', 'fullLine', true);
-        editor.getSession().setAnnotations([{row: d.line, type:'info'}]);
-        }
-    function mouseout(d) {
-        if (marker!=null) {
-            editor.getSession().removeMarker(marker);
-            marker = null;
-            }
-        editor.getSession().clearAnnotations();
-        }
-        
-    reload_graph_data();
+var marker = null;
+function mouseover(d) {
+	if (marker!=null) {
+		editor.getSession().removeMarker(marker);
+		marker = null;
+		}
+	marker = editor.getSession().addMarker(new aceRange(d.line, 0, d.line, 10), 'highlight', 'fullLine', true);
+	editor.getSession().setAnnotations([{row: d.line, type:'info'}]);
+	}
+function mouseout(d) {
+	if (marker!=null) {
+		editor.getSession().removeMarker(marker);
+		marker = null;
+		}
+	editor.getSession().clearAnnotations();
+	}
+	
+reload_graph_data();
     
         
-    function update_graph() {
-        graph = JSON.parse(this.responseText);
+function update_graph() {
+	graph = JSON.parse(this.responseText);
 
-        // was there a parsing error?
-        if (graph.error_line != undefined) {
-            if (marker!=null) {
-                editor.getSession().removeMarker(marker);
-                marker = null;
-                }
-            marker = editor.getSession().addMarker(new aceRange(graph.error_line-1, 0, graph.error_line-1, 10), 'highlight', 'fullLine', true);
-            editor.getSession().setAnnotations([{row: graph.error_line-1, type:'error'}]);
-            return;
-        } else {
-            if (marker!=null) {
-                editor.getSession().removeMarker(marker);
-                marker = null;
-                }
-            editor.getSession().clearAnnotations();
-        }
+	// was there a parsing error?
+	if (graph.error_line != undefined) {
+		if (marker!=null) {
+			editor.getSession().removeMarker(marker);
+			marker = null;
+			}
+		marker = editor.getSession().addMarker(new aceRange(graph.error_line-1, 0, graph.error_line-1, 10), 'highlight', 'fullLine', true);
+		editor.getSession().setAnnotations([{row: graph.error_line-1, type:'error'}]);
+		return;
+	} else {
+		if (marker!=null) {
+			editor.getSession().removeMarker(marker);
+			marker = null;
+			}
+		editor.getSession().clearAnnotations();
+	}
 
-        //delete all the links and redraw them
-        container.selectAll('.link').remove();
+	//delete all the links and redraw them
+	container.selectAll('.link').remove();
 
-        link = container.selectAll('.link')
-            .data(graph.links);
-            
-        link.enter().append('polyline')
-            .attr('class', function(d) {return 'link link_'+d.type;});
+	link = container.selectAll('.link')
+		.data(graph.links);
+		
+	link.enter().append('polyline')
+		.attr('class', function(d) {return 'link link_'+d.type;});
 
-        //get all the nodes, make the new ones delete the old
-        node = container.selectAll('g.node')
-            .data(graph.nodes, function(d) {return d.id})
-        container.selectAll('g.node text')
-            .data(graph.nodes, function(d) {return d.id})            
-            
-        var nodeEnter = node
-            .enter()
-            .append('g')
-            .attr('class', function(d) {return 'node node_'+d.type;})
-            .on('mouseover', mouseover)
-            .on('mouseout', mouseout)
-            .call(drag);
-        
-        nodeEnter.filter(function(d) {return d.type=='ens';})
-            .append('circle')
-            .attr('r', '20')
+	//get all the nodes, make the new ones delete the old
+	node = container.selectAll('g.node')
+		.data(graph.nodes, function(d) {return d.id})
+	container.selectAll('g.node text')
+		.data(graph.nodes, function(d) {return d.id})            
+		
+	var nodeEnter = node
+		.enter()
+		.append('g')
+		.attr('class', function(d) {return 'node node_'+d.type;})
+		.on('mouseover', mouseover)
+		.on('mouseout', mouseout)
+		.call(drag);
+	
+	nodeEnter.filter(function(d) {return d.type=='ens';})
+		.append('circle')
+		.attr('r', '20')
 
-        nodeEnter.filter(function(d) {return d.type=='nde';})
-            .append('rect')
-            .attr('x', '-20')
-            .attr('y', '-20')
-            .attr('width', '40')
-            .attr('height', '40')
+	nodeEnter.filter(function(d) {return d.type=='nde';})
+		.append('rect')
+		.attr('x', '-20')
+		.attr('y', '-20')
+		.attr('width', '40')
+		.attr('height', '40')
 
-        nodeEnter.filter(function(d) {return d.type=='net';})
-            .append('rect')
-            .attr('x', '-50')
-            .attr('y', '-50')
-            .attr('rx', '15')
-            .attr('ry', '15')
-            .attr('width', '100')
-            .attr('height', '100')
-            
-        nodeEnter.append('text')
-            .text(function(d) {return d.label;});
-            
-        node.exit().remove();
-        
-        //label everything    
-        container.selectAll('g.node')
-            .selectAll('text')
-            .text(function(d) {return d.label;});
-        //redraw so nodes are on top
-        container.selectAll('g.node').filter(function(d) {return d.type!='net';})
-            .moveToFront();
+	nodeEnter.filter(function(d) {return d.type=='net';})
+		.append('rect')
+		.attr('x', '-50')
+		.attr('y', '-50')
+		.attr('rx', '15')
+		.attr('ry', '15')
+		.attr('width', '100')
+		.attr('height', '100')
+		
+	nodeEnter.append('text')
+		.text(function(d) {return d.label;});
+		
+	node.exit().remove();
+	
+	//label everything    
+	container.selectAll('g.node')
+		.selectAll('text')
+		.text(function(d) {return d.label;});
+	//redraw so nodes are on top
+	container.selectAll('g.node').filter(function(d) {return d.type!='net';})
+		.moveToFront();
 
-        update_net_sizes();
-
-        update_line_locations();        
-    }
+	update_net_sizes();
+	update_line_locations();        
+}
 
 function update_line_locations() {
     link.filter(function(d) {return d.type=='std';})
@@ -267,8 +268,12 @@ function update_net_sizes() {
 
 var net_widths = {};
 var net_heights = {};
+var node_margin = 30; 
+var net_margin = 25;  
 function update_net_size(d) {
-    x0 = graph.nodes[d.contains[0]].x; //first item in net x,y
+	xstart = d.x
+	ystart = d.y
+    x0 = graph.nodes[d.contains[0]].x; //first item in net x,y as a start
     x1 = x0;
     y0 = graph.nodes[d.contains[0]].y;
     y1 = y0;
@@ -278,76 +283,90 @@ function update_net_size(d) {
         y0 = Math.min(graph.nodes[d.contains[obj]].y, y0);
         y1 = Math.max(graph.nodes[d.contains[obj]].y, y1);
     }
-    border = 25;
     d.x = (x0+x1)/2;  // x, y mid
     d.y = (y0+y1)/2;
-    net_widths[d.id] = x1 - x0+2*border; //track heights/widths
-    net_heights[d.id] = y1 - y0+2*border;
-    
-    function isin(x, y) { // is the point x, y inside the net
-        return (x<d.x+net_widths[d.id]/2) && 
-               (x>d.x-net_widths[d.id]/2) && 
-               (y<d.y+net_heights[d.id]/2) && 
-               (y>d.y-net_heights[d.id]/2);
-    }
+    dx = d.x - xstart;
+    dy = d.y - ystart;
+    net_widths[d.id] = x1 - x0+2*net_margin; //track heights/widths
+    net_heights[d.id] = y1 - y0+2*net_margin;
 
-    for (var i=0; i<graph.nodes.length; i++) {
-        n = graph.nodes[i];
-        if (!(n===d) && d.contains.indexOf(i)==-1) {
-            if (isin(d.x, d.y)) {
-                dx = n.x-d.x;
-                dy = n.y-d.y;
-                if (Math.abs(dx)-net_widths[d.id]/2>Math.abs(dy)-net_heights[d.id]/2) {
-                    if (dx>0) { n.x = Math.max(n.x, d.x+net_widths[d.id]/2+border); }
-                    else      { n.x = Math.min(n.x, d.x-net_widths[d.id]/2-border); }
-                } else {
-                    if (dy>0) { n.y = Math.max(n.y, d.y+net_heights[d.id]/2+border); }
-                    else      { n.y = Math.min(n.y, d.y-net_heights[d.id]/2-border); }
+    var node_list = []; //make a list of the indeces of all nodes
+    for (i in graph.nodes){node_list.push(i)}
+    update_node_positions(d, 2*dx, 2*dy, node_list)
+}
+
+function isin(d, x, y) { // is the point x, y inside the net
+	return (x<d.x+net_widths[d.id]/2) && 
+		   (x>d.x-net_widths[d.id]/2) && 
+		   (y<d.y+net_heights[d.id]/2) && 
+		   (y>d.y-net_heights[d.id]/2);
+}         
+
+function update_node_positions(d, dx, dy, node_list) {
+	ind = graph.nodes.indexOf(d)
+	node_list.splice(node_list.indexOf(ind.toString()),1) //remove d from node_list
+	console.log(node_list)
+    for (var i=0; i<node_list.length; i++) {
+        n = graph.nodes[node_list[i]];
+        if (close_to(n,d)) {
+        	move_node(n, dx, dy)
+        	update_node_positions(n, dx, dy, node_list)
+        }
+    }
+}        
+        
+function move_node(node, dx, dy) {
+	if (node.type == "net") { //move a network
+		update_net_position(node, dx,dy)
+	}
+	else{ //move ens or nde
+		node.x += dx
+		node.y += dy
+	}
+}
+        
+function close_to(n, o) { //n is node, o is origin
+	if (o.type == "net") { //if origin is net
+		if (!(n.type == "net")) { //if node is nde or ens
+        	if (!net_contains(o, n)) {
+            	if (Math.abs(o.x-n.x) < (net_margin+net_widths[o.id]/2) && 
+                    Math.abs(o.y-n.y) < (net_margin+net_heights[o.id]/2)) {
+                	//console.log('true 1')
+                	return true
+                }
+            }
+        }
+        else { //if node is net
+            if (Math.abs(o.x-n.x) < (net_margin+net_widths[n.id]/2+net_widths[o.id]/2) 
+                && Math.abs(o.y-n.y)<(net_margin+net_heights[n.id]/2
+                                                    +net_heights[o.id]/2)) {
+                //console.log('true 2')
+            	return true
+            }
+        }
+    }
+    if (!(o.type == "net")) { //if origin is nde or ens
+		if (!(n.type == "net")) { //if node nde or ens
+			if (Math.abs(o.x-n.x) < node_margin 
+			   && Math.abs(o.y-n.y) < node_margin) {
+             	//console.log('true 3')
+				return true
+			}
+		}
+        else { //if node is net
+        	if(!net_contains(n, o)) {
+            	if (Math.abs(o.x-n.x) < (net_margin+net_widths[n.id]/2) && 
+                    Math.abs(o.y-n.y) < (net_margin+net_heights[n.id]/2)) { 
+                	//console.log('true 4')
+                	return true
                 }
             }
         }
     }
-    
-}
-    
-function update_net_position(d, dx, dy) {
-    if (d.type == 'net') {
-        for (obj in d.contains) {
-            graph.nodes[d.contains[obj]].x += dx
-            graph.nodes[d.contains[obj]].y += dy
-        }
-    }
-}      
-       
-var node_margin = 30; 
-var net_margin = 20;  
-function update_node_positions(d, dx, dy, node_margin, net_margin) {
-    for (var i=0; i<graph.nodes.length; i++) {
-        n = graph.nodes[i];
-        if (n===d) {}
-        else if (n.type == 'net' && d.type == 'net' && !net_contains(n,d)) {
-            if (Math.abs(d.x-n.x) < (net_margin+net_widths[n.id]/2+net_widths[d.id]/2) 
-                && Math.abs(d.y-n.y)<(net_margin+net_heights[n.id]/2
-                                                    +net_heights[n.id]/2)) {
-                update_net_position(n, dx, dy)
-                update_node_positions(n,dx,dy,node_margin-1,net_margin-1)
-            }        
-        }
-        else if (n.type == 'net' && !net_contains(n,d)) {
-            if (Math.abs(d.x-n.x) < (net_margin+net_widths[n.id]/2) && 
-                    Math.abs(d.y-n.y) < (net_margin+net_heights[n.id]/2)) {
-                update_net_position(n, dx, dy)
-                update_node_positions(n,dx,dy,node_margin-1,net_margin-1)
-            }
-        }
-        else if (Math.abs(d.x-n.x) < node_margin && Math.abs(d.y-n.y) < node_margin) {
-                n.x += dx
-                n.y += dy
-                update_node_positions(n,dx,dy,node_margin-1,net_margin-1)
-        }
-    }          
-}  
+    return false
+}        
 
+//True if net contains node
 function net_contains(net, node) {
     contain_bool = false
     for (var i in net.contains) { 
@@ -357,6 +376,16 @@ function net_contains(net, node) {
     }
     return contain_bool
 }
+
+//Move all the nodes in a network if position changes
+function update_net_position(d, dx, dy) {
+    if (d.type == 'net') {
+        for (obj in d.contains) {
+            graph.nodes[d.contains[obj]].x += dx
+            graph.nodes[d.contains[obj]].y += dy
+        }
+    }
+} 
 
 function resize() {
     width = window.innerWidth/2;
