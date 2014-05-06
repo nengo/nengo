@@ -5,12 +5,12 @@ import namefinder
 
 import random
 import pprint
+import pdb
 
 def isidentifier(s):
     if s in keyword.kwlist:
         return False
     return re.match(r'^[a-z_][a-z0-9_]*$', s, re.I) is not None
-
 
 class Converter(object):
     def __init__(self, model, codelines, locals):
@@ -30,7 +30,10 @@ class Converter(object):
                 return text
         return default
 
-    def process(self, network, id_prefix=None):
+    def process(self, network, id_prefix=None, subnets=None):
+        if not subnets:
+            subnets=[]
+
         random.seed(4)
         for i, ens in enumerate(network.ensembles):
             line = ens._created_line_number-1
@@ -39,11 +42,11 @@ class Converter(object):
                 label = self.find_identifier(line, label)
             id = self.namefinder.name(ens)
 
-
             obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
                    'x':random.uniform(0,300), 'y':random.uniform(0,300)}
             self.object_index[ens] = len(self.objects)
             self.objects.append(obj)
+
         for i, nde in enumerate(network.nodes):
             line = nde._created_line_number-1
             label = nde.label
@@ -54,6 +57,8 @@ class Converter(object):
                    'x':random.uniform(0,300), 'y':random.uniform(0,300)}
             self.object_index[nde] = len(self.objects)
             self.objects.append(obj)
+
+        contains=[]
         for i, net in enumerate(network.networks):
             if not hasattr(net, '_created_line_number'):
                 for obj in net.ensembles + net.nodes + net.connections:
@@ -67,12 +72,16 @@ class Converter(object):
                 label = self.find_identifier(line, label)
             id = self.namefinder.name(net)
 
-            self.process(net, id_prefix=id)
+            //pdb.set_trace()
+            # contains includes all items, including those in subnetworks
+            self.process(net, id_prefix=id, subnets=subnets)
 
             contains = [self.object_index[obj] for obj in
                 net.ensembles + net.nodes + net.networks]
+            subnets += contains
+
             obj = {'label':label, 'line':line, 'id':id, 'type':'net',
-                   'contains':contains,
+                   'contains':list(contains),
                    'x':random.uniform(0,300), 'y':random.uniform(0,300)}
             self.object_index[net] = len(self.objects)
             self.objects.append(obj)
@@ -84,6 +93,8 @@ class Converter(object):
                                'target':self.object_index[conn.post],
                                'id':id,
                                'type':'std'})
+
+        return contains+subnets
 
     def to_json(self):
         data = dict(nodes=self.objects, links=self.links)
