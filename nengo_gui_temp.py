@@ -17,8 +17,13 @@ with model:
             d = nengo.Ensemble(n_neurons=80, dimensions=2)
             e = nengo.Ensemble(n_neurons=80, dimensions=2)
 
+            v4 = nengo.Network()
+            with v4:
+                h = nengo.Ensemble(n_neurons=80, dimensions=2)
+                i = nengo.Ensemble(n_neurons=80, dimensions=2)
 
-
-
-
+    v3 = nengo.Network()
+    with v3:
+        f = nengo.Ensemble(n_neurons=80, dimensions=2)
+        g = nengo.Ensemble(n_neurons=80, dimensions=2)
 

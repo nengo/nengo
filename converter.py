@@ -30,10 +30,7 @@ class Converter(object):
                 return text
         return default
 
-    def process(self, network, id_prefix=None, subnets=None):
-        if not subnets:
-            subnets=[]
-
+    def process(self, network, id_prefix=None):
         random.seed(4)
         for i, ens in enumerate(network.ensembles):
             line = ens._created_line_number-1
@@ -57,8 +54,8 @@ class Converter(object):
                    'x':random.uniform(0,300), 'y':random.uniform(0,300)}
             self.object_index[nde] = len(self.objects)
             self.objects.append(obj)
-
-        contains=[]
+		
+        contains={}
         for i, net in enumerate(network.networks):
             if not hasattr(net, '_created_line_number'):
                 for obj in net.ensembles + net.nodes + net.connections:
@@ -72,16 +69,15 @@ class Converter(object):
                 label = self.find_identifier(line, label)
             id = self.namefinder.name(net)
 
-            //pdb.set_trace()
+            #pdb.set_trace()
             # contains includes all items, including those in subnetworks
-            self.process(net, id_prefix=id, subnets=subnets)
+            contains[i] = self.process(net, id_prefix=id)
 
-            contains = [self.object_index[obj] for obj in
+            contains[i] += [self.object_index[obj] for obj in
                 net.ensembles + net.nodes + net.networks]
-            subnets += contains
 
             obj = {'label':label, 'line':line, 'id':id, 'type':'net',
-                   'contains':list(contains),
+                   'contains':list(contains[i]),
                    'x':random.uniform(0,300), 'y':random.uniform(0,300)}
             self.object_index[net] = len(self.objects)
             self.objects.append(obj)
@@ -94,7 +90,7 @@ class Converter(object):
                                'id':id,
                                'type':'std'})
 
-        return contains+subnets
+        return sum(contains.values(),[])
 
     def to_json(self):
         data = dict(nodes=self.objects, links=self.links)
