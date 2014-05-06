@@ -88,6 +88,17 @@ d3.selection.prototype.moveToFront = function() {
   });
 };
 
+//helper function to remove the object from the
+//map.  note this removes all matching items.
+function removeValue(map, d) {
+    keys = map.keys()
+    for (el in map.keys()) {
+        if (map.get(map.keys()[el]) == d) {
+            map.remove(map.keys()[el])
+        }
+    }
+}
+
 var drag = d3.behavior.drag()
     .origin(function(d){return d})
     .on('dragstart', dragstarted)
@@ -107,13 +118,13 @@ function dragged(d) {
     d.x = d3.event.x;
     d.y = d3.event.y;
 
-    d3.select(this).attr('transform', "translate("+d.x+","+d.y+")");
-    var node_list = []; //make a list of the indices of all nodes
-    for (i in graph.nodes){node_list.push(i)}
+    var node_list = d3.map(graph.nodes) //create a map of the nodes
     update_node_positions(d, d3.event.dx, d3.event.dy, node_list);
-    update_net_position(d, d3.event.dx, d3.event.dy);
+    update_net_position(d, d3.event.dx, d3.event.dy, node_list);
     update_net_sizes();
     update_line_locations();
+    
+    d3.select(this).attr('transform', "translate("+d.x+","+d.y+")");
 }
 
 function dragended(d) {
@@ -287,9 +298,7 @@ function update_net_size(d) {
     net_widths[d.id] = x1 - x0+2*net_inner_margin; //track heights/widths
     net_heights[d.id] = y1 - y0+2*net_inner_margin;
 
-    var node_list = []; //make a list of the indices of all nodes
-    for (i in graph.nodes){node_list.push(i)}
-    update_node_positions(d, 2*dx, 2*dy, node_list)
+    update_node_positions(d, 2*dx, 2*dy, d3.map(graph.nodes))
 }
 
 function isin(d, x, y) { // is the point x, y inside the net
@@ -299,28 +308,43 @@ function isin(d, x, y) { // is the point x, y inside the net
 		   (y>d.y-net_heights[d.id]/2);
 }
 
-function update_node_positions(d, dx, dy, node_list) {
-	ind = graph.nodes.indexOf(d)
-	node_list.splice(node_list.indexOf(ind.toString()),1) //remove d from node_list
-    for (var i=0; i<node_list.length; i++) {
-        n = graph.nodes[node_list[i]];
-        if (close_to(n,d)) {
-        	move_node(n, dx, dy)
-        	update_node_positions(n, dx, dy, node_list.slice(0))
+//Move all the nodes in a network if position changes
+function update_net_position(d, dx, dy, node_list) {
+    if (d.type == 'net') {
+        for (obj in d.contains) {
+            if (node_list.has(d.contains[obj])) {
+                graph.nodes[d.contains[obj]].x += dx
+                graph.nodes[d.contains[obj]].y += dy
+            }
         }
     }
 }
 
-function move_node(node, dx, dy) {
+//Update the position of any nodes and what they effect
+function update_node_positions(d, dx, dy, node_list) {
+    removeValue(node_list, d)
+    for (n in node_list.keys()) {
+        if (close_to(node_list.get(node_list.keys()[n]), d)) {
+        	move_node(node_list.get(node_list.keys()[n]), dx, dy, node_list)
+        	update_node_positions(node_list.get(node_list.keys()[n]), 
+        	        dx, dy, d3.map(node_list))
+        }
+    }
+}
+
+//Move the provided nodes the provided distance and note that
+function move_node(node, dx, dy, node_list) {
 	if (node.type == "net") { //move a network
-		update_net_position(node, dx,dy)
+		update_net_position(node, dx,dy, node_list)
 	}
 	else{ //move ens or nde
+	    //removeValue(node_list, node)
 		node.x += dx
 		node.y += dy
 	}
 }
 
+//Check if node, n is close to origin object, o
 function close_to(n, o) { //n is node, o is origin
 	if (o.type == "net") { //if origin is net
 		if (!(n.type == "net")) { //if node is nde or ens
@@ -371,16 +395,6 @@ function net_contains(net, node) {
         }
     }
     return contain_bool
-}
-
-//Move all the nodes in a network if position changes
-function update_net_position(d, dx, dy) {
-    if (d.type == 'net') {
-        for (obj in d.contains) {
-            graph.nodes[d.contains[obj]].x += dx
-            graph.nodes[d.contains[obj]].y += dy
-        }
-    }
 }
 
 function resize() {
