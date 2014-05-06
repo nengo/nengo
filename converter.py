@@ -5,7 +5,6 @@ import namefinder
 
 import random
 import pprint
-import pdb
 
 def isidentifier(s):
     if s in keyword.kwlist:
@@ -54,7 +53,7 @@ class Converter(object):
                    'x':random.uniform(0,300), 'y':random.uniform(0,300)}
             self.object_index[nde] = len(self.objects)
             self.objects.append(obj)
-		
+        
         contains={}
         for i, net in enumerate(network.networks):
             if not hasattr(net, '_created_line_number'):
@@ -69,7 +68,6 @@ class Converter(object):
                 label = self.find_identifier(line, label)
             id = self.namefinder.name(net)
 
-            #pdb.set_trace()
             # contains includes all items, including those in subnetworks
             contains[i] = self.process(net, id_prefix=id)
 
