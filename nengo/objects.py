@@ -8,7 +8,6 @@ import numpy as np
 
 import nengo.decoders
 from nengo.config import Config, Default, is_param
-from nengo.learning_rules import LearningRule
 from nengo.neurons import LIF
 from nengo import params
 from nengo.synapses import Lowpass
@@ -572,19 +571,19 @@ class Connection(NengoObject):
     solver = params.SolverParam(default=nengo.decoders.LstsqL2())
     _function = params.Parameter(default=(None, 0), optional=True)
     modulatory = params.BoolParam(default=False)
+    learning_rule = params.LearningRuleParam(default=None, optional=True)
     # TODO: sample_shape should be ('pre_size',)
     eval_points = params.DistributionParam(default=None,
                                            sample_shape=('*',),
                                            optional=True)
+    seed = params.IntParam(default=None, optional=True)
     probeable = params.ListParam(default=['signal'])
 
     def __init__(self, pre, post, synapse=Default, transform=1.0,
-                 solver=Default,
-                 function=None, modulatory=Default, eval_points=Default,
-                 learning_rule=[], seed=None):
+                 solver=Default, learning_rule=Default, function=None,
+                 modulatory=Default, eval_points=Default, seed=Default):
         # don't check shapes until we've set all parameters
         self._skip_check_shapes = True
-
         if not isinstance(pre, ObjView):
             pre = ObjView(pre)
         if not isinstance(post, ObjView):
@@ -746,32 +745,6 @@ class Connection(NengoObject):
     def transform(self, _transform):
         self._transform = np.asarray(_transform)
         self._check_shapes()
-
-    @property
-    def learning_rule(self):
-        return self._learning_rule
-
-    @learning_rule.setter
-    def learning_rule(self, _learning_rule):
-        try:
-            # This is done to convert generators to lists, and to copy the list
-            _learning_rule = list(_learning_rule)
-        except TypeError:
-            # Not given an iterable
-            _learning_rule = [_learning_rule]
-        for lr in _learning_rule:
-            if not isinstance(lr, LearningRule):
-                raise ValueError("Argument '%s' is not a learning rule." % lr)
-            if self.solver.weights:
-                if 'Neurons' not in lr.modifies:
-                    raise ValueError("Learning rule '%s' cannot be applied "
-                                     "when using a weight solver.")
-            elif type(self.pre).__name__ not in lr.modifies:
-                raise ValueError("Learning rule '%s' cannot be applied to "
-                                 "connection with pre of type '%s'"
-                                 % (lr, type(self.pre).__name__))
-
-        self._learning_rule = _learning_rule
 
 
 class Probe(NengoObject):

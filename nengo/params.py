@@ -2,9 +2,10 @@ import numpy as np
 
 from nengo.config import Parameter
 from nengo.decoders import Solver
+from nengo.learning_rules import LearningRule
 from nengo.neurons import NeuronType
 from nengo.synapses import Lowpass, Synapse
-from nengo.utils.compat import is_integer, is_number, is_string
+from nengo.utils.compat import is_integer, is_iterable, is_number, is_string
 from nengo.utils.distributions import Distribution
 from nengo.utils.inspect import checked_call
 import nengo.utils.numpy as npext
@@ -190,3 +191,23 @@ class SolverParam(Parameter):
     def validate(self, conn, solver):
         if not isinstance(solver, Solver):
             raise ValueError("'%s' is not a solver" % solver)
+
+
+class LearningRuleParam(Parameter):
+    def validate(self, conn, rule):
+        if is_iterable(rule):
+            for lr in rule:
+                self.validate_rule(conn, lr)
+        elif not isinstance(rule, LearningRule):
+            raise ValueError("'%s' is not a learning rule" % rule)
+
+    def validate_rule(self, conn, rule):
+        if not isinstance(rule, LearningRule):
+            raise ValueError("'%s' is not a learning rule" % rule)
+
+        rule_type = ('Neurons' if conn.solver.weights
+                     else type(conn.pre).__name__)
+        if rule_type not in rule.modifies:
+            raise ValueError("Learning rule '%s' cannot be applied to "
+                             "connection with pre of type '%s'"
+                             % (rule, type(conn.pre).__name__))
