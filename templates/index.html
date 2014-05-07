@@ -8,17 +8,32 @@
 </head>
 <body onload="open_file('scripts/default.py');">
 
-<script src="/static/js/ace/ace.js" type="text/javascript" charset="utf-8"></script>
-<script>
-var aceRange = ace.require('ace/range').Range;
-</script>
 <script src="/static/js/d3.min.js", type="text/javascript" charset="utf-8"></script>
 <script src="/static/js/jquery-1.11.0.min.js", type="text/javascript" charset="utf-8"></script>
 <script src="/static/js/jqueryFileTree/jqueryFileTree.js", type="text/javascript" charset="utf-8"></script>
 
+//*************************
+// Setup the GUI components
+//*************************
+
+//Setup the editor
+<script src="/static/js/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+var aceRange = ace.require('ace/range').Range;
+</script>
 <div id="editor">
 </div>
 
+//Load the editor and link it
+<script> 
+var editor = ace.edit("editor");
+editor.setTheme("ace/theme/monokai");
+editor.getSession().setMode("ace/mode/python");
+
+editor.on('change', function(event) {reload_graph_data();});
+</script> 
+
+//Setup the main graphical window
 <div id="graph">
     <svg>
         <defs>
@@ -34,11 +49,13 @@ var aceRange = ace.require('ace/range').Range;
     </svg>
 </div>
 
+//Setup the menu bar
 <div id="menubar">
     <img id="menu_open" src="/static/img/open.png" title="open model"/>
     <img id="menu_save" src="/static/img/savefile.png" title="save model"/>
 </div>
 
+//Setup a file browser
 <div id="filebrowser"></div>
 <script>
 $('#filebrowser').hide()
@@ -62,53 +79,13 @@ function open_file(file) {
 }
 </script>
 
+//*****************
+// Helper functions
+//*****************
 <script>
-var editor = ace.edit("editor");
-editor.setTheme("ace/theme/monokai");
-editor.getSession().setMode("ace/mode/python");
-
-editor.on('change', function(event) {reload_graph_data();});
-</script>
-
-
-<script>
-var zoom = d3.behavior.zoom()
-    .scaleExtent([0.1, 10])
-    .on('zoom', zoomed);
-
-var svg = d3.select("svg");
-var container = svg.append('g');
-
-zoom(svg);  // set up zooming on the graph
-
-// helper function to move objects to be drawn on top
-d3.selection.prototype.moveToFront = function() {
-  return this.each(function(){
-    this.parentNode.appendChild(this);
-  });
-};
-
-//helper function to remove the object from the
-//map.  note this removes all matching items.
-function removeValue(map, d) {
-    keys = map.keys()
-    for (el in map.keys()) {
-        if (map.get(map.keys()[el]) == d) {
-            map.remove(map.keys()[el])
-        }
-    }
-}
-
-var drag = d3.behavior.drag()
-    .origin(function(d){return d})
-    .on('dragstart', dragstarted)
-    .on('drag', dragged)
-    .on('dragend', dragended);
-
-function zoomed() {
-    container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-}
-
+//**************
+// Drag and zoom
+//**************
 function dragstarted(d) {
       d3.event.sourceEvent.stopPropagation();
       d3.select(this).classed("dragging", true);
@@ -132,7 +109,35 @@ function dragended(d) {
       d3.select(this).classed("dragging", false);
 }
 
-// editor -> server -> graph loop
+function zoomed() {
+    container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+}
+
+//*********************
+// Link graph to editor
+//*********************
+//Link mouse in graph to editor changes
+function mouseover(d) {
+	if (marker!=null) {
+		editor.getSession().removeMarker(marker);
+		marker = null;
+		}
+	marker = editor.getSession().addMarker(new aceRange(d.line, 0, d.line, 10), 'highlight', 'fullLine', true);
+	editor.getSession().setAnnotations([{row: d.line, type:'info'}]);
+	}
+	
+function mouseout(d) {
+	if (marker!=null) {
+		editor.getSession().removeMarker(marker);
+		marker = null;
+		}
+	editor.getSession().clearAnnotations();
+	}
+
+//*****************
+// Reload the graph
+//*****************
+//Send the editor data to the server
 function reload_graph_data() {
     var data = new FormData();
     data.append('code', editor.getValue());
@@ -143,31 +148,7 @@ function reload_graph_data() {
     xhr.send(data);
 }
 
-var graph;
-var link;
-var node;
-
-// line highlighting when over objects in graph
-var marker = null;
-function mouseover(d) {
-	if (marker!=null) {
-		editor.getSession().removeMarker(marker);
-		marker = null;
-		}
-	marker = editor.getSession().addMarker(new aceRange(d.line, 0, d.line, 10), 'highlight', 'fullLine', true);
-	editor.getSession().setAnnotations([{row: d.line, type:'info'}]);
-	}
-function mouseout(d) {
-	if (marker!=null) {
-		editor.getSession().removeMarker(marker);
-		marker = null;
-		}
-	editor.getSession().clearAnnotations();
-	}
-
-reload_graph_data();
-
-
+//Redraw the graph given server response
 function update_graph() {
 	graph = JSON.parse(this.responseText);
 
@@ -203,6 +184,7 @@ function update_graph() {
 	container.selectAll('g.node text')
 		.data(graph.nodes, function(d) {return d.id})
 
+    //Create html objects to draw
 	var nodeEnter = node
 		.enter()
 		.append('g')
@@ -248,6 +230,16 @@ function update_graph() {
 	update_line_locations();
 }
 
+// Move objects to be drawn on top
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};
+
+//***********************
+// Drawing graph elements
+//***********************
 function update_line_locations() {
     link.filter(function(d) {return d.type=='std';})
         .attr('points', function(d) {
@@ -260,6 +252,7 @@ function update_line_locations() {
         });
 }
 
+//Update all network sizes based on node positions
 function update_net_sizes() {
     node.filter(function(d) {return d.type=='net';})
         .each(update_net_size)
@@ -274,11 +267,7 @@ function update_net_sizes() {
         });
 }
 
-var net_widths = {};
-var net_heights = {};
-var node_margin = 35;
-var net_inner_margin = 25;
-var net_margin = 15;
+//Update given network size based on node position
 function update_net_size(d) {
 	xstart = d.x
 	ystart = d.y
@@ -310,14 +299,7 @@ function update_net_size(d) {
     update_node_positions(d, 2*dx, 2*dy, d3.map(graph.nodes))
 }
 
-function isin(d, x, y) { // is the point x, y inside the net
-	return (x<d.x+net_widths[d.id]/2) &&
-		   (x>d.x-net_widths[d.id]/2) &&
-		   (y<d.y+net_heights[d.id]/2) &&
-		   (y>d.y-net_heights[d.id]/2);
-}
-
-//Move all the nodes in a network if position changes
+//Move all the nodes in a network if network position changes
 function update_net_position(d, dx, dy) {
     if (d.type == "net") {
         for (var obj in d.contains) {
@@ -330,12 +312,12 @@ function update_net_position(d, dx, dy) {
     }
 }
 
-//Update the position of any nodes and what they effect
+//Update the position of any nodes and what they affect
 function update_node_positions(d, dx, dy, node_list) {
     removeValue(node_list, d)
     for (n in node_list.keys()) {
         if (close_to(node_list.get(node_list.keys()[n]), d)) {
-        	move_node(node_list.get(node_list.keys()[n]), dx, dy, node_list)
+        	move_node(node_list.get(node_list.keys()[n]), dx, dy)
         	update_node_positions(node_list.get(node_list.keys()[n]), 
         	        dx, dy, d3.map(node_list))
         }
@@ -343,7 +325,7 @@ function update_node_positions(d, dx, dy, node_list) {
 }
 
 //Move the provided nodes the provided distance and note that
-function move_node(node, dx, dy, node_list) {
+function move_node(node, dx, dy) {
     if (node.type == "net") { //move a network
         update_net_position(node, dx,dy)
     }
@@ -351,6 +333,34 @@ function move_node(node, dx, dy, node_list) {
             node.x += dx
             node.y += dy
     }
+}
+
+//Redraw if the window is resized
+function resize() {
+    width = window.innerWidth/2;
+    height = window.innerHeight;
+    svg.attr("width", width).attr("height", height);
+}
+
+//**************
+// Miscellaneous
+//**************
+//Remove object from a map.  Removes all matching items.
+function removeValue(map, d) {
+    keys = map.keys()
+    for (el in map.keys()) {
+        if (map.get(map.keys()[el]) == d) {
+            map.remove(map.keys()[el])
+        }
+    }
+}
+
+// is the point x, y inside the net
+function isin(d, x, y) { 
+	return (x<d.x+net_widths[d.id]/2) &&
+		   (x>d.x-net_widths[d.id]/2) &&
+		   (y<d.y+net_heights[d.id]/2) &&
+		   (y>d.y-net_heights[d.id]/2);
 }
 
 //Check if node, n is close to origin object, o
@@ -365,7 +375,7 @@ function close_to(n, o) { //n is node, o is origin
                 }
             }
         }
-        else if (!(isSubnet(n, o) || isSubnet(o, n))) { //if node is net
+        else if (!(netContains(n, o) || netContains(o, n))) { //if node is net
             if (Math.abs(o.x-n.x) < (net_widths[n.id]/2+net_widths[o.id]/2)
                 && Math.abs(o.y-n.y)<(net_heights[n.id]/2
                                                     +net_heights[o.id]/2)) {
@@ -395,25 +405,7 @@ function close_to(n, o) { //n is node, o is origin
     return false
 }
 
-//True if subnet is in supernet at any level
-function isSubnet(subnet, supernet) {
-    var contain_bool = false
-    for (var i in supernet.contains) {
-        if (graph.nodes[supernet.contains[i]].id == subnet.id) {
-            return true
-        }
-        else if (graph.nodes[supernet.contains[i]].type == "net") {
-            contain_bool = isSubnet(subnet, graph.nodes[supernet.contains[i]])
-            if (contain_bool) {
-                return true
-            }
-        }
-
-    }
-    return contain_bool
-}
-
-//True if net or subnet contains node
+//True if net or any of its subnets contains node
 function netContains(node, net) {
     var contain_bool = false
     for (var i in net.contains) {
@@ -429,15 +421,47 @@ function netContains(node, net) {
     }
     return contain_bool
 }
+</script>
 
-function resize() {
-    width = window.innerWidth/2;
-    height = window.innerHeight;
-    svg.attr("width", width).attr("height", height);
-}
+//***********
+//Main script
+//***********
+<script>
+var zoom = d3.behavior.zoom()
+    .scaleExtent([0.1, 10])
+    .on('zoom', zoomed);
+
+var svg = d3.select("svg");
+var container = svg.append('g');
+
+zoom(svg);  // set up zooming on the graph
+
+
+var drag = d3.behavior.drag()
+    .origin(function(d){return d})
+    .on('dragstart', dragstarted)
+    .on('drag', dragged)
+    .on('dragend', dragended);
+
+//**********************
+// editor -> server -> graph 
+//**********************
+var graph;
+var link;
+var node;
+
+// line highlighting when over objects in graph
+var marker = null;
+
+reload_graph_data();
+
+var net_widths = {};
+var net_heights = {};
+var node_margin = 35;
+var net_inner_margin = 25;
+var net_margin = 15;
 
 d3.select(window).on("resize", resize);
-
 </script>
 
 </body>
