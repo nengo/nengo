@@ -1,6 +1,7 @@
 import numpy as np
 
 from nengo.config import Parameter
+from nengo.decoders import Solver
 from nengo.neurons import NeuronType
 from nengo.synapses import Lowpass, Synapse
 from nengo.utils.compat import is_integer, is_number, is_string
@@ -183,3 +184,9 @@ class SynapseParam(Parameter):
     def validate(self, conn, synapse):
         if synapse is not None and not isinstance(synapse, Synapse):
             raise ValueError("'%s' is not a synapse type" % synapse)
+
+
+class SolverParam(Parameter):
+    def validate(self, conn, solver):
+        if not isinstance(solver, Solver):
+            raise ValueError("'%s' is not a solver" % solver)

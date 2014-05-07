@@ -569,7 +569,7 @@ class Connection(NengoObject):
 
     synapse = params.SynapseParam(default=Lowpass(0.005))
     _transform = params.Parameter(default=np.array(1.0))
-    solver = params.Parameter(default=nengo.decoders.LstsqL2())
+    solver = params.SolverParam(default=nengo.decoders.LstsqL2())
     _function = params.Parameter(default=(None, 0), optional=True)
     modulatory = params.BoolParam(default=False)
     # TODO: sample_shape should be ('pre_size',)
