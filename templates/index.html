@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Nengo Editor</title>
+    <title>Nengo Network Constructor</title>
     <link rel="stylesheet" type="text/css" href="/static/main.css">
     <link rel="stylesheet" type="text/css" href="/static/menu.css">
     <link rel="stylesheet" type="text/css" href="/static/js/jqueryFileTree/jqueryFileTree.css">
@@ -45,6 +45,22 @@ editor.on('change', function(event) {reload_graph_data();});
               orient="auto">
               <path d="M 0 0 L 10 5 L 0 10 z" />
             </marker>
+            <g id ="ensemble" transform="translate(-17.2735,-17.7015)"> 
+                <circle cx="4.843" cy="10.519" r="4.843"/>
+                <circle cx="16.186" cy="17.873" r="4.843"/>
+                <circle cx="21.012" cy="30.56" r="4.843"/>
+                <circle cx="29.704" cy="17.229" r="4.843"/>
+                <circle cx="5.647" cy="26.413" r="4.843"/>
+                <circle cx="19.894" cy="4.842" r="4.843"/>
+            </g>
+            <g id = "recur" transform="translate(-20,-34)">
+            <path 
+                d="M6.451,28.748C2.448,26.041,0,22.413,0,18.425C0,
+                    10.051,10.801,3.262,24.125,3.262
+                S48.25,10.051,48.25,18.425c0,6.453-6.412,11.964-15.45,14.153"/>
+            <path fill="black" stroke-width="1" stroke="black" stroke-opacity="1" 
+                d="M30.632,6.523l-6.524-3.262L30.632,0V6.523z"/>
+            </g>
         </defs>
     </svg>
 </div>
@@ -102,7 +118,6 @@ function dragged(d) {
     update_net_sizes();
     update_net_position(d, d3.event.dx, d3.event.dy);
     update_line_locations();
-    
 }
 
 function dragended(d) {
@@ -169,20 +184,21 @@ function update_graph() {
 		editor.getSession().clearAnnotations();
 	}
 
-	//delete all the links and redraw them
+	//delete all the links and reread them
 	container.selectAll('.link').remove();
-
 	link = container.selectAll('.link')
 		.data(graph.links);
-
-	link.enter().append('polyline')
-		.attr('class', function(d) {return 'link link_'+d.type;});
 
 	//get all the nodes, make the new ones delete the old
 	node = container.selectAll('g.node')
 		.data(graph.nodes, function(d) {return d.id})
 	container.selectAll('g.node text')
 		.data(graph.nodes, function(d) {return d.id})
+
+	linkEnter = link
+	    .enter()
+	    .append('g')
+		.attr('class', function(d) {return 'link link_'+d.type;})
 
     //Create html objects to draw
 	var nodeEnter = node
@@ -194,15 +210,12 @@ function update_graph() {
 		.call(drag);
 
 	nodeEnter.filter(function(d) {return d.type=='ens';})
+		.append('use')
+		.attr('xlink:href', "#ensemble")
+		
+	nodeEnter.filter(function(d) {return d.type=='nde';})
 		.append('circle')
 		.attr('r', '20')
-
-	nodeEnter.filter(function(d) {return d.type=='nde';})
-		.append('rect')
-		.attr('x', '-20')
-		.attr('y', '-20')
-		.attr('width', '40')
-		.attr('height', '40')
 
 	nodeEnter.filter(function(d) {return d.type=='net';})
 		.append('rect')
@@ -214,8 +227,9 @@ function update_graph() {
 		.attr('height', '100')
 
 	nodeEnter.append('text')
+		.attr('y', '30')
 		.text(function(d) {return d.label;});
-
+	
 	node.exit().remove();
 
 	//label everything
@@ -230,6 +244,9 @@ function update_graph() {
 	update_line_locations();
 }
 
+//***********************
+// Drawing graph elements
+//***********************
 // Move objects to be drawn on top
 d3.selection.prototype.moveToFront = function() {
   return this.each(function(){
@@ -237,11 +254,9 @@ d3.selection.prototype.moveToFront = function() {
   });
 };
 
-//***********************
-// Drawing graph elements
-//***********************
 function update_line_locations() {
-    link.filter(function(d) {return d.type=='std';})
+    linkEnter.filter(function(d) {return (d.type=='std' && d.source!=d.target);})
+        .append('polyline')
         .attr('points', function(d) {
             x0 = graph.nodes[d.source].x;
             y0 = graph.nodes[d.source].y;
@@ -250,6 +265,13 @@ function update_line_locations() {
             return ""+x0+","+y0+" "+(x0*0.45+x1*0.55)+","+(y0*0.45+y1*0.55)+" "+
                       x1+","+y1;
         });
+    linkEnter.filter(function(d) {return (d.type=='std' && d.source==d.target);})
+		.append('use')
+		.attr('xlink:href','#recur')
+		.attr('fill','none')
+		.attr('stroke','#333')
+		.attr('stroke-opacity','.6')
+		.attr('stroke-width','2px')
 }
 
 //Update all network sizes based on node positions
@@ -384,7 +406,7 @@ function close_to(n, o) { //n is node, o is origin
             }
         }
     }
-    if (!(o.type == "net")) { //if origin is nde or ens
+    else { //if origin is nde or ens
 		if (!(n.type == "net")) { //if node nde or ens
 			if (Math.abs(o.x-n.x) < node_margin
 			   && Math.abs(o.y-n.y) < node_margin) {
@@ -436,7 +458,6 @@ var container = svg.append('g');
 
 zoom(svg);  // set up zooming on the graph
 
-
 var drag = d3.behavior.drag()
     .origin(function(d){return d})
     .on('dragstart', dragstarted)
@@ -447,7 +468,7 @@ var drag = d3.behavior.drag()
 // editor -> server -> graph 
 //**********************
 var graph;
-var link;
+var linkEnter;
 var node;
 
 // line highlighting when over objects in graph
@@ -458,7 +479,7 @@ reload_graph_data();
 var net_widths = {};
 var net_heights = {};
 var node_margin = 35;
-var net_inner_margin = 25;
+var net_inner_margin = 40;
 var net_margin = 15;
 
 d3.select(window).on("resize", resize);

@@ -2,28 +2,29 @@ import nengo
 
 model = nengo.Network()
 with model:
-    a = nengo.Ensemble(n_neurons=80, dimensions=2)
+    a = nengo.Ensemble(n_neurons=100, dimensions=2, label='a')
+    b = nengo.Ensemble(n_neurons=80, dimensions=2, label='b')
+    c = nengo.Ensemble(n_neurons=80, dimensions=2)
+    d = nengo.Ensemble(n_neurons=80, dimensions=2)
+    e = nengo.networks.EnsembleArray(80,2)
 
     vis = nengo.Network()
     with vis:
-        b = nengo.Ensemble(n_neurons=80, dimensions=2)
 
-        v1 = nengo.Network()
-        with v1:
-            c = nengo.Ensemble(n_neurons=80, dimensions=2)
+		v1 = nengo.Network()
+		with v1:
+			f = nengo.Ensemble(n_neurons=80, dimensions=2)
+			g = nengo.Ensemble(n_neurons=80, dimensions=2)
+			nengo.Connection(f, g)
 
-        v2 = nengo.Network()
-        with v2:
-            d = nengo.Ensemble(n_neurons=80, dimensions=2)
-            e = nengo.Ensemble(n_neurons=80, dimensions=2)
+		r = nengo.Ensemble(n_neurons=80, dimensions=2)
+		t = nengo.Ensemble(n_neurons=80, dimensions=2)
+		nengo.Connection(r, t)
 
-            v4 = nengo.Network()
-            with v4:
-                h = nengo.Ensemble(n_neurons=80, dimensions=2)
-                i = nengo.Ensemble(n_neurons=80, dimensions=2)
-
-    v3 = nengo.Network()
-    with v3:
-        f = nengo.Ensemble(n_neurons=80, dimensions=2)
-        g = nengo.Ensemble(n_neurons=80, dimensions=2)
-
+    nengo.Connection(a, b, synapse=0.01)
+    nengo.Connection(a, a, synapse=0.01)
+    nengo.Connection(b, c, synapse=0.01)
+    nengo.Connection(c, d, synapse=0.01)
+    nengo.Connection(c, r, synapse=0.01)
+    nengo.Connection(b, d, synapse=0.01)
+    nengo.Connection(d, e.input[:2], synapse=0.01)
