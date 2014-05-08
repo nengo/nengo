@@ -184,22 +184,35 @@ function update_graph() {
 		editor.getSession().clearAnnotations();
 	}
 
-	//delete all the links and reread them
-	container.selectAll('.link').remove();
-	link = container.selectAll('.link')
-		.data(graph.links);
+	//separate links into recurrent and nonrecurrent ?move to convert?	
+	var nonrecurlink = []
+	var recurlink = []
+	for (i in graph.links) {
+	    if (graph.links[i].target!=graph.links[i].source) {
+	        nonrecurlink.push(graph.links[i])
+	    } else {
+	        recurlink.push(graph.links[i])
+	    }
+	}
+	
+	//update the links
+	link = container.selectAll('.link.link_std, .link.link_net')
+		.data(nonrecurlink, function(d) {return d.id})
+	link.enter().append('polyline')
+		.attr('class', function(d) {return 'link link_'+d.type;})
 
-	//get all the nodes, make the new ones delete the old
+	linkRecur = container.selectAll('.link.link_recur')
+		.data(recurlink, function(d) {return d.id})
+	linkRecur.enter().append('use')
+	    .attr('class', function(d) {return 'link link_recur';})
+	    .attr('xlink:href', "#recur")	
+
+	//get all the nodes, for updating
 	node = container.selectAll('g.node')
 		.data(graph.nodes, function(d) {return d.id})
 	container.selectAll('g.node text')
 		.data(graph.nodes, function(d) {return d.id})
-
-	linkEnter = link
-	    .enter()
-	    .append('g')
-		.attr('class', function(d) {return 'link link_'+d.type;})
-
+    
     //Create html objects to draw
 	var nodeEnter = node
 		.enter()
@@ -209,6 +222,18 @@ function update_graph() {
 		.on('mouseout', mouseout)
 		.call(drag);
 
+/*	nodeEnter.filter(function(d,i) {
+	    for (ind in recurlink) {
+	        if (i==recurlink[ind].target) {
+	            return true
+	        } else {
+	        return false
+	        }
+	    }})
+		.append('use')
+		.attr('class', function(d) {return 'link link_recur';})
+		.attr('xlink:href', "#recur")
+*/
 	nodeEnter.filter(function(d) {return d.type=='ens';})
 		.append('use')
 		.attr('xlink:href', "#ensemble")
@@ -231,6 +256,8 @@ function update_graph() {
 		.text(function(d) {return d.label;});
 	
 	node.exit().remove();
+	link.exit().remove();
+	linkRecur.exit().remove();
 
 	//label everything
 	container.selectAll('g.node')
@@ -255,8 +282,7 @@ d3.selection.prototype.moveToFront = function() {
 };
 
 function update_line_locations() {
-    linkEnter.filter(function(d) {return (d.type=='std' && d.source!=d.target);})
-        .append('polyline')
+    link.filter(function(d) {return d.type=='std';})
         .attr('points', function(d) {
             x0 = graph.nodes[d.source].x;
             y0 = graph.nodes[d.source].y;
@@ -265,13 +291,10 @@ function update_line_locations() {
             return ""+x0+","+y0+" "+(x0*0.45+x1*0.55)+","+(y0*0.45+y1*0.55)+" "+
                       x1+","+y1;
         });
-    linkEnter.filter(function(d) {return (d.type=='std' && d.source==d.target);})
-		.append('use')
-		.attr('xlink:href','#recur')
-		.attr('fill','none')
-		.attr('stroke','#333')
-		.attr('stroke-opacity','.6')
-		.attr('stroke-width','2px')
+        
+    linkRecur
+        .attr('x', function(d) {return graph.nodes[d.source].x})
+        .attr('y', function(d) {return graph.nodes[d.source].y})
 }
 
 //Update all network sizes based on node positions
@@ -468,7 +491,8 @@ var drag = d3.behavior.drag()
 // editor -> server -> graph 
 //**********************
 var graph;
-var linkEnter;
+var link;
+var linkRecur;
 var node;
 
 // line highlighting when over objects in graph

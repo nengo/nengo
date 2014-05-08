@@ -41,6 +41,13 @@ svg .link_net {
     stroke-width: 0px;
 }
 
+svg .link_recur {
+    stroke: #333;
+    stroke-opacity: .6;
+    stroke-width: 2px;
+    fill: none    
+}
+
 svg g.node_ens {
     fill: #ddd;
 }

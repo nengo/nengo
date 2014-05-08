@@ -20,7 +20,7 @@ with model:
 
 		r = nengo.Ensemble(n_neurons=80, dimensions=2)
 		t = nengo.Ensemble(n_neurons=80, dimensions=2)
-		nengo.Connection(r, c)
+		nengo.Connection(r, t)
 
     nengo.Connection(a, a, synapse=0.01)
     nengo.Connection(a, b, synapse=0.01)
@@ -29,4 +29,3 @@ with model:
     nengo.Connection(c, r, synapse=0.01)
     nengo.Connection(b, d, synapse=0.01)
     nengo.Connection(d, e.input[:2], synapse=0.01)
-
