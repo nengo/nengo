@@ -126,8 +126,10 @@ function dragended(d) {
 
 function zoomed() {
     scale = d3.event.scale
-    container.attr("transform", "translate(" + d3.event.translate + ")scale(" + scale + ")");
-    node.selectAll('text')
+    container.attr("transform", "translate(" + //scale everything
+        d3.event.translate + ")scale(" + scale + ")");
+        
+    node.selectAll('text') //Change the fonts size as a fcn of scale
         .style("font-size", function(d) {
             newsize = node_fontsize / scale
             if (newsize>node_fontsize) {
@@ -137,7 +139,8 @@ function zoomed() {
             }
         })
     
-    if (scale<.75) {  //could be faster if keep track of whether it was just drawn
+    //could be faster if keep track of whether it was just drawn
+    if (scale<.75) { //Don't draw node/ens text if scale out far 
         node.selectAll("g.node.node_ens text, g.node.node_nde text")
             .text("")
         }
@@ -146,7 +149,7 @@ function zoomed() {
 		.text(function(d) {return d.label;});
     }
             
-    node.selectAll("g.node.node_net text")
+    node.selectAll("g.node.node_net text") //Position net text by scale
 	    .attr('y', function(d) {
 	        if (scale<1) {
     	        return net_heights[d.id]/2+10/scale+"px"
@@ -280,13 +283,14 @@ function update_graph() {
 	container.selectAll('g.node')
 		.selectAll('text')
 		.text(function(d) {return d.label;});
+		
 	//redraw so nodes are on top
 	container.selectAll('g.node').filter(function(d) {return d.type!='net';})
 		.moveToFront();
 
     update_net_sizes();
     
-    nodeEnter.selectAll("g.node.node_net text")
+    nodeEnter.selectAll("g.node.node_net text") //move text below networks
 	    .attr('y', function(d) {return net_heights[d.id]/2+10})
     
 	update_line_locations();
