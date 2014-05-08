@@ -11,6 +11,9 @@ import os
 import urllib
 
 class NengoGui(swi.SimpleWebInterface):
+    default_filename = 'default.py'
+    script_path = 'scripts/'
+
     def swi_static(self, *path):
         fn = os.path.join('static', *path)
         if fn.endswith('.js'):
@@ -37,10 +40,16 @@ class NengoGui(swi.SimpleWebInterface):
             html = f.read()
         return html
 
+    @classmethod
+    def set_default_filename(klass, fn):
+        klass.default_filename = fn
+        path, fn = os.path.split(fn)
+        klass.path = path
+
     def swi_browse(self, dir):
         r = ['<ul class="jqueryFileTree" style="display: none;">']
         # r.append('<li class="directory collapsed"><a href="#" rel="../">..</a></li>')
-        d = 'scripts/' + urllib.unquote(dir)
+        d = os.path.join(self.script_path, urllib.unquote(dir))
         for f in os.listdir(d):
             ff = os.path.join(d,f)
             if os.path.isdir(ff):
@@ -52,8 +61,9 @@ class NengoGui(swi.SimpleWebInterface):
         r.append('</ul>')
         return ''.join(r)
 
-    def swi_openfile(self, filename):
-        print 'open', filename
+    def swi_openfile(self, filename=''):
+        if len(filename) == 0:
+            filename = self.default_filename
         with open(filename, 'r') as f:
             text = f.read()
         return text
@@ -105,5 +115,8 @@ class NengoGui(swi.SimpleWebInterface):
 
 
 if __name__=='__main__':
-    swi.start(NengoGui, 8080, asynch=False)
-    #swi.browser(8080)
+    import sys
+    if len(sys.argv) > 1:
+        NengoGui.set_default_filename(sys.argv[1])
+    swi.browser(8080)
+    swi.start(NengoGui, 8080)
