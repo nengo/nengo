@@ -1,24 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Nengo Editor</title>
+    <title>Nengo Network Constructor</title>
     <link rel="stylesheet" type="text/css" href="/static/main.css">
     <link rel="stylesheet" type="text/css" href="/static/menu.css">
     <link rel="stylesheet" type="text/css" href="/static/js/jqueryFileTree/jqueryFileTree.css">
 </head>
 <body onload="open_file('scripts/default.py');">
 
-<script src="/static/js/ace/ace.js" type="text/javascript" charset="utf-8"></script>
-<script>
-var aceRange = ace.require('ace/range').Range;
-</script>
 <script src="/static/js/d3.min.js", type="text/javascript" charset="utf-8"></script>
 <script src="/static/js/jquery-1.11.0.min.js", type="text/javascript" charset="utf-8"></script>
 <script src="/static/js/jqueryFileTree/jqueryFileTree.js", type="text/javascript" charset="utf-8"></script>
 
+//*************************
+// Setup the GUI components
+//*************************
+
+//Setup the editor
+<script src="/static/js/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+var aceRange = ace.require('ace/range').Range;
+</script>
 <div id="editor">
 </div>
 
+//Load the editor and link it
+<script> 
+var editor = ace.edit("editor");
+editor.setTheme("ace/theme/monokai");
+editor.getSession().setMode("ace/mode/python");
+
+editor.on('change', function(event) {reload_graph_data();});
+</script> 
+
+//Setup the main graphical window
 <div id="graph">
     <svg>
         <defs>
@@ -30,15 +45,33 @@ var aceRange = ace.require('ace/range').Range;
               orient="auto">
               <path d="M 0 0 L 10 5 L 0 10 z" />
             </marker>
+            <g id ="ensemble" transform="translate(-17.2735,-17.7015)"> 
+                <circle cx="4.843" cy="10.519" r="4.843"/>
+                <circle cx="16.186" cy="17.873" r="4.843"/>
+                <circle cx="21.012" cy="30.56" r="4.843"/>
+                <circle cx="29.704" cy="17.229" r="4.843"/>
+                <circle cx="5.647" cy="26.413" r="4.843"/>
+                <circle cx="19.894" cy="4.842" r="4.843"/>
+            </g>
+            <g id = "recur" transform="translate(-20,-34)">
+            <path 
+                d="M6.451,28.748C2.448,26.041,0,22.413,0,18.425C0,
+                    10.051,10.801,3.262,24.125,3.262
+                S48.25,10.051,48.25,18.425c0,6.453-6.412,11.964-15.45,14.153"/>
+            <path fill="black" stroke-width="1" stroke="black" stroke-opacity="1" 
+                d="M30.632,6.523l-6.524-3.262L30.632,0V6.523z"/>
+            </g>
         </defs>
     </svg>
 </div>
 
+//Setup the menu bar
 <div id="menubar">
     <img id="menu_open" src="/static/img/open.png" title="open model"/>
     <img id="menu_save" src="/static/img/savefile.png" title="save model"/>
 </div>
 
+//Setup a file browser
 <div id="filebrowser"></div>
 <script>
 $('#filebrowser').hide()
@@ -60,46 +93,15 @@ function open_file(file) {
     xhr.onload = function(event) {editor.setValue(this.responseText);};
     xhr.send(data);
 }
-
 </script>
 
+//*****************
+// Helper functions
+//*****************
 <script>
-var editor = ace.edit("editor");
-editor.setTheme("ace/theme/monokai");
-editor.getSession().setMode("ace/mode/python");
-
-editor.on('change', function(event) {reload_graph_data();});
-</script>
-
-
-<script>
-
-var zoom = d3.behavior.zoom()
-    .scaleExtent([0.1, 10])
-    .on('zoom', zoomed);
-
-var svg = d3.select("svg");
-var container = svg.append('g');
-
-zoom(svg);  // set up zooming on the graph
-
-// helper function to move objects to be drawn on top
-d3.selection.prototype.moveToFront = function() {
-  return this.each(function(){
-    this.parentNode.appendChild(this);
-  });
-};
-
-var drag = d3.behavior.drag()
-    .origin(function(d){return d})
-    .on('dragstart', dragstarted)
-    .on('drag', dragged)
-    .on('dragend', dragended);
-
-function zoomed() {
-    container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-}
-
+//**************
+// Drag and zoom
+//**************
 function dragstarted(d) {
       d3.event.sourceEvent.stopPropagation();
       d3.select(this).classed("dragging", true);
@@ -110,11 +112,11 @@ function dragged(d) {
     d.y = d3.event.y;
 
     d3.select(this).attr('transform', "translate("+d.x+","+d.y+")");
-    var node_list = []; //make a list of the indices of all nodes
-    for (i in graph.nodes){node_list.push(i)}
+
+    var node_list = d3.map(graph.nodes) //create a map of the nodes
     update_node_positions(d, d3.event.dx, d3.event.dy, node_list);
-    update_net_position(d, d3.event.dx, d3.event.dy);
     update_net_sizes();
+    update_net_position(d, d3.event.dx, d3.event.dy);
     update_line_locations();
 }
 
@@ -122,7 +124,35 @@ function dragended(d) {
       d3.select(this).classed("dragging", false);
 }
 
-// editor -> server -> graph loop
+function zoomed() {
+    container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+}
+
+//*********************
+// Link graph to editor
+//*********************
+//Link mouse in graph to editor changes
+function mouseover(d) {
+	if (marker!=null) {
+		editor.getSession().removeMarker(marker);
+		marker = null;
+		}
+	marker = editor.getSession().addMarker(new aceRange(d.line, 0, d.line, 10), 'highlight', 'fullLine', true);
+	editor.getSession().setAnnotations([{row: d.line, type:'info'}]);
+	}
+	
+function mouseout(d) {
+	if (marker!=null) {
+		editor.getSession().removeMarker(marker);
+		marker = null;
+		}
+	editor.getSession().clearAnnotations();
+	}
+
+//*****************
+// Reload the graph
+//*****************
+//Send the editor data to the server
 function reload_graph_data() {
     var data = new FormData();
     data.append('code', editor.getValue());
@@ -133,33 +163,7 @@ function reload_graph_data() {
     xhr.send(data);
 }
 
-var graph;
-var link;
-var node;
-
-
-
-// line highlighting when over objects in graph
-var marker = null;
-function mouseover(d) {
-	if (marker!=null) {
-		editor.getSession().removeMarker(marker);
-		marker = null;
-		}
-	marker = editor.getSession().addMarker(new aceRange(d.line, 0, d.line, 10), 'highlight', 'fullLine', true);
-	editor.getSession().setAnnotations([{row: d.line, type:'info'}]);
-	}
-function mouseout(d) {
-	if (marker!=null) {
-		editor.getSession().removeMarker(marker);
-		marker = null;
-		}
-	editor.getSession().clearAnnotations();
-	}
-
-reload_graph_data();
-
-
+//Redraw the graph given server response
 function update_graph() {
 	graph = JSON.parse(this.responseText);
 
@@ -180,14 +184,10 @@ function update_graph() {
 		editor.getSession().clearAnnotations();
 	}
 
-	//delete all the links and redraw them
+	//delete all the links and reread them
 	container.selectAll('.link').remove();
-
 	link = container.selectAll('.link')
 		.data(graph.links);
-
-	link.enter().append('polyline')
-		.attr('class', function(d) {return 'link link_'+d.type;});
 
 	//get all the nodes, make the new ones delete the old
 	node = container.selectAll('g.node')
@@ -195,6 +195,12 @@ function update_graph() {
 	container.selectAll('g.node text')
 		.data(graph.nodes, function(d) {return d.id})
 
+	linkEnter = link
+	    .enter()
+	    .append('g')
+		.attr('class', function(d) {return 'link link_'+d.type;})
+
+    //Create html objects to draw
 	var nodeEnter = node
 		.enter()
 		.append('g')
@@ -204,15 +210,12 @@ function update_graph() {
 		.call(drag);
 
 	nodeEnter.filter(function(d) {return d.type=='ens';})
+		.append('use')
+		.attr('xlink:href', "#ensemble")
+		
+	nodeEnter.filter(function(d) {return d.type=='nde';})
 		.append('circle')
 		.attr('r', '20')
-
-	nodeEnter.filter(function(d) {return d.type=='nde';})
-		.append('rect')
-		.attr('x', '-20')
-		.attr('y', '-20')
-		.attr('width', '40')
-		.attr('height', '40')
 
 	nodeEnter.filter(function(d) {return d.type=='net';})
 		.append('rect')
@@ -224,8 +227,9 @@ function update_graph() {
 		.attr('height', '100')
 
 	nodeEnter.append('text')
+		.attr('y', '30')
 		.text(function(d) {return d.label;});
-
+	
 	node.exit().remove();
 
 	//label everything
@@ -240,8 +244,19 @@ function update_graph() {
 	update_line_locations();
 }
 
+//***********************
+// Drawing graph elements
+//***********************
+// Move objects to be drawn on top
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};
+
 function update_line_locations() {
-    link.filter(function(d) {return d.type=='std';})
+    linkEnter.filter(function(d) {return (d.type=='std' && d.source!=d.target);})
+        .append('polyline')
         .attr('points', function(d) {
             x0 = graph.nodes[d.source].x;
             y0 = graph.nodes[d.source].y;
@@ -250,8 +265,16 @@ function update_line_locations() {
             return ""+x0+","+y0+" "+(x0*0.45+x1*0.55)+","+(y0*0.45+y1*0.55)+" "+
                       x1+","+y1;
         });
+    linkEnter.filter(function(d) {return (d.type=='std' && d.source==d.target);})
+		.append('use')
+		.attr('xlink:href','#recur')
+		.attr('fill','none')
+		.attr('stroke','#333')
+		.attr('stroke-opacity','.6')
+		.attr('stroke-width','2px')
 }
 
+//Update all network sizes based on node positions
 function update_net_sizes() {
     node.filter(function(d) {return d.type=='net';})
         .each(update_net_size)
@@ -266,11 +289,7 @@ function update_net_sizes() {
         });
 }
 
-var net_widths = {};
-var net_heights = {};
-var node_margin = 35;
-var net_inner_margin = 25;
-var net_margin = 15;
+//Update given network size based on node position
 function update_net_size(d) {
 	xstart = d.x
 	ystart = d.y
@@ -279,10 +298,17 @@ function update_net_size(d) {
     y0 = graph.nodes[d.contains[0]].y;
     y1 = y0;
     for (obj in d.contains) {  //min/max of y and x of nodes in net
-        x0 = Math.min(graph.nodes[d.contains[obj]].x, x0);
-        x1 = Math.max(graph.nodes[d.contains[obj]].x, x1);
-        y0 = Math.min(graph.nodes[d.contains[obj]].y, y0);
-        y1 = Math.max(graph.nodes[d.contains[obj]].y, y1);
+        xBorder = 0
+        yBorder = 0
+        tmp = graph.nodes[d.contains[obj]]
+        if (tmp.type =="net") {
+            xBorder = net_widths[tmp.id] / 2 - net_inner_margin
+            yBorder = net_heights[tmp.id] / 2 - net_inner_margin
+        }
+        x0 = Math.min(graph.nodes[d.contains[obj]].x-xBorder, x0);
+        x1 = Math.max(graph.nodes[d.contains[obj]].x+xBorder, x1);
+        y0 = Math.min(graph.nodes[d.contains[obj]].y-yBorder, y0);
+        y1 = Math.max(graph.nodes[d.contains[obj]].y+yBorder, y1);
     }
     d.x = (x0+x1)/2;  // x, y mid
     d.y = (y0+y1)/2;
@@ -291,44 +317,79 @@ function update_net_size(d) {
     net_widths[d.id] = x1 - x0+2*net_inner_margin; //track heights/widths
     net_heights[d.id] = y1 - y0+2*net_inner_margin;
 
-    var node_list = []; //make a list of the indices of all nodes
-    for (i in graph.nodes){node_list.push(i)}
-    update_node_positions(d, 2*dx, 2*dy, node_list)
+    
+    update_node_positions(d, 2*dx, 2*dy, d3.map(graph.nodes))
 }
 
-function isin(d, x, y) { // is the point x, y inside the net
+//Move all the nodes in a network if network position changes
+function update_net_position(d, dx, dy) {
+    if (d.type == "net") {
+        for (var obj in d.contains) {
+            if (graph.nodes[d.contains[obj]].type == "net") {
+                update_net_position(graph.nodes[d.contains[obj]], dx, dy)
+            }
+            graph.nodes[d.contains[obj]].x += dx
+            graph.nodes[d.contains[obj]].y += dy
+        }
+    }
+}
+
+//Update the position of any nodes and what they affect
+function update_node_positions(d, dx, dy, node_list) {
+    removeValue(node_list, d)
+    for (n in node_list.keys()) {
+        if (close_to(node_list.get(node_list.keys()[n]), d)) {
+        	move_node(node_list.get(node_list.keys()[n]), dx, dy)
+        	update_node_positions(node_list.get(node_list.keys()[n]), 
+        	        dx, dy, d3.map(node_list))
+        }
+    }
+}
+
+//Move the provided nodes the provided distance and note that
+function move_node(node, dx, dy) {
+    if (node.type == "net") { //move a network
+        update_net_position(node, dx,dy)
+    }
+    else{ //move ens or nde
+            node.x += dx
+            node.y += dy
+    }
+}
+
+//Redraw if the window is resized
+function resize() {
+    width = window.innerWidth/2;
+    height = window.innerHeight;
+    svg.attr("width", width).attr("height", height);
+}
+
+//**************
+// Miscellaneous
+//**************
+//Remove object from a map.  Removes all matching items.
+function removeValue(map, d) {
+    keys = map.keys()
+    for (el in map.keys()) {
+        if (map.get(map.keys()[el]) == d) {
+            map.remove(map.keys()[el])
+        }
+    }
+}
+
+// is the point x, y inside the net
+function isin(d, x, y) { 
 	return (x<d.x+net_widths[d.id]/2) &&
 		   (x>d.x-net_widths[d.id]/2) &&
 		   (y<d.y+net_heights[d.id]/2) &&
 		   (y>d.y-net_heights[d.id]/2);
 }
 
-function update_node_positions(d, dx, dy, node_list) {
-	ind = graph.nodes.indexOf(d)
-	node_list.splice(node_list.indexOf(ind.toString()),1) //remove d from node_list
-    for (var i=0; i<node_list.length; i++) {
-        n = graph.nodes[node_list[i]];
-        if (close_to(n,d)) {
-        	move_node(n, dx, dy)
-        	update_node_positions(n, dx, dy, node_list.slice(0))
-        }
-    }
-}
-
-function move_node(node, dx, dy) {
-	if (node.type == "net") { //move a network
-		update_net_position(node, dx,dy)
-	}
-	else{ //move ens or nde
-		node.x += dx
-		node.y += dy
-	}
-}
-
+//Check if node, n is close to origin object, o
 function close_to(n, o) { //n is node, o is origin
 	if (o.type == "net") { //if origin is net
 		if (!(n.type == "net")) { //if node is nde or ens
-        	if (!net_contains(o, n)) {
+        	if (!netContains(n, o)) {
             	if (Math.abs(o.x-n.x) < (net_margin+net_widths[o.id]/2) &&
                     Math.abs(o.y-n.y) < (net_margin+net_heights[o.id]/2)) {
                 	//console.log('true 1')
@@ -336,7 +397,7 @@ function close_to(n, o) { //n is node, o is origin
                 }
             }
         }
-        else { //if node is net
+        else if (!(netContains(n, o) || netContains(o, n))) { //if node is net
             if (Math.abs(o.x-n.x) < (net_widths[n.id]/2+net_widths[o.id]/2)
                 && Math.abs(o.y-n.y)<(net_heights[n.id]/2
                                                     +net_heights[o.id]/2)) {
@@ -345,7 +406,7 @@ function close_to(n, o) { //n is node, o is origin
             }
         }
     }
-    if (!(o.type == "net")) { //if origin is nde or ens
+    else { //if origin is nde or ens
 		if (!(n.type == "net")) { //if node nde or ens
 			if (Math.abs(o.x-n.x) < node_margin
 			   && Math.abs(o.y-n.y) < node_margin) {
@@ -354,7 +415,7 @@ function close_to(n, o) { //n is node, o is origin
 			}
 		}
         else { //if node is net
-        	if(!net_contains(n, o)) {
+        	if(!netContains(o, n)) {
             	if (Math.abs(o.x-n.x) < (net_margin+net_widths[n.id]/2) &&
                     Math.abs(o.y-n.y) < (net_margin+net_heights[n.id]/2)) {
                 	//console.log('true 4')
@@ -366,35 +427,62 @@ function close_to(n, o) { //n is node, o is origin
     return false
 }
 
-//True if net contains node
-function net_contains(net, node) {
-    contain_bool = false
+//True if net or any of its subnets contains node
+function netContains(node, net) {
+    var contain_bool = false
     for (var i in net.contains) {
         if (graph.nodes[net.contains[i]].id == node.id) {
-            contain_bool = true
+            return true
+        }
+        else if (graph.nodes[net.contains[i]].type == "net") {
+            contain_bool = netContains(node, graph.nodes[net.contains[i]])
+            if (contain_bool) {
+                return true
+            }
         }
     }
     return contain_bool
 }
+</script>
 
-//Move all the nodes in a network if position changes
-function update_net_position(d, dx, dy) {
-    if (d.type == 'net') {
-        for (obj in d.contains) {
-            graph.nodes[d.contains[obj]].x += dx
-            graph.nodes[d.contains[obj]].y += dy
-        }
-    }
-}
+//***********
+//Main script
+//***********
+<script>
+var zoom = d3.behavior.zoom()
+    .scaleExtent([0.1, 10])
+    .on('zoom', zoomed);
 
-function resize() {
-    width = window.innerWidth/2;
-    height = window.innerHeight;
-    svg.attr("width", width).attr("height", height);
-}
+var svg = d3.select("svg");
+var container = svg.append('g');
+
+zoom(svg);  // set up zooming on the graph
+
+var drag = d3.behavior.drag()
+    .origin(function(d){return d})
+    .on('dragstart', dragstarted)
+    .on('drag', dragged)
+    .on('dragend', dragended);
+
+//**********************
+// editor -> server -> graph 
+//**********************
+var graph;
+var linkEnter;
+var node;
+
+// line highlighting when over objects in graph
+var marker = null;
+
+reload_graph_data();
+
+var net_widths = {};
+var net_heights = {};
+var node_margin = 35;
+var net_inner_margin = 40;
+var net_margin = 15;
 
 d3.select(window).on("resize", resize);
-
 </script>
 
 </body>

@@ -51,9 +51,8 @@ if __name__ == '__main__':
     locals = {}
     exec c in globals(), locals
 
-    print locals
-
-    ident = NameFinder(locals)
+    model = locals['model']
+    ident = NameFinder(locals, model)
     ident.find_names(locals['model'])
 
     print ident.known_name

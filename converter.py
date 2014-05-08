@@ -31,7 +31,7 @@ class Converter(object):
         return default
 
     def process(self, network, id_prefix=None):
-        random.seed(4)
+        random.seed(5)
         for i, ens in enumerate(network.ensembles):
             line = ens._created_line_number-1
             label = ens.label
@@ -89,4 +89,3 @@ class Converter(object):
         data = dict(nodes=self.objects, links=self.links)
         pprint.pprint(data)
         return json.dumps(data)
-

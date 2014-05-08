@@ -11,6 +11,7 @@
     opacity: 0.2;
     position: absolute;
     }
+    
 div#graph { 
     position: absolute;
     top:48px;
@@ -34,16 +35,16 @@ svg .link_std {
     stroke-width: 2px;
     marker-mid: url(#TriangleMarker);
 }
+
 svg .link_net {
     stroke-width: 0px;
 }
 
-svg g.node_ens circle{
-    stroke: #444;
-    stroke-width: 0px;
+svg g.node_ens {
     fill: #ddd;
 }
-svg g.node_nde rect{
+
+svg g.node_nde circle{
     stroke: #444;
     stroke-width: 0px;
     fill: #ddd;
