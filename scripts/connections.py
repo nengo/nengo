@@ -2,16 +2,16 @@ import nengo
 
 model = nengo.Network()
 with model:
-    a = nengo.Ensemble(n_neurons=100, dimensions=2, label='a')
-    b = nengo.Ensemble(n_neurons=80, dimensions=2, label='b')
+    a = nengo.Ensemble(n_neurons=100, dimensions=2, label='int')
+    b = nengo.Ensemble(n_neurons=80, dimensions=2, label='wait')
     c = nengo.Ensemble(n_neurons=80, dimensions=2)
     d = nengo.Ensemble(n_neurons=80, dimensions=2)
-    e = nengo.networks.EnsembleArray(80,2)
+    e = nengo.networks.EnsembleArray(80,2, label="array")
 
-    vis = nengo.Network()
+    vis = nengo.Network(label="vision")
     with vis:
 
-		v1 = nengo.Network()
+		v1 = nengo.Network(label="primary")
 		with v1:
 			f = nengo.Ensemble(n_neurons=80, dimensions=2)
 			g = nengo.Ensemble(n_neurons=80, dimensions=2)

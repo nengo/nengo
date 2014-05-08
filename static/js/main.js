@@ -66,8 +66,8 @@ function dragged(d) {
 
     var node_list = d3.map(graph.nodes) //create a map of the nodes
     update_node_positions(d, d3.event.dx, d3.event.dy, node_list);
-    update_net_sizes();
     update_net_position(d, d3.event.dx, d3.event.dy);
+    update_net_sizes();
     update_line_locations();
 }
 
@@ -100,14 +100,7 @@ function zoomed() {
 		.text(function(d) {return d.label;});
     }
             
-    node.selectAll("g.node.node_net text") //Position net text by scale
-	    .attr('y', function(d) {
-	        if (scale<1) {
-    	        return net_heights[d.id]/2+10/scale+"px"
-    	    } else {
-    	        return net_heights[d.id]/2+10 +"px"
-    	    }
-    	})
+    update_net_text();
 }
 
 //***********************
@@ -116,6 +109,7 @@ function zoomed() {
 // Move objects to be drawn on top
 var net_widths = {};
 var net_heights = {};
+var net_text_margin = 10;
 
 d3.selection.prototype.moveToFront = function() {
   return this.each(function(){
@@ -152,19 +146,16 @@ function update_net_sizes() {
     node.attr('transform', function(d) {
         return 'translate('+[d.x, d.y]+')';
         });
-        
+    update_net_text();
+}
+
+function update_net_text() {
     node.selectAll("g.node.node_net text") //Position net text by scale
 	    .attr('y', function(d) {
-	        try {scale = d3.event.scale;}
-	        catch (e) {
-	            if (e instanceof TypeError) {
-                    scale=1;
-                }
-	        }
-	        if (scale<1) {
-    	        return net_heights[d.id]/2+10/scale+"px"
+	        if (zoom.scale()<1) {
+    	        return net_heights[d.id]/2+net_text_margin/zoom.scale()+"px"
     	    } else {
-    	        return net_heights[d.id]/2+10 +"px"
+    	        return net_heights[d.id]/2+net_text_margin +"px"
     	    }
     	})
 }
@@ -338,29 +329,24 @@ function update_graph() {
 		.attr('width', '100')
 		.attr('height', '100')
 
+	//label everything
 	nodeEnter.append('text')
+	    .text(function(d) {return d.label})
+
+	nodeEnter.selectAll('.node_nde text, .node_ens text')
 		.attr('y', '30')
 		.style('font-size', node_fontsize)
-		.text(function(d) {return d.label;});
 	
 	node.exit().remove();
 	link.exit().remove();
 	linkRecur.exit().remove();
 
-	//label everything
-	container.selectAll('g.node')
-		.selectAll('text')
-		.text(function(d) {return d.label;});
 		
 	//redraw so nodes are on top
 	container.selectAll('g.node').filter(function(d) {return d.type!='net';})
 		.moveToFront();
 
     update_net_sizes();
-    
-    nodeEnter.selectAll("g.node.node_net text") //move text below networks
-	    .attr('y', function(d) {return net_heights[d.id]/2+10})
-    
 	update_line_locations();
 	resize();
 }
