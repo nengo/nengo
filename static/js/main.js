@@ -117,6 +117,35 @@ d3.selection.prototype.moveToFront = function() {
   });
 };
 
+// put nodes on top, lowest level nets 2nd, and so on
+function layer_container () {
+    //if we had a list of what's 'contained' (i.e top level only) 
+    //by model from the server, this would be more efficient
+    for (var i in graph.nodes) {
+        if (graph.nodes[i].type=="net") {
+            layer_network(graph.nodes[i])
+        }
+    }
+
+	container.selectAll('g.node').filter(function(d) {return d.type!='net';})
+		.moveToFront();
+}
+
+//Move all the nodes in a network if network position changes
+function layer_network(curNode) {
+    if (curNode.type == "net") {
+        container.selectAll('g.node').filter(function(d) {
+            return d==curNode;})
+            .moveToFront()
+        
+        for (var obj in curNode.contains) {
+            if (graph.nodes[curNode.contains[obj]].type == "net") {
+                layer_network(graph.nodes[curNode.contains[obj]])
+            }
+        }
+    }
+}
+
 function update_line_locations() {
     link.filter(function(d) {return d.type=='std';})
         .attr('points', function(d) {
@@ -234,6 +263,86 @@ function resize() {
     svg.attr("width", width).attr("height", height);
 }
 
+//**************
+// Miscellaneous
+//**************
+//Remove object from a map.  Removes all matching items.
+function removeValue(map, d) {
+    keys = map.keys()
+    for (el in map.keys()) {
+        if (map.get(map.keys()[el]) == d) {
+            map.remove(map.keys()[el])
+        }
+    }
+}
+
+// is the point x, y inside the net
+function isin(d, x, y) { 
+	return (x<d.x+net_widths[d.id]/2) &&
+		   (x>d.x-net_widths[d.id]/2) &&
+		   (y<d.y+net_heights[d.id]/2) &&
+		   (y>d.y-net_heights[d.id]/2);
+}
+
+//Check if node, n is close to origin object, o
+function close_to(n, o) { //n is node, o is origin
+	if (o.type == "net") { //if origin is net
+		if (!(n.type == "net")) { //if node is nde or ens
+        	if (!netContains(n, o)) {
+            	if (Math.abs(o.x-n.x) < (net_margin+net_widths[o.id]/2) &&
+                    Math.abs(o.y-n.y) < (net_margin+net_heights[o.id]/2)) {
+                	//console.log('true 1')
+                	return true
+                }
+            }
+        }
+        else if (!(netContains(n, o) || netContains(o, n))) { //if node is net
+            if (Math.abs(o.x-n.x) < (net_widths[n.id]/2+net_widths[o.id]/2)
+                && Math.abs(o.y-n.y)<(net_heights[n.id]/2
+                                                    +net_heights[o.id]/2)) {
+                //console.log('true 2')
+            	return true
+            }
+        }
+    }
+    else { //if origin is nde or ens
+		if (!(n.type == "net")) { //if node nde or ens
+			if (Math.abs(o.x-n.x) < node_margin
+			   && Math.abs(o.y-n.y) < node_margin) {
+             	//console.log('true 3')
+				return true
+			}
+		}
+        else { //if node is net
+        	if(!netContains(o, n)) {
+            	if (Math.abs(o.x-n.x) < (net_margin+net_widths[n.id]/2) &&
+                    Math.abs(o.y-n.y) < (net_margin+net_heights[n.id]/2)) {
+                	//console.log('true 4')
+                	return true
+                }
+            }
+        }
+    }
+    return false
+}
+
+//True if net or any of its subnets contains node
+function netContains(node, net) {
+    var contain_bool = false
+    for (var i in net.contains) {
+        if (graph.nodes[net.contains[i]].id == node.id) {
+            return true
+        }
+        else if (graph.nodes[net.contains[i]].type == "net") {
+            contain_bool = netContains(node, graph.nodes[net.contains[i]])
+            if (contain_bool) {
+                return true
+            }
+        }
+    }
+    return contain_bool
+}
+
 //*****************
 // Reload the graph
 //*****************
@@ -340,95 +449,12 @@ function update_graph() {
 	node.exit().remove();
 	link.exit().remove();
 	linkRecur.exit().remove();
-
-		
-	//redraw so nodes are on top
-	container.selectAll('g.node').filter(function(d) {return d.type!='net';})
-		.moveToFront();
-
+	
+	//redraw so nodes are on top, lowest level nets 2nd, and so on
+	layer_container();
     update_net_sizes();
 	update_line_locations();
 	resize();
-}
-
-//**************
-// Miscellaneous
-//**************
-//Remove object from a map.  Removes all matching items.
-function removeValue(map, d) {
-    keys = map.keys()
-    for (el in map.keys()) {
-        if (map.get(map.keys()[el]) == d) {
-            map.remove(map.keys()[el])
-        }
-    }
-}
-
-// is the point x, y inside the net
-function isin(d, x, y) { 
-	return (x<d.x+net_widths[d.id]/2) &&
-		   (x>d.x-net_widths[d.id]/2) &&
-		   (y<d.y+net_heights[d.id]/2) &&
-		   (y>d.y-net_heights[d.id]/2);
-}
-
-//Check if node, n is close to origin object, o
-function close_to(n, o) { //n is node, o is origin
-	if (o.type == "net") { //if origin is net
-		if (!(n.type == "net")) { //if node is nde or ens
-        	if (!netContains(n, o)) {
-            	if (Math.abs(o.x-n.x) < (net_margin+net_widths[o.id]/2) &&
-                    Math.abs(o.y-n.y) < (net_margin+net_heights[o.id]/2)) {
-                	//console.log('true 1')
-                	return true
-                }
-            }
-        }
-        else if (!(netContains(n, o) || netContains(o, n))) { //if node is net
-            if (Math.abs(o.x-n.x) < (net_widths[n.id]/2+net_widths[o.id]/2)
-                && Math.abs(o.y-n.y)<(net_heights[n.id]/2
-                                                    +net_heights[o.id]/2)) {
-                //console.log('true 2')
-            	return true
-            }
-        }
-    }
-    else { //if origin is nde or ens
-		if (!(n.type == "net")) { //if node nde or ens
-			if (Math.abs(o.x-n.x) < node_margin
-			   && Math.abs(o.y-n.y) < node_margin) {
-             	//console.log('true 3')
-				return true
-			}
-		}
-        else { //if node is net
-        	if(!netContains(o, n)) {
-            	if (Math.abs(o.x-n.x) < (net_margin+net_widths[n.id]/2) &&
-                    Math.abs(o.y-n.y) < (net_margin+net_heights[n.id]/2)) {
-                	//console.log('true 4')
-                	return true
-                }
-            }
-        }
-    }
-    return false
-}
-
-//True if net or any of its subnets contains node
-function netContains(node, net) {
-    var contain_bool = false
-    for (var i in net.contains) {
-        if (graph.nodes[net.contains[i]].id == node.id) {
-            return true
-        }
-        else if (graph.nodes[net.contains[i]].type == "net") {
-            contain_bool = netContains(node, graph.nodes[net.contains[i]])
-            if (contain_bool) {
-                return true
-            }
-        }
-    }
-    return contain_bool
 }
 
 //***********
