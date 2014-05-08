@@ -16,11 +16,13 @@ with model:
 			f = nengo.Ensemble(n_neurons=80, dimensions=2)
 			g = nengo.Ensemble(n_neurons=80, dimensions=2)
 			nengo.Connection(f, g)
-
+			nengo.Connection(f, f)
+			
 		r = nengo.Ensemble(n_neurons=80, dimensions=2)
 		t = nengo.Ensemble(n_neurons=80, dimensions=2)
 		nengo.Connection(r, t)
 
+    nengo.Connection(a, a, synapse = 0.01)
     nengo.Connection(a, b, synapse=0.01)
     nengo.Connection(b, c, synapse=0.01)
     nengo.Connection(c, d, synapse=0.01)

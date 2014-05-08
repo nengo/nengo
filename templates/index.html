@@ -125,7 +125,35 @@ function dragended(d) {
 }
 
 function zoomed() {
-    container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+    scale = d3.event.scale
+    container.attr("transform", "translate(" + d3.event.translate + ")scale(" + scale + ")");
+    node.selectAll('text')
+        .style("font-size", function(d) {
+            newsize = node_fontsize / scale
+            if (newsize>node_fontsize) {
+                return newsize + "px";
+            } else {
+                return node_fontsize + "px";
+            }
+        })
+    
+    if (scale<.75) {  //could be faster if keep track of whether it was just drawn
+        node.selectAll("g.node.node_ens text, g.node.node_nde text")
+            .text("")
+        }
+    else {
+        node.selectAll("g.node.node_ens text, g.node.node_nde text")
+		.text(function(d) {return d.label;});
+    }
+            
+    node.selectAll("g.node.node_net text")
+	    .attr('y', function(d) {
+	        if (scale<1) {
+    	        return net_heights[d.id]/2+10/scale+"px"
+    	    } else {
+    	        return net_heights[d.id]/2+10 +"px"
+    	    }
+    	})
 }
 
 //*********************
@@ -222,18 +250,6 @@ function update_graph() {
 		.on('mouseout', mouseout)
 		.call(drag);
 
-/*	nodeEnter.filter(function(d,i) {
-	    for (ind in recurlink) {
-	        if (i==recurlink[ind].target) {
-	            return true
-	        } else {
-	        return false
-	        }
-	    }})
-		.append('use')
-		.attr('class', function(d) {return 'link link_recur';})
-		.attr('xlink:href', "#recur")
-*/
 	nodeEnter.filter(function(d) {return d.type=='ens';})
 		.append('use')
 		.attr('xlink:href', "#ensemble")
@@ -253,6 +269,7 @@ function update_graph() {
 
 	nodeEnter.append('text')
 		.attr('y', '30')
+		.style('font-size', node_fontsize)
 		.text(function(d) {return d.label;});
 	
 	node.exit().remove();
@@ -268,7 +285,12 @@ function update_graph() {
 		.moveToFront();
 
     update_net_sizes();
+    
+    nodeEnter.selectAll("g.node.node_net text")
+	    .attr('y', function(d) {return net_heights[d.id]/2+10})
+    
 	update_line_locations();
+	resize();
 }
 
 //***********************
@@ -473,7 +495,7 @@ function netContains(node, net) {
 //***********
 <script>
 var zoom = d3.behavior.zoom()
-    .scaleExtent([0.1, 10])
+    .scaleExtent([.05, 10])
     .on('zoom', zoomed);
 
 var svg = d3.select("svg");
@@ -505,6 +527,7 @@ var net_heights = {};
 var node_margin = 35;
 var net_inner_margin = 40;
 var net_margin = 15;
+var node_fontsize = 16;
 
 d3.select(window).on("resize", resize);
 </script>
