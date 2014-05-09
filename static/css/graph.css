@@ -7,6 +7,11 @@ div#graph {
     background-color: white;
 }
 
+#mainCircle {
+    fill: white;
+    opacity: 0
+}
+
 svg .link_std {
     stroke: #333;
     stroke-opacity: .6;
