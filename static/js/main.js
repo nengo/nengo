@@ -5,6 +5,7 @@
 var aceRange = ace.require('ace/range').Range;
 var editor = null;
 var marker = null;
+var gui_updating = false;
 
 function removeMarker() {
     if (marker!=null) {
@@ -46,6 +47,27 @@ function open_file(file) {
     xhr.send(data);
 }
 
+function update_gui_pos() {
+    gui_updating = true;
+    var pos = '\nimport nengo_gui\ngui = nengo_gui.Config()\n';
+    for (var i=0; i<graph.nodes.length; i++) {
+        d = graph.nodes[i];
+        if ((d.type == 'ens') || (d.type == 'nde')) {
+            pos += "gui[" + d.id + "].pos = " + d.x + ", " + d.y + "\n";
+        }
+    }
+    
+    text = editor.getValue();
+    index = text.indexOf('\nimport nengo_gui\n');
+    if (index!=-1) {
+        text = text.substring(0, index);
+    }
+    
+    new_text = text + pos;
+    
+    editor.session.setValue(new_text);
+    gui_updating = false;    
+}
 //*****************
 // Helper functions
 //*****************
@@ -69,6 +91,7 @@ function dragged(d) {
     update_net_position(d, d3.event.dx, d3.event.dy);
     update_net_sizes();
     update_line_locations();
+    update_gui_pos();
 }
 
 function dragended(d) {
@@ -485,7 +508,7 @@ $(document).ready(function () {
     editor = ace.edit("editor");
     editor.setTheme("ace/theme/monokai");
     editor.getSession().setMode("ace/mode/python");
-    editor.on('change', function(event) {reload_graph_data();});
+    editor.on('change', function(event) {if (!gui_updating) reload_graph_data();});
 
     //initialize file browser
     $('#filebrowser').hide()
