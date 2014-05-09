@@ -328,19 +328,12 @@ function close_to(n, o) { //n is node, o is origin
 
 //True if net or any of its subnets contains node
 function netContains(node, net) {
-    var contain_bool = false
-    for (var i in net.contains) {
-        if (graph.nodes[net.contains[i]].id == node.id) {
-            return true
-        }
-        else if (graph.nodes[net.contains[i]].type == "net") {
-            contain_bool = netContains(node, graph.nodes[net.contains[i]])
-            if (contain_bool) {
-                return true
-            }
-        }
+    ind = graph.nodes.indexOf(node)
+    if (net.full_contains.indexOf(ind) > -1) {
+        return true
+    } else {
+    return false
     }
-    return contain_bool
 }
 
 //*****************

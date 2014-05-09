@@ -61,6 +61,8 @@ class Converter(object):
                    'x':pos[0], 'y':pos[1]}
             self.object_index[nde] = len(self.objects)
             self.objects.append(obj)
+            
+        full_contains={}
         for i, net in enumerate(network.networks):
             if not hasattr(net, '_created_line_number'):
                 for obj in net.ensembles + net.nodes + net.connections:
@@ -74,12 +76,15 @@ class Converter(object):
                 label = self.find_identifier(line, label)
             id = self.namefinder.name(net)
 
-            self.process(net, id_prefix=id)
+            full_contains[i] = self.process(net, id_prefix=id)
 
             contains = [self.object_index[obj] for obj in
                 net.ensembles + net.nodes + net.networks]
+            
+            full_contains[i] += contains
+            
             obj = {'label':label, 'line':line, 'id':id, 'type':'net',
-                   'contains':contains,
+                   'contains':list(contains), 'full_contains': list(full_contains[i]),
                    'x':random.uniform(0,300), 'y':random.uniform(0,300)}
             self.object_index[net] = len(self.objects)
             self.objects.append(obj)
@@ -91,6 +96,8 @@ class Converter(object):
                                'target':self.object_index[conn.post],
                                'id':id,
                                'type':'std'})
+                               
+        return sum(full_contains.values(),[])
 
     def to_json(self):
         data = dict(nodes=self.objects, links=self.links)
