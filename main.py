@@ -11,7 +11,7 @@ import os
 import urllib
 
 class NengoGui(swi.SimpleWebInterface):
-    default_filename = 'default.py'
+    default_filename = 'scripts/default.py'
     script_path = 'scripts/'
 
     def swi_static(self, *path):
