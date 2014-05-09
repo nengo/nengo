@@ -355,7 +355,17 @@ var net_inner_margin = 40;
 var net_margin = 15;
 var node_fontsize = 16;
 
+var waiting_for_result = false;
+var pending_change = false;
 function reload_graph_data() {
+    // don't send a new request while we're still waiting for another one
+    if (waiting_for_result) {
+        pending_change = true;
+        return;
+    }
+    
+    waiting_for_result = true;
+    
     var data = new FormData();
     data.append('code', editor.getValue());
 
@@ -367,6 +377,13 @@ function reload_graph_data() {
 
 //Redraw the graph given server response
 function update_graph() {
+    waiting_for_result = false;
+    
+    if (pending_change) {
+        pending_change = false;
+        reload_graph_data();
+    }
+    
 	graph = JSON.parse(this.responseText);
 
 	// was there a parsing error?
