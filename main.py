@@ -10,6 +10,8 @@ import nengo
 import os
 import urllib
 
+import nengo_gui
+
 class NengoGui(swi.SimpleWebInterface):
     default_filename = 'scripts/default.py'
     script_path = 'scripts/'
@@ -104,8 +106,11 @@ class NengoGui(swi.SimpleWebInterface):
 
         try:
             model = locals['model']
+            cfg = locals.get('gui', None)
+            if cfg is None:
+                cfg = nengo_gui.Config()
 
-            conv = converter.Converter(model, code.splitlines(), locals)
+            conv = converter.Converter(model, code.splitlines(), locals, cfg)
 
         except:
             traceback.print_exc()

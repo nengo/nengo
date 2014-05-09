@@ -13,11 +13,12 @@ def isidentifier(s):
 
 
 class Converter(object):
-    def __init__(self, model, codelines, locals):
+    def __init__(self, model, codelines, locals, config):
         self.model = model
         self.namefinder = namefinder.NameFinder(locals, model)
         self.codelines = codelines
         self.objects = []
+        self.config = config
         self.links = []
         self.object_index = {}
         self.process(model)
@@ -40,8 +41,11 @@ class Converter(object):
             id = self.namefinder.name(ens)
 
 
+            pos = self.config[ens].pos
+            if pos is None:
+                pos = random.uniform(0, 300), random.uniform(0, 300)
             obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
-                   'x':random.uniform(0,300), 'y':random.uniform(0,300)}
+                   'x':pos[0], 'y':pos[1]}
             self.object_index[ens] = len(self.objects)
             self.objects.append(obj)
         for i, nde in enumerate(network.nodes):
@@ -50,8 +54,11 @@ class Converter(object):
             if label == 'Node':
                 label = self.find_identifier(line, label)
             id = self.namefinder.name(nde)
+            pos = self.config[nde].pos
+            if pos is None:
+                pos = random.uniform(0, 300), random.uniform(0, 300)
             obj = {'label':label, 'line':line, 'id':id, 'type':'nde',
-                   'x':random.uniform(0,300), 'y':random.uniform(0,300)}
+                   'x':pos[0], 'y':pos[1]}
             self.object_index[nde] = len(self.objects)
             self.objects.append(obj)
         for i, net in enumerate(network.networks):
