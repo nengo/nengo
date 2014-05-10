@@ -125,6 +125,7 @@ class Network(with_metaclass(NengoObjectContainer)):
         inst.connections = inst.objects[Connection]
         inst.networks = inst.objects[Network]
         inst.probes = inst.objects[Probe]
+        inst.order = []
         return inst
 
     context = collections.deque(maxlen=100)  # static stack of Network objects
@@ -144,6 +145,7 @@ class Network(with_metaclass(NengoObjectContainer)):
         for cls in obj.__class__.__mro__:
             if cls in network.objects:
                 network.objects[cls].append(obj)
+                network.order.append(obj)
                 break
         else:
             raise TypeError("Objects of type '%s' cannot be added to "
@@ -527,11 +529,12 @@ class Connection(NengoObject):
     pre : Ensemble or Neurons or Node
         The given pre object.
     transform : (post_size, pre_size) array_like
-        The given transform.
-    transform_full : (post_size, pre_size) array_like
-        The given transform, after padding with zeros according to the sliced
-        dimensionality of pre and post
-        (see the documentation for the transform parameter).
+        Linear transform mapping the pre output to the post input.
+    modulatory : bool
+        Whether the output of this signal is to act as an error signal for a
+        learning rule.
+    seed : int
+        The seed used for random number generation.
     """
 
     synapse = Parameter(default=0.005)
@@ -545,7 +548,7 @@ class Connection(NengoObject):
     def __init__(self, pre, post, synapse=Default, transform=1.0,
                  solver=Default,
                  function=None, modulatory=Default, eval_points=Default,
-                 learning_rule=[]):
+                 learning_rule=[], seed=None):
         # don't check shapes until we've set all parameters
         self._skip_check_shapes = True
 
@@ -563,6 +566,7 @@ class Connection(NengoObject):
         self.modulatory = modulatory
         self.synapse = synapse
         self.transform = transform
+        self.seed = seed
 
         self.solver = solver
         if isinstance(self._pre, Neurons):
@@ -774,6 +778,7 @@ class Probe(NengoObject):
         self.label = "Probe(%s.%s)" % (target.label, self.attr)
         self.sample_every = sample_every
         self.conn_args = conn_args
+        self.seed = conn_args.get('seed', None)
 
     @property
     def size_in(self):
