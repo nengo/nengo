@@ -830,16 +830,17 @@ class Model(object):
         self.toplevel = None
 
         # Resources used by the build process.
+        self.toplevel = None
+
         self.operators = []
         self.params = {}
+        self.seeds = {}
         self.probes = []
         self.sig = collections.defaultdict(dict)
 
         self.dt = dt
         self.label = label
         self.seed = np.random.randint(npext.maxint) if seed is None else seed
-
-        self.rng = np.random.RandomState(self.seed)
 
     def __str__(self):
         return "Model: %s" % self.label
@@ -855,10 +856,22 @@ class Model(object):
         """Returns true iff obj has been processed by build."""
         return obj in self.params
 
-    def next_seed(self):
-        """Yields a seed to use for RNG during build computations."""
-        return self.rng.randint(npext.maxint)
+    def assign_seeds(self, network):
+        """Recursively assign seeds.
 
+        It recurses depth first, and respects the order of object creation.
+        """
+        seed = self.seed if network is self.toplevel else self.seeds[network]
+        rng = np.random.RandomState(seed)
+
+        for obj in network.order:
+            self.seeds[obj] = rng.randint(npext.maxint)
+
+            if hasattr(obj, 'seed') and obj.seed is not None:
+                self.seeds[obj] = obj.seed
+
+            if isinstance(obj, nengo.Network):
+                self.assign_seeds(obj)
 
 BuiltConnection = collections.namedtuple(
     'BuiltConnection', ['decoders', 'eval_points', 'transform', 'solver_info'])
@@ -915,6 +928,7 @@ def build_network(network, model):  # noqa: C901
     """
     if model.toplevel is None:
         model.toplevel = network
+        model.assign_seeds(network)
         model.sig['common'][0] = Signal(0.0, name='Common: Zero')
         model.sig['common'][1] = Signal(1.0, name='Common: One')
 
@@ -956,8 +970,7 @@ def pick_eval_points(ens, n_points, rng):
 
 def build_ensemble(ens, model, config):  # noqa: C901
     # Create random number generator
-    seed = model.next_seed() if ens.seed is None else ens.seed
-    rng = np.random.RandomState(seed)
+    rng = np.random.RandomState(model.seeds[ens])
 
     # Generate eval points
     if ens.eval_points is None or is_integer(ens.eval_points):
@@ -1183,6 +1196,8 @@ def build_probe(probe, model, config):
         model.sig[probe]['in'] = Signal(np.zeros(conn.dimensions),
                                         name=probe.label)
         model.add_op(Reset(model.sig[probe]['in']))
+        # Set connection's seed to probe's (which isn't used elsewhere)
+        model.seeds[conn] = model.seeds[probe]
         # Build the connection
         Builder.build(conn, model=model, config=config)
 
@@ -1230,7 +1245,8 @@ def build_linear_system(conn, model, rng):
 
 
 def build_connection(conn, model, config):  # noqa: C901
-    rng = np.random.RandomState(model.next_seed())
+    # Create random number generator
+    rng = np.random.RandomState(model.seeds[conn])
 
     if isinstance(conn.pre, nengo.objects.Neurons):
         model.sig[conn]['in'] = model.sig[conn.pre.ensemble]["neuron_out"]
