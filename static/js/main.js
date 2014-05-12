@@ -93,7 +93,8 @@ function update_gui_pos() {
     for (var i=0; i<graph.nodes.length; i++) {
         d = graph.nodes[i];
         if ((d.type == 'ens') || (d.type == 'nde')) {
-            pos += "gui[" + d.id + "].pos = " + d.x + ", " + d.y + "\n";
+            pos += "gui[" + d.id + "].pos = " + 
+                            d.x.toFixed(3) + ", " + d.y.toFixed(3) + "\n";
         }
     }
     
