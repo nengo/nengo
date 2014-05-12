@@ -84,8 +84,11 @@ function dragended(d) {
     d3.select(this).classed("dragging", false);
 }
 
+var global_zoom_scale = 1.0;
+
 function zoomed() {
-    scale = d3.event.scale
+    scale = d3.event.scale;
+    global_zoom_scale = scale;
     container.attr("transform", "translate(" + //scale everything
         d3.event.translate + ")scale(" + scale + ")");
 
@@ -98,15 +101,20 @@ function zoomed() {
             return node_fontsize + "px";
         }
     })
+    update_text();
+}
 
+function update_text() {
     //could be faster if keep track of whether it was just drawn
-    if (scale < .75) { //Don't draw node/ens text if scale out far 
+    if (global_zoom_scale < .75) { //Don't draw node/ens text if scale out far 
         node.selectAll("g.node.node_ens text, g.node.node_nde text")
             .text("")
     } else {
         node.selectAll("g.node.node_ens text, g.node.node_nde text")
             .text(function (d) {return d.label;});
     }
+    node.selectAll("g.node.node_net text")
+            .text(function (d) {return d.label;});
 
     update_net_text();
 }
@@ -489,6 +497,7 @@ function update_graph() {
     layer_container();
     update_net_sizes();
     update_line_locations();
+    update_text();
     resize();
 }
 
