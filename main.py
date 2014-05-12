@@ -13,7 +13,7 @@ import urllib
 import nengo_gui
 
 class NengoGui(swi.SimpleWebInterface):
-    default_filename = 'scripts/default.py'
+    default_filename = 'default.py'
     script_path = 'scripts/'
 
     def swi_static(self, *path):
@@ -40,20 +40,21 @@ class NengoGui(swi.SimpleWebInterface):
     def swi(self):
         with open('templates/index.html') as f:
             html = f.read()
-        return html
+        return html % dict(filename=self.default_filename)
 
     @classmethod
     def set_default_filename(klass, fn):
         klass.default_filename = fn
         path, fn = os.path.split(fn)
-        klass.path = path
+        klass.script_path = path
+        klass.default_filename = fn
 
     def swi_browse(self, dir):
         r = ['<ul class="jqueryFileTree" style="display: none;">']
         # r.append('<li class="directory collapsed"><a href="#" rel="../">..</a></li>')
-        d = os.path.join(self.script_path, urllib.unquote(dir))
-        for f in os.listdir(d):
-            ff = os.path.join(d,f)
+        d = urllib.unquote(dir)
+        for f in sorted(os.listdir(os.path.join(self.script_path, d))):
+            ff = os.path.relpath(os.path.join(self.script_path, d,f), self.script_path)
             if os.path.isdir(ff):
                 r.append('<li class="directory collapsed"><a href="#" rel="%s/">%s</a></li>' % (ff,f))
             else:
@@ -63,12 +64,22 @@ class NengoGui(swi.SimpleWebInterface):
         r.append('</ul>')
         return ''.join(r)
 
-    def swi_openfile(self, filename=''):
-        if len(filename) == 0:
-            filename = self.default_filename
-        with open(filename, 'r') as f:
-            text = f.read()
-        return text
+    def swi_openfile(self, filename):
+        fn = os.path.join(self.script_path, filename)
+        try:
+            with open(fn, 'r') as f:
+                text = f.read()
+            return text
+        except:
+            return ''
+
+    def swi_savefile(self, filename, code):
+        fn = os.path.join(self.script_path, filename)
+        with open(fn, 'w') as f:
+            f.write(code.replace('\r\n', '\n'))
+        return 'success'
+
+
 
     def swi_graph_json(self, code):
 

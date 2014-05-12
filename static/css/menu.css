@@ -26,3 +26,26 @@ div#menubar {
     z-index: 1000;
     overflow: auto;
 }
+
+div#menubar input.filename {
+    position: absolute;
+    top: 5px;
+    left: 100px;
+    border: 0px;
+    background-color: #777;
+    font-size: 20px;
+    color: white;
+    padding: 5px;
+}
+
+div#menubar input.filename:hover {
+    background-color: #888;
+}
+div#menubar input.filename:focus {
+    background-color: #888;
+    border: 0px;
+}
+
+div#menubar .disable {
+    opacity: 0.3
+}

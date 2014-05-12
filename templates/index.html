@@ -18,7 +18,7 @@
     <link rel="stylesheet" type="text/css" href="static/css/editor.css">
 </head>
 
-<body onload="open_file('');">
+<body onload="open_file($('#filename').val());">
 
 <div id="editor">
 </div>
@@ -60,6 +60,7 @@
 <div id="menubar">
     <img id="menu_open" src="/static/img/open.png" title="open model"/>
     <img id="menu_save" src="/static/img/savefile.png" title="save model"/>
+    <input id="filename" class="filename" type="text" value="%(filename)s" width="40" />
 </div>
 
 <!--Setup the file browser-->
