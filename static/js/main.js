@@ -215,16 +215,18 @@ function update_net_size(d) {
     y0 = graph.nodes[d.contains[0]].y;
     y1 = y0;
     m = net_inner_margin;
+    m2 = net_net_margin;
     if (zoom_mode=='semantic') {
         m = m / global_zoom_scale;
+        m2 = m2 / global_zoom_scale;
     }
     for (obj in d.contains) { //min/max of y and x of nodes in net
         xBorder = 0
         yBorder = 0
         tmp = graph.nodes[d.contains[obj]]
         if (tmp.type == "net") {
-            xBorder = net_widths[tmp.id] / 2 - m;
-            yBorder = net_heights[tmp.id] / 2 - m;
+            xBorder = net_widths[tmp.id] / 2 - m + m2;
+            yBorder = net_heights[tmp.id] / 2 - m + m2;
         }
         x0 = Math.min(graph.nodes[d.contains[obj]].x - xBorder, x0);
         x1 = Math.max(graph.nodes[d.contains[obj]].x + xBorder, x1);
@@ -389,6 +391,7 @@ var node = null;
 var node_margin = 35;
 var net_inner_margin = 40;
 var net_margin = 15;
+var net_net_margin = 10;  // spacing between network and subnetwork
 var node_fontsize = 16;
 
 var waiting_for_result = false;
