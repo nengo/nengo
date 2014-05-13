@@ -791,9 +791,9 @@ class ObjView(object):
         if isinstance(key, int):
             # single slices of the form [i] should be cast into
             # slice objects for convenience
-            if key != -1:
-                key = slice(key, key+1)
-            else:
+            if key == -1:
                 # special case because slice(-1, 0) gives the empty list
                 key = slice(key, None)
+            else:
+                key = slice(key, key+1)
         self.slice = key
