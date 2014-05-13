@@ -23,6 +23,9 @@ class Converter(object):
         self.object_index = {}
         self.process(model)
 
+        self.global_scale = config[model].scale
+        self.global_offset = config[model].offset
+
     def find_identifier(self, line, default):
         text = self.codelines[line]
         if '=' in text:
@@ -61,7 +64,7 @@ class Converter(object):
                    'x':pos[0], 'y':pos[1]}
             self.object_index[nde] = len(self.objects)
             self.objects.append(obj)
-            
+
         full_contains={}
         for i, net in enumerate(network.networks):
             if not hasattr(net, '_created_line_number'):
@@ -80,9 +83,9 @@ class Converter(object):
 
             contains = [self.object_index[obj] for obj in
                 net.ensembles + net.nodes + net.networks]
-            
+
             full_contains[i] += contains
-            
+
             obj = {'label':label, 'line':line, 'id':id, 'type':'net',
                    'contains':list(contains), 'full_contains': list(full_contains[i]),
                    'x':random.uniform(0,300), 'y':random.uniform(0,300)}
@@ -96,10 +99,12 @@ class Converter(object):
                                'target':self.object_index[conn.post],
                                'id':id,
                                'type':'std'})
-                               
+
         return sum(full_contains.values(),[])
 
     def to_json(self):
-        data = dict(nodes=self.objects, links=self.links)
+        data = dict(nodes=self.objects, links=self.links,
+                    global_scale=self.global_scale,
+                    global_offset=self.global_offset)
         pprint.pprint(data)
         return json.dumps(data)

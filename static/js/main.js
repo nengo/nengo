@@ -31,11 +31,13 @@ function clearAnnotation(d) { //Called on mouseout in graph
 
 function update_gui_pos() {
     gui_updating = true;
-    var pos = '\nimport nengo_gui\ngui = nengo_gui.Config()\n';
+    var gui = '\nimport nengo_gui\ngui = nengo_gui.Config()\n';
+    gui += "gui[model].scale = " + zoom.scale() + "\n";
+    gui += "gui[model].offset = " + zoom.translate() + "\n";
     for (var i=0; i<graph.nodes.length; i++) {
         d = graph.nodes[i];
         if ((d.type == 'ens') || (d.type == 'nde')) {
-            pos += "gui[" + d.id + "].pos = " + 
+            gui += "gui[" + d.id + "].pos = " + 
                             d.x.toFixed(3) + ", " + d.y.toFixed(3) + "\n";
         }
     }
@@ -46,7 +48,7 @@ function update_gui_pos() {
         text = text.substring(0, index);
     }
     
-    new_text = text + pos;
+    new_text = text + gui;
     
     editor.session.setValue(new_text);
     gui_updating = false;    
@@ -103,6 +105,7 @@ function zoomed() {
     })
     update_text();
     update_net_sizes();
+    update_gui_pos();    
 }
 
 function update_text() {
@@ -443,6 +446,7 @@ function update_graph() {
         }
         editor.getSession().clearAnnotations();
     }
+    
 
     //separate links into recurrent and nonrecurrent ?move to convert?  
     var nonrecurlink = []
@@ -510,6 +514,13 @@ function update_graph() {
     node.exit().remove();
     link.exit().remove();
     linkRecur.exit().remove();
+    
+    // go to the stored gui location
+    zoom.scale(graph.global_scale);
+    zoom.translate(graph.global_offset);
+    zoom.event(d3.select("svg"));
+    $('#menu_save').addClass('disable');
+    
 
     //redraw so nodes are on top, lowest level nets 2nd, and so on
     layer_container();
