@@ -29,7 +29,7 @@ function clearAnnotation(d) { //Called on mouseout in graph
 }
 
 
-function update_gui_pos() {
+function update_gui_text() {
     gui_updating = true;
     var gui = '\nimport nengo_gui\ngui = nengo_gui.Config()\n';
     gui += "gui[model].scale = " + zoom.scale() + "\n";
@@ -50,7 +50,13 @@ function update_gui_pos() {
     
     new_text = text + gui;
     
+    cursor = editor.getCursorPosition();
+    scroll_top = editor.session.getScrollTop();
+    scroll_left = editor.session.getScrollLeft();
     editor.session.setValue(new_text);
+    editor.moveCursorToPosition(cursor);
+    editor.session.setScrollTop(scroll_top);
+    editor.session.setScrollLeft(scroll_left);
     gui_updating = false;    
 }
 //*****************
@@ -79,7 +85,7 @@ function dragged(d) {
     update_net_position(d, d3.event.dx, d3.event.dy);
     update_net_sizes();
     update_line_locations();
-    update_gui_pos();
+    update_gui_text();
 }
 
 function dragended(d) {
@@ -105,7 +111,7 @@ function zoomed() {
     })
     update_text();
     update_net_sizes();
-    update_gui_pos();    
+    update_gui_text();    
 }
 
 function update_text() {
