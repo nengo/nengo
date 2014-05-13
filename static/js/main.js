@@ -100,15 +100,19 @@ function zoomed() {
     container.attr("transform", "translate(" + //scale everything
         d3.event.translate + ")scale(" + scale + ")");
 
-    node.selectAll('text') //Change the fonts size as a fcn of scale
-    .style("font-size", function (d) {
-        newsize = node_fontsize / scale
-        if (newsize > node_fontsize) {
-            return newsize + "px";
-        } else {
-            return node_fontsize + "px";
-        }
-    })
+    if (zoom_mode == "geometric") {
+        node.selectAll('text') //Change the fonts size as a fcn of scale
+        .style("font-size", function (d) {
+            newsize = node_fontsize / scale
+            if (newsize > node_fontsize) {
+                return newsize + "px";
+            } else {
+                return node_fontsize + "px";
+            }
+        })
+    } else if (zoom_mode == "semantic") {
+        fix_labels(scale);
+    }
     update_text();
     update_net_sizes();
     update_gui_text();    
@@ -116,7 +120,7 @@ function zoomed() {
 
 function update_text() {
     //could be faster if keep track of whether it was just drawn
-    if (global_zoom_scale < .75) { //Don't draw node/ens text if scale out far 
+    if (zoom_mode == "geometric" && global_zoom_scale < .75) { //Don't draw node/ens text if scale out far 
         node.selectAll("g.node.node_ens text, g.node.node_nde text")
             .text("")
     } else {
