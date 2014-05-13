@@ -214,13 +214,17 @@ function update_net_size(d) {
     x1 = x0;
     y0 = graph.nodes[d.contains[0]].y;
     y1 = y0;
+    m = net_inner_margin;
+    if (zoom_mode=='semantic') {
+        m = m / global_zoom_scale;
+    }
     for (obj in d.contains) { //min/max of y and x of nodes in net
         xBorder = 0
         yBorder = 0
         tmp = graph.nodes[d.contains[obj]]
         if (tmp.type == "net") {
-            xBorder = net_widths[tmp.id] / 2 - net_inner_margin
-            yBorder = net_heights[tmp.id] / 2 - net_inner_margin
+            xBorder = net_widths[tmp.id] / 2 - m;
+            yBorder = net_heights[tmp.id] / 2 - m;
         }
         x0 = Math.min(graph.nodes[d.contains[obj]].x - xBorder, x0);
         x1 = Math.max(graph.nodes[d.contains[obj]].x + xBorder, x1);
@@ -231,8 +235,8 @@ function update_net_size(d) {
     d.y = (y0 + y1) / 2;
     dx = d.x - xstart;
     dy = d.y - ystart;
-    net_widths[d.id] = x1 - x0 + 2 * net_inner_margin; //track heights/widths
-    net_heights[d.id] = y1 - y0 + 2 * net_inner_margin;
+    net_widths[d.id] = x1 - x0 + 2 * m; //track heights/widths
+    net_heights[d.id] = y1 - y0 + 2 * m;
     
     var node_list = graph.nodes.slice(0)
     //node_list.sort(containsCompare)
@@ -310,11 +314,17 @@ function isin(d, x, y) {
 
 //Check if node, n is close to origin object, o
 function close_to(n, o) { //n is node, o is origin
+    netm = net_margin;
+    nodem = node_margin;
+    if (zoom_mode=="semantic") {
+        netm = netm / global_zoom_scale;
+        nodem = nodem / global_zoom_scale;
+    }
     if (o.type == "net") { //if origin is net
         if (!(n.type == "net")) { //if node is nde or ens
             if (!netContains(n, o)) {
-                if (Math.abs(o.x - n.x) < (net_margin + net_widths[o.id] / 2) &&
-                    Math.abs(o.y - n.y) < (net_margin + net_heights[o.id] / 2)) {
+                if (Math.abs(o.x - n.x) < (netm + net_widths[o.id] / 2) &&
+                    Math.abs(o.y - n.y) < (netm + net_heights[o.id] / 2)) {
                     //console.log('true 1')
                     return true
                 }
@@ -329,14 +339,14 @@ function close_to(n, o) { //n is node, o is origin
         }
     } else { //if origin is nde or ens
         if (!(n.type == "net")) { //if node nde or ens
-            if (Math.abs(o.x - n.x) < node_margin && Math.abs(o.y - n.y) < node_margin) {
+            if (Math.abs(o.x - n.x) < nodem && Math.abs(o.y - n.y) < nodem) {
                 //console.log('true 3')
                 return true
             }
         } else { //if node is net
             if (!netContains(o, n)) {
-                if (Math.abs(o.x - n.x) < (net_margin + net_widths[n.id] / 2) &&
-                    Math.abs(o.y - n.y) < (net_margin + net_heights[n.id] / 2)) {
+                if (Math.abs(o.x - n.x) < (netm + net_widths[n.id] / 2) &&
+                    Math.abs(o.y - n.y) < (netm + net_heights[n.id] / 2)) {
                     //console.log('true 4')
                     return true
                 }
