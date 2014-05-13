@@ -55,6 +55,21 @@ function edit_filename() {
     }
 }
     
+var zoom_mode = "geometric";
+
+function change_zoom_mode() {
+    if (zoom_mode == "none") {
+        zoom_mode = "geometric";
+    } else if (zoom_mode == "semantic") {
+        zoom_mode = "geometric";
+    } else {
+        zoom_mode = "semantic";
+    }
+    $('#zoom_mode').text(zoom_mode);
+    
+    update_text();
+    update_net_sizes();
+}
 
 $(document).ready(function () {
     //initialize file browser
@@ -72,4 +87,6 @@ $(document).ready(function () {
     $('#menu_save').click(save_file);
     $('#menu_save').addClass('disable');
     $('#filename').change(edit_filename);
+    $('#zoom_mode').click(change_zoom_mode);
+    $('#zoom_mode').text(zoom_mode);    
 });

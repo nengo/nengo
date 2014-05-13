@@ -49,3 +49,23 @@ div#menubar input.filename:focus {
 div#menubar .disable {
     opacity: 0.3
 }
+
+span#zoom_mode {
+    position: absolute;
+    top: 5px;
+    left: 400px;
+    background-color: #777;
+    font-size: 20px;
+    color: white;
+    padding: 5px;
+    font-family: sans-serif;
+}
+
+span#zoom_mode::before {
+    content: "mode:";
+}
+
+
+span#zoom_mode:hover {
+    background-color: #888;
+}

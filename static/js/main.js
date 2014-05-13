@@ -102,6 +102,7 @@ function zoomed() {
         }
     })
     update_text();
+    update_net_sizes();
 }
 
 function update_text() {
@@ -188,6 +189,10 @@ function update_net_sizes() {
         .attr('height', function (d) {return net_heights[d.id];});
     node.attr('transform', function (d) {return 'translate(' + [d.x, d.y] + ')';});
     update_net_text();
+    
+    if (zoom_mode=='semantic') {
+        fix_node_scales(global_zoom_scale);
+    }
 }
 
 function update_net_text() {
