@@ -151,11 +151,17 @@ if __name__=='__main__':
     parser = optparse.OptionParser()
     parser.add_option('-p', '--password', dest='password', metavar='PASS',
                       default=None, help='password for remote access')
+    parser.add_option('-P', '--port', dest='port', metavar='PORT',
+                      default=8080, type='int', help='port to run server on')
     (options, args) = parser.parse_args()
 
     if len(args) > 1:
         NengoGui.set_default_filename(sys.argv[1])
-    swi.browser(8080)
+    addr = 'localhost'
     if options.password is not None:
         swi.addUser('', options.password)
-    swi.start(NengoGui, 8080, addr='localhost')
+        addr = ''   # allow connections from anywhere
+    else:
+        swi.browser(options.port)
+    
+    swi.start(NengoGui, options.port, addr=addr)
