@@ -135,4 +135,4 @@ if __name__=='__main__':
     if len(sys.argv) > 1:
         NengoGui.set_default_filename(sys.argv[1])
     swi.browser(8080)
-    swi.start(NengoGui, 8080)
+    swi.start(NengoGui, 8080, addr='localhost')

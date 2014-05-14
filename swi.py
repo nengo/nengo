@@ -57,7 +57,7 @@ def makeDBFromMultipart(data):
   db={}
   boundary=data[:data.find('\n')+1].strip()
   n=len(boundary)
-  
+
   i=0
   while 1:
     j=data.find(boundary,i+n)
@@ -83,7 +83,7 @@ def makeDBFromMultipart(data):
 
 
 def makeDBFromLine(data):
-  if '\n' in data: 
+  if '\n' in data:
     data,x=data.split('\n',1)
     data=data.strip()
   db={}
@@ -195,7 +195,7 @@ class SimpleWebInterface(BaseHTTPServer.BaseHTTPRequestHandler):
       self.path,data=self.path.split('?',1)
       db2=makeDBFromLine(data)
       db.update(db2)
-      
+
     if self.path=='': self.path='/'
     self.path=fixText(self.path)
     args=self.path[1:].split('/')
@@ -283,15 +283,15 @@ class SimpleWebInterface(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
 
-def start(klass,port=80,asynch=True):
-  if asynch:
-    server=HTTPServer(('',port),klass)
-  else:
-    server=BaseHTTPServer.HTTPServer(('',port),klass)
-  server.serve_forever()
+def start(klass, port=80, asynch=True, addr=''):
+    if asynch:
+        server=HTTPServer((addr,port),klass)
+    else:
+        server=BaseHTTPServer.HTTPServer((addr,port),klass)
+    server.serve_forever()
 
 def browser(port=80):
-  thread.start_new_thread(webbrowser.open,('http://127.0.0.1:%d'%port,))
+    thread.start_new_thread(webbrowser.open,('http://localhost:%d'%port,))
 
 
 if __name__=='__main__':
