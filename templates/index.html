@@ -21,6 +21,10 @@
 </head>
 
 <body onload="open_file($('#filename').val());">
+<script>
+// set up server polling to see if file changed
+gui_server_check_interval = %(refresh_interval)d;
+</script>
 
 <div id="editor">
 </div>

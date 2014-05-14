@@ -15,6 +15,7 @@ import nengo_gui
 class NengoGui(swi.SimpleWebInterface):
     default_filename = 'default.py'
     script_path = 'scripts/'
+    refresh_interval = 0
 
     def swi_static(self, *path):
         if self.user is None: return
@@ -43,7 +44,8 @@ class NengoGui(swi.SimpleWebInterface):
             return self.create_login_form()
         with open('templates/index.html') as f:
             html = f.read()
-        return html % dict(filename=self.default_filename)
+        return html % dict(filename=self.default_filename,
+                           refresh_interval=self.refresh_interval)
 
     def create_login_form(self):
         message = "Enter the password:"
@@ -60,6 +62,10 @@ class NengoGui(swi.SimpleWebInterface):
         path, fn = os.path.split(fn)
         klass.script_path = path
         klass.default_filename = fn
+
+    @classmethod
+    def set_refresh_interval(klass, interval):
+        klass.refresh_interval = interval
 
     def swi_browse(self, dir):
         if self.user is None: return
@@ -83,9 +89,12 @@ class NengoGui(swi.SimpleWebInterface):
         try:
             with open(fn, 'r') as f:
                 text = f.read()
-            return text
+            modified_time = os.stat(fn).st_mtime
         except:
-            return ''
+            text = ''
+            modified_time = None
+        return json.dumps(dict(text=text, mtime=modified_time))
+
 
     def swi_savefile(self, filename, code):
         if self.user is None: return
@@ -94,7 +103,10 @@ class NengoGui(swi.SimpleWebInterface):
             f.write(code.replace('\r\n', '\n'))
         return 'success'
 
-
+    def swi_modified_time(self, filename):
+        if self.user is None: return
+        fn = os.path.join(self.script_path, filename)
+        return repr(os.stat(fn).st_mtime)
 
     def swi_graph_json(self, code):
         if self.user is None: return
@@ -151,7 +163,12 @@ if __name__=='__main__':
     parser = optparse.OptionParser()
     parser.add_option('-p', '--password', dest='password', metavar='PASS',
                       default=None, help='password for remote access')
+    parser.add_option('-r', '--refresh', dest='refresh', metavar='TIME',
+                      default=0, help='interval to check server for changes',
+                      type='int')
     (options, args) = parser.parse_args()
+
+    NengoGui.set_refresh_interval(options.refresh)
 
     if len(args) > 1:
         NengoGui.set_default_filename(sys.argv[1])

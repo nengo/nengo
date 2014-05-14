@@ -2,13 +2,12 @@
 // Setup the menu
 //*****************
 
+var server_last_modified_time = null;
+
 //Load the browser and hide it
 function open_file(file) {
     $('#filebrowser').hide();
 
-    container.selectAll('.link').remove();
-    container.selectAll('.node').remove();
-    editor.setValue('');
     $('#filename').val(file)
 
     var data = new FormData();
@@ -17,7 +16,9 @@ function open_file(file) {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/openfile', true);
     xhr.onload = function (event) {
-        editor.setValue(this.responseText);
+        r = JSON.parse(this.responseText);
+        editor.setValue(r.text);
+        server_last_modified_time = r.mtime;
         $('#menu_save').addClass('disable');
     };
     xhr.send(data);
@@ -71,6 +72,22 @@ function change_zoom_mode() {
     update_net_sizes();
 }
 
+function check_server_for_file_changes() {
+    var data = new FormData();
+    data.append('filename', $('#filename').val());
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/modified_time', true);
+    xhr.onload = function (event) {
+        mtime = parseFloat(this.responseText);
+        if (mtime > server_last_modified_time) {
+            open_file($('#filename').val());
+        }
+    };
+    xhr.send(data);
+}
+
+
 $(document).ready(function () {
     //initialize file browser
     $('#filebrowser').hide()
@@ -89,4 +106,9 @@ $(document).ready(function () {
     $('#filename').change(edit_filename);
     $('#zoom_mode').click(change_zoom_mode);
     $('#zoom_mode').text(zoom_mode);    
+
+    if (gui_server_check_interval>0) {
+        window.setInterval(check_server_for_file_changes, 
+                           gui_server_check_interval);
+    }
 });

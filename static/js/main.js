@@ -529,7 +529,6 @@ function update_graph() {
     zoom.scale(graph.global_scale);
     zoom.translate(graph.global_offset);
     zoom.event(d3.select("svg"));
-    $('#menu_save').addClass('disable');
     
 
     //redraw so nodes are on top, lowest level nets 2nd, and so on
@@ -557,6 +556,7 @@ $(document).ready(function () {
     //initialize editor
     editor = ace.edit("editor");
     editor.setTheme("ace/theme/monokai");
+    editor.getSession().setUseSoftTabs(true);
     editor.getSession().setMode("ace/mode/python");
     editor.on('change', function(event) {
         $('#menu_save').removeClass('disable');
