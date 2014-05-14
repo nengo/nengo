@@ -166,13 +166,19 @@ if __name__=='__main__':
     parser.add_option('-r', '--refresh', dest='refresh', metavar='TIME',
                       default=0, help='interval to check server for changes',
                       type='int')
+    parser.add_option('-P', '--port', dest='port', metavar='PORT',
+                      default=8080, type='int', help='port to run server on')
     (options, args) = parser.parse_args()
 
     NengoGui.set_refresh_interval(options.refresh)
 
     if len(args) > 1:
         NengoGui.set_default_filename(sys.argv[1])
-    swi.browser(8080)
+    addr = 'localhost'
     if options.password is not None:
         swi.addUser('', options.password)
-    swi.start(NengoGui, 8080, addr='localhost')
+        addr = ''   # allow connections from anywhere
+    else:
+        swi.browser(options.port)
+
+    swi.start(NengoGui, options.port, addr=addr)
