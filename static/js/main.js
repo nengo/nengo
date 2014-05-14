@@ -113,8 +113,8 @@ function zoomed() {
     } else if (zoom_mode == "semantic") {
         fix_labels(scale);
     }
-    update_text();
     update_net_sizes();
+    update_text();
     update_gui_text();    
 }
 
