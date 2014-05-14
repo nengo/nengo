@@ -17,6 +17,7 @@ class NengoGui(swi.SimpleWebInterface):
     script_path = 'scripts/'
 
     def swi_static(self, *path):
+        if self.user is None: return
         fn = os.path.join('static', *path)
         if fn.endswith('.js'):
             mimetype = 'text/javascript'
@@ -38,9 +39,20 @@ class NengoGui(swi.SimpleWebInterface):
         return ('image/ico', icon)
 
     def swi(self):
+        if self.user is None:
+            return self.create_login_form()
         with open('templates/index.html') as f:
             html = f.read()
         return html % dict(filename=self.default_filename)
+
+    def create_login_form(self):
+        message = "Enter the password:"
+        if self.attemptedLogin:
+            message = "Invalid password"
+        return """<form action="/" method="POST">%s<br/>
+        <input type=hidden name=swi_id value="" />
+        <input type=password name=swi_pwd>
+        </form>""" % message
 
     @classmethod
     def set_default_filename(klass, fn):
@@ -50,6 +62,7 @@ class NengoGui(swi.SimpleWebInterface):
         klass.default_filename = fn
 
     def swi_browse(self, dir):
+        if self.user is None: return
         r = ['<ul class="jqueryFileTree" style="display: none;">']
         # r.append('<li class="directory collapsed"><a href="#" rel="../">..</a></li>')
         d = urllib.unquote(dir)
@@ -65,6 +78,7 @@ class NengoGui(swi.SimpleWebInterface):
         return ''.join(r)
 
     def swi_openfile(self, filename):
+        if self.user is None: return
         fn = os.path.join(self.script_path, filename)
         try:
             with open(fn, 'r') as f:
@@ -74,6 +88,7 @@ class NengoGui(swi.SimpleWebInterface):
             return ''
 
     def swi_savefile(self, filename, code):
+        if self.user is None: return
         fn = os.path.join(self.script_path, filename)
         with open(fn, 'w') as f:
             f.write(code.replace('\r\n', '\n'))
@@ -82,6 +97,7 @@ class NengoGui(swi.SimpleWebInterface):
 
 
     def swi_graph_json(self, code):
+        if self.user is None: return
 
         with open('nengo_gui_temp.py', 'w') as f:
             f.write(code.replace('\r\n', '\n'))
@@ -131,8 +147,15 @@ class NengoGui(swi.SimpleWebInterface):
 
 
 if __name__=='__main__':
-    import sys
-    if len(sys.argv) > 1:
+    import optparse
+    parser = optparse.OptionParser()
+    parser.add_option('-p', '--password', dest='password', metavar='PASS',
+                      default=None, help='password for remote access')
+    (options, args) = parser.parse_args()
+
+    if len(args) > 1:
         NengoGui.set_default_filename(sys.argv[1])
     swi.browser(8080)
+    if options.password is not None:
+        swi.addUser('', options.password)
     swi.start(NengoGui, 8080, addr='localhost')
