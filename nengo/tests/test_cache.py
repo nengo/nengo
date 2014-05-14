@@ -117,6 +117,7 @@ def test_decoder_cache_shrinking(tmpdir):
 
     cache = DecoderCache(cache_dir=cache_dir)
     cache.wrap_solver(solver_mock)(activities, targets, rng)
+    limit = cache.get_size()
 
     # Ensure differing time stamps (depending on the file system the timestamp
     # resolution might be as bad as 1 day).
@@ -130,7 +131,7 @@ def test_decoder_cache_shrinking(tmpdir):
 
     assert cache.get_size() > 0
 
-    cache.shrink(1)
+    cache.shrink(limit)
 
     # check that older cached result was removed
     assert SolverMock.n_calls[solver_mock] == 1
