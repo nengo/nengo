@@ -25,6 +25,7 @@ from .network import Network
 from .learning_rules import PES, BCM, Oja
 from .params import Default
 from .probe import Probe
+from .rc import rc, RC_DEFAULTS
 from .simulator import Simulator
 from .synapses import Lowpass
 from .utils.logging import log

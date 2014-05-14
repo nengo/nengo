@@ -20,6 +20,7 @@ assert OrderedDict
 # If something's changed from Python 2 to 3, we handle that here
 if PY2:
     import cPickle as pickle
+    import ConfigParser as configparser
     from StringIO import StringIO
     string_types = (str, unicode)
     int_types = (int, long)
@@ -40,6 +41,7 @@ if PY2:
 
 else:
     import pickle
+    import configparser
     from io import StringIO
     string_types = (str,)
     int_types = (int,)
@@ -59,6 +61,7 @@ else:
         return s
 
 
+assert configparser
 assert pickle
 assert StringIO
 

@@ -1,11 +1,11 @@
 import hashlib
-import sys
 
 import numpy as np
 import pytest
 
 import nengo.utils.numpy as npext
 from nengo.neurons import LIF, LIFRate, Direct
+from nengo.rc import rc
 from nengo.simulator import Simulator as ReferenceSimulator
 from nengo.utils.compat import ensure_bytes
 from nengo.utils.testing import Plotter
@@ -14,12 +14,8 @@ test_seed = 0  # changing this will change seeds for all tests
 
 
 def pytest_configure(config):
-    sys._called_from_test = True
-
-
-def pytest_unconfigure(config):
-    if hasattr(sys, '_called_from_test'):
-        del sys._called_from_test
+    rc.reload_rc([])
+    rc.set('decoder_cache', 'enabled', 'false')
 
 
 @pytest.fixture(scope="session")

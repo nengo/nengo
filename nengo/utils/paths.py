@@ -6,8 +6,13 @@ if sys.platform.startswith('win'):
     config_dir = os.path.expanduser(os.path.join("~", ".nengo"))
     cache_dir = os.path.join(config_dir, "cache")
 else:
+    config_dir = os.path.expanduser(os.path.join("~", ".config", "nengo"))
     cache_dir = os.path.expanduser(os.path.join("~", ".cache", "nengo"))
 
+decoder_cache_dir = os.path.join(cache_dir, "decoders")
 install_dir = os.path.abspath(
     os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 examples_dir = os.path.join(install_dir, "examples")
+
+nengorc = {'user': os.path.join(config_dir, "nengorc"),
+           'project': os.path.abspath(os.path.join(os.curdir, "nengorc"))}
