@@ -1,2 +1,3 @@
 include *.rst
 recursive-include docs *.rst
+recursive-include nengo-data *

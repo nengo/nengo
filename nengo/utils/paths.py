@@ -14,5 +14,6 @@ install_dir = os.path.abspath(
     os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 examples_dir = os.path.join(install_dir, "examples")
 
-nengorc = {'user': os.path.join(config_dir, "nengorc"),
+nengorc = {'system': os.path.join(install_dir, 'nengo-data', 'nengorc'),
+           'user': os.path.join(config_dir, "nengorc"),
            'project': os.path.abspath(os.path.join(os.curdir, "nengorc"))}

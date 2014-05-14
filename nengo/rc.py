@@ -37,9 +37,9 @@ RC_DEFAULTS = {
     }
 }
 
-# TODO installation wide file.
 # The RC files in the order in which they will be read.
-RC_FILES = [nengo.utils.paths.nengorc['user'],
+RC_FILES = [nengo.utils.paths.nengorc['system'],
+            nengo.utils.paths.nengorc['user'],
             nengo.utils.paths.nengorc['project']]
 
 

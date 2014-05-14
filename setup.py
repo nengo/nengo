@@ -64,6 +64,7 @@ setup(
     author_email="celiasmith@uwaterloo.ca",
     packages=find_packages(),
     scripts=[],
+    data_files=[('nengo', ['nengo-data/nengorc'])],
     url="https://github.com/ctn-waterloo/nengo",
     license="See LICENSE.rst",
     description=description,
