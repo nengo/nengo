@@ -100,7 +100,6 @@ function zoomed(node) {
     
     var scale = d3.event.scale;
     var translate = d3.event.translate;
-    console.log(scale, translate)
     global_zoom_scale = scale;
     
     if (typeof node == 'undefined') {
@@ -108,25 +107,29 @@ function zoomed(node) {
             return "translate(" + translate + ")scale(" + scale + ")"
         })        
     } else {
-//        if (node.type == 'ens' || node.type == 'nde') {
-//            scale_net(graph.nodes[node.contained_by], scale)
-//        } else {
-//            scale_net(node, scale);
-//        }
-        scale = scale/node.scale;
-        if (node.type != 'net') {
+        scale = scale/node.scale;  //determine the scaling ratio
+        //translate = [translate[0]-node.x, translate[1]-node.y];
+        
+        if (node.type != 'net') {  //if you're on a ens scale the containing net
             node = graph.nodes[node.contained_by]
         }
-        node.scale *= scale;
-        for (i in node.full_contains) {
-            graph.nodes[node.full_contains[i]].scale *= scale
-            if (graph.nodes[node.full_contains[i]].type == 'net') {
-                zoomers[graph.nodes[node.full_contains[i]].id]
-                    .scale(graph.nodes[node.full_contains[i]].scale);
+        
+        mouseX = d3.mouse(svg[0][0])[0]
+        mouseY = d3.mouse(svg[0][0])[1]
+        node.scale *= scale;  //scale and translate this net
+        node.x = scale*(node.x-mouseX) + mouseX;
+        node.y =  scale*(node.y-mouseY) + mouseY;
+        for (i in node.full_contains) {  //scale everything it contains
+            curNode = graph.nodes[node.full_contains[i]]
+            curNode.scale *= scale;
+            curNode.x = scale*(curNode.x-mouseX) + mouseX;
+            curNode.y =  scale*(curNode.y-mouseY) + mouseY;
+            if (curNode.type == 'net') { //update contained zoomers 
+                zoomers[curNode.id].scale(curNode.scale);
             }
         }
                         
-        nodes.attr("transform", function (d) { //scale & translate everything
+        nodes.attr("transform", function (d) { //redraw scale & translate of everything
                 return "translate(" + [d.x, d.y] 
                     + ")scale(" + d.scale + ")"          
             })
@@ -148,13 +151,6 @@ function zoomed(node) {
     //update_net_sizes();
     update_text();
     update_gui_text();    
-}
-
-function scale_net(net, scale) {
-    var idList = [];
-    for (i in node.full_contains) {
-        idList.push(graph.nodes[node.full_contains[i]].id)
-    }
 }
 
 function update_text() {
