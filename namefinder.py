@@ -21,11 +21,6 @@ class NameFinder(object):
                         if not self.known_name.has_key(id(obj)):
                             n = '%s.%s[%d]' % (net_name, k, i)
                             self.known_name[id(obj)] = n
-                elif isinstance(v, dict):
-                    for kk, obj in v.items():
-                        if not self.known_name.has_key(id(obj)):
-                            n = '%s.%s[%s]' % (net_name, k, kk)
-                            self.known_name[id(obj)] = n
                 else:
                     self.known_name[id(v)] = '%s.%s' % (net_name, k)
 
