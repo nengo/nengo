@@ -94,14 +94,41 @@ function dragended(d) {
 
 var global_zoom_scale = 1.0;
 
-function zoomed() {
-    scale = d3.event.scale;
+function zoomed(node) { 
+    try {d3.event.sourceEvent.stopPropagation();}
+    catch (e) {if (e instanceof TypeError) {console.log('Ignored TypeError')}}
+    
+    var scale = d3.event.scale;
+    var translate = d3.event.translate;
+    console.log(scale, translate)
     global_zoom_scale = scale;
-    container.attr("transform", "translate(" + //scale everything
-        d3.event.translate + ")scale(" + scale + ")");
+    
+    /*if (typeof net == 'undefined') {//called at the top level or on a nde or ens
+        var curNode = container.select('.mouseover.node_nde, .mouseover.node_ens')
+        
+        if (!curNode.empty()) {
+            curNode.each(function (d) {net = graph.nodes[d.contained_by]})
+        }
+    }*/
+    
+    if (typeof node == 'undefined') {
+        container.attr("transform", function (d) { //scale & translate everything
+            return "translate(" + translate + ")scale(" + scale + ")"
+        })        
+    } else {
+        var idList = [];
+        for (i in node.full_contains) {
+            idList.push(graph.nodes[node.full_contains[i]].id)
+        }
+        nodes.filter(function (d) {return d.id == node.id || idList.indexOf(d.id) >-1})
+            .attr("transform", function (d) { //scale & translate everything
+                return "translate(" + [d.x, d.y] 
+                    + ")scale(" + scale + ")"          
+            })
+    }
 
     if (zoom_mode == "geometric") {
-        node.selectAll('text') //Change the fonts size as a fcn of scale
+        nodes.selectAll('text') //Change the fonts size as a fcn of scale
         .style("font-size", function (d) {
             newsize = node_fontsize / scale
             if (newsize > node_fontsize) {
@@ -113,7 +140,7 @@ function zoomed() {
     } else if (zoom_mode == "semantic") {
         fix_labels(scale);
     }
-    update_net_sizes();
+    //update_net_sizes();
     update_text();
     update_gui_text();    
 }
@@ -121,17 +148,25 @@ function zoomed() {
 function update_text() {
     //could be faster if keep track of whether it was just drawn
     if (zoom_mode == "geometric" && global_zoom_scale < .75) { //Don't draw node/ens text if scale out far 
-        node.selectAll("g.node.node_ens text, g.node.node_nde text")
+        nodes.selectAll("g.node.node_ens text, g.node.node_nde text")
             .text("")
     } else {
-        node.selectAll("g.node.node_ens text, g.node.node_nde text")
+        nodes.selectAll("g.node.node_ens text, g.node.node_nde text")
             .text(function (d) {return d.label;});
     }
-    node.selectAll("g.node.node_net text")
+    nodes.selectAll("g.node.node_net text")
             .text(function (d) {return d.label;});
 
     update_net_text();
 }
+
+function parseTranslate(inString) {
+    var split = inString.split(",");
+    var x = split[0] ? split[0].split("(")[1] : 0;
+    var y = split[1] ? split[1].split(")")[0] : 0;
+    var s = split[1] ? split[1].split(")")[1].split("(")[1] : null;
+    return [x, y, s];
+};
 
 //***********************
 // Drawing graph elements
@@ -159,7 +194,7 @@ function layer_container() {
         .moveToFront();
 }
 
-//Move all the nodes in a network if network position changes
+//Layer all the items in the network
 function layer_network(curNode) {
     if (curNode.type == "net") {
         container.selectAll('g.node').filter(function (d) {return d == curNode;})
@@ -174,7 +209,7 @@ function layer_network(curNode) {
 }
 
 function update_line_locations() {
-    link.filter(function (d) {return d.type == 'std';})
+    links.filter(function (d) {return d.type == 'std';})
         .attr('points', function (d) {
             x0 = graph.nodes[d.source].x;
             y0 = graph.nodes[d.source].y;
@@ -193,14 +228,14 @@ function update_line_locations() {
 
 //Update all network sizes based on node positions
 function update_net_sizes() {
-    node.filter(function (d) {return d.type == 'net';})
+    nodes.filter(function (d) {return d.type == 'net';})
         .each(update_net_size)
         .selectAll('rect')
         .attr('x', function (d) {return -net_widths[d.id] / 2;})
         .attr('y', function (d) {return -net_heights[d.id] / 2;})
         .attr('width', function (d) {return net_widths[d.id];})
         .attr('height', function (d) {return net_heights[d.id];});
-    node.attr('transform', function (d) {return 'translate(' + [d.x, d.y] + ')';});
+    nodes.attr('transform', function (d) {return 'translate(' + [d.x, d.y] + ')';});
     update_net_text();
     
     if (zoom_mode=='semantic') {
@@ -209,7 +244,7 @@ function update_net_sizes() {
 }
 
 function update_net_text() {
-    node.selectAll("g.node.node_net text") //Position net text by scale
+    nodes.selectAll("g.node.node_net text") //Position net text by scale
     .attr('y', function (d) {
         if (zoom.scale() < 1) {
             return net_heights[d.id] / 2 + net_text_margin / zoom.scale() + "px"
@@ -240,6 +275,7 @@ function update_net_size(d) {
         if (tmp.type == "net") {
             xBorder = net_widths[tmp.id] / 2 - m + m2;
             yBorder = net_heights[tmp.id] / 2 - m + m2;
+            if (isNaN(xBorder) || isNaN(yBorder)) {break;}
         }
         x0 = Math.min(graph.nodes[d.contains[obj]].x - xBorder, x0);
         x1 = Math.max(graph.nodes[d.contains[obj]].x + xBorder, x1);
@@ -319,14 +355,6 @@ function removeValue(map, d) {
     }
 }
 
-// is the point x, y inside the net
-function isin(d, x, y) {
-    return (x < d.x + net_widths[d.id] / 2) &&
-        (x > d.x - net_widths[d.id] / 2) &&
-        (y < d.y + net_heights[d.id] / 2) &&
-        (y > d.y - net_heights[d.id] / 2);
-}
-
 //Check if node, n is close to origin object, o
 function close_to(n, o) { //n is node, o is origin
     netm = net_margin;
@@ -401,6 +429,8 @@ var graph = null;
 var link = null;
 var linkRecur = null;
 var node = null;
+var zoomers = {};
+
 var node_margin = 35;
 var net_inner_margin = 40;
 var net_margin = 15;
@@ -470,9 +500,9 @@ function update_graph() {
     }
 
     //update the links
-    link = container.selectAll('.link.link_std, .link.link_net')
+    links = container.selectAll('.link.link_std, .link.link_net')
         .data(nonrecurlink, function (d) {return d.id})
-    link.enter().append('polyline')
+    links.enter().append('polyline')
         .attr('class', function (d) {return 'link link_' + d.type;})
 
     linkRecur = container.selectAll('.link.link_recur')
@@ -482,27 +512,19 @@ function update_graph() {
         .attr('xlink:href', "#recur")
 
     //get all the nodes, for updating
-    node = container.selectAll('g.node')
+    nodes = container.selectAll('g.node')
         .data(graph.nodes, function (d) {return d.id})
     container.selectAll('g.node text')
         .data(graph.nodes, function (d) {return d.id})
 
     //Create html objects to draw
-    var nodeEnter = node
+    var nodeEnter = nodes
         .enter()
         .append('g')
         .attr('class', function (d) {return 'node node_' + d.type;})
         .on('mouseover', annotateLine)
         .on('mouseout', clearAnnotation)
-        .call(drag);
-
-    nodeEnter.filter(function (d) {return d.type == 'ens';})
-        .append('use')
-        .attr('xlink:href', "#ensemble")
-
-    nodeEnter.filter(function (d) {return d.type == 'nde';})
-        .append('circle')
-        .attr('r', '20')
+        .call(drag);  
 
     nodeEnter.filter(function (d) {return d.type == 'net';})
         .append('rect')
@@ -512,17 +534,44 @@ function update_graph() {
         .attr('ry', '15')
         .attr('width', '100')
         .attr('height', '100')
+        .each(function (d) {
+            zoomers[d.id] = d3.behavior.zoom()
+                .scaleExtent([.05, 10])
+                .on('zoom', zoomed)
+            zoomers[d.id](d3.select(this))
+            })
+            
+    nodeEnter.filter(function (d) {return d.type == 'ens';})
+        .append('use')
+        .attr('xlink:href', "#ensemble")
+        .each(function (d) {
+            if (d.contained_by > -1) {
+                id = graph.nodes[d.contained_by].id
+                zoomers[id](d3.select(this))
+            }
+        })
 
-    //label everything
-    nodeEnter.append('text')
+    nodeEnter.filter(function (d) {return d.type == 'nde';})
+        .append('circle')
+        .attr('r', '20')
+        .each(function (d) {
+            if (d.contained_by > -1) {
+                id = graph.nodes[d.contained_by].id
+                zoomers[id](d3.select(this))
+            }
+        })  
+
+    nodeEnter.append('text')     //label everything
         .text(function (d) {return d.label})
 
     nodeEnter.selectAll('.node_nde text, .node_ens text')
         .attr('y', '30')
         .style('font-size', node_fontsize)
 
-    node.exit().remove();
-    link.exit().remove();
+    nodeEnter.filter(function (d) {return d.type == 'net'})
+
+    nodes.exit().remove();
+    links.exit().remove();
     linkRecur.exit().remove();
     
     // go to the stored gui location
@@ -535,6 +584,7 @@ function update_graph() {
     //redraw so nodes are on top, lowest level nets 2nd, and so on
     layer_container();
     update_net_sizes();
+    update_net_sizes(); //have to do 2 because of ordering effects on net_widths
     update_line_locations();
     update_text();
     resize();
@@ -567,7 +617,7 @@ $(document).ready(function () {
     //initialize graph
     svg = d3.select("svg");
     container = svg.append('g');
-    zoom(svg); // set up zooming on the graph
+    svg.call(zoom); // set up zooming on the graph
     d3.select(window).on("resize", resize);
 
     //start this puppy up
