@@ -103,27 +103,32 @@ function zoomed(node) {
     console.log(scale, translate)
     global_zoom_scale = scale;
     
-    /*if (typeof net == 'undefined') {//called at the top level or on a nde or ens
-        var curNode = container.select('.mouseover.node_nde, .mouseover.node_ens')
-        
-        if (!curNode.empty()) {
-            curNode.each(function (d) {net = graph.nodes[d.contained_by]})
-        }
-    }*/
-    
     if (typeof node == 'undefined') {
         container.attr("transform", function (d) { //scale & translate everything
             return "translate(" + translate + ")scale(" + scale + ")"
         })        
     } else {
-        var idList = [];
-        for (i in node.full_contains) {
-            idList.push(graph.nodes[node.full_contains[i]].id)
+//        if (node.type == 'ens' || node.type == 'nde') {
+//            scale_net(graph.nodes[node.contained_by], scale)
+//        } else {
+//            scale_net(node, scale);
+//        }
+        scale = scale/node.scale;
+        if (node.type != 'net') {
+            node = graph.nodes[node.contained_by]
         }
-        nodes.filter(function (d) {return d.id == node.id || idList.indexOf(d.id) >-1})
-            .attr("transform", function (d) { //scale & translate everything
+        node.scale *= scale;
+        for (i in node.full_contains) {
+            graph.nodes[node.full_contains[i]].scale *= scale
+            if (graph.nodes[node.full_contains[i]].type == 'net') {
+                zoomers[graph.nodes[node.full_contains[i]].id]
+                    .scale(graph.nodes[node.full_contains[i]].scale);
+            }
+        }
+                        
+        nodes.attr("transform", function (d) { //scale & translate everything
                 return "translate(" + [d.x, d.y] 
-                    + ")scale(" + scale + ")"          
+                    + ")scale(" + d.scale + ")"          
             })
     }
 
@@ -143,6 +148,13 @@ function zoomed(node) {
     //update_net_sizes();
     update_text();
     update_gui_text();    
+}
+
+function scale_net(net, scale) {
+    var idList = [];
+    for (i in node.full_contains) {
+        idList.push(graph.nodes[node.full_contains[i]].id)
+    }
 }
 
 function update_text() {

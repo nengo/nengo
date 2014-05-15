@@ -49,7 +49,8 @@ class Converter(object):
             if pos is None:
                 pos = random.uniform(0, 300), random.uniform(0, 300)
             obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
-                   'x':pos[0], 'y':pos[1], 'contained_by': self.object_index[network]}
+                   'x':pos[0], 'y':pos[1], 'scale': 1,
+                    'contained_by': self.object_index[network]}
             self.object_index[ens] = len(self.objects)
             self.objects.append(obj)
      
@@ -63,7 +64,8 @@ class Converter(object):
             if pos is None:
                 pos = random.uniform(0, 300), random.uniform(0, 300)
             obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
-                   'x':pos[0], 'y':pos[1], 'contained_by': self.object_index[network]}
+                   'x':pos[0], 'y':pos[1],  'scale': 1,
+                   'contained_by': self.object_index[network]}
             self.object_index[nde] = len(self.objects)
             self.objects.append(obj)
 
@@ -94,7 +96,7 @@ class Converter(object):
             obj = {'label':label, 'line':line, 'id':id, 'type':'net',
                    'contains':list(contains), 'full_contains': list(full_contains[i]),
                    'contained_by': self.object_index[network], 
-                   'x':random.uniform(0,300), 'y':random.uniform(0,300)}
+                   'x':random.uniform(0,300), 'y':random.uniform(0,300), 'scale': 1}
             self.objects[self.object_index[net]] = obj
 
         for i, conn in enumerate(network.connections):
