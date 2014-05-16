@@ -44,7 +44,6 @@ class Converter(object):
                 label = self.find_identifier(line, label)
             id = self.namefinder.name(ens)
 
-
             pos = self.config[ens].pos
             if pos is None:
                 pos = random.uniform(0, 300), random.uniform(0, 300)

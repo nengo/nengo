@@ -81,10 +81,8 @@ function dragged(d) {
         .attr("translate(" + [d.x, d.y] + ")scale(" + d.scale + ")");
 
     //sort the nodes by size of full contains (largest to smallest)
-    var node_list = graph.nodes.slice(0)
-    //node_list.sort(containsCompare);
-    node_list = d3.map(node_list); //create a map of the nodes
-    update_node_positions(d, dx, dy, node_list);
+    var node_list = graph.nodes.slice(0) //copy the list
+    update_node_positions(d, dx, dy, d3.map(node_list));
     update_net_position(d, dx, dy);
     update_net_sizes();
     update_line_locations();
@@ -120,7 +118,7 @@ function zoomed(node) {
         mouseX = d3.mouse(container[0][0])[0]
         mouseY = d3.mouse(container[0][0])[1]
         node.scale *= scale;  //scale and translate this net
-        node.x = scale*(node.x-mouseX) + mouseX;
+        node.x = scale*(node.x-mouseX) + mouseX; //translation with scaling
         node.y =  scale*(node.y-mouseY) + mouseY;
         for (i in node.full_contains) {  //scale everything it contains
             curNode = graph.nodes[node.full_contains[i]]
@@ -135,6 +133,9 @@ function zoomed(node) {
         nodes.attr("transform", function (d) { //redraw scale & translate of everything
                 return "translate(" + [d.x, d.y] + ")scale(" + d.scale + ")"          
             })
+            
+        d3.select('#recur')
+            .attr('transform', 'scale(' + d.scale + ')translate(-20,-34)')
     }
 
     if (zoom_mode == "geometric") {
@@ -307,14 +308,11 @@ function update_net_size(d) {
 
     net_widths[d.id] = (x1 - x0)/d.scale + 2 * m; //track heights/widths
     net_heights[d.id] = (y1 - y0)/d.scale + 2 * m;
-    
-    //console.log(x1,x0,y1,y0,m)
-    
-    //var node_list = graph.nodes.slice(0)
-    //node_list.sort(containsCompare)
-    //dx = d.x - xstart;
-    //dy = d.y - ystart;
-    //update_node_positions(d, 2 * dx, 2 * dy, d3.map(node_list))
+        
+    var node_list = graph.nodes.slice(0)
+    dx = d.x - xstart;
+    dy = d.y - ystart;
+    update_node_positions(d, 2 * dx, 2 * dy, d3.map(node_list))
 }
 
 //Move all the nodes in a network if network position changes
@@ -379,6 +377,8 @@ function removeValue(map, d) {
 function close_to(n, o) { //n is node, o is origin
     netm = net_margin;
     nodem = node_margin;
+    ns = n.scale;
+    os = o.scale;
     if (zoom_mode=="semantic") {
         netm = netm / global_zoom_scale;
         nodem = nodem / global_zoom_scale;
@@ -386,37 +386,33 @@ function close_to(n, o) { //n is node, o is origin
     if (o.type == "net") { //if origin is net
         if (!(n.type == "net")) { //if node is nde or ens
             if (!netContains(n, o)) {
-                if (Math.abs(o.x - n.x) < (netm + net_widths[o.id] / 2) &&
-                    Math.abs(o.y - n.y) < (netm + net_heights[o.id] / 2)) {
-                    //console.log('true 1')
-                    return true
+                if (Math.abs(o.x - n.x) < (netm + net_widths[o.id] / 2)*os &&
+                    Math.abs(o.y - n.y) < (netm + net_heights[o.id] / 2)*os) {
+                    return true;
                 }
             }
         } else if (!(netContains(n, o) || netContains(o, n))) { //if node is net
-            if (Math.abs(o.x - n.x) < (net_widths[n.id] / 2 
-                + net_widths[o.id] / 2) && Math.abs(o.y - n.y) < 
-                (net_heights[n.id] / 2 + net_heights[o.id] / 2)) {
-                //console.log('true 2')
-                return true
+            if (Math.abs(o.x - n.x) < (net_widths[n.id]*ns / 2 
+                + net_widths[o.id]*os / 2) && Math.abs(o.y - n.y) < 
+                (net_heights[n.id]*ns / 2 + net_heights[o.id]*os / 2)) {
+                return true;
             }
         }
     } else { //if origin is nde or ens
         if (!(n.type == "net")) { //if node nde or ens
             if (Math.abs(o.x - n.x) < nodem && Math.abs(o.y - n.y) < nodem) {
-                //console.log('true 3')
-                return true
+                return true;
             }
         } else { //if node is net
             if (!netContains(o, n)) {
-                if (Math.abs(o.x - n.x) < (netm + net_widths[n.id] / 2) &&
-                    Math.abs(o.y - n.y) < (netm + net_heights[n.id] / 2)) {
-                    //console.log('true 4')
-                    return true
+                if (Math.abs(o.x - n.x) < (netm + net_widths[n.id]*ns / 2) &&
+                    Math.abs(o.y - n.y) < (netm + net_heights[n.id]*ns / 2)) {
+                    return true;
                 }
             }
         }
     }
-    return false
+    return false;
 }
 
 //True if net or any of its subnets contains node
@@ -508,7 +504,7 @@ function update_graph() {
     }
     
 
-    //separate links into recurrent and nonrecurrent ?move to convert?  
+    //separate links into recurrent and nonrecurrent ?move to converter?  
     var nonrecurlink = []
     var recurlink = []
     for (i in graph.links) {
