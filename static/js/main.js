@@ -128,6 +128,13 @@ function zoomed(node) {
             if (curNode.type == 'net') { //update contained zoomers 
                 zoomers[curNode.id].scale(curNode.scale);
             }
+            //linkRecur.filter(function (d) {
+            //        return d.source==graph.nodes.indexOf(curNode)
+            //    })
+                //.attr('transform', //'translate(' + [-20, -34] + ')'
+                  //'scale(' + curNode.scale +')')
+            //   .attr('x', curNode.x)     
+            //    .attr('y', curNode.y)       
         }
                         
         nodes.attr("transform", function (d) { //redraw scale & translate of everything

@@ -32,17 +32,17 @@ with model:
 
 import nengo_gui
 gui = nengo_gui.Config()
-gui[model].scale = 0.46716367344159154
-gui[model].offset = 143.27502350406473,105.83837725652398
-gui[a].pos = 641.214, 715.919
-gui[b].pos = 128.779, 325.756
-gui[c].pos = -126.534, 302.431
-gui[d].pos = 58.743, 109.789
-gui[e.ea_ensembles[0]].pos = 896.185, 397.857
-gui[e.ea_ensembles[1]].pos = 953.408, 377.013
-gui[e.input].pos = 961.590, 293.411
-gui[e.output].pos = 884.644, 258.091
-gui[r].pos = 39.790, 1042.660
-gui[t].pos = 744.572, 818.879
-gui[f].pos = 532.513, 885.870
-gui[g].pos = 285.001, 912.920
+gui[model].scale = 0.7856725166675906
+gui[model].offset = -416.625720600102,-452.458217922657
+gui[a].pos = 231.023, 726.690
+gui[b].pos = 469.128, 723.581
+gui[c].pos = 1066.681, 897.112
+gui[d].pos = 820.147, 663.246
+gui[e.ea_ensembles[0]].pos = 1193.245, 782.520
+gui[e.ea_ensembles[1]].pos = 1250.468, 761.676
+gui[e.input].pos = 1258.650, 678.074
+gui[e.output].pos = 1181.704, 642.754
+gui[r].pos = 724.288, 1237.965
+gui[t].pos = 1343.277, 1071.008
+gui[f].pos = 1131.218, 1137.999
+gui[g].pos = 883.706, 1165.049
