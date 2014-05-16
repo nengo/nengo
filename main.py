@@ -172,8 +172,8 @@ if __name__=='__main__':
 
     NengoGui.set_refresh_interval(options.refresh)
 
-    if len(args) > 1:
-        NengoGui.set_default_filename(sys.argv[1])
+    if len(args) > 0:
+        NengoGui.set_default_filename(args[0])
     addr = 'localhost'
     if options.password is not None:
         swi.addUser('', options.password)
