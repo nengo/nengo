@@ -46,7 +46,7 @@ class Converter(object):
 
             pos = self.config[ens].pos
             if pos is None:
-                pos = random.uniform(0, 300), random.uniform(0, 300)
+                pos = 0,0 
             obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
                    'x':pos[0], 'y':pos[1], 'scale': 1,
                     'contained_by': self.object_index[network]}
@@ -61,7 +61,7 @@ class Converter(object):
             id = self.namefinder.name(nde)
             pos = self.config[nde].pos
             if pos is None:
-                pos = random.uniform(0, 300), random.uniform(0, 300)
+                pos = 0,0
             obj = {'label':label, 'line':line, 'id':id, 'type':'nde',
                    'x':pos[0], 'y':pos[1],  'scale': 1,
                    'contained_by': self.object_index[network]}
@@ -94,8 +94,7 @@ class Converter(object):
 
             obj = {'label':label, 'line':line, 'id':id, 'type':'net',
                    'contains':list(contains), 'full_contains': list(full_contains[i]),
-                   'contained_by': self.object_index[network], 
-                   'x':random.uniform(0,300), 'y':random.uniform(0,300), 'scale': 1}
+                   'contained_by': self.object_index[network], 'scale': 1}
             self.objects[self.object_index[net]] = obj
 
         for i, conn in enumerate(network.connections):
