@@ -63,7 +63,7 @@ class Converter(object):
             pos = self.config[nde].pos
             if pos is None:
                 pos = random.uniform(0, 300), random.uniform(0, 300)
-            obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
+            obj = {'label':label, 'line':line, 'id':id, 'type':'nde',
                    'x':pos[0], 'y':pos[1],  'scale': 1,
                    'contained_by': self.object_index[network]}
             self.object_index[nde] = len(self.objects)

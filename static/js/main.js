@@ -151,6 +151,7 @@ function zoomed(node) {
         fix_labels(scale);
     }
     update_net_sizes();
+    update_line_locations();
     update_text();
     update_gui_text();    
 }

@@ -29,3 +29,20 @@ with model:
     nengo.Connection(c, r, synapse=0.01)
     nengo.Connection(b, d, synapse=0.01)
     nengo.Connection(d, e.input[:2], synapse=0.01)
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 0.46716367344159154
+gui[model].offset = 143.27502350406473,105.83837725652398
+gui[a].pos = 641.214, 715.919
+gui[b].pos = 128.779, 325.756
+gui[c].pos = -126.534, 302.431
+gui[d].pos = 58.743, 109.789
+gui[e.ea_ensembles[0]].pos = 896.185, 397.857
+gui[e.ea_ensembles[1]].pos = 953.408, 377.013
+gui[e.input].pos = 961.590, 293.411
+gui[e.output].pos = 884.644, 258.091
+gui[r].pos = 39.790, 1042.660
+gui[t].pos = 744.572, 818.879
+gui[f].pos = 532.513, 885.870
+gui[g].pos = 285.001, 912.920
