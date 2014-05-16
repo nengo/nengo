@@ -59,6 +59,30 @@ def test_decoder_cache(tmpdir):
     assert SolverMock.n_calls[another_solver] == 1
 
 
+def test_corrupted_decoder_cache(tmpdir):
+    cache_dir = str(tmpdir)
+
+    M = 100
+    N = 10
+    D = 2
+    activities = np.ones((M, D))
+    targets = np.ones((M, N))
+    rng = np.random.RandomState(42)
+
+    cache = DecoderCache(cache_dir=cache_dir)
+    solver_mock = SolverMock()
+    cache.wrap_solver(solver_mock)(activities, targets, rng)
+    assert SolverMock.n_calls[solver_mock] == 1
+
+    # corrupt the cache
+    for filename in os.listdir(cache_dir):
+        with open(os.path.join(cache_dir, filename), 'w') as f:
+            f.write('corrupted')
+
+    cache.wrap_solver(solver_mock)(activities, targets, rng)
+    assert SolverMock.n_calls[solver_mock] == 2
+
+
 def test_decoder_cache_invalidation(tmpdir):
     cache_dir = str(tmpdir)
     solver_mock = SolverMock()
