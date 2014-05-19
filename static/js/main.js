@@ -660,12 +660,12 @@ $(document).ready(function () {
         //applyDefaultStyles:         true, 
 	    north__slidable:			false,	
 		north__resizsable:			false,	
-		north_livePaneResizing:		false,
 		north__spacing_open:        0,
 		north__size:                55,
-		east__size:					500,
-		east__minSize:				200,
-		east__maxSize:				.5 // 50% of layout width
+		east__livePaneResizing:		true,
+		east__size:					.4,
+		east__minSize:				.1,
+		east__maxSize:				.8 // 80% of layout width
         
     });
     

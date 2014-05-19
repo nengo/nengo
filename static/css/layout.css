@@ -15,16 +15,6 @@
  */
 
 /*
- *	DEFAULT FONT
- *	Just to make demo-pages look better - not actually relevant to Layout!
- */
-body {
-	font-family: Geneva, Arial, Helvetica, sans-serif;
-	font-size:   100%;
-	*font-size:  80%;
-}
-
-/*
  *	PANES & CONTENT-DIVs
  */
 .ui-layout-pane { /* all 'panes' */
@@ -69,7 +59,7 @@ body {
  *	RESIZER-BARS
  */
 .ui-layout-resizer	{ /* all 'resizer-bars' */
-	background:		#DDD;
+	background:		#BBB;
 	border:			1px solid #BBB;
 	border-width:	0;
 	}
@@ -81,10 +71,10 @@ body {
 		otherwise color shifts while dragging when bar can't keep up with mouse */
 	.ui-layout-resizer-open-hover ,	/* hover-color to 'resize' */
 	.ui-layout-resizer-dragging {	/* resizer beging 'dragging' */
-		background: #C4E1A4;
+		background: #BBB; /*default C4E1A4 */
 	}
 	.ui-layout-resizer-dragging {	/* CLONED resizer being dragged */
-		border: 	 1px solid #BBB;
+		border: 	 10px solid #BBB;
 	}
 	.ui-layout-resizer-north-dragging,
 	.ui-layout-resizer-south-dragging {
@@ -100,7 +90,7 @@ body {
 	}
 
 	.ui-layout-resizer-closed-hover	{ /* hover-color to 'slide open' */
-		background: #EBD5AA;
+		background: #BBB; /* default EBD5AA */
 	}
 	.ui-layout-resizer-sliding {	/* resizer when pane is 'slid open' */
 		opacity: .10; /* show only a slight shadow */
@@ -121,8 +111,8 @@ body {
  *	TOGGLER-BUTTONS
  */
 .ui-layout-toggler {
-	border: 1px solid #BBB; /* match pane-border */
-	background-color: #BBB;
+	border: 1px solid #FFF; /* match pane-border */
+	background-color: #AAA;
 	}
 	.ui-layout-resizer-hover .ui-layout-toggler {
 		opacity: .60;
@@ -130,7 +120,7 @@ body {
 	}
 	.ui-layout-toggler-hover , /* need when NOT resizable */
 	.ui-layout-resizer-hover .ui-layout-toggler-hover { /* need specificity when IS resizable */
-		background-color: #FC6;
+		background-color: #DDD; /* default #FC6; */
 		opacity: 1.00;
 		filter:  alpha(opacity=100);
 	}
