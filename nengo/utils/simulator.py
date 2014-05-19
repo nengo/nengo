@@ -1,7 +1,7 @@
 from collections import defaultdict
 import itertools
 
-from nengo.utils.compat import iteritems
+from nengo.utils.compat import iteritems, groupby
 from nengo.utils.graphs import add_edges
 
 
@@ -91,12 +91,13 @@ def validate_ops(sets, ups, incs):
         assert len(sets[node] + ups[node]) > 0, (node)
 
     # -- assert that no two views are both set and aliased
-    if len(sets) >= 2:
-        for node, other in itertools.combinations(sets, 2):
+    for _, base_group in groupby(sets, lambda x: x.base, hashable=True):
+        for node, other in itertools.combinations(base_group, 2):
             assert not node.shares_memory_with(other), (
                 "%s shares memory with %s" % (node, other))
 
     # -- assert that no two views are both updated and aliased
-    if len(ups) >= 2:
-        for node, other in itertools.combinations(ups, 2):
-            assert not node.shares_memory_with(other), (node, other)
+    for _, base_group in groupby(ups, lambda x: x.base, hashable=True):
+        for node, other in itertools.combinations(base_group, 2):
+            assert not node.shares_memory_with(other), (
+                "%s shares memory with %s" % (node, other))
