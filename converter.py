@@ -99,10 +99,14 @@ class Converter(object):
 
         for i, conn in enumerate(network.connections):
             id = self.namefinder.name(conn)
+            if self.object_index[conn.pre] == self.object_index[conn.post]:
+                type = 'rec'
+            else:
+                type = 'std'
             self.links.append({'source':self.object_index[conn.pre],
                                'target':self.object_index[conn.post],
                                'id':id,
-                               'type':'std'})
+                               'type':type})
 
         return sum(full_contains.values(),[])
 

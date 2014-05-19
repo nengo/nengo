@@ -101,9 +101,10 @@ function zoomed(node) {
     
     var scale = d3.event.scale;
     var translate = d3.event.translate;
-    global_zoom_scale = scale;
     
     if (typeof node == 'undefined') {
+        global_zoom_scale = scale;
+
         container.attr("transform", function (d) { //scale & translate everything
             return "translate(" + translate + ")scale(" + scale + ")"
         })        
@@ -232,14 +233,29 @@ function update_line_locations() {
                 (x0 * 0.45 + x1 * 0.55) + "," + 
                 (y0 * 0.45 + y1 * 0.55) + " " +
                 x1 + "," + y1;
+        })
+        .attr('stroke-width', function(d) {
+            if (constant_line_width) {
+                return 2/global_zoom_scale +'px';  
+            } else {
+                return 2;
+            }
         });
-        //.attr);
+        
     linkRecur
         .attr('x', function (d) {return graph.nodes[d.source].x-20
             * graph.nodes[d.source].scale})
         .attr('y', function (d) {return graph.nodes[d.source].y-34
             * graph.nodes[d.source].scale})
         .attr('width', function (d) {return graph.nodes[d.source].scale*100})
+        .select('use')
+        .attr('stroke-width', function(d) {
+            if (constant_line_width) {        
+                return 2/(global_zoom_scale*graph.nodes[d.source].scale) +'px'; 
+            } else {  
+                return 2;
+            }
+        });     
 }
 
 //Update all network sizes based on node positions
@@ -451,6 +467,7 @@ var linkRecur = null;
 var node = null;
 var zoomers = {};
 
+var constant_line_width = true; //keep the lines the same absolute size on zoom
 var node_margin = 35;
 var net_inner_margin = 40;
 var net_margin = 15;
@@ -525,10 +542,10 @@ function update_graph() {
     links.enter().append('polyline')
         .attr('class', function (d) {return 'link link_' + d.type;})
 
-    linkRecur = container.selectAll('.link.link_recur')
+    linkRecur = container.selectAll('.link.link_rec')
         .data(recurlink, function (d) {return d.id})
     linkRecur.enter().append('svg')       
-        .attr('class', function (d) {return 'link link_recur';})
+        .attr('class', function (d) {return 'link link_' + d.type;})
         .attr("viewBox", "-2 -2 100 100")
         .attr("preserveAspectRatio", "xMinYMin meet")
         .attr('width', '100')

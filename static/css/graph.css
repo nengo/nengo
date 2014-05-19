@@ -15,7 +15,7 @@ div#graph {
 svg .link_std {
     stroke: #333;
     stroke-opacity: .6;
-    stroke-width: 2px;
+    //stroke-width: 2px;
     marker-mid: url(#TriangleMarker);
 }
 
@@ -23,7 +23,7 @@ svg .link_net {
     stroke-width: 0px;
 }
 
-svg .link_recur {
+svg .link_rec {
     stroke: #333;
     stroke-opacity: .6;
     stroke-width: 2px;
