@@ -127,22 +127,15 @@ function zoomed(node) {
             curNode.y =  scale*(curNode.y-mouseY) + mouseY;
             if (curNode.type == 'net') { //update contained zoomers 
                 zoomers[curNode.id].scale(curNode.scale);
-            }
-            //linkRecur.filter(function (d) {
-            //        return d.source==graph.nodes.indexOf(curNode)
-            //    })
-                //.attr('transform', //'translate(' + [-20, -34] + ')'
-                  //'scale(' + curNode.scale +')')
-            //   .attr('x', curNode.x)     
-            //    .attr('y', curNode.y)       
+            }    
         }
                         
         nodes.attr("transform", function (d) { //redraw scale & translate of everything
                 return "translate(" + [d.x, d.y] + ")scale(" + d.scale + ")"          
             })
             
-        d3.select('#recur')
-            .attr('transform', 'scale(' + d.scale + ')translate(-20,-34)')
+        //d3.select('#recur')
+        //    .attr('transform', 'scale(' + d.scale + ')translate(-20,-34)')
     }
 
     if (zoom_mode == "geometric") {
@@ -228,21 +221,26 @@ function layer_network(curNode) {
 }
 
 function update_line_locations() {
+
     links.filter(function (d) {return d.type == 'std';})
         .attr('points', function (d) {
-            x0 = graph.nodes[d.source].x;
-            y0 = graph.nodes[d.source].y;
-            x1 = graph.nodes[d.target].x;
-            y1 = graph.nodes[d.target].y;
+            var curNode = graph.nodes[d.source]
+        
+            x0 = curNode.x;
+            y0 = curNode.y;
+            x1 = curNode.x;
+            y1 = curNode.y;
             return "" + x0 + "," + y0 + " " + 
                 (x0 * 0.45 + x1 * 0.55) + "," + 
                 (y0 * 0.45 + y1 * 0.55) + " " +
                 x1 + "," + y1;
         });
-
     linkRecur
-        .attr('x', function (d) {return graph.nodes[d.source].x})
-        .attr('y', function (d) {return graph.nodes[d.source].y})
+        .attr('x', function (d) {return graph.nodes[d.source].x-20
+            * graph.nodes[d.source].scale})
+        .attr('y', function (d) {return graph.nodes[d.source].y-34
+            * graph.nodes[d.source].scale})
+        .attr('width', function (d) {return graph.nodes[d.source].scale*100})
 }
 
 //Update all network sizes based on node positions
@@ -530,8 +528,12 @@ function update_graph() {
 
     linkRecur = container.selectAll('.link.link_recur')
         .data(recurlink, function (d) {return d.id})
-    linkRecur.enter().append('use')
+    linkRecur.enter().append('svg')       
         .attr('class', function (d) {return 'link link_recur';})
+        .attr("viewBox", "-2 -2 100 100")
+        .attr("preserveAspectRatio", "xMinYMin meet")
+        .attr('width', '100')
+        .append('use')
         .attr('xlink:href', "#recur")
 
     //get all the nodes, for updating
