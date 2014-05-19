@@ -70,7 +70,6 @@ setup(
     long_description=long_description,
     requires=[
         "numpy (>=1.5.0)",
-        "networkx",
     ],
     extras_require={
         'all_solvers': ["scipy", "scikit-learn"],
