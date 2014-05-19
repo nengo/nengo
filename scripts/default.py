@@ -16,11 +16,11 @@ with model:
 
 import nengo_gui
 gui = nengo_gui.Config()
-gui[model].scale = 0.7695036100804341
-gui[model].offset = -73.39594735024002,-76.28744694489154
+gui[model].scale = 0.7463891916484794
+gui[model].offset = -56.59276172926343,-64.20350054516632
 gui[a].pos = 556.130, 335.834
 gui[a].scale = 1.000
-gui[c].pos = 738.648, 320.237
+gui[c].pos = 343.588, 304.643
 gui[c].scale = 1.000
-gui[b].pos = 370.773, 401.369
-gui[b].scale = 2.156
+gui[b].pos = 636.355, 488.398
+gui[b].scale = 1.650

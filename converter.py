@@ -47,7 +47,10 @@ class Converter(object):
             pos = self.config[ens].pos
             scale = self.config[ens].scale
             if pos is None:
-                pos = 0,0 
+                pos = 0,0
+            if scale is None:
+                scale = 1
+                
             obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
                    'x':pos[0], 'y':pos[1], 'scale': scale,
                     'contained_by': self.object_index[network]}
@@ -60,10 +63,14 @@ class Converter(object):
             if label == 'Node':
                 label = self.find_identifier(line, label)
             id = self.namefinder.name(nde)
+            
             pos = self.config[nde].pos
             scale = self.config[nde].scale
             if pos is None:
                 pos = 0,0
+            if scale is None:
+                scale = 1
+                                
             obj = {'label':label, 'line':line, 'id':id, 'type':'nde',
                    'x':pos[0], 'y':pos[1],  'scale': scale,
                    'contained_by': self.object_index[network]}
