@@ -95,7 +95,7 @@ $(document).ready(function () {
         fb = $('#filebrowser');
         fb.toggle(200);
         if (fb.is(":visible")) {
-            $('#filebrowser').fileTree({
+            fb.fileTree({
                 root: '.',
                 script: '/browse'
             }, open_file);
