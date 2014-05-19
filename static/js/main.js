@@ -38,6 +38,7 @@ function update_gui_text() {
         if ((d.type == 'ens') || (d.type == 'nde')) {
             gui += "gui[" + d.id + "].pos = " + 
                             d.x.toFixed(3) + ", " + d.y.toFixed(3) + "\n";
+            gui += "gui[" + d.id + "].scale = " + d.scale.toFixed(3) + "\n";
         }
     }
     
@@ -126,7 +127,7 @@ function zoomed(node) {
             curNode.y =  scale*(curNode.y-mouseY) + mouseY;
             if (curNode.type == 'net') { //update contained zoomers 
                 zoomers[curNode.id].scale(curNode.scale);
-            }    
+            }
         }
                         
         nodes.attr("transform", function (d) { //redraw scale & translate of everything
@@ -370,7 +371,7 @@ function move_node(node, dx, dy) {
 
 //Redraw if the window is resized
 function resize() {
-    width = window.innerWidth / 2;
+    width = window.innerWidth;
     height = window.innerHeight;
     svg.attr("width", width).attr("height", height);
 }
@@ -575,6 +576,8 @@ function update_graph() {
                 .scaleExtent([.05, 10])
                 .on('zoom', zoomed)
             zoomers[d.id](d3.select(this))
+            d.scale = graph.nodes[d.contains[0]].scale
+            zoomers[d.id].scale(d.scale)
             })
             
     nodeEnter.filter(function (d) {return d.type == 'ens';})
@@ -584,6 +587,7 @@ function update_graph() {
             if (d.contained_by > -1) {
                 id = graph.nodes[d.contained_by].id
                 zoomers[id](d3.select(this))
+                //zoomers[id].scale(d.scale)
             }
         })
 
@@ -603,8 +607,6 @@ function update_graph() {
     nodeEnter.selectAll('.node_nde text, .node_ens text')
         .attr('y', '30')
         .style('font-size', node_fontsize)
-
-    nodeEnter.filter(function (d) {return d.type == 'net'})
 
     nodes.exit().remove();
     links.exit().remove();
@@ -655,18 +657,16 @@ $(document).ready(function () {
     svg.call(zoom); // set up zooming on the graph
     d3.select(window).on("resize", resize);
     
-    //setup the panes
+    //setup the window panes, and manipulations
     $('body').layout({ 
-        //applyDefaultStyles:         true, 
 	    north__slidable:			false,	
 		north__resizsable:			false,	
 		north__spacing_open:        0,
-		north__size:                55,
+		north__size:                55, //pixels
 		east__livePaneResizing:		true,
 		east__size:					.4,
 		east__minSize:				.1,
-		east__maxSize:				.8 // 80% of layout width
-        
+		east__maxSize:				.8 // 80% of layout width        
     });
     
     //start this puppy up

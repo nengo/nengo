@@ -45,10 +45,11 @@ class Converter(object):
             id = self.namefinder.name(ens)
 
             pos = self.config[ens].pos
+            scale = self.config[ens].scale
             if pos is None:
                 pos = 0,0 
             obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
-                   'x':pos[0], 'y':pos[1], 'scale': 1,
+                   'x':pos[0], 'y':pos[1], 'scale': scale,
                     'contained_by': self.object_index[network]}
             self.object_index[ens] = len(self.objects)
             self.objects.append(obj)
@@ -60,10 +61,11 @@ class Converter(object):
                 label = self.find_identifier(line, label)
             id = self.namefinder.name(nde)
             pos = self.config[nde].pos
+            scale = self.config[nde].scale
             if pos is None:
                 pos = 0,0
             obj = {'label':label, 'line':line, 'id':id, 'type':'nde',
-                   'x':pos[0], 'y':pos[1],  'scale': 1,
+                   'x':pos[0], 'y':pos[1],  'scale': scale,
                    'contained_by': self.object_index[network]}
             self.object_index[nde] = len(self.objects)
             self.objects.append(obj)
