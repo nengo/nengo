@@ -28,7 +28,6 @@ function clearAnnotation(d) { //Called on mouseout in graph
     editor.getSession().clearAnnotations();
 }
 
-
 function update_gui_text() {
     gui_updating = true;
     var gui = '\nimport nengo_gui\ngui = nengo_gui.Config()\n';
@@ -650,13 +649,26 @@ $(document).ready(function () {
         if (!gui_updating) reload_graph_data();
     });
 
-
     //initialize graph
     svg = d3.select("svg");
     container = svg.append('g');
     svg.call(zoom); // set up zooming on the graph
     d3.select(window).on("resize", resize);
-
+    
+    //setup the panes
+    $('body').layout({ 
+        //applyDefaultStyles:         true, 
+	    north__slidable:			false,	
+		north__resizsable:			false,	
+		north_livePaneResizing:		false,
+		north__spacing_open:        0,
+		north__size:                55,
+		east__size:					500,
+		east__minSize:				200,
+		east__maxSize:				.5 // 50% of layout width
+        
+    });
+    
     //start this puppy up
     reload_graph_data();
 });
