@@ -50,9 +50,8 @@ setup(
     license="See LICENSE.rst",
     description=description,
     long_description=long_description,
-    requires=[
-        "numpy (>=1.5.0)",
-        "networkx",
+    install_requires=[
+        "numpy>=1.6",
     ],
     **testing
 )
