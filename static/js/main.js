@@ -223,18 +223,17 @@ function layer_network(curNode) {
 function update_line_locations() {
 
     links.filter(function (d) {return d.type == 'std';})
-        .attr('points', function (d) {
-            var curNode = graph.nodes[d.source]
-        
-            x0 = curNode.x;
-            y0 = curNode.y;
-            x1 = curNode.x;
-            y1 = curNode.y;
+        .attr('points', function (d) {        
+            x0 = graph.nodes[d.source].x;
+            y0 = graph.nodes[d.source].y;
+            x1 = graph.nodes[d.target].x;
+            y1 = graph.nodes[d.target].y;
             return "" + x0 + "," + y0 + " " + 
                 (x0 * 0.45 + x1 * 0.55) + "," + 
                 (y0 * 0.45 + y1 * 0.55) + " " +
                 x1 + "," + y1;
         });
+        //.attr);
     linkRecur
         .attr('x', function (d) {return graph.nodes[d.source].x-20
             * graph.nodes[d.source].scale})
