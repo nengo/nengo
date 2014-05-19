@@ -12,7 +12,32 @@ except ImportError:
 from setuptools import find_packages, setup
 from setuptools.command.test import test as TestCommand
 
+
+class PyTest(TestCommand):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = None
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        import pytest
+        errno = pytest.main(self.pytest_args)
+        sys.exit(errno)
+
+
 class Tox(TestCommand):
+    user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.tox_args = None
+
     def finalize_options(self):
         TestCommand.finalize_options(self)
         self.test_args = []
@@ -20,7 +45,8 @@ class Tox(TestCommand):
 
     def run_tests(self):
         import tox
-        errno = tox.cmdline(self.test_args)
+        import shlex
+        errno = tox.cmdline(args=shlex.split(self.tox_args))
         sys.exit(errno)
 
 root = os.path.dirname(os.path.realpath(__file__))
@@ -46,6 +72,12 @@ setup(
         "numpy (>=1.5.0)",
         "networkx",
     ],
-    tests_require=['tox'],
-    cmdclass={'test': Tox}
+    extras_require={
+        'all_solvers': ["scipy", "scikit-learn"],
+    },
+    tests_require=['pytest'],
+    cmdclass={
+        'test': PyTest,
+        'tox': Tox,
+    }
 )
