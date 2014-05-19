@@ -110,7 +110,6 @@ function zoomed(node) {
         })        
     } else {
         scale = scale/node.scale;  //determine the scaling ratio
-        //translate = [translate[0]-node.x, translate[1]-node.y];
         
         if (node.type != 'net') {  //if you're on a ens scale the containing net
             node = graph.nodes[node.contained_by]
@@ -134,9 +133,6 @@ function zoomed(node) {
         nodes.attr("transform", function (d) { //redraw scale & translate of everything
                 return "translate(" + [d.x, d.y] + ")scale(" + d.scale + ")"          
             })
-            
-        //d3.select('#recur')
-        //    .attr('transform', 'scale(' + d.scale + ')translate(-20,-34)')
     }
 
     if (zoom_mode == "geometric") {
