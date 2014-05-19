@@ -11,6 +11,20 @@ from nengo.utils.inspect import checked_call
 import nengo.utils.numpy as npext
 
 
+def hack_isinstance(obj, clsname):
+    """Approximates isinstance but with strings instead of objects.
+
+    Useful for doing isinstance type checking when importing the type
+    would introduce a circular dependency.
+    """
+    if is_string(clsname):
+        clsname = [clsname]
+    for cls in obj.__class__.__mro__:
+        if cls.__name__ in clsname:
+            return True
+    return False
+
+
 class BoolParam(Parameter):
     def validate(self, instance, boolean):
         if not isinstance(boolean, bool):
@@ -147,6 +161,22 @@ class DistributionParam(Parameter):
         assert 0 < len(self.sample_shape) <= 2
 
 
+class ConnEvalPoints(DistributionParam):
+    def __set__(self, conn, dist):
+        self.validate_pre(conn, dist)
+        super(ConnEvalPoints, self).__set__(conn, dist)
+
+    def validate_pre(self, conn, dist):
+        """Eval points are only valid when pre is an ensemble."""
+        if dist is None:
+            return
+
+        pre = conn._pre
+        if not hack_isinstance(pre, ('Ensemble', 'Neurons')):
+            raise ValueError("eval_points only work on connections from "
+                             "ensembles (got '%s')" % pre.__class__.__name__)
+
+
 class NeuronTypeParam(Parameter):
     def __set__(self, ens, neurons):
         self.validate_none(ens, neurons)
@@ -191,6 +221,9 @@ class SolverParam(Parameter):
     def validate(self, conn, solver):
         if not isinstance(solver, Solver):
             raise ValueError("'%s' is not a solver" % solver)
+        if solver.weights and not hack_isinstance(conn._post, 'Ensemble'):
+            raise ValueError("weight solvers only work for connections from "
+                             "ensembles (got '%s')" % pre.__class__.__name__)
 
 
 class LearningRuleParam(Parameter):
@@ -211,3 +244,88 @@ class LearningRuleParam(Parameter):
             raise ValueError("Learning rule '%s' cannot be applied to "
                              "connection with pre of type '%s'"
                              % (rule, type(conn.pre).__name__))
+
+
+class FunctionParam(Parameter):
+    """The function additionally sets and validates size_in."""
+    def __set__(self, conn, function):
+        self.validate_function(conn, function)
+
+        if function is not None:
+            conn.size_in = self.validate_call(conn, function)
+        else:
+            conn.size_in = conn.size_pre
+
+        self.validate_size_in(conn, function)
+        self.data[conn] = function
+
+    def validate_function(self, conn, function):
+        fn_ok = ['Node', 'Ensemble']
+        if function is not None and not callable(function):
+            raise ValueError("function '%s' must be callable" % function)
+        if callable(function) and not hack_isinstance(conn._pre, fn_ok):
+            raise ValueError("function can only be set for connections from "
+                             "an Ensemble or Node (got type '%s')"
+                             % conn._pre.__class__.__name__)
+
+    def validate_call(self, conn, function):
+        x = (conn.eval_points[0] if is_iterable(conn.eval_points)
+             else np.zeros(conn.size_pre))
+        value, invoked = checked_call(function, x)
+        if not invoked:
+            raise TypeError("function '%s' must accept a single "
+                            "np.array argument" % function)
+        return np.asarray(value).size
+
+    def validate_size_in(self, conn, function):
+        type_pre = conn._pre.__class__.__name__
+        transform = conn.transform
+
+        if transform.ndim < 2 and conn.size_in != conn.size_out:
+            raise ValueError("function output size is incorrect; should "
+                             "return a vector of size %d" % conn.size_out)
+
+        if transform.ndim == 2 and conn.size_in != transform.shape[1]:
+            # check input dimensionality matches transform
+            raise ValueError(
+                "%s output size (%d) not equal to transform input size "
+                "(%d)" % (type_pre, conn.size_in, transform.shape[1]))
+
+
+class TransformParam(Parameter):
+    """The transform additionally validates size_out."""
+    def __set__(self, conn, transform):
+        self.validate_none(conn, transform)
+        transform = np.asarray(transform)
+        self.validate(conn, transform)
+        self.data[conn] = transform
+
+    def validate(self, conn, transform):
+        type_pre = conn._pre.__class__.__name__
+        type_post = conn._post.__class__.__name__
+        size_out = conn.size_out
+
+        if transform.ndim == 1 and transform.size != size_out:
+            raise ValueError("Transform length (%d) not equal to "
+                             "%s output size (%d)" %
+                             (transform.size, type_post, size_out))
+
+        if transform.ndim == 2:
+            # check output dimensionality matches transform
+            if size_out != transform.shape[0]:
+                raise ValueError("Transform output size (%d) not equal to "
+                                 "%s input size (%d)" %
+                                 (transform.shape[0], type_post, size_out))
+
+            # check for repeated dimensions in lists, as these don't work
+            # for two-dimensional transforms
+            repeated_inds = lambda x: (
+                not isinstance(x, slice) and np.unique(x).size != len(x))
+            if repeated_inds(conn._preslice) or repeated_inds(conn._postslice):
+                raise ValueError("%s object selection has repeated indices" %
+                                 ("Input" if repeated_inds(conn._preslice)
+                                  else "Output"))
+
+        if transform.ndim > 2:
+            raise ValueError("Cannot handle transform tensors "
+                             "with dimensions > 2")

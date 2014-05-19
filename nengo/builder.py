@@ -1189,7 +1189,7 @@ def build_probe(probe, model, config):
     # Most probes are implemented as connections
     if conn is not None:
         # Make a sink signal for the connection
-        model.sig[probe]['in'] = Signal(np.zeros(conn.dimensions),
+        model.sig[probe]['in'] = Signal(np.zeros(conn.size_out),
                                         name=probe.label)
         model.add_op(Reset(model.sig[probe]['in']))
         # Set connection's seed to probe's (which isn't used elsewhere)
@@ -1233,7 +1233,7 @@ def build_linear_system(conn, model, rng):
     if conn.function is None:
         targets = eval_points
     else:
-        targets = np.zeros((len(eval_points), conn.function_size))
+        targets = np.zeros((len(eval_points), conn.size_in))
         for i, ep in enumerate(eval_points):
             targets[i] = conn.function(ep)
 
@@ -1271,7 +1271,7 @@ def build_connection(conn, model, config):  # noqa: C901
                 fn=conn.function,
                 t_in=False,
                 n_in=model.sig[conn]['in'].size,
-                n_out=conn.dimensions,
+                n_out=conn.size_out,
                 label=conn.label,
                 model=model)
             model.add_op(DotInc(model.sig[conn]['in'],
@@ -1295,7 +1295,7 @@ def build_connection(conn, model, config):  # noqa: C901
             signal_size = model.sig[conn]['out'].size
         else:
             decoders, solver_info = conn.solver(activities, targets, rng=rng)
-            signal_size = conn.dimensions
+            signal_size = conn.size_in
 
         # Add operator for decoders
         decoders = decoders.T

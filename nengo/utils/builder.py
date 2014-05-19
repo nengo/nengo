@@ -32,15 +32,22 @@ def full_transform(conn, allow_scalars=True):
             return np.array(transform)
 
     # Create the new transform matching the pre/post dimensions
-    out_dims, in_dims = conn._required_transform_shape()
-    new_transform = np.zeros((out_dims, in_dims))
+    new_transform = np.zeros((conn.size_out, conn.size_in))
     if transform.ndim < 2:
         slice_to_list = lambda s, d: (
             np.arange(d)[s] if isinstance(s, slice) else s)
-        preslice = slice_to_list(conn._preslice, in_dims)
-        postslice = slice_to_list(conn._postslice, out_dims)
+        preslice = slice_to_list(conn._preslice, conn.size_in)
+        postslice = slice_to_list(conn._postslice, conn.size_out)
         new_transform[postslice, preslice] = transform
     else:  # if transform.ndim == 2:
+        print(transform.shape, new_transform.shape)
+        print(conn.post.dimensions, conn._postslice)
+        repeated_inds = lambda x: (
+            not isinstance(x, slice) and np.unique(x).size != len(x))
+        if repeated_inds(conn._preslice) or repeated_inds(conn._postslice):
+            raise ValueError("%s object selection has repeated indices" %
+                             ("Input" if repeated_inds(self._preslice)
+                              else "Output"))
         rows_transform = np.array(new_transform[conn._postslice])
         rows_transform[:, conn._preslice] = transform
         new_transform[conn._postslice] = rows_transform

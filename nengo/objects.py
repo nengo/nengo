@@ -13,7 +13,6 @@ from nengo import params
 from nengo.synapses import Lowpass
 from nengo.utils.compat import is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform, UniformHypersphere
-from nengo.utils.inspect import checked_call
 
 logger = logging.getLogger(__name__)
 
@@ -567,167 +566,60 @@ class Connection(NengoObject):
     """
 
     synapse = params.SynapseParam(default=Lowpass(0.005))
-    _transform = params.Parameter(default=np.array(1.0))
+    transform = params.TransformParam(default=np.array(1.0))
     solver = params.SolverParam(default=nengo.decoders.LstsqL2())
-    _function = params.Parameter(default=(None, 0), optional=True)
+    function = params.FunctionParam(
+        default=None, optional=True, modifies=['transform', 'eval_points'])
     modulatory = params.BoolParam(default=False)
-    learning_rule = params.LearningRuleParam(default=None, optional=True)
-    # TODO: sample_shape should be ('pre_size',)
-    eval_points = params.DistributionParam(default=None,
-                                           sample_shape=('*',),
-                                           optional=True)
+    learning_rule = params.LearningRuleParam(
+        default=None, optional=True, modifies=['probeable'])
+    eval_points = params.ConnEvalPoints(default=None,
+                                        sample_shape=('*', 'size_pre'),
+                                        optional=True)
     seed = params.IntParam(default=None, optional=True)
     probeable = params.ListParam(default=['signal'])
 
-    def __init__(self, pre, post, synapse=Default, transform=1.0,
-                 solver=Default, learning_rule=Default, function=None,
+    def __init__(self, pre, post, synapse=Default, transform=Default,
+                 solver=Default, learning_rule=Default, function=Default,
                  modulatory=Default, eval_points=Default, seed=Default):
-        # don't check shapes until we've set all parameters
-        self._skip_check_shapes = True
-        if not isinstance(pre, ObjView):
-            pre = ObjView(pre)
-        if not isinstance(post, ObjView):
-            post = ObjView(post)
-        self._pre = pre.obj
-        self._post = post.obj
-        self._preslice = pre.slice
-        self._postslice = post.slice
-        self.probeable = Default
+        # --- handle pre and post logic in __init__ rather than a property
+        # so that the pre and post setter can raise an error
+        self._set_pre(pre)
+        self._set_post(post)
 
+        def psize(ix):
+            print(ix)
+            if hasattr(self, 'size_in'):
+                print('size_in=%d' % self.size_in)
+            if hasattr(self, 'size_out'):
+                print('size_out=%d' % self.size_out)
+
+        self.probeable = Default
+        self.learning_rule = learning_rule
         self.modulatory = modulatory
         self.synapse = synapse
-        self.transform = transform
-        self.seed = seed
-
         self.solver = solver
-        if isinstance(self._pre, Neurons):
-            self.eval_points = None
-            self._function = (None, 0)
-        elif isinstance(self._pre, Node):
-            self.eval_points = None
-            self.function = function
-        elif isinstance(self._pre, (Ensemble, Node)):
-            self.eval_points = eval_points
-            self.function = function
-            if self.solver.weights and not isinstance(self._post, Ensemble):
-                raise ValueError("Cannot specify weight solver "
-                                 "when 'post' is not an Ensemble")
-        else:
-            raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
-                             self._pre.__class__.__name__)
+        self.transform = transform  # Must be set before function
+        self.eval_points = eval_points  # Must be set before function
+        self.function = function
 
-        if not isinstance(self._post, (Ensemble, Neurons, Node, Probe)):
-            raise ValueError("Objects of type '%s' cannot serve as 'post'" %
-                             self._post.__class__.__name__)
+    def _set_pre(self, pre):
+        self._set_obj(pre, 'pre')
+        # size_in is based on the function and size_pre
+        self.size_pre = np.zeros(self._pre.size_out)[self._preslice].size
 
-        self.learning_rule = learning_rule  # Must set after solver
+    def _set_post(self, post):
+        self._set_obj(post, 'post')
+        self.size_out = np.zeros(self._post.size_in)[self._postslice].size
 
-        # check that shapes match up
-        self._skip_check_shapes = False
-        self._check_shapes()
-
-    def _check_shapes(self):  # noqa: C901
-        if self._skip_check_shapes:
-            return
-
-        transform = self.transform
-
-        # Get the required input/output sizes for the new transform
-        post_dims, pre_dims = self._required_transform_shape()
-
-        # Leverage numpy's slice syntax to determine sizes of slices
-        in_dims = np.asarray(np.zeros(pre_dims)[self._preslice]).size
-        out_dims = np.asarray(np.zeros(post_dims)[self._postslice]).size
-
-        # Check that the given transform matches the pre/post slices sizes
-        in_src = self._pre.__class__.__name__
-        out_src = self._post.__class__.__name__
-
-        if transform.ndim < 2:
-            if transform.ndim == 1 and transform.size != out_dims:
-                raise ValueError("Transform length (%d) not equal to "
-                                 "%s output size (%d)" %
-                                 (transform.size, out_src, out_dims))
-
-            # check input dimensionality matches output dimensionality
-            if in_dims != out_dims:
-                raise ValueError("%s output size (%d) not equal to "
-                                 "%s input size (%d)" %
-                                 (in_src, in_dims, out_src, out_dims))
-        elif transform.ndim == 2:
-            # check input dimensionality matches transform
-            if in_dims != transform.shape[1]:
-                raise ValueError("%s output size (%d) not equal to "
-                                 "transform input size (%d)" %
-                                 (in_src, in_dims, transform.shape[1]))
-
-            # check output dimensionality matches transform
-            if out_dims != transform.shape[0]:
-                raise ValueError("Transform output size (%d) not equal to "
-                                 "%s input size (%d)" %
-                                 (transform.shape[0], out_src, out_dims))
-
-            # check for repeated dimensions in lists, as these don't work
-            # for two-dimensional transforms
-            repeated_inds = lambda x: (
-                not isinstance(x, slice) and np.unique(x).size != len(x))
-            if repeated_inds(self._preslice) or repeated_inds(self._postslice):
-                raise ValueError("%s object selection has repeated indices" %
-                                 ("Input" if repeated_inds(self._preslice)
-                                  else "Output"))
-        else:
-            raise ValueError("Cannot handle transform tensors "
-                             "with dimensions > 2")
-
-    def _required_transform_shape(self):
-        if (isinstance(self._pre, (Ensemble, Node))
-                and self.function is not None):
-            in_dims = self.function_size
-        else:
-            in_dims = self._pre.size_out
-
-        out_dims = self._post.size_in
-        return out_dims, in_dims
-
-    @property
-    def label(self):
-        label = "%s->%s" % (self._pre.label, self._post.label)
-        if self.function is not None:
-            return "%s:%s" % (label, self.function.__name__)
-        return label
-
-    @property
-    def dimensions(self):
-        return self._required_transform_shape()[1]
-
-    @property
-    def function(self):
-        return self._function[0]
-
-    @property
-    def function_size(self):
-        return self._function[1]
-
-    @function.setter
-    def function(self, _function):
-        if _function is not None:
-            if not isinstance(self._pre, (Node, Ensemble)):
-                raise ValueError("'function' can only be set if 'pre' "
-                                 "is an Ensemble or Node")
-            if not callable(_function):
-                raise TypeError("function '%s' must be callable" % _function)
-            x = (self.eval_points[0] if is_iterable(self.eval_points) else
-                 np.zeros(self._pre.size_out))
-            value, invoked = checked_call(_function, x)
-            if not invoked:
-                raise TypeError("function '%s' must accept a single "
-                                "np.array argument" % _function)
-            size_out = np.asarray(value).size
-        else:
-            size_out = 0
-
-        self._function = (_function, size_out)
-        self._check_shapes()
+    def _set_obj(self, obj, side):
+        if not isinstance(obj, ObjView):
+            obj = ObjView(obj)
+        if not isinstance(obj.obj, (Ensemble, Node, Probe, Neurons)):
+            raise ValueError("Objects of type '%s' cannot serve as '%s'"
+                             % (obj.obj.__class__.__name__, side))
+        setattr(self, '_%s' % side, obj.obj)
+        setattr(self, '_%sslice' % side, obj.slice)
 
     @property
     def pre(self):
@@ -738,13 +630,11 @@ class Connection(NengoObject):
         return self._post
 
     @property
-    def transform(self):
-        return self._transform
-
-    @transform.setter
-    def transform(self, _transform):
-        self._transform = np.asarray(_transform)
-        self._check_shapes()
+    def label(self):
+        label = "%s->%s" % (self._pre.label, self._post.label)
+        if self.function is not None:
+            return "%s:%s" % (label, self.function.__name__)
+        return label
 
 
 class Probe(NengoObject):
