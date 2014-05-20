@@ -434,7 +434,7 @@ def test_dimensionality_errors(nl_nodirect):
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         n01 = nengo.Node(output=[1])
         n02 = nengo.Node(output=[1, 1])
-        n21 = nengo.Node(output=[1], size_in=2)
+        n21 = nengo.Node(output=lambda t, x: [1], size_in=2)
         e1 = nengo.Ensemble(N, 1)
         e2 = nengo.Ensemble(N, 2)
 
@@ -457,6 +457,8 @@ def test_dimensionality_errors(nl_nodirect):
             nengo.Connection(e2.neurons, e1, transform=np.random.randn(2, N))
         with pytest.raises(ValueError):
             nengo.Connection(e2, e1, function=lambda x: x, transform=[[1]])
+        with pytest.raises(TypeError):
+            nengo.Connection(e2, e1, function=lambda: 0, transform=[[1]])
         with pytest.raises(ValueError):
             nengo.Connection(n21, e2, transform=np.ones((2, 2)))
 

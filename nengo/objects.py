@@ -10,6 +10,7 @@ from nengo.learning_rules import LearningRule
 from nengo.neurons import LIF
 from nengo.utils.compat import is_callable, is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
+from nengo.utils.inspect import checked_call
 
 logger = logging.getLogger(__name__)
 
@@ -440,7 +441,7 @@ class Node(NengoObject):
     label = Parameter(default="Node")
     probeable = Parameter(default=['output'])
 
-    def __init__(self, output=Default,
+    def __init__(self, output=Default,  # noqa: C901
                  size_in=Default, size_out=Default, label=Default):
         self.output = output
         self.label = label
@@ -452,23 +453,18 @@ class Node(NengoObject):
             self.output = npext.array(self.output, min_dims=1, copy=False)
 
         if self.output is not None:
+            if self.size_in != 0 and not is_callable(self.output):
+                raise TypeError("output must be callable if size_in != 0")
             if isinstance(self.output, np.ndarray):
                 shape_out = self.output.shape
             elif self.size_out is None and is_callable(self.output):
                 t, x = np.asarray(0.0), np.zeros(self.size_in)
                 args = [t, x] if self.size_in > 0 else [t]
-                try:
-                    result = self.output(*args)
-                except TypeError:
-                    raise TypeError(
-                        "The function '%s' provided to '%s' takes %d "
-                        "argument(s), where a function for this type "
-                        "of node is expected to take %d argument(s)" % (
-                            self.output.__name__, self,
-                            self.output.__code__.co_argcount, len(args)))
-
-                shape_out = ((0,) if result is None
-                             else np.asarray(result).shape)
+                value, invoked = checked_call(self.output, *args)
+                if not invoked:
+                    raise TypeError("output function '%s' must accept "
+                                    "%d arguments" % (self.output, len(args)))
+                shape_out = (0,) if value is None else np.asarray(value).shape
             else:
                 shape_out = (self.size_out,)  # assume `size_out` is correct
 
@@ -685,11 +681,15 @@ class Connection(NengoObject):
             if not isinstance(self._pre, (Node, Ensemble)):
                 raise ValueError("'function' can only be set if 'pre' "
                                  "is an Ensemble or Node")
-
+            if not is_callable(_function):
+                raise TypeError("function '%s' must be callable" % _function)
             x = (self.eval_points[0] if is_iterable(self.eval_points) else
                  np.zeros(self._pre.size_out))
-
-            size_out = np.asarray(_function(x)).size
+            value, invoked = checked_call(_function, x)
+            if not invoked:
+                raise TypeError("function '%s' must accept a single "
+                                "np.array argument" % _function)
+            size_out = np.asarray(value).size
         else:
             size_out = 0
 
