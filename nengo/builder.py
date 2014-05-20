@@ -722,7 +722,10 @@ class SimFilterSynapse(Operator):
         output = signals[self.output]
         num, den = self.num, self.den
 
-        if len(num) == 1 and len(den) == 1:
+        if len(num) == 1 and len(den) == 0:
+            def step(input=input, output=output, b=num[0]):
+                output[:] = b * input
+        elif len(num) == 1 and len(den) == 1:
             def step(input=input, output=output, a=den[0], b=num[0]):
                 output *= -a
                 output += b * input
@@ -1313,12 +1316,9 @@ def build_alpha_synapse(synapse, owner, input_signal, model, config):
     if synapse.tau > 0.03 * model.dt:
         a = model.dt / synapse.tau
         ea = np.exp(-a)
-        # num, den = [d**2], [2 * (d - 1), (d - 1)**2]
         num, den = [-a*ea + (1 - ea), ea*(a + ea - 1)], [-2 * ea, ea**2]
-        tau = synapse.tau
-        num1, den1, _ = cont2discrete(([1], [tau**2, 2*tau, 1]), model.dt)
     else:
-        num, den = [1.], []
+        num, den = [1.], []  # just copy the input
 
     build_discrete_filter_synapse(
         synapse, owner, input_signal, num, den, model, config)

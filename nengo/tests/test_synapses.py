@@ -84,6 +84,7 @@ def test_general(Simulator):
     tau = 0.03
 
     num, den = scipy.signal.butter(order, 1. / tau, analog=True)
+    num, den = num.real, den.real
     numi, deni, dt = scipy.signal.cont2discrete((num, den), dt)
 
     t, x, yhat = run_synapse(

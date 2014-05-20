@@ -383,7 +383,13 @@ def ss2zpk(A, B, C, D, input=0):
 def expm(A):
     """Simple matrix exponential to replace Scipy's matrix exponential"""
     w, V = np.linalg.eig(A)
-    return np.dot(V * np.exp(w), np.linalg.inv(V))
+    E = np.dot(V * np.exp(w), np.linalg.inv(V))
+
+    if np.allclose(np.abs(E), np.abs(E.real), rtol=1e-20, atol=0):
+        # negligible imaginary part
+        return E.real
+    else:
+        return E
 
 
 def cont2discrete(sys, dt, method="zoh", alpha=None):  # noqa: C901
