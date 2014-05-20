@@ -679,8 +679,6 @@ class SimFilterSynapse(Operator):
         self.output = output
         self.num = num
         self.den = den
-        self.x = collections.deque(maxlen=len(num))
-        self.y = collections.deque(maxlen=len(den))
 
         self.reads = [input]
         self.updates = [output]
@@ -690,16 +688,25 @@ class SimFilterSynapse(Operator):
     def make_step(self, signals, dt):
         input = signals[self.input]
         output = signals[self.output]
+        num, den = self.num, self.den
 
-        def step(input=input, output=output):
-            output[:] = 0
+        if len(num) == 1 and len(den) == 1:
+            def step(input=input, output=output, a=den[0], b=num[0]):
+                output *= -a
+                output += b * input
+        else:
+            x = collections.deque(maxlen=len(num))
+            y = collections.deque(maxlen=len(den))
 
-            self.x.appendleft(np.array(input))
-            for k, xk in enumerate(self.x):
-                output += self.num[k] * xk
-            for k, yk in enumerate(self.y):
-                output -= self.den[k] * yk
-            self.y.appendleft(np.array(output))
+            def step(input=input, output=output, x=x, y=y, num=num, den=den):
+                output[:] = 0
+
+                x.appendleft(np.array(input))
+                for k, xk in enumerate(x):
+                    output += num[k] * xk
+                for k, yk in enumerate(y):
+                    output -= den[k] * yk
+                y.appendleft(np.array(output))
 
         return step
 
