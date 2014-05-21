@@ -46,9 +46,14 @@ svg g.node_net rect{
     opacity: 0.5;
 }
 
+rect#resizeBR {
+    fill:'black';
+    opacity: 0;
+}
+
 svg g.node text {
     fill: black;
     font-family: sans-serif;
     text-anchor: middle;
     alignment-baseline: middle;
-    }
+}

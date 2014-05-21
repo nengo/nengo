@@ -22,7 +22,7 @@ with model:
 import nengo_gui
 gui = nengo_gui.Config()
 gui[model].scale = 0.7463891916484794
-gui[model].offset = 396.40723827073657,331.7964994548337
+gui[model].offset = 265.40723827073657,186.79649945483368
 gui[a].pos = -96.725, -169.064
 gui[a].scale = 1.000
 gui[c].pos = -309.267, -200.255

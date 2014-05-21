@@ -93,11 +93,34 @@ function dragended(d) {
     d3.select(this).classed("dragging", false);
 }
 
+function resizeBRstarted(d) {
+    d3.event.sourceEvent.stopPropagation();
+    d3.select(this.parentElement).classed("resizing", true);
+}
+
+function resizeBRdragged(d) {
+    a = d3.select(this.parentElement.children[0]);
+    /*a.attr('width', function (d) {
+        net_widths[d.id] += d3.event.dx
+        return net_widths[d.id]
+    })*/
+    a.each(function(d) {
+        curWidth = net_widths[d.id]*d.scale  
+        ds = (d3.event.dx+curWidth)/curWidth //ratio change
+        zoomers[d.id].scale(Math.max(.25, d.scale*ds))
+        zoomers[d.id].event(a)
+    })
+}
+
+function resizeBRended(d) {
+    d3.select(this.parentElement).classed("resizing", false);
+}
+
 var global_zoom_scale = 1.0;
 
 function zoomed(node) { 
     try {d3.event.sourceEvent.stopPropagation();}
-    catch (e) {if (e instanceof TypeError) {console.log('Ignored TypeError')}}
+    catch (e) {if (e instanceof TypeError) {console.log('Ignored Error: ' + e)}}
     
     var scale = d3.event.scale;
     var translate = d3.event.translate;
@@ -115,8 +138,14 @@ function zoomed(node) {
             node = graph.nodes[node.contained_by]
         }
         
-        mouseX = d3.mouse(container[0][0])[0]
-        mouseY = d3.mouse(container[0][0])[1]
+        if (d3.select(this.parentElement).classed('resizing')) { //drag zoom
+            //resize from top left corner (bottom right drag)
+            mouseX = node.x - (net_widths[node.id]/2)*node.scale
+            mouseY = node.y - (net_heights[node.id]/2)*node.scale
+        } else {
+            mouseX = d3.mouse(container[0][0])[0]
+            mouseY = d3.mouse(container[0][0])[1]
+        }
         node.scale *= scale;  //scale and translate this net
         node.x = scale*(node.x-mouseX) + mouseX; //translation with scaling
         node.y =  scale*(node.y-mouseY) + mouseY;
@@ -258,7 +287,7 @@ function update_line_locations() {
 function update_net_sizes() {
     nodes.filter(function (d) {return d.type == 'net';})
         .each(update_net_size)
-        .selectAll('rect')
+        .selectAll('.net')
         .attr('x', function (d) {return -net_widths[d.id] / 2;})
         .attr('y', function (d) {return -net_heights[d.id] / 2;})
         .attr('width', function (d) {return net_widths[d.id];})
@@ -469,6 +498,7 @@ var net_inner_margin = 40;
 var net_margin = 15;
 var net_net_margin = 10;  // spacing between network and subnetwork
 var node_fontsize = 16;
+var resizew = 15;  //width and height of resize region in bottom right corner of net 
 
 var waiting_for_result = false;
 var pending_change = false;
@@ -565,6 +595,7 @@ function update_graph() {
 
     nodeEnter.filter(function (d) {return d.type == 'net';})
         .append('rect')
+        .attr('class', 'net')
         .attr('x', '-50')
         .attr('y', '-50')
         .attr('rx', '15')
@@ -579,7 +610,7 @@ function update_graph() {
             d.scale = graph.nodes[d.contains[0]].scale
             zoomers[d.id].scale(d.scale)
             })
-            
+                              
     nodeEnter.filter(function (d) {return d.type == 'ens';})
         .append('use')
         .attr('xlink:href', "#ensemble")
@@ -622,6 +653,17 @@ function update_graph() {
     layer_container();
     update_net_sizes();
     update_net_sizes(); //have to do 2 because of ordering effects on net_widths
+    
+    var resizeBR = nodeEnter.filter(function (d) {return d.type == 'net';})
+        .append('rect') //bottom right drag region
+        .attr("x", function(d) { return net_widths[d.id]/2 - resizew; })
+        .attr("y", function(d) { return net_heights[d.id]/2 - resizew; })
+        .attr("height", resizew)
+        .attr("id", "resizeBR")
+        .attr("width", resizew)
+        .attr("cursor", "se-resize")
+        .call(resizeBotR);
+    
     update_line_locations();
     update_text();
     resize();
@@ -640,6 +682,12 @@ $(document).ready(function () {
         .on('dragstart', dragstarted)
         .on('drag', dragged)
         .on('dragend', dragended);
+
+    resizeBotR = d3.behavior.drag()
+        .origin(function (d) {return d})
+        .on('dragstart', resizeBRstarted)
+        .on('drag', resizeBRdragged)
+        .on('dragend', resizeBRended);
 
     //initialize editor
     editor = ace.edit("editor");
