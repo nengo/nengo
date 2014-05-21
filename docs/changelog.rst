@@ -1,6 +1,6 @@
-==============================
-Transitioning from the old API
-==============================
+*********
+Nengo 2.0
+*********
 
 The "old API" is the Python programming interface
 to the Java version of Nengo;

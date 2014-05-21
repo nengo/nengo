@@ -19,6 +19,7 @@ class LearningRule(object):
     ----------
     label : string
         Given label, or None.
+
     """
     learning_rate = Parameter(default=1e-5)
     label = Parameter(default=None)
@@ -56,6 +57,7 @@ class PES(LearningRule):
         The given learning rate.
     error_connection : Connection
         The modulatory connection created to project the error signal.
+
     """
 
     modifies = ['Ensemble', 'Neurons']
@@ -91,6 +93,7 @@ class BCM(LearningRule):
     Attributes
     ----------
     TODO
+
     """
 
     modifies = ['Neurons']
@@ -133,6 +136,7 @@ class Oja(LearningRule):
     Attributes
     ----------
     TODO
+
     """
 
     modifies = ['Neurons']
