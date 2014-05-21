@@ -44,6 +44,7 @@ class PES(LearningRuleType):
         The given learning rate.
     error_connection : Connection
         The modulatory connection created to project the error signal.
+
     """
 
     modifies = ['Ensemble', 'Neurons']
@@ -74,6 +75,7 @@ class BCM(LearningRuleType):
     Attributes
     ----------
     TODO
+
     """
 
     modifies = ['Neurons']
@@ -107,6 +109,7 @@ class Oja(LearningRuleType):
     Attributes
     ----------
     TODO
+
     """
 
     modifies = ['Neurons']

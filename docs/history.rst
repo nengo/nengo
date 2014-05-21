@@ -1,6 +1,6 @@
-===============
- Nengo history
-===============
+*************
+Nengo history
+*************
 
 Some form of Nengo has existed since 2003.
 From then until now (April, 2013 as of the creation of this document)

@@ -41,7 +41,7 @@ import unicodedata
 try:
     from IPython import get_ipython
     from IPython.display import HTML
-    from IPython.nbconvert import PythonExporter
+    from IPython.nbconvert import HTMLExporter, PythonExporter
     from IPython.nbformat import current
 except ImportError:
     def get_ipython():
@@ -99,8 +99,6 @@ def hide_input():
 
     Returns a link to toggle the visibility of the input block.
     """
-    from IPython.display import HTML
-
     uuid = np.random.randint(np.iinfo(np.int32).max)
 
     script = """
@@ -169,8 +167,7 @@ def export_py(nb, dest_path=None):
 
     Optionally saves script to dest_path.
     """
-    from IPython.nbconvert import python
-    exporter = python.PythonExporter()
+    exporter = PythonExporter()
     body, resources = exporter.from_notebook_node(nb)
     if sys.version_info[0] == 2:
         body = unicodedata.normalize('NFKD', body).encode('ascii', 'ignore')
@@ -188,11 +185,10 @@ def export_html(nb, dest_path=None):
 
     Optionally saves HTML to dest_path.
     """
-    from IPython.nbconvert import html
-    exporter = html.HTMLExporter(template_file='full')
+    exporter = HTMLExporter(template_file='full')
     output, resources = exporter.from_notebook_node(nb)
-    header = output.split('<head>', 1)[1].split('</head>',1)[0]
-    body = output.split('<body>', 1)[1].split('</body>',1)[0]
+    header = output.split('<head>', 1)[1].split('</head>', 1)[0]
+    body = output.split('<body>', 1)[1].split('</body>', 1)[0]
 
     # Monkeypatch CSS
     header = header.replace('<style', '<style scoped="scoped"')
@@ -232,7 +228,6 @@ def export_evaluated(nb, dest_path=None, skip_exceptions=False):
 
     Optionally saves the notebook to dest_path.
     """
-    from IPython.nbformat import current
     nb_runner = NotebookRunner(nb)
     try:
         nb_runner.run_notebook(skip_exceptions=skip_exceptions)
@@ -261,10 +256,8 @@ class NotebookRunner(object):
         'image/svg+xml': 'svg',
     }
 
-
     def __init__(self, nb, working_dir=None):
         from IPython.kernel import KernelManager
-        from IPython.nbformat import current
 
         self.km = KernelManager()
 
@@ -294,8 +287,6 @@ class NotebookRunner(object):
 
     def run_cell(self, cell):
         """Run a notebook cell and update the output of that cell in-place."""
-        from IPython.nbformat import current
-
         self.shell.execute(cell.input)
         reply = self.shell.get_msg()
         status = reply['content']['status']
@@ -332,7 +323,6 @@ class NotebookRunner(object):
             elif msg_type == 'stream':
                 out.stream = content['name']
                 out.text = content['data']
-                #print(out.text, end='')
             elif msg_type in ('display_data', 'pyout'):
                 for mime, data in content['data'].items():
                     try:
