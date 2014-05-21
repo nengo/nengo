@@ -227,7 +227,5 @@ class Simulator(object):
 
     def trange(self, dt=None):
         dt = self.dt if dt is None else dt
-        last_t = self.signals['__time__'] - self.dt
-        n_steps = self.n_steps if dt is None else int(
-            self.n_steps / (dt / self.dt))
-        return np.linspace(0, last_t, n_steps)
+        n_steps = int(self.n_steps / (dt / self.dt))
+        return dt * np.arange(0, n_steps)
