@@ -54,6 +54,7 @@ class PES(LearningRuleType):
         The given learning rate.
     error_connection : Connection
         The modulatory connection created to project the error signal.
+
     """
 
     error_connection = ConnectionParam()
@@ -85,6 +86,7 @@ class BCM(LearningRuleType):
     Attributes
     ----------
     TODO
+
     """
 
     pre_tau = NumberParam(low=0, low_open=True)
@@ -121,6 +123,7 @@ class Oja(LearningRuleType):
     Attributes
     ----------
     TODO
+
     """
 
     pre_tau = NumberParam(low=0, low_open=True)

@@ -194,8 +194,7 @@ class Simulator(object):
         ----------
         steps : int
             Number of steps to run the simulation for.
-        progress_bar : bool or :class:`nengo.utils.progress.ProgressBar` or
-                       :class:`nengo.utils.progress.ProgressUpdater`, optional
+        progress_bar : bool or ``ProgressBar`` or ``ProgressUpdater``, optional
             Progress bar for displaying the progress.
 
             By default, ``progress_bar=True``, which uses the default progress
@@ -220,8 +219,7 @@ class Simulator(object):
         ----------
         steps : int
             Number of steps to run the simulation for.
-        progress_bar : bool or :class:`nengo.utils.progress.ProgressBar` or
-                       :class:`nengo.utils.progress.ProgressUpdater`, optional
+        progress_bar : bool or ``ProgressBar`` or ``ProgressUpdater``, optional
             Progress bar for displaying the progress.
 
             By default, ``progress_bar=True``, which uses the default progress

@@ -41,10 +41,11 @@ class Operator(object):
     """Base class for operator instances understood by nengo.Simulator.
 
     The lifetime of a Signal during one simulator timestep:
-    0) at most one set operator (optional)
-    1) any number of increments
-    2) any number of reads
-    3) at most one update
+
+    0. at most one set operator (optional)
+    1. any number of increments
+    2. any number of reads
+    3. at most one update
 
     A signal that is only read can be considered a "constant".
 
@@ -53,9 +54,10 @@ class Operator(object):
     whatever were the contents of the update, it can be the case
     that the update is completely hidden and rendered irrelevant.
     There are however at least two reasons to use both a set and an update:
-    (a) to use a signal as scratch space (updating means destroying it)
-    (b) to use sets and updates on partly overlapping views of the same
-        memory.
+
+    - to use a signal as scratch space (updating means destroying it)
+    - to use sets and updates on partly overlapping views of the same
+      memory.
 
     N.B.: It is done on purpose that there are no default values for
     reads, sets, incs, and updates.

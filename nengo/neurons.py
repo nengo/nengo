@@ -30,7 +30,7 @@ class NeuronType(object):
         neuron types; for spiking neurons it will likely fail.
 
         Parameters
-        ---------
+        ----------
         x : ndarray
             vector-space input
         gain : ndarray
@@ -54,7 +54,7 @@ class NeuronType(object):
         subclasses should override this with a neuron-specific implementation.
 
         Parameters
-        ---------
+        ----------
         max_rates : ndarray(dtype=float64)
             Maximum firing rates of neurons.
         intercepts : ndarray(dtype=float64)
@@ -192,7 +192,7 @@ class LIFRate(NeuronType):
         Returns gain (alpha) and offset (j_bias) values of neurons.
 
         Parameters
-        ---------
+        ----------
         max_rates : list of floats
             Maximum firing rates of neurons.
         intercepts : list of floats

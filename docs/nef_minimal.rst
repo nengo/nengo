@@ -1,5 +1,6 @@
+*****************
 The NEF Algorithm
-================================================
+*****************
 
 While Nengo provides a flexible, general-purpose approach to neural modelling,
 it is sometimes useful to get a complete look at exactly what is going on
