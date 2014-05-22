@@ -11,34 +11,6 @@ from nengo.builder import (
 logger = logging.getLogger(__name__)
 
 
-def pytest_funcarg__RefSimulator(request):
-    return nengo.Simulator
-
-
-def test_signal_init_values(RefSimulator):
-    """Tests that initial values are not overwritten."""
-    zero = Signal([0])
-    one = Signal([1])
-    five = Signal([5.0])
-    zeroarray = Signal([[0], [0], [0]])
-    array = Signal([1, 2, 3])
-
-    m = Model(dt=0)
-    m.operators += [ProdUpdate(zero, zero, one, five),
-                    ProdUpdate(zeroarray, one, one, array)]
-
-    sim = RefSimulator(None, model=m)
-    assert sim.signals[zero][0] == 0
-    assert sim.signals[one][0] == 1
-    assert sim.signals[five][0] == 5.0
-    assert np.all(np.array([1, 2, 3]) == sim.signals[array])
-    sim.step()
-    assert sim.signals[zero][0] == 0
-    assert sim.signals[one][0] == 1
-    assert sim.signals[five][0] == 5.0
-    assert np.all(np.array([1, 2, 3]) == sim.signals[array])
-
-
 def test_steps(RefSimulator):
     m = nengo.Network(label="test_steps")
     sim = RefSimulator(m)
@@ -213,60 +185,6 @@ def test_encoder_decoder_with_views(RefSimulator):
     check(foo, .39)
     check(sig_in, [0.2, 0.4])
     check(sig_out, [1.2, 1.4])
-
-
-def test_signaldict():
-    """Tests simulator.SignalDict's dict overrides."""
-    signaldict = nengo.simulator.SignalDict()
-
-    scalar = Signal(1)
-
-    # Both __getitem__ and __setitem__ raise KeyError
-    with pytest.raises(KeyError):
-        signaldict[scalar]
-    with pytest.raises(KeyError):
-        signaldict[scalar] = np.array(1.)
-
-    signaldict.init(scalar, scalar.value)
-    assert np.allclose(signaldict[scalar], np.array(1.))
-    # __getitem__ handles scalars
-    assert signaldict[scalar].shape == ()
-
-    one_d = Signal([1])
-    signaldict.init(one_d, one_d.value)
-    assert np.allclose(signaldict[one_d], np.array([1.]))
-    assert signaldict[one_d].shape == (1,)
-
-    two_d = Signal([[1], [1]])
-    signaldict.init(two_d, two_d.value)
-    assert np.allclose(signaldict[two_d], np.array([[1.], [1.]]))
-    assert signaldict[two_d].shape == (2, 1)
-
-    # __getitem__ handles views
-    two_d_view = two_d[0, :]
-    assert np.allclose(signaldict[two_d_view], np.array([1.]))
-    assert signaldict[two_d_view].shape == (1,)
-
-    # __setitem__ ensures memory location stays the same
-    memloc = signaldict[scalar].__array_interface__['data'][0]
-    signaldict[scalar] = np.array(0.)
-    assert np.allclose(signaldict[scalar], np.array(0.))
-    assert signaldict[scalar].__array_interface__['data'][0] == memloc
-
-    memloc = signaldict[one_d].__array_interface__['data'][0]
-    signaldict[one_d] = np.array([0.])
-    assert np.allclose(signaldict[one_d], np.array([0.]))
-    assert signaldict[one_d].__array_interface__['data'][0] == memloc
-
-    memloc = signaldict[two_d].__array_interface__['data'][0]
-    signaldict[two_d] = np.array([[0.], [0.]])
-    assert np.allclose(signaldict[two_d], np.array([[0.], [0.]]))
-    assert signaldict[two_d].__array_interface__['data'][0] == memloc
-
-    # __str__ pretty-prints signals and current values
-    # Order not guaranteed for dicts, so we have to loop
-    for k in signaldict:
-        assert "%s %s" % (repr(k), repr(signaldict[k])) in str(signaldict)
 
 
 def test_probedict():
