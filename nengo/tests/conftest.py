@@ -11,6 +11,16 @@ def pytest_funcarg__Simulator(request):
     return nengo.Simulator
 
 
+def pytest_funcarg__RefSimulator(request):
+    """the reference simulator.
+
+    Please use this if the test is reference simulator specific.
+    Other simulators may choose to implement the same API as the
+    reference simulator; this allows them to test easily.
+    """
+    return nengo.Simulator
+
+
 def pytest_generate_tests(metafunc):
     if "nl" in metafunc.funcargnames:
         metafunc.parametrize("nl", [nengo.LIF, nengo.LIFRate, nengo.Direct])
