@@ -13,10 +13,10 @@ the LICENSE.md file. If you agree, then add yourself
 to the file like so:
 
 ```
-Name <email address>
+- Name <email address>
 ```
 
 Please keep this list sorted alphabetically.
 
-Chris Eliasmith <celiasmith@uwaterloo.ca>
-Terry Stewart <terry.stewart@gmail.com>
+- Chris Eliasmith <celiasmith@uwaterloo.ca>
+- Terry Stewart <terry.stewart@gmail.com>
