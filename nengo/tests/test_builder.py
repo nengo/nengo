@@ -58,7 +58,7 @@ def test_seeding():
 
 
 def test_signal():
-    # Make sure assert_named_signals works
+    """Make sure assert_named_signals works."""
     nengo.builder.Signal(np.array(0.))
     nengo.builder.Signal.assert_named_signals = True
     with pytest.raises(AssertionError):

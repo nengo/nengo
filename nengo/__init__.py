@@ -16,8 +16,10 @@ from .version import version as __version__
 import logging
 
 # Nengo namespace (API)
+from .config import Config
+from .objects import (
+    Ensemble, Node, Connection, Probe, Network, toplevel_config)
 from .neurons import Direct, LIF, LIFRate, AdaptiveLIF, AdaptiveLIFRate
-from .objects import Ensemble, Node, Connection, Probe, Network
 from . import networks
 from .simulator import Simulator
 from .utils.logging import log

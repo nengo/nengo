@@ -40,7 +40,8 @@ class Uniform(Distribution):
         self.integer = integer
 
     def __eq__(self, other):
-        return (self.low == other.low
+        return (self.__class__ == other.__class__
+                and self.low == other.low
                 and self.high == other.high
                 and self.integer == other.integer)
 
@@ -77,7 +78,9 @@ class Gaussian(Distribution):
         self.std = std
 
     def __eq__(self, other):
-        return self.mean == other.mean and self.std == other.std
+        return (self.__class__ == other.__class__
+                and self.mean == other.mean
+                and self.std == other.std)
 
     def sample(self, n, rng=np.random):
         return rng.normal(loc=self.mean, scale=self.std, size=n)
