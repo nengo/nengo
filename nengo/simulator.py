@@ -145,8 +145,8 @@ class Simulator(object):
                 tmp = self.signals[self.model.sig[probe]['in']].copy()
                 self._probe_outputs[probe].append(tmp)
 
-        self.signals['__time__'] += self.dt
         self.n_steps += 1
+        self.signals['__time__'] = self.n_steps * self.dt
 
     def run(self, time_in_seconds):
         """Simulate for the given length of time."""
