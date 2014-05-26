@@ -66,6 +66,20 @@ def test_time_absolute(Simulator):
     assert np.allclose(sim.trange(), [0.00, .001, .002])
 
 
+def test_trange_with_probes(Simulator):
+    dt = 1e-3
+    m = nengo.Network()
+    periods = dt * np.arange(1, 21)
+    with m:
+        u = nengo.Node(output=np.sin)
+        probes = [nengo.Probe(u, sample_every=p, synapse=5*p) for p in periods]
+
+    sim = Simulator(m, dt=dt)
+    sim.run(0.333)
+    for i, p in enumerate(periods):
+        assert len(sim.trange(p)) == len(sim.data[probes[i]])
+
+
 def test_signal_indexing_1(RefSimulator):
     one = Signal(np.zeros(1), name="a")
     two = Signal(np.zeros(2), name="b")
