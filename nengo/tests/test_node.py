@@ -197,7 +197,7 @@ def test_none(Simulator, nl_nodirect):
         a = nengo.Ensemble(neurons=nl_nodirect(10), dimensions=1)
         nengo.Connection(u, a)
 
-    sim = nengo.Simulator(model)
+    sim = Simulator(model)
     with pytest.raises(ValueError):
         sim.run(1.)
 
@@ -211,7 +211,7 @@ def test_none(Simulator, nl_nodirect):
     with model2:
         nengo.Node(output=none_function)
 
-    sim = nengo.Simulator(model2)
+    sim = Simulator(model2)
     sim.run(1)
 
 
@@ -224,7 +224,7 @@ def test_scalar(Simulator):
         ap = nengo.Probe(a)
         bp = nengo.Probe(b)
 
-    sim = nengo.Simulator(model)
+    sim = Simulator(model)
     sim.run(1)
     assert sim.data[ap].shape == (1000, 1)
     assert sim.data[bp].shape == (1000, 1)

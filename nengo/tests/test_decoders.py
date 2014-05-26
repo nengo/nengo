@@ -272,7 +272,7 @@ def test_solvers(Simulator, nl_nodirect):
             probes.append(nengo.Probe(b))
             names.append(solver.__name__ + (" (%s)" % arg[0]))
 
-    sim = nengo.Simulator(model, dt=dt)
+    sim = Simulator(model, dt=dt)
     sim.run(tfinal)
     t = sim.trange()
 
@@ -328,7 +328,7 @@ def test_regularization(Simulator, nl_nodirect):
                         probes[i, j, k, l] = nengo.Probe(
                             a, decoder_solver=reg_solver, synapse=synapse)
 
-    sim = nengo.Simulator(model, dt=dt)
+    sim = Simulator(model, dt=dt)
     sim.run(tfinal)
     t = sim.trange()
 
