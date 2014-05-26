@@ -619,6 +619,9 @@ class Model(object):
         self.sig_in = {}
         self.sig_out = {}
 
+        # Signals needed to build learning rules
+        self.sig_decoder = {}  # Connection -> decoder signal
+
         self.dt = dt
         self.label = label
         self.seed = np.random.randint(npext.maxint) if seed is None else seed
@@ -691,6 +694,7 @@ def build_network(network, model):
     1) Ensembles, Nodes, Neurons, Probes
     2) Subnetworks (recursively)
     3) Connections
+    4) Learning Rules
     """
     logger.info("Network step 1: Building ensembles and nodes")
     for obj in network.ensembles + network.nodes:
@@ -703,6 +707,12 @@ def build_network(network, model):
     logger.info("Network step 3: Building connections")
     for conn in network.connections:
         Builder.build(conn, model=model)
+
+    logger.info("Network step 4: Building learning rules")
+    for conn in network.connections:
+        if conn.learning_rule is not None:
+            Builder.build(conn.learning_rule, conn, model=model)
+
     model.params[network] = None
 
 Builder.register_builder(build_network, nengo.objects.Network)
@@ -970,6 +980,7 @@ def build_connection(conn, model):  # noqa: C901
             Signal(decay, name="decay"),
             signal,
             tag="%s decoding" % conn.label))
+        model.sig_decoder[conn] = decoder_signal
     else:
         # Direct connection
         signal = model.sig_in[conn]
@@ -988,8 +999,7 @@ def build_connection(conn, model):  # noqa: C901
         model.sig_out[conn] = Signal(
             np.zeros(model.sig_out[conn].size),
             name="%s.mod_output" % conn.label)
-        # Add reset operator?
-        # TODO: add unit test
+        model.operators.append(Reset(model.sig_out[conn]))
 
     # Add operator for transform
     if isinstance(conn.post, nengo.objects.Neurons):
@@ -1114,3 +1124,28 @@ def build_alif(alif, max_rates, intercepts, model):
         states=[voltage, refractory_time, adaptation]))
 
 Builder.register_builder(build_alif, nengo.neurons.AdaptiveLIF)
+
+
+def build_pes(pes, conn, model):
+    activities = model.sig_out[conn.pre]
+    error = model.sig_out[pes.error_connection]
+    scaled_error = Signal(np.zeros(error.shape), name="PES:scaled_error")
+    shaped_scaled_error = SignalView(scaled_error, (error.size, 1), (1, 1),
+                                     0, name="PES:shaped_scaled_error")
+    shaped_activities = SignalView(activities, (1, activities.size),
+                                   (1, 1), 0, name="PES:shaped_activites")
+
+    decoders = model.sig_decoder[conn]
+    lr_signal = Signal(pes.learning_rate, name="PES:learning_rate")
+
+    model.operators.append(Reset(scaled_error))
+    model.operators.append(
+        DotInc(lr_signal, error, scaled_error, tag="PES:scale error"))
+    model.operators.append(
+        ProdUpdate(shaped_scaled_error, shaped_activities,
+                   Signal(1, name="PES:one"), decoders,
+                   tag="PES:Update Decoder"))
+
+    model.params[pes] = None
+
+Builder.register_builder(build_pes, nengo.objects.PES)
