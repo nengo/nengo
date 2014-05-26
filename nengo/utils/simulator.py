@@ -8,10 +8,12 @@ def operator_depencency_graph(operators):  # noqa: C901
     dg = defaultdict(set)
 
     for op in operators:
-        if not dg.has_key(op):
-            dg[op] = set()
         add_edges(dg, itertools.product(op.reads + op.updates, [op]))
         add_edges(dg, itertools.product([op], op.sets + op.incs))
+        # -- If a node is not connected to anything else, its ops won't be
+        #    added through add_edges. We add them explicitly here instead.
+        if op not in dg:
+            dg[op] = set()
 
     # -- all views of a base object in a particular dictionary
     by_base_writes = defaultdict(list)

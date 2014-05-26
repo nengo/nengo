@@ -230,6 +230,23 @@ def test_scalar(Simulator):
     assert sim.data[bp].shape == (1000, 1)
 
 
+def test_unconnected_node(Simulator):
+    """Make sure unconnected nodes still run."""
+    hits = [0]  # Must be a list or f won't use it
+
+    def f(t):
+        hits[0] += 1
+    model = nengo.Network()
+    with model:
+        nengo.Node(f, size_in=0, size_out=0)
+    sim = Simulator(model)
+    assert hits[0] == 0
+    sim.step()
+    assert hits[0] == 1
+    sim.step()
+    assert hits[0] == 2
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
