@@ -283,6 +283,18 @@ function update_line_locations() {
                 return 2;
             }
         })  
+    recurMarker
+        .attr('transform', function (d) {
+            if (constant_line_width) {
+                return "translate("
+                + [ -4/(graph.nodes[d.source].scale*global_zoom_scale) + 26, 
+                    -4/(graph.nodes[d.source].scale*global_zoom_scale) + 3.3 ]
+                 + ")scale(" 
+                + 1/(graph.nodes[d.source].scale*global_zoom_scale) + ")"
+            } else {
+                return "translate(22,-.7)"
+            }
+        })
 }
 
 //Update all network sizes based on node positions
@@ -497,6 +509,7 @@ function containsCompare(a,b) {
 var graph = null;
 var link = null;
 var linkRecur = null;
+var recurMarker = null;
 var node = null;
 var resizeBR = null;
 var zoomers = {};
@@ -586,6 +599,11 @@ function update_graph() {
         .attr('width', '100')
         .append('use')
         .attr('xlink:href', "#recur")
+    recurMarker = linkRecur
+        .append('use')
+        .attr('xlink:href', "#recurTriangle")
+
+
 
     //get all the nodes, for updating
     nodes = container.selectAll('g.node')
