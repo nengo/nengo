@@ -80,9 +80,8 @@ function dragged(d) {
     d3.select(this)
         .attr("translate(" + [d.x, d.y] + ")scale(" + d.scale + ")");
 
-    //sort the nodes by size of full contains (largest to smallest)
     var node_list = graph.nodes.slice(0) //copy the list
-    update_node_positions(d, dx, dy, d3.map(node_list));
+    update_node_positions(d, dx, dy, d3.map(node_list)); 
     update_net_position(d, dx, dy);
     update_net_sizes();
     update_line_locations();
@@ -167,6 +166,12 @@ function zoomed(node) {
     }
 
     update_net_sizes();
+    
+   /* if (d3.event.sourceEvent !== null && node !== undefined) {
+        var node_list = graph.nodes.slice(0) //copy the list
+        update_node_positions(node, 0, 0, d3.map(node_list));
+    }*/
+    
     update_line_locations();
     update_text();
     update_gui_text();    
@@ -389,10 +394,11 @@ function update_net_size(d) {
 
     net_widths[d.id] = (x1 - x0)/d.scale + 2 * m; //track heights/widths
     net_heights[d.id] = (y1 - y0)/d.scale + 2 * m;
-        
-    var node_list = graph.nodes.slice(0)
+
     dx = d.x - xstart;
     dy = d.y - ystart;
+        
+    var node_list = graph.nodes.slice(0)
     update_node_positions(d, 2 * dx, 2 * dy, d3.map(node_list))
 }
 
@@ -407,7 +413,7 @@ function update_net_position(d, dx, dy) {
 }
 
 //Update the position of any nodes and what they affect
-function update_node_positions(d, dx, dy, node_list) { //node_list must be sorted to work
+function update_node_positions(d, dx, dy, node_list) { 
     removeValue(node_list, d)
     if (d.type == 'net') { //stop all sub items from moving
         for (var i in d.full_contains) {
@@ -416,8 +422,23 @@ function update_node_positions(d, dx, dy, node_list) { //node_list must be sorte
     }
     for (var n in node_list.keys()) {
         var curNode = node_list.get(node_list.keys()[n])
-        if (close_to(curNode, d)) {//if curNode is close to d, and not close to 
-                                   //any containers of d (this is true here from sorting)
+        if (close_to(curNode, d)) {//if curNode is close to d
+            if (d3.event != null) { //figure out which way to move things on zoom bump
+                if (d3.event.type == "zoom") {
+                    del = d3.event.sourceEvent.wheelDelta/3;
+                    if (curNode.x < d.x) {
+                        dx = -del;
+                    } else {
+                        dx = del;
+                    }
+                    if (curNode.y < d.y) {
+                        dy = -del;
+                    } else {
+                        dy = del;
+                    }
+                    console.log(dx, dy)
+                }
+            }
             move_node(curNode, dx, dy)
             update_node_positions(curNode, dx, dy, d3.map(node_list))
         }
