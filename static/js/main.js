@@ -166,9 +166,26 @@ function zoomed(node) {
             })
     }
 
+    update_net_sizes();
+    update_line_locations();
+    update_text();
+    update_gui_text();    
+}
+
+function update_text() {
+    //could be faster if keep track of whether it was just drawn
+    
     if (zoom_mode == "geometric") {
         nodes.selectAll('text') //Change the fonts size as a fcn of scale
         .style("font-size", function (d) {
+            if (d.type =='net') {
+                scale = zoomers[d.id].scale()
+            } else if (d.contained_by == -1) {//top level ens or nde
+                scale = global_zoom_scale
+            } else { //contained by a network
+                scale = zoomers[graph.nodes[d.contained_by].id].scale()
+                    * global_zoom_scale
+            }
             newsize = node_fontsize / scale
             if (newsize > node_fontsize) {
                 return newsize + "px";
@@ -179,25 +196,35 @@ function zoomed(node) {
     } else if (zoom_mode == "semantic") {
         fix_labels(scale);
     }
-    update_net_sizes();
-    update_line_locations();
-    update_text();
-    update_gui_text();    
-}
 
-function update_text() {
-    //could be faster if keep track of whether it was just drawn
-    if (zoom_mode == "geometric" && global_zoom_scale < .75) { //Don't draw node/ens text if scale out far 
+    if (zoom_mode == "geometric") {
+        //Don't draw node/ens text if scale out far 
         nodes.selectAll("g.node.node_ens text, g.node.node_nde text")
-            .text("")
+            .text(function (d) {
+                if (d.contained_by == -1) {//top level node
+                    if (global_zoom_scale < .75) {
+                        return ""
+                    } else {
+                        return d.label
+                    }
+                } else if (global_zoom_scale 
+                    * zoomers[graph.nodes[d.contained_by].id].scale() < .75) {
+                        return ""
+                } else { 
+                    return d.label
+                }
+            })
     } else {
         nodes.selectAll("g.node.node_ens text, g.node.node_nde text")
-            .text(function (d) {return d.label;});
+            .text(function(d) {return d.label;})
     }
-    nodes.selectAll("g.node.node_net text")
-            .text(function (d) {return d.label;});
 
-    update_net_text();
+    nodes.selectAll("g.node.node_net text")
+        .text(function (d) {return d.label;})
+        .attr('y', function (d) {
+            fontSize = parseFloat(d3.select(this).style('font-size'))
+            return net_heights[d.id]/2 + fontSize/2 + "px"
+        })
 }
 
 /*function parseTranslate(inString) {
@@ -316,22 +343,11 @@ function update_net_sizes() {
             .attr("y", function(d) { return net_heights[d.id]/2 - resizew; })
     }
     
-    update_net_text();
+    update_text();
     
     if (zoom_mode=='semantic') {
         fix_node_scales(global_zoom_scale);
     }
-}
-
-function update_net_text() {
-    nodes.selectAll("g.node.node_net text") //Position net text by scale
-    .attr('y', function (d) {
-        if (zoom.scale() < 1) {
-            return net_heights[d.id] / 2 + net_text_margin / zoom.scale() + "px"
-        } else {
-            return net_heights[d.id] / 2 + net_text_margin + "px"
-        }
-    })
 }
 
 //Update given network size based on node position
