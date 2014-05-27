@@ -119,9 +119,11 @@ function resizeBRended(d) {
 var global_zoom_scale = 1.0;
 
 function zoomed(node) { 
-    try {d3.event.sourceEvent.stopPropagation();}
-    catch (e) {if (e instanceof TypeError) {console.log('Ignored Error: ' + e)}}
-    
+    if (!d3.event && d3.event.sourceEvent.type != "drag") {
+        try {d3.event.sourceEvent.stopPropagation();}
+        catch (e) {if (e instanceof TypeError) {console.log('Ignored Error: ' + e)}}
+    }
+        
     var scale = d3.event.scale;
     var translate = d3.event.translate;
     
@@ -295,6 +297,12 @@ function update_net_sizes() {
     
     nodes.attr('transform', function (d) {return 'translate(' + [d.x, d.y] 
         + ')scale(' + d.scale + ')';});
+ 
+    if (resizeBR) {
+        resizeBR //place the rescale area
+            .attr("x", function(d) { return net_widths[d.id]/2 - resizew; })
+            .attr("y", function(d) { return net_heights[d.id]/2 - resizew; })
+    }
     
     update_net_text();
     
@@ -490,6 +498,7 @@ var graph = null;
 var link = null;
 var linkRecur = null;
 var node = null;
+var resizeBR = null;
 var zoomers = {};
 
 var constant_line_width = true; //keep the lines the same absolute size on zoom
@@ -654,7 +663,7 @@ function update_graph() {
     update_net_sizes();
     update_net_sizes(); //have to do 2 because of ordering effects on net_widths
     
-    var resizeBR = nodeEnter.filter(function (d) {return d.type == 'net';})
+    resizeBR = nodeEnter.filter(function (d) {return d.type == 'net';})
         .append('rect') //bottom right drag region
         .attr("x", function(d) { return net_widths[d.id]/2 - resizew; })
         .attr("y", function(d) { return net_heights[d.id]/2 - resizew; })

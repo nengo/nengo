@@ -48,7 +48,7 @@ svg g.node_net rect{
 
 rect#resizeBR {
     fill:'black';
-    opacity: 0;
+    opacity: .5;
 }
 
 svg g.node text {
