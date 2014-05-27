@@ -30,6 +30,13 @@ svg .link_rec {
     fill: none    
 }
 
+#recurTriangle {
+    stroke: #333;
+    stroke-opacity: .6;
+    stroke-width: 0;
+    fill: black
+}
+
 svg g.node_ens {
     fill: #ddd;
 }
@@ -48,7 +55,7 @@ svg g.node_net rect{
 
 rect#resizeBR {
     fill:'black';
-    opacity: .5;
+    opacity: 0;
 }
 
 svg g.node text {

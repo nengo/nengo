@@ -119,7 +119,7 @@ function resizeBRended(d) {
 var global_zoom_scale = 1.0;
 
 function zoomed(node) { 
-    if (!d3.event && d3.event.sourceEvent.type != "drag") {
+    if (d3.event.sourceEvent !== null && (d3.event.sourceEvent.type != "drag")) {
         try {d3.event.sourceEvent.stopPropagation();}
         catch (e) {if (e instanceof TypeError) {console.log('Ignored Error: ' + e)}}
     }
@@ -282,7 +282,7 @@ function update_line_locations() {
             } else {  
                 return 2;
             }
-        });     
+        })  
 }
 
 //Update all network sizes based on node positions
@@ -613,7 +613,7 @@ function update_graph() {
         .attr('height', '100')
         .each(function (d) {
             zoomers[d.id] = d3.behavior.zoom()
-                .scaleExtent([.05, 10])
+                .scaleExtent([.05, 4])
                 .on('zoom', zoomed)
             zoomers[d.id](d3.select(this))
             d.scale = graph.nodes[d.contains[0]].scale
