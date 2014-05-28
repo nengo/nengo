@@ -374,15 +374,9 @@ function update_net_size(d) {
         var yBorder = 0
         var curNode = graph.nodes[d.contains[obj]]
         if (curNode.type == "net") {
-            xBorder = (net_widths[curNode.id] / 2 - m)*curNode.scale + m2;
-            yBorder = (net_heights[curNode.id] / 2 - m)*curNode.scale + m2;
+            xBorder = (net_widths[curNode.id] / 2)*curNode.scale
+            yBorder = (net_widths[curNode.id] / 2)*curNode.scale
             if (isNaN(xBorder) || isNaN(yBorder)) {break;} //happens on load
-            if (net_widths[curNode.id]*curNode.scale > net_widths[d.id]*d.scale 
-                || net_heights[curNode.id]*curNode.scale > net_heights[d.id]*d.scale) {
-                //something?
-                //xBorder = net_widths[curNode.id] / 2 - m + m2
-                //yBorder = net_heights[curNode.id] / 2 - m + m2
-            }
         }
         x0 = Math.min(curNode.x - xBorder, x0);
         x1 = Math.max(curNode.x + xBorder, x1);
@@ -436,7 +430,6 @@ function update_node_positions(d, dx, dy, node_list) {
                     } else {
                         dy = del;
                     }
-                    console.log(dx, dy)
                 }
             }
             move_node(curNode, dx, dy)
