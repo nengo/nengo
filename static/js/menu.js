@@ -4,14 +4,19 @@
 
 var server_last_modified_time = null;
 
-//Load the browser and hide it
-function open_file(file) {
-    $('#filebrowser').hide();
-
+function clear_and_open_file(file) {
     // force a complete clearing of previous data
     container.selectAll('.link').remove();
     container.selectAll('.node').remove();
     editor.setValue('');    
+    
+    open_file(file);
+}
+
+//Load the browser and hide it
+function open_file(file) {
+    $('#filebrowser').hide();
+
     
     $('#filename').val(file)
 
@@ -103,7 +108,7 @@ $(document).ready(function () {
             fb.fileTree({
                 root: '.',
                 script: '/browse'
-            }, open_file);
+            }, clear_and_open_file);
         }
     })
     $('#menu_save').click(save_file);
