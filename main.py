@@ -113,11 +113,11 @@ class NengoGui(swi.SimpleWebInterface):
         
         code = code.replace('\r\n', '\n')
         
-        index = code.index('\nimport nengo_gui\n')
-        if index >= 0:
+        try:
+            index = code.index('\nimport nengo_gui\n')
             code_gui = code[index:]
             code = code[:index]
-        else:
+        except ValueError:
             code_gui = ''
 
         with open('nengo_gui_temp.py', 'w') as f:
