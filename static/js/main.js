@@ -232,6 +232,38 @@ function update_text() {
         })
 }
 
+function zoomCenter(d) { //zoom full screen and center the network clicked on
+    var zoomNet = d
+    if (d == undefined) { //background click
+        zoomNet = -1
+    } else if (d.type !== 'net') { //if node or ens
+         if (d.contained_by == -1) { //background click
+            zoomNet = -1 
+         } else { //use containing network
+            zoomNet = graph.nodes[d.contained_by]
+        }
+    }
+
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+
+    if (zoomNet == -1) { //zoom out to full model
+        //full model zoom
+    } else { //zoom to fit zoomNet
+        var netWidth = net_widths[zoomNet.id]*zoomNet.scale
+        var netHeight = net_heights[zoomNet.id]*zoomNet.scale
+        
+        if (width/height >= netWidth/netHeight) {
+            //zoom to height
+            zoom.scale(.9*netHeight/height)
+            zoom.translate([zoomNet.x-(width/2), zoomNet.y-(height/2)])
+            zoom.event(container)
+        } else {
+            //zoom to width
+        }
+    }
+}
+
 /*function parseTranslate(inString) {
     var split = inString.split(",");
     var x = split[0] ? split[0].split("(")[1] : 0;
@@ -554,6 +586,7 @@ var resizew = 15;  //width and height of resize region in bottom right corner of
 
 var waiting_for_result = false;
 var pending_change = false;
+
 function reload_graph_data() {
     // don't send a new request while we're still waiting for another one
     if (waiting_for_result) {
@@ -648,6 +681,7 @@ function update_graph() {
         .attr('class', function (d) {return 'node node_' + d.type;})
         .on('mouseover', annotateLine)
         .on('mouseout', clearAnnotation)
+        .on('dblclick.zoom', zoomCenter)
         .call(drag);  
 
     nodeEnter.filter(function (d) {return d.type == 'net';})
@@ -666,7 +700,8 @@ function update_graph() {
             zoomers[d.id](d3.select(this))
             d.scale = graph.nodes[d.contains[0]].scale
             zoomers[d.id].scale(d.scale)
-            })
+        })
+        .on('dblclick.zoom', zoomCenter)
                               
     nodeEnter.filter(function (d) {return d.type == 'ens';})
         .append('use')
@@ -678,6 +713,7 @@ function update_graph() {
                 //zoomers[id].scale(d.scale)
             }
         })
+        .on('dblclick.zoom', zoomCenter)
 
     nodeEnter.filter(function (d) {return d.type == 'nde';})
         .append('circle')
@@ -688,6 +724,7 @@ function update_graph() {
                 zoomers[id](d3.select(this))
             }
         })  
+        .on('dblclick.zoom', zoomCenter)
 
     nodeEnter.append('text')     //label everything
         .text(function (d) {return d.label})
@@ -759,7 +796,7 @@ $(document).ready(function () {
     //initialize graph
     svg = d3.select("svg");
     container = svg.append('g');
-    svg.call(zoom); // set up zooming on the graph
+    svg.call(zoom).on('dblclick.zoom', zoomCenter); // set up zooming on the graph
     d3.select(window).on("resize", resize);
     
     //setup the window panes, and manipulations
