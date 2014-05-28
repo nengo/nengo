@@ -1,6 +1,7 @@
 div#menubar {
     background-color: #777;
     padding-left: 10px;
+    overflow: hidden;
 }
 
 
