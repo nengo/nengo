@@ -120,7 +120,7 @@ var global_zoom_scale = 1.0;
 function zoomed(node) { 
     if (d3.event.sourceEvent !== null && (d3.event.sourceEvent.type != "drag")) {
         try {d3.event.sourceEvent.stopPropagation();}
-        catch (e) {if (e instanceof TypeError) {console.log('Ignored Error: ' + e)}}
+        catch (e) {if (e instanceof TypeError) {console.log('Zoomed Ignored Error: ' + e)}}
     }
         
     var scale = d3.event.scale;
@@ -234,6 +234,10 @@ function update_text() {
 
 function zoomCenter(d) { //zoom full screen and center the network clicked on
     var zoomNet = d
+    
+    try {d3.event.stopPropagation();}
+    catch (e) {if (e instanceof TypeError) {console.log('ZoomCenter Ignored Error: ' + e)}}
+
     if (d == undefined) { //background click
         zoomNet = -1
     } else if (d.type !== 'net') { //if node or ens
@@ -244,24 +248,45 @@ function zoomCenter(d) { //zoom full screen and center the network clicked on
         }
     }
 
-    var width = window.innerWidth;
-    var height = window.innerHeight;
+    var width = nengoLayout.center.state.innerWidth;
+    var height = nengoLayout.center.state.innerHeight;
 
     if (zoomNet == -1) { //zoom out to full model
         //full model zoom
+        var netWidth = $('#modelGroup')[0].getBoundingClientRect().width/zoom.scale();
+        var netHeight = $('#modelGroup')[0].getBoundingClientRect().height/zoom.scale();
+
     } else { //zoom to fit zoomNet
         var netWidth = net_widths[zoomNet.id]*zoomNet.scale
         var netHeight = net_heights[zoomNet.id]*zoomNet.scale
-        
-        if (width/height >= netWidth/netHeight) {
-            //zoom to height
-            zoom.scale(.9*netHeight/height)
-            zoom.translate([zoomNet.x-(width/2), zoomNet.y-(height/2)])
-            zoom.event(container)
-        } else {
-            //zoom to width
-        }
+        var netX = zoomNet.x
+        var netY = zoomNet.y
     }
+    
+    if (width/height >= netWidth/netHeight) {
+        //zoom to height
+        zoom.scale(.9*height/netHeight)
+    } else {
+        //zoom to width
+        zoom.scale(.9*width/netWidth)
+    }
+    
+    zoom.translate([width/2, height/2])
+    zoom.event(container)
+    if (zoomNet == -1) {
+        netWidth = $('#modelGroup')[0].getBoundingClientRect().width;
+        netHeight = $('#modelGroup')[0].getBoundingClientRect().height 
+        var netX = $('#modelGroup')[0].getBoundingClientRect().left
+            + netWidth/2;
+        var netY = $('#modelGroup')[0].getBoundingClientRect().top
+            + netHeight/2 - 65; //55 menubar and padding
+        zoom.translate([zoom.translate()[0] + (zoom.translate()[0]-netX),
+            zoom.translate()[1] + (zoom.translate()[1]-netY)])
+    } else {
+        zoom.translate([zoom.translate()[0]-netX*zoom.scale(),
+            zoom.translate()[1]-netY*zoom.scale()])
+    }
+    zoom.event(container)
 }
 
 /*function parseTranslate(inString) {
@@ -795,12 +820,12 @@ $(document).ready(function () {
 
     //initialize graph
     svg = d3.select("svg");
-    container = svg.append('g');
+    container = svg.append('g').attr('id','modelGroup');
     svg.call(zoom).on('dblclick.zoom', zoomCenter); // set up zooming on the graph
     d3.select(window).on("resize", resize);
     
     //setup the window panes, and manipulations
-    $('body').layout({ 
+    nengoLayout = $('body').layout({ 
 	    north__slidable:			false,	
 		north__resizsable:			false,	
 		north__spacing_open:        0,
