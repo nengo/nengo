@@ -72,6 +72,7 @@ function dragstarted(d) {
 }
 
 function dragged(d) {
+    d3.event.sourceEvent.preventDefault();
     d.x = d3.event.x;
     d.y = d3.event.y;
     dx = d3.event.dx;
