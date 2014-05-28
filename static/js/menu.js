@@ -34,6 +34,10 @@ function open_file(file) {
     xhr.send(data);
 }
 
+function reload_file() {
+    clear_and_open_file($('#filename').val());
+}
+
 function save_file() {
     if ($('#menu_save').hasClass('disable')) {
         return;
@@ -116,6 +120,7 @@ $(document).ready(function () {
     $('#filename').change(edit_filename);
     $('#zoom_mode').click(change_zoom_mode);
     $('#zoom_mode').text(zoom_mode);    
+    $('#menu_reload').click(reload_file);
 
     if (gui_server_check_interval>0) {
         window.setInterval(check_server_for_file_changes, 

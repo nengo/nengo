@@ -6,10 +6,8 @@ div#menubar {
 
 
 #menubar img {
-    bacground-color: red;
     margin:0;
     padding: 5px;
-    margin-top:3px;
 }
 
 
@@ -31,7 +29,7 @@ div#menubar {
 div#menubar input.filename {
     position: absolute;
     top: 5px;
-    left: 100px;
+    left: 150px;
     border: 0px;
     background-color: #777;
     font-size: 20px;
