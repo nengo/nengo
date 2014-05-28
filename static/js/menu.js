@@ -8,6 +8,11 @@ var server_last_modified_time = null;
 function open_file(file) {
     $('#filebrowser').hide();
 
+    // force a complete clearing of previous data
+    container.selectAll('.link').remove();
+    container.selectAll('.node').remove();
+    editor.setValue('');    
+    
     $('#filename').val(file)
 
     var data = new FormData();
