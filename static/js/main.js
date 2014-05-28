@@ -43,7 +43,7 @@ function update_gui_text() {
     }
     
     text = editor.getValue();
-    index = text.indexOf('\nimport nengo_gui\n');
+    index = text.indexOf('\n\nimport nengo_gui\n');
     if (index!=-1) {
         text = text.substring(0, index);
     }
