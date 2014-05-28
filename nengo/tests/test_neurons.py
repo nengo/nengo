@@ -115,14 +115,14 @@ def test_alif_rate(Simulator, plt):
 
     t = sim.trange()
     rates = sim.data[ap]
-    _, ref = tuning_curves(a, sim, eval_points=0.5)
+    _, ref = tuning_curves(a, sim, inputs=np.array([0.5]))
 
     ax = plt.subplot(211)
     implot(plt, t, intercepts[::-1], rates.T / dt, ax=ax)
     ax.set_xlabel('time [s]')
     ax.set_ylabel('input')
     ax = plt.subplot(212)
-    ax.plot(intercepts, ref[:, ::-1].T, 'k--')
+    ax.plot(intercepts, ref[::-1].T, 'k--')
     ax.plot(intercepts, rates[[1, 500, 1000, -1], ::-1].T / dt)
     ax.set_xlabel('input')
     ax.set_xlabel('rate')
