@@ -110,9 +110,18 @@ class NengoGui(swi.SimpleWebInterface):
 
     def swi_graph_json(self, code):
         if self.user is None: return
+        
+        code = code.replace('\r\n', '\n')
+        
+        try:
+            index = code.index('\nimport nengo_gui\n')
+            code_gui = code[index:]
+            code = code[:index]
+        except ValueError:
+            code_gui = ''
 
         with open('nengo_gui_temp.py', 'w') as f:
-            f.write(code.replace('\r\n', '\n'))
+            f.write(code)
 
         try:
             c = compile(code, 'nengo_gui_temp.py', 'exec')
@@ -142,7 +151,16 @@ class NengoGui(swi.SimpleWebInterface):
                 return json.dumps(dict(error_line=error_line, text=str(e_value)))
             except:
                 traceback.print_exc()
-
+                
+        # run gui code lines, skipping ones that cause name errors
+        for i, line in enumerate(code_gui.splitlines()):
+            try:
+                exec line in globals(), locals
+            except NameError:
+                # this is generally caused by having a gui[x].pos statement
+                #  for something that has been deleted
+                pass 
+                
         try:
             model = locals['model']
             cfg = locals.get('gui', None)

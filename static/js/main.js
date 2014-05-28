@@ -30,7 +30,7 @@ function clearAnnotation(d) { //Called on mouseout in graph
 
 function update_gui_text() {
     gui_updating = true;
-    var gui = '\nimport nengo_gui\ngui = nengo_gui.Config()\n';
+    var gui = '\n\nimport nengo_gui\ngui = nengo_gui.Config()\n';
     gui += "gui[model].scale = " + zoom.scale() + "\n";
     gui += "gui[model].offset = " + zoom.translate() + "\n";
     for (var i=0; i<graph.nodes.length; i++) {
@@ -43,7 +43,7 @@ function update_gui_text() {
     }
     
     text = editor.getValue();
-    index = text.indexOf('\nimport nengo_gui\n');
+    index = text.indexOf('\n\nimport nengo_gui\n');
     if (index!=-1) {
         text = text.substring(0, index);
     }
@@ -649,7 +649,8 @@ function update_graph() {
             'highlight', 'fullLine', true);
         editor.getSession().setAnnotations([{
             row: graph.error_line - 1,
-            type: 'error'
+            type: 'error',
+            text: graph.text,
         }]);
         return;
     } else {

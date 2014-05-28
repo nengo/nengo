@@ -4,14 +4,19 @@
 
 var server_last_modified_time = null;
 
-//Load the browser and hide it
-function open_file(file) {
-    $('#filebrowser').hide();
-
+function clear_and_open_file(file) {
     // force a complete clearing of previous data
     container.selectAll('.link').remove();
     container.selectAll('.node').remove();
     editor.setValue('');    
+    
+    open_file(file);
+}
+
+//Load the browser and hide it
+function open_file(file) {
+    $('#filebrowser').hide();
+
     
     $('#filename').val(file)
 
@@ -27,6 +32,10 @@ function open_file(file) {
         $('#menu_save').addClass('disable');
     };
     xhr.send(data);
+}
+
+function reload_file() {
+    clear_and_open_file($('#filename').val());
 }
 
 function save_file() {
@@ -103,7 +112,7 @@ $(document).ready(function () {
             fb.fileTree({
                 root: '.',
                 script: '/browse'
-            }, open_file);
+            }, clear_and_open_file);
         }
     })
     $('#menu_save').click(save_file);
@@ -111,6 +120,7 @@ $(document).ready(function () {
     $('#filename').change(edit_filename);
     $('#zoom_mode').click(change_zoom_mode);
     $('#zoom_mode').text(zoom_mode);    
+    $('#menu_reload').click(reload_file);
 
     if (gui_server_check_interval>0) {
         window.setInterval(check_server_for_file_changes, 
