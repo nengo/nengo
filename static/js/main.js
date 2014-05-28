@@ -30,7 +30,7 @@ function clearAnnotation(d) { //Called on mouseout in graph
 
 function update_gui_text() {
     gui_updating = true;
-    var gui = '\nimport nengo_gui\ngui = nengo_gui.Config()\n';
+    var gui = '\n\nimport nengo_gui\ngui = nengo_gui.Config()\n';
     gui += "gui[model].scale = " + zoom.scale() + "\n";
     gui += "gui[model].offset = " + zoom.translate() + "\n";
     for (var i=0; i<graph.nodes.length; i++) {
