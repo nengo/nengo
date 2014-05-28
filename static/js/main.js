@@ -591,7 +591,8 @@ function update_graph() {
             'highlight', 'fullLine', true);
         editor.getSession().setAnnotations([{
             row: graph.error_line - 1,
-            type: 'error'
+            type: 'error',
+            text: graph.text,
         }]);
         return;
     } else {
