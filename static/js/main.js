@@ -252,9 +252,10 @@ function zoomCenter(d) { //zoom full screen and center the network clicked on
     var height = nengoLayout.center.state.innerHeight;
 
     if (zoomNet == -1) { //zoom out to full model
-        //full model zoom
-        var netWidth = $('#modelGroup')[0].getBoundingClientRect().width/zoom.scale();
-        var netHeight = $('#modelGroup')[0].getBoundingClientRect().height/zoom.scale();
+        var netWidth = d3.select('#modelGroup').node()
+            .getBBox().width;
+        var netHeight = d3.select('#modelGroup').node()
+            .getBBox().height;
 
     } else { //zoom to fit zoomNet
         var netWidth = net_widths[zoomNet.id]*zoomNet.scale
@@ -265,28 +266,25 @@ function zoomCenter(d) { //zoom full screen and center the network clicked on
     
     if (width/height >= netWidth/netHeight) {
         //zoom to height
-        zoom.scale(.9*height/netHeight)
+        scale = .9*height/netHeight
     } else {
         //zoom to width
-        zoom.scale(.9*width/netWidth)
+        scale = .9*width/netWidth
     }
+
+    zoom.scale(scale)
     
-    zoom.translate([width/2, height/2])
-    zoom.event(container)
     if (zoomNet == -1) {
-        netWidth = $('#modelGroup')[0].getBoundingClientRect().width;
-        netHeight = $('#modelGroup')[0].getBoundingClientRect().height 
-        var netX = $('#modelGroup')[0].getBoundingClientRect().left
-            + netWidth/2;
-        var netY = $('#modelGroup')[0].getBoundingClientRect().top
-            + netHeight/2 - 65; //55 menubar and padding
-        zoom.translate([zoom.translate()[0] + (zoom.translate()[0]-netX),
-            zoom.translate()[1] + (zoom.translate()[1]-netY)])
+        var netX = d3.select('#modelGroup').node().getBBox().x;
+        var netY = d3.select('#modelGroup').node().getBBox().y
+
+        zoom.translate([width/2 - (netWidth/2 + netX)*scale,
+            height/2 - (netHeight/2 + netY)*scale])            
     } else {
-        zoom.translate([zoom.translate()[0]-netX*zoom.scale(),
-            zoom.translate()[1]-netY*zoom.scale()])
+        zoom.translate([width/2 - netX*scale, height/2-netY*scale])
     }
-    zoom.event(container)
+
+    zoom.event(container.transition().duration(500))
 }
 
 /*function parseTranslate(inString) {
