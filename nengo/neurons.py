@@ -4,19 +4,20 @@ import logging
 
 import numpy as np
 
-from nengo.objects import Neurons
-
 logger = logging.getLogger(__name__)
 
 
-class Direct(Neurons):
+class NeuronType(object):
+    def rates(self, x, gain, bias):
+        raise NotImplementedError("Neurons must provide rates")
+
+    def gain_bias(self, max_rates, intercepts):
+        raise NotImplementedError("Neurons must provide gain_bias")
+
+
+class Direct(NeuronType):
     """Direct mode. Functions are computed explicitly, instead of in neurons.
     """
-
-    def __init__(self, n_neurons=None, label=None):
-        # n_neurons is ignored, but accepted to maintain compatibility
-        # with other neuron types
-        super(Direct, self).__init__(0, label=label)
 
     def rates(self, x, gain, bias):
         return x
@@ -30,21 +31,12 @@ class Direct(Neurons):
 #       but still simulate very fast
 
 
-class _LIFBase(Neurons):
+class _LIFBase(NeuronType):
     """Abstract base class for LIF neuron types."""
 
-    def __init__(self, n_neurons, tau_rc=0.02, tau_ref=0.002, label=None):
+    def __init__(self, tau_rc=0.02, tau_ref=0.002):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
-        super(_LIFBase, self).__init__(n_neurons, label=label)
-
-    @property
-    def n_in(self):
-        return self.n_neurons
-
-    @property
-    def n_out(self):
-        return self.n_neurons
 
     def rates_from_current(self, J):
         """LIF firing rates in Hz for input current (incl. bias)"""
@@ -84,7 +76,6 @@ class _LIFBase(Neurons):
             X-intercepts of neurons.
 
         """
-        logger.debug("Setting gain and bias on %s", self.label)
         max_rates = np.asarray(max_rates)
         intercepts = np.asarray(intercepts)
         x = 1.0 / (1 - np.exp(
@@ -140,8 +131,8 @@ class LIF(_LIFBase):
 class AdaptiveLIFRate(LIFRate):
     """Adaptive rate version of the LIF neuron model."""
 
-    def __init__(self, n_neurons, tau_n=1, inc_n=10e-3, **kwargs):
-        super(AdaptiveLIFRate, self).__init__(n_neurons, **kwargs)
+    def __init__(self, tau_n=1, inc_n=10e-3, **lif_args):
+        super(AdaptiveLIFRate, self).__init__(**lif_args)
         self.tau_n = tau_n
         self.inc_n = inc_n
 
@@ -155,8 +146,8 @@ class AdaptiveLIFRate(LIFRate):
 class AdaptiveLIF(LIF):
     """Adaptive spiking version of the LIF neuron model."""
 
-    def __init__(self, n_neurons, tau_n=1, inc_n=10e-3, **kwargs):
-        super(AdaptiveLIF, self).__init__(n_neurons, **kwargs)
+    def __init__(self, tau_n=1, inc_n=10e-3, **lif_args):
+        super(AdaptiveLIF, self).__init__(**lif_args)
         self.tau_n = tau_n
         self.inc_n = inc_n
 

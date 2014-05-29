@@ -24,20 +24,20 @@ def _test_rates(Simulator, rates, name=None):
     # max_rates = 200 * np.ones(n)
     intercepts = np.linspace(-0.99, 0.99, n)
     encoders = np.ones((n, 1))
-    nparams = dict(n_neurons=n)
-    eparams = dict(
-        max_rates=max_rates, intercepts=intercepts, encoders=encoders)
 
     model = nengo.Network()
     with model:
+        model.config[nengo.Ensemble].max_rates = max_rates
+        model.config[nengo.Ensemble].intercepts = intercepts
+        model.config[nengo.Ensemble].encoders = encoders
         u = nengo.Node(output=whitenoise(1, 5, seed=8393))
-        a = nengo.Ensemble(nengo.LIFRate(**nparams), 1, **eparams)
-        b = nengo.Ensemble(nengo.LIF(**nparams), 1, **eparams)
+        a = nengo.Ensemble(n, 1, neuron_type=nengo.LIFRate())
+        b = nengo.Ensemble(n, 1, neuron_type=nengo.LIF())
         nengo.Connection(u, a, synapse=0)
         nengo.Connection(u, b, synapse=0)
         up = nengo.Probe(u)
-        ap = nengo.Probe(a.neurons, "output", synapse=None)
-        bp = nengo.Probe(b.neurons, "output", synapse=None)
+        ap = nengo.Probe(a, "neuron_output", synapse=None)
+        bp = nengo.Probe(b, "neuron_output", synapse=None)
 
     dt = 1e-3
     sim = Simulator(model, dt=dt)
@@ -97,7 +97,7 @@ def test_rates(Simulator):
         ('kernel_expogauss', lambda t, s: rates_kernel(
             t, s, kind='expogauss')),
         ('kernel_alpha', lambda t, s: rates_kernel(t, s, kind='alpha')),
-        ]
+    ]
 
     print("\ntest_rates:")
     for name, function in functions:

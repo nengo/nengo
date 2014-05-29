@@ -83,7 +83,7 @@ class CircularConvolution(nengo.Network):
     only the real part of `c` since the imaginary part is analytically zero.
     """
 
-    def __init__(self, neurons, dimensions, invert_a=False, invert_b=False):
+    def __init__(self, n_neurons, dimensions, invert_a=False, invert_b=False):
         self.dimensions = dimensions
         self.invert_a = invert_a
         self.invert_b = invert_b
@@ -91,7 +91,7 @@ class CircularConvolution(nengo.Network):
         self.A = nengo.Node(size_in=dimensions, label="A")
         self.B = nengo.Node(size_in=dimensions, label="B")
         self.product = Product(
-            neurons, self.transform_out.shape[1], label="conv")
+            n_neurons, self.transform_out.shape[1], label="conv")
         self.output = nengo.Node(size_in=dimensions, label="output")
 
         nengo.Connection(self.A, self.product.A,

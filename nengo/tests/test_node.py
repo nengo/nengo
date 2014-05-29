@@ -194,7 +194,7 @@ def test_none(Simulator, nl_nodirect):
 
     with model:
         u = nengo.Node(output=input_function)
-        a = nengo.Ensemble(neurons=nl_nodirect(10), dimensions=1)
+        a = nengo.Ensemble(10, neuron_type=nl_nodirect(), dimensions=1)
         nengo.Connection(u, a)
 
     sim = Simulator(model)
@@ -219,7 +219,7 @@ def test_scalar(Simulator):
     model = nengo.Network()
     with model:
         a = nengo.Node(output=1)
-        b = nengo.Ensemble(nengo.LIF(100), dimensions=1)
+        b = nengo.Ensemble(100, dimensions=1)
         nengo.Connection(a, b)
         ap = nengo.Probe(a)
         bp = nengo.Probe(b)

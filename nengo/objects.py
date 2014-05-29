@@ -4,6 +4,7 @@ import logging
 import numpy as np
 
 from nengo.config import Config, Default, is_param, Parameter
+from nengo.neurons import LIF
 from nengo.utils.compat import is_callable, is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
 import nengo.utils.numpy as npext
@@ -152,7 +153,6 @@ class Network(with_metaclass(NengoObjectContainer)):
         config.configures(Connection)
         config.configures(Ensemble)
         config.configures(Network)
-        config.configures(Neurons)
         config.configures(Node)
         return config
 
@@ -271,6 +271,34 @@ class NengoObject(with_metaclass(NetworkMember)):
         return self.param_list()
 
 
+class Neurons(object):
+    """A wrapper around Ensemble for making connections directly to neurons.
+
+    This should only ever be used in the ``Ensemble.neurons`` property,
+    as a way to signal to Connection that the connection should be made
+    directly to the neurons rather than to the Ensemble's decoded value.
+
+    Does not currently support any other view-like operations.
+    """
+    def __init__(self, ensemble):
+        self.ensemble = ensemble
+
+    def __getitem__(self, key):
+        return ObjView(self, key)
+
+    @property
+    def label(self):
+        return "%s.neurons" % self.ensemble.label
+
+    @property
+    def size_in(self):
+        return self.ensemble.n_neurons
+
+    @property
+    def size_out(self):
+        return self.ensemble.n_neurons
+
+
 class Ensemble(NengoObject):
     """A group of neurons that collectively represent a vector.
 
@@ -315,41 +343,56 @@ class Ensemble(NengoObject):
     eval_points = Parameter(default=None)
     seed = Parameter(default=None)
     label = Parameter(default="Ensemble")
-    probeable = Parameter(default=['decoded_output', 'spikes', 'voltages'])
+    bias = Parameter(default=None)
+    gain = Parameter(default=None)
+    neuron_type = Parameter(default=LIF())
+    probeable = Parameter(default=['decoded_output',
+                                   'neuron_output',
+                                   'spikes',
+                                   'voltage'])
 
-    def __init__(self, neurons, dimensions, radius=Default, encoders=Default,
+    def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
-                 seed=Default, label=Default):
+                 neuron_type=Default, seed=Default, label=Default):
 
         self.dimensions = dimensions
-
         if self.dimensions <= 0:
             raise ValueError(
                 "Number of dimensions (%d) must be positive" % dimensions)
 
-        self.neurons = neurons
+        self.n_neurons = n_neurons
+        if self.n_neurons <= 0:
+            raise ValueError(
+                "Number of neurons (%d) must be positive." % n_neurons)
+
         self.radius = radius
         self.encoders = encoders
         self.intercepts = intercepts
         self.max_rates = max_rates
         self.label = label
         self.eval_points = eval_points
+        self.neuron_type = neuron_type
         self.seed = seed
-
         self.probeable = Default
 
     def __getitem__(self, key):
         return ObjView(self, key)
 
     @property
-    def n_neurons(self):
-        """The number of neurons in the ensemble.
+    def neurons(self):
+        return Neurons(self)
 
-        Returns
-        -------
-        ~ : int
-        """
-        return self.neurons.n_neurons
+    @neurons.setter
+    def neurons(self, dummy):
+        raise AttributeError("neurons cannot be overwritten.")
+
+    @property
+    def size_in(self):
+        return self.dimensions
+
+    @property
+    def size_out(self):
+        return self.dimensions
 
 
 class Node(NengoObject):
@@ -508,7 +551,11 @@ class Connection(NengoObject):
         # don't check shapes until we've set all parameters
         self._skip_check_shapes = True
 
-        if isinstance(self._pre, Ensemble):
+        if isinstance(self._pre, (Neurons, Node)):
+            self.decoder_solver = None
+            self.eval_points = None
+            self._function = (None, 0)
+        elif isinstance(self._pre, Ensemble):
             if isinstance(self._post, Ensemble):
                 self.weight_solver = weight_solver
             else:
@@ -516,10 +563,6 @@ class Connection(NengoObject):
             self.decoder_solver = decoder_solver
             self.eval_points = eval_points
             self.function = function
-        elif isinstance(self._pre, (Neurons, Node)):
-            self.decoder_solver = None
-            self.eval_points = None
-            self._function = (None, 0)
         else:
             raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
                              self._pre.__class__.__name__)
@@ -581,27 +624,18 @@ class Connection(NengoObject):
     def _required_transform_shape(self):
         if isinstance(self._pre, Ensemble) and self.function is not None:
             in_dims = self.function_size
-        elif isinstance(self._pre, Ensemble):
-            in_dims = self._pre.dimensions
-        elif isinstance(self._pre, Neurons):
-            in_dims = self._pre.n_neurons
-        else:  # Node
+        else:
             in_dims = self._pre.size_out
 
-        if isinstance(self._post, Ensemble):
-            out_dims = self._post.dimensions
-        elif isinstance(self._post, Neurons):
-            out_dims = self._post.n_neurons
-        elif isinstance(self._post, Probe):
-            out_dims = in_dims
-        else:  # Node
-            out_dims = self._post.size_in
-
-        return (out_dims, in_dims)
+        out_dims = self._post.size_in
+        return out_dims, in_dims
 
     def _check_transform(self, transform, required_shape):
         in_src = self._pre.__class__.__name__
         out_src = self._post.__class__.__name__
+        # This is a bit of a hack as probe sizes aren't known until build time.
+        if out_src == "Probe":
+            return
         out_dims, in_dims = required_shape
         if transform.ndim == 0:
             # check input dimensionality matches output dimensionality
@@ -673,40 +707,6 @@ class Connection(NengoObject):
         self._check_shapes()
 
 
-class Neurons(object):
-
-    bias = Parameter(default=None)
-    gain = Parameter(default=None)
-    label = Parameter(default=None)
-    probeable = Parameter(default=['output'])
-
-    def __init__(self, n_neurons, bias=Default, gain=Default, label=Default):
-        self.n_neurons = n_neurons
-        self.bias = bias
-        self.gain = gain
-        self.label = label
-        if self.label is None:
-            self.label = "<%s%d>" % (self.__class__.__name__, id(self))
-
-        self.probeable = Default
-
-    def __str__(self):
-        return "%s(%s, %dN)" % (
-            self.__class__.__name__, self.label, self.n_neurons)
-
-    def __repr__(self):
-        return str(self)
-
-    def __getitem__(self, key):
-        return ObjView(self, key)
-
-    def rates(self, x, gain, bias):
-        raise NotImplementedError("Neurons must provide rates")
-
-    def gain_bias(self, max_rates, intercepts):
-        raise NotImplementedError("Neurons must provide gain_bias")
-
-
 class Probe(NengoObject):
     """A probe is a dummy object that only has an input signal and probe.
 
@@ -745,6 +745,10 @@ class Probe(NengoObject):
         self.label = "Probe(%s.%s)" % (target.label, self.attr)
         self.sample_every = sample_every
         self.conn_args = conn_args
+
+    @property
+    def size_in(self):
+        return self.target.size_out
 
 
 class ObjView(object):
