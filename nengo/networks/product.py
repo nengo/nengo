@@ -15,12 +15,10 @@ class Product(nengo.Network):
         self.output = nengo.Node(size_in=dimensions, label="output")
         self.dimensions = dimensions
 
-        if encoders is None and not isinstance(neurons, nengo.Direct):
+        if encoders is None:
             encoders = np.tile(
                 [[1, 1], [1, -1], [-1, 1], [-1, -1]],
                 ((neurons.n_neurons / 4) + 1, 1))[:neurons.n_neurons]
-        else:
-            encoders = None
 
         self.product = EnsembleArray(
             neurons, n_ensembles=dimensions, ens_dimensions=2,

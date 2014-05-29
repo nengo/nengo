@@ -172,10 +172,9 @@ def test_product(Simulator, nl):
         sin = nengo.Node(output=np.sin)
         cons = nengo.Node(output=-.5)
         factors = nengo.Ensemble(nl(2 * N), dimensions=2, radius=1.5)
-        if nl != nengo.Direct:
-            factors.encoders = np.tile(
-                [[1, 1], [-1, 1], [1, -1], [-1, -1]],
-                (factors.n_neurons // 4, 1))
+        factors.encoders = np.tile(
+            [[1, 1], [-1, 1], [1, -1], [-1, -1]],
+            (factors.n_neurons // 4, 1))
         product = nengo.Ensemble(nl(N), dimensions=1)
         nengo.Connection(sin, factors[0])
         nengo.Connection(cons, factors[1])
