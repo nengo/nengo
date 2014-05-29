@@ -1,19 +1,19 @@
-import swi
+import nengo_gui.swi
 import os.path
 import json
 import traceback
 import sys
 
-import converter
-import layout
-import nengo_helper
+import nengo_gui.converter
+import nengo_gui.layout
+import nengo_gui.nengo_helper
 import nengo
 import os
 import urllib
 
 import nengo_gui
 
-class NengoGui(swi.SimpleWebInterface):
+class NengoGui(nengo_gui.swi.SimpleWebInterface):
     default_filename = 'default.py'
     script_path = 'scripts/'
     refresh_interval = 0
@@ -171,11 +171,11 @@ class NengoGui(swi.SimpleWebInterface):
             traceback.print_exc()
             return json.dumps(dict(error_line=2, text='Unknown'))
 
-        gui_layout = layout.Layout(model, cfg)
+        gui_layout = nengo_gui.layout.Layout(model, cfg)
         gui_layout.run()
         gui_layout.store_results()
 
-        conv = converter.Converter(model, code.splitlines(), locals, cfg)
+        conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
         return conv.to_json()
 
 
@@ -197,9 +197,9 @@ if __name__=='__main__':
         NengoGui.set_default_filename(args[0])
     addr = 'localhost'
     if options.password is not None:
-        swi.addUser('', options.password)
+        nengo_gui.swi.addUser('', options.password)
         addr = ''   # allow connections from anywhere
     else:
-        swi.browser(options.port)
+        nengo_gui.swi.browser(options.port)
 
-    swi.start(NengoGui, options.port, addr=addr)
+    nengo_gui.swi.start(NengoGui, options.port, addr=addr)
