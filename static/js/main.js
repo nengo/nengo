@@ -435,7 +435,7 @@ function update_net_size(d) {
         var curNode = graph.nodes[d.contains[obj]]
         if (curNode.type == "net") {
             xBorder = (net_widths[curNode.id] / 2)*curNode.scale
-            yBorder = (net_widths[curNode.id] / 2)*curNode.scale
+            yBorder = (net_heights[curNode.id] / 2)*curNode.scale
             if (isNaN(xBorder) || isNaN(yBorder)) {continue;} //happens on load
         }
         x0 = Math.min(curNode.x - xBorder, x0);
