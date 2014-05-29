@@ -5,8 +5,6 @@ class Item(object):
         self.pos = pos
         self.fixed = fixed
         self.obj = obj
-    def push(self, d):
-        self.pos += d
     def distance2(self, other):
         return np.sum((self.pos-other.pos)**2)
     def distance(self, other):
@@ -26,6 +24,7 @@ class Layout(object):
         self.config = config
         self.connections = []
         self.process_network(model)
+        self.movement = 0.0
 
     def process_network(self, network):
         group = Group(network)
@@ -60,6 +59,9 @@ class Layout(object):
         self.center_nonfixed()
         for i in range(1000):
             self.step(1.0)
+            # stop early if nothing is moving
+            if self.movement < 1.0:
+                return
 
     def step(self, dt):
         for item in self.items.values():
@@ -72,9 +74,12 @@ class Layout(object):
                             force = np.array([1.0, 0])
                         else:
                             force /= d
-                        item.push(force * dt)
-                        other.push(-force * dt)
+                        self.push(item, force * dt)
+                        self.push(other, -force * dt)
 
+    def push(self, item, distance):
+        item.pos += distance
+        self.movement += np.linalg.norm(distance)
     def store_results(self):
         for k, v in self.items.items():
             self.config[k].pos = v.pos[0], v.pos[1]
