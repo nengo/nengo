@@ -50,8 +50,10 @@ class Layout(object):
         for g in self.groups:
             for item in g.items:
                 if item.pos is None:
-                    mid = np.mean([i.pos for i in g.items if i.pos is not None])
-                    item.pos = mid + np.random.uniform(-1.0, 1.0, size=2)
+                    positions = [i.pos for i in g.items if i.pos is not None]
+                    if len(positions)>0:
+                        mid = np.mean(positions)
+                        item.pos = mid + np.random.uniform(-1.0, 1.0, size=2)
 
 
     def run(self):
