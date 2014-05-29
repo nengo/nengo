@@ -11,6 +11,6 @@ class Config(nengo.config.Config):
             self[klass].set_param('scale', nengo.config.Parameter(None))
 
         self.configures(nengo.Network)
-        self[nengo.Network].set_param('scale', nengo.config.Parameter(1.0))
+        self[nengo.Network].set_param('scale', nengo.config.Parameter(None))
         self[nengo.Network].set_param('offset', nengo.config.Parameter((0,0)))
 

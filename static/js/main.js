@@ -778,7 +778,13 @@ function update_graph() {
     linkRecur.exit().remove();
     
     // go to the stored gui location
-    zoom.scale(graph.global_scale);
+    var newLayout = false;
+    if (graph.global_scale == null) {
+        zoom.scale(1);
+        newLayout = true;
+    } else {
+        zoom.scale(graph.global_scale);
+    }
     zoom.translate(graph.global_offset);
     zoom.event(d3.select("svg"));
     
@@ -800,7 +806,9 @@ function update_graph() {
     update_line_locations();
     update_text();
     resize();
-    //zoomCenter();
+    if (newLayout) {
+        zoomCenter();
+    }
 }
 
 //***********
