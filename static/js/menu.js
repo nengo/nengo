@@ -45,20 +45,25 @@ function save_file() {
     $('#filebrowser').hide();
 
     var data = new FormData();
-    data.append('filename', $('#filename').val());
-    data.append('code', editor.getValue());
+    if ($('#filename').val()=="default.py") {
+        alert('Cannot overwrite default.py from within the GUI.\n' +
+            'Please change the file name.')
+    } else {
+        data.append('filename', $('#filename').val());
+        data.append('code', editor.getValue());
+    
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/savefile', true);
+        xhr.onload = function (event) {
 
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/savefile', true);
-    xhr.onload = function (event) {
-
-        if (this.responseText == "success\n") {
-            $('#menu_save').addClass('disable');
-        } else {
-            alert('Save error: ' + this.responseText);
-        }
-    };
-    xhr.send(data);
+            if (this.responseText == "success\n") {
+                $('#menu_save').addClass('disable');
+            } else {
+                alert('Save error: ' + this.responseText);
+            }
+        };
+        xhr.send(data);
+    }
 }
 
 function edit_filename() {

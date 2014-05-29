@@ -1,20 +1,14 @@
 import nengo
 
-model = nengo.Network()
+model = nengo.Network(label="My Network")
 with model:
-    a = nengo.Ensemble(n_neurons=80, dimensions=2)
+    a = nengo.Ensemble(n_neurons=10, dimensions=2, label="My Ensemble")
 
-    vis = nengo.Network()
-    with vis:
-        b = nengo.Ensemble(n_neurons=80, dimensions=2)
-        c = nengo.Ensemble(n_neurons=80, dimensions=2)
+    nengo.Connection(a, a)
 
-        v1 = nengo.Network()
-        with v1:
-            d = nengo.Ensemble(n_neurons=80, dimensions=2)
-            e = nengo.Ensemble(n_neurons=80, dimensions=2)
-
-        v2 = nengo.Network()
-        with v2:
-            f = nengo.Ensemble(n_neurons=80, dimensions=2)
-            g = nengo.Ensemble(n_neurons=80, dimensions=2)
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 1.0
+gui[model].offset = 0.0,0.0
+gui[a].pos = 300.0, 200.0
+gui[a].scale = 1.000
