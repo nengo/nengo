@@ -717,6 +717,7 @@ function update_graph() {
         .enter()
         .append('g')
         .attr('class', function (d) {return 'node node_' + d.type;})
+        .attr('cursor', 'pointer')
         .on('mouseover', annotateLine)
         .on('mouseout', clearAnnotation)
         .on('dblclick.zoom', zoomCenter)
