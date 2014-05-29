@@ -19,11 +19,15 @@ class Group(object):
 
 class Layout(object):
     def __init__(self, model, config):
-        self.items = {}
-        self.groups = []
+        self.items = {} #All items at this level and lower
+        self.groups = [] #All subnets at this level and lower
         self.config = config
-        self.connections = []
+        self.connections = [] #All connections everywhere
         self.process_network(model)
+        #Add valid positions for top-level items 
+        for obj in model.nodes + model.ensembles:
+            if self.items[obj].pos is None:
+                self.items[obj].pos = np.random.uniform(-1.0, 1.0, size=2)
         self.movement = 0.0
 
     def process_network(self, network):
@@ -48,11 +52,13 @@ class Layout(object):
     def center_nonfixed(self):
         for g in self.groups:
             for item in g.items:
-                if item.pos is None:
+                if item.pos is None:  #set position near group mean
                     positions = [i.pos for i in g.items if i.pos is not None]
-                    if len(positions)>0:
+                    if len(positions)!=0:
                         mid = np.mean(positions)
-                        item.pos = mid + np.random.uniform(-1.0, 1.0, size=2)
+                    else:
+                        mid = 0.0
+                    item.pos = mid + np.random.uniform(-1.0, 1.0, size=2)
 
 
     def run(self):
