@@ -182,52 +182,45 @@ function zoomed(node) {
 
 function update_text() {
     //could be faster if keep track of whether it was just drawn
-    
+    var scales={}
     if (zoom_mode == "geometric") {
         nodes.selectAll('text') //Change the fonts size as a fcn of scale
         .style("font-size", function (d) {
             if (d.type =='net') {
-                scale = zoomers[d.id].scale()
+                scales[d.id] = zoomers[d.id].scale() * global_zoom_scale
             } else if (d.contained_by == -1) {//top level ens or nde
-                scale = global_zoom_scale
+                scales[d.id] = global_zoom_scale
             } else { //contained by a network
-                scale = zoomers[graph.nodes[d.contained_by].id].scale()
+                scales[d.id] = zoomers[graph.nodes[d.contained_by].id].scale()
                     * global_zoom_scale
             }
-            newsize = node_fontsize / scale
-            if (newsize > node_fontsize) {
-                return newsize + "px";
-            } else {
-                return node_fontsize + "px";
-            }
+            newsize = node_fontsize / scales[d.id]
+            return newsize +"px"
         })
-    } else if (zoom_mode == "semantic") {
-        fix_labels(scale);
-    }
-
-    if (zoom_mode == "geometric") {
-        //Don't draw node/ens text if scale out far 
+        
         nodes.selectAll("g.node.node_ens text, g.node.node_nde text")
             .text(function (d) {
-                if (d.contained_by == -1) {//top level node
-                    if (global_zoom_scale < .75) {
-                        return ""
-                    } else {
-                        return d.label
-                    }
-                } else if (global_zoom_scale 
-                    * zoomers[graph.nodes[d.contained_by].id].scale() < .75) {
-                        return ""
+                if (scales[d.id]<.75){
+                    return ""
                 } else { 
                     return d.label
                 }
             })
-    } else {
+                    
+    } else if (zoom_mode == "semantic") {
+        fix_labels(scale);
+        
         nodes.selectAll("g.node.node_ens text, g.node.node_nde text")
             .text(function(d) {return d.label;})
     }
 
-    nodes.selectAll("g.node.node_net text")
+    if (zoom_mode == "geometric") {
+        //Don't draw node/ens text if scale out far 
+
+    } else {
+    }
+
+    nodes.selectAll("g.node.node_net text") //place label under nets
         .text(function (d) {return d.label;})
         .attr('y', function (d) {
             fontSize = parseFloat(d3.select(this).style('font-size'))
@@ -437,6 +430,14 @@ function update_net_size(d) {
         var xBorder = 0
         var yBorder = 0
         var curNode = graph.nodes[d.contains[obj]]
+
+        var nodeText = nodes.selectAll('text') //to take text into account
+            .filter(function (d) {return d.id==curNode.id})
+            .node()
+
+        var textWidth = nodeText.getBBox()
+            .width 
+
         if (curNode.type == "net") {
             xBorder = (net_widths[curNode.id] / 2)*curNode.scale
             yBorder = (net_heights[curNode.id] / 2)*curNode.scale
@@ -444,7 +445,15 @@ function update_net_size(d) {
                 xBorder = 0;
                 yBorder = 0;
             } //happens on load
+            if (textWidth/2 > xBorder) {
+                xBorder = textWidth*curNode.scale/2
+            }
+        } else {
+            if (textWidth > 20*d.scale && nodeText.textContent !="") {
+                xBorder = (textWidth-20)*d.scale/2
+            }        
         }
+        
         x0 = Math.min(curNode.x - xBorder, x0);
         x1 = Math.max(curNode.x + xBorder, x1);
         y0 = Math.min(curNode.y - yBorder, y0);
@@ -751,7 +760,6 @@ function update_graph() {
             if (d.contained_by > -1) {
                 id = graph.nodes[d.contained_by].id
                 zoomers[id](d3.select(this))
-                //zoomers[id].scale(d.scale)
             }
         })
         .on('dblclick.zoom', zoomCenter)
