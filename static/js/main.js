@@ -166,12 +166,14 @@ function zoomed(node) {
             })
     }
 
+
     update_net_sizes();
-    
+
    /* if (d3.event.sourceEvent !== null && node !== undefined) {
         var node_list = graph.nodes.slice(0) //copy the list
         update_node_positions(node, 0, 0, d3.map(node_list));
     }*/
+
     
     update_line_locations();
     update_text();
@@ -434,7 +436,7 @@ function update_net_size(d) {
         if (curNode.type == "net") {
             xBorder = (net_widths[curNode.id] / 2)*curNode.scale
             yBorder = (net_widths[curNode.id] / 2)*curNode.scale
-            if (isNaN(xBorder) || isNaN(yBorder)) {break;} //happens on load
+            if (isNaN(xBorder) || isNaN(yBorder)) {continue;} //happens on load
         }
         x0 = Math.min(curNode.x - xBorder, x0);
         x1 = Math.max(curNode.x + xBorder, x1);
@@ -447,11 +449,14 @@ function update_net_size(d) {
     net_widths[d.id] = (x1 - x0)/d.scale + 2 * m; //track heights/widths
     net_heights[d.id] = (y1 - y0)/d.scale + 2 * m;
 
-    dx = d.x - xstart;
-    dy = d.y - ystart;
+    if (xstart!=undefined && ystart!=undefined) {    
+    
+        dx = d.x - xstart;
+        dy = d.y - ystart;
         
-    var node_list = graph.nodes.slice(0)
-    update_node_positions(d, 2 * dx, 2 * dy, d3.map(node_list))
+        var node_list = graph.nodes.slice(0)
+        update_node_positions(d, 2 * dx, 2 * dy, d3.map(node_list))
+    }
 }
 
 //Move all the nodes in a network if network position changes
@@ -476,7 +481,7 @@ function update_node_positions(d, dx, dy, node_list) {
         var curNode = node_list.get(node_list.keys()[n])
         if (close_to(curNode, d)) {//if curNode is close to d
             if (d3.event != null) { //figure out which way to move things on zoom bump
-                if (d3.event.type == "zoom") {
+                if (d3.event.type == "zoom" && d3.event.sourceEvent!=null) {
                     del = d3.event.sourceEvent.wheelDelta/3;
                     if (curNode.x < d.x) {
                         dx = -del;
@@ -662,7 +667,6 @@ function update_graph() {
         editor.getSession().clearAnnotations();
     }
     
-
     //separate links into recurrent and nonrecurrent ?move to converter?  
     var nonrecurlink = []
     var recurlink = []
