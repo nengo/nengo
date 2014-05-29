@@ -21,13 +21,13 @@ with model:
 
 import nengo_gui
 gui = nengo_gui.Config()
-gui[model].scale = 1.0027764359010838
-gui[model].offset = 536.8792300733733,411.09134847188193
+gui[model].scale = 0.7867325516300206
+gui[model].offset = 298.9476776123047,332.0541534423828
 gui[a].pos = -141.739, -323.147
 gui[a].scale = 1.000
 gui[c].pos = -321.373, -322.427
 gui[c].scale = 1.000
-gui[bag].pos = -6.565, -157.136
+gui[bag].pos = -1.960, -146.623
 gui[bag].scale = 0.942
-gui[d].pos = -226.083, -130.435
+gui[d].pos = -221.478, -119.922
 gui[d].scale = 0.697

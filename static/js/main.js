@@ -238,9 +238,13 @@ function update_text() {
 function zoomCenter(d) { //zoom full screen and center the network clicked on
     var zoomNet = d
     
-    try {d3.event.stopPropagation();}
-    catch (e) {if (e instanceof TypeError) {console.log('ZoomCenter Ignored Error: ' + e)}}
-
+    if (d3.event !== null) {
+        try {d3.event.stopPropagation();}
+        catch (e) {if (e instanceof TypeError) {
+            console.log('ZoomCenter Ignored Error: ' + e)
+        }}
+    }
+    
     if (d == undefined) { //background click
         zoomNet = -1
     } else if (d.type !== 'net') { //if node or ens
@@ -483,8 +487,8 @@ function update_node_positions(d, dx, dy, node_list) {
     for (var n in node_list.keys()) {
         var curNode = node_list.get(node_list.keys()[n])
         if (close_to(curNode, d)) {//if curNode is close to d
-            if (d3.event != null) { //figure out which way to move things on zoom bump
-                if (d3.event.type == "zoom" && d3.event.sourceEvent.type=="wheel") {
+            if (d3.event != null && d3.event.type == "zoom") { //figure out which way to move things on zoom bump
+                if (d3.event.sourceEvent !== null && d3.event.sourceEvent.type=="wheel") {
                     del = d3.event.sourceEvent.wheelDelta/3;
                     if (curNode.x < d.x) {
                         dx = -del;
@@ -796,6 +800,7 @@ function update_graph() {
     update_line_locations();
     update_text();
     resize();
+    //zoomCenter();
 }
 
 //***********
