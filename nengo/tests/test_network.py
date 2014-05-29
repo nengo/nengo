@@ -10,22 +10,22 @@ def test_basic_context(Simulator):
     model2 = nengo.Network(label="test2")
 
     with model1:
-        e = nengo.Ensemble(nengo.LIF(1), 1)
+        e = nengo.Ensemble(1, dimensions=1)
         n = nengo.Node([0])
         assert e in model1.ensembles
         assert n in model1.nodes
 
         con = nengo.Network()
         with con:
-            e2 = nengo.Ensemble(nengo.LIF(1), 1)
+            e2 = nengo.Ensemble(1, dimensions=1)
         assert e2 in con.ensembles
         assert e2 not in model1.ensembles
 
-        e3 = nengo.Ensemble(nengo.LIF(1), 1)
+        e3 = nengo.Ensemble(1, dimensions=1)
         assert e3 in model1.ensembles
 
     with model2:
-        e4 = nengo.Ensemble(nengo.LIF(1), 1)
+        e4 = nengo.Ensemble(1, dimensions=1)
         assert e4 not in model1.ensembles
         assert e4 in model2.ensembles
 
@@ -38,34 +38,34 @@ def test_nested_context(Simulator):
         con3 = nengo.Network()
 
         with con1:
-            e1 = nengo.Ensemble(nengo.LIF(1), 1)
+            e1 = nengo.Ensemble(1, dimensions=1)
             assert e1 in con1.ensembles
 
             with con2:
-                e2 = nengo.Ensemble(nengo.LIF(1), 1)
+                e2 = nengo.Ensemble(1, dimensions=1)
                 assert e2 in con2.ensembles
                 assert e2 not in con1.ensembles
 
                 with con3:
-                    e3 = nengo.Ensemble(nengo.LIF(1), 1)
+                    e3 = nengo.Ensemble(1, dimensions=1)
                     assert e3 in con3.ensembles
                     assert e3 not in con2.ensembles \
                         and e3 not in con1.ensembles
 
-                e4 = nengo.Ensemble(nengo.LIF(1), 1)
+                e4 = nengo.Ensemble(1, dimensions=1)
                 assert e4 in con2.ensembles
                 assert e4 not in con3.ensembles
 
-            e5 = nengo.Ensemble(nengo.LIF(1), 1)
+            e5 = nengo.Ensemble(1, dimensions=1)
             assert e5 in con1.ensembles
 
-        e6 = nengo.Ensemble(nengo.LIF(1), 1)
+        e6 = nengo.Ensemble(1, dimensions=1)
         assert e6 not in con1.ensembles
 
 
 def test_context_errors(Simulator):
     def add_something():
-        nengo.Ensemble(nengo.LIF(1), 1)
+        nengo.Ensemble(1, dimensions=1)
 
     # Error if adding before Network creation
     with pytest.raises(RuntimeError):
@@ -83,7 +83,7 @@ def test_context_errors(Simulator):
         add_something()
 
     # Okay if add_to_container=False
-    nengo.Ensemble(nengo.LIF(1), 1, add_to_container=False)
+    nengo.Ensemble(1, dimensions=1, add_to_container=False)
     nengo.Node(output=[0], add_to_container=False)
 
 

@@ -19,7 +19,7 @@ def test_encoders(n_dimensions, n_neurons=10, encoders=None):
 
     model = nengo.Network(label="_test_encoders")
     with model:
-        ens = nengo.Ensemble(neurons=nengo.LIF(n_neurons),
+        ens = nengo.Ensemble(n_neurons=n_neurons,
                              dimensions=n_dimensions,
                              encoders=encoders,
                              label="A")
@@ -52,8 +52,9 @@ def test_constant_scalar(Simulator, nl):
 
     m = nengo.Network(label='test_constant_scalar', seed=123)
     with m:
+        m.config[nengo.Ensemble].neuron_type = nl()
         input = nengo.Node(output=val, label='input')
-        A = nengo.Ensemble(nl(N), 1)
+        A = nengo.Ensemble(N, 1)
         nengo.Connection(input, A)
         in_p = nengo.Probe(input, 'output')
         A_p = nengo.Probe(A, 'decoded_output', synapse=0.1)
@@ -80,8 +81,9 @@ def test_constant_vector(Simulator, nl):
 
     m = nengo.Network(label='test_constant_vector', seed=123)
     with m:
+        m.config[nengo.Ensemble].neuron_type = nl()
         input = nengo.Node(output=vals)
-        A = nengo.Ensemble(nl(N * len(vals)), len(vals))
+        A = nengo.Ensemble(N * len(vals), len(vals))
         nengo.Connection(input, A)
         in_p = nengo.Probe(input, 'output')
         A_p = nengo.Probe(A, 'decoded_output', synapse=0.1)
@@ -107,8 +109,9 @@ def test_scalar(Simulator, nl):
 
     m = nengo.Network(label='test_scalar', seed=123)
     with m:
+        m.config[nengo.Ensemble].neuron_type = nl()
         input = nengo.Node(output=np.sin, label='input')
-        A = nengo.Ensemble(nl(N), 1, label='A')
+        A = nengo.Ensemble(N, 1, label='A')
         nengo.Connection(input, A)
         in_p = nengo.Probe(input, 'output')
         A_p = nengo.Probe(A, 'decoded_output', synapse=0.02)
@@ -138,9 +141,10 @@ def test_vector(Simulator, nl):
 
     m = nengo.Network(label='test_vector', seed=123)
     with m:
+        m.config[nengo.Ensemble].neuron_type = nl()
         input = nengo.Node(
             output=lambda t: [np.sin(t), np.cos(t), np.arctan(t)])
-        A = nengo.Ensemble(nl(N * 3), 3, radius=2)
+        A = nengo.Ensemble(N * 3, 3, radius=2)
         nengo.Connection(input, A)
         in_p = nengo.Probe(input, 'output')
         A_p = nengo.Probe(A, 'decoded_output', synapse=0.02)
@@ -169,13 +173,14 @@ def test_product(Simulator, nl):
 
     m = nengo.Network(label='test_product', seed=124)
     with m:
+        m.config[nengo.Ensemble].neuron_type = nl()
         sin = nengo.Node(output=np.sin)
         cons = nengo.Node(output=-.5)
-        factors = nengo.Ensemble(nl(2 * N), dimensions=2, radius=1.5)
+        factors = nengo.Ensemble(2 * N, dimensions=2, radius=1.5)
         factors.encoders = np.tile(
             [[1, 1], [-1, 1], [1, -1], [-1, -1]],
             (factors.n_neurons // 4, 1))
-        product = nengo.Ensemble(nl(N), dimensions=1)
+        product = nengo.Ensemble(N, dimensions=1)
         nengo.Connection(sin, factors[0])
         nengo.Connection(cons, factors[1])
         nengo.Connection(
@@ -218,7 +223,8 @@ def test_product(Simulator, nl):
 def test_eval_points_number(Simulator, nl, dims, points):
     model = nengo.Network(seed=123)
     with model:
-        A = nengo.Ensemble(nl(5), dims, eval_points=points)
+        model.config[nengo.Ensemble].neuron_type = nl()
+        A = nengo.Ensemble(5, dims, eval_points=points)
 
     sim = Simulator(model)
     assert sim.data[A].eval_points.shape == (points, dims)
@@ -232,7 +238,8 @@ def test_eval_points_heuristic(Simulator, nl_nodirect, neurons, dims):
 
     model = nengo.Network(seed=123)
     with model:
-        A = nengo.Ensemble(nl_nodirect(neurons), dims)
+        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        A = nengo.Ensemble(neurons, dims)
 
     sim = Simulator(model)
     points = sim.data[A].eval_points

@@ -14,8 +14,8 @@ def test_config_basic():
         model.config[nengo.Ensemble].set_param('fails', 1.0)
 
     with model:
-        a = nengo.Ensemble(nengo.LIF(50), 1)
-        b = nengo.Ensemble(nengo.LIF(90), 1)
+        a = nengo.Ensemble(50, dimensions=1)
+        b = nengo.Ensemble(90, dimensions=1)
         a2b = nengo.Connection(a, b, synapse=0.01)
 
     with pytest.raises(ValueError):
@@ -84,7 +84,7 @@ def test_network_nesting():
         assert net1.config[nengo.Ensemble].seed == 10
 
         # If we make an ensemble, it uses what we set, of the config default
-        ens1 = nengo.Ensemble(nengo.LIF(10), 1, radius=2.0)
+        ens1 = nengo.Ensemble(10, 1, radius=2.0)
         assert ens1.seed == 10
         assert ens1.radius == 2.0
 
@@ -101,30 +101,30 @@ def test_network_nesting():
             assert net2.config[nengo.Ensemble].radius == 5.0
 
             # If we make an ensemble, it traverses the context stack
-            ens2 = nengo.Ensemble(nengo.LIF(10), 1)
+            ens2 = nengo.Ensemble(10, 1)
             assert ens2.radius == 5.0
             assert ens2.seed == 10
 
             with nengo.Network() as net3:
                 # Works for > 1 levels
                 net3.config[nengo.Ensemble].seed = 20
-                ens3 = nengo.Ensemble(nengo.LIF(10), 1)
+                ens3 = nengo.Ensemble(10, 1)
                 assert ens3.seed == 20
                 assert ens3.radius == 5.0
 
 
 def test_defaults():
     """Test that settings defaults propagates appropriately."""
-    b = nengo.Ensemble(nengo.LIF(10), 1, radius=nengo.Default,
+    b = nengo.Ensemble(10, dimensions=1, radius=nengo.Default,
                        add_to_container=False)
 
     assert b.radius == nengo.Ensemble.radius.default
 
     with nengo.Network():
-        c = nengo.Ensemble(nengo.LIF(10), 1, radius=nengo.Default)
+        c = nengo.Ensemble(10, dimensions=1, radius=nengo.Default)
         with nengo.Network() as net2:
             net2.config[nengo.Ensemble].radius = 2.0
-            a = nengo.Ensemble(nengo.LIF(50), 1, radius=nengo.Default)
+            a = nengo.Ensemble(50, dimensions=1, radius=nengo.Default)
 
     assert c.radius == nengo.Ensemble.radius.default
     assert a.radius == 2.0
@@ -137,8 +137,8 @@ def test_configstack():
     inhib[nengo.Connection].synapse = 0.00848
     with nengo.Network() as net:
         net.config[nengo.Connection].modulatory = True
-        e1 = nengo.Ensemble(nengo.LIF(5), 1)
-        e2 = nengo.Ensemble(nengo.LIF(6), 1)
+        e1 = nengo.Ensemble(5, dimensions=1)
+        e2 = nengo.Ensemble(6, dimensions=1)
         excite = nengo.Connection(e1, e2)
         with inhib:
             inhibit = nengo.Connection(e1, e2)
@@ -172,7 +172,7 @@ def test_config_str():
             "  radius: 3.0\n"
             "  seed: 10")
 
-        ens = nengo.Ensemble(nengo.LIF(10), 1, radius=2.0, label="A")
+        ens = nengo.Ensemble(10, 1, radius=2.0, label="A")
         assert str(net1.config[ens]) == (
             "Parameters set for Ensemble: A:")
 

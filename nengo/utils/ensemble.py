@@ -8,9 +8,9 @@ def tuning_curves(ens, sim, eval_points=None):
         eval_points = np.array(sim.data[ens].eval_points)
         eval_points.sort(axis=0)
 
-    activities = ens.neurons.rates(eval_points * sim.data[ens].encoders.T,
-                                   sim.data[ens.neurons].gain,
-                                   sim.data[ens.neurons].bias)
+    activities = ens.neuron_type.rates(
+        np.dot(eval_points, sim.data[ens].encoders.T),
+        sim.data[ens].gain, sim.data[ens].bias)
     return eval_points, activities
 
 

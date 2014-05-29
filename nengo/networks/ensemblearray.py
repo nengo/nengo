@@ -1,5 +1,3 @@
-import copy
-
 import numpy as np
 
 import nengo
@@ -8,7 +6,7 @@ from nengo.utils.network import with_self
 
 class EnsembleArray(nengo.Network):
 
-    def __init__(self, neurons, n_ensembles, ens_dimensions=1, label=None,
+    def __init__(self, n_neurons, n_ensembles, ens_dimensions=1, label=None,
                  **ens_kwargs):
         if "dimensions" in ens_kwargs:
             raise TypeError(
@@ -29,7 +27,7 @@ class EnsembleArray(nengo.Network):
         self.ea_ensembles = []
         for i in range(n_ensembles):
             e = nengo.Ensemble(
-                copy.deepcopy(neurons), self.dimensions_per_ensemble,
+                n_neurons, self.dimensions_per_ensemble,
                 label=label_prefix + str(i))
             trans = transform[i * self.dimensions_per_ensemble:
                               (i + 1) * self.dimensions_per_ensemble, :]

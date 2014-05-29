@@ -20,7 +20,7 @@ def test_lif_builtin():
     t_final = 1.0
 
     N = 10
-    lif = nengo.LIF(N)
+    lif = nengo.LIF()
     gain, bias = lif.gain_bias(
         rng.uniform(80, 100, size=N), rng.uniform(-1, 1, size=N))
 
@@ -53,9 +53,10 @@ def test_lif(Simulator):
     with m:
         ins = nengo.Node(x)
         ens = nengo.Ensemble(
-            nengo.LIF(n), 1, max_rates=max_rates, intercepts=intercepts)
+            n, dimensions=1, max_rates=max_rates, intercepts=intercepts,
+            neuron_type=nengo.LIF())
         nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)))
-        spike_probe = nengo.Probe(ens.neurons, "output")
+        spike_probe = nengo.Probe(ens, "spikes")
 
     sim = Simulator(m, dt=dt)
 
@@ -63,8 +64,8 @@ def test_lif(Simulator):
     sim.run(t_final)
     spikes = sim.data[spike_probe].sum(0)
 
-    math_rates = ens.neurons.rates(
-        x, *ens.neurons.gain_bias(max_rates, intercepts))
+    math_rates = ens.neuron_type.rates(
+        x, *ens.neuron_type.gain_bias(max_rates, intercepts))
     sim_rates = spikes / t_final
     logger.debug("ME = %f", (sim_rates - math_rates).mean())
     logger.debug("RMSE = %f",
@@ -84,12 +85,13 @@ def test_alif_rate(Simulator):
     model = nengo.Network()
     with model:
         u = nengo.Node(output=0.5)
-        a = nengo.Ensemble(nengo.AdaptiveLIFRate(n), 1,
+        a = nengo.Ensemble(n, 1,
                            max_rates=max_rates,
                            intercepts=intercepts,
-                           encoders=encoders)
+                           encoders=encoders,
+                           neuron_type=nengo.AdaptiveLIFRate())
         nengo.Connection(u, a, synapse=None)
-        ap = nengo.Probe(a.neurons, "output", synapse=None)
+        ap = nengo.Probe(a, "spikes", synapse=None)
 
     dt = 1e-3
     sim = Simulator(model, dt=dt)
@@ -126,19 +128,23 @@ def test_alif(Simulator):
     max_rates = 50 * np.ones(n)
     intercepts = np.linspace(-0.99, 0.99, n)
     encoders = np.ones((n, 1))
-    nparams = dict(n_neurons=n, tau_n=1, inc_n=10e-3)
-    eparams = dict(
-        max_rates=max_rates, intercepts=intercepts, encoders=encoders)
+    nparams = dict(tau_n=1, inc_n=10e-3)
+    eparams = dict(n_neurons=n, max_rates=max_rates,
+                   intercepts=intercepts, encoders=encoders)
 
     model = nengo.Network()
     with model:
         u = nengo.Node(output=0.5)
-        a = nengo.Ensemble(nengo.AdaptiveLIFRate(**nparams), 1, **eparams)
-        b = nengo.Ensemble(nengo.AdaptiveLIF(**nparams), 1, **eparams)
+        a = nengo.Ensemble(neuron_type=nengo.AdaptiveLIFRate(**nparams),
+                           dimensions=1,
+                           **eparams)
+        b = nengo.Ensemble(neuron_type=nengo.AdaptiveLIF(**nparams),
+                           dimensions=1,
+                           **eparams)
         nengo.Connection(u, a, synapse=0)
         nengo.Connection(u, b, synapse=0)
-        ap = nengo.Probe(a.neurons, "output", synapse=0)
-        bp = nengo.Probe(b.neurons, "output", synapse=0)
+        ap = nengo.Probe(a, "spikes", synapse=0)
+        bp = nengo.Probe(b, "spikes", synapse=0)
 
     dt = 1e-3
     sim = Simulator(model, dt=dt)

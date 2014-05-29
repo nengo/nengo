@@ -106,7 +106,7 @@ def test_defaults(Simulator):
     model = nengo.Network(label='test_defaults')
     with model:
         node = nengo.Node(output=0.5)
-        ens = nengo.Ensemble(nengo.LIF(20), 1)
+        ens = nengo.Ensemble(20, 1)
         conn = nengo.Connection(node, ens)
         node_p = nengo.Probe(node)
         assert node_p.attr == 'output'
@@ -123,8 +123,8 @@ def test_simulator_dt(Simulator):
     """Changing the simulator dt should change the default probe dt."""
     model = nengo.Network()
     with model:
-        a = nengo.Ensemble(nengo.LIF(10), 1)
-        b = nengo.Ensemble(nengo.LIF(10), 1)
+        a = nengo.Ensemble(10, 1)
+        b = nengo.Ensemble(10, 1)
         nengo.Connection(a, b)
         bp = nengo.Probe(b)
 

@@ -15,9 +15,10 @@ def test_args(nl):
     N = 10
     d1, d2 = 3, 2
 
-    with nengo.Network(label='test_args'):
-        A = nengo.Ensemble(nl(N), dimensions=d1)
-        B = nengo.Ensemble(nl(N), dimensions=d2)
+    with nengo.Network(label='test_args') as model:
+        model.config[nengo.Ensemble].neuron_type = nl()
+        A = nengo.Ensemble(N, dimensions=d1)
+        B = nengo.Ensemble(N, dimensions=d2)
         nengo.Connection(
             A, B,
             eval_points=np.random.normal(size=(500, d1)),
@@ -32,7 +33,8 @@ def test_node_to_neurons(Simulator, nl_nodirect):
 
     m = nengo.Network(label=name, seed=123)
     with m:
-        a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        a = nengo.Ensemble(N, dimensions=1)
         inn = nengo.Node(output=np.sin)
         inh = nengo.Node(piecewise({0: 0, 2.5: 1}))
         nengo.Connection(inn, a)
@@ -66,8 +68,9 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect):
 
     m = nengo.Network(label=name, seed=123)
     with m:
-        a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
-        b = nengo.Ensemble(nl_nodirect(N), dimensions=1)
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        a = nengo.Ensemble(N, dimensions=1)
+        b = nengo.Ensemble(N, dimensions=1)
         inn = nengo.Node(output=np.sin)
         inh = nengo.Node(piecewise({0: 0, 2.5: 1}))
         nengo.Connection(inn, a)
@@ -106,9 +109,10 @@ def test_neurons_to_ensemble(Simulator, nl_nodirect):
 
     m = nengo.Network(label=name, seed=123)
     with m:
-        a = nengo.Ensemble(nl_nodirect(N * 2), dimensions=2)
-        b = nengo.Ensemble(nl_nodirect(N * 3), dimensions=3)
-        c = nengo.Ensemble(nl_nodirect(N), dimensions=N*2)
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        a = nengo.Ensemble(N * 2, dimensions=2)
+        b = nengo.Ensemble(N * 3, dimensions=3)
+        c = nengo.Ensemble(N, dimensions=N*2)
         nengo.Connection(a.neurons, b, transform=-10 * np.ones((3, N*2)))
         nengo.Connection(a.neurons, c)
 
@@ -136,7 +140,8 @@ def test_neurons_to_node(Simulator, nl_nodirect):
 
     m = nengo.Network(label=name, seed=123)
     with m:
-        a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        a = nengo.Ensemble(N, dimensions=1)
         out = nengo.Node(lambda t, x: x, size_in=N)
         nengo.Connection(a.neurons, out, synapse=None)
 
@@ -167,8 +172,9 @@ def test_neurons_to_neurons(Simulator, nl_nodirect):
 
     m = nengo.Network(label=name, seed=123)
     with m:
-        a = nengo.Ensemble(nl_nodirect(N1), dimensions=1)
-        b = nengo.Ensemble(nl_nodirect(N2), dimensions=1)
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        a = nengo.Ensemble(N1, dimensions=1)
+        b = nengo.Ensemble(N2, dimensions=1)
         inp = nengo.Node(output=1)
         nengo.Connection(inp, a)
         nengo.Connection(
@@ -205,9 +211,10 @@ def test_weights(Simulator, nl):
 
     m = nengo.Network(label=name, seed=3902)
     with m:
+        m.config[nengo.Ensemble].neuron_type = nl()
         u = nengo.Node(output=func)
-        a = nengo.Ensemble(nl(n1), dimensions=2, radius=1.5)
-        b = nengo.Ensemble(nl(n2), dimensions=1)
+        a = nengo.Ensemble(n1, dimensions=2, radius=1.5)
+        b = nengo.Ensemble(n2, dimensions=1)
         bp = nengo.Probe(b)
 
         nengo.Connection(u, a)
@@ -229,12 +236,13 @@ def test_weights(Simulator, nl):
 
 def test_dimensionality_errors(nl_nodirect):
     N = 10
-    with nengo.Network(label="test_dimensionality_error"):
+    with nengo.Network(label="test_dimensionality_error") as m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         n01 = nengo.Node(output=[1])
         n02 = nengo.Node(output=[1, 1])
         n21 = nengo.Node(output=[1], size_in=2)
-        e1 = nengo.Ensemble(nl_nodirect(N), 1)
-        e2 = nengo.Ensemble(nl_nodirect(N), 2)
+        e1 = nengo.Ensemble(N, 1)
+        e2 = nengo.Ensemble(N, 2)
 
         # these should work
         nengo.Connection(n01, e1)
@@ -275,11 +283,12 @@ def test_slicing(Simulator, nl_nodirect):
     name = 'connection_slicing'
     N = 30
 
-    with nengo.Network(label=name):
-        neurons3 = nl_nodirect(3)
-        ens1 = nengo.Ensemble(nl_nodirect(N), dimensions=1)
-        ens2 = nengo.Ensemble(nl_nodirect(N), dimensions=2)
-        ens3 = nengo.Ensemble(nl_nodirect(N), dimensions=3)
+    with nengo.Network(label=name) as m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        neurons3 = nengo.Ensemble(3, dimensions=1).neurons
+        ens1 = nengo.Ensemble(N, dimensions=1)
+        ens2 = nengo.Ensemble(N, dimensions=2)
+        ens3 = nengo.Ensemble(N, dimensions=3)
         node1 = nengo.Node(output=[0])
         node2 = nengo.Node(output=[0, 0])
         node3 = nengo.Node(output=[0, 0, 0])
@@ -352,10 +361,11 @@ def test_shortfilter(Simulator, nl):
     # Testing the case where the connection filter is < dt
     m = nengo.Network()
     with m:
-        a = nengo.Ensemble(neurons=nl(10), dimensions=1)
+        m.config[nengo.Ensemble].neuron_type = nl()
+        a = nengo.Ensemble(n_neurons=10, dimensions=1)
         nengo.Connection(a, a)
 
-        b = nengo.Ensemble(neurons=nl(10), dimensions=1)
+        b = nengo.Ensemble(n_neurons=10, dimensions=1)
         nengo.Connection(a, b)
         nengo.Connection(b, a)
 
@@ -365,7 +375,7 @@ def test_shortfilter(Simulator, nl):
     # We will still get a cycle if the user explicitly sets the
     # filter to None
     with m:
-        d = nengo.Ensemble(neurons=nengo.Direct(10), dimensions=1)
+        d = nengo.Ensemble(1, dimensions=1, neuron_type=nengo.Direct())
         nengo.Connection(d, d, synapse=None)
     with pytest.raises(ValueError):
         Simulator(m, dt=.01)
@@ -376,12 +386,13 @@ def test_zerofilter(Simulator):
     m = nengo.Network(seed=8)
     with m:
         # Ensure no cycles in the op graph.
-        a = nengo.Ensemble(nengo.Direct(0), 1)
+        a = nengo.Ensemble(1, dimensions=1, neuron_type=nengo.Direct())
         nengo.Connection(a, a, synapse=0)
 
         # Ensure that spikes are not filtered
-        b = nengo.Ensemble(nengo.LIF(3), 1, intercepts=[-.9, -.8, -.7])
-        bp = nengo.Probe(b.neurons, "output", synapse=0)
+        b = nengo.Ensemble(3, dimensions=1, intercepts=[-.9, -.8, -.7],
+                           neuron_type=nengo.LIF())
+        bp = nengo.Probe(b, "neuron_output", synapse=0)
 
     sim = Simulator(m)
     sim.run(1.)
@@ -396,9 +407,10 @@ def test_function_output_size(Simulator, nl_nodirect):
 
     model = nengo.Network(seed=9)
     with model:
+        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=lambda t: t - 1)
-        a = nengo.Ensemble(neurons=nl_nodirect(100), dimensions=1)
-        b = nengo.Ensemble(neurons=nl_nodirect(100), dimensions=1)
+        a = nengo.Ensemble(n_neurons=100, dimensions=1)
+        b = nengo.Ensemble(n_neurons=100, dimensions=1)
         nengo.Connection(u, a)
         nengo.Connection(a, b, function=bad_function)
         up = nengo.Probe(u, synapse=None)

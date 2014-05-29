@@ -17,7 +17,7 @@ import logging
 
 # Nengo namespace (API)
 from .config import Config, Default
-from .objects import Ensemble, Node, Connection, Probe, Network, Neurons
+from .objects import Ensemble, Node, Connection, Probe, Network
 from .neurons import Direct, LIF, LIFRate, AdaptiveLIF, AdaptiveLIFRate
 from . import networks
 from .simulator import Simulator

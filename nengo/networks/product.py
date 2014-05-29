@@ -7,7 +7,7 @@ from nengo.networks.ensemblearray import EnsembleArray
 class Product(nengo.Network):
     """Computes the element-wise product of two equally sized vectors."""
 
-    def __init__(self, neurons, dimensions, radius=1, encoders=None,
+    def __init__(self, n_neurons, dimensions, radius=1, encoders=None,
                  **ens_kwargs):
         self.config[nengo.Ensemble].update(ens_kwargs)
         self.A = nengo.Node(size_in=dimensions, label="A")
@@ -18,10 +18,10 @@ class Product(nengo.Network):
         if encoders is None:
             encoders = np.tile(
                 [[1, 1], [1, -1], [-1, 1], [-1, -1]],
-                ((neurons.n_neurons / 4) + 1, 1))[:neurons.n_neurons]
+                ((n_neurons // 4) + 1, 1))[:n_neurons]
 
         self.product = EnsembleArray(
-            neurons, n_ensembles=dimensions, ens_dimensions=2,
+            n_neurons, n_ensembles=dimensions, ens_dimensions=2,
             encoders=encoders, radius=np.sqrt(2) * radius)
 
         nengo.Connection(

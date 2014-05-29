@@ -11,7 +11,7 @@ def test_basic(Simulator):
     with bg:
         input = nengo.Node([0.8, 0.4, 0.4, 0.4, 0.4], label="input")
         nengo.Connection(input, bg.input, synapse=None)
-        p = nengo.Probe(bg.output, 'output', synapse=0.01)
+        p = nengo.Probe(bg.output, synapse=0.01)
 
     sim = Simulator(bg, seed=123)
     sim.run(0.2)

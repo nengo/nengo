@@ -21,22 +21,23 @@ def test_multidim(Simulator, nl):
 
     model = nengo.Network(label='Multidim', seed=123)
     with model:
-        inputA = nengo.Node(output=a)
-        inputB = nengo.Node(output=b)
-        A = nengo.networks.EnsembleArray(nl(n_neurons), dims, radius=radius)
-        B = nengo.networks.EnsembleArray(nl(n_neurons), dims, radius=radius)
-        C = nengo.networks.EnsembleArray(nl(n_neurons * 2), dims,
+        model.config[nengo.Ensemble].neuron_type = nl()
+        inputA = nengo.Node(a)
+        inputB = nengo.Node(b)
+        A = nengo.networks.EnsembleArray(n_neurons, dims, radius=radius)
+        B = nengo.networks.EnsembleArray(n_neurons, dims, radius=radius)
+        C = nengo.networks.EnsembleArray(n_neurons * 2, dims,
                                          ens_dimensions=2,
-                                         radius=radius, label="C")
+                                         radius=radius)
         nengo.Connection(inputA, A.input)
         nengo.Connection(inputB, B.input)
         ta = nengo.Connection(A.output, C.input[::2]).transform_full
         tb = nengo.Connection(B.output, C.input[1::2]).transform_full
         c = np.dot(ta, a) + np.dot(tb, b)
 
-        A_p = nengo.Probe(A.output, 'output', synapse=0.03)
-        B_p = nengo.Probe(B.output, 'output', synapse=0.03)
-        C_p = nengo.Probe(C.output, 'output', synapse=0.03)
+        A_p = nengo.Probe(A.output, synapse=0.03)
+        B_p = nengo.Probe(B.output, synapse=0.03)
+        C_p = nengo.Probe(C.output, synapse=0.03)
 
     sim = Simulator(model)
     sim.run(1.0)
@@ -94,23 +95,23 @@ def test_matrix_mul(Simulator, nl):
 
     model = nengo.Network(label='Matrix Multiplication', seed=123)
     with model:
+        model.config[nengo.Ensemble].neuron_type = nl()
         A = nengo.networks.EnsembleArray(
-            nl(N), Amat.size, radius=radius, label="A")
+            N, Amat.size, radius=radius, label="A")
         B = nengo.networks.EnsembleArray(
-            nl(N), Bmat.size, radius=radius, label="B")
+            N, Bmat.size, radius=radius, label="B")
 
         inputA = nengo.Node(output=Amat.ravel())
         inputB = nengo.Node(output=Bmat.ravel())
         nengo.Connection(inputA, A.input)
         nengo.Connection(inputB, B.input)
-        A_p = nengo.Probe(A.output, 'output', sample_every=0.01, synapse=0.01)
-        B_p = nengo.Probe(B.output, 'output', sample_every=0.01, synapse=0.01)
+        A_p = nengo.Probe(A.output, sample_every=0.01, synapse=0.01)
+        B_p = nengo.Probe(B.output, sample_every=0.01, synapse=0.01)
 
-        C = nengo.networks.EnsembleArray(nl(N),
+        C = nengo.networks.EnsembleArray(N,
                                          Amat.size * Bmat.shape[1],
                                          ens_dimensions=2,
-                                         radius=1.5 * radius,
-                                         label="C")
+                                         radius=1.5 * radius)
 
         for ens in C.ensembles:
             ens.encoders = np.tile([[1, 1], [-1, 1], [1, -1], [-1, -1]],
@@ -122,9 +123,9 @@ def test_matrix_mul(Simulator, nl):
         nengo.Connection(A.output, C.input, transform=transformA)
         nengo.Connection(B.output, C.input, transform=transformB)
 
-        D = nengo.networks.EnsembleArray(nl(N),
+        D = nengo.networks.EnsembleArray(N,
                                          Amat.shape[0] * Bmat.shape[1],
-                                         radius=radius, label="D")
+                                         radius=radius)
 
         transformC = np.zeros((D.dimensions, Bmat.size))
         for i in range(Bmat.size):
@@ -133,7 +134,7 @@ def test_matrix_mul(Simulator, nl):
         prod = C.add_output("product", lambda x: x[0] * x[1])
 
         nengo.Connection(prod, D.input, transform=transformC)
-        D_p = nengo.Probe(D.output, 'output', sample_every=0.01, synapse=0.01)
+        D_p = nengo.Probe(D.output, sample_every=0.01, synapse=0.01)
 
     sim = Simulator(model)
     sim.run(1)

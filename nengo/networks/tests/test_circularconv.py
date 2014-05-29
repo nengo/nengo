@@ -24,7 +24,7 @@ def test_circularconv_transforms(invert_a, invert_b):
     z0 = circconv(x, y, invert_a=invert_a, invert_b=invert_b)
 
     cconv = nengo.networks.CircularConvolution(
-        nengo.Direct(), dims, invert_a=invert_a, invert_b=invert_b)
+        1, dims, invert_a=invert_a, invert_b=invert_b)
     XY = np.dot(cconv.transformA, x) * np.dot(cconv.transformB, y)
     z1 = np.dot(cconv.transform_out, XY)
 
@@ -48,13 +48,14 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
     # --- model
     model = nengo.Network(label="circular convolution")
     with model:
-        inputA = nengo.Node(output=a)
-        inputB = nengo.Node(output=b)
-        A = EnsembleArray(nl(n_neurons), dims, radius=radius)
-        B = EnsembleArray(nl(n_neurons), dims, radius=radius)
+        model.config[nengo.Ensemble].neuron_type = nl()
+        inputA = nengo.Node(a)
+        inputB = nengo.Node(b)
+        A = EnsembleArray(n_neurons, dims, radius=radius)
+        B = EnsembleArray(n_neurons, dims, radius=radius)
         cconv = nengo.networks.CircularConvolution(
-            neurons=nl(n_neurons_d), dimensions=dims)
-        res = EnsembleArray(nl(n_neurons), dims, radius=radius)
+            n_neurons_d, dimensions=dims)
+        res = EnsembleArray(n_neurons, dims, radius=radius)
 
         nengo.Connection(inputA, A.input)
         nengo.Connection(inputB, B.input)

@@ -15,8 +15,8 @@ def test_seeding():
     m = nengo.Network(label="test_seeding")
     with m:
         input = nengo.Node(output=1, label="input")
-        A = nengo.Ensemble(nengo.LIF(40), 1, label="A")
-        B = nengo.Ensemble(nengo.LIF(20), 1, label="B")
+        A = nengo.Ensemble(40, 1, label="A")
+        B = nengo.Ensemble(20, 1, label="B")
         nengo.Connection(input, A)
         C = nengo.Connection(A, B, function=lambda x: x ** 2)
 
@@ -42,14 +42,6 @@ def test_seeding():
     compare_objs(Bs[0], Bs[1], ens_attrs)
     compare_objs(As[0], As[2], ens_attrs, equal=False)
     compare_objs(Bs[0], Bs[2], ens_attrs, equal=False)
-
-    neur_attrs = nengo.builder.BuiltNeurons._fields
-    As = [mi[A.neurons] for mi in [m1, m2, m3]]
-    Bs = [mi[B.neurons] for mi in [m1, m2, m3]]
-    compare_objs(As[0], As[1], neur_attrs)
-    compare_objs(Bs[0], Bs[1], neur_attrs)
-    compare_objs(As[0], As[2], neur_attrs, equal=False)
-    compare_objs(Bs[0], Bs[2], neur_attrs, equal=False)
 
     conn_attrs = ('decoders', 'eval_points')  # transform is static, unchecked
     Cs = [mi[C] for mi in [m1, m2, m3]]
