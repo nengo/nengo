@@ -1,8 +1,8 @@
 import numpy as np
 
 class Item(object):
-    def __init__(self, obj, x, y, fixed):
-        self.pos = np.array([x, y], dtype='float')
+    def __init__(self, obj, pos, fixed):
+        self.pos = pos
         self.fixed = fixed
         self.obj = obj
     def push(self, d):
@@ -33,9 +33,9 @@ class Layout(object):
         for obj in network.nodes + network.ensembles:
             pos = self.config[obj].pos
             if pos is None:
-                item = Item(obj, np.random.uniform(), np.random.uniform(), fixed=False)
+                item = Item(obj, None, fixed=False)
             else:
-                item = Item(obj, pos[0], pos[1], fixed=True)
+                item = Item(obj, np.array(pos, copy=True), fixed=True)
             group.add(item)
             self.items[obj] = item
         for obj in network.networks:
@@ -46,7 +46,16 @@ class Layout(object):
             self.connections.append((self.items[con.pre], self.items[con.post]))
         return group
 
+    def center_nonfixed(self):
+        for g in self.groups:
+            for item in g.items:
+                if item.pos is None:
+                    mid = np.mean([i.pos for i in g.items if i.pos is not None])
+                    item.pos = mid + np.random.uniform(-1.0, 1.0, size=2)
+
+
     def run(self):
+        self.center_nonfixed()
         for i in range(1000):
             self.step(1.0)
 
