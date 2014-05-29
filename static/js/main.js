@@ -436,7 +436,10 @@ function update_net_size(d) {
         if (curNode.type == "net") {
             xBorder = (net_widths[curNode.id] / 2)*curNode.scale
             yBorder = (net_heights[curNode.id] / 2)*curNode.scale
-            if (isNaN(xBorder) || isNaN(yBorder)) {continue;} //happens on load
+            if (isNaN(xBorder) || isNaN(yBorder)) {
+                xBorder = 0;
+                yBorder = 0;
+            } //happens on load
         }
         x0 = Math.min(curNode.x - xBorder, x0);
         x1 = Math.max(curNode.x + xBorder, x1);
@@ -481,7 +484,7 @@ function update_node_positions(d, dx, dy, node_list) {
         var curNode = node_list.get(node_list.keys()[n])
         if (close_to(curNode, d)) {//if curNode is close to d
             if (d3.event != null) { //figure out which way to move things on zoom bump
-                if (d3.event.type == "zoom" && d3.event.sourceEvent!=null) {
+                if (d3.event.type == "zoom" && d3.event.sourceEvent.type=="wheel") {
                     del = d3.event.sourceEvent.wheelDelta/3;
                     if (curNode.x < d.x) {
                         dx = -del;
@@ -731,6 +734,8 @@ function update_graph() {
             zoomers[d.id](d3.select(this))
             d.scale = graph.nodes[d.contains[0]].scale
             zoomers[d.id].scale(d.scale)
+            d.x = 0; //set initial positions to zero
+            d.y = 0;
         })
         .on('dblclick.zoom', zoomCenter)
                               
@@ -777,7 +782,6 @@ function update_graph() {
     //redraw so nodes are on top, lowest level nets 2nd, and so on
     layer_container();
     update_net_sizes();
-    update_net_sizes(); //have to do 2 because of ordering effects on net_widths
     
     resizeBR = nodeEnter.filter(function (d) {return d.type == 'net';})
         .append('rect') //bottom right drag region
