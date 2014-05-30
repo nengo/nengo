@@ -10,8 +10,12 @@ import time
 
 class View:
     def __init__(self, model, udp_port=56789, client='localhost'):
+        # connect to the remote java server
         self.rpyc = rpyc.classic.connect(client)
 
+        # make a ValueReceiver on the server to receive UDP data
+        # since java leaves a port open for a while, try other ports if
+        # the one we specify isn't open
         attempts = 0
         while attempts<100:
             try:
@@ -21,13 +25,17 @@ class View:
                 attempts += 1
         vr.start()
 
+
+        # for sending packets (with values to be visualized)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #UDP
         self.socket_target = (client, udp_port+attempts)
 
+        # for receiving packets (the slider values from the visualizer)
         self.socket_recv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_recv.bind(('localhost', udp_port+attempts+1))
         thread.start_new_thread(self.receiver, ())
 
+        # build the dummy model on the server
         label = model.label
         if label is None: label='Nengo Visualizer 0x%x'%id(model)
         net = self.rpyc.modules.nef.Network(label)
@@ -86,19 +94,31 @@ class View:
                 else:
                     print 'cannot process connection from %s to %s'%(`c.pre`, `c.post`)
 
+        # open up the visualizer on the server
         view = net.view()
         control_ensemble.set_view(view)
 
     def receiver(self):
+        # watch for packets coming from the server.  There should be one
+        # packet every time step, with the current time and any slider values
+        # that are set
         print 'waiting for msg'
         while True:
             msg = self.socket_recv.recv(4096)
+            # grab the current time the simulator thinks it is at
             time = struct.unpack('>f', msg[:4])
+            # tell the simulator to stop if it is past the given time
             OverrideFunction.overrides['block_time'] = time[0]
+
+            # override the node output values if the visualizer says to
             for i in range((len(msg)-4)/12):
                 id, index, value = struct.unpack('>LLf', msg[4+i*12:16+i*12])
                 OverrideFunction.overrides[id][index]=value
 
+# this replaces any callable nengo.Node's function with a function that:
+# a) blocks if it gets ahead of the time the visualizer wants to show
+# b) uses the slider value sent back from the visualizer instead of the
+# output function, if that slider has been set
 class OverrideFunction(object):
     overrides = {'block_time':0.0}
     def __init__(self, function, id):
