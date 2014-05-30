@@ -16,7 +16,7 @@ import pkgutil
 
 class NengoGui(nengo_gui.swi.SimpleWebInterface):
     default_filename = 'default.py'
-    script_path = 'nengo_gui/scripts/'
+    script_path = os.path.join(os.path.dirname(nengo_gui.__file__), 'scripts')
     refresh_interval = 0
 
     def swi_static(self, *path):
