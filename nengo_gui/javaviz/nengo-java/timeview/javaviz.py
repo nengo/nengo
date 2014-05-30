@@ -3,24 +3,20 @@ import nef
 import struct
 
 class Ensemble(nef.Node):
-    def __init__(self, receiver, id, ensemble):
-        if ensemble.label is None:
-            name = '0x%x'%id
-        else:
-            name = ensemble.label
+    def __init__(self, receiver, id,  name, dimensions):
         nef.Node.__init__(self, name)
         receiver.register(id, self)
         self.termination_count = 0
-        self.output = self.make_output('X', ensemble.dimensions)
+        self.output = self.make_output('X', dimensions)
     def create_new_dummy_termination(self, dimensions):
         name = 'term%d'%self.termination_count
         self.make_input(name, dimensions)
         self.termination_count += 1
         return self.getTermination(name)
-        
-        
+
+
 import java
-import jarray        
+import jarray
 class ValueReceiver(java.lang.Thread):
     def __init__(self, port):
         self.socket = java.net.DatagramSocket(port)
@@ -28,18 +24,18 @@ class ValueReceiver(java.lang.Thread):
         self.buffer = jarray.zeros(maxLength,'b')
         self.packet = java.net.DatagramPacket(self.buffer, maxLength)
         self.ensembles = {}
-        
+
     def register(self, id, ensemble):
         self.ensembles[id] = ensemble
-        
+
     def run(self):
         while True:
             self.socket.receive(self.packet)
-        
+
             d = java.io.DataInputStream(java.io.ByteArrayInputStream(self.packet.getData()))
 
             id = d.readInt()
-            
+
             ensemble = self.ensembles[id]
             time = d.readFloat()
             length = len(ensemble.output._value)
@@ -64,7 +60,7 @@ class ControlEnsemble(Ensemble):
         self.ids[input.name] = id
     def start(self):
         cache = {}
-    
+
         while True:
             if self.view is not None:
                 msg = struct.pack('>f', self.t)
@@ -79,14 +75,14 @@ class ControlEnsemble(Ensemble):
                                 cache[(id, index)] = value
                 packet = java.net.DatagramPacket(msg, len(msg), self.address, self.port)
                 self.socket.send(packet)
-                                
-            
-            
+
+
+
                 #for id, input in self.inputs.items():
                 #    msg = struct.pack(self.formats[input], id, self.t, *input.getOrigin('origin').getValues().getValues())
                 #    packet = java.net.DatagramPacket(msg, len(msg), self.address, self.port)
                 #    self.socket.send(packet)
                 #    print 'sent', id, self.t, input.getOrigin('origin').getValues().getValues()
-            yield self.dt    
+            yield self.dt
 
-        
+

@@ -13,6 +13,7 @@ class View:
         # connect to the remote java server
         self.rpyc = rpyc.classic.connect(client)
 
+
         # make a ValueReceiver on the server to receive UDP data
         # since java leaves a port open for a while, try other ports if
         # the one we specify isn't open
@@ -24,6 +25,8 @@ class View:
             except:
                 attempts += 1
         vr.start()
+        self.value_receiver = vr
+        self.udp_port = udp_port + attempts
 
 
         # for sending packets (with values to be visualized)
@@ -40,63 +43,100 @@ class View:
         if label is None: label='Nengo Visualizer 0x%x'%id(model)
         net = self.rpyc.modules.nef.Network(label)
 
-        control_ensemble = None
-        remote_objs = {}
-        ignore_connections = set()
-        inputs = []
-        for obj in model.ensembles:
-                if control_ensemble is None:
-                    e = self.rpyc.modules.timeview.javaviz.ControlEnsemble(vr, id(obj)&0xFFFF, obj)
-                    e.init_control('localhost', udp_port+attempts+1)
-                    control_ensemble = e
-                else:
-                    e = self.rpyc.modules.timeview.javaviz.Ensemble(vr, id(obj)&0xFFFF, obj)
-                net.add(e)
-                remote_objs[obj] = e
+        self.control_ensemble = None
+        self.remote_objs = {}
+        self.inputs = []
 
+        self.process_network(net, model)
 
-                with model:
-                    def send(t, x, self=self, format='>Lf'+'f'*obj.dimensions, id=id(obj)&0xFFFF):
-                        msg = struct.pack(format, id, t, *x)
-                        self.socket.sendto(msg, self.socket_target)
+        if self.control_ensemble is None:
+            raise Exception('Network must have at least one Ensemble in it')
 
-
-                    node = nengo.Node(send, size_in=obj.dimensions)
-                    c = nengo.Connection(obj, node, synapse=None)
-                    ignore_connections.add(c)
-        for obj in model.nodes:
-                if obj.size_in == 0:
-                    output = obj.output
-
-                    if callable(output):
-                        output = output(0.0)#np.zeros(obj.size_in))
-                    if isinstance(output, (int, float)):
-                        output_dims = 1
-                    else:
-                        output_dims = len(output)
-                    obj._output_dims = output_dims
-                    input = net.make_input(obj.label, tuple([0]*output_dims))
-                    obj.output = OverrideFunction(obj.output, id(input)&0xFFFF)
-                    remote_objs[obj] = input
-                    inputs.append(input)
-
-        for input in inputs:
-            control_ensemble.register(id(input)&0xFFFF, input)
-
-        for c in model.connections:
-            if c not in ignore_connections:
-                if c.pre in remote_objs and c.post in remote_objs:
-                    pre = remote_objs[c.pre]
-                    post = remote_objs[c.post]
-                    dims = c.pre.dimensions if isinstance(c.pre, nengo.Ensemble) else c.pre._output_dims
-                    t = post.create_new_dummy_termination(dims)
-                    net.connect(pre, t)
-                else:
-                    print 'cannot process connection from %s to %s'%(`c.pre`, `c.post`)
+        for input in self.inputs:
+            self.control_ensemble.register(id(input)&0xFFFF, input)
 
         # open up the visualizer on the server
         view = net.view()
-        control_ensemble.set_view(view)
+        self.control_ensemble.set_view(view)
+
+
+    def get_name(self, names, obj, prefix):
+        if prefix == '':
+            name = obj.label
+        else:
+            name = '%s.%s' % (prefix, obj.label)
+
+        counter = 2
+        base = name
+        while name in names:
+            name = '%s (%d)' % (base, counter)
+            counter += 1
+        names.append(name)
+        return name
+
+    def process_network(self, remote_net, network, names=[], prefix=''):
+        ignore_connections = []
+
+        for obj in network.ensembles:
+            name = self.get_name(names, obj, prefix)
+
+            # the first ensemble we create is in charge of communication
+            if self.control_ensemble is None:
+                e = self.rpyc.modules.timeview.javaviz.ControlEnsemble(
+                        self.value_receiver, id(obj)&0xFFFF, name, obj.dimensions)
+                e.init_control('localhost', self.udp_port + 1)
+                self.control_ensemble = e
+            else:
+                e = self.rpyc.modules.timeview.javaviz.Ensemble(
+                        self.value_receiver, id(obj)&0xFFFF, name, obj.dimensions)
+            remote_net.add(e)
+            self.remote_objs[obj] = e
+
+            with network:
+                def send(t, x, self=self, format='>Lf'+'f'*obj.dimensions, id=id(obj)&0xFFFF):
+                    msg = struct.pack(format, id, t, *x)
+                    self.socket.sendto(msg, self.socket_target)
+
+                node = nengo.Node(send, size_in=obj.dimensions)
+                c = nengo.Connection(obj, node, synapse=None)
+                ignore_connections.append(c)
+
+        for obj in network.nodes:
+            if obj.size_in == 0:
+                output = obj.output
+
+                if callable(output):
+                    output = output(0.0)#np.zeros(obj.size_in))
+                if isinstance(output, (int, float)):
+                    output_dims = 1
+                else:
+                    output_dims = len(output)
+                obj._output_dims = output_dims
+                name = self.get_name(names, obj, prefix)
+                input = remote_net.make_input(name, tuple([0]*output_dims))
+                obj.output = OverrideFunction(obj.output, id(input)&0xFFFF)
+                self.remote_objs[obj] = input
+                self.inputs.append(input)
+            else:
+                print 'skipping display for', obj
+
+        for subnet in network.networks:
+            name = self.get_name(names, subnet, prefix)
+            self.process_network(remote_net, subnet, names, prefix=name)
+
+        for c in network.connections:
+            if c not in ignore_connections:
+                if c.pre in self.remote_objs and c.post in self.remote_objs:
+                    pre = self.remote_objs[c.pre]
+                    post = self.remote_objs[c.post]
+                    if isinstance(c.pre, nengo.Ensemble):
+                        dims = c.pre.dimensions
+                    else:
+                        dims = c.pre._output_dims
+                    t = post.create_new_dummy_termination(dims)
+                    remote_net.connect(pre, t)
+                else:
+                    print 'cannot process connection from %s to %s'%(`c.pre`, `c.post`)
 
     def receiver(self):
         # watch for packets coming from the server.  There should be one
