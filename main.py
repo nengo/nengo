@@ -12,10 +12,11 @@ import os
 import urllib
 
 import nengo_gui
+import pkgutil
 
 class NengoGui(nengo_gui.swi.SimpleWebInterface):
     default_filename = 'default.py'
-    script_path = 'scripts/'
+    script_path = 'nengo_gui/scripts/'
     refresh_interval = 0
 
     def swi_static(self, *path):
@@ -31,20 +32,18 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
             mimetype = 'image/gif'
         else:
             raise Exception('unknown extenstion for %s' % fn)
-        with open(fn, 'rb') as f:
-            js = f.read()
-        return (mimetype, js)
+
+        data = pkgutil.get_data('nengo_gui', fn)
+        return (mimetype, data)
 
     def swi_favicon_ico(self):
-        with open('static/favicon.ico','rb') as f:
-            icon = f.read()
+        icon = pkgutil.get_data('nengo_gui', 'static/favicon.ico')
         return ('image/ico', icon)
 
     def swi(self):
         if self.user is None:
             return self.create_login_form()
-        with open('templates/index.html') as f:
-            html = f.read()
+        html = pkgutil.get_data('nengo_gui', 'templates/index.html')
         return html % dict(filename=self.default_filename,
                            refresh_interval=self.refresh_interval)
 
