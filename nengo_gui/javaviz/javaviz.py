@@ -13,7 +13,6 @@ class View:
         # connect to the remote java server
         self.rpyc = rpyc.classic.connect(client)
 
-
         # make a ValueReceiver on the server to receive UDP data
         # since java leaves a port open for a while, try other ports if
         # the one we specify isn't open
@@ -75,43 +74,52 @@ class View:
 
     def process_network(self, remote_net, network, names, prefix=''):
         ignore_connections = []
+        ignore_nodes = []
+
+        should_probe = {}
+        for probe in network.probes:
+            should_probe[(probe.target, probe.attr)] = probe
 
         for obj in network.ensembles:
             name = self.get_name(names, obj, prefix)
 
-            # the first ensemble we create is in charge of communication
             e = self.rpyc.modules.timeview.javaviz.Ensemble(
                     self.value_receiver, id(obj)&0xFFFF, name, obj.dimensions)
             remote_net.add(e)
             self.remote_objs[obj] = e
 
-            with network:
-                def send(t, x, self=self, format='>Lf'+'f'*obj.dimensions, id=id(obj)&0xFFFF):
-                    msg = struct.pack(format, id, t, *x)
-                    self.socket.sendto(msg, self.socket_target)
+            if (obj, 'decoded_output') in should_probe:
+                with network:
+                    def send(t, x, self=self, format='>Lf'+'f'*obj.dimensions,
+                             id=id(obj)&0xFFFF):
+                        msg = struct.pack(format, id, t, *x)
+                        self.socket.sendto(msg, self.socket_target)
 
-                node = nengo.Node(send, size_in=obj.dimensions)
-                c = nengo.Connection(obj, node, synapse=None)
-                ignore_connections.append(c)
+                    node = nengo.Node(send, size_in=obj.dimensions)
+                    c = nengo.Connection(obj, node, synapse=None)
+                    ignore_connections.append(c)
+                    ignore_nodes.append(node)
+                del should_probe[(obj, 'decoded_output')]
 
         for obj in network.nodes:
-            if obj.size_in == 0:
-                output = obj.output
+            if obj not in ignore_nodes:
+                if obj.size_in == 0:
+                    output = obj.output
 
-                if callable(output):
-                    output = output(0.0)#np.zeros(obj.size_in))
-                if isinstance(output, (int, float)):
-                    output_dims = 1
+                    if callable(output):
+                        output = output(0.0)#np.zeros(obj.size_in))
+                    if isinstance(output, (int, float)):
+                        output_dims = 1
+                    else:
+                        output_dims = len(output)
+                    obj._output_dims = output_dims
+                    name = self.get_name(names, obj, prefix)
+                    input = remote_net.make_input(name, tuple([0]*output_dims))
+                    obj.output = OverrideFunction(obj.output, id(input)&0xFFFF)
+                    self.remote_objs[obj] = input
+                    self.inputs.append(input)
                 else:
-                    output_dims = len(output)
-                obj._output_dims = output_dims
-                name = self.get_name(names, obj, prefix)
-                input = remote_net.make_input(name, tuple([0]*output_dims))
-                obj.output = OverrideFunction(obj.output, id(input)&0xFFFF)
-                self.remote_objs[obj] = input
-                self.inputs.append(input)
-            else:
-                print 'skipping display for', obj
+                    print 'skipping display for', obj
 
         for subnet in network.networks:
             name = self.get_name(names, subnet, prefix)
@@ -130,6 +138,9 @@ class View:
                     remote_net.connect(pre, t)
                 else:
                     print 'cannot process connection from %s to %s'%(`c.pre`, `c.post`)
+
+        for p in should_probe.values():
+            print 'Could not handle probe:', p
 
     def receiver(self):
         # watch for packets coming from the server.  There should be one
