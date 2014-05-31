@@ -146,7 +146,8 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
 
         javaviz.View(model)
         sim = nengo.Simulator(model)
-        sim.run(100000)
+        while True:
+            sim.run(1)
 
 
     def swi_graph_json(self, code):
