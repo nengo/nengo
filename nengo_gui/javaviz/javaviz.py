@@ -105,6 +105,7 @@ class View:
 
         for obj in network.nodes:
             if obj not in ignore_nodes:
+                name = self.get_name(names, obj, prefix)
                 if obj.size_in == 0:
                     output = obj.output
 
@@ -115,13 +116,15 @@ class View:
                     else:
                         output_dims = len(output)
                     obj._output_dims = output_dims
-                    name = self.get_name(names, obj, prefix)
                     input = remote_net.make_input(name, tuple([0]*output_dims))
                     obj.output = OverrideFunction(obj.output, id(input)&0xFFFF)
                     self.remote_objs[obj] = input
                     self.inputs.append(input)
                 else:
-                    print 'skipping display for', obj
+                    e = self.rpyc.modules.timeview.javaviz.ProbeNode(
+                            self.value_receiver, name)
+                    remote_net.add(e)
+                    self.remote_objs[obj] = e
 
         for subnet in network.networks:
             name = self.get_name(names, subnet, prefix)
@@ -133,11 +136,13 @@ class View:
                     pre = self.remote_objs[c.pre]
                     post = self.remote_objs[c.post]
                     if isinstance(c.pre, nengo.Ensemble):
-                        dims = c.pre.dimensions
+                        oname = 'current'  # a dummy origin
+                        dims = 1
                     else:
+                        oname = 'origin'
                         dims = c.pre._output_dims
                     t = post.create_new_dummy_termination(dims)
-                    remote_net.connect(pre, t)
+                    remote_net.connect(pre.getOrigin(oname), t)
                 else:
                     print 'cannot process connection from %s to %s'%(`c.pre`, `c.post`)
 
