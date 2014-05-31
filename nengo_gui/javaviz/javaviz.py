@@ -47,7 +47,7 @@ class View:
         self.remote_objs = {}
         self.inputs = []
 
-        self.process_network(net, model)
+        self.process_network(net, model, names=[])
 
         if self.control_ensemble is None:
             raise Exception('Network must have at least one Ensemble in it')
@@ -74,7 +74,7 @@ class View:
         names.append(name)
         return name
 
-    def process_network(self, remote_net, network, names=[], prefix=''):
+    def process_network(self, remote_net, network, names, prefix=''):
         ignore_connections = []
 
         for obj in network.ensembles:
