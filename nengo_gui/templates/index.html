@@ -27,6 +27,7 @@
 <script>
 // set up server polling to see if file changed
 gui_server_check_interval = %(refresh_interval)d;
+use_javaviz = %(use_javaviz)s;
 </script>
 
 <div id="editor" class="ui-layout-east">
@@ -74,6 +75,7 @@ gui_server_check_interval = %(refresh_interval)d;
     <img id="menu_reload" src="/static/img/reload.png" title="reload model" width="32px"/>
     <input id="filename" class="filename" type="text" value="%(filename)s" width="40" />
     <span id="zoom_mode"></span>
+    <img id="menu_javaviz" src="/static/img/javaviz.png" title="%(javaviz_message)s"/>
 </div>
 
 <!--Setup the file browser-->

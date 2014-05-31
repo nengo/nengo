@@ -68,3 +68,9 @@ span#zoom_mode::before {
 span#zoom_mode:hover {
     background-color: #888;
 }
+
+img#menu_javaviz {
+    position: absolute;
+    left: calc(100% - 50px);
+    top: 5px;
+}

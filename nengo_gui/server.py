@@ -14,6 +14,27 @@ import urllib
 import nengo_gui
 import pkgutil
 
+import socket
+try:
+    import rpyc
+    s = rpyc.classic.connect('localhost')
+    assert s.modules.timeview.javaviz.__name__ == 'timeview.javaviz'
+    import javaviz
+    javaviz_message = 'run with JavaViz'
+except ImportError:
+    javaviz_message = 'JavaViz disabled as rpyc is not installed.'
+    javaviz_message += ' Try "pip install rpyc"'
+    javaviz = None
+except socket.error:
+    javaviz_message = 'JavaViz disabled as the javaviz server is not running'
+    javaviz = None
+except AssertionError:
+    javaviz_message = 'JavaViz disabled due to an unknown server error.'
+    javaviz_message += ' Please reinstall and re-run the JavaViz server'
+    javaviz = None
+
+
+
 class NengoGui(nengo_gui.swi.SimpleWebInterface):
     default_filename = 'default.py'
     script_path = os.path.join(os.path.dirname(nengo_gui.__file__), 'scripts')
@@ -44,8 +65,14 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         if self.user is None:
             return self.create_login_form()
         html = pkgutil.get_data('nengo_gui', 'templates/index.html')
+        if javaviz is None:
+            use_javaviz = 'false'
+        else:
+            use_javaviz = 'true'
         return html % dict(filename=self.default_filename,
-                           refresh_interval=self.refresh_interval)
+                           refresh_interval=self.refresh_interval,
+                           use_javaviz=use_javaviz,
+                           javaviz_message=javaviz_message)
 
     def create_login_form(self):
         message = "Enter the password:"
@@ -107,6 +134,20 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         if self.user is None: return
         fn = os.path.join(self.script_path, filename)
         return repr(os.stat(fn).st_mtime)
+
+    def swi_javaviz(self, code):
+        if self.user is None: return
+        code = code.replace('\r\n', '\n')
+
+        locals = {}
+        exec code in globals(), locals
+
+        model = locals['model']
+
+        javaviz.View(model)
+        sim = nengo.Simulator(model)
+        sim.run(100000)
+
 
     def swi_graph_json(self, code):
         if self.user is None: return

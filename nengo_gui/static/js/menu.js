@@ -106,6 +106,15 @@ function check_server_for_file_changes() {
     xhr.send(data);
 }
 
+function do_javaviz() {
+    var data = new FormData();
+    data.append('code', editor.getValue());
+    
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/javaviz', true);
+    xhr.send(data);
+}
+
 
 $(document).ready(function () {
     //initialize file browser
@@ -130,5 +139,11 @@ $(document).ready(function () {
     if (gui_server_check_interval>0) {
         window.setInterval(check_server_for_file_changes, 
                            gui_server_check_interval);
+    }
+
+    if (!use_javaviz) {
+        $('#menu_javaviz').addClass('disable');
+    } else {
+        $('#menu_javaviz').click(do_javaviz);
     }
 });
