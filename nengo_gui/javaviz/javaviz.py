@@ -83,12 +83,14 @@ class View:
         for obj in network.ensembles:
             name = self.get_name(names, obj, prefix)
 
-            e = self.rpyc.modules.timeview.javaviz.Ensemble(
-                    self.value_receiver, id(obj)&0xFFFF, name, obj.dimensions)
+            e = self.rpyc.modules.timeview.javaviz.ProbeNode(
+                    self.value_receiver, name)
+
             remote_net.add(e)
             self.remote_objs[obj] = e
 
             if (obj, 'decoded_output') in should_probe:
+                e.add_probe(id(obj)&0xFFFF, obj.dimensions, 'X')
                 with network:
                     def send(t, x, self=self, format='>Lf'+'f'*obj.dimensions,
                              id=id(obj)&0xFFFF):

@@ -2,18 +2,24 @@ import nef
 
 import struct
 
-class Ensemble(nef.Node):
-    def __init__(self, receiver, id,  name, dimensions):
+class ProbeNode(nef.Node):
+    def __init__(self, receiver, name):
         nef.Node.__init__(self, name)
-        receiver.register(id, self)
         self.termination_count = 0
-        self.output = self.make_output('X', dimensions)
+        self.probes = {}
+        self.receiver = receiver
+    
+    def add_probe(self, id, dimensions, origin_name):
+        self.probes[id] = self.make_output(origin_name, dimensions)
+        self.receiver.register(id, self.probes[id])
+        
     def create_new_dummy_termination(self, dimensions):
         name = 'term%d'%self.termination_count
         self.make_input(name, dimensions)
         self.termination_count += 1
         return self.getTermination(name)
-
+        
+        
 
 import java
 import jarray
@@ -23,10 +29,10 @@ class ValueReceiver(java.lang.Thread):
         maxLength = 65535
         self.buffer = jarray.zeros(maxLength,'b')
         self.packet = java.net.DatagramPacket(self.buffer, maxLength)
-        self.ensembles = {}
+        self.probes = {}
 
-    def register(self, id, ensemble):
-        self.ensembles[id] = ensemble
+    def register(self, id, probe):
+        self.probes[id] = probe
 
     def run(self):
         while True:
@@ -36,11 +42,11 @@ class ValueReceiver(java.lang.Thread):
 
             id = d.readInt()
 
-            ensemble = self.ensembles[id]
+            probe = self.probes[id]
             time = d.readFloat()
-            length = len(ensemble.output._value)
+            length = len(probe._value)
             for i in range(length):
-                ensemble.output._value[i] = d.readFloat()
+                probe._value[i] = d.readFloat()
 
 class ControlNode(nef.Node):
     def __init__(self, name, address, port, dt=0.001):
