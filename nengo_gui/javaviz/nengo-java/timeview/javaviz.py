@@ -42,8 +42,9 @@ class ValueReceiver(java.lang.Thread):
             for i in range(length):
                 ensemble.output._value[i] = d.readFloat()
 
-class ControlEnsemble(Ensemble):
-    def init_control(self, address, port, dt=0.001):
+class ControlNode(nef.Node):
+    def __init__(self, name, address, port, dt=0.001):
+        nef.Node.__init__(self, name)
         self.view = None
         self.socket = java.net.DatagramSocket()
         self.address = java.net.InetAddress.getByName(address)
@@ -76,13 +77,6 @@ class ControlEnsemble(Ensemble):
                 packet = java.net.DatagramPacket(msg, len(msg), self.address, self.port)
                 self.socket.send(packet)
 
-
-
-                #for id, input in self.inputs.items():
-                #    msg = struct.pack(self.formats[input], id, self.t, *input.getOrigin('origin').getValues().getValues())
-                #    packet = java.net.DatagramPacket(msg, len(msg), self.address, self.port)
-                #    self.socket.send(packet)
-                #    print 'sent', id, self.t, input.getOrigin('origin').getValues().getValues()
             yield self.dt
 
 

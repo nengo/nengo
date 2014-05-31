@@ -43,21 +43,20 @@ class View:
         if label is None: label='Nengo Visualizer 0x%x'%id(model)
         net = self.rpyc.modules.nef.Network(label)
 
-        self.control_ensemble = None
+        self.control_node = self.rpyc.modules.timeview.javaviz.ControlNode(
+            '(javaviz control)', 'localhost', self.udp_port + 1)
+        net.add(self.control_node)
         self.remote_objs = {}
         self.inputs = []
 
         self.process_network(net, model, names=[])
 
-        if self.control_ensemble is None:
-            raise Exception('Network must have at least one Ensemble in it')
-
         for input in self.inputs:
-            self.control_ensemble.register(id(input)&0xFFFF, input)
+            self.control_node.register(id(input)&0xFFFF, input)
 
         # open up the visualizer on the server
         view = net.view()
-        self.control_ensemble.set_view(view)
+        self.control_node.set_view(view)
 
 
     def get_name(self, names, obj, prefix):
@@ -81,14 +80,8 @@ class View:
             name = self.get_name(names, obj, prefix)
 
             # the first ensemble we create is in charge of communication
-            if self.control_ensemble is None:
-                e = self.rpyc.modules.timeview.javaviz.ControlEnsemble(
-                        self.value_receiver, id(obj)&0xFFFF, name, obj.dimensions)
-                e.init_control('localhost', self.udp_port + 1)
-                self.control_ensemble = e
-            else:
-                e = self.rpyc.modules.timeview.javaviz.Ensemble(
-                        self.value_receiver, id(obj)&0xFFFF, name, obj.dimensions)
+            e = self.rpyc.modules.timeview.javaviz.Ensemble(
+                    self.value_receiver, id(obj)&0xFFFF, name, obj.dimensions)
             remote_net.add(e)
             self.remote_objs[obj] = e
 
