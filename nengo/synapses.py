@@ -1,9 +1,13 @@
 class Synapse(object):
+    """Abstract base class for synapse objects"""
     pass
 
 
 class LinearFilter(Synapse):
     """General linear time-invariant (LTI) system synapse.
+
+    This class can be used to implement any linear filter, given the
+    filter's transfer function. [1]_
 
     Parameters
     ----------
@@ -11,6 +15,10 @@ class LinearFilter(Synapse):
         Numerator coefficients of continuous-time transfer function.
     den : array_like
         Denominator coefficients of continuous-time transfer function.
+
+    References
+    ----------
+    .. [1] http://en.wikipedia.org/wiki/Filter_%28signal_processing%29
     """
 
     def __init__(self, num, den):
@@ -55,7 +63,7 @@ class Alpha(Synapse):
     References
     ----------
     .. [1] Mainen, Z.F. and Sejnowski, T.J. (1995). Reliability of spike timing
-        in neocortical neurons. Science (New York, NY), 268(5216):1503-6.
+       in neocortical neurons. Science (New York, NY), 268(5216):1503-6.
     """
     def __init__(self, tau):
         self.tau = tau
