@@ -674,6 +674,15 @@ class SimNeurons(Operator):
 
 
 class SimFilterSynapse(Operator):
+    """Simulate a discrete-time LTI system.
+
+    Implements a discrete-time LTI system using the difference equation [1]_
+    for the given transfer function (num, den).
+
+    References
+    ----------
+    .. [1] http://en.wikipedia.org/wiki/Digital_filter#Difference_equation
+    """
     def __init__(self, input, output, num, den):
         self.input = input
         self.output = output
