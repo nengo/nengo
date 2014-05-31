@@ -73,13 +73,6 @@ class View:
         return name
 
     def process_network(self, remote_net, network, names, prefix=''):
-        ignore_connections = []
-        ignore_nodes = []
-
-        should_probe = {}
-        for probe in network.probes:
-            should_probe[(probe.target, probe.attr)] = probe
-
         for obj in network.ensembles:
             name = self.get_name(names, obj, prefix)
 
@@ -89,7 +82,51 @@ class View:
             remote_net.add(e)
             self.remote_objs[obj] = e
 
-            if (obj, 'decoded_output') in should_probe:
+        for obj in network.nodes:
+            name = self.get_name(names, obj, prefix)
+            if obj.size_in == 0:
+                output = obj.output
+
+                if callable(output):
+                    output = output(0.0)#np.zeros(obj.size_in))
+                if isinstance(output, (int, float)):
+                    output_dims = 1
+                else:
+                    output_dims = len(output)
+                obj._output_dims = output_dims
+                input = remote_net.make_input(name, tuple([0]*output_dims))
+                obj.output = OverrideFunction(obj.output, id(input)&0xFFFF)
+                self.remote_objs[obj] = input
+                self.inputs.append(input)
+            else:
+                e = self.rpyc.modules.timeview.javaviz.ProbeNode(
+                        self.value_receiver, name)
+                remote_net.add(e)
+                self.remote_objs[obj] = e
+
+        for subnet in network.networks:
+            name = self.get_name(names, subnet, prefix)
+            self.process_network(remote_net, subnet, names, prefix=name)
+
+        for c in network.connections:
+            if c.pre in self.remote_objs and c.post in self.remote_objs:
+                pre = self.remote_objs[c.pre]
+                post = self.remote_objs[c.post]
+                if isinstance(c.pre, nengo.Ensemble):
+                    oname = 'current'  # a dummy origin
+                    dims = 1
+                else:
+                    oname = 'origin'
+                    dims = c.pre._output_dims
+                t = post.create_new_dummy_termination(dims)
+                remote_net.connect(pre.getOrigin(oname), t)
+            else:
+                print 'cannot process connection from %s to %s'%(`c.pre`, `c.post`)
+
+        for probe in network.probes:
+            if isinstance(probe.target, nengo.Ensemble) and probe.attr == 'decoded_output':
+                obj = probe.target
+                e = self.remote_objs[obj]
                 e.add_probe(id(obj)&0xFFFF, obj.dimensions, 'X')
                 with network:
                     def send(t, x, self=self, format='>Lf'+'f'*obj.dimensions,
@@ -99,55 +136,10 @@ class View:
 
                     node = nengo.Node(send, size_in=obj.dimensions)
                     c = nengo.Connection(obj, node, synapse=None)
-                    ignore_connections.append(c)
-                    ignore_nodes.append(node)
-                del should_probe[(obj, 'decoded_output')]
+            else:
+                print 'Unhandled probe', probe
 
-        for obj in network.nodes:
-            if obj not in ignore_nodes:
-                name = self.get_name(names, obj, prefix)
-                if obj.size_in == 0:
-                    output = obj.output
 
-                    if callable(output):
-                        output = output(0.0)#np.zeros(obj.size_in))
-                    if isinstance(output, (int, float)):
-                        output_dims = 1
-                    else:
-                        output_dims = len(output)
-                    obj._output_dims = output_dims
-                    input = remote_net.make_input(name, tuple([0]*output_dims))
-                    obj.output = OverrideFunction(obj.output, id(input)&0xFFFF)
-                    self.remote_objs[obj] = input
-                    self.inputs.append(input)
-                else:
-                    e = self.rpyc.modules.timeview.javaviz.ProbeNode(
-                            self.value_receiver, name)
-                    remote_net.add(e)
-                    self.remote_objs[obj] = e
-
-        for subnet in network.networks:
-            name = self.get_name(names, subnet, prefix)
-            self.process_network(remote_net, subnet, names, prefix=name)
-
-        for c in network.connections:
-            if c not in ignore_connections:
-                if c.pre in self.remote_objs and c.post in self.remote_objs:
-                    pre = self.remote_objs[c.pre]
-                    post = self.remote_objs[c.post]
-                    if isinstance(c.pre, nengo.Ensemble):
-                        oname = 'current'  # a dummy origin
-                        dims = 1
-                    else:
-                        oname = 'origin'
-                        dims = c.pre._output_dims
-                    t = post.create_new_dummy_termination(dims)
-                    remote_net.connect(pre.getOrigin(oname), t)
-                else:
-                    print 'cannot process connection from %s to %s'%(`c.pre`, `c.post`)
-
-        for p in should_probe.values():
-            print 'Could not handle probe:', p
 
     def receiver(self):
         # watch for packets coming from the server.  There should be one
