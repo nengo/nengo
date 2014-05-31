@@ -7,6 +7,7 @@ import sys
 import nengo_gui.converter
 import nengo_gui.layout
 import nengo_gui.nengo_helper
+import nengo_gui.namefinder
 import nengo
 import os
 import urllib
@@ -144,7 +145,9 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
 
         model = locals['model']
 
-        javaviz.View(model)
+        nf = nengo_gui.namefinder.NameFinder(locals, model)
+
+        javaviz.View(model, default_labels=nf.known_name)
         sim = nengo.Simulator(model)
         while True:
             sim.run(1)

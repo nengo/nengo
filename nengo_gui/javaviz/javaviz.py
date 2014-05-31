@@ -9,7 +9,10 @@ import thread
 import time
 
 class View:
-    def __init__(self, model, udp_port=56789, client='localhost'):
+    def __init__(self, model, udp_port=56789, client='localhost',
+                 default_labels={}):
+        self.default_labels = default_labels
+
         # connect to the remote java server
         self.rpyc = rpyc.classic.connect(client)
 
@@ -59,10 +62,14 @@ class View:
 
 
     def get_name(self, names, obj, prefix):
-        if prefix == '':
-            name = obj.label
-        else:
-            name = '%s.%s' % (prefix, obj.label)
+        name = obj.label
+        if (isinstance(obj, nengo.Ensemble) and name == 'Ensemble' or
+                isinstance(obj, nengo.Node) and name == 'Node' or
+                isinstance(obj, nengo.Network) and name == None):
+            name = self.default_labels.get(id(obj), name)
+
+        if prefix != '':
+            name = '%s.%s' % (prefix, name)
 
         counter = 2
         base = name
