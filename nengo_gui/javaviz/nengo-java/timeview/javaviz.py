@@ -8,23 +8,22 @@ class ProbeNode(nef.Node):
         self.termination_count = 0
         self.probes = {}
         self.receiver = receiver
-        
+
         # make a dummy connection for drawing arrow in the gui.
         #  we use "current" since that is ignored by the
         #  interactive plots visualizer
         self.make_output('current', 1)
-    
+
     def add_probe(self, id, dimensions, origin_name):
         self.probes[id] = self.make_output(origin_name, dimensions)
         self.receiver.register(id, self.probes[id])
-        
+
     def create_new_dummy_termination(self, dimensions):
         name = 'term%d'%self.termination_count
         self.make_input(name, dimensions)
         self.termination_count += 1
         return self.getTermination(name)
-        
-        
+
 
 import java
 import jarray
