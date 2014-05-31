@@ -169,9 +169,9 @@ class OverrideFunction(object):
         while OverrideFunction.overrides['block_time'] < t:
             time.sleep(0.01)
         if callable(self.function):
-            value = np.array(self.function(t))
+            value = np.array(self.function(t), dtype='float')
         else:
-            value = np.array(self.function)
+            value = np.array(self.function, dtype='float')
         for k,v in OverrideFunction.overrides.get(self.id, {}).items():
             value[k] = v
         return value
