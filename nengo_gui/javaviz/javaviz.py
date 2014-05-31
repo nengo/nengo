@@ -112,12 +112,12 @@ class View:
             if c.pre in self.remote_objs and c.post in self.remote_objs:
                 pre = self.remote_objs[c.pre]
                 post = self.remote_objs[c.post]
-                if isinstance(c.pre, nengo.Ensemble):
-                    oname = 'current'  # a dummy origin
-                    dims = 1
-                else:
+                if pre in self.inputs:
                     oname = 'origin'
                     dims = c.pre._output_dims
+                else:
+                    oname = 'current'  # a dummy origin
+                    dims = 1
                 t = post.create_new_dummy_termination(dims)
                 remote_net.connect(pre.getOrigin(oname), t)
             else:
