@@ -48,7 +48,8 @@ class View:
         net = self.rpyc.modules.nef.Network(label)
 
         self.control_node = self.rpyc.modules.timeview.javaviz.ControlNode(
-            '(javaviz control)', 'localhost', self.udp_port + 1)
+            '(javaviz control)', 'localhost', self.udp_port + 1,
+            self.value_receiver)
         net.add(self.control_node)
         self.remote_objs = {}
         self.inputs = []

@@ -36,6 +36,8 @@ import jarray
 class ValueReceiver(java.lang.Thread):
     def __init__(self, port):
         self.socket = java.net.DatagramSocket(port)
+        self.socket.setSoTimeout(200) # 200ms
+        self.close = False
         maxLength = 65535
         self.buffer = jarray.zeros(maxLength,'b')
         self.packet = java.net.DatagramPacket(self.buffer, maxLength)
@@ -46,8 +48,13 @@ class ValueReceiver(java.lang.Thread):
 
     def run(self):
         while True:
-            self.socket.receive(self.packet)
-
+            try:
+                self.socket.receive(self.packet)
+            except java.net.SocketTimeoutException:
+                if self.close:
+                    break
+                else:
+                    continue
             d = java.io.DataInputStream(java.io.ByteArrayInputStream(self.packet.getData()))
 
             id = d.readInt()
@@ -57,11 +64,14 @@ class ValueReceiver(java.lang.Thread):
             length = len(probe._value)
             for i in range(length):
                 probe._value[i] = d.readFloat()
+        self.socket.close()
+        print 'finished running JavaViz'
 
-class ControlNode(nef.Node):
-    def __init__(self, name, address, port, dt=0.001):
+class ControlNode(nef.Node, java.awt.event.WindowListener):
+    def __init__(self, name, address, port, receiver, dt=0.001):
         nef.Node.__init__(self, name)
         self.view = None
+        self.receiver = receiver
         self.socket = java.net.DatagramSocket()
         self.address = java.net.InetAddress.getByName(address)
         self.port = port
@@ -71,6 +81,7 @@ class ControlNode(nef.Node):
         self.ids = {}
     def set_view(self, view):
         self.view = view
+        self.view.frame.addWindowListener(self)
     def register(self, id, input):
         self.inputs[id] = input
         self.formats[input] = '>Lf'+'f'*input.getOrigin('origin').getDimensions()
@@ -94,5 +105,21 @@ class ControlNode(nef.Node):
                 self.socket.send(packet)
 
             yield self.dt
+    def windowActivated(self, event):
+        pass
+    def windowClosed(self, event):
+        self.receiver.close = True
+    def windowClosing(self, event):
+        pass
+    def windowDeactivated(self, event):
+        pass
+    def windowDeiconified(self, event):
+        pass
+    def windowIconified(self, event):
+        pass
+    def windowOpened(self, event):
+        pass
+    
+    
 
 
