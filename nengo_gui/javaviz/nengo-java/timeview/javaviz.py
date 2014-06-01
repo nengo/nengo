@@ -18,6 +18,12 @@ class ProbeNode(nef.Node):
         self.probes[id] = self.make_output(origin_name, dimensions)
         self.receiver.register(id, self.probes[id])
 
+    def add_spike_probe(self, id, num_neurons):
+        # Assuming it will only have 1 spike probe
+        self.spike_probe = lambda: None
+        self.spike_probe._value = [0] * num_neurons
+        self.receiver.register(id, self.spike_probe)
+
     def create_new_dummy_termination(self, dimensions):
         name = 'term%d'%self.termination_count
         self.make_input(name, dimensions)

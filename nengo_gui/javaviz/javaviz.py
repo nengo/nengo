@@ -131,18 +131,33 @@ class View:
                 print 'cannot process connection from %s to %s'%(`c.pre`, `c.post`)
 
         for probe in network.probes:
+
+            probe_id = id(probe)&0xFFFF
+
             if isinstance(probe.target, nengo.Ensemble) and probe.attr == 'decoded_output':
                 obj = probe.target
                 e = self.remote_objs[obj]
-                e.add_probe(id(obj)&0xFFFF, obj.dimensions, 'X')
+                e.add_probe(probe_id, obj.dimensions, 'X')
                 with network:
                     def send(t, x, self=self, format='>Lf'+'f'*obj.dimensions,
-                             id=id(obj)&0xFFFF):
+                            id=probe_id):
                         msg = struct.pack(format, id, t, *x)
                         self.socket.sendto(msg, self.socket_target)
 
                     node = nengo.Node(send, size_in=obj.dimensions)
                     c = nengo.Connection(obj, node, synapse=None)
+            elif isinstance(probe.target, nengo.Ensemble) and probe.attr == 'spikes':
+                obj = probe.target
+                e = self.remote_objs[obj]
+                e.add_spike_probe(probe_id, obj.n_neurons)
+                with network:
+                    def send(t, x, self=self, format='>Lf'+'f'*obj.n_neurons,
+                            id=probe_id):
+                        msg = struct.pack(format, id, t, *x)
+                        self.socket.sendto(msg, self.socket_target)
+
+                    node = nengo.Node(send, size_in=obj.n_neurons)
+                    c = nengo.Connection(obj.neurons, node, synapse=None)
             else:
                 print 'Unhandled probe', probe
 
