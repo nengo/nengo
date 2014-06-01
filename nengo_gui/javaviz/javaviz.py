@@ -50,6 +50,7 @@ class View:
         net.add(self.control_node)
         self.remote_objs = {}
         self.inputs = []
+        self.probe_count = 0
 
         self.process_network(net, model, names=[])
 
@@ -132,7 +133,8 @@ class View:
 
         for probe in network.probes:
 
-            probe_id = id(probe)&0xFFFF
+            probe_id = self.probe_count
+            self.probe_count += 1
 
             if isinstance(probe.target, nengo.Ensemble) and probe.attr == 'decoded_output':
                 obj = probe.target
