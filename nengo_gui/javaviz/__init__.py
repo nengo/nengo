@@ -1,1 +1,1 @@
-from javaviz import View
+from javaviz import View, VisualizerExitException
