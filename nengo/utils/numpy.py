@@ -181,6 +181,13 @@ def norm(x, axis=None, keepdims=False):
     return np.expand_dims(y, axis=axis) if keepdims else y
 
 
+def meshgrid_nd(*args):
+    args = [np.asarray(a) for a in args]
+    s = len(args) * (1,)
+    return np.broadcast_arrays(*(
+        a.reshape(s[:i] + (-1,) + s[i + 1:]) for i, a in enumerate(args)))
+
+
 def rms(x, axis=None, keepdims=False):
     """Root-mean-square amplitude
 
