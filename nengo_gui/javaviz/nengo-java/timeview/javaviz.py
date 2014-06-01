@@ -37,7 +37,7 @@ class ValueReceiver(java.lang.Thread):
     def __init__(self, port):
         self.socket = java.net.DatagramSocket(port)
         self.socket.setSoTimeout(200) # 200ms
-        self.close = False
+        self.should_close = False
         maxLength = 65535
         self.buffer = jarray.zeros(maxLength,'b')
         self.packet = java.net.DatagramPacket(self.buffer, maxLength)
@@ -51,7 +51,7 @@ class ValueReceiver(java.lang.Thread):
             try:
                 self.socket.receive(self.packet)
             except java.net.SocketTimeoutException:
-                if self.close:
+                if self.should_close:
                     break
                 else:
                     continue
@@ -108,7 +108,8 @@ class ControlNode(nef.Node, java.awt.event.WindowListener):
     def windowActivated(self, event):
         pass
     def windowClosed(self, event):
-        self.receiver.close = True
+        print 'window closed!'
+        self.receiver.should_close = True
     def windowClosing(self, event):
         pass
     def windowDeactivated(self, event):

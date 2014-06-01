@@ -14,6 +14,7 @@ class View:
         self.default_labels = default_labels
         self.overrides = {}
         self.block_time = 0.0
+        self.should_stop = False
 
         # connect to the remote java server
         self.rpyc = rpyc.classic.connect(client)
@@ -22,15 +23,17 @@ class View:
         # since java leaves a port open for a while, try other ports if
         # the one we specify isn't open
         attempts = 0
-        while attempts<100:
+        while attempts<1000:
             try:
-                vr = self.rpyc.modules.timeview.javaviz.ValueReceiver(udp_port+attempts)
+                vr = self.rpyc.modules.timeview.javaviz.ValueReceiver(
+                        udp_port+attempts)
                 break
             except:
                 attempts += 1
         vr.start()
         self.value_receiver = vr
         self.udp_port = udp_port + attempts
+        print 'Using port', self.udp_port
 
 
         # for sending packets (with values to be visualized)
@@ -172,14 +175,20 @@ class View:
                 print 'Unhandled probe', probe
 
 
-
     def receiver(self):
         # watch for packets coming from the server.  There should be one
         # packet every time step, with the current time and any slider values
         # that are set
         print 'waiting for msg'
+        self.socket_recv.settimeout(0.2)
         while True:
-            msg = self.socket_recv.recv(4096)
+            try:
+                msg = self.socket_recv.recv(4096)
+            except socket.timeout:
+                if self.value_receiver.should_close:
+                    break
+                else:
+                    continue
             # grab the current time the simulator thinks it is at
             time = struct.unpack('>f', msg[:4])
             # tell the simulator to stop if it is past the given time
@@ -189,6 +198,8 @@ class View:
             for i in range((len(msg)-4)/12):
                 id, index, value = struct.unpack('>LLf', msg[4+i*12:16+i*12])
                 self.overrides[id][index]=value
+        self.socket.close()
+        print 'finished receiving'
 
 # this replaces any callable nengo.Node's function with a function that:
 # a) blocks if it gets ahead of the time the visualizer wants to show
