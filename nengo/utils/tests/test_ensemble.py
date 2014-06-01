@@ -22,12 +22,13 @@ def plot_tuning_curves(plt, eval_points, activities):
 
 @pytest.mark.parametrize('dimensions', [1, 2])
 def test_tuning_curves(Simulator, plt, seed, dimensions):
+    radius = 10
     max_rate = 400
     model = nengo.Network(seed=seed)
     with model:
         ens = nengo.Ensemble(
             10, dimensions=dimensions, neuron_type=nengo.LIF(),
-            max_rates=Uniform(200, max_rate))
+            max_rates=Uniform(200, max_rate), radius=radius)
     sim = Simulator(model)
 
     eval_points, activities = tuning_curves(ens, sim)
@@ -35,10 +36,14 @@ def test_tuning_curves(Simulator, plt, seed, dimensions):
     plt.saveas = 'utils.test_ensemble.test_tuning_curves_%d.pdf' % dimensions
     plot_tuning_curves(plt, eval_points, activities)
 
+    # Check that eval_points cover up to the radius.
+    assert np.abs(radius - np.max(np.abs(eval_points))) <= 2 * radius / len(
+        eval_points[0])
+
     assert np.all(activities >= 0)
-    # Activity might be larger than max_rate as evaluation points will be taken
-    # outside the ensemble radius.
-    assert np.all(activities <= max_rate * np.sqrt(dimensions))
+
+    d = np.sqrt(np.sum(np.asarray(eval_points) ** 2, axis=0))
+    assert np.all(activities[:, d <= radius] <= max_rate)
 
 
 @pytest.mark.parametrize('dimensions', [1, 2])

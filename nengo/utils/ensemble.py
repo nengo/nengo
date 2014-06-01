@@ -40,13 +40,14 @@ def tuning_curves(ens, sim, inputs=None):
     """
 
     if inputs is None:
-        inputs = np.linspace(-1.0, 1.0)
+        inputs = np.linspace(-ens.radius, ens.radius)
         if ens.dimensions > 1:
             inputs = npext.meshgrid_nd(*(ens.dimensions * [inputs]))
         else:
             inputs = [inputs]
 
     flattened = np.column_stack([i.flat for i in inputs])
+    flattened /= ens.radius
     x = np.dot(flattened, sim.data[ens].encoders.T)
     activities = ens.neuron_type.rates(
         x, sim.data[ens].gain, sim.data[ens].bias)
