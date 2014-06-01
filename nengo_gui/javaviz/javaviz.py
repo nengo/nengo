@@ -33,7 +33,6 @@ class View:
         vr.start()
         self.value_receiver = vr
         self.udp_port = udp_port + attempts
-        print 'Using port', self.udp_port
 
 
         # for sending packets (with values to be visualized)
@@ -179,7 +178,6 @@ class View:
         # watch for packets coming from the server.  There should be one
         # packet every time step, with the current time and any slider values
         # that are set
-        print 'waiting for msg'
         self.socket_recv.settimeout(0.2)
         while True:
             try:
@@ -199,7 +197,8 @@ class View:
                 id, index, value = struct.unpack('>LLf', msg[4+i*12:16+i*12])
                 self.overrides[id][index]=value
         self.socket.close()
-        print 'finished receiving'
+        self.socket_recv.close()
+        self.should_stop = True
 
 # this replaces any callable nengo.Node's function with a function that:
 # a) blocks if it gets ahead of the time the visualizer wants to show
@@ -214,6 +213,8 @@ class OverrideFunction(object):
     def __call__(self, t):
         while self.view.block_time < t:
             time.sleep(0.01)
+            if self.view.should_stop:
+                raise visualizerExitException('JavaViz closed')
         if callable(self.function):
             value = np.array(self.function(t), dtype='float')
         else:
@@ -221,3 +222,6 @@ class OverrideFunction(object):
         for k,v in self.view.overrides.get(self.id, {}).items():
             value[k] = v
         return value
+
+class VisualizerExitException(Exception):
+    pass

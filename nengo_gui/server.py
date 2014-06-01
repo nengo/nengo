@@ -149,8 +149,11 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
 
         javaviz.View(model, default_labels=nf.known_name)
         sim = nengo.Simulator(model)
-        while True:
-            sim.run(1)
+        try:
+            while True:
+                sim.run(1)
+        except javaviz.VisualizerExitException:
+            print('Finished running JavaViz simulation')
 
 
     def swi_graph_json(self, code):
