@@ -69,6 +69,11 @@ class View:
                 isinstance(obj, nengo.Network) and name == None):
             name = self.default_labels.get(id(obj), name)
 
+            # if the provided name has dots (indicating a hierarchy),
+            # ignore them since that'll get filled in by the prefix
+            if '.' in name:
+                name = name.rsplit('.', 1)[1]
+
         if prefix != '':
             name = '%s.%s' % (prefix, name)
 
