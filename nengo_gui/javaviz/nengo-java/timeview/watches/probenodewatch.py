@@ -7,7 +7,7 @@ from timeview.watches import watchtemplate
 
 class ProbeNodeWatch(watchtemplate.WatchTemplate):
     def check(self, obj):
-        return isinstance(obj, ProbeNode)
+        return isinstance(obj, ProbeNode) and hasattr(obj, 'spike_probe')
 
     def spikes(self, obj):
         return obj.spike_probe._value + [] # force copy
