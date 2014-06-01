@@ -214,7 +214,7 @@ class OverrideFunction(object):
         while self.view.block_time < t:
             time.sleep(0.01)
             if self.view.should_stop:
-                raise visualizerExitException('JavaViz closed')
+                raise VisualizerExitException('JavaViz closed')
         if callable(self.function):
             value = np.array(self.function(t), dtype='float')
         else:
