@@ -12,6 +12,8 @@ class View:
     def __init__(self, model, udp_port=56789, client='localhost',
                  default_labels={}):
         self.default_labels = default_labels
+        self.overrides = {}
+        self.block_time = 0.0
 
         # connect to the remote java server
         self.rpyc = rpyc.classic.connect(client)
@@ -108,7 +110,7 @@ class View:
                     output_dims = len(output)
                 obj._output_dims = output_dims
                 input = remote_net.make_input(name, tuple([0]*output_dims))
-                obj.output = OverrideFunction(obj.output, id(input)&0xFFFF)
+                obj.output = OverrideFunction(self, obj.output, id(input)&0xFFFF)
                 self.remote_objs[obj] = input
                 self.inputs.append(input)
             else:
@@ -180,30 +182,30 @@ class View:
             # grab the current time the simulator thinks it is at
             time = struct.unpack('>f', msg[:4])
             # tell the simulator to stop if it is past the given time
-            OverrideFunction.overrides['block_time'] = time[0]
+            self.block_time = time[0]
 
             # override the node output values if the visualizer says to
             for i in range((len(msg)-4)/12):
                 id, index, value = struct.unpack('>LLf', msg[4+i*12:16+i*12])
-                OverrideFunction.overrides[id][index]=value
+                self.overrides[id][index]=value
 
 # this replaces any callable nengo.Node's function with a function that:
 # a) blocks if it gets ahead of the time the visualizer wants to show
 # b) uses the slider value sent back from the visualizer instead of the
 # output function, if that slider has been set
 class OverrideFunction(object):
-    overrides = {'block_time':0.0}
-    def __init__(self, function, id):
+    def __init__(self, view, function, id):
+        self.view = view
         self.function = function
         self.id = id
-        OverrideFunction.overrides[id] = {}
+        self.view.overrides[id] = {}
     def __call__(self, t):
-        while OverrideFunction.overrides['block_time'] < t:
+        while self.view.block_time < t:
             time.sleep(0.01)
         if callable(self.function):
             value = np.array(self.function(t), dtype='float')
         else:
             value = np.array(self.function, dtype='float')
-        for k,v in OverrideFunction.overrides.get(self.id, {}).items():
+        for k,v in self.view.overrides.get(self.id, {}).items():
             value[k] = v
         return value
