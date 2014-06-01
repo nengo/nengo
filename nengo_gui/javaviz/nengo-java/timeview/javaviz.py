@@ -55,19 +55,29 @@ class ValueReceiver(java.lang.Thread):
                     break
                 else:
                     continue
-            d = java.io.DataInputStream(java.io.ByteArrayInputStream(self.packet.getData()))
+            d = java.io.DataInputStream(
+                    java.io.ByteArrayInputStream(self.packet.getData()))
 
             id = d.readInt()
 
             probe = self.probes[id]
             time = d.readFloat()
+
             length = len(probe._value)
-            for i in range(length):
-                probe._value[i] = d.readFloat()
+
+            if callable(probe):
+                # spikes
+                for i in range(length):
+                    probe._value[i] += d.readFloat()
+            else:
+                for i in range(length):
+                    probe._value[i] = d.readFloat()
+
         self.socket.close()
         print 'finished running JavaViz'
 
 class ControlNode(nef.Node, java.awt.event.WindowListener):
+
     def __init__(self, name, address, port, receiver, dt=0.001):
         nef.Node.__init__(self, name)
         self.view = None
@@ -79,13 +89,16 @@ class ControlNode(nef.Node, java.awt.event.WindowListener):
         self.dt = dt
         self.formats = {}
         self.ids = {}
+
     def set_view(self, view):
         self.view = view
         self.view.frame.addWindowListener(self)
+
     def register(self, id, input):
         self.inputs[id] = input
         self.formats[input] = '>Lf'+'f'*input.getOrigin('origin').getDimensions()
         self.ids[input.name] = id
+
     def start(self):
         cache = {}
 
@@ -120,7 +133,4 @@ class ControlNode(nef.Node, java.awt.event.WindowListener):
         pass
     def windowOpened(self, event):
         pass
-    
-    
-
 

@@ -10,7 +10,13 @@ class ProbeNodeWatch(watchtemplate.WatchTemplate):
         return isinstance(obj, ProbeNode) and hasattr(obj, 'spike_probe')
 
     def spikes(self, obj):
-        return obj.spike_probe._value + [] # force copy
+        length = len(obj.spike_probe._value)
+        val = [0.0] * length
+        for i in range(length):
+            val[i] = obj.spike_probe._value[i]
+            obj.spike_probe._value[i] = 0.0
+
+        return val
 
     def views(self, obj):
         r = [(None, None, None)]
