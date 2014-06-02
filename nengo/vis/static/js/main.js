@@ -741,8 +741,6 @@ function update_graph() {
             zoomers[d.id](d3.select(this))
             d.scale = graph.nodes[d.contains[0]].scale
             zoomers[d.id].scale(d.scale)
-            d.x = 0; //set initial positions to zero
-            d.y = 0;
         })
         .on('dblclick.zoom', zoomCenter)
                               
