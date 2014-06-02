@@ -92,9 +92,8 @@ class Simulator(object):
             build artifacts in the Model before building the network,
             then you can pass in a ``nengo.builder.Model`` instance.
         """
-        self.dt = dt
         if model is None:
-            self.model = Model(dt=self.dt,
+            self.model = Model(dt=dt,
                                label="%s, dt=%f" % (network.label, dt),
                                seed=network.seed)
         else:
@@ -111,12 +110,12 @@ class Simulator(object):
         # -- map from Signal.base -> ndarray
         self.signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
         for op in self.model.operators:
-            op.init_signals(self.signals, self.dt)
+            op.init_signals(self.signals, dt)
 
         self.dg = operator_depencency_graph(self.model.operators)
         self._step_order = [node for node in toposort(self.dg)
                             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self.signals, self.dt)
+        self._steps = [node.make_step(self.signals, dt)
                        for node in self._step_order]
 
         self.n_steps = 0
@@ -126,6 +125,16 @@ class Simulator(object):
 
         # Provide a nicer interface to probe outputs
         self.data = ProbeDict(self._probe_outputs)
+
+    @property
+    def dt(self):
+        return self.model.dt
+
+    @dt.setter
+    def dt(self, dummy):
+        raise AttributeError("Cannot change simulator 'dt'. Please file "
+                             "an issue at http://github.com/ctn-waterloo/nengo"
+                             "/issues and describe your use case.")
 
     def step(self):
         """Advance the simulator by `self.dt` seconds.
