@@ -294,6 +294,24 @@ class SignalView(object):
                                           (self.structure, other.structure))
         raise NotImplementedError()
 
+    @property
+    def value(self):
+        """Returns a view on the base array's value."""
+        try:
+            # for some installations, this works
+            itemsize = int(self.dtype.itemsize)
+        except TypeError:
+            # other installations, this...
+            itemsize = int(self.dtype().itemsize)
+        byteoffset = itemsize * self.offset
+        bytestrides = [itemsize * s for s in self.elemstrides]
+        view = np.ndarray(shape=self.shape,
+                          dtype=self.dtype,
+                          buffer=self.base._value.data,
+                          offset=byteoffset,
+                          strides=bytestrides)
+        return view
+
 
 class Signal(SignalView):
     """Interpretable, vector-valued quantity within Nengo"""
@@ -306,7 +324,7 @@ class Signal(SignalView):
     assert_named_signals = False
 
     def __init__(self, value, name=None):
-        self.value = np.asarray(value, dtype=np.float64)
+        self._value = np.asarray(value, dtype=np.float64)
         if name is not None:
             self._name = name
         if Signal.assert_named_signals:
@@ -346,6 +364,10 @@ class Signal(SignalView):
     @property
     def base(self):
         return self
+
+    @property
+    def value(self):
+        return self._value
 
 
 class SignalDict(dict):

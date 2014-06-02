@@ -97,6 +97,16 @@ def test_signal():
     nengo.builder.Signal.assert_named_signals = False
 
 
+def test_signal_values():
+    """Make sure Signal.value and SignalView.value work."""
+    two_d = nengo.builder.Signal([[1], [1]])
+    assert np.allclose(two_d.value, np.array([[1], [1]]))
+    two_d_view = two_d[0, :]
+    assert np.allclose(two_d_view.value, np.array([1]))
+    two_d.value[...] = np.array([[0.5], [-0.5]])
+    assert np.allclose(two_d_view.value, np.array([0.5]))
+
+
 def test_signal_init_values(RefSimulator):
     """Tests that initial values are not overwritten."""
     zero = nengo.builder.Signal([0])
@@ -122,7 +132,7 @@ def test_signal_init_values(RefSimulator):
 
 
 def test_signaldict():
-    """Tests simulator.SignalDict's dict overrides."""
+    """Tests SignalDict's dict overrides."""
     signaldict = nengo.builder.SignalDict()
 
     scalar = nengo.builder.Signal(1)
@@ -189,10 +199,9 @@ def test_signaldict_reset():
     assert np.allclose(signaldict[two_d], np.array([[-1], [-1]]))
     assert np.allclose(signaldict[two_d_view], np.array([-1]))
 
-    # Doesn't work yet
-    # signaldict.reset(two_d_view)
-    # assert np.allclose(signaldict[two_d_view], np.array([1]))
-    # assert np.allclose(signaldict[two_d], np.array([[1], [-1]]))
+    signaldict.reset(two_d_view)
+    assert np.allclose(signaldict[two_d_view], np.array([1]))
+    assert np.allclose(signaldict[two_d], np.array([[1], [-1]]))
 
     signaldict.reset(two_d)
     assert np.allclose(signaldict[two_d], np.array([[1], [1]]))
