@@ -720,15 +720,21 @@ class Connection(NengoObject):
 
     @learning_rule.setter
     def learning_rule(self, _learning_rule):
-
-        if not isinstance(_learning_rule, list):
+        try:
+            # This is done to convert generators to lists, and to copy the list
+            _learning_rule = list(_learning_rule)
+        except TypeError:
+            # Not given an iterable
             _learning_rule = [_learning_rule]
+        for lr in _learning_rule:
+            if not isinstance(lr, LearningRule):
+                raise ValueError("Argument '%s' is not a learning rule." % lr)
+            if type(self.pre).__name__ not in lr.modifies:
+                raise ValueError("Learning rule '%s' cannot be applied to "
+                                 "connection with pre of type '%s'"
+                                 % (lr, type(self.pre).__name__))
 
         self._learning_rule = _learning_rule
-
-        for lr in self._learning_rule:
-            assert isinstance(lr, LearningRule)
-            assert type(self.pre).__name__ in lr.modifies
 
 
 class Probe(NengoObject):
