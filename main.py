@@ -1,205 +1,27 @@
-import swi
-import os.path
-import json
-import traceback
-import sys
+import nengo_gui.swi
+from nengo_gui.server import NengoGui
 
-import converter
-import layout
-import nengo_helper
-import nengo
-import os
-import urllib
+import optparse
+parser = optparse.OptionParser()
+parser.add_option('-p', '--password', dest='password', metavar='PASS',
+                  default=None, help='password for remote access')
+parser.add_option('-r', '--refresh', dest='refresh', metavar='TIME',
+                  default=0, help='interval to check server for changes',
+                  type='int')
+parser.add_option('-P', '--port', dest='port', metavar='PORT',
+                  default=8080, type='int', help='port to run server on')
+(options, args) = parser.parse_args()
 
-import nengo_gui
+NengoGui.set_refresh_interval(options.refresh)
 
-class NengoGui(swi.SimpleWebInterface):
-    default_filename = 'default.py'
-    script_path = 'scripts/'
-    refresh_interval = 0
+if len(args) > 0:
+    NengoGui.set_default_filename(args[0])
 
-    def swi_static(self, *path):
-        if self.user is None: return
-        fn = os.path.join('static', *path)
-        if fn.endswith('.js'):
-            mimetype = 'text/javascript'
-        elif fn.endswith('.css'):
-            mimetype = 'text/css'
-        elif fn.endswith('.png'):
-            mimetype = 'image/png'
-        elif fn.endswith('.gif'):
-            mimetype = 'image/gif'
-        else:
-            raise Exception('unknown extenstion for %s' % fn)
-        with open(fn, 'rb') as f:
-            js = f.read()
-        return (mimetype, js)
+addr = 'localhost'
+if options.password is not None:
+    nengo_gui.swi.addUser('', options.password)
+    addr = ''   # allow connections from anywhere
+else:
+    nengo_gui.swi.browser(options.port)
 
-    def swi_favicon_ico(self):
-        with open('static/favicon.ico','rb') as f:
-            icon = f.read()
-        return ('image/ico', icon)
-
-    def swi(self):
-        if self.user is None:
-            return self.create_login_form()
-        with open('templates/index.html') as f:
-            html = f.read()
-        return html % dict(filename=self.default_filename,
-                           refresh_interval=self.refresh_interval)
-
-    def create_login_form(self):
-        message = "Enter the password:"
-        if self.attemptedLogin:
-            message = "Invalid password"
-        return """<form action="/" method="POST">%s<br/>
-        <input type=hidden name=swi_id value="" />
-        <input type=password name=swi_pwd>
-        </form>""" % message
-
-    @classmethod
-    def set_default_filename(klass, fn):
-        klass.default_filename = fn
-        path, fn = os.path.split(fn)
-        klass.script_path = path
-        klass.default_filename = fn
-
-    @classmethod
-    def set_refresh_interval(klass, interval):
-        klass.refresh_interval = interval
-
-    def swi_browse(self, dir):
-        if self.user is None: return
-        r = ['<ul class="jqueryFileTree" style="display: none;">']
-        # r.append('<li class="directory collapsed"><a href="#" rel="../">..</a></li>')
-        d = urllib.unquote(dir)
-        for f in sorted(os.listdir(os.path.join(self.script_path, d))):
-            ff = os.path.relpath(os.path.join(self.script_path, d,f), self.script_path)
-            if os.path.isdir(ff):
-                r.append('<li class="directory collapsed"><a href="#" rel="%s/">%s</a></li>' % (ff,f))
-            else:
-                e = os.path.splitext(f)[1][1:] # get .ext and remove dot
-                if e == 'py':
-                    r.append('<li class="file ext_%s"><a href="#" rel="%s">%s</a></li>' % (e,ff,f))
-        r.append('</ul>')
-        return ''.join(r)
-
-    def swi_openfile(self, filename):
-        if self.user is None: return
-        fn = os.path.join(self.script_path, filename)
-        try:
-            with open(fn, 'r') as f:
-                text = f.read()
-            modified_time = os.stat(fn).st_mtime
-        except:
-            text = ''
-            modified_time = None
-        return json.dumps(dict(text=text, mtime=modified_time))
-
-
-    def swi_savefile(self, filename, code):
-        if self.user is None: return
-        fn = os.path.join(self.script_path, filename)
-        with open(fn, 'w') as f:
-            f.write(code.replace('\r\n', '\n'))
-        return 'success'
-
-    def swi_modified_time(self, filename):
-        if self.user is None: return
-        fn = os.path.join(self.script_path, filename)
-        return repr(os.stat(fn).st_mtime)
-
-    def swi_graph_json(self, code):
-        if self.user is None: return
-
-        code = code.replace('\r\n', '\n')
-
-        try:
-            index = code.index('\nimport nengo_gui\n')
-            code_gui = code[index:]
-            code = code[:index]
-        except ValueError:
-            code_gui = ''
-
-        with open('nengo_gui_temp.py', 'w') as f:
-            f.write(code)
-
-        try:
-            c = compile(code, 'nengo_gui_temp.py', 'exec')
-            locals = {}
-            exec c in globals(), locals
-        except (SyntaxError, Exception):
-            try:
-                e_type, e_value, e_traceback = sys.exc_info()
-                tb = traceback.extract_tb(e_traceback)
-
-                if e_type is SyntaxError:
-                    error_line = e_value.lineno
-                elif e_type is IndentationError:
-                    error_line = e_value.lineno
-                else:
-                    for (fn, line, funcname, text) in reversed(tb):
-                        if fn == 'nengo_gui_temp.py':
-                            error_line = line
-                            break
-                    else:
-                        print 'Unknown Error'
-                        error_line = 0
-
-                print tb
-                traceback.print_exc()
-
-                return json.dumps(dict(error_line=error_line, text=str(e_value)))
-            except:
-                traceback.print_exc()
-
-        # run gui code lines, skipping ones that cause name errors
-        for i, line in enumerate(code_gui.splitlines()):
-            try:
-                exec line in globals(), locals
-            except NameError:
-                # this is generally caused by having a gui[x].pos statement
-                #  for something that has been deleted
-                pass
-
-        try:
-            model = locals['model']
-            cfg = locals.get('gui', None)
-            if cfg is None:
-                cfg = nengo_gui.Config()
-        except:
-            traceback.print_exc()
-            return json.dumps(dict(error_line=2, text='Unknown'))
-
-        gui_layout = layout.Layout(model, cfg)
-        gui_layout.run()
-        gui_layout.store_results()
-
-        conv = converter.Converter(model, code.splitlines(), locals, cfg)
-        return conv.to_json()
-
-
-if __name__=='__main__':
-    import optparse
-    parser = optparse.OptionParser()
-    parser.add_option('-p', '--password', dest='password', metavar='PASS',
-                      default=None, help='password for remote access')
-    parser.add_option('-r', '--refresh', dest='refresh', metavar='TIME',
-                      default=0, help='interval to check server for changes',
-                      type='int')
-    parser.add_option('-P', '--port', dest='port', metavar='PORT',
-                      default=8080, type='int', help='port to run server on')
-    (options, args) = parser.parse_args()
-
-    NengoGui.set_refresh_interval(options.refresh)
-
-    if len(args) > 0:
-        NengoGui.set_default_filename(args[0])
-    addr = 'localhost'
-    if options.password is not None:
-        swi.addUser('', options.password)
-        addr = ''   # allow connections from anywhere
-    else:
-        swi.browser(options.port)
-
-    swi.start(NengoGui, options.port, addr=addr)
+nengo_gui.swi.start(NengoGui, options.port, addr=addr)
