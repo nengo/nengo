@@ -10,7 +10,7 @@ import time
 
 class View:
     def __init__(self, model, udp_port=56789, client='localhost',
-                 default_labels={}):
+                 default_labels={}, config=None):
         self.default_labels = default_labels
         self.overrides = {}
         self.block_time = 0.0
@@ -62,10 +62,24 @@ class View:
         for input in self.inputs:
             self.control_node.register(id(input)&0xFFFF, input)
 
+        has_layout = self.rpyc.modules.timeview.view.load_layout_file(label, False)
+
+        # check whether has layout == ({}, [], {})
+        has_layout = has_layout is not None and any(has_layout)
+
+        if config is not None and not has_layout:
+            # generate a layout based on the current positions of network nodes in GUI
+            view, layout, control = self.generate_layout(model, config)
+            net.set_layout(view, layout, control)
+
         # open up the visualizer on the server
         view = net.view()
         self.control_node.set_view(view)
 
+        if config is not None and not has_layout:
+            # destroy the layout we created - unless the user saves their layout,
+            # we want to generate a new layout next time javaviz is opened.
+            self.rpyc.modules.timeview.view.save_layout_file(label, {}, [], {})
 
     def get_name(self, names, obj, prefix):
         name = obj.label
@@ -204,6 +218,60 @@ class View:
         self.socket.close()
         self.socket_recv.close()
         self.should_stop = True
+
+    def generate_layout(self, network, config):
+        window_width = 1000
+        window_height = 625
+        window_pos_x = 50
+        window_pos_y = 50
+
+        top_cushion = int(0.1 * window_height)
+        bottom_cushion = 200
+        left_cushion = int(0.1 * window_width)
+        right_cushion = 200
+
+        draw_area_height = window_height - top_cushion - bottom_cushion
+        draw_area_width = window_width - left_cushion - right_cushion
+
+        view = {'state':0, 'height':window_height, 'width':window_width,
+                'x':window_pos_x, 'y':window_pos_y}
+
+        def _generate_layout(layout, network, config):
+            for obj in network.nodes + network.ensembles:
+                name = self.remote_objs[obj].getName()
+                pos = config[obj].pos
+                layout_item = (name, None,
+                        {'label': False, 'x': pos[0], 'y': pos[1],
+                         'width': 100, 'height': 20})
+                layout.append(layout_item)
+
+            for obj in network.networks:
+                _generate_layout(layout, obj, config)
+
+        layout = []
+        _generate_layout(layout, network, config)
+
+        # transform the node locations so the whole network is visible in javaviz
+        points = [[item[2]['x'], item[2]['y']] for item in layout]
+        points = np.array(points)
+
+        maxes = np.max(points, 0)
+        mins = np.min(points, 0)
+
+        points -= mins + (maxes - mins) / 2.0
+        points *= np.array([draw_area_width, draw_area_height]) / (maxes - mins)
+        points += np.array([left_cushion + draw_area_width / 2.0,
+                            top_cushion + draw_area_height / 2.0])
+        points = points.astype('int')
+
+        for point, item in zip(points, layout):
+            item[2]['x'] = point[0]
+            item[2]['y'] = point[1]
+
+        control = {}
+
+        return view, layout, control
+
 
 # this replaces any callable nengo.Node's function with a function that:
 # a) blocks if it gets ahead of the time the visualizer wants to show

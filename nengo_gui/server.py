@@ -144,10 +144,15 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         exec code in globals(), locals
 
         model = locals['model']
+        cfg = locals.get('gui', None)
+        if cfg is None:
+            cfg = nengo_gui.Config()
 
         nf = nengo_gui.namefinder.NameFinder(locals, model)
 
-        javaviz.View(model, default_labels=nf.known_name)
+        javaviz.View(
+            model, default_labels=nf.known_name, config=cfg)
+
         sim = nengo.Simulator(model)
         try:
             while True:
