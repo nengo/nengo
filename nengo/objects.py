@@ -587,7 +587,8 @@ class Connection(NengoObject):
 
     def _pad_transform(self, transform):
         """Pads the transform with zeros according to the pre/post slices."""
-        if self._preslice == slice(None) and self._postslice == slice(None):
+        if (self._preslice == slice(None) and self._postslice == slice(None)
+                and transform.ndim != 1):
             # Default case when unsliced objects are passed to __init__
             return transform
 
@@ -601,20 +602,27 @@ class Connection(NengoObject):
         # Check that the given transform matches the pre/post slices sizes
         self._check_transform(transform, (post_sliced_size, pre_sliced_size))
 
-        # Cast scalar transforms to the identity
-        if transform.ndim == 0:
-            # following assertion should be guaranteed by _check_transform
-            assert pre_sliced_size == post_sliced_size
-            transform = transform*np.eye(pre_sliced_size)
-
         # Create the new transform matching the pre/post dimensions
         new_transform = np.zeros((out_dims, in_dims))
-        rows_transform = np.array(new_transform[self._postslice])
-        rows_transform[:, self._preslice] = transform
-        new_transform[self._postslice] = rows_transform
-        # Note: the above is a little obscure, but we do it so that lists of
-        #  indices can specify selections of rows and columns, rather than
-        #  just individual items
+        if transform.ndim < 2:
+            slice_to_list = lambda s, d: (
+                np.arange(d)[s] if isinstance(s, slice) else s)
+            preslice = slice_to_list(self._preslice, in_dims)
+            postslice = slice_to_list(self._postslice, out_dims)
+            new_transform[postslice, preslice] = transform
+        else:  #if transform.ndim == 2:
+            repeated_inds = lambda x: (
+                not isinstance(x, slice) and np.unique(x).size != len(x))
+            if repeated_inds(self._preslice) or repeated_inds(self._postslice):
+                raise ValueError("%s object selection has repeated indices" %
+                                 ("Input" if repeated_inds(self._preslice)
+                                  else "Output"))
+            rows_transform = np.array(new_transform[self._postslice])
+            rows_transform[:, self._preslice] = transform
+            new_transform[self._postslice] = rows_transform
+            # Note: the above is a little obscure, but we do it so that lists of
+            #  indices can specify selections of rows and columns, rather than
+            #  just individual items
 
         # Note: Calling _check_shapes after this, is (or, should be) redundant
         return new_transform
@@ -641,13 +649,18 @@ class Connection(NengoObject):
         if out_src == "Probe":
             return
         out_dims, in_dims = required_shape
-        if transform.ndim == 0:
+        if transform.ndim < 2:
+            if transform.ndim == 1 and transform.size != out_dims:
+                raise ValueError("Transform length (%d) not equal to "
+                                 "%s output size (%d)" %
+                                 (transform.size, out_src, out_dims))
+
             # check input dimensionality matches output dimensionality
             if in_dims != out_dims:
                 raise ValueError("%s output size (%d) not equal to "
                                  "%s input size (%d)" %
                                  (in_src, in_dims, out_src, out_dims))
-        else:
+        elif transform.ndim == 2:
             # check input dimensionality matches transform
             if in_dims != transform.shape[1]:
                 raise ValueError("%s output size (%d) not equal to "
@@ -659,6 +672,9 @@ class Connection(NengoObject):
                 raise ValueError("Transform output size (%d) not equal to "
                                  "%s input size (%d)" %
                                  (transform.shape[0], out_src, out_dims))
+        else:
+            raise ValueError("Cannot handle transform tensors "
+                             "with dimensions > 2")
 
     @property
     def label(self):

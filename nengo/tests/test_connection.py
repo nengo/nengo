@@ -428,6 +428,39 @@ def test_unsupervised_learning_rule(Simulator, nl_nodirect, learning_rule):
     sim.run(1.)
 
 
+def test_vector(Simulator, nl):
+    name = 'vector'
+    N1, N2 = 50, 50
+    transform = [-1, 0.5]
+
+    m = nengo.Network(label=name, seed=123)
+    with m:
+        u = nengo.Node(output=[0.5, 0.5])
+        a = nengo.Ensemble(nl(N1), dimensions=2)
+        b = nengo.Ensemble(nl(N2), dimensions=2)
+        nengo.Connection(u, a)
+        nengo.Connection(a, b, transform=transform)
+
+        up = nengo.Probe(u, 'output')
+        ap = nengo.Probe(a, synapse=0.03)
+        bp = nengo.Probe(b, synapse=0.03)
+
+    sim = Simulator(m)
+    sim.run(1.0)
+    t = sim.trange()
+    x = sim.data[up]
+    y = x * transform
+    yhat = sim.data[bp]
+
+    with Plotter(Simulator, nl) as plt:
+        plt.plot(t, y, '--')
+        plt.plot(t, yhat)
+        plt.savefig('test_connection.test_' + name + '.pdf')
+        plt.close()
+
+    assert np.allclose(y[-10:], yhat[-10:], atol=.1, rtol=.01)
+
+
 def test_dimensionality_errors(nl_nodirect):
     N = 10
     with nengo.Network(label="test_dimensionality_error") as m:
@@ -445,6 +478,7 @@ def test_dimensionality_errors(nl_nodirect):
         nengo.Connection(n21, e1)
         nengo.Connection(e1.neurons, n21, transform=np.random.randn(2, N))
         nengo.Connection(e2, e1, function=lambda x: x[0])
+        nengo.Connection(e2, e2, transform=np.ones(2))
 
         # these should not work
         with pytest.raises(ValueError):
@@ -459,6 +493,10 @@ def test_dimensionality_errors(nl_nodirect):
             nengo.Connection(e2, e1, function=lambda x: x, transform=[[1]])
         with pytest.raises(ValueError):
             nengo.Connection(n21, e2, transform=np.ones((2, 2)))
+        with pytest.raises(ValueError):
+            nengo.Connection(e2, e2, transform=np.ones((2, 2, 2)))
+        with pytest.raises(ValueError):
+            nengo.Connection(e2, e2, transform=np.ones(3))
 
         # these should not work because of indexing mismatches
         with pytest.raises(ValueError):
@@ -549,6 +587,27 @@ def test_slicing(Simulator, nl_nodirect):
         assert np.all(conn.transform_full == np.array([[0, 0, 0],
                                                        [5, 4, 6],
                                                        [2, 1, 3]]))
+
+        # using vector
+        conn = nengo.Connection(ens3[[1, 0, 2]], ens3[[2, 0, 1]],
+                                transform=[1, 2, 3])
+        assert np.all(conn.transform == np.array([1, 2, 3]))
+        assert np.all(conn.transform_full == np.array([[2, 0, 0],
+                                                       [0, 0, 3],
+                                                       [0, 1, 0]]))
+
+        # using vector and lists
+        conn = nengo.Connection(ens3[[1, 0, 2]], ens3[[2, 0, 1]],
+                                transform=[1, 2, 3])
+        assert np.all(conn.transform == np.array([1, 2, 3]))
+        assert np.all(conn.transform_full == np.array([[2, 0, 0],
+                                                       [0, 0, 3],
+                                                       [0, 1, 0]]))
+
+        # using multi-index lists
+        conn = nengo.Connection(ens3, ens2[[0, 1, 0]])
+        assert np.all(conn.transform_full == np.array([[1, 0, 1],
+                                                       [0, 1, 0]]))
 
 
 def test_shortfilter(Simulator, nl):
