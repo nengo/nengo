@@ -560,7 +560,6 @@ class Connection(NengoObject):
         self._postslice = post.slice
         self.probeable = Default
 
-        self.learning_rule = learning_rule
         self.modulatory = modulatory
         self.synapse = synapse
         self.transform = transform
@@ -586,6 +585,8 @@ class Connection(NengoObject):
         if not isinstance(self._post, (Ensemble, Neurons, Node, Probe)):
             raise ValueError("Objects of type '%s' cannot serve as 'post'" %
                              self._post.__class__.__name__)
+
+        self.learning_rule = learning_rule  # Must set after solver
 
         # check that shapes match up
         self._skip_check_shapes = False
@@ -726,7 +727,11 @@ class Connection(NengoObject):
         for lr in _learning_rule:
             if not isinstance(lr, LearningRule):
                 raise ValueError("Argument '%s' is not a learning rule." % lr)
-            if type(self.pre).__name__ not in lr.modifies:
+            if self.solver.weights:
+                if 'Neurons' not in lr.modifies:
+                    raise ValueError("Learning rule '%s' cannot be applied "
+                                     "when using a weight solver.")
+            elif type(self.pre).__name__ not in lr.modifies:
                 raise ValueError("Learning rule '%s' cannot be applied to "
                                  "connection with pre of type '%s'"
                                  % (lr, type(self.pre).__name__))

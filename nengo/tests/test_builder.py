@@ -175,6 +175,29 @@ def test_signaldict():
         assert "%s %s" % (repr(k), repr(signaldict[k])) in str(signaldict)
 
 
+def test_signaldict_reset():
+    """Tests SignalDict's reset function."""
+    signaldict = nengo.builder.SignalDict()
+    two_d = nengo.builder.Signal([[1], [1]])
+    signaldict.init(two_d)
+
+    two_d_view = two_d[0, :]
+    signaldict[two_d_view] = -0.5
+    assert np.allclose(signaldict[two_d], np.array([[-0.5], [1]]))
+
+    signaldict[two_d] = np.array([[-1], [-1]])
+    assert np.allclose(signaldict[two_d], np.array([[-1], [-1]]))
+    assert np.allclose(signaldict[two_d_view], np.array([-1]))
+
+    # Doesn't work yet
+    # signaldict.reset(two_d_view)
+    # assert np.allclose(signaldict[two_d_view], np.array([1]))
+    # assert np.allclose(signaldict[two_d], np.array([[1], [-1]]))
+
+    signaldict.reset(two_d)
+    assert np.allclose(signaldict[two_d], np.array([[1], [1]]))
+
+
 if __name__ == '__main__':
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

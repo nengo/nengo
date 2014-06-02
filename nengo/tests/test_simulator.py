@@ -8,6 +8,7 @@ import nengo.simulator
 from nengo.builder import (
     Model, ProdUpdate, Copy, Reset, DotInc, Signal, build_pyfunc)
 from nengo.utils.compat import range
+from nengo.utils.functions import whitenoise
 
 
 logger = logging.getLogger(__name__)
@@ -196,6 +197,50 @@ def test_probedict():
     probedict = nengo.simulator.ProbeDict(raw)
     assert np.all(probedict["scalar"] == np.asarray(raw["scalar"]))
     assert np.all(probedict.get("list") == np.asarray(raw.get("list")))
+
+
+def test_reset(Simulator, nl_nodirect):
+    """Make sure resetting actually resets.
+
+    A learning network on weights is used as the example network as the
+    ultimate stress test; lots of weird stuff happens during learning, but
+    if we're able to reset back to initial connection weights and everything
+    then we're probably doing resetting right.
+    """
+    noise = whitenoise(0.1, 5, dimensions=2, seed=328)
+    m = nengo.Network(seed=3902)
+    with m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        u = nengo.Node(output=noise)
+        ens = nengo.Ensemble(200, dimensions=2)
+        error = nengo.Ensemble(200, dimensions=2)
+        square = nengo.Ensemble(200, dimensions=2)
+
+        nengo.Connection(u, ens)
+        nengo.Connection(u, error)
+        nengo.Connection(square, error, transform=-1)
+        err_conn = nengo.Connection(error, square, modulatory=True)
+        nengo.Connection(ens, square,
+                         learning_rule=[nengo.PES(err_conn), nengo.BCM()],
+                         solver=nengo.decoders.LstsqL2nz(weights=True))
+
+        square_p = nengo.Probe(square, synapse=0.1)
+        err_p = nengo.Probe(error, synapse=0.1)
+
+    sim = Simulator(m)
+    sim.run(0.2)
+    sim.run(0.6)
+
+    first_t = sim.trange()
+    first_square_p = np.array(sim.data[square_p], copy=True)
+    first_err_p = np.array(sim.data[err_p], copy=True)
+
+    sim.reset()
+    sim.run(0.8)
+
+    assert np.all(sim.trange() == first_t)
+    assert np.all(sim.data[square_p] == first_square_p)
+    assert np.all(sim.data[err_p] == first_err_p)
 
 
 if __name__ == "__main__":
