@@ -32,8 +32,8 @@ with model:
 
 import nengo_gui
 gui = nengo_gui.Config()
-gui[model].scale = 0.51277261193212
-gui[model].offset = -2045.497204963708,-1986.6769353655764
+gui[model].scale = 0.8321616733242706
+gui[model].offset = -3625.708661645668,-3223.8780939417775
 gui[a].pos = 4786.724, 4517.055
 gui[a].scale = 1.000
 gui[b].pos = 4752.862, 4338.535
@@ -42,9 +42,9 @@ gui[c].pos = 5017.618, 4405.442
 gui[c].scale = 1.000
 gui[d].pos = 5103.881, 4278.200
 gui[d].scale = 1.000
-gui[e].pos = 4543.174, 4032.532
+gui[e].pos = 4540.471, 4032.532
 gui[e].scale = 1.000
-gui[e].size = 156.946, 219.766
+gui[e].size = 184.415, 219.766
 gui[e.ea_ensembles[0]].pos = 4516.242, 4102.415
 gui[e.ea_ensembles[0]].scale = 1.000
 gui[e.ea_ensembles[1]].pos = 4573.465, 4081.571

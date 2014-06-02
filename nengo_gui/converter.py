@@ -5,7 +5,6 @@ import namefinder
 
 import random
 import pprint
-import pdb
 
 def isidentifier(s):
     if s in keyword.kwlist:
@@ -27,8 +26,6 @@ class Converter(object):
         self.global_scale = config[model].scale
         self.global_offset = config[model].offset
 
-        #pdb.set_trace()
-
     def find_identifier(self, line, default):
         text = self.codelines[line]
         if '=' in text:
@@ -49,10 +46,6 @@ class Converter(object):
 
             pos = self.config[ens].pos
             scale = self.config[ens].scale
-            if pos is None:
-                pos = 0,0
-            if scale is None:
-                scale = 1
                 
             obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
                    'x':pos[0], 'y':pos[1], 'scale': scale,
@@ -69,10 +62,6 @@ class Converter(object):
             
             pos = self.config[nde].pos
             scale = self.config[nde].scale
-            if pos is None:
-                pos = 0,0
-            if scale is None:
-                scale = 1
                                 
             obj = {'label':label, 'line':line, 'id':id, 'type':'nde',
                    'x':pos[0], 'y':pos[1],  'scale': scale,
@@ -107,15 +96,6 @@ class Converter(object):
             pos = self.config[net].pos
             scale = self.config[net].scale
             size = self.config[net].size
-                        
-            if pos is None:
-                pos = -50,-50
-
-            if scale is None:
-                scale = 1
-
-            if size is None:
-                size = 100,100
                 
             obj = {'label':label, 'line':line, 'id':id, 'type':'net',
                    'contains':list(contains), 'full_contains': list(full_contains[i]),

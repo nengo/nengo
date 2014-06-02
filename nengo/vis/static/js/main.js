@@ -815,7 +815,7 @@ function update_graph() {
 //***********
 $(document).ready(function () {
     zoom = d3.behavior.zoom()
-        .scaleExtent([.05, 10])
+        .scaleExtent([.00005, 10])
         .on('zoom', zoomed);
 
     drag = d3.behavior.drag()

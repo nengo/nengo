@@ -22,10 +22,10 @@ try:
     assert s.modules.timeview.javaviz.__name__ == 'timeview.javaviz'
     import javaviz
     javaviz_message = 'run with JavaViz'
-except ImportError:
+    '''except ImportError:
     javaviz_message = 'JavaViz disabled as rpyc is not installed.'
     javaviz_message += ' Try "pip install rpyc"'
-    javaviz = None
+    javaviz = None'''
 except socket.error:
     javaviz_message = 'JavaViz disabled as the javaviz server is not running'
     javaviz = None
@@ -223,9 +223,9 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
             traceback.print_exc()
             return json.dumps(dict(error_line=2, text='Unknown'))
 
-        gui_layout = nengo_gui.layout.Layout(model, cfg)
-        gui_layout.run()
-        gui_layout.store_results()
+        #gui_layout = nengo_gui.layout.Layout(model, cfg)
+        #gui_layout.run()
+        #gui_layout.store_results()
 
         conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
         return conv.to_json()
