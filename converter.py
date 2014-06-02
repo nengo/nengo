@@ -5,6 +5,7 @@ import namefinder
 
 import random
 import pprint
+import pdb
 
 def isidentifier(s):
     if s in keyword.kwlist:
@@ -25,6 +26,8 @@ class Converter(object):
 
         self.global_scale = config[model].scale
         self.global_offset = config[model].offset
+
+        #pdb.set_trace()
 
     def find_identifier(self, line, default):
         text = self.codelines[line]
@@ -100,10 +103,24 @@ class Converter(object):
                 net.ensembles + net.nodes + net.networks]
 
             full_contains[i] += contains
+            
+            pos = self.config[net].pos
+            scale = self.config[net].scale
+            size = self.config[net].size
+                        
+            if pos is None:
+                pos = -50,-50
 
+            if scale is None:
+                scale = 1
+
+            if size is None:
+                size = 100,100
+                
             obj = {'label':label, 'line':line, 'id':id, 'type':'net',
                    'contains':list(contains), 'full_contains': list(full_contains[i]),
-                   'contained_by': self.object_index[network], 'scale': 1}
+                   'contained_by': self.object_index[network], 'scale': scale,
+                   'x':pos[0], 'y':pos[1], 'width':size[0], 'height':size[1]}
             self.objects[self.object_index[net]] = obj
 
         for i, conn in enumerate(network.connections):

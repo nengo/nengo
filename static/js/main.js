@@ -40,6 +40,13 @@ function update_gui_text() {
                             d.x.toFixed(3) + ", " + d.y.toFixed(3) + "\n";
             gui += "gui[" + d.id + "].scale = " + d.scale.toFixed(3) + "\n";
         }
+        if (d.type == "net") {
+            gui += "gui[" + d.id + "].pos = " + 
+                            d.x.toFixed(3) + ", " + d.y.toFixed(3) + "\n";
+            gui += "gui[" + d.id + "].scale = " + d.scale.toFixed(3) + "\n";
+            gui += "gui[" + d.id + "].size = " + 
+                            d.width.toFixed(3) + ", " + d.height.toFixed(3) + "\n";
+        }
     }
     
     text = editor.getValue();
@@ -100,12 +107,9 @@ function resizeBRstarted(d) {
 
 function resizeBRdragged(d) {
     a = d3.select(this.parentElement.children[0]);
-    /*a.attr('width', function (d) {
-        net_widths[d.id] += d3.event.dx
-        return net_widths[d.id]
-    })*/
+
     a.each(function(d) {
-        curWidth = net_widths[d.id]*d.scale  
+        curWidth = d.width*d.scale  
         ds = (d3.event.dx+curWidth)/curWidth //ratio change
         zoomers[d.id].scale(Math.max(.25, d.scale*ds))
         zoomers[d.id].event(a)
@@ -142,8 +146,8 @@ function zoomed(node) {
         
         if (d3.select(this.parentElement).classed('resizing')) { //drag zoom
             //resize from top left corner (bottom right drag)
-            mouseX = node.x - (net_widths[node.id]/2)*node.scale
-            mouseY = node.y - (net_heights[node.id]/2)*node.scale
+            mouseX = node.x - (node.width/2)*node.scale
+            mouseY = node.y - (node.height/2)*node.scale
         } else {
             mouseX = d3.mouse(container[0][0])[0]
             mouseY = d3.mouse(container[0][0])[1]
@@ -167,14 +171,7 @@ function zoomed(node) {
     }
 
 
-    update_net_sizes();
-
-   /* if (d3.event.sourceEvent !== null && node !== undefined) {
-        var node_list = graph.nodes.slice(0) //copy the list
-        update_node_positions(node, 0, 0, d3.map(node_list));
-    }*/
-
-    
+    update_net_sizes();  
     update_line_locations();
     update_text();
     update_gui_text();    
@@ -224,7 +221,7 @@ function update_text() {
         .text(function (d) {return d.label;})
         .attr('y', function (d) {
             fontSize = parseFloat(d3.select(this).style('font-size'))
-            return net_heights[d.id]/2 + fontSize/2 + "px"
+            return d.height/2 + fontSize/2 + "px"
         })
 }
 
@@ -258,8 +255,8 @@ function zoomCenter(d) { //zoom full screen and center the network clicked on
             .getBBox().height;
 
     } else { //zoom to fit zoomNet
-        var netWidth = net_widths[zoomNet.id]*zoomNet.scale
-        var netHeight = net_heights[zoomNet.id]*zoomNet.scale
+        var netWidth = zoomNet.width*zoomNet.scale
+        var netHeight = zoomNet.height*zoomNet.scale
         var netX = zoomNet.x
         var netY = zoomNet.y
     }
@@ -299,8 +296,6 @@ function zoomCenter(d) { //zoom full screen and center the network clicked on
 // Drawing graph elements
 //***********************
 // Move objects to be drawn on top
-var net_widths = {};
-var net_heights = {};
 var net_text_margin = 10;
 
 d3.selection.prototype.moveToFront = function () {
@@ -389,18 +384,18 @@ function update_net_sizes() {
     nodes.filter(function (d) {return d.type == 'net';})
         .each(update_net_size)
         .selectAll('.net')
-        .attr('x', function (d) {return -net_widths[d.id] / 2;})
-        .attr('y', function (d) {return -net_heights[d.id] / 2;})
-        .attr('width', function (d) {return net_widths[d.id];})
-        .attr('height', function (d) {return net_heights[d.id];})
+        .attr('x', function (d) {return -d.width / 2;})
+        .attr('y', function (d) {return -d.height / 2;})
+        .attr('width', function (d) {return d.width;})
+        .attr('height', function (d) {return d.height;})
     
     nodes.attr('transform', function (d) {return 'translate(' + [d.x, d.y] 
         + ')scale(' + d.scale + ')';});
  
     if (resizeBR) {
         resizeBR //place the rescale area
-            .attr("x", function(d) { return net_widths[d.id]/2 - resizew; })
-            .attr("y", function(d) { return net_heights[d.id]/2 - resizew; })
+            .attr("x", function(d) { return d.width/2 - resizew; })
+            .attr("y", function(d) { return d.height/2 - resizew; })
     }
     
     update_text();
@@ -437,8 +432,8 @@ function update_net_size(d) {
             .width 
 
         if (curNode.type == "net") {
-            xBorder = (net_widths[curNode.id] / 2)*curNode.scale
-            yBorder = (net_heights[curNode.id] / 2)*curNode.scale
+            xBorder = (curNode.width / 2)*curNode.scale
+            yBorder = (curNode.height / 2)*curNode.scale
             if (isNaN(xBorder) || isNaN(yBorder)) {
                 xBorder = 0;
                 yBorder = 0;
@@ -460,8 +455,8 @@ function update_net_size(d) {
     d.x = (x0 + x1) / 2; // x, y mid
     d.y = (y0 + y1) / 2;
 
-    net_widths[d.id] = (x1 - x0)/d.scale + 2 * m; //track heights/widths
-    net_heights[d.id] = (y1 - y0)/d.scale + 2 * m;
+    d.width = (x1 - x0)/d.scale + 2 * m; //track heights/widths
+    d.height = (y1 - y0)/d.scale + 2 * m;
 
     if (xstart!=undefined && ystart!=undefined) {    
     
@@ -558,15 +553,15 @@ function close_to(n, o) { //n is node, o is origin
     if (o.type == "net") { //if origin is net
         if (!(n.type == "net")) { //if node is nde or ens
             if (!netContains(n, o)) {
-                if (Math.abs(o.x - n.x) < (netm + net_widths[o.id] / 2)*os &&
-                    Math.abs(o.y - n.y) < (netm + net_heights[o.id] / 2)*os) {
+                if (Math.abs(o.x - n.x) < (netm + o.width / 2)*os &&
+                    Math.abs(o.y - n.y) < (netm + o.height / 2)*os) {
                     return true;
                 }
             }
         } else if (!(netContains(n, o) || netContains(o, n))) { //if node is net
-            if (Math.abs(o.x - n.x) < (net_widths[n.id]*ns / 2 
-                + net_widths[o.id]*os / 2) && Math.abs(o.y - n.y) < 
-                (net_heights[n.id]*ns / 2 + net_heights[o.id]*os / 2)) {
+            if (Math.abs(o.x - n.x) < (n.width*ns / 2 
+                + o.width*os / 2) && Math.abs(o.y - n.y) < 
+                (n.height*ns / 2 + o.height*os / 2)) {
                 return true;
             }
         }
@@ -577,8 +572,8 @@ function close_to(n, o) { //n is node, o is origin
             }
         } else { //if node is net
             if (!netContains(o, n)) {
-                if (Math.abs(o.x - n.x) < (netm + net_widths[n.id]*ns / 2) &&
-                    Math.abs(o.y - n.y) < (netm + net_heights[n.id]*ns / 2)) {
+                if (Math.abs(o.x - n.x) < (netm + n.width*ns / 2) &&
+                    Math.abs(o.y - n.y) < (netm + n.height*ns / 2)) {
                     return true;
                 }
             }
@@ -733,12 +728,12 @@ function update_graph() {
     nodeEnter.filter(function (d) {return d.type == 'net';})
         .append('rect')
         .attr('class', 'net')
-        .attr('x', '-50')
-        .attr('y', '-50')
+        .attr('x', function (d) {return d.x})
+        .attr('y', function (d) {return d.y})
         .attr('rx', '15')
         .attr('ry', '15')
-        .attr('width', '100')
-        .attr('height', '100')
+        .attr('width', function (d) {return d.width})
+        .attr('height', function (d) {return d.height})
         .each(function (d) {
             zoomers[d.id] = d3.behavior.zoom()
                 .scaleExtent([.05, 4])
@@ -793,17 +788,16 @@ function update_graph() {
         zoom.scale(graph.global_scale);
     }
     zoom.translate(graph.global_offset);
-    zoom.event(d3.select("svg"));
+    zoom.event(container.transition().duration(500)); //or event on svg?
     
-
     //redraw so nodes are on top, lowest level nets 2nd, and so on
     layer_container();
     update_net_sizes();
     
     resizeBR = nodeEnter.filter(function (d) {return d.type == 'net';})
         .append('rect') //bottom right drag region
-        .attr("x", function(d) { return net_widths[d.id]/2 - resizew; })
-        .attr("y", function(d) { return net_heights[d.id]/2 - resizew; })
+        .attr("x", function(d) { return d.width/2 - resizew; })
+        .attr("y", function(d) { return d.height/2 - resizew; })
         .attr("height", resizew)
         .attr("id", "resizeBR")
         .attr("width", resizew)
