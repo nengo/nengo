@@ -158,14 +158,19 @@ class View:
 
                     node = nengo.Node(send, size_in=obj.dimensions)
                     c = nengo.Connection(obj, node, synapse=None)
+
             elif isinstance(probe.target, nengo.Ensemble) and probe.attr == 'spikes':
                 obj = probe.target
                 e = self.remote_objs[obj]
                 e.add_spike_probe(probe_id, obj.n_neurons)
                 with network:
-                    def send(t, x, self=self, format='>Lf'+'f'*obj.n_neurons,
-                            id=probe_id):
-                        msg = struct.pack(format, id, t, *x)
+
+                    def send(t, x, self=self, id=probe_id):
+                        spikes = filter(lambda i: x[i] > 0.5, range(len(x)))
+                        num_spikes = len(spikes)
+                        format_string = '>LH'+'H'*num_spikes
+                        msg = struct.pack(
+                             format_string, id, num_spikes, *spikes)
                         self.socket.sendto(msg, self.socket_target)
 
                     node = nengo.Node(send, size_in=obj.n_neurons)

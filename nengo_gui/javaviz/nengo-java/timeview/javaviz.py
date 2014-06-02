@@ -1,6 +1,7 @@
 import nef
 
 import struct
+import math
 
 class ProbeNode(nef.Node):
     def __init__(self, receiver, name):
@@ -59,17 +60,18 @@ class ValueReceiver(java.lang.Thread):
                     java.io.ByteArrayInputStream(self.packet.getData()))
 
             id = d.readInt()
-
             probe = self.probes[id]
-            time = d.readFloat()
-
-            length = len(probe._value)
 
             if callable(probe):
-                # spikes
-                for i in range(length):
-                    probe._value[i] += d.readFloat()
+                num_spikes = d.readUnsignedShort()
+                for i in range(num_spikes):
+                    spike_index = d.readUnsignedShort()
+                    probe._value[spike_index] += 1.0
             else:
+                time = d.readFloat()
+
+                length = len(probe._value)
+
                 for i in range(length):
                     probe._value[i] = d.readFloat()
 
