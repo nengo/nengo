@@ -1504,11 +1504,14 @@ Builder.register_builder(build_pes, nengo.learning_rules.PES)
 
 
 def build_bcm(bcm, conn, model, config):
-    pre_activities = model.sig[conn.pre.ensemble]['neuron_out']
-    post_activities = model.sig[conn.post.ensemble]['neuron_out']
+    pre = (conn.pre if isinstance(conn.pre, nengo.objects.Ensemble)
+           else conn.pre.ensemble)
+    post = (conn.post if isinstance(conn.post, nengo.objects.Ensemble)
+            else conn.post.ensemble)
+    pre_activities = model.sig[pre]['neuron_out']
+    post_activities = model.sig[post]['neuron_out']
 
-    delta = Signal(np.zeros((conn.post.ensemble.n_neurons,
-                             conn.pre.ensemble.n_neurons)), name='delta')
+    delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)), name='delta')
 
     pre_filtered = filtered_signal(
         bcm, pre_activities, bcm.pre_tau, model, config)
@@ -1532,13 +1535,17 @@ Builder.register_builder(build_bcm, nengo.learning_rules.BCM)
 
 
 def build_oja(oja, conn, model, config):
-    pre_activities = model.sig[conn.pre.ensemble]['neuron_out']
-    post_activities = model.sig[conn.post.ensemble]['neuron_out']
+    pre = (conn.pre if isinstance(conn.pre, nengo.objects.Ensemble)
+           else conn.pre.ensemble)
+    post = (conn.post if isinstance(conn.post, nengo.objects.Ensemble)
+            else conn.post.ensemble)
+    pre_activities = model.sig[pre]['neuron_out']
+    post_activities = model.sig[post]['neuron_out']
     pre_filtered = filtered_signal(
         oja, pre_activities, oja.pre_tau, model, config)
     post_filtered = filtered_signal(
         oja, post_activities, oja.post_tau, model, config)
-    omega_shape = (conn.post.ensemble.n_neurons, conn.pre.ensemble.n_neurons)
+    omega_shape = (post.n_neurons, pre.n_neurons)
 
     transform = model.sig[conn]['transform']
     delta = Signal(np.zeros(omega_shape), name='Oja: Delta')
