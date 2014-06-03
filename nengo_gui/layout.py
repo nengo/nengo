@@ -53,7 +53,7 @@ class Layout(object):
             else:
                 pos = contain_pos
 
-            pdb.set_trace()
+            #pdb.set_trace()
 
             pos = self.find_position(fixed, pos, size)
                         
