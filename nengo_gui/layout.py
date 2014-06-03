@@ -115,6 +115,7 @@ class Layout(object):
             for obj in objects: #check if current pos is valid 
                 if self.is_in(obj, pos, size):
                     no_position = True
+                    #pdb.set_trace()
                     pos += ((np.random.random(2) - .5) * self.config[obj].size 
                          + (pos-self.config[obj].pos))
                     break
@@ -136,7 +137,7 @@ class Layout(object):
         bx = this_pos[0] - this_size[0]/2, this_pos[0] + this_size[0]/2 
         by = this_pos[1] - this_size[1]/2, this_pos[1] + this_size[1]/2 
         
-        if ((ax[1] > bx[0] and ax[0] < bx[1]) or #x overlap
+        if ((ax[1] > bx[0] and ax[0] < bx[1]) and #x overlap
             (ay[1] > by[0] and ay[0] < by[1])): #y overlap
             return True
         
