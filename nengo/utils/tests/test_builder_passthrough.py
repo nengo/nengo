@@ -44,8 +44,7 @@ def test_remove_passthrough_bg():
         def printout(t, x):
             print(t, x)
         output = nengo.Node(printout, size_in=D, label='output')
-        bg = nengo.networks.BasalGanglia(D, 20, label='BG',
-                                         solver=nengo.Default)
+        bg = nengo.networks.BasalGanglia(D, 20, label='BG')
         nengo.Connection(input, bg.input, synapse=0.01)
         nengo.Connection(bg.output, output, synapse=0.01)
 

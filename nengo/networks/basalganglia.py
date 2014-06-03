@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 import nengo
@@ -30,7 +32,16 @@ class BasalGanglia(nengo.Network):
     def __init__(self, dimensions, n_neurons_per_ensemble=100, radius=1.5,
                  tau_ampa=0.002, tau_gaba=0.008, output_weight=-3,
                  solver=None):
-        solver = NnlsL2nz() if solver is None else solver
+        if solver is None:
+            try:
+                # Best, if we have SciPy
+                solver = NnlsL2nz()
+            except ImportError:
+                # If not, use default
+                warnings.warn("SciPy is not installed, so BasalGanglia will "
+                              "use default decoder solver. Installing SciPy "
+                              "may improve BasalGanglia performance.")
+                solver = nengo.Default
         encoders = np.ones((n_neurons_per_ensemble, 1))
         ea_params = {
             'n_neurons': n_neurons_per_ensemble,
