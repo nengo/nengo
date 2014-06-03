@@ -6,8 +6,7 @@ from nengo.utils.testing import Plotter
 
 
 def test_basic(Simulator):
-    bg = nengo.networks.BasalGanglia(
-        dimensions=5, label="BG", solver=nengo.Default)
+    bg = nengo.networks.BasalGanglia(dimensions=5, label="BG")
     with bg:
         input = nengo.Node([0.8, 0.4, 0.4, 0.4, 0.4], label="input")
         nengo.Connection(input, bg.input, synapse=None)
