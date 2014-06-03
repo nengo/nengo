@@ -706,8 +706,6 @@ function update_graph() {
         .append('use')
         .attr('xlink:href', "#recurTriangle")
 
-
-
     //get all the nodes, for updating
     nodes = container.selectAll('g.node')
         .data(graph.nodes, function (d) {return d.id})
@@ -804,6 +802,7 @@ function update_graph() {
     
     update_line_locations();
     update_text();
+    //update_gui_text();
     resize();
     if (newLayout) {
         zoomCenter();

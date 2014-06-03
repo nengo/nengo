@@ -11,7 +11,6 @@ def isidentifier(s):
         return False
     return re.match(r'^[a-z_][a-z0-9_]*$', s, re.I) is not None
 
-
 class Converter(object):
     def __init__(self, model, codelines, locals, config):
         self.model = model
@@ -96,7 +95,7 @@ class Converter(object):
             pos = self.config[net].pos
             scale = self.config[net].scale
             size = self.config[net].size
-                
+
             obj = {'label':label, 'line':line, 'id':id, 'type':'net',
                    'contains':list(contains), 'full_contains': list(full_contains[i]),
                    'contained_by': self.object_index[network], 'scale': scale,

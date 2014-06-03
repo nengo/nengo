@@ -1,130 +1,162 @@
 import numpy as np
 
-class Item(object):
-    def __init__(self, obj, pos, scale, fixed, size=None):
-        self.pos = pos
-        self.scale = scale
-        self.fixed = fixed
-        self.size = size #Only networks have a non-zero size
-        self.obj = obj
-    def distance2(self, other):
-        return np.sum((self.pos-other.pos)**2)
-    def distance(self, other):
-        return np.sqrt(self.distance2(other))
+import pdb
 
-class Group(object):
-    def __init__(self, net):
-        self.items = []
-        self.net = net
-    def add(self, item):
-        self.items.append(item)
+class Item(object):
+    def __init__(self, obj, changed, fixed):
+        self.changed = changed #did the net size change
+        self.fixed = fixed #is the position fixed
+        self.obj = obj
 
 class Layout(object):
     def __init__(self, model, config):
-        self.items = {} #All items at this level and lower
-        self.groups = [] #All subnets at this level and lower
+        self.nets = {} #All nets at this level
         self.config = config
-        self.top_level = self.process_network(model)
-        #Add valid positions for top-level items 
-        for obj in model.nodes + model.ensembles:
-            if self.items[obj].pos is None:
-                self.items[obj].pos = np.random.uniform(-1.0, 1.0, size=2)
-        self.movement = 0.0
+        self.model = model
+        if not self.config[model].scale:
+            self.config[model].scale = 1
+        self.process_network(model)
 
-    def process_network(self, network):
-        group = Group(network)
+    def process_network(self, network): #layout of the network
+        contain_size = self.config[network].size
+        contain_scale = self.config[network].scale
+        contain_pos = self.config[network].pos
+        if network==self.model:
+            contain_pos = self.middle(network.networks + network.nodes 
+                + network.ensembles)
+        changed = False
 
-        for obj in network.nodes + network.ensembles:
-            pos = self.config[obj].pos
-            scale = self.config[obj].scale
-            if scale is None:
-                scale = 1
-            if pos is None:
-                item = Item(obj, None, scale, fixed=False)
-            else:
-                item = Item(obj, np.array(pos, copy=True), scale, fixed=True)
-            group.add(item)
-            self.items[obj] = item
-            
         for obj in network.networks:
-            pos = self.config[obj].pos
-            scale = self.config[obj].scale
-            size = self.config[obj].size
-            if size is None:
-                size = 50,50 #size of empty net
-            if scale is None:
-                scale = 1
+            size, changed = self.process_network(obj)
+            self.config[obj] = size
+            
             if pos is None:
-                item = Item(obj, None, scale, fixed=False, size=size)
+                net = Item(obj, changed=True, fixed=False)
             else:
-                item = Item(obj, np.array(pos, copy=True), scale, fixed=True, 
-                    size=np.array(size, copy=True))
-
-            g = self.process_network(obj)
-            self.groups.append(g)
-            group.items.extend(g.items)
+                net = Item(obj, changed, fixed=True)
             
-        return group
+            self.nets.append(net)
 
-    def initialize_nonfixed(self):
-        for g in self.groups:
-            
-            for item in g.items:
-                if item.pos is None:  #set position near group mean
-                    positions = [i.pos for i in g.items if i.pos is not None]
-                    if len(positions) != 0:
-                        mid = np.mean(positions)
-                    else:
-                        mid = 0.0
-                    item.pos = mid + np.random.uniform(-1.0, 1.0, size=2)
-
-
-    def run(self):
-        self.initialize_nonfixed()
-        for i in range(1000):
-            self.step(1.0)
-            # stop early if nothing is moving
-            if self.movement < 1.0:
-                return
-
-    def step(self, dt):
-        for item in self.items.values():
-            if not item.fixed:
-                for other in self.items.values():
-                    d = item.distance(other)
-                    if d < 100:
-                        force = item.pos - other.pos
-                        if d == 0:
-                            force = np.array([1.0, 0])
-                        else:
-                            force /= d
-                        self.push(item, force * dt)
-                        self.push(other, -force * dt)
-
-    def push(self, item, distance):
-        item.pos += distance
-        self.movement += np.linalg.norm(distance)
+        fixed = [o.obj for o in self.nets if o.fixed]
+        fixed += [o for o in network.nodes+network.ensembles 
+            if self.config[o].pos != None]
         
-    def store_results(self):
-        for k, v in self.items.items():
-            self.config[k].pos = v.pos[0], v.pos[1]
-            self.config[k].scale = v.scale
-            if self.config[k].size is not None: #Only networks have non-zero size
-                self.config[k].size = v.size[0], v.size[1]
+        floating = [o.obj for o in self.nets if not o.fixed]
+        floating += [o for o in network.nodes+network.ensembles
+            if self.config[o].pos == None]
+                
+        for obj in floating:
+            self.config[obj].scale = 1         
+            size = self.config[obj].size
+            if fixed:
+                pos = self.middle(fixed)
+            else:
+                pos = contain_pos
+
+            pdb.set_trace()
+
+            pos = self.find_position(fixed, pos, size)
+                        
+            self.config[obj].pos = pos
+            fixed.append(obj)
+            
+            if contain_size:
+                if not self.is_in(obj, contain_pos, contain_size):
+                    changed = True
+        
+        #compute size to return
+        if len(network.nodes + network.ensembles) == 0: #empty network
+            contain_size = 100,100 #default empty network size
+        elif [o for o in self.nets if o.changed]: #if any subnetwork changed size
+            if network == self.model: #if we're at the top, do nothing
+                pass
+            else:
+                contain_size = network_size(network)
+        else: #contain_size already set at entry
+            pass
+            
+        return contain_size, changed
+
+    def network_size(self, net):
+        nodes = net.ensembles + net.nodes
+        x0 = self.config[nodes[0]].pos[0] #first item in net x,y as a start
+        x1 = x0
+        y0 = self.config[nodes[0]].pos[1]
+        y1 = y0
+        m = 40 #net_inner_margin
+
+        for obj in nodes + net.networks:
+            scale = self.config[obj].scale
+            xBorder = (self.config[obj].size[0] / 2)*scale
+            yBorder = (self.config[obj].size[1] / 2)*scale
+            
+            x = config[obj].pos[0]
+            y = config[obj].pos[1]
+            
+            x0 = np.min([x - xBorder, x0])
+            x1 = np.max([x + xBorder, x1])
+            y0 = np.min([y - yBorder, y0])
+            y1 = np.max([y + yBorder, y1])
+
+        self.config[net].pos[0] = (x0 + x1) / 2 # x, y mid
+        self.config[net].pos[1] = (y0 + y1) / 2
+
+        xsize = (x1 - x0)/self.config[net].scale + 2 * m 
+        ysize = (y1 - y0)/self.config[net].scale + 2 * m        
+        
+        return xsize, ysize
+
+    def find_position(self, objects, pos, size):
+        no_position = True
+        iters = 0
+                
+        while no_position and iters<500:  
+            no_position = False
+            for obj in objects: #check if current pos is valid 
+                if self.is_in(obj, pos, size):
+                    no_position = True
+                    pos += ((np.random.random(2) - .5) * self.config[obj].size 
+                         + (pos-self.config[obj].pos))
+                    break
+            
+            iters +=1
+        
+        print(iters, pos)
+        
+        if iters >= 499:
+            print '\n***Warning: Too many iterations, exiting\n'
+        
+        return pos
+        
+    def is_in(self, obj, pos, size): #Determine if obj is inside the pos/size provided
+        this_size = self.config[obj].size
+        this_pos = self.config[obj].pos
+        ax = pos[0] - size[0]/2, pos[0] + size[0]/2 
+        ay = pos[1] - size[1]/2, pos[1] + size[1]/2 
+        bx = this_pos[0] - this_size[0]/2, this_pos[0] + this_size[0]/2 
+        by = this_pos[1] - this_size[1]/2, this_pos[1] + this_size[1]/2 
+        
+        if ((ax[1] > bx[0] and ax[0] < bx[1]) or #x overlap
+            (ay[1] > by[0] and ay[0] < by[1])): #y overlap
+            return True
+        
+        return False
+        
+    def middle(self, objects):
+        mid = np.array([0.0,0.0])
+        obj_cnt = 0
+        
+        for obj in objects:
+            if self.config[obj].pos is not None:
+                mid+=np.array(self.config[obj].pos)
+                obj_cnt += 1
+
+        if obj_cnt > 0:
+            mid = mid/obj_cnt
+            
+        return mid
 
 
-'''
-Algorithms:
-
-2 cases; incremental adding of stuff (could be 'big' stuff); and starting from scratch...
-- nice to make these just 1 case
-
-1. layout a network:
-- figure out the sizes of all subnetworks
-- count how many nodes there are, and assign 100px square to each
-- fit the subnetworks within the current network size, moving
-as few as possible
-- if yes, then fit the nodes in the network size ('''
 
 
 
