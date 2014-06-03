@@ -4,6 +4,7 @@ import json
 import traceback
 import sys
 
+from nengo_gui.feedforward_layout import feedforward_layout
 import nengo_gui.converter
 import nengo_gui.layout
 import nengo_gui.nengo_helper
@@ -230,10 +231,19 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         except:
             traceback.print_exc()
             return json.dumps(dict(error_line=2, text='Unknown'))
-        #import pdb
-        #pdb.set_trace()
-        gui_layout = nengo_gui.layout.Layout(model, cfg)
-        #pdb.set_trace()
-        cfg = gui_layout.config
+
+        feedforward = True
+
+        if feedforward:
+            conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
+            feedforward_layout(model, cfg, locals, conv.links, conv.objects)
+        else:
+            #import pdb
+            #pdb.set_trace()
+            gui_layout = nengo_gui.layout.Layout(model, cfg)
+            #pdb.set_trace()
+            cfg = gui_layout.config
+
         conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
+
         return conv.to_json()
