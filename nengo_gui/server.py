@@ -117,6 +117,9 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         try:
             with open(fn, 'r') as f:
                 text = f.read()
+            # make sure there are no tabs in the file, since the editor is
+            # supposed to use spaces instead
+            text = text.replace('\t', '    ')
             modified_time = os.stat(fn).st_mtime
         except:
             text = ''
