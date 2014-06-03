@@ -213,6 +213,11 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
                 # this is generally caused by having a gui[x].pos statement
                 #  for something that has been deleted
                 pass
+            except IndexError:
+                # this is generally caused by having a statement like
+                # gui[model.ensemble[i]].pos statement for something that has
+                # been deleted
+                pass
 
         try:
             model = locals['model']
