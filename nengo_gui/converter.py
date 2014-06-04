@@ -3,7 +3,6 @@ import re
 import keyword
 import namefinder
 
-import random
 import pprint
 
 
@@ -27,22 +26,13 @@ class Converter(object):
         self.global_scale = config[model].scale
         self.global_offset = config[model].offset
 
-    def find_identifier(self, line, default):
-        text = self.codelines[line]
-        if '=' in text:
-            text = text.split('=', 1)[0].strip()
-            if isidentifier(text):
-                return text
-        return default
-
     def process(self, network, id_prefix=None):
-        random.seed(5)
 
         for i, ens in enumerate(network.ensembles):
             line = ens._created_line_number-1
             label = ens.label
             if label == 'Ensemble':
-                label = self.find_identifier(line, label)
+                label = ''
             id = self.namefinder.name(ens)
 
             pos = self.config[ens].pos
@@ -65,7 +55,7 @@ class Converter(object):
             line = nde._created_line_number-1
             label = nde.label
             if label == 'Node':
-                label = self.find_identifier(line, label)
+                label = ''
             id = self.namefinder.name(nde)
 
             pos = self.config[nde].pos
@@ -94,7 +84,7 @@ class Converter(object):
             line = net._created_line_number-1
             label = net.label
             if label == 'Node':
-                label = self.find_identifier(line, label)
+                label = ''
             id = self.namefinder.name(net)
 
             self.object_index[net] = len(self.objects)
