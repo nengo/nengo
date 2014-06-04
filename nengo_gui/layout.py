@@ -99,6 +99,8 @@ class Layout(object):
         m = 40 #net_inner_margin
 
         for obj in nodes + net.networks:
+            if self.config[obj].scale is None:
+                self.config[obj].scale = 1
             scale = self.config[obj].scale
             xBorder = (self.config[obj].size[0] / 2)*scale
             yBorder = (self.config[obj].size[1] / 2)*scale
