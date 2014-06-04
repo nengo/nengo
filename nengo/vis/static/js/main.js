@@ -407,6 +407,7 @@ function update_net_sizes() {
 
 //Update given network size based on node position
 function update_net_size(d) {
+    if (d.contains.length == 0) {return;} //empty network
     var xstart = d.x
     var ystart = d.y
     var x0 = graph.nodes[d.contains[0]].x; //first item in net x,y as a start
@@ -741,7 +742,7 @@ function update_graph() {
                 .scaleExtent([.05, 4])
                 .on('zoom', zoomed)
             zoomers[d.id](d3.select(this))
-            d.scale = graph.nodes[d.contains[0]].scale
+            //d.scale = graph.nodes[d.contains[0]].scale
             zoomers[d.id].scale(d.scale)
         })
         .on('dblclick.zoom', zoomCenter)

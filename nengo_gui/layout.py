@@ -52,23 +52,25 @@ class Layout(object):
             else:
                 self.config[obj].scale = contain_scale
             size = self.config[obj].size
-
+            
+            
             if self.config[obj].pos: #subnets may have position and float from size change
                 pos = self.config[obj].pos
-                old_pos = pos
             elif fixed: #if other items, start it at the mean
                 pos = self.middle(fixed)
             elif contain_pos is None: #if the container has no position put it at 0,0
                 pos = 0.0,0.0
             else: #put it at the container position
                 pos = contain_pos
+                
+            old_pos = np.array(pos, copy=True)
 
             pos = self.find_position(fixed, pos, size)
 
             self.config[obj].pos = pos
             
             if obj in network.networks: #update all positions in subnet
-                self.update_positions(obj, np.array(old_pos)-np.array(pos))
+                self.update_positions(obj, old_pos-np.array(pos))
                 
             fixed.append(obj)
 
