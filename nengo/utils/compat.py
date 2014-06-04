@@ -1,25 +1,50 @@
 from __future__ import absolute_import
+
 import collections
-try:
-    from collections import OrderedDict  # noqa: F401
-except ImportError:
-    from ordereddict import OrderedDict  # noqa: F401
 import sys
 
-IS_PYTHON3 = sys.version_info[0] == 3
+# Only test for Python 2 so that we have less changes for Python 4
+PY2 = sys.version_info[0] == 2
 
-if IS_PYTHON3:
-    from io import StringIO  # noqa: F401
+# OrderedDict was introduced in Python 2.7 so for 2.6 we use the PyPI package
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+assert OrderedDict
+
+# If something's changed from Python 2 to 3, we handle that here
+if PY2:
+    from StringIO import StringIO
+    string_types = (str, unicode)
+    int_types = (int, long)
+    range = xrange
+
+    # No iterkeys; use ``for key in dict:`` instead
+    iteritems = lambda d: d.iteritems()
+    itervalues = lambda d: d.itervalues()
+
+    # We have to put this in an exec call because it's a syntax error in Py3+
+    exec('def reraise(tp, value, tb):\n raise tp, value, tb')
+
 else:
-    from StringIO import StringIO  # noqa: F401
+    from io import StringIO
+    string_types = (str,)
+    int_types = (int,)
+    range = range
 
+    # No iterkeys; use ``for key in dict:`` instead
+    iteritems = lambda d: iter(d.items())
+    itervalues = lambda d: iter(d.values())
 
-def is_callable(obj):
-    return isinstance(obj, collections.Callable)
+    def reraise(tp, value, tb):
+        raise value.with_traceback(tb)
+
+assert StringIO
 
 
 def is_integer(obj):
-    return isinstance(obj, int if IS_PYTHON3 else (int, long))  # noqa: F821
+    return isinstance(obj, int_types)
 
 
 def is_iterable(obj):
@@ -27,13 +52,12 @@ def is_iterable(obj):
 
 
 def is_number(obj, check_complex=False):
-    types = (float, complex) if check_complex else float
-    return isinstance(obj, types) or is_integer(obj)
+    types = (float, complex) if check_complex else (float,)
+    return isinstance(obj, types + int_types)
 
 
 def is_string(obj):
-    types = str if IS_PYTHON3 else basestring  # noqa: F821
-    return isinstance(obj, types)
+    return isinstance(obj, string_types)
 
 
 def execfile(path, globals, locals=None):

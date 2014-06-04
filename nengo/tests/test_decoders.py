@@ -4,12 +4,14 @@ TODO:
     and record the error.
 """
 from __future__ import print_function
+
 import logging
 
 import numpy as np
 import pytest
 
 import nengo
+from nengo.utils.compat import range
 from nengo.utils.distributions import UniformHypersphere
 from nengo.utils.numpy import filtfilt, rms, norm
 from nengo.utils.testing import Plotter, allclose, Timer

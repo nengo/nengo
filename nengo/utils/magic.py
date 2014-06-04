@@ -46,7 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
 import functools
 import inspect
 
-from nengo.utils.compat import with_metaclass
+from nengo.utils.compat import iteritems, with_metaclass
 
 
 class ObjectProxyMethods(object):
@@ -143,6 +143,9 @@ class ObjectProxy(with_metaclass(ObjectProxyMeta)):
             type(self).__name__, id(self),
             type(self.__wrapped__).__name__,
             id(self.__wrapped__))
+
+    def __unicode__(self):
+        return unicode(self.__wrapped__)
 
 
 class BoundFunctionWrapper(ObjectProxy):
@@ -289,7 +292,7 @@ class memoize(object):
         self.misses = 0
 
     def __call__(self, wrapped, instance, args, kwargs):
-        key = (instance, tuple(args), tuple(sorted((kwargs.items()))))
+        key = (instance, tuple(args), tuple(sorted(list(kwargs.items()))))
         if key not in self._cache:
             self._cache[key] = wrapped(*args, **kwargs)
             self.misses += 1
@@ -313,7 +316,7 @@ class DocstringInheritor(type):
                 if doc:
                     clsdict['__doc__'] = doc
                     break
-        for attr, attribute in clsdict.items():
+        for attr, attribute in iteritems(clsdict):
             if not attribute.__doc__:
                 for mro_cls in (
                         mro_cls for base in bases for mro_cls in base.mro()
