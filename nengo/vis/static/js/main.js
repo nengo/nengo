@@ -457,6 +457,7 @@ function update_net_size(d) {
 
     d.width = (x1 - x0)/d.scale + 2 * m; //track heights/widths
     d.height = (y1 - y0)/d.scale + 2 * m;
+    
 
     if (xstart!=undefined && ystart!=undefined) {    
     
@@ -654,21 +655,22 @@ function update_graph() {
         reload_graph_data();
     }
     
-	graph = JSON.parse(this.responseText);
+	graph2 = JSON.parse(this.responseText);
 
     // was there a parsing error?
-    if (graph.error_line != undefined) {
+    if (graph2.error_line != undefined) {
         removeMarker();
         marker = editor.getSession()
-            .addMarker(new aceRange(graph.error_line - 1, 0, graph.error_line - 1, 10), 
+            .addMarker(new aceRange(graph2.error_line - 1, 0, graph2.error_line - 1, 10), 
             'highlight', 'fullLine', true);
         editor.getSession().setAnnotations([{
-            row: graph.error_line - 1,
+            row: graph2.error_line - 1,
             type: 'error',
-            text: graph.text,
+            text: graph2.text,
         }]);
         return;
     } else {
+        graph = graph2
         if (marker != null) {
             editor.getSession().removeMarker(marker);
             marker = null;
@@ -705,6 +707,8 @@ function update_graph() {
     recurMarker = linkRecur
         .append('use')
         .attr('xlink:href', "#recurTriangle")
+
+    container.selectAll('g.node').remove()
 
     //get all the nodes, for updating
     nodes = container.selectAll('g.node')
