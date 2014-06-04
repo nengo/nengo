@@ -1,6 +1,7 @@
 from collections import defaultdict
 import itertools
 
+from nengo.utils.compat import iteritems
 from nengo.utils.graphs import add_edges
 
 
@@ -51,21 +52,21 @@ def operator_depencency_graph(operators):  # noqa: C901
     #    4) All updates on a given base signal
 
     # -- incs depend on sets
-    for node, post_ops in incs.items():
+    for node, post_ops in iteritems(incs):
         pre_ops = list(sets[node])
         for other in by_base_writes[node.base]:
             pre_ops.extend(sets[other])
         add_edges(dg, itertools.product(set(pre_ops), post_ops))
 
     # -- reads depend on writes (sets and incs)
-    for node, post_ops in reads.items():
+    for node, post_ops in iteritems(reads):
         pre_ops = sets[node] + incs[node]
         for other in by_base_writes[node.base]:
             pre_ops.extend(sets[other] + incs[other])
         add_edges(dg, itertools.product(set(pre_ops), post_ops))
 
     # -- updates depend on reads, sets, and incs.
-    for node, post_ops in ups.items():
+    for node, post_ops in iteritems(ups):
         pre_ops = sets[node] + incs[node] + reads[node]
         for other in by_base_writes[node.base]:
             pre_ops.extend(sets[other] + incs[other] + reads[other])

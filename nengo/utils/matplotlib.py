@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import numpy as np
 import matplotlib.pyplot as plt
 
+from nengo.utils.compat import range
+
 
 def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
     """

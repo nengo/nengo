@@ -37,6 +37,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from collections import defaultdict
 
+from nengo.utils.compat import iteritems
+
 
 def graph(edges=None):
     g = defaultdict(set)
@@ -75,7 +77,8 @@ def toposort(edges):
     [2] http://en.wikipedia.org/wiki/Toposort#Algorithms
     """
     incoming_edges = reverse_edges(edges)
-    incoming_edges = dict((k, set(val)) for k, val in incoming_edges.items())
+    incoming_edges = dict((k, set(val))
+                          for k, val in iteritems(incoming_edges))
     vertices = set((v for v in edges if v not in incoming_edges))
     ordered = []
 

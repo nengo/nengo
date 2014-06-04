@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.utils.compat import range
 from nengo.utils.testing import Timer
 
 logger = logging.getLogger(__name__)

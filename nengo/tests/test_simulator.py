@@ -7,6 +7,8 @@ import nengo
 import nengo.simulator
 from nengo.builder import (
     Model, ProdUpdate, Copy, Reset, DotInc, Signal, build_pyfunc)
+from nengo.utils.compat import range
+
 
 logger = logging.getLogger(__name__)
 

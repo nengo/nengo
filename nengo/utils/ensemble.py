@@ -1,5 +1,8 @@
 from __future__ import absolute_import
+
 import numpy as np
+
+from nengo.utils.compat import range
 import nengo.utils.numpy as npext
 
 
