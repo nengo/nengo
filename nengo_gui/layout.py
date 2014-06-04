@@ -46,7 +46,10 @@ class Layout(object):
             if self.config[o].pos == None]
 
         for obj in floating:
-            self.config[obj].scale = 1
+            if network==self.model:
+                self.config[obj].scale = 1
+            else:
+                self.config[obj].scale = contain_scale
             size = self.config[obj].size
 
             if fixed:
@@ -74,7 +77,7 @@ class Layout(object):
             contain_size = 100,100 #default empty network size
         elif not network==self.model:
             #if any subnetwork changed size or it has no size
-            if not contain_size or [o for o in self.nets if self.nets[o].changed]:
+            if not contain_size or [o for o in self.nets if self.nets[o].changed] or changed:
                 contain_size = self.network_size(network)
                 changed = True
             
@@ -122,7 +125,7 @@ class Layout(object):
         while no_position and iters<500:
             no_position = False
             for obj in objects: #check if current pos is valid
-                if self.is_in(obj, pos, size):
+                if self.is_overlap(obj, pos, size):
                     no_position = True
                     pos += ((np.random.random(2) - .5) * self.config[obj].size 
                          + (pos-self.config[obj].pos))
@@ -137,7 +140,7 @@ class Layout(object):
 
         return pos
 
-    def is_in(self, obj, pos, size): 
+    def is_overlap(self, obj, pos, size): 
         #Determine if obj is inside the pos/size provided
         if self.config[obj]:
             if (self.config[obj].size is not None and
@@ -151,6 +154,24 @@ class Layout(object):
 
                 if ((ax[1] > bx[0] and ax[0] < bx[1]) and #x overlap
                     (ay[1] > by[0] and ay[0] < by[1])): #y overlap
+                    return True
+
+        return False
+
+    def is_in(self, obj, pos, size): 
+        #Determine if obj is inside the pos/size provided
+        if self.config[obj]:
+            if (self.config[obj].size is not None and
+               self.config[obj].pos is not None):
+                this_size = self.config[obj].size
+                this_pos = self.config[obj].pos
+                ax = pos[0] - size[0]/2, pos[0] + size[0]/2
+                ay = pos[1] - size[1]/2, pos[1] + size[1]/2
+                bx = this_pos[0] - this_size[0]/2, this_pos[0] + this_size[0]/2
+                by = this_pos[1] - this_size[1]/2, this_pos[1] + this_size[1]/2
+
+                if ((ax[0] < bx[0] and ax[1] > bx[1]) and #x overlap
+                    (ay[0] < by[0] and ay[1] > by[1])): #y overlap
                     return True
 
         return False
