@@ -4,6 +4,7 @@ import json
 import traceback
 import sys
 
+from nengo_gui.feedforward_layout import feedforward_layout
 import nengo_gui.converter
 import nengo_gui.layout
 import nengo_gui.nengo_helper
@@ -117,6 +118,9 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         try:
             with open(fn, 'r') as f:
                 text = f.read()
+            # make sure there are no tabs in the file, since the editor is
+            # supposed to use spaces instead
+            text = text.replace('\t', '    ')
             modified_time = os.stat(fn).st_mtime
         except:
             text = ''
@@ -213,6 +217,11 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
                 # this is generally caused by having a gui[x].pos statement
                 #  for something that has been deleted
                 pass
+            except IndexError:
+                # this is generally caused by having a statement like
+                # gui[model.ensemble[i]].pos statement for something that has
+                # been deleted
+                pass
 
         try:
             model = locals['model']
@@ -223,8 +232,20 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
             traceback.print_exc()
             return json.dumps(dict(error_line=2, text='Unknown'))
 
+<<<<<<< HEAD
         gui_layout = nengo_gui.layout.Layout(model, cfg)
 
         cfg = gui_layout.config
+=======
+        feedforward = False
+        if feedforward:
+            conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
+            feedforward_layout(model, cfg, locals, conv.links, conv.objects)
+        else:
+            gui_layout = nengo_gui.layout.Layout(model, cfg)
+            cfg = gui_layout.config
+
+>>>>>>> FETCH_HEAD
         conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
+
         return conv.to_json()

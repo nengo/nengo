@@ -6,10 +6,12 @@ import namefinder
 import random
 import pprint
 
+
 def isidentifier(s):
     if s in keyword.kwlist:
         return False
     return re.match(r'^[a-z_][a-z0-9_]*$', s, re.I) is not None
+
 
 class Converter(object):
     def __init__(self, model, codelines, locals, config):
@@ -19,7 +21,7 @@ class Converter(object):
         self.objects = []
         self.config = config
         self.links = []
-        self.object_index = {model:-1}
+        self.object_index = {model: -1}
         self.process(model)
 
         self.global_scale = config[model].scale
@@ -35,7 +37,7 @@ class Converter(object):
 
     def process(self, network, id_prefix=None):
         random.seed(5)
-        
+
         for i, ens in enumerate(network.ensembles):
             line = ens._created_line_number-1
             label = ens.label
@@ -45,23 +47,36 @@ class Converter(object):
 
             pos = self.config[ens].pos
             scale = self.config[ens].scale
-                
-            obj = {'label':label, 'line':line, 'id':id, 'type':'ens',
-                   'x':pos[0], 'y':pos[1], 'scale': scale,
-                    'contained_by': self.object_index[network]}
+
+            if pos is None:
+                pos = 0, 0
+
+            if scale is None:
+                scale = 1
+
+            obj = {'label': label, 'line': line, 'id': id, 'type': 'ens',
+                   'x': pos[0], 'y': pos[1], 'scale': scale,
+                   'contained_by': self.object_index[network]}
+
             self.object_index[ens] = len(self.objects)
             self.objects.append(obj)
-     
+
         for i, nde in enumerate(network.nodes):
             line = nde._created_line_number-1
             label = nde.label
             if label == 'Node':
                 label = self.find_identifier(line, label)
             id = self.namefinder.name(nde)
-            
+
             pos = self.config[nde].pos
             scale = self.config[nde].scale
-                                
+
+            if pos is None:
+                pos = 0, 0
+
+            if scale is None:
+                scale = 1
+
             obj = {'label':label, 'line':line, 'id':id, 'type':'nde',
                    'x':pos[0], 'y':pos[1],  'scale': scale,
                    'contained_by': self.object_index[network]}
@@ -81,7 +96,7 @@ class Converter(object):
             if label == 'Node':
                 label = self.find_identifier(line, label)
             id = self.namefinder.name(net)
-            
+
             self.object_index[net] = len(self.objects)
             self.objects.append({'placeholder':0}) # place holder
 
@@ -91,10 +106,19 @@ class Converter(object):
                 net.ensembles + net.nodes + net.networks]
 
             full_contains[i] += contains
-            
+
             pos = self.config[net].pos
             scale = self.config[net].scale
             size = self.config[net].size
+
+            if pos is None:
+                pos = -50, -50
+
+            if scale is None:
+                scale = 1
+
+            if size is None:
+                size = 100, 100
 
             obj = {'label':label, 'line':line, 'id':id, 'type':'net',
                    'contains':list(contains), 'full_contains': list(full_contains[i]),
