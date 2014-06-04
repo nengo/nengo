@@ -232,11 +232,6 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
             traceback.print_exc()
             return json.dumps(dict(error_line=2, text='Unknown'))
 
-<<<<<<< HEAD
-        gui_layout = nengo_gui.layout.Layout(model, cfg)
-
-        cfg = gui_layout.config
-=======
         feedforward = False
         if feedforward:
             conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
@@ -245,7 +240,6 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
             gui_layout = nengo_gui.layout.Layout(model, cfg)
             cfg = gui_layout.config
 
->>>>>>> FETCH_HEAD
         conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
 
         return conv.to_json()

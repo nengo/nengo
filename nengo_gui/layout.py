@@ -29,7 +29,6 @@ class Layout(object):
         for obj in network.networks:
             size, changed = self.process_network(obj)
             self.config[obj].size = size
-<<<<<<< HEAD
             
             if self.config[obj].pos is None:
                 net = Item(obj, changed=True, fixed=False)
@@ -43,21 +42,6 @@ class Layout(object):
             if self.config[o].pos != None]
         
         floating = [self.nets[o].obj for o in self.nets if not self.nets[o].fixed]
-=======
-
-            if pos is None:
-                net = Item(obj, changed=True, fixed=False)
-            else:
-                net = Item(obj, changed, fixed=True)
-
-            self.nets.append(net)
-
-        fixed = [o.obj for o in self.nets if o.fixed]
-        fixed += [o for o in network.nodes+network.ensembles
-            if self.config[o].pos != None]
-
-        floating = [o.obj for o in self.nets if not o.fixed]
->>>>>>> FETCH_HEAD
         floating += [o for o in network.nodes+network.ensembles
             if self.config[o].pos == None]
 
@@ -88,23 +72,12 @@ class Layout(object):
         #compute size to return
         if len(network.nodes + network.ensembles + network.networks) == 0: #empty network
             contain_size = 100,100 #default empty network size
-<<<<<<< HEAD
         elif not network==self.model:
             #if any subnetwork changed size or it has no size
             if not contain_size or [o for o in self.nets if self.nets[o].changed]:
                 contain_size = self.network_size(network)
                 changed = True
             
-=======
-        elif [o for o in self.nets if o.changed]: #if any subnetwork changed size
-            if network == self.model: #if we're at the top, do nothing
-                pass
-            else:
-                contain_size = network_size(network)
-        else: #contain_size already set at entry
-            pass
-
->>>>>>> FETCH_HEAD
         return contain_size, changed
 
     def update_positions(self, net, pos):
@@ -126,17 +99,10 @@ class Layout(object):
             scale = self.config[obj].scale
             xBorder = (self.config[obj].size[0] / 2)*scale
             yBorder = (self.config[obj].size[1] / 2)*scale
-<<<<<<< HEAD
             
             x = self.config[obj].pos[0]
             y = self.config[obj].pos[1]
-            
-=======
 
-            x = config[obj].pos[0]
-            y = config[obj].pos[1]
-
->>>>>>> FETCH_HEAD
             x0 = np.min([x - xBorder, x0])
             x1 = np.max([x + xBorder, x1])
             y0 = np.min([y - yBorder, y0])
@@ -158,11 +124,7 @@ class Layout(object):
             for obj in objects: #check if current pos is valid
                 if self.is_in(obj, pos, size):
                     no_position = True
-<<<<<<< HEAD
                     pos += ((np.random.random(2) - .5) * self.config[obj].size 
-=======
-                    pos += ((np.random.random(2) - .5) * self.config[obj].size
->>>>>>> FETCH_HEAD
                          + (pos-self.config[obj].pos))
                     break
 
