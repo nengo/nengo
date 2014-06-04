@@ -1,10 +1,9 @@
 import nengo
 import nengo.config
 
-
 class Config(nengo.config.Config):
-    def __init__(self, parent=None):
-        super(Config, self).__init__(parent=parent)
+    def __init__(self):
+        super(Config, self).__init__()
         for klass in [nengo.Ensemble, nengo.Node]:
             self.configures(klass)
             self[klass].set_param('pos', nengo.config.Parameter(None))
@@ -16,4 +15,3 @@ class Config(nengo.config.Config):
         self[nengo.Network].set_param('offset', nengo.config.Parameter((0,0)))
         self[nengo.Network].set_param('pos', nengo.config.Parameter(None))
         self[nengo.Network].set_param('size', nengo.config.Parameter(None)) #width/height
-

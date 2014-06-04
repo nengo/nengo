@@ -708,7 +708,7 @@ function update_graph() {
         .append('use')
         .attr('xlink:href', "#recurTriangle")
 
-    container.selectAll('g.node').remove()
+    container.selectAll('g.node_net').remove()
 
     //get all the nodes, for updating
     nodes = container.selectAll('g.node')
