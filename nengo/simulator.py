@@ -12,6 +12,7 @@ import logging
 import numpy as np
 
 from nengo.builder import Model, Builder, SignalDict
+from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
 from nengo.utils.simulator import operator_depencency_graph
 

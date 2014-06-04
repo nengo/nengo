@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.utils.compat import range
 from nengo.utils.numpy import rmse
 from nengo.utils.testing import Plotter
 

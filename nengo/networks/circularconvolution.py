@@ -2,6 +2,7 @@ import numpy as np
 
 import nengo
 from nengo.networks.product import Product
+from nengo.utils.compat import range
 from nengo.utils.magic import memoize
 
 

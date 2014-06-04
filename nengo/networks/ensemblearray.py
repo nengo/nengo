@@ -1,6 +1,7 @@
 import numpy as np
 
 import nengo
+from nengo.utils.compat import range
 from nengo.utils.network import with_self
 
 

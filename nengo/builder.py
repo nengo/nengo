@@ -1,5 +1,7 @@
 """Reference implementation for building a nengo.Network."""
 
+from __future__ import print_function
+
 import collections
 import logging
 import warnings
@@ -12,7 +14,7 @@ import nengo.objects
 import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
-from nengo.utils.compat import is_callable, is_integer, is_number, StringIO
+from nengo.utils.compat import is_integer, is_number, range, StringIO
 from nengo.utils.filter_design import cont2discrete
 
 logger = logging.getLogger(__name__)
@@ -1061,7 +1063,7 @@ Builder.register_builder(build_alif, nengo.neurons.AdaptiveLIF)
 
 def build_node(node, model, config):
     # Get input
-    if node.output is None or is_callable(node.output):
+    if node.output is None or callable(node.output):
         if node.size_in > 0:
             model.sig[node]['in'] = Signal(
                 np.zeros(node.size_in), name="%s.signal" % node.label)
@@ -1071,7 +1073,7 @@ def build_node(node, model, config):
     # Provide output
     if node.output is None:
         model.sig[node]['out'] = model.sig[node]['in']
-    elif not is_callable(node.output):
+    elif not callable(node.output):
         model.sig[node]['out'] = Signal(node.output, name=node.label)
     else:
         sig_in, sig_out = build_pyfunc(fn=node.output,

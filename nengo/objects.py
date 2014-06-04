@@ -10,7 +10,7 @@ import nengo.utils.numpy as npext
 from nengo.config import Config, Default, is_param, Parameter
 from nengo.learning_rules import LearningRule
 from nengo.neurons import LIF
-from nengo.utils.compat import is_callable, is_iterable, with_metaclass
+from nengo.utils.compat import is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
 from nengo.utils.inspect import checked_call
 
@@ -429,15 +429,15 @@ class Node(NengoObject):
         self.size_out = size_out
         self.probeable = Default
 
-        if self.output is not None and not is_callable(self.output):
+        if self.output is not None and not callable(self.output):
             self.output = npext.array(self.output, min_dims=1, copy=False)
 
         if self.output is not None:
-            if self.size_in != 0 and not is_callable(self.output):
+            if self.size_in != 0 and not callable(self.output):
                 raise TypeError("output must be callable if size_in != 0")
             if isinstance(self.output, np.ndarray):
                 shape_out = self.output.shape
-            elif self.size_out is None and is_callable(self.output):
+            elif self.size_out is None and callable(self.output):
                 t, x = np.asarray(0.0), np.zeros(self.size_in)
                 args = [t, x] if self.size_in > 0 else [t]
                 value, invoked = checked_call(self.output, *args)
@@ -690,7 +690,7 @@ class Connection(NengoObject):
             if not isinstance(self._pre, (Node, Ensemble)):
                 raise ValueError("'function' can only be set if 'pre' "
                                  "is an Ensemble or Node")
-            if not is_callable(_function):
+            if not callable(_function):
                 raise TypeError("function '%s' must be callable" % _function)
             x = (self.eval_points[0] if is_iterable(self.eval_points) else
                  np.zeros(self._pre.size_out))
