@@ -198,6 +198,24 @@ def test_config_str():
                     "  extra: 50")
 
 
+def test_external_class():
+    class A(object):
+        thing = Parameter(default='hey')
+
+    inst = A()
+    config = nengo.Config()
+    config.configures(A)
+    config[A].set_param('amount', Parameter(default=1))
+
+    # Extra param
+    assert config[inst].amount == 1
+
+    # Default still works like Nengo object
+    assert inst.thing == 'hey'
+    with pytest.raises(AttributeError):
+        config[inst].thing
+
+
 if __name__ == '__main__':
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

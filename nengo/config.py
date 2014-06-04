@@ -124,7 +124,8 @@ class ClassParams(object):
 
     @property
     def default_params(self):
-        return self._configures.param_list()
+        return (attr for attr in dir(self._configures)
+                if is_param(getattr(self._configures, attr)))
 
     @property
     def extra_params(self):
@@ -207,7 +208,7 @@ class Config(object):
     >>> inst = A()
     >>> config = Config()
     >>> config.configures(A)
-    >>> config[A].set_parameter('amount', Parameter(default=1))
+    >>> config[A].set_param('amount', Parameter(default=1))
     >>> print(config[inst].amount)
     1
     >>> config[inst].amount = 3
