@@ -222,10 +222,9 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         except:
             traceback.print_exc()
             return json.dumps(dict(error_line=2, text='Unknown'))
-        #import pdb
-        #pdb.set_trace()
+
         gui_layout = nengo_gui.layout.Layout(model, cfg)
-        #pdb.set_trace()
+
         cfg = gui_layout.config
         conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
         return conv.to_json()

@@ -2,6 +2,9 @@ import nengo
 
 model = nengo.Network()
 with model:
-	a = nengo.Ensemble(n_neurons=80, dimensions=2, label="testasdfasdfasdfasfd")
 
+	c = nengo.Ensemble(n_neurons=10, dimensions=1)
 
+	v1 = nengo.Network()
+	with v1:
+	    b = nengo.Ensemble(n_neurons=10, dimensions=1)

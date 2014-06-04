@@ -1,7 +1,5 @@
 import numpy as np
 
-import pdb
-
 class Item(object):
     def __init__(self, obj, changed, fixed):
         self.changed = changed #did the net size change
@@ -19,6 +17,8 @@ class Layout(object):
 
     def process_network(self, network): #layout of the network
         contain_size = self.config[network].size
+        if not self.config[network].scale:
+            self.config[network].scale = 1
         contain_scale = self.config[network].scale
         contain_pos = self.config[network].pos
         if network==self.model:
@@ -28,20 +28,20 @@ class Layout(object):
 
         for obj in network.networks:
             size, changed = self.process_network(obj)
-            self.config[obj] = size
+            self.config[obj].size = size
             
-            if pos is None:
+            if self.config[obj].pos is None:
                 net = Item(obj, changed=True, fixed=False)
             else:
                 net = Item(obj, changed, fixed=True)
             
-            self.nets.append(net)
-
-        fixed = [o.obj for o in self.nets if o.fixed]
+            self.nets[obj] = net
+            
+        fixed = [self.nets[o].obj for o in self.nets if self.nets[o].fixed]
         fixed += [o for o in network.nodes+network.ensembles 
             if self.config[o].pos != None]
         
-        floating = [o.obj for o in self.nets if not o.fixed]
+        floating = [self.nets[o].obj for o in self.nets if not self.nets[o].fixed]
         floating += [o for o in network.nodes+network.ensembles
             if self.config[o].pos == None]
                 
@@ -50,14 +50,18 @@ class Layout(object):
             size = self.config[obj].size
             if fixed:
                 pos = self.middle(fixed)
+            elif contain_pos is None:
+                pos = 0.0,0.0
             else:
                 pos = contain_pos
-
-            #pdb.set_trace()
 
             pos = self.find_position(fixed, pos, size)
                         
             self.config[obj].pos = pos
+            
+            if obj in network.networks: #update all positions in subnet
+                self.update_positions(obj, pos)
+                
             fixed.append(obj)
             
             if contain_size:
@@ -65,18 +69,23 @@ class Layout(object):
                     changed = True
         
         #compute size to return
-        if len(network.nodes + network.ensembles) == 0: #empty network
+        if len(network.nodes + network.ensembles + network.networks) == 0: #empty network
             contain_size = 100,100 #default empty network size
-        elif [o for o in self.nets if o.changed]: #if any subnetwork changed size
-            if network == self.model: #if we're at the top, do nothing
-                pass
-            else:
-                contain_size = network_size(network)
-        else: #contain_size already set at entry
-            pass
+        elif not network==self.model:
+            #if any subnetwork changed size or it has no size
+            if not contain_size or [o for o in self.nets if self.nets[o].changed]:
+                contain_size = self.network_size(network)
+                changed = True
             
         return contain_size, changed
 
+    def update_positions(self, net, pos):
+        for obj in net.networks:
+            self.config[obj].pos += pos
+            self.update_positions(obj, pos)
+        for obj in net.nodes + net.ensembles:
+            self.config[obj].pos += pos
+            
     def network_size(self, net):
         nodes = net.ensembles + net.nodes
         x0 = self.config[nodes[0]].pos[0] #first item in net x,y as a start
@@ -90,16 +99,15 @@ class Layout(object):
             xBorder = (self.config[obj].size[0] / 2)*scale
             yBorder = (self.config[obj].size[1] / 2)*scale
             
-            x = config[obj].pos[0]
-            y = config[obj].pos[1]
+            x = self.config[obj].pos[0]
+            y = self.config[obj].pos[1]
             
             x0 = np.min([x - xBorder, x0])
             x1 = np.max([x + xBorder, x1])
             y0 = np.min([y - yBorder, y0])
             y1 = np.max([y + yBorder, y1])
-
-        self.config[net].pos[0] = (x0 + x1) / 2 # x, y mid
-        self.config[net].pos[1] = (y0 + y1) / 2
+    
+        self.config[net].pos = (x0 + x1) / 2, (y0 + y1) / 2  # x, y mid
 
         xsize = (x1 - x0)/self.config[net].scale + 2 * m 
         ysize = (y1 - y0)/self.config[net].scale + 2 * m        
@@ -115,7 +123,6 @@ class Layout(object):
             for obj in objects: #check if current pos is valid 
                 if self.is_in(obj, pos, size):
                     no_position = True
-                    #pdb.set_trace()
                     pos += ((np.random.random(2) - .5) * self.config[obj].size 
                          + (pos-self.config[obj].pos))
                     break
