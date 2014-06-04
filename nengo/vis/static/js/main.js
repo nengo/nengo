@@ -793,8 +793,9 @@ function update_graph() {
     //redraw so nodes are on top, lowest level nets 2nd, and so on
     layer_container();
     update_net_sizes();
-    
-    resizeBR = nodeEnter.filter(function (d) {return d.type == 'net';})
+   
+//Removed: code for drag resize    
+/*    resizeBR = nodeEnter.filter(function (d) {return d.type == 'net';})
         .append('rect') //bottom right drag region
         .attr("x", function(d) { return d.width/2 - resizew; })
         .attr("y", function(d) { return d.height/2 - resizew; })
@@ -803,7 +804,7 @@ function update_graph() {
         .attr("width", resizew)
         .attr("cursor", "se-resize")
         .call(resizeBotR);
-    
+*/     
     update_line_locations();
     update_text();
 
