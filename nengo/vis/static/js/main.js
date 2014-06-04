@@ -780,14 +780,12 @@ function update_graph() {
     links.exit().remove();
     linkRecur.exit().remove();
     
-    // go to the stored gui location
-    var newLayout = false;
+    var newLayout = false; //check if this is a new layout
     if (graph.global_scale == 1 && graph.global_offset.toString() == [0, 0].toString()) {
-        zoom.scale(1);
         newLayout = true;
-    } else {
-        zoom.scale(graph.global_scale);
     }
+    
+    zoom.scale(graph.global_scale);     // go to the stored gui location
     zoom.translate(graph.global_offset);
     zoom.event(container.transition().duration(500)); //or event on svg?
     
