@@ -1,14 +1,11 @@
 import nengo
 
-model = nengo.Network(label="My Network")
+model = nengo.Network()
 with model:
-    a = nengo.Ensemble(n_neurons=10, dimensions=2, label="My Ensemble")
 
-    nengo.Connection(a, a)
+    vis = nengo.Network(label="1")
+    with vis:
+        b = nengo.Ensemble(n_neurons=80, dimensions=2)
+        b = nengo.Ensemble(n_neurons=80, dimensions=2)
 
-import nengo_gui
-gui = nengo_gui.Config()
-gui[model].scale = 1.0
-gui[model].offset = 0.0,0.0
-gui[a].pos = 300.0, 200.0
-gui[a].scale = 1.000
+

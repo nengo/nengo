@@ -132,8 +132,8 @@ $(document).ready(function () {
     $('#menu_save').click(save_file);
     $('#menu_save').addClass('disable');
     $('#filename').change(edit_filename);
-    $('#zoom_mode').click(change_zoom_mode);
-    $('#zoom_mode').text(zoom_mode);    
+//    $('#zoom_mode').click(change_zoom_mode);
+//    $('#zoom_mode').text(zoom_mode);    
     $('#menu_reload').click(reload_file);
 
     if (gui_server_check_interval>0) {
