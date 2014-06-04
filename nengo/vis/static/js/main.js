@@ -777,7 +777,7 @@ function update_graph() {
     
     // go to the stored gui location
     var newLayout = false;
-    if (graph.global_scale == null) {
+    if (graph.global_scale == 1 && graph.global_offset.toString() == [0, 0].toString()) {
         zoom.scale(1);
         newLayout = true;
     } else {
@@ -802,7 +802,7 @@ function update_graph() {
     
     update_line_locations();
     update_text();
-    //update_gui_text();
+
     resize();
     if (newLayout) {
         zoomCenter();
