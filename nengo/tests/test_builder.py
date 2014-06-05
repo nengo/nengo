@@ -86,9 +86,9 @@ def test_signal_init_values(RefSimulator):
 
 def test_signaldict():
     """Tests simulator.SignalDict's dict overrides."""
-    signaldict = nengo.builder.SignalDict()
+    signaldict = nengo.simulator.SignalDict()
 
-    scalar = nengo.builder.Signal(1)
+    scalar = Signal(1)
 
     # Both __getitem__ and __setitem__ raise KeyError
     with pytest.raises(KeyError):
@@ -101,12 +101,12 @@ def test_signaldict():
     # __getitem__ handles scalars
     assert signaldict[scalar].shape == ()
 
-    one_d = nengo.builder.Signal([1])
+    one_d = Signal([1])
     signaldict.init(one_d, one_d.value)
     assert np.allclose(signaldict[one_d], np.array([1.]))
     assert signaldict[one_d].shape == (1,)
 
-    two_d = nengo.builder.Signal([[1], [1]])
+    two_d = Signal([[1], [1]])
     signaldict.init(two_d, two_d.value)
     assert np.allclose(signaldict[two_d], np.array([[1.], [1.]]))
     assert signaldict[two_d].shape == (2, 1)
@@ -136,6 +136,41 @@ def test_signaldict():
     # Order not guaranteed for dicts, so we have to loop
     for k in signaldict:
         assert "%s %s" % (repr(k), repr(signaldict[k])) in str(signaldict)
+
+
+def test_signaldict_readonly():
+    """Tests simulator.SignalDict with readonly items."""
+    signaldict = nengo.simulator.SignalDict()
+
+    writeable = Signal([[1], [1]])
+    signaldict.init(writeable, writeable.value)
+    signaldict[writeable] = np.array([[0], [0]])
+    assert np.allclose(signaldict[writeable], np.array([[0], [0]]))
+    signaldict[writeable][...] = np.array([[-1], [-1]])
+    assert np.allclose(signaldict[writeable], np.array([[-1], [-1]]))
+
+    writeable_view = writeable[0, :]
+    signaldict[writeable_view] = np.array([-2])
+    assert np.allclose(signaldict[writeable_view], np.array([-2]))
+    signaldict[writeable_view][...] = np.array([2])
+    assert np.allclose(signaldict[writeable_view], np.array([2]))
+
+    readonly = Signal([[1], [1]])
+    signaldict.init(readonly, readonly.value, readonly=True)
+    with pytest.raises(ValueError):
+        signaldict[readonly] = np.array([[0], [0]])
+    assert np.allclose(signaldict[readonly], np.array([[1], [1]]))
+    with pytest.raises(ValueError):
+        signaldict[readonly][...] = np.array([[-1], [-1]])
+    assert np.allclose(signaldict[readonly], np.array([[1], [1]]))
+
+    readonly_view = readonly[0, :]
+    with pytest.raises(ValueError):
+        signaldict[readonly_view] = np.array([-2])
+    assert np.allclose(signaldict[readonly_view], np.array([1]))
+    with pytest.raises(ValueError):
+        signaldict[readonly_view][...] = np.array([2])
+    assert np.allclose(signaldict[readonly_view], np.array([1]))
 
 
 if __name__ == '__main__':
