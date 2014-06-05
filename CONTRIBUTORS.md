@@ -20,3 +20,4 @@ Please keep this list sorted alphabetically.
 
 - Chris Eliasmith <celiasmith@uwaterloo.ca>
 - Terry Stewart <terry.stewart@gmail.com>
+- Trevor Bekolay <tbekolay@gmail.com>
