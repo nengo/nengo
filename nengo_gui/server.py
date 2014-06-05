@@ -165,9 +165,10 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
             print('Finished running JavaViz simulation')
 
 
-    def swi_graph_json(self, code):
+    def swi_graph_json(self, code, feedforward=False):
         if self.user is None: return
-
+        if feedforward == "true":
+            feedforward = True
         code = code.replace('\r\n', '\n')
 
         try:
@@ -232,7 +233,6 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
             traceback.print_exc()
             return json.dumps(dict(error_line=2, text='Unknown'))
 
-        feedforward = False
         if feedforward:
             conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
             feedforward_layout(model, cfg, locals, conv.links, conv.objects)

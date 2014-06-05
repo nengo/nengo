@@ -6,8 +6,9 @@ div#menubar {
 
 
 #menubar img {
-    margin:0;
-    padding: 5px;
+    margin:10;
+    top: 2px;
+    padding: 2px;
 }
 
 
@@ -28,7 +29,6 @@ div#menubar {
 
 div#menubar input.filename {
     position: absolute;
-    top: 5px;
     left: 150px;
     border: 0px;
     background-color: #777;
@@ -64,13 +64,18 @@ span#zoom_mode::before {
     content: "mode:";
 }
 
-
 span#zoom_mode:hover {
     background-color: #888;
 }
 
 img#menu_javaviz {
     position: absolute;
+    top: 10px;
     left: calc(100% - 50px);
-    top: 5px;
+}
+
+img#menu_feedfwd {
+    position: absolute;
+    top: 10px;
+    left: 50%;
 }

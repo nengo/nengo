@@ -38,6 +38,15 @@ function reload_file() {
     clear_and_open_file($('#filename').val());
 }
 
+function feedfwd_layout() {
+    var data = new FormData();
+    data.append('code', editor.getValue());
+    data.append('feedforward', true);
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/graph.json', true);
+    xhr.send(data);
+}
+
 function save_file() {
     if ($('#menu_save').hasClass('disable')) {
         return;
@@ -135,6 +144,7 @@ $(document).ready(function () {
 //    $('#zoom_mode').click(change_zoom_mode);
 //    $('#zoom_mode').text(zoom_mode);    
     $('#menu_reload').click(reload_file);
+    $('#menu_feedfwd').click(feedfwd_layout);
 
     if (gui_server_check_interval>0) {
         window.setInterval(check_server_for_file_changes, 
