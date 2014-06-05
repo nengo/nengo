@@ -51,6 +51,36 @@ def test_seeding():
     compare_objs(Cs[0], Cs[2], conn_attrs, equal=False)
 
 
+def test_hierarchical_seeding():
+    """Test that changes to subnetworks don't affect RNGs in other subnetworks
+    """
+    seed = 9
+
+    def create(make_b):
+        with nengo.Network():
+            a = nengo.Ensemble(40, 1, label="a")
+            if make_b:
+                b = nengo.Ensemble(40, 1, label="b")
+
+        with nengo.Network():
+            c = nengo.Ensemble(20, 1, label="c")
+
+        return c
+
+    m1 = nengo.Network(seed=seed)
+    with m1:
+        c1 = create(False)
+
+    m2 = nengo.Network(seed=seed)
+    with m2:
+        c2 = create(True)
+
+    params1 = nengo.Simulator(m1).model.params[c1]
+    params2 = nengo.Simulator(m2).model.params[c2]
+    for key in ['gain', 'bias', 'encoders']:
+        assert np.array_equal(getattr(params1, key), getattr(params2, key))
+
+
 def test_signal():
     """Make sure assert_named_signals works."""
     nengo.builder.Signal(np.array(0.))
