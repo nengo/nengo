@@ -1,6 +1,4 @@
--e git://github.com/matplotlib/matplotlib.git#egg=matplotlib
-IPython
-jinja2
-pygments
+matplotlib>=1.4
+IPython[nbconvert]>=2.3
 pytest
 pytest-xdist
