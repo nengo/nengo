@@ -238,8 +238,7 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
             feedforward_layout(model, cfg, locals, conv.links, conv.objects)
         else:
             gui_layout = nengo_gui.layout.Layout(model, cfg)
-            cfg = gui_layout.config
-
+            
         conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
 
         return conv.to_json()
