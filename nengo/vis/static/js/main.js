@@ -731,12 +731,12 @@ function update_graph() {
     nodeEnter.filter(function (d) {return d.type == 'net';})
         .append('rect')
         .attr('class', 'net')
-        .attr('x', function (d) {return d.x})
-        .attr('y', function (d) {return d.y})
+        .attr('x', function (d) {return -d.width / 2;})
+        .attr('y', function (d) {return -d.height / 2;})
+        .attr('width', function (d) {return d.width;})
+        .attr('height', function (d) {return d.height;})
         .attr('rx', '15')
         .attr('ry', '15')
-        .attr('width', function (d) {return d.width})
-        .attr('height', function (d) {return d.height})
         .each(function (d) {
             zoomers[d.id] = d3.behavior.zoom()
                 .scaleExtent([.05, 4])
@@ -768,6 +768,9 @@ function update_graph() {
             }
         })  
         .on('dblclick.zoom', zoomCenter)
+
+    nodeEnter.attr('transform', function (d) {return 'translate(' + [d.x, d.y] 
+        + ')scale(' + d.scale + ')';});
 
     nodeEnter.append('text')     //label everything
         .text(function (d) {return d.label})

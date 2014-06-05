@@ -4,13 +4,11 @@ div#menubar {
     overflow: hidden;
 }
 
-
 #menubar img {
     margin:10;
     top: 2px;
     padding: 2px;
 }
-
 
 #menubar img:hover {
     background-color: #888;
@@ -39,6 +37,7 @@ div#menubar input.filename {
     font-size: 20px;
     color: white;
     padding: 5px;
+    width: 400px;
 }
 
 div#menubar input.filename:hover {

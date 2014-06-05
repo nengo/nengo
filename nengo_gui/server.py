@@ -103,7 +103,7 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         d = urllib.unquote(dir)
         for f in sorted(os.listdir(os.path.join(self.script_path, d))):
             ff = os.path.relpath(os.path.join(self.script_path, d,f), self.script_path)
-            if os.path.isdir(ff):
+            if os.path.isdir(os.path.join(self.script_path, d, ff)):
                 r.append('<li class="directory collapsed"><a href="#" rel="%s/">%s</a></li>' % (ff,f))
             else:
                 e = os.path.splitext(f)[1][1:] # get .ext and remove dot
