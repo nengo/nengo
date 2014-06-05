@@ -793,13 +793,11 @@ class SimOja(Operator):
 class Model(object):
     """Output of the Builder, used by the Simulator."""
 
-    def __init__(self, dt=0.001, label=None, seed=None):
+    def __init__(self, dt=0.001, label=None):
         # We want to keep track of the toplevel network
         self.toplevel = None
 
         # Resources used by the build process.
-        self.toplevel = None
-
         self.operators = []
         self.params = {}
         self.seeds = {}
@@ -808,7 +806,6 @@ class Model(object):
 
         self.dt = dt
         self.label = label
-        self.seed = np.random.randint(npext.maxint) if seed is None else seed
 
     def __str__(self):
         return "Model: %s" % self.label
@@ -823,23 +820,6 @@ class Model(object):
     def has_built(self, obj):
         """Returns true iff obj has been processed by build."""
         return obj in self.params
-
-    def assign_seeds(self, network):
-        """Recursively assign seeds.
-
-        It recurses depth first, and respects the order of object creation.
-        """
-        seed = self.seed if network is self.toplevel else self.seeds[network]
-        rng = np.random.RandomState(seed)
-
-        for obj in network.order:
-            self.seeds[obj] = rng.randint(npext.maxint)
-
-            if hasattr(obj, 'seed') and obj.seed is not None:
-                self.seeds[obj] = obj.seed
-
-            if isinstance(obj, nengo.Network):
-                self.assign_seeds(obj)
 
 BuiltConnection = collections.namedtuple(
     'BuiltConnection', ['decoders', 'eval_points', 'transform', 'solver_info'])
@@ -894,11 +874,24 @@ def build_network(network, model):  # noqa: C901
     4) Learning Rules
     5) Probes
     """
+    def get_seed(obj, rng):
+        # Generate a seed no matter what, so that setting a seed or not on
+        # one object doesn't affect the seeds of other objects.
+        seed = rng.randint(npext.maxint)
+        return (seed if not hasattr(obj, 'seed') or obj.seed is None
+                else obj.seed)
+
     if model.toplevel is None:
         model.toplevel = network
-        model.assign_seeds(network)
         model.sig['common'][0] = Signal(0.0, name='Common: Zero')
         model.sig['common'][1] = Signal(1.0, name='Common: One')
+        model.seeds[network] = get_seed(network, np.random)
+
+    # assign seeds to children
+    rng = np.random.RandomState(model.seeds[network])
+    for objs in network.objects.values():
+        for obj in objs:
+            model.seeds[obj] = get_seed(obj, rng)
 
     logger.info("Network step 1: Building ensembles and nodes")
     for obj in network.ensembles + network.nodes:
