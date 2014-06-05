@@ -133,6 +133,21 @@ def test_simulator_dt(Simulator):
     assert sim.data[bp].shape == (100, 1)
 
 
+def test_multiple_probes(Simulator):
+    """Make sure we can probe the same object multiple times."""
+    model = nengo.Network()
+    with model:
+        ens = nengo.Ensemble(10, 1)
+        p_001 = nengo.Probe(ens, sample_every=0.001)
+        p_01 = nengo.Probe(ens, sample_every=0.01)
+        p_1 = nengo.Probe(ens, sample_every=0.1)
+
+    sim = nengo.Simulator(model, dt=0.001)
+    sim.run(1.)
+    assert np.allclose(sim.data[p_001][::10], sim.data[p_01])
+    assert np.allclose(sim.data[p_01][::10], sim.data[p_1])
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
