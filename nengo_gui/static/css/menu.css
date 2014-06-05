@@ -18,10 +18,14 @@ div#menubar {
 
 #filebrowser {
     position: absolute;
-    top:32px;
-    left: 40px;
-    width: 400px;
-    height: 200px;
+    top:20px;
+    left: 20px;
+    width: 200px;
+    height: 300px;
+    border-top: solid 2px #BBB;
+    border-left: solid 2px #BBB;
+    border-bottom: solid 2px #BBB;
+    border-right: solid 2px #BBB;
     background-color: #999;
     z-index: 1000;
     overflow: auto;

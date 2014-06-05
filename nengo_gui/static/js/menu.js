@@ -128,6 +128,7 @@ function do_javaviz() {
 $(document).ready(function () {
     //initialize file browser
     $('#filebrowser').hide()
+    $('#filebrowser').mouseleave(function(){$(this).toggle(200)})
     $('#menu_open').click(function () {
         fb = $('#filebrowser');
         fb.toggle(200);
