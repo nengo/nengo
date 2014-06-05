@@ -77,6 +77,9 @@ def export_py(nb, dst_path):
     body, resources = export.from_notebook_node(nb)
     if sys.version_info[0] == 2:
         body = unicodedata.normalize('NFKD', body).encode('ascii', 'ignore')
+    # We'll remove %matplotlib inline magic, but leave the rest
+    body = body.replace("get_ipython().magic(u'matplotlib inline')\n", "")
+    body = body.replace("get_ipython().magic('matplotlib inline')\n", "")
     with open(dst_path, 'w') as f:
         f.write(body)
 
