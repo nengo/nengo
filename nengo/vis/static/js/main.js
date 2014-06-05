@@ -858,7 +858,8 @@ $(document).ready(function () {
 		east__livePaneResizing:		true,
 		east__size:					.4,
 		east__minSize:				.1,
-		east__maxSize:				.8 // 80% of layout width        
+		east__maxSize:				.8, // 80% of layout width 
+		east__onresize:             function() {editor.resize(true)}       
     });
     
     //start this puppy up
