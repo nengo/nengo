@@ -87,6 +87,8 @@ class View:
                 isinstance(obj, nengo.Node) and name == 'Node' or
                 isinstance(obj, nengo.Network) and name == None):
             name = self.default_labels.get(id(obj), name)
+            if name is None:
+                name = 'Network'
 
             # if the provided name has dots (indicating a hierarchy),
             # ignore them since that'll get filled in by the prefix
