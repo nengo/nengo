@@ -41,11 +41,8 @@ class NengoObjectContainer(type):
             'add_to_container', len(Network.context) > 0)
         if add_to_container:
             cls.add(inst)
-        else:
-            inst._key = None
         inst.label = kwargs.pop('label', None)
         inst.seed = kwargs.pop('seed', None)
-        inst._next_key = hash(inst)
         with inst:
             inst.__init__(*args, **kwargs)
         return inst
@@ -144,7 +141,6 @@ class Network(with_metaclass(NengoObjectContainer)):
         if not isinstance(network, Network):
             raise RuntimeError("Current context is not a network: %s" %
                                network)
-        obj._key = network.generate_key()
         for cls in obj.__class__.__mro__:
             if cls in network.objects:
                 network.objects[cls].append(obj)
@@ -162,11 +158,6 @@ class Network(with_metaclass(NengoObjectContainer)):
         config.configures(Node)
         return config
 
-    def generate_key(self):
-        """Returns a new key for a NengoObject to be added to this Network."""
-        self._next_key += 1
-        return self._next_key
-
     @property
     def config(self):
         return self._config
@@ -175,9 +166,6 @@ class Network(with_metaclass(NengoObjectContainer)):
     def config(self, dummy):
         raise AttributeError("config cannot be overwritten. See help("
                              "nengo.Config) for help on modifying configs.")
-
-    def __eq__(self, other):
-        return hash(self) == hash(other)
 
     def __enter__(self):
         Network.context.append(self)
@@ -203,13 +191,10 @@ class Network(with_metaclass(NengoObjectContainer)):
                                "'%s'." % (self, network))
         self._config.__exit__(dummy_exc_type, dummy_exc_value, dummy_tb)
 
-    def __hash__(self):
-        return hash((self.__class__, id(self.config), self._key, self.label))
-
     def __str__(self):
         return "%s: %s" % (
             self.__class__.__name__,
-            self.label if self.label is not None else str(self._key))
+            self.label if self.label is not None else str(id(self)))
 
     def __repr__(self):
         return str(self)
@@ -229,8 +214,6 @@ class NetworkMember(type):
         add_to_container = kwargs.pop('add_to_container', True)
         if add_to_container:
             Network.add(inst)
-        else:
-            inst._key = None
         inst.__init__(*args, **kwargs)
         return inst
 
@@ -243,19 +226,9 @@ class NengoObject(with_metaclass(NetworkMember)):
     and object comparison require each object to have a unique ID.
     """
 
-    def __hash__(self):
-        if self._key is None:
-            return super(NengoObject, self).__hash__()
-        return hash((self.__class__, self._key))
-
-    def __eq__(self, other):
-        return hash(self) == hash(other)
-
     def __str__(self):
         if hasattr(self, 'label') and self.label is not None:
             return "%s: %s" % (self.__class__.__name__, self.label)
-        elif hasattr(self, '_key'):
-            return "%s: key=%d" % (self.__class__.__name__, self._key)
         else:
             return "%s: id=%d" % (self.__class__.__name__, id(self))
 

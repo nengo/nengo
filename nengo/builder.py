@@ -880,8 +880,6 @@ def build_network(network, model):  # noqa: C901
     """
     if model.toplevel is None:
         model.toplevel = network
-
-    if model.toplevel == network:
         model.sig['common'][0] = Signal(0.0, name='Common: Zero')
         model.sig['common'][1] = Signal(1.0, name='Common: One')
 
