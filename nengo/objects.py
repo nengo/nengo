@@ -125,7 +125,6 @@ class Network(with_metaclass(NengoObjectContainer)):
         inst.connections = inst.objects[Connection]
         inst.networks = inst.objects[Network]
         inst.probes = inst.objects[Probe]
-        inst.order = []
         return inst
 
     context = collections.deque(maxlen=100)  # static stack of Network objects
@@ -145,7 +144,6 @@ class Network(with_metaclass(NengoObjectContainer)):
         for cls in obj.__class__.__mro__:
             if cls in network.objects:
                 network.objects[cls].append(obj)
-                network.order.append(obj)
                 break
         else:
             raise TypeError("Objects of type '%s' cannot be added to "

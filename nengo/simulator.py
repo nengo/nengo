@@ -11,6 +11,7 @@ import logging
 
 import numpy as np
 
+import nengo.utils.numpy as npext
 from nengo.builder import Model, Builder, SignalDict
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
@@ -94,9 +95,8 @@ class Simulator(object):
             then you can pass in a ``nengo.builder.Model`` instance.
         """
         if model is None:
-            self.model = Model(dt=dt,
-                               label="%s, dt=%f" % (network.label, dt),
-                               seed=network.seed)
+            self.model = Model(
+                dt=dt, label="%s, dt=%f" % (network.label, dt))
         else:
             self.model = model
 
@@ -104,9 +104,8 @@ class Simulator(object):
             # Build the network into the model
             Builder.build(network, model=self.model)
 
-        # Use model seed as simulator seed if the seed is not provided
         # Note: seed is not used right now, but one day...
-        self.seed = self.model.seed if seed is None else seed
+        self.seed = np.random.randint(npext.maxint) if seed is None else seed
 
         # -- map from Signal.base -> ndarray
         self.signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
