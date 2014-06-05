@@ -8,6 +8,7 @@ from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc, PreserveValue
 from nengo.builder.signal import Signal, SignalDict
+from nengo.utils.compat import itervalues
 
 
 def test_seeding(RefSimulator):
@@ -223,3 +224,15 @@ def test_signal_reshape():
     assert three_d.reshape((-1, 4)).shape == (2, 4)
     assert three_d.reshape((2, -1, 2)).shape == (2, 2, 2)
     assert three_d.reshape((1, 2, 1, 2, 2, 1)).shape == (1, 2, 1, 2, 2, 1)
+
+
+def test_commonsig_readonly(RefSimulator):
+    """Test that the common signals cannot be modified."""
+    net = nengo.Network(label="test_commonsig")
+    sim = RefSimulator(net)
+    for sig in itervalues(sim.model.sig['common']):
+        sim.signals.init(sig, sig.value)
+        with pytest.raises(ValueError):
+            sim.signals[sig] = np.array([-1])
+        with pytest.raises(ValueError):
+            sim.signals[sig][...] = np.array([-1])

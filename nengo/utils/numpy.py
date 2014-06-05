@@ -21,7 +21,7 @@ def broadcast_shape(shape, length):
         return shape
 
 
-def array(x, dims=None, min_dims=0, **kwargs):
+def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
     y = np.array(x, **kwargs)
     dims = max(min_dims, y.ndim) if dims is None else dims
 
@@ -32,6 +32,9 @@ def array(x, dims=None, min_dims=0, **kwargs):
     elif y.ndim > dims:
         raise ValueError(
             "Input cannot be cast to array with %d dimensions" % dims)
+
+    if readonly:
+        y.flags.writeable = False
 
     return y
 
