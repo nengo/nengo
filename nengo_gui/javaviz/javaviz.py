@@ -118,20 +118,22 @@ class View:
 
         for obj in network.nodes:
             name = self.get_name(names, obj, prefix)
-            if obj.size_in == 0:
-                output = obj.output
 
-                if callable(output):
-                    output = output(0.0)#np.zeros(obj.size_in))
-                if isinstance(output, (int, float)):
-                    output_dims = 1
-                else:
-                    output_dims = len(output)
-                obj._output_dims = output_dims
-                input = remote_net.make_input(name, tuple([0]*output_dims))
-                obj.output = OverrideFunction(self, obj.output, id(input)&0xFFFF)
-                self.remote_objs[obj] = input
-                self.inputs.append(input)
+            if obj.size_in == 0:
+                if obj.size_out > 0:
+                    output = obj.output
+
+                    if callable(output):
+                        output = output(0.0)#np.zeros(obj.size_in))
+                    if isinstance(output, (int, float)):
+                        output_dims = 1
+                    else:
+                        output_dims = len(output)
+                    obj._output_dims = output_dims
+                    input = remote_net.make_input(name, tuple([0]*output_dims))
+                    obj.output = OverrideFunction(self, obj.output, id(input)&0xFFFF)
+                    self.remote_objs[obj] = input
+                    self.inputs.append(input)
             else:
                 e = self.rpyc.modules.timeview.javaviz.ProbeNode(
                         self.value_receiver, name)
