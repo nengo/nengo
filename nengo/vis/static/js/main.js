@@ -633,6 +633,7 @@ var resizew = 15;  //width and height of resize region in bottom right corner of
 
 var waiting_for_result = false;
 var pending_change = false;
+var newLayout = false; //check if this is a new layout
 
 function reload_graph_data() {
     // don't send a new request while we're still waiting for another one
@@ -796,7 +797,6 @@ function update_graph() {
     links.exit().remove();
     linkRecur.exit().remove();
     
-    var newLayout = false; //check if this is a new layout
     if (graph.global_scale == 1 && graph.global_offset.toString() == [0, 0].toString()) {
         newLayout = true;
     }
@@ -826,6 +826,7 @@ function update_graph() {
     resize();
     if (newLayout) {
         zoomCenter();
+        newLayout = false; 
     }
 }
 
