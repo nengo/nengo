@@ -7,7 +7,7 @@ class DummyNetwork(nengo.Network):
     def add(cls, obj):
         # figure out the line number this object was created on
         for fn, line, function, code in reversed(traceback.extract_stack()):
-            if fn == 'nengo_gui_temp.py':
+            if fn.endswith('nengo_gui_temp.py'):
                 obj._created_line_number = line
                 break
         else:

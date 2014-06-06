@@ -15,6 +15,7 @@ import urllib
 
 import nengo_gui
 import pkgutil
+import tempfile
 
 import socket
 try:
@@ -178,11 +179,12 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         except ValueError:
             code_gui = ''
 
-        with open('nengo_gui_temp.py', 'w') as f:
+        codefile, code_fn = tempfile.mkstemp(suffix='nengo_gui_temp.py')
+        with os.fdopen(codefile, 'w') as f:
             f.write(code)
 
         try:
-            c = compile(code, 'nengo_gui_temp.py', 'exec')
+            c = compile(code, code_fn, 'exec')
             locals = {}
             exec c in globals(), locals
         except (SyntaxError, Exception):
@@ -196,7 +198,7 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
                     error_line = e_value.lineno
                 else:
                     for (fn, line, funcname, text) in reversed(tb):
-                        if fn == 'nengo_gui_temp.py':
+                        if fn == code_fn:
                             error_line = line
                             break
                     else:
@@ -206,9 +208,12 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
                 print tb
                 traceback.print_exc()
 
+                os.remove(code_fn)
+
                 return json.dumps(dict(error_line=error_line, text=str(e_value)))
             except:
                 traceback.print_exc()
+        os.remove(code_fn)
 
         # run gui code lines, skipping ones that cause name errors
         for i, line in enumerate(code_gui.splitlines()):
@@ -238,7 +243,7 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
             feedforward_layout(model, cfg, locals, conv.links, conv.objects)
         else:
             gui_layout = nengo_gui.layout.Layout(model, cfg)
-            
+
         conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
 
         return conv.to_json()
