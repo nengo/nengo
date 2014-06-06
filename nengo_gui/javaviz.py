@@ -215,6 +215,9 @@ class View:
             elif isinstance(probe.target, nengo.Node) and probe.attr == 'output':
                 obj = probe.target
                 e = self.remote_objs[obj]
+                if e in self.inputs:
+                    # inputs are automatically probed
+                    continue
                 e.add_probe(probe_id, obj.size_out, 'X')
                 with network:
                     def send(t, x, self=self, format='>Lf'+'f'*obj.size_out,
