@@ -233,13 +233,13 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
                 # been deleted
                 pass
 
+        model = locals.get('model', None)
+        if model is None:
+            return json.dumps(dict(error_line=1,
+                text='The top-level nengo.Network must be named "model"'))
+
         if feedforward:
-            try:
-                model = locals['model']
-                cfg = nengo_gui.Config()
-            except:
-                traceback.print_exc()
-                return json.dumps(dict(error_line=2, text='Unknown'))
+            cfg = nengo_gui.Config()
 
             conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
             feedforward_layout(model, cfg, locals, conv.links, conv.objects)
@@ -247,14 +247,9 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
             conv.global_scale = 1.0
             conv.global_offset = 0.0, 0.0
         else:
-            try:
-                model = locals['model']
-                cfg = locals.get('gui', None)
-                if cfg is None:
-                    cfg = nengo_gui.Config()
-            except:
-                traceback.print_exc()
-                return json.dumps(dict(error_line=2, text='Unknown'))
+            cfg = locals.get('gui', None)
+            if cfg is None:
+                cfg = nengo_gui.Config()
 
             gui_layout = nengo_gui.layout.Layout(model, cfg)
             conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
