@@ -10,7 +10,7 @@ import time
 
 class View:
     def __init__(self, model, udp_port=56789, client='localhost',
-                 default_labels={}):
+                 default_labels={}, filename=None):
         self.default_labels = default_labels
         self.need_encoders = []
         self.overrides = {}
@@ -48,7 +48,10 @@ class View:
         # build the dummy model on the server
         self.label = model.label
         if self.label is None:
+            self.label = filename
+        if self.label is None:
             self.label='Nengo Visualizer 0x%x'%id(model)
+        self.label = self.label.replace('.', '_')
         net = self.rpyc.modules.nef.Network(self.label)
 
         self.control_node = self.rpyc.modules.timeview.javaviz.ControlNode(

@@ -140,7 +140,7 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         fn = os.path.join(self.script_path, filename)
         return repr(os.stat(fn).st_mtime)
 
-    def swi_javaviz(self, code):
+    def swi_javaviz(self, filename, code):
         if self.user is None: return
         code = code.replace('\r\n', '\n')
 
@@ -154,7 +154,8 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
 
         nf = nengo_gui.namefinder.NameFinder(locals, model)
 
-        jv = javaviz.View(model, default_labels=nf.known_name)
+        jv = javaviz.View(model, default_labels=nf.known_name,
+                          filename=filename)
         sim = nengo.Simulator(model)
         jv.update_model(sim)
         jv.view(config=cfg)

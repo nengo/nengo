@@ -119,6 +119,7 @@ function check_server_for_file_changes() {
 function do_javaviz() {
     var data = new FormData();
     data.append('code', editor.getValue());
+    data.append('filename', $('#filename').val());
     
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/javaviz', true);
