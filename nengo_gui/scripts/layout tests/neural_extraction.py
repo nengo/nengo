@@ -4,8 +4,8 @@ from nengo.networks import CircularConvolution, EnsembleArray
 
 model = nengo.Network(label="Neural Extraction")
 
-D = 4
-num_items = 10
+D = 10
+num_items = 20
 
 threshold_func = lambda x: 1.0 if x > 0.3 else 0.0
 
@@ -15,11 +15,11 @@ with model:
         a = EnsembleArray(n_neurons=80, n_ensembles=D)
         b = EnsembleArray(n_neurons=80, n_ensembles=D)
         c = CircularConvolution(n_neurons=80, dimensions=D)
-        d = nengo.Ensemble(n_neurons=80, dimensions=D)
+        d = EnsembleArray(n_neurons=80, n_ensembles=D)
 
         nengo.Connection(a.output, c.A)
         nengo.Connection(b.output, c.B)
-        nengo.Connection(c.output, d)
+        nengo.Connection(c.output, d.input)
 
     assoc = nengo.Network(label="Associate")
     assoc_nodes = []
@@ -35,10 +35,8 @@ with model:
                 assoc_nodes[-1], assoc_output, transform=np.ones((D, 1)),
                 function=threshold_func)
 
-    nengo.Connection(d, assoc_input)
+    nengo.Connection(d.output, assoc_input)
 
-    output = nengo.Network(label="output")
-    with output:
-        out = nengo.Ensemble(n_neurons=80, dimensions=D)
+    out = EnsembleArray(n_neurons=80, n_ensembles=D)
 
-    nengo.Connection(assoc_output, out)
+    nengo.Connection(assoc_output, out.input)

@@ -43,6 +43,7 @@ class Item(object):
         """Return None if no common parents. Otherwise, return the lowest
         common parent, along with the two nodes that item1 and item2
         are a part of in that common parent."""
+
         parents1 = item1.all_parents()
         parents2 = item2.all_parents()
 
@@ -232,45 +233,46 @@ def apply_feedforward(parent):
             next_layer.extend(new_vertices)
 
         if not next_layer:
-            next_layer, remaining_vertices = degree_partition(parent, remaining_vertices)
+            result = degree_partition(parent, remaining_vertices)
+            next_layer, remaining_vertices = result
 
         layers.append(next_layer)
 
+    # set the positions of the subitems accordingly
+    h_spacing = 125
+    h_subnet_padding = 50
+    v_spacing = 75
+    v_subnet_padding = 50
 
-    # and set the positions of the subitems accordingly
-    h_spacing = 150
-    h_subnet_padding = 20
-    v_spacing = 130
-    v_subnet_padding = 20
-    #v_text_padding = 20
-
-    h_offset = 0
+    h_offset = h_subnet_padding
     layer_heights = []
+    layer_widths = [max([item.width for item in layer]) for layer in layers]
 
-    print layers
     for i, layer in enumerate(layers):
-        v_offset = 0
+        v_offset = v_subnet_padding
 
-        max_width = max([item.width for item in layer])
-
-        # add some cushion for text
-        for item in layer:
+        for j, item in enumerate(layer):
             # extra x term is for horizontal centering within layer
-            item.pos[0] = h_offset + (max_width - item.width) / 2.0  # x
-            item.pos[1] = v_offset  # y
+            item.pos[0] = h_offset + (layer_widths[i] - item.width) / 2.0  # x
+            item.pos[1] = v_offset
 
-            v_offset += v_spacing + item.height# + v_text_padding
+            v_offset += item.height
 
-        v_offset -= v_spacing
+            if j < len(layer) - 1:
+                v_offset += v_spacing
+
+        v_offset += v_subnet_padding
         layer_heights.append(v_offset)
 
-        h_offset += h_spacing + max_width
+        h_offset += layer_widths[i]
 
-    h_offset -= h_spacing
+        if i < len(layers) - 1:
+            h_offset += h_spacing
 
-    parent.width = h_offset + 2 * h_subnet_padding
+    parent.width = h_offset + h_subnet_padding
+
     max_height = max(layer_heights)
-    parent.height = max_height #+ 2 * v_subnet_padding
+    parent.height = max_height
 
     # centre vertically
     for layer, height in zip(layers, layer_heights):
@@ -282,7 +284,10 @@ def apply_feedforward(parent):
 
 
 def apply_transforms(parent):
-    # Now propogate changes downward
+    """ Propogate changes downward. Before this call, for all items,
+    item.pos should be the position with respect to the network/item
+    containing it. The purpose of this function is to make all item.pos
+    the position of the item relative to the top-level network"""
     for item in parent.members:
         item.pos[0] += parent.pos[0]
         item.pos[1] += parent.pos[1]
@@ -291,6 +296,8 @@ def apply_transforms(parent):
 
 
 def populate_config(parent, locals, config):
+    """Store the computed layput in the config and in the dictionaries
+    that get converted to json (ie item.node)"""
     for item in parent.members:
         if item.members:
             populate_config(item, locals, config)
@@ -302,6 +309,10 @@ def populate_config(parent, locals, config):
                 del item.node['x']
             if 'y' in item.node:
                 del item.node['y']
+            if 'width' in item.node:
+                del item.node['width']
+            if 'height' in item.node:
+                del item.node['height']
         else:
             key = eval(item.obj_id, {}, locals)
             config[key].pos = item.pos
