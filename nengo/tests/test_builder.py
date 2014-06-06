@@ -52,33 +52,38 @@ def test_seeding():
 
 
 def test_hierarchical_seeding():
-    """Test that changes to subnetworks don't affect RNGs in other subnetworks
-    """
-    seed = 9
+    """Changes to subnetworks shouldn't affect seeds in top-level network"""
 
-    def create(make_b):
-        with nengo.Network():
-            a = nengo.Ensemble(40, 1, label="a")
-            if make_b:
-                b = nengo.Ensemble(40, 1, label="b")
+    def create(make_extra, seed):
+        objs = []
+        with nengo.Network(seed=seed, label='n1') as model:
+            objs.append(nengo.Ensemble(10, 1, label='e1'))
+            with nengo.Network(label='n2'):
+                objs.append(nengo.Ensemble(10, 1, label='e2'))
+                if make_extra:
+                    # This shouldn't affect any seeds
+                    objs.append(nengo.Ensemble(10, 1, label='e3'))
+            objs.append(nengo.Ensemble(10, 1, label='e4'))
+        return model, objs
 
-        with nengo.Network():
-            c = nengo.Ensemble(20, 1, label="c")
+    same1, same1objs = create(False, 9)
+    same2, same2objs = create(True, 9)
+    diff, diffobjs = create(True, 10)
 
-        return c
+    same1seeds = nengo.Simulator(same1).model.seeds
+    same2seeds = nengo.Simulator(same2).model.seeds
+    diffseeds = nengo.Simulator(diff).model.seeds
 
-    m1 = nengo.Network(seed=seed)
-    with m1:
-        c1 = create(False)
+    for diffobj, same2obj in zip(diffobjs, same2objs):
+        # These seeds should all be different
+        assert diffseeds[diffobj] != same2seeds[same2obj]
 
-    m2 = nengo.Network(seed=seed)
-    with m2:
-        c2 = create(True)
+    # Skip the extra ensemble
+    same2objs = same2objs[:2] + same2objs[3:]
 
-    params1 = nengo.Simulator(m1).model.params[c1]
-    params2 = nengo.Simulator(m2).model.params[c2]
-    for key in ['gain', 'bias', 'encoders']:
-        assert np.array_equal(getattr(params1, key), getattr(params2, key))
+    for same1obj, same2obj in zip(same1objs, same2objs):
+        # These seeds should all be the same
+        assert same1seeds[same1obj] == same2seeds[same2obj]
 
 
 def test_signal():
