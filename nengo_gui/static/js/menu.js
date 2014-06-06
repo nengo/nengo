@@ -44,6 +44,7 @@ function feedfwd_layout() {
     data.append('feedforward', true);
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/graph.json', true);
+    xhr.onload = update_graph
     xhr.send(data);
 }
 
