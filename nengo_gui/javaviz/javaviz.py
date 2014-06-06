@@ -255,12 +255,13 @@ class View:
 
         def _generate_layout(layout, network, config):
             for obj in network.nodes + network.ensembles:
-                name = self.remote_objs[obj].getName()
-                pos = config[obj].pos
-                layout_item = (name, None,
-                        {'label': False, 'x': pos[0], 'y': pos[1],
-                         'width': 100, 'height': 20})
-                layout.append(layout_item)
+                if obj in self.remote_objs:
+                    name = self.remote_objs[obj].getName()
+                    pos = config[obj].pos
+                    layout_item = (name, None,
+                            {'label': False, 'x': pos[0], 'y': pos[1],
+                             'width': 100, 'height': 20})
+                    layout.append(layout_item)
 
             for obj in network.networks:
                 _generate_layout(layout, obj, config)
