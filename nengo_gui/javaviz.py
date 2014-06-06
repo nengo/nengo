@@ -75,7 +75,7 @@ class View:
         if config is not None and not has_layout:
             # generate a layout based on the current positions of network nodes in GUI
             view, layout, control = self.generate_layout(self.model, config)
-            net.set_layout(view, layout, control)
+            self.net.set_layout(view, layout, control)
 
         # open up the visualizer on the server
         view = self.net.view()
@@ -88,12 +88,10 @@ class View:
 
     def get_name(self, names, obj, prefix):
         name = obj.label
-        if (isinstance(obj, nengo.Ensemble) and name == 'Ensemble' or
-                isinstance(obj, nengo.Node) and name == 'Node' or
-                isinstance(obj, nengo.Network) and name == None):
-            name = self.default_labels.get(id(obj), name)
+        if name == None:
+            name = self.default_labels.get(id(obj), None)
             if name is None:
-                name = 'Network'
+                name = '%s_%d' % (obj.__class__.__name__, id(obj))
 
             # if the provided name has dots (indicating a hierarchy),
             # ignore them since that'll get filled in by the prefix
