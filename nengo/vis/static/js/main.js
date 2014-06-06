@@ -777,7 +777,7 @@ function update_graph() {
 
     nodeEnter.selectAll('.node_nde text, .node_ens text')
         .attr('y', '30')
-        .style('font-size', node_fontsize)
+        .style('font-size', node_fontsize+"px")
 
     nodes.exit().remove();
     links.exit().remove();
