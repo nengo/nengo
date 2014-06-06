@@ -208,11 +208,16 @@ def apply_feedforward(parent):
     # Here do the "vertex" sorting. Not quite vertices, because
     # they have non-zero size (in the case of subnetworks) that we have to
     # take into account when positioning things
-    min_in_degree = min([parent.in_degree(item) for item in sub_items])
 
-    starting_vertices, remaining_vertices = partition(
-        lambda item: parent.in_degree(item) == min_in_degree, sub_items)
+    def degree_partition(parent, items):
+        min_in_degree = min([parent.in_degree(item) for item in items])
 
+        starting_vertices, remaining_vertices = partition(
+            lambda item: parent.in_degree(item) == min_in_degree, items)
+
+        return starting_vertices, remaining_vertices
+
+    starting_vertices, remaining_vertices = degree_partition(parent, sub_items)
     layers = [starting_vertices]
 
     while remaining_vertices:
@@ -226,7 +231,11 @@ def apply_feedforward(parent):
 
             next_layer.extend(new_vertices)
 
+        if not next_layer:
+            next_layer, remaining_vertices = degree_partition(parent, remaining_vertices)
+
         layers.append(next_layer)
+
 
     # and set the positions of the subitems accordingly
     h_spacing = 100
