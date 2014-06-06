@@ -135,7 +135,7 @@ class View:
                         if output.shape == ():
                             output_dims = 1
                         else:
-                            assert len(output.shape) == 0
+                            assert len(output.shape) == 1
                             output_dims = output.shape[0]
                     else:
                         output_dims = len(output)
