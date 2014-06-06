@@ -11,10 +11,9 @@ Starting from scratch:
 
 #. Install ``nengo_gui`` from the command-line in its directory:
 
-.. code:: bash
-
+```
    python setup.py develop
-   
+```
 #. Download the latest development version of Nengo 1.4 and unzip it: 
 http://ctnsrv.uwaterloo.ca:8080/jenkins/job/Nengo/lastSuccessfulBuild/artifact/nengo-latest.zip
 
@@ -26,13 +25,12 @@ http://ctnsrv.uwaterloo.ca:8080/jenkins/job/Nengo/lastSuccessfulBuild/artifact/n
 #. From the command line type ``nengo_gui``
 (Now the gui server is running to let you see and edit the model)
 
-
 #. To connect the model to the interactive visualizer, put this at the bottom of your script:
 
-.. code:: bash
-
+```
    import javaviz   
    javaviz.View(model)   # this is all you need to do!
+```
 
 #. The button in the top right of the Chrome window should light up.  Click it to interact with the running 
 model. Right click on the background of the visualizer to pick things to see, right click on the things to pick
