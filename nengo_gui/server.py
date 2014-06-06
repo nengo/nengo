@@ -155,10 +155,10 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
 
         nf = nengo_gui.namefinder.NameFinder(locals, model)
 
-        javaviz.View(
-            model, default_labels=nf.known_name, config=cfg)
-
+        jv = javaviz.View(model, default_labels=nf.known_name)
         sim = nengo.Simulator(model)
+        jv.update_model(sim)
+        jv.view(config=cfg)
         try:
             while True:
                 sim.run(1)

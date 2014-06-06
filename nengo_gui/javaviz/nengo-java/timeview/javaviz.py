@@ -24,6 +24,11 @@ class ProbeNode(nef.Node):
         self.spike_probe = lambda: None
         self.spike_probe._value = [0] * num_neurons
         self.receiver.register(id, self.spike_probe)
+        
+    def set_encoders(self, n_neurons, dimensions, encoder_data):
+        self.encoders = []
+        for i in range(n_neurons):
+            self.encoders.append(list(encoder_data[i*dimensions:(i+1)*dimensions]))
 
     def create_new_dummy_termination(self, dimensions):
         name = 'term%d'%self.termination_count

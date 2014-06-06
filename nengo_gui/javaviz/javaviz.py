@@ -10,7 +10,7 @@ import time
 
 class View:
     def __init__(self, model, udp_port=56789, client='localhost',
-                 default_labels={}, config=None):
+                 default_labels={}):
         self.default_labels = default_labels
         self.overrides = {}
         self.block_time = 0.0
@@ -45,9 +45,10 @@ class View:
         thread.start_new_thread(self.receiver, ())
 
         # build the dummy model on the server
-        label = model.label
-        if label is None: label='Nengo Visualizer 0x%x'%id(model)
-        net = self.rpyc.modules.nef.Network(label)
+        self.label = model.label
+        if self.label is None:
+            self.label='Nengo Visualizer 0x%x'%id(model)
+        net = self.rpyc.modules.nef.Network(self.label)
 
         self.control_node = self.rpyc.modules.timeview.javaviz.ControlNode(
             '(javaviz control)', 'localhost', self.udp_port + 1,
@@ -62,18 +63,22 @@ class View:
         for input in self.inputs:
             self.control_node.register(id(input)&0xFFFF, input)
 
-        has_layout = self.rpyc.modules.timeview.view.load_layout_file(label, False)
+        self.model = model
+        self.net = net
+
+    def view(self, config=None):
+        has_layout = self.rpyc.modules.timeview.view.load_layout_file(self.label, False)
 
         # check whether has layout == ({}, [], {})
         has_layout = has_layout is not None and any(has_layout)
 
         if config is not None and not has_layout:
             # generate a layout based on the current positions of network nodes in GUI
-            view, layout, control = self.generate_layout(model, config)
+            view, layout, control = self.generate_layout(self.model, config)
             net.set_layout(view, layout, control)
 
         # open up the visualizer on the server
-        view = net.view()
+        view = self.net.view()
         self.control_node.set_view(view)
 
         if config is not None and not has_layout:
@@ -208,6 +213,15 @@ class View:
 
             else:
                 print 'Unhandled probe', probe
+
+    def update_model(self, sim):
+        """Grab data from the simulator needed for plotting."""
+
+        for obj, remote in self.remote_objs.items():
+            if isinstance(obj, nengo.Ensemble):
+                encoders = sim.model.params[obj].encoders
+                remote.set_encoders(obj.n_neurons, obj.dimensions,
+                        tuple([float(x) for x in encoders.flatten()]))
 
 
     def receiver(self):
