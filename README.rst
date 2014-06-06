@@ -35,6 +35,16 @@ To get started, run the following in a terminal window.
    pip install rpyc
    pip install --editable .
 
+Interactive usage
+=================
+
+To run models and see the data generated as the model runs,
+you must first start the ``javaviz`` interactive visualizer.
+
+.. code:: bash
+
+   cd /path/to/nengo-latest
+   ./nengo-cl python/rpyc/scripts/rpyc_classic.py
 
 Basic usage
 ===========
@@ -46,19 +56,8 @@ You can pass it a script to visualize, if desired.
 
    nengo_gui my_nengo_script.py
 
-If you do not pass a Nengo script,
-you will see some scripts we've provided.
+If you do not pass a Nengo script, you can load scripts from within the gui.
 
-Interactive usage
-=================
-
-To run models and see the data generated as the model runs,
-you must first start the ``javaviz`` interactive visualizer.
-
-.. code:: bash
-
-   cd /path/to/nengo-latest
-   ./nengo-cl python/rpyc/scripts/rpyc_classic.py
 
 Using ``nengo_gui``
 -------------------
