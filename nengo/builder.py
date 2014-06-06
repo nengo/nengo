@@ -921,8 +921,10 @@ def build_network(network, model):  # noqa: C901
 
     # assign seeds to children
     rng = np.random.RandomState(model.seeds[network])
-    for objs in network.objects.values():
-        for obj in objs:
+    sorted_types = sorted(list(network.objects.keys()),
+                          key=lambda t: t.__name__)
+    for obj_type in sorted_types:
+        for obj in network.objects[obj_type]:
             model.seeds[obj] = get_seed(obj, rng)
 
     logger.info("Network step 1: Building ensembles and nodes")
