@@ -7,11 +7,7 @@ Starting from scratch:
 
 1. clone this ``nengo_gui`` repository from githumb
 
-1. Install ``nengo_gui`` from the command-line in its directory:
-
-```
-   python setup.py develop
-```
+1. Install ``nengo_gui`` from the command-line in its directory: ``python setup.py develop``
 
 1. Download the latest development version of Nengo 1.4 and unzip it: 
 http://ctnsrv.uwaterloo.ca:8080/jenkins/job/Nengo/lastSuccessfulBuild/artifact/nengo-latest.zip
@@ -30,9 +26,10 @@ http://ctnsrv.uwaterloo.ca:8080/jenkins/job/Nengo/lastSuccessfulBuild/artifact/n
    import javaviz   
    javaviz.View(model)   # this is all you need to do!
 ```
-
-1. The button in the top right of the Chrome window should light up.  Click it to interact with the running 
+<ol start=8>
+<li>The button in the top right of the Chrome window should light up.  Click it to interact with the running 
 model. Right click on the background of the visualizer to pick things to see, right click on the things to pick
-data to plot. The rest is all very intuitive :).
+data to plot. The rest is all very intuitive :).</li>
+<ol>
 
 
