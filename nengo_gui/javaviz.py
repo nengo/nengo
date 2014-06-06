@@ -155,17 +155,25 @@ class View:
             self.process_network(remote_net, subnet, names, prefix=name)
 
         for c in network.connections:
-            if c.pre in self.remote_objs and c.post in self.remote_objs:
-                pre = self.remote_objs[c.pre]
-                post = self.remote_objs[c.post]
-                if pre in self.inputs:
+            # handle direct connections
+            pre = c.pre
+            if isinstance(pre, nengo.objects.Neurons):
+                pre = pre.ensemble
+            post = c.post
+            if isinstance(post, nengo.objects.Neurons):
+                post = post.ensemble
+
+            if pre in self.remote_objs and post in self.remote_objs:
+                r_pre = self.remote_objs[pre]
+                r_post = self.remote_objs[post]
+                if r_pre in self.inputs:
                     oname = 'origin'
                     dims = c.pre._output_dims
                 else:
                     oname = 'current'  # a dummy origin
                     dims = 1
-                t = post.create_new_dummy_termination(dims)
-                remote_net.connect(pre.getOrigin(oname), t)
+                t = r_post.create_new_dummy_termination(dims)
+                remote_net.connect(r_pre.getOrigin(oname), t)
             else:
                 print 'cannot process connection from %s to %s'%(`c.pre`, `c.post`)
 
