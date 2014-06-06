@@ -193,6 +193,19 @@ class View:
 
                     node = nengo.Node(send, size_in=obj.n_neurons)
                     c = nengo.Connection(obj.neurons, node, synapse=None)
+            elif isinstance(probe.target, nengo.Node) and probe.attr == 'output':
+                obj = probe.target
+                e = self.remote_objs[obj]
+                e.add_probe(probe_id, obj.size_out, 'X')
+                with network:
+                    def send(t, x, self=self, format='>Lf'+'f'*obj.size_out,
+                            id=probe_id):
+                        msg = struct.pack(format, id, t, *x)
+                        self.socket.sendto(msg, self.socket_target)
+
+                    node = nengo.Node(send, size_in=obj.size_out)
+                    c = nengo.Connection(obj, node, synapse=None)
+
             else:
                 print 'Unhandled probe', probe
 
