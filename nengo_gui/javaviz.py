@@ -84,7 +84,7 @@ class View:
         if config is not None and not has_layout:
             # destroy the layout we created - unless the user saves their layout,
             # we want to generate a new layout next time javaviz is opened.
-            self.rpyc.modules.timeview.view.save_layout_file(label, {}, [], {})
+            self.rpyc.modules.timeview.view.save_layout_file(self.label, {}, [], {})
 
     def get_name(self, names, obj, prefix):
         name = obj.label
