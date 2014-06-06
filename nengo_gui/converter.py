@@ -31,8 +31,6 @@ class Converter(object):
         for i, ens in enumerate(network.ensembles):
             line = ens._created_line_number-1
             label = ens.label
-            if label == 'Ensemble':
-                label = ''
             id = self.namefinder.name(ens)
 
             pos = self.config[ens].pos
@@ -83,8 +81,6 @@ class Converter(object):
                     net._created_line_number = 0
             line = net._created_line_number-1
             label = net.label
-            if label == 'Node':
-                label = ''
             id = self.namefinder.name(net)
 
             self.object_index[net] = len(self.objects)
