@@ -279,8 +279,8 @@ class View:
                     name = self.remote_objs[obj].getName()
                     pos = config[obj].pos
                     layout_item = (name, None,
-                            {'label': False, 'x': pos[0], 'y': pos[1],
-                             'width': 100, 'height': 20})
+                           {'label': False, 'x': int(pos[0]), 'y': int(pos[1]),
+                            'width': 100, 'height': 20})
                     layout.append(layout_item)
 
             for obj in network.networks:
