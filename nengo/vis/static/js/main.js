@@ -439,13 +439,18 @@ function update_net_size(d) {
                 xBorder = 0;
                 yBorder = 0;
             } //happens on load
-            if (textWidth/2 > xBorder) {
+            if (textWidth/2*curNode.scale > xBorder) {
                 xBorder = textWidth*curNode.scale/2
             }
+            
         } else {
             if (textWidth > 20*d.scale && nodeText.textContent !="") {
                 xBorder = (textWidth-20)*d.scale/2
             }        
+        }
+        
+        if (nodeText.textContent !="") { //Adjust heights and center
+            yBorder += (node_fontsize)*curNode.scale
         }
         
         x0 = Math.min(curNode.x - xBorder, x0);
@@ -454,7 +459,7 @@ function update_net_size(d) {
         y1 = Math.max(curNode.y + yBorder, y1);
     }
     d.x = (x0 + x1) / 2; // x, y mid
-    d.y = (y0 + y1) / 2;
+    d.y = (y0 + y1) / 2; // + textHeight;
 
     d.width = (x1 - x0)/d.scale + 2 * m; //track heights/widths
     d.height = (y1 - y0)/d.scale + 2 * m;
@@ -778,6 +783,14 @@ function update_graph() {
     nodeEnter.selectAll('.node_nde text, .node_ens text')
         .attr('y', '30')
         .style('font-size', node_fontsize+"px")
+
+/*    nodeEnter.selectAll('text')
+        .each(function (d) {
+            if (d.contained_by > -1) {
+                id = graph.nodes[d.contained_by].id
+                zoomers[id](d3.select(this))
+            }
+        })   */     
 
     nodes.exit().remove();
     links.exit().remove();
