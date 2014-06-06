@@ -20,16 +20,13 @@ http://ctnsrv.uwaterloo.ca:8080/jenkins/job/Nengo/lastSuccessfulBuild/artifact/n
 1. From the command line type ``nengo_gui``
 (Now the gui server is running to let you see and edit the model)
 
-1. To connect the model to the interactive visualizer, put this at the bottom of your script:
+1. The button in the top right can be clicked to run the interactive visualizer. Right click on the background of the visualizer to pick things to see, right click on the things to pick
+data to plot. The rest is all very intuitive :).</li>
 
+1. If you want to run straight from a script put this in it:
 ```
    import javaviz   
    javaviz.View(model)   # this is all you need to do!
 ```
-<ol start=8>
-<li>The button in the top right of the Chrome window should light up.  Click it to interact with the running 
-model. Right click on the background of the visualizer to pick things to see, right click on the things to pick
-data to plot. The rest is all very intuitive :).</li>
-<ol>
 
 
