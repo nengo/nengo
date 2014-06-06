@@ -29,3 +29,19 @@ with model:
     A_probe = nengo.Probe(A, synapse=0.01)
     B_probe = nengo.Probe(B, synapse=0.01)
     C_probe = nengo.Probe(C, synapse=0.01)
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 1.8292492631042439
+gui[model].offset = 264.3641454173405,168.7695155003713
+gui[A].pos = 100.000, 0.000
+gui[A].scale = 1.000
+gui[B].pos = 100.000, 100.000
+gui[B].scale = 1.000
+gui[C].pos = 200.000, 50.000
+gui[C].scale = 1.000
+gui[input_a].pos = 0.000, 0.000
+gui[input_a].scale = 1.000
+gui[input_b].pos = 0.000, 100.000
+gui[input_b].scale = 1.000

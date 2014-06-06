@@ -19,3 +19,15 @@ with model:
     cos_probe = nengo.Probe(cos, 'output')
     neurons_probe = nengo.Probe(neurons, 'decoded_output', synapse=0.01)  
 
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 1.747430497927022
+gui[model].offset = 198.68894055742055,417.89867622430995
+gui[neurons].pos = 254.672, -126.626
+gui[neurons].scale = 1.000
+gui[sin].pos = 40.259, -66.659
+gui[sin].scale = 1.000
+gui[cos].pos = 29.512, -132.731
+gui[cos].scale = 1.000

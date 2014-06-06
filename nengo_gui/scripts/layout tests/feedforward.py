@@ -58,8 +58,8 @@ with model:
 
 import nengo_gui
 gui = nengo_gui.Config()
-gui[model].scale = 1.0074489795918369
-gui[model].offset = 95.14795918367338,274.98479117724355
+gui[model].scale = 0.9027551020408164
+gui[model].offset = 85.2602040816326,138.14858269671998
 gui[a].pos = 400.000, 50.000
 gui[a].scale = 1.000
 gui[b].pos = 500.000, 150.000
@@ -76,7 +76,7 @@ gui[input].pos = 150.000, 50.000
 gui[input].scale = 1.000
 gui[subnet].pos = 750.000, 250.000
 gui[subnet].scale = 1.000
-gui[subnet].size = 380.000, 180.000
+gui[subnet].size = 380.000, 212.000
 gui[d].pos = 600.000, 250.000
 gui[d].scale = 1.000
 gui[f].pos = 700.000, 200.000
@@ -89,7 +89,7 @@ gui[z].pos = 900.000, 250.000
 gui[z].scale = 1.000
 gui[subnet2].pos = 150.000, 200.000
 gui[subnet2].scale = 1.000
-gui[subnet2].size = 380.000, 180.000
+gui[subnet2].size = 380.000, 212.000
 gui[d0].pos = 0.000, 200.000
 gui[d0].scale = 1.000
 gui[d1].pos = 100.000, 200.000

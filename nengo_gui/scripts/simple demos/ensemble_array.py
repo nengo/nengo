@@ -27,3 +27,35 @@ with model:
     A_probe = nengo.Probe(A.output, synapse=0.02)
     B_probe = nengo.Probe(B, synapse=0.02)
     C_probe = nengo.Probe(C.output, synapse=0.02)
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 0.9215625000000003
+gui[model].offset = 67.58124999999984,131.2675634765625
+gui[B].pos = 496.914, 47.999
+gui[B].scale = 1.000
+gui[sin].pos = 0.000, 50.000
+gui[sin].scale = 1.000
+gui[A].pos = 202.438, 50.000
+gui[A].scale = 1.000
+gui[A].size = 302.875, 212.000
+gui[A.ea_ensembles[0]].pos = 200.000, 0.000
+gui[A.ea_ensembles[0]].scale = 1.000
+gui[A.ea_ensembles[1]].pos = 200.000, 100.000
+gui[A.ea_ensembles[1]].scale = 1.000
+gui[A.input].pos = 100.000, 50.000
+gui[A.input].scale = 1.000
+gui[A.output].pos = 300.000, 50.000
+gui[A.output].scale = 1.000
+gui[C].pos = 773.139, 45.829
+gui[C].scale = 1.000
+gui[C].size = 302.875, 212.000
+gui[C.ea_ensembles[0]].pos = 770.702, -4.171
+gui[C.ea_ensembles[0]].scale = 1.000
+gui[C.ea_ensembles[1]].pos = 770.702, 95.829
+gui[C.ea_ensembles[1]].scale = 1.000
+gui[C.input].pos = 670.702, 45.829
+gui[C.input].scale = 1.000
+gui[C.output].pos = 870.702, 45.829
+gui[C.output].scale = 1.000
