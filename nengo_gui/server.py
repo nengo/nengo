@@ -146,7 +146,7 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         code = code.replace('\r\n', '\n')
 
         locals = {}
-        exec code in globals(), locals
+        exec code in locals
 
         model = locals['model']
         cfg = locals.get('gui', None)
@@ -186,7 +186,7 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         try:
             c = compile(code, code_fn, 'exec')
             locals = {}
-            exec c in globals(), locals
+            exec c in locals
         except (SyntaxError, Exception):
             try:
                 e_type, e_value, e_traceback = sys.exc_info()
