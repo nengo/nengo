@@ -90,4 +90,7 @@ After
        sim.run(2.0)
    if 1:  # Change to 0 to run non-interacively
        from nengo_gui import javaviz
-       javaviz.View(model)
+       jv = javaviz.View(model)
+       sim = nengo.Simulator(model)
+       jv.update_model(sim)
+       sim.run(10000) #run for 10000 seconds (effectively forever)
