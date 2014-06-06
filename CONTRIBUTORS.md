@@ -19,4 +19,6 @@ to the file like so:
 Please keep this list sorted alphabetically.
 
 - Chris Eliasmith <celiasmith@uwaterloo.ca>
+- Eric Crawford <e2crawfo@uwaterloo.ca>
 - Terry Stewart <terry.stewart@gmail.com>
+- Trevor Bekolay <tbekolay@gmail.com>
