@@ -245,9 +245,11 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         if feedforward:
             conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
             feedforward_layout(model, cfg, locals, conv.links, conv.objects)
+            conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
+            conv.global_scale = 1.0
+            conv.global_offset = 0.0, 0.0
         else:
             gui_layout = nengo_gui.layout.Layout(model, cfg)
-
-        conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
+            conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
 
         return conv.to_json()
