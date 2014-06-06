@@ -3,7 +3,6 @@ import os.path
 import json
 import traceback
 import sys
-
 from nengo_gui.feedforward_layout import feedforward_layout
 import nengo_gui.converter
 import nengo_gui.layout
@@ -233,22 +232,29 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
                 # been deleted
                 pass
 
-        try:
-            model = locals['model']
-            cfg = locals.get('gui', None)
-            if cfg is None:
-                cfg = nengo_gui.Config()
-        except:
-            traceback.print_exc()
-            return json.dumps(dict(error_line=2, text='Unknown'))
-
         if feedforward:
+            try:
+                model = locals['model']
+                cfg = nengo_gui.Config()
+            except:
+                traceback.print_exc()
+                return json.dumps(dict(error_line=2, text='Unknown'))
+
             conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
             feedforward_layout(model, cfg, locals, conv.links, conv.objects)
-            conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
+            #conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
             conv.global_scale = 1.0
             conv.global_offset = 0.0, 0.0
         else:
+            try:
+                model = locals['model']
+                cfg = locals.get('gui', None)
+                if cfg is None:
+                    cfg = nengo_gui.Config()
+            except:
+                traceback.print_exc()
+                return json.dumps(dict(error_line=2, text='Unknown'))
+
             gui_layout = nengo_gui.layout.Layout(model, cfg)
             conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
 

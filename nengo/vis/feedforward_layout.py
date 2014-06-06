@@ -238,33 +238,39 @@ def apply_feedforward(parent):
 
 
     # and set the positions of the subitems accordingly
-    h_spacing = 100
-    v_spacing = 100
+    h_spacing = 150
+    h_subnet_padding = 20
+    v_spacing = 130
+    v_subnet_padding = 20
+    #v_text_padding = 20
 
     h_offset = 0
     layer_heights = []
-    for layer in layers:
+
+    print layers
+    for i, layer in enumerate(layers):
         v_offset = 0
 
         max_width = max([item.width for item in layer])
 
+        # add some cushion for text
         for item in layer:
             # extra x term is for horizontal centering within layer
             item.pos[0] = h_offset + (max_width - item.width) / 2.0  # x
             item.pos[1] = v_offset  # y
 
-            v_offset += v_spacing + item.height
+            v_offset += v_spacing + item.height# + v_text_padding
 
         v_offset -= v_spacing
+        layer_heights.append(v_offset)
 
         h_offset += h_spacing + max_width
-        layer_heights.append(v_offset)
 
     h_offset -= h_spacing
 
-    parent.width = h_offset
+    parent.width = h_offset + 2 * h_subnet_padding
     max_height = max(layer_heights)
-    parent.height = max_height
+    parent.height = max_height #+ 2 * v_subnet_padding
 
     # centre vertically
     for layer, height in zip(layers, layer_heights):
@@ -286,9 +292,21 @@ def apply_transforms(parent):
 
 def populate_config(parent, locals, config):
     for item in parent.members:
-        key = eval(item.obj_id, {}, locals)
-        config[key].pos = item.pos
-        populate_config(item, locals, config)
+        if item.members:
+            populate_config(item, locals, config)
+
+            # this is so that the javascript engine doesn't
+            # move things around when rendering the layout
+            # see update_node_positions in static/js/main.js
+            if 'x' in item.node:
+                del item.node['x']
+            if 'y' in item.node:
+                del item.node['y']
+        else:
+            key = eval(item.obj_id, {}, locals)
+            config[key].pos = item.pos
+            item.node['x'] = item.pos[0]
+            item.node['y'] = item.pos[1]
 
 
 def feedforward_layout(network, config, locals, links, nodes):
