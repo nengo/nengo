@@ -321,7 +321,7 @@ class Ensemble(NengoObject):
     max_rates = Parameter(default=Uniform(200, 400))
     eval_points = Parameter(default=None)
     seed = Parameter(default=None)
-    label = Parameter(default="Ensemble")
+    label = Parameter(default=None)
     bias = Parameter(default=None)
     gain = Parameter(default=None)
     neuron_type = Parameter(default=LIF())
@@ -418,7 +418,7 @@ class Node(NengoObject):
     output = Parameter(default=None)
     size_in = Parameter(default=0)
     size_out = Parameter(default=None)
-    label = Parameter(default="Node")
+    label = Parameter(default=None)
     probeable = Parameter(default=['output'])
 
     def __init__(self, output=Default,  # noqa: C901
