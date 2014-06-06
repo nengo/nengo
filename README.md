@@ -21,7 +21,7 @@ http://ctnsrv.uwaterloo.ca:8080/jenkins/job/Nengo/lastSuccessfulBuild/artifact/n
 (Now the gui server is running to let you see and edit the model)
 
 1. The button in the top right can be clicked to run the interactive visualizer. Right click on the background of the visualizer to pick things to see, right click on the things to pick
-data to plot. The rest is all very intuitive :).</li>
+data to plot. The rest is all very intuitive ::smiley::. (If you don't see the visualizer window, it may be hidden in the background, find it in your OSs window bar)
 
 1. If you want to run straight from a script put this in it:
 ```
