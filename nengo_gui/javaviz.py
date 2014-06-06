@@ -12,6 +12,7 @@ class View:
     def __init__(self, model, udp_port=56789, client='localhost',
                  default_labels={}):
         self.default_labels = default_labels
+        self.need_encoders = []
         self.overrides = {}
         self.block_time = 0.0
         self.should_stop = False
@@ -183,6 +184,7 @@ class View:
             elif isinstance(probe.target, nengo.Ensemble) and probe.attr == 'spikes':
                 obj = probe.target
                 e = self.remote_objs[obj]
+                self.need_encoders.append(obj)
                 e.add_spike_probe(probe_id, obj.n_neurons)
                 with network:
 
@@ -215,12 +217,11 @@ class View:
     def update_model(self, sim):
         """Grab data from the simulator needed for plotting."""
 
-        for obj, remote in self.remote_objs.items():
-            if isinstance(obj, nengo.Ensemble):
-                if hasattr(remote, 'spike_probe'):
-                    encoders = sim.model.params[obj].encoders
-                    remote.set_encoders(obj.n_neurons, obj.dimensions,
-                            tuple([float(x) for x in encoders.flatten()]))
+        for obj in self.need_encoders:
+            remote = self.remote_objs[obj]
+            encoders = sim.model.params[obj].encoders
+            remote.set_encoders(obj.n_neurons, obj.dimensions,
+                    tuple([float(x) for x in encoders.flatten()]))
 
 
     def receiver(self):
