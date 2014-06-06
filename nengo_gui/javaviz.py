@@ -130,6 +130,12 @@ class View:
                         output = output(0.0)#np.zeros(obj.size_in))
                     if isinstance(output, (int, float)):
                         output_dims = 1
+                    elif isinstance(output, np.ndarray):
+                        if output.shape == ():
+                            output_dims = 1
+                        else:
+                            assert len(output.shape) == 0
+                            output_dims = output.shape[0]
                     else:
                         output_dims = len(output)
                     obj._output_dims = output_dims
@@ -323,6 +329,8 @@ class OverrideFunction(object):
             value = np.array(self.function(t), dtype='float')
         else:
             value = np.array(self.function, dtype='float')
+        if len(value.shape) == 0:
+            value.shape = (1,)
         for k,v in self.view.overrides.get(self.id, {}).items():
             value[k] = v
         return value
