@@ -36,5 +36,6 @@ setup(
     long_description=long_description,
     requires=[
         "nengo",
+        "rpyc",
     ],
 )
