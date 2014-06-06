@@ -4,6 +4,7 @@ import keyword
 import namefinder
 
 import pprint
+import nengo
 
 
 def isidentifier(s):
@@ -114,12 +115,19 @@ class Converter(object):
 
         for i, conn in enumerate(network.connections):
             id = self.namefinder.name(conn)
-            if self.object_index[conn.pre] == self.object_index[conn.post]:
+            pre = conn.pre
+            if isinstance(pre, nengo.objects.Neurons):
+                pre = pre.ensemble
+            post = conn.post
+            if isinstance(post, nengo.objects.Neurons):
+                post = post.ensemble
+            # TODO: have a visual indication of direct connections
+            if self.object_index[pre] == self.object_index[post]:
                 type = 'rec'
             else:
                 type = 'std'
-            self.links.append({'source':self.object_index[conn.pre],
-                               'target':self.object_index[conn.post],
+            self.links.append({'source':self.object_index[pre],
+                               'target':self.object_index[post],
                                'id':id,
                                'type':type})
 
