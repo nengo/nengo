@@ -93,4 +93,6 @@ After
        jv = javaviz.View(model)
        sim = nengo.Simulator(model)
        jv.update_model(sim)
+       jv.view()
        sim.run(10000) #run for 10000 seconds (effectively forever)
+       
