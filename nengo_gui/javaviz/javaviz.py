@@ -219,9 +219,10 @@ class View:
 
         for obj, remote in self.remote_objs.items():
             if isinstance(obj, nengo.Ensemble):
-                encoders = sim.model.params[obj].encoders
-                remote.set_encoders(obj.n_neurons, obj.dimensions,
-                        tuple([float(x) for x in encoders.flatten()]))
+                if hasattr(remote, 'spike_probe'):
+                    encoders = sim.model.params[obj].encoders
+                    remote.set_encoders(obj.n_neurons, obj.dimensions,
+                            tuple([float(x) for x in encoders.flatten()]))
 
 
     def receiver(self):
