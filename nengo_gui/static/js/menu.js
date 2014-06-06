@@ -46,8 +46,6 @@ function feedfwd_layout() {
     xhr.open('POST', '/graph.json', true);
     xhr.onload = update_graph
     xhr.send(data);
-    
-    newLayout=true;    
 }
 
 function save_file() {
