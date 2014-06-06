@@ -6,6 +6,7 @@ with model:
 
     a = nengo.Ensemble(100, dimensions=2, label="My Ensemble")
     nengo.Probe(a)
+    nengo.Probe(a, 'spikes')
 
     nengo.Connection(input, a)
 
