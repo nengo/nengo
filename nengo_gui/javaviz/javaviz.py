@@ -104,7 +104,7 @@ class View:
             name = '%s (%d)' % (base, counter)
             counter += 1
         names.append(name)
-        return name
+        return name.replace('.', ':')
 
     def process_network(self, remote_net, network, names, prefix=''):
         for obj in network.ensembles:
