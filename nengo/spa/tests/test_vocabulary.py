@@ -53,6 +53,15 @@ def test_parse():
     with pytest.raises(TypeError):
         v.parse('"hello"')
 
+def test_invalid_dimensions():
+    with pytest.raises(TypeError):
+        Vocabulary(1.5)
+    with pytest.raises(ValueError):
+        Vocabulary(0)
+    with pytest.raises(ValueError):
+        Vocabulary(-1)
+
+
 
 def test_identity():
     v = Vocabulary(64)

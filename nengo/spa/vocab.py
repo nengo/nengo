@@ -62,6 +62,11 @@ class Vocabulary(object):
 
     def __init__(self, dimensions, randomize=True, unitary=False,
                  max_similarity=0.1, include_pairs=False, rng=None):
+
+        if not isinstance(dimensions, int):
+            raise TypeError('dimensions must be an integer')
+        if dimensions < 1:
+            raise ValueError('dimensions must be positive')
         self.dimensions = dimensions
         self.randomize = randomize
         self.unitary = unitary
