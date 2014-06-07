@@ -135,8 +135,6 @@ def lti(signals, transfer_fn, axis=0):
     a, b = transfer_fn
     a = np.asarray(a).flatten()
     b = np.asarray(b).flatten()
-    na, nb = len(a), len(b)
-    # assert a.ndim == 1, b.ndim == 1
 
     if b[0] != 1.:
         a = a / b[0]

@@ -2,6 +2,7 @@
 
 import collections
 import logging
+import warnings
 
 import numpy as np
 
@@ -256,6 +257,7 @@ class NetworkMember(type):
         if add_to_container:
             Network.add(inst)
         inst.__init__(*args, **kwargs)
+        inst._initialized = True  # value doesn't matter, just existance
         return inst
 
 
@@ -277,6 +279,11 @@ class NengoObject(with_metaclass(NetworkMember)):
         return str(self)
 
     def __setattr__(self, name, val):
+        if hasattr(self, '_initialized') and not hasattr(self, name):
+            warnings.warn(
+                "Creating new attribute '%s' on '%s'. "
+                "Did you mean to change an existing attribute?" % (name, self),
+                SyntaxWarning)
         if val is Default:
             val = Config.default(type(self), name)
         super(NengoObject, self).__setattr__(name, val)

@@ -6,9 +6,17 @@ import pytest
 import nengo
 from nengo.builder import ShapeMismatch
 from nengo.utils.numpy import rmse, norm
-from nengo.utils.testing import Plotter
+from nengo.utils.testing import Plotter, warns
 
 logger = logging.getLogger(__name__)
+
+
+def test_missing_attribute():
+    with nengo.Network():
+        a = nengo.Ensemble(10, 1)
+
+        with warns(SyntaxWarning):
+            a.dne = 9
 
 
 @pytest.mark.parametrize("n_dimensions", [1, 200])

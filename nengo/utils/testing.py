@@ -5,8 +5,10 @@ import os
 import re
 import sys
 import time
+import warnings
 
 import numpy as np
+import pytest
 
 from nengo.utils.compat import is_string
 
@@ -60,6 +62,58 @@ class Plotter(object):
             if self.nl is not None:
                 fname = self.nl.__name__ + '.' + fname
             return self.oldsavefig(os.path.join(self.dirname, fname), **kwargs)
+
+
+class Timer(object):
+    """A context manager for timing a block of code.
+
+    Attributes
+    ----------
+    duration : float
+        The difference between the start and end time (in seconds).
+        Usually this is what you care about.
+    start : float
+        The time at which the timer started (in seconds).
+    end : float
+        The time at which the timer ended (in seconds).
+
+    Example
+    -------
+    >>> import time
+    >>> with Timer() as t:
+    ...    time.sleep(1)
+    >>> assert t.duration >= 1
+    """
+
+    TIMER = time.clock if sys.platform == "win32" else time.time
+
+    def __init__(self):
+        self.start = None
+        self.end = None
+        self.duration = None
+
+    def __enter__(self):
+        self.start = Timer.TIMER()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.end = Timer.TIMER()
+        self.duration = self.end - self.start
+
+
+class warns(object):
+    def __init__(self, warning_type):
+        self.warning_type = warning_type
+
+    def __enter__(self):
+        self.catcher = warnings.catch_warnings(record=True)
+        self.record = self.catcher.__enter__()
+
+    def __exit__(self, type, value, traceback):
+        if not any(r.category is self.warning_type for r in self.record):
+            pytest.fail("DID NOT RAISE")
+
+        self.catcher.__exit__(type, value, traceback)
 
 
 def allclose(t, target, signals, plotter=None, filename=None,  # noqa:C901
@@ -222,40 +276,3 @@ def load_functions(modules, pattern='^test_', arg_pattern='^Simulator$'):
                 tests[k] = getattr(m, k)
 
     return tests
-
-
-class Timer(object):
-    """A context manager for timing a block of code.
-
-    Attributes
-    ----------
-    duration : float
-        The difference between the start and end time (in seconds).
-        Usually this is what you care about.
-    start : float
-        The time at which the timer started (in seconds).
-    end : float
-        The time at which the timer ended (in seconds).
-
-    Example
-    -------
-    >>> import time
-    >>> with Timer() as t:
-    ...    time.sleep(1)
-    >>> assert t.duration >= 1
-    """
-
-    TIMER = time.clock if sys.platform == "win32" else time.time
-
-    def __init__(self):
-        self.start = None
-        self.end = None
-        self.duration = None
-
-    def __enter__(self):
-        self.start = Timer.TIMER()
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.end = Timer.TIMER()
-        self.duration = self.end - self.start
