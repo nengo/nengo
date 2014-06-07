@@ -53,7 +53,7 @@ Using ``nengo_gui``
 -------------------
 
 If you're using ``nengo_gui``, then click the top right button to run
-the interactive visualizer. (You can do this right away with the default network that loads
+the interactive visualizer. (You can do this right away with the default network that loads, 
 as a quick example).  If you don't
 see the visualizer window, it may be hidden in the background; find it
 in your OS's window bar.
