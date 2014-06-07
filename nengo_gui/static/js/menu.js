@@ -126,11 +126,26 @@ function do_javaviz() {
     xhr.send(data);
 }
 
+function handle_hotkeys(e) {
+    e = e || event;
+    var keyCode = ('which' in e) ? e.which : e.keyCode;
+    switch(keyCode){
+        case 119: //F8
+            save_file();
+            $('#menu_save').addClass('disable');
+            return false;
+        case 120: //F9
+            reload_file();
+            return false;
+        default:
+            return true;
+    }
+}
 
 $(document).ready(function () {
     //initialize file browser
-    $('#filebrowser').hide()
-    $('#filebrowser').mouseleave(function(){$(this).hide(200)})
+    $('#filebrowser').hide();
+    $('#filebrowser').mouseleave(function(){$(this).hide(200)});
     $('#menu_open').click(function () {
         fb = $('#filebrowser');
         fb.toggle(200);
@@ -159,4 +174,6 @@ $(document).ready(function () {
     } else {
         $('#menu_javaviz').click(do_javaviz);
     }
+
+    window.onkeyup = handle_hotkeys;
 });
