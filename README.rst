@@ -41,7 +41,7 @@ Interactive usage
 To run models and see the data generated as the model runs,
 you must first start the ``javaviz`` interactive visualizer.
 
-   #double click on javaviz-server.bat (or just javaviz-server) in the nengo-latest folder
+Double-click on javaviz-server.bat (windows) or javaviz-server (unix/mac) in the nengo-latest folder.
 
 Basic usage
 ===========
