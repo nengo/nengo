@@ -83,29 +83,21 @@ You can pass nengo_gui a script to visualize, if desired.
 
    nengo_gui my_nengo_script.py
 
-Using Javaviz in a script
--------------------------
+Advanced Usage: Javaviz without Nengo GUI
+-------------------------------------------
 
-You can run ``javaviz`` straight from a script.
-Before
+You can also just use the visualizer and bypass the editor completely
+(if you don't want to see your network as you build it).  Here is what
+you would do in a normal Python script (i.e. one where you are NOT
+using the Nengo GUI editor).
 
 .. code:: python
 
+   import nengo_gui
+   jv = nengo_gui.javaviz.View(model)
    sim = nengo.Simulator(model)
-   sim.run(2.0)
-
-After
-
-.. code:: python
-
-   if 0:  # Change to 1 to run non-interactively
-       sim = nengo.Simulator(model)
-       sim.run(2.0)
-   if 1:  # Change to 0 to run non-interacively
-       from nengo_gui import javaviz
-       jv = javaviz.View(model)
-       sim = nengo.Simulator(model)
-       jv.update_model(sim)
-       jv.view()
-       sim.run(10000) #run for 10000 seconds (effectively forever)
+   jv.update_model(sim)
+   jv.view()
+   while True:
+       sim.run(1) 
        
