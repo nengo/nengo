@@ -1,6 +1,7 @@
 # # Nengo Example: Squaring the Input
 
-# This demo shows you how to construct a network that squares the value encoded in a first population in the output of a second population. 
+# This demo shows you how to construct a network that squares the value
+# encoded in a first population in the output of a second population.
 
 # Create the model object
 import nengo
@@ -14,14 +15,14 @@ import numpy as np
 with model:
     # Create an input node that represents a sine wave
     sin = nengo.Node(np.sin, label = "sin")
-    
+
     # Connect the input node to ensemble A
     nengo.Connection(sin, A)
-    
+
     # Define the squaring function
     def square(x):
         return x[0] * x[0]
-    
+
     # Connection ensemble A to ensemble B
     nengo.Connection(A, B, function=square)
 

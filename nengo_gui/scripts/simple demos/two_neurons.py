@@ -1,10 +1,14 @@
 # # Nengo Example: Two Neurons
 #
-# This demo shows how to construct and manipulate a complementary pair of neurons.
+# This demo shows how to construct and manipulate a complementary pair of
+# neurons.
 #
-# These are leaky integrate-and-fire (LIF) neurons. The neuron tuning properties have been selected so there is one on and one off neuron.
+# These are leaky integrate-and-fire (LIF) neurons. The neuron tuning
+# properties have been selected so there is one on and one off neuron.
 #
-# One neuron will increase for positive input, and the other will decrease. This can be thought of as the simplest population that is able to give a reasonable representation of a scalar value.
+# One neuron will increase for positive input, and the other will decrease.
+# This can be thought of as the simplest population that is able to give a
+# reasonable representation of a scalar value.
 
 import nengo
 from nengo.objects import Uniform

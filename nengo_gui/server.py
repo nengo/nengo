@@ -243,7 +243,6 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
 
             conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
             feedforward_layout(model, cfg, locals, conv.links, conv.objects)
-            #conv = nengo_gui.converter.Converter(model, code.splitlines(), locals, cfg)
             conv.global_scale = 1.0
             conv.global_offset = 0.0, 0.0
         else:

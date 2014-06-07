@@ -1,5 +1,8 @@
 # # Nengo Example: A Single Neuron
-# This demo shows you how to construct and manipulate a single leaky integrate-and-fire (LIF) neuron. The LIF neuron is a simple, standard neuron model, and here it resides inside a neural population, even though there is only one neuron.
+# This demo shows you how to construct and manipulate a single leaky
+# integrate-and-fire (LIF) neuron. The LIF neuron is a simple, standard
+# neuron model, and here it resides inside a neural population, even though
+# there is only one neuron.
 
 import nengo
 from nengo.objects import Uniform
@@ -9,7 +12,7 @@ with model:
                             intercepts=Uniform(-.5, -.5),  # Set intercept to 0.5
                             max_rates=Uniform(100, 100),  # Set the maximum firing rate of the neuron to 100hz
                             encoders=[[1]], # Sets the neurons firing rate to increase for positive input
-                            label = "A")  
+                            label = "A")
 
 import numpy as np
 with model:

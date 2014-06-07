@@ -1,10 +1,14 @@
 # # Nengo Example: Many neurons
-# 
+#
 # This demo shows how to construct and manipulate a population of neurons.
-# 
-# These are 100 leaky integrate-and-fire (LIF) neurons. The neuron tuning properties have been randomly selected.
-# 
-# The input is a sine wave to show the effects of increasing or decreasing input. As a population, these neurons do a good job of representing a single scalar value. This can be seen by the fact that the input graph and neurons graphs match well.
+#
+# These are 100 leaky integrate-and-fire (LIF) neurons. The neuron tuning
+# properties have been randomly selected.
+#
+# The input is a sine wave to show the effects of increasing or decreasing
+# input. As a population, these neurons do a good job of representing a
+# single scalar value. This can be seen by the fact that the input graph and
+# neurons graphs match well.
 
 import nengo
 import numpy as np

@@ -1,6 +1,7 @@
 # # Nengo Example: Combining
-# 
-# This example demonstrates how to create a neuronal ensemble that will combine two 1-D inputs into one 2-D representation.
+#
+# This example demonstrates how to create a neuronal ensemble that will
+# combine two 1-D inputs into one 2-D representation.
 
 import nengo
 import numpy as np
@@ -11,7 +12,7 @@ with model:
     # representing a one-dimensional signal
     A = nengo.Ensemble(100, dimensions=1, label = "A")
     B = nengo.Ensemble(100, dimensions=1, label = "B")
-    
+
     # The output ensemble consists of 200 leaky integrate-and-fire neurons,
     # representing a two-dimensional signal
     output = nengo.Ensemble(200, dimensions=2, label='2D Population')
@@ -22,7 +23,7 @@ with model:
 
     nengo.Connection(sin, A)
     nengo.Connection(cos, B)
-    
+
     # The square brackets define which dimension the input will project to
     nengo.Connection(A, output[1])
     nengo.Connection(B, output[0])

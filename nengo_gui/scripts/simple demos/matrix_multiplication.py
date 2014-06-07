@@ -1,6 +1,9 @@
 # # Nengo Example: Matrix multiplication
-# 
-# This example demonstrates how to perform general matrix multiplication using Nengo.  The matrix can change during the computation, which makes it distinct from doing static matrix multiplication with neural connection weights (as done in all neural networks).
+#
+# This example demonstrates how to perform general matrix multiplication
+# using Nengo.  The matrix can change during the computation, which makes it
+# distinct from doing static matrix multiplication with neural connection
+# weights (as done in all neural networks).
 
 import nengo
 import numpy as np
@@ -18,7 +21,7 @@ with model:
     # Make 2 EnsembleArrays to store the input
     A = nengo.networks.EnsembleArray(N, Amat.size, radius=radius, label="A")
     B = nengo.networks.EnsembleArray(N, Bmat.size, radius=radius, label="B")
-    
+
     # connect inputs to them so we can set their value
     inputA = nengo.Node(Amat.ravel(), label="input A")
     inputB = nengo.Node(Bmat.ravel(), label="input B")
@@ -39,7 +42,9 @@ with model:
 
 # The appropriate encoders make the multiplication more accurate
 for ens in C.ensembles:
-    ens.encoders = np.tile([[1, 1], [-1, 1], [1, -1], [-1, -1]], (ens.n_neurons // 4, 1))
+    ens.encoders = np.tile(
+        [[1, 1], [-1, 1], [1, -1], [-1, -1]],
+        (ens.n_neurons // 4, 1))
 
 # Determine the transformation matrices to get the correct pairwise
 # products computed.  This looks a bit like black magic but if

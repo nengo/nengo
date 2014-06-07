@@ -1,10 +1,14 @@
 # # Nengo Example: Inhibitory Gating of Ensembles
 
 # ## Step 1: Create the network
-# 
-# Our model consists of two ensembles (called A and B) that receive inputs from a common sine wave signal generator. 
-# 
-# Ensemble A is gated using the output of a node, while Ensemble B is gated using the output of a third ensemble (C). This is to demonstrate that ensembles can be gated using either node outputs, or decoded outputs from ensembles.
+#
+# Our model consists of two ensembles (called A and B) that receive inputs from
+# a common sine wave signal generator.
+#
+# Ensemble A is gated using the output of a node, while Ensemble B is gated
+# using the output of a third ensemble (C). This is to demonstrate that
+# ensembles can be gated using either node outputs, or decoded outputs from
+# ensembles.
 
 import nengo
 import numpy as np
@@ -20,7 +24,9 @@ with model:
     C = nengo.Ensemble(n_neurons, dimensions=1, label="C")
 
     sin = nengo.Node(np.sin, label="sin")
-    inhib = nengo.Node(piecewise({0: 0, 2.5: 1, 5: 0, 7.5: 1, 10: 0, 12.5: 1}), label="inhibition")
+    inhib = nengo.Node(
+        piecewise({0: 0, 2.5: 1, 5: 0, 7.5: 1, 10: 0, 12.5: 1}),
+        label="inhibition")
 
     nengo.Connection(sin, A)
     nengo.Connection(sin, B)
