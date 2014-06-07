@@ -3,7 +3,7 @@ nengo_gui
 *********
 
 HTML5 graphical interface for Nengo. This works best in the
-`Chrome Browser <https://www.google.com/intl/en_ca/chrome/browser/>`_. Really.  Get Chrome.
+`Chrome Browser <https://www.google.com/intl/en_ca/chrome/browser/>`_.
 
 Installation
 ============
