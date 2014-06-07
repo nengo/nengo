@@ -79,6 +79,33 @@ class View:
 
         self.model = model
         self.net = net
+        self.initialize_vocabs()
+
+    def initialize_vocabs(self):
+        vocabs = []
+        if hasattr(self.model, '_modules'):
+            for m in self.model._modules.values():
+                for obj, v in m.inputs.values():
+                    if v not in vocabs:
+                        vocabs.append(v)
+                for obj, v in m.outputs.values():
+                    if v not in vocabs:
+                        vocabs.append(v)
+        for local in vocabs:
+            remote = self.rpyc.modules.hrr.Vocabulary(
+                dimensions=local.dimensions,
+                randomize=local.randomize,
+                unitary=local.unitary,
+                max_similarity=local.max_similarity,
+                include_pairs=local.include_pairs)
+            for i, k in enumerate(local.keys):
+                remote.add(k, self.rpyc.modules.hrr.HRR(
+                    data=[float(v) for v in local.vectors[i]]))
+
+
+
+
+
 
     def view(self, config=None):
         has_layout = self.rpyc.modules.timeview.view.load_layout_file(self.label, False)
