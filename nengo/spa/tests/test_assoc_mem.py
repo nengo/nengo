@@ -50,7 +50,7 @@ def test_am_different_output_vocab(Simulator):
     vocab = Vocabulary(D, rng=rng)
     vocab.parse('A+B+C+D')
 
-    D2 = D / 2
+    D2 = int(D / 2)
     vocab2 = Vocabulary(D2, rng=rng)
     vocab2.parse('A+B+C+D')
 
