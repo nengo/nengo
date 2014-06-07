@@ -41,36 +41,37 @@ Interactive usage
 To run models and see the data generated as the model runs,
 you must first start the ``javaviz`` interactive visualizer.
 
-.. code:: bash
-
-   cd /path/to/nengo-latest
-   ./nengo-cl python/rpyc/scripts/rpyc_classic.py
+   #double click on javaviz-server.bat (or just javaviz-server) in the nengo-latest folder
 
 Basic usage
 ===========
 
-To view a Nengo model, run the ``nengo_gui`` script.
-You can pass it a script to visualize, if desired.
-
-.. code:: bash
-
-   nengo_gui my_nengo_script.py
-
-If you do not pass a Nengo script, you can load scripts from within the gui.
-
+To view a Nengo model, run ``nengo_gui`` from the command line.  You can load scripts from the nengo_gui/scripts
+folder from within the gui.
 
 Using ``nengo_gui``
 -------------------
 
 If you're using ``nengo_gui``, then click the top right button to run
-the interactive visualizer. Right click on the background of the
-visualizer to pick things to see; right click on the things to pick
-data to plot. The rest is all very intuitive :smiley:. If you don't
+the interactive visualizer. (You can do this right away with the default network that loads
+as a quick example).  If you don't
 see the visualizer window, it may be hidden in the background; find it
 in your OS's window bar.
 
-Using a script
---------------
+In the interactive visualizer, right click on the background of the
+visualizer to pick things to see; right click on the things to pick
+data to plot. The rest is all very intuitive :smiley:. 
+
+Alternative usage
+-----------------
+You can pass nengo_gui a script to visualize, if desired.
+
+.. code:: bash
+
+   nengo_gui my_nengo_script.py
+
+Using Javaviz in a script
+-------------------------
 
 You can run ``javaviz`` straight from a script.
 Before
