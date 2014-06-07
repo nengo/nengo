@@ -95,3 +95,67 @@ with model:
 
     nengo.Connection(prod, D.input, transform=transformC)
     D_probe = nengo.Probe(D.output, sample_every=0.01, synapse=0.01)
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 0.5067785234899329
+gui[model].offset = 52.085570469798654,153.26662856543624
+gui[inputA].pos = 0.000, 260.000
+gui[inputA].scale = 1.000
+gui[inputB].pos = 0.000, 390.000
+gui[inputB].scale = 1.000
+gui[A].pos = 300.000, 65.000
+gui[A].scale = 1.000
+gui[A].size = 380.000, 210.000
+gui[A.ea_ensembles[0]].pos = 300.000, 0.000
+gui[A.ea_ensembles[0]].scale = 1.000
+gui[A.ea_ensembles[1]].pos = 300.000, 130.000
+gui[A.ea_ensembles[1]].scale = 1.000
+gui[A.input].pos = 150.000, 65.000
+gui[A.input].scale = 1.000
+gui[A.output].pos = 450.000, 65.000
+gui[A.output].scale = 1.000
+gui[B].pos = 300.000, 455.000
+gui[B].scale = 1.000
+gui[B].size = 380.000, 470.000
+gui[B.ea_ensembles[0]].pos = 300.000, 260.000
+gui[B.ea_ensembles[0]].scale = 1.000
+gui[B.ea_ensembles[1]].pos = 300.000, 390.000
+gui[B.ea_ensembles[1]].scale = 1.000
+gui[B.ea_ensembles[2]].pos = 300.000, 520.000
+gui[B.ea_ensembles[2]].scale = 1.000
+gui[B.ea_ensembles[3]].pos = 300.000, 650.000
+gui[B.ea_ensembles[3]].scale = 1.000
+gui[B.input].pos = 150.000, 455.000
+gui[B.input].scale = 1.000
+gui[B.output].pos = 450.000, 455.000
+gui[B.output].scale = 1.000
+gui[C].pos = 790.000, 325.000
+gui[C].scale = 1.000
+gui[C].size = 380.000, 470.000
+gui[C.ea_ensembles[0]].pos = 790.000, 130.000
+gui[C.ea_ensembles[0]].scale = 1.000
+gui[C.ea_ensembles[1]].pos = 790.000, 260.000
+gui[C.ea_ensembles[1]].scale = 1.000
+gui[C.ea_ensembles[2]].pos = 790.000, 390.000
+gui[C.ea_ensembles[2]].scale = 1.000
+gui[ens].pos = 790.000, 520.000
+gui[ens].scale = 1.000
+gui[C.input].pos = 640.000, 325.000
+gui[C.input].scale = 1.000
+gui[C.output].pos = 940.000, 260.000
+gui[C.output].scale = 1.000
+gui[C.product].pos = 940.000, 390.000
+gui[C.product].scale = 1.000
+gui[D].pos = 1280.000, 325.000
+gui[D].scale = 1.000
+gui[D].size = 380.000, 210.000
+gui[D.ea_ensembles[0]].pos = 1280.000, 260.000
+gui[D.ea_ensembles[0]].scale = 1.000
+gui[D.ea_ensembles[1]].pos = 1280.000, 390.000
+gui[D.ea_ensembles[1]].scale = 1.000
+gui[D.input].pos = 1130.000, 325.000
+gui[D.input].scale = 1.000
+gui[D.output].pos = 1430.000, 325.000
+gui[D.output].scale = 1.000

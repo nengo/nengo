@@ -21,3 +21,13 @@ with model:
 
     input_probe = nengo.Probe(input, 'output')
     neuron_probe = nengo.Probe(neurons, 'decoded_output', synapse=0.1)
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 2.3147645815836775
+gui[model].offset = 163.4299195712814,173.37512132629337
+gui[neurons].pos = 150.000, 0.000
+gui[neurons].scale = 1.000
+gui[input].pos = 0.000, 0.000
+gui[input].scale = 1.000

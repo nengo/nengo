@@ -59,7 +59,7 @@ with model:
     # Another piecewise step that changes half way through the run
     control_func = piecewise({0: 1, 0.6: 0.5})
 
-    control = nengo.Node(output=control_func, label="A")
+    control = nengo.Node(output=control_func, label="control")
     
     # Connect the "Control" signal to the second of A's two input channels.
     nengo.Connection(control, A[1], synapse=0.005)
@@ -74,3 +74,15 @@ with model:
     
     # Record both dimensions of A
     A_probe = nengo.Probe(A, 'decoded_output', synapse=0.01)
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 1.6225966640653222
+gui[model].offset = 234.9818132124747,150.67321922008716
+gui[A].pos = 138.845, 0.859
+gui[A].scale = 1.000
+gui[inp].pos = 0.000, 0.000
+gui[inp].scale = 1.000
+gui[control].pos = 137.132, 115.402
+gui[control].scale = 1.000

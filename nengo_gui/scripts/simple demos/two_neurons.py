@@ -25,3 +25,13 @@ with model:
     spikes = nengo.Probe(neurons, 'spikes')  # Raw spikes from each neuron
     voltage = nengo.Probe(neurons, 'voltage')  # Subthreshold soma voltages of the neurons
     filtered = nengo.Probe(neurons, synapse=0.01)  # Spikes filtered by a 10ms post-synaptic filter
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 1.333780222628592
+gui[model].offset = 279.143763896969,127.28155345458995
+gui[neurons].pos = 150.000, 0.000
+gui[neurons].scale = 1.000
+gui[sin].pos = 0.000, 0.000
+gui[sin].scale = 1.000

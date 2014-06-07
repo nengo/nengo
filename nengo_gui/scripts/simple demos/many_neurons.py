@@ -23,3 +23,13 @@ with model:
     sin_probe = nengo.Probe(sin)
     A_probe = nengo.Probe(A, synapse=0.01)  # 10ms filter
     A_spikes = nengo.Probe(A, 'spikes') # Collect the spikes
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 1.9855255998510186
+gui[model].offset = 289.5077061203747,208.13879272738876
+gui[A].pos = 150.000, 0.000
+gui[A].scale = 1.000
+gui[sin].pos = 0.000, 0.000
+gui[sin].scale = 1.000

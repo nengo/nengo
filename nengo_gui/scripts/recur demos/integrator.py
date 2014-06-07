@@ -28,3 +28,13 @@ with model:
     # Add probes
     input_probe = nengo.Probe(input)
     A_probe = nengo.Probe(A, synapse=0.01)
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 2.1627478501702324
+gui[model].offset = 247.9354680983106,165.38342794429917
+gui[A].pos = 150.000, 0.000
+gui[A].scale = 1.000
+gui[input].pos = 0.000, 0.000
+gui[input].scale = 1.000

@@ -39,3 +39,11 @@ with model:
     nengo.Connection(state, state, function=feedback, synapse=tau)
     state_probe = nengo.Probe(state, synapse=tau)
 
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 2.6605652662574757
+gui[model].offset = 379.08657696393794,153.60400337944498
+gui[state].pos = 0.000, 0.000
+gui[state].scale = 1.000

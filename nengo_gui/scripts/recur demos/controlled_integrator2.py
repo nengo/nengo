@@ -34,3 +34,15 @@ with model:
     
     # Record both dimensions of A
     A_probe = nengo.Probe(A, 'decoded_output', synapse=0.01)
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 1.3901981214408314
+gui[model].offset = 252.30568751828542,43.65994898682379
+gui[A].pos = 150.000, 65.000
+gui[A].scale = 1.000
+gui[inp].pos = 3.747, 64.633
+gui[inp].scale = 1.000
+gui[control].pos = 148.368, 153.635
+gui[control].scale = 1.000

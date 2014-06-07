@@ -28,3 +28,15 @@ with model:
     sin_probe = nengo.Probe(sin)
     A_probe = nengo.Probe(A, synapse=0.01)
     B_probe = nengo.Probe(B, synapse=0.01)
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 0.9991330790684605
+gui[model].offset = 270.10435658240567,174.22430516380342
+gui[A].pos = 150.000, 0.000
+gui[A].scale = 1.000
+gui[B].pos = 300.000, 0.000
+gui[B].scale = 1.000
+gui[sin].pos = 0.000, 0.000
+gui[sin].scale = 1.000

@@ -78,3 +78,17 @@ with model:
     # Indicate which values to record
     oscillator_probe = nengo.Probe(oscillator, synapse=0.03)
 
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 1.6196900080885626
+gui[model].offset = 245.45144745063635,140.32104592938163
+gui[oscillator].pos = 150.000, 0.000
+gui[oscillator].scale = 1.000
+gui[frequency].pos = 78.073, 61.372
+gui[frequency].scale = 1.000
+gui[initial].pos = 0.000, 0.000
+gui[initial].scale = 1.000
+gui[input_frequency].pos = 0.000, 130.000
+gui[input_frequency].scale = 1.000
