@@ -19,8 +19,8 @@ class SemanticPointer:
             try:
                 len(data)
             except:
-                raise Exception("Must specify either the data or the length" +
-                                " for a SemanticPointer.")
+                raise Exception("Must specify either the data or the length "
+                                "for a SemanticPointer.")
             self.v = np.array(data, dtype=float)
             if len(self.v.shape) != 1:
                 raise Exception("data must be a vector")
