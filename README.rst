@@ -71,7 +71,9 @@ in your OS's window bar.
 
 In the interactive visualizer, right click on the background of the
 visualizer to pick things to see; right click on the things to pick
-data to plot. The rest is all very intuitive :smiley:. 
+data to plot. Items can be dragged to be moved around and resized
+by the edges.  Plots can be customized by right-clicking on them.
+The play button in the bottom-right starts the simulation.
 
 Alternative usage
 -----------------
