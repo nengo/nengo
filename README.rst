@@ -3,45 +3,56 @@ nengo_gui
 *********
 
 HTML5 graphical interface for Nengo. This works best in the
-`Chrome Browser <https://www.google.com/intl/en_ca/chrome/browser/>`_.
+`Chrome Browser <https://www.google.com/intl/en_ca/chrome/browser/>`_, Safari, or Opera.
+We are still working on some compatibility issues in Firefox.
 
 Installation
 ============
 
-To get started, run the following in a terminal window.
+The Nengo GUI system consists of two parts: a browser-based code editor that shows you the
+structure of the network you are building as you create it, and a separate Java-based
+visualizer that shows the behaviour of the model as you run it.
+
+To install the editor, you need to download and install the code in this repository.
+For most operating systems, here are the commands needed:
 
 .. code:: bash
-
-   # Start in some directory that will contain source code.
-   # A common place is $HOME/Code.
-
-   # --- Installing Nengo 1.4
-
-   # Download the latest dev version of Nengo 1.4
-   wget http://ctnsrv.uwaterloo.ca:8080/jenkins/job/Nengo/lastSuccessfulBuild/artifact/nengo-latest.zip
-   # Unzip it
-   unzip nengo-latest.zip
-   # Rename the extracted folder to nengo-latest
-   mv nengo-[^l]* nengo-latest
-   # Remove nengo-latest.zip
-   rm nengo-latest.zip
-
-   # --- Installing nengo_gui
-
-   # Clone the nengo_gui project
    git clone https://github.com/ctn-waterloo/nengo_gui.git
-   # Install it
    cd nengo_gui
-   pip install rpyc
-   pip install --editable .
+   python setup.py develop
+   
+Note that this assumes you already have `Nengo <https://github.com/ctn-waterloo/nengo/>`_ installed.
 
-Interactive usage
+The editor will work on its own, but it is more useful with the visualizer as well.
+To install this, we need to download the old Java-based version of Nengo.  Here
+are the instructions:
+
+ - Download `this file <http://ctnsrv.uwaterloo.ca:8080/jenkins/job/Nengo/lastSuccessfulBuild/artifact/nengo-latest.zip>`_.
+ - Unzip the file
+
+Note that you do have to have `Java <http://java.com/>`_ installed on your computer for this to work.  Finally, you
+need to install `RPyC <http://rpyc.readthedocs.org/>`_, which allows the editor and the visualizer to communicate.
+
+.. code:: bash
+   pip install rpyc
+   
+
+
+Running Nengo GUI
 =================
 
-To run models and see the data generated as the model runs,
-you must first start the ``javaviz`` interactive visualizer.
+First, you must start the javaviz-server, a program that will sit in the background and handle the
+visualization system.  Do this by going to the directory where you unzipped the old Java-based version
+of nengo and running javaviz-server.bat (on Windows) or javaviz-server (on Unix/Mac).  A text window should
+pop up and a line like ``INFO:SLAVE/18812:server started on [127.0.0.1]:18812`` should appear.
 
-Double-click on javaviz-server.bat (windows) or javaviz-server (unix/mac) in the nengo-latest folder.
+Finally, we run the Nengo GUI using the command ``nengo_gui``.  You can run this from the command prompt,
+or by double-clicking on the ``nengo_gui`` executable.  On Windows, this is likely in a directory such as
+``C:\Python27\Scripts\nengo_gui.exe``.  
+
+
+
+
 
 Basic usage
 ===========
