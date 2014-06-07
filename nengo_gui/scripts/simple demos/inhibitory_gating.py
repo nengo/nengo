@@ -33,3 +33,19 @@ with model:
     A_probe = nengo.Probe(A, synapse=0.01)
     B_probe = nengo.Probe(B, synapse=0.01)
     C_probe = nengo.Probe(C, synapse=0.01)
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 1.7442636788443602
+gui[model].offset = 212.12253790762998,24.930856767521504
+gui[A].pos = 175.000, 50.000
+gui[A].scale = 1.000
+gui[B].pos = 175.000, 125.000
+gui[B].scale = 1.000
+gui[C].pos = 143.468, 186.814
+gui[C].scale = 1.000
+gui[sin].pos = 16.175, 54.248
+gui[sin].scale = 1.000
+gui[inhib].pos = 55.160, 198.618
+gui[inhib].scale = 1.000

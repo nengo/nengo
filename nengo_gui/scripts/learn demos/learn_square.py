@@ -43,3 +43,19 @@ with model:
     A_squared_probe = nengo.Probe(A_squared, synapse=0.01)
     error_probe = nengo.Probe(error, synapse=0.01)
     learn_probe = nengo.Probe(stop_learning, synapse=None)
+
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 1.5712922403418472
+gui[model].offset = 77.74107509164281,64.92264812066998
+gui[A].pos = 175.000, 50.000
+gui[A].scale = 1.000
+gui[A_squared].pos = 279.965, 48.215
+gui[A_squared].scale = 1.000
+gui[error].pos = 280.284, 136.393
+gui[error].scale = 1.000
+gui[input_node].pos = 50.000, 50.000
+gui[input_node].scale = 1.000
+gui[stop_learning].pos = 148.212, 139.535
+gui[stop_learning].scale = 1.000
