@@ -4,7 +4,7 @@ import nengo
 from nengo.networks.ensemblearray import EnsembleArray
 from nengo.spa.module import Module
 from nengo.spa.vocab import Vocabulary
-from nengo.utils.dists import Uniform
+from nengo.utils.distributions import Uniform
 from nengo.utils.compat import is_iterable
 
 

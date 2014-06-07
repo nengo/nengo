@@ -1,12 +1,8 @@
 import numpy as np
-import numpy.linalg
-import numpy.fft  # noqa: F401
 
-from nengo.utils.compat import (
-    implements_to_string, is_integer, is_number, range)
+from nengo.utils.compat import (is_integer, is_number, range)
 
 
-@implements_to_string
 class SemanticPointer:
     """A Semantic Pointer, based on Holographic Reduced Representations.
 
@@ -56,7 +52,7 @@ class SemanticPointer:
         fft_val = np.fft.fft(self.v)
         fft_imag = fft_val.imag
         fft_real = fft_val.real
-        fft_norms = np.sqrt(fft_imag**2 + fft_real**2)
+        fft_norms = np.sqrt(fft_imag ** 2 + fft_real ** 2)
         fft_unit = fft_val / fft_norms
         self.v = (np.fft.ifft(fft_unit)).real
 
@@ -167,7 +163,7 @@ class SemanticPointer:
 
     def mse(self, other):
         """Return the mean-squared-error between two vectors."""
-        return np.sum((self-other).v**2)/len(self.v)
+        return np.sum((self - other).v ** 2) / len(self.v)
 
     def get_convolution_matrix(self):
         """Return the matrix that does a circular convolution by this vector.
