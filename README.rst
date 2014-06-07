@@ -1,5 +1,5 @@
 *********
-nengo_GUI
+nengo_gui
 *********
 
 HTML5 graphical interface for Nengo. This works best in the
