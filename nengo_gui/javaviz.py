@@ -67,6 +67,16 @@ class View:
         for input in self.inputs:
             self.control_node.register(id(input)&0xFFFF, input)
 
+        if self.probe_count == 0:
+            # need at least one probe to let the synchronizing system work
+            # so we make a dummy one
+            with model:
+                def send(t, self=self):
+                    msg = struct.pack('>Lf', 0xFFFFFFFF, t)
+                    self.socket.sendto(msg, self.socket_target)
+                nengo.Node(send)
+
+
         self.model = model
         self.net = net
 
