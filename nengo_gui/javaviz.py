@@ -52,6 +52,7 @@ class View:
         if self.label is None:
             self.label='Nengo Visualizer 0x%x'%id(model)
         self.label = self.label.replace('.', '_')
+        self.label = self.label.replace('/', '_slash_')
         net = self.rpyc.modules.nef.Network(self.label)
 
         self.control_node = self.rpyc.modules.timeview.javaviz.ControlNode(
@@ -108,10 +109,14 @@ class View:
 
 
     def view(self, config=None):
-        has_layout = self.rpyc.modules.timeview.view.load_layout_file(self.label, False)
+        try:
+            layout = \
+                self.rpyc.modules.timeview.view.load_layout_file(self.label, False)
 
-        # check whether has layout == ({}, [], {})
-        has_layout = has_layout is not None and any(has_layout)
+            # check whether has layout == ({}, [], {})
+            has_layout = layout is not None and any(layout)
+        except:
+            has_layout = False
 
         if config is not None and not has_layout:
             # generate a layout based on the current positions of network nodes in GUI
@@ -325,6 +330,8 @@ class View:
                 'x':window_pos_x, 'y':window_pos_y}
 
         def _generate_layout(layout, network, config):
+            # populate the list 'layout' with an item specifying
+            # the location of each node/ensemble
             for obj in network.nodes + network.ensembles:
                 if obj in self.remote_objs:
                     name = self.remote_objs[obj].getName()
