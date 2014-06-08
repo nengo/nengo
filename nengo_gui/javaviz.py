@@ -154,6 +154,8 @@ class View:
         return name.replace('.', ':')
 
     def process_network(self, remote_net, network, names, prefix=''):
+        semantic = []
+
         for obj in network.ensembles:
             name = self.get_name(names, obj, prefix)
 
@@ -162,6 +164,9 @@ class View:
 
             remote_net.add(e)
             self.remote_objs[obj] = e
+
+            if obj.dimensions >= 8:
+                semantic.append(obj)
 
         for obj in network.nodes:
             name = self.get_name(names, obj, prefix)
@@ -194,6 +199,8 @@ class View:
                         self.value_receiver, name)
                 remote_net.add(e)
                 self.remote_objs[obj] = e
+                if obj.size_out >= 8:
+                    semantic.append(obj)
 
         for subnet in network.networks:
             name = self.get_name(names, subnet, prefix)
@@ -221,6 +228,11 @@ class View:
                 remote_net.connect(r_pre.getOrigin(oname), t)
             else:
                 print 'cannot process connection from %s to %s'%(`c.pre`, `c.post`)
+
+        for obj in semantic:
+            # do this after all the nodes and connections so that the
+            # nodes and connections we create won't be mapped to remote
+            self.add_semantic_override(obj, network)
 
         for probe in network.probes:
 
@@ -275,6 +287,24 @@ class View:
 
             else:
                 print 'Unhandled probe', probe
+
+    def add_semantic_override(self, obj, network):
+        if isinstance(obj, nengo.Ensemble):
+            dim = obj.dimensions
+        elif isinstance(obj, nengo.Node):
+            dim = obj.size_out
+        remote = self.remote_objs[obj]
+        self.control_node.register(self.input_count, remote)
+        override_func = PassthroughOverrideFunction(self, self.input_count)
+        with network:
+            node = nengo.Node(override_func, size_in=dim, size_out=dim)
+            nengo.Connection(obj, node, synapse=0.01)
+            nengo.Connection(node, obj, synapse=0.01)
+
+        self.input_count += 1
+
+
+
 
     def update_model(self, sim):
         """Grab data from the simulator needed for plotting."""
@@ -393,6 +423,19 @@ class OverrideFunction(object):
         for k,v in self.view.overrides.get(self.id, {}).items():
             value[k] = v
         return value
+
+
+class PassthroughOverrideFunction(object):
+    def __init__(self, view, id):
+        self.view = view
+        self.id = id
+        self.view.overrides[id] = {}
+    def __call__(self, t, x):
+        value = np.array(x)
+        for k,v in self.view.overrides.get(self.id, {}).items():
+            value[k] = v
+        return value - x
+
 
 class VisualizerExitException(Exception):
     pass
