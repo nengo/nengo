@@ -127,6 +127,10 @@ class View:
         view = self.net.view()
         self.control_node.set_view(view)
 
+        # disable components that cannot be used with javaviz
+        view.time_control.mode_combobox.enabled = False
+        view.time_control.dt_combobox.enabled = False
+
         if config is not None and not has_layout:
             # destroy the layout we created - unless the user saves their layout,
             # we want to generate a new layout next time javaviz is opened.
