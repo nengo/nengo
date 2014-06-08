@@ -14,6 +14,7 @@ class View:
         self.default_labels = default_labels
         self.need_encoders = []
         self.overrides = {}
+        self.override_last_time = {}
         self.block_time = 0.0
         self.should_stop = False
 
@@ -176,7 +177,7 @@ class View:
                     output = obj.output
 
                     if callable(output):
-                        output = output(0.0)#np.zeros(obj.size_in))
+                        output = output(0.0)
                     if isinstance(output, (int, float)):
                         output_dims = 1
                     elif isinstance(output, np.ndarray):
@@ -337,7 +338,8 @@ class View:
             # override the node output values if the visualizer says to
             for i in range((len(msg)-4)/12):
                 id, index, value = struct.unpack('>LLf', msg[4+i*12:16+i*12])
-                self.overrides[id][index]=value
+                self.overrides[id][index] = value
+                self.override_last_time[id] = time[0]
         self.socket.close()
         self.socket_recv.close()
         self.should_stop = True
@@ -432,8 +434,10 @@ class PassthroughOverrideFunction(object):
         self.view.overrides[id] = {}
     def __call__(self, t, x):
         value = np.array(x)
-        for k,v in self.view.overrides.get(self.id, {}).items():
-            value[k] = v
+        last_time = self.view.override_last_time.get(self.id, None)
+        if last_time is not None and t - last_time < 0.002:
+            for k,v in self.view.overrides.get(self.id, {}).items():
+                value[k] = v
         return value - x
 
 
