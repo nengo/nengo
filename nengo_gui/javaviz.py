@@ -53,7 +53,8 @@ class View:
         if self.label is None:
             self.label='Nengo Visualizer 0x%x'%id(model)
         self.label = self.label.replace('.', '_')
-        self.label = self.label.replace('/', '_slash_')
+        self.label = self.label.replace('/', '_')
+        self.label = self.label.replace('\\', '_')
         net = self.rpyc.modules.nef.Network(self.label)
 
         self.control_node = self.rpyc.modules.timeview.javaviz.ControlNode(
