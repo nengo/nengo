@@ -426,7 +426,14 @@ class OverrideFunction(object):
             value[k] = v
         return value
 
-
+# This is meant for driving a Nengo node towards a particular value.
+# The idea is to have a Node that takes input from a nengo Object and sends
+# output back to that same object.  The "override" value comes from the
+# javaviz visualizer.  If there is no override value (or if there hasn't
+# been one for the last few time steps), then this node outputs a 0.
+# Otherwise, it outputs the difference between the value it is receiving
+# and the target value.  This should drive the nengo object it is connected
+# to towards the override value.
 class PassthroughOverrideFunction(object):
     def __init__(self, view, id):
         self.view = view
