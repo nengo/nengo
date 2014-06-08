@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 from nengo.spa import pointer
-from nengo.utils.compat import is_iterable, is_number, range
+from nengo.utils.compat import is_iterable, is_number, is_integer, range
 
 
 class Vocabulary(object):
@@ -63,7 +63,7 @@ class Vocabulary(object):
     def __init__(self, dimensions, randomize=True, unitary=False,
                  max_similarity=0.1, include_pairs=False, rng=None):
 
-        if not isinstance(dimensions, int):
+        if not is_integer(dimensions):
             raise TypeError('dimensions must be an integer')
         if dimensions < 1:
             raise ValueError('dimensions must be positive')
