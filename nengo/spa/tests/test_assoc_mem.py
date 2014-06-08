@@ -9,8 +9,8 @@ from nengo.spa.assoc_mem import AssociativeMemory
 def test_am_defaults(Simulator):
     """Default assoc memory.
 
-       Options: auto-associative, threshold = 0.3, non-inhibitable,
-       non-wta, does not output utilities or thresholded utilities.
+    Options: auto-associative, threshold = 0.3, non-inhibitable, non-wta,
+    does not output utilities or thresholded utilities.
     """
 
     rng = np.random.RandomState(1)
@@ -43,8 +43,8 @@ def test_am_defaults(Simulator):
 def test_am_assoc_mem_threshold(Simulator):
     """Standard associative memory (differing input and output vocabularies).
 
-       Options: threshold = 0.5, non-inhibitable, non-wta, does not output
-       utilities or thresholded utilities.
+    Options: threshold = 0.5, non-inhibitable, non-wta, does not output
+    utilities or thresholded utilities.
     """
     rng = np.random.RandomState(1)
 
@@ -89,9 +89,9 @@ def test_am_assoc_mem_threshold(Simulator):
 def test_am_default_output_inhibit_utilities(Simulator):
     """Auto-associative memory (non-wta) complex test.
 
-       Options: defaults to predefined vector if no match is found,
-       threshold = 0.3, inhibitable, non-wta, outputs utilities and
-       thresholded utilities.
+    Options: defaults to predefined vector if no match is found,
+    threshold = 0.3, inhibitable, non-wta, outputs utilities and thresholded
+    utilities.
     """
     rng = np.random.RandomState(1)
 
@@ -172,9 +172,9 @@ def test_am_default_output_inhibit_utilities(Simulator):
 def test_am_default_output_inhibit_utilities_wta(Simulator):
     """Auto-associative memory (wta) complex test.
 
-       Options: defaults to predefined vector if no match is found,
-       threshold = 0.3, inhibitable, wta, outputs utilities and
-       thresholded utilities.
+    Options: defaults to predefined vector if no match is found,
+    threshold = 0.3, inhibitable, wta, outputs utilities and thresholded
+    utilities.
     """
     rng = np.random.RandomState(1)
 
