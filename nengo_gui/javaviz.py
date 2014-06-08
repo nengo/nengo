@@ -62,11 +62,9 @@ class View:
         self.remote_objs = {}
         self.inputs = []
         self.probe_count = 0
+        self.input_count = 0
 
         self.process_network(net, model, names=[])
-
-        for input in self.inputs:
-            self.control_node.register(id(input)&0xFFFF, input)
 
         if self.probe_count == 0:
             # need at least one probe to let the synchronizing system work
@@ -186,7 +184,9 @@ class View:
                         output_dims = len(output)
                     obj._output_dims = output_dims
                     input = remote_net.make_input(name, tuple([0]*output_dims))
-                    obj.output = OverrideFunction(self, obj.output, id(input)&0xFFFF)
+                    obj.output = OverrideFunction(self, obj.output, self.input_count)
+                    self.control_node.register(self.input_count, input)
+                    self.input_count += 1
                     self.remote_objs[obj] = input
                     self.inputs.append(input)
             else:
