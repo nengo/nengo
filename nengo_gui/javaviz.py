@@ -256,7 +256,6 @@ class View:
                     def send(t, x, self=self, format='>Lf'+'f'*obj.dimensions,
                             id=probe_id):
                         msg = struct.pack(format, id, t, *x)
-                        print id, t, x
                         self.socket.sendto(msg, self.socket_target)
 
                     node = nengo.Node(send, size_in=obj.dimensions)
