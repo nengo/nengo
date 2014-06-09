@@ -45,8 +45,9 @@ Running Nengo GUI
 
 First, you must start the javaviz-server, a program that will sit in the background and handle the
 visualization system.  Do this by going to the directory where you unzipped the old Java-based version
-of nengo and running javaviz-server.bat (on Windows) or javaviz-server (on Unix/Mac).  A text window should
-pop up and a line like ``INFO:SLAVE/18812:server started on [127.0.0.1]:18812`` should appear.
+of nengo and running ``javaviz-server.bat`` (on Windows) or ``bash javaviz-server`` (on Unix/Mac). 
+
+A text window should pop up and a line like ``INFO:SLAVE/18812:server started on [127.0.0.1]:18812`` should appear.
 
 Finally, we run the Nengo GUI using the command ``nengo_gui``.  You can run this from the command prompt,
 or by double-clicking on the ``nengo_gui`` executable.  On Windows, this is likely in a directory such as
@@ -81,7 +82,7 @@ Alternative usage
 -----------------
 You can pass nengo_gui a script to visualize, if desired.
 
-.. code:: bash
+.. code:: shell
 
    nengo_gui my_nengo_script.py
 
