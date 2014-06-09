@@ -16,7 +16,7 @@ visualizer that shows the behaviour of the model as you run it.
 To install the editor, you need to download and install the code in this repository.
 For most operating systems, here are the commands needed:
 
-.. code:: bash
+.. code:: shell
 
    git clone https://github.com/ctn-waterloo/nengo_gui.git
    cd nengo_gui
@@ -34,7 +34,7 @@ are the instructions:
 Note that you do have to have `Java <http://java.com/>`_ installed on your computer for this to work.  Finally, you
 need to install `RPyC <http://rpyc.readthedocs.org/>`_, which allows the editor and the visualizer to communicate.
 
-.. code:: bash
+.. code:: shell
 
    pip install rpyc
    
