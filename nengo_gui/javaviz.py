@@ -16,6 +16,7 @@ class View:
         self.overrides = {}
         self.override_last_time = {}
         self.block_time = 0.0
+        self.should_reset = False
         self.should_stop = False
 
         # connect to the remote java server
@@ -136,6 +137,8 @@ class View:
             # we want to generate a new layout next time javaviz is opened.
             self.rpyc.modules.timeview.view.save_layout_file(self.label, {}, [], {})
 
+        self.remote_view = view
+
     def get_name(self, names, obj, prefix):
         name = obj.label
         if name == None:
@@ -253,6 +256,7 @@ class View:
                     def send(t, x, self=self, format='>Lf'+'f'*obj.dimensions,
                             id=probe_id):
                         msg = struct.pack(format, id, t, *x)
+                        print id, t, x
                         self.socket.sendto(msg, self.socket_target)
 
                     node = nengo.Node(send, size_in=obj.dimensions)
@@ -337,6 +341,10 @@ class View:
                     continue
             # grab the current time the simulator thinks it is at
             time = struct.unpack('>f', msg[:4])
+
+            if self.block_time > 0 and time[0] < self.block_time:
+                self.should_reset = True
+
             # tell the simulator to stop if it is past the given time
             self.block_time = time[0]
 
@@ -416,11 +424,23 @@ class OverrideFunction(object):
         self.function = function
         self.id = id
         self.view.overrides[id] = {}
+    def check_reset(self):
+        if self.view.should_reset:
+            for k in self.view.overrides.keys():
+                self.view.overrides[k] = {}
+            self.view.override_last_time.clear()
+            self.view.should_reset = False
+            self.view.remote_view.sim_time = 0.0
+
+            raise VisualizerResetException()
+
     def __call__(self, t):
+        self.check_reset()
         while self.view.block_time < t:
             time.sleep(0.01)
             if self.view.should_stop:
                 raise VisualizerExitException('JavaViz closed')
+            self.check_reset()
         if callable(self.function):
             value = np.array(self.function(t), dtype='float')
         else:
@@ -455,3 +475,8 @@ class PassthroughOverrideFunction(object):
 
 class VisualizerExitException(Exception):
     pass
+
+class VisualizerResetException(Exception):
+    pass
+
+

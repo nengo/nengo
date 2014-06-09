@@ -161,7 +161,10 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         jv.view(config=cfg)
         try:
             while True:
-                sim.run(1)
+                try:
+                    sim.run(1)
+                except javaviz.VisualizerResetException:
+                    sim.reset()
         except javaviz.VisualizerExitException:
             print('Finished running JavaViz simulation')
 
