@@ -17,6 +17,7 @@ To install the editor, you need to download and install the code in this reposit
 For most operating systems, here are the commands needed:
 
 .. code:: bash
+
    git clone https://github.com/ctn-waterloo/nengo_gui.git
    cd nengo_gui
    python setup.py develop
@@ -34,6 +35,7 @@ Note that you do have to have `Java <http://java.com/>`_ installed on your compu
 need to install `RPyC <http://rpyc.readthedocs.org/>`_, which allows the editor and the visualizer to communicate.
 
 .. code:: bash
+
    pip install rpyc
    
 
