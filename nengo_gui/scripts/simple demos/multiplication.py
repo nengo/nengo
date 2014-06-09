@@ -28,11 +28,10 @@ combined.encoders = np.tile(
     [[1,1],[-1,1],[1,-1],[-1,-1]],
     (combined.n_neurons // 4, 1))
 
-from nengo.utils.functions import piecewise
 with model:
     # Create a piecewise step function for input
-    inputA = nengo.Node(piecewise({0: 0, 2.5: 10, 4: -10}), label="input A")
-    inputB = nengo.Node(piecewise({0: 10, 1.5: 2, 3: 0, 4.5: 2}), label="input B")
+    inputA = nengo.Node([0], label="input A")
+    inputB = nengo.Node([0], label="input B")
 
     # Connect the input nodes to the appropriate ensembles
     nengo.Connection(inputA, A)
@@ -49,10 +48,28 @@ with model:
     # Connect the combined ensemble to the output ensemble D
     nengo.Connection(combined, prod, function=product)
 
-    inputA_probe = nengo.Probe(inputA)
-    inputB_probe = nengo.Probe(inputB,)
-    A_probe = nengo.Probe(A, synapse=0.01)
-    B_probe = nengo.Probe(B, synapse=0.01)
-    combined_probe = nengo.Probe(combined, synapse=0.01)
-    prod_probe = nengo.Probe(prod, synapse=0.01)
+    nengo.Probe(inputA)
+    nengo.Probe(inputB,)
+    nengo.Probe(A, synapse=0.01)
+    nengo.Probe(B, synapse=0.01)
+    nengo.Probe(combined, synapse=0.01)
+    nengo.Probe(prod, synapse=0.01)
+    nengo.Probe(combined, 'spikes')
 
+
+import nengo_gui
+gui = nengo_gui.Config()
+gui[model].scale = 1.7291542213316193
+gui[model].offset = -12.174626639948599,130.63578585201708
+gui[A].pos = 175.000, 50.000
+gui[A].scale = 1.000
+gui[B].pos = 175.000, 125.000
+gui[B].scale = 1.000
+gui[combined].pos = 300.000, 87.500
+gui[combined].scale = 1.000
+gui[prod].pos = 425.000, 87.500
+gui[prod].scale = 1.000
+gui[inputA].pos = 50.000, 50.000
+gui[inputA].scale = 1.000
+gui[inputB].pos = 50.000, 125.000
+gui[inputB].scale = 1.000

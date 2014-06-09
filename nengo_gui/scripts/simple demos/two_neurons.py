@@ -21,21 +21,19 @@ with model:
                              max_rates=Uniform(100,100),  # Set the max firing rate at 100hz
                              encoders=[[1],[-1]])  # One 'on' and one 'off' neuron
 
-    sin = nengo.Node(lambda t: np.sin(8 * t), label = "sin")
+    input = nengo.Node([0])
 
-    nengo.Connection(sin, neurons, synapse=0.01)
+    nengo.Connection(input, neurons, synapse=0.01)
 
-    sin_probe = nengo.Probe(sin)  # The original input
-    spikes = nengo.Probe(neurons, 'spikes')  # Raw spikes from each neuron
-    voltage = nengo.Probe(neurons, 'voltage')  # Subthreshold soma voltages of the neurons
-    filtered = nengo.Probe(neurons, synapse=0.01)  # Spikes filtered by a 10ms post-synaptic filter
-
+    nengo.Probe(input)  # The original input
+    nengo.Probe(neurons, 'spikes')  # Raw spikes from each neuron
+    nengo.Probe(neurons)
 
 import nengo_gui
 gui = nengo_gui.Config()
-gui[model].scale = 1.333780222628592
-gui[model].offset = 279.143763896969,127.28155345458995
-gui[neurons].pos = 150.000, 0.000
+gui[model].scale = 4.4036765488554686
+gui[model].offset = -92.41029646566369,74.81617255722708
+gui[neurons].pos = 175.000, 50.000
 gui[neurons].scale = 1.000
-gui[sin].pos = 0.000, 0.000
-gui[sin].scale = 1.000
+gui[input].pos = 50.000, 50.000
+gui[input].scale = 1.000

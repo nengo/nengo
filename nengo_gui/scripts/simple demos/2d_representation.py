@@ -12,25 +12,20 @@ model = nengo.Network(label='2D Representation')
 with model:
     neurons = nengo.Ensemble(100, dimensions=2, label="neurons")
 
-    sin = nengo.Node(output=np.sin, label="sin")
-    cos = nengo.Node(output=np.cos, label="cos")
+    input = nengo.Node([0, 0])
+    nengo.Connection(input, neurons)
 
-    nengo.Connection(sin, neurons[0])
-    nengo.Connection(cos, neurons[1])
-
-    sin_probe = nengo.Probe(sin, 'output')
-    cos_probe = nengo.Probe(cos, 'output')
-    neurons_probe = nengo.Probe(neurons, 'decoded_output', synapse=0.01)
+    nengo.Probe(input)
+    nengo.Probe(neurons)
+    nengo.Probe(neurons, 'spikes')
 
 
 
 import nengo_gui
 gui = nengo_gui.Config()
-gui[model].scale = 1.747430497927022
-gui[model].offset = 198.68894055742055,417.89867622430995
-gui[neurons].pos = 254.672, -126.626
+gui[model].scale = 4.4036765488554686
+gui[model].offset = -92.41029646566392,43.50878459270723
+gui[neurons].pos = 175.000, 50.000
 gui[neurons].scale = 1.000
-gui[sin].pos = 40.259, -66.659
-gui[sin].scale = 1.000
-gui[cos].pos = 29.512, -132.731
-gui[cos].scale = 1.000
+gui[input].pos = 50.000, 50.000
+gui[input].scale = 1.000

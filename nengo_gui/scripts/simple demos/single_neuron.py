@@ -16,22 +16,21 @@ with model:
 
 import numpy as np
 with model:
-    cos = nengo.Node(lambda t: np.cos(8 * t), label = "cos")
+    input = nengo.Node(0)
 
     # Connect the input signal to the neuron
-    nengo.Connection(cos, neuron)
+    nengo.Connection(input, neuron)
 
-    cos_probe = nengo.Probe(cos)  # The original input
-    spikes = nengo.Probe(neuron, 'spikes')  # The raw spikes from the neuron
-    voltage = nengo.Probe(neuron, 'voltage')  # Subthreshold soma voltage of the neuron
-    filtered = nengo.Probe(neuron, synapse=0.01) # Spikes filtered by a 10ms post-synaptic filter
+    nengo.Probe(input)  # The original input
+    nengo.Probe(neuron)  # The original input
+    nengo.Probe(neuron, 'spikes')  # The raw spikes from the neuron
 
 
 import nengo_gui
 gui = nengo_gui.Config()
-gui[model].scale = 1.4117855518454434
-gui[model].offset = 289.20742602597045,186.36333980484574
-gui[neuron].pos = 150.000, 0.000
+gui[model].scale = 4.40367654885547
+gui[model].offset = -92.41029646566608,41.51336865650782
+gui[neuron].pos = 175.000, 50.000
 gui[neuron].scale = 1.000
-gui[cos].pos = 0.000, 0.000
-gui[cos].scale = 1.000
+gui[input].pos = 50.000, 50.000
+gui[input].scale = 1.000
