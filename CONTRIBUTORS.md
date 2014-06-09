@@ -20,5 +20,6 @@ Please keep this list sorted alphabetically.
 
 - Chris Eliasmith <celiasmith@uwaterloo.ca>
 - Eric Crawford <e2crawfo@uwaterloo.ca>
+- Sean Aubin <seanaubin@gmail.com>
 - Terry Stewart <terry.stewart@gmail.com>
 - Trevor Bekolay <tbekolay@gmail.com>
