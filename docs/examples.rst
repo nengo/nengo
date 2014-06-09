@@ -70,8 +70,10 @@ Semantic Pointer Architecture
    examples/question
    examples/question_control
    examples/question_memory
-   examples/spa_sequence
+   examples/spa_sequence-Class
+   examples/spa_sequence-Context
    examples/spa_sequence_routed
+   examples/spa_parser
 
 Extending Nengo
 ===============
