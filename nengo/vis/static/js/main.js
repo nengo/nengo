@@ -269,6 +269,15 @@ function zoomCenter(d) { //zoom full screen and center the network clicked on
         scale = .9*width/netWidth
     }
 
+    console.log(scale);
+    if (isNaN(scale)) {
+        scale = 1.0;
+    } 
+    
+    if (scale == Infinity) {
+        scale = 1.0;
+    }
+
     zoom.scale(scale)
     
     if (zoomNet == -1) {
