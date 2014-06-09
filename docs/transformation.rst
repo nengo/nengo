@@ -2,8 +2,6 @@
 Principle 2: Transformation
 ***************************
 
-TODO intro
-
 .. toctree::
 
    examples/communication_channel
