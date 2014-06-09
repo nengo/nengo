@@ -6,20 +6,6 @@ class LearningRule(object):
 
     To use a learning rule, pass it as a learning_rule keyword argument to
     the Connection that you want to do learning.
-
-    Example:
-        nengo.Connection(a, b, learning_rule=nengo.PES(error))
-
-    Parameters
-    ----------
-    label : string, optional
-        A name for the learning rule.
-
-    Attributes
-    ----------
-    label : string
-        Given label, or None.
-
     """
     learning_rate = Parameter(default=1e-5)
     label = Parameter(default=None)

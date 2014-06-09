@@ -421,9 +421,11 @@ class Operator(object):
     whatever were the contents of the update, it can be the case
     that the update is completely hidden and rendered irrelevant.
     There are however at least two reasons to use both a set and an update:
-    (a) to use a signal as scratch space (updating means destroying it)
-    (b) to use sets and updates on partly overlapping views of the same
-        memory.
+
+    1. to use a signal as scratch space (updating means destroying it)
+
+    2. to use sets and updates on partly overlapping views of the same
+       memory.
 
     N.B.: It is done on purpose that there are no default values for
     reads, sets, incs, and updates.

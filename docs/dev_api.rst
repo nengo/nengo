@@ -97,9 +97,6 @@ Operators
 .. autoclass:: nengo.builder.ProdUpdate
    :members:
 
-.. autoclass:: nengo.builder.OuterUpdate
-   :members:
-
 .. autoclass:: nengo.builder.SimPyFunc
    :members:
 

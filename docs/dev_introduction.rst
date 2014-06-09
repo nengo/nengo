@@ -1,3 +1,6 @@
 ***************************
 Introduction for developers
 ***************************
+
+Architecture
+============

@@ -2,8 +2,6 @@
 Principle 3: Dynamics
 *********************
 
-TODO intro
-
 .. toctree::
 
    examples/integrator

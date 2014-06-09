@@ -1,129 +1,180 @@
 ***************
-Getting started
+Getting Started
 ***************
 
-The easiest way to use Nengo is to use the ``Model``.
-Everything that you need
-for building most simple models can be done with
-a ``Model``.
+Installation
+============
 
-To create a new ``Model``::
+Using the basic functions of Nengo requires ``NumPy``.
+To do any kind of visualization, you will need ``matplotlib``.
+It is highly recommended that ``IPython`` is installed as
+well, in order to fully appreciate the IPython notebook
+examples. For Python beginners, an all-in-one solution
+like `Anaconda <https://store.continuum.io/cshop/anaconda/>`_
+is recommended to install these packages, as well as
+Python itself.
+
+Basic installation
+------------------
+
+This isn't quite true yet, but once we put Nengo
+on PyPI, you will be able to
+
+.. code:: bash
+
+   pip install nengo
+
+For now, do a developer installation.
+
+Developer installation
+----------------------
+
+If you plan to make changes to Nengo,
+you should clone its git repository
+and install from it.
+
+.. code:: bash
+
+   git clone https://github.com/ctn-waterloo/nengo.git
+   cd nengo
+   python setup.py develop
+
+If you get an error relating to permissions, try
+``python setup.py develop --user``.
+
+Usage
+=====
+
+Everything in a Nengo model is contained within a
+:class:`nengo.Network`. To create a new ``Network``::
 
   import nengo
-  model = nengo.Model("My Model")
+  model = nengo.Network()
 
 Creating Nengo objects
-======================
+----------------------
 
 A Nengo object is a part of your model that represents information.
-There are two objects that make up a basic Nengo model.
-Each of these objects can be constructed by calling
-the appropriate ``make_`` function.
+When creating a new object, you must place it within a ``with``
+block in order to inform Nengo which network your object
+should be placed in.
 
-An ``Ensemble`` is a group of neurons that represents
+There are two objects that make up a basic Nengo model.
+A :class:`nengo.Ensemble` is a group of neurons that represents
 information in the form of real valued numbers.
 
 ::
 
-  my_ensemble = model.make_ensemble("My Ensemble", nengo.LIF(35), dimensions=1)
+  with model:
+      my_ensemble = nengo.Ensemble(n_neurons=40, dimensions=1)
 
-In this case, My Ensemble is made up of
-35 leaky integrate-and-fire neurons,
+In this case, ``my_ensemble`` is made up of
+40 neurons (by default, Nengo uses leaky integrate-and-fire neurons)
 and it is representing a one dimensional signal.
 In other words, this ensemble represents a single number.
 
-In order to provide input to this ensemble,
-to emulate some signal that exists in nature, for example,
-we create a ``Node``.
+In order to provide input to this ensemble
+(to emulate some signal that exists in nature, for example)
+we create a :class:`Node`.
 
 ::
 
-  my_node = model.make_node("My Node", output=0.5)
+  with model:
+      my_node = nengo.Node(output=0.5)
 
-In this case, My Node emits the number 0.5.
+In this case, ``my_node`` emits the number 0.5.
 
 In most cases, however, we want more dynamic information.
-We can make a ``Node`` using a function as output
+We can make a :class:`nengo.Node` using a function as output
 instead of a number.
 
 ::
 
   import numpy as np
-  sin_node = model.make_node("Sine Node", output=np.sin)
+  with model:
+      sin_node = nengo.Node(output=np.sin)
 
-This node will represent the sine over time.
+This node will represent a sine wave.
 
 Connecting Nengo objects
-========================
+------------------------
 
-We can connect our nodes to ensembles
+We can connect nodes to ensembles
 in order to represent that information
 in the activity a group of neurons.
 
 ::
 
-  model.connect(my_node, my_ensemble)
+  with model:
+      nengo.Connection(my_node, my_ensemble)
 
-This connects My Node to My Ensemble,
-meaning that My Ensemble will now represent
-0.5 in its population of 35 neurons.
+This connects ``my_node`` to ``my_ensemble``,
+meaning that ``my_ensemble`` will now represent
+0.5 in its population of 40 neurons.
 
-This works because the dimensionality of
-``my_node`` and ``my_ensemble`` is the same.
-If this were not true, we would
-define the transformation between
-the dimensions of the first object to the second object
-with a ``transform`` argument.
+Ensembles can also be connected to other models.
+When the dimensionality of the objects being
+connectd are different, we can use Python's
+slice syntax to route information from
+one node or ensemble to another.
 For example::
 
-  two_d_ensemble = model.make_ensemble("2D Ensemble", nengo.LIF(70), dimensions=2)
-  model.connect(sin_node, two_d_ensemble, transform=[[1], [0]])
+  with model:
+      two_d_ensemble = nengo.Ensemble(n_neurons=80, dimensions=2)
+      nengo.Connection(sin_node, two_d_ensemble[0])
+      nengo.Connection(my_ensemble, two_d_ensemble[1])
 
 This creates a new ensemble that represents
 two real-valued signals.
-By connecting the Sine Node to the ensemble,
-its first dimension now represents
-a sine wave.
+By connecting ``sin_node`` to ``two_d_ensemble``,
+its first dimension now represents a sine wave.
+Its second dimensions now represents the same
+value as ``my_ensemble``.
 
-Ensembles can be connected to each other as well.
-When connecting ensembles together,
-we can optionally compute an arbitrary smooth function
-on the real numbers being connected.
+When creating connections,
+we can specify a function that
+will be computed across the connection.
+
 
 ::
 
-  model.connect(my_ensemble, two_d_ensemble, transform=[[0], [1]], function=np.square)
+  with model:
+      square = nengo.Ensemble(n_neurons=40, dimensions=1)
+      nengo.Connection(my_ensemble, square, function=np.square)
 
 Functions can be computed over multiple dimensions, as well.
 
 ::
 
-  product_ensemble = model.make_ensemble("Product", nengo.LIF(35), dimensions=1)
   def product(x):
       return x[0] * x[1]
-  model.connect(two_d_ensemble, product_ensemble, function=product)
+  with model:
+      product_ensemble = nengo.Ensemble(n_neurons=40, dimensions=1)
+      nengo.Connection(two_d_ensemble, product_ensemble, function=product)
 
 Probing Nengo objects
-=====================
+---------------------
 
 Once you have defined the objects in your model
 and how they're connected,
-decide what data you want to collect
+you can decide what data you want to collect
 by probing those objects.
 
-For example, if we wanted to collect data from
+If we wanted to collect data from
 our 2D Ensemble and the Product of those two dimensions::
 
-  model.probe(two_d_ensemble, filter=0.01)
-  model.probe(product_ensemble, filter=0.01)
+  with model:
+      2d_probe = nengo.Probe(two_d_ensemble, synapse=0.01)
+      product_probe = nengo.Probe(product_ensemble, synapse=0.01)
 
-The argument ``filter`` defines the time constant
-on a causal low-pass filter.
+The argument ``synapse`` defines the time constant
+on a causal low-pass filter,
+which approximates a simple synapse model.
 The output of ensembles of spiking neurons
 can be very noisy, so a filter is recommended.
 
 Running an experiment
-=====================
+---------------------
 
 Once a model has been constructed and we have probed
 certain objects, we can run it to collect data.
@@ -133,22 +184,21 @@ based on the model we've defined.
 
 ::
 
-  sim = model.simulator()
+  sim = nengo.Simulator(model)
 
 We can then run that simulator.
 For example, to run our model for five seconds::
 
   sim.run(5.0)
 
-One a simulation has been run at least once
+Once a simulation has been run at least once
 (it can be run for additional time if desired)
 the data collected can be accessed
 for analysis or visualization.
 
 ::
 
-  print sim.data(product_ensemble)[-10:]
+  print(sim.data[product_probe][-10:])
 
-For more details on the functions
-in ``nengo.Model``, and ``nengo.simulator.Simulator``
-see `the basic API documentation <model_api.html>`_.
+For more details on these objects,
+see `the basic API documentation <user_api.html>`_.

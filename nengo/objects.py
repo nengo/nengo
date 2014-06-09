@@ -104,14 +104,14 @@ class Network(with_metaclass(NengoObjectContainer)):
         Name of the Network.
     seed : int
         Random seed used by the Network.
-    ensembles : list
+    ensembles : list of Ensemble
         List of nengo.Ensemble objects in this Network.
-    nodes : list
+    nodes : list of Node
         List of nengo.Node objects in this Network.
-    connections : list
+    connections : list of Connection
         List of nengo.Connection objects in this Network.
-    networks : list
-        List of nengo.BaseNetwork objects in this Network.
+    networks : list of Network
+        List of nengo.Network objects in this Network.
     """
 
     def __new__(cls, *args, **kwargs):
@@ -413,6 +413,9 @@ class Node(NengoObject):
         The number of input dimensions.
     size_out : int
         The number of output dimensions.
+    probeable : list of str
+        List of attributes that can be probed.
+
     """
 
     output = Parameter(default=None)
@@ -519,9 +522,8 @@ class Connection(NengoObject):
     label : str
         A human-readable connection label for debugging and visualization.
         Incorporates the labels of the pre and post objects.
-    learning_rule : list of LearningRule
-        The given learning rules. If given a single LearningRule, this will be
-        a list with a single element.
+    learning_rule : :class:`LearningRule` or list of LearningRule
+        The given learning rule(s).
     post : Ensemble or Neurons or Node or Probe
         The given pre object.
     pre : Ensemble or Neurons or Node

@@ -2,8 +2,6 @@
 Principle 1: Representation
 ***************************
 
-TODO intro
-
 .. toctree::
 
    examples/single_neuron

@@ -33,64 +33,14 @@ get input directly from hardware, drive robots,
 and even simulate your model on a completely
 different neural simulator.
 
-Examples
-========
-
-Nengo creates these models using the principles of the
-`Neural Engineering Framework <http://compneuro.uwaterloo.ca/research/nef.html>`_.
-The first set of examples explains these three principles:
-*representation*, *transformation*, and *dynamics*.
-
 .. toctree::
    :maxdepth: 2
 
-   representation
-   transformation
-   dynamics
-
-Putting these three principles together allows us to scale
-these examples up to larger networks that do more complex functions.
-
-.. toctree::
-   :maxdepth: 2
-
-   all_examples
-
-User Guide
-==========
-
-The following sections will help you start
-making your own Nengo models.
-
-.. toctree::
-   :maxdepth: 2
-
-   user_introduction
-   installation
    getting_started
-   user_api
-   networks
-   changelog
-   history
+   examples
+   user_guide
+   dev_guide
 
-Developer Guide
-===============
-
-The following sections will help you change
-how Nengo builds and simulates brain models.
-If you make Nengo do something cool,
-we hope that you'll consider contributing
-to Nengo development!
-
-.. toctree::
-   :maxdepth: 2
-
-   dev_introduction
-   nef_minimal
-   architecture
-   simulators
-   dev_api
-   contributing
 
 Indices and tables
 ==================
