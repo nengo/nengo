@@ -199,7 +199,6 @@ class Solver(with_metaclass(DocstringInheritor)):
     """
     Decoder or weight solver.
     """
-    weights = False
 
     def __call__(self, A, Y, rng=None, E=None):
         """Call the solver.
