@@ -43,6 +43,7 @@ Learning
    examples/learn_communication_channel
    examples/learn_square
    examples/learn_product
+   examples/learn_unsupervised
 
 Networks
 ========
