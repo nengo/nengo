@@ -105,6 +105,7 @@ class Simulator(object):
             Builder.build(network, model=self.model)
 
         # Note: seed is not used right now, but one day...
+        assert seed is None, "Simulator seed not yet implemented"
         self.seed = np.random.randint(npext.maxint) if seed is None else seed
 
         # -- map from Signal.base -> ndarray

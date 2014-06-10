@@ -6,13 +6,13 @@ from nengo.utils.testing import Plotter
 
 
 def test_basic(Simulator):
-    bg = nengo.networks.BasalGanglia(dimensions=5, label="BG")
+    bg = nengo.networks.BasalGanglia(dimensions=5, label="BG", seed=79)
     with bg:
         input = nengo.Node([0.8, 0.4, 0.4, 0.4, 0.4], label="input")
         nengo.Connection(input, bg.input, synapse=None)
         p = nengo.Probe(bg.output, synapse=0.01)
 
-    sim = Simulator(bg, seed=123)
+    sim = Simulator(bg)
     sim.run(0.2)
 
     t = sim.trange()
