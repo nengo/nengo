@@ -252,6 +252,19 @@ def test_unconnected_node(Simulator):
     assert hits[0] == 2
 
 
+def test_len():
+    with nengo.Network():
+        n1 = nengo.Node(None, size_in=1)
+        n3 = nengo.Node([1, 2, 3])
+        n4 = nengo.Node(lambda t: np.arange(4) * t)
+
+    assert len(n1) == 1
+    assert len(n3) == 3
+    assert len(n4) == 4
+    assert len(n1[0]) == 1
+    assert len(n4[1:3]) == 2
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

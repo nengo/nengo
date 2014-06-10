@@ -246,6 +246,24 @@ def test_eval_points_heuristic(Simulator, nl_nodirect, neurons, dims):
     assert points.shape == (heuristic(neurons, dims), dims)
 
 
+def test_len():
+    """Make sure we can do len(ens) or len(ens.neurons)."""
+    with nengo.Network():
+        ens1 = nengo.Ensemble(10, dimensions=1)
+        ens5 = nengo.Ensemble(100, dimensions=5)
+    # Ensemble.__len__
+    assert len(ens1) == 1
+    assert len(ens5) == 5
+    assert len(ens1[0]) == 1
+    assert len(ens5[:3]) == 3
+
+    # Neurons.__len__
+    assert len(ens1.neurons) == 10
+    assert len(ens5.neurons) == 100
+    assert len(ens1.neurons[0]) == 1
+    assert len(ens5.neurons[90:]) == 10
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
