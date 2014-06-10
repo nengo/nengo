@@ -35,7 +35,7 @@ def test_thalamus(Simulator):
         input = nengo.Node([0.8, 0.4, 0.4, 0.4, 0.4], label="input")
         nengo.Connection(input, bg.input, synapse=None)
 
-        thal = nengo.networks.basalganglia.Thalamus(dimensions=5)
+        thal = nengo.networks.Thalamus(dimensions=5)
         nengo.Connection(bg.output, thal.input)
 
         p = nengo.Probe(thal.output, synapse=0.01)
