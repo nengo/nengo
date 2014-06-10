@@ -25,7 +25,8 @@ def pytest_generate_tests(metafunc):
     ignores = [] if metafunc.config.option.optional else [
         'lorenz_attractor.ipynb', 'spa_sequence_routed.ipynb',
         'spa_sequence-Class.ipynb', 'spa_sequence-Context.ipynb',
-        'spa_parser.ipynb', 'question_control.ipynb']
+        'spa_parser.ipynb', 'question_control.ipynb',
+        'learn_communication_channel.ipynb']
     examples = [path for path in examples
                 if os.path.split(path)[1] not in ignores]
 
