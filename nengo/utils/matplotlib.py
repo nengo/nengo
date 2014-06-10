@@ -1,9 +1,12 @@
 from __future__ import absolute_import
 
+import warnings
+
 import numpy as np
 import matplotlib.pyplot as plt
 
 from nengo.utils.compat import range
+from nengo.utils.ensemble import tuning_curves
 
 
 def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
@@ -97,3 +100,23 @@ def rasterplot(time, spikes, ax=None, **kwargs):
                     color=colors[i], **kwargs)
 
     return ax
+
+
+def plot_tuning_curves(ensemble, sim, connection=None, ax=None):
+    """Plot tuning curves for the given ensemble and simulator.
+
+    If a connection is provided, the decoders will be used to set
+    the colours of the tuning curves.
+    """
+
+    if ax is None:
+        ax = plt.gca()
+
+    evals, t_curves = tuning_curves(ensemble, sim)
+
+    if connection is not None:
+        if connection.dimensions > 1:
+            warnings.warn("Ignoring dimensions > 1 in plot_tuning_curves")
+        cm = plt.cm.ScalarMappable(cmap=plt.cm.jet)
+        ax.set_color_cycle(cm.to_rgba(sim.data[connection].decoders[0]))
+    ax.plot(evals, t_curves)
