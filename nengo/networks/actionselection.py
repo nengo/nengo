@@ -145,9 +145,10 @@ class Thalamus(nengo.Network):
     """Converts basal ganglia output into a signal with
     (approximately) 1 for the selected action and 0 elsewhere."""
 
-    def __init__(self, dimensions, n_neurons_per_ensemble=50, mutual_inhib=1):
+    def __init__(self, dimensions, n_neurons_per_ensemble=50, mutual_inhib=1,
+                 threshold=0):
         self.thalamus = EnsembleArray(n_neurons_per_ensemble, dimensions,
-                                      intercepts=Uniform(0, 1),
+                                      intercepts=Uniform(threshold, 1),
                                       encoders=[[1]] * n_neurons_per_ensemble,
                                       label="thalamus")
 
@@ -157,5 +158,6 @@ class Thalamus(nengo.Network):
         nengo.Connection(self.thalamus.output, self.thalamus.input,
                          transform=(np.eye(dimensions) - 1) * mutual_inhib)
 
-        thal_bias = nengo.Node([1] * dimensions)
-        nengo.Connection(thal_bias, self.thalamus.input)
+        self.bias = nengo.Node([1])
+        nengo.Connection(self.bias, self.thalamus.input,
+                         transform=[[1]]*dimensions)
