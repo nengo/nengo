@@ -1,4 +1,4 @@
-from .basalganglia import BasalGanglia
+from .actionselection import BasalGanglia, Thalamus
 from .circularconvolution import CircularConvolution
 from .ensemblearray import EnsembleArray
 from .integrator import Integrator
