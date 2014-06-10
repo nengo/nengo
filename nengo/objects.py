@@ -266,6 +266,9 @@ class Neurons(object):
     def __getitem__(self, key):
         return ObjView(self, key)
 
+    def __len__(self):
+        return self.ensemble.n_neurons
+
     @property
     def label(self):
         return "%s.neurons" % self.ensemble.label
@@ -356,6 +359,9 @@ class Ensemble(NengoObject):
 
     def __getitem__(self, key):
         return ObjView(self, key)
+
+    def __len__(self):
+        return self.dimensions
 
     @property
     def neurons(self):
@@ -466,6 +472,9 @@ class Node(NengoObject):
 
     def __getitem__(self, key):
         return ObjView(self, key)
+
+    def __len__(self):
+        return self.size_out
 
 
 class Connection(NengoObject):
@@ -812,3 +821,6 @@ class ObjView(object):
             else:
                 key = slice(key, key+1)
         self.slice = key
+
+    def __len__(self):
+        return len(np.arange(len(self.obj))[self.slice])
