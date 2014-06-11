@@ -31,23 +31,25 @@ def full_transform(conn, allow_scalars=True):
         elif transform.size == 1 and allow_scalars:
             return np.array(transform)
 
+    full_size_in = (conn._pre.size_out if conn.function is None
+                    else conn.size_in)
+    full_size_out = conn._post.size_in
+
     # Create the new transform matching the pre/post dimensions
-    new_transform = np.zeros((conn.size_out, conn.size_in))
+    new_transform = np.zeros((full_size_out, full_size_in))
     if transform.ndim < 2:
         slice_to_list = lambda s, d: (
             np.arange(d)[s] if isinstance(s, slice) else s)
-        preslice = slice_to_list(conn._preslice, conn.size_in)
-        postslice = slice_to_list(conn._postslice, conn.size_out)
+        preslice = slice_to_list(conn._preslice, full_size_in)
+        postslice = slice_to_list(conn._postslice, full_size_out)
         new_transform[postslice, preslice] = transform
     else:  # if transform.ndim == 2:
-        print(transform.shape, new_transform.shape)
-        print(conn.post.dimensions, conn._postslice)
         repeated_inds = lambda x: (
             not isinstance(x, slice) and np.unique(x).size != len(x))
-        if repeated_inds(conn._preslice) or repeated_inds(conn._postslice):
-            raise ValueError("%s object selection has repeated indices" %
-                             ("Input" if repeated_inds(self._preslice)
-                              else "Output"))
+        if repeated_inds(conn._preslice):
+            raise ValueError("Input object selection has repeated indices")
+        if repeated_inds(conn._postslice):
+            raise ValueError("Output object selection has repeated indices")
         rows_transform = np.array(new_transform[conn._postslice])
         rows_transform[:, conn._preslice] = transform
         new_transform[conn._postslice] = rows_transform

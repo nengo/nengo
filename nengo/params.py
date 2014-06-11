@@ -213,8 +213,9 @@ class SolverParam(Parameter):
         if not isinstance(solver, Solver):
             raise ValueError("'%s' is not a solver" % solver)
         if solver.weights and not isinstance(conn._post, Ensemble):
-            raise ValueError("weight solvers only work for connections from "
-                             "ensembles (got '%s')" % pre.__class__.__name__)
+            raise ValueError(
+                "weight solvers only work for connections from ensembles "
+                "(got '%s')" % conn._post.__class__.__name__)
 
 
 class LearningRuleParam(Parameter):
@@ -238,6 +239,7 @@ class LearningRuleParam(Parameter):
 
 
 FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
+
 
 class FunctionParam(Parameter):
     """The function additionally sets and validates size_in."""

@@ -11,7 +11,7 @@ from nengo.config import Config, Default, is_param
 from nengo.neurons import LIF
 from nengo import params
 from nengo.synapses import Lowpass
-from nengo.utils.compat import is_iterable, with_metaclass
+from nengo.utils.compat import with_metaclass
 from nengo.utils.distributions import Uniform, UniformHypersphere
 
 logger = logging.getLogger(__name__)
