@@ -467,13 +467,29 @@ class PassthroughOverrideFunction(object):
         self.view = view
         self.id = id
         self.view.overrides[id] = {}
+    def check_reset(self):
+        if self.view.should_reset:
+            for k in self.view.overrides.keys():
+                self.view.overrides[k] = {}
+            self.view.override_last_time.clear()
+            self.view.should_reset = False
+            self.view.remote_view.sim_time = 0.0
+
+            raise VisualizerResetException()
+
     def __call__(self, t, x):
+        self.check_reset()
+        while self.view.block_time < t:
+            time.sleep(0.01)
+            if self.view.should_stop:
+                raise VisualizerExitException('JavaViz closed')
+            self.check_reset()
         value = np.array(x)
         last_time = self.view.override_last_time.get(self.id, None)
         if last_time is not None and t - last_time < 0.002:
             for k,v in self.view.overrides.get(self.id, {}).items():
                 value[k] = v
-        return value - x
+        return 10*(value - x)
 
 
 class VisualizerExitException(Exception):
