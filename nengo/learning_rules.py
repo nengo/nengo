@@ -1,3 +1,5 @@
+import warnings
+
 from nengo.params import Parameter
 from nengo.utils.compat import is_iterable, itervalues
 
@@ -11,7 +13,10 @@ class LearningRuleType(object):
 
     probeable = []
 
-    def __init__(self, learning_rate=1.0):
+    def __init__(self, learning_rate=1e-6):
+        if learning_rate >= 1.0:
+            warnings.warn("This learning rate is very high, and can result "
+                          "in floating point errors from too much current.")
         self.learning_rate = learning_rate
 
     def __str__(self):
