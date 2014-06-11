@@ -13,20 +13,6 @@ from nengo.utils.inspect import checked_call
 import nengo.utils.numpy as npext
 
 
-def hack_isinstance(obj, clsname):
-    """Approximates isinstance but with strings instead of objects.
-
-    Useful for doing isinstance type checking when importing the type
-    would introduce a circular dependency.
-    """
-    if is_string(clsname):
-        clsname = [clsname]
-    for cls in obj.__class__.__mro__:
-        if cls.__name__ in clsname:
-            return True
-    return False
-
-
 class BoolParam(Parameter):
     def validate(self, instance, boolean):
         if not isinstance(boolean, bool):
@@ -170,11 +156,13 @@ class ConnEvalPoints(DistributionParam):
 
     def validate_pre(self, conn, dist):
         """Eval points are only valid when pre is an ensemble."""
+        from nengo.objects import Ensemble, Neurons
+
         if dist is None:
             return
 
         pre = conn._pre
-        if not hack_isinstance(pre, ('Ensemble', 'Neurons')):
+        if not isinstance(pre, (Ensemble, Neurons)):
             raise ValueError("eval_points only work on connections from "
                              "ensembles (got '%s')" % pre.__class__.__name__)
 
@@ -221,9 +209,10 @@ class SynapseParam(Parameter):
 
 class SolverParam(Parameter):
     def validate(self, conn, solver):
+        from nengo.objects import Ensemble
         if not isinstance(solver, Solver):
             raise ValueError("'%s' is not a solver" % solver)
-        if solver.weights and not hack_isinstance(conn._post, 'Ensemble'):
+        if solver.weights and not isinstance(conn._post, Ensemble):
             raise ValueError("weight solvers only work for connections from "
                              "ensembles (got '%s')" % pre.__class__.__name__)
 
@@ -273,10 +262,11 @@ class FunctionParam(Parameter):
         self.validate_size_in(conn)
 
     def validate_function(self, conn, function):
-        fn_ok = ['Node', 'Ensemble']
+        from nengo.objects import Node, Ensemble
+        fn_ok = (Node, Ensemble)
         if function is not None and not callable(function):
             raise ValueError("function '%s' must be callable" % function)
-        if callable(function) and not hack_isinstance(conn._pre, fn_ok):
+        if callable(function) and not isinstance(conn._pre, fn_ok):
             raise ValueError("function can only be set for connections from "
                              "an Ensemble or Node (got type '%s')"
                              % conn._pre.__class__.__name__)
