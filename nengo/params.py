@@ -1,3 +1,5 @@
+import collections
+
 import numpy as np
 
 from nengo.config import Parameter
@@ -246,18 +248,29 @@ class LearningRuleParam(Parameter):
                              % (rule, type(conn.pre).__name__))
 
 
+FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
+
 class FunctionParam(Parameter):
     """The function additionally sets and validates size_in."""
+
+    def __get__(self, conn, type_):
+        value = Parameter.__get__(self, conn, type_)
+        return value.function if isinstance(value, FunctionInfo) else value
+
+    def size(self, conn):
+        value = Parameter.__get__(self, conn, None)
+        return value.size if isinstance(value, FunctionInfo) else value
+
     def __set__(self, conn, function):
         self.validate_function(conn, function)
 
         if function is not None:
-            conn.size_in = self.validate_call(conn, function)
+            size = self.validate_call(conn, function)
+            self.data[conn] = FunctionInfo(function=function, size=size)
         else:
-            conn.size_in = conn.size_pre
+            self.data[conn] = None
 
-        self.validate_size_in(conn, function)
-        self.data[conn] = function
+        self.validate_size_in(conn)
 
     def validate_function(self, conn, function):
         fn_ok = ['Node', 'Ensemble']
@@ -277,7 +290,7 @@ class FunctionParam(Parameter):
                             "np.array argument" % function)
         return np.asarray(value).size
 
-    def validate_size_in(self, conn, function):
+    def validate_size_in(self, conn):
         type_pre = conn._pre.__class__.__name__
         transform = conn.transform
 

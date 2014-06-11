@@ -606,11 +606,11 @@ class Connection(NengoObject):
     def _set_pre(self, pre):
         self._set_obj(pre, 'pre')
         # size_in is based on the function and size_pre
-        self.size_pre = np.zeros(self._pre.size_out)[self._preslice].size
+        self._size_pre = np.zeros(self._pre.size_out)[self._preslice].size
 
     def _set_post(self, post):
         self._set_obj(post, 'post')
-        self.size_out = np.zeros(self._post.size_in)[self._postslice].size
+        self._size_out = np.zeros(self._post.size_in)[self._postslice].size
 
     def _set_obj(self, obj, side):
         if not isinstance(obj, ObjView):
@@ -628,6 +628,19 @@ class Connection(NengoObject):
     @property
     def post(self):
         return self._post
+
+    @property
+    def size_pre(self):
+        return self._size_pre
+
+    @property
+    def size_in(self):
+        size = Connection.function.size(self)
+        return self._size_pre if size is None else size
+
+    @property
+    def size_out(self):
+        return self._size_out
 
     @property
     def label(self):
