@@ -403,7 +403,7 @@ class View:
         mins = np.min(points, 0)
 
         points -= mins + (maxes - mins) / 2.0
-        points *= np.array([draw_area_width, draw_area_height]) / (maxes - mins)
+        points = (points * np.array([draw_area_width, draw_area_height]) )/ (maxes - mins)
         points += np.array([left_cushion + draw_area_width / 2.0,
                             top_cushion + draw_area_height / 2.0])
         points = points.astype('int')
