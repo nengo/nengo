@@ -31,7 +31,7 @@ class BasalGanglia(nengo.Network):
 
     def __init__(self, dimensions, n_neurons_per_ensemble=100, radius=1.5,
                  tau_ampa=0.002, tau_gaba=0.008, output_weight=-3,
-                 solver=None):
+                 input_bias=0.0, solver=None):
         if solver is None:
             try:
                 # Best, if we have SciPy
@@ -67,6 +67,11 @@ class BasalGanglia(nengo.Network):
 
         self.input = nengo.Node(label="input", size_in=dimensions)
         self.output = nengo.Node(label="output", size_in=dimensions)
+
+        # add bias input (BG performs best in the range 0.5--1.5)
+        if abs(input_bias) > 0.0:
+            self.bias_input = nengo.Node([input_bias] * dimensions)
+            nengo.Connection(self.bias_input, self.input)
 
         # spread the input to StrD1, StrD2, and STN
         nengo.Connection(self.input, strD1.input, synapse=None,
@@ -134,3 +139,25 @@ class BasalGanglia(nengo.Network):
         if x < cls.eg:
             return 0
         return cls.mg * (x - cls.eg)
+
+
+class Thalamus(nengo.Network):
+    """Converts basal ganglia output into a signal with
+    (approximately) 1 for the selected action and 0 elsewhere."""
+
+    def __init__(self, dimensions, n_neurons_per_ensemble=50, mutual_inhib=1,
+                 threshold=0):
+        self.thalamus = EnsembleArray(n_neurons_per_ensemble, dimensions,
+                                      intercepts=Uniform(threshold, 1),
+                                      encoders=[[1]] * n_neurons_per_ensemble,
+                                      label="thalamus")
+
+        self.input = self.thalamus.input
+        self.output = self.thalamus.output
+
+        nengo.Connection(self.thalamus.output, self.thalamus.input,
+                         transform=(np.eye(dimensions) - 1) * mutual_inhib)
+
+        self.bias = nengo.Node([1])
+        nengo.Connection(self.bias, self.thalamus.input,
+                         transform=[[1]]*dimensions)

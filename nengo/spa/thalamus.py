@@ -6,7 +6,7 @@ from nengo.spa.module import Module
 from nengo.utils.compat import iteritems
 
 
-class Thalamus(Module):
+class Thalamus(nengo.networks.Thalamus, Module):
     """A thalamus, implementing the effects for an associated BasalGanglia
 
     Parameters
@@ -47,7 +47,7 @@ class Thalamus(Module):
                  synapse_channel=0.01,
                  neurons_cconv=200,
                  neurons_gate=40, threshold_gate=0.3, synapse_to_gate=0.002):
-        super(Thalamus, self).__init__()
+
         self.bg = bg
         self.neurons_action = neurons_action
         self.inhibit = inhibit
@@ -66,35 +66,20 @@ class Thalamus(Module):
         self.gates = {}     # gating ensembles per action (created as needed)
         self.channels = {}  # channels to pass transformed data between modules
 
+        Module.__init__(self)
+        nengo.networks.Thalamus.__init__(
+            self, self.bg.actions.count,
+            n_neurons_per_ensemble=self.neurons_action,
+            mutual_inhib=self.inhibit,
+            threshold=self.threshold_action)
+
     def on_add(self, spa):
         Module.on_add(self, spa)
         self.spa = spa
 
-        N = self.bg.actions.count  # number of actions
-
-        with self:
-            # An EnsembleArray to store which action is selected
-            self.actions = nengo.networks.EnsembleArray(
-                self.neurons_action, N,
-                ens_dimensions=1,
-                encoders=[[1.0]] * self.neurons_action,
-                intercepts=nengo.objects.Uniform(self.threshold_action, 1),
-                label='actions')
-
-            # bias input to keep the value up in the absence of basal
-            # basal ganglia inhibition
-            self.bias = nengo.Node(output=[1], label='bias')
-            nengo.Connection(self.bias, self.actions.input,
-                             transform=np.ones((N, 1)), synapse=None)
-
-            # mutual inhibition on the actions
-            nengo.Connection(self.actions.output, self.actions.input,
-                             transform=(np.eye(N)-1)*self.inhibit,
-                             synapse=self.synapse_inhibit)
-
         with spa:
             # connect basal ganglia to thalamus
-            nengo.Connection(self.bg.output, self.actions.input,
+            nengo.Connection(self.bg.output, self.thalamus.input,
                              synapse=self.synapse_bg)
 
         # implement the various effects
@@ -133,7 +118,7 @@ class Thalamus(Module):
         transform = np.array([vocab.parse(value).v]).T
 
         with self.spa:
-            nengo.Connection(self.actions.ensembles[index],
+            nengo.Connection(self.thalamus.ensembles[index],
                              sink, transform=transform,
                              synapse=self.synapse_direct)
 
@@ -154,7 +139,7 @@ class Thalamus(Module):
                                       intercepts=intercepts,
                                       label='gate[%d]' % index,
                                       encoders=[[1]] * self.neurons_gate)
-                nengo.Connection(self.actions.ensembles[index], gate,
+                nengo.Connection(self.thalamus.ensembles[index], gate,
                                  synapse=self.synapse_to_gate, transform=-1)
                 nengo.Connection(self.bias, gate, synapse=None)
                 self.gates[index] = gate
