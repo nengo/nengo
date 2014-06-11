@@ -35,6 +35,8 @@ def probe(net, recursive=False, probe_options=None):
             node2 = nengo.Node(output=[0])
 
     probe_options = {nengo.Ensemble:['decoded_output', 'spikes']}
+    #will probe the decoded output and spikes in all ensembles
+    in this network and its subnetworks.
     object_probe_dict = probe(model, recursive=True,
                               probe_options=probe_options)
     object_probe_dict[ens2]['decoded_output'] #a probe object
