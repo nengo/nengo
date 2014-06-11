@@ -93,6 +93,10 @@ class View:
                 for obj, v in m.outputs.values():
                     if v not in vocabs:
                         vocabs.append(v)
+        for obj, remote in self.remote_objs.items():
+            if hasattr(obj, 'vocab'):
+                if obj.vocab not in vocabs:
+                    vocabs.append(obj.vocab)
         for local in vocabs:
             remote = self.rpyc.modules.hrr.Vocabulary(
                 dimensions=local.dimensions,
