@@ -210,7 +210,7 @@ class Connection(NengoObject):
     eval_points = EvalPointsParam(
         default=None, optional=True, shape=('*', 'size_in'))
     seed = IntParam(default=None, optional=True)
-    probeable = ListParam(default=['output', 'input'])
+    probeable = ListParam(default=['output', 'input', 'transform', 'decoders'])
 
     def __init__(self, pre, post, synapse=Default, transform=Default,
                  solver=Default, learning_rule_type=Default, function=Default,

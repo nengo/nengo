@@ -1,3 +1,5 @@
+import warnings
+
 from nengo.params import Parameter
 from nengo.utils.compat import is_iterable, itervalues
 
@@ -11,7 +13,10 @@ class LearningRuleType(object):
 
     probeable = []
 
-    def __init__(self, learning_rate=1.0):
+    def __init__(self, learning_rate=1e-6):
+        if learning_rate >= 1.0:
+            warnings.warn("This learning rate is very high, and can result "
+                          "in floating point errors from too much current.")
         self.learning_rate = learning_rate
 
     def __str__(self):
@@ -75,7 +80,7 @@ class BCM(LearningRuleType):
     probeable = ['theta', 'pre_filtered', 'post_filtered']
 
     def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
-                 learning_rate=1e-6):
+                 learning_rate=1e-9):
         self.theta_tau = theta_tau
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
