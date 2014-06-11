@@ -311,8 +311,8 @@ class View:
         override_func = PassthroughOverrideFunction(self, self.input_count)
         with network:
             node = nengo.Node(override_func, size_in=dim, size_out=dim)
-            nengo.Connection(obj, node, synapse=0.01)
-            nengo.Connection(node, obj, synapse=0.01)
+            nengo.Connection(obj, node, synapse=None)
+            nengo.Connection(node, obj, synapse=0.05)
 
         self.input_count += 1
 
