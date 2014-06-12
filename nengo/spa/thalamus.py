@@ -79,7 +79,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
 
         with spa:
             # connect basal ganglia to thalamus
-            nengo.Connection(self.bg.output, self.thalamus.input,
+            nengo.Connection(self.bg.output, self.actions.input,
                              synapse=self.synapse_bg)
 
         # implement the various effects
@@ -118,7 +118,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
         transform = np.array([vocab.parse(value).v]).T
 
         with self.spa:
-            nengo.Connection(self.thalamus.ensembles[index],
+            nengo.Connection(self.actions.ensembles[index],
                              sink, transform=transform,
                              synapse=self.synapse_direct)
 
@@ -139,7 +139,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
                                       intercepts=intercepts,
                                       label='gate[%d]' % index,
                                       encoders=[[1]] * self.neurons_gate)
-                nengo.Connection(self.thalamus.ensembles[index], gate,
+                nengo.Connection(self.actions.ensembles[index], gate,
                                  synapse=self.synapse_to_gate, transform=-1)
                 nengo.Connection(self.bias, gate, synapse=None)
                 self.gates[index] = gate

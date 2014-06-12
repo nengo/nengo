@@ -147,17 +147,17 @@ class Thalamus(nengo.Network):
 
     def __init__(self, dimensions, n_neurons_per_ensemble=50, mutual_inhib=1,
                  threshold=0):
-        self.thalamus = EnsembleArray(n_neurons_per_ensemble, dimensions,
-                                      intercepts=Uniform(threshold, 1),
-                                      encoders=[[1]] * n_neurons_per_ensemble,
-                                      label="thalamus")
+        self.actions = EnsembleArray(n_neurons_per_ensemble, dimensions,
+                                     intercepts=Uniform(threshold, 1),
+                                     encoders=[[1]] * n_neurons_per_ensemble,
+                                     label="actions")
 
-        self.input = self.thalamus.input
-        self.output = self.thalamus.output
+        self.input = self.actions.input
+        self.output = self.actions.output
 
-        nengo.Connection(self.thalamus.output, self.thalamus.input,
+        nengo.Connection(self.actions.output, self.actions.input,
                          transform=(np.eye(dimensions) - 1) * mutual_inhib)
 
         self.bias = nengo.Node([1])
-        nengo.Connection(self.bias, self.thalamus.input,
+        nengo.Connection(self.bias, self.actions.input,
                          transform=[[1]]*dimensions)
