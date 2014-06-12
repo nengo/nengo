@@ -28,7 +28,8 @@ class InputGatedMemory(nengo.Network):
 
         # feed difference into integrator
         nengo.Connection(self.diff.output, self.mem.input,
-                         transform=np.eye(dimensions) * difference_gain)
+                         transform=np.eye(dimensions) * difference_gain,
+                         synapse=mem_synapse)
 
         # gate difference (if gate==0, update stored value,
         # otherwise retain stored value)
