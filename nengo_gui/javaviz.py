@@ -170,50 +170,55 @@ class View:
         semantic = []
 
         for obj in network.ensembles:
-            name = self.get_name(names, obj, prefix)
+            for probe in network.probes:
+                if probe.target == obj and not obj in self.remote_objs:
+                    name = self.get_name(names, obj, prefix)
 
-            e = self.rpyc.modules.timeview.javaviz.ProbeNode(
-                    self.value_receiver, name)
+                    e = self.rpyc.modules.timeview.javaviz.ProbeNode(
+                            self.value_receiver, name)
 
-            remote_net.add(e)
-            self.remote_objs[obj] = e
+                    remote_net.add(e)
+                    self.remote_objs[obj] = e
 
-            if obj.dimensions >= 8:
-                semantic.append(obj)
+                    if obj.dimensions >= 8:
+                        semantic.append(obj)
 
         for obj in network.nodes:
-            name = self.get_name(names, obj, prefix)
+                name = self.get_name(names, obj, prefix)
 
-            if obj.size_in == 0:
-                if obj.size_out > 0:
-                    output = obj.output
+                if obj.size_in == 0:
+                    if obj.size_out > 0:
+                        output = obj.output
 
-                    if callable(output):
-                        output = output(0.0)
-                    if isinstance(output, (int, float)):
-                        output_dims = 1
-                    elif isinstance(output, np.ndarray):
-                        if output.shape == ():
+                        if callable(output):
+                            output = output(0.0)
+                        if isinstance(output, (int, float)):
                             output_dims = 1
+                        elif isinstance(output, np.ndarray):
+                            if output.shape == ():
+                                output_dims = 1
+                            else:
+                                assert len(output.shape) == 1
+                                output_dims = output.shape[0]
                         else:
-                            assert len(output.shape) == 1
-                            output_dims = output.shape[0]
-                    else:
-                        output_dims = len(output)
-                    obj._output_dims = output_dims
-                    input = remote_net.make_input(name, tuple([0]*output_dims))
-                    obj.output = OverrideFunction(self, obj.output, self.input_count)
-                    self.control_node.register(self.input_count, input)
-                    self.input_count += 1
-                    self.remote_objs[obj] = input
-                    self.inputs.append(input)
-            else:
-                e = self.rpyc.modules.timeview.javaviz.ProbeNode(
-                        self.value_receiver, name)
-                remote_net.add(e)
-                self.remote_objs[obj] = e
-                if obj.size_out >= 8:
-                    semantic.append(obj)
+                            output_dims = len(output)
+                        obj._output_dims = output_dims
+                        input = remote_net.make_input(name, tuple([0]*output_dims))
+                        obj.output = OverrideFunction(self, obj.output, 
+                                    self.input_count)
+                        self.control_node.register(self.input_count, input)
+                        self.input_count += 1
+                        self.remote_objs[obj] = input
+                        self.inputs.append(input)
+                else:
+                    #for probe in network.probes:
+                    #    if probe.target == obj and not obj in self.remote_objs:
+                    e = self.rpyc.modules.timeview.javaviz.ProbeNode(
+                            self.value_receiver, name)
+                    remote_net.add(e)
+                    self.remote_objs[obj] = e
+                    if obj.size_out >= 8:
+                        semantic.append(obj)
 
         for subnet in network.networks:
             name = self.get_name(names, subnet, prefix)
