@@ -59,6 +59,24 @@ def test_probe_all_options():
     assert(len(model.probes) == 2)
     assert(len(subnet.probes) == 2)
 
+
+def test_probe_all_kwargs():
+    model = nengo.Network(label='test_probing')
+    with model:
+        ens1 = nengo.Ensemble(n_neurons=1, dimensions=1)
+        node1 = nengo.Node(output=[0])
+        nengo.Connection(node1, ens1)
+        subnet = nengo.Network(label='subnet')
+
+        with subnet:
+            nengo.Ensemble(n_neurons=1, dimensions=1)
+            nengo.Node(output=[0])
+
+    probe_all(model, recursive=True, sample_every=0.1, seed=10)
+    for probe in model.probes + subnet.probes:
+        assert probe.sample_every == 0.1
+        assert probe.seed == 10
+
 if __name__ == '__main__':
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
