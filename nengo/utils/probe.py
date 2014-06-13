@@ -2,7 +2,9 @@ from nengo.objects import Probe, Network
 from nengo.utils.compat import iteritems
 
 
-def probe_all(net, recursive=False, probe_options=None):  # noqa: C901
+def probe_all(net, recursive=False, probe_options=None,  # noqa: C901
+              **probe_args):
+
     """A helper function to make probing easier.
 
     Parameters
@@ -63,7 +65,7 @@ def probe_all(net, recursive=False, probe_options=None):  # noqa: C901
                             probes[obj] = {}
                             for probeable in obj.probeable:
                                 probes[obj][probeable] = Probe(
-                                    obj, probeable)
+                                    obj, probeable, **probe_args)
 
                 # probe specified objects only
                 elif obj_type in probe_options:
@@ -78,7 +80,7 @@ def probe_all(net, recursive=False, probe_options=None):  # noqa: C901
                                     "'%s' is not probeable for '%s'" %
                                     (obj, attr))
                             probes[obj][
-                                attr] = Probe(obj, attr)
+                                attr] = Probe(obj, attr, **probe_args)
 
     probe_helper(net, recursive, probe_options)
     return probes
