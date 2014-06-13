@@ -66,9 +66,11 @@ class View:
         self.inputs = []
         self.probe_count = 0
         self.input_count = 0
-
+        self.all_probes = []
+        
+        self.get_all_probes(model)
         self.process_network(net, model, names=[])
-
+        
         if self.probe_count == 0:
             # need at least one probe to let the synchronizing system work
             # so we make a dummy one
@@ -82,6 +84,11 @@ class View:
         self.model = model
         self.net = net
         self.initialize_vocabs()
+
+    def get_all_probes(self, network):
+        for subnet in network.networks:
+            self.get_all_probes(subnet)
+            self.all_probes.extend(network.probes)
 
     def initialize_vocabs(self):
         vocabs = []
@@ -107,10 +114,6 @@ class View:
             for i, k in enumerate(local.keys):
                 remote.add(k, self.rpyc.modules.hrr.HRR(
                     data=[float(v) for v in local.vectors[i]]))
-
-
-
-
 
 
     def view(self, config=None):
@@ -170,8 +173,8 @@ class View:
         semantic = []
 
         for obj in network.ensembles:
-            for probe in network.probes:
-                if probe.target == obj and not obj in self.remote_objs:
+            for probe in self.all_probes:
+                if probe.target is obj:
                     name = self.get_name(names, obj, prefix)
 
                     e = self.rpyc.modules.timeview.javaviz.ProbeNode(
@@ -182,6 +185,7 @@ class View:
 
                     if obj.dimensions >= 8:
                         semantic.append(obj)
+                    break
 
         for obj in network.nodes:
                 name = self.get_name(names, obj, prefix)
@@ -211,14 +215,15 @@ class View:
                         self.remote_objs[obj] = input
                         self.inputs.append(input)
                 else:
-                    #for probe in network.probes:
-                    #    if probe.target == obj and not obj in self.remote_objs:
-                    e = self.rpyc.modules.timeview.javaviz.ProbeNode(
-                            self.value_receiver, name)
-                    remote_net.add(e)
-                    self.remote_objs[obj] = e
-                    if obj.size_out >= 8:
-                        semantic.append(obj)
+                    for probe in self.all_probes:
+                        if probe.target is obj:
+                            e = self.rpyc.modules.timeview.javaviz.ProbeNode(
+                                    self.value_receiver, name)
+                            remote_net.add(e)
+                            self.remote_objs[obj] = e
+                            if obj.size_out >= 8:
+                                semantic.append(obj)
+                            break
 
         for subnet in network.networks:
             name = self.get_name(names, subnet, prefix)
