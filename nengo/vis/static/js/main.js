@@ -53,6 +53,12 @@ function update_gui_text() {
     index = text.indexOf('\n\nimport nengo_gui\n');
     if (index!=-1) {
         text = text.substring(0, index);
+    } else {
+        // also check if line endings changed on us
+        index = text.indexOf('\r\n\r\nimport nengo_gui\r\n');
+        if (index!=-1) {
+            text = text.substring(0, index);
+        }
     }
     
     new_text = text + gui;

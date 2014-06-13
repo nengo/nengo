@@ -210,33 +210,65 @@ def apply_feedforward(parent):
     # they have non-zero size (in the case of subnetworks) that we have to
     # take into account when positioning things
 
-    def degree_partition(parent, items):
-        min_in_degree = min([parent.in_degree(item) for item in items])
+    def min_degree_partition(parent, items, degree_func):
+        if not items:
+            return [], []
 
-        starting_vertices, remaining_vertices = partition(
-            lambda item: parent.in_degree(item) == min_in_degree, items)
+        min_degree = min([degree_func(parent, item) for item in items])
 
-        return starting_vertices, remaining_vertices
+        chosen_vertices, remaining_vertices = partition(
+            lambda item: degree_func(parent, item) == min_degree, items)
 
-    starting_vertices, remaining_vertices = degree_partition(parent, sub_items)
-    layers = [starting_vertices]
+        return chosen_vertices, remaining_vertices
 
-    while remaining_vertices:
+    in_degree_func = lambda p, i: p.in_degree(i)
+    out_degree_func = lambda p, i: p.out_degree(i)
 
-        next_layer = []
+    starting_vertices, _ = min_degree_partition(
+        parent, sub_items, in_degree_func)
 
-        for v in layers[-1]:
-            new_vertices, remaining_vertices = partition(
-                lambda nv: parent.link_exists(v, nv),
-                remaining_vertices)
+    ending_vertices, _ = min_degree_partition(
+        parent, sub_items, out_degree_func)
 
-            next_layer.extend(new_vertices)
+    remaining_vertices = filter(
+        lambda x: x not in starting_vertices and x not in ending_vertices,
+        sub_items)
 
-        if not next_layer:
-            result = degree_partition(parent, remaining_vertices)
-            next_layer, remaining_vertices = result
+    intersection = filter(lambda x: x in ending_vertices, starting_vertices)
 
-        layers.append(next_layer)
+    for x in intersection:
+        if parent.out_degree(x) >= parent.in_degree(x):
+            ending_vertices.remove(x)
+        else:
+            starting_vertices.remove(x)
+
+    if not starting_vertices:
+        starting_vertices, remaining_vertices = min_degree_partition(
+            parent, remaining_vertices, in_degree_func)
+
+    layers = []
+    if starting_vertices:
+        layers.append(starting_vertices)
+
+        while remaining_vertices:
+
+            next_layer = []
+
+            for v in layers[-1]:
+                new_vertices, remaining_vertices = partition(
+                    lambda nv: parent.link_exists(v, nv),
+                    remaining_vertices)
+
+                next_layer.extend(new_vertices)
+
+            if not next_layer:
+                next_layer, remaining_vertices = min_degree_partition(
+                    parent, remaining_vertices, in_degree_func)
+
+            layers.append(next_layer)
+
+    if ending_vertices:
+        layers.append(ending_vertices)
 
     # set the positions of the subitems accordingly
     h_spacing = 125
