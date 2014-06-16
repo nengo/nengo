@@ -89,6 +89,7 @@ class View:
         for subnet in network.networks:
             self.get_all_probes(subnet)
             self.all_probes.extend(network.probes)
+        self.all_probes.extend(network.probes)
 
     def initialize_vocabs(self):
         vocabs = []
