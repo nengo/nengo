@@ -573,9 +573,8 @@ class Connection(NengoObject):
     modulatory = params.BoolParam(default=False)
     learning_rule = params.LearningRuleParam(
         default=None, optional=True, modifies=['probeable'])
-    eval_points = params.ConnEvalPoints(default=None,
-                                        sample_shape=('*', 'size_pre'),
-                                        optional=True)
+    eval_points = params.ConnEvalPoints(
+        default=None, optional=True, sample_shape=('*', 'size_pre'))
     seed = params.IntParam(default=None, optional=True)
     probeable = params.ListParam(default=['signal'])
 
@@ -586,13 +585,6 @@ class Connection(NengoObject):
         # so that the pre and post setter can raise an error
         self._set_pre(pre)
         self._set_post(post)
-
-        def psize(ix):
-            print(ix)
-            if hasattr(self, 'size_in'):
-                print('size_in=%d' % self.size_in)
-            if hasattr(self, 'size_out'):
-                print('size_out=%d' % self.size_out)
 
         self.probeable = Default
         self.learning_rule = learning_rule
@@ -606,7 +598,7 @@ class Connection(NengoObject):
     def _set_pre(self, pre):
         self._set_obj(pre, 'pre')
         # size_in is based on the function and size_pre
-        self._size_pre = np.zeros(self._pre.size_out)[self._preslice].size
+        self._size_in = np.zeros(self._pre.size_out)[self._preslice].size
 
     def _set_post(self, post):
         self._set_obj(post, 'post')
@@ -630,13 +622,14 @@ class Connection(NengoObject):
         return self._post
 
     @property
-    def size_pre(self):
-        return self._size_pre
+    def size_in(self):
+        return self._size_in
 
     @property
-    def size_in(self):
+    def size_mid(self):
+        """Output size of the function, input size of the transform"""
         size = Connection.function.size(self)
-        return self._size_pre if size is None else size
+        return self._size_in if size is None else size
 
     @property
     def size_out(self):

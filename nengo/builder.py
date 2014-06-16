@@ -1212,8 +1212,11 @@ def build_linear_system(conn, model, rng):
     gain = model.params[conn.pre].gain
     bias = model.params[conn.pre].bias
 
+    # get eval points
     eval_points = conn.eval_points
     if eval_points is None:
+        # TODO: account for slice when picking points, probably by reducing
+        # the number of points used based on the slice size.
         eval_points = npext.array(
             model.params[conn.pre].eval_points, min_dims=2)
     elif eval_points.size == 1:
@@ -1222,6 +1225,12 @@ def build_linear_system(conn, model, rng):
     else:
         eval_points = npext.array(eval_points, min_dims=2)
 
+    # slice eval points and encoders
+    preslice = conn._preslice
+    eval_points = eval_points[:, preslice]
+    encoders = encoders[:, preslice]
+
+    # get activities
     x = np.dot(eval_points, encoders.T / conn.pre.radius)
     activities = model.dt * conn.pre.neuron_type.rates(x, gain, bias)
     if np.count_nonzero(activities) == 0:
@@ -1233,7 +1242,7 @@ def build_linear_system(conn, model, rng):
     if conn.function is None:
         targets = eval_points
     else:
-        targets = np.zeros((len(eval_points), conn.size_in))
+        targets = np.zeros((len(eval_points), conn.size_mid))
         for i, ep in enumerate(eval_points):
             targets[i] = conn.function(ep)
 
