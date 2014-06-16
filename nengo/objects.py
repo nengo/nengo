@@ -329,6 +329,7 @@ class Ensemble(NengoObject):
     gain = Parameter(default=None)
     neuron_type = Parameter(default=LIF())
     probeable = Parameter(default=['decoded_output',
+                                   'input',
                                    'neuron_output',
                                    'spikes',
                                    'voltage'])

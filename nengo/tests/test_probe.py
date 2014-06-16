@@ -149,6 +149,22 @@ def test_multiple_probes(Simulator):
     assert np.allclose(sim.data[p_01][::10], sim.data[p_1])
 
 
+def test_input_probe(Simulator):
+    """Make sure we can probe the input to an ensemble."""
+    model = nengo.Network()
+    with model:
+        ens = nengo.Ensemble(100, 1)
+        n1 = nengo.Node(output=np.sin)
+        n2 = nengo.Node(output=0.5)
+        nengo.Connection(n1, ens, synapse=None)
+        nengo.Connection(n2, ens, synapse=None)
+        input_probe = nengo.Probe(ens, 'input', synapse=None)
+
+        sim = nengo.Simulator(model)
+        sim.run(1.)
+        t = sim.trange() - 0.001
+        assert np.allclose(sim.data[input_probe][1:, 0], (np.sin(t) + 0.5)[1:])
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
