@@ -1183,7 +1183,7 @@ def probe_ensemble(probe, conn_args, model, config):
     elif probe.attr == 'voltage':
         return synapse_probe(model.sig[ens]['voltage'], probe, model, config)
     elif probe.attr == 'input':
-        model.sig[probe]['in'] = model.sig[ens]['in']
+        return synapse_probe(model.sig[ens]['in'], probe, model, config)
 
 
 def probe_node(probe, conn_args, model, config):
