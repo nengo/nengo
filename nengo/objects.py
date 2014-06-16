@@ -331,7 +331,8 @@ class Ensemble(NengoObject):
     probeable = Parameter(default=['decoded_output',
                                    'neuron_output',
                                    'spikes',
-                                   'voltage'])
+                                   'voltage',
+                                   'input'])
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,

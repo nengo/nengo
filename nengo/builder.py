@@ -1150,6 +1150,8 @@ def probe_ensemble(probe, conn_args, model, config):
         return conn_probe(ens.neurons, probe, transform=1.0, **conn_args)
     elif probe.attr == 'voltage':
         return synapse_probe(model.sig[ens]['voltage'], probe, model, config)
+    elif probe.attr == 'input':
+        model.sig[probe]['in'] = model.sig[ens]['in']
 
 
 def probe_node(probe, conn_args, model, config):
