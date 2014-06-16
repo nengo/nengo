@@ -96,7 +96,7 @@ using the Nengo GUI editor).
 
 .. code:: python
 
-   import nengo_gui
+   import nengo_gui.javaviz
    jv = nengo_gui.javaviz.View(model)
    sim = nengo.Simulator(model)
    jv.update_model(sim)
