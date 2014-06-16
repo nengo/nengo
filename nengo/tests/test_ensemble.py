@@ -264,6 +264,15 @@ def test_len():
     assert len(ens5.neurons[90:]) == 10
 
 
+def test_invalid_rates(Simulator):
+    with nengo.Network() as model:
+        nengo.Ensemble(1, 1, max_rates=[200],
+                       neuron_type=nengo.LIF(tau_ref=0.01))
+
+    with pytest.raises(ValueError):
+        Simulator(model)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
