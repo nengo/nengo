@@ -78,6 +78,12 @@ class _LIFBase(NeuronType):
         """
         max_rates = np.asarray(max_rates)
         intercepts = np.asarray(intercepts)
+        inv_tau_ref = 1. / self.tau_ref
+        if (max_rates > inv_tau_ref).any():
+            raise ValueError(
+                "Max rates must be below the inverse refractory period (%0.3f)"
+                % (inv_tau_ref))
+
         x = 1.0 / (1 - np.exp(
             (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
         gain = (1 - x) / (intercepts - 1.0)
