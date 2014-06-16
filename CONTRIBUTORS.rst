@@ -32,3 +32,4 @@ Please keep this list sorted alphabetically.
 - Travis DeWolf <travis.dewolf@gmail.com>
 - Trevor Bekolay <tbekolay@gmail.com>
 - Xuan Choo <xchoo.mainframe@gmail.com>
+- Youssef Zaky <youssefzaky@gmail.com>
