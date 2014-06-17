@@ -3,6 +3,15 @@ from nengo.spa.module import Module
 from nengo.utils.compat import iteritems
 
 
+def make_parse_func(func, vocab):
+    """Create a function that calls func and parses the output in vocab."""
+
+    def parse_func(t):
+        return vocab.parse(func(t)).v
+
+    return parse_func
+
+
 class Input(Module):
     """A SPA module for providing external inputs to other modules.
 
@@ -32,7 +41,7 @@ class Input(Module):
         for name, value in iteritems(self.kwargs):
             target, vocab = spa.get_module_input(name)
             if callable(value):
-                val = lambda t, value=value: vocab.parse(value(t)).v
+                val = make_parse_func(value, vocab)
             else:
                 val = vocab.parse(value).v
 
