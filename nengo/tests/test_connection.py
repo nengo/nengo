@@ -618,6 +618,7 @@ def test_slicing_function(Simulator, nl):
     """Test using a pre-slice and a function"""
     f_in = lambda x: np.sin(x)
     with nengo.Network() as model:
+        model.config[nengo.Ensemble].neuron_type = nl()
         u = nengo.Node(output=f_in)
         a = nengo.Ensemble(10, 2)
         b = nengo.Ensemble(10, 2)
