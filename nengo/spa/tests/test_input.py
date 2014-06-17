@@ -51,6 +51,51 @@ def test_time_varying():
                        np.zeros(16))
 
 
+def test_predefined_vocabs():
+    class SPA(spa.SPA):
+        def __init__(self):
+            D = 64
+            self.vocab1 = spa.Vocabulary(D)
+            self.vocab1.parse('A+B+C')
+
+            self.vocab2 = spa.Vocabulary(D)
+            self.vocab1.parse('A+B+C')
+
+            self.buffer1 = spa.Buffer(dimensions=D, vocab=self.vocab1)
+            self.buffer2 = spa.Buffer(dimensions=D, vocab=self.vocab2)
+
+            def input(t):
+                if t < 0.1:
+                    return 'A'
+                elif t < 0.2:
+                    return 'B'
+                else:
+                    return 'C'
+
+            self.input = spa.Input(buffer1=input, buffer2=input)
+
+    model = SPA()
+
+    a1 = model.input.input_nodes['buffer1'].output(t=0.0)
+    b1 = model.input.input_nodes['buffer1'].output(t=0.1)
+    c1 = model.input.input_nodes['buffer1'].output(t=0.2)
+
+    a2 = model.input.input_nodes['buffer2'].output(t=0.0)
+    b2 = model.input.input_nodes['buffer2'].output(t=0.1)
+    c2 = model.input.input_nodes['buffer2'].output(t=0.2)
+
+    assert np.allclose(a1, model.vocab1.parse('A').v)
+    assert np.allclose(b1, model.vocab1.parse('B').v)
+    assert np.allclose(c1, model.vocab1.parse('C').v)
+
+    assert np.allclose(a2, model.vocab2.parse('A').v)
+    assert np.allclose(b2, model.vocab2.parse('B').v)
+    assert np.allclose(c2, model.vocab2.parse('C').v)
+
+    assert np.dot(a1, a2) < 0.95
+    assert np.dot(b1, b2) < 0.95
+    assert np.dot(c1, c2) < 0.95
+
 if __name__ == '__main__':
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
