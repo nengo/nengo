@@ -574,7 +574,7 @@ class Connection(NengoObject):
     learning_rule = params.LearningRuleParam(
         default=None, optional=True, modifies=['probeable'])
     eval_points = params.ConnEvalPoints(
-        default=None, optional=True, sample_shape=('*', 'size_pre'))
+        default=None, optional=True, sample_shape=('*', 'size_in'))
     seed = params.IntParam(default=None, optional=True)
     probeable = params.ListParam(default=['signal'])
 
@@ -623,16 +623,18 @@ class Connection(NengoObject):
 
     @property
     def size_in(self):
+        """Input size to the function, or the transform if none provided."""
         return self._size_in
 
     @property
     def size_mid(self):
-        """Output size of the function, input size of the transform"""
+        """Output size of the function; input size of the transform."""
         size = Connection.function.size(self)
         return self._size_in if size is None else size
 
     @property
     def size_out(self):
+        """Output size of the transform; input size to the sliced post."""
         return self._size_out
 
     @property

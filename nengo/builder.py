@@ -1212,11 +1212,8 @@ def build_linear_system(conn, model, rng):
     gain = model.params[conn.pre].gain
     bias = model.params[conn.pre].bias
 
-    # get eval points
     eval_points = conn.eval_points
     if eval_points is None:
-        # TODO: account for slice when picking points, probably by reducing
-        # the number of points used based on the slice size.
         eval_points = npext.array(
             model.params[conn.pre].eval_points, min_dims=2)
     elif eval_points.size == 1:
@@ -1225,12 +1222,6 @@ def build_linear_system(conn, model, rng):
     else:
         eval_points = npext.array(eval_points, min_dims=2)
 
-    # slice eval points and encoders
-    preslice = conn._preslice
-    eval_points = eval_points[:, preslice]
-    encoders = encoders[:, preslice]
-
-    # get activities
     x = np.dot(eval_points, encoders.T / conn.pre.radius)
     activities = model.dt * conn.pre.neuron_type.rates(x, gain, bias)
     if np.count_nonzero(activities) == 0:
@@ -1242,9 +1233,10 @@ def build_linear_system(conn, model, rng):
     if conn.function is None:
         targets = eval_points
     else:
-        targets = np.zeros((len(eval_points), conn.size_mid))
+        size = nengo.objects.Connection.function.size(conn)
+        targets = np.zeros((len(eval_points), size))
         for i, ep in enumerate(eval_points):
-            targets[i] = conn.function(ep)
+            targets[i] = conn.function(ep[conn._preslice])
 
     return eval_points, activities, targets
 
@@ -1277,7 +1269,7 @@ def build_connection(conn, model, config):  # noqa: C901
             signal = model.sig[conn]['in']
         else:
             sig_in, signal = build_pyfunc(
-                fn=conn.function,
+                fn=lambda x: conn.function(x[conn._preslice]),
                 t_in=False,
                 n_in=model.sig[conn]['in'].size,
                 n_out=conn.size_out,
@@ -1304,7 +1296,7 @@ def build_connection(conn, model, config):  # noqa: C901
             signal_size = model.sig[conn]['out'].size
         else:
             decoders, solver_info = conn.solver(activities, targets, rng=rng)
-            signal_size = conn.size_in
+            signal_size = conn.size_mid
 
         # Add operator for decoders
         decoders = decoders.T

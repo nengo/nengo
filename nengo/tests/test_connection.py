@@ -614,33 +614,17 @@ def test_function_output_size(Simulator, nl_nodirect):
     assert np.allclose(x, y, atol=0.1)
 
 
-def test_slicing_function(Simulator):
+def test_slicing_function(Simulator, nl):
     """Test using a pre-slice and a function"""
     f_in = lambda x: np.sin(x)
     with nengo.Network() as model:
         u = nengo.Node(output=f_in)
-        a = nengo.Ensemble(10, 1)
-        b = nengo.Ensemble(10, 1)
-        nengo.Connection(u, a)
-        c = nengo.Connection(a[1], b, function=lambda x: [x[0], x[0]**2])
+        a = nengo.Ensemble(10, 2)
+        b = nengo.Ensemble(10, 2)
+        nengo.Connection(u, a[0], function=lambda x: x)
+        nengo.Connection(a[1], b, function=lambda x: [x[0], x[0]**2])
 
-        ap = nengo.Probe(a, synapse=0.03)
-        bp = nengo.Probe(b, synapse=0.03)
-
-    sim = Simulator(model)
-    sim.run(1.)
-
-    t = sim.trange()
-    u = f_in(t)
-    x = sim.data[ap]
-    y = sim.data[bp]
-
-    with Plotter(Simulator, nl_nodirect) as plt:
-        plt.plot(t, u, 'k--')
-        plt.plot(t, x)
-        plt.plot(t, y)
-        plt.savefig('test_connection.test_slicing_function.pdf')
-        plt.close()
+    Simulator(model)  # checks no build errors
 
 
 if __name__ == "__main__":

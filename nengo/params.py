@@ -275,7 +275,7 @@ class FunctionParam(Parameter):
 
     def validate_call(self, conn, function):
         x = (conn.eval_points[0] if is_iterable(conn.eval_points)
-             else np.zeros(conn.size_pre))
+             else np.zeros(conn.size_in))
         value, invoked = checked_call(function, x)
         if not invoked:
             raise TypeError("function '%s' must accept a single "
@@ -286,15 +286,15 @@ class FunctionParam(Parameter):
         type_pre = conn._pre.__class__.__name__
         transform = conn.transform
 
-        if transform.ndim < 2 and conn.size_in != conn.size_out:
+        if transform.ndim < 2 and conn.size_mid != conn.size_out:
             raise ValueError("function output size is incorrect; should "
                              "return a vector of size %d" % conn.size_out)
 
-        if transform.ndim == 2 and conn.size_in != transform.shape[1]:
+        if transform.ndim == 2 and conn.size_mid != transform.shape[1]:
             # check input dimensionality matches transform
             raise ValueError(
                 "%s output size (%d) not equal to transform input size "
-                "(%d)" % (type_pre, conn.size_in, transform.shape[1]))
+                "(%d)" % (type_pre, conn.size_mid, transform.shape[1]))
 
 
 class TransformParam(Parameter):
@@ -306,7 +306,7 @@ class TransformParam(Parameter):
         self.data[conn] = transform
 
     def validate(self, conn, transform):
-        type_pre = conn._pre.__class__.__name__
+        # type_pre = conn._pre.__class__.__name__
         type_post = conn._post.__class__.__name__
         size_out = conn.size_out
 

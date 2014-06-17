@@ -24,6 +24,10 @@ def full_transform(conn, allow_scalars=True):
     """
     transform = conn.transform
 
+    # If a function is given then the preslice applies to the function input,
+    # not to the transform.
+    preslice = conn._preslice if conn.function is None else slice(None)
+
     if conn._preslice == slice(None) and conn._postslice == slice(None):
         if transform.ndim == 2:
             # transform is already full, so return a copy
@@ -32,7 +36,7 @@ def full_transform(conn, allow_scalars=True):
             return np.array(transform)
 
     full_size_in = (conn._pre.size_out if conn.function is None
-                    else conn.size_in)
+                    else conn.size_mid)
     full_size_out = conn._post.size_in
 
     # Create the new transform matching the pre/post dimensions
