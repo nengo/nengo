@@ -42,7 +42,8 @@ def test_neurons():
 def test_exception():
     class Basic(spa.SPA):
         def __init__(self):
-            self.memory = spa.Memory(dimensions=12)
+            vocab = spa.Vocabulary(16)
+            self.buffer = spa.Memory(dimensions=12, vocab=vocab)
 
     with pytest.raises(Exception):
         Basic()
