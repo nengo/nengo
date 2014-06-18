@@ -41,8 +41,8 @@ class Thalamus(nengo.networks.Thalamus, Module):
         Synaptic filter for controlling a gate
     """
     def __init__(self, bg, neurons_action=50, threshold_action=0.2,
-                 inhibit=1, synapse_inhibit=0.008, synapse_bg=0.008,
-                 synapse_direct=0.01,
+                 mutual_inhibit=1, route_inhibit=3,
+                 synapse_inhibit=0.008, synapse_bg=0.008, synapse_direct=0.01,
                  neurons_channel_dim=50, subdim_channel=16,
                  synapse_channel=0.01,
                  neurons_cconv=200,
@@ -50,7 +50,8 @@ class Thalamus(nengo.networks.Thalamus, Module):
 
         self.bg = bg
         self.neurons_action = neurons_action
-        self.inhibit = inhibit
+        self.mutual_inhibit = mutual_inhibit
+        self.route_inhibit = route_inhibit
         self.synapse_inhibit = synapse_inhibit
         self.synapse_direct = synapse_direct
         self.threshold_action = threshold_action
@@ -70,7 +71,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
         nengo.networks.Thalamus.__init__(
             self, self.bg.actions.count,
             n_neurons_per_ensemble=self.neurons_action,
-            mutual_inhib=self.inhibit,
+            mutual_inhib=self.mutual_inhibit,
             threshold=self.threshold_action)
 
     def on_add(self, spa):
@@ -172,10 +173,23 @@ class Thalamus(nengo.networks.Thalamus, Module):
             target, target_vocab = self.spa.get_module_input(target_name)
             source, source_vocab = self.spa.get_module_output(source_name)
 
+            target_module = self.spa.get_module(target_name)
+
             # build a communication channel between the source and target
             dim = target_vocab.dimensions
+
+            # Determine size of subdimension. If target module is spa.Buffer,
+            # use target module's subdimension. Otherwise use default
+            # (self.subdim_channel).
+            # TODO: Use the ensemble properties of target module instead?
+            #       - How to get these properties?
             subdim = self.subdim_channel
-            assert dim % subdim == 0  # TODO: check this somewhere
+            if isinstance(target_module, nengo.spa.Buffer):
+                subdim = target_module.state.dimensions_per_ensemble
+            elif dim < subdim:
+                subdim = dim
+            elif dim % subdim != 0:
+                subdim = 1
 
             channel = nengo.networks.EnsembleArray(
                 self.neurons_channel_dim * subdim,
@@ -184,7 +198,8 @@ class Thalamus(nengo.networks.Thalamus, Module):
                 label='channel_%d_%s' % (index, target_name))
 
             # inhibit the channel when the action is not chosen
-            inhibit = [[-1]] * (self.neurons_channel_dim * subdim)
+            inhibit = ([[-self.route_inhibit]] *
+                       (self.neurons_channel_dim * subdim))
             for e in channel.ensembles:
                 nengo.Connection(gate, e.neurons, transform=inhibit,
                                  synapse=self.synapse_inhibit)
@@ -223,7 +238,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
                 label='cconv_%d_%s' % (index, str(effect)))
 
             # inhibit the channel when the action is not chosen
-            inhibit = [[-1]] * (self.neurons_cconv)
+            inhibit = [[-self.route_inhibit]] * (self.neurons_cconv)
             for e in channel.product.ensembles:
                 nengo.Connection(gate, e.neurons, transform=inhibit,
                                  synapse=self.synapse_inhibit)

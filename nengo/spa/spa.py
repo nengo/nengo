@@ -84,6 +84,10 @@ class SPA(nengo.Network):
 
             value.on_add(self)
 
+    def get_module(self, name):
+        """Return the module for the given name."""
+        return self._modules[name]
+
     def get_default_vocab(self, dimensions):
         """Return a Vocabulary with the desired dimensions.
 
