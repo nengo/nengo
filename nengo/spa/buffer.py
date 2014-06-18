@@ -30,6 +30,9 @@ class Buffer(Module):
             # use the default one for this dimensionality
             vocab = dimensions
 
+        # Subdimensions should be at most the number of dimensions
+        subdimensions = min(dimensions, subdimensions)
+
         if dimensions % subdimensions != 0:
             raise Exception('Number of dimensions(%d) must be divisible by '
                             'subdimensions(%d)' % (dimensions, subdimensions))
