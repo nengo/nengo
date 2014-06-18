@@ -26,42 +26,45 @@ def full_transform(conn, allow_scalars=True):
 
     # If a function is given then the preslice applies to the function input,
     # not to the transform.
-    preslice = conn._preslice if conn.function is None else slice(None)
+    pre_slice = conn._preslice if conn.function is None else slice(None)
+    post_slice = conn._postslice
 
-    if conn._preslice == slice(None) and conn._postslice == slice(None):
+    if pre_slice == slice(None) and post_slice == slice(None):
         if transform.ndim == 2:
             # transform is already full, so return a copy
             return np.array(transform)
         elif transform.size == 1 and allow_scalars:
             return np.array(transform)
 
-    full_size_in = (conn._pre.size_out if conn.function is None
-                    else conn.size_mid)
-    full_size_out = conn._post.size_in
-
     # Create the new transform matching the pre/post dimensions
+    full_size_in = (
+        conn.pre.size_out if conn.function is None else conn.size_mid)
+    full_size_out = conn.post.size_in
     new_transform = np.zeros((full_size_out, full_size_in))
+
     if transform.ndim < 2:
         slice_to_list = lambda s, d: (
             np.arange(d)[s] if isinstance(s, slice) else s)
-        preslice = slice_to_list(conn._preslice, full_size_in)
-        postslice = slice_to_list(conn._postslice, full_size_out)
-        new_transform[postslice, preslice] = transform
-    else:  # if transform.ndim == 2:
+        pre_list = slice_to_list(pre_slice, full_size_in)
+        post_list = slice_to_list(post_slice, full_size_out)
+        new_transform[post_list, pre_list] = transform
+        return new_transform
+    elif transform.ndim == 2:
         repeated_inds = lambda x: (
             not isinstance(x, slice) and np.unique(x).size != len(x))
-        if repeated_inds(conn._preslice):
+        if repeated_inds(pre_slice):
             raise ValueError("Input object selection has repeated indices")
-        if repeated_inds(conn._postslice):
+        if repeated_inds(post_slice):
             raise ValueError("Output object selection has repeated indices")
-        rows_transform = np.array(new_transform[conn._postslice])
-        rows_transform[:, conn._preslice] = transform
-        new_transform[conn._postslice] = rows_transform
+        rows_transform = np.array(new_transform[post_slice])
+        rows_transform[:, pre_slice] = transform
+        new_transform[post_slice] = rows_transform
         # Note: the above is a little obscure, but we do it so that lists of
         #  indices can specify selections of rows and columns, rather than
         #  just individual items
-
-    return new_transform
+        return new_transform
+    else:
+        raise ValueError("Transforms with > 2 dims not supported")
 
 
 def objs_and_connections(network):
