@@ -1,3 +1,5 @@
+from collections import Counter
+
 import pytest
 
 import nengo
@@ -86,6 +88,41 @@ def test_context_errors(Simulator):
     nengo.Ensemble(1, dimensions=1, add_to_container=False)
     nengo.Node(output=[0], add_to_container=False)
 
+
+def test_get_objects(Simulator):
+    model = nengo.Network()
+    with model:
+        ens1 = nengo.Ensemble(10, 1)
+        node1 = nengo.Node([0])
+        conn1 = nengo.Connection(node1, ens1)
+        pr1 = nengo.Probe(ens1)
+
+        subnet = nengo.Network()
+
+        with subnet:
+            ens2 = nengo.Ensemble(10, 1)
+            node2 = nengo.Node([0])
+            conn2 = nengo.Connection(node2, ens2)
+            pr2 = nengo.Probe(ens2)
+            subnet2 = nengo.Network()
+
+            with subnet2:
+                ens3 = nengo.Ensemble(10, 1)
+
+    all_objects = [ens1, pr1, node1, conn1,
+                   subnet, ens2, node2, conn2,
+                   pr2, ens3, subnet2]
+
+    # Test that the lists contain the same elements, but order doesn't matter.
+    # Counter is like a set, but also keeps track of the number of objects.
+    assert Counter(all_objects) == Counter(model.all_objects)
+    assert Counter([ens1, ens2, ens3]) == Counter(model.all_ensembles)
+    assert Counter([node1, node2]) == Counter(model.all_nodes)
+    assert Counter([conn1, conn2]) == Counter(model.all_connections)
+    assert Counter([pr1, pr2]) == Counter(model.all_probes)
+    assert Counter([subnet, subnet2]) == Counter(model.all_networks)
+    # Make sure it works a second time
+    assert Counter([ens1, ens2, ens3]) == Counter(model.all_ensembles)
 
 if __name__ == '__main__':
     nengo.log(debug=True)
