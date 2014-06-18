@@ -26,8 +26,8 @@ def full_transform(conn, allow_scalars=True):
 
     # If a function is given then the preslice applies to the function input,
     # not to the transform.
-    pre_slice = conn._preslice if conn.function is None else slice(None)
-    post_slice = conn._postslice
+    pre_slice = conn.pre_slice if conn.function is None else slice(None)
+    post_slice = conn.post_slice
 
     if pre_slice == slice(None) and post_slice == slice(None):
         if transform.ndim == 2:

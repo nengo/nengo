@@ -1231,12 +1231,14 @@ def build_linear_system(conn, model, rng):
             "ranges of any neurons." % (str(conn), str(conn.pre)))
 
     if conn.function is None:
+        # TODO: slice eval_points here rather than later, as it could
+        # significantly reduce computation
         targets = eval_points
     else:
         size = nengo.objects.Connection.function.size(conn)
         targets = np.zeros((len(eval_points), size))
-        for i, ep in enumerate(eval_points):
-            targets[i] = conn.function(ep[conn._preslice])
+        for i, ep in enumerate(eval_points[:, conn.pre_slice]):
+            targets[i] = conn.function(ep)
 
     return eval_points, activities, targets
 
@@ -1269,7 +1271,7 @@ def build_connection(conn, model, config):  # noqa: C901
             signal = model.sig[conn]['in']
         else:
             sig_in, signal = build_pyfunc(
-                fn=lambda x: conn.function(x[conn._preslice]),
+                fn=lambda x: conn.function(x[conn.pre_slice]),
                 t_in=False,
                 n_in=model.sig[conn]['in'].size,
                 n_out=conn.size_out,

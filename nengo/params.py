@@ -268,10 +268,10 @@ class FunctionParam(Parameter):
         fn_ok = (Node, Ensemble)
         if function is not None and not callable(function):
             raise ValueError("function '%s' must be callable" % function)
-        if callable(function) and not isinstance(conn._pre, fn_ok):
+        if callable(function) and not isinstance(conn.pre, fn_ok):
             raise ValueError("function can only be set for connections from "
                              "an Ensemble or Node (got type '%s')"
-                             % conn._pre.__class__.__name__)
+                             % conn.pre.__class__.__name__)
 
     def validate_call(self, conn, function):
         x = (conn.eval_points[0] if is_iterable(conn.eval_points)
@@ -283,7 +283,7 @@ class FunctionParam(Parameter):
         return np.asarray(value).size
 
     def validate_size_in(self, conn):
-        type_pre = conn._pre.__class__.__name__
+        type_pre = conn.pre.__class__.__name__
         transform = conn.transform
 
         if transform.ndim < 2 and conn.size_mid != conn.size_out:
@@ -306,8 +306,7 @@ class TransformParam(Parameter):
         self.data[conn] = transform
 
     def validate(self, conn, transform):
-        # type_pre = conn._pre.__class__.__name__
-        type_post = conn._post.__class__.__name__
+        type_post = conn.post.__class__.__name__
         size_out = conn.size_out
 
         if transform.ndim == 1 and transform.size != size_out:
@@ -326,10 +325,11 @@ class TransformParam(Parameter):
             # for two-dimensional transforms
             repeated_inds = lambda x: (
                 not isinstance(x, slice) and np.unique(x).size != len(x))
-            if repeated_inds(conn._preslice) or repeated_inds(conn._postslice):
-                raise ValueError("%s object selection has repeated indices" %
-                                 ("Input" if repeated_inds(conn._preslice)
-                                  else "Output"))
+            if repeated_inds(conn.pre_slice):
+                raise ValueError("Input object selection has repeated indices")
+            if repeated_inds(conn.post_slice):
+                raise ValueError(
+                    "Output object selection has repeated indices")
 
         if transform.ndim > 2:
             raise ValueError("Cannot handle transform tensors "

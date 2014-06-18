@@ -597,12 +597,11 @@ class Connection(NengoObject):
 
     def _set_pre(self, pre):
         self._set_obj(pre, 'pre')
-        # size_in is based on the function and size_pre
-        self._size_in = np.zeros(self._pre.size_out)[self._preslice].size
+        self._size_in = np.zeros(self._pre.size_out)[self._pre_slice].size
 
     def _set_post(self, post):
         self._set_obj(post, 'post')
-        self._size_out = np.zeros(self._post.size_in)[self._postslice].size
+        self._size_out = np.zeros(self._post.size_in)[self._post_slice].size
 
     def _set_obj(self, obj, side):
         if not isinstance(obj, ObjView):
@@ -611,7 +610,7 @@ class Connection(NengoObject):
             raise ValueError("Objects of type '%s' cannot serve as '%s'"
                              % (obj.obj.__class__.__name__, side))
         setattr(self, '_%s' % side, obj.obj)
-        setattr(self, '_%sslice' % side, obj.slice)
+        setattr(self, '_%s_slice' % side, obj.slice)
 
     @property
     def pre(self):
@@ -622,13 +621,24 @@ class Connection(NengoObject):
         return self._post
 
     @property
+    def pre_slice(self):
+        return self._pre_slice
+
+    @property
+    def post_slice(self):
+        return self._post_slice
+
+    @property
     def size_in(self):
-        """Input size to the function, or the transform if none provided."""
+        """Output size of sliced `pre`; input size of the function."""
         return self._size_in
 
     @property
     def size_mid(self):
-        """Output size of the function; input size of the transform."""
+        """Output size of the function; input size of the transform.
+
+        If the function is None, then `size_in == size_mid`.
+        """
         size = Connection.function.size(self)
         return self._size_in if size is None else size
 
