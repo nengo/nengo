@@ -158,6 +158,43 @@ class Network(with_metaclass(NengoObjectContainer)):
         config.configures(Node)
         return config
 
+    def _all_objects(self, object_type):
+        """Returns a list of all objects of the
+        specified type in this network and its
+        subnetworks"""
+        objects = []
+        objects.extend(self.objects[object_type])
+        for subnet in self.networks:
+            objects.extend(subnet.objects[object_type])
+        return objects
+
+    @property
+    def all_objects(self):
+        objects = []
+        for object_type in self.objects.keys():
+            objects.extend(self._all_objects(object_type))
+        return objects
+
+    @property
+    def all_ensembles(self):
+        return self._all_objects(Ensemble)
+
+    @property
+    def all_nodes(self):
+        return self._all_objects(Node)
+
+    @property
+    def all_networks(self):
+        return self._all_objects(Network)
+
+    @property
+    def all_connections(self):
+        return self._all_objects(Connection)
+
+    @property
+    def all_probes(self):
+        return self._all_objects(Probe)
+
     @property
     def config(self):
         return self._config
