@@ -255,6 +255,42 @@ def test_am_default_output_inhibit_utilities_wta(Simulator):
                        atol=.1, rtol=.01)
 
 
+def test_am_spa_interaction(Simulator):
+    """Standard associative memory interacting with other SPA modules.
+
+    Options: threshold = 0.5, non-inhibitable, non-wta, does not output
+    utilities or thresholded utilities.
+    """
+    rng = np.random.RandomState(1)
+
+    D = 16
+    vocab = Vocabulary(D, rng=rng)
+    vocab.parse('A+B+C+D')
+
+    D2 = int(D / 2)
+    vocab2 = Vocabulary(D2, rng=rng)
+    vocab2.parse('A+B+C+D')
+
+    def input_func(t):
+        if t < 0.5:
+            return '0.49*A'
+        else:
+            return '0.79*A'
+
+    m = nengo.spa.SPA('model', seed=123)
+    with m:
+        m.buf = nengo.spa.Buffer(D)
+        m.input = nengo.spa.Input(buf=input_func)
+
+        m.am = AssociativeMemory(vocab, vocab2, threshold=0.5)
+
+        cortical_actions = nengo.spa.Actions('am = buf')
+        m.c_act = nengo.spa.Cortical(cortical_actions)
+
+    # Check to see if model builds properly. No functionality test needed
+    Simulator(m)
+
+
 if __name__ == '__main__':
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
