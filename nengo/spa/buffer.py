@@ -29,6 +29,13 @@ class Buffer(Module):
         if vocab is None:
             # use the default one for this dimensionality
             vocab = dimensions
+        elif vocab.dimensions != dimensions:
+            raise Exception('Dimensionality of given vocabulary (%d) does not'
+                            'match dimensionality of buffer (%d)' %
+                            (vocab.dimensions, dimensions))
+
+        # Subdimensions should be at most the number of dimensions
+        subdimensions = min(dimensions, subdimensions)
 
         if dimensions % subdimensions != 0:
             raise Exception('Number of dimensions(%d) must be divisible by '
