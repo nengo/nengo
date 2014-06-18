@@ -182,3 +182,8 @@ class AssociativeMemory(Module):
             if inhibitable:
                 nengo.Connection(self.inhibit, default_vector_gate,
                                  synapse=None, transform=[[-1]])
+
+        if isinstance(input_vocab, Vocabulary):
+            self.inputs = dict(default=(self.input, input_vocab))
+        if isinstance(output_vocab, Vocabulary):
+            self.outputs = dict(default=(self.output, output_vocab))
