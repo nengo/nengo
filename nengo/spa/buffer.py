@@ -29,10 +29,17 @@ class Buffer(Module):
         if vocab is None:
             # use the default one for this dimensionality
             vocab = dimensions
+        elif vocab.dimensions != dimensions:
+            raise ValueError('Dimensionality of given vocabulary (%d) does not'
+                             'match dimensionality of buffer (%d)' %
+                             (vocab.dimensions, dimensions))
+
+        # Subdimensions should be at most the number of dimensions
+        subdimensions = min(dimensions, subdimensions)
 
         if dimensions % subdimensions != 0:
-            raise Exception('Number of dimensions(%d) must be divisible by '
-                            'subdimensions(%d)' % (dimensions, subdimensions))
+            raise ValueError('Number of dimensions(%d) must be divisible by '
+                             'subdimensions(%d)' % (dimensions, subdimensions))
 
         self.state = nengo.networks.EnsembleArray(
             neurons_per_dimension * subdimensions,
