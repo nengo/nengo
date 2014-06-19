@@ -1,6 +1,5 @@
 """Reference implementation for building a nengo.Network."""
 
-from __future__ import print_function
 
 import collections
 import logging
