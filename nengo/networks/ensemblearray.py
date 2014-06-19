@@ -19,20 +19,36 @@ class EnsembleArray(nengo.Network):
 
         label_prefix = "" if label is None else label + "_"
 
+        self.n_neurons = n_neurons
         self.n_ensembles = n_ensembles
         self.dimensions_per_ensemble = ens_dimensions
-        transform = np.eye(self.dimensions)
 
         self.input = nengo.Node(size_in=self.dimensions, label="input")
+
+        self.neuron_input = nengo.Node(size_in=n_neurons * n_ensembles,
+                                       label="neuron_input")
+        self.neuron_output = nengo.Node(size_in=n_neurons * n_ensembles,
+                                        label="neuron_output")
 
         self.ea_ensembles = []
         for i in range(n_ensembles):
             e = nengo.Ensemble(
                 n_neurons, self.dimensions_per_ensemble,
                 label=label_prefix + str(i))
-            trans = transform[i * self.dimensions_per_ensemble:
-                              (i + 1) * self.dimensions_per_ensemble, :]
-            nengo.Connection(self.input, e, transform=trans, synapse=None)
+
+            nengo.Connection(self.input[i * ens_dimensions:
+                                        (i + 1) * ens_dimensions],
+                             e, synapse=None)
+
+            if not isinstance(e.neuron_type, nengo.Direct):
+                nengo.Connection(self.neuron_input[i * n_neurons:
+                                                   (i + 1) * n_neurons],
+                                 e.neurons, synapse=None)
+                nengo.Connection(e.neurons,
+                                 self.neuron_output[i * n_neurons:
+                                                    (i + 1) * n_neurons],
+                                 synapse=None)
+
             self.ea_ensembles.append(e)
 
         self.add_output('output', function=None)
@@ -51,8 +67,8 @@ class EnsembleArray(nengo.Network):
 
         for i, e in enumerate(self.ea_ensembles):
             nengo.Connection(
-                e, output[i*function_d:(i+1)*function_d], function=function,
-                synapse=synapse, **conn_kwargs)
+                e, output[i * function_d:(i + 1) * function_d],
+                function=function, synapse=synapse, **conn_kwargs)
         return output
 
     @property

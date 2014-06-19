@@ -77,13 +77,13 @@ def test_am_assoc_mem_threshold(Simulator):
     sim.run(1.0)
 
     assert np.allclose(sim.data[in_p][490:500], vocab.parse("0.49*A").v,
-                       atol=.1, rtol=.01)
+                       atol=.15, rtol=.01)
     assert np.allclose(sim.data[in_p][-10:], vocab.parse("0.79*A").v,
-                       atol=.1, rtol=.01)
+                       atol=.15, rtol=.01)
     assert np.allclose(sim.data[out_p][490:500], vocab2.parse("0").v,
-                       atol=.1, rtol=.01)
+                       atol=.15, rtol=.01)
     assert np.allclose(sim.data[out_p][-10:], vocab2.parse("A").v,
-                       atol=.1, rtol=.01)
+                       atol=.15, rtol=.01)
 
 
 def test_am_default_output_inhibit_utilities(Simulator):
