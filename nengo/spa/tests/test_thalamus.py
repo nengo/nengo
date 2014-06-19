@@ -50,11 +50,11 @@ def test_thalamus(Simulator):
     assert -0.25 < data[1, 100] < 0.2
     assert 0.4 < data2[1, 100] < 0.6
     assert -0.2 < data[0, 299] < 0.2  # Action 2
-    assert 0.6 < data2[0, 299] < 0.85
+    assert 0.6 < data2[0, 299] < 0.95
     assert 0.8 < data[1, 299] < 1.1
     assert -0.2 < data2[1, 299] < 0.2
     assert 0.8 < data[0, 499] < 1.0  # Action 3
-    assert 0.0 < data2[0, 499] < 0.4
+    assert 0.0 < data2[0, 499] < 0.5
     assert -0.2 < data[1, 499] < 0.2
     assert 0.4 < data2[1, 499] < 0.7
 

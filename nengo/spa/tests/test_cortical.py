@@ -28,9 +28,9 @@ def test_connect(Simulator):
     sim.run(0.2)
 
     match = np.dot(sim.data[p2], vocab.parse('A').v)
-    assert match[199] > 0.95
+    assert match[199] > 0.9
     match = np.dot(sim.data[p3], vocab.parse('~A').v)
-    assert match[199] > 0.95
+    assert match[199] > 0.9
 
 
 def test_transform(Simulator):

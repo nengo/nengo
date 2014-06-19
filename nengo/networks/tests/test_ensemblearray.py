@@ -174,6 +174,22 @@ def test_arguments():
         nengo.networks.EnsembleArray(nengo.LIF(10), 1, dimensions=2)
 
 
+def test_neuronconnection(Simulator, nl):
+    with nengo.Network(seed=123) as net:
+        net.config[nengo.Ensemble].neuron_type = nl()
+
+        input = nengo.Node([-10] * 20)
+        ea = nengo.networks.EnsembleArray(10, 2)
+
+        nengo.Connection(input, ea.neuron_input)
+
+        p = nengo.Probe(ea.neuron_output)
+
+    s = Simulator(net)
+    s.run(1)
+
+    assert np.all(s.data[p][-1] == 0.0)
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
