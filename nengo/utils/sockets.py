@@ -1,6 +1,6 @@
 import struct
 import socket
-import nengo
+# import nengo
 import Queue
 import time
 import thread
@@ -9,7 +9,7 @@ import thread
 class UDPSocket:
     def __init__(self, dim=1, dt=0.001, local_port=-1,
                  dest_addr='127.0.0.1', dest_port=-1,
-                 timeout=5, max_idle_time = 60):
+                 timeout=5, max_idle_time=60):
         self.dim = dim
         self.local_addr = '127.0.0.1'
         self.local_port = local_port
@@ -38,7 +38,7 @@ class UDPSocket:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind((self.local_addr, max(self.local_port, 0)))
         self.socket.settimeout(self.timeout)
-        
+
         self.last_active = time.time()
         thread.start_new_thread(self._alive_check, self)
 
@@ -125,7 +125,7 @@ class UDPSocket:
 
     def run(self, t, x=None):
         self.last_active = time.time()
-    
+
         # Initialize socket if t > 0, and it has not been initialized
         if (t > 0 and self.socket is None):
             self._initialize()
@@ -181,30 +181,30 @@ class UDPSocket:
         self.socket = None
 
 # -------------------------------
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-dt = 0.001
+# dt = 0.001
 
-udp_local_addr = "127.0.0.1"
-udp_local_port = 12346
-udp_dest_addr = "127.0.0.1"
-udp_dest_port = 12345
+# udp_local_addr = "127.0.0.1"
+# udp_local_port = 12346
+# udp_dest_addr = "127.0.0.1"
+# udp_dest_port = 12345
 
-UDP = UDPSocket(dim=1, dt=dt)
-#UDP.config_send_recv(local_port=udp_local_port, dest_addr=udp_dest_addr,
-#                     dest_port=udp_dest_port)
-#UDP.config_send_only(dest_addr=udp_dest_addr, dest_port=udp_dest_port)
-UDP.config_recv_only(local_port=udp_local_port)
-m = nengo.Model("test")
-input = m.make_node("Input", lambda t: UDP.run(t))
-m.probe("Input", filter=0)
+# UDP = UDPSocket(dim=1, dt=dt)
+# #UDP.config_send_recv(local_port=udp_local_port, dest_addr=udp_dest_addr,
+# #                     dest_port=udp_dest_port)
+# #UDP.config_send_only(dest_addr=udp_dest_addr, dest_port=udp_dest_port)
+# UDP.config_recv_only(local_port=udp_local_port)
+# m = nengo.Model("test")
+# input = m.make_node("Input", lambda t: UDP.run(t))
+# m.probe("Input", filter=0)
 
-s = m.simulator(dt=dt)
-#s.run(0.002)
-s.run(1)
-UDP.close()
+# s = m.simulator(dt=dt)
+# #s.run(0.002)
+# s.run(1)
+# UDP.close()
 
-t = s.data(m.t)
+# t = s.data(m.t)
 
-plt.plot(t, s.data("Input"), label="ref")
-plt.show()
+# plt.plot(t, s.data("Input"), label="ref")
+# plt.show()
