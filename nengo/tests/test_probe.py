@@ -165,6 +165,7 @@ def test_input_probe(Simulator):
         t = sim.trange() - 0.001
         assert np.allclose(sim.data[input_probe][1:, 0], (np.sin(t) + 0.5)[1:])
 
+
 def test_event_probing(Simulator):
     model = nengo.Network()
     with model:

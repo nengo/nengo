@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProbeDict(Mapping):
+
     """Map from Probe -> ndarray
 
     This is more like a view on the dict that the simulator manipulates.
@@ -53,6 +54,7 @@ class ProbeDict(Mapping):
 
 
 class Simulator(object):
+
     """Reference simulator for Nengo models."""
 
     def __init__(self, network, dt=0.001, seed=None, model=None):

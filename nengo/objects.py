@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class NengoObjectContainer(type):
+
     """A metaclass for containers of Nengo objects.
 
     Currently, the only container is ``Network``.
@@ -49,6 +50,7 @@ class NengoObjectContainer(type):
 
 
 class Network(with_metaclass(NengoObjectContainer)):
+
     """A network contains ensembles, nodes, connections, and other networks.
 
     A network is primarily used for grouping together related
@@ -238,6 +240,7 @@ class Network(with_metaclass(NengoObjectContainer)):
 
 
 class NetworkMember(type):
+
     """A metaclass used to add instances of derived classes to networks.
 
     Inheriting from this class means that Network.add will be invoked after
@@ -256,6 +259,7 @@ class NetworkMember(type):
 
 
 class NengoObject(with_metaclass(NetworkMember)):
+
     """A base class for Nengo objects.
 
     This defines some functions that the Network requires
@@ -289,6 +293,7 @@ class NengoObject(with_metaclass(NetworkMember)):
 
 
 class Neurons(object):
+
     """A wrapper around Ensemble for making connections directly to neurons.
 
     This should only ever be used in the ``Ensemble.neurons`` property,
@@ -297,6 +302,7 @@ class Neurons(object):
 
     Does not currently support any other view-like operations.
     """
+
     def __init__(self, ensemble):
         self.ensemble = ensemble
 
@@ -320,6 +326,7 @@ class Neurons(object):
 
 
 class Ensemble(NengoObject):
+
     """A group of neurons that collectively represent a vector.
 
     Parameters
@@ -419,6 +426,7 @@ class Ensemble(NengoObject):
 
 
 class Node(NengoObject):
+
     """Provides arbitrary data to Nengo objects.
 
     Nodes can accept input, and perform arbitrary computations
@@ -516,6 +524,7 @@ class Node(NengoObject):
 
 
 class Connection(NengoObject):
+
     """Connects two objects together.
 
     TODO: Document slice syntax here and in the transform parameter.
@@ -787,6 +796,7 @@ class Connection(NengoObject):
 
 
 class Probe(NengoObject):
+
     """A probe is an object that receives data from the simulation.
 
     This is to be used in any situation where you wish to gather simulation
@@ -846,6 +856,7 @@ class Probe(NengoObject):
                 self._binary_vector = self.function
             else:
                 self._bool = None
+
                 def _binary_vector(signal):
                     # evaluate the function on current signal
                     temp = self.function(signal)
@@ -874,6 +885,7 @@ class Probe(NengoObject):
 
 
 class ObjView(object):
+
     """Container for a slice with respect to some object.
 
     This is used by the __getitem__ of Neurons, Node, and Ensemble, in order
@@ -892,7 +904,7 @@ class ObjView(object):
                 # special case because slice(-1, 0) gives the empty list
                 key = slice(key, None)
             else:
-                key = slice(key, key+1)
+                key = slice(key, key + 1)
         self.slice = key
 
     def __len__(self):
