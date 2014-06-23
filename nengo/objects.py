@@ -817,9 +817,12 @@ class Probe(NengoObject):
     sample_every : float, optional
         Sampling period in seconds.
     function: callable, optional
-
+        Takes the probed signal as input, and returns a binary vector.
     track_changes: bool, optional
-
+        If False, time is recorded every time the function returns True.
+        If True, time is recorded only when the function changes from False
+        to True. This holds for every dimension of the vector that the
+        function returns.
     conn_args : dict, optional
         Optional keyword arguments to pass to the Connection created for this
         probe. For example, passing ``synapse=pstc`` will filter the data.
