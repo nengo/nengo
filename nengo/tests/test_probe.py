@@ -170,16 +170,39 @@ def test_event_probing(Simulator):
     with model:
         node = nengo.Node(output=np.cos)
 
+        def input(t):
+            return [np.sin(t), np.cos(t), 1]
+
+        node2 = nengo.Node(output=input)
+
         def func(x):
             return x > 0
 
-        event_probe = nengo.EventProbe(node, function=func, synapse=None)
+        event_probe = nengo.Probe(node, function=func,
+                                  track_changes=True, synapse=None)
+
+        event_probe2 = nengo.Probe(node2, function=func,
+                                   track_changes=True, synapse=None)
+
+        event_probe3 = nengo.Probe(node2, function=func, synapse=None)
+
         dt = 0.001
         sim = Simulator(model, dt=dt)
         sim.run(2 * np.pi)
 
-        correct_val = np.array([0, 3*np.pi / 2]) + dt
-        assert np.allclose(sim.data[event_probe][0], correct_val, atol=0.001)
+        cos_val = np.array([0, 3*np.pi / 2]) + dt
+        sin_val = np.array([0]) + dt
+
+        # test single dimensional case
+        assert np.allclose(sim.data[event_probe][0], cos_val, atol=0.001)
+
+        # test multidimensional case
+        assert np.allclose(sim.data[event_probe2][0], sin_val, atol=0.001)
+        assert np.allclose(sim.data[event_probe2][1], cos_val, atol=0.001)
+        assert np.allclose(sim.data[event_probe2][2], sin_val, atol=0.001)
+
+        # test without tracking
+        assert np.allclose(sim.data[event_probe3][2], sim.trange()[1:])
 
 if __name__ == "__main__":
     nengo.log(debug=True)
