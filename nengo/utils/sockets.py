@@ -23,8 +23,8 @@ class SocketCheckAliveThread(threading.Thread):
 
 
 class UDPSocket:
-    def __init__(self, dimensions=1, dt=0.001, local_port=-1,
-                 dest_addr='127.0.0.1', dest_port=-1,
+    def __init__(self, dimensions=1, dt_local=0.001, dt_remote=0,
+                 local_port=-1, dest_addr='127.0.0.1', dest_port=-1,
                  timeout=30, max_idle_time=1):
         self.dim = dimensions
         self.local_addr = '127.0.0.1'
@@ -32,8 +32,11 @@ class UDPSocket:
         self.dest_addr = dest_addr
         self.dest_port = dest_port
         self.timeout = timeout
-        self.dt = dt
         self.byte_order = '!'
+
+        self.dt = dt_local                          # Local simulation dt
+        self.dt_remote = max(dt_remote, dt_local)   # dt btw each packet sent
+        self.last_packet_t = 0
 
         self.last_active = time.time()
         self.max_idle_time_initial = max_idle_time
@@ -57,10 +60,14 @@ class UDPSocket:
 
     def _initialize(self):
         self.value = 0
-        self.timeout_count = 0
+        self.last_packet_t = 0
 
         while (not self.buffer.empty()):
             self.buffer.get()
+
+    def _open_socket(self):
+        # Close socket, terminate alive check thread
+        self.close()
 
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -90,6 +97,7 @@ class UDPSocket:
         self.ignore_timestamp = False
 
         self.close()
+        self._initialize()
 
     def config_send_only(self, dest_addr, dest_port):
         self._config_wipe()
@@ -139,7 +147,7 @@ class UDPSocket:
         # pack_packet takes a timestamp and data (x) and makes a socket packet
         # Default packet data type: float
         # Default packet structure: [t, x[0], x[1], x[2], ... , x[d]]
-        send_data = [float(t + self.dt / 2.0)] + \
+        send_data = [float(t + self.dt_remote / 2.0)] + \
                     [x[i] for i in range(self.dim)]
         packet = struct.pack(self.byte_order + 'f' * (self.dim + 1),
                              *send_data)
@@ -159,17 +167,21 @@ class UDPSocket:
         # If t == 0, return array of zeros. Terminate any open sockets to
         # reset system
         if (t == 0):
+            self._initialize()
             self.close()
-            return [0] * self.dim
+            return self.value
         # Initialize socket if t > 0, and it has not been initialized
         if (t > 0 and self.socket is None):
-            self._initialize()
+            self._open_socket()
 
         self.last_active = time.time()
 
         if (self.is_sender):
-            self.socket.sendto(self.pack_packet(t, x),
-                               (self.dest_addr, self.dest_port))
+            if (t - self.last_packet_t >= self.dt_remote):
+                self.socket.sendto(self.pack_packet(t, x),
+                                   (self.dest_addr, self.dest_port))
+                self.last_packet_t = t * 1.0    # Copy t (which is a np.scalar)
+
         if (self.is_receiver):
             found_item = False
             if (not self.buffer.empty()):
@@ -213,6 +225,8 @@ class UDPSocket:
                         max(1, self.retry_backoff_time / 2)
 
                 except (socket.error, AttributeError) as error:
+                    found_item = False
+
                     # Socket error has occured. Probably a timeout.
                     # Assume worst case, set max_idle_time_current to
                     # max_idle_time_timeout to wait for more timeouts to
@@ -221,14 +235,18 @@ class UDPSocket:
                     self.max_idle_time_current = self.max_idle_time_timeout
 
                     # Timeout occured, assume packet lost.
-                    found_item = True
+                    if isinstance(error, socket.timeout):
+                        found_item = True
 
-                    # If connection was reset (somehow?), close the socket.
+                    # If connection was reset (somehow?), or closed by the
+                    # idle timer (prematurely).
                     # In this case, retry the connection, and retry receiving
                     # the packet again.
-                    if (error.errno == errno.ECONNRESET):
+                    if (hasattr(error, 'errno') and error.errno ==
+                       errno.ECONNRESET) or self.socket is None:
                         self._retry_connection()
-                        found_item = False
+
+                    print "UDPSocket Error: " + str(error)
 
         return self.value
 
@@ -249,8 +267,7 @@ class UDPSocket:
         while (self.socket is None):
             time.sleep(self.retry_backoff_time)
             try:
-                self.close()
-                self._initialize()
+                self._open_socket()
             except socket.error:
                 pass
             self.retry_backoff_time *= 2
