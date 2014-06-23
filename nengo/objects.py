@@ -790,7 +790,8 @@ class Probe(NengoObject):
     """A probe is an object that receives data from the simulation.
 
     This is to be used in any situation where you wish to gather simulation
-    data (spike data, represented values, neuron voltages, etc.) for analysis.
+    data (spike data, represented values, neuron voltages, etc.)
+    or event times for analysis.
 
     Probes cannot directly affect the simulation.
 
@@ -803,14 +804,12 @@ class Probe(NengoObject):
     attr : str, optional
         The quantity to probe. Refer to the target's ``probeable`` list for
         details. Defaults to the first element in the list.
-    sample_every : float, optional
-        Sampling period in seconds.
     conn_args : dict, optional
         Optional keyword arguments to pass to the Connection created for this
         probe. For example, passing ``synapse=pstc`` will filter the data.
     """
 
-    def __init__(self, target, attr=None, sample_every=None, **conn_args):
+    def __init__(self, target, attr, conn_args):
         if not hasattr(target, 'probeable') or len(target.probeable) == 0:
             raise TypeError(
                 "Type '%s' is not probeable" % target.__class__.__name__)
@@ -825,8 +824,6 @@ class Probe(NengoObject):
                 "'%s' is not probeable for '%s'" % (self.attr, target))
 
         self.target = target
-        self.label = "Probe(%s.%s)" % (target.label, self.attr)
-        self.sample_every = sample_every
         self.conn_args = conn_args
         self.seed = conn_args.get('seed', None)
 
@@ -836,6 +833,49 @@ class Probe(NengoObject):
         if isinstance(self.target, Ensemble) and self.attr != "decoded_output":
             return self.target.neurons.size_out
         return self.target.size_out
+
+class DataProbe(Probe):
+    """
+    Parameters
+    ----------
+    sample_every : float, optional
+        Sampling period in seconds.
+    """
+
+    def __init__(self, target, attr=None, sample_every=None, **conn_args):
+        super(DataProbe, self).__init__(target, attr, conn_args=conn_args)
+        self.sample_every = sample_every
+        self.label = "DataProbe(%s.%s)" % (target.label, self.attr)
+
+class EventProbe(Probe):
+    """
+    Parameters
+    ----------
+    function : callable, optional
+        Must return a binary vector
+    """
+    def __init__(self, target, function, attr=None, **conn_args):
+
+        super(EventProbe, self).__init__(target, attr, conn_args=conn_args)
+        self.function = function
+        self.label = "EventProbe(%s.%s)" % (target.label, self.attr)
+        self._bool = None
+
+    def _binary_vector(self, signal):
+        #evaluate the function on current signal
+        temp = self.function(signal)
+        temp = np.asarray(temp)
+        #initialize bool with zeros
+        if self._bool is None:
+            self._bool = np.zeros(temp.shape)
+        #figure out if anything changed since last step
+        changes = np.logical_xor(self._bool, temp)
+        #if any values changed, return the corresponding binary vector
+        if np.any(changes):
+            true_changes = np.logical_and(temp, changes)
+            self._bool = temp
+            return true_changes
+        return np.zeros(temp.shape)
 
 
 class ObjView(object):

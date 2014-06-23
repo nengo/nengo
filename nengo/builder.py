@@ -1226,7 +1226,12 @@ def build_probe(probe, model, config):
 
     # We put a list here so that the simulator can fill it
     # as it simulates the model
-    model.params[probe] = []
+    if isinstance(probe, nengo.objects.DataProbe):
+        model.params[probe] = []
+    else:
+        test_input  = np.zeros(model.sig[probe]['in'].shape[0])
+        dimension = np.asarray(probe.function(test_input)).shape[0]
+        model.params[probe] = [[] * dimension]
 
 Builder.register_builder(build_probe, nengo.objects.Probe)
 

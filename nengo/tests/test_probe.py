@@ -165,6 +165,22 @@ def test_input_probe(Simulator):
         t = sim.trange() - 0.001
         assert np.allclose(sim.data[input_probe][1:, 0], (np.sin(t) + 0.5)[1:])
 
+def test_event_probing(Simulator):
+    model = nengo.Network()
+    with model:
+        node = nengo.Node(output=np.cos)
+
+        def func(x):
+            return x > 0
+
+        event_probe = nengo.EventProbe(node, function=func, synapse=None)
+        dt = 0.001
+        sim = Simulator(model, dt=dt)
+        sim.run(2 * np.pi)
+
+        correct_val = np.array([0, 3*np.pi / 2]) + dt
+        assert np.allclose(sim.data[event_probe][0], correct_val, atol=0.001)
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

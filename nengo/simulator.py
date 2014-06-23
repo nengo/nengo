@@ -13,6 +13,7 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder import Model, Builder, SignalDict
+from nengo.objects import DataProbe, EventProbe
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
 from nengo.utils.simulator import operator_depencency_graph
@@ -149,11 +150,20 @@ class Simulator(object):
 
         # -- probes signals -> probe buffers
         for probe in self.model.probes:
-            period = (1 if probe.sample_every is None
-                      else int(probe.sample_every / self.dt))
-            if self.n_steps % period == 0:
-                tmp = self.signals[self.model.sig[probe]['in']].copy()
-                self._probe_outputs[probe].append(tmp)
+            signal_val = self.signals[self.model.sig[probe]['in']].copy()
+
+            if isinstance(probe, DataProbe):
+                period = (1 if probe.sample_every is None
+                          else int(probe.sample_every / self.dt))
+                if self.n_steps % period == 0:
+                    self._probe_outputs[probe].append(signal_val)
+            else:
+                temp = probe._binary_vector(signal_val)
+                if temp.any():
+                    for index in np.where(temp > 0)[0]:
+                        print(len(self._probe_outputs[probe]))
+                        self._probe_outputs[probe][index].extend(
+                            self.signals['__time__'].copy() * temp)
 
         self.n_steps += 1
         self.signals['__time__'] = self.n_steps * self.dt
