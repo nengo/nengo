@@ -102,6 +102,25 @@ def test_choice(weights, rng):
     assert np.allclose(p, p_empirical, atol=2 * sterr)
 
 
+@pytest.mark.parametrize("n,m", [(99, 1), (50, 50)])
+def test_sqrt_beta(n, m):
+    np.random.seed(33)
+
+    num_samples = 250
+    num_bins = 5
+
+    vectors = np.random.randn(num_samples, n + m)
+    vectors /= np.linalg.norm(vectors, axis=1)[:, np.newaxis]
+    expectation, _ = np.histogram(
+        np.linalg.norm(vectors[:, :m], axis=1), bins=num_bins)
+
+    dist = dists.SqrtBeta(n, m)
+    samples = dist.sample(num_samples, 1)
+    hist, _ = np.histogram(samples, bins=num_bins)
+
+    assert np.all(np.abs(np.asfarray(hist - expectation) / num_samples) < 0.16)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
