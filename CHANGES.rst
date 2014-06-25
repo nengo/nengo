@@ -22,6 +22,12 @@ Release History
 2.1.0 (unreleased)
 ==================
 
+**Improvements**
+
+- SqrtBeta distribution gives distribution of semantic pointer elements.
+  (`#414 <https://github.com/nengo/nengo/issues/414>`_,
+  `#430 <https://github.com/nengo/nengo/pull/430>`_)
+
 2.0.1 (January 27, 2015)
 ========================
 
