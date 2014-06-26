@@ -709,7 +709,7 @@ class Connection(NengoObject):
     @property
     def label(self):
         label = "%s->%s" % (self._pre.label, self._post.label)
-        if self.function is not None:
+        if self.function is not None and callable(self.function):
             return "%s:%s" % (label, self.function.__name__)
         return label
 
@@ -731,14 +731,24 @@ class Connection(NengoObject):
             if not isinstance(self._pre, (Node, Ensemble)):
                 raise ValueError("'function' can only be set if 'pre' "
                                  "is an Ensemble or Node")
-            if not callable(_function):
-                raise TypeError("function '%s' must be callable" % _function)
-            x = (self.eval_points[0] if is_iterable(self.eval_points) else
-                 np.zeros(self._pre.size_out))
-            value, invoked = checked_call(_function, x)
-            if not invoked:
-                raise TypeError("function '%s' must accept a single "
-                                "np.array argument" % _function)
+            value = None
+
+            if is_iterable(_function):
+                if self.eval_points is None:
+                    raise ValueError("Must specify evaluation points
+                                     when function is an iterable")
+                    value = _function[0]
+            elif callable(_function):
+                x = (self.eval_points[0] if is_iterable(self.eval_points) else
+                     np.zeros(self._pre.size_out))
+                value, invoked = checked_call(_function, x)
+                if not invoked:
+                    raise TypeError("function '%s' must accept a single "
+                                    "np.array argument" % _function)
+            else:
+                raise TypeError("Argument function must be a callable
+                                or iterable")
+
             size_out = np.asarray(value).size
         else:
             size_out = 0

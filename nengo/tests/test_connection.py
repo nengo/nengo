@@ -614,6 +614,30 @@ def test_function_output_size(Simulator, nl_nodirect):
     assert np.allclose(x, y, atol=0.1)
 
 
+def test_function_list(Simulator, nl_nodirect):
+    "Test connection with function specified as a list"
+    model = nengo.Network("function as list")
+
+    dt = 0.001
+    eval_points = np.arange(0, 1, dt)
+
+    with model:
+        inp = nengo.Node((lambda t: t))
+        ens1 = nengo.Ensemble(100, 1)
+        ens2 = nengo.Ensemble(100, 1)
+        ens3 = nengo.Ensemble(100, 1)
+        nengo.Connection(inp, ens1)
+        nengo.Connection(ens1, ens2, function=np.sin(eval_points),
+                         eval_points=eval_points)
+        nengo.Connection(ens1, ens3, function=np.sin)
+        probe1 = nengo.Probe(ens2, synapse=0.01)
+        probe2 = nengo.Probe(ens3, synapse=0.01)
+
+        sim = nengo.Simulator(model, dt=dt)
+        sim.run(3)
+
+        assert np.allclose(sim.data[probe1], sim.data[probe2], atol=0.1)
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

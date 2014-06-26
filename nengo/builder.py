@@ -14,7 +14,8 @@ import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
 from nengo.utils.builder import full_transform
-from nengo.utils.compat import is_integer, is_number, range, StringIO
+from nengo.utils.compat import is_integer, is_number,
+from nengo.utils.compat import is_iterable, range, StringIO
 from nengo.utils.filter_design import cont2discrete
 
 logger = logging.getLogger(__name__)
@@ -1223,7 +1224,9 @@ def build_linear_system(conn, model, rng):
 
     if conn.function is None:
         targets = eval_points
-    else:
+    elif is_iterable(conn.function):
+        targets = conn.function
+    else:  # function is callable
         targets = np.zeros((len(eval_points), conn.function_size))
         for i, ep in enumerate(eval_points):
             targets[i] = conn.function(ep)
