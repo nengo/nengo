@@ -735,8 +735,8 @@ class Connection(NengoObject):
 
             if is_iterable(_function):
                 if self.eval_points is None:
-                    raise ValueError("Must specify evaluation points
-                                     when function is an iterable")
+                    raise ValueError("Must specify evaluation points "
+                                     "when function is an iterable")
                     value = _function[0]
             elif callable(_function):
                 x = (self.eval_points[0] if is_iterable(self.eval_points) else
@@ -746,8 +746,8 @@ class Connection(NengoObject):
                     raise TypeError("function '%s' must accept a single "
                                     "np.array argument" % _function)
             else:
-                raise TypeError("Argument function must be a callable
-                                or iterable")
+                raise TypeError("Argument function must be a callable "
+                                "or iterable")
 
             size_out = np.asarray(value).size
         else:

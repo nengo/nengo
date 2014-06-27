@@ -14,7 +14,7 @@ import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
 from nengo.utils.builder import full_transform
-from nengo.utils.compat import is_integer, is_number,
+from nengo.utils.compat import is_integer, is_number
 from nengo.utils.compat import is_iterable, range, StringIO
 from nengo.utils.filter_design import cont2discrete
 
