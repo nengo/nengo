@@ -26,7 +26,7 @@ def test_create_dot():
 
     objs, conns = objs_and_connections(model)
     dot = generate_graphviz(objs, conns)
-    assert len(dot.splitlines()) == 47
+    assert len(dot.splitlines()) == 31
     # not sure what else to check here
 
     dot = generate_graphviz(
