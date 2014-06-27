@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 import nengo
@@ -7,8 +9,8 @@ from nengo.utils.network import with_self
 
 class EnsembleArray(nengo.Network):
 
-    def __init__(self, n_neurons, n_ensembles, ens_dimensions=1, label=None,
-                 **ens_kwargs):
+    def __init__(self, n_neurons, n_ensembles, ens_dimensions=1,
+                 neuron_nodes=False, label=None, **ens_kwargs):
         if "dimensions" in ens_kwargs:
             raise TypeError(
                 "'dimensions' is not a valid argument to EnsembleArray. "
@@ -25,10 +27,11 @@ class EnsembleArray(nengo.Network):
 
         self.input = nengo.Node(size_in=self.dimensions, label="input")
 
-        self.neuron_input = nengo.Node(size_in=n_neurons * n_ensembles,
-                                       label="neuron_input")
-        self.neuron_output = nengo.Node(size_in=n_neurons * n_ensembles,
-                                        label="neuron_output")
+        if neuron_nodes:
+            self.neuron_input = nengo.Node(size_in=n_neurons * n_ensembles,
+                                           label="neuron_input")
+            self.neuron_output = nengo.Node(size_in=n_neurons * n_ensembles,
+                                            label="neuron_output")
 
         self.ea_ensembles = []
         for i in range(n_ensembles):
@@ -40,7 +43,7 @@ class EnsembleArray(nengo.Network):
                                         (i + 1) * ens_dimensions],
                              e, synapse=None)
 
-            if not isinstance(e.neuron_type, nengo.Direct):
+            if neuron_nodes and not isinstance(e.neuron_type, nengo.Direct):
                 nengo.Connection(self.neuron_input[i * n_neurons:
                                                    (i + 1) * n_neurons],
                                  e.neurons, synapse=None)
@@ -50,6 +53,10 @@ class EnsembleArray(nengo.Network):
                                  synapse=None)
 
             self.ea_ensembles.append(e)
+
+        if neuron_nodes and isinstance(e.neuron_type, nengo.Direct):
+            warnings.warn("Creating neuron nodes in an EnsembleArray"
+                          " with Direct neurons")
 
         self.add_output('output', function=None)
 
