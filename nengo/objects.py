@@ -662,8 +662,8 @@ class Connection(NengoObject):
         self.modulatory = modulatory
         self.synapse = synapse
         self.transform = transform
+        self.eval_points = eval_points  # Must be set before function
         self.function_info = function  # Must be set after transform
-        self.eval_points = eval_points
 
     @property
     def function(self):
