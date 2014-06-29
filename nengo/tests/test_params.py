@@ -80,6 +80,68 @@ def test_boolparam():
     with pytest.raises(ValueError):
         inst.bp = 1
 
+
+def test_numberparam():
+    """NumberParams can be numbers constrained to a range."""
+
+    class Test(object):
+        np = params.NumberParam(default=1.0)
+        np_l = params.NumberParam(default=1.0, low=0.0)
+        np_h = params.NumberParam(default=-1.0, high=0.0)
+        np_lh = params.NumberParam(default=1.0, low=-1.0, high=1.0)
+
+    inst = Test()
+
+    # defaults
+    assert inst.np == 1.0
+    assert inst.np_l == 1.0
+    assert inst.np_h == -1.0
+    assert inst.np_lh == 1.0
+
+    # respect low boundaries
+    inst.np = -10
+    with pytest.raises(ValueError):
+        inst.np_l = -10
+    with pytest.raises(ValueError):
+        inst.np_lh = -10
+    assert inst.np == -10
+    assert inst.np_l == 1.0
+    assert inst.np_lh == 1.0
+    # equal to the low boundary is ok though!
+    inst.np_lh = -1.0
+    assert inst.np_lh == -1.0
+
+    # respect high boundaries
+    inst.np = 10
+    with pytest.raises(ValueError):
+        inst.np_h = 10
+    with pytest.raises(ValueError):
+        inst.np_lh = 10
+    assert inst.np == 10
+    assert inst.np_h == -1.0
+    assert inst.np_lh == -1.0
+    # equal to the high boundary is ok though!
+    inst.np_lh = 1.0
+    assert inst.np_lh == 1.0
+
+
+def test_numberparam_assert():
+    """Malformed NumberParams."""
+
+    # low > high = bad
+    with pytest.raises(AssertionError):
+        class Test(object):
+            np = params.NumberParam(default=0, low=1, high=-1)
+
+    # default must be in range
+    with pytest.raises(AssertionError):
+        class Test(object):
+            np = params.NumberParam(default=1.0, high=0.0)
+    with pytest.raises(AssertionError):
+        class Test(object):
+            np = params.NumberParam(default=-1.0, low=0.0)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

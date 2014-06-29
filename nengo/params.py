@@ -23,6 +23,12 @@ class NumberParam(Parameter):
     def __init__(self, default, low=None, high=None, optional=False):
         self.low = low
         self.high = high
+        if default is not None and low is not None:
+            assert default >= low
+        if default is not None and high is not None:
+            assert default <= high
+        if low is not None and high is not None:
+            assert low < high
         super(NumberParam, self).__init__(default, optional)
 
     def validate(self, instance, num):
