@@ -4,6 +4,7 @@ import pytest
 
 import nengo
 from nengo import params
+from nengo.utils.compat import PY2
 
 logger = logging.getLogger(__name__)
 
@@ -134,15 +135,15 @@ def test_numberparam_assert():
 
     # low > high = bad
     with pytest.raises(AssertionError):
-        class Test(object):
+        class TestLH(object):
             np = params.NumberParam(default=0, low=1, high=-1)
 
     # default must be in range
     with pytest.raises(AssertionError):
-        class Test(object):
+        class TestDH(object):
             np = params.NumberParam(default=1.0, high=0.0)
     with pytest.raises(AssertionError):
-        class Test(object):
+        class TestDL(object):
             np = params.NumberParam(default=-1.0, low=0.0)
 
 
@@ -160,6 +161,26 @@ def test_intparam():
     with pytest.raises(ValueError):
         inst.ip = 'a'
 
+
+def test_stringparam():
+    """StringParams must be strings (bytes or unicode)."""
+    class Test(object):
+        sp = params.StringParam(default="Hi")
+
+    inst = Test()
+    assert inst.sp == "Hi"
+
+    # Bytes OK on Python 2
+    if PY2:
+        inst.sp = b"hello"
+        assert inst.sp == b"hello"
+    # Unicode OK on both
+    inst.sp = u"goodbye"
+    assert inst.sp == u"goodbye"
+
+    # Non-strings no good
+    with pytest.raises(ValueError):
+        inst.sp = 1
 
 if __name__ == "__main__":
     nengo.log(debug=True)
