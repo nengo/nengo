@@ -596,6 +596,8 @@ class Connection(NengoObject):
         self.function = function
 
     def _set_pre(self, pre):
+        if isinstance(pre, Probe):
+            raise ValueError("Objects of type 'Probe' cannot serve as 'pre'")
         self._set_obj(pre, 'pre')
         self._size_in = np.zeros(self._pre.size_out)[self._pre_slice].size
 
