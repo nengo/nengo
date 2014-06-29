@@ -28,11 +28,26 @@ def is_param(obj):
 
 
 class Parameter(object):
-    """Simple descriptor for storing configuration parameters"""
-    def __init__(self, default, optional=False, modifies=None):
+    """Simple descriptor for storing configuration parameters.
+
+    Parameters
+    ----------
+    default : object
+        The value returned if the parameter hasn't been explicitly set.
+    optional : bool, optional
+        Whether this parameter accepts the value None. By default,
+        parameters are not optional (i.e., cannot be set to ``None``).
+    modifies : list of str, optional
+        A list of attributes that this parameter modifies when being set.
+    readonly : bool, optional
+        Whether the parameter can be set multiple times.
+        By default, parameters can be set multiple times.
+    """
+    def __init__(self, default, optional=False, modifies=None, readonly=False):
         self.default = default
         self.optional = optional
         self.modifies = modifies
+        self.readonly = readonly
         # use WeakKey dictionaries so items can still be garbage collected
         self.defaults = weakref.WeakKeyDictionary()
         self.data = weakref.WeakKeyDictionary()
@@ -54,6 +69,8 @@ class Parameter(object):
         self.validate_none(instance, value)
         if value is not None:
             self.validate(instance, value)
+        if self.readonly and instance in self.data:
+            raise ValueError("Parameter is read-only; cannot be changed.")
         self.data[instance] = value
 
     def __repr__(self):
@@ -64,7 +81,7 @@ class Parameter(object):
 
     def validate_none(self, instance, value):
         if not self.optional and value is None:
-            raise ValueError("Mandatory; cannot set to None")
+            raise ValueError("Parameter is not optional; cannot set to None")
 
 
 class ClassParams(object):

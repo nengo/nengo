@@ -498,6 +498,63 @@ class Node(NengoObject):
         return self.size_out
 
 
+class Probe(NengoObject):
+    """A probe is an object that receives data from the simulation.
+
+    This is to be used in any situation where you wish to gather simulation
+    data (spike data, represented values, neuron voltages, etc.) for analysis.
+
+    Probes cannot directly affect the simulation.
+
+    TODO: Example usage for each object.
+
+    Parameters
+    ----------
+    target : Ensemble, Node, Connection
+        The Nengo object to connect to the probe.
+    attr : str, optional
+        The quantity to probe. Refer to the target's ``probeable`` list for
+        details. Defaults to the first element in the list.
+    sample_every : float, optional
+        Sampling period in seconds.
+    conn_args : dict, optional
+        Optional keyword arguments to pass to the Connection created for this
+        probe. For example, passing ``synapse=pstc`` will filter the data.
+    """
+
+    target = params.NengoObjectParam()
+
+    def __init__(self, target, attr=None, sample_every=None, **conn_args):
+        if not hasattr(target, 'probeable') or len(target.probeable) == 0:
+            raise TypeError(
+                "Type '%s' is not probeable" % target.__class__.__name__)
+
+        conn_args.setdefault('synapse', None)
+
+        # We'll use the first in the list as default
+        self.attr = attr if attr is not None else target.probeable[0]
+
+        if self.attr not in target.probeable:
+            raise ValueError(
+                "'%s' is not probeable for '%s'" % (self.attr, target))
+
+        self.target = target
+        self.label = "Probe(%s.%s)" % (target.label, self.attr)
+        self.sample_every = sample_every
+        self.conn_args = conn_args
+        self.seed = conn_args.get('seed', None)
+
+    def __len__(self):
+        return self.size_in
+
+    @property
+    def size_in(self):
+        # TODO: A bit of a hack; make less hacky.
+        if isinstance(self.target, Ensemble) and self.attr != "decoded_output":
+            return self.target.neurons.size_out
+        return self.target.size_out
+
+
 class Connection(NengoObject):
     """Connects two objects together.
 
@@ -565,6 +622,8 @@ class Connection(NengoObject):
         The seed used for random number generation.
     """
 
+    pre = params.NengoObjectParam(disallow=[Probe])
+    post = params.NengoObjectParam(role='post')
     synapse = params.SynapseParam(default=Lowpass(0.005))
     transform = params.TransformParam(default=np.array(1.0))
     solver = params.SolverParam(default=nengo.decoders.LstsqL2())
@@ -581,59 +640,30 @@ class Connection(NengoObject):
     def __init__(self, pre, post, synapse=Default, transform=Default,
                  solver=Default, learning_rule=Default, function=Default,
                  modulatory=Default, eval_points=Default, seed=Default):
-        # --- handle pre and post logic in __init__ rather than a property
-        # so that the pre and post setter can raise an error
-        self._set_pre(pre)
-        self._set_post(post)
+        self.pre = pre
+        self.post = post
 
         self.probeable = Default
+        self.solver = solver  # Must be set before learning rule
         self.learning_rule = learning_rule
         self.modulatory = modulatory
         self.synapse = synapse
-        self.solver = solver
         self.transform = transform  # Must be set before function
         self.eval_points = eval_points  # Must be set before function
         self.function = function
 
-    def _set_pre(self, pre):
-        if isinstance(pre, Probe):
-            raise ValueError("Objects of type 'Probe' cannot serve as 'pre'")
-        self._set_obj(pre, 'pre')
-        self._size_in = np.zeros(self._pre.size_out)[self._pre_slice].size
-
-    def _set_post(self, post):
-        self._set_obj(post, 'post')
-        self._size_out = np.zeros(self._post.size_in)[self._post_slice].size
-
-    def _set_obj(self, obj, side):
-        if not isinstance(obj, ObjView):
-            obj = ObjView(obj)
-        if not isinstance(obj.obj, (Ensemble, Node, Probe, Neurons)):
-            raise ValueError("Objects of type '%s' cannot serve as '%s'"
-                             % (obj.obj.__class__.__name__, side))
-        setattr(self, '_%s' % side, obj.obj)
-        setattr(self, '_%s_slice' % side, obj.slice)
-
-    @property
-    def pre(self):
-        return self._pre
-
-    @property
-    def post(self):
-        return self._post
-
     @property
     def pre_slice(self):
-        return self._pre_slice
+        return Connection.pre.slice(self)
 
     @property
     def post_slice(self):
-        return self._post_slice
+        return Connection.post.slice(self)
 
     @property
     def size_in(self):
         """Output size of sliced `pre`; input size of the function."""
-        return self._size_in
+        return Connection.pre.size(self)
 
     @property
     def size_mid(self):
@@ -642,71 +672,19 @@ class Connection(NengoObject):
         If the function is None, then `size_in == size_mid`.
         """
         size = Connection.function.size(self)
-        return self._size_in if size is None else size
+        return self.size_in if size is None else size
 
     @property
     def size_out(self):
         """Output size of the transform; input size to the sliced post."""
-        return self._size_out
+        return Connection.post.size(self)
 
     @property
     def label(self):
-        label = "%s->%s" % (self._pre.label, self._post.label)
+        label = "%s->%s" % (self.pre.label, self.post.label)
         if self.function is not None:
             return "%s:%s" % (label, self.function.__name__)
         return label
-
-
-class Probe(NengoObject):
-    """A probe is an object that receives data from the simulation.
-
-    This is to be used in any situation where you wish to gather simulation
-    data (spike data, represented values, neuron voltages, etc.) for analysis.
-
-    Probes cannot directly affect the simulation.
-
-    TODO: Example usage for each object.
-
-    Parameters
-    ----------
-    target : Ensemble, Node, Connection
-        The Nengo object to connect to the probe.
-    attr : str, optional
-        The quantity to probe. Refer to the target's ``probeable`` list for
-        details. Defaults to the first element in the list.
-    sample_every : float, optional
-        Sampling period in seconds.
-    conn_args : dict, optional
-        Optional keyword arguments to pass to the Connection created for this
-        probe. For example, passing ``synapse=pstc`` will filter the data.
-    """
-
-    def __init__(self, target, attr=None, sample_every=None, **conn_args):
-        if not hasattr(target, 'probeable') or len(target.probeable) == 0:
-            raise TypeError(
-                "Type '%s' is not probeable" % target.__class__.__name__)
-
-        conn_args.setdefault('synapse', None)
-
-        # We'll use the first in the list as default
-        self.attr = attr if attr is not None else target.probeable[0]
-
-        if self.attr not in target.probeable:
-            raise ValueError(
-                "'%s' is not probeable for '%s'" % (self.attr, target))
-
-        self.target = target
-        self.label = "Probe(%s.%s)" % (target.label, self.attr)
-        self.sample_every = sample_every
-        self.conn_args = conn_args
-        self.seed = conn_args.get('seed', None)
-
-    @property
-    def size_in(self):
-        # TODO: A bit of a hack; make less hacky.
-        if isinstance(self.target, Ensemble) and self.attr != "decoded_output":
-            return self.target.neurons.size_out
-        return self.target.size_out
 
 
 class ObjView(object):
@@ -719,7 +697,7 @@ class ObjView(object):
     Does not currently support any other view-like operations.
     """
 
-    def __init__(self, obj, key=slice(None)):
+    def __init__(self, obj, key=slice(None), role='pre'):
         self.obj = obj
         if isinstance(key, int):
             # single slices of the form [i] should be cast into
@@ -730,6 +708,8 @@ class ObjView(object):
             else:
                 key = slice(key, key+1)
         self.slice = key
+        self.role = role
 
     def __len__(self):
-        return len(np.arange(len(self.obj))[self.slice])
+        size = self.obj.size_in if self.role == 'post' else self.obj.size_out
+        return len(np.arange(size)[self.slice])

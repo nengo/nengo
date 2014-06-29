@@ -110,11 +110,12 @@ class NodeOutput(Parameter):
 class DistributionParam(Parameter):
     """Can be a Distribution or samples from a distribution."""
 
-    def __init__(self, default, optional=False, modifies=None,
+    def __init__(self, default, optional=False, modifies=None, readonly=False,
                  sample_shape=None, scalar_ok=True):
         self.sample_shape = sample_shape
         self.scalar_ok = scalar_ok
-        super(DistributionParam, self).__init__(default, optional, modifies)
+        super(DistributionParam, self).__init__(
+            default, optional, modifies, readonly)
 
     def __set__(self, instance, dist):
         self.validate_none(instance, dist)
@@ -161,7 +162,7 @@ class ConnEvalPoints(DistributionParam):
         if dist is None:
             return
 
-        pre = conn._pre
+        pre = conn.pre
         if not isinstance(pre, (Ensemble, Neurons)):
             raise ValueError("eval_points only work on connections from "
                              "ensembles (got '%s')" % pre.__class__.__name__)
@@ -192,9 +193,10 @@ class NeuronTypeParam(Parameter):
 
 
 class SynapseParam(Parameter):
-    def __init__(self, default, optional=True, modifies=None):
+    def __init__(self, default, optional=True, modifies=None, readonly=False):
         assert optional  # None has meaning (no filtering)
-        super(SynapseParam, self).__init__(default, optional, modifies)
+        super(SynapseParam, self).__init__(
+            default, optional, modifies, readonly)
 
     def __set__(self, conn, synapse):
         if is_number(synapse):
@@ -212,10 +214,10 @@ class SolverParam(Parameter):
         from nengo.objects import Ensemble
         if not isinstance(solver, Solver):
             raise ValueError("'%s' is not a solver" % solver)
-        if solver.weights and not isinstance(conn._post, Ensemble):
+        if solver.weights and not isinstance(conn.post, Ensemble):
             raise ValueError(
                 "weight solvers only work for connections from ensembles "
-                "(got '%s')" % conn._post.__class__.__name__)
+                "(got '%s')" % conn.post.__class__.__name__)
 
 
 class LearningRuleParam(Parameter):
@@ -334,3 +336,49 @@ class TransformParam(Parameter):
         if transform.ndim > 2:
             raise ValueError("Cannot handle transform tensors "
                              "with dimensions > 2")
+
+NengoObjectInfo = collections.namedtuple('NengoObjectInfo',
+                                         ['obj', 'slice', 'size'])
+
+
+class NengoObjectParam(Parameter):
+    def __init__(self, default=None, optional=False, modifies=None,
+                 readonly=True, disallow=None, role='pre'):
+        assert default is None  # These can't have defaults
+        self.disallow = [] if disallow is None else disallow
+        self.role = role
+        super(NengoObjectParam, self).__init__(
+            default, optional, modifies, readonly)
+
+    def __get__(self, instance, type_):
+        value = Parameter.__get__(self, instance, type_)
+        return value.obj if isinstance(value, NengoObjectInfo) else value
+
+    def size(self, instance):
+        value = Parameter.__get__(self, instance, None)
+        return value.size if isinstance(value, NengoObjectInfo) else value
+
+    def slice(self, instance):
+        value = Parameter.__get__(self, instance, None)
+        return value.slice if isinstance(value, NengoObjectInfo) else value
+
+    def __set__(self, instance, nengo_obj):
+        from nengo.objects import ObjView
+        self.validate_none(instance, nengo_obj)
+
+        if not isinstance(nengo_obj, ObjView):
+            nengo_obj = ObjView(nengo_obj)
+        nengo_obj.role = self.role
+        self.validate(instance, nengo_obj.obj)
+        self.data[instance] = NengoObjectInfo(obj=nengo_obj.obj,
+                                              slice=nengo_obj.slice,
+                                              size=len(nengo_obj))
+
+    def validate(self, instance, nengo_obj):
+        from nengo.objects import NengoObject, Neurons
+        if not isinstance(nengo_obj, (NengoObject, Neurons)):
+            raise ValueError("'%s' is not a Nengo object" % nengo_obj)
+
+        for n_type in self.disallow:
+            if isinstance(nengo_obj, n_type):
+                raise ValueError("Objects of type '%s' disallowed." % n_type)
