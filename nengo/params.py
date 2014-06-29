@@ -56,7 +56,7 @@ class StringParam(Parameter):
 class ListParam(Parameter):
     def validate(self, instance, lst):
         if not isinstance(lst, list):
-            raise ValueError("Must be a list; got '%s'" % lst)
+            raise ValueError("Must be a list; got '%s'" % str(lst))
 
 
 class NodeOutput(Parameter):
