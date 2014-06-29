@@ -48,6 +48,8 @@ class Parameter(object):
         self.optional = optional
         self.modifies = modifies
         self.readonly = readonly
+        # readonly Parameters must have default=None
+        assert not readonly or default is None
         # use WeakKey dictionaries so items can still be garbage collected
         self.defaults = weakref.WeakKeyDictionary()
         self.data = weakref.WeakKeyDictionary()

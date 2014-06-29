@@ -48,27 +48,6 @@ def test_config_basic():
         model.config[None].something
 
 
-def test_parameter_checking():
-    class PositiveParameter(Parameter):
-        def __set__(self, instance, value):
-            if not isinstance(value, (int, float)) or value <= 0:
-                raise AttributeError('value must be positive')
-            super(PositiveParameter, self).__set__(instance, value)
-
-    model = nengo.Network()
-    model.config[nengo.Ensemble].set_param(
-        'number', PositiveParameter(default=1))
-    with model:
-        a = nengo.Ensemble(50, 1)
-        b = nengo.Ensemble(90, 1)
-
-    model.config[a].number = 3
-    with pytest.raises(AttributeError):
-        model.config[a].number = 0
-    with pytest.raises(AttributeError):
-        model.config[b].number = 'a'
-
-
 def test_network_nesting():
     """Make sure nested networks inherit configs."""
     with nengo.Network() as net1:
