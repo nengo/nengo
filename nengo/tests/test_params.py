@@ -67,6 +67,19 @@ def test_readonly_assert():
             p = params.Parameter(default=1, readonly=True)
 
 
+def test_boolparam():
+    """BoolParams can only be booleans."""
+
+    class Test(object):
+        bp = params.BoolParam(default=False)
+
+    inst = Test()
+    assert not inst.bp
+    inst.bp = True
+    assert inst.bp
+    with pytest.raises(ValueError):
+        inst.bp = 1
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
