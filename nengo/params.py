@@ -44,7 +44,7 @@ class IntParam(NumberParam):
     def validate(self, instance, num):
         if not is_integer(num):
             raise ValueError("Must be an integer; got '%s'" % num)
-        super(NumberParam, self).validate(instance, num)
+        super(IntParam, self).validate(instance, num)
 
 
 class StringParam(Parameter):

@@ -124,6 +124,10 @@ def test_numberparam():
     inst.np_lh = 1.0
     assert inst.np_lh == 1.0
 
+    # must be a number!
+    with pytest.raises(ValueError):
+        inst.np = 'a'
+
 
 def test_numberparam_assert():
     """Malformed NumberParams."""
@@ -140,6 +144,21 @@ def test_numberparam_assert():
     with pytest.raises(AssertionError):
         class Test(object):
             np = params.NumberParam(default=-1.0, low=0.0)
+
+
+def test_intparam():
+    """IntParams are like NumberParams but must be an int."""
+    class Test(object):
+        ip = params.IntParam(default=1, low=0, high=2)
+
+    inst = Test()
+    assert inst.ip == 1
+    with pytest.raises(ValueError):
+        inst.ip = -1
+    with pytest.raises(ValueError):
+        inst.ip = 3
+    with pytest.raises(ValueError):
+        inst.ip = 'a'
 
 
 if __name__ == "__main__":
