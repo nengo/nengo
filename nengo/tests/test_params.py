@@ -5,11 +5,12 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.decoders import LstsqL2
+from nengo.neurons import LIF
 from nengo import params
+from nengo.synapses import Lowpass
 from nengo.utils.compat import PY2
 from nengo.utils.distributions import UniformHypersphere
-from nengo.neurons import LIF
-from nengo.synapses import Lowpass
 
 logger = logging.getLogger(__name__)
 
@@ -288,6 +289,21 @@ def test_synapseparam():
     inst.sp = None
     assert inst.sp is None
     # Non-synapse not OK
+    with pytest.raises(ValueError):
+        inst.sp = 'a'
+
+
+def test_solverparam():
+    """SolverParam must be a solver."""
+    class Test(object):
+        sp = params.SolverParam(default=None)
+
+    inst = Test()
+    assert inst.sp is None
+    inst.sp = LstsqL2()
+    assert isinstance(inst.sp, LstsqL2)
+    assert not inst.sp.weights
+    # Non-solver not OK
     with pytest.raises(ValueError):
         inst.sp = 'a'
 

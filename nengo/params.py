@@ -224,14 +224,19 @@ class SynapseParam(Parameter):
 
 
 class SolverParam(Parameter):
-    def validate(self, conn, solver):
-        from nengo.objects import Ensemble
+    def validate(self, instance, solver):
+        from nengo.objects import Connection, Ensemble
         if not isinstance(solver, Solver):
             raise ValueError("'%s' is not a solver" % solver)
-        if solver.weights and not isinstance(conn.post, Ensemble):
-            raise ValueError(
-                "weight solvers only work for connections from ensembles "
-                "(got '%s')" % conn.post.__class__.__name__)
+        if isinstance(instance, Connection):
+            if solver.weights and not isinstance(instance.pre, Ensemble):
+                raise ValueError(
+                    "weight solvers only work for connections from ensembles "
+                    "(got '%s')" % instance.pre.__class__.__name__)
+            if solver.weights and not isinstance(instance.post, Ensemble):
+                raise ValueError(
+                    "weight solvers only work for connections to ensembles "
+                    "(got '%s')" % instance.post.__class__.__name__)
 
 
 class LearningRuleParam(Parameter):
