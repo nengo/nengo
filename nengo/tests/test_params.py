@@ -9,6 +9,7 @@ from nengo import params
 from nengo.utils.compat import PY2
 from nengo.utils.distributions import UniformHypersphere
 from nengo.neurons import LIF
+from nengo.synapses import Lowpass
 
 logger = logging.getLogger(__name__)
 
@@ -269,6 +270,26 @@ def test_neurontypeparam_probeable():
     # Unsetting it should clear the list appropriately
     inst.ntp = None
     assert inst.probeable == ['output']
+
+
+def test_synapseparam():
+    """SynapseParam must be a Synapse, and converts numbers to LowPass."""
+    class Test(object):
+        sp = params.SynapseParam(default=Lowpass(0.1))
+
+    inst = Test()
+    assert isinstance(inst.sp, Lowpass)
+    assert inst.sp.tau == 0.1
+    # Number are converted to LowPass
+    inst.sp = 0.05
+    assert isinstance(inst.sp, Lowpass)
+    assert inst.sp.tau == 0.05
+    # None has meaning
+    inst.sp = None
+    assert inst.sp is None
+    # Non-synapse not OK
+    with pytest.raises(ValueError):
+        inst.sp = 'a'
 
 
 if __name__ == "__main__":

@@ -215,6 +215,7 @@ class SynapseParam(Parameter):
         if is_number(synapse):
             synapse = Lowpass(synapse)
         self.validate(conn, synapse)
+        self.validate_readonly(conn, synapse)
         self.data[conn] = synapse
 
     def validate(self, conn, synapse):
