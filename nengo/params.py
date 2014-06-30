@@ -116,8 +116,8 @@ class NodeOutput(Parameter):
 class DistributionParam(Parameter):
     """Can be a Distribution or samples from a distribution."""
 
-    def __init__(self, default, optional=False, modifies=None, readonly=False,
-                 sample_shape=None, scalar_ok=True):
+    def __init__(self, default, sample_shape, optional=False, modifies=None,
+                 readonly=False, scalar_ok=True):
         self.sample_shape = sample_shape
         self.scalar_ok = scalar_ok
         super(DistributionParam, self).__init__(
@@ -131,6 +131,8 @@ class DistributionParam(Parameter):
         elif dist is not None:
             dist = self.validate_ndarray(instance, dist)
 
+        if self.readonly and instance in self.data:
+            raise ValueError("Parameter is read-only; cannot be changed.")
         self.data[instance] = dist
 
     def validate_ndarray(self, instance, dist):

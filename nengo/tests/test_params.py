@@ -1,10 +1,12 @@
 import logging
 
+import numpy as np
 import pytest
 
 import nengo
 from nengo import params
 from nengo.utils.compat import PY2
+from nengo.utils.distributions import UniformHypersphere
 
 logger = logging.getLogger(__name__)
 
@@ -199,6 +201,39 @@ def test_listparam():
     # Non-lists no good
     with pytest.raises(ValueError):
         inst2.lp = (1, 2)
+
+
+def test_distributionparam():
+    """DistributionParams can be distributions or samples."""
+    class Test(object):
+        dp = params.DistributionParam(default=None, sample_shape=['*', '*'])
+
+    inst = Test()
+    inst.dp = UniformHypersphere()
+    assert isinstance(inst.dp, UniformHypersphere)
+    inst.dp = np.array([[1], [2], [3]])
+    assert np.all(inst.dp == np.array([[1], [2], [3]]))
+    with pytest.raises(ValueError):
+        inst.dp = 'a'
+
+
+def test_distributionparam_sample_shape():
+    """sample_shape dictates the shape of the sample that can be set."""
+    class Test(object):
+        dp = params.DistributionParam(default=None, sample_shape=['d1', 'd2'])
+        d1 = 4
+        d2 = 10
+
+    inst = Test()
+    # Distributions are still cool
+    inst.dp = UniformHypersphere()
+    assert isinstance(inst.dp, UniformHypersphere)
+    # Must be shape (4, 10)
+    inst.dp = np.ones((4, 10))
+    assert np.all(inst.dp == np.ones((4, 10)))
+    with pytest.raises(ValueError):
+        inst.dp = np.ones((10, 4))
+    assert np.all(inst.dp == np.ones((4, 10)))
 
 
 if __name__ == "__main__":
