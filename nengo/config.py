@@ -71,8 +71,7 @@ class Parameter(object):
         self.validate_none(instance, value)
         if value is not None:
             self.validate(instance, value)
-        if self.readonly and instance in self.data:
-            raise ValueError("Parameter is read-only; cannot be changed.")
+        self.validate_readonly(instance, value)
         self.data[instance] = value
 
     def __repr__(self):
@@ -84,6 +83,10 @@ class Parameter(object):
     def validate_none(self, instance, value):
         if not self.optional and value is None:
             raise ValueError("Parameter is not optional; cannot set to None")
+
+    def validate_readonly(self, instance, value):
+        if self.readonly and instance in self.data:
+            raise ValueError("Parameter is read-only; cannot be changed.")
 
 
 class ClassParams(object):

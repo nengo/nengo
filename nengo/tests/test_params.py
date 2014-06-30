@@ -1,3 +1,4 @@
+from collections import Counter
 import logging
 
 import numpy as np
@@ -7,6 +8,7 @@ import nengo
 from nengo import params
 from nengo.utils.compat import PY2
 from nengo.utils.distributions import UniformHypersphere
+from nengo.neurons import LIF
 
 logger = logging.getLogger(__name__)
 
@@ -234,6 +236,39 @@ def test_distributionparam_sample_shape():
     with pytest.raises(ValueError):
         inst.dp = np.ones((10, 4))
     assert np.all(inst.dp == np.ones((4, 10)))
+
+
+def test_neurontypeparam():
+    """NeuronTypeParam must be a neuron type."""
+    class Test(object):
+        ntp = params.NeuronTypeParam(default=None)
+
+    inst = Test()
+    inst.ntp = LIF()
+    assert isinstance(inst.ntp, LIF)
+    with pytest.raises(ValueError):
+        inst.ntp = 'a'
+
+
+def test_neurontypeparam_probeable():
+    """NeuronTypeParam can update a probeable list."""
+    class Test(object):
+        ntp = params.NeuronTypeParam(default=None, optional=True)
+        probeable = ['output']
+
+    inst = Test()
+    assert inst.probeable == ['output']
+    inst.ntp = LIF()
+    assert Counter(inst.probeable) == Counter(inst.ntp.probeable + ['output'])
+    # The first element is important,  as it's the default
+    assert inst.probeable[0] == 'output'
+    # Setting it again should result in the same list
+    inst.ntp = LIF()
+    assert Counter(inst.probeable) == Counter(inst.ntp.probeable + ['output'])
+    assert inst.probeable[0] == 'output'
+    # Unsetting it should clear the list appropriately
+    inst.ntp = None
+    assert inst.probeable == ['output']
 
 
 if __name__ == "__main__":

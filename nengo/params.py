@@ -125,14 +125,13 @@ class DistributionParam(Parameter):
 
     def __set__(self, instance, dist):
         self.validate_none(instance, dist)
+        self.validate_readonly(instance, dist)
 
         if isinstance(dist, Distribution):
             self.validate_distribution(instance, dist)
         elif dist is not None:
             dist = self.validate_ndarray(instance, dist)
 
-        if self.readonly and instance in self.data:
-            raise ValueError("Parameter is read-only; cannot be changed.")
         self.data[instance] = dist
 
     def validate_ndarray(self, instance, dist):
@@ -177,25 +176,31 @@ class ConnEvalPoints(DistributionParam):
 
 
 class NeuronTypeParam(Parameter):
-    def __set__(self, ens, neurons):
-        self.validate_none(ens, neurons)
-        self.validate(ens, neurons)
+    def __set__(self, instance, neurons):
+        self.validate_none(instance, neurons)
+        if neurons is not None:
+            self.validate(instance, neurons)
+        self.validate_readonly(instance, neurons)
+        if hasattr(instance, 'probeable'):
+            self.update_probeable(instance, neurons)
+        self.data[instance] = neurons
 
-        # --- Update the probeable list
+    def update_probeable(self, instance, neurons):
+        """Update the probeable list."""
         # We could use a set instead and this would be easier, but we use
-        # the first member of the list as the default probeable
-        if hasattr(ens, 'neuron_type') and ens.neuron_type is not None:
-            for attr in ens.neuron_type.probeable:
-                if attr in ens.probeable:
-                    ens.probeable.remove(attr)
+        # the first member of the list as the default probeable, so that
+        # doesn't work.
+        if instance in self.data and self.data[instance] is not None:
+            for attr in self.data[instance].probeable:
+                if attr in instance.probeable:
+                    instance.probeable.remove(attr)
 
-        for attr in neurons.probeable:
-            if attr not in ens.probeable:
-                ens.probeable.append(attr)
+        if neurons is not None:
+            for attr in neurons.probeable:
+                if attr not in instance.probeable:
+                    instance.probeable.append(attr)
 
-        self.data[ens] = neurons
-
-    def validate(self, ens, neurons):
+    def validate(self, instance, neurons):
         if not isinstance(neurons, NeuronType):
             raise ValueError("'%s' is not a neuron type" % neurons)
 
