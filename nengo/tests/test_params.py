@@ -6,6 +6,7 @@ import pytest
 
 import nengo
 from nengo.decoders import LstsqL2
+from nengo.learning_rules import Oja
 from nengo.neurons import LIF
 from nengo import params
 from nengo.synapses import Lowpass
@@ -307,6 +308,25 @@ def test_solverparam():
     with pytest.raises(ValueError):
         inst.sp = 'a'
 
+
+def test_learningruleparam():
+    """LearningRuleParam must be one or many learning rules."""
+    class Test(object):
+        lrp = params.LearningRuleParam(default=None)
+
+    inst = Test()
+    assert inst.lrp is None
+    inst.lrp = Oja()
+    assert isinstance(inst.lrp, Oja)
+    inst.lrp = [Oja(), Oja()]
+    for lr in inst.lrp:
+        assert isinstance(lr, Oja)
+    # Non-LR no good
+    with pytest.raises(ValueError):
+        inst.lrp = 'a'
+    # All elements in list must be LR
+    with pytest.raises(ValueError):
+        inst.lrp = [Oja(), 'a', Oja()]
 
 if __name__ == "__main__":
     nengo.log(debug=True)

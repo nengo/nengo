@@ -240,23 +240,25 @@ class SolverParam(Parameter):
 
 
 class LearningRuleParam(Parameter):
-    def validate(self, conn, rule):
+    def validate(self, instance, rule):
         if is_iterable(rule):
             for lr in rule:
-                self.validate_rule(conn, lr)
-        elif not isinstance(rule, LearningRule):
-            raise ValueError("'%s' is not a learning rule" % rule)
+                self.validate_rule(instance, lr)
+        elif rule is not None:
+            self.validate_rule(instance, rule)
 
-    def validate_rule(self, conn, rule):
+    def validate_rule(self, instance, rule):
+        from nengo.objects import Connection
         if not isinstance(rule, LearningRule):
             raise ValueError("'%s' is not a learning rule" % rule)
 
-        rule_type = ('Neurons' if conn.solver.weights
-                     else type(conn.pre).__name__)
-        if rule_type not in rule.modifies:
-            raise ValueError("Learning rule '%s' cannot be applied to "
-                             "connection with pre of type '%s'"
-                             % (rule, type(conn.pre).__name__))
+        if isinstance(instance, Connection):
+            rule_type = ('Neurons' if instance.solver.weights
+                         else type(instance.pre).__name__)
+            if rule_type not in rule.modifies:
+                raise ValueError("Learning rule '%s' cannot be applied to "
+                                 "connection with pre of type '%s'"
+                                 % (rule, type(instance.pre).__name__))
 
 
 FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])

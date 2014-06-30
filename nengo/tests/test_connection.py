@@ -648,7 +648,7 @@ def test_slicing_function(Simulator, nl):
     assert np.allclose(w, y, atol=0.1, rtol=0.0)
 
 
-def test_weight_solver():
+def test_set_weight_solver():
     with nengo.Network():
         a = nengo.Ensemble(10, 2)
         b = nengo.Ensemble(10, 2)
@@ -663,6 +663,22 @@ def test_weight_solver():
         with pytest.raises(ValueError):
             nengo.Connection(a.neurons, b.neurons,
                              solver=nengo.decoders.LstsqL2(weights=True))
+
+
+def test_set_learning_rule():
+    with nengo.Network():
+        a = nengo.Ensemble(10, 2)
+        b = nengo.Ensemble(10, 2)
+        err = nengo.Connection(a, b)
+        n = nengo.Node(output=lambda t, x: t * x, size_in=2)
+        nengo.Connection(a, b, learning_rule=nengo.PES(err))
+        nengo.Connection(a, b, learning_rule=nengo.PES(err),
+                         solver=nengo.decoders.LstsqL2(weights=True))
+        nengo.Connection(a.neurons, b.neurons, learning_rule=nengo.PES(err))
+        nengo.Connection(a.neurons, b.neurons, learning_rule=nengo.Oja())
+
+        with pytest.raises(ValueError):
+            nengo.Connection(n, a, learning_rule=nengo.PES(err))
 
 
 if __name__ == "__main__":
