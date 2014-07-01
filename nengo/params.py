@@ -168,13 +168,13 @@ class ConnEvalPoints(DistributionParam):
 
     def validate_pre(self, conn, dist):
         """Eval points are only valid when pre is an ensemble."""
-        from nengo.objects import Ensemble, Neurons
+        from nengo.objects import Ensemble
 
         if dist is None:
             return
 
         pre = conn.pre
-        if not isinstance(pre, (Ensemble, Neurons)):
+        if not isinstance(pre, Ensemble):
             raise ValueError("eval_points only work on connections from "
                              "ensembles (got '%s')" % pre.__class__.__name__)
 

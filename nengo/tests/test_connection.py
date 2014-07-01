@@ -719,6 +719,19 @@ def test_set_function(Simulator):
 
     Simulator(model)  # Builds fine
 
+
+def test_set_eval_points(Simulator):
+    with nengo.Network() as model:
+        a = nengo.Ensemble(10, 2)
+        b = nengo.Ensemble(10, 2)
+        # ConnEvalPoints parameter checks that pre is an ensemble
+        nengo.Connection(a, b, eval_points=[[0, 0], [0.5, 1]])
+        with pytest.raises(ValueError):
+            nengo.Connection(a.neurons, b, eval_points=[[0, 0], [0.5, 1]])
+
+    Simulator(model)  # Builds fine
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
