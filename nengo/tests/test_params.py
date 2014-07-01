@@ -346,6 +346,57 @@ def test_functionparam():
         inst.fp = 0
 
 
+def test_nengoobjectparam():
+    """NengoObjectParam must be a Nengo object and is readonly by default."""
+    class Test(object):
+        nop = params.NengoObjectParam()
+
+    inst = Test()
+    assert inst.nop is None
+    # Must be a Nengo object
+    with pytest.raises(ValueError):
+        inst.nop = 'a'
+    a = nengo.Ensemble(10, dimensions=2, add_to_container=False)
+    inst.nop = a.neurons
+    assert inst.nop is a.neurons
+    # Can't set it twice
+    with pytest.raises(ValueError):
+        inst.nop = a
+    # Setting it gives access to size and slice
+    assert Test.nop.size(inst) == 10
+    assert Test.nop.slice(inst) == slice(None)
+
+
+def test_nengoobjectparam_disallow():
+    """Can disallow specific Nengo objects."""
+    class Test(object):
+        nop = params.NengoObjectParam(disallow=[nengo.Connection])
+
+    inst = Test()
+    with nengo.Network():
+        a = nengo.Ensemble(10, 2)
+        b = nengo.Ensemble(10, 2)
+        with pytest.raises(ValueError):
+            inst.nop = nengo.Connection(a, b)
+        inst.nop = b
+        assert inst.nop is b
+
+
+def test_nengoobjectparam_role():
+    """Setting the 'role' can give different sizes."""
+    class Test(object):
+        pre = params.NengoObjectParam(role='pre')
+        post = params.NengoObjectParam(role='post')
+
+    inst = Test()
+    n = nengo.Node(lambda t, x: np.ones(5) * np.sum(x),
+                   size_in=3,
+                   add_to_container=False)
+    inst.pre = n
+    inst.post = n
+    assert Test.pre.size(inst) == 5
+    assert Test.post.size(inst) == 3
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

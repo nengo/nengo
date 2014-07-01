@@ -406,6 +406,7 @@ class NengoObjectParam(Parameter):
             nengo_obj = ObjView(nengo_obj)
         nengo_obj.role = self.role
         self.validate(instance, nengo_obj.obj)
+        self.validate_readonly(instance, nengo_obj.obj)
         self.data[instance] = NengoObjectInfo(obj=nengo_obj.obj,
                                               slice=nengo_obj.slice,
                                               size=len(nengo_obj))

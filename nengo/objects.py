@@ -414,6 +414,7 @@ class Ensemble(NengoObject):
         self.neuron_type = neuron_type
         self.seed = seed
         self.probeable = Default
+        self._neurons = Neurons(self)
 
     def __getitem__(self, key):
         return ObjView(self, key)
@@ -423,7 +424,7 @@ class Ensemble(NengoObject):
 
     @property
     def neurons(self):
-        return Neurons(self)
+        return self._neurons
 
     @neurons.setter
     def neurons(self, dummy):
