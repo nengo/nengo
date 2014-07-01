@@ -1,4 +1,5 @@
 import collections
+import warnings
 
 import numpy as np
 
@@ -67,6 +68,9 @@ class NodeOutput(Parameter):
     def __set__(self, node, output):
         # --- Validate and set the new size_out
         if output is None:
+            if node.size_out is not None:
+                warnings.warn("'Node.size_out' will be overwritten with "
+                              "'Node.size_in' when 'Node.output=None'")
             node.size_out = node.size_in
         elif callable(output) and node.size_out is not None:
             # We trust user's size_out if set, because calling output

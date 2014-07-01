@@ -486,7 +486,7 @@ class Node(NengoObject):
     label = params.StringParam(default=None, optional=True)
     probeable = params.ListParam(default=['output'])
 
-    def __init__(self, output=Default,  # noqa: C901
+    def __init__(self, output=Default,
                  size_in=Default, size_out=Default, label=Default):
         self.size_in = size_in
         self.size_out = size_out

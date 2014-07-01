@@ -265,6 +265,63 @@ def test_len():
     assert len(n4[1:3]) == 2
 
 
+def test_set_output(Simulator, recwarn):
+    counter = []
+
+    def accumulate(t):
+        counter.append(t)
+        return t
+
+    def noreturn(t):
+        pass
+
+    with nengo.Network() as model:
+        # if output is None, size_out == size_in
+        passthrough = nengo.Node(None, size_in=20, size_out=30)
+        assert recwarn.pop() is not None  # Should raise warning
+        assert passthrough.output is None
+        assert passthrough.size_out == 20
+
+        # if output is an array-like...
+        # size_in must be 0
+        with pytest.raises(TypeError):
+            nengo.Node(np.ones(1), size_in=1)
+        # size_out must match
+        with pytest.raises(ValueError):
+            nengo.Node(np.ones(3), size_out=2)
+        # must be scalar or vector, not matrix
+        with pytest.raises(ValueError):
+            nengo.Node(np.ones((2, 2)))
+        # scalar gets promoted to float vector
+        scalar = nengo.Node(2)
+        assert scalar.output.shape == (1,)
+        assert str(scalar.output.dtype) == 'float64'
+        # vector stays 1D
+        vector = nengo.Node(np.arange(3))
+        assert vector.output.shape == (3,)
+        assert str(vector.output.dtype) == 'float64'
+
+        # if output is callable...
+        # if size_in is 0, should only take in t
+        with pytest.raises(TypeError):
+            nengo.Node(lambda t, x: 2.0, size_in=0)
+        # if size_in > 0, should take both t and x
+        with pytest.raises(TypeError):
+            nengo.Node(lambda t: t ** 2, size_in=1)
+        # function must return a scalar or vector, not matrix
+        with pytest.raises(ValueError):
+            nengo.Node(lambda t: np.ones((2, 2)))
+        # if we pass size_out, function should not be called
+        assert len(counter) == 0
+        accum_func = nengo.Node(accumulate, size_out=1)
+        assert len(counter) == 0
+        assert accum_func.size_out == 1
+        # if the function returns None, size_out == 0
+        noreturn_func = nengo.Node(noreturn)
+        assert noreturn_func.size_out == 0
+
+    Simulator(model)  # Ensure it all builds
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
