@@ -208,6 +208,24 @@ def test_listparam():
         inst2.lp = (1, 2)
 
 
+def test_dictparam():
+    """DictParams must be dictionaries."""
+    class Test(object):
+        dp = params.DictParam(default={'a': 1})
+
+    inst1 = Test()
+    assert inst1.dp == {'a': 1}
+    inst1.dp['b'] = 2
+
+    # The default dict is mutable -- other instances will get the same dict
+    inst2 = Test()
+    assert inst2.dp == {'a': 1, 'b': 2}
+
+    # Non-dicts no good
+    with pytest.raises(ValueError):
+        inst2.dp = [('a', 1), ('b', 2)]
+
+
 def test_distributionparam():
     """DistributionParams can be distributions or samples."""
     class Test(object):

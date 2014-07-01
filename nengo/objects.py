@@ -157,6 +157,7 @@ class Network(with_metaclass(NengoObjectContainer)):
         config.configures(Ensemble)
         config.configures(Network)
         config.configures(Node)
+        config.configures(Probe)
         return config
 
     def _all_objects(self, object_type):
@@ -526,8 +527,12 @@ class Probe(NengoObject):
     """
 
     target = params.NengoObjectParam()
+    attr = params.StringParam(default=None)
+    sample_every = params.NumberParam(default=None, optional=True, low=1e-10)
+    conn_args = params.DictParam(default=None)
 
-    def __init__(self, target, attr=None, sample_every=None, **conn_args):
+    def __init__(self, target, attr=Default, sample_every=Default,
+                 label=Default, **conn_args):
         if not hasattr(target, 'probeable') or len(target.probeable) == 0:
             raise TypeError(
                 "Type '%s' is not probeable" % target.__class__.__name__)
@@ -535,20 +540,23 @@ class Probe(NengoObject):
         conn_args.setdefault('synapse', None)
 
         # We'll use the first in the list as default
-        self.attr = attr if attr is not None else target.probeable[0]
+        self.attr = attr if attr is not Default else target.probeable[0]
 
         if self.attr not in target.probeable:
             raise ValueError(
                 "'%s' is not probeable for '%s'" % (self.attr, target))
 
         self.target = target
-        self.label = "Probe(%s.%s)" % (target.label, self.attr)
         self.sample_every = sample_every
         self.conn_args = conn_args
         self.seed = conn_args.get('seed', None)
 
     def __len__(self):
         return self.size_in
+
+    @property
+    def label(self):
+        return "Probe(%s.%s)" % (self.target.label, self.attr)
 
     @property
     def size_in(self):

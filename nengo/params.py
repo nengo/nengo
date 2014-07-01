@@ -60,6 +60,12 @@ class ListParam(Parameter):
             raise ValueError("Must be a list; got '%s'" % str(lst))
 
 
+class DictParam(Parameter):
+    def validate(self, instance, dct):
+        if not isinstance(dct, dict):
+            raise ValueError("Must be a dictionary; got '%s'" % str(dct))
+
+
 class NodeOutput(Parameter):
     def __init__(self, default, optional=True, modifies=None):
         assert optional  # None has meaning (passthrough node)
