@@ -66,10 +66,10 @@ class DictParam(Parameter):
             raise ValueError("Must be a dictionary; got '%s'" % str(dct))
 
 
-class NodeOutput(Parameter):
+class NodeOutputParam(Parameter):
     def __init__(self, default, optional=True, modifies=None):
         assert optional  # None has meaning (passthrough node)
-        super(NodeOutput, self).__init__(default, optional, modifies)
+        super(NodeOutputParam, self).__init__(default, optional, modifies)
 
     def __set__(self, node, output):
         # --- Validate and set the new size_out
@@ -167,10 +167,10 @@ class DistributionParam(Parameter):
         assert 0 < len(self.sample_shape) <= 2
 
 
-class ConnEvalPoints(DistributionParam):
+class ConnEvalPointsParam(DistributionParam):
     def __set__(self, conn, dist):
         self.validate_pre(conn, dist)
-        super(ConnEvalPoints, self).__set__(conn, dist)
+        super(ConnEvalPointsParam, self).__set__(conn, dist)
 
     def validate_pre(self, conn, dist):
         """Eval points are only valid when pre is an ensemble."""

@@ -481,7 +481,7 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
-    output = params.NodeOutput(default=None, modifies='size_out')
+    output = params.NodeOutputParam(default=None, modifies='size_out')
     size_in = params.IntParam(default=0, low=0)
     size_out = params.IntParam(default=None, low=0, optional=True)
     label = params.StringParam(default=None, optional=True)
@@ -642,7 +642,7 @@ class Connection(NengoObject):
     modulatory = params.BoolParam(default=False)
     learning_rule = params.LearningRuleParam(
         default=None, optional=True, modifies=['probeable'])
-    eval_points = params.ConnEvalPoints(
+    eval_points = params.ConnEvalPointsParam(
         default=None, optional=True, sample_shape=('*', 'size_in'))
     seed = params.IntParam(default=None, optional=True)
     probeable = params.ListParam(default=['signal'])
