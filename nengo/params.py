@@ -265,59 +265,74 @@ FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
 
 
 class FunctionParam(Parameter):
-    """The function additionally sets and validates size_in."""
-
-    def __get__(self, conn, type_):
-        value = Parameter.__get__(self, conn, type_)
+    def __get__(self, instance, type_):
+        value = Parameter.__get__(self, instance, type_)
         return value.function if isinstance(value, FunctionInfo) else value
 
-    def size(self, conn):
-        value = Parameter.__get__(self, conn, None)
+    def size(self, instance):
+        value = Parameter.__get__(self, instance, None)
         return value.size if isinstance(value, FunctionInfo) else value
 
-    def __set__(self, conn, function):
-        self.validate_function(conn, function)
+    def __set__(self, instance, function):
+        from nengo.objects import Connection
+        self.validate_none(instance, function)
+        self.validate_readonly(instance, function)
+        self.validate_function(instance, function)
 
         if function is not None:
-            size = self.validate_call(conn, function)
-            self.data[conn] = FunctionInfo(function=function, size=size)
-        else:
-            self.data[conn] = None
+            size = self.validate_call(instance, function)
+            function = FunctionInfo(function=function, size=size)
 
-        self.validate_size_in(conn)
+        if isinstance(instance, Connection):
+            # This validation is Connection specific
+            self.validate_connection(instance, function)
 
-    def validate_function(self, conn, function):
-        from nengo.objects import Node, Ensemble
-        fn_ok = (Node, Ensemble)
+        # Set this at the end in case validate_connection fails
+        self.data[instance] = function
+
+    def validate_function(self, instance, function):
         if function is not None and not callable(function):
             raise ValueError("function '%s' must be callable" % function)
-        if callable(function) and not isinstance(conn.pre, fn_ok):
-            raise ValueError("function can only be set for connections from "
-                             "an Ensemble or Node (got type '%s')"
-                             % conn.pre.__class__.__name__)
 
-    def validate_call(self, conn, function):
-        x = (conn.eval_points[0] if is_iterable(conn.eval_points)
-             else np.zeros(conn.size_in))
-        value, invoked = checked_call(function, x)
+    def function_args(self, instance, function):
+        from nengo.objects import Connection
+        if isinstance(instance, Connection):
+            x = (instance.eval_points[0] if is_iterable(instance.eval_points)
+                 else np.zeros(instance.size_in))
+        else:
+            x = np.zeros(1)
+        return (x,)
+
+    def validate_call(self, instance, function):
+        args = self.function_args(instance, function)
+        value, invoked = checked_call(function, *args)
         if not invoked:
             raise TypeError("function '%s' must accept a single "
                             "np.array argument" % function)
         return np.asarray(value).size
 
-    def validate_size_in(self, conn):
+    def validate_connection(self, conn, function):
+        from nengo.objects import Node, Ensemble
+        fn_ok = (Node, Ensemble)
+
+        if function is not None and not isinstance(conn.pre, fn_ok):
+            raise ValueError("function can only be set for connections from "
+                             "an Ensemble or Node (got type '%s')"
+                             % conn.pre.__class__.__name__)
+
         type_pre = conn.pre.__class__.__name__
         transform = conn.transform
+        size_mid = conn.size_in if function is None else function.size
 
-        if transform.ndim < 2 and conn.size_mid != conn.size_out:
+        if transform.ndim < 2 and size_mid != conn.size_out:
             raise ValueError("function output size is incorrect; should "
                              "return a vector of size %d" % conn.size_out)
 
-        if transform.ndim == 2 and conn.size_mid != transform.shape[1]:
+        if transform.ndim == 2 and size_mid != transform.shape[1]:
             # check input dimensionality matches transform
             raise ValueError(
                 "%s output size (%d) not equal to transform input size "
-                "(%d)" % (type_pre, conn.size_mid, transform.shape[1]))
+                "(%d)" % (type_pre, size_mid, transform.shape[1]))
 
 
 class TransformParam(Parameter):

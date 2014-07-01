@@ -39,12 +39,13 @@ class NengoObjectContainer(type):
         inst = cls.__new__(cls, *args, **kwargs)
         add_to_container = kwargs.pop(
             'add_to_container', len(Network.context) > 0)
-        if add_to_container:
-            cls.add(inst)
         inst.label = kwargs.pop('label', None)
         inst.seed = kwargs.pop('seed', None)
         with inst:
             inst.__init__(*args, **kwargs)
+        # Do the __init__ before adding in case __init__ errors out
+        if add_to_container:
+            cls.add(inst)
         return inst
 
 
@@ -253,10 +254,11 @@ class NetworkMember(type):
         """Override default __call__ behavior so that Network.add is called."""
         inst = cls.__new__(cls)
         add_to_container = kwargs.pop('add_to_container', True)
+        # Do the __init__ before adding in case __init__ errors out
+        inst.__init__(*args, **kwargs)
         if add_to_container:
             Network.add(inst)
-        inst.__init__(*args, **kwargs)
-        inst._initialized = True  # value doesn't matter, just existance
+        inst._initialized = True  # value doesn't matter, just existence
         return inst
 
 
@@ -627,8 +629,7 @@ class Connection(NengoObject):
     synapse = params.SynapseParam(default=Lowpass(0.005))
     transform = params.TransformParam(default=np.array(1.0))
     solver = params.SolverParam(default=nengo.decoders.LstsqL2())
-    function = params.FunctionParam(
-        default=None, optional=True, modifies=['transform', 'eval_points'])
+    function = params.FunctionParam(default=None, optional=True)
     modulatory = params.BoolParam(default=False)
     learning_rule = params.LearningRuleParam(
         default=None, optional=True, modifies=['probeable'])
