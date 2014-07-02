@@ -281,6 +281,25 @@ def test_invalid_rates(Simulator):
         Simulator(model)
 
 
+def test_gain_bias(Simulator, nl_nodirect):
+
+    N = 17
+    D = 2
+
+    gain = np.random.uniform(low=0.2, high=5, size=N)
+    bias = np.random.uniform(low=0.2, high=1, size=N)
+
+    model = nengo.Network()
+    with model:
+        a = nengo.Ensemble(N, D)
+        a.gain = gain
+        a.bias = bias
+
+    sim = Simulator(model)
+    assert np.array_equal(gain, sim.data[a].gain)
+    assert np.array_equal(bias, sim.data[a].bias)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
