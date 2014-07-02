@@ -97,10 +97,11 @@ class AssociativeMemory(Module):
                 % (input_vectors.shape[0], output_vectors.shape[0]))
 
         N = len(input_vectors)
-        num_eval_points = 500
+        n_eval_points = 500
         eval_point_margin = 0.1
-        eval_points = Uniform(threshold + eval_point_margin,
-                              1 + eval_point_margin).sample(num_eval_points)
+        eval_points = Uniform(
+            threshold + eval_point_margin, 1 + eval_point_margin
+        ).sample(n_eval_points).reshape(-1, 1)
 
         # Ensemble array parameters
         ea_params = {'radius': 1.0,
@@ -164,7 +165,7 @@ class AssociativeMemory(Module):
 
         # Configure default output vector
         if default_output_vector is not None:
-            eval_points = Uniform(0.8, 1).sample(num_eval_points)
+            eval_points = Uniform(0.8, 1).sample(n_eval_points).reshape(-1, 1)
             bias = nengo.Node(output=[1])
             default_vector_gate = nengo.Ensemble(
                 n_neurons_per_ensemble, dimensions=1,

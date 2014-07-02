@@ -145,14 +145,16 @@ class DistributionParam(Parameter):
         self.data[instance] = dist
 
     def validate_ndarray(self, instance, dist):
+        ndim = len(self.sample_shape)
         try:
             dist = np.asarray(dist, dtype=np.float64)
         except ValueError:
-            raise ValueError("Must be a Distribution or %dD array"
-                             % len(self.sample_shape))
+            raise ValueError("Must be a Distribution or %dD array" % ndim)
 
         if self.scalar_ok and dist.size == 1:
             dist.shape = ()
+        elif dist.ndim != ndim:
+            raise ValueError("Array must be %dD (got %dD)" % (ndim, dist.ndim))
         else:
             for i, attr in enumerate(self.sample_shape):
                 if attr == '*':
