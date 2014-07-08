@@ -67,9 +67,9 @@ class DictParam(Parameter):
 
 
 class NodeOutputParam(Parameter):
-    def __init__(self, default, optional=True, modifies=None):
+    def __init__(self, default, optional=True):
         assert optional  # None has meaning (passthrough node)
-        super(NodeOutputParam, self).__init__(default, optional, modifies)
+        super(NodeOutputParam, self).__init__(default, optional)
 
     def __set__(self, node, output):
         # --- Validate and set the new size_out
@@ -126,12 +126,10 @@ class NodeOutputParam(Parameter):
 class DistributionParam(Parameter):
     """Can be a Distribution or samples from a distribution."""
 
-    def __init__(self, default, sample_shape, optional=False, modifies=None,
-                 readonly=False, scalar_ok=True):
+    def __init__(self, default, sample_shape, optional=False, readonly=False):
         self.sample_shape = sample_shape
-        self.scalar_ok = scalar_ok
         super(DistributionParam, self).__init__(
-            default, optional, modifies, readonly)
+            default, optional, readonly)
 
     def __set__(self, instance, dist):
         self.validate_none(instance, dist)
@@ -218,10 +216,10 @@ class NeuronTypeParam(Parameter):
 
 
 class SynapseParam(Parameter):
-    def __init__(self, default, optional=True, modifies=None, readonly=False):
+    def __init__(self, default, optional=True, readonly=False):
         assert optional  # None has meaning (no filtering)
         super(SynapseParam, self).__init__(
-            default, optional, modifies, readonly)
+            default, optional, readonly)
 
     def __set__(self, conn, synapse):
         if is_number(synapse):
@@ -390,13 +388,13 @@ NengoObjectInfo = collections.namedtuple('NengoObjectInfo',
 
 
 class NengoObjectParam(Parameter):
-    def __init__(self, default=None, optional=False, modifies=None,
-                 readonly=True, disallow=None, role='pre'):
+    def __init__(self, default=None, optional=False, readonly=True,
+                 disallow=None, role='pre'):
         assert default is None  # These can't have defaults
         self.disallow = [] if disallow is None else disallow
         self.role = role
         super(NengoObjectParam, self).__init__(
-            default, optional, modifies, readonly)
+            default, optional, readonly)
 
     def __get__(self, instance, type_):
         value = Parameter.__get__(self, instance, type_)

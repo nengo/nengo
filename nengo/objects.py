@@ -378,7 +378,7 @@ class Ensemble(NengoObject):
     n_neurons = params.IntParam(default=None, low=1)
     dimensions = params.IntParam(default=None, low=1)
     radius = params.NumberParam(default=1.0, low=0.0)
-    neuron_type = params.NeuronTypeParam(default=LIF(), modifies=['probeable'])
+    neuron_type = params.NeuronTypeParam(default=LIF())
     encoders = params.DistributionParam(
         default=UniformHypersphere(surface=True),
         sample_shape=('n_neurons', 'dimensions'))
@@ -481,7 +481,7 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
-    output = params.NodeOutputParam(default=None, modifies='size_out')
+    output = params.NodeOutputParam(default=None)
     size_in = params.IntParam(default=0, low=0)
     size_out = params.IntParam(default=None, low=0, optional=True)
     label = params.StringParam(default=None, optional=True)
@@ -640,8 +640,7 @@ class Connection(NengoObject):
     solver = params.SolverParam(default=nengo.decoders.LstsqL2())
     function = params.FunctionParam(default=None, optional=True)
     modulatory = params.BoolParam(default=False)
-    learning_rule = params.LearningRuleParam(
-        default=None, optional=True, modifies=['probeable'])
+    learning_rule = params.LearningRuleParam(default=None, optional=True)
     eval_points = params.ConnEvalPointsParam(
         default=None, optional=True, sample_shape=('*', 'size_in'))
     seed = params.IntParam(default=None, optional=True)

@@ -37,16 +37,13 @@ class Parameter(object):
     optional : bool, optional
         Whether this parameter accepts the value None. By default,
         parameters are not optional (i.e., cannot be set to ``None``).
-    modifies : list of str, optional
-        A list of attributes that this parameter modifies when being set.
     readonly : bool, optional
         Whether the parameter can be set multiple times.
         By default, parameters can be set multiple times.
     """
-    def __init__(self, default, optional=False, modifies=None, readonly=False):
+    def __init__(self, default, optional=False, readonly=False):
         self.default = default
         self.optional = optional
-        self.modifies = modifies
         self.readonly = readonly
         # readonly Parameters must have default=None
         assert not readonly or default is None
