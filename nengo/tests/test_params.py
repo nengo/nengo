@@ -238,14 +238,16 @@ def test_distributionparam():
     assert np.all(inst.dp == np.array([[1], [2], [3]]))
     with pytest.raises(ValueError):
         inst.dp = 'a'
+    # Sample must have correct dims
+    with pytest.raises(ValueError):
+        inst.dp = np.array([1])
 
 
 def test_distributionparam_sample_shape():
     """sample_shape dictates the shape of the sample that can be set."""
     class Test(object):
-        dp = params.DistributionParam(default=None, sample_shape=['d1', 'd2'])
+        dp = params.DistributionParam(default=None, sample_shape=['d1', 10])
         d1 = 4
-        d2 = 10
 
     inst = Test()
     # Distributions are still cool
@@ -257,6 +259,40 @@ def test_distributionparam_sample_shape():
     with pytest.raises(ValueError):
         inst.dp = np.ones((10, 4))
     assert np.all(inst.dp == np.ones((4, 10)))
+
+
+def test_ndarrayparam():
+    """NdarrayParams must be able to be made into float ndarrays."""
+    class Test(object):
+        ndp = params.NdarrayParam(default=None, shape=('*',))
+
+    inst = Test()
+    inst.ndp = np.ones(10)
+    assert np.all(inst.ndp == np.ones(10))
+    # Dimensionality too low
+    with pytest.raises(ValueError):
+        inst.ndp = 0
+    # Dimensionality too high
+    with pytest.raises(ValueError):
+        inst.ndp = np.ones((1, 1))
+    # Must be convertible to float array
+    with pytest.raises(ValueError):
+        inst.ndp = 'a'
+
+
+def test_ndarrayparam_sample_shape():
+    """sample_shape dictates the shape of the sample that can be set."""
+    class Test(object):
+        ndp = params.NdarrayParam(default=None, shape=[10, 'd2'])
+        d2 = 3
+
+    inst = Test()
+    # Must be shape (4, 10)
+    inst.ndp = np.ones((10, 3))
+    assert np.all(inst.ndp == np.ones((10, 3)))
+    with pytest.raises(ValueError):
+        inst.ndp = np.ones((3, 10))
+    assert np.all(inst.ndp == np.ones((10, 3)))
 
 
 def test_neurontypeparam():

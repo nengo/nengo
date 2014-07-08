@@ -645,7 +645,7 @@ class Connection(NengoObject):
     modulatory = params.BoolParam(default=False)
     learning_rule = params.LearningRuleParam(default=None, optional=True)
     eval_points = params.ConnEvalPointsParam(
-        default=None, optional=True, sample_shape=('*', 'size_in'))
+        default=None, optional=True, shape=('*', 'size_in'))
     seed = params.IntParam(default=None, optional=True)
     probeable = params.ListParam(default=['signal'])
 

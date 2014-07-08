@@ -123,64 +123,83 @@ class NodeOutputParam(Parameter):
                              "(%d)" % (output.size, node.size_out))
 
 
-class DistributionParam(Parameter):
+class NdarrayParam(Parameter):
+    """Can be a NumPy ndarray, or something that can be coerced into one."""
+
+    def __init__(self, default, shape, optional=False, readonly=False):
+        assert shape is not None
+        self.shape = shape
+        super(NdarrayParam, self).__init__(default, optional, readonly)
+
+    def __set__(self, instance, ndarray):
+        self.validate_none(instance, ndarray)
+        self.validate_readonly(instance, ndarray)
+        if ndarray is not None:
+            ndarray = self.validate(instance, ndarray)
+        self.data[instance] = ndarray
+
+    def validate(self, instance, ndarray):
+        ndim = len(self.shape)
+        try:
+            ndarray = np.asarray(ndarray, dtype=np.float64)
+        except TypeError:
+            raise ValueError("Must be a float NumPy array (got type '%s')"
+                             % ndarray.__class__.__name__)
+
+        if ndarray.ndim != ndim:
+            raise ValueError("ndarray must be %dD (got %dD)"
+                             % (ndim, ndarray.ndim))
+        for i, attr in enumerate(self.shape):
+            assert is_integer(attr) or is_string(attr), (
+                "shape can only be an int or str representing an attribute")
+            if attr == '*':
+                continue
+
+            if is_integer(attr):
+                desired = attr
+            elif is_string(attr):
+                desired = getattr(instance, attr)
+
+            if ndarray.shape[i] != desired:
+                raise ValueError("shape[%d] should be %d (got %d)"
+                                 % (i, desired, ndarray.shape[i]))
+        return ndarray
+
+
+class DistributionParam(NdarrayParam):
     """Can be a Distribution or samples from a distribution."""
 
     def __init__(self, default, sample_shape, optional=False, readonly=False):
-        self.sample_shape = sample_shape
         super(DistributionParam, self).__init__(
-            default, optional, readonly)
+            default, sample_shape, optional, readonly)
 
     def __set__(self, instance, dist):
         self.validate_none(instance, dist)
         self.validate_readonly(instance, dist)
-
-        if isinstance(dist, Distribution):
-            self.validate_distribution(instance, dist)
-        elif dist is not None:
-            dist = self.validate_ndarray(instance, dist)
-
+        if dist is not None and not isinstance(dist, Distribution):
+            try:
+                dist = super(DistributionParam, self).validate(instance, dist)
+            except ValueError:
+                raise ValueError("Must be a distribution or NumPy array")
         self.data[instance] = dist
 
-    def validate_ndarray(self, instance, dist):
-        ndim = len(self.sample_shape)
-        try:
-            dist = np.asarray(dist, dtype=np.float64)
-        except ValueError:
-            raise ValueError("Must be a Distribution or %dD array" % ndim)
 
-        if dist.ndim != ndim:
-            raise ValueError("Array must be %dD (got %dD)" % (ndim, dist.ndim))
-        else:
-            for i, attr in enumerate(self.sample_shape):
-                if attr == '*':
-                    continue
-                desired = getattr(instance, attr)
-                if dist.shape[i] != desired:
-                    raise ValueError("Shape[%d] should be %d (got %d)"
-                                     % (i, desired, dist.shape[i]))
-        return dist
+class ConnEvalPointsParam(NdarrayParam):
+    def __set__(self, conn, ndarray):
+        self.validate_pre(conn, ndarray)
+        super(ConnEvalPointsParam, self).__set__(conn, ndarray)
 
-    def validate_distribution(self, instance, dist):
-        assert 0 < len(self.sample_shape) <= 2
-
-
-class ConnEvalPointsParam(DistributionParam):
-    def __set__(self, conn, dist):
-        self.validate_pre(conn, dist)
-        super(ConnEvalPointsParam, self).__set__(conn, dist)
-
-    def validate_pre(self, conn, dist):
+    def validate_pre(self, conn, ndarray):
         """Eval points are only valid when pre is an ensemble."""
         from nengo.objects import Ensemble
 
-        if dist is None:
+        if ndarray is None:
             return
 
-        pre = conn.pre
-        if not isinstance(pre, Ensemble):
-            raise ValueError("eval_points only work on connections from "
-                             "ensembles (got '%s')" % pre.__class__.__name__)
+        if not isinstance(conn.pre, Ensemble):
+            msg = ("eval_points are only valid on connections from ensembles "
+                   "(got type '%s')" % conn.pre.__class__.__name__)
+            raise ValueError(msg)
 
 
 class NeuronTypeParam(Parameter):
