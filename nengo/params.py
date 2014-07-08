@@ -149,9 +149,7 @@ class DistributionParam(Parameter):
         except ValueError:
             raise ValueError("Must be a Distribution or %dD array" % ndim)
 
-        if self.scalar_ok and dist.size == 1:
-            dist.shape = ()
-        elif dist.ndim != ndim:
+        if dist.ndim != ndim:
             raise ValueError("Array must be %dD (got %dD)" % (ndim, dist.ndim))
         else:
             for i, attr in enumerate(self.sample_shape):

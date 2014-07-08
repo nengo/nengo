@@ -232,10 +232,21 @@ def test_eval_points_number(Simulator, nl, dims, points):
     model = nengo.Network(seed=123)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl()
-        A = nengo.Ensemble(5, dims, eval_points=points)
+        A = nengo.Ensemble(5, dims, n_eval_points=points)
 
     sim = Simulator(model)
     assert sim.data[A].eval_points.shape == (points, dims)
+
+
+def test_eval_points_number_warning(Simulator, recwarn):
+    model = nengo.Network(seed=123)
+    with model:
+        A = nengo.Ensemble(5, 1, n_eval_points=10, eval_points=[[0.1], [0.2]])
+
+    sim = Simulator(model)
+    assert np.allclose(sim.data[A].eval_points, [[0.1], [0.2]])
+    # n_eval_points doesn't match actual passed eval_points, which warns
+    assert recwarn.pop() is not None
 
 
 @pytest.mark.parametrize('neurons, dims', [

@@ -388,6 +388,7 @@ class Ensemble(NengoObject):
     max_rates = params.DistributionParam(default=Uniform(200, 400),
                                          optional=True,
                                          sample_shape=('n_neurons',))
+    n_eval_points = params.IntParam(default=None, optional=True)
     eval_points = params.DistributionParam(default=UniformHypersphere(),
                                            sample_shape=('*', 'dimensions'))
     bias = params.DistributionParam(default=None,
@@ -402,7 +403,8 @@ class Ensemble(NengoObject):
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
-                 neuron_type=Default, seed=Default, label=Default):
+                 n_eval_points=Default, neuron_type=Default, seed=Default,
+                 label=Default):
 
         self.n_neurons = n_neurons
         self.dimensions = dimensions
@@ -411,6 +413,7 @@ class Ensemble(NengoObject):
         self.intercepts = intercepts
         self.max_rates = max_rates
         self.label = label
+        self.n_eval_points = n_eval_points
         self.eval_points = eval_points
         self.neuron_type = neuron_type
         self.seed = seed

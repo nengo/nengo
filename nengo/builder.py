@@ -961,11 +961,15 @@ def build_ensemble(ens, model, config):  # noqa: C901
 
     # Generate eval points
     if isinstance(ens.eval_points, dists.Distribution):
-        eval_points = pick_eval_points(ens=ens, rng=rng, dist=ens.eval_points)
-    elif ens.eval_points.size == 1:
-        eval_points = pick_eval_points(
-            ens=ens, rng=rng, n_points=ens.eval_points)
+        eval_points = pick_eval_points(ens=ens,
+                                       rng=rng,
+                                       dist=ens.eval_points,
+                                       n_points=ens.n_eval_points)
     else:
+        if (ens.n_eval_points is not None
+                and ens.eval_points[0] != ens.n_eval_points):
+            warnings.warn("Number of eval_points doesn't match "
+                          "n_eval_points. Ignoring n_eval_points.")
         eval_points = npext.array(
             ens.eval_points, dtype=np.float64, min_dims=2)
 
@@ -1210,9 +1214,6 @@ def build_linear_system(conn, model, rng):
     if eval_points is None:
         eval_points = npext.array(
             model.params[conn.pre].eval_points, min_dims=2)
-    elif eval_points.size == 1:
-        eval_points = pick_eval_points(
-            ens=conn.pre, n_points=eval_points, rng=rng)
     else:
         eval_points = npext.array(eval_points, min_dims=2)
 
