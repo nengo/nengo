@@ -996,10 +996,10 @@ def build_ensemble(ens, model, config):  # noqa: C901
         gain = sample(ens.gain, ens.n_neurons, rng=rng)
         bias = sample(ens.bias, ens.n_neurons, rng=rng)
     elif ens.gain is not None or ens.bias is not None:
-        # TODO: address this warning
-        warnings.warn("gain or bias set for %s, but not both. Solving for one "
-                      "given the other is not implemented yet." % ens)
-        gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
+        # TODO: handle this instead of error
+        raise NotImplementedError("gain or bias set for %s, but not both. "
+                                  "Solving for one given the other is not "
+                                  "implemented yet." % ens)
     else:
         gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
 
