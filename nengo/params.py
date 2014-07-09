@@ -327,28 +327,23 @@ FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
 
 
 class FunctionParam(Parameter):
-    def __get__(self, instance, type_):
-        value = Parameter.__get__(self, instance, type_)
-        return value.function if isinstance(value, FunctionInfo) else value
-
-    def size(self, instance):
-        value = Parameter.__get__(self, instance, None)
-        return value.size if isinstance(value, FunctionInfo) else value
-
     def __set__(self, instance, function):
         from nengo.objects import Connection
         self.validate(instance, function)
 
-        if function is not None:
+        if function is None:
+            size = None
+        else:
             size = self.validate_call(instance, function)
-            function = FunctionInfo(function=function, size=size)
+
+        function_info = FunctionInfo(function=function, size=size)
 
         if isinstance(instance, Connection):
             # This validation is Connection specific
-            self.validate_connection(instance, function)
+            self.validate_connection(instance, function_info)
 
         # Set this at the end in case validate_connection fails
-        self.data[instance] = function
+        self.data[instance] = function_info
 
     def validate(self, instance, function):
         if function is not None and not callable(function):
@@ -372,9 +367,10 @@ class FunctionParam(Parameter):
                             "np.array argument" % function)
         return np.asarray(value).size
 
-    def validate_connection(self, conn, function):
+    def validate_connection(self, conn, function_info):
         from nengo.objects import Node, Ensemble
         fn_ok = (Node, Ensemble)
+        function, size = function_info
 
         if function is not None and not isinstance(conn.pre, fn_ok):
             raise ValueError("function can only be set for connections from "
@@ -383,7 +379,7 @@ class FunctionParam(Parameter):
 
         type_pre = conn.pre.__class__.__name__
         transform = conn.transform
-        size_mid = conn.size_in if function is None else function.size
+        size_mid = conn.size_in if function is None else size
 
         if transform.ndim < 2 and size_mid != conn.size_out:
             raise ValueError("function output size is incorrect; should "

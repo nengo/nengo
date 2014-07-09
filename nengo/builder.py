@@ -1230,7 +1230,7 @@ def build_linear_system(conn, model, rng):
         # significantly reduce computation
         targets = eval_points
     else:
-        size = nengo.objects.Connection.function.size(conn)
+        size = conn.function_info.size
         targets = np.zeros((len(eval_points), size))
         for i, ep in enumerate(eval_points[:, conn.pre_slice]):
             targets[i] = conn.function(ep)

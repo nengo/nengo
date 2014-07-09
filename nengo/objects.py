@@ -643,7 +643,7 @@ class Connection(NengoObject):
     synapse = params.SynapseParam(default=Lowpass(0.005))
     transform = params.TransformParam(default=np.array(1.0))
     solver = params.SolverParam(default=nengo.decoders.LstsqL2())
-    function = params.FunctionParam(default=None, optional=True)
+    function_info = params.FunctionParam(default=None, optional=True)
     modulatory = params.BoolParam(default=False)
     learning_rule = params.LearningRuleParam(default=None, optional=True)
     eval_points = params.ConnEvalPointsParam(
@@ -663,8 +663,16 @@ class Connection(NengoObject):
         self.modulatory = modulatory
         self.synapse = synapse
         self.transform = transform
-        self.function = function  # Must be set after transform
+        self.function_info = function  # Must be set after transform
         self.eval_points = eval_points
+
+    @property
+    def function(self):
+        return self.function_info.function
+
+    @function.setter
+    def function(self, function):
+        self.function_info = function
 
     @property
     def pre_slice(self):
@@ -685,7 +693,7 @@ class Connection(NengoObject):
 
         If the function is None, then `size_in == size_mid`.
         """
-        size = Connection.function.size(self)
+        size = self.function_info.size
         return self.size_in if size is None else size
 
     @property

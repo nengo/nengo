@@ -391,7 +391,8 @@ def test_functionparam():
     inst = Test()
     assert inst.fp is None
     inst.fp = np.sin
-    assert inst.fp is np.sin
+    assert inst.fp.function is np.sin
+    assert inst.fp.size == 1
     # Not OK: requires two args
     with pytest.raises(TypeError):
         inst.fp = lambda x, y: x + y
