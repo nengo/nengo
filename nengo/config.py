@@ -68,7 +68,11 @@ class Parameter(object):
         self.data[instance] = value
 
     def __repr__(self):
-        return "%s(default=%s)" % (self.__class__.__name__, self.default)
+        return "%s(default=%s, optional=%s, readonly=%s)" % (
+            self.__class__.__name__,
+            self.default,
+            self.optional,
+            self.readonly)
 
     def validate(self, instance, value):
         if value is Default:
