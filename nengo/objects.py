@@ -660,9 +660,9 @@ class Connection(NengoObject):
         self.learning_rule = learning_rule
         self.modulatory = modulatory
         self.synapse = synapse
-        self.transform = transform  # Must be set before function
-        self.eval_points = eval_points  # Must be set before function
-        self.function = function
+        self.transform = transform
+        self.function = function  # Must be set after transform
+        self.eval_points = eval_points
 
     @property
     def pre_slice(self):

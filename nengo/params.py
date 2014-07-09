@@ -184,6 +184,48 @@ class DistributionParam(NdarrayParam):
         self.data[instance] = dist
 
 
+class TransformParam(NdarrayParam):
+    """The transform additionally validates size_out."""
+    def __init__(self, default, optional=False, readonly=False):
+        super(TransformParam, self).__init__(default, (), optional, readonly)
+
+    def __set__(self, conn, transform):
+        self.validate_none(conn, transform)
+        self.validate_readonly(conn, transform)
+        if transform is not None:
+            transform = self.validate(conn, transform)
+        self.data[conn] = transform
+
+    def validate(self, conn, transform):
+        transform = np.asarray(transform, dtype=np.float64)
+
+        if transform.ndim == 0:
+            self.shape = ()
+        elif transform.ndim == 1:
+            self.shape = ('size_out',)
+        elif transform.ndim == 2:
+            # Actually (size_out, size_mid) but Function handles size_mid
+            self.shape = ('size_out', '*')
+        else:
+            raise ValueError("Cannot handle transforms with dimensions > 2")
+
+        # Checks the shapes
+        super(TransformParam, self).validate(conn, transform)
+
+        if transform.ndim == 2:
+            # check for repeated dimensions in lists, as these don't work
+            # for two-dimensional transforms
+            repeated_inds = lambda x: (
+                not isinstance(x, slice) and np.unique(x).size != len(x))
+            if repeated_inds(conn.pre_slice):
+                raise ValueError("Input object selection has repeated indices")
+            if repeated_inds(conn.post_slice):
+                raise ValueError(
+                    "Output object selection has repeated indices")
+
+        return transform
+
+
 class ConnEvalPointsParam(NdarrayParam):
     def __set__(self, conn, ndarray):
         self.validate_pre(conn, ndarray)
@@ -360,45 +402,6 @@ class FunctionParam(Parameter):
             raise ValueError(
                 "%s output size (%d) not equal to transform input size "
                 "(%d)" % (type_pre, size_mid, transform.shape[1]))
-
-
-class TransformParam(Parameter):
-    """The transform additionally validates size_out."""
-    def __set__(self, conn, transform):
-        self.validate_none(conn, transform)
-        transform = np.asarray(transform)
-        self.validate(conn, transform)
-        self.data[conn] = transform
-
-    def validate(self, conn, transform):
-        type_post = conn.post.__class__.__name__
-        size_out = conn.size_out
-
-        if transform.ndim == 1 and transform.size != size_out:
-            raise ValueError("Transform length (%d) not equal to "
-                             "%s output size (%d)" %
-                             (transform.size, type_post, size_out))
-
-        if transform.ndim == 2:
-            # check output dimensionality matches transform
-            if size_out != transform.shape[0]:
-                raise ValueError("Transform output size (%d) not equal to "
-                                 "%s input size (%d)" %
-                                 (transform.shape[0], type_post, size_out))
-
-            # check for repeated dimensions in lists, as these don't work
-            # for two-dimensional transforms
-            repeated_inds = lambda x: (
-                not isinstance(x, slice) and np.unique(x).size != len(x))
-            if repeated_inds(conn.pre_slice):
-                raise ValueError("Input object selection has repeated indices")
-            if repeated_inds(conn.post_slice):
-                raise ValueError(
-                    "Output object selection has repeated indices")
-
-        if transform.ndim > 2:
-            raise ValueError("Cannot handle transform tensors "
-                             "with dimensions > 2")
 
 NengoObjectInfo = collections.namedtuple('NengoObjectInfo',
                                          ['obj', 'slice', 'size'])
