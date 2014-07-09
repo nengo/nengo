@@ -64,26 +64,19 @@ class Parameter(object):
         return self.data.get(instance, self.default)
 
     def __set__(self, instance, value):
-        assert value is not Default
-        self.validate_none(instance, value)
-        if value is not None:
-            self.validate(instance, value)
-        self.validate_readonly(instance, value)
+        self.validate(instance, value)
         self.data[instance] = value
 
     def __repr__(self):
         return "%s(default=%s)" % (self.__class__.__name__, self.default)
 
     def validate(self, instance, value):
-        pass
-
-    def validate_none(self, instance, value):
-        if not self.optional and value is None:
-            raise ValueError("Parameter is not optional; cannot set to None")
-
-    def validate_readonly(self, instance, value):
+        if value is Default:
+            raise ValueError("Default is not a valid value.")
         if self.readonly and instance in self.data:
             raise ValueError("Parameter is read-only; cannot be changed.")
+        if not self.optional and value is None:
+            raise ValueError("Parameter is not optional; cannot set to None")
 
 
 class ClassParams(object):

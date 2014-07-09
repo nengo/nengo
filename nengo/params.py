@@ -16,12 +16,14 @@ import nengo.utils.numpy as npext
 
 class BoolParam(Parameter):
     def validate(self, instance, boolean):
-        if not isinstance(boolean, bool):
+        if boolean is not None and not isinstance(boolean, bool):
             raise ValueError("Must be a boolean; got '%s'" % boolean)
+        super(BoolParam, self).validate(instance, boolean)
 
 
 class NumberParam(Parameter):
-    def __init__(self, default, low=None, high=None, optional=False):
+    def __init__(self, default, low=None, high=None,
+                 optional=False, readonly=False):
         self.low = low
         self.high = high
         if default is not None and low is not None:
@@ -30,53 +32,59 @@ class NumberParam(Parameter):
             assert default <= high
         if low is not None and high is not None:
             assert low < high
-        super(NumberParam, self).__init__(default, optional)
+        super(NumberParam, self).__init__(default, optional, readonly)
 
     def validate(self, instance, num):
-        if not is_number(num):
+        if num is not None and not is_number(num):
             raise ValueError("Must be a number; got '%s'" % num)
-        if self.low is not None and num < self.low:
+        if num is not None and self.low is not None and num < self.low:
             raise ValueError("Number must be greater than %s" % self.low)
-        if self.high is not None and num > self.high:
+        if num is not None and self.high is not None and num > self.high:
             raise ValueError("Number must be less than %s" % self.high)
+        super(NumberParam, self).validate(instance, num)
 
 
 class IntParam(NumberParam):
     def validate(self, instance, num):
-        if not is_integer(num):
+        if num is not None and not is_integer(num):
             raise ValueError("Must be an integer; got '%s'" % num)
         super(IntParam, self).validate(instance, num)
 
 
 class StringParam(Parameter):
     def validate(self, instance, string):
-        if not is_string(string):
+        if string is not None and not is_string(string):
             raise ValueError("Must be a string; got '%s'" % string)
+        super(StringParam, self).validate(instance, string)
 
 
 class ListParam(Parameter):
     def validate(self, instance, lst):
-        if not isinstance(lst, list):
+        if lst is not None and not isinstance(lst, list):
             raise ValueError("Must be a list; got '%s'" % str(lst))
+        super(ListParam, self).validate(instance, lst)
 
 
 class DictParam(Parameter):
     def validate(self, instance, dct):
-        if not isinstance(dct, dict):
+        if dct is not None and not isinstance(dct, dict):
             raise ValueError("Must be a dictionary; got '%s'" % str(dct))
+        super(DictParam, self).validate(instance, dct)
 
 
 class NodeOutputParam(Parameter):
-    def __init__(self, default, optional=True):
+    def __init__(self, default, optional=True, readonly=False):
         assert optional  # None has meaning (passthrough node)
-        super(NodeOutputParam, self).__init__(default, optional)
+        super(NodeOutputParam, self).__init__(default, optional, readonly)
 
     def __set__(self, node, output):
+        super(NodeOutputParam, self).validate(node, output)
+
         # --- Validate and set the new size_out
         if output is None:
             if node.size_out is not None:
-                warnings.warn("'Node.size_out' will be overwritten with "
-                              "'Node.size_in' when 'Node.output=None'")
+                warnings.warn("'Node.size_out' is being overwritten with "
+                              "'Node.size_in' since 'Node.output=None'")
             node.size_out = node.size_in
         elif callable(output) and node.size_out is not None:
             # We trust user's size_out if set, because calling output
@@ -114,10 +122,8 @@ class NodeOutputParam(Parameter):
         if len(output.shape) > 1:
             raise ValueError("Node output must be a vector (got shape %s)"
                              % (output.shape,))
-
         if node.size_in != 0:
             raise TypeError("output must be callable if size_in != 0")
-
         if node.size_out is not None and node.size_out != output.size:
             raise ValueError("Size of Node output (%d) does not match size_out"
                              "(%d)" % (output.size, node.size_out))
@@ -132,8 +138,7 @@ class NdarrayParam(Parameter):
         super(NdarrayParam, self).__init__(default, optional, readonly)
 
     def __set__(self, instance, ndarray):
-        self.validate_none(instance, ndarray)
-        self.validate_readonly(instance, ndarray)
+        super(NdarrayParam, self).validate(instance, ndarray)
         if ndarray is not None:
             ndarray = self.validate(instance, ndarray)
         self.data[instance] = ndarray
@@ -173,28 +178,19 @@ class DistributionParam(NdarrayParam):
         super(DistributionParam, self).__init__(
             default, sample_shape, optional, readonly)
 
-    def __set__(self, instance, dist):
-        self.validate_none(instance, dist)
-        self.validate_readonly(instance, dist)
+    def validate(self, instance, dist):
         if dist is not None and not isinstance(dist, Distribution):
             try:
                 dist = super(DistributionParam, self).validate(instance, dist)
             except ValueError:
                 raise ValueError("Must be a distribution or NumPy array")
-        self.data[instance] = dist
+        return dist
 
 
 class TransformParam(NdarrayParam):
     """The transform additionally validates size_out."""
     def __init__(self, default, optional=False, readonly=False):
         super(TransformParam, self).__init__(default, (), optional, readonly)
-
-    def __set__(self, conn, transform):
-        self.validate_none(conn, transform)
-        self.validate_readonly(conn, transform)
-        if transform is not None:
-            transform = self.validate(conn, transform)
-        self.data[conn] = transform
 
     def validate(self, conn, transform):
         transform = np.asarray(transform, dtype=np.float64)
@@ -228,16 +224,13 @@ class TransformParam(NdarrayParam):
 
 class ConnEvalPointsParam(NdarrayParam):
     def __set__(self, conn, ndarray):
-        self.validate_pre(conn, ndarray)
+        if ndarray is not None:
+            self.validate_pre(conn, ndarray)
         super(ConnEvalPointsParam, self).__set__(conn, ndarray)
 
     def validate_pre(self, conn, ndarray):
         """Eval points are only valid when pre is an ensemble."""
         from nengo.objects import Ensemble
-
-        if ndarray is None:
-            return
-
         if not isinstance(conn.pre, Ensemble):
             msg = ("eval_points are only valid on connections from ensembles "
                    "(got type '%s')" % conn.pre.__class__.__name__)
@@ -246,10 +239,7 @@ class ConnEvalPointsParam(NdarrayParam):
 
 class NeuronTypeParam(Parameter):
     def __set__(self, instance, neurons):
-        self.validate_none(instance, neurons)
-        if neurons is not None:
-            self.validate(instance, neurons)
-        self.validate_readonly(instance, neurons)
+        self.validate(instance, neurons)
         if hasattr(instance, 'probeable'):
             self.update_probeable(instance, neurons)
         self.data[instance] = neurons
@@ -270,8 +260,9 @@ class NeuronTypeParam(Parameter):
                     instance.probeable.append(attr)
 
     def validate(self, instance, neurons):
-        if not isinstance(neurons, NeuronType):
+        if neurons is not None and not isinstance(neurons, NeuronType):
             raise ValueError("'%s' is not a neuron type" % neurons)
+        super(NeuronTypeParam, self).validate(instance, neurons)
 
 
 class SynapseParam(Parameter):
@@ -284,20 +275,20 @@ class SynapseParam(Parameter):
         if is_number(synapse):
             synapse = Lowpass(synapse)
         self.validate(conn, synapse)
-        self.validate_readonly(conn, synapse)
         self.data[conn] = synapse
 
     def validate(self, conn, synapse):
         if synapse is not None and not isinstance(synapse, Synapse):
             raise ValueError("'%s' is not a synapse type" % synapse)
+        super(SynapseParam, self).validate(conn, synapse)
 
 
 class SolverParam(Parameter):
     def validate(self, instance, solver):
         from nengo.objects import Connection, Ensemble
-        if not isinstance(solver, Solver):
+        if solver is not None and not isinstance(solver, Solver):
             raise ValueError("'%s' is not a solver" % solver)
-        if isinstance(instance, Connection):
+        if solver is not None and isinstance(instance, Connection):
             if solver.weights and not isinstance(instance.pre, Ensemble):
                 raise ValueError(
                     "weight solvers only work for connections from ensembles "
@@ -306,6 +297,7 @@ class SolverParam(Parameter):
                 raise ValueError(
                     "weight solvers only work for connections to ensembles "
                     "(got '%s')" % instance.post.__class__.__name__)
+        super(SolverParam, self).validate(instance, solver)
 
 
 class LearningRuleParam(Parameter):
@@ -315,6 +307,7 @@ class LearningRuleParam(Parameter):
                 self.validate_rule(instance, lr)
         elif rule is not None:
             self.validate_rule(instance, rule)
+        super(LearningRuleParam, self).validate(instance, rule)
 
     def validate_rule(self, instance, rule):
         from nengo.objects import Connection
@@ -344,9 +337,7 @@ class FunctionParam(Parameter):
 
     def __set__(self, instance, function):
         from nengo.objects import Connection
-        self.validate_none(instance, function)
-        self.validate_readonly(instance, function)
-        self.validate_function(instance, function)
+        self.validate(instance, function)
 
         if function is not None:
             size = self.validate_call(instance, function)
@@ -359,9 +350,10 @@ class FunctionParam(Parameter):
         # Set this at the end in case validate_connection fails
         self.data[instance] = function
 
-    def validate_function(self, instance, function):
+    def validate(self, instance, function):
         if function is not None and not callable(function):
             raise ValueError("function '%s' must be callable" % function)
+        super(FunctionParam, self).validate(instance, function)
 
     def function_args(self, instance, function):
         from nengo.objects import Connection
@@ -413,8 +405,7 @@ class NengoObjectParam(Parameter):
         assert default is None  # These can't have defaults
         self.disallow = [] if disallow is None else disallow
         self.role = role
-        super(NengoObjectParam, self).__init__(
-            default, optional, readonly)
+        super(NengoObjectParam, self).__init__(default, optional, readonly)
 
     def __get__(self, instance, type_):
         value = Parameter.__get__(self, instance, type_)
@@ -430,22 +421,19 @@ class NengoObjectParam(Parameter):
 
     def __set__(self, instance, nengo_obj):
         from nengo.objects import ObjView
-        self.validate_none(instance, nengo_obj)
-
+        self.validate(instance, nengo_obj)
         if not isinstance(nengo_obj, ObjView):
             nengo_obj = ObjView(nengo_obj)
         nengo_obj.role = self.role
-        self.validate(instance, nengo_obj.obj)
-        self.validate_readonly(instance, nengo_obj.obj)
         self.data[instance] = NengoObjectInfo(obj=nengo_obj.obj,
                                               slice=nengo_obj.slice,
                                               size=len(nengo_obj))
 
     def validate(self, instance, nengo_obj):
-        from nengo.objects import NengoObject, Neurons
-        if not isinstance(nengo_obj, (NengoObject, Neurons)):
+        from nengo.objects import NengoObject, Neurons, ObjView
+        if not isinstance(nengo_obj, (NengoObject, Neurons, ObjView)):
             raise ValueError("'%s' is not a Nengo object" % nengo_obj)
-
         for n_type in self.disallow:
             if isinstance(nengo_obj, n_type):
                 raise ValueError("Objects of type '%s' disallowed." % n_type)
+        super(NengoObjectParam, self).validate(instance, nengo_obj)
