@@ -403,8 +403,8 @@ class Ensemble(NengoObject):
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
-                 n_eval_points=Default, neuron_type=Default, seed=Default,
-                 label=Default):
+                 n_eval_points=Default, neuron_type=Default, gain=Default,
+                 bias=Default, seed=Default, label=Default):
 
         self.n_neurons = n_neurons
         self.dimensions = dimensions
@@ -417,6 +417,8 @@ class Ensemble(NengoObject):
         self.eval_points = eval_points
         self.neuron_type = neuron_type
         self.seed = seed
+        self.gain = gain
+        self.bias = bias
         self.probeable = Default
         self._neurons = Neurons(self)
 
