@@ -639,7 +639,7 @@ class Connection(NengoObject):
     """
 
     pre = params.NengoObjectParam(disallow=[Probe])
-    post = params.NengoObjectParam(role='post')
+    post = params.NengoObjectParam()
     synapse = params.SynapseParam(default=Lowpass(0.005))
     transform = params.TransformParam(default=np.array(1.0))
     solver = params.SolverParam(default=nengo.decoders.LstsqL2())
@@ -675,17 +675,26 @@ class Connection(NengoObject):
         self.function_info = function
 
     @property
+    def pre_obj(self):
+        return self.pre.obj if isinstance(self.pre, ObjView) else self.pre
+
+    @property
     def pre_slice(self):
-        return Connection.pre.slice(self)
+        return self.pre.slice if isinstance(self.pre, ObjView) else slice(None)
+
+    @property
+    def post_obj(self):
+        return self.post.obj if isinstance(self.post, ObjView) else self.post
 
     @property
     def post_slice(self):
-        return Connection.post.slice(self)
+        return (self.post.slice if isinstance(self.post, ObjView)
+                else slice(None))
 
     @property
     def size_in(self):
         """Output size of sliced `pre`; input size of the function."""
-        return Connection.pre.size(self)
+        return self.pre.size_out
 
     @property
     def size_mid(self):
@@ -699,7 +708,7 @@ class Connection(NengoObject):
     @property
     def size_out(self):
         """Output size of the transform; input size to the sliced post."""
-        return Connection.post.size(self)
+        return self.post.size_in
 
     @property
     def label(self):
@@ -719,7 +728,7 @@ class ObjView(object):
     Does not currently support any other view-like operations.
     """
 
-    def __init__(self, obj, key=slice(None), role='pre'):
+    def __init__(self, obj, key=slice(None)):
         self.obj = obj
         if isinstance(key, int):
             # single slices of the form [i] should be cast into
@@ -730,8 +739,29 @@ class ObjView(object):
             else:
                 key = slice(key, key+1)
         self.slice = key
-        self.role = role
+
+        # Node.size_in != size_out, so one of these can be invalid
+        try:
+            self.size_in = np.arange(obj.size_in)[self.slice].size
+        except IndexError:
+            self.size_in = None
+        try:
+            self.size_out = np.arange(obj.size_out)[self.slice].size
+        except IndexError:
+            self.size_out = None
 
     def __len__(self):
-        size = self.obj.size_in if self.role == 'post' else self.obj.size_out
-        return len(np.arange(size)[self.slice])
+        return self.size_out
+
+    @property
+    def label(self):
+        if isinstance(self.slice, list):
+            sl_str = self.slice
+        else:
+            sl_start = "" if self.slice.start is None else self.slice.start
+            sl_stop = "" if self.slice.stop is None else self.slice.stop
+            if self.slice.step is None:
+                sl_str = "%s:%s" % (sl_start, sl_stop)
+            else:
+                sl_str = "%s:%s:%s" % (sl_start, sl_stop, self.slice.step)
+        return "%s[%s]" % (self.obj.label, sl_str)

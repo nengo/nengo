@@ -417,9 +417,6 @@ def test_nengoobjectparam():
     # Can't set it twice
     with pytest.raises(ValueError):
         inst.nop = a
-    # Setting it gives access to size and slice
-    assert Test.nop.size(inst) == 10
-    assert Test.nop.slice(inst) == slice(None)
 
 
 def test_nengoobjectparam_disallow():
@@ -436,21 +433,6 @@ def test_nengoobjectparam_disallow():
         inst.nop = b
         assert inst.nop is b
 
-
-def test_nengoobjectparam_role():
-    """Setting the 'role' can give different sizes."""
-    class Test(object):
-        pre = params.NengoObjectParam(role='pre')
-        post = params.NengoObjectParam(role='post')
-
-    inst = Test()
-    n = nengo.Node(lambda t, x: np.ones(5) * np.sum(x),
-                   size_in=3,
-                   add_to_container=False)
-    inst.pre = n
-    inst.post = n
-    assert Test.pre.size(inst) == 5
-    assert Test.post.size(inst) == 3
 
 if __name__ == "__main__":
     nengo.log(debug=True)

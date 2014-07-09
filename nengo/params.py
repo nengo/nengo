@@ -372,12 +372,12 @@ class FunctionParam(Parameter):
         fn_ok = (Node, Ensemble)
         function, size = function_info
 
-        if function is not None and not isinstance(conn.pre, fn_ok):
+        if function is not None and not isinstance(conn.pre_obj, fn_ok):
             raise ValueError("function can only be set for connections from "
                              "an Ensemble or Node (got type '%s')"
-                             % conn.pre.__class__.__name__)
+                             % conn.pre_obj.__class__.__name__)
 
-        type_pre = conn.pre.__class__.__name__
+        type_pre = conn.pre_obj.__class__.__name__
         transform = conn.transform
         size_mid = conn.size_in if function is None else size
 
@@ -391,39 +391,13 @@ class FunctionParam(Parameter):
                 "%s output size (%d) not equal to transform input size "
                 "(%d)" % (type_pre, size_mid, transform.shape[1]))
 
-NengoObjectInfo = collections.namedtuple('NengoObjectInfo',
-                                         ['obj', 'slice', 'size'])
-
 
 class NengoObjectParam(Parameter):
-    def __init__(self, default=None, optional=False, readonly=True,
-                 disallow=None, role='pre'):
+    def __init__(self, default=None, disallow=None, optional=False,
+                 readonly=True):
         assert default is None  # These can't have defaults
         self.disallow = [] if disallow is None else disallow
-        self.role = role
         super(NengoObjectParam, self).__init__(default, optional, readonly)
-
-    def __get__(self, instance, type_):
-        value = Parameter.__get__(self, instance, type_)
-        return value.obj if isinstance(value, NengoObjectInfo) else value
-
-    def size(self, instance):
-        value = Parameter.__get__(self, instance, None)
-        return value.size if isinstance(value, NengoObjectInfo) else value
-
-    def slice(self, instance):
-        value = Parameter.__get__(self, instance, None)
-        return value.slice if isinstance(value, NengoObjectInfo) else value
-
-    def __set__(self, instance, nengo_obj):
-        from nengo.objects import ObjView
-        self.validate(instance, nengo_obj)
-        if not isinstance(nengo_obj, ObjView):
-            nengo_obj = ObjView(nengo_obj)
-        nengo_obj.role = self.role
-        self.data[instance] = NengoObjectInfo(obj=nengo_obj.obj,
-                                              slice=nengo_obj.slice,
-                                              size=len(nengo_obj))
 
     def validate(self, instance, nengo_obj):
         from nengo.objects import NengoObject, Neurons, ObjView

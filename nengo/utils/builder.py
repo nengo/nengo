@@ -38,8 +38,8 @@ def full_transform(conn, allow_scalars=True):
 
     # Create the new transform matching the pre/post dimensions
     full_size_in = (
-        conn.pre.size_out if conn.function is None else conn.size_mid)
-    full_size_out = conn.post.size_in
+        conn.pre_obj.size_out if conn.function is None else conn.size_mid)
+    full_size_out = conn.post_obj.size_in
     new_transform = np.zeros((full_size_out, full_size_in))
 
     if transform.ndim < 2:
@@ -107,7 +107,7 @@ def generate_graphviz(objs, connections):
 
     for c in connections:
         text.append('  "%d" -> "%d" [label="%s"];' % (
-            id(c.pre), id(c.post), label(c.transform)))
+            id(c.pre_obj), id(c.post_obj), label(c.transform)))
     text.append('}')
     return '\n'.join(text)
 
@@ -153,14 +153,14 @@ def remove_passthrough_nodes(objs, connections):  # noqa: C901
             # get rid of the connections to and from this Node
             for c in inputs[obj]:
                 result_conn.remove(c)
-                outputs[c.pre].remove(c)
+                outputs[c.pre_obj].remove(c)
             for c in outputs[obj]:
                 result_conn.remove(c)
-                inputs[c.post].remove(c)
+                inputs[c.post_obj].remove(c)
 
             # replace those connections with equivalent ones
             for c_in in inputs[obj]:
-                if c_in.pre is obj:
+                if c_in.pre_obj is obj:
                     raise Exception('Cannot remove a Node with feedback')
 
                 for c_out in outputs[obj]:
@@ -169,8 +169,8 @@ def remove_passthrough_nodes(objs, connections):  # noqa: C901
                         result_conn.append(c)
                         # put this in the list, since it might be used
                         # another time through the loop
-                        outputs[c.pre].append(c)
-                        inputs[c.post].append(c)
+                        outputs[c.pre_obj].append(c)
+                        inputs[c.post_obj].append(c)
 
     return result_objs, result_conn
 
@@ -180,15 +180,15 @@ def find_all_io(connections):
     inputs = collections.defaultdict(list)
     outputs = collections.defaultdict(list)
     for c in connections:
-        inputs[c.post].append(c)
-        outputs[c.pre].append(c)
+        inputs[c.post_obj].append(c)
+        outputs[c.pre_obj].append(c)
     return inputs, outputs
 
 
 def _create_replacement_connection(c_in, c_out):
     """Generate a new Connection to replace two through a passthrough Node"""
-    assert c_in.post is c_out.pre
-    assert c_in.post.output is None
+    assert c_in.post_obj is c_out.pre_obj
+    assert c_in.post_obj.output is None
 
     # determine the filter for the new Connection
     if c_in.synapse is None:
@@ -213,7 +213,7 @@ def _create_replacement_connection(c_in, c_out):
     if np.all(transform == 0):
         return None
 
-    c = nengo.Connection(c_in.pre, c_out.post,
+    c = nengo.Connection(c_in.pre_obj, c_out.post_obj,
                          synapse=synapse,
                          transform=transform,
                          function=function,
