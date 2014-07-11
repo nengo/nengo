@@ -13,7 +13,7 @@ import nengo.objects
 import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
-from nengo.utils.builder import full_transform
+from nengo.utils.builder import default_n_eval_points, full_transform
 from nengo.utils.compat import is_iterable, is_number, range, StringIO
 from nengo.utils.filter_design import cont2discrete
 
@@ -938,17 +938,6 @@ def build_network(network, model):  # noqa: C901
 Builder.register_builder(build_network, nengo.objects.Network)
 
 
-def pick_eval_points(ens, rng, dist=None, n_points=None):
-    dims, neurons = ens.dimensions, ens.n_neurons
-    if dist is None:
-        # Use nengo.Ensemble default
-        dist = ens.__class__.eval_points.default
-    if n_points is None:
-        # Use a heuristic
-        n_points = max(np.clip(500 * dims, 750, 2500), 2 * neurons)
-    return dist.sample(n_points, dims, rng=rng) * ens.radius
-
-
 def sample(dist, n_samples, rng):
     if isinstance(dist, dists.Distribution):
         return dist.sample(n_samples, rng=rng)
@@ -961,17 +950,18 @@ def build_ensemble(ens, model, config):  # noqa: C901
 
     # Generate eval points
     if isinstance(ens.eval_points, dists.Distribution):
-        eval_points = pick_eval_points(ens=ens,
-                                       rng=rng,
-                                       dist=ens.eval_points,
-                                       n_points=ens.n_eval_points)
+        n_points = ens.n_eval_points
+        if n_points is None:
+            n_points = default_n_eval_points(ens.n_neurons, ens.dimensions)
+        eval_points = ens.eval_points.sample(n_points, ens.dimensions, rng)
+        # eval_points should be in the ensemble's representational range
+        eval_points *= ens.radius
     else:
         if (ens.n_eval_points is not None
-                and ens.eval_points[0] != ens.n_eval_points):
+                and ens.eval_points.shape[0] != ens.n_eval_points):
             warnings.warn("Number of eval_points doesn't match "
                           "n_eval_points. Ignoring n_eval_points.")
-        eval_points = npext.array(
-            ens.eval_points, dtype=np.float64, min_dims=2)
+        eval_points = np.array(ens.eval_points, dtype=np.float64)
 
     # Set up signal
     model.sig[ens]['in'] = Signal(np.zeros(ens.dimensions),

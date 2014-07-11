@@ -67,6 +67,26 @@ def full_transform(conn, allow_scalars=True):
         raise ValueError("Transforms with > 2 dims not supported")
 
 
+def default_n_eval_points(n_neurons, dimensions):
+    """A heuristic to determine an appropriate number of evaluation points.
+
+    This is used by builders to generate a sufficiently large sample
+    from a vector space in order to solve for accurate decoders.
+
+    Parameters
+    ----------
+    n_neurons : int
+        The number of neurons in the ensemble that will be sampled.
+        For a connection, this would be the number of neurons in the
+        `pre` ensemble.
+    dimensions : int
+        The number of dimensions in the ensemble that will be sampled.
+        For a connection, this would be the number of dimensions in the
+        `pre` ensemble.
+    """
+    return max(np.clip(500 * dimensions, 750, 2500), 2 * n_neurons)
+
+
 def objs_and_connections(network):
     """Given a Network, returns all (ensembles + nodes, connections)."""
     objs = list(network.ensembles + network.nodes)
