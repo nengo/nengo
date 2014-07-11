@@ -137,23 +137,6 @@ def test_numberparam():
         inst.np = 'a'
 
 
-def test_numberparam_assert():
-    """Malformed NumberParams."""
-
-    # low > high = bad
-    with pytest.raises(AssertionError):
-        class TestLH(object):
-            np = params.NumberParam(default=0, low=1, high=-1)
-
-    # default must be in range
-    with pytest.raises(AssertionError):
-        class TestDH(object):
-            np = params.NumberParam(default=1.0, high=0.0)
-    with pytest.raises(AssertionError):
-        class TestDL(object):
-            np = params.NumberParam(default=-1.0, low=0.0)
-
-
 def test_intparam():
     """IntParams are like NumberParams but must be an int."""
     class Test(object):

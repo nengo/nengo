@@ -26,21 +26,16 @@ class NumberParam(Parameter):
                  optional=False, readonly=False):
         self.low = low
         self.high = high
-        if default is not None and low is not None:
-            assert default >= low
-        if default is not None and high is not None:
-            assert default <= high
-        if low is not None and high is not None:
-            assert low < high
         super(NumberParam, self).__init__(default, optional, readonly)
 
     def validate(self, instance, num):
-        if num is not None and not is_number(num):
-            raise ValueError("Must be a number; got '%s'" % num)
-        if num is not None and self.low is not None and num < self.low:
-            raise ValueError("Number must be greater than %s" % self.low)
-        if num is not None and self.high is not None and num > self.high:
-            raise ValueError("Number must be less than %s" % self.high)
+        if num is not None:
+            if not is_number(num):
+                raise ValueError("Must be a number; got '%s'" % num)
+            if self.low is not None and num < self.low:
+                raise ValueError("Number must be greater than %s" % self.low)
+            if self.high is not None and num > self.high:
+                raise ValueError("Number must be less than %s" % self.high)
         super(NumberParam, self).validate(instance, num)
 
 
