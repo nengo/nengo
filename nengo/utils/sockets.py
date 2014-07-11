@@ -1,32 +1,31 @@
 import struct
 import socket
-# import nengo
 import Queue
 import time
 import threading
 import errno
+import warnings
 
 
 class SocketCheckAliveThread(threading.Thread):
     def __init__(self, socket_class):
         threading.Thread.__init__(self)
-        self.socket = socket_class
-        self.name = str(int(time.time()))
+        self.socket_class = socket_class
 
     def run(self):
         # Keep checking if the socket class is still being used.
-        while (time.time() - self.socket.last_active <
-               self.socket.max_idle_time_current):
-            time.sleep(self.socket.alive_thread_sleep_time)
-        # If the socket class is idle, terminate the socket
-        self.socket._close_socket()
+        while (time.time() - self.socket_class.last_active <
+               self.socket_class.max_idle_time_current):
+            time.sleep(self.socket_class.alive_thread_sleep_time)
+        # If the socket class is idle, terminate the sockets
+        self.socket_class._close_recv_socket()
+        self.socket_class._close_send_socket()
 
 
 class UDPSocket:
-    def __init__(self, dimensions=1, dt_local=0.001, dt_remote=0,
+    def __init__(self, send_dim=1, recv_dim=1, dt_remote=0,
                  local_port=-1, dest_addr='127.0.0.1', dest_port=-1,
                  timeout=30, max_idle_time=1):
-        self.dim = dimensions
         self.local_addr = '127.0.0.1'
         self.local_port = local_port
         self.dest_addr = dest_addr
@@ -34,9 +33,10 @@ class UDPSocket:
         self.timeout = timeout
         self.byte_order = '!'
 
-        self.dt = dt_local                          # Local simulation dt
-        self.dt_remote = max(dt_remote, dt_local)   # dt btw each packet sent
-        self.last_packet_t = 0
+        self.last_t = 0.0
+        self.dt = 0.0                               # Local simulation dt
+        self.dt_remote = max(dt_remote, self.dt)    # dt btw each packet sent
+        self.last_packet_t = 0.0
 
         self.last_active = time.time()
         self.max_idle_time_initial = max_idle_time
@@ -46,22 +46,28 @@ class UDPSocket:
         self.alive_thread_sleep_time = max_idle_time / 2.0
         self.retry_backoff_time = 1
 
-        self.socket = None
+        self.send_socket = None
+        self.recv_socket = None
         self.is_sender = dest_port > 0
         self.is_receiver = local_port > 0
         self.ignore_timestamp = False
 
-        self.max_len = (self.dim + 1) * 4
-        self.value = [0] * self.dim
+        self.send_dim = send_dim
+        self.recv_dim = recv_dim
+
+        self.max_recv_len = (recv_dim + 1) * 4
+        self.value = [0.0] * recv_dim
         self.buffer = Queue.PriorityQueue()
 
     def __del__(self):
         self.close()
 
     def _initialize(self):
-        self.value = 0
-        self.last_packet_t = 0
+        self.value = [0.0] * self.recv_dim
+        self.last_t = 0.0
+        self.last_packet_t = 0.0
 
+        # Empty the buffer
         while (not self.buffer.empty()):
             self.buffer.get()
 
@@ -70,9 +76,22 @@ class UDPSocket:
         self.close()
 
         try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.socket.bind((self.local_addr, max(self.local_port, 0)))
-            self.socket.settimeout(self.timeout)
+            self.send_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.send_socket.bind((self.local_addr, 0))
+        except socket.error as error:
+            raise RuntimeError("UDPSocket: Error str: " + str(error))
+
+        self._open_recv_socket()
+
+        self.last_active = time.time()
+        self.alive_check_thread = SocketCheckAliveThread(self)
+        self.alive_check_thread.start()
+
+    def _open_recv_socket(self):
+        try:
+            self.recv_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.recv_socket.bind((self.local_addr, max(self.local_port, 0)))
+            self.recv_socket.settimeout(self.timeout)
         except socket.error:
             raise RuntimeError("UDPSocket: Could not bind to socket. "
                                "Address: %s, Port: %s, is in use. If "
@@ -83,9 +102,33 @@ class UDPSocket:
                                (self.local_addr, self.local_port,
                                 self.max_idle_time_current))
 
-        self.last_active = time.time()
-        self.alive_check_thread = SocketCheckAliveThread(self)
-        self.alive_check_thread.start()
+    def _retry_connection(self):
+        self._close_recv_socket()
+        while (self.recv_socket is None):
+            time.sleep(self.retry_backoff_time)
+            try:
+                self._open_recv_socket()
+            except socket.error:
+                pass
+            # Failed to open receiving socket, double backoff time, then retry
+            self.retry_backoff_time *= 2
+
+    def _terminate_alive_check_thread(self):
+        self.max_idle_time_current = self.max_idle_time_timeout
+        if (not self.alive_check_thread is None):
+            self.last_active = 0
+            self.alive_check_thread.join()
+        self.alive_check_thread = None
+
+    def _close_send_socket(self):
+        if (not self.send_socket is None):
+            self.send_socket.close()
+        self.send_socket = None
+
+    def _close_recv_socket(self):
+        if (not self.recv_socket is None):
+            self.recv_socket.close()
+        self.recv_socket = None
 
     def _config_wipe(self):
         self.local_addr = '127.0.0.1'
@@ -148,8 +191,8 @@ class UDPSocket:
         # Default packet data type: float
         # Default packet structure: [t, x[0], x[1], x[2], ... , x[d]]
         send_data = [float(t + self.dt_remote / 2.0)] + \
-                    [x[i] for i in range(self.dim)]
-        packet = struct.pack(self.byte_order + 'f' * (self.dim + 1),
+                    [x[i] for i in range(self.send_dim)]
+        packet = struct.pack(self.byte_order + 'f' * (self.send_dim + 1),
                              *send_data)
         return packet
 
@@ -171,16 +214,23 @@ class UDPSocket:
             self.close()
             return self.value
         # Initialize socket if t > 0, and it has not been initialized
-        if (t > 0 and self.socket is None):
+        if (t > 0 and (self.recv_socket is None or self.send_socket is None)):
             self._open_socket()
 
+        # Calculate dt
+        self.dt = t - self.last_t
+        self.dt_remote = max(self.dt_remote, self.dt)
+        self.last_t = t * 1.0
         self.last_active = time.time()
 
         if (self.is_sender):
-            if (t - self.last_packet_t >= self.dt_remote):
-                self.socket.sendto(self.pack_packet(t, x),
-                                   (self.dest_addr, self.dest_port))
-                self.last_packet_t = t * 1.0    # Copy t (which is a np.scalar)
+            # Calculate if it is time to send the next packet.
+            # Time to send next packet if time between last packet and current
+            # t + half of dt is >= remote dt
+            if (t - self.last_packet_t + self.dt / 2.0 >= self.dt_remote):
+                self.send_socket.sendto(self.pack_packet(t * 1.0, x),
+                                        (self.dest_addr, self.dest_port))
+                self.last_packet_t = t * 1.0    # Copy t (which is an np.scalar)
 
         if (self.is_receiver):
             found_item = False
@@ -205,7 +255,7 @@ class UDPSocket:
 
             while (not found_item):
                 try:
-                    packet, addr = self.socket.recvfrom(self.max_len)
+                    packet, addr = self.recv_socket.recvfrom(self.max_recv_len)
                     t_data, value = self.unpack_packet(packet)
                     if (t_data >= t and t_data < t + self.dt) or \
                        self.ignore_timestamp:
@@ -243,35 +293,16 @@ class UDPSocket:
                     # In this case, retry the connection, and retry receiving
                     # the packet again.
                     if (hasattr(error, 'errno') and error.errno ==
-                       errno.ECONNRESET) or self.socket is None:
+                       errno.ECONNRESET) or self.recv_socket is None:
                         self._retry_connection()
 
-                    print "UDPSocket Error: " + str(error)
+                    warnings.warn("UDPSocket Error @ t = " + str(t) +
+                                  "s: " + str(error))
 
+        # Return retrieved value
         return self.value
-
-    def _terminate_alive_check_thread(self):
-        self.max_idle_time_current = self.max_idle_time_timeout
-        if (not self.alive_check_thread is None):
-            self.last_active = 0
-            self.alive_check_thread.join()
-        self.alive_check_thread = None
-
-    def _close_socket(self):
-        if (not self.socket is None):
-            self.socket.close()
-        self.socket = None
-
-    def _retry_connection(self):
-        self.socket = None
-        while (self.socket is None):
-            time.sleep(self.retry_backoff_time)
-            try:
-                self._open_socket()
-            except socket.error:
-                pass
-            self.retry_backoff_time *= 2
 
     def close(self):
         self._terminate_alive_check_thread()
-        self._close_socket()
+        self._close_send_socket()
+        self._close_recv_socket()
