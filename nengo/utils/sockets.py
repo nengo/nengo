@@ -75,13 +75,16 @@ class UDPSocket:
         # Close socket, terminate alive check thread
         self.close()
 
-        try:
-            self.send_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.send_socket.bind((self.local_addr, 0))
-        except socket.error as error:
-            raise RuntimeError("UDPSocket: Error str: " + str(error))
+        if (self.is_sender):
+            try:
+                self.send_socket = socket.socket(socket.AF_INET,
+                                                 socket.SOCK_DGRAM)
+                self.send_socket.bind((self.local_addr, 0))
+            except socket.error as error:
+                raise RuntimeError("UDPSocket: Error str: " + str(error))
 
-        self._open_recv_socket()
+        if (self.is_receiver):
+            self._open_recv_socket()
 
         self.last_active = time.time()
         self.alive_check_thread = SocketCheckAliveThread(self)
@@ -90,7 +93,7 @@ class UDPSocket:
     def _open_recv_socket(self):
         try:
             self.recv_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.recv_socket.bind((self.local_addr, max(self.local_port, 0)))
+            self.recv_socket.bind((self.local_addr, self.local_port))
             self.recv_socket.settimeout(self.timeout)
         except socket.error:
             raise RuntimeError("UDPSocket: Could not bind to socket. "
@@ -214,7 +217,8 @@ class UDPSocket:
             self.close()
             return self.value
         # Initialize socket if t > 0, and it has not been initialized
-        if (t > 0 and (self.recv_socket is None or self.send_socket is None)):
+        if t > 0 and ((self.recv_socket is None and self.is_receiver) or
+           (self.send_socket is None and self.is_sender)):
             self._open_socket()
 
         # Calculate dt
@@ -230,7 +234,7 @@ class UDPSocket:
             if (t - self.last_packet_t + self.dt / 2.0 >= self.dt_remote):
                 self.send_socket.sendto(self.pack_packet(t * 1.0, x),
                                         (self.dest_addr, self.dest_port))
-                self.last_packet_t = t * 1.0    # Copy t (which is an np.scalar)
+                self.last_packet_t = t * 1.0   # Copy t (which is an np.scalar)
 
         if (self.is_receiver):
             found_item = False
