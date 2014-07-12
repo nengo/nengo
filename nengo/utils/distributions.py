@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 import numpy as np
 
+from nengo.utils.compat import is_integer
+
 
 class Distribution(object):
     """A base class for probability distributions.
@@ -105,7 +107,7 @@ class UniformHypersphere(Distribution):
     def __init__(self, dimensions, surface=False):
         if dimensions < 1:
             raise ValueError("Hypersphere must have dimensions > 0")
-        if not isinstance(dimensions, int):
+        if not is_integer(dimensions):
             raise ValueError("Hyperphere only defined for integer dimensions")
         self.dimensions = dimensions
         self.surface = surface
