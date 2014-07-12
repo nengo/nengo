@@ -28,14 +28,31 @@ def is_param(obj):
 
 
 class Parameter(object):
-    """Simple descriptor for storing configuration parameters"""
-    def __init__(self, default):
+    """Simple descriptor for storing configuration parameters.
+
+    Parameters
+    ----------
+    default : object
+        The value returned if the parameter hasn't been explicitly set.
+    optional : bool, optional
+        Whether this parameter accepts the value None. By default,
+        parameters are not optional (i.e., cannot be set to ``None``).
+    readonly : bool, optional
+        Whether the parameter can be set multiple times.
+        By default, parameters can be set multiple times.
+    """
+    def __init__(self, default, optional=False, readonly=False):
         self.default = default
-        # use a WeakKey dictionary so items can still be garbage collected
+        self.optional = optional
+        self.readonly = readonly
+        # readonly Parameters must have default=None
+        assert not readonly or default is None
+        # use WeakKey dictionaries so items can still be garbage collected
+        self.defaults = weakref.WeakKeyDictionary()
         self.data = weakref.WeakKeyDictionary()
 
     def __contains__(self, key):
-        return key in self.data
+        return key in self.data or key in self.defaults
 
     def __delete__(self, instance):
         del self.data[instance]
@@ -47,13 +64,23 @@ class Parameter(object):
         return self.data.get(instance, self.default)
 
     def __set__(self, instance, value):
-        if value is Default:
-            # NB: If default is overridden, value will not be updated
-            value = self.default
+        self.validate(instance, value)
         self.data[instance] = value
 
     def __repr__(self):
-        return "%s(default=%s)" % (self.__class__.__name__, self.default)
+        return "%s(default=%s, optional=%s, readonly=%s)" % (
+            self.__class__.__name__,
+            self.default,
+            self.optional,
+            self.readonly)
+
+    def validate(self, instance, value):
+        if value is Default:
+            raise ValueError("Default is not a valid value.")
+        if self.readonly and instance in self.data:
+            raise ValueError("Parameter is read-only; cannot be changed.")
+        if not self.optional and value is None:
+            raise ValueError("Parameter is not optional; cannot set to None")
 
 
 class ClassParams(object):
@@ -75,7 +102,8 @@ class ClassParams(object):
             return super(ClassParams, self).__getattribute__(key)
         except AttributeError:
             # get_param gives a good error message, so this is sufficient
-            return self.get_param(key).__get__(self, self.__class__)
+            param = self.get_param(key)
+            return param.defaults[self] if self in param else param.default
 
     def __setattr__(self, key, value):
         """Overridden to handle instance descriptors manually.
@@ -85,7 +113,7 @@ class ClassParams(object):
         if key.startswith("_"):
             super(ClassParams, self).__setattr__(key, value)
         else:
-            self.get_param(key).__set__(self, value)
+            self.get_param(key).defaults[self] = value
 
     def __str__(self):
         lines = ["All parameters for %s:" % self._configures.__name__]

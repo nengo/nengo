@@ -1,34 +1,15 @@
-from nengo.config import Default, Parameter
-
-
 class LearningRule(object):
     """Base class for all learning rule objects.
 
-    To use a learning rule, pass it as a learning_rule keyword argument to
-    the Connection that you want to do learning.
-
-    Example:
-        nengo.Connection(a, b, learning_rule=nengo.PES(error))
-
-    Parameters
-    ----------
-    label : string, optional
-        A name for the learning rule.
-
-    Attributes
-    ----------
-    label : string
-        Given label, or None.
+    To use a learning rule, pass it as a ``learning_rule`` keyword argument to
+    the Connection on which you want to do learning.
     """
-    learning_rate = Parameter(default=1e-5)
-    label = Parameter(default=None)
 
-    def __init__(self, learning_rate=Default, label=Default):
+    def __init__(self, learning_rate=1.0):
         self.learning_rate = learning_rate
-        self.label = label
 
     def __str__(self):
-        return "%s: %s" % (self.__class__.__name__, self.label)
+        return self.__class__.__name__
 
 
 class PES(LearningRule):
@@ -45,13 +26,9 @@ class PES(LearningRule):
     learning_rate : float, optional
         A scalar indicating the rate at which decoders will be adjusted.
         Defaults to 1e-5.
-    label : string, optional
-        A name for the learning rule. Defaults to None.
 
     Attributes
     ----------
-    label : string
-        The given label.
     learning_rate : float
         The given learning rate.
     error_connection : Connection
@@ -60,9 +37,9 @@ class PES(LearningRule):
 
     modifies = ['Ensemble', 'Neurons']
 
-    def __init__(self, error_connection, learning_rate=1.0, label=None):
+    def __init__(self, error_connection, learning_rate=1.0):
         self.error_connection = error_connection
-        super(PES, self).__init__(learning_rate, label)
+        super(PES, self).__init__(learning_rate)
 
 
 class BCM(LearningRule):
@@ -75,18 +52,12 @@ class BCM(LearningRule):
     learning_rate : float, optional
         A scalar indicating the rate at which decoders will be adjusted.
         Defaults to 1e-5.
-
     theta_tau : float, optional
         A scalar indicating the time constant for theta integration.
-
     pre_tau : float, optional
         Filter constant on activities of neurons in pre population.
-
     post_tau : float, optional
         Filter constant on activities of neurons in post population.
-
-    label : string, optional
-        A name for the learning rule. Defaults to None.
 
     Attributes
     ----------
@@ -96,15 +67,11 @@ class BCM(LearningRule):
     modifies = ['Neurons']
 
     def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
-                 learning_rate=1.0, label=""):
+                 learning_rate=1.0):
         self.theta_tau = theta_tau
-
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
-
-        self.learning_rate = learning_rate
-
-        self.label = label
+        super(BCM, self).__init__(learning_rate)
 
 
 class Oja(LearningRule):
@@ -117,18 +84,12 @@ class Oja(LearningRule):
     learning_rate : float, optional
         A scalar indicating the rate at which decoders will be adjusted.
         Defaults to 1e-5.
-
     beta : float, optional
         A scalar governing the amount of forgetting. Larger => more forgetting.
-
     pre_tau : float, optional
         Filter constant on activities of neurons in pre population.
-
     post_tau : float, optional
         Filter constant on activities of neurons in post population.
-
-    label : string, optional
-        A name for the learning rule. Defaults to None.
 
     Attributes
     ----------
@@ -138,11 +99,8 @@ class Oja(LearningRule):
     modifies = ['Neurons']
 
     def __init__(self, pre_tau=0.005, post_tau=None, beta=1.0,
-                 learning_rate=1.0, label=""):
+                 learning_rate=1.0):
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
-
-        self.learning_rate = learning_rate
         self.beta = beta
-
-        self.label = label
+        super(Oja, self).__init__(learning_rate)

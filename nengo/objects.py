@@ -7,13 +7,12 @@ import warnings
 import numpy as np
 
 import nengo.decoders
-import nengo.utils.numpy as npext
-from nengo.config import Config, Default, is_param, Parameter
-from nengo.learning_rules import LearningRule
+from nengo.config import Config, Default, is_param
 from nengo.neurons import LIF
-from nengo.utils.compat import is_iterable, with_metaclass
-from nengo.utils.distributions import Uniform
-from nengo.utils.inspect import checked_call
+from nengo import params
+from nengo.synapses import Lowpass
+from nengo.utils.compat import with_metaclass
+from nengo.utils.distributions import Uniform, UniformHypersphere
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +39,13 @@ class NengoObjectContainer(type):
         inst = cls.__new__(cls, *args, **kwargs)
         add_to_container = kwargs.pop(
             'add_to_container', len(Network.context) > 0)
-        if add_to_container:
-            cls.add(inst)
         inst.label = kwargs.pop('label', None)
         inst.seed = kwargs.pop('seed', None)
         with inst:
             inst.__init__(*args, **kwargs)
+        # Do the __init__ before adding in case __init__ errors out
+        if add_to_container:
+            cls.add(inst)
         return inst
 
 
@@ -157,6 +157,7 @@ class Network(with_metaclass(NengoObjectContainer)):
         config.configures(Ensemble)
         config.configures(Network)
         config.configures(Node)
+        config.configures(Probe)
         return config
 
     def _all_objects(self, object_type):
@@ -254,10 +255,11 @@ class NetworkMember(type):
         """Override default __call__ behavior so that Network.add is called."""
         inst = cls.__new__(cls)
         add_to_container = kwargs.pop('add_to_container', True)
+        # Do the __init__ before adding in case __init__ errors out
+        inst.__init__(*args, **kwargs)
         if add_to_container:
             Network.add(inst)
-        inst.__init__(*args, **kwargs)
-        inst._initialized = True  # value doesn't matter, just existance
+        inst._initialized = True  # value doesn't matter, just existence
         return inst
 
 
@@ -286,7 +288,14 @@ class NengoObject(with_metaclass(NetworkMember)):
                 SyntaxWarning)
         if val is Default:
             val = Config.default(type(self), name)
-        super(NengoObject, self).__setattr__(name, val)
+        try:
+            super(NengoObject, self).__setattr__(name, val)
+        except Exception as e:
+            arg0 = '' if len(e.args) == 0 else e.args[0]
+            arg0 = ("Validation error when setting '%s.%s': %s"
+                    % (self.__class__.__name__, name, arg0))
+            e.args = (arg0,) + e.args[1:]
+            raise
 
     @classmethod
     def param_list(cls):
@@ -366,45 +375,52 @@ class Ensemble(NengoObject):
         A name for the ensemble. Used for debugging and visualization.
     """
 
-    radius = Parameter(default=1.0)
-    encoders = Parameter(default=None)
-    intercepts = Parameter(default=Uniform(-1.0, 1.0))
-    max_rates = Parameter(default=Uniform(200, 400))
-    eval_points = Parameter(default=None)
-    seed = Parameter(default=None)
-    label = Parameter(default=None)
-    bias = Parameter(default=None)
-    gain = Parameter(default=None)
-    neuron_type = Parameter(default=LIF())
-    probeable = Parameter(default=['decoded_output',
-                                   'input',
-                                   'neuron_output',
-                                   'spikes',
-                                   'voltage'])
+    n_neurons = params.IntParam(default=None, low=1)
+    dimensions = params.IntParam(default=None, low=1)
+    radius = params.NumberParam(default=1.0, low=0.0)
+    neuron_type = params.NeuronTypeParam(default=LIF())
+    encoders = params.DistributionParam(
+        default=UniformHypersphere(surface=True),
+        sample_shape=('n_neurons', 'dimensions'))
+    intercepts = params.DistributionParam(default=Uniform(-1.0, 1.0),
+                                          optional=True,
+                                          sample_shape=('n_neurons',))
+    max_rates = params.DistributionParam(default=Uniform(200, 400),
+                                         optional=True,
+                                         sample_shape=('n_neurons',))
+    n_eval_points = params.IntParam(default=None, optional=True)
+    eval_points = params.DistributionParam(default=UniformHypersphere(),
+                                           sample_shape=('*', 'dimensions'))
+    bias = params.DistributionParam(default=None,
+                                    optional=True,
+                                    sample_shape=('n_neurons',))
+    gain = params.DistributionParam(default=None,
+                                    optional=True,
+                                    sample_shape=('n_neurons',))
+    seed = params.IntParam(default=None, optional=True)
+    label = params.StringParam(default=None, optional=True)
+    probeable = params.ListParam(default=['decoded_output', 'input'])
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
-                 neuron_type=Default, seed=Default, label=Default):
-
-        self.dimensions = dimensions
-        if self.dimensions <= 0:
-            raise ValueError(
-                "Number of dimensions (%d) must be positive" % dimensions)
+                 n_eval_points=Default, neuron_type=Default, gain=Default,
+                 bias=Default, seed=Default, label=Default):
 
         self.n_neurons = n_neurons
-        if self.n_neurons <= 0:
-            raise ValueError(
-                "Number of neurons (%d) must be positive." % n_neurons)
-
+        self.dimensions = dimensions
         self.radius = radius
         self.encoders = encoders
         self.intercepts = intercepts
         self.max_rates = max_rates
         self.label = label
+        self.n_eval_points = n_eval_points
         self.eval_points = eval_points
         self.neuron_type = neuron_type
         self.seed = seed
+        self.gain = gain
+        self.bias = bias
         self.probeable = Default
+        self._neurons = Neurons(self)
 
     def __getitem__(self, key):
         return ObjView(self, key)
@@ -414,7 +430,7 @@ class Ensemble(NengoObject):
 
     @property
     def neurons(self):
-        return Neurons(self)
+        return self._neurons
 
     @neurons.setter
     def neurons(self, dummy):
@@ -470,60 +486,89 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
-    output = Parameter(default=None)
-    size_in = Parameter(default=0)
-    size_out = Parameter(default=None)
-    label = Parameter(default=None)
-    probeable = Parameter(default=['output'])
+    output = params.NodeOutputParam(default=None)
+    size_in = params.IntParam(default=0, low=0)
+    size_out = params.IntParam(default=None, low=0, optional=True)
+    label = params.StringParam(default=None, optional=True)
+    probeable = params.ListParam(default=['output'])
 
-    def __init__(self, output=Default,  # noqa: C901
+    def __init__(self, output=Default,
                  size_in=Default, size_out=Default, label=Default):
-        self.output = output
-        self.label = label
         self.size_in = size_in
         self.size_out = size_out
+        self.label = label
+        self.output = output  # Must be set after size_out; may modify size_out
         self.probeable = Default
-
-        if self.output is not None and not callable(self.output):
-            self.output = npext.array(self.output, min_dims=1, copy=False)
-
-        if self.output is not None:
-            if self.size_in != 0 and not callable(self.output):
-                raise TypeError("output must be callable if size_in != 0")
-            if isinstance(self.output, np.ndarray):
-                shape_out = self.output.shape
-            elif self.size_out is None and callable(self.output):
-                t, x = np.asarray(0.0), np.zeros(self.size_in)
-                args = [t, x] if self.size_in > 0 else [t]
-                value, invoked = checked_call(self.output, *args)
-                if not invoked:
-                    raise TypeError("output function '%s' must accept "
-                                    "%d arguments" % (self.output, len(args)))
-                shape_out = (0,) if value is None else np.asarray(value).shape
-            else:
-                shape_out = (self.size_out,)  # assume `size_out` is correct
-
-            if len(shape_out) > 1:
-                raise ValueError(
-                    "Node output must be a vector (got array shape %s)" %
-                    (shape_out,))
-
-            size_out_new = shape_out[0] if len(shape_out) == 1 else 1
-
-            if self.size_out is not None and self.size_out != size_out_new:
-                raise ValueError(
-                    "Size of Node output (%d) does not match `size_out` (%d)" %
-                    (size_out_new, self.size_out))
-
-            self.size_out = size_out_new
-        else:  # output is None
-            self.size_out = self.size_in
 
     def __getitem__(self, key):
         return ObjView(self, key)
 
     def __len__(self):
         return self.size_out
+
+
+class Probe(NengoObject):
+    """A probe is an object that receives data from the simulation.
+
+    This is to be used in any situation where you wish to gather simulation
+    data (spike data, represented values, neuron voltages, etc.) for analysis.
+
+    Probes cannot directly affect the simulation.
+
+    TODO: Example usage for each object.
+
+    Parameters
+    ----------
+    target : Ensemble, Node, Connection
+        The Nengo object to connect to the probe.
+    attr : str, optional
+        The quantity to probe. Refer to the target's ``probeable`` list for
+        details. Defaults to the first element in the list.
+    sample_every : float, optional
+        Sampling period in seconds.
+    conn_args : dict, optional
+        Optional keyword arguments to pass to the Connection created for this
+        probe. For example, passing ``synapse=pstc`` will filter the data.
+    """
+
+    target = params.NengoObjectParam()
+    attr = params.StringParam(default=None)
+    sample_every = params.NumberParam(default=None, optional=True, low=1e-10)
+    conn_args = params.DictParam(default=None)
+
+    def __init__(self, target, attr=Default, sample_every=Default,
+                 label=Default, **conn_args):
+        if not hasattr(target, 'probeable') or len(target.probeable) == 0:
+            raise TypeError(
+                "Type '%s' is not probeable" % target.__class__.__name__)
+
+        conn_args.setdefault('synapse', None)
+
+        # We'll use the first in the list as default
+        self.attr = attr if attr is not Default else target.probeable[0]
+
+        if self.attr not in target.probeable:
+            raise ValueError(
+                "'%s' is not probeable for '%s'" % (self.attr, target))
+
+        self.target = target
+        self.sample_every = sample_every
+        self.conn_args = conn_args
+        self.seed = conn_args.get('seed', None)
+
+    def __len__(self):
+        return self.size_in
+
+    @property
+    def label(self):
+        return "Probe(%s.%s)" % (self.target.label, self.attr)
+
+    @property
+    def size_in(self):
+        # TODO: A bit of a hack; make less hacky.
+        if isinstance(self.target, Ensemble) and self.attr != "decoded_output":
+            return self.target.neurons.size_out
+        return self.target.size_out
 
 
 class Connection(NengoObject):
@@ -593,260 +638,84 @@ class Connection(NengoObject):
         The seed used for random number generation.
     """
 
-    synapse = Parameter(default=0.005)
-    _transform = Parameter(default=np.array(1.0))
-    solver = Parameter(default=nengo.decoders.LstsqL2())
-    _function = Parameter(default=(None, 0))
-    modulatory = Parameter(default=False)
-    eval_points = Parameter(default=None)
-    probeable = Parameter(default=['signal'])
+    pre = params.NengoObjectParam(disallow=[Probe])
+    post = params.NengoObjectParam()
+    synapse = params.SynapseParam(default=Lowpass(0.005))
+    transform = params.TransformParam(default=np.array(1.0))
+    solver = params.SolverParam(default=nengo.decoders.LstsqL2())
+    function_info = params.FunctionParam(default=None, optional=True)
+    modulatory = params.BoolParam(default=False)
+    learning_rule = params.LearningRuleParam(default=None, optional=True)
+    eval_points = params.ConnEvalPointsParam(
+        default=None, optional=True, shape=('*', 'size_in'))
+    seed = params.IntParam(default=None, optional=True)
+    probeable = params.ListParam(default=['signal'])
 
-    def __init__(self, pre, post, synapse=Default, transform=1.0,
-                 solver=Default,
-                 function=None, modulatory=Default, eval_points=Default,
-                 learning_rule=[], seed=None):
-        # don't check shapes until we've set all parameters
-        self._skip_check_shapes = True
+    def __init__(self, pre, post, synapse=Default, transform=Default,
+                 solver=Default, learning_rule=Default, function=Default,
+                 modulatory=Default, eval_points=Default, seed=Default):
+        self.pre = pre
+        self.post = post
 
-        if not isinstance(pre, ObjView):
-            pre = ObjView(pre)
-        if not isinstance(post, ObjView):
-            post = ObjView(post)
-        self._pre = pre.obj
-        self._post = post.obj
-        self._preslice = pre.slice
-        self._postslice = post.slice
         self.probeable = Default
-
+        self.solver = solver  # Must be set before learning rule
+        self.learning_rule = learning_rule
         self.modulatory = modulatory
         self.synapse = synapse
         self.transform = transform
-        self.seed = seed
-
-        self.solver = solver
-        if isinstance(self._pre, Neurons):
-            self.eval_points = None
-            self._function = (None, 0)
-        elif isinstance(self._pre, Node):
-            self.eval_points = None
-            self.function = function
-        elif isinstance(self._pre, (Ensemble, Node)):
-            self.eval_points = eval_points
-            self.function = function
-            if self.solver.weights and not isinstance(self._post, Ensemble):
-                raise ValueError("Cannot specify weight solver "
-                                 "when 'post' is not an Ensemble")
-        else:
-            raise ValueError("Objects of type '%s' cannot serve as 'pre'" %
-                             self._pre.__class__.__name__)
-
-        if not isinstance(self._post, (Ensemble, Neurons, Node, Probe)):
-            raise ValueError("Objects of type '%s' cannot serve as 'post'" %
-                             self._post.__class__.__name__)
-
-        self.learning_rule = learning_rule  # Must set after solver
-
-        # check that shapes match up
-        self._skip_check_shapes = False
-        self._check_shapes()
-
-    def _check_shapes(self):  # noqa: C901
-        if self._skip_check_shapes:
-            return
-
-        transform = self.transform
-
-        # Get the required input/output sizes for the new transform
-        post_dims, pre_dims = self._required_transform_shape()
-
-        # Leverage numpy's slice syntax to determine sizes of slices
-        in_dims = np.asarray(np.zeros(pre_dims)[self._preslice]).size
-        out_dims = np.asarray(np.zeros(post_dims)[self._postslice]).size
-
-        # Check that the given transform matches the pre/post slices sizes
-        in_src = self._pre.__class__.__name__
-        out_src = self._post.__class__.__name__
-
-        if transform.ndim < 2:
-            if transform.ndim == 1 and transform.size != out_dims:
-                raise ValueError("Transform length (%d) not equal to "
-                                 "%s output size (%d)" %
-                                 (transform.size, out_src, out_dims))
-
-            # check input dimensionality matches output dimensionality
-            if in_dims != out_dims:
-                raise ValueError("%s output size (%d) not equal to "
-                                 "%s input size (%d)" %
-                                 (in_src, in_dims, out_src, out_dims))
-        elif transform.ndim == 2:
-            # check input dimensionality matches transform
-            if in_dims != transform.shape[1]:
-                raise ValueError("%s output size (%d) not equal to "
-                                 "transform input size (%d)" %
-                                 (in_src, in_dims, transform.shape[1]))
-
-            # check output dimensionality matches transform
-            if out_dims != transform.shape[0]:
-                raise ValueError("Transform output size (%d) not equal to "
-                                 "%s input size (%d)" %
-                                 (transform.shape[0], out_src, out_dims))
-
-            # check for repeated dimensions in lists, as these don't work
-            # for two-dimensional transforms
-            repeated_inds = lambda x: (
-                not isinstance(x, slice) and np.unique(x).size != len(x))
-            if repeated_inds(self._preslice) or repeated_inds(self._postslice):
-                raise ValueError("%s object selection has repeated indices" %
-                                 ("Input" if repeated_inds(self._preslice)
-                                  else "Output"))
-        else:
-            raise ValueError("Cannot handle transform tensors "
-                             "with dimensions > 2")
-
-    def _required_transform_shape(self):
-        if (isinstance(self._pre, (Ensemble, Node))
-                and self.function is not None):
-            in_dims = self.function_size
-        else:
-            in_dims = self._pre.size_out
-
-        out_dims = self._post.size_in
-        return out_dims, in_dims
-
-    @property
-    def label(self):
-        label = "%s->%s" % (self._pre.label, self._post.label)
-        if self.function is not None:
-            return "%s:%s" % (label, self.function.__name__)
-        return label
-
-    @property
-    def dimensions(self):
-        return self._required_transform_shape()[1]
+        self.function_info = function  # Must be set after transform
+        self.eval_points = eval_points
 
     @property
     def function(self):
-        return self._function[0]
-
-    @property
-    def function_size(self):
-        return self._function[1]
+        return self.function_info.function
 
     @function.setter
-    def function(self, _function):
-        if _function is not None:
-            if not isinstance(self._pre, (Node, Ensemble)):
-                raise ValueError("'function' can only be set if 'pre' "
-                                 "is an Ensemble or Node")
-            if not callable(_function):
-                raise TypeError("function '%s' must be callable" % _function)
-            x = (self.eval_points[0] if is_iterable(self.eval_points) else
-                 np.zeros(self._pre.size_out))
-            value, invoked = checked_call(_function, x)
-            if not invoked:
-                raise TypeError("function '%s' must accept a single "
-                                "np.array argument" % _function)
-            size_out = np.asarray(value).size
-        else:
-            size_out = 0
-
-        self._function = (_function, size_out)
-        self._check_shapes()
+    def function(self, function):
+        self.function_info = function
 
     @property
-    def pre(self):
-        return self._pre
+    def pre_obj(self):
+        return self.pre.obj if isinstance(self.pre, ObjView) else self.pre
 
     @property
-    def post(self):
-        return self._post
+    def pre_slice(self):
+        return self.pre.slice if isinstance(self.pre, ObjView) else slice(None)
 
     @property
-    def transform(self):
-        return self._transform
-
-    @transform.setter
-    def transform(self, _transform):
-        self._transform = np.asarray(_transform)
-        self._check_shapes()
+    def post_obj(self):
+        return self.post.obj if isinstance(self.post, ObjView) else self.post
 
     @property
-    def learning_rule(self):
-        return self._learning_rule
-
-    @learning_rule.setter
-    def learning_rule(self, _learning_rule):
-        try:
-            # This is done to convert generators to lists, and to copy the list
-            _learning_rule = list(_learning_rule)
-        except TypeError:
-            # Not given an iterable
-            _learning_rule = [_learning_rule]
-        for lr in _learning_rule:
-            if not isinstance(lr, LearningRule):
-                raise ValueError("Argument '%s' is not a learning rule." % lr)
-            if self.solver.weights:
-                if 'Neurons' not in lr.modifies:
-                    raise ValueError("Learning rule '%s' cannot be applied "
-                                     "when using a weight solver.")
-            elif type(self.pre).__name__ not in lr.modifies:
-                raise ValueError("Learning rule '%s' cannot be applied to "
-                                 "connection with pre of type '%s'"
-                                 % (lr, type(self.pre).__name__))
-
-        self._learning_rule = _learning_rule
-
-
-class Probe(NengoObject):
-    """A probe is an object that receives data from the simulation.
-
-    This is to be used in any situation where you wish to gather simulation
-    data (spike data, represented values, neuron voltages, etc.) for analysis.
-
-    Probes cannot directly affect the simulation.
-
-    TODO: Example usage for each object.
-
-    Parameters
-    ----------
-    target : Ensemble, Node, Connection
-        The Nengo object to connect to the probe.
-    attr : str, optional
-        The quantity to probe. Refer to the target's ``probeable`` list for
-        details. Defaults to the first element in the list.
-    sample_every : float, optional
-        Sampling period in seconds.
-    conn_args : dict, optional
-        Optional keyword arguments to pass to the Connection created for this
-        probe. For example, passing ``synapse=pstc`` will filter the data.
-    """
-
-    def __init__(self, target, attr=None, sample_every=None, **conn_args):
-        if not hasattr(target, 'probeable') or len(target.probeable) == 0:
-            raise TypeError(
-                "Type '%s' is not probeable" % target.__class__.__name__)
-
-        conn_args.setdefault('synapse', None)
-
-        # We'll use the first in the list as default
-        self.attr = attr if attr is not None else target.probeable[0]
-
-        if self.attr not in target.probeable:
-            raise ValueError(
-                "'%s' is not probeable for '%s'" % (self.attr, target))
-
-        self.target = target
-        self.label = "Probe(%s.%s)" % (target.label, self.attr)
-        self.sample_every = sample_every
-        self.conn_args = conn_args
-        self.seed = conn_args.get('seed', None)
+    def post_slice(self):
+        return (self.post.slice if isinstance(self.post, ObjView)
+                else slice(None))
 
     @property
     def size_in(self):
-        # TODO: A bit of a hack; make less hacky.
-        if isinstance(self.target, Ensemble) and self.attr != "decoded_output":
-            return self.target.neurons.size_out
-        return self.target.size_out
+        """Output size of sliced `pre`; input size of the function."""
+        return self.pre.size_out
+
+    @property
+    def size_mid(self):
+        """Output size of the function; input size of the transform.
+
+        If the function is None, then `size_in == size_mid`.
+        """
+        size = self.function_info.size
+        return self.size_in if size is None else size
+
+    @property
+    def size_out(self):
+        """Output size of the transform; input size to the sliced post."""
+        return self.post.size_in
+
+    @property
+    def label(self):
+        label = "%s->%s" % (self.pre.label, self.post.label)
+        if self.function is not None:
+            return "%s:%s" % (label, self.function.__name__)
+        return label
 
 
 class ObjView(object):
@@ -871,5 +740,28 @@ class ObjView(object):
                 key = slice(key, key+1)
         self.slice = key
 
+        # Node.size_in != size_out, so one of these can be invalid
+        try:
+            self.size_in = np.arange(obj.size_in)[self.slice].size
+        except IndexError:
+            self.size_in = None
+        try:
+            self.size_out = np.arange(obj.size_out)[self.slice].size
+        except IndexError:
+            self.size_out = None
+
     def __len__(self):
-        return len(np.arange(len(self.obj))[self.slice])
+        return self.size_out
+
+    @property
+    def label(self):
+        if isinstance(self.slice, list):
+            sl_str = self.slice
+        else:
+            sl_start = "" if self.slice.start is None else self.slice.start
+            sl_stop = "" if self.slice.stop is None else self.slice.stop
+            if self.slice.step is None:
+                sl_str = "%s:%s" % (sl_start, sl_stop)
+            else:
+                sl_str = "%s:%s:%s" % (sl_start, sl_stop, self.slice.step)
+        return "%s[%s]" % (self.obj.label, sl_str)

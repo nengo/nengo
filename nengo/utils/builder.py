@@ -24,7 +24,12 @@ def full_transform(conn, allow_scalars=True):
     """
     transform = conn.transform
 
-    if conn._preslice == slice(None) and conn._postslice == slice(None):
+    # If a function is given then the preslice applies to the function input,
+    # not to the transform.
+    pre_slice = conn.pre_slice if conn.function is None else slice(None)
+    post_slice = conn.post_slice
+
+    if pre_slice == slice(None) and post_slice == slice(None):
         if transform.ndim == 2:
             # transform is already full, so return a copy
             return np.array(transform)
@@ -32,23 +37,54 @@ def full_transform(conn, allow_scalars=True):
             return np.array(transform)
 
     # Create the new transform matching the pre/post dimensions
-    out_dims, in_dims = conn._required_transform_shape()
-    new_transform = np.zeros((out_dims, in_dims))
+    full_size_in = (
+        conn.pre_obj.size_out if conn.function is None else conn.size_mid)
+    full_size_out = conn.post_obj.size_in
+    new_transform = np.zeros((full_size_out, full_size_in))
+
     if transform.ndim < 2:
         slice_to_list = lambda s, d: (
             np.arange(d)[s] if isinstance(s, slice) else s)
-        preslice = slice_to_list(conn._preslice, in_dims)
-        postslice = slice_to_list(conn._postslice, out_dims)
-        new_transform[postslice, preslice] = transform
-    else:  # if transform.ndim == 2:
-        rows_transform = np.array(new_transform[conn._postslice])
-        rows_transform[:, conn._preslice] = transform
-        new_transform[conn._postslice] = rows_transform
+        pre_list = slice_to_list(pre_slice, full_size_in)
+        post_list = slice_to_list(post_slice, full_size_out)
+        new_transform[post_list, pre_list] = transform
+        return new_transform
+    elif transform.ndim == 2:
+        repeated_inds = lambda x: (
+            not isinstance(x, slice) and np.unique(x).size != len(x))
+        if repeated_inds(pre_slice):
+            raise ValueError("Input object selection has repeated indices")
+        if repeated_inds(post_slice):
+            raise ValueError("Output object selection has repeated indices")
+        rows_transform = np.array(new_transform[post_slice])
+        rows_transform[:, pre_slice] = transform
+        new_transform[post_slice] = rows_transform
         # Note: the above is a little obscure, but we do it so that lists of
         #  indices can specify selections of rows and columns, rather than
         #  just individual items
+        return new_transform
+    else:
+        raise ValueError("Transforms with > 2 dims not supported")
 
-    return new_transform
+
+def default_n_eval_points(n_neurons, dimensions):
+    """A heuristic to determine an appropriate number of evaluation points.
+
+    This is used by builders to generate a sufficiently large sample
+    from a vector space in order to solve for accurate decoders.
+
+    Parameters
+    ----------
+    n_neurons : int
+        The number of neurons in the ensemble that will be sampled.
+        For a connection, this would be the number of neurons in the
+        `pre` ensemble.
+    dimensions : int
+        The number of dimensions in the ensemble that will be sampled.
+        For a connection, this would be the number of dimensions in the
+        `pre` ensemble.
+    """
+    return max(np.clip(500 * dimensions, 750, 2500), 2 * n_neurons)
 
 
 def objs_and_connections(network):
@@ -91,7 +127,7 @@ def generate_graphviz(objs, connections):
 
     for c in connections:
         text.append('  "%d" -> "%d" [label="%s"];' % (
-            id(c.pre), id(c.post), label(c.transform)))
+            id(c.pre_obj), id(c.post_obj), label(c.transform)))
     text.append('}')
     return '\n'.join(text)
 
@@ -137,14 +173,14 @@ def remove_passthrough_nodes(objs, connections):  # noqa: C901
             # get rid of the connections to and from this Node
             for c in inputs[obj]:
                 result_conn.remove(c)
-                outputs[c.pre].remove(c)
+                outputs[c.pre_obj].remove(c)
             for c in outputs[obj]:
                 result_conn.remove(c)
-                inputs[c.post].remove(c)
+                inputs[c.post_obj].remove(c)
 
             # replace those connections with equivalent ones
             for c_in in inputs[obj]:
-                if c_in.pre is obj:
+                if c_in.pre_obj is obj:
                     raise Exception('Cannot remove a Node with feedback')
 
                 for c_out in outputs[obj]:
@@ -153,8 +189,8 @@ def remove_passthrough_nodes(objs, connections):  # noqa: C901
                         result_conn.append(c)
                         # put this in the list, since it might be used
                         # another time through the loop
-                        outputs[c.pre].append(c)
-                        inputs[c.post].append(c)
+                        outputs[c.pre_obj].append(c)
+                        inputs[c.post_obj].append(c)
 
     return result_objs, result_conn
 
@@ -164,15 +200,15 @@ def find_all_io(connections):
     inputs = collections.defaultdict(list)
     outputs = collections.defaultdict(list)
     for c in connections:
-        inputs[c.post].append(c)
-        outputs[c.pre].append(c)
+        inputs[c.post_obj].append(c)
+        outputs[c.pre_obj].append(c)
     return inputs, outputs
 
 
 def _create_replacement_connection(c_in, c_out):
     """Generate a new Connection to replace two through a passthrough Node"""
-    assert c_in.post is c_out.pre
-    assert c_in.post.output is None
+    assert c_in.post_obj is c_out.pre_obj
+    assert c_in.post_obj.output is None
 
     # determine the filter for the new Connection
     if c_in.synapse is None:
@@ -197,7 +233,7 @@ def _create_replacement_connection(c_in, c_out):
     if np.all(transform == 0):
         return None
 
-    c = nengo.Connection(c_in.pre, c_out.post,
+    c = nengo.Connection(c_in.pre_obj, c_out.post_obj,
                          synapse=synapse,
                          transform=transform,
                          function=function,

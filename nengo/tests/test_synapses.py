@@ -94,3 +94,8 @@ def test_general(Simulator):
     assert allclose(t, y.flatten(), yhat.flatten(),
                     plotter=Plotter(Simulator),
                     filename='test_synapse.test_general.pdf')
+
+
+if __name__ == "__main__":
+    nengo.log(debug=True)
+    pytest.main([__file__, '-v'])

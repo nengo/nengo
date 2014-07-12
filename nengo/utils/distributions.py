@@ -1,16 +1,19 @@
 from __future__ import absolute_import
 import numpy as np
 
+import nengo.utils.numpy as npext
+
 
 class Distribution(object):
     """A base class for probability distributions.
 
-    The only thing that a probabilities distribution needs is a
+    The only thing that a probabilities distribution need to define is a
     ``sample`` function. This base class ensures that all distributions
     accept the same arguments for the sample function.
+
     """
 
-    def sample(self, n, rng=np.random):
+    def sample(self, n, d=None, rng=np.random):
         raise NotImplementedError("Distributions should implement sample.")
 
 
@@ -45,11 +48,12 @@ class Uniform(Distribution):
                 and self.high == other.high
                 and self.integer == other.integer)
 
-    def sample(self, n, rng=np.random):
+    def sample(self, n, d=None, rng=np.random):
+        shape = (n,) if d is None else (n, d)
         if self.integer:
-            return rng.randint(low=self.low, high=self.high, size=n)
+            return rng.randint(low=self.low, high=self.high, size=shape)
         else:
-            return rng.uniform(low=self.low, high=self.high, size=n)
+            return rng.uniform(low=self.low, high=self.high, size=shape)
 
 
 class Gaussian(Distribution):
@@ -82,8 +86,9 @@ class Gaussian(Distribution):
                 and self.mean == other.mean
                 and self.std == other.std)
 
-    def sample(self, n, rng=np.random):
-        return rng.normal(loc=self.mean, scale=self.std, size=n)
+    def sample(self, n, d=None, rng=np.random):
+        shape = (n,) if d is None else (n, d)
+        return rng.normal(loc=self.mean, scale=self.std, size=shape)
 
 
 class UniformHypersphere(Distribution):
@@ -91,9 +96,6 @@ class UniformHypersphere(Distribution):
 
     Parameters
     ----------
-    dimensions : Number
-        The dimensionality of the hypersphere; i.e., the length
-        of each sample point vector.
     surface : bool
         Whether sample points should be distributed uniformly
         over the surface of the hyperphere (True),
@@ -102,27 +104,22 @@ class UniformHypersphere(Distribution):
 
     """
 
-    def __init__(self, dimensions, surface=False):
-        if dimensions < 1:
-            raise ValueError("Hypersphere must have dimensions > 0")
-        if not isinstance(dimensions, int):
-            raise ValueError("Hyperphere only defined for integer dimensions")
-        self.dimensions = dimensions
+    def __init__(self, surface=False):
         self.surface = surface
 
-    def sample(self, n, rng=np.random):
-        samples = rng.randn(n, self.dimensions)
+    def sample(self, n, d, rng=np.random):
+        if d is None or d < 1:  # check this, since other dists allow d = None
+            raise ValueError("Dimensions must be a positive integer")
 
-        # normalize magnitude of sampled points to be of unit length
-        norm = np.sum(samples * samples, axis=1)
-        samples /= np.sqrt(norm)[:, np.newaxis]
+        samples = rng.randn(n, d)
+        samples /= npext.norm(samples, axis=1, keepdims=True)
 
         if self.surface:
             return samples
 
-        # generate magnitudes for vectors from uniform distribution
-        scale = rng.rand(n, 1) ** (1.0 / self.dimensions)
+        # Generate magnitudes for vectors from uniform distribution.
+        # The (1 / d) exponent ensures that samples are uniformly distributed
+        # in n-space and not all bunched up at the centre of the sphere.
+        samples *= rng.rand(n, 1) ** (1.0 / d)
 
-        # scale sample points
-        samples *= scale
         return samples

@@ -614,6 +614,124 @@ def test_function_output_size(Simulator, nl_nodirect):
     assert np.allclose(x, y, atol=0.1)
 
 
+def test_slicing_function(Simulator, nl):
+    """Test using a pre-slice and a function"""
+    N = 300
+    f_in = lambda t: [np.cos(3*t), np.sin(3*t)]
+    f_x = lambda x: [x, -x**2]
+
+    with nengo.Network(seed=99) as model:
+        model.config[nengo.Ensemble].neuron_type = nl()
+        u = nengo.Node(output=f_in)
+        a = nengo.Ensemble(N, 2, radius=1.5)
+        b = nengo.Ensemble(N, 2, radius=1.5)
+        nengo.Connection(u, a)
+        nengo.Connection(a[1], b, function=f_x)
+
+        up = nengo.Probe(u, synapse=0.03)
+        bp = nengo.Probe(b, synapse=0.03)
+
+    sim = Simulator(model)
+    sim.run(1.)
+
+    t = sim.trange()
+    v = sim.data[up]
+    w = np.column_stack(f_x(v[:, 1]))
+    y = sim.data[bp]
+
+    with Plotter(Simulator, nl) as plt:
+        plt.plot(t, y)
+        plt.plot(t, w, ':')
+        plt.savefig('test_connection.test_slicing_function.pdf')
+        plt.close()
+
+    assert np.allclose(w, y, atol=0.1, rtol=0.0)
+
+
+def test_set_weight_solver():
+    with nengo.Network():
+        a = nengo.Ensemble(10, 2)
+        b = nengo.Ensemble(10, 2)
+        nengo.Connection(a, b,
+                         solver=nengo.decoders.LstsqL2(weights=True))
+        with pytest.raises(ValueError):
+            nengo.Connection(a.neurons, b,
+                             solver=nengo.decoders.LstsqL2(weights=True))
+        with pytest.raises(ValueError):
+            nengo.Connection(a, b.neurons,
+                             solver=nengo.decoders.LstsqL2(weights=True))
+        with pytest.raises(ValueError):
+            nengo.Connection(a.neurons, b.neurons,
+                             solver=nengo.decoders.LstsqL2(weights=True))
+
+
+def test_set_learning_rule():
+    with nengo.Network():
+        a = nengo.Ensemble(10, 2)
+        b = nengo.Ensemble(10, 2)
+        err = nengo.Connection(a, b)
+        n = nengo.Node(output=lambda t, x: t * x, size_in=2)
+        nengo.Connection(a, b, learning_rule=nengo.PES(err))
+        nengo.Connection(a, b, learning_rule=nengo.PES(err),
+                         solver=nengo.decoders.LstsqL2(weights=True))
+        nengo.Connection(a.neurons, b.neurons, learning_rule=nengo.PES(err))
+        nengo.Connection(a.neurons, b.neurons, learning_rule=nengo.Oja())
+
+        with pytest.raises(ValueError):
+            nengo.Connection(n, a, learning_rule=nengo.PES(err))
+
+
+def test_set_function(Simulator):
+    with nengo.Network() as model:
+        a = nengo.Ensemble(10, 2)
+        b = nengo.Ensemble(10, 2)
+        c = nengo.Ensemble(10, 1)
+
+        # Function only OK from node or ensemble
+        with pytest.raises(ValueError):
+            nengo.Connection(a.neurons, b, function=lambda x: x)
+
+        # Function and transform must match up
+        with pytest.raises(ValueError):
+            nengo.Connection(a, b, function=lambda x: x[0] * x[1],
+                             transform=np.eye(2))
+
+        # These initial functions have correct dimensionality
+        conn_2d = nengo.Connection(a, b)
+        conn_1d = nengo.Connection(b, c, function=lambda x: x[0] * x[1])
+
+    Simulator(model)  # Builds fine
+
+    with model:
+        # Can change to another function with correct dimensionality
+        conn_2d.function = lambda x: x ** 2
+        conn_1d.function = lambda x: x[0] + x[1]
+
+    Simulator(model)  # Builds fine
+
+    with model:
+        # Cannot change to a function with different dimensionality
+        # because that would require a change in transform
+        with pytest.raises(ValueError):
+            conn_2d.function = lambda x: x[0] * x[1]
+        with pytest.raises(ValueError):
+            conn_1d.function = None
+
+    Simulator(model)  # Builds fine
+
+
+def test_set_eval_points(Simulator):
+    with nengo.Network() as model:
+        a = nengo.Ensemble(10, 2)
+        b = nengo.Ensemble(10, 2)
+        # ConnEvalPoints parameter checks that pre is an ensemble
+        nengo.Connection(a, b, eval_points=[[0, 0], [0.5, 1]])
+        with pytest.raises(ValueError):
+            nengo.Connection(a.neurons, b, eval_points=[[0, 0], [0.5, 1]])
+
+    Simulator(model)  # Builds fine
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

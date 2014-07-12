@@ -1,6 +1,7 @@
 import pytest
 
 import nengo
+import nengo.synapses
 from nengo.config import Parameter
 
 
@@ -45,27 +46,6 @@ def test_config_basic():
         model.config['a'].something
     with pytest.raises(KeyError):
         model.config[None].something
-
-
-def test_parameter_checking():
-    class PositiveParameter(Parameter):
-        def __set__(self, instance, value):
-            if not isinstance(value, (int, float)) or value <= 0:
-                raise AttributeError('value must be positive')
-            super(PositiveParameter, self).__set__(instance, value)
-
-    model = nengo.Network()
-    model.config[nengo.Ensemble].set_param(
-        'number', PositiveParameter(default=1))
-    with model:
-        a = nengo.Ensemble(50, 1)
-        b = nengo.Ensemble(90, 1)
-
-    model.config[a].number = 3
-    with pytest.raises(AttributeError):
-        model.config[a].number = 0
-    with pytest.raises(AttributeError):
-        model.config[b].number = 'a'
 
 
 def test_network_nesting():
@@ -134,7 +114,7 @@ def test_configstack():
     """Test that setting defaults with bare configs works."""
     inhib = nengo.Config()
     inhib.configures(nengo.Connection)
-    inhib[nengo.Connection].synapse = 0.00848
+    inhib[nengo.Connection].synapse = nengo.synapses.Lowpass(0.00848)
     with nengo.Network() as net:
         net.config[nengo.Connection].modulatory = True
         e1 = nengo.Ensemble(5, dimensions=1)
