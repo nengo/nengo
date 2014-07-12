@@ -16,13 +16,14 @@ from .version import version as __version__
 import logging
 
 # Nengo namespace (API)
-from .config import Config, Default
+from .config import Config
 from .objects import Ensemble, Node, Connection, Probe, Network
 from .neurons import Direct, LIF, LIFRate, AdaptiveLIF, AdaptiveLIFRate
 from .learning_rules import PES, BCM, Oja
-from . import networks
+from .params import Default
 from .simulator import Simulator
 from .utils.logging import log
+from . import networks
 
 logger = logging.getLogger(__name__)
 try:

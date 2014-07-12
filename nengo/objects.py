@@ -8,9 +8,10 @@ import numpy as np
 
 import nengo.decoders
 import nengo.utils.numpy as npext
-from nengo.config import Config, Default, is_param, Parameter
+from nengo.config import Config
 from nengo.learning_rules import LearningRule
 from nengo.neurons import LIF
+from nengo.params import Default, is_param, Parameter
 from nengo.utils.compat import is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
 from nengo.utils.inspect import checked_call
@@ -286,7 +287,14 @@ class NengoObject(with_metaclass(NetworkMember)):
                 SyntaxWarning)
         if val is Default:
             val = Config.default(type(self), name)
-        super(NengoObject, self).__setattr__(name, val)
+        try:
+            super(NengoObject, self).__setattr__(name, val)
+        except Exception as e:
+            arg0 = '' if len(e.args) == 0 else e.args[0]
+            arg0 = ("Validation error when setting '%s.%s': %s"
+                    % (self.__class__.__name__, name, arg0))
+            e.args = (arg0,) + e.args[1:]
+            raise
 
     @classmethod
     def param_list(cls):
@@ -367,14 +375,14 @@ class Ensemble(NengoObject):
     """
 
     radius = Parameter(default=1.0)
-    encoders = Parameter(default=None)
+    encoders = Parameter(default=None, optional=True)
     intercepts = Parameter(default=Uniform(-1.0, 1.0))
     max_rates = Parameter(default=Uniform(200, 400))
-    eval_points = Parameter(default=None)
-    seed = Parameter(default=None)
-    label = Parameter(default=None)
-    bias = Parameter(default=None)
-    gain = Parameter(default=None)
+    eval_points = Parameter(default=None, optional=True)
+    seed = Parameter(default=None, optional=True)
+    label = Parameter(default=None, optional=True)
+    bias = Parameter(default=None, optional=True)
+    gain = Parameter(default=None, optional=True)
     neuron_type = Parameter(default=LIF())
     probeable = Parameter(default=['decoded_output',
                                    'input',
@@ -470,10 +478,10 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
-    output = Parameter(default=None)
+    output = Parameter(default=None, optional=True)
     size_in = Parameter(default=0)
-    size_out = Parameter(default=None)
-    label = Parameter(default=None)
+    size_out = Parameter(default=None, optional=True)
+    label = Parameter(default=None, optional=True)
     probeable = Parameter(default=['output'])
 
     def __init__(self, output=Default,  # noqa: C901
@@ -593,12 +601,12 @@ class Connection(NengoObject):
         The seed used for random number generation.
     """
 
-    synapse = Parameter(default=0.005)
+    synapse = Parameter(default=0.005, optional=True)
     _transform = Parameter(default=np.array(1.0))
     solver = Parameter(default=nengo.decoders.LstsqL2())
     _function = Parameter(default=(None, 0))
     modulatory = Parameter(default=False)
-    eval_points = Parameter(default=None)
+    eval_points = Parameter(default=None, optional=True)
     probeable = Parameter(default=['signal'])
 
     def __init__(self, pre, post, synapse=Default, transform=1.0,
