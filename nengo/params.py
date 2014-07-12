@@ -1,5 +1,7 @@
 import weakref
 
+from nengo.utils.compat import is_integer, is_number, is_string
+
 
 class DefaultType:
     def __repr__(self):
@@ -65,3 +67,56 @@ class Parameter(object):
             raise ValueError("Parameter is read-only; cannot be changed.")
         if not self.optional and value is None:
             raise ValueError("Parameter is not optional; cannot set to None")
+
+
+class BoolParam(Parameter):
+    def validate(self, instance, boolean):
+        if boolean is not None and not isinstance(boolean, bool):
+            raise ValueError("Must be a boolean; got '%s'" % boolean)
+        super(BoolParam, self).validate(instance, boolean)
+
+
+class NumberParam(Parameter):
+    def __init__(self, default, low=None, high=None,
+                 optional=False, readonly=False):
+        self.low = low
+        self.high = high
+        super(NumberParam, self).__init__(default, optional, readonly)
+
+    def validate(self, instance, num):
+        if num is not None:
+            if not is_number(num):
+                raise ValueError("Must be a number; got '%s'" % num)
+            if self.low is not None and num < self.low:
+                raise ValueError("Number must be greater than %s" % self.low)
+            if self.high is not None and num > self.high:
+                raise ValueError("Number must be less than %s" % self.high)
+        super(NumberParam, self).validate(instance, num)
+
+
+class IntParam(NumberParam):
+    def validate(self, instance, num):
+        if num is not None and not is_integer(num):
+            raise ValueError("Must be an integer; got '%s'" % num)
+        super(IntParam, self).validate(instance, num)
+
+
+class StringParam(Parameter):
+    def validate(self, instance, string):
+        if string is not None and not is_string(string):
+            raise ValueError("Must be a string; got '%s'" % string)
+        super(StringParam, self).validate(instance, string)
+
+
+class ListParam(Parameter):
+    def validate(self, instance, lst):
+        if lst is not None and not isinstance(lst, list):
+            raise ValueError("Must be a list; got '%s'" % str(lst))
+        super(ListParam, self).validate(instance, lst)
+
+
+class DictParam(Parameter):
+    def validate(self, instance, dct):
+        if dct is not None and not isinstance(dct, dict):
+            raise ValueError("Must be a dictionary; got '%s'" % str(dct))
+        super(DictParam, self).validate(instance, dct)
