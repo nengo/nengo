@@ -12,6 +12,7 @@ from nengo.config import Config
 from nengo.learning_rules import LearningRule
 from nengo.neurons import LIF
 from nengo.params import Default, is_param, Parameter
+from nengo import params
 from nengo.utils.compat import is_iterable, with_metaclass
 from nengo.utils.distributions import Uniform
 from nengo.utils.inspect import checked_call
@@ -158,6 +159,7 @@ class Network(with_metaclass(NengoObjectContainer)):
         config.configures(Ensemble)
         config.configures(Network)
         config.configures(Node)
+        config.configures(Probe)
         return config
 
     def _all_objects(self, object_type):
@@ -374,36 +376,30 @@ class Ensemble(NengoObject):
         A name for the ensemble. Used for debugging and visualization.
     """
 
-    radius = Parameter(default=1.0)
+    n_neurons = params.IntParam(default=None, low=1)
+    dimensions = params.IntParam(default=None, low=1)
+    radius = params.NumberParam(default=1.0, low=1e-10)
     encoders = Parameter(default=None, optional=True)
     intercepts = Parameter(default=Uniform(-1.0, 1.0))
     max_rates = Parameter(default=Uniform(200, 400))
     eval_points = Parameter(default=None, optional=True)
-    seed = Parameter(default=None, optional=True)
-    label = Parameter(default=None, optional=True)
+    seed = params.IntParam(default=None, optional=True)
+    label = params.StringParam(default=None, optional=True)
     bias = Parameter(default=None, optional=True)
     gain = Parameter(default=None, optional=True)
     neuron_type = Parameter(default=LIF())
-    probeable = Parameter(default=['decoded_output',
-                                   'input',
-                                   'neuron_output',
-                                   'spikes',
-                                   'voltage'])
+    probeable = params.ListParam(default=['decoded_output',
+                                          'input',
+                                          'neuron_output',
+                                          'spikes',
+                                          'voltage'])
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
                  neuron_type=Default, seed=Default, label=Default):
 
-        self.dimensions = dimensions
-        if self.dimensions <= 0:
-            raise ValueError(
-                "Number of dimensions (%d) must be positive" % dimensions)
-
         self.n_neurons = n_neurons
-        if self.n_neurons <= 0:
-            raise ValueError(
-                "Number of neurons (%d) must be positive." % n_neurons)
-
+        self.dimensions = dimensions
         self.radius = radius
         self.encoders = encoders
         self.intercepts = intercepts
@@ -479,10 +475,10 @@ class Node(NengoObject):
     """
 
     output = Parameter(default=None, optional=True)
-    size_in = Parameter(default=0)
-    size_out = Parameter(default=None, optional=True)
-    label = Parameter(default=None, optional=True)
-    probeable = Parameter(default=['output'])
+    size_in = params.IntParam(default=0, low=0)
+    size_out = params.IntParam(default=None, low=0, optional=True)
+    label = params.StringParam(default=None, optional=True)
+    probeable = params.ListParam(default=['output'])
 
     def __init__(self, output=Default,  # noqa: C901
                  size_in=Default, size_out=Default, label=Default):
@@ -605,9 +601,10 @@ class Connection(NengoObject):
     _transform = Parameter(default=np.array(1.0))
     solver = Parameter(default=nengo.decoders.LstsqL2())
     _function = Parameter(default=(None, 0))
-    modulatory = Parameter(default=False)
+    modulatory = params.BoolParam(default=False)
     eval_points = Parameter(default=None, optional=True)
-    probeable = Parameter(default=['signal'])
+    seed = params.IntParam(default=None, optional=True)
+    probeable = params.ListParam(default=['signal'])
 
     def __init__(self, pre, post, synapse=Default, transform=1.0,
                  solver=Default,
@@ -849,7 +846,13 @@ class Probe(NengoObject):
         probe. For example, passing ``synapse=pstc`` will filter the data.
     """
 
-    def __init__(self, target, attr=None, sample_every=None, **conn_args):
+    attr = params.StringParam(default=None)
+    sample_every = params.NumberParam(default=None, optional=True, low=1e-10)
+    conn_args = params.DictParam(default=None)
+    seed = params.IntParam(default=None, optional=True)
+
+    def __init__(self, target, attr=Default, sample_every=Default,
+                 **conn_args):
         if not hasattr(target, 'probeable') or len(target.probeable) == 0:
             raise TypeError(
                 "Type '%s' is not probeable" % target.__class__.__name__)
@@ -857,17 +860,20 @@ class Probe(NengoObject):
         conn_args.setdefault('synapse', None)
 
         # We'll use the first in the list as default
-        self.attr = attr if attr is not None else target.probeable[0]
+        self.attr = attr if attr is not Default else target.probeable[0]
 
         if self.attr not in target.probeable:
             raise ValueError(
                 "'%s' is not probeable for '%s'" % (self.attr, target))
 
         self.target = target
-        self.label = "Probe(%s.%s)" % (target.label, self.attr)
         self.sample_every = sample_every
         self.conn_args = conn_args
         self.seed = conn_args.get('seed', None)
+
+    @property
+    def label(self):
+        return "Probe(%s.%s)" % (self.target.label, self.attr)
 
     @property
     def size_in(self):
