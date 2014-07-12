@@ -4,8 +4,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.builder import ShapeMismatch
-from nengo.utils.numpy import rmse, norm
+import nengo.utils.numpy as npext
 from nengo.utils.testing import Plotter, warns
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,8 @@ def test_missing_attribute():
 def test_encoders(n_dimensions, n_neurons=10, encoders=None):
     if encoders is None:
         encoders = np.random.normal(size=(n_neurons, n_dimensions))
-        encoders /= norm(encoders, axis=-1, keepdims=True)
+        encoders = npext.array(encoders, min_dims=2, dtype=np.float64)
+        encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     model = nengo.Network(label="_test_encoders")
     with model:
@@ -39,7 +39,7 @@ def test_encoders(n_dimensions, n_neurons=10, encoders=None):
 def test_encoders_wrong_shape():
     n_dimensions = 3
     encoders = np.random.normal(size=n_dimensions)
-    with pytest.raises(ShapeMismatch):
+    with pytest.raises(ValueError):
         test_encoders(n_dimensions, encoders=encoders)
 
 
@@ -137,10 +137,10 @@ def test_scalar(Simulator, nl):
 
     target = np.sin(np.arange(5000) / 1000.)
     target.shape = (-1, 1)
-    logger.debug("[New API] input RMSE: %f", rmse(target, sim.data[in_p]))
-    logger.debug("[New API] A RMSE: %f", rmse(target, sim.data[A_p]))
-    assert rmse(target, sim.data[in_p]) < 0.001
-    assert rmse(target, sim.data[A_p]) < 0.1
+    logger.debug("Input RMSE: %f", npext.rmse(target, sim.data[in_p]))
+    logger.debug("A RMSE: %f", npext.rmse(target, sim.data[A_p]))
+    assert npext.rmse(target, sim.data[in_p]) < 0.001
+    assert npext.rmse(target, sim.data[A_p]) < 0.1
 
 
 def test_vector(Simulator, nl):
@@ -171,9 +171,9 @@ def test_vector(Simulator, nl):
     target = np.vstack((np.sin(np.arange(5000) / 1000.),
                         np.cos(np.arange(5000) / 1000.),
                         np.arctan(np.arange(5000) / 1000.))).T
-    logger.debug("In RMSE: %f", rmse(target, sim.data[in_p]))
-    assert rmse(target, sim.data[in_p]) < 0.01
-    assert rmse(target, sim.data[A_p]) < 0.1
+    logger.debug("In RMSE: %f", npext.rmse(target, sim.data[in_p]))
+    assert npext.rmse(target, sim.data[in_p]) < 0.01
+    assert npext.rmse(target, sim.data[A_p]) < 0.1
 
 
 def test_product(Simulator, nl):
@@ -220,11 +220,11 @@ def test_product(Simulator, nl):
         plt.close()
 
     sin = np.sin(np.arange(0, 6, .01))
-    assert rmse(sim.data[factors_p][:, 0], sin) < 0.1
-    assert rmse(sim.data[factors_p][20:, 1], -0.5) < 0.1
+    assert npext.rmse(sim.data[factors_p][:, 0], sin) < 0.1
+    assert npext.rmse(sim.data[factors_p][20:, 1], -0.5) < 0.1
 
-    assert rmse(sim.data[product_p][:, 0], -0.5 * sin) < 0.1
-    # assert rmse(sim.data[conn][:, 0], -0.5 * sin) < 0.1
+    assert npext.rmse(sim.data[product_p][:, 0], -0.5 * sin) < 0.1
+    # assert npext.rmse(sim.data[conn][:, 0], -0.5 * sin) < 0.1
 
 
 @pytest.mark.parametrize('dims, points', [(1, 528), (2, 823), (3, 937)])
@@ -232,10 +232,21 @@ def test_eval_points_number(Simulator, nl, dims, points):
     model = nengo.Network(seed=123)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl()
-        A = nengo.Ensemble(5, dims, eval_points=points)
+        A = nengo.Ensemble(5, dims, n_eval_points=points)
 
     sim = Simulator(model)
     assert sim.data[A].eval_points.shape == (points, dims)
+
+
+def test_eval_points_number_warning(Simulator, recwarn):
+    model = nengo.Network(seed=123)
+    with model:
+        A = nengo.Ensemble(5, 1, n_eval_points=10, eval_points=[[0.1], [0.2]])
+
+    sim = Simulator(model)
+    assert np.allclose(sim.data[A].eval_points, [[0.1], [0.2]])
+    # n_eval_points doesn't match actual passed eval_points, which warns
+    assert recwarn.pop() is not None
 
 
 @pytest.mark.parametrize('neurons, dims', [
@@ -279,6 +290,25 @@ def test_invalid_rates(Simulator):
 
     with pytest.raises(ValueError):
         Simulator(model)
+
+
+def test_gain_bias(Simulator, nl_nodirect):
+
+    N = 17
+    D = 2
+
+    gain = np.random.uniform(low=0.2, high=5, size=N)
+    bias = np.random.uniform(low=0.2, high=1, size=N)
+
+    model = nengo.Network()
+    with model:
+        a = nengo.Ensemble(N, D)
+        a.gain = gain
+        a.bias = bias
+
+    sim = Simulator(model)
+    assert np.array_equal(gain, sim.data[a].gain)
+    assert np.array_equal(bias, sim.data[a].bias)
 
 
 if __name__ == "__main__":

@@ -45,15 +45,11 @@ import nengo.objects
 import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
-from nengo.utils.builder import full_transform
-from nengo.utils.compat import is_integer, is_number, range, StringIO
+from nengo.utils.builder import default_n_eval_points, full_transform
+from nengo.utils.compat import is_number, range, StringIO
 from nengo.utils.filter_design import cont2discrete
 
 logger = logging.getLogger(__name__)
-
-
-class ShapeMismatch(ValueError):
-    pass
 
 
 class SignalView(object):
@@ -117,7 +113,7 @@ class SignalView(object):
         if self.elemstrides == (1,):
             size = int(np.prod(shape))
             if size != self.size:
-                raise ShapeMismatch(shape, self.shape)
+                raise ValueError(shape, self.shape)
             elemstrides = [1]
             for si in reversed(shape[1:]):
                 elemstrides = [si * elemstrides[0]] + elemstrides
@@ -130,7 +126,7 @@ class SignalView(object):
             # -- scalars can be reshaped to any number of (1, 1, 1...)
             size = int(np.prod(shape))
             if size != self.size:
-                raise ShapeMismatch(shape, self.shape)
+                raise ValueError(shape, self.shape)
             elemstrides = [1] * len(shape)
             return SignalView(
                 base=self.base,
@@ -894,8 +890,6 @@ class Builder(object):
         model = kwargs.setdefault('model', Model())
 
         if model.has_built(obj):
-            # If we've already built the obj, we'll ignore it.
-
             # TODO: Prevent this at pre-build validation time.
             warnings.warn("Object '%s' has already been built." % obj)
             return
@@ -907,10 +901,6 @@ class Builder(object):
             raise TypeError("Cannot build object of type '%s'." %
                             obj.__class__.__name__)
         cls.builders[obj_cls](obj, *args, **kwargs)
-        # if obj not in model.params:
-        #     raise RuntimeError(
-        #         "Build function '%s' did not add '%s' to model.params"
-        #         % (cls.builders[obj_cls].__name__, str(obj)))
         return model
 
 
@@ -976,13 +966,10 @@ def build_network(network, model):  # noqa: C901
 Builder.register_builder(build_network, nengo.objects.Network)
 
 
-def pick_eval_points(ens, n_points, rng):
-    if n_points is None:
-        # use a heuristic to pick the number of points
-        dims, neurons = ens.dimensions, ens.n_neurons
-        n_points = max(np.clip(500 * dims, 750, 2500), 2 * neurons)
-    return dists.UniformHypersphere(ens.dimensions).sample(
-        n_points, rng=rng) * ens.radius
+def sample(dist, n_samples, rng):
+    if isinstance(dist, dists.Distribution):
+        return dist.sample(n_samples, rng=rng)
+    return np.array(dist)
 
 
 def build_ensemble(ens, model, config):  # noqa: C901
@@ -990,12 +977,19 @@ def build_ensemble(ens, model, config):  # noqa: C901
     rng = np.random.RandomState(model.seeds[ens])
 
     # Generate eval points
-    if ens.eval_points is None or is_integer(ens.eval_points):
-        eval_points = pick_eval_points(
-            ens=ens, n_points=ens.eval_points, rng=rng)
+    if isinstance(ens.eval_points, dists.Distribution):
+        n_points = ens.n_eval_points
+        if n_points is None:
+            n_points = default_n_eval_points(ens.n_neurons, ens.dimensions)
+        eval_points = ens.eval_points.sample(n_points, ens.dimensions, rng)
+        # eval_points should be in the ensemble's representational range
+        eval_points *= ens.radius
     else:
-        eval_points = npext.array(
-            ens.eval_points, dtype=np.float64, min_dims=2)
+        if (ens.n_eval_points is not None
+                and ens.eval_points.shape[0] != ens.n_eval_points):
+            warnings.warn("Number of eval_points doesn't match "
+                          "n_eval_points. Ignoring n_eval_points.")
+        eval_points = np.array(ens.eval_points, dtype=np.float64)
 
     # Set up signal
     model.sig[ens]['in'] = Signal(np.zeros(ens.dimensions),
@@ -1005,30 +999,28 @@ def build_ensemble(ens, model, config):  # noqa: C901
     # Set up encoders
     if isinstance(ens.neuron_type, nengo.neurons.Direct):
         encoders = np.identity(ens.dimensions)
-    elif ens.encoders is None:
-        sphere = dists.UniformHypersphere(ens.dimensions, surface=True)
-        encoders = sphere.sample(ens.n_neurons, rng=rng)
+    elif isinstance(ens.encoders, dists.Distribution):
+        encoders = ens.encoders.sample(ens.n_neurons, ens.dimensions, rng=rng)
     else:
-        encoders = np.array(ens.encoders, dtype=np.float64)
-        enc_shape = (ens.n_neurons, ens.dimensions)
-        if encoders.shape != enc_shape:
-            raise ShapeMismatch(
-                "Encoder shape is %s. Should be (n_neurons, dimensions); "
-                "in this case %s." % (encoders.shape, enc_shape))
+        encoders = npext.array(ens.encoders, min_dims=2, dtype=np.float64)
         encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     # Determine max_rates and intercepts
-    if isinstance(ens.max_rates, dists.Distribution):
-        max_rates = ens.max_rates.sample(ens.n_neurons, rng=rng)
-    else:
-        max_rates = np.array(ens.max_rates)
-    if isinstance(ens.intercepts, dists.Distribution):
-        intercepts = ens.intercepts.sample(ens.n_neurons, rng=rng)
-    else:
-        intercepts = np.array(ens.intercepts)
+    max_rates = sample(ens.max_rates, ens.n_neurons, rng=rng)
+    intercepts = sample(ens.intercepts, ens.n_neurons, rng=rng)
 
     # Build the neurons
-    gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
+    if ens.gain is not None and ens.bias is not None:
+        gain = sample(ens.gain, ens.n_neurons, rng=rng)
+        bias = sample(ens.bias, ens.n_neurons, rng=rng)
+    elif ens.gain is not None or ens.bias is not None:
+        # TODO: handle this instead of error
+        raise NotImplementedError("gain or bias set for %s, but not both. "
+                                  "Solving for one given the other is not "
+                                  "implemented yet." % ens)
+    else:
+        gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
+
     if isinstance(ens.neuron_type, nengo.neurons.Direct):
         model.sig[ens]['neuron_in'] = Signal(
             np.zeros(ens.dimensions), name='%s.neuron_in' % ens.label)
@@ -1239,9 +1231,6 @@ def build_linear_system(conn, model, rng):
     if eval_points is None:
         eval_points = npext.array(
             model.params[conn.pre].eval_points, min_dims=2)
-    elif is_integer(eval_points):
-        eval_points = pick_eval_points(
-            ens=conn.pre, n_points=eval_points, rng=rng)
     else:
         eval_points = npext.array(eval_points, min_dims=2)
 

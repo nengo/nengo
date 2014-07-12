@@ -85,7 +85,7 @@ class CircularConvolution(nengo.Network):
     """
 
     def __init__(self, n_neurons, dimensions, invert_a=False, invert_b=False,
-                 radius=1, encoders=None, **ens_kwargs):
+                 radius=1, encoders=nengo.Default, **ens_kwargs):
         self.dimensions = dimensions
         self.invert_a = invert_a
         self.invert_b = invert_b
