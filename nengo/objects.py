@@ -7,7 +7,6 @@ import warnings
 import numpy as np
 
 import nengo.decoders
-import nengo.utils.numpy as npext
 from nengo.config import Config
 from nengo.learning_rules import LearningRule
 from nengo.neurons import LIF
@@ -42,12 +41,13 @@ class NengoObjectContainer(type):
         inst = cls.__new__(cls, *args, **kwargs)
         add_to_container = kwargs.pop(
             'add_to_container', len(Network.context) > 0)
-        if add_to_container:
-            cls.add(inst)
         inst.label = kwargs.pop('label', None)
         inst.seed = kwargs.pop('seed', None)
         with inst:
             inst.__init__(*args, **kwargs)
+        # Do the __init__ before adding in case __init__ errors out
+        if add_to_container:
+            cls.add(inst)
         return inst
 
 
@@ -257,9 +257,10 @@ class NetworkMember(type):
         """Override default __call__ behavior so that Network.add is called."""
         inst = cls.__new__(cls)
         add_to_container = kwargs.pop('add_to_container', True)
+        # Do the __init__ before adding in case __init__ errors out
+        inst.__init__(*args, **kwargs)
         if add_to_container:
             Network.add(inst)
-        inst.__init__(*args, **kwargs)
         inst._initialized = True  # value doesn't matter, just existance
         return inst
 
@@ -490,54 +491,19 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
-    output = Parameter(default=None, optional=True)
+    output = params.NodeOutputParam(default=None)
     size_in = params.IntParam(default=0, low=0)
     size_out = params.IntParam(default=None, low=0, optional=True)
     label = params.StringParam(default=None, optional=True)
     probeable = params.ListParam(default=['output'])
 
-    def __init__(self, output=Default,  # noqa: C901
+    def __init__(self, output=Default,
                  size_in=Default, size_out=Default, label=Default):
-        self.output = output
-        self.label = label
         self.size_in = size_in
         self.size_out = size_out
+        self.label = label
+        self.output = output  # Must be set after size_out; may modify size_out
         self.probeable = Default
-
-        if self.output is not None and not callable(self.output):
-            self.output = npext.array(self.output, min_dims=1, copy=False)
-
-        if self.output is not None:
-            if self.size_in != 0 and not callable(self.output):
-                raise TypeError("output must be callable if size_in != 0")
-            if isinstance(self.output, np.ndarray):
-                shape_out = self.output.shape
-            elif self.size_out is None and callable(self.output):
-                t, x = np.asarray(0.0), np.zeros(self.size_in)
-                args = [t, x] if self.size_in > 0 else [t]
-                value, invoked = checked_call(self.output, *args)
-                if not invoked:
-                    raise TypeError("output function '%s' must accept "
-                                    "%d arguments" % (self.output, len(args)))
-                shape_out = (0,) if value is None else np.asarray(value).shape
-            else:
-                shape_out = (self.size_out,)  # assume `size_out` is correct
-
-            if len(shape_out) > 1:
-                raise ValueError(
-                    "Node output must be a vector (got array shape %s)" %
-                    (shape_out,))
-
-            size_out_new = shape_out[0] if len(shape_out) == 1 else 1
-
-            if self.size_out is not None and self.size_out != size_out_new:
-                raise ValueError(
-                    "Size of Node output (%d) does not match `size_out` (%d)" %
-                    (size_out_new, self.size_out))
-
-            self.size_out = size_out_new
-        else:  # output is None
-            self.size_out = self.size_in
 
     def __getitem__(self, key):
         return ObjView(self, key)
