@@ -732,6 +732,10 @@ class Connection(NengoObject):
     def function_size(self):
         return self._function[1]
 
+    @property
+    def size_mid(self):
+        return self._function[1]
+
     @function.setter
     def function(self, _function):
         if _function is not None:
@@ -758,8 +762,24 @@ class Connection(NengoObject):
         return self._pre
 
     @property
+    def pre_obj(self):
+        return self._pre
+
+    @property
+    def pre_slice(self):
+        return self._preslice
+
+    @property
     def post(self):
         return self._post
+
+    @property
+    def post_obj(self):
+        return self._post
+
+    @property
+    def post_slice(self):
+        return self._postslice
 
     @property
     def transform(self):
