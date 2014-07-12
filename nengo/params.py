@@ -1,6 +1,9 @@
 import weakref
 
+import numpy as np
+
 from nengo.utils.compat import is_integer, is_number, is_string
+from nengo.utils.distributions import Distribution
 
 
 class DefaultType:
@@ -120,3 +123,61 @@ class DictParam(Parameter):
         if dct is not None and not isinstance(dct, dict):
             raise ValueError("Must be a dictionary; got '%s'" % str(dct))
         super(DictParam, self).validate(instance, dct)
+
+
+class NdarrayParam(Parameter):
+    """Can be a NumPy ndarray, or something that can be coerced into one."""
+
+    def __init__(self, default, shape, optional=False, readonly=False):
+        assert shape is not None
+        self.shape = shape
+        super(NdarrayParam, self).__init__(default, optional, readonly)
+
+    def __set__(self, instance, ndarray):
+        super(NdarrayParam, self).validate(instance, ndarray)
+        if ndarray is not None:
+            ndarray = self.validate(instance, ndarray)
+        self.data[instance] = ndarray
+
+    def validate(self, instance, ndarray):
+        ndim = len(self.shape)
+        try:
+            ndarray = np.asarray(ndarray, dtype=np.float64)
+        except TypeError:
+            raise ValueError("Must be a float NumPy array (got type '%s')"
+                             % ndarray.__class__.__name__)
+
+        if ndarray.ndim != ndim:
+            raise ValueError("ndarray must be %dD (got %dD)"
+                             % (ndim, ndarray.ndim))
+        for i, attr in enumerate(self.shape):
+            assert is_integer(attr) or is_string(attr), (
+                "shape can only be an int or str representing an attribute")
+            if attr == '*':
+                continue
+
+            if is_integer(attr):
+                desired = attr
+            elif is_string(attr):
+                desired = getattr(instance, attr)
+
+            if ndarray.shape[i] != desired:
+                raise ValueError("shape[%d] should be %d (got %d)"
+                                 % (i, desired, ndarray.shape[i]))
+        return ndarray
+
+
+class DistributionParam(NdarrayParam):
+    """Can be a Distribution or samples from a distribution."""
+
+    def __init__(self, default, sample_shape, optional=False, readonly=False):
+        super(DistributionParam, self).__init__(
+            default, sample_shape, optional, readonly)
+
+    def validate(self, instance, dist):
+        if dist is not None and not isinstance(dist, Distribution):
+            try:
+                dist = super(DistributionParam, self).validate(instance, dist)
+            except ValueError:
+                raise ValueError("Must be a distribution or NumPy array")
+        return dist
