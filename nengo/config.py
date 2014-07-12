@@ -14,46 +14,8 @@ http://nbviewer.ipython.org/urls/gist.github.com/ChrisBeaumont/5758381/raw/descr
 
 import collections
 import inspect
-import weakref
 
-
-class DefaultType:
-    def __repr__(self):
-        return "Default"
-Default = DefaultType()
-
-
-def is_param(obj):
-    return isinstance(obj, Parameter)
-
-
-class Parameter(object):
-    """Simple descriptor for storing configuration parameters"""
-    def __init__(self, default):
-        self.default = default
-        # use a WeakKey dictionary so items can still be garbage collected
-        self.data = weakref.WeakKeyDictionary()
-
-    def __contains__(self, key):
-        return key in self.data
-
-    def __delete__(self, instance):
-        del self.data[instance]
-
-    def __get__(self, instance, type_):
-        if instance is None:
-            # Return self so default can be inspected
-            return self
-        return self.data.get(instance, self.default)
-
-    def __set__(self, instance, value):
-        if value is Default:
-            # NB: If default is overridden, value will not be updated
-            value = self.default
-        self.data[instance] = value
-
-    def __repr__(self):
-        return "%s(default=%s)" % (self.__class__.__name__, self.default)
+from nengo.params import is_param
 
 
 class ClassParams(object):
@@ -75,7 +37,8 @@ class ClassParams(object):
             return super(ClassParams, self).__getattribute__(key)
         except AttributeError:
             # get_param gives a good error message, so this is sufficient
-            return self.get_param(key).__get__(self, self.__class__)
+            param = self.get_param(key)
+            return param.defaults[self] if self in param else param.default
 
     def __setattr__(self, key, value):
         """Overridden to handle instance descriptors manually.
@@ -85,7 +48,7 @@ class ClassParams(object):
         if key.startswith("_"):
             super(ClassParams, self).__setattr__(key, value)
         else:
-            self.get_param(key).__set__(self, value)
+            self.get_param(key).defaults[self] = value
 
     def __str__(self):
         lines = ["All parameters for %s:" % self._configures.__name__]

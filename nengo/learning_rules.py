@@ -1,4 +1,4 @@
-from nengo.config import Default, Parameter
+from nengo.params import Default, Parameter
 
 
 class LearningRule(object):
@@ -21,7 +21,7 @@ class LearningRule(object):
         Given label, or None.
     """
     learning_rate = Parameter(default=1e-5)
-    label = Parameter(default=None)
+    label = Parameter(default=None, optional=True)
 
     def __init__(self, learning_rate=Default, label=Default):
         self.learning_rate = learning_rate
