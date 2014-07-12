@@ -34,7 +34,7 @@ def test_gaussian(mean, std):
         assert abs(np.std(samples) - std) < 1
 
 
-@pytest.mark.parametrize("dimensions", [0, 1, 2, 5])
+@pytest.mark.parametrize("dimensions", [0, 1, 2, 5L])
 def test_hypersphere(dimensions):
     n = 100 * dimensions
     if dimensions < 1:
