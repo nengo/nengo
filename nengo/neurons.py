@@ -8,6 +8,9 @@ logger = logging.getLogger(__name__)
 
 
 class NeuronType(object):
+
+    probeable = []
+
     def rates(self, x, gain, bias):
         raise NotImplementedError("Neurons must provide rates")
 
@@ -33,6 +36,8 @@ class Direct(NeuronType):
 
 class _LIFBase(NeuronType):
     """Abstract base class for LIF neuron types."""
+
+    probeable = ['neuron_output', 'spikes']
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002):
         self.tau_rc = tau_rc
@@ -107,6 +112,8 @@ class LIFRate(_LIFBase):
 
 class LIF(_LIFBase):
     """Spiking version of the leaky integrate-and-fire (LIF) neuron model."""
+
+    probeable = ['neuron_output', 'spikes', 'voltage']
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
 

@@ -1,10 +1,15 @@
+from collections import Counter
 import logging
 
 import numpy as np
 import pytest
 
 import nengo
+from nengo.decoders import LstsqL2
+from nengo.learning_rules import Oja
+from nengo.neurons import LIF
 from nengo import params
+from nengo.synapses import Lowpass
 from nengo.utils.compat import PY2
 from nengo.utils.distributions import UniformHypersphere
 
@@ -271,6 +276,94 @@ def test_ndarrayparam_sample_shape():
     with pytest.raises(ValueError):
         inst.ndp = np.ones((3, 10))
     assert np.all(inst.ndp == np.ones((10, 3)))
+
+
+def test_neurontypeparam():
+    """NeuronTypeParam must be a neuron type."""
+    class Test(object):
+        ntp = params.NeuronTypeParam(default=None)
+
+    inst = Test()
+    inst.ntp = LIF()
+    assert isinstance(inst.ntp, LIF)
+    with pytest.raises(ValueError):
+        inst.ntp = 'a'
+
+
+def test_neurontypeparam_probeable():
+    """NeuronTypeParam can update a probeable list."""
+    class Test(object):
+        ntp = params.NeuronTypeParam(default=None, optional=True)
+        probeable = ['output']
+
+    inst = Test()
+    assert inst.probeable == ['output']
+    inst.ntp = LIF()
+    assert Counter(inst.probeable) == Counter(inst.ntp.probeable + ['output'])
+    # The first element is important,  as it's the default
+    assert inst.probeable[0] == 'output'
+    # Setting it again should result in the same list
+    inst.ntp = LIF()
+    assert Counter(inst.probeable) == Counter(inst.ntp.probeable + ['output'])
+    assert inst.probeable[0] == 'output'
+    # Unsetting it should clear the list appropriately
+    inst.ntp = None
+    assert inst.probeable == ['output']
+
+
+def test_synapseparam():
+    """SynapseParam must be a Synapse, and converts numbers to LowPass."""
+    class Test(object):
+        sp = params.SynapseParam(default=Lowpass(0.1))
+
+    inst = Test()
+    assert isinstance(inst.sp, Lowpass)
+    assert inst.sp.tau == 0.1
+    # Number are converted to LowPass
+    inst.sp = 0.05
+    assert isinstance(inst.sp, Lowpass)
+    assert inst.sp.tau == 0.05
+    # None has meaning
+    inst.sp = None
+    assert inst.sp is None
+    # Non-synapse not OK
+    with pytest.raises(ValueError):
+        inst.sp = 'a'
+
+
+def test_solverparam():
+    """SolverParam must be a solver."""
+    class Test(object):
+        sp = params.SolverParam(default=None)
+
+    inst = Test()
+    assert inst.sp is None
+    inst.sp = LstsqL2()
+    assert isinstance(inst.sp, LstsqL2)
+    assert not inst.sp.weights
+    # Non-solver not OK
+    with pytest.raises(ValueError):
+        inst.sp = 'a'
+
+
+def test_learningruleparam():
+    """LearningRuleParam must be one or many learning rules."""
+    class Test(object):
+        lrp = params.LearningRuleParam(default=None)
+
+    inst = Test()
+    assert inst.lrp is None
+    inst.lrp = Oja()
+    assert isinstance(inst.lrp, Oja)
+    inst.lrp = [Oja(), Oja()]
+    for lr in inst.lrp:
+        assert isinstance(lr, Oja)
+    # Non-LR no good
+    with pytest.raises(ValueError):
+        inst.lrp = 'a'
+    # All elements in list must be LR
+    with pytest.raises(ValueError):
+        inst.lrp = [Oja(), 'a', Oja()]
 
 
 def test_nengoobjectparam():

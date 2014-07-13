@@ -3,7 +3,11 @@ import weakref
 
 import numpy as np
 
-from nengo.utils.compat import is_integer, is_number, is_string
+from nengo.decoders import Solver
+from nengo.learning_rules import LearningRule
+from nengo.neurons import NeuronType
+from nengo.synapses import Lowpass, Synapse
+from nengo.utils.compat import is_integer, is_iterable, is_number, is_string
 from nengo.utils.distributions import Distribution
 from nengo.utils.inspect import checked_call
 import nengo.utils.numpy as npext
@@ -241,6 +245,107 @@ class DistributionParam(NdarrayParam):
             except ValueError:
                 raise ValueError("Must be a distribution or NumPy array")
         return dist
+
+
+class ConnEvalPointsParam(NdarrayParam):
+    def __set__(self, conn, ndarray):
+        if ndarray is not None:
+            self.validate_pre(conn, ndarray)
+        super(ConnEvalPointsParam, self).__set__(conn, ndarray)
+
+    def validate_pre(self, conn, ndarray):
+        """Eval points are only valid when pre is an ensemble."""
+        from nengo.objects import Ensemble
+        if not isinstance(conn.pre, Ensemble):
+            msg = ("eval_points are only valid on connections from ensembles "
+                   "(got type '%s')" % conn.pre.__class__.__name__)
+            raise ValueError(msg)
+
+
+class NeuronTypeParam(Parameter):
+    def __set__(self, instance, neurons):
+        self.validate(instance, neurons)
+        if hasattr(instance, 'probeable'):
+            self.update_probeable(instance, neurons)
+        self.data[instance] = neurons
+
+    def update_probeable(self, instance, neurons):
+        """Update the probeable list."""
+        # We could use a set instead and this would be easier, but we use
+        # the first member of the list as the default probeable, so that
+        # doesn't work.
+        if instance in self.data and self.data[instance] is not None:
+            for attr in self.data[instance].probeable:
+                if attr in instance.probeable:
+                    instance.probeable.remove(attr)
+
+        if neurons is not None:
+            for attr in neurons.probeable:
+                if attr not in instance.probeable:
+                    instance.probeable.append(attr)
+
+    def validate(self, instance, neurons):
+        if neurons is not None and not isinstance(neurons, NeuronType):
+            raise ValueError("'%s' is not a neuron type" % neurons)
+        super(NeuronTypeParam, self).validate(instance, neurons)
+
+
+class SynapseParam(Parameter):
+    def __init__(self, default, optional=True, readonly=False):
+        assert optional  # None has meaning (no filtering)
+        super(SynapseParam, self).__init__(
+            default, optional, readonly)
+
+    def __set__(self, conn, synapse):
+        if is_number(synapse):
+            synapse = Lowpass(synapse)
+        self.validate(conn, synapse)
+        self.data[conn] = synapse
+
+    def validate(self, conn, synapse):
+        if synapse is not None and not isinstance(synapse, Synapse):
+            raise ValueError("'%s' is not a synapse type" % synapse)
+        super(SynapseParam, self).validate(conn, synapse)
+
+
+class SolverParam(Parameter):
+    def validate(self, instance, solver):
+        from nengo.objects import Connection, Ensemble
+        if solver is not None and not isinstance(solver, Solver):
+            raise ValueError("'%s' is not a solver" % solver)
+        if solver is not None and isinstance(instance, Connection):
+            if solver.weights and not isinstance(instance.pre, Ensemble):
+                raise ValueError(
+                    "weight solvers only work for connections from ensembles "
+                    "(got '%s')" % instance.pre.__class__.__name__)
+            if solver.weights and not isinstance(instance.post, Ensemble):
+                raise ValueError(
+                    "weight solvers only work for connections to ensembles "
+                    "(got '%s')" % instance.post.__class__.__name__)
+        super(SolverParam, self).validate(instance, solver)
+
+
+class LearningRuleParam(Parameter):
+    def validate(self, instance, rule):
+        if is_iterable(rule):
+            for lr in rule:
+                self.validate_rule(instance, lr)
+        elif rule is not None:
+            self.validate_rule(instance, rule)
+        super(LearningRuleParam, self).validate(instance, rule)
+
+    def validate_rule(self, instance, rule):
+        from nengo.objects import Connection
+        if not isinstance(rule, LearningRule):
+            raise ValueError("'%s' is not a learning rule" % rule)
+
+        if isinstance(instance, Connection):
+            rule_type = ('Neurons' if instance.solver.weights
+                         else type(instance.pre).__name__)
+            if rule_type not in rule.modifies:
+                raise ValueError("Learning rule '%s' cannot be applied to "
+                                 "connection with pre of type '%s'"
+                                 % (rule, type(instance.pre).__name__))
 
 
 class NengoObjectParam(Parameter):

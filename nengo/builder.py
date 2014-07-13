@@ -46,7 +46,7 @@ import nengo.synapses
 import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
 from nengo.utils.builder import default_n_eval_points, full_transform
-from nengo.utils.compat import is_number, range, StringIO
+from nengo.utils.compat import is_iterable, is_number, range, StringIO
 from nengo.utils.filter_design import cont2discrete
 
 logger = logging.getLogger(__name__)
@@ -953,8 +953,12 @@ def build_network(network, model):  # noqa: C901
 
     logger.info("Network step 4: Building learning rules")
     for conn in network.connections:
-        for learning_rule in conn.learning_rule:
-            Builder.build(learning_rule, conn,
+        if is_iterable(conn.learning_rule):
+            for learning_rule in conn.learning_rule:
+                Builder.build(learning_rule, conn,
+                              model=model, config=network.config)
+        elif conn.learning_rule is not None:
+            Builder.build(conn.learning_rule, conn,
                           model=model, config=network.config)
 
     logger.info("Network step 5: Building probes")
