@@ -366,6 +366,24 @@ def test_learningruleparam():
         inst.lrp = [Oja(), 'a', Oja()]
 
 
+def test_functionparam():
+    """FunctionParam must be a function, and accept one scalar argument."""
+    class Test(object):
+        fp = params.FunctionParam(default=None)
+
+    inst = Test()
+    assert inst.fp is None
+    inst.fp = np.sin
+    assert inst.fp.function is np.sin
+    assert inst.fp.size == 1
+    # Not OK: requires two args
+    with pytest.raises(TypeError):
+        inst.fp = lambda x, y: x + y
+    # Not OK: not a function
+    with pytest.raises(ValueError):
+        inst.fp = 0
+
+
 def test_nengoobjectparam():
     """NengoObjectParam must be a Nengo object and is readonly by default."""
     class Test(object):

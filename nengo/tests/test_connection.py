@@ -647,6 +647,45 @@ def test_set_learning_rule():
             nengo.Connection(n, a, learning_rule=nengo.PES(err))
 
 
+def test_set_function(Simulator):
+    with nengo.Network() as model:
+        a = nengo.Ensemble(10, 2)
+        b = nengo.Ensemble(10, 2)
+        c = nengo.Ensemble(10, 1)
+
+        # Function only OK from node or ensemble
+        with pytest.raises(ValueError):
+            nengo.Connection(a.neurons, b, function=lambda x: x)
+
+        # Function and transform must match up
+        with pytest.raises(ValueError):
+            nengo.Connection(a, b, function=lambda x: x[0] * x[1],
+                             transform=np.eye(2))
+
+        # These initial functions have correct dimensionality
+        conn_2d = nengo.Connection(a, b)
+        conn_1d = nengo.Connection(b, c, function=lambda x: x[0] * x[1])
+
+    Simulator(model)  # Builds fine
+
+    with model:
+        # Can change to another function with correct dimensionality
+        conn_2d.function = lambda x: x ** 2
+        conn_1d.function = lambda x: x[0] + x[1]
+
+    Simulator(model)  # Builds fine
+
+    with model:
+        # Cannot change to a function with different dimensionality
+        # because that would require a change in transform
+        with pytest.raises(ValueError):
+            conn_2d.function = lambda x: x[0] * x[1]
+        with pytest.raises(ValueError):
+            conn_1d.function = None
+
+    Simulator(model)  # Builds fine
+
+
 def test_set_eval_points(Simulator):
     with nengo.Network() as model:
         a = nengo.Ensemble(10, 2)
