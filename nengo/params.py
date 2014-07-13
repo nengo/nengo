@@ -241,3 +241,20 @@ class DistributionParam(NdarrayParam):
             except ValueError:
                 raise ValueError("Must be a distribution or NumPy array")
         return dist
+
+
+class NengoObjectParam(Parameter):
+    def __init__(self, default=None, disallow=None, optional=False,
+                 readonly=True):
+        assert default is None  # These can't have defaults
+        self.disallow = [] if disallow is None else disallow
+        super(NengoObjectParam, self).__init__(default, optional, readonly)
+
+    def validate(self, instance, nengo_obj):
+        from nengo.objects import NengoObject, Neurons, ObjView
+        if not isinstance(nengo_obj, (NengoObject, Neurons, ObjView)):
+            raise ValueError("'%s' is not a Nengo object" % nengo_obj)
+        for n_type in self.disallow:
+            if isinstance(nengo_obj, n_type):
+                raise ValueError("Objects of type '%s' disallowed." % n_type)
+        super(NengoObjectParam, self).validate(instance, nengo_obj)
