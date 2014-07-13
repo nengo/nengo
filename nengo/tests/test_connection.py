@@ -614,6 +614,40 @@ def test_function_output_size(Simulator, nl_nodirect):
     assert np.allclose(x, y, atol=0.1)
 
 
+def test_slicing_function(Simulator, nl):
+    """Test using a pre-slice and a function"""
+    N = 300
+    f_in = lambda t: [np.cos(3*t), np.sin(3*t)]
+    f_x = lambda x: [x, -x**2]
+
+    with nengo.Network(seed=99) as model:
+        model.config[nengo.Ensemble].neuron_type = nl()
+        u = nengo.Node(output=f_in)
+        a = nengo.Ensemble(N, 2, radius=1.5)
+        b = nengo.Ensemble(N, 2, radius=1.5)
+        nengo.Connection(u, a)
+        nengo.Connection(a[1], b, function=f_x)
+
+        up = nengo.Probe(u, synapse=0.03)
+        bp = nengo.Probe(b, synapse=0.03)
+
+    sim = Simulator(model)
+    sim.run(1.)
+
+    t = sim.trange()
+    v = sim.data[up]
+    w = np.column_stack(f_x(v[:, 1]))
+    y = sim.data[bp]
+
+    with Plotter(Simulator, nl) as plt:
+        plt.plot(t, y)
+        plt.plot(t, w, ':')
+        plt.savefig('test_connection.test_slicing_function.pdf')
+        plt.close()
+
+    assert np.allclose(w, y, atol=0.1, rtol=0.0)
+
+
 def test_set_weight_solver():
     with nengo.Network():
         a = nengo.Ensemble(10, 2)

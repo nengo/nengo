@@ -1221,7 +1221,7 @@ def build_linear_system(conn, model, rng):
         targets = eval_points
     else:
         targets = np.zeros((len(eval_points), conn.size_mid))
-        for i, ep in enumerate(eval_points):
+        for i, ep in enumerate(eval_points[:, conn.pre_slice]):
             targets[i] = conn.function(ep)
 
     return eval_points, activities, targets
@@ -1255,7 +1255,7 @@ def build_connection(conn, model, config):  # noqa: C901
             signal = model.sig[conn]['in']
         else:
             sig_in, signal = build_pyfunc(
-                fn=conn.function,
+                fn=lambda x: conn.function(x[conn.pre_slice]),
                 t_in=False,
                 n_in=model.sig[conn]['in'].size,
                 n_out=conn.size_out,
