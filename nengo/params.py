@@ -1,3 +1,4 @@
+import collections
 import warnings
 import weakref
 
@@ -247,6 +248,41 @@ class DistributionParam(NdarrayParam):
         return dist
 
 
+class TransformParam(NdarrayParam):
+    """The transform additionally validates size_out."""
+    def __init__(self, default, optional=False, readonly=False):
+        super(TransformParam, self).__init__(default, (), optional, readonly)
+
+    def validate(self, conn, transform):
+        transform = np.asarray(transform, dtype=np.float64)
+
+        if transform.ndim == 0:
+            self.shape = ()
+        elif transform.ndim == 1:
+            self.shape = ('size_out',)
+        elif transform.ndim == 2:
+            # Actually (size_out, size_mid) but Function handles size_mid
+            self.shape = ('size_out', '*')
+        else:
+            raise ValueError("Cannot handle transforms with dimensions > 2")
+
+        # Checks the shapes
+        super(TransformParam, self).validate(conn, transform)
+
+        if transform.ndim == 2:
+            # check for repeated dimensions in lists, as these don't work
+            # for two-dimensional transforms
+            repeated_inds = lambda x: (
+                not isinstance(x, slice) and np.unique(x).size != len(x))
+            if repeated_inds(conn.pre_slice):
+                raise ValueError("Input object selection has repeated indices")
+            if repeated_inds(conn.post_slice):
+                raise ValueError(
+                    "Output object selection has repeated indices")
+
+        return transform
+
+
 class ConnEvalPointsParam(NdarrayParam):
     def __set__(self, conn, ndarray):
         if ndarray is not None:
@@ -346,6 +382,75 @@ class LearningRuleParam(Parameter):
                 raise ValueError("Learning rule '%s' cannot be applied to "
                                  "connection with pre of type '%s'"
                                  % (rule, type(instance.pre).__name__))
+
+
+FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
+
+
+class FunctionParam(Parameter):
+    def __set__(self, instance, function):
+        from nengo.objects import Connection
+        self.validate(instance, function)
+
+        if function is None:
+            size = None
+        else:
+            size = self.validate_call(instance, function)
+
+        function_info = FunctionInfo(function=function, size=size)
+
+        if isinstance(instance, Connection):
+            # This validation is Connection specific
+            self.validate_connection(instance, function_info)
+
+        # Set this at the end in case validate_connection fails
+        self.data[instance] = function_info
+
+    def validate(self, instance, function):
+        if function is not None and not callable(function):
+            raise ValueError("function '%s' must be callable" % function)
+        super(FunctionParam, self).validate(instance, function)
+
+    def function_args(self, instance, function):
+        from nengo.objects import Connection
+        if isinstance(instance, Connection):
+            x = (instance.eval_points[0] if is_iterable(instance.eval_points)
+                 else np.zeros(instance.size_in))
+        else:
+            x = np.zeros(1)
+        return (x,)
+
+    def validate_call(self, instance, function):
+        args = self.function_args(instance, function)
+        value, invoked = checked_call(function, *args)
+        if not invoked:
+            raise TypeError("function '%s' must accept a single "
+                            "np.array argument" % function)
+        return np.asarray(value).size
+
+    def validate_connection(self, conn, function_info):
+        from nengo.objects import Node, Ensemble
+        fn_ok = (Node, Ensemble)
+        function, size = function_info
+
+        if function is not None and not isinstance(conn.pre_obj, fn_ok):
+            raise ValueError("function can only be set for connections from "
+                             "an Ensemble or Node (got type '%s')"
+                             % conn.pre_obj.__class__.__name__)
+
+        type_pre = conn.pre_obj.__class__.__name__
+        transform = conn.transform
+        size_mid = conn.size_in if function is None else size
+
+        if transform.ndim < 2 and size_mid != conn.size_out:
+            raise ValueError("function output size is incorrect; should "
+                             "return a vector of size %d" % conn.size_out)
+
+        if transform.ndim == 2 and size_mid != transform.shape[1]:
+            # check input dimensionality matches transform
+            raise ValueError(
+                "%s output size (%d) not equal to transform input size "
+                "(%d)" % (type_pre, size_mid, transform.shape[1]))
 
 
 class NengoObjectParam(Parameter):
