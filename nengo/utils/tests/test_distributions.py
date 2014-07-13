@@ -35,8 +35,7 @@ def test_gaussian(mean, std):
         assert abs(np.std(samples) - std) < 1
 
 
-# eval() used here because 5L is a syntax error on Python 3
-@pytest.mark.parametrize("dimensions", [0, 1, 2, eval('5L') if PY2 else 5])
+@pytest.mark.parametrize("dimensions", [0, 1, 2, long(5) if PY2 else 5])
 def test_hypersphere(dimensions):
     n = 100 * dimensions
     if dimensions < 1:
