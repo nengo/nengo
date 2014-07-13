@@ -1191,26 +1191,28 @@ Builder.register_builder(build_probe, nengo.objects.Probe)
 
 
 def build_linear_system(conn, model, rng):
-    encoders = model.params[conn.pre].encoders
-    gain = model.params[conn.pre].gain
-    bias = model.params[conn.pre].bias
+    encoders = model.params[conn.pre_obj].encoders
+    gain = model.params[conn.pre_obj].gain
+    bias = model.params[conn.pre_obj].bias
 
     eval_points = conn.eval_points
     if eval_points is None:
         eval_points = npext.array(
-            model.params[conn.pre].eval_points, min_dims=2)
+            model.params[conn.pre_obj].eval_points, min_dims=2)
     else:
         eval_points = npext.array(eval_points, min_dims=2)
 
-    x = np.dot(eval_points, encoders.T / conn.pre.radius)
-    activities = model.dt * conn.pre.neuron_type.rates(x, gain, bias)
+    x = np.dot(eval_points, encoders.T / conn.pre_obj.radius)
+    activities = model.dt * conn.pre_obj.neuron_type.rates(x, gain, bias)
     if np.count_nonzero(activities) == 0:
         raise RuntimeError(
             "In '%s', for '%s', 'activites' matrix is all zero. "
             "This is because no evaluation points fall in the firing "
-            "ranges of any neurons." % (str(conn), str(conn.pre)))
+            "ranges of any neurons." % (str(conn), str(conn.pre_obj)))
 
     if conn.function is None:
+        # TODO: slice eval_points here rather than later, as it could
+        # significantly reduce computation
         targets = eval_points
     else:
         targets = np.zeros((len(eval_points), conn.function_size))
@@ -1224,15 +1226,15 @@ def build_connection(conn, model, config):  # noqa: C901
     # Create random number generator
     rng = np.random.RandomState(model.seeds[conn])
 
-    if isinstance(conn.pre, nengo.objects.Neurons):
-        model.sig[conn]['in'] = model.sig[conn.pre.ensemble]["neuron_out"]
+    if isinstance(conn.pre_obj, nengo.objects.Neurons):
+        model.sig[conn]['in'] = model.sig[conn.pre_obj.ensemble]["neuron_out"]
     else:
-        model.sig[conn]['in'] = model.sig[conn.pre]["out"]
+        model.sig[conn]['in'] = model.sig[conn.pre_obj]["out"]
 
-    if isinstance(conn.post, nengo.objects.Neurons):
-        model.sig[conn]['out'] = model.sig[conn.post.ensemble]["neuron_in"]
+    if isinstance(conn.post_obj, nengo.objects.Neurons):
+        model.sig[conn]['out'] = model.sig[conn.post_obj.ensemble]["neuron_in"]
     else:
-        model.sig[conn]['out'] = model.sig[conn.post]["in"]
+        model.sig[conn]['out'] = model.sig[conn.post_obj]["in"]
 
     decoders = None
     eval_points = None
@@ -1240,9 +1242,9 @@ def build_connection(conn, model, config):  # noqa: C901
     transform = full_transform(conn)
 
     # Figure out the signal going across this connection
-    if (isinstance(conn.pre, nengo.objects.Node) or
-            (isinstance(conn.pre, nengo.Ensemble) and
-             isinstance(conn.pre.neuron_type, nengo.neurons.Direct))):
+    if (isinstance(conn.pre_obj, nengo.objects.Node) or
+            (isinstance(conn.pre_obj, nengo.Ensemble) and
+             isinstance(conn.pre_obj.neuron_type, nengo.neurons.Direct))):
         # Node or Decoded connection in directmode
         if conn.function is None:
             signal = model.sig[conn]['in']
@@ -1258,7 +1260,7 @@ def build_connection(conn, model, config):  # noqa: C901
                                 model.sig['common'][1],
                                 sig_in,
                                 tag="%s input" % conn.label))
-    elif isinstance(conn.pre, nengo.objects.Ensemble):
+    elif isinstance(conn.pre_obj, nengo.objects.Ensemble):
         # Normal decoded connection
         eval_points, activities, targets = build_linear_system(
             conn, model, rng=rng)
@@ -1270,8 +1272,8 @@ def build_connection(conn, model, config):  # noqa: C901
 
             decoders, solver_info = conn.solver(
                 activities, targets, rng=rng,
-                E=model.params[conn.post].scaled_encoders.T)
-            model.sig[conn]['out'] = model.sig[conn.post]['neuron_in']
+                E=model.params[conn.post_obj].scaled_encoders.T)
+            model.sig[conn]['out'] = model.sig[conn.post_obj]['neuron_in']
             signal_size = model.sig[conn]['out'].size
         else:
             decoders, solver_info = conn.solver(activities, targets, rng=rng)
@@ -1304,15 +1306,15 @@ def build_connection(conn, model, config):  # noqa: C901
         model.add_op(Reset(model.sig[conn]['out']))
 
     # Add operator for transform
-    if isinstance(conn.post, nengo.objects.Neurons):
-        if not model.has_built(conn.post.ensemble):
+    if isinstance(conn.post_obj, nengo.objects.Neurons):
+        if not model.has_built(conn.post_obj.ensemble):
             # Since it hasn't been built, it wasn't added to the Network,
             # which is most likely because the Neurons weren't associated
             # with an Ensemble.
             raise RuntimeError("Connection '%s' refers to Neurons '%s' "
                                "that are not a part of any Ensemble." % (
-                                   conn, conn.post))
-        transform *= model.params[conn.post.ensemble].gain[:, np.newaxis]
+                                   conn, conn.post_obj))
+        transform *= model.params[conn.post_obj.ensemble].gain[:, np.newaxis]
 
     model.sig[conn]['transform'] = Signal(transform,
                                           name="%s.transform" % conn.label)
@@ -1325,9 +1327,9 @@ def build_connection(conn, model, config):  # noqa: C901
         # Forcing update of signal that is modified by learning rules.
         # Learning rules themselves apply DotIncs.
 
-        if isinstance(conn.pre, nengo.objects.Neurons):
+        if isinstance(conn.pre_obj, nengo.objects.Neurons):
             modified_signal = model.sig[conn]['transform']
-        elif isinstance(conn.pre, nengo.objects.Ensemble):
+        elif isinstance(conn.pre_obj, nengo.objects.Ensemble):
             if conn.solver.weights:
                 # TODO: make less hacky.
                 # Have to do this because when a weight_solver
@@ -1340,8 +1342,8 @@ def build_connection(conn, model, config):  # noqa: C901
         else:
             raise TypeError("Can't apply learning rules to connections of "
                             "this type. pre type: %s, post type: %s"
-                            % (type(conn.pre).__name__,
-                               type(conn.post).__name__))
+                            % (type(conn.pre_obj).__name__,
+                               type(conn.post_obj).__name__))
 
         model.add_op(ProdUpdate(model.sig['common'][0],
                                 model.sig['common'][0],
@@ -1438,10 +1440,10 @@ Builder.register_builder(build_alpha_synapse, nengo.synapses.Alpha)
 
 
 def build_pes(pes, conn, model, config):
-    if isinstance(conn.pre, nengo.objects.Neurons):
-        activities = model.sig[conn.pre.ensemble]['out']
+    if isinstance(conn.pre_obj, nengo.objects.Neurons):
+        activities = model.sig[conn.pre_obj.ensemble]['out']
     else:
-        activities = model.sig[conn.pre]['out']
+        activities = model.sig[conn.pre_obj]['out']
     error = model.sig[pes.error_connection]['out']
 
     scaled_error = Signal(np.zeros(error.shape),
@@ -1456,14 +1458,14 @@ def build_pes(pes, conn, model, config):
     model.add_op(Reset(scaled_error))
     model.add_op(DotInc(lr_sig, error, scaled_error, tag="PES:scale error"))
 
-    if conn.solver.weights or isinstance(conn.pre, nengo.objects.Neurons):
+    if conn.solver.weights or isinstance(conn.pre_obj, nengo.objects.Neurons):
         outer_product = Signal(np.zeros((error.size, activities.size)),
                                name="PES: outer prod")
         transform = model.sig[conn]['transform']
-        if isinstance(conn.post, nengo.objects.Neurons):
-            encoders = model.sig[conn.post.ensemble]['encoders']
+        if isinstance(conn.post_obj, nengo.objects.Neurons):
+            encoders = model.sig[conn.post_obj.ensemble]['encoders']
         else:
-            encoders = model.sig[conn.post]['encoders']
+            encoders = model.sig[conn.post_obj]['encoders']
 
         model.add_op(Reset(outer_product))
         model.add_op(DotInc(scaled_error_view, activities_view, outer_product,
@@ -1472,7 +1474,7 @@ def build_pes(pes, conn, model, config):
                             tag="PES:Inc Decoder"))
 
     else:
-        assert isinstance(conn.pre, nengo.objects.Ensemble)
+        assert isinstance(conn.pre_obj, nengo.objects.Ensemble)
         decoders = model.sig[conn]['decoders']
 
         model.add_op(DotInc(scaled_error_view, activities_view, decoders,
@@ -1484,10 +1486,10 @@ Builder.register_builder(build_pes, nengo.learning_rules.PES)
 
 
 def build_bcm(bcm, conn, model, config):
-    pre = (conn.pre if isinstance(conn.pre, nengo.objects.Ensemble)
-           else conn.pre.ensemble)
-    post = (conn.post if isinstance(conn.post, nengo.objects.Ensemble)
-            else conn.post.ensemble)
+    pre = (conn.pre_obj if isinstance(conn.pre_obj, nengo.objects.Ensemble)
+           else conn.pre_obj.ensemble)
+    post = (conn.post_obj if isinstance(conn.post_obj, nengo.objects.Ensemble)
+            else conn.post_obj.ensemble)
     pre_activities = model.sig[pre]['neuron_out']
     post_activities = model.sig[post]['neuron_out']
 
@@ -1515,10 +1517,10 @@ Builder.register_builder(build_bcm, nengo.learning_rules.BCM)
 
 
 def build_oja(oja, conn, model, config):
-    pre = (conn.pre if isinstance(conn.pre, nengo.objects.Ensemble)
-           else conn.pre.ensemble)
-    post = (conn.post if isinstance(conn.post, nengo.objects.Ensemble)
-            else conn.post.ensemble)
+    pre = (conn.pre_obj if isinstance(conn.pre_obj, nengo.objects.Ensemble)
+           else conn.pre_obj.ensemble)
+    post = (conn.post_obj if isinstance(conn.post_obj, nengo.objects.Ensemble)
+            else conn.post_obj.ensemble)
     pre_activities = model.sig[pre]['neuron_out']
     post_activities = model.sig[post]['neuron_out']
     pre_filtered = filtered_signal(
