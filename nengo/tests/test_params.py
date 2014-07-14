@@ -5,10 +5,10 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.decoders import LstsqL2
 from nengo.learning_rules import Oja
 from nengo.neurons import LIF
 from nengo import params
+from nengo.solvers import LstsqL2
 from nengo.synapses import Lowpass
 from nengo.utils.compat import PY2
 from nengo.utils.distributions import UniformHypersphere

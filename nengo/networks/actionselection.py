@@ -3,8 +3,8 @@ import warnings
 import numpy as np
 
 import nengo
-from nengo.decoders import NnlsL2nz
 from nengo.objects import Uniform
+from nengo.solvers import NnlsL2nz
 from nengo.networks.ensemblearray import EnsembleArray
 
 

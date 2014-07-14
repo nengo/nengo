@@ -4,9 +4,9 @@ import weakref
 
 import numpy as np
 
-from nengo.decoders import Solver
 from nengo.learning_rules import LearningRule
 from nengo.neurons import NeuronType
+from nengo.solvers import Solver
 from nengo.synapses import Lowpass, Synapse
 from nengo.utils.compat import is_integer, is_iterable, is_number, is_string
 from nengo.utils.distributions import Distribution
