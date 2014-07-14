@@ -7,6 +7,7 @@ import nengo
 import nengo.simulator
 from nengo.builder import (
     Model, ProdUpdate, Copy, Reset, DotInc, Signal, build_pyfunc)
+from nengo.solvers import LstsqL2nz
 from nengo.utils.compat import range
 from nengo.utils.functions import whitenoise
 
@@ -222,7 +223,7 @@ def test_reset(Simulator, nl_nodirect):
         err_conn = nengo.Connection(error, square, modulatory=True)
         nengo.Connection(ens, square,
                          learning_rule=[nengo.PES(err_conn), nengo.BCM()],
-                         solver=nengo.decoders.LstsqL2nz(weights=True))
+                         solver=LstsqL2nz(weights=True))
 
         square_p = nengo.Probe(square, synapse=0.1)
         err_p = nengo.Probe(error, synapse=0.1)
