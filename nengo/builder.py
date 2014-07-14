@@ -7,7 +7,6 @@ import warnings
 
 import numpy as np
 
-import nengo.decoders
 import nengo.neurons
 import nengo.objects
 import nengo.synapses

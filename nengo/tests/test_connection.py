@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.solvers import LstsqL2, LstsqL2nz
 from nengo.utils.functions import piecewise
 from nengo.utils.numpy import filtfilt
 from nengo.utils.testing import Plotter, allclose
@@ -257,7 +258,7 @@ def test_weights(Simulator, nl):
 
         nengo.Connection(u, a)
         nengo.Connection(a, b, transform=transform,
-                         solver=nengo.decoders.LstsqL2(weights=True))
+                         solver=LstsqL2(weights=True))
 
     sim = Simulator(m)
     sim.run(2.)
@@ -321,7 +322,7 @@ def test_pes_learning_rule_nef_weights(Simulator, nl_nodirect):
         err_conn = nengo.Connection(e, u_learned, modulatory=True)
         nengo.Connection(a, u_learned,
                          learning_rule=nengo.PES(err_conn, 5),
-                         solver=nengo.decoders.LstsqL2nz(weights=True))
+                         solver=LstsqL2nz(weights=True))
 
         nengo.Connection(u_learned, e, transform=-1)
         nengo.Connection(u, e)
@@ -652,17 +653,14 @@ def test_set_weight_solver():
     with nengo.Network():
         a = nengo.Ensemble(10, 2)
         b = nengo.Ensemble(10, 2)
-        nengo.Connection(a, b,
-                         solver=nengo.decoders.LstsqL2(weights=True))
+        nengo.Connection(a, b, solver=LstsqL2(weights=True))
         with pytest.raises(ValueError):
-            nengo.Connection(a.neurons, b,
-                             solver=nengo.decoders.LstsqL2(weights=True))
+            nengo.Connection(a.neurons, b, solver=LstsqL2(weights=True))
         with pytest.raises(ValueError):
-            nengo.Connection(a, b.neurons,
-                             solver=nengo.decoders.LstsqL2(weights=True))
+            nengo.Connection(a, b.neurons, solver=LstsqL2(weights=True))
         with pytest.raises(ValueError):
             nengo.Connection(a.neurons, b.neurons,
-                             solver=nengo.decoders.LstsqL2(weights=True))
+                             solver=LstsqL2(weights=True))
 
 
 def test_set_learning_rule():
@@ -673,7 +671,7 @@ def test_set_learning_rule():
         n = nengo.Node(output=lambda t, x: t * x, size_in=2)
         nengo.Connection(a, b, learning_rule=nengo.PES(err))
         nengo.Connection(a, b, learning_rule=nengo.PES(err),
-                         solver=nengo.decoders.LstsqL2(weights=True))
+                         solver=LstsqL2(weights=True))
         nengo.Connection(a.neurons, b.neurons, learning_rule=nengo.PES(err))
         nengo.Connection(a.neurons, b.neurons, learning_rule=nengo.Oja())
 
