@@ -4,6 +4,8 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.connection import FunctionParam, LearningRuleParam, SolverParam
+from nengo.learning_rules import Oja
 from nengo.solvers import LstsqL2, LstsqL2nz
 from nengo.utils.functions import piecewise
 from nengo.utils.numpy import filtfilt
@@ -679,6 +681,24 @@ def test_set_learning_rule():
             nengo.Connection(n, a, learning_rule=nengo.PES(err))
 
 
+def test_functionparam():
+    """FunctionParam must be a function, and accept one scalar argument."""
+    class Test(object):
+        fp = FunctionParam(default=None)
+
+    inst = Test()
+    assert inst.fp is None
+    inst.fp = np.sin
+    assert inst.fp.function is np.sin
+    assert inst.fp.size == 1
+    # Not OK: requires two args
+    with pytest.raises(TypeError):
+        inst.fp = lambda x, y: x + y
+    # Not OK: not a function
+    with pytest.raises(ValueError):
+        inst.fp = 0
+
+
 def test_set_function(Simulator):
     with nengo.Network() as model:
         a = nengo.Ensemble(10, 2)
@@ -728,6 +748,41 @@ def test_set_eval_points(Simulator):
             nengo.Connection(a.neurons, b, eval_points=[[0, 0], [0.5, 1]])
 
     Simulator(model)  # Builds fine
+
+
+def test_solverparam():
+    """SolverParam must be a solver."""
+    class Test(object):
+        sp = SolverParam(default=None)
+
+    inst = Test()
+    assert inst.sp is None
+    inst.sp = LstsqL2()
+    assert isinstance(inst.sp, LstsqL2)
+    assert not inst.sp.weights
+    # Non-solver not OK
+    with pytest.raises(ValueError):
+        inst.sp = 'a'
+
+
+def test_learningruleparam():
+    """LearningRuleParam must be one or many learning rules."""
+    class Test(object):
+        lrp = LearningRuleParam(default=None)
+
+    inst = Test()
+    assert inst.lrp is None
+    inst.lrp = Oja()
+    assert isinstance(inst.lrp, Oja)
+    inst.lrp = [Oja(), Oja()]
+    for lr in inst.lrp:
+        assert isinstance(lr, Oja)
+    # Non-LR no good
+    with pytest.raises(ValueError):
+        inst.lrp = 'a'
+    # All elements in list must be LR
+    with pytest.raises(ValueError):
+        inst.lrp = [Oja(), 'a', Oja()]
 
 
 if __name__ == "__main__":
