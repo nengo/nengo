@@ -3,9 +3,9 @@ import warnings
 import numpy as np
 
 import nengo
-from nengo.objects import Uniform
 from nengo.solvers import NnlsL2nz
 from nengo.networks.ensemblearray import EnsembleArray
+from nengo.utils.distributions import Uniform
 
 
 class BasalGanglia(nengo.Network):

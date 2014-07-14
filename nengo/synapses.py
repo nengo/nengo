@@ -1,3 +1,7 @@
+from nengo.params import Parameter
+from nengo.utils.compat import is_number
+
+
 class Synapse(object):
     """Abstract base class for synapse objects"""
     pass
@@ -70,3 +74,21 @@ class Alpha(Synapse):
 
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, self.tau)
+
+
+class SynapseParam(Parameter):
+    def __init__(self, default, optional=True, readonly=False):
+        assert optional  # None has meaning (no filtering)
+        super(SynapseParam, self).__init__(
+            default, optional, readonly)
+
+    def __set__(self, conn, synapse):
+        if is_number(synapse):
+            synapse = Lowpass(synapse)
+        self.validate(conn, synapse)
+        self.data[conn] = synapse
+
+    def validate(self, conn, synapse):
+        if synapse is not None and not isinstance(synapse, Synapse):
+            raise ValueError("'%s' is not a synapse type" % synapse)
+        super(SynapseParam, self).validate(conn, synapse)

@@ -4,6 +4,7 @@ import nengo
 from nengo.spa.action_objects import Symbol, Source, Convolution
 from nengo.spa.module import Module
 from nengo.utils.compat import iteritems
+from nengo.utils.distributions import Uniform
 
 
 class Thalamus(nengo.networks.Thalamus, Module):
@@ -134,7 +135,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
         """
         if index not in self.gates:
             with self:
-                intercepts = nengo.objects.Uniform(self.threshold_gate, 1)
+                intercepts = Uniform(self.threshold_gate, 1)
                 gate = nengo.Ensemble(self.neurons_gate,
                                       dimensions=1,
                                       intercepts=intercepts,
