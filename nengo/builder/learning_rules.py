@@ -71,6 +71,7 @@ class SimOja(Operator):
         return step
 
 
+@Builder.register_builder(BCM)
 def build_bcm(bcm, conn, model, config):
     pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
            else conn.pre_obj.ensemble)
@@ -99,9 +100,8 @@ def build_bcm(bcm, conn, model, config):
                         theta=theta,
                         learning_rate=bcm.learning_rate))
 
-Builder.register_builder(build_bcm, BCM)
 
-
+@Builder.register_builder(Oja)
 def build_oja(oja, conn, model, config):
     pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
            else conn.pre_obj.ensemble)
@@ -136,9 +136,8 @@ def build_oja(oja, conn, model, config):
 
     model.params[oja] = None
 
-Builder.register_builder(build_oja, Oja)
 
-
+@Builder.register_builder(PES)
 def build_pes(pes, conn, model, config):
     if isinstance(conn.pre_obj, Neurons):
         activities = model.sig[conn.pre_obj.ensemble]['out']
@@ -181,5 +180,3 @@ def build_pes(pes, conn, model, config):
                             tag="PES:Inc Decoder"))
 
     model.params[pes] = None
-
-Builder.register_builder(build_pes, PES)

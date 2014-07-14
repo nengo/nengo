@@ -42,8 +42,11 @@ class Builder(object):
     builders = {}
 
     @classmethod
-    def register_builder(cls, build_fn, nengo_class):
-        cls.builders[nengo_class] = build_fn
+    def register_builder(cls, nengo_class):
+        def _register_builder(build_fn):
+            cls.builders[nengo_class] = build_fn
+            return build_fn
+        return _register_builder
 
     @classmethod
     def build(cls, obj, *args, **kwargs):

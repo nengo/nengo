@@ -24,7 +24,9 @@ def sample(dist, n_samples, rng):
     return np.array(dist)
 
 
-def build_ensemble(ens, model, config):  # noqa: C901
+@Builder.register_builder(Ensemble)  # noqa: C901
+def build_ensemble(ens, model, config):
+    """Builds ensemble."""
     # Create random number generator
     rng = np.random.RandomState(model.seeds[ens])
 
@@ -114,5 +116,3 @@ def build_ensemble(ens, model, config):  # noqa: C901
                                       scaled_encoders=scaled_encoders,
                                       gain=gain,
                                       bias=bias)
-
-Builder.register_builder(build_ensemble, Ensemble)
