@@ -84,6 +84,7 @@ def build_discrete_filter(
                                   num=num, den=den))
 
 
+@Builder.register_builder(LinearFilter)
 def build_filter(synapse, owner, input_signal, model, config):
     num, den, _ = cont2discrete(
         (synapse.num, synapse.den), model.dt, method='zoh')
@@ -93,9 +94,8 @@ def build_filter(synapse, owner, input_signal, model, config):
     build_discrete_filter(
         synapse, owner, input_signal, num, den, model, config)
 
-Builder.register_builder(build_filter, LinearFilter)
 
-
+@Builder.register_builder(Lowpass)
 def build_lowpass(synapse, owner, input_signal, model, config):
     if synapse.tau > 0.03 * model.dt:
         d = -np.expm1(-model.dt / synapse.tau)
@@ -106,9 +106,8 @@ def build_lowpass(synapse, owner, input_signal, model, config):
     build_discrete_filter(
         synapse, owner, input_signal, num, den, model, config)
 
-Builder.register_builder(build_lowpass, Lowpass)
 
-
+@Builder.register_builder(Alpha)
 def build_alpha(synapse, owner, input_signal, model, config):
     if synapse.tau > 0.03 * model.dt:
         a = model.dt / synapse.tau
@@ -119,5 +118,3 @@ def build_alpha(synapse, owner, input_signal, model, config):
 
     build_discrete_filter(
         synapse, owner, input_signal, num, den, model, config)
-
-Builder.register_builder(build_alpha, Alpha)

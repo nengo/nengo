@@ -49,6 +49,7 @@ def probe_connection(probe, conn_args, model, config):
         return synapse_probe(sig_out, probe, model, config)
 
 
+@Builder.register_builder(Probe)
 def build_probe(probe, model, config):
     # Make a copy so as not to modify the probe
     conn_args = probe.conn_args.copy()
@@ -79,5 +80,3 @@ def build_probe(probe, model, config):
     # We put a list here so that the simulator can fill it
     # as it simulates the model
     model.params[probe] = []
-
-Builder.register_builder(build_probe, Probe)
