@@ -1,4 +1,5 @@
-from nengo.objects import Probe, Network
+from nengo.network import Network
+from nengo.probe import Probe
 from nengo.utils.compat import iteritems
 
 
