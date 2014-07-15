@@ -7,10 +7,10 @@ import warnings
 import numpy as np
 
 import nengo.decoders
+from nengo import params
 from nengo.config import Config
 from nengo.neurons import LIF
 from nengo.params import Default, is_param
-from nengo import params
 from nengo.synapses import Lowpass
 from nengo.utils.compat import with_metaclass
 from nengo.utils.distributions import Uniform, UniformHypersphere

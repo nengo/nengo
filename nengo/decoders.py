@@ -11,8 +11,8 @@ import logging
 
 import numpy as np
 
-from nengo.utils.compat import range, with_metaclass
 import nengo.utils.numpy as npext
+from nengo.utils.compat import range, with_metaclass
 from nengo.utils.magic import DocstringInheritor
 
 logger = logging.getLogger(__name__)

@@ -60,26 +60,6 @@ def is_string(obj):
     return isinstance(obj, string_types)
 
 
-def execfile(path, globals, locals=None):
-    """Execute a Python script in the (mandatory) globals namespace.
-
-    This is similar to the Python 2 builtin execfile, but it
-    also works on Python 3, and ``globals`` is mandatory.
-    This is because getting the calling frame's globals would
-    be non-trivial, and it makes sense to be explicit about
-    the namespace being modified.
-
-    If ``locals`` is not specified, it will have the same value
-    as ``globals``, as in the execfile builtin.
-    """
-    if locals is None:
-        locals = globals
-    with open(path, 'rb') as fp:
-        source = fp.read()
-    code = compile(source, path, "exec")
-    exec(code, globals, locals)
-
-
 def with_metaclass(meta, *bases):
     """Function for creating a class with a metaclass.
 
@@ -96,55 +76,3 @@ def with_metaclass(meta, *bases):
                 return type.__new__(cls, name, (), d)
             return meta(name, bases, d)
     return metaclass('temporary_class', None, {})
-
-
-def groupby(objects, key, hashable=None, force_list=True):
-    """Group objects based on a key.
-
-    Unlike `itertools.groupby`, this function does not require the input
-    to be sorted.
-
-    Parameters
-    ----------
-    objects : Iterable
-        The objects to be grouped.
-    key : callable
-        The key function by which to group the objects. If
-        `key(obj1) == key(obj2)` then `obj1` and `obj2` are in the same group,
-        otherwise they are not.
-    hashable : boolean (optional)
-        Whether to use the key's hash to determine equality. By default, this
-        will be determined by calling `key` on the first item in `objects`, and
-        if it is hashable, the hash will be used. Using a hash is faster, but
-        not possible for all keys.
-    force_list : boolean (optional)
-        Whether to force the returned `key_groups` iterator, as well as the
-        `group` iterator in each `(key, group)` pair, to be lists.
-
-    Returns
-    -------
-    keygroups : iterable
-        An iterable of `(key, group)` pairs, where `key` is the key used for
-        grouping, and `group` is an iterable of the items in the group. The
-        nature of the iterables depends on the value of `force_list`.
-    """
-    import itertools
-
-    if hashable is None:
-        # get first item without advancing iterator, and see if key is hashable
-        objects, objects2 = itertools.tee(iter(objects))
-        item0 = next(objects2)
-        hashable = isinstance(key(item0), collections.Hashable)
-
-    if hashable:
-        # use a dictionary to sort by hash (faster)
-        groups = {}
-        for obj in objects:
-            groups.setdefault(key(obj), []).append(obj)
-        return list(groups.items()) if force_list else iteritems(groups)
-    else:
-        keygroupers = itertools.groupby(sorted(objects, key=key), key=key)
-        if force_list:
-            return [(k, [v for v in g]) for k, g in keygroupers]
-        else:
-            return keygroupers
