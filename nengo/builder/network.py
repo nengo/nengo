@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @Builder.register(Network)  # noqa: C901
-def build_network(network, model):
+def build_network(model, network):
     """Takes a Network object and returns a Model.
 
     This determines the signals and operators necessary to simulate that model.
@@ -39,6 +39,10 @@ def build_network(network, model):
         model.sig['common'][1] = Signal(1.0, name='Common: One')
         model.seeds[network] = get_seed(network, np.random)
 
+    # Set config
+    old_config = model.config
+    model.config = network.config
+
     # assign seeds to children
     rng = np.random.RandomState(model.seeds[network])
     sorted_types = sorted(list(network.objects.keys()),
@@ -49,28 +53,29 @@ def build_network(network, model):
 
     logger.info("Network step 1: Building ensembles and nodes")
     for obj in network.ensembles + network.nodes:
-        Builder.build(obj, model=model, config=network.config)
+        model.build(obj)
 
     logger.info("Network step 2: Building subnetworks")
     for subnetwork in network.networks:
-        Builder.build(subnetwork, model=model)
+        model.build(subnetwork)
+    assert model.config is network.config, "model.config not reset properly"
 
     logger.info("Network step 3: Building connections")
     for conn in network.connections:
-        Builder.build(conn, model=model, config=network.config)
+        model.build(conn)
 
     logger.info("Network step 4: Building learning rules")
     for conn in network.connections:
         if is_iterable(conn.learning_rule):
             for learning_rule in conn.learning_rule:
-                Builder.build(learning_rule, conn,
-                              model=model, config=network.config)
+                model.build(conn, learning_rule)
         elif conn.learning_rule is not None:
-            Builder.build(conn.learning_rule, conn,
-                          model=model, config=network.config)
+            model.build(conn, conn.learning_rule)
 
     logger.info("Network step 5: Building probes")
     for probe in network.probes:
-        Builder.build(probe, model=model, config=network.config)
+        model.build(probe)
 
+    # Unset config
+    model.config = old_config
     model.params[network] = None

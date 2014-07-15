@@ -5,8 +5,9 @@ import numpy as np
 from nengo.builder.builder import Builder
 from nengo.builder.signal import Signal
 from nengo.builder.operator import Operator
-from nengo.synapses import Alpha, LinearFilter, Lowpass, Synapse
-from nengo.utils.compat import is_number
+from nengo.connection import Connection
+from nengo.probe import Probe
+from nengo.synapses import Alpha, LinearFilter, Lowpass
 from nengo.utils.filter_design import cont2discrete
 
 
@@ -60,61 +61,46 @@ class SimFilterSynapse(Operator):
         return step
 
 
-def filtered_signal(owner, sig, synapse, model, config):
-    # Note: we add a filter here even if synapse < dt,
-    # in order to avoid cycles in the op graph. If the filter
-    # is explicitly set to None (e.g. for a passthrough node)
-    # then cycles can still occur.
-    if is_number(synapse):
-        synapse = Lowpass(synapse)
-    assert isinstance(synapse, Synapse)
-    Builder.build(synapse, owner, sig, model=model, config=config)
-    return model.sig[owner]['synapse_out']
-
-
-def build_discrete_filter(
-        synapse, owner, input_signal, num, den, model, config):
-    model.sig[owner]['synapse_in'] = input_signal
-    model.sig[owner]['synapse_out'] = Signal(
+def build_discrete_filter(model, obj, synapse, name, num, den):
+    input_signal = model.sig[obj]["%s_in" % name]
+    model.sig[obj]["%s_out" % name] = Signal(
         np.zeros(input_signal.size),
         name="%s.%s" % (input_signal.name, synapse))
-
-    model.add_op(SimFilterSynapse(input=model.sig[owner]['synapse_in'],
-                                  output=model.sig[owner]['synapse_out'],
+    model.add_op(SimFilterSynapse(input=model.sig[obj]['%s_in' % name],
+                                  output=model.sig[obj]['%s_out' % name],
                                   num=num, den=den))
+    model.params[(obj, synapse, name)] = None
 
 
-@Builder.register(LinearFilter)
-def build_filter(synapse, owner, input_signal, model, config):
+@Builder.register(Connection, LinearFilter, str)
+@Builder.register(Probe, LinearFilter, str)
+def build_filter(model, obj, synapse, name):
     num, den, _ = cont2discrete(
         (synapse.num, synapse.den), model.dt, method='zoh')
     num = num.flatten()
     num = num[1:] if num[0] == 0 else num
     den = den[1:]  # drop first element (equal to 1)
-    build_discrete_filter(
-        synapse, owner, input_signal, num, den, model, config)
+    build_discrete_filter(model, obj, synapse, num, den)
 
 
-@Builder.register(Lowpass)
-def build_lowpass(synapse, owner, input_signal, model, config):
+@Builder.register(Connection, Lowpass, str)
+@Builder.register(Probe, Lowpass, str)
+def build_lowpass(model, obj, synapse, name):
     if synapse.tau > 0.03 * model.dt:
         d = -np.expm1(-model.dt / synapse.tau)
         num, den = [d], [d - 1]
     else:
         num, den = [1.], []
-
-    build_discrete_filter(
-        synapse, owner, input_signal, num, den, model, config)
+    build_discrete_filter(model, obj, synapse, name, num, den)
 
 
-@Builder.register(Alpha)
-def build_alpha(synapse, owner, input_signal, model, config):
+@Builder.register(Connection, Alpha, str)
+@Builder.register(Probe, Alpha, str)
+def build_alpha(model, obj, synapse, name):
     if synapse.tau > 0.03 * model.dt:
         a = model.dt / synapse.tau
         ea = np.exp(-a)
         num, den = [-a*ea + (1 - ea), ea*(a + ea - 1)], [-2 * ea, ea**2]
     else:
         num, den = [1.], []  # just copy the input
-
-    build_discrete_filter(
-        synapse, owner, input_signal, num, den, model, config)
+    build_discrete_filter(model, obj, synapse, name, num, den)

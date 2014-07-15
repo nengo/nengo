@@ -6,7 +6,6 @@ from nengo.builder.builder import Builder
 from nengo.builder.node import build_pyfunc
 from nengo.builder.operator import DotInc, ProdUpdate, Reset
 from nengo.builder.signal import Signal
-from nengo.builder.synapses import filtered_signal
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble, Neurons
 from nengo.neurons import Direct
@@ -19,7 +18,7 @@ BuiltConnection = collections.namedtuple(
     'BuiltConnection', ['decoders', 'eval_points', 'transform', 'solver_info'])
 
 
-def build_linear_system(conn, model, rng):
+def build_linear_system(model, conn, rng):
     encoders = model.params[conn.pre_obj].encoders
     gain = model.params[conn.pre_obj].gain
     bias = model.params[conn.pre_obj].bias
@@ -52,7 +51,7 @@ def build_linear_system(conn, model, rng):
 
 
 @Builder.register(Connection)  # noqa: C901
-def build_connection(conn, model, config):
+def build_connection(model, conn):
     # Create random number generator
     rng = np.random.RandomState(model.seeds[conn])
 
@@ -93,7 +92,7 @@ def build_connection(conn, model, config):
     elif isinstance(conn.pre_obj, Ensemble):
         # Normal decoded connection
         eval_points, activities, targets = build_linear_system(
-            conn, model, rng=rng)
+            model, conn, rng=rng)
 
         if conn.solver.weights:
             # account for transform
@@ -126,7 +125,9 @@ def build_connection(conn, model, config):
 
     # Add operator for filtering
     if conn.synapse is not None:
-        signal = filtered_signal(conn, signal, conn.synapse, model, config)
+        model.sig[conn]['synapse_in'] = signal
+        model.build(conn, conn.synapse, 'synapse')
+        signal = model.sig[conn]['synapse_out']
 
     if conn.modulatory:
         # Make a new signal, effectively detaching from post

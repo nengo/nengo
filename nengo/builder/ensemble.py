@@ -25,7 +25,7 @@ def sample(dist, n_samples, rng):
 
 
 @Builder.register(Ensemble)  # noqa: C901
-def build_ensemble(ens, model, config):
+def build_ensemble(model, ens):
     """Builds ensemble."""
     # Create random number generator
     rng = np.random.RandomState(model.seeds[ens])
@@ -88,7 +88,7 @@ def build_ensemble(ens, model, config):
         model.add_op(Copy(src=Signal(bias, name="%s.bias" % ens.label),
                           dst=model.sig[ens]['neuron_in']))
         # This adds the neuron's operator and sets other signals
-        Builder.build(ens.neuron_type, ens, model=model, config=config)
+        model.build(ens, ens.neuron_type)
 
     # Scale the encoders
     if isinstance(ens.neuron_type, Direct):
