@@ -10,7 +10,7 @@ from nengo.neurons import NeuronType
 from nengo.synapses import Lowpass, Synapse
 from nengo.utils.compat import is_integer, is_iterable, is_number, is_string
 from nengo.utils.distributions import Distribution
-from nengo.utils.inspect import checked_call
+from nengo.utils.stdlib import checked_call
 import nengo.utils.numpy as npext
 
 

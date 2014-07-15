@@ -12,8 +12,8 @@ import pytest
 import _pytest.capture
 _pytest.capture.DontReadFromInput.encoding = "utf-8"
 
-from nengo.utils.compat import execfile
 from nengo.utils.ipython import export_py, load_notebook
+from nengo.utils.stdlib import execfile
 
 
 def pytest_generate_tests(metafunc):
