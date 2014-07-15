@@ -36,6 +36,15 @@ For now, you can do the following::
 
 Nengo supports Python 2.6, 2.7, and 3.3+ in a single codebase.
 
+Developer Install
+=================
+
+.. code-block:: shell
+
+   git clone https://github.com/ctn-waterloo/nengo.git
+   cd nengo
+   python setup.py develop
+
 Usage
 =====
 
