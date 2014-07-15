@@ -38,6 +38,15 @@ try install NumPy first.
 
 Nengo supports Python 2.6, 2.7, and 3.3+.
 
+Developer Install
+=================
+
+.. code-block:: bash
+
+   git clone https://github.com/nengo/nengo.git
+   cd nengo
+   python setup.py develop --user
+
 Documentation & Examples
 ========================
 
@@ -88,3 +97,10 @@ Or, for the current terminal session::
 
 Plots are placed in ``nengo.simulator.plots`` in whatever directory
 ``py.test`` is invoked from.
+
+Contributing
+============
+
+Please read the ``LISCENCE.rst`` file to understand what becoming a contributor entails.
+Once you have read and understood the liscence agreement, add yourself to the ``CONTRIBUTORS.rst`` file.
+Note that all pull requests must be commited by someone else other than the original requestor.

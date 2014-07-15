@@ -9,3 +9,4 @@ User Guide
    networks
    changelog
    history
+   converting

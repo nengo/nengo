@@ -35,7 +35,7 @@ and install from it.
 
 .. code:: bash
 
-   git clone https://github.com/ctn-waterloo/nengo.git
+   git clone https://github.com/nengo/nengo.git
    cd nengo
    python setup.py develop
 

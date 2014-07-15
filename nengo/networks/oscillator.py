@@ -2,6 +2,11 @@ import nengo
 
 
 def Oscillator(recurrent_tau, frequency, n_neurons, net=None):
+    """An ensemble with interacting recurrent connections.
+
+    It connects to itself in a manner similar to the integrator,
+    however here the two dimensions interact with each other.
+    """
     if net is None:
         net = nengo.Network(label="Oscillator")
     with net:

@@ -153,6 +153,9 @@ class Simulator(object):
     def trange(self, dt=None):
         """Create a range of times matching probe data.
 
+        Note that the range does not start at 0 as one might expect, but at
+        the first timestep (i.e., dt).
+
         Parameters
         ----------
         dt : float (optional)
