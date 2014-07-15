@@ -58,7 +58,7 @@ def build_pyfunc(fn, t_in, n_in, n_out, label, model):
     return sig_in, sig_out
 
 
-@Builder.register_builder(Node)
+@Builder.register(Node)
 def build_node(node, model, config):
     # Get input
     if node.output is None or callable(node.output):

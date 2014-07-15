@@ -24,7 +24,7 @@ def sample(dist, n_samples, rng):
     return np.array(dist)
 
 
-@Builder.register_builder(Ensemble)  # noqa: C901
+@Builder.register(Ensemble)  # noqa: C901
 def build_ensemble(ens, model, config):
     """Builds ensemble."""
     # Create random number generator

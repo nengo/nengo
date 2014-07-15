@@ -30,14 +30,14 @@ class SimNeurons(Operator):
         return step
 
 
-@Builder.register_builder(LIFRate)
+@Builder.register(LIFRate)
 def build_lifrate(lif, ens, model, config):
     model.add_op(SimNeurons(neurons=lif,
                             J=model.sig[ens]['neuron_in'],
                             output=model.sig[ens]['neuron_out']))
 
 
-@Builder.register_builder(LIF)
+@Builder.register(LIF)
 def build_lif(lif, ens, model, config):
     model.sig[ens]['voltage'] = Signal(
         np.zeros(ens.n_neurons), name="%s.voltage" % ens.label)
@@ -50,7 +50,7 @@ def build_lif(lif, ens, model, config):
         states=[model.sig[ens]['voltage'], model.sig[ens]['refractory_time']]))
 
 
-@Builder.register_builder(AdaptiveLIFRate)
+@Builder.register(AdaptiveLIFRate)
 def build_alifrate(alif, ens, model, config):
     model.sig[ens]['adaptation'] = Signal(
         np.zeros(ens.n_neurons), name="%s.adaptation" % ens.label)
@@ -60,7 +60,7 @@ def build_alifrate(alif, ens, model, config):
                             states=[model.sig[ens]['adaptation']]))
 
 
-@Builder.register_builder(AdaptiveLIF)
+@Builder.register(AdaptiveLIF)
 def build_alif(alif, ens, model, config):
     model.sig[ens]['voltage'] = Signal(
         np.zeros(ens.n_neurons), name="%s.voltage" % ens.label)
