@@ -93,7 +93,7 @@ def test_simple_pyfunc(RefSimulator):
     time = Signal(np.zeros(1), name="time")
     sig = Signal(np.zeros(1), name="sig")
     m = Model(dt=dt)
-    sig_in, sig_out = build_pyfunc(lambda t, x: np.sin(x), True, 1, 1, None, m)
+    sig_in, sig_out = build_pyfunc(m, lambda t, x: np.sin(x), True, 1, 1, None)
     m.operators += [
         ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
         DotInc(Signal([[1.0]]), time, sig_in),
@@ -116,7 +116,7 @@ def test_encoder_decoder_pathway(RefSimulator):
     decoders = np.asarray([.2, .1])
     decs = Signal(decoders * 0.5)
     m = Model(dt=0.001)
-    sig_in, sig_out = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
+    sig_in, sig_out = build_pyfunc(m, lambda t, x: x + 1, True, 2, 2, None)
     m.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo, sig_in),
         ProdUpdate(decs, sig_out, Signal(0.2), foo)
@@ -162,7 +162,7 @@ def test_encoder_decoder_with_views(RefSimulator):
     foo = Signal([1.0], name="foo")
     decoders = np.asarray([.2, .1])
     m = Model(dt=0.001)
-    sig_in, sig_out = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
+    sig_in, sig_out = build_pyfunc(m, lambda t, x: x + 1, True, 2, 2, None)
     m.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo[:], sig_in),
         ProdUpdate(Signal(decoders * 0.5), sig_out, Signal(0.2), foo[:])

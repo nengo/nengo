@@ -1,3 +1,6 @@
+from nengo.synapses import Lowpass, SynapseParam
+
+
 class LearningRule(object):
     """Base class for all learning rule objects.
 
@@ -52,11 +55,11 @@ class BCM(LearningRule):
     learning_rate : float, optional
         A scalar indicating the rate at which decoders will be adjusted.
         Defaults to 1e-5.
-    theta_tau : float, optional
+    theta_synapse : float, optional
         A scalar indicating the time constant for theta integration.
-    pre_tau : float, optional
+    pre_synapse : float, optional
         Filter constant on activities of neurons in pre population.
-    post_tau : float, optional
+    post_synapse : float, optional
         Filter constant on activities of neurons in post population.
 
     Attributes
@@ -65,12 +68,15 @@ class BCM(LearningRule):
     """
 
     modifies = ['Neurons']
+    pre_synapse = SynapseParam(default=Lowpass(0.005))
+    post_synapse = SynapseParam(default=Lowpass(0.005))
+    theta_synapse = SynapseParam(default=Lowpass(100))
 
-    def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
-                 learning_rate=1.0):
-        self.theta_tau = theta_tau
-        self.pre_tau = pre_tau
-        self.post_tau = post_tau if post_tau is not None else pre_tau
+    def __init__(self, pre_synapse=0.005, post_synapse=0.005,
+                 theta_synapse=100, learning_rate=1.0):
+        self.theta_synapse = theta_synapse
+        self.pre_synapse = pre_synapse
+        self.post_synapse = post_synapse
         super(BCM, self).__init__(learning_rate)
 
 
@@ -86,9 +92,9 @@ class Oja(LearningRule):
         Defaults to 1e-5.
     beta : float, optional
         A scalar governing the amount of forgetting. Larger => more forgetting.
-    pre_tau : float, optional
+    pre_synapse : float, optional
         Filter constant on activities of neurons in pre population.
-    post_tau : float, optional
+    post_synapse : float, optional
         Filter constant on activities of neurons in post population.
 
     Attributes
@@ -97,10 +103,12 @@ class Oja(LearningRule):
     """
 
     modifies = ['Neurons']
+    pre_synapse = SynapseParam(default=Lowpass(0.005))
+    post_synapse = SynapseParam(default=Lowpass(0.005))
 
-    def __init__(self, pre_tau=0.005, post_tau=None, beta=1.0,
-                 learning_rate=1.0):
-        self.pre_tau = pre_tau
-        self.post_tau = post_tau if post_tau is not None else pre_tau
+    def __init__(self, pre_synapse=0.005, post_synapse=0.005,
+                 beta=1.0, learning_rate=1.0):
+        self.pre_synapse = pre_synapse
+        self.post_synapse = post_synapse
         self.beta = beta
         super(Oja, self).__init__(learning_rate)

@@ -3,6 +3,7 @@ import numpy as np
 from nengo.builder.builder import Builder
 from nengo.builder.signal import Signal
 from nengo.builder.operator import Operator
+from nengo.ensemble import Ensemble
 from nengo.neurons import LIF, LIFRate, AdaptiveLIF, AdaptiveLIFRate
 
 
@@ -30,15 +31,16 @@ class SimNeurons(Operator):
         return step
 
 
-@Builder.register(LIFRate)
-def build_lifrate(lif, ens, model, config):
+@Builder.register(Ensemble, LIFRate)
+def build_lifrate(model, ens, lif):
     model.add_op(SimNeurons(neurons=lif,
                             J=model.sig[ens]['neuron_in'],
                             output=model.sig[ens]['neuron_out']))
+    model.params[(ens, lif)] = None
 
 
-@Builder.register(LIF)
-def build_lif(lif, ens, model, config):
+@Builder.register(Ensemble, LIF)
+def build_lif(model, ens, lif):
     model.sig[ens]['voltage'] = Signal(
         np.zeros(ens.n_neurons), name="%s.voltage" % ens.label)
     model.sig[ens]['refractory_time'] = Signal(
@@ -48,20 +50,22 @@ def build_lif(lif, ens, model, config):
         J=model.sig[ens]['neuron_in'],
         output=model.sig[ens]['neuron_out'],
         states=[model.sig[ens]['voltage'], model.sig[ens]['refractory_time']]))
+    model.params[(ens, lif)] = None
 
 
-@Builder.register(AdaptiveLIFRate)
-def build_alifrate(alif, ens, model, config):
+@Builder.register(Ensemble, AdaptiveLIFRate)
+def build_alifrate(model, ens, alif):
     model.sig[ens]['adaptation'] = Signal(
         np.zeros(ens.n_neurons), name="%s.adaptation" % ens.label)
     model.add_op(SimNeurons(neurons=alif,
                             J=model.sig[ens]['neuron_in'],
                             output=model.sig[ens]['neuron_out'],
                             states=[model.sig[ens]['adaptation']]))
+    model.params[(ens, alif)] = None
 
 
-@Builder.register(AdaptiveLIF)
-def build_alif(alif, ens, model, config):
+@Builder.register(Ensemble, AdaptiveLIF)
+def build_alif(model, ens, alif):
     model.sig[ens]['voltage'] = Signal(
         np.zeros(ens.n_neurons), name="%s.voltage" % ens.label)
     model.sig[ens]['refractory_time'] = Signal(
@@ -74,3 +78,4 @@ def build_alif(alif, ens, model, config):
                             states=[model.sig[ens]['voltage'],
                                     model.sig[ens]['refractory_time'],
                                     model.sig[ens]['adaptation']]))
+    model.params[(ens, alif)] = None

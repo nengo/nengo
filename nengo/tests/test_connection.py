@@ -425,7 +425,7 @@ def test_unsupervised_learning_rule(Simulator, nl_nodirect, learning_rule):
         nengo.Connection(u, a)
         nengo.Connection(a.neurons, u_learned.neurons,
                          transform=initial_weights,
-                         learning_rule=nengo.Oja())
+                         learning_rule=learning_rule)
 
     sim = Simulator(m)
     sim.run(1.)

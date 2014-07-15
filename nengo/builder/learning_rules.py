@@ -3,7 +3,7 @@ import numpy as np
 from nengo.builder.builder import Builder
 from nengo.builder.operator import DotInc, Operator, Reset
 from nengo.builder.signal import Signal, SignalView
-from nengo.builder.synapses import filtered_signal
+from nengo.connection import Connection
 from nengo.ensemble import Ensemble, Neurons
 from nengo.learning_rules import BCM, Oja, PES
 
@@ -37,9 +37,7 @@ class SimBCM(Operator):
 
 
 class SimOja(Operator):
-    """
-    Change the transform according to the OJA rule
-    """
+    """Change the transform according to the Oja rule."""
     def __init__(self, transform, delta, pre_filtered, post_filtered,
                  forgetting, learning_rate):
         self.transform = transform
@@ -71,74 +69,74 @@ class SimOja(Operator):
         return step
 
 
-@Builder.register(BCM)
-def build_bcm(bcm, conn, model, config):
+@Builder.register(Connection, BCM)
+def build_bcm(model, conn, bcm):
     pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
            else conn.pre_obj.ensemble)
     post = (conn.post_obj if isinstance(conn.post_obj, Ensemble)
             else conn.post_obj.ensemble)
-    pre_activities = model.sig[pre]['neuron_out']
-    post_activities = model.sig[post]['neuron_out']
 
     delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)), name='delta')
-
-    pre_filtered = filtered_signal(
-        bcm, pre_activities, bcm.pre_tau, model, config)
-    post_filtered = filtered_signal(
-        bcm, post_activities, bcm.post_tau, model, config)
-    theta = filtered_signal(
-        bcm, post_filtered, bcm.theta_tau, model, config)
-
     transform = model.sig[conn]['transform']
+
+    # Build the filters
+    name = 'bcm%d' % id(bcm)  # Have to use the id here in case of multiples
+    model.sig[conn]['%s_pre_in' % name] = model.sig[pre]['neuron_out']
+    model.sig[conn]['%s_post_in' % name] = model.sig[post]['neuron_out']
+    model.sig[conn]['%s_theta_in' % name] = model.sig[post]['neuron_out']
+    model.build(conn, bcm.pre_synapse, '%s_pre' % name)
+    model.build(conn, bcm.post_synapse, '%s_post' % name)
+    model.build(conn, bcm.theta_synapse, '%s_theta' % name)
 
     model.add_op(DotInc(
         model.sig['common'][1], delta, transform, tag="BCM: DotInc"))
-
     model.add_op(SimBCM(delta=delta,
-                        pre_filtered=pre_filtered,
-                        post_filtered=post_filtered,
-                        theta=theta,
+                        pre_filtered=model.sig[conn]['%s_pre_out' % name],
+                        post_filtered=model.sig[conn]['%s_post_out' % name],
+                        theta=model.sig[conn]['%s_theta_out' % name],
                         learning_rate=bcm.learning_rate))
 
+    model.params[(conn, bcm)] = None
 
-@Builder.register(Oja)
-def build_oja(oja, conn, model, config):
+
+@Builder.register(Connection, Oja)
+def build_oja(model, conn, oja):
     pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
            else conn.pre_obj.ensemble)
     post = (conn.post_obj if isinstance(conn.post_obj, Ensemble)
             else conn.post_obj.ensemble)
-    pre_activities = model.sig[pre]['neuron_out']
-    post_activities = model.sig[post]['neuron_out']
-    pre_filtered = filtered_signal(
-        oja, pre_activities, oja.pre_tau, model, config)
-    post_filtered = filtered_signal(
-        oja, post_activities, oja.post_tau, model, config)
-    omega_shape = (post.n_neurons, pre.n_neurons)
-
     transform = model.sig[conn]['transform']
+    omega_shape = (post.n_neurons, pre.n_neurons)
     delta = Signal(np.zeros(omega_shape), name='Oja: Delta')
     forgetting = Signal(np.zeros(omega_shape), name='Oja: Forgetting')
 
+    # Build the filters
+    name = 'oja%d' % id(oja)  # Have to use the id here in case of multiples
+    model.sig[conn]['%s_pre_in' % name] = model.sig[pre]['neuron_out']
+    model.sig[conn]['%s_post_in' % name] = model.sig[post]['neuron_out']
+    model.build(conn, oja.pre_synapse, '%s_pre' % name)
+    model.build(conn, oja.post_synapse, '%s_post' % name)
+
     model.add_op(DotInc(
         model.sig['common'][1], delta, transform, tag="Oja: Delta DotInc"))
-
     model.add_op(DotInc(Signal(-oja.beta, "Oja: Negative oja scale"),
                         forgetting,
                         transform,
                         tag="Oja: Forgetting DotInc"))
-
     model.add_op(SimOja(transform=transform,
                         delta=delta,
-                        pre_filtered=pre_filtered,
-                        post_filtered=post_filtered,
+                        pre_filtered=model.sig[conn]['%s_pre_out' % name],
+                        post_filtered=model.sig[conn]['%s_post_out' % name],
                         forgetting=forgetting,
                         learning_rate=oja.learning_rate))
 
-    model.params[oja] = None
+    model.params[(conn, oja)] = None
 
 
-@Builder.register(PES)
-def build_pes(pes, conn, model, config):
+@Builder.register(Connection, PES)
+def build_pes(model, conn, pes):
+    # TODO: Filter activities
+
     if isinstance(conn.pre_obj, Neurons):
         activities = model.sig[conn.pre_obj.ensemble]['out']
     else:
@@ -179,4 +177,4 @@ def build_pes(pes, conn, model, config):
         model.add_op(DotInc(scaled_error_view, activities_view, decoders,
                             tag="PES:Inc Decoder"))
 
-    model.params[pes] = None
+    model.params[(conn, pes)] = None
