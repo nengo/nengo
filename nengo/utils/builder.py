@@ -132,7 +132,44 @@ def generate_graphviz(objs, connections):
     return '\n'.join(text)
 
 
-def remove_passthrough_nodes(objs, connections):  # noqa: C901
+def _create_replacement_connection(c_in, c_out):
+    """Generate a new Connection to replace two through a passthrough Node"""
+    assert c_in.post_obj is c_out.pre_obj
+    assert c_in.post_obj.output is None
+
+    # determine the filter for the new Connection
+    if c_in.synapse is None:
+        synapse = c_out.synapse
+    elif c_out.synapse is None:
+        synapse = c_in.synapse
+    else:
+        raise NotImplementedError('Cannot merge two filters')
+        # Note: the algorithm below is in the right ballpark,
+        #  but isn't exactly the same as two low-pass filters
+        # filter = c_out.filter + c_in.filter
+
+    function = c_in.function
+    if c_out.function is not None:
+        raise Exception('Cannot remove a Node with a '
+                        'function being computed on it')
+
+    # compute the combined transform
+    transform = np.dot(full_transform(c_out), full_transform(c_in))
+    # check if the transform is 0 (this happens a lot
+    #  with things like identity transforms)
+    if np.all(transform == 0):
+        return None
+
+    c = nengo.Connection(c_in.pre_obj, c_out.post_obj,
+                         synapse=synapse,
+                         transform=transform,
+                         function=function,
+                         add_to_container=False)
+    return c
+
+
+def remove_passthrough_nodes(objs, connections,  # noqa: C901
+        create_connection_fn=_create_replacement_connection):
     """Returns a version of the model without passthrough Nodes
 
     For some backends (such as SpiNNaker), it is useful to remove Nodes that
@@ -184,7 +221,7 @@ def remove_passthrough_nodes(objs, connections):  # noqa: C901
                     raise Exception('Cannot remove a Node with feedback')
 
                 for c_out in outputs[obj]:
-                    c = _create_replacement_connection(c_in, c_out)
+                    c = create_connection_fn(c_in, c_out)
                     if c is not None:
                         result_conn.append(c)
                         # put this in the list, since it might be used
@@ -203,39 +240,3 @@ def find_all_io(connections):
         inputs[c.post_obj].append(c)
         outputs[c.pre_obj].append(c)
     return inputs, outputs
-
-
-def _create_replacement_connection(c_in, c_out):
-    """Generate a new Connection to replace two through a passthrough Node"""
-    assert c_in.post_obj is c_out.pre_obj
-    assert c_in.post_obj.output is None
-
-    # determine the filter for the new Connection
-    if c_in.synapse is None:
-        synapse = c_out.synapse
-    elif c_out.synapse is None:
-        synapse = c_in.synapse
-    else:
-        raise NotImplementedError('Cannot merge two filters')
-        # Note: the algorithm below is in the right ballpark,
-        #  but isn't exactly the same as two low-pass filters
-        # filter = c_out.filter + c_in.filter
-
-    function = c_in.function
-    if c_out.function is not None:
-        raise Exception('Cannot remove a Node with a '
-                        'function being computed on it')
-
-    # compute the combined transform
-    transform = np.dot(full_transform(c_out), full_transform(c_in))
-    # check if the transform is 0 (this happens a lot
-    #  with things like identity transforms)
-    if np.all(transform == 0):
-        return None
-
-    c = nengo.Connection(c_in.pre_obj, c_out.post_obj,
-                         synapse=synapse,
-                         transform=transform,
-                         function=function,
-                         add_to_container=False)
-    return c
