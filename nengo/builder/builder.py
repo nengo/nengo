@@ -42,11 +42,14 @@ class Builder(object):
     builders = {}
 
     @classmethod
-    def register_builder(cls, nengo_class):
-        def _register_builder(build_fn):
+    def register(cls, nengo_class):
+        def register_builder(build_fn):
+            if nengo_class in cls.builders:
+                warnings.warn("Type '%s' already has a builder. Overwriting."
+                              % nengo_class)
             cls.builders[nengo_class] = build_fn
             return build_fn
-        return _register_builder
+        return register_builder
 
     @classmethod
     def build(cls, obj, *args, **kwargs):

@@ -51,7 +51,7 @@ def build_linear_system(conn, model, rng):
     return eval_points, activities, targets
 
 
-@Builder.register_builder(Connection)  # noqa: C901
+@Builder.register(Connection)  # noqa: C901
 def build_connection(conn, model, config):
     # Create random number generator
     rng = np.random.RandomState(model.seeds[conn])

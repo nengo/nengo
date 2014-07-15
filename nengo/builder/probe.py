@@ -49,7 +49,7 @@ def probe_connection(probe, conn_args, model, config):
         return synapse_probe(sig_out, probe, model, config)
 
 
-@Builder.register_builder(Probe)
+@Builder.register(Probe)
 def build_probe(probe, model, config):
     # Make a copy so as not to modify the probe
     conn_args = probe.conn_args.copy()

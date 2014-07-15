@@ -11,7 +11,7 @@ import nengo.utils.numpy as npext
 logger = logging.getLogger(__name__)
 
 
-@Builder.register_builder(Network)  # noqa: C901
+@Builder.register(Network)  # noqa: C901
 def build_network(network, model):
     """Takes a Network object and returns a Model.
 
