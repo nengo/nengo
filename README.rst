@@ -30,11 +30,20 @@ Installation
 
 We will be making a release on PyPI soon,
 meaning you will be able to ``pip install nengo``.
-For now, you can do the following::
+For now, you can do the following (with `sudo` if you're on Linux)::
 
   pip install -e git://github.com/ctn-waterloo/nengo.git#egg=nengo
 
 Nengo supports Python 2.6, 2.7, and 3.3+ in a single codebase.
+
+Developer Install
+=================
+
+.. code-block:: shell
+
+   git clone git@github.com:ctn-waterloo/nengo-temp.git
+   cd nengo-temp
+   python setup.py develop
 
 Usage
 =====
