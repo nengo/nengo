@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 import nengo.utils.numpy as npext
-from nengo.base import NengoObject, ObjView
+from nengo.base import NetworkMember, ObjView
 from nengo.params import Default, IntParam, ListParam, Parameter, StringParam
 from nengo.utils.stdlib import checked_call
 
@@ -65,7 +65,7 @@ class OutputParam(Parameter):
                              "(%d)" % (output.size, node.size_out))
 
 
-class Node(NengoObject):
+class Node(NetworkMember):
     """Provides arbitrary data to Nengo objects.
 
     Nodes can accept input, and perform arbitrary computations
@@ -122,6 +122,3 @@ class Node(NengoObject):
 
     def __getitem__(self, key):
         return ObjView(self, key)
-
-    def __len__(self):
-        return self.size_out

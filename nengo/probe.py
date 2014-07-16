@@ -1,9 +1,9 @@
-from nengo.base import NengoObject, NengoObjectParam
+from nengo.base import NengoObjectParam, NetworkMember
 from nengo.ensemble import Ensemble
 from nengo.params import Default, DictParam, IntParam, NumberParam, StringParam
 
 
-class Probe(NengoObject):
+class Probe(NetworkMember):
     """A probe is an object that receives data from the simulation.
 
     This is to be used in any situation where you wish to gather simulation
@@ -53,9 +53,13 @@ class Probe(NengoObject):
         self.conn_args = conn_args
         self.seed = conn_args.get('seed', None)
 
+    def __len__(self):
+        """Probe has no size_out, so len(probe) == probe.size_in."""
+        return self.size_in
+
     @property
     def label(self):
-        return "Probe(%s.%s)" % (self.target.label, self.attr)
+        return "Probe(%s.%s)" % (self.target, self.attr)
 
     @property
     def size_in(self):

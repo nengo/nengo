@@ -125,6 +125,24 @@ class DictParam(Parameter):
         super(DictParam, self).validate(instance, dct)
 
 
+class SliceParam(Parameter):
+    def __set__(self, instance, slce):
+        if isinstance(slce, int):
+            # single slices of the form [i] should be cast into
+            # slice objects for convenience
+            if slce == -1:
+                # special case because slice(-1, 0) gives the empty list
+                slce = slice(slce, None)
+            else:
+                slce = slice(slce, slce+1)
+        super(SliceParam, self).__set__(instance, slce)
+
+    def validate(self, instance, slce):
+        if slce is not None and not isinstance(slce, (slice, list)):
+            raise ValueError("Must be a slice or list; got '%s'" % str(slce))
+        super(SliceParam, self).validate(instance, slce)
+
+
 class NdarrayParam(Parameter):
     """Can be a NumPy ndarray, or something that can be coerced into one."""
 
