@@ -1,4 +1,4 @@
-from nengo.base import NengoObject, ObjView
+from nengo.base import NengoObject, NengoObjectParam, NetworkMember, ObjView
 from nengo.neurons import LIF, NeuronType
 from nengo.params import (Default, DistributionParam, IntParam, ListParam,
                           NumberParam, Parameter, StringParam)
@@ -33,7 +33,7 @@ class NeuronTypeParam(Parameter):
         super(NeuronTypeParam, self).validate(instance, neurons)
 
 
-class Ensemble(NengoObject):
+class Ensemble(NetworkMember):
     """A group of neurons that collectively represent a vector.
 
     Parameters
@@ -93,6 +93,7 @@ class Ensemble(NengoObject):
     seed = IntParam(default=None, optional=True)
     label = StringParam(default=None, optional=True)
     probeable = ListParam(default=['decoded_output', 'input'])
+    neurons = NengoObjectParam()
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
@@ -113,21 +114,10 @@ class Ensemble(NengoObject):
         self.neuron_type = neuron_type
         self.seed = seed
         self.probeable = Default
-        self._neurons = Neurons(self)
+        self.neurons = Neurons(self)
 
     def __getitem__(self, key):
         return ObjView(self, key)
-
-    def __len__(self):
-        return self.dimensions
-
-    @property
-    def neurons(self):
-        return self._neurons
-
-    @neurons.setter
-    def neurons(self, dummy):
-        raise AttributeError("neurons cannot be overwritten.")
 
     @property
     def size_in(self):
@@ -138,7 +128,7 @@ class Ensemble(NengoObject):
         return self.dimensions
 
 
-class Neurons(object):
+class Neurons(NengoObject):
     """A wrapper around Ensemble for making connections directly to neurons.
 
     This should only ever be used in the ``Ensemble.neurons`` property,
@@ -147,18 +137,18 @@ class Neurons(object):
 
     Does not currently support any other view-like operations.
     """
+
+    ensemble = NengoObjectParam()
+
     def __init__(self, ensemble):
         self.ensemble = ensemble
 
     def __getitem__(self, key):
         return ObjView(self, key)
 
-    def __len__(self):
-        return self.ensemble.n_neurons
-
     @property
     def label(self):
-        return "%s.neurons" % self.ensemble.label
+        return "%s.neurons" % self.ensemble
 
     @property
     def size_in(self):

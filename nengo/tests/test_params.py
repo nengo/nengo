@@ -204,6 +204,27 @@ def test_dictparam():
         inst2.dp = [('a', 1), ('b', 2)]
 
 
+def test_sliceparam():
+    """SliceParams must be slices or lists."""
+    class Test(object):
+        sp = params.SliceParam(default=slice(1, 2))
+
+    inst = Test()
+    assert inst.sp == slice(1, 2)
+
+    # Lists good
+    inst.sp = [0, 1]
+    assert inst.sp == [0, 1]
+
+    # ints get converted to slices
+    inst.sp = 3
+    assert inst.sp == slice(3, 4)
+
+    # Non-slice no good
+    with pytest.raises(ValueError):
+        inst.sp = 'a'
+
+
 def test_distributionparam():
     """DistributionParams can be distributions or samples."""
     class Test(object):

@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-from nengo.base import NengoObject, NengoObjectParam, ObjView
+from nengo.base import NengoObjectParam, NetworkMember, ObjView
 from nengo.ensemble import Ensemble
 from nengo.params import (
     Default, BoolParam, IntParam, ListParam, NdarrayParam, Parameter)
@@ -171,7 +171,7 @@ class TransformParam(NdarrayParam):
         return transform
 
 
-class Connection(NengoObject):
+class Connection(NetworkMember):
     """Connects two objects together.
 
     TODO: Document slice syntax here and in the transform parameter.
@@ -280,7 +280,7 @@ class Connection(NengoObject):
 
     @property
     def pre_slice(self):
-        return self.pre.slice if isinstance(self.pre, ObjView) else slice(None)
+        return self.pre.key if isinstance(self.pre, ObjView) else slice(None)
 
     @property
     def post_obj(self):
@@ -288,8 +288,7 @@ class Connection(NengoObject):
 
     @property
     def post_slice(self):
-        return (self.post.slice if isinstance(self.post, ObjView)
-                else slice(None))
+        return self.post.key if isinstance(self.post, ObjView) else slice(None)
 
     @property
     def size_in(self):
