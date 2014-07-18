@@ -154,7 +154,7 @@ def test_config_str():
 
         ens = nengo.Ensemble(10, 1, radius=2.0, label="A")
         assert str(net1.config[ens]) == (
-            "Parameters set for Ensemble: A:")
+            "Parameters set for Ensemble(label='A'):")
 
         with nengo.Network() as net2:
             assert str(net2.config[nengo.Ensemble]) == (
@@ -174,7 +174,7 @@ def test_config_str():
                     "  extra: 20")
                 net3.config[ens].extra = 50
                 assert str(net3.config[ens]) == (
-                    "Parameters set for Ensemble: A:\n"
+                    "Parameters set for Ensemble(label='A'):\n"
                     "  extra: 50")
 
 

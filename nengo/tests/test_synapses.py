@@ -3,6 +3,7 @@ import logging
 import pytest
 
 import nengo
+from nengo.synapses import SynapseParam
 from nengo.utils.functions import whitenoise
 from nengo.utils.numpy import filt, lti
 from nengo.utils.testing import Plotter, allclose
@@ -94,6 +95,26 @@ def test_general(Simulator):
     assert allclose(t, y.flatten(), yhat.flatten(),
                     plotter=Plotter(Simulator),
                     filename='test_synapse.test_general.pdf')
+
+
+def test_synapseparam():
+    """SynapseParam must be a Synapse, and converts numbers to LowPass."""
+    class Test(object):
+        sp = SynapseParam(default=nengo.Lowpass(0.1))
+
+    inst = Test()
+    assert isinstance(inst.sp, nengo.Lowpass)
+    assert inst.sp.tau == 0.1
+    # Number are converted to LowPass
+    inst.sp = 0.05
+    assert isinstance(inst.sp, nengo.Lowpass)
+    assert inst.sp.tau == 0.05
+    # None has meaning
+    inst.sp = None
+    assert inst.sp is None
+    # Non-synapse not OK
+    with pytest.raises(ValueError):
+        inst.sp = 'a'
 
 
 if __name__ == "__main__":

@@ -5,8 +5,11 @@ import pytest
 
 import nengo
 import nengo.simulator
-from nengo.builder import (
-    Model, ProdUpdate, Copy, Reset, DotInc, Signal, build_pyfunc)
+from nengo.builder import Model
+from nengo.builder.node import build_pyfunc
+from nengo.builder.operator import Copy, DotInc, ProdUpdate, Reset
+from nengo.builder.signal import Signal
+from nengo.solvers import LstsqL2nz
 from nengo.utils.compat import range
 from nengo.utils.functions import whitenoise
 
@@ -90,7 +93,7 @@ def test_simple_pyfunc(RefSimulator):
     time = Signal(np.zeros(1), name="time")
     sig = Signal(np.zeros(1), name="sig")
     m = Model(dt=dt)
-    sig_in, sig_out = build_pyfunc(lambda t, x: np.sin(x), True, 1, 1, None, m)
+    sig_in, sig_out = build_pyfunc(m, lambda t, x: np.sin(x), True, 1, 1, None)
     m.operators += [
         ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
         DotInc(Signal([[1.0]]), time, sig_in),
@@ -113,7 +116,7 @@ def test_encoder_decoder_pathway(RefSimulator):
     decoders = np.asarray([.2, .1])
     decs = Signal(decoders * 0.5)
     m = Model(dt=0.001)
-    sig_in, sig_out = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
+    sig_in, sig_out = build_pyfunc(m, lambda t, x: x + 1, True, 2, 2, None)
     m.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo, sig_in),
         ProdUpdate(decs, sig_out, Signal(0.2), foo)
@@ -159,7 +162,7 @@ def test_encoder_decoder_with_views(RefSimulator):
     foo = Signal([1.0], name="foo")
     decoders = np.asarray([.2, .1])
     m = Model(dt=0.001)
-    sig_in, sig_out = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
+    sig_in, sig_out = build_pyfunc(m, lambda t, x: x + 1, True, 2, 2, None)
     m.operators += [
         DotInc(Signal([[1.0], [2.0]]), foo[:], sig_in),
         ProdUpdate(Signal(decoders * 0.5), sig_out, Signal(0.2), foo[:])
@@ -222,7 +225,7 @@ def test_reset(Simulator, nl_nodirect):
         err_conn = nengo.Connection(error, square, modulatory=True)
         nengo.Connection(ens, square,
                          learning_rule=[nengo.PES(err_conn), nengo.BCM()],
-                         solver=nengo.decoders.LstsqL2nz(weights=True))
+                         solver=LstsqL2nz(weights=True))
 
         square_p = nengo.Probe(square, synapse=0.1)
         err_p = nengo.Probe(error, synapse=0.1)

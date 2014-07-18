@@ -12,7 +12,8 @@ import logging
 import numpy as np
 
 import nengo.utils.numpy as npext
-from nengo.builder import Model, Builder, SignalDict
+from nengo.builder import Model
+from nengo.builder.signal import SignalDict
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
 from nengo.utils.simulator import operator_depencency_graph
@@ -95,14 +96,12 @@ class Simulator(object):
             then you can pass in a ``nengo.builder.Model`` instance.
         """
         if model is None:
-            self.model = Model(
-                dt=dt, label="%s, dt=%f" % (network.label, dt))
+            self.model = Model(dt=dt, label="%s, dt=%f" % (network.label, dt))
         else:
             self.model = model
 
         if network is not None:
-            # Build the network into the model
-            Builder.build(network, model=self.model)
+            self.model.build(network)
 
         # Note: seed is not used right now, but one day...
         assert seed is None, "Simulator seed not yet implemented"

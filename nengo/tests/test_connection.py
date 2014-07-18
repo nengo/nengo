@@ -4,6 +4,9 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.connection import FunctionParam, LearningRuleParam, SolverParam
+from nengo.learning_rules import Oja
+from nengo.solvers import LstsqL2, LstsqL2nz
 from nengo.utils.functions import piecewise
 from nengo.utils.numpy import filtfilt
 from nengo.utils.testing import Plotter, allclose
@@ -257,7 +260,7 @@ def test_weights(Simulator, nl):
 
         nengo.Connection(u, a)
         nengo.Connection(a, b, transform=transform,
-                         solver=nengo.decoders.LstsqL2(weights=True))
+                         solver=LstsqL2(weights=True))
 
     sim = Simulator(m)
     sim.run(2.)
@@ -321,7 +324,7 @@ def test_pes_learning_rule_nef_weights(Simulator, nl_nodirect):
         err_conn = nengo.Connection(e, u_learned, modulatory=True)
         nengo.Connection(a, u_learned,
                          learning_rule=nengo.PES(err_conn, 5),
-                         solver=nengo.decoders.LstsqL2nz(weights=True))
+                         solver=LstsqL2nz(weights=True))
 
         nengo.Connection(u_learned, e, transform=-1)
         nengo.Connection(u, e)
@@ -422,7 +425,7 @@ def test_unsupervised_learning_rule(Simulator, nl_nodirect, learning_rule):
         nengo.Connection(u, a)
         nengo.Connection(a.neurons, u_learned.neurons,
                          transform=initial_weights,
-                         learning_rule=nengo.Oja())
+                         learning_rule=learning_rule)
 
     sim = Simulator(m)
     sim.run(1.)
@@ -652,17 +655,14 @@ def test_set_weight_solver():
     with nengo.Network():
         a = nengo.Ensemble(10, 2)
         b = nengo.Ensemble(10, 2)
-        nengo.Connection(a, b,
-                         solver=nengo.decoders.LstsqL2(weights=True))
+        nengo.Connection(a, b, solver=LstsqL2(weights=True))
         with pytest.raises(ValueError):
-            nengo.Connection(a.neurons, b,
-                             solver=nengo.decoders.LstsqL2(weights=True))
+            nengo.Connection(a.neurons, b, solver=LstsqL2(weights=True))
         with pytest.raises(ValueError):
-            nengo.Connection(a, b.neurons,
-                             solver=nengo.decoders.LstsqL2(weights=True))
+            nengo.Connection(a, b.neurons, solver=LstsqL2(weights=True))
         with pytest.raises(ValueError):
             nengo.Connection(a.neurons, b.neurons,
-                             solver=nengo.decoders.LstsqL2(weights=True))
+                             solver=LstsqL2(weights=True))
 
 
 def test_set_learning_rule():
@@ -673,12 +673,30 @@ def test_set_learning_rule():
         n = nengo.Node(output=lambda t, x: t * x, size_in=2)
         nengo.Connection(a, b, learning_rule=nengo.PES(err))
         nengo.Connection(a, b, learning_rule=nengo.PES(err),
-                         solver=nengo.decoders.LstsqL2(weights=True))
+                         solver=LstsqL2(weights=True))
         nengo.Connection(a.neurons, b.neurons, learning_rule=nengo.PES(err))
         nengo.Connection(a.neurons, b.neurons, learning_rule=nengo.Oja())
 
         with pytest.raises(ValueError):
             nengo.Connection(n, a, learning_rule=nengo.PES(err))
+
+
+def test_functionparam():
+    """FunctionParam must be a function, and accept one scalar argument."""
+    class Test(object):
+        fp = FunctionParam(default=None)
+
+    inst = Test()
+    assert inst.fp is None
+    inst.fp = np.sin
+    assert inst.fp.function is np.sin
+    assert inst.fp.size == 1
+    # Not OK: requires two args
+    with pytest.raises(TypeError):
+        inst.fp = lambda x, y: x + y
+    # Not OK: not a function
+    with pytest.raises(ValueError):
+        inst.fp = 0
 
 
 def test_set_function(Simulator):
@@ -730,6 +748,41 @@ def test_set_eval_points(Simulator):
             nengo.Connection(a.neurons, b, eval_points=[[0, 0], [0.5, 1]])
 
     Simulator(model)  # Builds fine
+
+
+def test_solverparam():
+    """SolverParam must be a solver."""
+    class Test(object):
+        sp = SolverParam(default=None)
+
+    inst = Test()
+    assert inst.sp is None
+    inst.sp = LstsqL2()
+    assert isinstance(inst.sp, LstsqL2)
+    assert not inst.sp.weights
+    # Non-solver not OK
+    with pytest.raises(ValueError):
+        inst.sp = 'a'
+
+
+def test_learningruleparam():
+    """LearningRuleParam must be one or many learning rules."""
+    class Test(object):
+        lrp = LearningRuleParam(default=None)
+
+    inst = Test()
+    assert inst.lrp is None
+    inst.lrp = Oja()
+    assert isinstance(inst.lrp, Oja)
+    inst.lrp = [Oja(), Oja()]
+    for lr in inst.lrp:
+        assert isinstance(lr, Oja)
+    # Non-LR no good
+    with pytest.raises(ValueError):
+        inst.lrp = 'a'
+    # All elements in list must be LR
+    with pytest.raises(ValueError):
+        inst.lrp = [Oja(), 'a', Oja()]
 
 
 if __name__ == "__main__":
