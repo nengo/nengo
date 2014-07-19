@@ -132,6 +132,10 @@ def test_numberparam():
     inst.np_lh = 1.0
     assert inst.np_lh == 1.0
 
+    # ensure scalar array works
+    inst.np = np.array(2.0)
+    assert inst.np == 2.0
+
     # must be a number!
     with pytest.raises(ValueError):
         inst.np = 'a'

@@ -94,6 +94,11 @@ class NumberParam(Parameter):
         self.high = high
         super(NumberParam, self).__init__(default, optional, readonly)
 
+    def __set__(self, instance, value):
+        if isinstance(value, np.ndarray) and value.shape == ():
+            value = value.item()  # convert scalar array to Python object
+        super(NumberParam, self).__set__(instance, value)
+
     def validate(self, instance, num):
         if num is not None:
             if not is_number(num):
