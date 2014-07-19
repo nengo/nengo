@@ -6,7 +6,7 @@ import pytest
 
 import nengo
 import nengo.utils.numpy as npext
-from nengo.ensemble import NeuronTypeParam
+from nengo.ensemble import EnsembleNeuronTypeParam
 from nengo.utils.testing import Plotter, warns
 
 logger = logging.getLogger(__name__)
@@ -313,22 +313,10 @@ def test_gain_bias(Simulator, nl_nodirect):
     assert np.array_equal(bias, sim.data[a].bias)
 
 
-def test_neurontypeparam():
-    """NeuronTypeParam must be a neuron type."""
-    class Test(object):
-        ntp = NeuronTypeParam(default=None)
-
-    inst = Test()
-    inst.ntp = nengo.LIF()
-    assert isinstance(inst.ntp, nengo.LIF)
-    with pytest.raises(ValueError):
-        inst.ntp = 'a'
-
-
 def test_neurontypeparam_probeable():
     """NeuronTypeParam can update a probeable list."""
     class Test(object):
-        ntp = NeuronTypeParam(default=None, optional=True)
+        ntp = EnsembleNeuronTypeParam(default=None, optional=True)
         probeable = ['output']
 
     inst = Test()

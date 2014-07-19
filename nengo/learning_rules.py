@@ -1,3 +1,7 @@
+from nengo.params import Parameter
+from nengo.utils.compat import is_iterable
+
+
 class LearningRule(object):
     """Base class for all learning rule objects.
 
@@ -104,3 +108,17 @@ class Oja(LearningRule):
         self.post_tau = post_tau if post_tau is not None else pre_tau
         self.beta = beta
         super(Oja, self).__init__(learning_rate)
+
+
+class LearningRuleParam(Parameter):
+    def validate(self, instance, rule):
+        if is_iterable(rule):
+            for lr in rule:
+                self.validate_rule(instance, lr)
+        elif rule is not None:
+            self.validate_rule(instance, rule)
+        super(LearningRuleParam, self).validate(instance, rule)
+
+    def validate_rule(self, instance, rule):
+        if not isinstance(rule, LearningRule):
+            raise ValueError("'%s' is not a learning rule" % rule)
