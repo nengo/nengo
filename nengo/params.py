@@ -1,9 +1,11 @@
+import collections
 import weakref
 
 import numpy as np
 
 from nengo.utils.compat import is_integer, is_number, is_string
 from nengo.utils.distributions import Distribution
+from nengo.utils.stdlib import checked_call
 
 
 class DefaultType:
@@ -186,3 +188,30 @@ class DistributionParam(NdarrayParam):
             except ValueError:
                 raise ValueError("Must be a distribution or NumPy array")
         return dist
+
+FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
+
+
+class FunctionParam(Parameter):
+    def __set__(self, instance, function):
+        size = (self.determine_size(instance, function)
+                if callable(function) else None)
+        function_info = FunctionInfo(function=function, size=size)
+        super(FunctionParam, self).__set__(instance, function_info)
+
+    def function_args(self, instance, function):
+        return (np.zeros(1),)
+
+    def determine_size(self, instance, function):
+        args = self.function_args(instance, function)
+        value, invoked = checked_call(function, *args)
+        if not invoked:
+            raise TypeError("function '%s' must accept a single "
+                            "np.array argument" % function)
+        return np.asarray(value).size
+
+    def validate(self, instance, function_info):
+        function = function_info.function
+        if function is not None and not callable(function):
+            raise ValueError("function '%s' must be callable" % function)
+        super(FunctionParam, self).validate(instance, function)

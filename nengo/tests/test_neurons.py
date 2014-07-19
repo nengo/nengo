@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.neurons import NeuronTypeParam
 from nengo.utils.ensemble import tuning_curves
 from nengo.utils.matplotlib import implot
 from nengo.utils.neurons import rates_kernel
@@ -173,6 +174,18 @@ def test_alif(Simulator):
         plt.close()
 
     assert rel_rmse < 0.07
+
+
+def test_neurontypeparam():
+    """NeuronTypeParam must be a neuron type."""
+    class Test(object):
+        ntp = NeuronTypeParam(default=None)
+
+    inst = Test()
+    inst.ntp = nengo.LIF()
+    assert isinstance(inst.ntp, nengo.LIF)
+    with pytest.raises(ValueError):
+        inst.ntp = 'a'
 
 
 if __name__ == "__main__":

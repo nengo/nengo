@@ -1,36 +1,34 @@
 from nengo.base import NengoObject, ObjView
-from nengo.neurons import LIF, NeuronType
-from nengo.params import (Default, DistributionParam, IntParam, ListParam,
-                          NumberParam, Parameter, StringParam)
+from nengo.neurons import LIF, NeuronTypeParam
+from nengo.params import (
+    Default, DistributionParam, IntParam, ListParam, NumberParam, StringParam)
 from nengo.utils.distributions import Uniform, UniformHypersphere
 
 
-class NeuronTypeParam(Parameter):
-    def __set__(self, instance, neurons):
-        self.validate(instance, neurons)
-        if hasattr(instance, 'probeable'):
-            self.update_probeable(instance, neurons)
-        self.data[instance] = neurons
+class EnsembleNeuronTypeParam(NeuronTypeParam):
+    def __set__(self, ens, neurons):
+        orig_probeable = list(ens.probeable)
+        self.update_probeable(ens, neurons)
+        try:
+            super(EnsembleNeuronTypeParam, self).__set__(ens, neurons)
+        except:
+            ens.probeable = orig_probeable
+            raise
 
-    def update_probeable(self, instance, neurons):
+    def update_probeable(self, ens, neurons):
         """Update the probeable list."""
         # We could use a set instead and this would be easier, but we use
         # the first member of the list as the default probeable, so that
         # doesn't work.
-        if instance in self.data and self.data[instance] is not None:
-            for attr in self.data[instance].probeable:
-                if attr in instance.probeable:
-                    instance.probeable.remove(attr)
+        if ens in self.data and self.data[ens] is not None:
+            for attr in self.data[ens].probeable:
+                if attr in ens.probeable:
+                    ens.probeable.remove(attr)
 
         if neurons is not None:
             for attr in neurons.probeable:
-                if attr not in instance.probeable:
-                    instance.probeable.append(attr)
-
-    def validate(self, instance, neurons):
-        if neurons is not None and not isinstance(neurons, NeuronType):
-            raise ValueError("'%s' is not a neuron type" % neurons)
-        super(NeuronTypeParam, self).validate(instance, neurons)
+                if attr not in ens.probeable:
+                    ens.probeable.append(attr)
 
 
 class Ensemble(NengoObject):
@@ -72,7 +70,7 @@ class Ensemble(NengoObject):
     n_neurons = IntParam(default=None, low=1)
     dimensions = IntParam(default=None, low=1)
     radius = NumberParam(default=1.0, low=1e-10)
-    neuron_type = NeuronTypeParam(default=LIF())
+    neuron_type = EnsembleNeuronTypeParam(default=LIF())
     encoders = DistributionParam(default=UniformHypersphere(surface=True),
                                  sample_shape=('n_neurons', 'dimensions'))
     intercepts = DistributionParam(default=Uniform(-1.0, 1.0),

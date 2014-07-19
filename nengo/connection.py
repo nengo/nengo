@@ -1,118 +1,70 @@
-import collections
 import logging
 
 import numpy as np
 
 from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.ensemble import Ensemble
-from nengo.params import (
-    Default, BoolParam, IntParam, ListParam, NdarrayParam, Parameter)
-from nengo.learning_rules import LearningRule
+from nengo.learning_rules import LearningRuleParam
 from nengo.node import Node
+from nengo.params import (
+    Default, BoolParam, FunctionParam, IntParam, ListParam, NdarrayParam)
 from nengo.probe import Probe
-from nengo.solvers import LstsqL2, Solver
+from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_iterable
-from nengo.utils.stdlib import checked_call
 
 logger = logging.getLogger(__name__)
 
 
-class LearningRuleParam(Parameter):
-    def validate(self, instance, rule):
-        if is_iterable(rule):
-            for lr in rule:
-                self.validate_rule(instance, lr)
-        elif rule is not None:
-            self.validate_rule(instance, rule)
-        super(LearningRuleParam, self).validate(instance, rule)
+class ConnectionLearningRuleParam(LearningRuleParam):
+    """Connection-specific validation for learning rules."""
 
-    def validate_rule(self, instance, rule):
-        if not isinstance(rule, LearningRule):
-            raise ValueError("'%s' is not a learning rule" % rule)
-
-        if isinstance(instance, Connection):
-            rule_type = ('Neurons' if instance.solver.weights
-                         else type(instance.pre).__name__)
-            if rule_type not in rule.modifies:
-                raise ValueError("Learning rule '%s' cannot be applied to "
-                                 "connection with pre of type '%s'"
-                                 % (rule, type(instance.pre).__name__))
+    def validate_rule(self, conn, rule):
+        super(ConnectionLearningRuleParam, self).validate_rule(conn, rule)
+        rule_type = ('Neurons' if conn.solver.weights
+                     else type(conn.pre).__name__)
+        if rule_type not in rule.modifies:
+            raise ValueError("Learning rule '%s' cannot be applied to "
+                             "connection with pre of type '%s'"
+                             % (rule, type(conn.pre).__name__))
 
 
-class SolverParam(Parameter):
-    def validate(self, instance, solver):
-        if solver is not None and not isinstance(solver, Solver):
-            raise ValueError("'%s' is not a solver" % solver)
-        if solver is not None and isinstance(instance, Connection):
-            if solver.weights and not isinstance(instance.pre, Ensemble):
+class ConnectionSolverParam(SolverParam):
+    """Connection-specific validation for decoder solvers."""
+
+    def validate(self, conn, solver):
+        super(ConnectionSolverParam, self).validate(conn, solver)
+        if solver is not None:
+            if solver.weights and not isinstance(conn.pre, Ensemble):
                 raise ValueError(
                     "weight solvers only work for connections from ensembles "
-                    "(got '%s')" % instance.pre.__class__.__name__)
-            if solver.weights and not isinstance(instance.post, Ensemble):
+                    "(got '%s')" % conn.pre.__class__.__name__)
+            if solver.weights and not isinstance(conn.post, Ensemble):
                 raise ValueError(
                     "weight solvers only work for connections to ensembles "
-                    "(got '%s')" % instance.post.__class__.__name__)
-        super(SolverParam, self).validate(instance, solver)
+                    "(got '%s')" % conn.post.__class__.__name__)
 
 
 class EvalPointsParam(NdarrayParam):
-    def __set__(self, conn, ndarray):
-        if ndarray is not None:
-            self.validate_pre(conn, ndarray)
-        super(EvalPointsParam, self).__set__(conn, ndarray)
-
-    def validate_pre(self, conn, ndarray):
+    def validate(self, conn, ndarray):
         """Eval points are only valid when pre is an ensemble."""
         if not isinstance(conn.pre, Ensemble):
             msg = ("eval_points are only valid on connections from ensembles "
                    "(got type '%s')" % conn.pre.__class__.__name__)
             raise ValueError(msg)
+        return super(EvalPointsParam, self).validate(conn, ndarray)
 
 
-FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
+class ConnectionFunctionParam(FunctionParam):
+    """Connection-specific validation for functions."""
 
-
-class FunctionParam(Parameter):
-    def __set__(self, instance, function):
-        self.validate(instance, function)
-
-        if function is None:
-            size = None
-        else:
-            size = self.validate_call(instance, function)
-
-        function_info = FunctionInfo(function=function, size=size)
-
-        if isinstance(instance, Connection):
-            # This validation is Connection specific
-            self.validate_connection(instance, function_info)
-
-        # Set this at the end in case validate_connection fails
-        self.data[instance] = function_info
-
-    def validate(self, instance, function):
-        if function is not None and not callable(function):
-            raise ValueError("function '%s' must be callable" % function)
-        super(FunctionParam, self).validate(instance, function)
-
-    def function_args(self, instance, function):
-        if isinstance(instance, Connection):
-            x = (instance.eval_points[0] if is_iterable(instance.eval_points)
-                 else np.zeros(instance.size_in))
-        else:
-            x = np.zeros(1)
+    def function_args(self, conn, function):
+        x = (conn.eval_points[0] if is_iterable(conn.eval_points)
+             else np.zeros(conn.size_in))
         return (x,)
 
-    def validate_call(self, instance, function):
-        args = self.function_args(instance, function)
-        value, invoked = checked_call(function, *args)
-        if not invoked:
-            raise TypeError("function '%s' must accept a single "
-                            "np.array argument" % function)
-        return np.asarray(value).size
-
-    def validate_connection(self, conn, function_info):
+    def validate(self, conn, function_info):
+        super(ConnectionFunctionParam, self).validate(conn, function_info)
         fn_ok = (Node, Ensemble)
         function, size = function_info
 
@@ -242,10 +194,10 @@ class Connection(NengoObject):
     post = NengoObjectParam(disallow=[])
     synapse = SynapseParam(default=Lowpass(0.005))
     transform = TransformParam(default=np.array(1.0))
-    solver = SolverParam(default=LstsqL2())
-    function_info = FunctionParam(default=None, optional=True)
+    solver = ConnectionSolverParam(default=LstsqL2())
+    function_info = ConnectionFunctionParam(default=None, optional=True)
     modulatory = BoolParam(default=False)
-    learning_rule = LearningRuleParam(default=None, optional=True)
+    learning_rule = ConnectionLearningRuleParam(default=None, optional=True)
     eval_points = EvalPointsParam(
         default=None, optional=True, shape=('*', 'size_in'))
     seed = IntParam(default=None, optional=True)

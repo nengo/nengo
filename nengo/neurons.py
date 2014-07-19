@@ -4,6 +4,8 @@ import logging
 
 import numpy as np
 
+from nengo.params import Parameter
+
 logger = logging.getLogger(__name__)
 
 
@@ -169,3 +171,10 @@ class AdaptiveLIF(LIF):
         n = adaptation
         LIF.step_math(self, dt, J - n, output, voltage, ref)
         n += (dt / self.tau_n) * ((self.inc_n / dt) * output - n)
+
+
+class NeuronTypeParam(Parameter):
+    def validate(self, instance, neurons):
+        if neurons is not None and not isinstance(neurons, NeuronType):
+            raise ValueError("'%s' is not a neuron type" % neurons)
+        super(NeuronTypeParam, self).validate(instance, neurons)

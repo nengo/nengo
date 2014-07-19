@@ -11,6 +11,7 @@ import logging
 
 import numpy as np
 
+from nengo.params import Parameter
 import nengo.utils.numpy as npext
 from nengo.utils.compat import range, with_metaclass
 from nengo.utils.magic import DocstringInheritor
@@ -547,3 +548,10 @@ class NnlsL2nz(Nnls):
         Y = np.dot(A.T, Y)
         np.fill_diagonal(G, G.diagonal() + sigma)
         return super(NnlsL2nz, self).__call__(G, Y, rng=rng, E=E)
+
+
+class SolverParam(Parameter):
+    def validate(self, instance, solver):
+        if solver is not None and not isinstance(solver, Solver):
+            raise ValueError("'%s' is not a solver" % solver)
+        super(SolverParam, self).validate(instance, solver)
