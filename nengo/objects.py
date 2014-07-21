@@ -40,8 +40,21 @@ class NengoObjectContainer(type):
         inst = cls.__new__(cls, *args, **kwargs)
         add_to_container = kwargs.pop(
             'add_to_container', len(Network.context) > 0)
+
+        # check that arguments we rip out are not also in __init__
+        # if cls.__init__ is not object.__init__:
+        if hasattr(cls.__init__, '__code__'):
+            code = cls.__init__.__code__
+            argnames = code.co_varnames[:code.co_argcount]
+            for name in ['label', 'seed']:
+                if name in argnames:
+                    raise SyntaxError(
+                        "'%s.__init__' has '%s' argument, which is "
+                        "reserved" % (type(inst), name))
+
         inst.label = kwargs.pop('label', None)
         inst.seed = kwargs.pop('seed', None)
+
         with inst:
             inst.__init__(*args, **kwargs)
         # Do the __init__ before adding in case __init__ errors out
