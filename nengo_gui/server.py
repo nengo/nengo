@@ -41,6 +41,9 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
     default_filename = 'default.py'
     script_path = os.path.join(os.path.dirname(nengo_gui.__file__), 'scripts')
     refresh_interval = 0
+    realtime_simulator = False
+    simulator_class = nengo.Simulator
+
 
     def swi_static(self, *path):
         if self.user is None: return
@@ -91,6 +94,16 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         path, fn = os.path.split(fn)
         klass.script_path = path
         klass.default_filename = fn
+
+    @classmethod
+    def set_simulator_class(klass, simulator_class):
+        """Which Simulator to use"""
+        klass.simulator_class = simulator_class
+
+    @classmethod
+    def set_realtime_simulator_mode(klass, realtime_simulator):
+        """Flag whether GUI should be in real-time mode"""
+        klass.realtime_simulator = realtime_simulator
 
     @classmethod
     def set_refresh_interval(klass, interval):
@@ -152,19 +165,28 @@ class NengoGui(nengo_gui.swi.SimpleWebInterface):
         if cfg is None:
             cfg = nengo_gui.Config()
 
+        model_config = locals.get('config', None)
+
+
         nf = nengo_gui.namefinder.NameFinder(locals, model)
 
         jv = javaviz.View(model, default_labels=nf.known_name,
-                          filename=filename)
-        sim = nengo.Simulator(model)
+                          filename=filename, realtime=self.realtime_simulator)
+        if model_config is not None:
+            sim = self.simulator_class(model, config=model_config)
+        else:
+            sim = self.simulator_class(model)
         jv.update_model(sim)
         jv.view(config=cfg)
         try:
-            while True:
-                try:
-                    sim.run(1)
-                except javaviz.VisualizerResetException:
-                    sim.reset()
+            if self.realtime_simulator:
+                sim.run()
+            else:
+                while True:
+                    try:
+                        sim.run(1)
+                    except javaviz.VisualizerResetException:
+                        sim.reset()
         except javaviz.VisualizerExitException:
             print('Finished running JavaViz simulation')
 

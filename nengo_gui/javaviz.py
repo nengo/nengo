@@ -10,7 +10,7 @@ import time
 
 class View:
     def __init__(self, model, udp_port=56789, client='localhost',
-                 default_labels={}, filename=None):
+                 default_labels={}, filename=None, realtime=False):
         self.default_labels = default_labels
         self.need_encoders = []
         self.overrides = {}
@@ -18,6 +18,7 @@ class View:
         self.block_time = 0.0
         self.should_reset = False
         self.should_stop = False
+        self.realtime = realtime
 
         # connect to the remote java server
         self.rpyc = rpyc.classic.connect(client)
@@ -140,6 +141,20 @@ class View:
         view.time_control.mode_combobox.enabled = False
         view.time_control.dt_combobox.enabled = False
 
+        # disable components which aren't applicable to realtime simulations
+        if self.realtime:
+            # Force simulation speed to realtime
+            view.time_control.rate_combobox.setSelectedIndex(1)
+            view.set_target_rate(view.time_control.rate_combobox.getSelectedItem())
+            view.time_control.rate_combobox.enabled = False
+
+            # TODO: Disable restart button
+
+            # Disable pausing and start immediately
+            view.time_control.playpause_button.enabled = 0
+            view.time_control.pause(None)
+
+
         if config is not None and not has_layout:
             # destroy the layout we created - unless the user saves their layout,
             # we want to generate a new layout next time javaviz is opened.
@@ -222,7 +237,7 @@ class View:
                                     self.value_receiver, name)
                             remote_net.add(e)
                             self.remote_objs[obj] = e
-                            if obj.size_out >= 8:
+                            if obj.size_out >= 8 and obj.size_in == obj.size_out:
                                 semantic.append(obj)
                             break
 
