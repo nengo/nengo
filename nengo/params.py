@@ -183,10 +183,7 @@ class DistributionParam(NdarrayParam):
 
     def validate(self, instance, dist):
         if dist is not None and not isinstance(dist, Distribution):
-            try:
-                dist = super(DistributionParam, self).validate(instance, dist)
-            except ValueError:
-                raise ValueError("Must be a distribution or NumPy array")
+            dist = super(DistributionParam, self).validate(instance, dist)
         return dist
 
 FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
