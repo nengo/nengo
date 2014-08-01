@@ -8,7 +8,6 @@ from nengo.learning_rules import LearningRuleParam
 from nengo.node import Node
 from nengo.params import (
     Default, BoolParam, FunctionParam, IntParam, ListParam, NdarrayParam)
-from nengo.probe import Probe
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_iterable
@@ -190,8 +189,8 @@ class Connection(NengoObject):
         The seed used for random number generation.
     """
 
-    pre = NengoObjectParam(disallow=[Probe])
-    post = NengoObjectParam(disallow=[])
+    pre = NengoObjectParam(nonzero_size_out=True)
+    post = NengoObjectParam(nonzero_size_in=True)
     synapse = SynapseParam(default=Lowpass(0.005))
     transform = TransformParam(default=np.array(1.0))
     solver = ConnectionSolverParam(default=LstsqL2())

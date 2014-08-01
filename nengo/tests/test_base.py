@@ -22,19 +22,27 @@ def test_nengoobjectparam():
         inst.nop = a
 
 
-def test_nengoobjectparam_disallow():
-    """Can disallow specific Nengo objects."""
+def test_nengoobjectparam_nonzero():
+    """Can check that objects have nonzero size in/out."""
     class Test(object):
-        nop = NengoObjectParam(disallow=[nengo.Connection])
+        nin = NengoObjectParam(nonzero_size_in=True)
+        nout = NengoObjectParam(nonzero_size_out=True)
 
     inst = Test()
     with nengo.Network():
-        a = nengo.Ensemble(10, 2)
-        b = nengo.Ensemble(10, 2)
+        nin = nengo.Node(output=lambda t: t)
+        nout = nengo.Node(output=lambda t, x: None, size_in=1)
+        probe = nengo.Probe(nin)
+
         with pytest.raises(ValueError):
-            inst.nop = nengo.Connection(a, b)
-        inst.nop = b
-        assert inst.nop is b
+            inst.nin = nin
+        with pytest.raises(ValueError):
+            inst.nout = nout
+        with pytest.raises(ValueError):
+            inst.nout = probe
+
+        inst.nin = nout
+        inst.nout = nin
 
 
 if __name__ == "__main__":

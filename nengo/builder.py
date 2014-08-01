@@ -1245,8 +1245,12 @@ def build_connection(conn, model, config):  # noqa: C901
 
         if target not in model.sig:
             raise ValueError("Error building '%s': the '%s' object ('%s') "
-                             "is not in the model."
+                             "is not in the model, or has a size of zero."
                              % (conn, 'pre' if is_pre else 'post', target))
+        if key not in model.sig[target]:
+            raise ValueError("Error building '%s': the '%s' object ('%s') "
+                             "has a '%s' size of zero." %
+                             (conn, 'pre' if is_pre else 'post', target, key))
 
         return model.sig[target][key]
 
