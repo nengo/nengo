@@ -590,6 +590,28 @@ def test_solverparam():
         inst.sp = 'a'
 
 
+def test_nonexistant_prepost(Simulator):
+    with nengo.Network():
+        a = nengo.Ensemble(100, 1)
+
+    with nengo.Network() as model1:
+        e1 = nengo.Ensemble(100, 1)
+        nengo.Connection(a, e1)
+    with pytest.raises(ValueError):
+        nengo.Simulator(model1)
+
+    with nengo.Network() as model2:
+        e2 = nengo.Ensemble(100, 1)
+        nengo.Connection(e2, a)
+    with pytest.raises(ValueError):
+        nengo.Simulator(model2)
+
+    with nengo.Network() as model3:
+        nengo.Probe(a)
+    with pytest.raises(ValueError):
+        nengo.Simulator(model3)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
