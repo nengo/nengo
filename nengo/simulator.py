@@ -96,7 +96,7 @@ class Simulator(object):
         """
         if model is None:
             self.model = Model(
-                dt=dt, label="%s, dt=%f" % (network.label, dt))
+                dt=dt, label="%s, dt=%f" % (network, dt))
         else:
             self.model = model
 

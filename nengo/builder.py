@@ -621,7 +621,7 @@ class DotInc(Operator):
 
     def __str__(self):
         return 'DotInc(%s, %s -> %s "%s")' % (
-            str(self.A), str(self.X), str(self.Y), self.tag)
+            self.A, self.X, self.Y, self.tag)
 
     def make_step(self, signals, dt):
         X = signals[self.X]
@@ -654,7 +654,7 @@ class ProdUpdate(Operator):
 
     def __str__(self):
         return 'ProdUpdate(%s, %s, %s, -> %s "%s")' % (
-            str(self.A), str(self.X), str(self.B), str(self.Y), self.tag)
+            self.A, self.X, self.B, self.Y, self.tag)
 
     def make_step(self, signals, dt):
         X = signals[self.X]
@@ -895,7 +895,7 @@ class Builder(object):
 
         if model.has_built(obj):
             # TODO: Prevent this at pre-build validation time.
-            warnings.warn("Object '%s' has already been built." % obj)
+            warnings.warn("Object %s has already been built." % obj)
             return
 
         for obj_cls in obj.__class__.__mro__:
@@ -1001,7 +1001,7 @@ def build_ensemble(ens, model, config):  # noqa: C901
 
     # Set up signal
     model.sig[ens]['in'] = Signal(np.zeros(ens.dimensions),
-                                  name="%s.signal" % ens.label)
+                                  name="%s.signal" % ens)
     model.add_op(Reset(model.sig[ens]['in']))
 
     # Set up encoders
@@ -1031,15 +1031,15 @@ def build_ensemble(ens, model, config):  # noqa: C901
 
     if isinstance(ens.neuron_type, Direct):
         model.sig[ens]['neuron_in'] = Signal(
-            np.zeros(ens.dimensions), name='%s.neuron_in' % ens.label)
+            np.zeros(ens.dimensions), name='%s.neuron_in' % ens)
         model.sig[ens]['neuron_out'] = model.sig[ens]['neuron_in']
         model.add_op(Reset(model.sig[ens]['neuron_in']))
     else:
         model.sig[ens]['neuron_in'] = Signal(
-            np.zeros(ens.n_neurons), name="%s.neuron_in" % ens.label)
+            np.zeros(ens.n_neurons), name="%s.neuron_in" % ens)
         model.sig[ens]['neuron_out'] = Signal(
-            np.zeros(ens.n_neurons), name="%s.neuron_out" % ens.label)
-        model.add_op(Copy(src=Signal(bias, name="%s.bias" % ens.label),
+            np.zeros(ens.n_neurons), name="%s.neuron_out" % ens)
+        model.add_op(Copy(src=Signal(bias, name="%s.bias" % ens),
                           dst=model.sig[ens]['neuron_in']))
         # This adds the neuron's operator and sets other signals
         Builder.build(ens.neuron_type, ens, model=model, config=config)
@@ -1051,14 +1051,14 @@ def build_ensemble(ens, model, config):  # noqa: C901
         scaled_encoders = encoders * (gain / ens.radius)[:, np.newaxis]
 
     model.sig[ens]['encoders'] = Signal(
-        scaled_encoders, name="%s.scaled_encoders" % ens.label)
+        scaled_encoders, name="%s.scaled_encoders" % ens)
 
     # Create output signal, using built Neurons
     model.add_op(DotInc(
         model.sig[ens]['encoders'],
         model.sig[ens]['in'],
         model.sig[ens]['neuron_in'],
-        tag="%s encoding" % ens.label))
+        tag="%s encoding" % ens))
 
     # Output is neural output
     model.sig[ens]['out'] = model.sig[ens]['neuron_out']
@@ -1084,9 +1084,9 @@ Builder.register_builder(build_lifrate, LIFRate)
 
 def build_lif(lif, ens, model, config):
     model.sig[ens]['voltage'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.voltage" % ens.label)
+        np.zeros(ens.n_neurons), name="%s.voltage" % ens)
     model.sig[ens]['refractory_time'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.refractory_time" % ens.label)
+        np.zeros(ens.n_neurons), name="%s.refractory_time" % ens)
     model.add_op(SimNeurons(
         neurons=lif,
         J=model.sig[ens]['neuron_in'],
@@ -1098,7 +1098,7 @@ Builder.register_builder(build_lif, LIF)
 
 def build_alifrate(alif, ens, model, config):
     model.sig[ens]['adaptation'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.adaptation" % ens.label)
+        np.zeros(ens.n_neurons), name="%s.adaptation" % ens)
     model.add_op(SimNeurons(neurons=alif,
                             J=model.sig[ens]['neuron_in'],
                             output=model.sig[ens]['neuron_out'],
@@ -1109,11 +1109,11 @@ Builder.register_builder(build_alifrate, AdaptiveLIFRate)
 
 def build_alif(alif, ens, model, config):
     model.sig[ens]['voltage'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.voltage" % ens.label)
+        np.zeros(ens.n_neurons), name="%s.voltage" % ens)
     model.sig[ens]['refractory_time'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.refractory_time" % ens.label)
+        np.zeros(ens.n_neurons), name="%s.refractory_time" % ens)
     model.sig[ens]['adaptation'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.adaptation" % ens.label)
+        np.zeros(ens.n_neurons), name="%s.adaptation" % ens)
     model.add_op(SimNeurons(neurons=alif,
                             J=model.sig[ens]['neuron_in'],
                             output=model.sig[ens]['neuron_out'],
@@ -1129,7 +1129,7 @@ def build_node(node, model, config):
     if node.output is None or callable(node.output):
         if node.size_in > 0:
             model.sig[node]['in'] = Signal(
-                np.zeros(node.size_in), name="%s.signal" % node.label)
+                np.zeros(node.size_in), name="%s.signal" % node)
             # Reset input signal to 0 each timestep
             model.add_op(Reset(model.sig[node]['in']))
 
@@ -1137,19 +1137,19 @@ def build_node(node, model, config):
     if node.output is None:
         model.sig[node]['out'] = model.sig[node]['in']
     elif not callable(node.output):
-        model.sig[node]['out'] = Signal(node.output, name=node.label)
+        model.sig[node]['out'] = Signal(node.output, name=str(node))
     else:
         sig_in, sig_out = build_pyfunc(fn=node.output,
                                        t_in=True,
                                        n_in=node.size_in,
                                        n_out=node.size_out,
-                                       label="%s.pyfn" % node.label,
+                                       label="%s.pyfn" % node,
                                        model=model)
         if sig_in is not None:
             model.add_op(DotInc(model.sig[node]['in'],
                                 model.sig['common'][1],
                                 sig_in,
-                                tag="%s input" % node.label))
+                                tag="%s input" % node))
         if sig_out is not None:
             model.sig[node]['out'] = sig_out
 
@@ -1214,7 +1214,7 @@ def build_probe(probe, model, config):
     if conn is not None:
         # Make a sink signal for the connection
         model.sig[probe]['in'] = Signal(np.zeros(conn.size_out),
-                                        name=probe.label)
+                                        name=str(probe))
         model.add_op(Reset(model.sig[probe]['in']))
         # Set connection's seed to probe's (which isn't used elsewhere)
         model.seeds[conn] = model.seeds[probe]
@@ -1247,9 +1247,9 @@ def build_linear_system(conn, model, rng):
     activities = model.dt * conn.pre_obj.neuron_type.rates(x, gain, bias)
     if np.count_nonzero(activities) == 0:
         raise RuntimeError(
-            "In '%s', for '%s', 'activites' matrix is all zero. "
+            "Building %s: 'activites' matrix is all zero for %s. "
             "This is because no evaluation points fall in the firing "
-            "ranges of any neurons." % (str(conn), str(conn.pre_obj)))
+            "ranges of any neurons." % (conn, conn.pre_obj))
 
     if conn.function is None:
         # TODO: slice eval_points here rather than later, as it could
@@ -1276,11 +1276,11 @@ def build_connection(conn, model, config):  # noqa: C901
             target, key = obj, "out" if is_pre else "in"
 
         if target not in model.sig:
-            raise ValueError("Error building '%s': the '%s' object ('%s') "
+            raise ValueError("Building %s: the '%s' object %s "
                              "is not in the model, or has a size of zero."
                              % (conn, 'pre' if is_pre else 'post', target))
         if key not in model.sig[target]:
-            raise ValueError("Error building '%s': the '%s' object ('%s') "
+            raise ValueError("Error building %s: the '%s' object %s "
                              "has a '%s' size of zero." %
                              (conn, 'pre' if is_pre else 'post', target, key))
 
@@ -1307,12 +1307,12 @@ def build_connection(conn, model, config):  # noqa: C901
                 t_in=False,
                 n_in=model.sig[conn]['in'].size,
                 n_out=conn.size_mid,
-                label=conn.label,
+                label=str(conn),
                 model=model)
             model.add_op(DotInc(model.sig[conn]['in'],
                                 model.sig['common'][1],
                                 sig_in,
-                                tag="%s input" % conn.label))
+                                tag="%s input" % conn))
     elif isinstance(conn.pre_obj, Ensemble):
         # Normal decoded connection
         eval_points, activities, targets = build_linear_system(
@@ -1336,13 +1336,13 @@ def build_connection(conn, model, config):  # noqa: C901
         decoders = decoders.T
 
         model.sig[conn]['decoders'] = Signal(
-            decoders, name="%s.decoders" % conn.label)
-        signal = Signal(np.zeros(signal_size), name=conn.label)
+            decoders, name="%s.decoders" % conn)
+        signal = Signal(np.zeros(signal_size), name=str(conn))
         model.add_op(ProdUpdate(model.sig[conn]['decoders'],
                                 model.sig[conn]['in'],
                                 model.sig['common'][0],
                                 signal,
-                                tag="%s decoding" % conn.label))
+                                tag="%s decoding" % conn))
     else:
         # Direct connection
         signal = model.sig[conn]['in']
@@ -1355,7 +1355,7 @@ def build_connection(conn, model, config):  # noqa: C901
         # Make a new signal, effectively detaching from post
         model.sig[conn]['out'] = Signal(
             np.zeros(model.sig[conn]['out'].size),
-            name="%s.mod_output" % conn.label)
+            name="%s.mod_output" % conn)
         model.add_op(Reset(model.sig[conn]['out']))
 
     # Add operator for transform
@@ -1364,17 +1364,16 @@ def build_connection(conn, model, config):  # noqa: C901
             # Since it hasn't been built, it wasn't added to the Network,
             # which is most likely because the Neurons weren't associated
             # with an Ensemble.
-            raise RuntimeError("Connection '%s' refers to Neurons '%s' "
-                               "that are not a part of any Ensemble." % (
-                                   conn, conn.post_obj))
+            raise RuntimeError("%s refers to %s, whose Ensemble is not part of"
+                               " the model." % (conn, conn.post_obj))
         transform *= model.params[conn.post_obj.ensemble].gain[:, np.newaxis]
 
     model.sig[conn]['transform'] = Signal(transform,
-                                          name="%s.transform" % conn.label)
+                                          name="%s.transform" % conn)
     model.add_op(DotInc(model.sig[conn]['transform'],
                         signal,
                         model.sig[conn]['out'],
-                        tag=conn.label))
+                        tag=str(conn)))
 
     if conn.learning_rule:
         # Forcing update of signal that is modified by learning rules.

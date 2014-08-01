@@ -154,9 +154,11 @@ class Neurons(object):
     def __len__(self):
         return self.ensemble.n_neurons
 
-    @property
-    def label(self):
-        return "%s.neurons" % self.ensemble.label
+    def __repr__(self):
+        return "<Neurons at 0x%x of %r>" % (id(self), self.ensemble)
+
+    def __str__(self):
+        return "<Neurons of %s>" % self.ensemble
 
     @property
     def size_in(self):

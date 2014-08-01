@@ -226,9 +226,13 @@ class Network(with_metaclass(NengoObjectContainer)):
         self._config.__exit__(dummy_exc_type, dummy_exc_value, dummy_tb)
 
     def __str__(self):
-        return "%s: %s" % (
+        return "<%s %s>" % (
             self.__class__.__name__,
-            self.label if self.label is not None else str(id(self)))
+            '"%s"' % self.label if self.label is not None else
+            "(unlabeled) at 0x%x" % id(self))
 
     def __repr__(self):
-        return str(self)
+        return "<%s %s %s>" % (
+            self.__class__.__name__,
+            '"%s"' % self.label if self.label is not None else "(unlabeled)",
+            "at 0x%x" % id(self))
