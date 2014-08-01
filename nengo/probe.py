@@ -27,7 +27,7 @@ class Probe(NengoObject):
         probe. For example, passing ``synapse=pstc`` will filter the data.
     """
 
-    target = NengoObjectParam()
+    target = NengoObjectParam(nonzero_size_out=True)
     attr = StringParam(default=None)
     sample_every = NumberParam(default=None, optional=True, low=1e-10)
     conn_args = DictParam(default=None)
@@ -63,3 +63,7 @@ class Probe(NengoObject):
         if isinstance(self.target, Ensemble) and self.attr != "decoded_output":
             return self.target.neurons.size_out
         return self.target.size_out
+
+    @property
+    def size_out(self):
+        return 0

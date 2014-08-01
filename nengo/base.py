@@ -123,17 +123,19 @@ class ObjView(object):
 
 
 class NengoObjectParam(Parameter):
-    def __init__(self, default=None, disallow=None, optional=False,
-                 readonly=True):
+    def __init__(self, default=None, optional=False, readonly=True,
+                 nonzero_size_in=False, nonzero_size_out=False):
         assert default is None  # These can't have defaults
-        self.disallow = [] if disallow is None else disallow
+        self.nonzero_size_in = nonzero_size_in
+        self.nonzero_size_out = nonzero_size_out
         super(NengoObjectParam, self).__init__(default, optional, readonly)
 
     def validate(self, instance, nengo_obj):
         from nengo.ensemble import Neurons
         if not isinstance(nengo_obj, (NengoObject, Neurons, ObjView)):
             raise ValueError("'%s' is not a Nengo object" % nengo_obj)
-        for n_type in self.disallow:
-            if isinstance(nengo_obj, n_type):
-                raise ValueError("Objects of type '%s' disallowed." % n_type)
+        if self.nonzero_size_in and nengo_obj.size_in < 1:
+            raise ValueError("'%s' must have size_in > 0." % nengo_obj)
+        if self.nonzero_size_out and nengo_obj.size_out < 1:
+            raise ValueError("'%s' must have size_out > 0." % nengo_obj)
         super(NengoObjectParam, self).validate(instance, nengo_obj)
