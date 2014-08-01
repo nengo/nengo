@@ -1235,15 +1235,23 @@ def build_connection(conn, model, config):  # noqa: C901
     # Create random number generator
     rng = np.random.RandomState(model.seeds[conn])
 
-    if isinstance(conn.pre_obj, Neurons):
-        model.sig[conn]['in'] = model.sig[conn.pre_obj.ensemble]["neuron_out"]
-    else:
-        model.sig[conn]['in'] = model.sig[conn.pre_obj]["out"]
+    # Get input and output connections from pre and post
+    def get_prepost_signal(is_pre):
+        obj = conn.pre_obj if is_pre else conn.post_obj
+        if isinstance(obj, Neurons):
+            target, key = obj.ensemble, "neuron_out" if is_pre else "neuron_in"
+        else:
+            target, key = obj, "out" if is_pre else "in"
 
-    if isinstance(conn.post_obj, Neurons):
-        model.sig[conn]['out'] = model.sig[conn.post_obj.ensemble]["neuron_in"]
-    else:
-        model.sig[conn]['out'] = model.sig[conn.post_obj]["in"]
+        if target not in model.sig:
+            raise ValueError("Error building '%s': the '%s' object ('%s') "
+                             "is not in the model."
+                             % (conn, 'pre' if is_pre else 'post', target))
+
+        return model.sig[target][key]
+
+    model.sig[conn]['in'] = get_prepost_signal(is_pre=True)
+    model.sig[conn]['out'] = get_prepost_signal(is_pre=False)
 
     decoders = None
     eval_points = None
