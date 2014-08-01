@@ -36,14 +36,20 @@ class NengoObject(with_metaclass(NetworkMember)):
     and object comparison require each object to have a unique ID.
     """
 
+    def _str(self, include_id):
+        return "<%s%s%s>" % (
+            self.__class__.__name__,
+            "" if not hasattr(self, 'label') else
+            " (unlabeled)" if self.label is None else
+            ' "%s"' % self.label,
+            " at 0x%x" % id(self) if include_id else "")
+
     def __str__(self):
-        if hasattr(self, 'label') and self.label is not None:
-            return "%s: %s" % (self.__class__.__name__, self.label)
-        else:
-            return "%s: id=%d" % (self.__class__.__name__, id(self))
+        return self._str(
+            include_id=not hasattr(self, 'label') or self.label is None)
 
     def __repr__(self):
-        return str(self)
+        return self._str(include_id=True)
 
     def __setattr__(self, name, val):
         if hasattr(self, '_initialized') and not hasattr(self, name):
@@ -109,7 +115,7 @@ class ObjView(object):
         return self.size_out
 
     @property
-    def label(self):
+    def _slice_string(self):
         if isinstance(self.slice, list):
             sl_str = self.slice
         else:
@@ -119,7 +125,13 @@ class ObjView(object):
                 sl_str = "%s:%s" % (sl_start, sl_stop)
             else:
                 sl_str = "%s:%s:%s" % (sl_start, sl_stop, self.slice.step)
-        return "%s[%s]" % (self.obj.label, sl_str)
+        return str(sl_str)
+
+    def __str__(self):
+        return "%s[%s]" % (self.obj, self._slice_string)
+
+    def __repr__(self):
+        return "%r[%s]" % (self.obj, self._slice_string)
 
 
 class NengoObjectParam(Parameter):

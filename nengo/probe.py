@@ -54,10 +54,6 @@ class Probe(NengoObject):
         self.seed = conn_args.get('seed', None)
 
     @property
-    def label(self):
-        return "Probe(%s.%s)" % (self.target.label, self.attr)
-
-    @property
     def size_in(self):
         # TODO: A bit of a hack; make less hacky.
         if isinstance(self.target, Ensemble) and self.attr != "decoded_output":
@@ -67,3 +63,10 @@ class Probe(NengoObject):
     @property
     def size_out(self):
         return 0
+
+    def __str__(self):
+        return "<Probe of '%s' of %s>" % (self.attr, self.target)
+
+    def __repr__(self):
+        return "<Probe at 0x%x of '%s' of %s>" % (
+            id(self), self.attr, self.target)

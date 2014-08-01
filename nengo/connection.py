@@ -262,8 +262,14 @@ class Connection(NengoObject):
         return self.post.size_in
 
     @property
-    def label(self):
-        label = "%s->%s" % (self.pre.label, self.post.label)
-        if self.function is not None:
-            return "%s:%s" % (label, self.function.__name__)
-        return label
+    def _label(self):
+        return "from %s to %s%s" % (
+            self.pre, self.post,
+            " computing '%s'" % self.function.__name__
+            if self.function is not None else "")
+
+    def __str__(self):
+        return "<Connection %s>" % self._label
+
+    def __repr__(self):
+        return "<Connection at 0x%x %s>" % (id(self), self._label)
