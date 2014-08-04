@@ -248,10 +248,10 @@ class View:
         for c in network.connections:
             # handle direct connections
             pre = c.pre
-            if isinstance(pre, nengo.objects.Neurons):
+            if isinstance(pre, nengo.ensemble.Neurons):
                 pre = pre.ensemble
             post = c.post
-            if isinstance(post, nengo.objects.Neurons):
+            if isinstance(post, nengo.ensemble.Neurons):
                 post = post.ensemble
 
             if pre in self.remote_objs and post in self.remote_objs:

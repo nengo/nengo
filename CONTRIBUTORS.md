@@ -18,6 +18,7 @@ to the file like so:
 
 Please keep this list sorted alphabetically.
 
+- Andrew Mundy <andrew.mundy@ieee.org>
 - Chris Eliasmith <celiasmith@uwaterloo.ca>
 - Eric Crawford <e2crawfo@uwaterloo.ca>
 - Sean Aubin <seanaubin@gmail.com>

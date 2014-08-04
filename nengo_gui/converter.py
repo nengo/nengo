@@ -116,10 +116,10 @@ class Converter(object):
         for i, conn in enumerate(network.connections):
             id = self.namefinder.name(conn)
             pre = conn.pre
-            if isinstance(pre, nengo.objects.Neurons):
+            if isinstance(pre, nengo.ensemble.Neurons):
                 pre = pre.ensemble
             post = conn.post
-            if isinstance(post, nengo.objects.Neurons):
+            if isinstance(post, nengo.ensemble.Neurons):
                 post = post.ensemble
             # TODO: have a visual indication of direct connections
             if self.object_index[pre] == self.object_index[post]:
