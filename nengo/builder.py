@@ -1274,7 +1274,7 @@ def build_connection(conn, model, config):  # noqa: C901
                 fn=lambda x: conn.function(x[conn.pre_slice]),
                 t_in=False,
                 n_in=model.sig[conn]['in'].size,
-                n_out=conn.size_out,
+                n_out=conn.size_mid,
                 label=conn.label,
                 model=model)
             model.add_op(DotInc(model.sig[conn]['in'],

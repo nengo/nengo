@@ -240,6 +240,38 @@ def test_neurons_to_neurons(Simulator, nl_nodirect):
     assert np.allclose(sim.data[b_p][-10:], 0, atol=.1, rtol=.01)
 
 
+def test_function_and_transform(Simulator, nl):
+    """Test using both a function and a transform"""
+
+    model = nengo.Network(seed=742)
+    with model:
+        u = nengo.Node(output=lambda t: np.sin(6 * t))
+        a = nengo.Ensemble(100, 1, neuron_type=nl())
+        b = nengo.Ensemble(200, 2, neuron_type=nl(), radius=1.5)
+        nengo.Connection(u, a)
+        nengo.Connection(a, b, function=np.square, transform=[[1.0], [-1.0]])
+        ap = nengo.Probe(a, synapse=0.03)
+        bp = nengo.Probe(b, synapse=0.03)
+
+    sim = nengo.Simulator(model)
+    sim.run(1.0)
+    x0, x1 = np.dot(sim.data[ap]**2, [[1., -1]]).T
+    y0, y1 = sim.data[bp].T
+
+    with Plotter(Simulator, nl) as plt:
+        t = sim.trange()
+        plt.plot(t, x0, 'b:', label='a**2')
+        plt.plot(t, x1, 'g:', label='-a**2')
+        plt.plot(t, y0, 'b', label='b[0]')
+        plt.plot(t, y1, 'g', label='b[1]')
+        plt.legend(loc=0, prop={'size': 10})
+        plt.savefig('test_connection.test_function_and_transform.pdf')
+        plt.close()
+
+    assert np.allclose(x0, y0, atol=.1, rtol=.01)
+    assert np.allclose(x1, y1, atol=.1, rtol=.01)
+
+
 def test_weights(Simulator, nl):
     name = 'test_weights'
     n1, n2 = 100, 50
