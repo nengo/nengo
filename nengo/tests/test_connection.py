@@ -391,31 +391,62 @@ def test_dimensionality_errors(nl_nodirect):
             nengo.Connection(e2[0], e2, transform=[[1, 2]])
 
 
-def test_slicing(Simulator, nl_nodirect):
-    name = 'connection_slicing'
-    N = 30
+def test_slicing(Simulator, nl):
+    N = 300
 
-    with nengo.Network(label=name) as m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
-        ens3 = nengo.Ensemble(N, dimensions=3)
+    x = np.array([-1, -0.25, 1])
 
-        # Both slices with 2x3 transform -> 3x3 transform... IN REVERSE!
-        c1 = nengo.Connection(ens3[::-1], ens3[[2, 0]],
-                              transform=[[1, 2, 3], [4, 5, 6]])
-        assert np.all(c1.transform == np.array([[1, 2, 3], [4, 5, 6]]))
+    s1a = slice(1, None, -1)
+    s1b = [2, 0]
+    T1 = [[-1, 0.5], [2, 0.25]]
+    y1 = np.zeros(3)
+    y1[s1b] = np.dot(T1, x[s1a])
 
-        # using vector and lists
-        c2 = nengo.Connection(ens3[[1, 0, 2]], ens3[[2, 0, 1]],
-                              transform=[1, 2, 3])
-        assert np.all(c2.transform == np.array([1, 2, 3]))
+    s2a = [0, 2]
+    s2b = slice(0, 2)
+    T2 = [[-0.5, 0.25], [0.5, 0.75]]
+    y2 = np.zeros(3)
+    y2[s2b] = np.dot(T2, x[s2a])
+
+    s3a = [2, 0]
+    s3b = [0, 2]
+    T3 = [0.5, 0.75]
+    y3 = np.zeros(3)
+    y3[s3b] = np.dot(np.diag(T3), x[s3a])
+
+    sas = [s1a, s2a, s3a]
+    sbs = [s1b, s2b, s3b]
+    Ts = [T1, T2, T3]
+    ys = [y1, y2, y3]
+
+    with nengo.Network(seed=932) as m:
+        m.config[nengo.Ensemble].neuron_type = nl()
+
+        u = nengo.Node(output=x)
+        a = nengo.Ensemble(N, dimensions=3, radius=1.7)
+        nengo.Connection(u, a)
+
+        probes = []
+        for sa, sb, T in zip(sas, sbs, Ts):
+            b = nengo.Ensemble(N, dimensions=3, radius=1.7)
+            nengo.Connection(a[sa], b[sb], transform=T)
+            probes.append(nengo.Probe(b, synapse=0.03))
 
     sim = nengo.Simulator(m)
-    assert np.all(sim.data[c1].transform == np.array([[6, 5, 4],
-                                                      [0, 0, 0],
-                                                      [3, 2, 1]]))
-    assert np.all(sim.data[c2].transform == np.array([[2, 0, 0],
-                                                      [0, 0, 3],
-                                                      [0, 1, 0]]))
+    sim.run(0.2)
+    t = sim.trange()
+
+    with Plotter(Simulator, nl) as plt:
+        for i, [y, p] in enumerate(zip(ys, probes)):
+            plt.subplot(len(ys), 1, i)
+            plt.plot(t, np.tile(y, (len(t), 1)), '--')
+            plt.plot(t, sim.data[p])
+        plt.savefig('test_connection.test_slicing.pdf')
+        plt.close()
+
+    atol = 0.01 if nl is nengo.Direct else 0.1
+    for i, [y, p] in enumerate(zip(ys, probes)):
+        assert np.allclose(y, sim.data[p][-20:], atol=atol), "Failed %d" % i
 
 
 def test_shortfilter(Simulator, nl):

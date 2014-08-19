@@ -605,6 +605,40 @@ def reshape_dot(A, X, Y, tag=None):
     return (np.dot(A, X)).size == Y.size == 1
 
 
+class ElementwiseInc(Operator):
+    """Increment signal Y by A * X"""
+
+    def __init__(self, A, X, Y, tag=None):
+        self.A = A
+        self.X = X
+        self.Y = Y
+        self.tag = tag
+
+        self.reads = [self.A, self.X]
+        self.incs = [self.Y]
+        self.sets = []
+        self.updates = []
+
+    def __str__(self):
+        return 'ElementwiseInc(%s, %s -> %s "%s")' % (
+            str(self.A), str(self.X), str(self.Y), self.tag)
+
+    def make_step(self, signals, dt):
+        X = signals[self.X]
+        A = signals[self.A]
+        Y = signals[self.Y]
+        if X.shape != Y.shape:
+            raise ValueError("Shape mismatch in %s: %s != %s"
+                             % (self.tag, X.shape, Y.shape))
+        if A.size > 1 and A.shape != X.shape:
+            raise ValueError("Shape mismatch in %s: %s != %s"
+                             % (self.tag, A.shape, X.shape))
+
+        def step():
+            Y[...] += A * X
+        return step
+
+
 class DotInc(Operator):
     """Increment signal Y by dot(A, X)"""
 
@@ -1252,9 +1286,7 @@ def build_linear_system(conn, model):
             "ranges of any neurons." % (conn, conn.pre_obj))
 
     if conn.function is None:
-        # TODO: slice eval_points here rather than later, as it could
-        # significantly reduce computation
-        targets = eval_points
+        targets = eval_points[:, conn.pre_slice]
     else:
         targets = np.zeros((len(eval_points), conn.size_mid))
         for i, ep in enumerate(eval_points[:, conn.pre_slice]):
@@ -1292,18 +1324,20 @@ def build_connection(conn, model, config):  # noqa: C901
     decoders = None
     eval_points = None
     solver_info = None
-    transform = full_transform(conn)
+    transform = full_transform(conn, slice_pre=False)
 
     # Figure out the signal going across this connection
     if (isinstance(conn.pre_obj, Node) or
             (isinstance(conn.pre_obj, Ensemble) and
              isinstance(conn.pre_obj.neuron_type, Direct))):
         # Node or Decoded connection in directmode
-        if conn.function is None:
-            signal = model.sig[conn]['in']
+        if (conn.function is None and isinstance(conn.pre_slice, slice) and
+                (conn.pre_slice.step is None or conn.pre_slice.step == 1)):
+            signal = model.sig[conn]['in'][conn.pre_slice]
         else:
             sig_in, signal = build_pyfunc(
-                fn=lambda x: conn.function(x[conn.pre_slice]),
+                fn=(lambda x: x[conn.pre_slice]) if conn.function is None else
+                   (lambda x: conn.function(x[conn.pre_slice])),
                 t_in=False,
                 n_in=model.sig[conn]['in'].size,
                 n_out=conn.size_mid,
@@ -1363,16 +1397,32 @@ def build_connection(conn, model, config):  # noqa: C901
             # Since it hasn't been built, it wasn't added to the Network,
             # which is most likely because the Neurons weren't associated
             # with an Ensemble.
-            raise RuntimeError("%s refers to %s, whose Ensemble is not part of"
-                               " the model." % (conn, conn.post_obj))
-        transform *= model.params[conn.post_obj.ensemble].gain[:, np.newaxis]
+            raise RuntimeError("Connection '%s' refers to Neurons '%s' "
+                               "that are not a part of any Ensemble." % (
+                                   conn, conn.post_obj))
+
+        if conn.post_slice != slice(None):
+            raise NotImplementedError(
+                "Post-slices on connections to neurons are not implemented")
+
+        gain = model.params[conn.post_obj.ensemble].gain[conn.post_slice]
+        if transform.ndim < 2:
+            transform = transform * gain
+        else:
+            transform *= gain[:, np.newaxis]
 
     model.sig[conn]['transform'] = Signal(transform,
                                           name="%s.transform" % conn)
-    model.add_op(DotInc(model.sig[conn]['transform'],
-                        signal,
-                        model.sig[conn]['out'],
-                        tag=str(conn)))
+    if transform.ndim < 2:
+        model.add_op(ElementwiseInc(model.sig[conn]['transform'],
+                                    signal,
+                                    model.sig[conn]['out'],
+                                    tag=str(conn)))
+    else:
+        model.add_op(DotInc(model.sig[conn]['transform'],
+                            signal,
+                            model.sig[conn]['out'],
+                            tag=str(conn)))
 
     if conn.learning_rule:
         # Forcing update of signal that is modified by learning rules.

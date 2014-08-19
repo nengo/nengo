@@ -10,24 +10,25 @@ import numpy as np
 import nengo
 
 
-def full_transform(conn, allow_scalars=True):
+def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
     """Compute the full transform for a connection.
 
     Parameters
     ----------
     conn : Connection
         The connection for which to compute the full transform.
-    allow_scalars : boolean, optional
+    slice_pre : boolean, optional (True)
+        Whether to compute the pre slice as part of the transform.
+    slice_post : boolean, optional (True)
+        Whether to compute the post slice as part of the transform.
+    allow_scalars : boolean, optional (True)
         If true (default), will not make scalars into full transforms when
         not using slicing, since these work fine in the reference builder.
         If false, these scalars will be turned into scaled identity matrices.
     """
     transform = conn.transform
-
-    # If a function is given then the preslice applies to the function input,
-    # not to the transform.
-    pre_slice = conn.pre_slice if conn.function is None else slice(None)
-    post_slice = conn.post_slice
+    pre_slice = conn.pre_slice if slice_pre else slice(None)
+    post_slice = conn.post_slice if slice_post else slice(None)
 
     if pre_slice == slice(None) and post_slice == slice(None):
         if transform.ndim == 2:
@@ -37,17 +38,15 @@ def full_transform(conn, allow_scalars=True):
             return np.array(transform)
 
     # Create the new transform matching the pre/post dimensions
-    full_size_in = (
-        conn.pre_obj.size_out if conn.function is None else conn.size_mid)
-    full_size_out = conn.post_obj.size_in
-    new_transform = np.zeros((full_size_out, full_size_in))
+    func_size = conn.function_info.size
+    size_in = (conn.pre_obj.size_out if func_size is None
+               else func_size) if slice_pre else conn.size_mid
+    size_out = conn.post_obj.size_in if slice_post else conn.size_out
+    new_transform = np.zeros((size_out, size_in))
 
     if transform.ndim < 2:
-        slice_to_list = lambda s, d: (
-            np.arange(d)[s] if isinstance(s, slice) else s)
-        pre_list = slice_to_list(pre_slice, full_size_in)
-        post_list = slice_to_list(post_slice, full_size_out)
-        new_transform[post_list, pre_list] = transform
+        new_transform[np.arange(size_out)[post_slice],
+                      np.arange(size_in)[pre_slice]] = transform
         return new_transform
     elif transform.ndim == 2:
         repeated_inds = lambda x: (
@@ -56,6 +55,7 @@ def full_transform(conn, allow_scalars=True):
             raise ValueError("Input object selection has repeated indices")
         if repeated_inds(post_slice):
             raise ValueError("Output object selection has repeated indices")
+
         rows_transform = np.array(new_transform[post_slice])
         rows_transform[:, pre_slice] = transform
         new_transform[post_slice] = rows_transform
@@ -155,6 +155,7 @@ def _create_replacement_connection(c_in, c_out):
 
     # compute the combined transform
     transform = np.dot(full_transform(c_out), full_transform(c_in))
+
     # check if the transform is 0 (this happens a lot
     #  with things like identity transforms)
     if np.all(transform == 0):
