@@ -167,3 +167,7 @@ class Neurons(object):
     @property
     def size_out(self):
         return self.ensemble.n_neurons
+
+    @property
+    def probeable(self):
+        return ['output', 'input'] + self.ensemble.neuron_type.probeable

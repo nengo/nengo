@@ -114,7 +114,7 @@ def test_defaults(Simulator):
         ens_p = nengo.Probe(ens)
         assert ens_p.attr == 'decoded_output'
         conn_p = nengo.Probe(conn)
-        assert conn_p.attr == 'signal'
+        assert conn_p.attr == 'output'
     # Let's just make sure it runs too...
     sim = Simulator(model)
     sim.run(0.01)
@@ -158,12 +158,32 @@ def test_input_probe(Simulator):
         n2 = nengo.Node(output=0.5)
         nengo.Connection(n1, ens, synapse=None)
         nengo.Connection(n2, ens, synapse=None)
-        input_probe = nengo.Probe(ens, 'input', synapse=None)
+        input_probe = nengo.Probe(ens, 'input')
 
         sim = nengo.Simulator(model)
         sim.run(1.)
         t = sim.trange()
         assert np.allclose(sim.data[input_probe][1:, 0], (np.sin(t) + 0.5)[1:])
+
+
+def test_slice(Simulator, nl):
+    with nengo.Network() as model:
+        a = nengo.Node(output=lambda t: [np.cos(t), np.sin(t)])
+        b = nengo.Ensemble(100, 2)
+        nengo.Connection(a, b)
+
+        bp = nengo.Probe(b, synapse=0.03)
+        bp0a = nengo.Probe(b[0], synapse=0.03)
+        bp0b = nengo.Probe(b[:1], synapse=0.03)
+        bp1a = nengo.Probe(b[1], synapse=0.03)
+        bp1b = nengo.Probe(b[1:], synapse=0.03)
+
+    sim = nengo.Simulator(model)
+    sim.run(1.0)
+    assert np.allclose(sim.data[bp][:, 0], sim.data[bp0a][:, 0])
+    assert np.allclose(sim.data[bp][:, 0], sim.data[bp0b][:, 0])
+    assert np.allclose(sim.data[bp][:, 1], sim.data[bp1a][:, 0])
+    assert np.allclose(sim.data[bp][:, 1], sim.data[bp1b][:, 0])
 
 
 if __name__ == "__main__":

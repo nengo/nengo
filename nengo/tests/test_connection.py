@@ -185,8 +185,8 @@ def test_neurons_to_node(Simulator, nl_nodirect):
         out = nengo.Node(lambda t, x: x, size_in=N)
         nengo.Connection(a.neurons, out, synapse=None)
 
-        a_spikes = nengo.Probe(a, 'spikes')
-        out_p = nengo.Probe(out, 'output')
+        a_spikes = nengo.Probe(a.neurons)
+        out_p = nengo.Probe(out)
 
     sim = Simulator(m)
     sim.run(0.6)
@@ -484,7 +484,7 @@ def test_zerofilter(Simulator):
         # Ensure that spikes are not filtered
         b = nengo.Ensemble(3, dimensions=1, intercepts=[-.9, -.8, -.7],
                            neuron_type=nengo.LIF())
-        bp = nengo.Probe(b, "neuron_output", synapse=0)
+        bp = nengo.Probe(b.neurons)
 
     sim = Simulator(m)
     sim.run(1.)
@@ -505,7 +505,7 @@ def test_function_output_size(Simulator, nl_nodirect):
         b = nengo.Ensemble(n_neurons=100, dimensions=1)
         nengo.Connection(u, a)
         nengo.Connection(a, b, function=bad_function)
-        up = nengo.Probe(u, synapse=None)
+        up = nengo.Probe(u)
         bp = nengo.Probe(b, synapse=0.03)
 
     sim = Simulator(model)

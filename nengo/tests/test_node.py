@@ -324,8 +324,8 @@ def test_delay(Simulator):
         b = nengo.Node(output=lambda t, x: -x, size_in=1)
         nengo.Connection(a[[0]], b, synapse=None)
 
-        ap = nengo.Probe(a, synapse=None)
-        bp = nengo.Probe(b, synapse=None)
+        ap = nengo.Probe(a)
+        bp = nengo.Probe(b)
 
     sim = Simulator(model)
     sim.run(0.005)

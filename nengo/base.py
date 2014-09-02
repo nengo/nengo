@@ -103,13 +103,16 @@ class ObjView(object):
 
         # Node.size_in != size_out, so one of these can be invalid
         try:
-            self.size_in = np.arange(obj.size_in)[self.slice].size
+            self.size_in = np.arange(self.obj.size_in)[self.slice].size
         except IndexError:
             self.size_in = None
         try:
-            self.size_out = np.arange(obj.size_out)[self.slice].size
+            self.size_out = np.arange(self.obj.size_out)[self.slice].size
         except IndexError:
             self.size_out = None
+        if self.size_in is None and self.size_out is None:
+            raise IndexError("Invalid slice '%s' of %s"
+                             % (self.slice, self.obj))
 
     def __len__(self):
         return self.size_out

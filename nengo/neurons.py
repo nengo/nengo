@@ -39,8 +39,6 @@ class Direct(NeuronType):
 class _LIFBase(NeuronType):
     """Abstract base class for LIF neuron types."""
 
-    probeable = ['neuron_output', 'spikes']
-
     def __init__(self, tau_rc=0.02, tau_ref=0.002):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
@@ -101,6 +99,8 @@ class _LIFBase(NeuronType):
 class LIFRate(_LIFBase):
     """Rate version of the leaky integrate-and-fire (LIF) neuron model."""
 
+    probeable = ['rates']
+
     def step_math(self, dt, J, output):
         """Compute rates for input current (incl. bias)"""
 
@@ -115,7 +115,7 @@ class LIFRate(_LIFBase):
 class LIF(_LIFBase):
     """Spiking version of the leaky integrate-and-fire (LIF) neuron model."""
 
-    probeable = ['neuron_output', 'spikes', 'voltage']
+    probeable = ['spikes', 'voltage', 'refractory_time']
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
 
@@ -146,6 +146,8 @@ class LIF(_LIFBase):
 class AdaptiveLIFRate(LIFRate):
     """Adaptive rate version of the LIF neuron model."""
 
+    probeable = ['rates', 'adaptation']
+
     def __init__(self, tau_n=1, inc_n=10e-3, **lif_args):
         super(AdaptiveLIFRate, self).__init__(**lif_args)
         self.tau_n = tau_n
@@ -160,6 +162,8 @@ class AdaptiveLIFRate(LIFRate):
 
 class AdaptiveLIF(LIF):
     """Adaptive spiking version of the LIF neuron model."""
+
+    probeable = ['spikes', 'adaptation', 'voltage', 'refractory_time']
 
     def __init__(self, tau_n=1, inc_n=10e-3, **lif_args):
         super(AdaptiveLIF, self).__init__(**lif_args)
