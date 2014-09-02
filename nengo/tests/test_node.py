@@ -31,8 +31,7 @@ def test_simple(Simulator):
     sim_in = sim.data[p].ravel()
     t = 0.001 * np.arange(len(sim_t))
     assert np.allclose(sim_t, t)
-    # 1-step delay
-    assert np.allclose(sim_in[1:], np.sin(t[:-1]))
+    assert np.allclose(sim_in, np.sin(t))
 
 
 def test_connected(Simulator):
@@ -66,9 +65,8 @@ def test_connected(Simulator):
     t = 0.001 * np.arange(len(sim_t))
 
     assert np.allclose(sim_t, t)
-    # 1-step delay
-    assert np.allclose(sim_sin[1:], np.sin(t[:-1]))
-    assert np.allclose(sim_sq[1:], sim_sin[:-1] ** 2)
+    assert np.allclose(sim_sin, np.sin(t))
+    assert np.allclose(sim_sq, sim_sin**2)
 
 
 def test_passthrough(Simulator):
@@ -98,9 +96,8 @@ def test_passthrough(Simulator):
         plt.savefig('test_node.test_passthrough.pdf')
         plt.close()
 
-    # One-step delay between first and second nonlinearity
-    sim_in = sim.data[in1_p][:-1] + sim.data[in2_p][:-1]
-    sim_out = sim.data[out_p][1:]
+    sim_in = sim.data[in1_p] + sim.data[in2_p]
+    sim_out = sim.data[out_p]
     assert np.allclose(sim_in, sim_out)
 
 
@@ -135,9 +132,7 @@ def test_passthrough_filter(Simulator):
         plt.savefig("test_node.test_passthrough_filter.pdf")
         plt.close()
 
-    # TODO: we have a two-step delay here since the passthrough node is not
-    #   actually optimized out. We should look into doing this.
-    assert np.allclose(y[:-2], z[2:])
+    assert np.allclose(y[:-1], z[1:])
 
 
 def test_circular(Simulator):
@@ -145,8 +140,8 @@ def test_circular(Simulator):
     with m:
         a = nengo.Node(output=lambda t, x: x+1, size_in=1)
         b = nengo.Node(output=lambda t, x: x+1, size_in=1)
-        nengo.Connection(a, b, synapse=None)
-        nengo.Connection(b, a, synapse=None)
+        nengo.Connection(a, b, synapse=0)
+        nengo.Connection(b, a, synapse=0)
 
         a_p = nengo.Probe(a, 'output')
         b_p = nengo.Probe(b, 'output')
@@ -321,6 +316,26 @@ def test_set_output(Simulator, recwarn):
         assert noreturn_func.size_out == 0
 
     Simulator(model)  # Ensure it all builds
+
+
+def test_delay(Simulator):
+    with nengo.Network() as model:
+        a = nengo.Node(output=np.sin)
+        b = nengo.Node(output=lambda t, x: -x, size_in=1)
+        nengo.Connection(a[[0]], b, synapse=None)
+
+        ap = nengo.Probe(a, synapse=None)
+        bp = nengo.Probe(b, synapse=None)
+
+    sim = Simulator(model)
+    sim.run(0.005)
+
+    with Plotter(Simulator) as plt:
+        plt.plot(sim.trange(), sim.data[ap])
+        plt.plot(sim.trange(), -sim.data[bp])
+        plt.savefig("test_node.test_delay.pdf")
+        plt.close()
+
 
 if __name__ == "__main__":
     nengo.log(debug=True)

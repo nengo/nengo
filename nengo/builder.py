@@ -684,8 +684,8 @@ class SimPyFunc(Operator):
         self.x = x
 
         self.reads = [] if x is None else [x]
-        self.updates = [] if output is None else [output]
-        self.sets = []
+        self.updates = []
+        self.sets = [] if output is None else [output]
         self.incs = []
 
     def __str__(self):
@@ -719,8 +719,8 @@ class SimNeurons(Operator):
         self.states = states
 
         self.reads = [J]
-        self.updates = [output] + states
-        self.sets = []
+        self.updates = []
+        self.sets = [output] + states
         self.incs = []
 
     def make_step(self, signals, dt):
@@ -1339,11 +1339,11 @@ def build_connection(conn, model, config):  # noqa: C901
         model.sig[conn]['decoders'] = Signal(
             decoders, name="%s.decoders" % conn)
         signal = Signal(np.zeros(signal_size), name=str(conn))
-        model.add_op(ProdUpdate(model.sig[conn]['decoders'],
-                                model.sig[conn]['in'],
-                                model.sig['common'][0],
-                                signal,
-                                tag="%s decoding" % conn))
+        model.add_op(Reset(signal))
+        model.add_op(DotInc(model.sig[conn]['decoders'],
+                            model.sig[conn]['in'],
+                            signal,
+                            tag="%s decoding" % conn))
     else:
         # Direct connection
         signal = model.sig[conn]['in']

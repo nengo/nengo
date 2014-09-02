@@ -99,96 +99,11 @@ def test_simple_pyfunc(RefSimulator):
     ]
 
     sim = RefSimulator(None, model=m)
-    sim.step()
     for i in range(5):
         sim.step()
-        t = (i + 2) * dt
+        t = (i + 1) * dt
         assert np.allclose(sim.signals[time], t)
-        assert np.allclose(sim.signals[sig], np.sin(t - dt*2))
-
-
-def test_encoder_decoder_pathway(RefSimulator):
-    """Verifies (like by hand) that the simulator does the right
-    things in the right order."""
-    foo = Signal([1.0], name="foo")
-    decoders = np.asarray([.2, .1])
-    decs = Signal(decoders * 0.5)
-    m = Model(dt=0.001)
-    sig_in, sig_out = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
-    m.operators += [
-        DotInc(Signal([[1.0], [2.0]]), foo, sig_in),
-        ProdUpdate(decs, sig_out, Signal(0.2), foo)
-    ]
-
-    def check(sig, target):
-        assert np.allclose(sim.signals[sig], target)
-
-    sim = RefSimulator(None, model=m)
-
-    check(foo, 1.0)
-    check(sig_in, 0)
-    check(sig_out, 0)
-
-    sim.step()
-    # DotInc to pop.input_signal (input=[1.0,2.0])
-    # produpdate updates foo (foo=[0.2])
-    # pop updates pop.output_signal (output=[2,3])
-
-    check(sig_in, [1, 2])
-    check(sig_out, [2, 3])
-    check(foo, .2)
-    check(decs, [.1, .05])
-
-    sim.step()
-    # DotInc to pop.input_signal (input=[0.2,0.4])
-    #  (note that pop resets its own input signal each timestep)
-    # produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
-    # pop updates pop.output_signal (output=[1.2,1.4])
-
-    check(decs, [.1, .05])
-    check(sig_in, [0.2, 0.4])
-    check(sig_out, [1.2, 1.4])
-    # -- foo is computed as a prodUpdate of the *previous* output signal
-    #    foo <- .2 * foo + dot(decoders * .5, output_signal)
-    #           .2 * .2  + dot([.2, .1] * .5, [2, 3])
-    #           .04      + (.2 + .15)
-    #        <- .39
-    check(foo, .39)
-
-
-def test_encoder_decoder_with_views(RefSimulator):
-    foo = Signal([1.0], name="foo")
-    decoders = np.asarray([.2, .1])
-    m = Model(dt=0.001)
-    sig_in, sig_out = build_pyfunc(lambda t, x: x + 1, True, 2, 2, None, m)
-    m.operators += [
-        DotInc(Signal([[1.0], [2.0]]), foo[:], sig_in),
-        ProdUpdate(Signal(decoders * 0.5), sig_out, Signal(0.2), foo[:])
-    ]
-
-    def check(sig, target):
-        assert np.allclose(sim.signals[sig], target)
-
-    sim = RefSimulator(None, model=m)
-
-    sim.step()
-    # DotInc to pop.input_signal (input=[1.0,2.0])
-    # produpdate updates foo (foo=[0.2])
-    # pop updates pop.output_signal (output=[2,3])
-
-    check(foo, .2)
-    check(sig_in, [1, 2])
-    check(sig_out, [2, 3])
-
-    sim.step()
-    # DotInc to pop.input_signal (input=[0.2,0.4])
-    #  (note that pop resets its own input signal each timestep)
-    # produpdate updates foo (foo=[0.39]) 0.2*0.5*2+0.1*0.5*3 + 0.2*0.2
-    # pop updates pop.output_signal (output=[1.2,1.4])
-
-    check(foo, .39)
-    check(sig_in, [0.2, 0.4])
-    check(sig_out, [1.2, 1.4])
+        assert np.allclose(sim.signals[sig], np.sin(t - dt))
 
 
 def test_probedict():

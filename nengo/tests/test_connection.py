@@ -203,7 +203,7 @@ def test_neurons_to_node(Simulator, nl_nodirect):
         plt.savefig('test_connection.test_' + name + '.pdf')
         plt.close()
 
-    assert np.allclose(sim.data[a_spikes][:-1], sim.data[out_p][1:])
+    assert np.allclose(sim.data[a_spikes], sim.data[out_p])
 
 
 def test_neurons_to_neurons(Simulator, nl_nodirect):

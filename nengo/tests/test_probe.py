@@ -162,8 +162,9 @@ def test_input_probe(Simulator):
 
         sim = nengo.Simulator(model)
         sim.run(1.)
-        t = sim.trange() - 0.001
+        t = sim.trange()
         assert np.allclose(sim.data[input_probe][1:, 0], (np.sin(t) + 0.5)[1:])
+
 
 if __name__ == "__main__":
     nengo.log(debug=True)
