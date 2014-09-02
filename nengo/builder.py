@@ -1064,19 +1064,19 @@ def build_ensemble(ens, model, config):  # noqa: C901
         gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
 
     if isinstance(ens.neuron_type, Direct):
-        model.sig[ens]['neuron_in'] = Signal(
+        model.sig[ens.neurons]['in'] = Signal(
             np.zeros(ens.dimensions), name='%s.neuron_in' % ens)
-        model.sig[ens]['neuron_out'] = model.sig[ens]['neuron_in']
-        model.add_op(Reset(model.sig[ens]['neuron_in']))
+        model.sig[ens.neurons]['out'] = model.sig[ens.neurons]['in']
+        model.add_op(Reset(model.sig[ens.neurons]['in']))
     else:
-        model.sig[ens]['neuron_in'] = Signal(
+        model.sig[ens.neurons]['in'] = Signal(
             np.zeros(ens.n_neurons), name="%s.neuron_in" % ens)
-        model.sig[ens]['neuron_out'] = Signal(
+        model.sig[ens.neurons]['out'] = Signal(
             np.zeros(ens.n_neurons), name="%s.neuron_out" % ens)
         model.add_op(Copy(src=Signal(bias, name="%s.bias" % ens),
-                          dst=model.sig[ens]['neuron_in']))
+                          dst=model.sig[ens.neurons]['in']))
         # This adds the neuron's operator and sets other signals
-        Builder.build(ens.neuron_type, ens, model=model, config=config)
+        Builder.build(ens.neuron_type, ens.neurons, model=model, config=config)
 
     # Scale the encoders
     if isinstance(ens.neuron_type, Direct):
@@ -1091,11 +1091,11 @@ def build_ensemble(ens, model, config):  # noqa: C901
     model.add_op(DotInc(
         model.sig[ens]['encoders'],
         model.sig[ens]['in'],
-        model.sig[ens]['neuron_in'],
+        model.sig[ens.neurons]['in'],
         tag="%s encoding" % ens))
 
     # Output is neural output
-    model.sig[ens]['out'] = model.sig[ens]['neuron_out']
+    model.sig[ens]['out'] = model.sig[ens.neurons]['out']
 
     model.params[ens] = BuiltEnsemble(eval_points=eval_points,
                                       encoders=encoders,
@@ -1108,52 +1108,53 @@ def build_ensemble(ens, model, config):  # noqa: C901
 Builder.register_builder(build_ensemble, Ensemble)
 
 
-def build_lifrate(lif, ens, model, config):
-    model.add_op(SimNeurons(neurons=lif,
-                            J=model.sig[ens]['neuron_in'],
-                            output=model.sig[ens]['neuron_out']))
+def build_lifrate(lifrate, neurons, model, config):
+    model.add_op(SimNeurons(neurons=lifrate,
+                            J=model.sig[neurons]['in'],
+                            output=model.sig[neurons]['out']))
 
 Builder.register_builder(build_lifrate, LIFRate)
 
 
-def build_lif(lif, ens, model, config):
-    model.sig[ens]['voltage'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.voltage" % ens)
-    model.sig[ens]['refractory_time'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.refractory_time" % ens)
+def build_lif(lif, neurons, model, config):
+    model.sig[neurons]['voltage'] = Signal(
+        np.zeros(neurons.size_in), name="%s.voltage" % neurons)
+    model.sig[neurons]['refractory_time'] = Signal(
+        np.zeros(neurons.size_in), name="%s.refractory_time" % neurons)
     model.add_op(SimNeurons(
         neurons=lif,
-        J=model.sig[ens]['neuron_in'],
-        output=model.sig[ens]['neuron_out'],
-        states=[model.sig[ens]['voltage'], model.sig[ens]['refractory_time']]))
+        J=model.sig[neurons]['in'],
+        output=model.sig[neurons]['out'],
+        states=[model.sig[neurons]['voltage'],
+                model.sig[neurons]['refractory_time']]))
 
 Builder.register_builder(build_lif, LIF)
 
 
-def build_alifrate(alif, ens, model, config):
-    model.sig[ens]['adaptation'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.adaptation" % ens)
-    model.add_op(SimNeurons(neurons=alif,
-                            J=model.sig[ens]['neuron_in'],
-                            output=model.sig[ens]['neuron_out'],
-                            states=[model.sig[ens]['adaptation']]))
+def build_alifrate(alifrate, neurons, model, config):
+    model.sig[neurons]['adaptation'] = Signal(
+        np.zeros(neurons.size_in), name="%s.adaptation" % neurons)
+    model.add_op(SimNeurons(neurons=alifrate,
+                            J=model.sig[neurons]['in'],
+                            output=model.sig[neurons]['out'],
+                            states=[model.sig[neurons]['adaptation']]))
 
 Builder.register_builder(build_alifrate, AdaptiveLIFRate)
 
 
-def build_alif(alif, ens, model, config):
-    model.sig[ens]['voltage'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.voltage" % ens)
-    model.sig[ens]['refractory_time'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.refractory_time" % ens)
-    model.sig[ens]['adaptation'] = Signal(
-        np.zeros(ens.n_neurons), name="%s.adaptation" % ens)
+def build_alif(alif, neurons, model, config):
+    model.sig[neurons]['voltage'] = Signal(
+        np.zeros(neurons.size_in), name="%s.voltage" % neurons)
+    model.sig[neurons]['refractory_time'] = Signal(
+        np.zeros(neurons.size_in), name="%s.refractory_time" % neurons)
+    model.sig[neurons]['adaptation'] = Signal(
+        np.zeros(neurons.size_in), name="%s.adaptation" % neurons)
     model.add_op(SimNeurons(neurons=alif,
-                            J=model.sig[ens]['neuron_in'],
-                            output=model.sig[ens]['neuron_out'],
-                            states=[model.sig[ens]['voltage'],
-                                    model.sig[ens]['refractory_time'],
-                                    model.sig[ens]['adaptation']]))
+                            J=model.sig[neurons]['in'],
+                            output=model.sig[neurons]['out'],
+                            states=[model.sig[neurons]['voltage'],
+                                    model.sig[neurons]['refractory_time'],
+                                    model.sig[neurons]['adaptation']]))
 
 Builder.register_builder(build_alif, AdaptiveLIF)
 
@@ -1192,14 +1193,20 @@ def build_node(node, model, config):
 Builder.register_builder(build_node, Node)
 
 
-def conn_probe(pre, probe, **conn_args):
+def conn_probe(probe, conn_args, model, config):
     # TODO: make this connection in the network config context
-    return Connection(pre, probe, **conn_args)
+    return Connection(probe.target, probe, **conn_args)
 
 
-def synapse_probe(sig, probe, model, config):
+def synapse_probe(key, probe, model, config):
     # We can use probe.conn_args here because we don't modify synapse
     synapse = probe.conn_args.get('synapse', None)
+
+    sig = model.sig[probe.obj][key]
+    if isinstance(probe.slice, slice):
+        sig = sig[probe.slice]
+    else:
+        raise NotImplementedError("Indexing slices not implemented")
 
     if synapse is None:
         model.sig[probe]['in'] = sig
@@ -1207,28 +1214,17 @@ def synapse_probe(sig, probe, model, config):
         model.sig[probe]['in'] = filtered_signal(
             probe, sig, synapse, model=model, config=config)
 
-
-def probe_ensemble(probe, conn_args, model, config):
-    ens = probe.target
-    if probe.attr == 'decoded_output':
-        return conn_probe(ens, probe, **conn_args)
-    elif probe.attr in ('neuron_output', 'spikes'):
-        return conn_probe(ens.neurons, probe, transform=1.0, **conn_args)
-    elif probe.attr == 'voltage':
-        return synapse_probe(model.sig[ens]['voltage'], probe, model, config)
-    elif probe.attr == 'input':
-        return synapse_probe(model.sig[ens]['in'], probe, model, config)
-
-
-def probe_node(probe, conn_args, model, config):
-    if probe.attr == 'output':
-        return conn_probe(probe.target, probe,  **conn_args)
-
-
-def probe_connection(probe, conn_args, model, config):
-    if probe.attr == 'signal':
-        sig_out = model.sig[probe.target]['out']
-        return synapse_probe(sig_out, probe, model, config)
+probemap = {
+    Ensemble: {'decoded_output': None,
+               'input': 'in'},
+    Neurons: {'output': None,
+              'spikes': None,
+              'rates': None,
+              'input': 'in'},
+    Node: {'output': None},
+    Connection: {'output': 'out',
+                 'input': 'in'},
+}
 
 
 def build_probe(probe, model, config):
@@ -1237,12 +1233,18 @@ def build_probe(probe, model, config):
     # If we make a connection, we won't add it to a network
     conn_args['add_to_container'] = False
 
-    if isinstance(probe.target, Ensemble):
-        conn = probe_ensemble(probe, conn_args, model, config)
-    elif isinstance(probe.target, Node):
-        conn = probe_node(probe, conn_args, model, config)
-    elif isinstance(probe.target, Connection):
-        conn = probe_connection(probe, conn_args, model, config)
+    for nengotype, probeables in probemap.items():
+        if isinstance(probe.obj, nengotype):
+            break
+    else:
+        raise ValueError("Type '%s' is not probeable" % type(probe.obj))
+
+    key = probeables[probe.attr] if probe.attr in probeables else probe.attr
+    if key is None:
+        conn = conn_probe(probe, conn_args, model, config)
+    else:
+        synapse_probe(key, probe, model, config)
+        conn = None
 
     # Most probes are implemented as connections
     if conn is not None:
@@ -1301,11 +1303,8 @@ def build_connection(conn, model, config):  # noqa: C901
 
     # Get input and output connections from pre and post
     def get_prepost_signal(is_pre):
-        obj = conn.pre_obj if is_pre else conn.post_obj
-        if isinstance(obj, Neurons):
-            target, key = obj.ensemble, "neuron_out" if is_pre else "neuron_in"
-        else:
-            target, key = obj, "out" if is_pre else "in"
+        target = conn.pre_obj if is_pre else conn.post_obj
+        key = 'out' if is_pre else 'in'
 
         if target not in model.sig:
             raise ValueError("Building %s: the '%s' object %s "
@@ -1359,7 +1358,7 @@ def build_connection(conn, model, config):  # noqa: C901
             decoders, solver_info = conn.solver(
                 activities, targets, rng=rng,
                 E=model.params[conn.post_obj].scaled_encoders.T)
-            model.sig[conn]['out'] = model.sig[conn.post_obj]['neuron_in']
+            model.sig[conn]['out'] = model.sig[conn.post_obj.neurons]['in']
             signal_size = model.sig[conn]['out'].size
         else:
             decoders, solver_info = conn.solver(activities, targets, rng=rng)
@@ -1591,8 +1590,8 @@ def build_bcm(bcm, conn, model, config):
            else conn.pre_obj.ensemble)
     post = (conn.post_obj if isinstance(conn.post_obj, Ensemble)
             else conn.post_obj.ensemble)
-    pre_activities = model.sig[pre]['neuron_out']
-    post_activities = model.sig[post]['neuron_out']
+    pre_activities = model.sig[pre.neurons]['out']
+    post_activities = model.sig[post.neurons]['out']
 
     delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)), name='delta')
 
@@ -1622,8 +1621,8 @@ def build_oja(oja, conn, model, config):
            else conn.pre_obj.ensemble)
     post = (conn.post_obj if isinstance(conn.post_obj, Ensemble)
             else conn.post_obj.ensemble)
-    pre_activities = model.sig[pre]['neuron_out']
-    post_activities = model.sig[post]['neuron_out']
+    pre_activities = model.sig[pre.neurons]['out']
+    post_activities = model.sig[post.neurons]['out']
     pre_filtered = filtered_signal(
         oja, pre_activities, oja.pre_tau, model, config)
     post_filtered = filtered_signal(

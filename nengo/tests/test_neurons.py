@@ -47,6 +47,7 @@ def test_lif(Simulator):
     dt = 0.001
     n = 5000
     x = 0.5
+    encoders = np.ones((n, 1))
     max_rates = rng.uniform(low=10, high=200, size=n)
     intercepts = rng.uniform(low=-1, high=1, size=n)
 
@@ -54,26 +55,44 @@ def test_lif(Simulator):
     with m:
         ins = nengo.Node(x)
         ens = nengo.Ensemble(
-            n, dimensions=1, max_rates=max_rates, intercepts=intercepts,
-            neuron_type=nengo.LIF())
+            n, dimensions=1, neuron_type=nengo.LIF(),
+            encoders=encoders, max_rates=max_rates, intercepts=intercepts)
         nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)))
-        spike_probe = nengo.Probe(ens, "spikes")
+        spike_probe = nengo.Probe(ens.neurons)
+        voltage_probe = nengo.Probe(ens.neurons, 'voltage')
+        ref_probe = nengo.Probe(ens.neurons, 'refractory_time')
 
     sim = Simulator(m, dt=dt)
 
     t_final = 1.0
     sim.run(t_final)
-    spikes = sim.data[spike_probe].sum(0)
 
+    with Plotter(Simulator) as plt:
+        i = 3
+        plt.subplot(311)
+        plt.plot(sim.trange(), sim.data[spike_probe][:, :i])
+        plt.subplot(312)
+        plt.plot(sim.trange(), sim.data[voltage_probe][:, :i])
+        plt.subplot(313)
+        plt.plot(sim.trange(), sim.data[ref_probe][:, :i])
+        plt.ylim([-dt, ens.neuron_type.tau_ref + dt])
+        plt.savefig('test_neurons.test_lif.pdf')
+        plt.close()
+
+    # check rates against analytic rates
     math_rates = ens.neuron_type.rates(
         x, *ens.neuron_type.gain_bias(max_rates, intercepts))
-    sim_rates = spikes / t_final
+    sim_rates = sim.data[spike_probe].sum(0) / t_final
     logger.debug("ME = %f", (sim_rates - math_rates).mean())
     logger.debug("RMSE = %f",
                  rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
     assert np.sum(math_rates > 0) > 0.5 * n, (
         "At least 50% of neurons must fire")
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
+
+    # if voltage and ref time are non-constant, the probe is doing something
+    assert np.abs(np.diff(sim.data[voltage_probe])).sum() > 1
+    assert np.abs(np.diff(sim.data[ref_probe])).sum() > 1
 
 
 def test_alif_rate(Simulator):
@@ -92,7 +111,7 @@ def test_alif_rate(Simulator):
                            encoders=encoders,
                            neuron_type=nengo.AdaptiveLIFRate())
         nengo.Connection(u, a, synapse=None)
-        ap = nengo.Probe(a, "spikes", synapse=None)
+        ap = nengo.Probe(a.neurons)
 
     dt = 1e-3
     sim = Simulator(model, dt=dt)
@@ -144,8 +163,8 @@ def test_alif(Simulator):
                            **eparams)
         nengo.Connection(u, a, synapse=0)
         nengo.Connection(u, b, synapse=0)
-        ap = nengo.Probe(a, "spikes", synapse=0)
-        bp = nengo.Probe(b, "spikes", synapse=0)
+        ap = nengo.Probe(a.neurons)
+        bp = nengo.Probe(b.neurons)
 
     dt = 1e-3
     sim = Simulator(model, dt=dt)

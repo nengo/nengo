@@ -1,5 +1,4 @@
-from nengo.base import NengoObject, NengoObjectParam
-from nengo.ensemble import Ensemble
+from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.params import Default, DictParam, IntParam, NumberParam, StringParam
 
 
@@ -34,30 +33,36 @@ class Probe(NengoObject):
     seed = IntParam(default=None, optional=True)
 
     def __init__(self, target, attr=Default, sample_every=Default,
-                 **conn_args):
-        if not hasattr(target, 'probeable') or len(target.probeable) == 0:
+                 synapse=None, **conn_args):
+        conn_args['synapse'] = synapse
+
+        self.target = target
+        if not hasattr(self.obj, 'probeable') or len(self.obj.probeable) == 0:
             raise TypeError(
                 "Type '%s' is not probeable" % target.__class__.__name__)
 
-        conn_args.setdefault('synapse', None)
-
         # We'll use the first in the list as default
-        self.attr = attr if attr is not Default else target.probeable[0]
-
-        if self.attr not in target.probeable:
+        self.attr = attr if attr is not Default else self.obj.probeable[0]
+        if self.attr not in self.obj.probeable:
             raise ValueError(
-                "'%s' is not probeable for '%s'" % (self.attr, target))
+                "'%s' is not probeable for '%s'" % (self.attr, self.obj))
 
-        self.target = target
         self.sample_every = sample_every
         self.conn_args = conn_args
         self.seed = conn_args.get('seed', None)
 
     @property
+    def obj(self):
+        return (self.target.obj if isinstance(self.target, ObjView) else
+                self.target)
+
+    @property
+    def slice(self):
+        return (self.target.slice if isinstance(self.target, ObjView) else
+                slice(None))
+
+    @property
     def size_in(self):
-        # TODO: A bit of a hack; make less hacky.
-        if isinstance(self.target, Ensemble) and self.attr != "decoded_output":
-            return self.target.neurons.size_out
         return self.target.size_out
 
     @property
