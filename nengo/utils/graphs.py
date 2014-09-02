@@ -91,7 +91,9 @@ def toposort(edges):
             if not incoming_edges[m]:
                 vertices.add(m)
     if any(incoming_edges.get(v, None) for v in edges):
-        raise ValueError("Input has cycles")
+        raise ValueError("Input graph has cycles. This usually occurs because "
+                         "too many connections have no synapses. Try setting "
+                         "more synapses to '0' instead of 'None'.")
     return ordered
 
 
