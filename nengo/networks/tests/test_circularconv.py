@@ -96,7 +96,7 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
 
     # --- results
     tmask = t > (0.5 + sim.dt/2)
-    assert sim.data[A_p][tmask].shape == (499, dims)
+    assert sim.data[A_p][tmask].shape == (500, dims)
     a_sim = sim.data[A_p][tmask].mean(axis=0)
     b_sim = sim.data[B_p][tmask].mean(axis=0)
     res_sim = sim.data[res_p][tmask].mean(axis=0)

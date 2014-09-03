@@ -39,7 +39,7 @@ def test_time_absolute(Simulator):
     m = nengo.Network(label="test_time_absolute", seed=123)
     sim = Simulator(m)
     sim.run(0.003)
-    assert np.allclose(sim.trange(), [0.00, .001, .002])
+    assert np.allclose(sim.trange(), [0.001, 0.002, 0.003])
 
 
 def test_trange_with_probes(Simulator):
