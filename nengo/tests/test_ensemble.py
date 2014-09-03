@@ -81,7 +81,7 @@ def test_constant_scalar(Simulator, nl):
         plt.savefig('test_ensemble.test_constant_scalar.pdf')
         plt.close()
 
-    assert np.allclose(sim.data[in_p].ravel(), val, atol=.1, rtol=.01)
+    assert np.allclose(sim.data[in_p], val, atol=.1, rtol=.01)
     assert np.allclose(sim.data[A_p][-10:], val, atol=.1, rtol=.01)
 
 
@@ -129,17 +129,16 @@ def test_scalar(Simulator, nl):
 
     sim = Simulator(m)
     sim.run(5.0)
+    t = sim.trange()
 
     with Plotter(Simulator, nl) as plt:
-        t = sim.trange()
         plt.plot(t, sim.data[in_p], label='Input')
         plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.02')
         plt.legend(loc=0)
         plt.savefig('test_ensemble.test_scalar.pdf')
         plt.close()
 
-    target = np.sin(np.arange(5000) / 1000.)
-    target.shape = (-1, 1)
+    target = np.sin(t).reshape(-1, 1)
     logger.debug("Input RMSE: %f", npext.rmse(target, sim.data[in_p]))
     logger.debug("A RMSE: %f", npext.rmse(target, sim.data[A_p]))
     assert npext.rmse(target, sim.data[in_p]) < 0.001
@@ -162,18 +161,16 @@ def test_vector(Simulator, nl):
 
     sim = Simulator(m)
     sim.run(5)
+    t = sim.trange()
 
     with Plotter(Simulator, nl) as plt:
-        t = sim.trange()
         plt.plot(t, sim.data[in_p], label='Input')
         plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.02')
         plt.legend(loc='best', prop={'size': 10})
         plt.savefig('test_ensemble.test_vector.pdf')
         plt.close()
 
-    target = np.vstack((np.sin(np.arange(5000) / 1000.),
-                        np.cos(np.arange(5000) / 1000.),
-                        np.arctan(np.arange(5000) / 1000.))).T
+    target = np.vstack((np.sin(t), np.cos(t), np.arctan(t))).T
     logger.debug("In RMSE: %f", npext.rmse(target, sim.data[in_p]))
     assert npext.rmse(target, sim.data[in_p]) < 0.01
     assert npext.rmse(target, sim.data[A_p]) < 0.1
@@ -181,11 +178,13 @@ def test_vector(Simulator, nl):
 
 def test_product(Simulator, nl):
     N = 80
+    dt2 = 0.002
+    f = lambda t: np.sin(6*t)
 
     m = nengo.Network(label='test_product', seed=124)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl()
-        sin = nengo.Node(output=np.sin)
+        sin = nengo.Node(output=f)
         cons = nengo.Node(output=-.5)
         factors = nengo.Ensemble(
             2 * N,
@@ -198,37 +197,28 @@ def test_product(Simulator, nl):
         nengo.Connection(
             factors, product, function=lambda x: x[0] * x[1], synapse=0.01)
 
-        sin_p = nengo.Probe(sin, 'output', sample_every=.01)
-        # TODO
-        # m.probe(conn, sample_every=.01)
-        factors_p = nengo.Probe(
-            factors, 'decoded_output', sample_every=.01, synapse=.01)
-        product_p = nengo.Probe(
-            product, 'decoded_output', sample_every=.01, synapse=.01)
+        sin_p = nengo.Probe(sin, sample_every=dt2)
+        factors_p = nengo.Probe(factors, sample_every=dt2, synapse=0.01)
+        product_p = nengo.Probe(product, sample_every=dt2, synapse=0.01)
 
     sim = Simulator(m)
-    sim.run(6)
+    sim.run(1)
+    t = sim.trange(dt=dt2)
 
     with Plotter(Simulator, nl) as plt:
-        t = sim.trange(dt=.01)
         plt.subplot(211)
         plt.plot(t, sim.data[factors_p])
-        plt.plot(t, np.sin(np.arange(0, 6, .01)))
+        plt.plot(t, f(t))
         plt.plot(t, sim.data[sin_p])
         plt.subplot(212)
         plt.plot(t, sim.data[product_p])
-        # TODO
-        # plt.plot(sim.data[conn])
-        plt.plot(t, -.5 * np.sin(np.arange(0, 6, .01)))
+        plt.plot(t, -.5 * f(t))
         plt.savefig('test_ensemble.test_prod.pdf')
         plt.close()
 
-    sin = np.sin(np.arange(0, 6, .01))
-    assert npext.rmse(sim.data[factors_p][:, 0], sin) < 0.1
+    assert npext.rmse(sim.data[factors_p][:, 0], f(t)) < 0.1
     assert npext.rmse(sim.data[factors_p][20:, 1], -0.5) < 0.1
-
-    assert npext.rmse(sim.data[product_p][:, 0], -0.5 * sin) < 0.1
-    # assert npext.rmse(sim.data[conn][:, 0], -0.5 * sin) < 0.1
+    assert npext.rmse(sim.data[product_p][:, 0], -0.5 * f(t)) < 0.1
 
 
 @pytest.mark.parametrize('dims, points', [(1, 528), (2, 823), (3, 937)])

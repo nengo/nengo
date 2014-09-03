@@ -119,16 +119,17 @@ class Simulator(object):
         self._steps = [node.make_step(self.signals, dt)
                        for node in self._step_order]
 
-        self.n_steps = 0
-
         # Add built states to the probe dictionary
         self._probe_outputs = self.model.params
 
         # Provide a nicer interface to probe outputs
         self.data = ProbeDict(self._probe_outputs)
 
+        self.reset()
+
     @property
     def dt(self):
+        """The time step of the simulator"""
         return self.model.dt
 
     @dt.setter
@@ -137,17 +138,26 @@ class Simulator(object):
                              "an issue at http://github.com/ctn-waterloo/nengo"
                              "/issues and describe your use case.")
 
-    def step(self):
-        """Advance the simulator by `self.dt` seconds.
-        """
-        old_err = np.seterr(invalid='raise', divide='ignore')
-        try:
-            for step_fn in self._steps:
-                step_fn()
-        finally:
-            np.seterr(**old_err)
+    @property
+    def time(self):
+        """The current time of the simulator"""
+        return self.signals['__time__'].copy()
 
-        # -- probes signals -> probe buffers
+    def trange(self, dt=None):
+        """Create a range of times matching probe data.
+
+        Parameters
+        ----------
+        dt : float (optional)
+            The sampling period of the probe to create a range for. If empty,
+            will use the default probe sampling period.
+        """
+        dt = self.dt if dt is None else dt
+        n_steps = int(self.n_steps * self.dt / dt)
+        return dt * np.arange(1, n_steps + 1)
+
+    def _probe(self):
+        """Copy all probed signals to buffers"""
         for probe in self.model.probes:
             period = (1 if probe.sample_every is None
                       else int(probe.sample_every / self.dt))
@@ -155,8 +165,20 @@ class Simulator(object):
                 tmp = self.signals[self.model.sig[probe]['in']].copy()
                 self._probe_outputs[probe].append(tmp)
 
+    def step(self):
+        """Advance the simulator by `self.dt` seconds.
+        """
         self.n_steps += 1
-        self.signals['__time__'] = self.n_steps * self.dt
+        self.signals['__time__'][...] = self.n_steps * self.dt
+
+        old_err = np.seterr(invalid='raise', divide='ignore')
+        try:
+            for step_fn in self._steps:
+                step_fn()
+        finally:
+            np.seterr(**old_err)
+
+        self._probe()
 
     def run(self, time_in_seconds):
         """Simulate for the given length of time."""
@@ -174,9 +196,8 @@ class Simulator(object):
 
     def reset(self):
         """Reset the simulator state."""
-
-        self.signals['__time__'][...] = 0.0
         self.n_steps = 0
+        self.signals['__time__'][...] = 0
 
         for key in self.signals:
             if key != '__time__':
@@ -184,8 +205,3 @@ class Simulator(object):
 
         for probe in self.model.probes:
             self._probe_outputs[probe] = []
-
-    def trange(self, dt=None):
-        dt = self.dt if dt is None else dt
-        n_steps = int(np.ceil(self.n_steps * self.dt / dt))
-        return dt * np.arange(0, n_steps)

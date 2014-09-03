@@ -29,9 +29,7 @@ def test_simple(Simulator):
 
     sim_t = sim.trange()
     sim_in = sim.data[p].ravel()
-    t = 0.001 * np.arange(len(sim_t))
-    assert np.allclose(sim_t, t)
-    assert np.allclose(sim_in, np.sin(t))
+    assert np.allclose(sim_in, np.sin(sim_t))
 
 
 def test_connected(Simulator):
@@ -62,10 +60,7 @@ def test_connected(Simulator):
     sim_t = sim.trange()
     sim_sin = sim.data[p_in].ravel()
     sim_sq = sim.data[p_out].ravel()
-    t = 0.001 * np.arange(len(sim_t))
-
-    assert np.allclose(sim_t, t)
-    assert np.allclose(sim_sin, np.sin(t))
+    assert np.allclose(sim_sin, np.sin(sim_t))
     assert np.allclose(sim_sq, sim_sin**2)
 
 
@@ -189,7 +184,7 @@ def test_none(Simulator, nl_nodirect):
     # detected as producing output (func is called with 0 input)
     # but during the run it will produce None when t >=0.5
     def input_function(t):
-        if t < 0.5:
+        if t < 0.005:
             return [1]
 
     with model:
@@ -199,7 +194,7 @@ def test_none(Simulator, nl_nodirect):
 
     sim = Simulator(model)
     with pytest.raises(ValueError):
-        sim.run(1.)
+        sim.run(0.01)
 
     # This function will pass (with a warning), because it will
     # be determined at run time that the output function
@@ -212,22 +207,7 @@ def test_none(Simulator, nl_nodirect):
         nengo.Node(output=none_function)
 
     sim = Simulator(model2)
-    sim.run(1)
-
-
-def test_scalar(Simulator):
-    model = nengo.Network()
-    with model:
-        a = nengo.Node(output=1)
-        b = nengo.Ensemble(100, dimensions=1)
-        nengo.Connection(a, b)
-        ap = nengo.Probe(a)
-        bp = nengo.Probe(b)
-
-    sim = Simulator(model)
-    sim.run(1)
-    assert sim.data[ap].shape == (1000, 1)
-    assert sim.data[bp].shape == (1000, 1)
+    sim.run(0.01)
 
 
 def test_unconnected_node(Simulator):
