@@ -123,3 +123,44 @@ class UniformHypersphere(Distribution):
         samples *= rng.rand(n, 1) ** (1.0 / d)
 
         return samples
+
+
+class Choice(Distribution):
+    """Discrete distribution across a set of possible values.
+
+    The same as `numpy.random.choice`, except can take vector or matrix values
+    for the choices.
+
+    Parameters
+    ----------
+    options : array_like (N, ...)
+        The options (choices) to choose between. The choice is always done
+        along the first axis, so if `options` is a matrix, the options are
+        the rows of that matrix.
+    weights : array_like (N,) (optional)
+        Weights controlling the probability of selecting each option. Will
+        automatically be normalized. Defaults to a uniform distribution.
+    """
+
+    def __init__(self, options, weights=None):
+        self.options = np.array(options)
+
+        if weights is None:
+            self.p = None
+        else:
+            weights = np.asarray(weights)
+            if len(weights) != len(self.options):
+                raise ValueError(
+                    "Number of weights (%d) must match number of options (%d)"
+                    % (len(weights), len(self.options)))
+            if not all(weights >= 0):
+                raise ValueError("All weights must be non-negative")
+            total = float(weights.sum())
+            if total <= 0:
+                raise ValueError(
+                    "Sum of weights must be positive (got %f)" % total)
+            self.p = weights / total
+
+    def sample(self, n, rng=np.random):
+        i = rng.choice(len(self.options), p=self.p, size=n)
+        return self.options[i]
