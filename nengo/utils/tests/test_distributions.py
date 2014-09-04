@@ -61,6 +61,25 @@ def test_hypersphere_surface(dimensions):
         np.mean(samples, axis=0), np.zeros(dimensions), atol=0.1)
 
 
+@pytest.mark.parametrize("weights", [None, [5, 1, 2, 9], [3, 2, 1, 0]])
+def test_choice(weights):
+    n = 2000
+    choices = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
+    N = len(choices)
+
+    dist = dists.Choice(choices, weights=weights)
+    sample = dist.sample(n, rng=np.random.RandomState(5))
+    tsample, tchoices = list(map(tuple, sample)), list(map(tuple, choices))
+
+    # check that frequency of choices matches weights
+    inds = [tchoices.index(s) for s in tsample]
+    hist, bins = np.histogram(inds, bins=np.linspace(-0.5, N - 0.5, N + 1))
+    p_empirical = hist / float(hist.sum())
+    p = np.ones(N) / N if dist.p is None else dist.p
+    sterr = 1. / np.sqrt(n)  # expected maximum standard error
+    assert np.allclose(p, p_empirical, atol=sterr)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
