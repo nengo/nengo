@@ -21,18 +21,19 @@ def pytest_generate_tests(metafunc):
     examples = os.path.realpath(os.path.join(tests, '..', '..', 'examples'))
     examples = glob(examples + '/*.ipynb')
 
-    # if `--optional` is not set, filter out optional notebooks
+    # if `--optional` is not set, filter out time-consuming notebooks
     ignores = [] if metafunc.config.option.optional else [
         'lorenz_attractor.ipynb', 'spa_sequence_routed.ipynb',
         'spa_sequence-Class.ipynb', 'spa_sequence-Context.ipynb',
         'spa_parser.ipynb', 'question_control.ipynb',
         'learn_communication_channel.ipynb', 'learn_product.ipynb',
         'learn_unsupervised.ipynb']
-    examples = [path for path in examples
-                if os.path.split(path)[1] not in ignores]
+    argvalues = [pytest.mark.skipif(os.path.split(path)[1] in ignores,
+                                    reason="Time-consuming")(path)
+                 for path in examples]
 
     if "nb_path" in metafunc.funcargnames:
-        metafunc.parametrize("nb_path", examples)
+        metafunc.parametrize("nb_path", argvalues)
 
 
 @pytest.mark.example
