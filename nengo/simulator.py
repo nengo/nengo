@@ -8,6 +8,7 @@ from __future__ import print_function
 
 from collections import Mapping
 import logging
+import sys
 
 import numpy as np
 
@@ -158,19 +159,33 @@ class Simulator(object):
         self.n_steps += 1
         self.signals['__time__'] = self.n_steps * self.dt
 
-    def run(self, time_in_seconds):
+    def run(self, time_in_seconds, progress=False):
         """Simulate for the given length of time."""
         steps = int(np.round(float(time_in_seconds) / self.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.model.label, time_in_seconds, steps)
-        self.run_steps(steps)
+        self.run_steps(steps, progress=progress)
 
-    def run_steps(self, steps):
+    def run_steps(self, steps, progress=False):
         """Simulate for the given number of `dt` steps."""
+        if progress:
+            mark_period = steps / 100.
+            marks = 0
+
         for i in range(steps):
+            if progress and i == np.round(marks * mark_period):
+                while i == np.round(marks * mark_period):
+                    marks += 1
+                    sys.stdout.write('*' if marks == 100 else
+                                     str(marks / 10) if marks % 10 == 0 else '.')
+                sys.stdout.flush()
+
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
             self.step()
+
+        if progress:
+            print()  # end line of dots
 
     def reset(self):
         """Reset the simulator state."""
