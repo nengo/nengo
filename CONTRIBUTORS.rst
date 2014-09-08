@@ -18,6 +18,7 @@ to the file like so::
 Please keep this list sorted alphabetically.
 
 - Aaron Voelker <arvoelke@gmail.com>
+- Andrew Mundy <andrew.mundy@ieee.org>
 - Brent Komer <brent.komer@gmail.com>
 - Bryan Tripp <bptripp@uwaterloo.ca>
 - Chris Eliasmith <celiasmith@uwaterloo.ca>
@@ -28,7 +29,9 @@ Please keep this list sorted alphabetically.
 - Oliver Trujillo <olivertgp@hotmail.com>
 - Peter Blouw <pblouw@uwaterloo.ca>
 - Peter Suma <psuma@waterloo.ca>
+- Sean Aubin <seanaubin@gmail.com>
 - Terry Stewart <terry.stewart@gmail.com>
 - Travis DeWolf <travis.dewolf@gmail.com>
 - Trevor Bekolay <tbekolay@gmail.com>
 - Xuan Choo <xchoo.mainframe@gmail.com>
+- Youssef Zaky <youssefzaky@gmail.com>
