@@ -30,7 +30,7 @@ Installation
 
 We will be making a release on PyPI soon,
 meaning you will be able to ``pip install nengo``.
-For now, you can do the following::
+For now, you can do the following (with `sudo` if you're on Linux)::
 
   pip install -e git://github.com/ctn-waterloo/nengo.git#egg=nengo
 
@@ -39,10 +39,10 @@ Nengo supports Python 2.6, 2.7, and 3.3+ in a single codebase.
 Developer Install
 =================
 
-.. code-block:: shell
+.. code-block:: bash
 
-   git clone https://github.com/ctn-waterloo/nengo.git
-   cd nengo
+   git clone git@github.com:ctn-waterloo/nengo-temp.git
+   cd nengo-temp
    python setup.py develop
 
 Usage
@@ -100,3 +100,10 @@ for easier debugging. To enable this feature, set the environment variable
 
 Plots are placed in ``nengo.simulator.plots`` in whatever directory
 ``py.test`` is invoked from.
+
+Contributing to the code
+========================
+
+Please read the ``LISCENCE.rst`` file to understand what becoming a contributor entails. 
+Once you have read and understood the liscence agreement, add yourself to the ``CONTRIBUTORS.rst`` file.
+Note that all pull requests must be commited by someone else other than the original requestor.
