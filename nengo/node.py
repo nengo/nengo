@@ -44,8 +44,11 @@ class OutputParam(Parameter):
         args = (t, x) if node.size_in > 0 else (t,)
         result, invoked = checked_call(output, *args)
         if not invoked:
-            raise TypeError("output function '%s' must accept %d argument%s" %
-                            (output, len(args), 's' if len(args) > 1 else ''))
+            msg = ("output function '%s' is expected to accept exactly"
+                   "%d argument" % output, len(args))
+            msg += (' (time, as a float)' if len(args) == 1 else
+                    's (time, as a float and data, as a NumPy array)')
+            raise TypeError(msg)
 
         if result is not None:
             result = np.asarray(result)
@@ -86,7 +89,7 @@ class Node(NengoObject):
         Function that transforms the Node inputs into outputs, or
         a constant output value.
     size_in : int, optional
-        The number of input dimensions.
+        The number of dimensions of the input data parameter.
     size_out : int, optional
         The size of the output signal.
         Optional; if not specified, it will be determined based on
@@ -101,7 +104,7 @@ class Node(NengoObject):
     output : callable or array_like
         The given output.
     size_in : int
-        The number of input dimensions.
+        The number of dimensions of the input data parameter.
     size_out : int
         The number of output dimensions.
     """
