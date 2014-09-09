@@ -42,6 +42,9 @@ The documentation is built with Sphinx and has a few requirements
 How you install Pandoc (requirement of Sphinx) and
 Sphinx depends on your operating system,
 so no instructions will be included here.
+However, if you're using Windows and having a hard
+time installing the requirements, please check out
+`Chocolatey <https://chocolatey.org/>`_.
 
 After you've installed all the requirements,
 execute from the root directory of ``nengo-temp``
