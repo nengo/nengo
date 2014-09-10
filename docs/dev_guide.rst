@@ -33,8 +33,8 @@ The documentation is built with Sphinx and has a few requirements
 .. code-block:: bash
 
    # install the sphinx theme
-   git clone git@github.com:ctn-waterloo/nengo-temp.git
-   cd nengo-temp
+   git clone https://github.com/ctn-waterloo/nengo_sphinx_theme.git
+   cd nengo_sphinx_theme
    python setup.py develop
    # install numpydoc
    pip install numpydoc
@@ -53,7 +53,6 @@ which will probably take a few minutes.
 
 .. code-block:: bash
 
-   mkdir ./docs/build
    sphinx-build -b html ./docs ./docs/build
 
 Now you're ready to code and look-up docs!
