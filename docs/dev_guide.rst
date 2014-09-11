@@ -40,7 +40,7 @@ The documentation is built with Sphinx and has a few requirements
    # if you're having trouble installing pip on
    # Windows check the link below to Chocolatey
    pip install numpydoc
-   # getting the newest version of ipython is important
+   # using ipython 2.x is important
    pip install ipython --upgrade
 
 How you install Pandoc (requirement of Sphinx) and
