@@ -36,8 +36,12 @@ The documentation is built with Sphinx and has a few requirements
    git clone https://github.com/ctn-waterloo/nengo_sphinx_theme.git
    cd nengo_sphinx_theme
    python setup.py develop
-   # install numpydoc
+   # install numpydoc and ipython with pip
+   # if you're having trouble installing pip on
+   # Windows check the link below to Chocolatey
    pip install numpydoc
+   # getting the newest version of ipython is important
+   pip install ipython --upgrade
 
 How you install Pandoc (requirement of Sphinx) and
 Sphinx depends on your operating system,
