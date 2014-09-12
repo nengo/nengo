@@ -5,6 +5,7 @@ import pytest
 
 import nengo
 from nengo.utils.compat import range
+from nengo.utils.distributions import Choice
 from nengo.utils.testing import Plotter
 
 logger = logging.getLogger(__name__)
@@ -111,14 +112,12 @@ def test_matrix_mul(Simulator, nl):
         A_p = nengo.Probe(A.output, sample_every=0.01, synapse=0.01)
         B_p = nengo.Probe(B.output, sample_every=0.01, synapse=0.01)
 
-        C = nengo.networks.EnsembleArray(N,
-                                         Amat.size * Bmat.shape[1],
-                                         ens_dimensions=2,
-                                         radius=1.5 * radius)
-
-        for ens in C.ensembles:
-            ens.encoders = np.tile([[1, 1], [-1, 1], [1, -1], [-1, -1]],
-                                   (ens.n_neurons // 4, 1))
+        C = nengo.networks.EnsembleArray(
+            N,
+            Amat.size * Bmat.shape[1],
+            ens_dimensions=2,
+            radius=1.5 * radius,
+            encoders=Choice([[1, 1], [-1, 1], [1, -1], [-1, -1]]))
 
         transformA, transformB = _mmul_transforms(
             Amat.shape, Bmat.shape, C.dimensions)

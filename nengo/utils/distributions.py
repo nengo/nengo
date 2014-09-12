@@ -161,6 +161,10 @@ class Choice(Distribution):
                     "Sum of weights must be positive (got %f)" % total)
             self.p = weights / total
 
-    def sample(self, n, rng=np.random):
+    def sample(self, n, d=None, rng=np.random):
         i = rng.choice(len(self.options), p=self.p, size=n)
+        if d is not None:
+            if self.options[i].shape[1] != d:
+                raise ValueError("Options must be of dimensionality %d "
+                                 "(got %d)" % (d, self.options[i].shape[1]))
         return self.options[i]

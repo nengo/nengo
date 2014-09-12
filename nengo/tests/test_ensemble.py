@@ -7,6 +7,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.ensemble import EnsembleNeuronTypeParam
+from nengo.utils.distributions import Choice
 from nengo.utils.testing import Plotter, warns
 
 logger = logging.getLogger(__name__)
@@ -186,10 +187,11 @@ def test_product(Simulator, nl):
         m.config[nengo.Ensemble].neuron_type = nl()
         sin = nengo.Node(output=np.sin)
         cons = nengo.Node(output=-.5)
-        factors = nengo.Ensemble(2 * N, dimensions=2, radius=1.5)
-        factors.encoders = np.tile(
-            [[1, 1], [-1, 1], [1, -1], [-1, -1]],
-            (factors.n_neurons // 4, 1))
+        factors = nengo.Ensemble(
+            2 * N,
+            dimensions=2,
+            radius=1.5,
+            encoders=Choice([[1, 1], [-1, 1], [1, -1], [-1, -1]]))
         product = nengo.Ensemble(N, dimensions=1)
         nengo.Connection(sin, factors[0])
         nengo.Connection(cons, factors[1])

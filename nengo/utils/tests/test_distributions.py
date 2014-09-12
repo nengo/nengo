@@ -68,6 +68,9 @@ def test_choice(weights):
     N = len(choices)
 
     dist = dists.Choice(choices, weights=weights)
+    # If d is passed, it has to match
+    with pytest.raises(ValueError):
+        dist.sample(n, d=4, rng=np.random.RandomState(5))
     sample = dist.sample(n, rng=np.random.RandomState(5))
     tsample, tchoices = list(map(tuple, sample)), list(map(tuple, choices))
 

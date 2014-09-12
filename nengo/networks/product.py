@@ -2,6 +2,7 @@ import numpy as np
 
 import nengo
 from nengo.networks.ensemblearray import EnsembleArray
+from nengo.utils.distributions import Choice
 
 
 class Product(nengo.Network):
@@ -16,9 +17,7 @@ class Product(nengo.Network):
         self.dimensions = dimensions
 
         if encoders is nengo.Default:
-            encoders = np.tile(
-                [[1, 1], [1, -1], [-1, 1], [-1, -1]],
-                ((n_neurons // 4) + 1, 1))[:n_neurons]
+            encoders = Choice([[1, 1], [1, -1], [-1, 1], [-1, -1]])
 
         self.product = EnsembleArray(
             n_neurons, n_ensembles=dimensions, ens_dimensions=2,
