@@ -36,14 +36,55 @@ For now, you can do the following (with `sudo` if you're on Linux)::
 
 Nengo supports Python 2.6, 2.7, and 3.3+ in a single codebase.
 
-Developer Install
-=================
+Developer install
+-----------------
 
 .. code-block:: bash
 
    git clone git@github.com:ctn-waterloo/nengo-temp.git
    cd nengo-temp
    python setup.py develop
+
+
+Installing requirements
+-----------------------
+
+Nengo's main requirement is Numpy (and optionally Scipy for better
+performance). Currently, installing Numpy from ``pip`` will install an
+unoptimized (slow) version, so it is preferable to install Numpy using one of
+the following methods. It is important to install Numpy before installing the
+other requirements.
+
+**Anaconda**
+Numpy is included as part of the [Anaconda](https://store.continuum.io/cshop/anaconda/)
+Python distribution. This is a straightforward solution to get Numpy working on
+Windows, Mac, or Linux.
+
+**Ubuntu**
+On Ubuntu and derivatives (e.g. Linux Mint), Numpy and Scipy can be installed
+using ``apt-get``:
+
+.. code-block:: bash
+
+   sudo apt-get install python-numpy python-scipy
+
+**From source**
+Numpy can be installed from source. This is the most complicated method, but
+is also the most flexible and results in the best performance. See the detailed
+instructions [here](http://hunseblog.wordpress.com/2014/09/15/installing-numpy-and-openblas/).
+
+**Other requirements**
+To install the other Nengo requirements (currently none), or the optional
+requirements, do:
+
+.. code-block:: bash
+
+   pip install -r requirements.txt
+   pip install -r requirements-optional.txt
+
+The testing and documentation requirements can be found in similarly named
+files.
+
 
 Usage
 =====
@@ -104,6 +145,6 @@ Plots are placed in ``nengo.simulator.plots`` in whatever directory
 Contributing to the code
 ========================
 
-Please read the ``LISCENCE.rst`` file to understand what becoming a contributor entails. 
+Please read the ``LISCENCE.rst`` file to understand what becoming a contributor entails.
 Once you have read and understood the liscence agreement, add yourself to the ``CONTRIBUTORS.rst`` file.
 Note that all pull requests must be commited by someone else other than the original requestor.
