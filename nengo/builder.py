@@ -1231,7 +1231,7 @@ def build_probe(probe, model, config):
 Builder.register_builder(build_probe, Probe)
 
 
-def build_linear_system(conn, model, rng):
+def build_linear_system(conn, model):
     encoders = model.params[conn.pre_obj].encoders
     gain = model.params[conn.pre_obj].gain
     bias = model.params[conn.pre_obj].bias
@@ -1315,8 +1315,7 @@ def build_connection(conn, model, config):  # noqa: C901
                                 tag="%s input" % conn))
     elif isinstance(conn.pre_obj, Ensemble):
         # Normal decoded connection
-        eval_points, activities, targets = build_linear_system(
-            conn, model, rng=rng)
+        eval_points, activities, targets = build_linear_system(conn, model)
 
         if conn.solver.weights:
             # account for transform
