@@ -57,11 +57,10 @@ class SPA(nengo.Network):
             self.thal = spa.Thalamus(self.bg)
     """
 
-    def __new__(cls, *args, **kwargs):
-        inst = super(SPA, cls).__new__(cls)
-        inst._modules = {}
-        inst._default_vocabs = {}
-        return inst
+    def __init__(self, label=None, seed=None, add_to_container=None):
+        super(SPA, self).__init__(label, seed, add_to_container)
+        self._modules = {}
+        self._default_vocabs = {}
 
     def __setattr__(self, key, value):
         """A setattr that handles Modules being added specially.

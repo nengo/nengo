@@ -47,7 +47,8 @@ class Thalamus(nengo.networks.Thalamus, Module):
                  neurons_channel_dim=50, subdim_channel=16,
                  synapse_channel=0.01,
                  neurons_cconv=200,
-                 neurons_gate=40, threshold_gate=0.3, synapse_to_gate=0.002):
+                 neurons_gate=40, threshold_gate=0.3, synapse_to_gate=0.002,
+                 label=None, seed=None, add_to_container=None):
 
         self.bg = bg
         self.neurons_action = neurons_action
@@ -68,12 +69,16 @@ class Thalamus(nengo.networks.Thalamus, Module):
         self.gates = {}     # gating ensembles per action (created as needed)
         self.channels = {}  # channels to pass transformed data between modules
 
-        Module.__init__(self)
+        # add_to_container always False here, to avoid double adding
+        Module.__init__(self, label, seed, False)
         nengo.networks.Thalamus.__init__(
             self, self.bg.actions.count,
             n_neurons_per_ensemble=self.neurons_action,
             mutual_inhib=self.mutual_inhibit,
-            threshold=self.threshold_action)
+            threshold=self.threshold_action,
+            label=label,
+            seed=seed,
+            add_to_container=add_to_container)
 
     def on_add(self, spa):
         Module.on_add(self, spa)

@@ -66,8 +66,9 @@ class AssociativeMemory(Module):
                  inhibitable=False, inhibit_scale=1.0, wta_output=False,
                  wta_inhibit_scale=2.0, wta_synapse=0.005,
                  output_utilities=False, output_thresholded_utilities=False,
-                 neuron_type=nengo.LIF(), n_neurons_per_ensemble=10):
-        super(AssociativeMemory, self).__init__()
+                 neuron_type=nengo.LIF(), n_neurons_per_ensemble=10,
+                 label=None, seed=None, add_to_container=None):
+        super(AssociativeMemory, self).__init__(label, seed, add_to_container)
 
         # If output vocabulary is not specified, use input vocabulary
         # (i.e autoassociative memory)
@@ -117,73 +118,79 @@ class AssociativeMemory(Module):
         def threshold_func(x):
             return x > threshold
 
-        # Input and output nodes
-        self.input = nengo.Node(size_in=input_vectors.shape[1], label="input")
-        self.output = nengo.Node(size_in=output_vectors.shape[1],
-                                 label="output")
+        with self:
+            # Input and output nodes
+            self.input = nengo.Node(size_in=input_vectors.shape[1],
+                                    label="input")
+            self.output = nengo.Node(size_in=output_vectors.shape[1],
+                                     label="output")
 
-        # Ensemble array to do the thresholding stuff
-        self.thresholded_ens_array = EnsembleArray(
-            label="thresholded ens array", **ea_params)
+            # Ensemble array to do the thresholding stuff
+            self.thresholded_ens_array = EnsembleArray(
+                label="thresholded ens array", **ea_params)
 
-        # Connect input and output nodes
-        nengo.Connection(self.input, self.thresholded_ens_array.input,
-                         synapse=None, transform=input_vectors * input_scale)
-        nengo.Connection(
-            self.thresholded_ens_array.add_output(
-                'thresholded_output', threshold_func),
-            self.output, synapse=None, transform=output_vectors.T)
+            # Connect input and output nodes
+            nengo.Connection(self.input, self.thresholded_ens_array.input,
+                             synapse=None,
+                             transform=input_vectors * input_scale)
+            nengo.Connection(
+                self.thresholded_ens_array.add_output(
+                    'thresholded_output', threshold_func),
+                self.output, synapse=None, transform=output_vectors.T)
 
-        # Configure associative memory to be inhibitable
-        if inhibitable:
-            # Input node for inhibitory gating signal (if enabled)
-            self.inhibit = nengo.Node(size_in=1, label="inhibit")
-            nengo.Connection(self.inhibit, self.thresholded_ens_array.input,
-                             synapse=None, transform=-np.ones((N, 1)))
-            # Note: We can use decoded connection here because all the
-            # encoding vectors are [1]
-
-        # Configure associative memory to have mutually inhibited output
-        if wta_output:
-            nengo.Connection(self.thresholded_ens_array.output,
-                             self.thresholded_ens_array.input,
-                             synapse=wta_synapse,
-                             transform=(np.eye(N) - 1) * inhibit_scale)
-
-        # Configure utilities output
-        if output_utilities:
-            self.utilities = nengo.Node(size_in=N, label="utilities")
-            nengo.Connection(self.thresholded_ens_array.output,
-                             self.utilities, synapse=None)
-
-        # Configure utilities output
-        if output_thresholded_utilities:
-            self.thresholded_utilities = nengo.Node(
-                size_in=N, label="thresholded_utilities")
-            nengo.Connection(self.thresholded_ens_array.thresholded_output,
-                             self.thresholded_utilities, synapse=None)
-
-        # Configure default output vector
-        if default_output_vector is not None:
-            eval_points = Uniform(0.8, 1)
-            bias = nengo.Node(output=[1])
-            default_vector_gate = nengo.Ensemble(
-                n_neurons_per_ensemble, dimensions=1,
-                encoders=Choice([[1]]),
-                intercepts=Uniform(0.5, 1),
-                max_rates=ea_params['max_rates'],
-                n_eval_points=n_eval_points,
-                eval_points=eval_points,
-                label="default vector gate")
-            nengo.Connection(bias, default_vector_gate, synapse=None)
-            nengo.Connection(self.thresholded_ens_array.thresholded_output,
-                             default_vector_gate, transform=-np.ones((1, N)),
-                             synapse=0.005)
-            nengo.Connection(default_vector_gate, self.output, synapse=None,
-                             transform=np.matrix(default_output_vector).T)
+            # Configure associative memory to be inhibitable
             if inhibitable:
-                nengo.Connection(self.inhibit, default_vector_gate,
-                                 synapse=None, transform=[[-1]])
+                # Input node for inhibitory gating signal (if enabled)
+                self.inhibit = nengo.Node(size_in=1, label="inhibit")
+                nengo.Connection(
+                    self.inhibit, self.thresholded_ens_array.input,
+                    synapse=None, transform=-np.ones((N, 1)))
+                # Note: We can use decoded connection here because all the
+                # encoding vectors are [1]
+
+            # Configure associative memory to have mutually inhibited output
+            if wta_output:
+                nengo.Connection(self.thresholded_ens_array.output,
+                                 self.thresholded_ens_array.input,
+                                 synapse=wta_synapse,
+                                 transform=(np.eye(N) - 1) * inhibit_scale)
+
+            # Configure utilities output
+            if output_utilities:
+                self.utilities = nengo.Node(size_in=N, label="utilities")
+                nengo.Connection(self.thresholded_ens_array.output,
+                                 self.utilities, synapse=None)
+
+            # Configure utilities output
+            if output_thresholded_utilities:
+                self.thresholded_utilities = nengo.Node(
+                    size_in=N, label="thresholded_utilities")
+                nengo.Connection(self.thresholded_ens_array.thresholded_output,
+                                 self.thresholded_utilities, synapse=None)
+
+            # Configure default output vector
+            if default_output_vector is not None:
+                eval_points = Uniform(0.8, 1)
+                bias = nengo.Node(output=[1])
+                default_vector_gate = nengo.Ensemble(
+                    n_neurons_per_ensemble, dimensions=1,
+                    encoders=Choice([[1]]),
+                    intercepts=Uniform(0.5, 1),
+                    max_rates=ea_params['max_rates'],
+                    n_eval_points=n_eval_points,
+                    eval_points=eval_points,
+                    label="default vector gate")
+                nengo.Connection(bias, default_vector_gate, synapse=None)
+                nengo.Connection(self.thresholded_ens_array.thresholded_output,
+                                 default_vector_gate,
+                                 transform=-np.ones((1, N)),
+                                 synapse=0.005)
+                nengo.Connection(default_vector_gate, self.output,
+                                 transform=np.matrix(default_output_vector).T,
+                                 synapse=None)
+                if inhibitable:
+                    nengo.Connection(self.inhibit, default_vector_gate,
+                                     synapse=None, transform=[[-1]])
 
         if isinstance(input_vocab, Vocabulary):
             self.inputs = dict(default=(self.input, input_vocab))

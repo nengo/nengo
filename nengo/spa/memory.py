@@ -17,18 +17,23 @@ class Memory(Buffer):
     """
 
     def __init__(self, dimensions, subdimensions=16, neurons_per_dimension=50,
-                 synapse=0.01, vocab=None, tau=None, direct=False):
+                 synapse=0.01, vocab=None, tau=None, direct=False,
+                 label=None, seed=None, add_to_container=None):
         super(Memory, self).__init__(
             dimensions=dimensions,
             subdimensions=subdimensions,
             neurons_per_dimension=neurons_per_dimension,
             vocab=vocab,
-            direct=direct)
+            direct=direct,
+            label=label,
+            seed=seed,
+            add_to_container=add_to_container)
 
         if tau is None:
             transform = 1.0
         else:
             transform = 1.0 - synapse / tau
 
-        nengo.Connection(self.state.output, self.state.input,
-                         transform=transform, synapse=synapse)
+        with self:
+            nengo.Connection(self.state.output, self.state.input,
+                             transform=transform, synapse=synapse)

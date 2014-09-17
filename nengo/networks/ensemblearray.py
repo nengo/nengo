@@ -10,12 +10,15 @@ from nengo.utils.network import with_self
 class EnsembleArray(nengo.Network):
 
     def __init__(self, n_neurons, n_ensembles, ens_dimensions=1,
-                 neuron_nodes=False, label=None, **ens_kwargs):
+                 neuron_nodes=False, label=None, seed=None,
+                 add_to_container=None, **ens_kwargs):
         if "dimensions" in ens_kwargs:
             raise TypeError(
                 "'dimensions' is not a valid argument to EnsembleArray. "
                 "To set the number of ensembles, use 'n_ensembles'. To set "
                 "the number of dimensions per ensemble, use 'ens_dimensions'.")
+
+        super(EnsembleArray, self).__init__(label, seed, add_to_container)
 
         self.config[nengo.Ensemble].update(ens_kwargs)
 
@@ -25,38 +28,41 @@ class EnsembleArray(nengo.Network):
         self.n_ensembles = n_ensembles
         self.dimensions_per_ensemble = ens_dimensions
 
-        self.input = nengo.Node(size_in=self.dimensions, label="input")
-
-        if neuron_nodes:
-            self.neuron_input = nengo.Node(size_in=n_neurons * n_ensembles,
-                                           label="neuron_input")
-            self.neuron_output = nengo.Node(size_in=n_neurons * n_ensembles,
-                                            label="neuron_output")
-
         self.ea_ensembles = []
-        for i in range(n_ensembles):
-            e = nengo.Ensemble(
-                n_neurons, self.dimensions_per_ensemble,
-                label=label_prefix + str(i))
 
-            nengo.Connection(self.input[i * ens_dimensions:
-                                        (i + 1) * ens_dimensions],
-                             e, synapse=None)
+        with self:
+            self.input = nengo.Node(size_in=self.dimensions, label="input")
 
-            if neuron_nodes and not isinstance(e.neuron_type, nengo.Direct):
-                nengo.Connection(self.neuron_input[i * n_neurons:
-                                                   (i + 1) * n_neurons],
-                                 e.neurons, synapse=None)
-                nengo.Connection(e.neurons,
-                                 self.neuron_output[i * n_neurons:
-                                                    (i + 1) * n_neurons],
-                                 synapse=None)
+            if neuron_nodes:
+                self.neuron_input = nengo.Node(
+                    size_in=n_neurons * n_ensembles, label="neuron_input")
+                self.neuron_output = nengo.Node(
+                    size_in=n_neurons * n_ensembles, label="neuron_output")
 
-            self.ea_ensembles.append(e)
+            for i in range(n_ensembles):
+                e = nengo.Ensemble(
+                    n_neurons, self.dimensions_per_ensemble,
+                    label=label_prefix + str(i))
 
-        if neuron_nodes and isinstance(e.neuron_type, nengo.Direct):
-            warnings.warn("Creating neuron nodes in an EnsembleArray"
-                          " with Direct neurons")
+                nengo.Connection(self.input[i * ens_dimensions:
+                                            (i + 1) * ens_dimensions],
+                                 e, synapse=None)
+
+                if (neuron_nodes
+                        and not isinstance(e.neuron_type, nengo.Direct)):
+                    nengo.Connection(self.neuron_input[i * n_neurons:
+                                                       (i + 1) * n_neurons],
+                                     e.neurons, synapse=None)
+                    nengo.Connection(e.neurons,
+                                     self.neuron_output[i * n_neurons:
+                                                        (i + 1) * n_neurons],
+                                     synapse=None)
+
+                self.ea_ensembles.append(e)
+
+            if neuron_nodes and isinstance(e.neuron_type, nengo.Direct):
+                warnings.warn("Creating neuron nodes in an EnsembleArray"
+                              " with Direct neurons")
 
         self.add_output('output', function=None)
 

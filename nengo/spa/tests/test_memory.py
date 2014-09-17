@@ -6,11 +6,8 @@ from nengo import spa
 
 
 def test_basic():
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.memory = spa.Memory(dimensions=16)
-
-    model = Basic()
+    with spa.SPA() as model:
+        model.memory = spa.Memory(dimensions=16)
 
     input = model.get_module_input('memory')
     output = model.get_module_output('memory')
@@ -21,52 +18,41 @@ def test_basic():
 
 
 def test_neurons():
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.memory = spa.Memory(dimensions=16, neurons_per_dimension=2)
+    with spa.SPA() as model:
+        model.memory = spa.Memory(dimensions=16, neurons_per_dimension=2)
 
-    model = Basic()
     assert len(model.memory.state.ensembles) == 1
     assert model.memory.state.ensembles[0].n_neurons == 16 * 2
 
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.memory = spa.Memory(dimensions=16, subdimensions=1,
-                                     neurons_per_dimension=2)
+    with spa.SPA() as model:
+        model.memory = spa.Memory(dimensions=16, subdimensions=1,
+                                  neurons_per_dimension=2)
 
-    model = Basic()
     assert len(model.memory.state.ensembles) == 16
     assert model.memory.state.ensembles[0].n_neurons == 2
 
 
 def test_exception():
-    class Basic(spa.SPA):
-        def __init__(self):
-            vocab = spa.Vocabulary(16)
-            self.buffer = spa.Memory(dimensions=12, vocab=vocab)
-
     with pytest.raises(Exception):
-        Basic()
+        with spa.SPA() as model:
+            vocab = spa.Vocabulary(16)
+            model.buffer = spa.Memory(dimensions=12, vocab=vocab)
 
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.memory = spa.Memory(dimensions=12, subdimensions=3)
-    Basic()
+    with spa.SPA() as model:
+        model.memory = spa.Memory(dimensions=12, subdimensions=3)
 
 
 def test_run(Simulator):
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.memory = spa.Memory(dimensions=32)
+    with spa.SPA(seed=123) as model:
+        model.memory = spa.Memory(dimensions=32)
 
-            def input(t):
-                if 0 <= t < 0.05:
-                    return 'A'
-                else:
-                    return '0'
+        def input(t):
+            if 0 <= t < 0.05:
+                return 'A'
+            else:
+                return '0'
 
-            self.input = spa.Input(memory=input)
-    model = Basic(seed=123)
+        model.input = spa.Input(memory=input)
 
     memory, vocab = model.get_module_output('memory')
 
@@ -84,18 +70,16 @@ def test_run(Simulator):
 
 
 def test_run_decay(Simulator, plt, seed):
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.memory = spa.Memory(dimensions=32, tau=0.05)
+    with spa.SPA(seed=seed) as model:
+        model.memory = spa.Memory(dimensions=32, tau=0.05)
 
-            def input(t):
-                if 0 <= t < 0.05:
-                    return 'A'
-                else:
-                    return '0'
+        def input(t):
+            if 0 <= t < 0.05:
+                return 'A'
+            else:
+                return '0'
 
-            self.input = spa.Input(memory=input)
-    model = Basic(seed=seed)
+        model.input = spa.Input(memory=input)
 
     memory, vocab = model.get_module_output('memory')
 

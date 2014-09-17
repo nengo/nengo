@@ -6,11 +6,8 @@ from nengo import spa
 
 
 def test_basic():
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.compare = spa.Compare(dimensions=16)
-
-    model = Basic()
+    with spa.SPA() as model:
+        model.compare = spa.Compare(dimensions=16)
 
     inputA = model.get_module_input('compare_A')
     inputB = model.get_module_input('compare_B')
@@ -24,18 +21,16 @@ def test_basic():
 
 
 def test_run(Simulator):
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.compare = spa.Compare(dimensions=16)
+    with spa.SPA(seed=2) as model:
+        model.compare = spa.Compare(dimensions=16)
 
-            def inputA(t):
-                if 0 <= t < 0.1:
-                    return 'A'
-                else:
-                    return 'B'
+        def inputA(t):
+            if 0 <= t < 0.1:
+                return 'A'
+            else:
+                return 'B'
 
-            self.input = spa.Input(compare_A=inputA, compare_B='A')
-    model = Basic(seed=2)
+        model.input = spa.Input(compare_A=inputA, compare_B='A')
 
     compare, vocab = model.get_module_output('compare')
 

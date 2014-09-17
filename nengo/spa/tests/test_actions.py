@@ -112,11 +112,9 @@ def test_actions():
     )
     assert a.count == 3
 
-    class Test(spa.SPA):
-        def __init__(self):
-            self.state = spa.Buffer(16)
-
-    model = Test()
+    model = spa.SPA()
+    with model:
+        model.state = spa.Buffer(16)
     a.process(model)
     assert str(a.actions[0].condition) == 'dot(state, A)'
     assert str(a.actions[0].effect) == 'state=B'

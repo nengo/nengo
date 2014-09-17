@@ -25,8 +25,9 @@ class Buffer(Module):
         Whether or not to use direct mode for the neurons
     """
     def __init__(self, dimensions, subdimensions=16, neurons_per_dimension=50,
-                 vocab=None, direct=False):
-        super(Buffer, self).__init__()
+                 vocab=None, direct=False, label=None, seed=None,
+                 add_to_container=None):
+        super(Buffer, self).__init__(label, seed, add_to_container)
 
         if vocab is None:
             # use the default one for this dimensionality
@@ -43,13 +44,14 @@ class Buffer(Module):
             raise ValueError('Number of dimensions(%d) must be divisible by '
                              'subdimensions(%d)' % (dimensions, subdimensions))
 
-        self.state = nengo.networks.EnsembleArray(
-            neurons_per_dimension * subdimensions,
-            dimensions // subdimensions,
-            ens_dimensions=subdimensions,
-            neuron_type=nengo.Direct() if direct else nengo.LIF(),
-            radius=np.sqrt(float(subdimensions) / dimensions),
-            label='state')
+        with self:
+            self.state = nengo.networks.EnsembleArray(
+                neurons_per_dimension * subdimensions,
+                dimensions // subdimensions,
+                ens_dimensions=subdimensions,
+                neuron_type=nengo.Direct() if direct else nengo.LIF(),
+                radius=np.sqrt(float(subdimensions) / dimensions),
+                label='state')
 
         self.inputs = dict(default=(self.state.input, vocab))
         self.outputs = dict(default=(self.state.output, vocab))

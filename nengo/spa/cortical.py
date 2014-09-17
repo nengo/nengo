@@ -19,8 +19,9 @@ class Cortical(Module):
     neurons_cconv : int
         Number of neurons per circular convolution dimension
     """
-    def __init__(self, actions, synapse=0.01, neurons_cconv=200):
-        super(Cortical, self).__init__()
+    def __init__(self, actions, synapse=0.01, neurons_cconv=200,
+                 label=None, seed=None, add_to_container=None):
+        super(Cortical, self).__init__(label, seed, add_to_container)
         self.actions = actions
         self.synapse = synapse
         self.neurons_cconv = neurons_cconv

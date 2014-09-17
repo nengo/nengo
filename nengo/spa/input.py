@@ -29,8 +29,8 @@ class Input(Module):
         Input(vision=input1, task='X')
 
     """
-    def __init__(self, **kwargs):
-        super(Input, self).__init__()
+    def __init__(self, label=None, seed=None, add_to_container=None, **kwargs):
+        super(Input, self).__init__(label, seed, add_to_container)
         self.kwargs = kwargs
         self.input_nodes = {}
 

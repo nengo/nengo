@@ -117,24 +117,20 @@ def test_routing(Simulator):
 
 
 def test_errors():
-    class SPA(spa.SPA):
-        def __init__(self):
-            self.vision = spa.Buffer(dimensions=16)
-            actions = spa.Actions('0.5 --> motor=A')
-            self.bg = spa.BasalGanglia(actions)
-
+    # motor does not exist
     with pytest.raises(NameError):
-        SPA()  # motor does not exist
+        with spa.SPA() as model:
+            model.vision = spa.Buffer(dimensions=16)
+            actions = spa.Actions('0.5 --> motor=A')
+            model.bg = spa.BasalGanglia(actions)
 
-    class SPA(spa.SPA):
-        def __init__(self):
-            self.scalar = spa.Buffer(dimensions=16, subdimensions=1)
-            actions = spa.Actions('0.5 --> scalar=dot(scalar, FOO)')
-            self.bg = spa.BasalGanglia(actions)
-            self.thalamus = spa.Thalamus(self.bg)
-
+    # dot products not implemented
     with pytest.raises(NotImplementedError):
-        SPA()  # dot products not implemented
+        with spa.SPA() as model:
+            model.scalar = spa.Buffer(dimensions=16, subdimensions=1)
+            actions = spa.Actions('0.5 --> scalar=dot(scalar, FOO)')
+            model.bg = spa.BasalGanglia(actions)
+            model.thalamus = spa.Thalamus(model.bg)
 
 
 if __name__ == '__main__':

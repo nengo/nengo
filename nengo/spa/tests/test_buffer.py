@@ -6,11 +6,8 @@ from nengo import spa
 
 
 def test_basic():
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.buffer = spa.Buffer(dimensions=16)
-
-    model = Basic()
+    with spa.SPA() as model:
+        model.buffer = spa.Buffer(dimensions=16)
 
     input = model.get_module_input('buffer')
     output = model.get_module_output('buffer')
@@ -21,53 +18,42 @@ def test_basic():
 
 
 def test_neurons():
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.buffer = spa.Buffer(dimensions=16, neurons_per_dimension=2)
+    with spa.SPA() as model:
+        model.buffer = spa.Buffer(dimensions=16, neurons_per_dimension=2)
 
-    model = Basic()
     assert len(model.buffer.state.ensembles) == 1
     assert model.buffer.state.ensembles[0].n_neurons == 16 * 2
 
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.buffer = spa.Buffer(dimensions=16, subdimensions=1,
-                                     neurons_per_dimension=2)
+    with spa.SPA() as model:
+        model.buffer = spa.Buffer(dimensions=16, subdimensions=1,
+                                  neurons_per_dimension=2)
 
-    model = Basic()
     assert len(model.buffer.state.ensembles) == 16
     assert model.buffer.state.ensembles[0].n_neurons == 2
 
 
 def test_exception():
-    class Basic(spa.SPA):
-        def __init__(self):
-            vocab = spa.Vocabulary(16)
-            self.buffer = spa.Buffer(dimensions=12, vocab=vocab)
-
     with pytest.raises(Exception):
-        Basic()
+        with spa.SPA() as model:
+            vocab = spa.Vocabulary(16)
+            model.buffer = spa.Buffer(dimensions=12, vocab=vocab)
 
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.buffer = spa.Buffer(dimensions=12, subdimensions=3)
-    Basic()
+    with spa.SPA() as model:
+        model.buffer = spa.Buffer(dimensions=12, subdimensions=3)
 
 
 def test_run(Simulator):
-    class Basic(spa.SPA):
-        def __init__(self):
-            self.buffer = spa.Buffer(dimensions=32)
+    with spa.SPA(seed=123) as model:
+        model.buffer = spa.Buffer(dimensions=32)
 
-            def input(t):
-                if 0 <= t < 0.2:
-                    return 'A'
-                elif 0.2 <= t < 0.4:
-                    return 'B'
-                else:
-                    return '0'
-            self.input = spa.Input(buffer=input)
-    model = Basic(seed=123)
+        def input(t):
+            if 0 <= t < 0.2:
+                return 'A'
+            elif 0.2 <= t < 0.4:
+                return 'B'
+            else:
+                return '0'
+        model.input = spa.Input(buffer=input)
 
     buffer, vocab = model.get_module_output('buffer')
 

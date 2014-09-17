@@ -3,7 +3,7 @@ import numpy as np
 from nengo.utils.compat import is_integer, is_number, range
 
 
-class SemanticPointer:
+class SemanticPointer(object):
     """A Semantic Pointer, based on Holographic Reduced Representations.
 
     Operators are overloaded so that + and - are addition, * is circular

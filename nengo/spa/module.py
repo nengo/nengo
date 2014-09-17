@@ -12,7 +12,8 @@ class Module(nengo.Network):
     (object, Vocabulary) pair.  The object can be a Node or an Ensemble.
     """
 
-    def __init__(self):
+    def __init__(self, label=None, seed=None, add_to_container=None):
+        super(Module, self).__init__(label, seed, add_to_container)
         self.inputs = {}
         self.outputs = {}
 

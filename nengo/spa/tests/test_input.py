@@ -6,13 +6,10 @@ from nengo import spa
 
 
 def test_fixed():
-    class SPA(spa.SPA):
-        def __init__(self):
-            self.buffer1 = spa.Buffer(dimensions=16)
-            self.buffer2 = spa.Buffer(dimensions=8, subdimensions=2)
-            self.input = spa.Input(buffer1='A', buffer2='B')
-
-    model = SPA()
+    with spa.SPA() as model:
+        model.buffer1 = spa.Buffer(dimensions=16)
+        model.buffer2 = spa.Buffer(dimensions=8, subdimensions=2)
+        model.input = spa.Input(buffer1='A', buffer2='B')
 
     input1, vocab1 = model.get_module_input('buffer1')
     input2, vocab2 = model.get_module_input('buffer2')
@@ -24,22 +21,19 @@ def test_fixed():
 
 
 def test_time_varying():
-    class SPA(spa.SPA):
-        def __init__(self):
-            self.buffer = spa.Buffer(dimensions=16)
-            self.buffer2 = spa.Buffer(dimensions=16)
+    with spa.SPA() as model:
+        model.buffer = spa.Buffer(dimensions=16)
+        model.buffer2 = spa.Buffer(dimensions=16)
 
-            def input(t):
-                if t < 0.1:
-                    return 'A'
-                elif t < 0.2:
-                    return 'B'
-                else:
-                    return '0'
+        def input(t):
+            if t < 0.1:
+                return 'A'
+            elif t < 0.2:
+                return 'B'
+            else:
+                return '0'
 
-            self.input = spa.Input(buffer=input, buffer2='B')
-
-    model = SPA()
+        model.input = spa.Input(buffer=input, buffer2='B')
 
     input, vocab = model.get_module_input('buffer')
 
@@ -52,29 +46,27 @@ def test_time_varying():
 
 
 def test_predefined_vocabs():
-    class SPA(spa.SPA):
-        def __init__(self):
-            D = 64
-            self.vocab1 = spa.Vocabulary(D)
-            self.vocab1.parse('A+B+C')
+    D = 64
 
-            self.vocab2 = spa.Vocabulary(D)
-            self.vocab1.parse('A+B+C')
+    with spa.SPA() as model:
+        model.vocab1 = spa.Vocabulary(D)
+        model.vocab1.parse('A+B+C')
 
-            self.buffer1 = spa.Buffer(dimensions=D, vocab=self.vocab1)
-            self.buffer2 = spa.Buffer(dimensions=D, vocab=self.vocab2)
+        model.vocab2 = spa.Vocabulary(D)
+        model.vocab1.parse('A+B+C')
 
-            def input(t):
-                if t < 0.1:
-                    return 'A'
-                elif t < 0.2:
-                    return 'B'
-                else:
-                    return 'C'
+        model.buffer1 = spa.Buffer(dimensions=D, vocab=model.vocab1)
+        model.buffer2 = spa.Buffer(dimensions=D, vocab=model.vocab2)
 
-            self.input = spa.Input(buffer1=input, buffer2=input)
+        def input(t):
+            if t < 0.1:
+                return 'A'
+            elif t < 0.2:
+                return 'B'
+            else:
+                return 'C'
 
-    model = SPA()
+        model.input = spa.Input(buffer1=input, buffer2=input)
 
     a1 = model.input.input_nodes['buffer1'].output(t=0.0)
     b1 = model.input.input_nodes['buffer1'].output(t=0.1)

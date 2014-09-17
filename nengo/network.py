@@ -5,42 +5,9 @@ from nengo.connection import Connection
 from nengo.ensemble import Ensemble
 from nengo.node import Node
 from nengo.probe import Probe
-from nengo.utils.compat import with_metaclass
 
 
-class NengoObjectContainer(type):
-    """A metaclass for containers of Nengo objects.
-
-    Currently, the only container is ``Network``.
-
-    There are two primary reasons for this metaclass. The first is to
-    automatically add networks to the current context; this is similar
-    to the need for the ``NetworkMember`` metaclass. However, there
-    are some differences with how this works in containers, so they are
-    separate classes (that both call ``Network.add``).
-    The second reason for this metaclass is to wrap the __init__ method
-    within the network's context manager; i.e., there is an automatic
-    ``with self`` inside a Network's (or Network subclass') __init__.
-    This allows modelers to create Network subclasses that look like
-    ordinary Python classes, while maintaining the nice property that
-    all created objects are stored inside the network.
-    """
-
-    def __call__(cls, *args, **kwargs):
-        inst = cls.__new__(cls, *args, **kwargs)
-        add_to_container = kwargs.pop(
-            'add_to_container', len(Network.context) > 0)
-        inst.label = kwargs.pop('label', None)
-        inst.seed = kwargs.pop('seed', None)
-        with inst:
-            inst.__init__(*args, **kwargs)
-        # Do the __init__ before adding in case __init__ errors out
-        if add_to_container:
-            cls.add(inst)
-        return inst
-
-
-class Network(with_metaclass(NengoObjectContainer)):
+class Network(object):
     """A network contains ensembles, nodes, connections, and other networks.
 
     A network is primarily used for grouping together related
@@ -106,30 +73,50 @@ class Network(with_metaclass(NengoObjectContainer)):
         List of nengo.BaseNetwork objects in this Network.
     """
 
-    def __new__(cls, *args, **kwargs):
-        inst = super(Network, cls).__new__(cls)
-        inst._config = cls.default_config()
-        inst.objects = {
-            Ensemble: [], Node: [], Connection: [], Network: [], Probe: [],
-        }
-        inst.ensembles = inst.objects[Ensemble]
-        inst.nodes = inst.objects[Node]
-        inst.connections = inst.objects[Connection]
-        inst.networks = inst.objects[Network]
-        inst.probes = inst.objects[Probe]
-        return inst
-
     context = collections.deque(maxlen=100)  # static stack of Network objects
 
-    @classmethod
-    def add(cls, obj):
+    def __init__(self, label=None, seed=None, add_to_container=None):
+        self.label = label
+        self.seed = seed
+        self._config = self.default_config()
+
+        self.objects = {
+            Ensemble: [], Node: [], Connection: [], Network: [], Probe: [],
+        }
+        self.ensembles = self.objects[Ensemble]
+        self.nodes = self.objects[Node]
+        self.connections = self.objects[Connection]
+        self.networks = self.objects[Network]
+        self.probes = self.objects[Probe]
+
+        # By default, we want to add to the current context, unless there is
+        # no context; i.e., we're creating a top-level network.
+        if add_to_container is None:
+            add_to_container = len(Network.context) > 0
+
+        if add_to_container:
+            Network.add(self)
+
+    @staticmethod
+    def default_config():
+        """Constructs a Config object for setting Nengo object defaults."""
+        config = Config()
+        config.configures(Connection)
+        config.configures(Ensemble)
+        config.configures(Network)
+        config.configures(Node)
+        config.configures(Probe)
+        return config
+
+    @staticmethod
+    def add(obj):
         """Add the passed object to the current Network.context."""
-        if len(cls.context) == 0:
+        if len(Network.context) == 0:
             raise RuntimeError("'%s' must either be created "
                                "inside a `with network:` block, or set "
                                "add_to_container=False in the object's "
                                "constructor." % obj)
-        network = cls.context[-1]
+        network = Network.context[-1]
         if not isinstance(network, Network):
             raise RuntimeError("Current context is not a network: %s" %
                                network)
@@ -140,16 +127,6 @@ class Network(with_metaclass(NengoObjectContainer)):
         else:
             raise TypeError("Objects of type '%s' cannot be added to "
                             "networks." % obj.__class__.__name__)
-
-    @staticmethod
-    def default_config():
-        config = Config()
-        config.configures(Connection)
-        config.configures(Ensemble)
-        config.configures(Network)
-        config.configures(Node)
-        config.configures(Probe)
-        return config
 
     def _all_objects(self, object_type):
         """Returns a list of all objects of the specified type"""
@@ -218,11 +195,11 @@ class Network(with_metaclass(NengoObjectContainer)):
                                "'%s'." % (self._config, config))
 
         network = Network.context.pop()
-
         if network is not self:
             raise RuntimeError("Network.context in bad state; was expecting "
                                "current context to be '%s' but instead got "
                                "'%s'." % (self, network))
+
         self._config.__exit__(dummy_exc_type, dummy_exc_value, dummy_tb)
 
     def __str__(self):
