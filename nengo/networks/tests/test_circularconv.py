@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.networks.circularconvolution import circconv
+from nengo.networks.circularconvolution import (
+    circconv, transform_in, transform_out)
 from nengo.utils.numpy import rmse
 
 logger = logging.getLogger(__name__)
@@ -21,10 +22,11 @@ def test_circularconv_transforms(invert_a, invert_b):
     y = rng.randn(dims)
     z0 = circconv(x, y, invert_a=invert_a, invert_b=invert_b)
 
-    cconv = nengo.networks.CircularConvolution(
-        1, dims, invert_a=invert_a, invert_b=invert_b)
-    XY = np.dot(cconv.transformA, x) * np.dot(cconv.transformB, y)
-    z1 = np.dot(cconv.transform_out, XY)
+    tr_a = transform_in(dims, 'A', invert_a)
+    tr_b = transform_in(dims, 'B', invert_b)
+    tr_out = transform_out(dims)
+    XY = np.dot(tr_a, x) * np.dot(tr_b, y)
+    z1 = np.dot(tr_out, XY)
 
     assert np.allclose(z0, z1)
 

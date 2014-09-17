@@ -33,7 +33,7 @@ def convolution(module, target_name, effect, n_neurons_cconv, synapse):
             n_neurons_cconv, s1_vocab.dimensions,
             invert_a=False,
             invert_b=False,
-            label='cconv_%s' % str(effect))
+            net=nengo.Network(label='cconv_%s' % str(effect)))
 
     with module.spa:
         # compute the requested transform

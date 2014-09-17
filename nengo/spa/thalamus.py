@@ -7,7 +7,7 @@ from nengo.spa.module import Module
 from nengo.utils.compat import iteritems
 
 
-class Thalamus(nengo.networks.Thalamus, Module):
+class Thalamus(Module):
     """A thalamus, implementing the effects for an associated BasalGanglia
 
     Parameters
@@ -69,16 +69,12 @@ class Thalamus(nengo.networks.Thalamus, Module):
         self.gates = {}     # gating ensembles per action (created as needed)
         self.channels = {}  # channels to pass transformed data between modules
 
-        # add_to_container always False here, to avoid double adding
-        Module.__init__(self, label, seed, False)
-        nengo.networks.Thalamus.__init__(
-            self, self.bg.actions.count,
-            n_neurons_per_ensemble=self.neurons_action,
-            mutual_inhib=self.mutual_inhibit,
-            threshold=self.threshold_action,
-            label=label,
-            seed=seed,
-            add_to_container=add_to_container)
+        Module.__init__(self, label, seed, add_to_container)
+        nengo.networks.Thalamus(self.bg.actions.count,
+                                n_neurons_per_ensemble=self.neurons_action,
+                                mutual_inhib=self.mutual_inhibit,
+                                threshold=self.threshold_action,
+                                net=self)
 
     def on_add(self, spa):
         Module.on_add(self, spa)

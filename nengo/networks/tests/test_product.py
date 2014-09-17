@@ -9,8 +9,9 @@ from nengo.utils.numpy import rmse
 def test_sine_waves(Simulator, nl, plt):
     radius = 2
     dim = 5
-    product = nengo.networks.Product(
-        200, dim, radius, neuron_type=nl(), seed=63)
+    product = nengo.Network(seed=63)
+    product.config[nengo.Ensemble].neuron_type = nl()
+    product = nengo.networks.Product(200, dim, radius, net=product)
 
     func_A = lambda t: np.sqrt(radius)*np.sin(np.arange(1, dim+1)*2*np.pi*t)
     func_B = lambda t: np.sqrt(radius)*np.sin(np.arange(dim, 0, -1)*2*np.pi*t)

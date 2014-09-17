@@ -1,15 +1,13 @@
 import nengo
 
 
-class Integrator(nengo.Network):
-    def __init__(self, recurrent_tau, label=None, seed=None,
-                 add_to_container=None, **ens_args):
-        super(Integrator, self).__init__(label, seed, add_to_container)
-        dimensions = ens_args.get('dimensions', 1)
-        with self:
-            self.input = nengo.Node(size_in=dimensions)
-            self.ensemble = nengo.Ensemble(**ens_args)
-            nengo.Connection(self.ensemble, self.ensemble,
-                             synapse=recurrent_tau)
-            nengo.Connection(self.input, self.ensemble,
-                             transform=recurrent_tau, synapse=None)
+def Integrator(recurrent_tau, n_neurons, dimensions, net=None):
+    if net is None:
+        net = nengo.Network(label="Integrator")
+    with net:
+        net.input = nengo.Node(size_in=dimensions)
+        net.ensemble = nengo.Ensemble(n_neurons, dimensions=dimensions)
+        nengo.Connection(net.ensemble, net.ensemble, synapse=recurrent_tau)
+        nengo.Connection(net.input, net.ensemble,
+                         transform=recurrent_tau, synapse=None)
+    return net

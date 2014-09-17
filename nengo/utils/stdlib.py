@@ -4,13 +4,15 @@ Functions that extend the Python Standard Library.
 
 from __future__ import absolute_import
 
+from contextlib import contextmanager
 import collections
 import inspect
 import itertools
 import os
 import shutil
+import sys
 
-from .compat import iteritems
+from .compat import iteritems, reraise
 
 CheckedCall = collections.namedtuple('CheckedCall', ('value', 'invoked'))
 
@@ -127,3 +129,36 @@ else:
         except:
             pass
         return terminal_size(w, h)
+
+
+@contextmanager
+def nested(*managers):
+    """Combine multiple context managers into a single nested context manager.
+
+    Ideally we would just use the `with ctx1, ctx2` form for this, but
+    this doesn't work in Python 2.6. Similarly, though it would be nice to
+    just import contextlib.nested instead, that doesn't work in Python 3. Geez!
+
+    """
+    exits = []
+    vars = []
+    exc = (None, None, None)
+    try:
+        for mgr in managers:
+            exit = mgr.__exit__
+            enter = mgr.__enter__
+            vars.append(enter())
+            exits.append(exit)
+        yield vars
+    except:
+        exc = sys.exc_info()
+    finally:
+        while exits:
+            exit = exits.pop()
+            try:
+                if exit(*exc):
+                    exc = (None, None, None)
+            except:
+                exc = sys.exc_info()
+        if exc != (None, None, None):
+            reraise(exc[0], exc[1], exc[2])

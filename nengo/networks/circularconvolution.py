@@ -17,7 +17,78 @@ def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
     return np.fft.ifft(A * B, axis=axis).real
 
 
-class CircularConvolution(nengo.Network):
+@memoize
+def transform_in(dims, align, invert):
+    """Create a transform to map the input into the Fourier domain.
+
+    See CircularConvolution docstring for more details.
+
+    Parameters
+    ----------
+    dims : int
+        Input dimensions.
+    align : 'A' or 'B'
+        How to align the real and imaginary components; the alignment
+        depends on whether we're doing transformA or transformB.
+    invert : bool
+        Whether to reverse the order of elements.
+    """
+    if align not in ('A', 'B'):
+        raise ValueError("'align' must be either 'A' or 'B'")
+
+    dims2 = 4 * (dims // 2 + 1)
+    tr = np.zeros((dims2, dims))
+    dft = dft_half(dims)
+
+    for i in range(dims2):
+        row = dft[i // 4] if not invert else dft[i // 4].conj()
+        if align == 'A':
+            tr[i] = row.real if i % 2 == 0 else row.imag
+        else:  # align == 'B'
+            tr[i] = row.real if i % 4 == 0 or i % 4 == 3 else row.imag
+
+    remove_imag_rows(tr)
+    return tr.reshape((-1, dims))
+
+
+def transform_out(dims):
+    dims2 = (dims // 2 + 1)
+    tr = np.zeros((dims2, 4, dims))
+    idft = dft_half(dims).conj()
+
+    for i in range(dims2):
+        row = idft[i] if i == 0 or 2*i == dims else 2*idft[i]
+        tr[i, 0] = row.real
+        tr[i, 1] = -row.real
+        tr[i, 2] = -row.imag
+        tr[i, 3] = -row.imag
+
+    tr = tr.reshape(4*dims2, dims)
+    remove_imag_rows(tr)
+    # IDFT has a 1/D scaling factor
+    tr /= dims
+
+    return tr.T
+
+
+def remove_imag_rows(tr):
+    """Throw away imaginary row we don't need (since they're zero)"""
+    i = np.arange(tr.shape[0])
+    if tr.shape[1] % 2 == 0:
+        tr = tr[(i == 0) | (i > 3) & (i < len(i) - 3)]
+    else:
+        tr = tr[(i == 0) | (i > 3)]
+
+
+@memoize
+def dft_half(n):
+    x = np.arange(n)
+    w = np.arange(n // 2 + 1)
+    return np.exp((-2.j * np.pi / n) * (w[:, None] * x[None, :]))
+
+
+def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
+                        input_magnitude=1, net=None):
     """Compute the circular convolution of two vectors.
 
     The circular convolution `c` of vectors `a` and `b` is given by
@@ -35,9 +106,8 @@ class CircularConvolution(nengo.Network):
 
     Parameters
     ----------
-    neurons : Neurons
-        A Neurons object, defining both the number of neurons per
-        dimension and the neuron model.
+    n_neurons : int
+        Number of neurons to be used, in total.
     dimensions : int
         The number of dimensions of the input and output vectors.
     invert_a, invert_b : bool
@@ -51,10 +121,10 @@ class CircularConvolution(nengo.Network):
     Examples
     --------
 
-        A = EnsembleArray(nengo.LIF(50), 10)
-        B = EnsembleArray(nengo.LIF(50), 10)
-        C = EnsembleArray(nengo.LIF(50), 10)
-        cconv = nengo.networks.CircularConvolution(nengo.LIF(50), 10)
+        A = EnsembleArray(50, n_ensembles=10)
+        B = EnsembleArray(50, n_ensembles=10)
+        C = EnsembleArray(50, n_ensembles=10)
+        cconv = nengo.networks.CircularConvolution(50, dimensions=10)
 
         nengo.Connection(A.output, cconv.A)
         nengo.Connection(B.output, cconv.B)
@@ -85,108 +155,23 @@ class CircularConvolution(nengo.Network):
     inverse DFT `c = DFT^{-1}(H)` in a single output transform, finding
     only the real part of `c` since the imaginary part is analytically zero.
     """
+    if net is None:
+        net = nengo.Network("Circular Convolution")
 
-    def __init__(self, n_neurons, dimensions, invert_a=False, invert_b=False,
-                 input_magnitude=1,
-                 label=None, seed=None, add_to_container=None):
-        super(CircularConvolution, self).__init__(
-            label, seed, add_to_container)
-        self.dimensions = dimensions
-        self.invert_a = invert_a
-        self.invert_b = invert_b
+    tr_a = transform_in(dimensions, 'A', invert_a)
+    tr_b = transform_in(dimensions, 'B', invert_b)
+    tr_out = transform_out(dimensions)
 
-        with self:
-            self.A = nengo.Node(size_in=dimensions, label="A")
-            self.B = nengo.Node(size_in=dimensions, label="B")
-            self.product = Product(n_neurons,
-                                   self.transform_out.shape[1],
-                                   radius=input_magnitude * 2,
-                                   label="conv")
-            self.output = nengo.Node(size_in=dimensions, label="output")
+    with net:
+        net.A = nengo.Node(size_in=dimensions, label="A")
+        net.B = nengo.Node(size_in=dimensions, label="B")
+        net.product = Product(n_neurons, tr_out.shape[1],
+                              input_magnitude=input_magnitude * 2)
+        net.output = nengo.Node(size_in=dimensions, label="output")
 
-            nengo.Connection(self.A, self.product.A,
-                             transform=self.transformA, synapse=None)
-            nengo.Connection(self.B, self.product.B,
-                             transform=self.transformB, synapse=None)
-            nengo.Connection(
-                self.product.output, self.output, transform=self.transform_out,
-                synapse=None)
+        nengo.Connection(net.A, net.product.A, transform=tr_a, synapse=None)
+        nengo.Connection(net.B, net.product.B, transform=tr_b, synapse=None)
+        nengo.Connection(net.product.output, net.output,
+                         transform=tr_out, synapse=None)
 
-    @property
-    def transformA(self):
-        return self._input_transform(self.dimensions, 'A', self.invert_a)
-
-    @property
-    def transformB(self):
-        return self._input_transform(self.dimensions, 'B', self.invert_b)
-
-    @property
-    def transform_out(self):
-        dims = self.dimensions
-        dims2 = (dims // 2 + 1)
-        tr = np.zeros((dims2, 4, dims))
-        idft = self.dft_half(dims).conj()
-
-        for i in range(dims2):
-            row = idft[i] if i == 0 or 2*i == dims else 2*idft[i]
-            tr[i, 0] = row.real
-            tr[i, 1] = -row.real
-            tr[i, 2] = -row.imag
-            tr[i, 3] = -row.imag
-
-        tr = tr.reshape(4*dims2, dims)
-        self._remove_imag_rows(tr)
-        # IDFT has a 1/D scaling factor
-        tr /= dims
-
-        return tr.T
-
-    @staticmethod
-    @memoize
-    def dft_half(n):
-        x = np.arange(n)
-        w = np.arange(n // 2 + 1)
-        return np.exp((-2.j * np.pi / n) * (w[:, None] * x[None, :]))
-
-    @staticmethod
-    @memoize
-    def _input_transform(dims, align, invert):
-        """Create a transform to map the input into the Fourier domain.
-
-        See the class docstring for more details.
-
-        Parameters
-        ----------
-        dims : int
-            Input dimensions.
-        align : 'A' or 'B'
-            How to align the real and imaginary components; the alignment
-            depends on whether we're doing transformA or transformB.
-        invert : bool
-            Whether to reverse the order of elements.
-        """
-        if align not in ('A', 'B'):
-            raise ValueError("'align' must be either 'A' or 'B'")
-
-        dims2 = 4 * (dims // 2 + 1)
-        tr = np.zeros((dims2, dims))
-        dft = CircularConvolution.dft_half(dims)
-
-        for i in range(dims2):
-            row = dft[i // 4] if not invert else dft[i // 4].conj()
-            if align == 'A':
-                tr[i] = row.real if i % 2 == 0 else row.imag
-            else:  # align == 'B'
-                tr[i] = row.real if i % 4 == 0 or i % 4 == 3 else row.imag
-
-        CircularConvolution._remove_imag_rows(tr)
-        return tr.reshape((-1, dims))
-
-    @staticmethod
-    def _remove_imag_rows(tr):
-        """Throw away imaginary row we don't need (since they're zero)"""
-        i = np.arange(tr.shape[0])
-        if tr.shape[1] % 2 == 0:
-            tr = tr[(i == 0) | (i > 3) & (i < len(i) - 3)]
-        else:
-            tr = tr[(i == 0) | (i > 3)]
+    return net

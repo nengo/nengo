@@ -6,7 +6,7 @@ from nengo.spa.module import Module
 from nengo.utils.compat import is_number
 
 
-class BasalGanglia(nengo.networks.BasalGanglia, Module):
+class BasalGanglia(Module):
     """A Basal Ganglia, performing action selection on a set of given actions.
 
     Parameters
@@ -21,11 +21,8 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
         self.actions = actions
         self.input_synapse = input_synapse
         self._bias = None
-        # add_to_container always False here, to avoid double adding
-        Module.__init__(self, label, seed, False)
-        nengo.networks.BasalGanglia.__init__(
-            self, dimensions=self.actions.count, label=label, seed=seed,
-            add_to_container=add_to_container)
+        Module.__init__(self, label, seed, add_to_container)
+        nengo.networks.BasalGanglia(dimensions=self.actions.count, net=self)
 
     @property
     def bias(self):
