@@ -30,6 +30,9 @@ class ClassParams(object):
         self._configures = configures
         assert inspect.isclass(configures)
 
+    def __contains__(self, key):
+        return self in self.get_param(key)
+
     def __getattribute__(self, key):
         """Overridden to handle instance descriptors manually."""
         try:
@@ -72,25 +75,21 @@ class ClassParams(object):
         return "\n".join(lines)
 
     def get_param(self, key):
-        if key in self.extra_params:
+        if key in self._extraparams:
             return self._extraparams[key]
-        elif key in self.default_params:
+        elif key in dir(self._configures):
             return getattr(self._configures, key)
         else:
             raise AttributeError("Unknown config parameter '%s'" % key)
 
     def set_param(self, key, value):
-        if key in dir(self):
-            raise ValueError("'%s' is a reserved key. "
-                             "Please choose a different name." % key)
-        elif key in self.default_params:
+        if not is_param(value):
+            raise TypeError("'%s' is not a parameter" % key)
+        elif key in dir(self._configures):
             raise ValueError("'%s' is already a parameter in %s. "
                              "Please choose a different name."
                              % (key, self._configures.__name__))
-        elif not is_param(value):
-            raise TypeError("%s is not a parameter" % key)
-        else:
-            self._extraparams[key] = value
+        self._extraparams[key] = value
 
     def update(self, d):
         """Sets a number of parameters at once given a dictionary."""
@@ -124,6 +123,9 @@ class InstanceParams(object):
         self._clsparams = clsparams
         assert not inspect.isclass(configures)
 
+    def __contains__(self, key):
+        return self in self._clsparams.get_param(key)
+
     def __getattribute__(self, key):
         try:
             return super(InstanceParams, self).__getattribute__(key)
@@ -131,7 +133,9 @@ class InstanceParams(object):
             if key in self._clsparams.default_params:
                 raise
             param = self._clsparams.get_param(key)
-            return param.__get__(self, self.__class__)
+            if self in param:
+                return param.__get__(self, self.__class__)
+            return getattr(self._clsparams, key)
 
     def __setattr__(self, key, value):
         """Everything not starting with _ is assumed to be a parameter."""
@@ -191,8 +195,7 @@ class Config(object):
     -------
     >>> class A(object): pass
     >>> inst = A()
-    >>> config = Config()
-    >>> config.configures(A)
+    >>> config = Config(A)
     >>> config[A].set_param('amount', Parameter(default=1))
     >>> print(config[inst].amount)
     1
@@ -205,24 +208,28 @@ class Config(object):
 
     context = collections.deque(maxlen=100)  # static stack of Config objects
 
-    def __init__(self):
+    def __init__(self, *configures):
         self.params = {}
+        for cls in configures:
+            self.configures(cls)
 
-    @classmethod
-    def default(cls, nengo_cls, param):
+    @staticmethod
+    def default(nengo_cls, param):
         """Look up the current default value for a parameter.
 
-        The default is found by going through the config stack, top to bottom.
+        The default is found by going through the config stack, from most
+        specific to least specific. The network that an object is in
+        is the most specific; the top-level network is the least specific.
         If no default is found there, then the parameter's default value
         is returned.
         """
 
         # Get the descriptor
         desc = getattr(nengo_cls, param)
-        for config in reversed(cls.context):
+        for config in reversed(Config.context):
 
             # If a default has been set for this config, return it
-            if config[nengo_cls] in desc:
+            if nengo_cls in config.params and config[nengo_cls] in desc:
                 return getattr(config[nengo_cls], param)
 
         # Otherwise, return the param default
@@ -257,7 +264,7 @@ class Config(object):
             # If no superclass ClassParams, KeyError
             raise KeyError(
                 "Type '%(name)s' is not set up for configuration. "
-                "Call 'configure(%(name)s)' first." % {'name': key.__name__})
+                "Call 'configures(%(name)s)' first." % {'name': key.__name__})
 
         # For new instances, if we configure a class in the mro we're good
         for cls in key.__class__.__mro__:
@@ -270,7 +277,7 @@ class Config(object):
         # If we don't configure the class, KeyError
         raise KeyError(
             "Type '%(name)s' is not set up for configuration. Call "
-            "configure('%(name)s') first." % {'name': key.__class__.__name__})
+            "configures('%(name)s') first." % {'name': key.__class__.__name__})
 
     def configures(self, cls):
         """Start configuring a particular class and its instances."""

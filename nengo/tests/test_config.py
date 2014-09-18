@@ -117,8 +117,7 @@ def test_defaults():
 
 def test_configstack():
     """Test that setting defaults with bare configs works."""
-    inhib = nengo.Config()
-    inhib.configures(nengo.Connection)
+    inhib = nengo.Config(nengo.Connection)
     inhib[nengo.Connection].synapse = nengo.synapses.Lowpass(0.00848)
     with nengo.Network() as net:
         net.config[nengo.Connection].modulatory = True
@@ -187,8 +186,7 @@ def test_external_class():
         thing = Parameter(default='hey')
 
     inst = A()
-    config = nengo.Config()
-    config.configures(A)
+    config = nengo.Config(A)
     config[A].set_param('amount', Parameter(default=1))
 
     # Extra param
@@ -198,6 +196,30 @@ def test_external_class():
     assert inst.thing == 'hey'
     with pytest.raises(AttributeError):
         config[inst].thing
+
+
+def test_instance_fallthrough():
+    """If the class default is set, instances should use that."""
+    class A(object):
+        pass
+
+    inst1 = A()
+    inst2 = A()
+    config = nengo.Config(A)
+    config[A].set_param('amount', Parameter(default=1))
+    assert config[A].amount == 1
+    assert config[inst1].amount == 1
+    assert config[inst2].amount == 1
+    # Value can change for instance
+    config[inst1].amount = 2
+    assert config[A].amount == 1
+    assert config[inst1].amount == 2
+    assert config[inst2].amount == 1
+    # If value to A is changed, unset instances should also change
+    config[A].amount = 3
+    assert config[A].amount == 3
+    assert config[inst1].amount == 2
+    assert config[inst2].amount == 3
 
 
 if __name__ == '__main__':

@@ -100,13 +100,7 @@ class Network(object):
     @staticmethod
     def default_config():
         """Constructs a Config object for setting Nengo object defaults."""
-        config = Config()
-        config.configures(Connection)
-        config.configures(Ensemble)
-        config.configures(Network)
-        config.configures(Node)
-        config.configures(Probe)
-        return config
+        return Config(Connection, Ensemble, Network, Node, Probe)
 
     @staticmethod
     def add(obj):
