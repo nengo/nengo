@@ -45,6 +45,8 @@ class CircularConvolution(nengo.Network):
         the first input (`invert_a`) or the second input (`invert_b`).
         Flipping the second input will make the network perform circular
         correlation instead of circular convolution.
+    input_magnitude : float
+        The expected magnitude (vector norm) of the two input values.
 
     Examples
     --------
@@ -85,7 +87,7 @@ class CircularConvolution(nengo.Network):
     """
 
     def __init__(self, n_neurons, dimensions, invert_a=False, invert_b=False,
-                 radius=1, encoders=nengo.Default, **ens_kwargs):
+                 input_magnitude=1):
         self.dimensions = dimensions
         self.invert_a = invert_a
         self.invert_b = invert_b
@@ -94,10 +96,8 @@ class CircularConvolution(nengo.Network):
         self.B = nengo.Node(size_in=dimensions, label="B")
         self.product = Product(n_neurons,
                                self.transform_out.shape[1],
-                               radius=radius,
-                               encoders=encoders,
-                               label="conv",
-                               **ens_kwargs)
+                               radius=input_magnitude * 2,
+                               label="conv")
         self.output = nengo.Node(size_in=dimensions, label="output")
 
         nengo.Connection(self.A, self.product.A,
@@ -132,8 +132,8 @@ class CircularConvolution(nengo.Network):
 
         tr = tr.reshape(4*dims2, dims)
         self._remove_imag_rows(tr)
-        # scaling is needed since we have 1./sqrt(dims) in DFT
-        tr *= np.sqrt(dims)
+        # IDFT has a 1/D scaling factor
+        tr /= dims
 
         return tr.T
 
@@ -142,8 +142,7 @@ class CircularConvolution(nengo.Network):
     def dft_half(n):
         x = np.arange(n)
         w = np.arange(n // 2 + 1)
-        return ((1. / np.sqrt(n)) *
-                np.exp((-2.j * np.pi / n) * (w[:, None] * x[None, :])))
+        return np.exp((-2.j * np.pi / n) * (w[:, None] * x[None, :]))
 
     @staticmethod
     @memoize
