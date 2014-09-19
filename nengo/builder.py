@@ -1193,26 +1193,34 @@ def build_node(node, model, config):
 Builder.register_builder(build_node, Node)
 
 
-def conn_probe(probe, conn_args, model, config):
+def conn_probe(probe, model, config):
     # TODO: make this connection in the network config context
-    return Connection(probe.target, probe, **conn_args)
+    conn = Connection(probe.target, probe, synapse=probe.synapse,
+                      add_to_container=False)
+
+    # Set connection's seed to probe's (which isn't used elsewhere)
+    model.seeds[conn] = model.seeds[probe]
+
+    # Make a sink signal for the connection
+    model.sig[probe]['in'] = Signal(np.zeros(conn.size_out), name=str(probe))
+    model.add_op(Reset(model.sig[probe]['in']))
+
+    # Build the connection
+    Builder.build(conn, model=model, config=config)
 
 
 def synapse_probe(key, probe, model, config):
-    # We can use probe.conn_args here because we don't modify synapse
-    synapse = probe.conn_args.get('synapse', None)
-
     sig = model.sig[probe.obj][key]
     if isinstance(probe.slice, slice):
         sig = sig[probe.slice]
     else:
         raise NotImplementedError("Indexing slices not implemented")
 
-    if synapse is None:
+    if probe.synapse is None:
         model.sig[probe]['in'] = sig
     else:
         model.sig[probe]['in'] = filtered_signal(
-            probe, sig, synapse, model=model, config=config)
+            probe, sig, probe.synapse, model=model, config=config)
 
 probemap = {
     Ensemble: {'decoded_output': None,
@@ -1228,11 +1236,7 @@ probemap = {
 
 
 def build_probe(probe, model, config):
-    # Make a copy so as not to modify the probe
-    conn_args = probe.conn_args.copy()
-    # If we make a connection, we won't add it to a network
-    conn_args['add_to_container'] = False
-
+    # find the right parent class in `objtypes`, using `isinstance`
     for nengotype, probeables in probemap.items():
         if isinstance(probe.obj, nengotype):
             break
@@ -1241,27 +1245,13 @@ def build_probe(probe, model, config):
 
     key = probeables[probe.attr] if probe.attr in probeables else probe.attr
     if key is None:
-        conn = conn_probe(probe, conn_args, model, config)
+        conn_probe(probe, model, config)
     else:
         synapse_probe(key, probe, model, config)
-        conn = None
 
-    # Most probes are implemented as connections
-    if conn is not None:
-        # Make a sink signal for the connection
-        model.sig[probe]['in'] = Signal(np.zeros(conn.size_out),
-                                        name=str(probe))
-        model.add_op(Reset(model.sig[probe]['in']))
-        # Set connection's seed to probe's (which isn't used elsewhere)
-        model.seeds[conn] = model.seeds[probe]
-        # Build the connection
-        Builder.build(conn, model=model, config=config)
-
-    # Let the model know
     model.probes.append(probe)
 
-    # We put a list here so that the simulator can fill it
-    # as it simulates the model
+    # Simulator will fill this list with probe data during simulation
     model.params[probe] = []
 
 Builder.register_builder(build_probe, Probe)
