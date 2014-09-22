@@ -101,19 +101,24 @@ class Timer(object):
         self.duration = self.end - self.start
 
 
-class warns(object):
-    def __init__(self, warning_type):
-        self.warning_type = warning_type
-
+class WarningCatcher(object):
     def __enter__(self):
         self.catcher = warnings.catch_warnings(record=True)
         self.record = self.catcher.__enter__()
 
     def __exit__(self, type, value, traceback):
+        self.catcher.__exit__(type, value, traceback)
+
+
+class warns(WarningCatcher):
+    def __init__(self, warning_type):
+        self.warning_type = warning_type
+
+    def __exit__(self, type, value, traceback):
         if not any(r.category is self.warning_type for r in self.record):
             pytest.fail("DID NOT RAISE")
 
-        self.catcher.__exit__(type, value, traceback)
+        super(warns, self).__exit__(type, value, traceback)
 
 
 def allclose(t, target, signals, plotter=None, filename=None,  # noqa:C901

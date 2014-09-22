@@ -6,7 +6,7 @@ import pytest
 import nengo
 from nengo.utils.compat import range
 from nengo.utils.distributions import Choice
-from nengo.utils.testing import Plotter
+from nengo.utils.testing import Plotter, WarningCatcher
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def test_multidim(Simulator, nl):
     c[::2] = a
     c[1::2] = b
 
-    model = nengo.Network(label='Multidim', seed=123)
+    model = nengo.Network(label='Multidim', seed=121)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl()
         inputA = nengo.Node(a)
@@ -93,8 +93,8 @@ def _mmul_transforms(A_shape, B_shape, C_dim):
 def test_matrix_mul(Simulator, nl):
     N = 100
 
-    Amat = np.asarray([[.5, -.5]])
-    Bmat = np.asarray([[0, -1.], [.7, 0]])
+    Amat = np.asarray([[0.5, -0.5]])
+    Bmat = np.asarray([[0.8, 0.3], [0.2, 0.7]])
     radius = 1
 
     model = nengo.Network(label='Matrix Multiplication', seed=123)
@@ -109,14 +109,12 @@ def test_matrix_mul(Simulator, nl):
         inputB = nengo.Node(output=Bmat.ravel())
         nengo.Connection(inputA, A.input)
         nengo.Connection(inputB, B.input)
-        A_p = nengo.Probe(A.output, sample_every=0.01, synapse=0.01)
-        B_p = nengo.Probe(B.output, sample_every=0.01, synapse=0.01)
+        A_p = nengo.Probe(A.output, synapse=0.03)
+        B_p = nengo.Probe(B.output, synapse=0.03)
 
+        Cdims = Amat.size * Bmat.shape[1]
         C = nengo.networks.EnsembleArray(
-            N,
-            Amat.size * Bmat.shape[1],
-            ens_dimensions=2,
-            radius=1.5 * radius,
+            N, Cdims, ens_dimensions=2, radius=np.sqrt(2) * radius,
             encoders=Choice([[1, 1], [-1, 1], [1, -1], [-1, -1]]))
 
         transformA, transformB = _mmul_transforms(
@@ -125,9 +123,8 @@ def test_matrix_mul(Simulator, nl):
         nengo.Connection(A.output, C.input, transform=transformA)
         nengo.Connection(B.output, C.input, transform=transformB)
 
-        D = nengo.networks.EnsembleArray(N,
-                                         Amat.shape[0] * Bmat.shape[1],
-                                         radius=radius)
+        D = nengo.networks.EnsembleArray(
+            N, Amat.shape[0] * Bmat.shape[1], radius=radius)
 
         transformC = np.zeros((D.dimensions, Bmat.size))
         for i in range(Bmat.size):
@@ -136,35 +133,32 @@ def test_matrix_mul(Simulator, nl):
         prod = C.add_output("product", lambda x: x[0] * x[1])
 
         nengo.Connection(prod, D.input, transform=transformC)
-        D_p = nengo.Probe(D.output, sample_every=0.01, synapse=0.01)
+        D_p = nengo.Probe(D.output, synapse=0.03)
 
     sim = Simulator(model)
-    sim.run(1)
+    sim.run(0.3)
+
+    t = sim.trange()
+    tmask = (t >= 0.2)
 
     with Plotter(Simulator, nl) as plt:
-        t = sim.trange(dt=0.01)
         plt.plot(t, sim.data[D_p])
         for d in np.dot(Amat, Bmat).flatten():
             plt.axhline(d, color='k')
         plt.savefig('test_ensemble_array.test_matrix_mul.pdf')
         plt.close()
 
-    atol, rtol = .1, .01
-    assert np.allclose(sim.data[A_p][50:, 0], 0.5, atol=atol, rtol=rtol)
-    assert np.allclose(sim.data[A_p][50:, 1], -0.5, atol=atol, rtol=rtol)
-
-    assert np.allclose(sim.data[B_p][50:, 0], 0, atol=atol, rtol=rtol)
-    assert np.allclose(sim.data[B_p][50:, 1], -1, atol=atol, rtol=rtol)
-    assert np.allclose(sim.data[B_p][50:, 2], .7, atol=atol, rtol=rtol)
-    assert np.allclose(sim.data[B_p][50:, 3], 0, atol=atol, rtol=rtol)
+    tols = dict(atol=0.1, rtol=0.01)
+    for i in range(Amat.size):
+        assert np.allclose(sim.data[A_p][tmask, i], Amat.flat[i], **tols)
+    for i in range(Bmat.size):
+        assert np.allclose(sim.data[B_p][tmask, i], Bmat.flat[i], **tols)
 
     Dmat = np.dot(Amat, Bmat)
     for i in range(Amat.shape[0]):
         for k in range(Bmat.shape[1]):
-            assert np.allclose(
-                sim.data[D_p][-10:, i * Bmat.shape[1] + k],
-                Dmat[i, k],
-                atol=atol, rtol=rtol)
+            data_ik = sim.data[D_p][tmask, i * Bmat.shape[1] + k]
+            assert np.allclose(data_ik, Dmat[i, k], **tols)
 
 
 def test_arguments():
@@ -173,12 +167,14 @@ def test_arguments():
         nengo.networks.EnsembleArray(nengo.LIF(10), 1, dimensions=2)
 
 
-def test_neuronconnection(Simulator, nl, recwarn):
+def test_neuronconnection(Simulator, nl):
+    catcher = WarningCatcher()
     with nengo.Network(seed=123) as net:
         net.config[nengo.Ensemble].neuron_type = nl()
 
         input = nengo.Node([-10] * 20)
-        ea = nengo.networks.EnsembleArray(10, 2, neuron_nodes=True)
+        with catcher:
+            ea = nengo.networks.EnsembleArray(10, 2, neuron_nodes=True)
 
         nengo.Connection(input, ea.neuron_input)
 
@@ -190,7 +186,11 @@ def test_neuronconnection(Simulator, nl, recwarn):
     assert np.all(s.data[p][-1] == 0.0)
 
     if nl == nengo.Direct:
-        assert recwarn.pop() is not None
+        assert (len(catcher.record) == 1 and
+                catcher.record[0].category is UserWarning)
+    else:
+        assert len(catcher.record) == 0
+
 
 if __name__ == "__main__":
     nengo.log(debug=True)
