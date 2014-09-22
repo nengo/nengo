@@ -44,8 +44,8 @@ class OutputParam(Parameter):
         args = (t, x) if node.size_in > 0 else (t,)
         result, invoked = checked_call(output, *args)
         if not invoked:
-            msg = ("output function '%s' is expected to accept exactly"
-                   "%d argument" % output, len(args))
+            msg = ("output function '%s' is expected to accept exactly "
+                   "%d argument" % (output, len(args)))
             msg += (' (time, as a float)' if len(args) == 1 else
                     's (time, as a float and data, as a NumPy array)')
             raise TypeError(msg)
