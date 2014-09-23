@@ -26,6 +26,7 @@ Please keep this list sorted alphabetically.
 - Eric Crawford <e2crawfo@uwaterloo.ca>
 - Eric Hunsberger <erichuns@gmail.com>
 - James Bergstra <james.bergstra@gmail.com>
+- Jan Gosmann <jan@hyper-world.de>
 - Oliver Trujillo <olivertgp@hotmail.com>
 - Peter Blouw <pblouw@uwaterloo.ca>
 - Peter Suma <psuma@waterloo.ca>
