@@ -259,15 +259,16 @@ def test_solvers(Simulator, nl_nodirect):
 
     model = nengo.Network('test_solvers', seed=290)
     with model:
+        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=input_function)
-        a = nengo.Ensemble(nl_nodirect(N), dimensions=1)
+        a = nengo.Ensemble(N, dimensions=1)
         nengo.Connection(u, a)
         ap = nengo.Probe(a)
 
         probes = []
         names = []
         for solver in decoder_solvers + weight_solvers:
-            b = nengo.Ensemble(nl_nodirect(N), dimensions=1, seed=99)
+            b = nengo.Ensemble(N, dimensions=1, seed=99)
             nengo.Connection(a, b, solver=solver)
             probes.append(nengo.Probe(b))
             names.append("%s(%s)" % (
@@ -279,7 +280,7 @@ def test_solvers(Simulator, nl_nodirect):
 
     # ref = sim.data[up]
     ref = filtfilt(sim.data[ap], 20)
-    outputs = np.array([sim.data[probe] for probe in probes])
+    outputs = np.array([sim.data[probe][:, 0] for probe in probes])
     outputs_f = filtfilt(outputs, 20, axis=1)
 
     close = allclose(t, ref, outputs_f,
@@ -310,6 +311,7 @@ def test_regularization(Simulator, nl_nodirect):
 
     model = nengo.Network('test_regularization')
     with model:
+        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=input_function)
         up = nengo.Probe(u)
 
@@ -318,14 +320,17 @@ def test_regularization(Simulator, nl_nodirect):
             dtype='object')
 
         for j, n_neurons in enumerate(neurons):
-            a = nengo.Ensemble(nl_nodirect(n_neurons), dimensions=1)
+            a = nengo.Ensemble(n_neurons, dimensions=1)
             nengo.Connection(u, a)
 
             for i, Solver in enumerate(Solvers):
                 for k, reg in enumerate(regs):
                     for l, synapse in enumerate(filters):
-                        probes[i, j, k, l] = nengo.Probe(
-                            a, solver=Solver(reg=reg), synapse=synapse)
+                        n = nengo.Node(output=None, size_in=1)
+                        nengo.Connection(a, n,
+                                         solver=Solver(reg=reg),
+                                         synapse=synapse)
+                        probes[i, j, k, l] = nengo.Probe(n, synapse=None)
 
     sim = Simulator(model, dt=dt)
     sim.run(tfinal)
@@ -454,8 +459,9 @@ def test_eval_points(Simulator, nl_nodirect):
             model = nengo.Network(
                 'test_eval_points(%d,%d)' % (i, j), seed=seed)
             with model:
+                model.config[nengo.Ensemble].neuron_type = nl_nodirect()
                 u = nengo.Node(output=x)
-                a = nengo.Ensemble(nl_nodirect(n * d), d,
+                a = nengo.Ensemble(n * d, dimensions=d,
                                    eval_points=points[:n_points])
                 nengo.Connection(u, a, synapse=0)
                 up = nengo.Probe(u)
