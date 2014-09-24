@@ -232,3 +232,12 @@ class NoDecoderCache(object):
 
     def invalidate(self):
         pass
+
+
+def get_default_decoder_cache():
+    if rc.getboolean('decoder_cache', 'enabled'):
+        decoder_cache = DecoderCache(
+            rc.getboolean('decoder_cache', 'readonly'))
+    else:
+        decoder_cache = NoDecoderCache()
+    return decoder_cache

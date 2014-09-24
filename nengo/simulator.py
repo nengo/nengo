@@ -14,8 +14,7 @@ import numpy as np
 import nengo.utils.numpy as npext
 from nengo.builder import Model
 from nengo.builder.signal import SignalDict
-from nengo.cache import DecoderCache, NoDecoderCache
-from nengo.rc import rc
+from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
 from nengo.utils.simulator import operator_depencency_graph
@@ -98,16 +97,9 @@ class Simulator(object):
             then you can pass in a ``nengo.builder.Model`` instance.
         """
         if model is None:
-            caching = rc.getboolean('decoder_cache', 'enabled')
-            if caching:
-                decoder_cache = DecoderCache(
-                    rc.getboolean('decoder_cache', 'readonly'))
-            else:
-                decoder_cache = NoDecoderCache()
-
             self.model = Model(dt=dt,
                                label="%s, dt=%f" % (network, dt),
-                               decoder_cache=decoder_cache)
+                               decoder_cache=get_default_decoder_cache())
         else:
             self.model = model
 
