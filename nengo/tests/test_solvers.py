@@ -326,11 +326,8 @@ def test_regularization(Simulator, nl_nodirect):
             for i, Solver in enumerate(Solvers):
                 for k, reg in enumerate(regs):
                     for l, synapse in enumerate(filters):
-                        n = nengo.Node(output=None, size_in=1)
-                        nengo.Connection(a, n,
-                                         solver=Solver(reg=reg),
-                                         synapse=synapse)
-                        probes[i, j, k, l] = nengo.Probe(n, synapse=None)
+                        probes[i, j, k, l] = nengo.Probe(
+                            a, solver=Solver(reg=reg), synapse=synapse)
 
     sim = Simulator(model, dt=dt)
     sim.run(tfinal)

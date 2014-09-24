@@ -1194,9 +1194,8 @@ Builder.register_builder(build_node, Node)
 
 
 def conn_probe(probe, model, config):
-    # TODO: make this connection in the network config context
     conn = Connection(probe.target, probe, synapse=probe.synapse,
-                      add_to_container=False)
+                      solver=probe.solver, add_to_container=False)
 
     # Set connection's seed to probe's (which isn't used elsewhere)
     model.seeds[conn] = model.seeds[probe]
