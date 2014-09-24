@@ -101,7 +101,7 @@ def test_decoder_solver(Solver):
         plt.plot(test, np.zeros_like(test), 'k--')
         plt.plot(test, test - est)
         plt.title("relative RMSE: %0.2e" % rel_rmse)
-        plt.savefig('test_decoders.test_decoder_solver.%s.pdf'
+        plt.savefig('test_solvers.test_decoder_solver.%s.pdf'
                     % Solver.__name__)
         plt.close()
 
@@ -200,7 +200,7 @@ def test_nnls(Solver):
         plt.subplot(212)
         plt.plot(x, np.zeros_like(x), 'k--')
         plt.plot(x, yest - y)
-        plt.savefig('test_decoders.test_nnls.%s.pdf' % Solver.__name__)
+        plt.savefig('test_solvers.test_nnls.%s.pdf' % Solver.__name__)
         plt.close()
 
     assert np.allclose(yest, y, atol=3e-2, rtol=1e-3)
@@ -244,9 +244,9 @@ def test_subsolvers_L1():
 
 
 @pytest.mark.benchmark
-def test_solvers(Simulator, nl_nodirect):
+def test_compare_solvers(Simulator, nl_nodirect):
 
-    N = 100
+    N = 70
     decoder_solvers = [
         Lstsq(), LstsqNoise(), LstsqL2(), LstsqL2nz(), LstsqL1()]
     weight_solvers = [LstsqL1(weights=True), LstsqDrop(weights=True)]
@@ -285,7 +285,7 @@ def test_solvers(Simulator, nl_nodirect):
 
     close = allclose(t, ref, outputs_f,
                      plotter=Plotter(Simulator, nl_nodirect),
-                     filename='test_decoders.test_solvers.pdf',
+                     filename='test_solvers.test_solvers.pdf',
                      labels=names,
                      atol=0.05, rtol=0, buf=100, delay=7)
     for name, c in zip(names, close):
@@ -357,7 +357,7 @@ def test_regularization(Simulator, nl_nodirect):
                 plt.title("%s (N=%d)" % (Solver.__name__, n_neurons))
 
         plt.tight_layout()
-        plt.savefig('test_decoders.test_regularization.pdf')
+        plt.savefig('test_solvers.test_regularization.pdf')
         plt.close()
 
 
@@ -425,7 +425,7 @@ def test_eval_points_static(Simulator):
         plt.subplot(3, 1, 3)
         make_plot(rmses_norm2)
         plt.ylabel('(rmse - mean) / std')
-        plt.savefig('test_decoders.test_eval_points_static.pdf')
+        plt.savefig('test_solvers.test_eval_points_static.pdf')
         plt.close()
 
 
@@ -493,7 +493,7 @@ def test_eval_points(Simulator, nl_nodirect):
         plt.semilogx(eval_points, low, 'b-')
         plt.xlim([eval_points[0], eval_points[-1]])
         plt.xticks(eval_points, eval_points)
-        plt.savefig('test_decoders.test_eval_points.pdf')
+        plt.savefig('test_solvers.test_eval_points.pdf')
         plt.close()
 
 
