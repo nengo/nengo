@@ -23,8 +23,12 @@ This example demonstrates how to set settings in an RC file:
     size: 536870912  # setting the decoder cache size to 512MiB.
 """
 
+import logging
+
 import nengo.utils.paths
 from nengo.utils.compat import configparser
+
+logger = logging.getLogger(__name__)
 
 # The default core Nengo RC settings. Access with
 #   nengo.RC_DEFAULTS[section_name][option_name]
@@ -61,6 +65,19 @@ class _RC(configparser.SafeConfigParser):
             self.add_section(section)
             for k, v in settings.items():
                 self.set(section, k, str(v))
+
+    def readfp(self, fp, filename=None):
+        if filename is None:
+            if hasattr(fp, 'name'):
+                filename = fp.name
+            else:
+                filename = '<???>'
+        logger.info('Reading configuration from {0}'.format(filename))
+        return configparser.SafeConfigParser.readfp(self, fp, filename)
+
+    def read(self, filenames):
+        logger.info('Reading configuration files {0}'.format(filenames))
+        return configparser.SafeConfigParser.read(self, filenames)
 
     def reload_rc(self, filenames=None):
         """Resets the currently loaded RC settings and loads new RC files.
