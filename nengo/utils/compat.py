@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import collections
 import sys
 
+import numpy as np
+
 # Only test for Python 2 so that we have less changes for Python 4
 PY2 = sys.version_info[0] == 2
 
@@ -17,7 +19,7 @@ assert OrderedDict
 if PY2:
     from StringIO import StringIO
     string_types = (str, unicode)
-    int_types = (int, long)
+    int_types = (int, long, np.integer)
     range = xrange
 
     # No iterkeys; use ``for key in dict:`` instead
@@ -30,7 +32,7 @@ if PY2:
 else:
     from io import StringIO
     string_types = (str,)
-    int_types = (int,)
+    int_types = (int, np.integer)
     range = range
 
     # No iterkeys; use ``for key in dict:`` instead
