@@ -9,9 +9,14 @@ from nengo.utils.stdlib import checked_call
 
 
 class DefaultType:
+    def __init__(self, name):
+        self.name = name
+
     def __repr__(self):
-        return "Default"
-Default = DefaultType()
+        return self.name
+
+Default = DefaultType("Default")
+ConnectionDefault = DefaultType("ConnectionDefault")
 
 
 def is_param(obj):

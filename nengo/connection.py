@@ -148,7 +148,7 @@ class Connection(NengoObject):
         Linear transform mapping the pre output to the post input.
     solver : Solver
         Instance of a Solver class to compute decoders or weights
-        (see `nengo.decoders`). If solver.weights is True, a full
+        (see `nengo.solvers`). If solver.weights is True, a full
         connection weight matrix is computed instead of decoders.
     function : callable, optional
         Function to compute using the pre population (pre must be Ensemble).

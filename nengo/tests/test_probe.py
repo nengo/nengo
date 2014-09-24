@@ -186,6 +186,39 @@ def test_slice(Simulator, nl):
     assert np.allclose(sim.data[bp][:, 1], sim.data[bp1b][:, 0])
 
 
+def test_solver_defaults(Simulator):
+    solver1 = nengo.solvers.LstsqL2(reg=0.764)
+    solver2 = nengo.solvers.LstsqL2(reg=0.911)
+    solver3 = nengo.solvers.LstsqL2(reg=0.898)
+
+    make_probe = lambda: nengo.Probe(nengo.Ensemble(100, 1))
+
+    with nengo.Network() as model:
+        a = make_probe()
+        model.config[nengo.Connection].solver = solver1
+        b = make_probe()
+
+        with nengo.Network() as net:
+            c = make_probe()
+            net.config[nengo.Probe].solver = solver2
+            d = make_probe()
+
+        net = nengo.Network()
+        with net:
+            e = make_probe()
+
+        net.config[nengo.Probe].solver = solver3
+        with net:
+            f = make_probe()
+
+    assert a.solver is nengo.Connection.solver.default
+    assert b.solver is solver1
+    assert c.solver is solver1
+    assert d.solver is solver2
+    assert e.solver is solver1
+    assert f.solver is solver3
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
