@@ -50,6 +50,12 @@ class ClassParams(object):
         else:
             self.get_param(key).defaults[self] = value
 
+    def __delattr__(self, key):
+        if key.startswith("_"):
+            super(ClassParams, self).__delattr__(key)
+        else:
+            del self.get_param(key).defaults[self]
+
     def __str__(self):
         lines = ["All parameters for %s:" % self._configures.__name__]
 
@@ -65,20 +71,25 @@ class ClassParams(object):
         return "\n".join(lines)
 
     def get_param(self, key):
-        if key in self._extraparams:
+        if key in self.extra_params:
             return self._extraparams[key]
-        elif key in dir(self._configures):
+        elif key in self.default_params:
             return getattr(self._configures, key)
-        raise AttributeError("Unknown config parameter '%s'" % key)
+        else:
+            raise AttributeError("Unknown config parameter '%s'" % key)
 
     def set_param(self, key, value):
-        if not is_param(value):
-            raise TypeError("%s is not a parameter" % key)
-        elif key in dir(self._configures):
-            raise ValueError("%s is already a parameter in %s. "
+        if key in dir(self):
+            raise ValueError("'%s' is a reserved key. "
+                             "Please choose a different name." % key)
+        elif key in self.default_params:
+            raise ValueError("'%s' is already a parameter in %s. "
                              "Please choose a different name."
                              % (key, self._configures.__name__))
-        self._extraparams[key] = value
+        elif not is_param(value):
+            raise TypeError("%s is not a parameter" % key)
+        else:
+            self._extraparams[key] = value
 
     def update(self, d):
         """Sets a number of parameters at once given a dictionary."""
@@ -131,6 +142,16 @@ class InstanceParams(object):
                                  % (self.__class__.__name__, key))
         else:
             self._clsparams.get_param(key).__set__(self, value)
+
+    def __delattr__(self, key):
+        if key.startswith("_"):
+            super(InstanceParams, self).__delattr__(key)
+        elif key in dir(self._configures):
+            # Disallow configuring attributes the instance already has
+            raise AttributeError("'%s' object has no attribute '%s'"
+                                 % (self.__class__.__name__, key))
+        else:
+            self._clsparams.get_param(key).__delete__(self)
 
     def __str__(self):
         lines = ["Parameters set for %s:" % str(self._configures)]

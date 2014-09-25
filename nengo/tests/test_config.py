@@ -32,6 +32,8 @@ def test_config_basic():
     assert model.config[a].something == 'hello'
     model.config[a].something = 'world'
     assert model.config[a].something == 'world'
+    del model.config[a].something
+    assert model.config[a].something is None
 
     with pytest.raises(AttributeError):
         model.config[a].something_else
@@ -105,9 +107,12 @@ def test_defaults():
         with nengo.Network() as net2:
             net2.config[nengo.Ensemble].radius = 2.0
             a = nengo.Ensemble(50, dimensions=1, radius=nengo.Default)
+            del net2.config[nengo.Ensemble].radius
+            d = nengo.Ensemble(50, dimensions=1, radius=nengo.Default)
 
     assert c.radius == nengo.Ensemble.radius.default
     assert a.radius == 2.0
+    assert d.radius == nengo.Ensemble.radius.default
 
 
 def test_configstack():

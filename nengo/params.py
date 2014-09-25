@@ -72,7 +72,8 @@ class Parameter(object):
 
     def validate(self, instance, value):
         if value is Default:
-            raise ValueError("Default is not a valid value.")
+            raise ValueError("Default is not a valid value. To reset a "
+                             "parameter, use `del`.")
         if self.readonly and instance in self.data:
             raise ValueError("Parameter is read-only; cannot be changed.")
         if not self.optional and value is None:
