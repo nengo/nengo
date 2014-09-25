@@ -1,0 +1,3 @@
+graft nengo_gui/scripts
+graft nengo_gui/static
+graft nengo_gui/templates

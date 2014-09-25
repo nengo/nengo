@@ -24,6 +24,13 @@ setup(
     author="CNRGlab at UWaterloo",
     author_email="celiasmith@uwaterloo.ca",
     packages=find_packages(),
+    data_files=[(dirpath, [os.path.join(dirpath, f) for f in filenames])
+                for dirpath, dirnames, filenames
+                in os.walk('nengo_gui/scripts')] +
+    [(dirpath, [os.path.join(dirpath, f) for f in filenames])
+     for dirpath, dirnames, filenames in os.walk('nengo_gui/static')] +
+    [(dirpath, [os.path.join(dirpath, f) for f in filenames])
+     for dirpath, dirnames, filenames in os.walk('nengo_gui/templates')],
     entry_points={
         'console_scripts': [
             'nengo_gui = nengo_gui:main',
