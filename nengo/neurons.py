@@ -36,24 +36,28 @@ class Direct(NeuronType):
 #       but still simulate very fast
 
 
-class _LIFBase(NeuronType):
-    """Abstract base class for LIF neuron types."""
+class LIFRate(NeuronType):
+    """Rate version of the leaky integrate-and-fire (LIF) neuron model."""
+
+    probeable = ['rates']
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
 
+    def step_math(self, dt, J, output):
+        """Compute rates in Hz/dt for input current (incl. bias)"""
+        j = J - 1
+        output[:] = 0  # faster than output[j <= 0] = 0
+        output[j > 0] = dt / (
+            self.tau_ref + self.tau_rc * np.log1p(1. / j[j > 0]))
+        # the above line is designed to throw an error if any j is nan
+        # (nan > 0 -> error), and not pass x < -1 to log1p
+
     def rates_from_current(self, J):
         """LIF firing rates in Hz for input current (incl. bias)"""
-        old = np.seterr(divide='ignore', invalid='ignore')
-        try:
-            j = J - 1    # because we're using log1p instead of log
-            r = 1. / (self.tau_ref + self.tau_rc * np.log1p(1. / j))
-            # NOTE: There is a known bug in numpy that np.log1p(inf) returns
-            #   NaN instead of inf: https://github.com/numpy/numpy/issues/4225
-            r[j <= 0] = 0
-        finally:
-            np.seterr(**old)
+        r = np.zeros_like(J)
+        LIFRate.step_math(self, 1.0, J, r)  # don't use overriden version
         return r
 
     def rates(self, x, gain, bias):
@@ -96,23 +100,7 @@ class _LIFBase(NeuronType):
         return gain, bias
 
 
-class LIFRate(_LIFBase):
-    """Rate version of the leaky integrate-and-fire (LIF) neuron model."""
-
-    probeable = ['rates']
-
-    def step_math(self, dt, J, output):
-        """Compute rates for input current (incl. bias)"""
-
-        j = J - 1
-        output[:] = 0  # faster than output[j <= 0] = 0
-        output[j > 0] = dt / (
-            self.tau_ref + self.tau_rc * np.log1p(1. / j[j > 0]))
-        # the above line is designed to throw an error if any j is nan
-        # (nan > 0 -> error), and not pass x < -1 to log1p
-
-
-class LIF(_LIFBase):
+class LIF(LIFRate):
     """Spiking version of the leaky integrate-and-fire (LIF) neuron model."""
 
     probeable = ['spikes', 'voltage', 'refractory_time']
