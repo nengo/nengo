@@ -137,36 +137,27 @@ def test_am_default_output_inhibit_utilities(Simulator):
     sim = Simulator(m)
     sim.run(1.0)
 
-    assert np.allclose(sim.data[in_p][240:250], vocab.parse("A+0.8*B").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[in_p][490:500], vocab.parse("0.8*A+B").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[in_p][-10:], vocab.parse("E").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[out_p][240:250], vocab.parse("A+B").v,
-                       atol=.2, rtol=.05)
-    assert np.allclose(sim.data[out_p][490:500], vocab.parse("A+B").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[out_p][740:750], vocab.parse("F").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[out_p][-10:], vocab.parse("0").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_p][240:250], [1, 0.75, 0, 0],
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_p][490:500], [0.75, 1, 0, 0],
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_p][740:750], [0, 0, 0, 0],
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_p][-10:], [0, 0, 0, 0],
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_th_p][240:250], [1.05, 1.05, 0, 0],
-                       atol=.2, rtol=.05)
-    assert np.allclose(sim.data[utils_th_p][490:500], [1.05, 1.05, 0, 0],
-                       atol=.1, rtol=.05)
-    assert np.allclose(sim.data[utils_th_p][740:750], [0, 0, 0, 0],
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_th_p][-10:], [0, 0, 0, 0],
-                       atol=.1, rtol=.01)
+    t = sim.trange()
+    t1 = (t >= 0.2) & (t < 0.25)
+    t2 = (t >= 0.45) & (t < 0.5)
+    t3 = (t >= 0.7) & (t < 0.75)
+    t4 = (t >= 0.95)
+    assert np.allclose(sim.data[in_p][t1], vocab.parse("A+0.8*B").v, atol=0.1)
+    assert np.allclose(sim.data[in_p][t2], vocab.parse("0.8*A+B").v, atol=0.1)
+    assert np.allclose(sim.data[in_p][t3], vocab.parse("E").v, atol=0.1)
+    assert np.allclose(sim.data[in_p][t4], vocab.parse("E").v, atol=0.1)
+    assert np.allclose(sim.data[out_p][t1], vocab.parse("A+B").v, atol=0.11)
+    assert np.allclose(sim.data[out_p][t2], vocab.parse("A+B").v, atol=0.1)
+    assert np.allclose(sim.data[out_p][t3], vocab.parse("F").v, atol=0.1)
+    assert np.allclose(sim.data[out_p][t4], vocab.parse("0").v, atol=0.1)
+    assert np.allclose(sim.data[utils_p][t1], [1, 0.75, 0, 0], atol=0.1)
+    assert np.allclose(sim.data[utils_p][t2], [0.75, 1, 0, 0], atol=0.1)
+    assert np.allclose(sim.data[utils_p][t3], [0, 0, 0, 0], atol=0.1)
+    assert np.allclose(sim.data[utils_p][t4], [0, 0, 0, 0], atol=0.1)
+    assert np.allclose(sim.data[utils_th_p][t1], [1.05, 1.05, 0, 0], atol=0.2)
+    assert np.allclose(sim.data[utils_th_p][t2], [1.05, 1.05, 0, 0], atol=0.15)
+    assert np.allclose(sim.data[utils_th_p][t3], [0, 0, 0, 0], atol=0.1)
+    assert np.allclose(sim.data[utils_th_p][t4], [0, 0, 0, 0], atol=0.1)
 
 
 def test_am_default_output_inhibit_utilities_wta(Simulator):
@@ -223,36 +214,27 @@ def test_am_default_output_inhibit_utilities_wta(Simulator):
     sim = Simulator(m)
     sim.run(1.0)
 
-    assert np.allclose(sim.data[in_p][240:250], vocab.parse("A+0.8*B").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[in_p][490:500], vocab.parse("E").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[in_p][-10:], vocab.parse("0.8*A+B").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[out_p][240:250], vocab.parse("A").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[out_p][490:500], vocab.parse("F").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[out_p][740:750], vocab.parse("B").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[out_p][-10:], vocab.parse("0").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_p][240:250], [1, 0, 0, 0],
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_p][490:500], [0, 0, 0, 0],
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_p][740:750], [0, 1, 0, 0],
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_p][-10:], [0, 0, 0, 0],
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_th_p][240:250], [1.05, 0, 0, 0],
-                       atol=.1, rtol=.05)
-    assert np.allclose(sim.data[utils_th_p][490:500], [0, 0, 0, 0],
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[utils_th_p][740:750], [0, 1.05, 0, 0],
-                       atol=.1, rtol=.05)
-    assert np.allclose(sim.data[utils_th_p][-10:], [0, 0, 0, 0],
-                       atol=.1, rtol=.01)
+    t = sim.trange()
+    t1 = (t >= 0.2) & (t < 0.25)
+    t2 = (t >= 0.45) & (t < 0.5)
+    t3 = (t >= 0.7) & (t < 0.75)
+    t4 = (t >= 0.95)
+    assert np.allclose(sim.data[in_p][t1], vocab.parse("A+0.8*B").v, atol=0.1)
+    assert np.allclose(sim.data[in_p][t2], vocab.parse("E").v, atol=0.1)
+    assert np.allclose(sim.data[in_p][t3], vocab.parse("0.8*A+B").v, atol=0.1)
+    assert np.allclose(sim.data[in_p][t4], vocab.parse("0.8*A+B").v, atol=0.1)
+    assert np.allclose(sim.data[out_p][t1], vocab.parse("A").v, atol=0.1)
+    assert np.allclose(sim.data[out_p][t2], vocab.parse("F").v, atol=0.1)
+    assert np.allclose(sim.data[out_p][t3], vocab.parse("B").v, atol=0.1)
+    assert np.allclose(sim.data[out_p][t4], vocab.parse("0").v, atol=0.1)
+    assert np.allclose(sim.data[utils_p][t1], [1, 0, 0, 0], atol=0.1)
+    assert np.allclose(sim.data[utils_p][t2], [0, 0, 0, 0], atol=0.1)
+    assert np.allclose(sim.data[utils_p][t3], [0, 1, 0, 0], atol=0.1)
+    assert np.allclose(sim.data[utils_p][t4], [0, 0, 0, 0], atol=0.1)
+    assert np.allclose(sim.data[utils_th_p][t1], [1.05, 0, 0, 0], atol=0.15)
+    assert np.allclose(sim.data[utils_th_p][t2], [0, 0, 0, 0], atol=0.1)
+    assert np.allclose(sim.data[utils_th_p][t3], [0, 1.05, 0, 0], atol=0.15)
+    assert np.allclose(sim.data[utils_th_p][t4], [0, 0, 0, 0], atol=0.1)
 
 
 def test_am_spa_interaction(Simulator):
