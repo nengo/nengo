@@ -4,10 +4,12 @@ Simulator.py
 Reference simulator for nengo models.
 """
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 from collections import Mapping
 import logging
+import os
+import sys
 
 import numpy as np
 
@@ -20,6 +22,39 @@ from nengo.utils.graphs import toposort
 from nengo.utils.simulator import operator_depencency_graph
 
 logger = logging.getLogger(__name__)
+
+
+class ProgressBar(object):
+    def __init__(self, max_steps, update_interval=100):
+        self.steps = 0
+        self.max_steps = max_steps
+        self.last_update = 0
+        self.update_interval = update_interval
+
+    @property
+    def progress(self):
+        return self.steps / self.max_steps
+
+    def start(self):
+        self.steps = 0
+        self.last_update = 0
+        sys.stdout.write(os.linesep)
+        self.update()
+
+    def finish(self):
+        sys.stdout.write(os.linesep)
+
+    def step(self, n=1):
+        self.steps = min(self.steps + n, self.max_steps)
+        if self.last_update + self.update_interval < self.steps:
+            self.update()
+
+    def update(self):
+        self.last_update = self.steps
+        width = 80
+        ticks = int(width * self.progress)
+        sys.stdout.write('\r' + '#' * ticks)
+
 
 
 class ProbeDict(Mapping):
@@ -184,19 +219,29 @@ class Simulator(object):
 
         self._probe()
 
-    def run(self, time_in_seconds):
+    def run(self, time_in_seconds, progress=False):
         """Simulate for the given length of time."""
         steps = int(np.round(float(time_in_seconds) / self.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.model.label, time_in_seconds, steps)
-        self.run_steps(steps)
+        self.run_steps(steps, progress=progress)
 
-    def run_steps(self, steps):
+    def run_steps(self, steps, progress=False):
         """Simulate for the given number of `dt` steps."""
+        if progress:
+            pb = ProgressBar(steps)
+            pb.start()
+
         for i in range(steps):
+            if progress:
+                pb.step()
+
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
             self.step()
+
+        if progress:
+            pb.finish()
 
     def reset(self):
         """Reset the simulator state."""
