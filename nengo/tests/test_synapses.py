@@ -39,7 +39,7 @@ def test_lowpass(Simulator, plt):
     t, x, yhat = run_synapse(Simulator, nengo.synapses.Lowpass(tau), dt=dt)
     y = filt(x, tau / dt)
 
-    assert allclose(t, y.flatten(), yhat.flatten(), delay=1, plt=plt)
+    assert allclose(t, y, yhat, delay=dt, plt=plt)
 
 
 def test_alpha(Simulator, plt):
@@ -56,8 +56,7 @@ def test_alpha(Simulator, plt):
     t, x, yhat = run_synapse(Simulator, nengo.synapses.Alpha(tau), dt=dt)
     y = lti(x, (b, a))
 
-    assert allclose(t, y.flatten(), yhat.flatten(),
-                    delay=1, atol=5e-6, plt=plt)
+    assert allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt)
 
 
 def test_decoders(Simulator, nl, plt):
@@ -68,7 +67,7 @@ def test_decoders(Simulator, nl, plt):
         Simulator, nengo.synapses.Lowpass(tau), dt=dt, n_neurons=100)
 
     y = filt(x, tau / dt)
-    assert allclose(t, y.flatten(), yhat.flatten(), delay=1, plt=plt)
+    assert allclose(t, y, yhat, delay=dt, plt=plt)
 
 
 @pytest.mark.optional  # the test requires scipy
@@ -87,7 +86,7 @@ def test_general(Simulator, plt):
         Simulator, nengo.synapses.LinearFilter(num, den), dt=dt)
     y = lti(x, (numi, deni))
 
-    assert allclose(t, y.flatten(), yhat.flatten(), plt=plt)
+    assert allclose(t, y, yhat, plt=plt)
 
 
 def test_synapseparam():

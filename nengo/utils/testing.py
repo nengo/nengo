@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import inspect
+import itertools
 import os
 import re
 import sys
@@ -128,27 +129,56 @@ class warns(WarningCatcher):
         super(warns, self).__exit__(type, value, traceback)
 
 
-def allclose(t, target, signals, plt=None, show=False,  # noqa:C901
-             labels=None, atol=1e-8, rtol=1e-5, buf=0, delay=0):
-    """Perform an allclose check between two signals, with the potential to
-    buffer both ends of the signal, account for a delay, and make a plot."""
-    target = target.squeeze()
-    if target.ndim > 1:
-        raise ValueError("Can only pass one target signal")
+def allclose(t, targets, signals,  # noqa:C901
+             atol=1e-8, rtol=1e-5, buf=0, delay=0,
+             plt=None, show=False, labels=None, individual_results=False):
+    """Ensure all signal elements are within tolerances.
 
+    Allows for delay, removing the beginning of the signal, and plotting.
+
+    Parameters
+    ----------
+    t : array_like (T,)
+        Simulation time for the points in `target` and `signals`.
+    targets : array_like (T, 1) or (T, N)
+        Reference signal or signals for error comparison.
+    signals : array_like (T, N)
+        Signals to be tested against the target signals.
+    atol, rtol : float
+        Absolute and relative tolerances.
+    buf : float
+        Length of time (in seconds) to remove from the beginnings of signals.
+    delay : float
+        Amount of delay (in seconds) to account for when doing comparisons.
+    plt : matplotlib.pyplot or mock
+        Pyplot interface for plotting the results, unless it's mocked out.
+    show : bool
+        Whether to show the plot immediately.
+    labels : list of string, length N
+        Labels of each signal to use when plotting.
+    individual_results : bool
+        If True, returns a separate `allclose` result for each signal.
+    """
+    t = np.asarray(t)
+    dt = t[1] - t[0]
+    assert t.ndim == 1
+    assert np.allclose(np.diff(t), dt)
+
+    targets = np.asarray(targets)
     signals = np.asarray(signals)
-    vector_in = signals.ndim < 2
-    if signals.ndim > 2:
-        raise ValueError("'signals' cannot have more than two dimensions")
-    elif vector_in:
-        signals.shape = (1, -1)
+    if targets.ndim == 1:
+        targets = targets.reshape((-1, 1))
+    if signals.ndim == 1:
+        signals = signals.reshape((-1, 1))
+    assert targets.ndim == 2 and signals.ndim == 2
+    assert t.size == targets.shape[0]
+    assert t.size == signals.shape[0]
+    assert targets.shape[1] == 1 or targets.shape[1] == signals.shape[1]
 
-    nt = t.size
-    if signals.shape[1] != nt:
-        raise ValueError("'signals' must have time along the second axis")
-
-    slice1 = slice(buf, nt - buf - delay)
-    slice2 = slice(buf + delay, nt - buf)
+    buf = int(np.round(buf / dt))
+    delay = int(np.round(delay / dt))
+    slice1 = slice(buf, len(t) - delay)
+    slice2 = slice(buf + delay, None)
 
     if plt is not None:
         if labels is None:
@@ -156,40 +186,60 @@ def allclose(t, target, signals, plt=None, show=False,  # noqa:C901
         elif is_string(labels):
             labels = [labels]
 
-        bound = atol + rtol * np.abs(target)
+        colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+
+        def plot_target(ax, x, b=0, c='k'):
+            bound = atol + rtol * np.abs(x)
+            y = x - b
+            ax.plot(t[slice2], y[slice1], c + ':')
+            ax.plot(t[slice2], (y + bound)[slice1], c + '--')
+            ax.plot(t[slice2], (y - bound)[slice1], c + '--')
 
         # signal plot
         ax = plt.subplot(2, 1, 1)
-        ax.plot(t, target, 'k:')
-        for signal, label in zip(signals, labels):
-            ax.plot(t, signal, label=label)
-        ax.plot(t[slice2], (target + bound)[slice1], 'k--')
-        ax.plot(t[slice2], (target - bound)[slice1], 'k--')
+        for y, label in zip(signals.T, labels):
+            ax.plot(t, y, label=label)
+
+        if targets.shape[1] == 1:
+            plot_target(ax, targets[:, 0], c='k')
+        else:
+            color_cycle = itertools.cycle(colors)
+            for x in targets.T:
+                plot_target(ax, x, c=next(color_cycle))
+
         ax.set_ylabel('signal')
         if labels[0] is not None:
-            ax.legend(loc=2, bbox_to_anchor=(1., 1.))
-
-        # error plot
-        errors = np.array([signal[slice2] - target[slice1]
-                           for signal in signals])
-        ymax = 1.1 * max(np.abs(errors).max(), bound.max())
+            ax.legend(loc='upper left', bbox_to_anchor=(1., 1.))
 
         ax = plt.subplot(2, 1, 2)
-        ax.plot(t[slice2], np.zeros_like(t[slice2]), 'k:')
-        for error, label in zip(errors, labels):
-            plt.plot(t[slice2], error, label=label)
-        ax.plot(t[slice2], bound[slice1], 'k--')
-        ax.plot(t[slice2], -bound[slice1], 'k--')
-        ax.set_ylim((-ymax, ymax))
+        if targets.shape[1] == 1:
+            x = targets[:, 0]
+            plot_target(ax, x, b=x, c='k')
+            for y, label in zip(signals.T, labels):
+                ax.plot(t[slice2], y[slice2] - x[slice1])
+        else:
+            color_cycle = itertools.cycle(colors)
+            for x, y, label in zip(targets.T, signals.T, labels):
+                c = next(color_cycle)
+                plot_target(ax, x, b=x, c=c)
+                ax.plot(t[slice2], y[slice2] - x[slice1], c, label=label)
+
         ax.set_xlabel('time')
         ax.set_ylabel('error')
 
         if show:
             plt.show()
 
-    close = [np.allclose(signal[slice2], target[slice1], atol=atol, rtol=rtol)
-             for signal in signals]
-    return close[0] if vector_in else close
+    if individual_results:
+        if targets.shape[1] == 1:
+            return [np.allclose(y[slice2], targets[slice1, 0],
+                                atol=atol, rtol=rtol) for y in signals.T]
+        else:
+            return [np.allclose(y[slice2], x[slice1], atol=atol, rtol=rtol)
+                    for x, y in zip(targets.T, signals.T)]
+    else:
+        return np.allclose(signals[slice2, :], targets[slice1, :],
+                           atol=atol, rtol=rtol)
 
 
 def find_modules(root_path, prefix=[], pattern='^test_.*\\.py$'):

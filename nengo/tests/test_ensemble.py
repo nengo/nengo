@@ -6,7 +6,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.utils.distributions import Choice
-from nengo.utils.testing import warns
+from nengo.utils.testing import warns, allclose
 
 logger = logging.getLogger(__name__)
 
@@ -109,58 +109,49 @@ def test_constant_vector(Simulator, nl, plt):
 
 def test_scalar(Simulator, nl, plt):
     """A network that represents sin(t)."""
-    N = 30
+    N = 40
+    f = lambda t: np.sin(6.3 * t)
 
     m = nengo.Network(label='test_scalar', seed=123)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl()
-        input = nengo.Node(output=np.sin, label='input')
+        input = nengo.Node(output=f)
         A = nengo.Ensemble(N, 1, label='A')
         nengo.Connection(input, A)
         in_p = nengo.Probe(input, 'output')
         A_p = nengo.Probe(A, 'decoded_output', synapse=0.02)
 
     sim = Simulator(m)
-    sim.run(5.0)
+    sim.run(1.0)
     t = sim.trange()
+    target = f(t)
 
-    plt.plot(t, sim.data[in_p], label='Input')
-    plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.02')
-    plt.legend(loc=0)
-
-    target = np.sin(t).reshape(-1, 1)
-    logger.debug("Input RMSE: %f", npext.rmse(target, sim.data[in_p]))
-    logger.debug("A RMSE: %f", npext.rmse(target, sim.data[A_p]))
-    assert npext.rmse(target, sim.data[in_p]) < 0.001
-    assert npext.rmse(target, sim.data[A_p]) < 0.1
+    assert allclose(t, target, sim.data[in_p], rtol=1e-3, atol=1e-5)
+    assert allclose(t, target, sim.data[A_p], atol=0.1, delay=0.03, plt=plt)
 
 
 def test_vector(Simulator, nl, plt):
-    """A network that represents sin(t), cos(t), arctan(t)."""
-    N = 40
+    """A network that represents sin(t), cos(t), cos(t)**2."""
+    N = 100
+    f = lambda t: [np.sin(6.3*t), np.cos(6.3*t), np.cos(6.3*t)**2]
 
     m = nengo.Network(label='test_vector', seed=123)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl()
-        input = nengo.Node(
-            output=lambda t: [np.sin(t), np.cos(t), np.arctan(t)])
-        A = nengo.Ensemble(N * 3, 3, radius=2)
+        input = nengo.Node(output=f)
+        A = nengo.Ensemble(N * 3, 3, radius=1.5)
         nengo.Connection(input, A)
-        in_p = nengo.Probe(input, 'output')
-        A_p = nengo.Probe(A, 'decoded_output', synapse=0.02)
+        in_p = nengo.Probe(input)
+        A_p = nengo.Probe(A, synapse=0.03)
 
     sim = Simulator(m)
-    sim.run(5)
+    sim.run(1.0)
     t = sim.trange()
+    target = np.vstack(f(t)).T
 
-    plt.plot(t, sim.data[in_p], label='Input')
-    plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.02')
-    plt.legend(loc='best', prop={'size': 10})
-
-    target = np.vstack((np.sin(t), np.cos(t), np.arctan(t))).T
-    logger.debug("In RMSE: %f", npext.rmse(target, sim.data[in_p]))
-    assert npext.rmse(target, sim.data[in_p]) < 0.01
-    assert npext.rmse(target, sim.data[A_p]) < 0.1
+    assert allclose(t, target, sim.data[in_p], rtol=1e-3, atol=1e-5)
+    assert allclose(t, target, sim.data[A_p],
+                    plt=plt, atol=0.1, delay=0.03, buf=0.1)
 
 
 def test_product(Simulator, nl, plt):

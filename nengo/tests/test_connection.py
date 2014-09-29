@@ -277,8 +277,7 @@ def test_weights(Simulator, nl, plt):
     x = func(t).T
     y = np.dot(x, transform.T)
     z = filtfilt(sim.data[bp], 10, axis=0)
-    assert allclose(t, y.flatten(), z.flatten(), plt=plt,
-                    atol=0.1, rtol=0, buf=100, delay=10)
+    assert allclose(t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt)
 
 
 def test_vector(Simulator, nl, plt):
