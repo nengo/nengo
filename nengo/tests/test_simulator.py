@@ -6,7 +6,7 @@ import pytest
 import nengo
 import nengo.simulator
 from nengo.builder import (
-    Model, ProdUpdate, Copy, Reset, DotInc, Signal, build_pyfunc)
+    Model, PreserveValue, Copy, Reset, DotInc, Signal, build_pyfunc)
 from nengo.solvers import LstsqL2nz
 from nengo.utils.compat import range
 from nengo.utils.functions import whitenoise
@@ -64,11 +64,9 @@ def test_signal_indexing_1(RefSimulator):
 
     m = Model(dt=0.001)
     m.operators += [
-        ProdUpdate(
-            Signal(1, name="A1"), three[:1], Signal(0, name="Z0"), one),
-        ProdUpdate(
-            Signal(2.0, name="A2"), three[1:], Signal(0, name="Z1"), two),
-        Reset(tmp),
+        Reset(one), Reset(two), Reset(tmp),
+        DotInc(Signal(1, name="A1"), three[:1], one),
+        DotInc(Signal(2.0, name="A2"), three[1:], two),
         DotInc(
             Signal([[0, 0, 1], [0, 1, 0], [1, 0, 0]], name="A3"), three, tmp),
         Copy(src=tmp, dst=three, as_update=True),
@@ -93,9 +91,10 @@ def test_simple_pyfunc(RefSimulator):
     m = Model(dt=dt)
     sig_in, sig_out = build_pyfunc(lambda t, x: np.sin(x), True, 1, 1, None, m)
     m.operators += [
-        ProdUpdate(Signal(dt), Signal(1), Signal(1), time),
+        PreserveValue(time), Reset(sig),
+        DotInc(Signal(dt), Signal(1), time),
         DotInc(Signal([[1.0]]), time, sig_in),
-        ProdUpdate(Signal([[1.0]]), sig_out, Signal(0), sig),
+        DotInc(Signal([[1.0]]), sig_out, sig),
     ]
 
     sim = RefSimulator(None, model=m)
@@ -103,7 +102,7 @@ def test_simple_pyfunc(RefSimulator):
         sim.step()
         t = (i + 1) * dt
         assert np.allclose(sim.signals[time], t)
-        assert np.allclose(sim.signals[sig], np.sin(t - dt))
+        assert np.allclose(sim.signals[sig], np.sin(t))
 
 
 def test_probedict():

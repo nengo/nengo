@@ -526,6 +526,27 @@ class Operator(object):
                 signals.init(sig.base)
 
 
+class PreserveValue(Operator):
+    """Marks a signal as `set` for the graph checker.
+
+    This is a silly operator that does no computation. It simply marks
+    a signal as `set`, allowing us to apply other ops to signals that
+    we want to preserve their value across multiple time steps. It is
+    used primarily for learning rules.
+    """
+    def __init__(self, dst):
+        self.dst = dst
+        self.reads = []
+        self.incs = []
+        self.updates = []
+        self.sets = [dst]
+
+    def make_step(self, signals, dt):
+        def step():
+            pass
+        return step
+
+
 class Reset(Operator):
     """Assign a constant value to a Signal."""
 
@@ -668,41 +689,6 @@ class DotInc(Operator):
             if reshape:
                 inc = np.asarray(inc).reshape(Y.shape)
             Y[...] += inc
-        return step
-
-
-class ProdUpdate(Operator):
-    """Sets Y <- dot(A, X) + B * Y"""
-
-    def __init__(self, A, X, B, Y, tag=None):
-        self.A = A
-        self.X = X
-        self.B = B
-        self.Y = Y
-        self.tag = tag
-
-        self.reads = [self.A, self.X, self.B]
-        self.updates = [self.Y]
-        self.incs = []
-        self.sets = []
-
-    def __str__(self):
-        return 'ProdUpdate(%s, %s, %s, -> %s "%s")' % (
-            self.A, self.X, self.B, self.Y, self.tag)
-
-    def make_step(self, signals, dt):
-        X = signals[self.X]
-        A = signals[self.A]
-        Y = signals[self.Y]
-        B = signals[self.B]
-        reshape = reshape_dot(A, X, Y, self.tag)
-
-        def step():
-            val = np.dot(A, X)
-            if reshape:
-                val = np.asarray(val).reshape(Y.shape)
-            Y[...] *= B
-            Y[...] += val
         return step
 
 
@@ -1434,11 +1420,7 @@ def build_connection(conn, model, config):  # noqa: C901
                             % (type(conn.pre_obj).__name__,
                                type(conn.post_obj).__name__))
 
-        model.add_op(ProdUpdate(model.sig['common'][0],
-                                model.sig['common'][0],
-                                model.sig['common'][1],
-                                modified_signal,
-                                tag="Learning Rule Dummy Update"))
+        model.add_op(PreserveValue(modified_signal))
 
     model.params[conn] = BuiltConnection(decoders=decoders,
                                          eval_points=eval_points,
