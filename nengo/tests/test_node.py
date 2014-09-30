@@ -5,6 +5,7 @@ import pytest
 
 import nengo
 from nengo.utils.numpy import filt
+from nengo.utils.testing import warns
 
 
 logger = logging.getLogger(__name__)
@@ -227,7 +228,7 @@ def test_len():
     assert len(n4[1:3]) == 2
 
 
-def test_set_output(Simulator, recwarn):
+def test_set_output(Simulator):
     counter = []
 
     def accumulate(t):
@@ -239,8 +240,9 @@ def test_set_output(Simulator, recwarn):
 
     with nengo.Network() as model:
         # if output is None, size_out == size_in
-        passthrough = nengo.Node(None, size_in=20, size_out=30)
-        assert recwarn.pop() is not None  # Should raise warning
+        with warns(UserWarning):
+            # warns since size_in != size_out and output is None
+            passthrough = nengo.Node(None, size_in=20, size_out=30)
         assert passthrough.output is None
         assert passthrough.size_out == 20
 
