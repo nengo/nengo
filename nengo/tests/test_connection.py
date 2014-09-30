@@ -423,11 +423,11 @@ def test_shortfilter(Simulator, nl):
     with m:
         m.config[nengo.Ensemble].neuron_type = nl()
         a = nengo.Ensemble(n_neurons=10, dimensions=1)
-        nengo.Connection(a, a)
+        nengo.Connection(a, a, synapse=0)
 
         b = nengo.Ensemble(n_neurons=10, dimensions=1)
-        nengo.Connection(a, b)
-        nengo.Connection(b, a)
+        nengo.Connection(a, b, synapse=0)
+        nengo.Connection(b, a, synapse=0)
 
     Simulator(m, dt=.01)
     # This test passes if there are no cycles in the op graph
