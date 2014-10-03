@@ -37,7 +37,7 @@ class NameFinder(object):
 
 
         for base_type in base_lists:
-            for i, obj in enumerate(getattr(net, type)):
+            for i, obj in enumerate(getattr(net, base_type)):
                 name = self.known_name.get(id(obj), None)
                 # If there was no name found already in the known names
                 if name is None:
