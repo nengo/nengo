@@ -3,6 +3,8 @@ import nengo.config
 import nengo.params
 
 class Config(nengo.config.Config):
+    """Re-uses the Nengo config object for keeping track of GUI element
+     parameters"""
     def __init__(self):
         super(Config, self).__init__()
         for klass in [nengo.Ensemble, nengo.Node]:

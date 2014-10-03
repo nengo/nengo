@@ -1,3 +1,8 @@
+# The basic function of Javaviz is to create nodes (corresponding to outputs
+# of a network written in Nengo 2.0) in the old Nengo 1.4 
+# environment that can be read by the old vizualizers. It is a hack and there
+# are active efforts to replace it with WebSockets and HTML5
+
 import socket
 import rpyc
 import struct
