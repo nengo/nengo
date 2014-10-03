@@ -1,8 +1,11 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
+from datetime import timedelta
 import os
 import sys
 import time
+
+import numpy as np
 
 from nengo.utils.compat import get_terminal_size
 
@@ -82,13 +85,29 @@ class CmdProgress(ProgressBar):
         pass
 
     def _on_finish(self):
-        sys.stdout.write('\r' + os.linesep)
+        width, _ = get_terminal_size()
+        line = "Done in {}.".format(
+            timedelta(seconds=np.ceil(self.seconds_passed))).ljust(width)
+        sys.stdout.write('\r' + line + os.linesep)
         sys.stdout.flush()
 
     def _on_update(self):
+        line = "[{{}}] ETA: {eta}".format(eta=timedelta(
+            seconds=np.ceil(self.eta)))
+        percent_str = " {}% ".format(int(100 * self.progress))
+
         width, _ = get_terminal_size()
-        ticks = int(width * self.progress)
-        sys.stdout.write('\r' + '#' * ticks)
+        progress_width = max(0, width - len(line))
+        progress_str = (int(progress_width * self.progress) * "#").ljust(
+            progress_width)
+
+        percent_pos = (len(progress_str) - len(percent_str)) // 2
+        if percent_pos > 0:
+            progress_str = (
+                progress_str[:percent_pos] + percent_str +
+                progress_str[percent_pos + len(percent_str):])
+
+        sys.stdout.write('\r' + line.format(progress_str))
         sys.stdout.flush()
 
 
