@@ -118,5 +118,34 @@ class CmdProgressBar(ProgressBar):
         sys.stdout.flush()
 
 
+class AutoProgressBar(ProgressBar):
+    def __init__(self, delegate=None, min_eta=1.):
+        if delegate is None:
+            self.delegate = get_progressbar()
+        else:
+            self.delegate = delegate
+
+        super(AutoProgressBar, self).__init__(self.delegate.update_interval)
+
+        self.min_eta = min_eta
+        self._visible = False
+
+    def _on_init(self):
+        pass
+
+    def _on_update(self, progress):
+        min_delay = progress.start_time + 0.1
+        if self._visible:
+            self.delegate.update(progress)
+        elif progress.eta > self.min_eta and min_delay < time.time():
+            self.delegate.init()
+            self._visible = True
+            self.delegate.update(progress)
+
+    def _on_finish(self, progress):
+        if self._visible:
+            self.delegate.update(progress)
+
+
 def get_progressbar():
     return CmdProgressBar()
