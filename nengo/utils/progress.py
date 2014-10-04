@@ -147,5 +147,23 @@ class AutoProgressBar(ProgressBar):
             self.delegate.update(progress)
 
 
+class ProgressControl(object):
+    def __init__(self, progress, progress_bar):
+        self.progress = progress
+        self.progress_bar = progress_bar
+
+    def start(self):
+        self.progress.start()
+        self.progress_bar.init()
+
+    def step(self, n=1):
+        self.progress.step(n)
+        self.progress_bar.update(self.progress)
+
+    def finish(self):
+        self.progress.finish()
+        self.progress_bar.update(self.progress)
+
+
 def get_progressbar():
     return CmdProgressBar()
