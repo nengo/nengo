@@ -11,7 +11,7 @@ from nengo.utils.compat import get_terminal_size
 
 
 class ProgressBar(object):
-    def __init__(self, max_steps, update_interval=100):
+    def __init__(self, max_steps, update_interval=0.05):
         self.steps = 0
         self.max_steps = max_steps
         self.last_update = 0
@@ -40,7 +40,7 @@ class ProgressBar(object):
     def start(self):
         self.finished = False
         self.steps = 0
-        self.last_update = 0
+        self.start_time = self.last_update = time.time()
         self._on_start()
         self.update()
 
@@ -59,11 +59,11 @@ class ProgressBar(object):
 
     def step(self, n=1):
         self.steps = min(self.steps + n, self.max_steps)
-        if self.last_update + self.update_interval < self.steps:
+        if self.last_update + self.update_interval < time.time():
             self.update()
 
     def update(self):
-        self.last_update = self.steps
+        self.last_update = time.time()
         self._on_update()
 
     def _on_update(self):
