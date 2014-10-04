@@ -17,7 +17,7 @@ from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
-from nengo.utils.progress import get_progressbar
+from nengo.utils.progress import get_progressbar, Progress
 from nengo.utils.simulator import operator_depencency_graph
 
 logger = logging.getLogger(__name__)
@@ -185,26 +185,29 @@ class Simulator(object):
 
         self._probe()
 
-    def run(self, time_in_seconds, progress=None):
+    def run(self, time_in_seconds, progress_bar=None):
         """Simulate for the given length of time."""
         steps = int(np.round(float(time_in_seconds) / self.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.model.label, time_in_seconds, steps)
-        self.run_steps(steps, progress=progress)
+        self.run_steps(steps, progress_bar=progress_bar)
 
-    def run_steps(self, steps, progress=None):
+    def run_steps(self, steps, progress_bar=None):
         """Simulate for the given number of `dt` steps."""
-        if progress is None:
-            progress = get_progressbar()
-        pb = progress(steps)
+        if progress_bar is None:
+            progress_bar = get_progressbar()
+        progress_bar.init()
 
-        pb.start()
+        progress = Progress(steps)
+        progress.start()
         for i in range(steps):
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
             self.step()
-            pb.step()
-        pb.finish()
+            progress.step()
+            progress_bar.update(progress)
+        progress.finish()
+        progress_bar.update(progress)
 
     def reset(self):
         """Reset the simulator state."""
