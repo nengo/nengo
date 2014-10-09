@@ -854,7 +854,7 @@ class SimOja(Operator):
         pre_filtered = signals[self.pre_filtered]
         post_filtered = signals[self.post_filtered]
         delta = signals[self.delta]
-        alpha = self.learning_rate
+        alpha = self.learning_rate * dt
         beta = self.beta
 
         def step():
