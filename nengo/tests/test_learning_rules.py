@@ -142,6 +142,7 @@ def test_pes_learning_decoders_multidimensional(Simulator, nl_nodirect):
 def test_unsupervised_learning_rule(Simulator, nl_nodirect, learning_rule):
     n = 200
     learned_vector = [0.5, -0.5]
+    rng = np.random.RandomState(83)
 
     m = nengo.Network(seed=3902)
     with m:
@@ -150,13 +151,12 @@ def test_unsupervised_learning_rule(Simulator, nl_nodirect, learning_rule):
         a = nengo.Ensemble(n, dimensions=2)
         u_learned = nengo.Ensemble(n, dimensions=2)
 
-        initial_weights = np.random.random((a.n_neurons,
-                                            u_learned.n_neurons))
+        initial_weights = rng.normal(size=(a.n_neurons, u_learned.n_neurons))
 
         nengo.Connection(u, a)
         nengo.Connection(a.neurons, u_learned.neurons,
                          transform=initial_weights,
-                         learning_rule=nengo.Oja())
+                         learning_rule=learning_rule)
 
     sim = Simulator(m)
     sim.run(1.)
