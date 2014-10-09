@@ -49,7 +49,7 @@ from nengo.probe import Probe
 from nengo.synapses import Alpha, LinearFilter, Lowpass, Synapse
 from nengo.utils.distributions import Distribution
 from nengo.utils.builder import default_n_eval_points, full_transform
-from nengo.utils.compat import is_iterable, is_number, range, StringIO
+from nengo.utils.compat import is_iterable, is_number, StringIO
 from nengo.utils.filter_design import cont2discrete
 import nengo.utils.numpy as npext
 
@@ -536,10 +536,11 @@ class PreserveValue(Operator):
     """
     def __init__(self, dst):
         self.dst = dst
-        self.reads = []
-        self.incs = []
-        self.updates = []
+
         self.sets = [dst]
+        self.incs = []
+        self.reads = []
+        self.updates = []
 
     def make_step(self, signals, dt):
         def step():
@@ -554,10 +555,10 @@ class Reset(Operator):
         self.dst = dst
         self.value = float(value)
 
-        self.reads = []
-        self.incs = []
-        self.updates = []
         self.sets = [dst]
+        self.incs = []
+        self.reads = []
+        self.updates = []
 
     def __str__(self):
         return 'Reset(%s)' % str(self.dst)
@@ -577,13 +578,13 @@ class Copy(Operator):
     def __init__(self, dst, src, as_update=False, tag=None):
         self.dst = dst
         self.src = src
+        self.as_update = as_update
         self.tag = tag
-        self.as_update = True
 
-        self.reads = [src]
         self.sets = [] if as_update else [dst]
-        self.updates = [dst] if as_update else []
         self.incs = []
+        self.reads = [src]
+        self.updates = [dst] if as_update else []
 
     def __str__(self):
         return 'Copy(%s -> %s, as_update=%s)' % (
@@ -595,6 +596,40 @@ class Copy(Operator):
 
         def step():
             dst[...] = src
+        return step
+
+
+class ElementwiseInc(Operator):
+    """Increment signal Y by A * X"""
+
+    def __init__(self, A, X, Y, tag=None):
+        self.A = A
+        self.X = X
+        self.Y = Y
+        self.tag = tag
+
+        self.sets = []
+        self.incs = [Y]
+        self.reads = [A, X]
+        self.updates = []
+
+    def __str__(self):
+        return 'ElementwiseInc(%s, %s -> %s "%s")' % (
+            str(self.A), str(self.X), str(self.Y), self.tag)
+
+    def make_step(self, signals, dt):
+        X = signals[self.X]
+        A = signals[self.A]
+        Y = signals[self.Y]
+        if X.shape != Y.shape:
+            raise ValueError("Shape mismatch in %s: %s != %s"
+                             % (self.tag, X.shape, Y.shape))
+        if A.size > 1 and A.shape != X.shape:
+            raise ValueError("Shape mismatch in %s: %s != %s"
+                             % (self.tag, A.shape, X.shape))
+
+        def step():
+            Y[...] += A * X
         return step
 
 
@@ -626,53 +661,20 @@ def reshape_dot(A, X, Y, tag=None):
     return (np.dot(A, X)).size == Y.size == 1
 
 
-class ElementwiseInc(Operator):
-    """Increment signal Y by A * X"""
-
-    def __init__(self, A, X, Y, tag=None):
-        self.A = A
-        self.X = X
-        self.Y = Y
-        self.tag = tag
-
-        self.reads = [self.A, self.X]
-        self.incs = [self.Y]
-        self.sets = []
-        self.updates = []
-
-    def __str__(self):
-        return 'ElementwiseInc(%s, %s -> %s "%s")' % (
-            str(self.A), str(self.X), str(self.Y), self.tag)
-
-    def make_step(self, signals, dt):
-        X = signals[self.X]
-        A = signals[self.A]
-        Y = signals[self.Y]
-        if X.shape != Y.shape:
-            raise ValueError("Shape mismatch in %s: %s != %s"
-                             % (self.tag, X.shape, Y.shape))
-        if A.size > 1 and A.shape != X.shape:
-            raise ValueError("Shape mismatch in %s: %s != %s"
-                             % (self.tag, A.shape, X.shape))
-
-        def step():
-            Y[...] += A * X
-        return step
-
-
 class DotInc(Operator):
     """Increment signal Y by dot(A, X)"""
 
-    def __init__(self, A, X, Y, tag=None):
+    def __init__(self, A, X, Y, as_update=False, tag=None):
         self.A = A
         self.X = X
         self.Y = Y
+        self.as_update = as_update
         self.tag = tag
 
-        self.reads = [self.A, self.X]
-        self.incs = [self.Y]
         self.sets = []
-        self.updates = []
+        self.incs = [] if as_update else [Y]
+        self.reads = [A, X]
+        self.updates = [Y] if as_update else []
 
     def __str__(self):
         return 'DotInc(%s, %s -> %s "%s")' % (
@@ -701,10 +703,10 @@ class SimPyFunc(Operator):
         self.t_in = t_in
         self.x = x
 
-        self.reads = [] if x is None else [x]
-        self.updates = []
         self.sets = [] if output is None else [output]
         self.incs = []
+        self.reads = [] if x is None else [x]
+        self.updates = []
 
     def __str__(self):
         return "SimPyFunc(%s -> %s '%s')" % (self.x, self.output, self.fn)
@@ -736,10 +738,10 @@ class SimNeurons(Operator):
         self.output = output
         self.states = states
 
-        self.reads = [J]
-        self.updates = []
         self.sets = [output] + states
         self.incs = []
+        self.reads = [J]
+        self.updates = []
 
     def make_step(self, signals, dt):
         J = signals[self.J]
@@ -767,10 +769,10 @@ class SimFilterSynapse(Operator):
         self.num = num
         self.den = den
 
-        self.reads = [input]
-        self.updates = [output]
         self.sets = []
         self.incs = []
+        self.reads = [input]
+        self.updates = [output]
 
     def make_step(self, signals, dt):
         input = signals[self.input]
@@ -803,29 +805,29 @@ class SimFilterSynapse(Operator):
 
 class SimBCM(Operator):
     """Change the transform according to the BCM rule."""
-    def __init__(self, delta,
-                 pre_filtered, post_filtered, theta, learning_rate):
-        self.delta = delta
+    def __init__(self, pre_filtered, post_filtered, theta, delta,
+                 learning_rate):
         self.post_filtered = post_filtered
         self.pre_filtered = pre_filtered
         self.theta = theta
+        self.delta = delta
         self.learning_rate = learning_rate
 
-        self.reads = [theta, pre_filtered, post_filtered]
-        self.updates = [delta]
         self.sets = []
         self.incs = []
+        self.reads = [pre_filtered, post_filtered, theta]
+        self.updates = [delta]
 
     def make_step(self, signals, dt):
-        delta = signals[self.delta]
         pre_filtered = signals[self.pre_filtered]
         post_filtered = signals[self.post_filtered]
         theta = signals[self.theta]
-        learning_rate = self.learning_rate
+        delta = signals[self.delta]
+        alpha = self.learning_rate * dt
 
         def step():
-            delta[...] = np.outer(post_filtered * (post_filtered - theta),
-                                  pre_filtered) * learning_rate * dt
+            delta[...] = np.outer(
+                alpha * post_filtered * (post_filtered - theta), pre_filtered)
         return step
 
 
@@ -833,34 +835,36 @@ class SimOja(Operator):
     """
     Change the transform according to the OJA rule
     """
-    def __init__(self, transform, delta, pre_filtered, post_filtered,
-                 forgetting, learning_rate):
-        self.transform = transform
-        self.delta = delta
+    def __init__(self, pre_filtered, post_filtered, transform, delta,
+                 learning_rate, beta):
         self.post_filtered = post_filtered
         self.pre_filtered = pre_filtered
-        self.forgetting = forgetting
+        self.transform = transform
+        self.delta = delta
         self.learning_rate = learning_rate
+        self.beta = beta
 
-        self.reads = [transform, pre_filtered, post_filtered]
-        self.updates = [delta, forgetting]
         self.sets = []
         self.incs = []
+        self.reads = [pre_filtered, post_filtered, transform]
+        self.updates = [delta]
 
     def make_step(self, signals, dt):
         transform = signals[self.transform]
-        delta = signals[self.delta]
         pre_filtered = signals[self.pre_filtered]
         post_filtered = signals[self.post_filtered]
-        forgetting = signals[self.forgetting]
-        learning_rate = self.learning_rate
+        delta = signals[self.delta]
+        alpha = self.learning_rate
+        beta = self.beta
 
         def step():
-            post_squared = learning_rate * post_filtered * post_filtered
-            for i in range(len(post_squared)):
-                forgetting[i, :] = transform[i, :] * post_squared[i]
+            # perform forgetting
+            post_squared = alpha * post_filtered * post_filtered
+            delta[...] = -beta * transform * post_squared[:, None]
 
-            delta[...] = np.outer(post_filtered, pre_filtered) * learning_rate
+            # perform update
+            delta[...] += np.outer(alpha * post_filtered, pre_filtered)
+
         return step
 
 
@@ -1561,28 +1565,23 @@ def build_bcm(bcm, conn, model, config):
            else conn.pre_obj.ensemble)
     post = (conn.post_obj if isinstance(conn.post_obj, Ensemble)
             else conn.post_obj.ensemble)
+    transform = model.sig[conn]['transform']
     pre_activities = model.sig[pre.neurons]['out']
     post_activities = model.sig[post.neurons]['out']
-
-    delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)), name='delta')
-
     pre_filtered = filtered_signal(
         bcm, pre_activities, bcm.pre_tau, model, config)
     post_filtered = filtered_signal(
         bcm, post_activities, bcm.post_tau, model, config)
     theta = filtered_signal(
         bcm, post_filtered, bcm.theta_tau, model, config)
+    delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)),
+                   name='BCM: Delta')
 
-    transform = model.sig[conn]['transform']
-
-    model.add_op(DotInc(
-        model.sig['common'][1], delta, transform, tag="BCM: DotInc"))
-
-    model.add_op(SimBCM(delta=delta,
-                        pre_filtered=pre_filtered,
-                        post_filtered=post_filtered,
-                        theta=theta,
+    model.add_op(SimBCM(pre_filtered, post_filtered, theta, delta,
                         learning_rate=bcm.learning_rate))
+    model.add_op(DotInc(model.sig['common'][1], delta, transform,
+                        tag="BCM: DotInc"))
+
 
 Builder.register_builder(build_bcm, BCM)
 
@@ -1592,32 +1591,20 @@ def build_oja(oja, conn, model, config):
            else conn.pre_obj.ensemble)
     post = (conn.post_obj if isinstance(conn.post_obj, Ensemble)
             else conn.post_obj.ensemble)
+    transform = model.sig[conn]['transform']
     pre_activities = model.sig[pre.neurons]['out']
     post_activities = model.sig[post.neurons]['out']
     pre_filtered = filtered_signal(
         oja, pre_activities, oja.pre_tau, model, config)
     post_filtered = filtered_signal(
         oja, post_activities, oja.post_tau, model, config)
-    omega_shape = (post.n_neurons, pre.n_neurons)
+    delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)),
+                   name='Oja: Delta')
 
-    transform = model.sig[conn]['transform']
-    delta = Signal(np.zeros(omega_shape), name='Oja: Delta')
-    forgetting = Signal(np.zeros(omega_shape), name='Oja: Forgetting')
-
-    model.add_op(DotInc(
-        model.sig['common'][1], delta, transform, tag="Oja: Delta DotInc"))
-
-    model.add_op(DotInc(Signal(-oja.beta, "Oja: Negative oja scale"),
-                        forgetting,
-                        transform,
-                        tag="Oja: Forgetting DotInc"))
-
-    model.add_op(SimOja(transform=transform,
-                        delta=delta,
-                        pre_filtered=pre_filtered,
-                        post_filtered=post_filtered,
-                        forgetting=forgetting,
-                        learning_rate=oja.learning_rate))
+    model.add_op(SimOja(pre_filtered, post_filtered, transform, delta,
+                        learning_rate=oja.learning_rate, beta=oja.beta))
+    model.add_op(DotInc(model.sig['common'][1], delta, transform,
+                        tag="Oja: DotInc"))
 
     model.params[oja] = None
 

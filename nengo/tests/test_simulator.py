@@ -6,7 +6,7 @@ import pytest
 import nengo
 import nengo.simulator
 from nengo.builder import (
-    Model, PreserveValue, Copy, Reset, DotInc, Signal, build_pyfunc)
+    Model, Copy, Reset, DotInc, Signal, build_pyfunc)
 from nengo.solvers import LstsqL2nz
 from nengo.utils.compat import range
 from nengo.utils.functions import whitenoise
@@ -91,18 +91,18 @@ def test_simple_pyfunc(RefSimulator):
     m = Model(dt=dt)
     sig_in, sig_out = build_pyfunc(lambda t, x: np.sin(x), True, 1, 1, None, m)
     m.operators += [
-        PreserveValue(time), Reset(sig),
-        DotInc(Signal(dt), Signal(1), time),
+        Reset(sig),
         DotInc(Signal([[1.0]]), time, sig_in),
         DotInc(Signal([[1.0]]), sig_out, sig),
+        DotInc(Signal(dt), Signal(1), time, as_update=True),
     ]
 
     sim = RefSimulator(None, model=m)
     for i in range(5):
         sim.step()
-        t = (i + 1) * dt
-        assert np.allclose(sim.signals[time], t)
+        t = i * dt
         assert np.allclose(sim.signals[sig], np.sin(t))
+        assert np.allclose(sim.signals[time], t + dt)
 
 
 def test_probedict():
