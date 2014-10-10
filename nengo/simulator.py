@@ -153,7 +153,7 @@ class Simulator(object):
             will use the default probe sampling period.
         """
         dt = self.dt if dt is None else dt
-        n_steps = int(self.n_steps * self.dt / dt)
+        n_steps = int(self.n_steps * (self.dt / dt))
         return dt * np.arange(1, n_steps + 1)
 
     def _probe(self):
