@@ -36,6 +36,26 @@ def test_multirun(Simulator):
 
 
 def test_dts(Simulator):
+    """Test probes with different simulator dts and runtimes"""
+    with nengo.Network(seed=0) as model:
+        a = nengo.Node(output=0)
+        ap = nengo.Probe(a)
+
+    rng = np.random.RandomState(9)
+    for i in range(100):
+        dt = rng.uniform(0.001, 0.1)
+        tend = rng.uniform(0.2, 0.3)
+
+        sim = nengo.Simulator(model, dt=dt)
+        sim.run(tend)
+        t = sim.trange()
+        x = sim.data[ap]
+
+        assert len(t) == len(x), "dt=%f, tend=%f, len(t)=%d, len(x)=%d" % (
+            dt, tend, len(t), len(x))
+
+
+def test_sampling_rates(Simulator):
     """Test probes with different sampling times."""
 
     n = 10
