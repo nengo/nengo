@@ -36,59 +36,25 @@ def test_multirun(Simulator):
 
 
 def test_dts(Simulator):
-    """Test probes with different simulator dts and runtimes"""
-    with nengo.Network(seed=0) as model:
-        a = nengo.Node(output=0)
-        ap = nengo.Probe(a)
+    """Test probes with different dts and runtimes"""
 
     rng = np.random.RandomState(9)
     for i in range(100):
-        dt = rng.uniform(0.001, 0.1)
-        tend = rng.uniform(0.2, 0.3)
+        dt = rng.uniform(0.001, 0.1)  # simulator dt
+        dt2 = rng.uniform(dt, 0.15)   # probe dt
+        tend = rng.uniform(0.2, 0.3)  # simulator runtime
+
+        with nengo.Network(seed=0) as model:
+            a = nengo.Node(output=0)
+            ap = nengo.Probe(a, sample_every=dt2)
 
         sim = nengo.Simulator(model, dt=dt)
         sim.run(tend)
-        t = sim.trange()
+        t = sim.trange(dt2)
         x = sim.data[ap]
 
-        assert len(t) == len(x), "dt=%f, tend=%f, len(t)=%d, len(x)=%d" % (
-            dt, tend, len(t), len(x))
-
-
-def test_sampling_rates(Simulator):
-    """Test probes with different sampling times."""
-
-    n = 10
-
-    rng = np.random.RandomState(48392)
-    dts = 0.001 * rng.randint(low=1, high=100, size=n)
-    # dts = 0.001 * np.hstack([2, rng.randint(low=1, high=100, size=n-1)])
-
-    def input_fn(t):
-        return [np.sin(t), np.cos(t)]
-
-    model = nengo.Network(label='test_probe_dts', seed=2891)
-    with model:
-        probes = []
-        for i, dt in enumerate(dts):
-            xi = nengo.Node(label='x%d' % i, output=input_fn)
-            p = nengo.Probe(xi, 'output', sample_every=dt)
-            probes.append(p)
-
-    sim = Simulator(model)
-    simtime = 2.483
-
-    with Timer() as timer:
-        sim.run(simtime)
-    logger.debug("Ran %d probes for %f sec simtime in %0.3f sec",
-                 n, simtime, timer.duration)
-
-    for i, p in enumerate(probes):
-        t = dts[i] * np.arange(1, 1 + int(simtime / dts[i]))
-        x = np.asarray([input_fn(tt) for tt in t])
-        y = sim.data[p]
-        assert len(x) == len(y)
-        assert np.allclose(y, x)
+        assert len(t) == len(x), "dt=%f, dt2=%f, tend=%f, nt=%d, nx=%d" % (
+            dt, dt2, tend, len(t), len(x))
 
 
 def test_large(Simulator):
