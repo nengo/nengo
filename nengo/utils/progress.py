@@ -10,6 +10,15 @@ import numpy as np
 from nengo.utils.compat import get_terminal_size
 
 
+try:
+    from IPython.html import widgets
+    from IPython.display import display, Javascript
+    import IPython.utils.traitlets as traitlets
+    _HAS_WIDGETS = True
+except ImportError:
+    _HAS_WIDGETS = False
+
+
 class Progress(object):
     def __init__(self, max_steps):
         self.steps = 0
@@ -118,6 +127,85 @@ class CmdProgressBar(ProgressBar):
         sys.stdout.flush()
 
 
+if _HAS_WIDGETS:
+    class IPythonProgressWidget(widgets.DOMWidget):
+        # pylint: disable=too-many-public-methods
+        _view_name = traitlets.Unicode('NengoProgressBar', sync=True)
+        progress = traitlets.Float(0., sync=True)
+        text = traitlets.Unicode(u'', sync=True)
+
+        FRONTEND = Javascript('''
+        require(["widgets/js/widget", "widgets/js/manager"],
+            function(widget, manager) {
+          if (typeof widget.DOMWidgetView == 'undefined') {
+            widget = IPython;
+          }
+          if (typeof manager.WidgetManager == 'undefined') {
+            manager = IPython;
+          }
+
+          var NengoProgressBar = widget.DOMWidgetView.extend({
+            render: function() {
+              this.$el.css({width: '100%'});
+              this.$el.html([
+                '<div style="',
+                    'width: 100%;',
+                    'border: 1px solid #cfcfcf;',
+                    'border-radius: 4px;',
+                    'text-align: center;',
+                    'position: relative;',
+                    'margin-bottom: 0.5em;">',
+                  '<div class="pb-text" style="',
+                      'position: absolute;',
+                      'width: 100%;">',
+                    '0%',
+                  '</div>',
+                  '<div class="pb-bar" style="',
+                      'background-color: #bdd2e6;',
+                      'width: 0%;',
+                      'transition: width 0.1s linear;">',
+                    '&nbsp;',
+                  '</div>',
+                '</div>'].join(''));
+            },
+
+            update: function() {
+              this.$el.css({width: '100%'});
+              var progress = 100 * this.model.get('progress');
+              var text = this.model.get('text');
+              this.$el.find('div.pb-bar').width(progress.toString() + '%');
+              this.$el.find('div.pb-text').text(text);
+            },
+          });
+
+          manager.WidgetManager.register_widget_view(
+            'NengoProgressBar', NengoProgressBar);
+        });''')
+
+        def _ipython_display_(self, **kwargs):
+            display(self.FRONTEND)
+            widgets.DOMWidget._ipython_display_(self, **kwargs)
+
+    class IPython2ProgressBar(ProgressBar):
+        def __init__(self, update_interval=0.1):
+            super(IPython2ProgressBar, self).__init__(update_interval)
+            self._widget = IPythonProgressWidget()
+
+        def _on_init(self):
+            display(self._widget)
+
+        def _on_update(self, progress):
+            self._widget.progress = progress.progress
+            self._widget.text = "{progress:.0f}%, ETA: {eta}".format(
+                progress=100 * progress.progress,
+                eta=timedelta(seconds=np.ceil(progress.eta)))
+
+        def _on_finish(self, progress):
+            self._widget.progress = 1.
+            self._widget.text = "Done in {}.".format(
+                timedelta(seconds=np.ceil(progress.seconds_passed)))
+
+
 class AutoProgressBar(ProgressBar):
     def __init__(self, delegate=None, min_eta=1.):
         if delegate is None:
@@ -165,5 +253,19 @@ class ProgressControl(object):
         self.progress_bar.update(self.progress)
 
 
+def _in_ipynb():
+    try:
+        cfg = get_ipython().config  # pylint: disable=undefined-variable
+        if cfg['IPKernelApp']['parent_appname'] == 'ipython-notebook':
+            return True
+        else:
+            return False
+    except NameError:
+        return False
+
+
 def get_progressbar():
-    return CmdProgressBar()
+    if _HAS_WIDGETS and _in_ipynb():
+        return IPython2ProgressBar()
+    else:
+        return CmdProgressBar()
