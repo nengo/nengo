@@ -1,6 +1,6 @@
 from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.config import Config
-from nengo.connection import Connection
+from nengo.connection import Connection, LearningRule
 from nengo.params import (
     Default, ConnectionDefault, IntParam, NumberParam, StringParam)
 from nengo.solvers import SolverParam
@@ -15,14 +15,15 @@ class TargetParam(NengoObjectParam):
                 "Type '%s' is not probeable" % obj.__class__.__name__)
 
         # do this after; better to know that type is not Probable first
-        super(TargetParam, self).validate(probe, target)
+        if not isinstance(obj, LearningRule):
+            super(TargetParam, self).validate(probe, target)
 
 
 class AttributeParam(StringParam):
     def validate(self, probe, attr):
         super(AttributeParam, self).validate(probe, attr)
         if attr not in probe.obj.probeable:
-            raise ValueError("Attribute '%s' is not probeable for '%s'."
+            raise ValueError("Attribute '%s' is not probeable on %s."
                              % (attr, probe.obj))
 
 

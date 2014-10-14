@@ -2,7 +2,7 @@ from nengo.params import Parameter
 from nengo.utils.compat import is_iterable
 
 
-class LearningRule(object):
+class LearningRuleType(object):
     """Base class for all learning rule objects.
 
     To use a learning rule, pass it as a ``learning_rule`` keyword argument to
@@ -16,7 +16,7 @@ class LearningRule(object):
         return self.__class__.__name__
 
 
-class PES(LearningRule):
+class PES(LearningRuleType):
     """Prescribed Error Sensitivity Learning Rule
 
     Modifies a connection's decoders to minimize an error signal.
@@ -40,13 +40,14 @@ class PES(LearningRule):
     """
 
     modifies = ['Ensemble', 'Neurons']
+    probeable = ['scaled_error', 'activities']
 
     def __init__(self, error_connection, learning_rate=1.0):
         self.error_connection = error_connection
         super(PES, self).__init__(learning_rate)
 
 
-class BCM(LearningRule):
+class BCM(LearningRuleType):
     """Bienenstock-Cooper-Munroe learning rule
 
     Modifies connection weights.
@@ -78,7 +79,7 @@ class BCM(LearningRule):
         super(BCM, self).__init__(learning_rate)
 
 
-class Oja(LearningRule):
+class Oja(LearningRuleType):
     """Oja's learning rule
 
     Modifies connection weights.
@@ -110,15 +111,16 @@ class Oja(LearningRule):
         super(Oja, self).__init__(learning_rate)
 
 
-class LearningRuleParam(Parameter):
+class LearningRuleTypeParam(Parameter):
     def validate(self, instance, rule):
         if is_iterable(rule):
-            for lr in rule:
+            for lr in (rule.values() if isinstance(rule, dict) else rule):
                 self.validate_rule(instance, lr)
         elif rule is not None:
             self.validate_rule(instance, rule)
-        super(LearningRuleParam, self).validate(instance, rule)
+        super(LearningRuleTypeParam, self).validate(instance, rule)
 
     def validate_rule(self, instance, rule):
-        if not isinstance(rule, LearningRule):
-            raise ValueError("'%s' is not a learning rule" % rule)
+        if not isinstance(rule, LearningRuleType):
+            raise ValueError("'%s' must be a learning rule type or a dict or "
+                             "list of such types." % rule)

@@ -4,7 +4,7 @@ import numpy as np
 
 from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.ensemble import Ensemble
-from nengo.learning_rules import LearningRuleParam
+from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.node import Node
 from nengo.params import (
     Default, BoolParam, FunctionParam, IntParam, ListParam, NdarrayParam)
@@ -15,11 +15,14 @@ from nengo.utils.compat import is_iterable
 logger = logging.getLogger(__name__)
 
 
-class ConnectionLearningRuleParam(LearningRuleParam):
+class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
     """Connection-specific validation for learning rules."""
+    def __set__(self, conn, rule):
+        conn._learning_rule = None
+        super(ConnectionLearningRuleTypeParam, self).__set__(conn, rule)
 
     def validate_rule(self, conn, rule):
-        super(ConnectionLearningRuleParam, self).validate_rule(conn, rule)
+        super(ConnectionLearningRuleTypeParam, self).validate_rule(conn, rule)
         rule_type = ('Neurons' if conn.solver.weights
                      else type(conn.pre).__name__)
         if rule_type not in rule.modifies:
@@ -162,7 +165,7 @@ class Connection(NengoObject):
     eval_points : (n_eval_points, pre_size) array_like or int, optional
         Points at which to evaluate `function` when computing decoders,
         spanning the interval (-pre.radius, pre.radius) in each dimension.
-    learning_rule : LearningRule or list of LearningRule, optional
+    learning_rule_type : instance or list or dict of LearningRuleType, optional
         Methods of modifying the connection weights during simulation.
 
     Attributes
@@ -177,9 +180,11 @@ class Connection(NengoObject):
     label : str
         A human-readable connection label for debugging and visualization.
         Incorporates the labels of the pre and post objects.
-    learning_rule : list of LearningRule
-        The given learning rules. If given a single LearningRule, this will be
-        a list with a single element.
+    learning_rule : LearningRule or collection of LearningRule
+        The LearningRule objects corresponding to `learning_rule_type`, and in
+        the same format. Use these to probe the learning rules.
+    learning_rule_type : instance or list or dict of LearningRuleType, optional
+        The learning rule types.
     post : Ensemble or Neurons or Node or Probe
         The given pre object.
     pre : Ensemble or Neurons or Node
@@ -200,21 +205,22 @@ class Connection(NengoObject):
     solver = ConnectionSolverParam(default=LstsqL2())
     function_info = ConnectionFunctionParam(default=None, optional=True)
     modulatory = BoolParam(default=False)
-    learning_rule = ConnectionLearningRuleParam(default=None, optional=True)
+    learning_rule_type = ConnectionLearningRuleTypeParam(
+        default=None, optional=True)
     eval_points = EvalPointsParam(
         default=None, optional=True, shape=('*', 'size_in'))
     seed = IntParam(default=None, optional=True)
     probeable = ListParam(default=['output', 'input'])
 
     def __init__(self, pre, post, synapse=Default, transform=Default,
-                 solver=Default, learning_rule=Default, function=Default,
+                 solver=Default, learning_rule_type=Default, function=Default,
                  modulatory=Default, eval_points=Default, seed=Default):
         self.pre = pre
         self.post = post
 
         self.probeable = Default
         self.solver = solver  # Must be set before learning rule
-        self.learning_rule = learning_rule
+        self.learning_rule_type = learning_rule_type
         self.modulatory = modulatory
         self.synapse = synapse
         self.transform = transform
@@ -277,3 +283,38 @@ class Connection(NengoObject):
 
     def __repr__(self):
         return "<Connection at 0x%x %s>" % (id(self), self._label)
+
+    @property
+    def learning_rule(self):
+        if self.learning_rule_type is not None and self._learning_rule is None:
+            types = self.learning_rule_type
+            if isinstance(types, dict):
+                self._learning_rule = types.__class__()  # dict of same type
+                for k, v in types.items():
+                    self._learning_rule[k] = LearningRule(self, v)
+            elif is_iterable(types):
+                self._learning_rule = [LearningRule(self, v) for v in types]
+            elif isinstance(types, LearningRuleType):
+                self._learning_rule = LearningRule(self, types)
+            else:
+                raise ValueError("Invalid type for `learning_rule_type`: %s"
+                                 % (types.__class__.__name__))
+        return self._learning_rule
+
+
+class LearningRule(object):
+    def __init__(self, connection, learning_rule_type):
+        self.connection = connection
+        self.learning_rule_type = learning_rule_type
+
+    def __repr__(self):
+        return "<LearningRule at 0x%x modifying %r with type %r>" % (
+            id(self), self.connection, self.learning_rule_type)
+
+    def __str__(self):
+        return "<LearningRule modifying %s with type %s>" % (
+            self.connection, self.learning_rule_type)
+
+    @property
+    def probeable(self):
+        return self.learning_rule_type.probeable

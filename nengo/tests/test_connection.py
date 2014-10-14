@@ -539,14 +539,16 @@ def test_set_learning_rule():
         b = nengo.Ensemble(10, 2)
         err = nengo.Connection(a, b)
         n = nengo.Node(output=lambda t, x: t * x, size_in=2)
-        nengo.Connection(a, b, learning_rule=nengo.PES(err))
-        nengo.Connection(a, b, learning_rule=nengo.PES(err),
+        nengo.Connection(a, b, learning_rule_type=nengo.PES(err))
+        nengo.Connection(a, b, learning_rule_type=nengo.PES(err),
                          solver=LstsqL2(weights=True))
-        nengo.Connection(a.neurons, b.neurons, learning_rule=nengo.PES(err))
-        nengo.Connection(a.neurons, b.neurons, learning_rule=nengo.Oja())
+        nengo.Connection(a.neurons, b.neurons,
+                         learning_rule_type=nengo.PES(err))
+        nengo.Connection(a.neurons, b.neurons,
+                         learning_rule_type=nengo.Oja())
 
         with pytest.raises(ValueError):
-            nengo.Connection(n, a, learning_rule=nengo.PES(err))
+            nengo.Connection(n, a, learning_rule_type=nengo.PES(err))
 
 
 def test_set_function(Simulator):

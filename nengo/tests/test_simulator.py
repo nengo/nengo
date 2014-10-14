@@ -136,7 +136,7 @@ def test_reset(Simulator, nl_nodirect):
         nengo.Connection(square, error, transform=-1)
         err_conn = nengo.Connection(error, square, modulatory=True)
         nengo.Connection(ens, square,
-                         learning_rule=[nengo.PES(err_conn), nengo.BCM()],
+                         learning_rule_type=[nengo.PES(err_conn), nengo.BCM()],
                          solver=LstsqL2nz(weights=True))
 
         square_p = nengo.Probe(square, synapse=0.1)

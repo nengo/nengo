@@ -39,7 +39,7 @@ import warnings
 
 import numpy as np
 
-from nengo.connection import Connection
+from nengo.connection import Connection, LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.learning_rules import BCM, Oja, PES
 from nengo.network import Network
@@ -992,13 +992,12 @@ def build_network(network, model):  # noqa: C901
 
     logger.info("Network step 4: Building learning rules")
     for conn in network.connections:
-        if is_iterable(conn.learning_rule):
-            for learning_rule in conn.learning_rule:
-                Builder.build(learning_rule, conn,
-                              model=model, config=network.config)
-        elif conn.learning_rule is not None:
-            Builder.build(conn.learning_rule, conn,
-                          model=model, config=network.config)
+        rules = conn.learning_rule
+        if is_iterable(rules):
+            for rule in (rules.values() if isinstance(rules, dict) else rules):
+                Builder.build(rule, model=model, config=network.config)
+        elif rules is not None:
+            Builder.build(rules, model=model, config=network.config)
 
     logger.info("Network step 5: Building probes")
     for probe in network.probes:
@@ -1210,7 +1209,12 @@ def conn_probe(probe, model, config):
 
 
 def synapse_probe(key, probe, model, config):
-    sig = model.sig[probe.obj][key]
+    try:
+        sig = model.sig[probe.obj][key]
+    except IndexError:
+        raise ValueError("Attribute '%s' is not probable on %s."
+                         % (key, probe.obj))
+
     if isinstance(probe.slice, slice):
         sig = sig[probe.slice]
     else:
@@ -1232,6 +1236,7 @@ probemap = {
     Node: {'output': None},
     Connection: {'output': 'out',
                  'input': 'in'},
+    LearningRule: {},  # make LR signals probable, but no mapping required
 }
 
 
@@ -1413,7 +1418,7 @@ def build_connection(conn, model, config):  # noqa: C901
                             model.sig[conn]['out'],
                             tag=str(conn)))
 
-    if conn.learning_rule:
+    if conn.learning_rule_type:
         # Forcing update of signal that is modified by learning rules.
         # Learning rules themselves apply DotIncs.
 
@@ -1525,7 +1530,15 @@ def build_alpha_synapse(synapse, owner, input_signal, model, config):
 Builder.register_builder(build_alpha_synapse, Alpha)
 
 
-def build_pes(pes, conn, model, config):
+def build_learning_rule(rule, model, config):
+    rule_type = rule.learning_rule_type
+    Builder.build(rule_type, rule, model=model, config=config)
+
+Builder.register_builder(build_learning_rule, LearningRule)
+
+
+def build_pes(pes, rule, model, config):
+    conn = rule.connection
     activities = model.sig[conn.pre_obj]['out']
     error = model.sig[pes.error_connection]['out']
 
@@ -1533,6 +1546,9 @@ def build_pes(pes, conn, model, config):
                           name="PES:error * learning_rate")
     scaled_error_view = scaled_error.reshape((error.size, 1))
     activities_view = activities.reshape((1, activities.size))
+
+    model.sig[rule]['scaled_error'] = scaled_error
+    model.sig[rule]['activities'] = activities
 
     lr_sig = Signal(pes.learning_rate * model.dt, name="PES:learning_rate")
 
@@ -1569,12 +1585,13 @@ def build_pes(pes, conn, model, config):
             scaled_error_view, activities_view, decoders,
             tag="PES:Inc Decoder"))
 
-    model.params[pes] = None
+    model.params[rule] = None
 
 Builder.register_builder(build_pes, PES)
 
 
-def build_bcm(bcm, conn, model, config):
+def build_bcm(bcm, rule, model, config):
+    conn = rule.connection
     pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
            else conn.pre_obj.ensemble)
     post = (conn.post_obj if isinstance(conn.post_obj, Ensemble)
@@ -1596,11 +1613,13 @@ def build_bcm(bcm, conn, model, config):
     model.add_op(ElementwiseInc(
         model.sig['common'][1], delta, transform, tag="BCM: Inc Transform"))
 
+    model.params[rule] = None
 
 Builder.register_builder(build_bcm, BCM)
 
 
-def build_oja(oja, conn, model, config):
+def build_oja(oja, rule, model, config):
+    conn = rule.connection
     pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
            else conn.pre_obj.ensemble)
     post = (conn.post_obj if isinstance(conn.post_obj, Ensemble)
@@ -1620,6 +1639,6 @@ def build_oja(oja, conn, model, config):
     model.add_op(ElementwiseInc(
         model.sig['common'][1], delta, transform, tag="Oja: Inc Transform"))
 
-    model.params[oja] = None
+    model.params[rule] = None
 
 Builder.register_builder(build_oja, Oja)
