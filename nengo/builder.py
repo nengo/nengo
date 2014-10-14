@@ -600,7 +600,7 @@ class Copy(Operator):
 
 
 class ElementwiseInc(Operator):
-    """Increment signal Y by A * X"""
+    """Increment signal Y by A * X (with broadcasting)"""
 
     def __init__(self, A, X, Y, tag=None):
         self.A = A
@@ -618,15 +618,17 @@ class ElementwiseInc(Operator):
             str(self.A), str(self.X), str(self.Y), self.tag)
 
     def make_step(self, signals, dt):
-        X = signals[self.X]
         A = signals[self.A]
+        X = signals[self.X]
         Y = signals[self.Y]
-        if X.shape != Y.shape:
-            raise ValueError("Shape mismatch in %s: %s != %s"
-                             % (self.tag, X.shape, Y.shape))
-        if A.size > 1 and A.shape != X.shape:
-            raise ValueError("Shape mismatch in %s: %s != %s"
-                             % (self.tag, A.shape, X.shape))
+
+        # check broadcasting shapes
+        Ashape = npext.broadcast_shape(A.shape, 2)
+        Xshape = npext.broadcast_shape(X.shape, 2)
+        Yshape = npext.broadcast_shape(Y.shape, 2)
+        assert all(len(s) == 2 for s in [Ashape, Xshape, Yshape])
+        for da, dx, dy in zip(Ashape, Xshape, Yshape):
+            assert da in [1, dy] and dx in [1, dy] and max(da, dx) == dy
 
         def step():
             Y[...] += A * X
@@ -1515,45 +1517,47 @@ Builder.register_builder(build_alpha_synapse, Alpha)
 
 
 def build_pes(pes, conn, model, config):
-    if isinstance(conn.pre_obj, Neurons):
-        activities = model.sig[conn.pre_obj.ensemble]['out']
-    else:
-        activities = model.sig[conn.pre_obj]['out']
+    activities = model.sig[conn.pre_obj]['out']
     error = model.sig[pes.error_connection]['out']
 
     scaled_error = Signal(np.zeros(error.shape),
-                          name="PES:error * learning rate")
-    scaled_error_view = SignalView(scaled_error, (error.size, 1), (1, 1), 0,
-                                   name="PES:scaled_error_view")
-    activities_view = SignalView(activities, (1, activities.size), (1, 1), 0,
-                                 name="PES:activities_view")
+                          name="PES:error * learning_rate")
+    scaled_error_view = scaled_error.reshape((error.size, 1))
+    activities_view = activities.reshape((1, activities.size))
 
     lr_sig = Signal(pes.learning_rate * model.dt, name="PES:learning_rate")
 
     model.add_op(Reset(scaled_error))
     model.add_op(DotInc(lr_sig, error, scaled_error, tag="PES:scale error"))
 
-    if conn.solver.weights or isinstance(conn.pre_obj, Neurons):
+    if conn.solver.weights or (
+            isinstance(conn.pre_obj, Neurons) and
+            isinstance(conn.post_obj, Neurons)):
+        post = (conn.post_obj.ensemble if isinstance(conn.post_obj, Neurons)
+                else conn.post_obj)
+        transform = model.sig[conn]['transform']
+        encoders = model.sig[post]['encoders']
         outer_product = Signal(np.zeros((error.size, activities.size)),
                                name="PES: outer prod")
-        transform = model.sig[conn]['transform']
-        if isinstance(conn.post_obj, Neurons):
-            encoders = model.sig[conn.post_obj.ensemble]['encoders']
-        else:
-            encoders = model.sig[conn.post_obj]['encoders']
 
         model.add_op(Reset(outer_product))
-        model.add_op(DotInc(scaled_error_view, activities_view, outer_product,
-                            tag="PES:Outer Prod"))
-        model.add_op(DotInc(encoders, outer_product, transform,
-                            tag="PES:Inc Decoder"))
+        model.add_op(ElementwiseInc(
+            scaled_error_view, activities_view, outer_product,
+            tag="PES:Outer Prod"))
+        model.add_op(DotInc(
+            encoders, outer_product, transform, tag="PES:Inc Weights"))
 
+    elif isinstance(conn.pre_obj, Neurons):
+        transform = model.sig[conn]['transform']
+        model.add_op(ElementwiseInc(
+            scaled_error_view, activities_view, transform,
+            tag="PES:Inc Transform"))
     else:
         assert isinstance(conn.pre_obj, Ensemble)
         decoders = model.sig[conn]['decoders']
-
-        model.add_op(DotInc(scaled_error_view, activities_view, decoders,
-                            tag="PES:Inc Decoder"))
+        model.add_op(ElementwiseInc(
+            scaled_error_view, activities_view, decoders,
+            tag="PES:Inc Decoder"))
 
     model.params[pes] = None
 

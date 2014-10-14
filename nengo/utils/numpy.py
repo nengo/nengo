@@ -10,6 +10,15 @@ import numpy as np
 maxint = np.iinfo(np.int32).max
 
 
+def broadcast_shape(shape, length):
+    """Pad a shape with ones following standard Numpy broadcasting."""
+    n = len(shape)
+    if n < length:
+        return tuple([1] * (length - n) + list(shape))
+    else:
+        return shape
+
+
 def array(x, dims=None, min_dims=0, **kwargs):
     y = np.array(x, **kwargs)
     dims = max(min_dims, y.ndim) if dims is None else dims
