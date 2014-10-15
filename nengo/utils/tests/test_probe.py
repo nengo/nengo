@@ -53,11 +53,11 @@ def test_probe_all_options():
             nengo.Node(output=[0])
 
     probe_all(model, recursive=True, probe_options={
-        nengo.Ensemble: ['decoded_output', 'spikes']})
+        nengo.Ensemble: ['decoded_output']})
 
     # only probes spikes and decoded output of the ensembles
-    assert(len(model.probes) == 2)
-    assert(len(subnet.probes) == 2)
+    assert(len(model.probes) == 1)
+    assert(len(subnet.probes) == 1)
 
 
 def test_probe_all_kwargs():

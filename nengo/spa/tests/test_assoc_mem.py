@@ -112,7 +112,7 @@ def test_am_default_output_inhibit_utilities(Simulator):
     def inhib_func(t):
         return int(t > 0.75)
 
-    m = nengo.Network('model', seed=123)
+    m = nengo.Network('model', seed=1234)
     with m:
         am = AssociativeMemory(vocab2,
                                default_output_vector=vocab.parse("F").v,
@@ -146,7 +146,7 @@ def test_am_default_output_inhibit_utilities(Simulator):
     assert np.allclose(sim.data[in_p][t2], vocab.parse("0.8*A+B").v, atol=0.1)
     assert np.allclose(sim.data[in_p][t3], vocab.parse("E").v, atol=0.1)
     assert np.allclose(sim.data[in_p][t4], vocab.parse("E").v, atol=0.1)
-    assert np.allclose(sim.data[out_p][t1], vocab.parse("A+B").v, atol=0.11)
+    assert np.allclose(sim.data[out_p][t1], vocab.parse("A+B").v, atol=0.1)
     assert np.allclose(sim.data[out_p][t2], vocab.parse("A+B").v, atol=0.1)
     assert np.allclose(sim.data[out_p][t3], vocab.parse("F").v, atol=0.1)
     assert np.allclose(sim.data[out_p][t4], vocab.parse("0").v, atol=0.1)
