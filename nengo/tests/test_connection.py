@@ -13,27 +13,27 @@ from nengo.utils.testing import allclose
 logger = logging.getLogger(__name__)
 
 
-def test_args(nl):
+def test_args(nl, seed, rng):
     N = 10
     d1, d2 = 3, 2
 
-    with nengo.Network(label='test_args') as model:
+    with nengo.Network(seed=seed) as model:
         model.config[nengo.Ensemble].neuron_type = nl()
         A = nengo.Ensemble(N, dimensions=d1)
         B = nengo.Ensemble(N, dimensions=d2)
         nengo.Connection(
             A, B,
-            eval_points=np.random.normal(size=(500, d1)),
+            eval_points=rng.normal(size=(500, d1)),
             synapse=0.01,
             function=np.sin,
-            transform=np.random.normal(size=(d2, d1)))
+            transform=rng.normal(size=(d2, d1)))
 
 
-def test_node_to_neurons(Simulator, nl_nodirect, plt):
+def test_node_to_neurons(Simulator, nl_nodirect, plt, seed):
     name = 'node_to_neurons'
     N = 30
 
-    m = nengo.Network(label=name, seed=123)
+    m = nengo.Network(label=name, seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         a = nengo.Ensemble(N, dimensions=1)
@@ -310,9 +310,9 @@ def test_vector(Simulator, nl, plt):
     assert np.allclose(y[-10:], yhat[-10:], atol=.1, rtol=.01)
 
 
-def test_dimensionality_errors(nl_nodirect):
+def test_dimensionality_errors(nl_nodirect, seed, rng):
     N = 10
-    with nengo.Network(label="test_dimensionality_error") as m:
+    with nengo.Network(seed=seed) as m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         n01 = nengo.Node(output=[1])
         n02 = nengo.Node(output=[1, 1])
@@ -325,7 +325,7 @@ def test_dimensionality_errors(nl_nodirect):
         nengo.Connection(n02, e2)
         nengo.Connection(e2, n21)
         nengo.Connection(n21, e1)
-        nengo.Connection(e1.neurons, n21, transform=np.random.randn(2, N))
+        nengo.Connection(e1.neurons, n21, transform=rng.randn(2, N))
         nengo.Connection(e2, e1, function=lambda x: x[0])
         nengo.Connection(e2, e2, transform=np.ones(2))
 
@@ -335,9 +335,9 @@ def test_dimensionality_errors(nl_nodirect):
         with pytest.raises(ValueError):
             nengo.Connection(e1, e2)
         with pytest.raises(ValueError):
-            nengo.Connection(e2.neurons, e1, transform=np.random.randn(1, N+1))
+            nengo.Connection(e2.neurons, e1, transform=rng.randn(1, N+1))
         with pytest.raises(ValueError):
-            nengo.Connection(e2.neurons, e1, transform=np.random.randn(2, N))
+            nengo.Connection(e2.neurons, e1, transform=rng.randn(2, N))
         with pytest.raises(ValueError):
             nengo.Connection(e2, e1, function=lambda x: x, transform=[[1]])
         with pytest.raises(TypeError):
@@ -362,7 +362,7 @@ def test_dimensionality_errors(nl_nodirect):
             nengo.Connection(e2[0], e2, transform=[[1, 2]])
 
 
-def test_slicing(Simulator, nl, plt):
+def test_slicing(Simulator, nl, plt, seed):
     N = 300
 
     x = np.array([-1, -0.25, 1])
@@ -390,7 +390,7 @@ def test_slicing(Simulator, nl, plt):
     Ts = [T1, T2, T3]
     ys = [y1, y2, y3]
 
-    with nengo.Network(seed=932) as m:
+    with nengo.Network(seed=seed) as m:
         m.config[nengo.Ensemble].neuron_type = nl()
 
         u = nengo.Node(output=x)
@@ -441,9 +441,9 @@ def test_shortfilter(Simulator, nl):
         Simulator(m, dt=.01)
 
 
-def test_zerofilter(Simulator):
+def test_zerofilter(Simulator, seed):
     # Testing the case where the connection filter is zero
-    m = nengo.Network(seed=8)
+    m = nengo.Network(seed=seed)
     with m:
         # Ensure no cycles in the op graph.
         a = nengo.Ensemble(1, dimensions=1, neuron_type=nengo.Direct())

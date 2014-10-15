@@ -4,14 +4,13 @@ import pytest
 import nengo
 from nengo.learning_rules import LearningRuleParam, Oja
 from nengo.solvers import LstsqL2nz
-from nengo.utils.testing import Plotter
 
 
-def test_pes_initial_weights(Simulator, nl_nodirect):
+def test_pes_initial_weights(Simulator, nl_nodirect, plt, seed, rng):
     n = 200
     learned_vector = [0.5, -0.5]
 
-    m = nengo.Network(seed=3902)
+    m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=learned_vector)
@@ -19,7 +18,7 @@ def test_pes_initial_weights(Simulator, nl_nodirect):
         u_learned = nengo.Ensemble(n, dimensions=2)
         e = nengo.Ensemble(n, dimensions=2)
 
-        initial_weights = np.random.random((a.n_neurons, u_learned.n_neurons))
+        initial_weights = rng.uniform(size=(a.n_neurons, u_learned.n_neurons))
         nengo.Connection(u, a)
         err_conn = nengo.Connection(e, u_learned, modulatory=True)
         nengo.Connection(a.neurons, u_learned.neurons,
@@ -36,22 +35,19 @@ def test_pes_initial_weights(Simulator, nl_nodirect):
     sim.run(1.)
     t = sim.trange()
 
-    with Plotter(Simulator, nl_nodirect) as plt:
-        plt.plot(t, sim.data[u_learned_p])
-        plt.plot(t, sim.data[e_p])
-        plt.savefig('test_learning_rules.test_pes_initial_weights.pdf')
-        plt.close()
+    plt.plot(t, sim.data[u_learned_p])
+    plt.plot(t, sim.data[e_p])
 
     tmask = t > 0.9
     assert np.allclose(sim.data[u_learned_p][tmask], learned_vector, atol=0.05)
     assert np.allclose(sim.data[e_p][tmask], 0, atol=0.05)
 
 
-def test_pes_nef_weights(Simulator, nl_nodirect):
+def test_pes_nef_weights(Simulator, nl_nodirect, plt, seed):
     n = 200
     learned_vector = [0.5, -0.5]
 
-    m = nengo.Network(seed=3902)
+    m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=learned_vector)
@@ -75,22 +71,19 @@ def test_pes_nef_weights(Simulator, nl_nodirect):
     sim.run(1.)
     t = sim.trange()
 
-    with Plotter(Simulator, nl_nodirect) as plt:
-        plt.plot(t, sim.data[u_learned_p])
-        plt.plot(t, sim.data[e_p])
-        plt.savefig('test_learning_rules.test_pes_nef_weights.pdf')
-        plt.close()
+    plt.plot(t, sim.data[u_learned_p])
+    plt.plot(t, sim.data[e_p])
 
     tmask = t > 0.9
     assert np.allclose(sim.data[u_learned_p][tmask], learned_vector, atol=0.05)
     assert np.allclose(sim.data[e_p][tmask], 0, atol=0.05)
 
 
-def test_pes_decoders(Simulator, nl_nodirect):
+def test_pes_decoders(Simulator, nl_nodirect, seed):
     n = 200
     learned_vector = [0.5, -0.5]
 
-    m = nengo.Network(seed=3902)
+    m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=learned_vector)
@@ -115,12 +108,12 @@ def test_pes_decoders(Simulator, nl_nodirect):
     assert np.allclose(sim.data[e_p][tmask], 0, atol=0.05)
 
 
-def test_pes_decoders_multidimensional(Simulator, nl_nodirect):
+def test_pes_decoders_multidimensional(Simulator, nl_nodirect, seed):
     n = 200
     input_vector = [0.5, -0.5]
     learned_vector = [input_vector[0]**2 + input_vector[1]**2]
 
-    m = nengo.Network(seed=3902)
+    m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=input_vector)
@@ -154,12 +147,11 @@ def test_pes_decoders_multidimensional(Simulator, nl_nodirect):
 
 @pytest.mark.parametrize('learning_rule', [
     nengo.BCM(), nengo.Oja(), [nengo.Oja(), nengo.BCM()]])
-def test_unsupervised(Simulator, nl_nodirect, learning_rule):
+def test_unsupervised(Simulator, nl_nodirect, learning_rule, seed, rng):
     n = 200
     learned_vector = [0.5, -0.5]
-    rng = np.random.RandomState(83)
 
-    m = nengo.Network(seed=3902)
+    m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=learned_vector)

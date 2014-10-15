@@ -11,15 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("dimension", [1, 2, 3, 5])
-def test_target_function(Simulator, nl_nodirect, plt, dimension):
-
-    model = nengo.Network("Connection Helper", seed=12)
-
-    eval_points = UniformHypersphere().sample(
-        1000, dimension, np.random.RandomState(seed=12))
-
+def test_target_function(Simulator, nl_nodirect, plt, dimension, seed, rng):
+    eval_points = UniformHypersphere().sample(1000, dimension, rng=rng)
     targets = eval_points ** 2
 
+    model = nengo.Network("Connection Helper", seed=seed)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         inp = nengo.Node(np.sin)

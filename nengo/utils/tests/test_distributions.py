@@ -7,10 +7,10 @@ import nengo.utils.numpy as npext
 
 
 @pytest.mark.parametrize("low,high", [(-2, -1), (-1, 1), (1, 2), (1, -1)])
-def test_uniform(low, high):
+def test_uniform(low, high, rng):
     n = 100
     dist = dists.Uniform(low, high)
-    samples = dist.sample(n, rng=np.random.RandomState(1))
+    samples = dist.sample(n, rng=rng)
     if low < high:
         assert np.all(samples >= low)
         assert np.all(samples < high)
@@ -22,27 +22,27 @@ def test_uniform(low, high):
 
 
 @pytest.mark.parametrize("mean,std", [(0, 1), (0, 0), (10, 2)])
-def test_gaussian(mean, std):
+def test_gaussian(mean, std, rng):
     n = 100
     if std <= 0:
         with pytest.raises(ValueError):
             dist = dists.Gaussian(mean, std)
     else:
         dist = dists.Gaussian(mean, std)
-        samples = dist.sample(n, rng=np.random.RandomState(1))
-        assert abs(np.mean(samples) - mean) < std * 0.1
-        assert abs(np.std(samples) - std) < 1
+        samples = dist.sample(n, rng=rng)
+        assert abs(np.mean(samples) - mean) < 2 * std / np.sqrt(n)
+        assert abs(np.std(samples) - std) < 0.25  # using chi2 for n=100
 
 
 @pytest.mark.parametrize("dimensions", [0, 1, 2, 5])
-def test_hypersphere(dimensions):
+def test_hypersphere(dimensions, rng):
     n = 100 * dimensions
     if dimensions < 1:
         with pytest.raises(ValueError):
             dist = dists.UniformHypersphere().sample(1, dimensions)
     else:
         dist = dists.UniformHypersphere()
-        samples = dist.sample(n, dimensions, np.random.RandomState(1))
+        samples = dist.sample(n, dimensions, rng=rng)
         assert samples.shape == (n, dimensions)
         assert np.allclose(
             np.mean(samples, axis=0), np.zeros(dimensions), atol=0.1)
@@ -51,10 +51,10 @@ def test_hypersphere(dimensions):
 
 
 @pytest.mark.parametrize("dimensions", [1, 2, 5])
-def test_hypersphere_surface(dimensions):
-    n = 100 * dimensions
+def test_hypersphere_surface(dimensions, rng):
+    n = 500 * dimensions
     dist = dists.UniformHypersphere(surface=True)
-    samples = dist.sample(n, dimensions, np.random.RandomState(1))
+    samples = dist.sample(n, dimensions, rng=rng)
     assert samples.shape == (n, dimensions)
     assert np.allclose(npext.norm(samples, axis=1), 1)
     assert np.allclose(
@@ -62,7 +62,7 @@ def test_hypersphere_surface(dimensions):
 
 
 @pytest.mark.parametrize("weights", [None, [5, 1, 2, 9], [3, 2, 1, 0]])
-def test_choice(weights):
+def test_choice(weights, rng):
     n = 2000
     choices = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
     N = len(choices)
@@ -70,8 +70,8 @@ def test_choice(weights):
     dist = dists.Choice(choices, weights=weights)
     # If d is passed, it has to match
     with pytest.raises(ValueError):
-        dist.sample(n, d=4, rng=np.random.RandomState(5))
-    sample = dist.sample(n, rng=np.random.RandomState(5))
+        dist.sample(n, d=4, rng=rng)
+    sample = dist.sample(n, rng=rng)
     tsample, tchoices = list(map(tuple, sample)), list(map(tuple, choices))
 
     # check that frequency of choices matches weights

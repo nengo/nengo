@@ -1,5 +1,7 @@
+import numpy as np
 import pytest
 
+import nengo.utils.numpy as npext
 from nengo.neurons import LIF, LIFRate, Direct
 from nengo.simulator import Simulator as ReferenceSimulator
 from nengo.utils.testing import Plotter
@@ -49,6 +51,32 @@ def plt(request):
     plotter = Plotter(simulator, request.module, request.function, nl=nl)
     request.addfinalizer(lambda p=plotter: p.__exit__(None, None, None))
     return plotter.__enter__()
+
+
+def function_seed(function, mod=0):
+    c = function.__code__
+    return (hash((c.co_filename, c.co_name)) + mod) % npext.maxint
+
+
+@pytest.fixture
+def rng(request):
+    """a seeded random number generator.
+
+    This should be used in lieu of np.random because we control its seed.
+    """
+    # add 1 to seed to be different from network seed
+    seed = function_seed(request.function, mod=1)
+    return np.random.RandomState(seed)
+
+
+@pytest.fixture
+def seed(request):
+    """a seed for seeding Networks.
+
+    This should be used in lieu of an integer seed so that we can ensure that
+    tests are not dependent on specific seeds.
+    """
+    return function_seed(request.function)
 
 
 def pytest_generate_tests(metafunc):
