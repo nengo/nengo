@@ -1,4 +1,3 @@
-from collections import Counter
 import logging
 
 import numpy as np
@@ -6,7 +5,6 @@ import pytest
 
 import nengo
 import nengo.utils.numpy as npext
-from nengo.ensemble import EnsembleNeuronTypeParam
 from nengo.utils.distributions import Choice
 from nengo.utils.testing import Plotter, warns
 
@@ -303,27 +301,6 @@ def test_gain_bias(Simulator, nl_nodirect):
     sim = Simulator(model)
     assert np.array_equal(gain, sim.data[a].gain)
     assert np.array_equal(bias, sim.data[a].bias)
-
-
-def test_neurontypeparam_probeable():
-    """NeuronTypeParam can update a probeable list."""
-    class Test(object):
-        ntp = EnsembleNeuronTypeParam(default=None, optional=True)
-        probeable = ['output']
-
-    inst = Test()
-    assert inst.probeable == ['output']
-    inst.ntp = nengo.LIF()
-    assert Counter(inst.probeable) == Counter(inst.ntp.probeable + ['output'])
-    # The first element is important,  as it's the default
-    assert inst.probeable[0] == 'output'
-    # Setting it again should result in the same list
-    inst.ntp = nengo.LIF()
-    assert Counter(inst.probeable) == Counter(inst.ntp.probeable + ['output'])
-    assert inst.probeable[0] == 'output'
-    # Unsetting it should clear the list appropriately
-    inst.ntp = None
-    assert inst.probeable == ['output']
 
 
 if __name__ == "__main__":
