@@ -592,6 +592,7 @@ def test_set_function(Simulator):
         a = nengo.Ensemble(10, 2)
         b = nengo.Ensemble(10, 2)
         c = nengo.Ensemble(10, 1)
+        d = nengo.Node(size_in=1)
 
         # Function only OK from node or ensemble
         with pytest.raises(ValueError):
@@ -601,6 +602,10 @@ def test_set_function(Simulator):
         with pytest.raises(ValueError):
             nengo.Connection(a, b, function=lambda x: x[0] * x[1],
                              transform=np.eye(2))
+
+        # No functions allowed on passthrough nodes
+        with pytest.raises(ValueError):
+            nengo.Connection(d, c, function=lambda x: [1])
 
         # These initial functions have correct dimensionality
         conn_2d = nengo.Connection(a, b)
@@ -673,6 +678,18 @@ def test_nonexistant_prepost(Simulator):
         nengo.Probe(a)
     with pytest.raises(ValueError):
         nengo.Simulator(model3)
+
+
+def test_directneurons(Simulator, nl_nodirect):
+    with nengo.Network():
+        a = nengo.Ensemble(1, 1, neuron_type=nl_nodirect())
+        b = nengo.Ensemble(1, 1, neuron_type=nengo.Direct())
+
+        # cannot connect to or from direct neurons
+        with pytest.raises(ValueError):
+            nengo.Connection(a, b.neurons)
+        with pytest.raises(ValueError):
+            nengo.Connection(b.neurons, a)
 
 
 if __name__ == "__main__":

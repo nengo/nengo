@@ -1,5 +1,5 @@
 from nengo.base import NengoObject, ObjView
-from nengo.neurons import LIF, NeuronTypeParam
+from nengo.neurons import LIF, NeuronTypeParam, Direct
 from nengo.params import (
     Default, DistributionParam, IntParam, ListParam, NumberParam, StringParam)
 from nengo.utils.distributions import Uniform, UniformHypersphere
@@ -136,10 +136,18 @@ class Neurons(object):
 
     @property
     def size_in(self):
+        if isinstance(self.ensemble.neuron_type, Direct):
+            # This will prevent users from connecting/probing Direct neurons
+            # (since there aren't actually any neurons being simulated).
+            return 0
         return self.ensemble.n_neurons
 
     @property
     def size_out(self):
+        if isinstance(self.ensemble.neuron_type, Direct):
+            # This will prevent users from connecting/probing Direct neurons
+            # (since there aren't actually any neurons being simulated).
+            return 0
         return self.ensemble.n_neurons
 
     @property
