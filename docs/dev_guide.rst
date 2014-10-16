@@ -41,7 +41,7 @@ requirements:
 
 .. code-block:: bash
 
-   pip install -r doc-requirements.txt
+   pip install -r requirements-docs.txt
 
 After you've installed all the requirements,
 execute from the root directory of ``nengo-temp``
