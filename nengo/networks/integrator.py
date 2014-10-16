@@ -2,6 +2,7 @@ import nengo
 
 
 def Integrator(recurrent_tau, n_neurons, dimensions, net=None):
+    """An emsemble that connects to itself."""
     if net is None:
         net = nengo.Network(label="Integrator")
     with net:
