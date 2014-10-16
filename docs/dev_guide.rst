@@ -30,21 +30,18 @@ documentation.
 The documentation is built with Sphinx and has a few requirements 
 (Pandoc, Numpydoc and the Nengo-Sphinx-theme).
 
-.. code-block:: bash
-
-   # install the sphinx theme
-   git clone git@github.com:ctn-waterloo/nengo-temp.git
-   cd nengo-temp
-   python setup.py develop
-   # install numpydoc
-   pip install numpydoc
-
-How you install Pandoc (requirement of Sphinx) and
-Sphinx depends on your operating system,
+How you install `Pandoc <http://johnmacfarlane.net/pandoc/installing.html>`_ (requirement of Sphinx)depends on your operating system,
 so no instructions will be included here.
 However, if you're using Windows and having a hard
 time installing the requirements, please check out
 `Chocolatey <https://chocolatey.org/>`_.
+
+After you've installed Pandoc, you're ready to intall the rest of the 
+requirements:
+
+.. code-block:: bash
+
+   pip install -r doc-requirements.txt
 
 After you've installed all the requirements,
 execute from the root directory of ``nengo-temp``
