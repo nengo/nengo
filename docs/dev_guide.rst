@@ -25,7 +25,7 @@ How to Build the Documentation
 
 Note that you can only build the documentation after
 you've built the branch that you're using to build the
-documentation.
+documentation, which hypothetically you've already done in the previous section.
 
 The documentation is built with Sphinx and has a few requirements 
 (Pandoc, Numpydoc and the Nengo-Sphinx-theme).
@@ -36,6 +36,13 @@ so no instructions will be included here.
 However, if you're using Windows and having a hard
 time installing the requirements, please check out
 `Chocolatey <https://chocolatey.org/>`_.
+
+After you've installed Pandoc, you're ready to intall the rest of the 
+requirements:
+
+.. code-block:: bash
+
+   pip install -r doc-requirements.txt
 
 After you've installed all the requirements,
 execute from the root directory of ``nengo-temp``
