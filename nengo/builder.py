@@ -664,9 +664,18 @@ def reshape_dot(A, X, Y, tag=None):
 
 
 class DotInc(Operator):
-    """Increment signal Y by dot(A, X)"""
+    """Increment signal Y by dot(A, X)
+
+    Currently, this only supports matrix-vector multiplies for compatibility
+    with NengoOCL.
+    """
 
     def __init__(self, A, X, Y, as_update=False, tag=None):
+        if X.ndim >= 2 and any(d > 1 for d in X.shape[1:]):
+            raise ValueError("X must be a column vector")
+        if Y.ndim >= 2 and any(d > 1 for d in Y.shape[1:]):
+            raise ValueError("Y must be a column vector")
+
         self.A = A
         self.X = X
         self.Y = Y
@@ -1537,16 +1546,17 @@ def build_pes(pes, conn, model, config):
                 else conn.post_obj)
         transform = model.sig[conn]['transform']
         encoders = model.sig[post]['encoders']
-        outer_product = Signal(np.zeros((error.size, activities.size)),
-                               name="PES: outer prod")
+        encoded_error = Signal(np.zeros(transform.shape[0]),
+                               name="PES: encoded error")
 
-        model.add_op(Reset(outer_product))
-        model.add_op(ElementwiseInc(
-            scaled_error_view, activities_view, outer_product,
-            tag="PES:Outer Prod"))
+        model.add_op(Reset(encoded_error))
         model.add_op(DotInc(
-            encoders, outer_product, transform, tag="PES:Inc Weights"))
+            encoders, scaled_error, encoded_error, tag="PES:Encode error"))
 
+        encoded_error_view = encoded_error.reshape((encoded_error.size, 1))
+        model.add_op(ElementwiseInc(
+            encoded_error_view, activities_view, transform,
+            tag="PES:Inc Transform"))
     elif isinstance(conn.pre_obj, Neurons):
         transform = model.sig[conn]['transform']
         model.add_op(ElementwiseInc(
@@ -1583,8 +1593,8 @@ def build_bcm(bcm, conn, model, config):
 
     model.add_op(SimBCM(pre_filtered, post_filtered, theta, delta,
                         learning_rate=bcm.learning_rate))
-    model.add_op(DotInc(model.sig['common'][1], delta, transform,
-                        tag="BCM: DotInc"))
+    model.add_op(ElementwiseInc(
+        model.sig['common'][1], delta, transform, tag="BCM: Inc Transform"))
 
 
 Builder.register_builder(build_bcm, BCM)
@@ -1607,8 +1617,8 @@ def build_oja(oja, conn, model, config):
 
     model.add_op(SimOja(pre_filtered, post_filtered, transform, delta,
                         learning_rate=oja.learning_rate, beta=oja.beta))
-    model.add_op(DotInc(model.sig['common'][1], delta, transform,
-                        tag="Oja: DotInc"))
+    model.add_op(ElementwiseInc(
+        model.sig['common'][1], delta, transform, tag="Oja: Inc Transform"))
 
     model.params[oja] = None
 
