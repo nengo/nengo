@@ -10,6 +10,7 @@ dist
 nengo.simulator.plots/
 log.txt
 .ipynb_checkpoints/
+packages/
 .cache
 .tox
 
