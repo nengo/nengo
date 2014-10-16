@@ -25,7 +25,7 @@ How to Build the Documentation
 
 Note that you can only build the documentation after
 you've built the branch that you're using to build the
-documentation.
+documentation, which hypothetically you've already done in the previous section.
 
 The documentation is built with Sphinx and has a few requirements
 (Pandoc, Numpydoc and the Nengo-Sphinx-theme).
