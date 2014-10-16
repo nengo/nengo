@@ -13,13 +13,13 @@ from nengo.utils.testing import Plotter
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.parametrize('dims', [5, 6, 11, 16])
 @pytest.mark.parametrize('invert_a', [True, False])
 @pytest.mark.parametrize('invert_b', [True, False])
-def test_circularconv_transforms(invert_a, invert_b):
+def test_circularconv_transforms(dims, invert_a, invert_b):
     """Test the circular convolution transforms"""
     rng = np.random.RandomState(43232)
 
-    dims = 100
     x = rng.randn(dims)
     y = rng.randn(dims)
     z0 = circconv(x, y, invert_a=invert_a, invert_b=invert_b)
@@ -47,7 +47,7 @@ def test_circularconv(Simulator, nl, dims=4, neurons_per_product=128):
     assert np.abs(result).max() < radius
 
     # --- model
-    model = nengo.Network(label="circular convolution")
+    model = nengo.Network(seed=283)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl()
         inputA = nengo.Node(a)

@@ -120,22 +120,25 @@ class CircularConvolution(nengo.Network):
     def transform_out(self):
         dims = self.dimensions
         dims2 = (dims // 2 + 1)
-        tr = np.zeros((dims2, 4, dims))
-        idft = self.dft_half(dims).conj()
+        D = self.dft_half(dims).conj().T  # inverse DFT
 
-        for i in range(dims2):
-            row = idft[i] if i == 0 or 2*i == dims else 2*idft[i]
-            tr[i, 0] = row.real
-            tr[i, 1] = -row.real
-            tr[i, 2] = -row.imag
-            tr[i, 3] = -row.imag
+        # scale middle columns to simulate the full DFT matrix
+        i2 = (dims + 1) // 2
+        D[:, 1:i2] *= 2
 
-        tr = tr.reshape(4*dims2, dims)
-        self._remove_imag_rows(tr)
+        T = np.zeros((dims, 3 * dims2))
+        for i in xrange(dims):
+            # Real part = (k1 - k3) * D.real - (k1 + k2) * D.imag
+            Di = D[i]
+            T[i, 0::3] = 2*D.real[i] - 2*D.imag[i]  # k1 * (D.real - D.imag)
+            T[i, 1::3] = -2*D.imag[i]               # -k2 * Di.imag
+            T[i, 2::3] = -2*D.real[i]               # -k3 * Di.real
+
         # scaling is needed since we have 1./sqrt(dims) in DFT
-        tr *= np.sqrt(dims)
+        T *= np.sqrt(dims)
 
-        return tr.T
+        T = CircularConvolution._remove_imag_rows(T.T).T
+        return T
 
     @staticmethod
     @memoize
@@ -165,25 +168,30 @@ class CircularConvolution(nengo.Network):
         if align not in ('A', 'B'):
             raise ValueError("'align' must be either 'A' or 'B'")
 
-        dims2 = 4 * (dims // 2 + 1)
-        tr = np.zeros((dims2, dims))
-        dft = CircularConvolution.dft_half(dims)
+        dims2 = dims // 2 + 1
+        D = CircularConvolution.dft_half(dims)
+        D = D.conj() if invert else D
 
-        for i in range(dims2):
-            row = dft[i // 4] if not invert else dft[i // 4].conj()
+        T = np.zeros((3 * dims2, dims))
+        for i in xrange(dims2):
+            Ti = T[3*i:3*(i+1)]
             if align == 'A':
-                tr[i] = row.real if i % 2 == 0 else row.imag
-            else:  # align == 'B'
-                tr[i] = row.real if i % 4 == 0 or i % 4 == 3 else row.imag
+                Ti[0] = 0.5 * (D.real[i] + D.imag[i])  # (a + b)
+                Ti[1] = D.real[i]              # a
+                Ti[2] = D.imag[i]              # b
+            else:
+                Ti[0] = D.real[i]              # c
+                Ti[1] = 0.5 * (D.imag[i] - D.real[i])  # (d - c)
+                Ti[2] = 0.5 * (D.real[i] + D.imag[i])  # (c + d)
 
-        CircularConvolution._remove_imag_rows(tr)
-        return tr.reshape((-1, dims))
+        T = CircularConvolution._remove_imag_rows(T)
+        return T
 
     @staticmethod
-    def _remove_imag_rows(tr):
+    def _remove_imag_rows(T):
         """Throw away imaginary row we don't need (since they're zero)"""
-        i = np.arange(tr.shape[0])
-        if tr.shape[1] % 2 == 0:
-            tr = tr[(i == 0) | (i > 3) & (i < len(i) - 3)]
+        i = np.arange(T.shape[0])
+        if T.shape[1] % 2 == 0:
+            return T[(i == 0) | (i > 2) & (i < len(i) - 2)]
         else:
-            tr = tr[(i == 0) | (i > 3)]
+            return T[(i == 0) | (i > 2)]
