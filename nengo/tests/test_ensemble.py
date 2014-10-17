@@ -75,6 +75,7 @@ def test_constant_scalar(Simulator, nl):
         t = sim.trange()
         plt.plot(t, sim.data[in_p], label='Input')
         plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.1')
+        plt.ylim([0, 1.05 * val])
         plt.legend(loc=0)
         plt.savefig('test_ensemble.test_constant_scalar.pdf')
         plt.close()
@@ -185,9 +186,7 @@ def test_product(Simulator, nl):
         sin = nengo.Node(output=f)
         cons = nengo.Node(output=-.5)
         factors = nengo.Ensemble(
-            2 * N,
-            dimensions=2,
-            radius=1.5,
+            2 * N, 2, radius=1.5,
             encoders=Choice([[1, 1], [-1, 1], [1, -1], [-1, -1]]))
         product = nengo.Ensemble(N, dimensions=1)
         nengo.Connection(sin, factors[0])
@@ -195,7 +194,6 @@ def test_product(Simulator, nl):
         nengo.Connection(
             factors, product, function=lambda x: x[0] * x[1], synapse=0.01)
 
-        sin_p = nengo.Probe(sin, sample_every=dt2)
         factors_p = nengo.Probe(factors, sample_every=dt2, synapse=0.01)
         product_p = nengo.Probe(product, sample_every=dt2, synapse=0.01)
 
@@ -206,12 +204,12 @@ def test_product(Simulator, nl):
     with Plotter(Simulator, nl) as plt:
         plt.subplot(211)
         plt.plot(t, sim.data[factors_p])
-        plt.plot(t, f(t))
-        plt.plot(t, sim.data[sin_p])
+        plt.legend(['factor 1', 'factor 2'])
         plt.subplot(212)
+        plt.plot(t, -.5 * f(t), 'k--')
         plt.plot(t, sim.data[product_p])
-        plt.plot(t, -.5 * f(t))
-        plt.savefig('test_ensemble.test_prod.pdf')
+        plt.legend(['exact product', 'neural product'], loc=4)
+        plt.savefig('test_ensemble.test_product.pdf')
         plt.close()
 
     assert npext.rmse(sim.data[factors_p][:, 0], f(t)) < 0.1
