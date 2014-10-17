@@ -4,6 +4,7 @@ from datetime import timedelta
 import os
 import sys
 import time
+import warnings
 
 import numpy as np
 
@@ -17,6 +18,13 @@ try:
     _HAS_WIDGETS = True
 except ImportError:
     _HAS_WIDGETS = False
+
+
+class MemoryLeakWarning(UserWarning):
+    pass
+
+
+warnings.filterwarnings('once', category=MemoryLeakWarning)
 
 
 class Progress(object):
@@ -96,6 +104,23 @@ class NoProgressBar(ProgressBar):
 
 
 class CmdProgressBar(ProgressBar):
+    def __init__(self, update_interval=0.05):
+        super(CmdProgressBar, self).__init__(update_interval)
+        if _in_ipynb():
+            warnings.warn(MemoryLeakWarning((
+                "The {cls} continuously adds invisible content to the "
+                "IPython notebook which may lead to excessive memory usage "
+                "and ipynb files which cannot be opened anymore. Please "
+                "consider doing one of the following:{cr}{cr}"
+                "  * Wrap {cls} in an UpdateLimiter class. This reduces the "
+                "memory consumption, but does not solve the problem "
+                "completely.{cr}"
+                "  * Disable the progress bar.{cr}"
+                "  * Use IPython 2.0 or later and the IPython2ProgressBar "
+                "(this is the default behavior from IPython 2.0 onwards).{cr}"
+                ).format(cls=self.__class__.__name__, cr=os.linesep)))
+            sys.stderr.flush()  # Show warning immediately.
+
     def _on_init(self):
         pass
 
@@ -235,6 +260,27 @@ class AutoProgressBar(ProgressBar):
             self.delegate.update(progress)
 
 
+class UpdateLimiter(ProgressBar):
+    def __init__(self, delegate, max_updates=100):
+        super(UpdateLimiter, self).__init__()
+        self.delegate = delegate
+        self.max_updates = max_updates
+        self.last_update_step = 0
+
+    def _on_init(self):
+        self.delegate.init()
+
+    def _on_update(self, progress):
+        next_update_step = (self.last_update_step +
+                            progress.max_steps / self.max_updates)
+        if next_update_step < progress.step:
+            self.delegate.update(progress)
+            self.last_update_step = progress.steps
+
+    def _on_finish(self, progress):
+        self.delegate.update(progress)
+
+
 class ProgressControl(object):
     def __init__(self, progress, progress_bar):
         self.progress = progress
@@ -256,16 +302,20 @@ class ProgressControl(object):
 def _in_ipynb():
     try:
         cfg = get_ipython().config  # pylint: disable=undefined-variable
-        if cfg['IPKernelApp']['parent_appname'] == 'ipython-notebook':
+        app_key = 'IPKernelApp'
+        if 'parent_appname' not in cfg[app_key]:
+            app_key = 'KernelApp'  # was used by old IPython versions
+        if cfg[app_key]['parent_appname'] == 'ipython-notebook':
             return True
-        else:
-            return False
     except NameError:
-        return False
+        pass
+    return False
 
 
 def get_progressbar():
-    if _HAS_WIDGETS and _in_ipynb():
-        return IPython2ProgressBar()
-    else:
+    if _in_ipynb:
+        if _HAS_WIDGETS:  # IPython >= 2.0
+            return IPython2ProgressBar()
+        else:  # IPython < 2.0
+            return UpdateLimiter(CmdProgressBar())
         return CmdProgressBar()
