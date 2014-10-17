@@ -49,7 +49,8 @@ from nengo.probe import Probe
 from nengo.synapses import Alpha, LinearFilter, Lowpass, Synapse
 from nengo.utils.distributions import Distribution
 from nengo.utils.builder import default_n_eval_points, full_transform
-from nengo.utils.compat import is_iterable, is_number, StringIO
+from nengo.utils.compat import (
+    is_iterable, is_number, StringIO, itervalues, iteritems)
 from nengo.utils.filter_design import cont2discrete
 import nengo.utils.numpy as npext
 
@@ -972,8 +973,7 @@ def build_network(network, model):  # noqa: C901
 
     # assign seeds to children
     rng = np.random.RandomState(model.seeds[network])
-    sorted_types = sorted(list(network.objects.keys()),
-                          key=lambda t: t.__name__)
+    sorted_types = sorted(network.objects, key=lambda t: t.__name__)
     for obj_type in sorted_types:
         for obj in network.objects[obj_type]:
             model.seeds[obj] = get_seed(obj, rng)
@@ -992,12 +992,12 @@ def build_network(network, model):  # noqa: C901
 
     logger.info("Network step 4: Building learning rules")
     for conn in network.connections:
-        rules = conn.learning_rule
-        if is_iterable(rules):
-            for rule in (rules.values() if isinstance(rules, dict) else rules):
-                Builder.build(rule, model=model, config=network.config)
-        elif rules is not None:
-            Builder.build(rules, model=model, config=network.config)
+        rule = conn.learning_rule
+        if is_iterable(rule):
+            for r in (itervalues(rule) if isinstance(rule, dict) else rule):
+                Builder.build(r, model=model, config=network.config)
+        elif rule is not None:
+            Builder.build(rule, model=model, config=network.config)
 
     logger.info("Network step 5: Building probes")
     for probe in network.probes:
@@ -1242,7 +1242,7 @@ probemap = {
 
 def build_probe(probe, model, config):
     # find the right parent class in `objtypes`, using `isinstance`
-    for nengotype, probeables in probemap.items():
+    for nengotype, probeables in iteritems(probemap):
         if isinstance(probe.obj, nengotype):
             break
     else:

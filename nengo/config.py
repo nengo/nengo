@@ -92,7 +92,7 @@ class ClassParams(object):
 
     @property
     def extra_params(self):
-        return self._extraparams.keys()
+        return list(self._extraparams)
 
     @property
     def params(self):

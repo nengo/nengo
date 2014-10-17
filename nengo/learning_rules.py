@@ -1,5 +1,5 @@
 from nengo.params import Parameter
-from nengo.utils.compat import is_iterable
+from nengo.utils.compat import is_iterable, itervalues
 
 
 class LearningRuleType(object):
@@ -114,8 +114,8 @@ class Oja(LearningRuleType):
 class LearningRuleTypeParam(Parameter):
     def validate(self, instance, rule):
         if is_iterable(rule):
-            for lr in (rule.values() if isinstance(rule, dict) else rule):
-                self.validate_rule(instance, lr)
+            for r in (itervalues(rule) if isinstance(rule, dict) else rule):
+                self.validate_rule(instance, r)
         elif rule is not None:
             self.validate_rule(instance, rule)
         super(LearningRuleTypeParam, self).validate(instance, rule)

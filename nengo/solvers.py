@@ -13,7 +13,7 @@ import numpy as np
 
 from nengo.params import Parameter
 import nengo.utils.numpy as npext
-from nengo.utils.compat import range, with_metaclass
+from nengo.utils.compat import range, with_metaclass, iteritems
 from nengo.utils.magic import DocstringInheritor
 
 logger = logging.getLogger(__name__)
@@ -265,7 +265,7 @@ class Solver(with_metaclass(DocstringInheritor)):
     def __str__(self):
         return "%s(%s)" % (
             self.__class__.__name__,
-            ', '.join("%s=%s" % (k, v) for k, v in self.__dict__.items()))
+            ', '.join("%s=%s" % (k, v) for k, v in iteritems(self.__dict__)))
 
 
 class Lstsq(Solver):

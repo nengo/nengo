@@ -10,7 +10,7 @@ from nengo.params import (
     Default, BoolParam, FunctionParam, IntParam, ListParam, NdarrayParam)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
-from nengo.utils.compat import is_iterable
+from nengo.utils.compat import is_iterable, iteritems
 
 logger = logging.getLogger(__name__)
 
@@ -290,7 +290,7 @@ class Connection(NengoObject):
             types = self.learning_rule_type
             if isinstance(types, dict):
                 self._learning_rule = types.__class__()  # dict of same type
-                for k, v in types.items():
+                for k, v in iteritems(types):
                     self._learning_rule[k] = LearningRule(self, v)
             elif is_iterable(types):
                 self._learning_rule = [LearningRule(self, v) for v in types]

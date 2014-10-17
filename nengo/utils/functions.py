@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from nengo.utils.compat import is_number, OrderedDict, range
+from nengo.utils.compat import is_number, OrderedDict, range, iteritems
 
 
 def piecewise(data):
@@ -94,7 +94,7 @@ def piecewise(data):
 
     # make a default output of 0 when t before what was passed
     data[np.finfo(float).min] = np.zeros(output_length)
-    ordered_data = OrderedDict(sorted(data.items()))
+    ordered_data = OrderedDict(sorted(iteritems(data)))
 
     # build the function to return
     def piecewise_function(t, data=ordered_data):

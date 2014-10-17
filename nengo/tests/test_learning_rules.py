@@ -220,8 +220,8 @@ def test_learningrule_attr(seed):
         r3 = dict(oja=Oja(), bcm=BCM())
         c3 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r3)
         assert isinstance(c3.learning_rule, dict)
-        assert set(c3.learning_rule.keys()) == set(r3.keys())
-        for key in r3.keys():
+        assert set(c3.learning_rule) == set(r3)  # assert same keys
+        for key in r3:
             check_rule(c3.learning_rule[key], c3, r3[key])
 
 

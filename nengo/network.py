@@ -163,7 +163,7 @@ class Network(with_metaclass(NengoObjectContainer)):
     def all_objects(self):
         """All objects in this network and its subnetworks"""
         objects = []
-        for object_type in self.objects.keys():
+        for object_type in self.objects:
             objects.extend(self._all_objects(object_type))
         return objects
 

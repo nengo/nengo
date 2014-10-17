@@ -56,7 +56,7 @@ def test_hypersphere_surface(dimensions, rng):
     samples = dist.sample(n, dimensions, rng=rng)
     assert samples.shape == (n, dimensions)
     assert np.allclose(npext.norm(samples, axis=1), 1)
-    assert np.allclose(np.mean(samples, axis=0), 0, atol=0.2 / dimensions)
+    assert np.allclose(np.mean(samples, axis=0), 0, atol=0.25 / dimensions)
 
 
 @pytest.mark.parametrize("weights", [None, [5, 1, 2, 9], [3, 2, 1, 0]])

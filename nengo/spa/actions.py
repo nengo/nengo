@@ -105,7 +105,7 @@ class Effect(object):
             self.effect[sink] = Expression(sources, rvalue)
 
     def __str__(self):
-        return ", ".join("%s=%s" % x for x in self.effect.items())
+        return ", ".join("%s=%s" % x for x in iteritems(self.effect))
 
 
 class Action(object):

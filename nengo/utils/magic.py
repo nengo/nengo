@@ -292,7 +292,7 @@ class memoize(object):
         self.misses = 0
 
     def __call__(self, wrapped, instance, args, kwargs):
-        key = (instance, tuple(args), tuple(sorted(list(kwargs.items()))))
+        key = (instance, tuple(args), tuple(sorted(iteritems(kwargs))))
         if key not in self._cache:
             self._cache[key] = wrapped(*args, **kwargs)
             self.misses += 1
