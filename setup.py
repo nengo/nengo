@@ -24,6 +24,7 @@ setup(
     author="CNRGlab at UWaterloo",
     author_email="celiasmith@uwaterloo.ca",
     packages=find_packages(),
+    include_package_data=True,
     entry_points={
         'console_scripts': [
             'nengo_gui = nengo_gui:main',
