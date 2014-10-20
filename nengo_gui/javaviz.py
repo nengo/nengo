@@ -291,8 +291,8 @@ class View:
                     node = nengo.Node(send, size_in=obj.dimensions)
                     c = nengo.Connection(obj, node, synapse=None)
 
-            elif isinstance(probe.target, nengo.Ensemble) and probe.attr == 'spikes':
-                obj = probe.target
+            elif isinstance(probe.target, nengo.ensemble.Neurons) and probe.attr == 'output':
+                obj = probe.target.ensemble
                 e = self.remote_objs[obj]
                 self.need_encoders.append(obj)
                 e.add_spike_probe(probe_id, obj.n_neurons)
