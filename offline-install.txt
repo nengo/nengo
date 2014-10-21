@@ -1,0 +1,14 @@
+Offline Installation
+====================
+
+
+Windows
+-------
+
+Run the batch file install.bat
+
+
+Linux and/or OS X
+-----------------
+
+Run the bash script install.sh
