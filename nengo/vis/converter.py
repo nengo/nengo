@@ -28,11 +28,14 @@ class Converter(object):
         self.global_offset = config[model].offset
 
     def process(self, network, id_prefix=None):
+        """Process the network, ensembles, nodes, connections and probes into 
+        a dictionary format to be processed by 
+        the client side browser for visualization."""
 
         for i, ens in enumerate(network.ensembles):
             line = ens._created_line_number-1
             label = ens.label
-            id = self.namefinder.name(ens)
+            ens_id = self.namefinder.name(ens)
 
             pos = self.config[ens].pos
             scale = self.config[ens].scale
@@ -43,7 +46,7 @@ class Converter(object):
             if scale is None:
                 scale = 1
 
-            obj = {'label': label, 'line': line, 'id': id, 'type': 'ens',
+            obj = {'label': label, 'line': line, 'id': ens_id, 'type': 'ens',
                    'x': pos[0], 'y': pos[1], 'scale': scale,
                    'contained_by': self.object_index[network]}
 
@@ -55,7 +58,7 @@ class Converter(object):
             label = nde.label
             if label == 'Node':
                 label = ''
-            id = self.namefinder.name(nde)
+            nde_id = self.namefinder.name(nde)
 
             pos = self.config[nde].pos
             scale = self.config[nde].scale
@@ -66,11 +69,14 @@ class Converter(object):
             if scale is None:
                 scale = 1
 
-            obj = {'label':label, 'line':line, 'id':id, 'type':'nde',
+            is_input = (nde.size_in == 0 and nde.size_out >= 1)
+
+            obj = {'label':label, 'line':line, 'id':nde_id, 'type':'nde',
                    'x':pos[0], 'y':pos[1],  'scale': scale,
-                   'contained_by': self.object_index[network]}
+                   'contained_by': self.object_index[network], "is_input": is_input}
             self.object_index[nde] = len(self.objects)
             self.objects.append(obj)
+
 
         full_contains={}
         for i, net in enumerate(network.networks):
@@ -82,12 +88,13 @@ class Converter(object):
                     net._created_line_number = 0
             line = net._created_line_number-1
             label = net.label
-            id = self.namefinder.name(net)
+            net_id = self.namefinder.name(net)
 
             self.object_index[net] = len(self.objects)
             self.objects.append({'placeholder':0}) # place holder
 
-            full_contains[i] = self.process(net, id_prefix=id)
+            # recursive call to process all sub-networks
+            full_contains[i] = self.process(net, id_prefix=net_id)
 
             contains = [self.object_index[obj] for obj in
                 net.ensembles + net.nodes + net.networks]
@@ -107,14 +114,14 @@ class Converter(object):
             if size is None:
                 size = 100, 100
 
-            obj = {'label':label, 'line':line, 'id':id, 'type':'net',
+            obj = {'label':label, 'line':line, 'id':net_id, 'type':'net',
                    'contains':list(contains), 'full_contains': list(full_contains[i]),
                    'contained_by': self.object_index[network], 'scale': scale,
                    'x':pos[0], 'y':pos[1], 'width':size[0], 'height':size[1]}
             self.objects[self.object_index[net]] = obj
 
         for i, conn in enumerate(network.connections):
-            id = self.namefinder.name(conn)
+            conn_id = self.namefinder.name(conn)
             pre = conn.pre_obj
             if isinstance(pre, nengo.ensemble.Neurons):
                 pre = pre.ensemble
@@ -123,13 +130,13 @@ class Converter(object):
                 post = post.ensemble
             # TODO: have a visual indication of direct connections
             if self.object_index[pre] == self.object_index[post]:
-                type = 'rec'
+                connection_type = 'rec'
             else:
-                type = 'std'
+                connection_type = 'std'
             self.links.append({'source':self.object_index[pre],
                                'target':self.object_index[post],
-                               'id':id,
-                               'type':type})
+                               'id':conn_id,
+                               'type':connection_type})
 
         return sum(full_contains.values(),[])
 
