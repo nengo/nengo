@@ -23,12 +23,9 @@ class SimpleIdentificator(Identificator):
 
 
 class Converter(object):
-    def __init__(
-            self, model, codelines, config,
-            identificator=SimpleIdentificator()):
+    def __init__(self, model, config, identificator=SimpleIdentificator()):
         self.model = model
         self.identificator = identificator
-        self.codelines = codelines
         self.objects = []
         self.config = config
         self.links = []
