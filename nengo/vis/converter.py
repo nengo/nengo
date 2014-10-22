@@ -1,7 +1,6 @@
 import json
 import re
 import keyword
-import namefinder
 
 import pprint
 import nengo
@@ -13,10 +12,22 @@ def isidentifier(s):
     return re.match(r'^[a-z_][a-z0-9_]*$', s, re.I) is not None
 
 
+class Identificator(object):
+    def get_id(self, obj):
+        raise NotImplementedError()
+
+
+class SimpleIdentificator(Identificator):
+    def get_id(self, obj):
+        return id(obj)
+
+
 class Converter(object):
-    def __init__(self, model, codelines, locals, config):
+    def __init__(
+            self, model, codelines, config,
+            identificator=SimpleIdentificator()):
         self.model = model
-        self.namefinder = namefinder.NameFinder(locals, model)
+        self.identificator = identificator
         self.codelines = codelines
         self.objects = []
         self.config = config
@@ -35,7 +46,7 @@ class Converter(object):
         for i, ens in enumerate(network.ensembles):
             line = ens._created_line_number-1
             label = ens.label
-            ens_id = self.namefinder.name(ens)
+            ens_id = self.identificator.get_id(ens)
 
             pos = self.config[ens].pos
             scale = self.config[ens].scale
@@ -58,7 +69,7 @@ class Converter(object):
             label = nde.label
             if label == 'Node':
                 label = ''
-            nde_id = self.namefinder.name(nde)
+            nde_id = self.identificator.get_id(nde)
 
             pos = self.config[nde].pos
             scale = self.config[nde].scale
@@ -88,7 +99,7 @@ class Converter(object):
                     net._created_line_number = 0
             line = net._created_line_number-1
             label = net.label
-            net_id = self.namefinder.name(net)
+            net_id = self.identificator.get_id(net)
 
             self.object_index[net] = len(self.objects)
             self.objects.append({'placeholder':0}) # place holder
@@ -121,7 +132,7 @@ class Converter(object):
             self.objects[self.object_index[net]] = obj
 
         for i, conn in enumerate(network.connections):
-            conn_id = self.namefinder.name(conn)
+            conn_id = self.identificator.get_id(conn)
             pre = conn.pre_obj
             if isinstance(pre, nengo.ensemble.Neurons):
                 pre = pre.ensemble
