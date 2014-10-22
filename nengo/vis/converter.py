@@ -8,6 +8,9 @@ import nengo
 from nengo.vis.config import Config
 
 
+# TODO: method to add line numbers
+
+
 def isidentifier(s):
     if s in keyword.kwlist:
         return False
@@ -47,7 +50,6 @@ class Converter(object):
         the client side browser for visualization."""
 
         for i, ens in enumerate(network.ensembles):
-            line = ens._created_line_number-1
             label = ens.label
             ens_id = self.identificator.get_id(ens)
 
@@ -60,7 +62,7 @@ class Converter(object):
             if scale is None:
                 scale = 1
 
-            obj = {'label': label, 'line': line, 'id': ens_id, 'type': 'ens',
+            obj = {'label': label, 'id': ens_id, 'type': 'ens',
                    'x': pos[0], 'y': pos[1], 'scale': scale,
                    'contained_by': self.object_index[network]}
 
@@ -68,7 +70,6 @@ class Converter(object):
             self.objects.append(obj)
 
         for i, nde in enumerate(network.nodes):
-            line = nde._created_line_number-1
             label = nde.label
             if label == 'Node':
                 label = ''
@@ -85,7 +86,7 @@ class Converter(object):
 
             is_input = (nde.size_in == 0 and nde.size_out >= 1)
 
-            obj = {'label':label, 'line':line, 'id':nde_id, 'type':'nde',
+            obj = {'label':label, 'id':nde_id, 'type':'nde',
                    'x':pos[0], 'y':pos[1],  'scale': scale,
                    'contained_by': self.object_index[network], "is_input": is_input}
             self.object_index[nde] = len(self.objects)
@@ -94,13 +95,6 @@ class Converter(object):
 
         full_contains={}
         for i, net in enumerate(network.networks):
-            if not hasattr(net, '_created_line_number'):
-                for obj in net.ensembles + net.nodes + net.connections:
-                    net._created_line_number = obj._created_line_number
-                    break
-                else:
-                    net._created_line_number = 0
-            line = net._created_line_number-1
             label = net.label
             net_id = self.identificator.get_id(net)
 
@@ -128,7 +122,7 @@ class Converter(object):
             if size is None:
                 size = 100, 100
 
-            obj = {'label':label, 'line':line, 'id':net_id, 'type':'net',
+            obj = {'label':label, 'id':net_id, 'type':'net',
                    'contains':list(contains), 'full_contains': list(full_contains[i]),
                    'contained_by': self.object_index[network], 'scale': scale,
                    'x':pos[0], 'y':pos[1], 'width':size[0], 'height':size[1]}
