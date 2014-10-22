@@ -5,6 +5,8 @@ import keyword
 import pprint
 import nengo
 
+from nengo.vis.config import Config
+
 
 def isidentifier(s):
     if s in keyword.kwlist:
@@ -23,7 +25,11 @@ class SimpleIdentificator(Identificator):
 
 
 class Converter(object):
-    def __init__(self, model, config, identificator=SimpleIdentificator()):
+    def __init__(
+            self, model, config=None, identificator=SimpleIdentificator()):
+        if config is None:
+            config = Config()
+
         self.model = model
         self.identificator = identificator
         self.objects = []
