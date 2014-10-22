@@ -127,4 +127,4 @@ def rates_kernel(t, spikes, kind='gauss', tau=0.04):
     else:
         rates = lowpass_filter(spikes, tau_i, kind=kind)
 
-    return rates.T / dt
+    return rates.T

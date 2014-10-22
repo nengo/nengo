@@ -49,7 +49,7 @@ class LIFRate(NeuronType):
         """Compute rates in Hz/dt for input current (incl. bias)"""
         j = J - 1
         output[:] = 0  # faster than output[j <= 0] = 0
-        output[j > 0] = dt / (
+        output[j > 0] = 1. / (
             self.tau_ref + self.tau_rc * np.log1p(1. / j[j > 0]))
         # the above line is designed to throw an error if any j is nan
         # (nan > 0 -> error), and not pass x < -1 to log1p
@@ -119,8 +119,8 @@ class LIF(LIFRate):
         # and reduce voltage of neurons partway out of their ref. period
         voltage *= (1 - refractory_time / dt).clip(0, 1)
 
-        # determine which neurons spike (if v > 1 set spiked = 1, else 0)
-        spiked[:] = (voltage > 1)
+        # determine which neurons spike (if v > 1 set spiked = 1/dt, else 0)
+        spiked[:] = (voltage > 1) / dt
 
         # linearly approximate time since neuron crossed spike threshold
         overshoot = (voltage[spiked > 0] - 1) / dV[spiked > 0]
@@ -145,7 +145,7 @@ class AdaptiveLIFRate(LIFRate):
         """Compute rates for input current (incl. bias)"""
         n = adaptation
         LIFRate.step_math(self, dt, J - n, output)
-        n += (dt / self.tau_n) * ((self.inc_n / dt) * output - n)
+        n += (dt / self.tau_n) * (self.inc_n * output - n)
 
 
 class AdaptiveLIF(LIF):
@@ -162,7 +162,7 @@ class AdaptiveLIF(LIF):
         """Compute rates for input current (incl. bias)"""
         n = adaptation
         LIF.step_math(self, dt, J - n, output, voltage, ref)
-        n += (dt / self.tau_n) * ((self.inc_n / dt) * output - n)
+        n += (dt / self.tau_n) * (self.inc_n * output - n)
 
 
 class NeuronTypeParam(Parameter):

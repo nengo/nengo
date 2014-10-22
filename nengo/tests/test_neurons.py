@@ -35,7 +35,7 @@ def test_lif_builtin():
         lif.step_math(dt, J, spikes_i, voltage, reftime)
 
     math_rates = lif.rates(x, gain, bias)
-    sim_rates = spikes.sum(0)
+    sim_rates = spikes.mean(0)
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 
 
@@ -78,7 +78,8 @@ def test_lif(Simulator, plt):
     # check rates against analytic rates
     math_rates = ens.neuron_type.rates(
         x, *ens.neuron_type.gain_bias(max_rates, intercepts))
-    sim_rates = sim.data[spike_probe].sum(0) / t_final
+    spikes = sim.data[spike_probe]
+    sim_rates = (spikes > 0).sum(0) / t_final
     logger.debug("ME = %f", (sim_rates - math_rates).mean())
     logger.debug("RMSE = %f",
                  rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
@@ -118,17 +119,17 @@ def test_alif_rate(Simulator, plt):
     _, ref = tuning_curves(a, sim, inputs=np.array([0.5]))
 
     ax = plt.subplot(211)
-    implot(plt, t, intercepts[::-1], rates.T / dt, ax=ax)
+    implot(plt, t, intercepts[::-1], rates.T, ax=ax)
     ax.set_xlabel('time [s]')
     ax.set_ylabel('input')
     ax = plt.subplot(212)
     ax.plot(intercepts, ref[::-1].T, 'k--')
-    ax.plot(intercepts, rates[[1, 500, 1000, -1], ::-1].T / dt)
+    ax.plot(intercepts, rates[[1, 500, 1000, -1], ::-1].T)
     ax.set_xlabel('input')
     ax.set_xlabel('rate')
 
     # check that initial tuning curve is the same as LIF rates
-    assert np.allclose(rates[1] / dt, ref, atol=0.1, rtol=1e-3)
+    assert np.allclose(rates[1], ref, atol=0.1, rtol=1e-3)
 
     # check that curves in firing region are monotonically decreasing
     assert np.all(np.diff(rates[1:, intercepts < 0.4], axis=0) < 0)
@@ -164,7 +165,7 @@ def test_alif(Simulator, plt):
     sim.run(2.)
 
     t = sim.trange()
-    a_rates = sim.data[ap] / dt
+    a_rates = sim.data[ap]
     spikes = sim.data[bp]
     b_rates = rates_kernel(t, spikes)
 

@@ -42,7 +42,7 @@ class PES(LearningRuleType):
     modifies = ['Ensemble', 'Neurons']
     probeable = ['scaled_error', 'activities']
 
-    def __init__(self, error_connection, learning_rate=1.0):
+    def __init__(self, error_connection, learning_rate=1e-6):
         self.error_connection = error_connection
         super(PES, self).__init__(learning_rate)
 
@@ -72,7 +72,7 @@ class BCM(LearningRuleType):
     modifies = ['Neurons']
 
     def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
-                 learning_rate=1.0):
+                 learning_rate=1e-6):
         self.theta_tau = theta_tau
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
@@ -104,7 +104,7 @@ class Oja(LearningRuleType):
     modifies = ['Neurons']
 
     def __init__(self, pre_tau=0.005, post_tau=None, beta=1.0,
-                 learning_rate=1.0):
+                 learning_rate=1e-6):
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
         self.beta = beta

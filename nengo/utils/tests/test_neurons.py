@@ -43,7 +43,7 @@ def _test_rates(Simulator, rates, plt, name=None):
 
     t = sim.trange()
     x = sim.data[up]
-    a_rates = sim.data[ap] / dt
+    a_rates = sim.data[ap]
     spikes = sim.data[bp]
     b_rates = rates(t, spikes)
 

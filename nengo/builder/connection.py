@@ -32,7 +32,7 @@ def build_linear_system(model, conn):
         eval_points = npext.array(eval_points, min_dims=2)
 
     x = np.dot(eval_points, encoders.T / conn.pre_obj.radius)
-    activities = model.dt * conn.pre_obj.neuron_type.rates(x, gain, bias)
+    activities = conn.pre_obj.neuron_type.rates(x, gain, bias)
     if np.count_nonzero(activities) == 0:
         raise RuntimeError(
             "Building %s: 'activites' matrix is all zero for %s. "

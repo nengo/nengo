@@ -96,6 +96,8 @@ class Simulator(object):
             build artifacts in the Model before building the network,
             then you can pass in a ``nengo.builder.Model`` instance.
         """
+        dt = float(dt)  # make sure it's a float (for division purposes)
+
         if model is None:
             self.model = Model(dt=dt,
                                label="%s, dt=%f" % (network, dt),

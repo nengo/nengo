@@ -9,7 +9,7 @@ from nengo.solvers import LstsqL2nz
 def test_pes_initial_weights(Simulator, nl_nodirect, plt, seed, rng):
     n = 200
     learned_vector = [0.5, -0.5]
-    rate = 10
+    rate = 10e-6
 
     m = nengo.Network(seed=seed)
     with m:
@@ -19,7 +19,10 @@ def test_pes_initial_weights(Simulator, nl_nodirect, plt, seed, rng):
         u_learned = nengo.Ensemble(n, dimensions=2)
         e = nengo.Ensemble(n, dimensions=2)
 
-        initial_weights = rng.uniform(size=(a.n_neurons, u_learned.n_neurons))
+        initial_weights = rng.uniform(
+            high=1e-3,
+            size=(a.n_neurons, u_learned.n_neurons))
+
         nengo.Connection(u, a)
         err_conn = nengo.Connection(e, u_learned, modulatory=True)
         conn = nengo.Connection(a.neurons, u_learned.neurons,
@@ -44,12 +47,12 @@ def test_pes_initial_weights(Simulator, nl_nodirect, plt, seed, rng):
     plt.subplot(312)
     plt.plot(t, sim.data[e_p])
     plt.subplot(313)
-    plt.plot(t, sim.data[se_p] / sim.dt / rate)
+    plt.plot(t, sim.data[se_p] / rate)
 
     tmask = t > 0.9
     assert np.allclose(sim.data[u_learned_p][tmask], learned_vector, atol=0.05)
     assert np.allclose(sim.data[e_p][tmask], 0, atol=0.05)
-    assert np.allclose(sim.data[se_p][tmask] / sim.dt / rate, 0, atol=0.05)
+    assert np.allclose(sim.data[se_p][tmask] / rate, 0, atol=0.05)
 
 
 def test_pes_nef_weights(Simulator, nl_nodirect, plt, seed):
@@ -67,7 +70,7 @@ def test_pes_nef_weights(Simulator, nl_nodirect, plt, seed):
         nengo.Connection(u, a)
         err_conn = nengo.Connection(e, u_learned, modulatory=True)
         nengo.Connection(a, u_learned,
-                         learning_rule_type={'pes': PES(err_conn, 5)},
+                         learning_rule_type={'pes': PES(err_conn, 5e-6)},
                          solver=LstsqL2nz(weights=True))
 
         nengo.Connection(u_learned, e, transform=-1)
@@ -88,7 +91,7 @@ def test_pes_nef_weights(Simulator, nl_nodirect, plt, seed):
     assert np.allclose(sim.data[e_p][tmask], 0, atol=0.05)
 
 
-def test_pes_decoders(Simulator, nl_nodirect, seed):
+def test_pes_decoders(Simulator, nl_nodirect, seed, plt):
     n = 200
     learned_vector = [0.5, -0.5]
 
@@ -111,6 +114,9 @@ def test_pes_decoders(Simulator, nl_nodirect, seed):
 
     sim = Simulator(m)
     sim.run(1.)
+
+    plt.plot(sim.trange(), sim.data[u_learned_p])
+    plt.plot(sim.trange(), sim.data[e_p])
 
     tmask = sim.trange() > 0.9
     assert np.allclose(sim.data[u_learned_p][tmask], learned_vector, atol=0.05)
@@ -136,7 +142,7 @@ def test_pes_decoders_multidimensional(Simulator, nl_nodirect, seed):
 
         # initial decoded function is x[0] - x[1]
         nengo.Connection(a, u_learned, function=lambda x: x[0] - x[1],
-                         learning_rule_type=PES(err_conn, 5))
+                         learning_rule_type=PES(err_conn, 5e-6))
 
         nengo.Connection(u_learned, e, transform=-1)
 
@@ -156,7 +162,8 @@ def test_pes_decoders_multidimensional(Simulator, nl_nodirect, seed):
 
 @pytest.mark.parametrize('learning_rule_type', [
     BCM(), Oja(), [Oja(), BCM()]])
-def test_unsupervised(Simulator, nl_nodirect, learning_rule_type, seed, rng):
+def test_unsupervised(Simulator, nl_nodirect, learning_rule_type,
+                      seed, rng, plt):
     n = 200
     learned_vector = [0.5, -0.5]
 
@@ -174,8 +181,15 @@ def test_unsupervised(Simulator, nl_nodirect, learning_rule_type, seed, rng):
                          transform=initial_weights,
                          learning_rule_type=learning_rule_type)
 
+        ap = nengo.Probe(a, synapse=0.03)
+        up = nengo.Probe(u_learned, synapse=0.03)
+
     sim = Simulator(m)
     sim.run(1.)
+
+    t = sim.trange()
+    plt.plot(t, sim.data[ap])
+    plt.plot(t, sim.data[up])
 
 
 def test_learningruletypeparam():
