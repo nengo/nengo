@@ -107,8 +107,8 @@ class LIF(LIFRate):
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
 
-        # update voltage using Euler's method
-        dV = (dt / self.tau_rc) * (J - voltage)
+        # update voltage using accurate exponential integration scheme
+        dV = -np.expm1(-dt / self.tau_rc) * (J - voltage)
         voltage += dV
         voltage[voltage < 0] = 0  # clip values below zero
 
