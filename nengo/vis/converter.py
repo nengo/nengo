@@ -45,9 +45,9 @@ class Converter(object):
         self.global_offset = config[model].offset
 
     def process(self, network, id_prefix=None):
-        """Process the network, ensembles, nodes, connections and probes into 
-        a dictionary format to be processed by 
-        the client side browser for visualization."""
+        """Process the network, ensembles, nodes, connections and probes into
+        a dictionary format to be processed by the client side browser for
+        visualization."""
 
         for i, ens in enumerate(network.ensembles):
             label = ens.label
@@ -86,26 +86,26 @@ class Converter(object):
 
             is_input = (nde.size_in == 0 and nde.size_out >= 1)
 
-            obj = {'label':label, 'id':nde_id, 'type':'nde',
-                   'x':pos[0], 'y':pos[1],  'scale': scale,
-                   'contained_by': self.object_index[network], "is_input": is_input}
+            obj = {'label': label, 'id': nde_id, 'type': 'nde',
+                   'x': pos[0], 'y': pos[1],  'scale': scale,
+                   'contained_by': self.object_index[network],
+                   "is_input": is_input}
             self.object_index[nde] = len(self.objects)
             self.objects.append(obj)
 
-
-        full_contains={}
+        full_contains = {}
         for i, net in enumerate(network.networks):
             label = net.label
             net_id = self.identificator.get_id(net)
 
             self.object_index[net] = len(self.objects)
-            self.objects.append({'placeholder':0}) # place holder
+            self.objects.append({'placeholder': 0})  # place holder
 
             # recursive call to process all sub-networks
             full_contains[i] = self.process(net, id_prefix=net_id)
 
             contains = [self.object_index[obj] for obj in
-                net.ensembles + net.nodes + net.networks]
+                        net.ensembles + net.nodes + net.networks]
 
             full_contains[i] += contains
 
@@ -122,10 +122,12 @@ class Converter(object):
             if size is None:
                 size = 100, 100
 
-            obj = {'label':label, 'id':net_id, 'type':'net',
-                   'contains':list(contains), 'full_contains': list(full_contains[i]),
+            obj = {'label': label, 'id': net_id, 'type': 'net',
+                   'contains': list(contains),
+                   'full_contains': list(full_contains[i]),
                    'contained_by': self.object_index[network], 'scale': scale,
-                   'x':pos[0], 'y':pos[1], 'width':size[0], 'height':size[1]}
+                   'x': pos[0], 'y': pos[1], 'width': size[0],
+                   'height': size[1]}
             self.objects[self.object_index[net]] = obj
 
         for i, conn in enumerate(network.connections):
@@ -141,12 +143,12 @@ class Converter(object):
                 connection_type = 'rec'
             else:
                 connection_type = 'std'
-            self.links.append({'source':self.object_index[pre],
-                               'target':self.object_index[post],
-                               'id':conn_id,
-                               'type':connection_type})
+            self.links.append({'source': self.object_index[pre],
+                               'target': self.object_index[post],
+                               'id': conn_id,
+                               'type': connection_type})
 
-        return sum(full_contains.values(),[])
+        return sum(full_contains.values(), [])
 
     def to_json(self):
         data = dict(nodes=self.objects, links=self.links,
