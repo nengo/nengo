@@ -18,9 +18,8 @@ function dragged(d) {
     dx = d3.event.dx;
     dy = d3.event.dy;
     
-    // FIXME
-    //d3.select(this)
-        //.attr("translate(" + [d.x, d.y] + ")scale(" + d.scale + ")");
+    d3.select(this)
+        .attr("translate(" + [d.x, d.y] + ")scale(" + d.scale + ")");
 
     var node_list = graph.nodes.slice(0) //copy the list
     update_node_positions(d, dx, dy, d3.map(node_list)); 
@@ -625,7 +624,7 @@ function update_graph(graph2) {
         .attr('class', function (d) {return 'node node_' + d.type;})
         .attr('cursor', 'pointer')
         .on('dblclick.zoom', zoomCenter)
-        .call(drag);  
+        .call(drag);
 
     nodeEnter.filter(function (d) {return d.type == 'net';})
         .append('rect')
@@ -668,9 +667,8 @@ function update_graph(graph2) {
         })  
         .on('dblclick.zoom', zoomCenter)
 
-    // FIXME
-    //nodeEnter.attr('transform', function (d) {return 'translate(' + [d.x, d.y] 
-        //+ ')scale(' + d.scale + ')';});
+    nodeEnter.attr('transform', function (d) {return 'translate(' + [d.x, d.y] 
+        + ')scale(' + d.scale + ')';});
 
     nodeEnter.append('text')     //label everything
         .text(function (d) {return d.label})

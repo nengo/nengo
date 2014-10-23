@@ -14,7 +14,7 @@ class Config(nengo.config.Config):
             self[klass].set_param('size', nengo.params.Parameter((50,50)))
 
         self.configures(nengo.Network)
-        self[nengo.Network].set_param('scale', nengo.params.Parameter(None))
+        self[nengo.Network].set_param('scale', nengo.params.Parameter(1.))
         self[nengo.Network].set_param('offset', nengo.params.Parameter((0,0)))
         self[nengo.Network].set_param('pos', nengo.params.Parameter(None))
         self[nengo.Network].set_param('size', nengo.params.Parameter(None)) #width/height
