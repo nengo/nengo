@@ -18,15 +18,15 @@ function dragged(d) {
     dx = d3.event.dx;
     dy = d3.event.dy;
     
-    d3.select(this)
-        .attr("translate(" + [d.x, d.y] + ")scale(" + d.scale + ")");
+    // FIXME
+    //d3.select(this)
+        //.attr("translate(" + [d.x, d.y] + ")scale(" + d.scale + ")");
 
     var node_list = graph.nodes.slice(0) //copy the list
     update_node_positions(d, dx, dy, d3.map(node_list)); 
     update_net_position(d, dx, dy);
     update_net_sizes();
     update_line_locations();
-    update_gui_text();
 }
 
 function dragended(d) {
@@ -107,7 +107,6 @@ function zoomed(node) {
     update_net_sizes();  
     update_line_locations();
     update_text();
-    update_gui_text();    
 }
 
 function update_text() {
