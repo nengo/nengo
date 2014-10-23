@@ -1,78 +1,4 @@
 //*****************
-// Setup the editor
-//*****************
-//Functions for interaction with editor
-var aceRange = ace.require('ace/range').Range;
-var editor = null;
-var marker = null;
-var gui_updating = false;
-
-function removeMarker() {
-    if (marker != null) {
-        editor.getSession().removeMarker(marker);
-        marker = null;
-    }
-}
-
-function annotateLine(d) { //Called on mouseover in graph
-    removeMarker();
-    marker = editor.getSession()
-        .addMarker(new aceRange(d.line, 0, d.line, 10), 
-            'highlight', 'fullLine', true);
-
-    editor.getSession().setAnnotations([{row: d.line, type: 'info'}]);
-}
-
-function clearAnnotation(d) { //Called on mouseout in graph
-    removeMarker();
-    editor.getSession().clearAnnotations();
-}
-
-function update_gui_text() {
-    gui_updating = true;
-    var gui = '\n\nimport nengo_gui\ngui = nengo_gui.Config()\n';
-    gui += "gui[model].scale = " + zoom.scale() + "\n";
-    gui += "gui[model].offset = " + zoom.translate() + "\n";
-    for (var i=0; i<graph.nodes.length; i++) {
-        d = graph.nodes[i];
-        if ((d.type == 'ens') || (d.type == 'nde')) {
-            gui += "gui[" + d.id + "].pos = " + 
-                            d.x.toFixed(3) + ", " + d.y.toFixed(3) + "\n";
-            gui += "gui[" + d.id + "].scale = " + d.scale.toFixed(3) + "\n";
-        }
-        if (d.type == "net") {
-            gui += "gui[" + d.id + "].pos = " + 
-                            d.x.toFixed(3) + ", " + d.y.toFixed(3) + "\n";
-            gui += "gui[" + d.id + "].scale = " + d.scale.toFixed(3) + "\n";
-            gui += "gui[" + d.id + "].size = " + 
-                            d.width.toFixed(3) + ", " + d.height.toFixed(3) + "\n";
-        }
-    }
-    
-    text = editor.getValue();
-    index = text.indexOf('\n\nimport nengo_gui\n');
-    if (index!=-1) {
-        text = text.substring(0, index);
-    } else {
-        // also check if line endings changed on us
-        index = text.indexOf('\r\n\r\nimport nengo_gui\r\n');
-        if (index!=-1) {
-            text = text.substring(0, index);
-        }
-    }
-    
-    new_text = text + gui;
-    
-    cursor = editor.getCursorPosition();
-    scroll_top = editor.session.getScrollTop();
-    scroll_left = editor.session.getScrollLeft();
-    editor.session.setValue(new_text);
-    editor.moveCursorToPosition(cursor);
-    editor.session.setScrollTop(scroll_top);
-    editor.session.setScrollLeft(scroll_left);
-    gui_updating = false;    
-}
-//*****************
 // Helper functions
 //*****************
 
@@ -864,16 +790,6 @@ $(document).ready(function () {
         .on('dragstart', resizeBRstarted)
         .on('drag', resizeBRdragged)
         .on('dragend', resizeBRended);
-
-    //initialize editor
-    editor = ace.edit("editor");
-    editor.setTheme("ace/theme/monokai");
-    editor.getSession().setUseSoftTabs(true);
-    editor.getSession().setMode("ace/mode/python");
-    editor.on('change', function(event) {
-        $('#menu_save').removeClass('disable');
-        if (!gui_updating) reload_graph_data();
-    });
 
     //initialize graph
     svg = d3.select("svg");
