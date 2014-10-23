@@ -19,8 +19,8 @@ class ModelGraphDisplay(object):
             </script>
             <style type="text/css">{css}</style>
             <script>
-                var gdata = {data};
                 {js}
+                main({data});
             </script>
             <div id="#graph"><svg></svg></div>'''.format(
                 js=js, d3=d3, css=css, data=self.graph.to_json())))

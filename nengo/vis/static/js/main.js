@@ -1,3 +1,4 @@
+function main(gdata) {
 //*****************
 // Helper functions
 //*****************
@@ -752,3 +753,4 @@ d3.select(window).on("resize", resize);
 
 //start this puppy up
 update_graph(gdata);
+};
