@@ -576,56 +576,10 @@ var waiting_for_result = false;
 var pending_change = false;
 var newLayout = false; //check if this is a new layout
 
-function reload_graph_data() {
-    // don't send a new request while we're still waiting for another one
-    if (waiting_for_result) {
-        pending_change = true;
-        return;
-    }
-    
-    waiting_for_result = true;
-    
-    var data = new FormData();
-    data.append('code', editor.getValue());
-
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/graph.json', true);
-    xhr.onload = update_graph;
-    xhr.send(data);
-}
-
 //Redraw the graph given server response
-function update_graph() {
-    waiting_for_result = false;
-    
-    if (pending_change) {
-        pending_change = false;
-        reload_graph_data();
-    }
-    
-	graph2 = JSON.parse(this.responseText);
+function update_graph(graph2) {
+    graph = graph2
 
-    // was there a parsing error?
-    if (graph2.error_line != undefined) {
-        removeMarker();
-        marker = editor.getSession()
-            .addMarker(new aceRange(graph2.error_line - 1, 0, graph2.error_line - 1, 10), 
-            'highlight', 'fullLine', true);
-        editor.getSession().setAnnotations([{
-            row: graph2.error_line - 1,
-            type: 'error',
-            text: graph2.text,
-        }]);
-        return;
-    } else {
-        graph = graph2
-        if (marker != null) {
-            editor.getSession().removeMarker(marker);
-            marker = null;
-        }
-        editor.getSession().clearAnnotations();
-    }
-    
     //separate links into recurrent and nonrecurrent ?move to converter?  
     var nonrecurlink = []
     var recurlink = []
@@ -670,8 +624,6 @@ function update_graph() {
         .append('g')
         .attr('class', function (d) {return 'node node_' + d.type;})
         .attr('cursor', 'pointer')
-        .on('mouseover', annotateLine)
-        .on('mouseout', clearAnnotation)
         .on('dblclick.zoom', zoomCenter)
         .call(drag);  
 
@@ -716,8 +668,9 @@ function update_graph() {
         })  
         .on('dblclick.zoom', zoomCenter)
 
-    nodeEnter.attr('transform', function (d) {return 'translate(' + [d.x, d.y] 
-        + ')scale(' + d.scale + ')';});
+    // FIXME
+    //nodeEnter.attr('transform', function (d) {return 'translate(' + [d.x, d.y] 
+        //+ ')scale(' + d.scale + ')';});
 
     nodeEnter.append('text')     //label everything
         .text(function (d) {return d.label})
@@ -774,42 +727,28 @@ function update_graph() {
 //***********
 //Main script
 //***********
-$(document).ready(function () {
-    zoom = d3.behavior.zoom()
-        .scaleExtent([.00005, 10])
-        .on('zoom', zoomed);
+zoom_mode = 'geometric';
+zoom = d3.behavior.zoom()
+    .scaleExtent([.00005, 10])
+    .on('zoom', zoomed);
 
-    drag = d3.behavior.drag()
-        .origin(function (d) {return d})
-        .on('dragstart', dragstarted)
-        .on('drag', dragged)
-        .on('dragend', dragended);
+drag = d3.behavior.drag()
+    .origin(function (d) {return d})
+    .on('dragstart', dragstarted)
+    .on('drag', dragged)
+    .on('dragend', dragended);
 
-    resizeBotR = d3.behavior.drag()
-        .origin(function (d) {return d})
-        .on('dragstart', resizeBRstarted)
-        .on('drag', resizeBRdragged)
-        .on('dragend', resizeBRended);
+resizeBotR = d3.behavior.drag()
+    .origin(function (d) {return d})
+    .on('dragstart', resizeBRstarted)
+    .on('drag', resizeBRdragged)
+    .on('dragend', resizeBRended);
 
-    //initialize graph
-    svg = d3.select("svg");
-    container = svg.append('g').attr('id','modelGroup');
-    svg.call(zoom).on('dblclick.zoom', zoomCenter); // set up zooming on the graph
-    d3.select(window).on("resize", resize);
-    
-    //setup the window panes, and manipulations
-    nengoLayout = $('body').layout({ 
-	    north__slidable:			false,	
-		north__resizsable:			false,	
-		north__spacing_open:        0,
-		north__size:                55, //pixels
-		east__livePaneResizing:		true,
-		east__size:					.4,
-		east__minSize:				.1,
-		east__maxSize:				.8, // 80% of layout width 
-		east__onresize:             function() {editor.resize(true)}       
-    });
-    
-    //start this puppy up
-    reload_graph_data();
-});
+//initialize graph
+svg = d3.select("svg");
+container = svg.append('g').attr('id','modelGroup');
+svg.call(zoom).on('dblclick.zoom', zoomCenter); // set up zooming on the graph
+d3.select(window).on("resize", resize);
+
+//start this puppy up
+update_graph(gdata);
