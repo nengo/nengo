@@ -47,4 +47,8 @@ def log(debug=False, path=None):
             handler.setFormatter(file_formatter)
             logging.root.addHandler(handler)
     handler.setLevel(level)
-    logging.captureWarnings(True)
+    try:
+        logging.captureWarnings(True)
+    except AttributeError:
+        # logging.captureWarnings doesn't exist in Python 2.6; ignore it
+        pass

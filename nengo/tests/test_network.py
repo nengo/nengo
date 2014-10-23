@@ -1,8 +1,7 @@
-from collections import Counter
-
 import pytest
 
 import nengo
+from nengo.utils.compat import Counter
 
 
 def test_basic_context(Simulator):
