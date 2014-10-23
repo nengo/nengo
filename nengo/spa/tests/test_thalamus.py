@@ -61,53 +61,59 @@ def test_thalamus(Simulator):
 
 
 def test_routing(Simulator):
-    D = 2
+    D = 3
     model = spa.SPA(seed=123)
     with model:
-        model.ctrl = spa.Buffer(D, label='ctrl')
+        model.ctrl = spa.Buffer(16, label='ctrl')
 
         def input_func(t):
-            if t < 0.25:
+            if t < 0.2:
                 return 'A'
-            else:
+            elif t < 0.4:
                 return 'B'
+            else:
+                return 'C'
         model.input = spa.Input(ctrl=input_func)
 
         model.buff1 = spa.Buffer(D, label='buff1')
         model.buff2 = spa.Buffer(D, label='buff2')
         model.buff3 = spa.Buffer(D, label='buff3')
 
-        node1 = nengo.Node([1, 0])
-        node2 = nengo.Node([0, 1])
+        node1 = nengo.Node([0, 1, 0])
+        node2 = nengo.Node([0, 0, 1])
 
         nengo.Connection(node1, model.buff1.state.input)
         nengo.Connection(node2, model.buff2.state.input)
 
         actions = spa.Actions('dot(ctrl, A) --> buff3=buff1',
-                              'dot(ctrl, B) --> buff3=buff2')
+                              'dot(ctrl, B) --> buff3=buff2',
+                              'dot(ctrl, C) --> buff3=buff1*buff2',
+                              )
         model.bg = spa.BasalGanglia(actions)
         model.thal = spa.Thalamus(model.bg)
 
-        buff1_probe = nengo.Probe(model.buff1.state.output, synapse=0.03)
-        buff2_probe = nengo.Probe(model.buff2.state.output, synapse=0.03)
         buff3_probe = nengo.Probe(model.buff3.state.output, synapse=0.03)
-        thal_probe = nengo.Probe(model.thal.output, synapse=0.03)
 
     sim = Simulator(model)
-    sim.run(0.5)
+    sim.run(0.6)
 
-    data1 = sim.data[buff1_probe]
-    data2 = sim.data[buff2_probe]
-    data3 = sim.data[buff3_probe]
-    data_thal = sim.data[thal_probe]
-    trange = sim.trange()
+    data = sim.data[buff3_probe]
 
-    assert abs(np.mean(data1[trange < 0.25] - data3[trange < 0.25])) < 0.15
-    assert abs(np.mean(data2[trange > 0.25] - data3[trange > 0.25])) < 0.15
-    assert data_thal[249][1] < 0.01
-    assert data_thal[249][0] > 0.8
-    assert data_thal[499][1] > 0.8
-    assert data_thal[499][0] < 0.01
+    valueA = np.mean(data[100:200], axis=0)  # should be [0, 1, 0]
+    valueB = np.mean(data[300:400], axis=0)  # should be [0, 0, 1]
+    valueC = np.mean(data[500:600], axis=0)  # should be [1, 0, 0]
+
+    assert valueA[0] < 0.2
+    assert valueA[1] > 0.8
+    assert valueA[2] < 0.2
+
+    assert valueB[0] < 0.2
+    assert valueB[1] < 0.2
+    assert valueB[2] > 0.8
+
+    assert valueC[0] > 0.8
+    assert valueC[1] < 0.2
+    assert valueC[2] < 0.2
 
 
 def test_errors():

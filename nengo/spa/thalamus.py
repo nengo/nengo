@@ -240,7 +240,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
 
             # inhibit the channel when the action is not chosen
             inhibit = [[-self.route_inhibit]] * (self.neurons_cconv)
-            for e in channel.product.ensembles:
+            for e in channel.product.all_ensembles:
                 nengo.Connection(gate, e.neurons, transform=inhibit,
                                  synapse=self.synapse_inhibit)
 
