@@ -104,19 +104,18 @@ class Simulator(object):
             # Build the network into the model
             Builder.build(network, model=self.model)
 
-        # Note: seed is not used right now, but one day...
-        assert seed is None, "Simulator seed not yet implemented"
         self.seed = np.random.randint(npext.maxint) if seed is None else seed
+        self.rng = np.random.RandomState(self.seed)
 
         # -- map from Signal.base -> ndarray
         self.signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
         for op in self.model.operators:
-            op.init_signals(self.signals, dt)
+            op.init_signals(self.signals)
 
         self.dg = operator_depencency_graph(self.model.operators)
         self._step_order = [node for node in toposort(self.dg)
                             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self.signals, dt)
+        self._steps = [node.make_step(self.signals, dt, self.rng)
                        for node in self._step_order]
 
         # Add built states to the probe dictionary

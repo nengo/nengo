@@ -515,7 +515,7 @@ class Operator(object):
     def all_signals(self):
         return self.reads + self.sets + self.incs + self.updates
 
-    def init_signals(self, signals, dt):
+    def init_signals(self, signals):
         """Initialize simulator.signals
 
         Install any buffers into the signals view that
@@ -543,7 +543,7 @@ class PreserveValue(Operator):
         self.reads = []
         self.updates = []
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals, dt, rng):
         def step():
             pass
         return step
@@ -564,7 +564,7 @@ class Reset(Operator):
     def __str__(self):
         return 'Reset(%s)' % str(self.dst)
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals, dt, rng):
         target = signals[self.dst]
         value = self.value
 
@@ -591,7 +591,7 @@ class Copy(Operator):
         return 'Copy(%s -> %s, as_update=%s)' % (
             str(self.src), str(self.dst), self.as_update)
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals, dt, rng):
         dst = signals[self.dst]
         src = signals[self.src]
 
@@ -618,7 +618,7 @@ class ElementwiseInc(Operator):
         return 'ElementwiseInc(%s, %s -> %s "%s")' % (
             str(self.A), str(self.X), str(self.Y), self.tag)
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals, dt, rng):
         A = signals[self.A]
         X = signals[self.X]
         Y = signals[self.Y]
@@ -692,7 +692,7 @@ class DotInc(Operator):
         return 'DotInc(%s, %s -> %s "%s")' % (
             self.A, self.X, self.Y, self.tag)
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals, dt, rng):
         X = signals[self.X]
         A = signals[self.A]
         Y = signals[self.Y]
@@ -723,7 +723,7 @@ class SimPyFunc(Operator):
     def __str__(self):
         return "SimPyFunc(%s -> %s '%s')" % (self.x, self.output, self.fn)
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals, dt, rng):
         if self.output is not None:
             output = signals[self.output]
         fn = self.fn
@@ -755,7 +755,7 @@ class SimNeurons(Operator):
         self.reads = [J]
         self.updates = []
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals, dt, rng):
         J = signals[self.J]
         output = signals[self.output]
         states = [signals[state] for state in self.states]
@@ -786,7 +786,7 @@ class SimFilterSynapse(Operator):
         self.reads = [input]
         self.updates = [output]
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals, dt, rng):
         input = signals[self.input]
         output = signals[self.output]
         num, den = self.num, self.den
@@ -815,6 +815,28 @@ class SimFilterSynapse(Operator):
         return step
 
 
+class SimNoise(Operator):
+    def __init__(self, output, distribution):
+        self.output = output
+        self.distribution = distribution
+
+        self.sets = []
+        self.incs = [output]
+        self.reads = []
+        self.updates = []
+
+    def make_step(self, signals, dt, rng):
+        Y = signals[self.output]
+        dist = self.distribution
+        n = Y.size
+        Yview = Y.reshape(-1)
+
+        def step():
+            Yview[...] += dist.sample(n, rng=rng)
+
+        return step
+
+
 class SimBCM(Operator):
     """Change the transform according to the BCM rule."""
     def __init__(self, pre_filtered, post_filtered, theta, delta,
@@ -830,7 +852,7 @@ class SimBCM(Operator):
         self.reads = [pre_filtered, post_filtered, theta]
         self.updates = [delta]
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals, dt, rng):
         pre_filtered = signals[self.pre_filtered]
         post_filtered = signals[self.post_filtered]
         theta = signals[self.theta]
@@ -861,7 +883,7 @@ class SimOja(Operator):
         self.reads = [pre_filtered, post_filtered, transform]
         self.updates = [delta]
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals, dt, rng):
         transform = signals[self.transform]
         pre_filtered = signals[self.pre_filtered]
         post_filtered = signals[self.post_filtered]
@@ -904,8 +926,8 @@ class Model(object):
         self.operators.append(op)
         # Fail fast by trying make_step with a temporary sigdict
         signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
-        op.init_signals(signals, self.dt)
-        op.make_step(signals, self.dt)
+        op.init_signals(signals)
+        op.make_step(signals, self.dt, np.random)
 
     def has_built(self, obj):
         """Returns true iff obj has been processed by build."""

@@ -6,7 +6,7 @@ import pytest
 import nengo
 import nengo.simulator
 from nengo.builder import (
-    Model, Copy, Reset, DotInc, Signal, build_pyfunc)
+    Model, Copy, Reset, DotInc, Signal, build_pyfunc, SimNoise)
 from nengo.solvers import LstsqL2nz
 from nengo.utils.compat import range
 from nengo.utils.functions import whitenoise
@@ -156,6 +156,31 @@ def test_reset(Simulator, nl_nodirect):
     assert np.all(sim.trange() == first_t)
     assert np.all(sim.data[square_p] == first_square_p)
     assert np.all(sim.data[err_p] == first_err_p)
+
+
+def test_noise(RefSimulator):
+    """Make sure that we can generate noise properly."""
+
+    n = 1000
+    mean, std = 0.1, 0.8
+    noise = Signal(np.zeros(n), name="noise")
+    dist = nengo.utils.distributions.Gaussian(mean, std)
+
+    m = Model(dt=0.001)
+    m.operators += [Reset(noise), SimNoise(noise, dist)]
+
+    sim = RefSimulator(None, model=m, seed=9)
+    samples = np.zeros((100, n))
+    for i in range(100):
+        sim.step()
+        samples[i] = sim.signals[noise]
+
+    h, xedges = np.histogram(samples.flat, bins=51)
+    x = 0.5 * (xedges[:-1] + xedges[1:])
+    dx = np.diff(xedges)
+    z = 1./np.sqrt(2 * np.pi * std**2) * np.exp(-0.5 * (x - mean)**2 / std**2)
+    y = h / float(h.sum()) / dx
+    assert np.allclose(y, z, atol=0.02)
 
 
 if __name__ == "__main__":
