@@ -6,17 +6,17 @@ from nengo.vis.graph import Graph, ModelGraph, Vertex
 
 class TestVertex(object):
     def test_ancestors(self):
-        v1 = Vertex(None)
-        v2a = Vertex(None, parent=v1)
-        v2b = Vertex(None, parent=v1)
-        v3 = Vertex(None, parent=v2a)
+        v1 = Vertex()
+        v2a = Vertex(parent=v1)
+        v2b = Vertex(parent=v1)
+        v3 = Vertex(parent=v2a)
         assert v3.ancestors == [v2a, v1]
 
     def test_descendants(self):
-        v1 = Vertex(None)
-        v2a = Vertex(None)
-        v2b = Vertex(None)
-        v3 = Vertex(None)
+        v1 = Vertex()
+        v2a = Vertex()
+        v2b = Vertex()
+        v3 = Vertex()
         v1.children.append(v2a)
         v1.children.append(v2b)
         v2a.children.append(v3)
@@ -26,7 +26,7 @@ class TestVertex(object):
 
 class TestGraph(object):
     def test_build_graph(self):
-        vertices = [Vertex(None) for i in range(4)]
+        vertices = [Vertex() for i in range(4)]
 
         # Construct this graph:
         # 0 --+--> 1 ---+--> 3
@@ -50,8 +50,8 @@ class TestGraph(object):
         assert vertices[3].outgoing == []
 
     def test_build_parent_relation(self):
-        v1 = Vertex(None)
-        v2 = Vertex(None)
+        v1 = Vertex()
+        v2 = Vertex()
 
         g = Graph()
         g.add_vertex(v1)

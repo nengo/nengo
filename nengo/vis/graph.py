@@ -2,10 +2,9 @@ import nengo
 
 
 class Vertex(object):
-    __slots__ = ['nengo_object', 'parent', 'children', 'incoming', 'outgoing']
+    __slots__ = ['parent', 'children', 'incoming', 'outgoing']
 
-    def __init__(self, nengo_object, parent=None, children=None):
-        self.nengo_object = nengo_object
+    def __init__(self, parent=None, children=None):
         self.parent = parent
         if children is None:
             children = []
@@ -30,7 +29,15 @@ class Vertex(object):
         return descendants
 
 
-class Node(Vertex):
+class NengoVertex(Vertex):
+    __slots__ = ['nengo_object']
+
+    def __init__(self, nengo_object, parent=None, children=None):
+        super(NengoVertex, self).__init__(parent=parent, children=children)
+        self.nengo_object = nengo_object
+
+
+class Node(NengoVertex):
     def is_input(self):
         return self.nengo_object.size_out > 0
 
@@ -44,15 +51,15 @@ class Node(Vertex):
         return not self.is_input() and self.is_output()
 
 
-class Ensemble(Vertex):
+class Ensemble(NengoVertex):
     pass
 
 
-class Network(Vertex):
+class Network(NengoVertex):
     pass
 
 
-class CollapsedNetwork(Vertex):
+class CollapsedNetwork(NengoVertex):
     __slots__ = ['collapsed']
 
     def __init__(self, nengo_object, collapsed, parent=None, children=[]):
@@ -62,11 +69,7 @@ class CollapsedNetwork(Vertex):
 
 
 class Graph(object):
-    def __init__(self):
-        self._nengo_object_to_vertex = {}
-
     def add_vertex(self, v, parent=None):
-        self._nengo_object_to_vertex[v.nengo_object] = v
         if parent is not None:
             v.parent = parent
             parent.children.append(v)
@@ -75,15 +78,17 @@ class Graph(object):
         source.outgoing.append(target)
         target.incoming.append(source)
 
-    def get_vertex(self, nengo_object):
-        return self._nengo_object_to_vertex[nengo_object]
-
 
 class ModelGraph(Graph):
     def __init__(self, model=None):
         super(ModelGraph, self).__init__()
+        self._nengo_object_to_vertex = {}
         if model is not None:
             self.add_network(model)
+
+    def add_vertex(self, v, parent=None):
+        self._nengo_object_to_vertex[v.nengo_object] = v
+        super(ModelGraph, self).add_vertex(v, parent=parent)
 
     def add_network(self, net):
         v_net = Network(net)
@@ -106,3 +111,6 @@ class ModelGraph(Graph):
     def _add_objects_with_conversion(self, objects, conversion, parent=None):
         for obj in objects:
             self.add_vertex(conversion(obj), parent=parent)
+
+    def get_vertex(self, nengo_object):
+        return self._nengo_object_to_vertex[nengo_object]
