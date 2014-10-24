@@ -14,6 +14,7 @@ matrix:
 before_install:
   - pip install --upgrade pip setuptools  # For wheel support
 install:
+  - "echo 'backend : Agg' > matplotlibrc"
   - if [[ "$TOXENV" == "pep8" ]]; then pip install tox; fi
   - if [[ "$TOXENV" != "pep8" ]]; then $PIP_WHEEL_COMMAND -r requirements.txt; fi
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.6" && "$TOXENV" != "pep8" ]]; then $PIP_WHEEL_COMMAND -r requirements-test-py26.txt; fi
