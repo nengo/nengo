@@ -327,12 +327,12 @@ def apply_transforms(parent):
         apply_transforms(item)
 
 
-def populate_config(parent, locals, config):
+def populate_config(parent, config):
     """Store the computed layput in the config and in the dictionaries
     that get converted to json (ie item.node)"""
     for item in parent.members:
         if item.members:
-            populate_config(item, locals, config)
+            populate_config(item, config)
 
             # this is so that the javascript engine doesn't
             # move things around when rendering the layout
@@ -346,14 +346,25 @@ def populate_config(parent, locals, config):
             if 'height' in item.node:
                 del item.node['height']
         else:
-            key = eval(item.obj_id, {}, locals)
+            key = get_obj_for_id(item.obj_id)
             config[key].pos = item.pos
             item.node['x'] = item.pos[0]
             item.node['y'] = item.pos[1]
 
 
-def feedforward_layout(network, config, locals, links, nodes):
+# FIXME this is an extremely horrible hack
+import gc
+
+
+def get_obj_for_id(id_):
+    for obj in gc.get_objects():
+        if id(obj) == id_:
+            return obj
+    raise KeyError()
+
+
+def feedforward_layout(network, config, links, nodes):
     top_level_item = convert(links, nodes)
     apply_feedforward(top_level_item)
     apply_transforms(top_level_item)
-    populate_config(top_level_item, locals, config)
+    populate_config(top_level_item, config)
