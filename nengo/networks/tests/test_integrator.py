@@ -5,12 +5,11 @@ import pytest
 import nengo
 from nengo.utils.functions import piecewise
 from nengo.utils.numpy import rmse
-from nengo.utils.testing import Plotter
 
 logger = logging.getLogger(__name__)
 
 
-def test_integrator(Simulator, nl):
+def test_integrator(Simulator, nl, plt):
     model = nengo.Network(label='Integrator', seed=892)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl()
@@ -32,14 +31,11 @@ def test_integrator(Simulator, nl):
     sim = Simulator(model, dt=0.001)
     sim.run(6.0)
 
-    with Plotter(Simulator, nl) as plt:
-        t = sim.trange()
-        plt.plot(t, sim.data[A_p], label='Manual')
-        plt.plot(t, sim.data[T_p], label='Template')
-        plt.plot(t, sim.data[input_p], 'k', label='Input')
-        plt.legend(loc=0)
-        plt.savefig('test_integrator.test_integrator.pdf')
-        plt.close()
+    t = sim.trange()
+    plt.plot(t, sim.data[A_p], label='Manual')
+    plt.plot(t, sim.data[T_p], label='Template')
+    plt.plot(t, sim.data[input_p], 'k', label='Input')
+    plt.legend(loc=0)
 
     assert rmse(sim.data[A_p], sim.data[T_p]) < 0.2
 

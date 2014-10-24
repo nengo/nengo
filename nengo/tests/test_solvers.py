@@ -14,7 +14,7 @@ import nengo
 from nengo.utils.compat import range
 from nengo.utils.distributions import UniformHypersphere
 from nengo.utils.numpy import filtfilt, rms, norm
-from nengo.utils.testing import Plotter, allclose, Timer
+from nengo.utils.testing import allclose, Timer
 from nengo.solvers import (
     cholesky, conjgrad, block_conjgrad, conjgrad_scipy, lsmr_scipy,
     Lstsq, LstsqNoise, LstsqL2, LstsqL2nz,
@@ -77,7 +77,7 @@ def test_conjgrad():
 
 @pytest.mark.parametrize('Solver', [
     Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqDrop])
-def test_decoder_solver(Solver):
+def test_decoder_solver(Solver, plt):
     rng = np.random.RandomState(39408)
 
     dims = 1
@@ -97,13 +97,10 @@ def test_decoder_solver(Solver):
     est = np.dot(Atest, D)
     rel_rmse = rms(est - test) / rms(test)
 
-    with Plotter(nengo.Simulator) as plt:
-        plt.plot(test, np.zeros_like(test), 'k--')
-        plt.plot(test, test - est)
-        plt.title("relative RMSE: %0.2e" % rel_rmse)
-        plt.savefig('test_solvers.test_decoder_solver.%s.pdf'
-                    % Solver.__name__)
-        plt.close()
+    plt.plot(test, np.zeros_like(test), 'k--')
+    plt.plot(test, test - est)
+    plt.title("relative RMSE: %0.2e" % rel_rmse)
+    plt.saveas = 'test_solvers.test_decoder_solver.%s.pdf' % Solver.__name__
 
     assert np.allclose(test, est, atol=3e-2, rtol=1e-3)
     assert rel_rmse < 0.02
@@ -183,7 +180,7 @@ def test_scipy_solvers():
 
 @pytest.mark.optional  # uses scipy
 @pytest.mark.parametrize('Solver', [Nnls, NnlsL2, NnlsL2nz])
-def test_nnls(Solver):
+def test_nnls(Solver, plt):
     rng = np.random.RandomState(39408)
     A, x = get_system(500, 100, 1, rng=rng, sort=True)
     y = x**2
@@ -192,16 +189,14 @@ def test_nnls(Solver):
     yest = np.dot(A, d)
     rel_rmse = rms(yest - y) / rms(y)
 
-    with Plotter(nengo.Simulator) as plt:
-        plt.subplot(211)
-        plt.plot(x, y, 'k--')
-        plt.plot(x, yest)
-        plt.ylim([-0.1, 1.1])
-        plt.subplot(212)
-        plt.plot(x, np.zeros_like(x), 'k--')
-        plt.plot(x, yest - y)
-        plt.savefig('test_solvers.test_nnls.%s.pdf' % Solver.__name__)
-        plt.close()
+    plt.subplot(211)
+    plt.plot(x, y, 'k--')
+    plt.plot(x, yest)
+    plt.ylim([-0.1, 1.1])
+    plt.subplot(212)
+    plt.plot(x, np.zeros_like(x), 'k--')
+    plt.plot(x, yest - y)
+    plt.saveas = 'test_solvers.test_nnls.%s.pdf' % Solver.__name__
 
     assert np.allclose(yest, y, atol=3e-2, rtol=1e-3)
     assert rel_rmse < 0.02
@@ -244,7 +239,7 @@ def test_subsolvers_L1():
 
 
 @pytest.mark.benchmark
-def test_compare_solvers(Simulator, nl_nodirect):
+def test_compare_solvers(Simulator, nl_nodirect, plt):
 
     N = 70
     decoder_solvers = [
@@ -284,16 +279,14 @@ def test_compare_solvers(Simulator, nl_nodirect):
     outputs_f = filtfilt(outputs, 20, axis=1)
 
     close = allclose(t, ref, outputs_f,
-                     plotter=Plotter(Simulator, nl_nodirect),
-                     filename='test_solvers.test_solvers.pdf',
-                     labels=names,
+                     plt=plt, labels=names,
                      atol=0.05, rtol=0, buf=100, delay=7)
     for name, c in zip(names, close):
         assert c, "Solver '%s' does not meet tolerances" % name
 
 
 @pytest.mark.benchmark  # noqa: C901
-def test_regularization(Simulator, nl_nodirect):
+def test_regularization(Simulator, nl_nodirect, plt):
 
     # TODO: multiple trials per parameter set, with different seeds
 
@@ -340,26 +333,23 @@ def test_regularization(Simulator, nl_nodirect):
         rmses.flat[i] = rmse_buf(sim.data[probe], ref)
     rmses = rmses - rmses[:, :, [0], :]
 
-    with Plotter(Simulator, nl_nodirect) as plt:
-        plt.figure(figsize=(8, 12))
-        X, Y = np.meshgrid(filters, regs)
+    plt.figure(figsize=(8, 12))
+    X, Y = np.meshgrid(filters, regs)
 
-        for i, Solver in enumerate(Solvers):
-            for j, n_neurons in enumerate(neurons):
-                plt.subplot(len(neurons), len(Solvers), len(Solvers)*j + i + 1)
-                Z = rmses[i, j, :, :]
-                plt.contourf(X, Y, Z, levels=np.linspace(Z.min(), Z.max(), 21))
-                plt.xlabel('filter')
-                plt.ylabel('reg')
-                plt.title("%s (N=%d)" % (Solver.__name__, n_neurons))
+    for i, Solver in enumerate(Solvers):
+        for j, n_neurons in enumerate(neurons):
+            plt.subplot(len(neurons), len(Solvers), len(Solvers)*j + i + 1)
+            Z = rmses[i, j, :, :]
+            plt.contourf(X, Y, Z, levels=np.linspace(Z.min(), Z.max(), 21))
+            plt.xlabel('filter')
+            plt.ylabel('reg')
+            plt.title("%s (N=%d)" % (Solver.__name__, n_neurons))
 
-        plt.tight_layout()
-        plt.savefig('test_solvers.test_regularization.pdf')
-        plt.close()
+    plt.tight_layout()
 
 
 @pytest.mark.benchmark
-def test_eval_points_static(Simulator):
+def test_eval_points_static(Simulator, plt):
     solver = LstsqL2()
 
     rng = np.random.RandomState(0)
@@ -397,37 +387,34 @@ def test_eval_points_static(Simulator):
     rmses_norm2 = (rmses - rmses.mean(0, keepdims=True)
                    ) / rmses.std(0, keepdims=True)
 
-    with Plotter(Simulator) as plt:
-        def make_plot(rmses):
-            mean = rmses.mean(1)
-            low = rmses.min(1)
-            high = rmses.max(1)
-            std = rmses.std(1)
-            plt.semilogx(eval_points, mean, 'k-', label='mean')
-            plt.semilogx(eval_points, mean - std, 'k--', label='+/- std')
-            plt.semilogx(eval_points, mean + std, 'k--')
-            plt.semilogx(eval_points, high, 'r-', label='high')
-            plt.semilogx(eval_points, low, 'b-', label='low')
-            plt.xlim([eval_points[0], eval_points[-1]])
-            # plt.xticks(eval_points, eval_points)
-            plt.legend(fontsize=8, loc=1)
+    def make_plot(rmses):
+        mean = rmses.mean(1)
+        low = rmses.min(1)
+        high = rmses.max(1)
+        std = rmses.std(1)
+        plt.semilogx(eval_points, mean, 'k-', label='mean')
+        plt.semilogx(eval_points, mean - std, 'k--', label='+/- std')
+        plt.semilogx(eval_points, mean + std, 'k--')
+        plt.semilogx(eval_points, high, 'r-', label='high')
+        plt.semilogx(eval_points, low, 'b-', label='low')
+        plt.xlim([eval_points[0], eval_points[-1]])
+        # plt.xticks(eval_points, eval_points)
+        plt.legend(fontsize=8, loc=1)
 
-        plt.figure(figsize=(12, 8))
-        plt.subplot(3, 1, 1)
-        make_plot(rmses)
-        plt.ylabel('rmse')
-        plt.subplot(3, 1, 2)
-        make_plot(rmses_norm1)
-        plt.ylabel('rmse - mean')
-        plt.subplot(3, 1, 3)
-        make_plot(rmses_norm2)
-        plt.ylabel('(rmse - mean) / std')
-        plt.savefig('test_solvers.test_eval_points_static.pdf')
-        plt.close()
+    plt.figure(figsize=(12, 8))
+    plt.subplot(3, 1, 1)
+    make_plot(rmses)
+    plt.ylabel('rmse')
+    plt.subplot(3, 1, 2)
+    make_plot(rmses_norm1)
+    plt.ylabel('rmse - mean')
+    plt.subplot(3, 1, 3)
+    make_plot(rmses_norm2)
+    plt.ylabel('(rmse - mean) / std')
 
 
 @pytest.mark.benchmark
-def test_eval_points(Simulator, nl_nodirect):
+def test_eval_points(Simulator, nl_nodirect, plt):
     rng = np.random.RandomState(0)
     n = 100
     d = 5
@@ -481,17 +468,14 @@ def test_eval_points(Simulator, nl_nodirect):
     # subtract out mean for each model
     rmses_norm = rmses - rmses.mean(0, keepdims=True)
 
-    with Plotter(Simulator, nl_nodirect) as plt:
-        mean = rmses_norm.mean(1)
-        low = rmses_norm.min(1)
-        high = rmses_norm.max(1)
-        plt.semilogx(eval_points, mean, 'k-')
-        plt.semilogx(eval_points, high, 'r-')
-        plt.semilogx(eval_points, low, 'b-')
-        plt.xlim([eval_points[0], eval_points[-1]])
-        plt.xticks(eval_points, eval_points)
-        plt.savefig('test_solvers.test_eval_points.pdf')
-        plt.close()
+    mean = rmses_norm.mean(1)
+    low = rmses_norm.min(1)
+    high = rmses_norm.max(1)
+    plt.semilogx(eval_points, mean, 'k-')
+    plt.semilogx(eval_points, high, 'r-')
+    plt.semilogx(eval_points, low, 'b-')
+    plt.xlim([eval_points[0], eval_points[-1]])
+    plt.xticks(eval_points, eval_points)
 
 
 if __name__ == "__main__":

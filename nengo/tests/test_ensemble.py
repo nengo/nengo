@@ -6,7 +6,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.utils.distributions import Choice
-from nengo.utils.testing import Plotter, warns
+from nengo.utils.testing import warns
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def test_encoders_no_dimensions():
         test_encoders(0)
 
 
-def test_constant_scalar(Simulator, nl):
+def test_constant_scalar(Simulator, nl, plt):
     """A Network that represents a constant value."""
     N = 30
     val = 0.5
@@ -71,20 +71,17 @@ def test_constant_scalar(Simulator, nl):
     sim = Simulator(m, dt=0.001)
     sim.run(1.0)
 
-    with Plotter(Simulator, nl) as plt:
-        t = sim.trange()
-        plt.plot(t, sim.data[in_p], label='Input')
-        plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.1')
-        plt.ylim([0, 1.05 * val])
-        plt.legend(loc=0)
-        plt.savefig('test_ensemble.test_constant_scalar.pdf')
-        plt.close()
+    t = sim.trange()
+    plt.plot(t, sim.data[in_p], label='Input')
+    plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.1')
+    plt.ylim([0, 1.05 * val])
+    plt.legend(loc=0)
 
     assert np.allclose(sim.data[in_p], val, atol=.1, rtol=.01)
     assert np.allclose(sim.data[A_p][-10:], val, atol=.1, rtol=.01)
 
 
-def test_constant_vector(Simulator, nl):
+def test_constant_vector(Simulator, nl, plt):
     """A network that represents a constant 3D vector."""
     N = 30
     vals = [0.6, 0.1, -0.5]
@@ -101,19 +98,16 @@ def test_constant_vector(Simulator, nl):
     sim = Simulator(m)
     sim.run(1.0)
 
-    with Plotter(Simulator, nl) as plt:
-        t = sim.trange()
-        plt.plot(t, sim.data[in_p], label='Input')
-        plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.1')
-        plt.legend(loc=0, prop={'size': 10})
-        plt.savefig('test_ensemble.test_constant_vector.pdf')
-        plt.close()
+    t = sim.trange()
+    plt.plot(t, sim.data[in_p], label='Input')
+    plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.1')
+    plt.legend(loc=0, prop={'size': 10})
 
     assert np.allclose(sim.data[in_p][-10:], vals, atol=.1, rtol=.01)
     assert np.allclose(sim.data[A_p][-10:], vals, atol=.1, rtol=.01)
 
 
-def test_scalar(Simulator, nl):
+def test_scalar(Simulator, nl, plt):
     """A network that represents sin(t)."""
     N = 30
 
@@ -130,12 +124,9 @@ def test_scalar(Simulator, nl):
     sim.run(5.0)
     t = sim.trange()
 
-    with Plotter(Simulator, nl) as plt:
-        plt.plot(t, sim.data[in_p], label='Input')
-        plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.02')
-        plt.legend(loc=0)
-        plt.savefig('test_ensemble.test_scalar.pdf')
-        plt.close()
+    plt.plot(t, sim.data[in_p], label='Input')
+    plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.02')
+    plt.legend(loc=0)
 
     target = np.sin(t).reshape(-1, 1)
     logger.debug("Input RMSE: %f", npext.rmse(target, sim.data[in_p]))
@@ -144,7 +135,7 @@ def test_scalar(Simulator, nl):
     assert npext.rmse(target, sim.data[A_p]) < 0.1
 
 
-def test_vector(Simulator, nl):
+def test_vector(Simulator, nl, plt):
     """A network that represents sin(t), cos(t), arctan(t)."""
     N = 40
 
@@ -162,12 +153,9 @@ def test_vector(Simulator, nl):
     sim.run(5)
     t = sim.trange()
 
-    with Plotter(Simulator, nl) as plt:
-        plt.plot(t, sim.data[in_p], label='Input')
-        plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.02')
-        plt.legend(loc='best', prop={'size': 10})
-        plt.savefig('test_ensemble.test_vector.pdf')
-        plt.close()
+    plt.plot(t, sim.data[in_p], label='Input')
+    plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.02')
+    plt.legend(loc='best', prop={'size': 10})
 
     target = np.vstack((np.sin(t), np.cos(t), np.arctan(t))).T
     logger.debug("In RMSE: %f", npext.rmse(target, sim.data[in_p]))
@@ -175,7 +163,7 @@ def test_vector(Simulator, nl):
     assert npext.rmse(target, sim.data[A_p]) < 0.1
 
 
-def test_product(Simulator, nl):
+def test_product(Simulator, nl, plt):
     N = 80
     dt2 = 0.002
     f = lambda t: np.sin(6*t)
@@ -201,16 +189,13 @@ def test_product(Simulator, nl):
     sim.run(1)
     t = sim.trange(dt=dt2)
 
-    with Plotter(Simulator, nl) as plt:
-        plt.subplot(211)
-        plt.plot(t, sim.data[factors_p])
-        plt.legend(['factor 1', 'factor 2'])
-        plt.subplot(212)
-        plt.plot(t, -.5 * f(t), 'k--')
-        plt.plot(t, sim.data[product_p])
-        plt.legend(['exact product', 'neural product'], loc=4)
-        plt.savefig('test_ensemble.test_product.pdf')
-        plt.close()
+    plt.subplot(211)
+    plt.plot(t, sim.data[factors_p])
+    plt.legend(['factor 1', 'factor 2'])
+    plt.subplot(212)
+    plt.plot(t, -.5 * f(t), 'k--')
+    plt.plot(t, sim.data[product_p])
+    plt.legend(['exact product', 'neural product'], loc=4)
 
     assert npext.rmse(sim.data[factors_p][:, 0], f(t)) < 0.1
     assert npext.rmse(sim.data[factors_p][20:, 1], -0.5) < 0.1

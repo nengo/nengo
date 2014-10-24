@@ -8,7 +8,6 @@ from nengo.utils.ensemble import tuning_curves
 from nengo.utils.matplotlib import implot
 from nengo.utils.neurons import rates_kernel
 from nengo.utils.numpy import rms
-from nengo.utils.testing import Plotter
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ def test_lif_builtin():
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 
 
-def test_lif(Simulator):
+def test_lif(Simulator, plt):
     """Test that the dynamic model approximately matches the rates"""
     rng = np.random.RandomState(85243)
 
@@ -67,17 +66,14 @@ def test_lif(Simulator):
     t_final = 1.0
     sim.run(t_final)
 
-    with Plotter(Simulator) as plt:
-        i = 3
-        plt.subplot(311)
-        plt.plot(sim.trange(), sim.data[spike_probe][:, :i])
-        plt.subplot(312)
-        plt.plot(sim.trange(), sim.data[voltage_probe][:, :i])
-        plt.subplot(313)
-        plt.plot(sim.trange(), sim.data[ref_probe][:, :i])
-        plt.ylim([-dt, ens.neuron_type.tau_ref + dt])
-        plt.savefig('test_neurons.test_lif.pdf')
-        plt.close()
+    i = 3
+    plt.subplot(311)
+    plt.plot(sim.trange(), sim.data[spike_probe][:, :i])
+    plt.subplot(312)
+    plt.plot(sim.trange(), sim.data[voltage_probe][:, :i])
+    plt.subplot(313)
+    plt.plot(sim.trange(), sim.data[ref_probe][:, :i])
+    plt.ylim([-dt, ens.neuron_type.tau_ref + dt])
 
     # check rates against analytic rates
     math_rates = ens.neuron_type.rates(
@@ -95,7 +91,7 @@ def test_lif(Simulator):
     assert np.abs(np.diff(sim.data[ref_probe])).sum() > 1
 
 
-def test_alif_rate(Simulator):
+def test_alif_rate(Simulator, plt):
     n = 100
     max_rates = 50 * np.ones(n)
     # max_rates = 200 * np.ones(n)
@@ -121,18 +117,15 @@ def test_alif_rate(Simulator):
     rates = sim.data[ap]
     _, ref = tuning_curves(a, sim, eval_points=0.5)
 
-    with Plotter(Simulator) as plt:
-        ax = plt.subplot(211)
-        implot(plt, t, intercepts[::-1], rates.T / dt, ax=ax)
-        ax.set_xlabel('time [s]')
-        ax.set_ylabel('input')
-        ax = plt.subplot(212)
-        ax.plot(intercepts, ref[:, ::-1].T, 'k--')
-        ax.plot(intercepts, rates[[1, 500, 1000, -1], ::-1].T / dt)
-        ax.set_xlabel('input')
-        ax.set_xlabel('rate')
-        plt.savefig('test_neurons.test_alif_rate.pdf')
-        plt.close()
+    ax = plt.subplot(211)
+    implot(plt, t, intercepts[::-1], rates.T / dt, ax=ax)
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel('input')
+    ax = plt.subplot(212)
+    ax.plot(intercepts, ref[:, ::-1].T, 'k--')
+    ax.plot(intercepts, rates[[1, 500, 1000, -1], ::-1].T / dt)
+    ax.set_xlabel('input')
+    ax.set_xlabel('rate')
 
     # check that initial tuning curve is the same as LIF rates
     assert np.allclose(rates[1] / dt, ref, atol=0.1, rtol=1e-3)
@@ -141,7 +134,7 @@ def test_alif_rate(Simulator):
     assert np.all(np.diff(rates[1:, intercepts < 0.4], axis=0) < 0)
 
 
-def test_alif(Simulator):
+def test_alif(Simulator, plt):
     """Test ALIF and ALIFRate by comparing them to each other"""
 
     n = 100
@@ -178,19 +171,16 @@ def test_alif(Simulator):
     tmask = (t > 0.1) & (t < 1.7)
     rel_rmse = rms(b_rates[tmask] - a_rates[tmask]) / rms(a_rates[tmask])
 
-    with Plotter(Simulator) as plt:
-        ax = plt.subplot(311)
-        implot(plt, t, intercepts[::-1], a_rates.T, ax=ax)
-        ax.set_ylabel('input')
-        ax = plt.subplot(312)
-        implot(plt, t, intercepts[::-1], b_rates.T, ax=ax)
-        ax.set_ylabel('input')
-        ax = plt.subplot(313)
-        implot(plt, t, intercepts[::-1], (b_rates - a_rates)[tmask].T, ax=ax)
-        ax.set_xlabel('time [s]')
-        ax.set_ylabel('input')
-        plt.savefig('test_neurons.test_alif.pdf')
-        plt.close()
+    ax = plt.subplot(311)
+    implot(plt, t, intercepts[::-1], a_rates.T, ax=ax)
+    ax.set_ylabel('input')
+    ax = plt.subplot(312)
+    implot(plt, t, intercepts[::-1], b_rates.T, ax=ax)
+    ax.set_ylabel('input')
+    ax = plt.subplot(313)
+    implot(plt, t, intercepts[::-1], (b_rates - a_rates)[tmask].T, ax=ax)
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel('input')
 
     assert rel_rmse < 0.07
 

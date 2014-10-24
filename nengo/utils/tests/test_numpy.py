@@ -7,12 +7,11 @@ import numpy as np
 
 import nengo
 from nengo.utils.numpy import filt, filtfilt, lti
-from nengo.utils.testing import Plotter
 
 logger = logging.getLogger(__name__)
 
 
-def test_filt():
+def test_filt(plt):
     dt = 1e-3
     tend = 3.
     t = dt * np.arange(tend / dt)
@@ -28,16 +27,13 @@ def test_filt():
 
     y = filt(u, tau)
 
-    with Plotter(nengo.Simulator) as plt:
-        plt.plot(t, x)
-        plt.plot(t, y, '--')
-        plt.savefig('utils.test_filtering.test_filt.pdf')
-        plt.close()
+    plt.plot(t, x)
+    plt.plot(t, y, '--')
 
     assert np.allclose(x, y, atol=1e-3, rtol=1e-2)
 
 
-def test_filtfilt():
+def test_filtfilt(plt):
     dt = 1e-3
     tend = 3.
     t = dt * np.arange(tend / dt)
@@ -50,11 +46,8 @@ def test_filtfilt():
     x = filt(x[::-1], tau, x0=x[-1])[::-1]
     y = filtfilt(u, tau)
 
-    with Plotter(nengo.Simulator) as plt:
-        plt.plot(t, x)
-        plt.plot(t, y, '--')
-        plt.savefig('utils.test_filtering.test_filtfilt.pdf')
-        plt.close()
+    plt.plot(t, x)
+    plt.plot(t, y, '--')
 
     assert np.allclose(x, y)
 

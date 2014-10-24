@@ -2,10 +2,9 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.utils.testing import Plotter
 
 
-def test_basic(Simulator):
+def test_basic(Simulator, plt):
     bg = nengo.networks.BasalGanglia(dimensions=5, label="BG", seed=79)
     with bg:
         input = nengo.Node([0.8, 0.4, 0.4, 0.4, 0.4], label="input")
@@ -18,17 +17,14 @@ def test_basic(Simulator):
     t = sim.trange()
     output = np.mean(sim.data[p][t > 0.1], axis=0)
 
-    with Plotter(Simulator) as plt:
-        plt.plot(t, sim.data[p])
-        plt.ylabel("Output")
-        plt.savefig('test_basalganglia.test_basic.pdf')
-        plt.close()
+    plt.plot(t, sim.data[p])
+    plt.ylabel("Output")
 
     assert output[0] > -0.1
     assert np.all(output[1:] < -0.8)
 
 
-def test_thalamus(Simulator):
+def test_thalamus(Simulator, plt):
 
     with nengo.Network(seed=123) as net:
         bg = nengo.networks.BasalGanglia(dimensions=5, label="BG")
@@ -46,11 +42,8 @@ def test_thalamus(Simulator):
     t = sim.trange()
     output = np.mean(sim.data[p][t > 0.1], axis=0)
 
-    with Plotter(Simulator) as plt:
-        plt.plot(t, sim.data[p])
-        plt.ylabel("Output")
-        plt.savefig('test_basalganglia.test_thalamus.pdf')
-        plt.close()
+    plt.plot(t, sim.data[p])
+    plt.ylabel("Output")
 
     assert output[0] > 0.8
     assert np.all(output[1:] < 0.01)

@@ -1,5 +1,5 @@
 from glob import glob
-import os.path
+import os
 
 import pytest
 
@@ -37,13 +37,15 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.mark.example
-def test_noexceptions(nb_path, tmpdir):
+def test_noexceptions(nb_path, tmpdir, plt):
     """Ensure that no cells raise an exception."""
     nb = load_notebook(nb_path)
     pyfile = "%s.py" % str(
         tmpdir.join(os.path.splitext(os.path.basename(nb_path))[0]))
     export_py(nb, pyfile)
     execfile(pyfile, {})
+    # Note: plt imported but not used to ensure figures are closed
+    plt.saveas = None
 
 
 @pytest.mark.example

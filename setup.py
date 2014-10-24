@@ -74,7 +74,7 @@ setup(
     extras_require={
         'all_solvers': ["scipy", "scikit-learn"],
     },
-    tests_require=['pytest'],
+    tests_require=['pytest>=2.3'],
     cmdclass={
         'test': PyTest,
         'tox': Tox,

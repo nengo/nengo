@@ -5,13 +5,12 @@ import pytest
 
 import nengo
 from nengo.utils.numpy import filt
-from nengo.utils.testing import Plotter
 
 
 logger = logging.getLogger(__name__)
 
 
-def test_simple(Simulator):
+def test_simple(Simulator, plt):
     m = nengo.Network(label='test_simple', seed=123)
     with m:
         input = nengo.Node(output=lambda t: np.sin(t))
@@ -21,18 +20,15 @@ def test_simple(Simulator):
     runtime = 0.5
     sim.run(runtime)
 
-    with Plotter(Simulator) as plt:
-        plt.plot(sim.trange(), sim.data[p], label='sin')
-        plt.legend(loc='best')
-        plt.savefig('test_node.test_simple.pdf')
-        plt.close()
+    plt.plot(sim.trange(), sim.data[p], label='sin')
+    plt.legend(loc='best')
 
     sim_t = sim.trange()
     sim_in = sim.data[p].ravel()
     assert np.allclose(sim_in, np.sin(sim_t))
 
 
-def test_connected(Simulator):
+def test_connected(Simulator, plt):
     m = nengo.Network(label='test_connected', seed=123)
     with m:
         input = nengo.Node(output=lambda t: np.sin(t), label='input')
@@ -47,15 +43,12 @@ def test_connected(Simulator):
     runtime = 0.5
     sim.run(runtime)
 
-    with Plotter(Simulator) as plt:
-        t = sim.trange()
-        plt.plot(t, sim.data[p_in], label='sin')
-        plt.plot(t, sim.data[p_out], label='sin squared')
-        plt.plot(t, np.sin(t), label='ideal sin')
-        plt.plot(t, np.sin(t) ** 2, label='ideal squared')
-        plt.legend(loc='best')
-        plt.savefig('test_node.test_connected.pdf')
-        plt.close()
+    t = sim.trange()
+    plt.plot(t, sim.data[p_in], label='sin')
+    plt.plot(t, sim.data[p_out], label='sin squared')
+    plt.plot(t, np.sin(t), label='ideal sin')
+    plt.plot(t, np.sin(t) ** 2, label='ideal squared')
+    plt.legend(loc='best')
 
     sim_t = sim.trange()
     sim_sin = sim.data[p_in].ravel()
@@ -64,7 +57,7 @@ def test_connected(Simulator):
     assert np.allclose(sim_sq, sim_sin**2)
 
 
-def test_passthrough(Simulator):
+def test_passthrough(Simulator, plt):
     m = nengo.Network(label="test_passthrough", seed=0)
     with m:
         in1 = nengo.Node(output=lambda t: np.sin(t))
@@ -84,19 +77,16 @@ def test_passthrough(Simulator):
     runtime = 0.5
     sim.run(runtime)
 
-    with Plotter(Simulator) as plt:
-        plt.plot(sim.trange(), sim.data[in1_p]+sim.data[in2_p], label='in+in2')
-        plt.plot(sim.trange()[:-2], sim.data[out_p][2:], label='out')
-        plt.legend(loc='best')
-        plt.savefig('test_node.test_passthrough.pdf')
-        plt.close()
+    plt.plot(sim.trange(), sim.data[in1_p]+sim.data[in2_p], label='in+in2')
+    plt.plot(sim.trange()[:-2], sim.data[out_p][2:], label='out')
+    plt.legend(loc='best')
 
     sim_in = sim.data[in1_p] + sim.data[in2_p]
     sim_out = sim.data[out_p]
     assert np.allclose(sim_in, sim_out)
 
 
-def test_passthrough_filter(Simulator):
+def test_passthrough_filter(Simulator, plt):
     m = nengo.Network(label="test_passthrough", seed=0)
     with m:
         omega = 2 * np.pi * 5
@@ -120,12 +110,9 @@ def test_passthrough_filter(Simulator):
     y = filt(x, synapse / dt)
     z = sim.data[vp]
 
-    with Plotter(Simulator) as plt:
-        plt.plot(t, x)
-        plt.plot(t, y)
-        plt.plot(t, z)
-        plt.savefig("test_node.test_passthrough_filter.pdf")
-        plt.close()
+    plt.plot(t, x)
+    plt.plot(t, y)
+    plt.plot(t, z)
 
     assert np.allclose(y[:-1], z[1:])
 
@@ -298,7 +285,7 @@ def test_set_output(Simulator, recwarn):
     Simulator(model)  # Ensure it all builds
 
 
-def test_delay(Simulator):
+def test_delay(Simulator, plt):
     with nengo.Network() as model:
         a = nengo.Node(output=np.sin)
         b = nengo.Node(output=lambda t, x: -x, size_in=1)
@@ -310,11 +297,8 @@ def test_delay(Simulator):
     sim = Simulator(model)
     sim.run(0.005)
 
-    with Plotter(Simulator) as plt:
-        plt.plot(sim.trange(), sim.data[ap])
-        plt.plot(sim.trange(), -sim.data[bp])
-        plt.savefig("test_node.test_delay.pdf")
-        plt.close()
+    plt.plot(sim.trange(), sim.data[ap])
+    plt.plot(sim.trange(), -sim.data[bp])
 
 
 if __name__ == "__main__":

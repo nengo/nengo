@@ -3,10 +3,9 @@ import pytest
 
 import nengo
 from nengo.utils.functions import piecewise
-from nengo.utils.testing import Plotter
 
 
-def test_inputgatedmemory(Simulator):
+def test_inputgatedmemory(Simulator, plt):
     with nengo.Network(seed=123) as net:
         test_input = nengo.Node(piecewise({0.0: 0, 0.3: 0.5, 1.0: 0}))
 
@@ -29,18 +28,14 @@ def test_inputgatedmemory(Simulator):
     data = sim.data[mem_p]
     trange = sim.trange()
 
-    with Plotter(Simulator) as plt:
-        plt.plot(trange, data)
-
-        plt.savefig('test_workingmemory.test_inputgatedmemory.pdf')
-        plt.close()
+    plt.plot(trange, data)
 
     assert abs(np.mean(data[trange < 0.3])) < 0.01
     assert abs(np.mean(data[(trange > 0.8) & (trange < 1.0)]) - 0.5) < 0.02
     assert abs(np.mean(data[trange > 1.0]) - 0.5) < 0.02
 
 
-def test_feedbackgatedmemory(Simulator):
+def test_feedbackgatedmemory(Simulator, plt):
     with nengo.Network(seed=123) as net:
         test_input = nengo.Node(piecewise({0.0: 0, 0.3: 0.5, 1.0: 0}))
 
@@ -63,11 +58,7 @@ def test_feedbackgatedmemory(Simulator):
     data = sim.data[mem_p]
     trange = sim.trange()
 
-    with Plotter(Simulator) as plt:
-        plt.plot(trange, data)
-
-        plt.savefig('test_workingmemory.test_feedbackgatedmemory.pdf')
-        plt.close()
+    plt.plot(trange, data)
 
     assert abs(np.mean(data[trange < 0.3])) < 0.01
     assert abs(np.mean(data[(trange > 0.5) & (trange < 0.7)]) - 0.50) < 0.02

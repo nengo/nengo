@@ -4,10 +4,9 @@ import pytest
 import nengo
 from nengo.utils.compat import range
 from nengo.utils.numpy import rmse
-from nengo.utils.testing import Plotter
 
 
-def test_sine_waves(Simulator, nl):
+def test_sine_waves(Simulator, nl, plt):
     radius = 2
     dim = 5
     product = nengo.networks.Product(
@@ -30,13 +29,10 @@ def test_sine_waves(Simulator, nl):
     delay = 0.013
     offset = np.where(t >= delay)[0]
 
-    with Plotter(Simulator, nl) as plt:
-        for i in range(dim):
-            plt.subplot(dim+1, 1, i+1)
-            plt.plot(t + delay, AB[:, i])
-            plt.plot(t, sim.data[p][:, i])
-        plt.savefig('test_product.test_sine_waves.pdf')
-        plt.close()
+    for i in range(dim):
+        plt.subplot(dim+1, 1, i+1)
+        plt.plot(t + delay, AB[:, i])
+        plt.plot(t, sim.data[p][:, i])
 
     assert rmse(AB[:len(offset), :], sim.data[p][offset, :]) < 0.2
 

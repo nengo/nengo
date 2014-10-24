@@ -6,7 +6,7 @@ import nengo
 from nengo.synapses import SynapseParam
 from nengo.utils.functions import whitenoise
 from nengo.utils.numpy import filt, lti
-from nengo.utils.testing import Plotter, allclose
+from nengo.utils.testing import allclose
 
 logger = logging.getLogger(__name__)
 
@@ -32,19 +32,17 @@ def run_synapse(Simulator, synapse, dt=1e-3, runtime=1., n_neurons=None):
     return sim.trange(), sim.data[ref], sim.data[filtered]
 
 
-def test_lowpass(Simulator):
+def test_lowpass(Simulator, plt):
     dt = 1e-3
     tau = 0.03
 
     t, x, yhat = run_synapse(Simulator, nengo.synapses.Lowpass(tau), dt=dt)
     y = filt(x, tau / dt)
 
-    assert allclose(t, y.flatten(), yhat.flatten(), delay=1,
-                    plotter=Plotter(Simulator),
-                    filename='test_synapse.test_lowpass.pdf')
+    assert allclose(t, y.flatten(), yhat.flatten(), delay=1, plt=plt)
 
 
-def test_alpha(Simulator):
+def test_alpha(Simulator, plt):
     dt = 1e-3
     tau = 0.03
     b, a = [0.00054336, 0.00053142], [1, -1.9344322, 0.93550699]
@@ -58,12 +56,11 @@ def test_alpha(Simulator):
     t, x, yhat = run_synapse(Simulator, nengo.synapses.Alpha(tau), dt=dt)
     y = lti(x, (b, a))
 
-    assert allclose(t, y.flatten(), yhat.flatten(), delay=1, atol=5e-6,
-                    plotter=Plotter(Simulator),
-                    filename='test_synapse.test_alpha.pdf')
+    assert allclose(t, y.flatten(), yhat.flatten(),
+                    delay=1, atol=5e-6, plt=plt)
 
 
-def test_decoders(Simulator, nl):
+def test_decoders(Simulator, nl, plt):
     dt = 1e-3
     tau = 0.01
 
@@ -71,13 +68,11 @@ def test_decoders(Simulator, nl):
         Simulator, nengo.synapses.Lowpass(tau), dt=dt, n_neurons=100)
 
     y = filt(x, tau / dt)
-    assert allclose(t, y.flatten(), yhat.flatten(), delay=1,
-                    plotter=Plotter(Simulator, nl),
-                    filename='test_synapse.test_decoders.pdf')
+    assert allclose(t, y.flatten(), yhat.flatten(), delay=1, plt=plt)
 
 
 @pytest.mark.optional  # the test requires scipy
-def test_general(Simulator):
+def test_general(Simulator, plt):
     import scipy.signal
 
     dt = 1e-3
@@ -92,9 +87,7 @@ def test_general(Simulator):
         Simulator, nengo.synapses.LinearFilter(num, den), dt=dt)
     y = lti(x, (numi, deni))
 
-    assert allclose(t, y.flatten(), yhat.flatten(),
-                    plotter=Plotter(Simulator),
-                    filename='test_synapse.test_general.pdf')
+    assert allclose(t, y.flatten(), yhat.flatten(), plt=plt)
 
 
 def test_synapseparam():

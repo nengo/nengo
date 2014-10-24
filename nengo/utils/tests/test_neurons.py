@@ -10,12 +10,11 @@ from nengo.utils.functions import whitenoise
 from nengo.utils.matplotlib import implot
 from nengo.utils.neurons import rates_isi, rates_kernel
 from nengo.utils.numpy import rms
-from nengo.utils.testing import Plotter
 
 logger = logging.getLogger(__name__)
 
 
-def _test_rates(Simulator, rates, name=None):
+def _test_rates(Simulator, rates, plt, name=None):
     if name is None:
         name = rates.__name__
 
@@ -49,21 +48,19 @@ def _test_rates(Simulator, rates, name=None):
     spikes = sim.data[bp]
     b_rates = rates(t, spikes)
 
-    with Plotter(Simulator) as plt:
-        ax = plt.subplot(411)
-        plt.plot(t, x)
-        ax = plt.subplot(412)
-        implot(plt, t, intercepts, a_rates.T, ax=ax)
-        ax.set_ylabel('intercept')
-        ax = plt.subplot(413)
-        implot(plt, t, intercepts, b_rates.T, ax=ax)
-        ax.set_ylabel('intercept')
-        ax = plt.subplot(414)
-        implot(plt, t, intercepts, (b_rates - a_rates).T, ax=ax)
-        ax.set_xlabel('time [s]')
-        ax.set_ylabel('intercept')
-        plt.savefig('utils.test_neurons.test_rates.%s.pdf' % name)
-        plt.close()
+    ax = plt.subplot(411)
+    plt.plot(t, x)
+    ax = plt.subplot(412)
+    implot(plt, t, intercepts, a_rates.T, ax=ax)
+    ax.set_ylabel('intercept')
+    ax = plt.subplot(413)
+    implot(plt, t, intercepts, b_rates.T, ax=ax)
+    ax.set_ylabel('intercept')
+    ax = plt.subplot(414)
+    implot(plt, t, intercepts, (b_rates - a_rates).T, ax=ax)
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel('intercept')
+    plt.saveas = 'utils.test_neurons.test_rates.%s.pdf' % name
 
     tmask = (t > 0.1) & (t < 1.9)
     relative_rmse = rms(b_rates[tmask] - a_rates[tmask]) / rms(a_rates[tmask])
@@ -71,18 +68,18 @@ def _test_rates(Simulator, rates, name=None):
 
 
 @pytest.mark.optional  # requires Scipy
-def test_rates_isi(Simulator):
-    rel_rmse = _test_rates(Simulator, rates_isi)
+def test_rates_isi(Simulator, plt):
+    rel_rmse = _test_rates(Simulator, rates_isi, plt)
     assert rel_rmse < 0.3
 
 
-def test_rates_kernel(Simulator):
-    rel_rmse = _test_rates(Simulator, rates_kernel)
+def test_rates_kernel(Simulator, plt):
+    rel_rmse = _test_rates(Simulator, rates_kernel, plt)
     assert rel_rmse < 0.2
 
 
 @pytest.mark.benchmark
-def test_rates(Simulator):
+def test_rates(Simulator, plt):
     functions = [
         ('isi_zero', lambda t, s: rates_isi(
             t, s, midpoint=False, interp='zero')),
@@ -101,7 +98,7 @@ def test_rates(Simulator):
 
     print("\ntest_rates:")
     for name, function in functions:
-        rel_rmse = _test_rates(Simulator, function, name)
+        rel_rmse = _test_rates(Simulator, function, plt, name)
         print("%20s relative rmse: %0.3f" % (name, rel_rmse))
 
 

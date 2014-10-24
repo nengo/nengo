@@ -6,12 +6,12 @@ import pytest
 import nengo
 from nengo.utils.compat import range
 from nengo.utils.distributions import Choice
-from nengo.utils.testing import Plotter, WarningCatcher
+from nengo.utils.testing import WarningCatcher
 
 logger = logging.getLogger(__name__)
 
 
-def test_multidim(Simulator, nl):
+def test_multidim(Simulator, nl, plt):
     """Test an ensemble array with multiple dimensions per ensemble"""
     dims = 3
     n_neurons = 60
@@ -47,24 +47,22 @@ def test_multidim(Simulator, nl):
     sim.run(1.0)
 
     t = sim.trange()
-    with Plotter(Simulator, nl) as plt:
-        def plot(sim, a, p, title=""):
-            a_ref = np.tile(a, (len(t), 1))
-            a_sim = sim.data[p]
-            colors = ['b', 'g', 'r', 'c', 'm', 'y']
-            for i in range(a_sim.shape[1]):
-                plt.plot(t, a_ref[:, i], '--', color=colors[i % 6])
-                plt.plot(t, a_sim[:, i], '-', color=colors[i % 6])
-            plt.title(title)
 
-        plt.subplot(131)
-        plot(sim, a, A_p, title="A")
-        plt.subplot(132)
-        plot(sim, b, B_p, title="B")
-        plt.subplot(133)
-        plot(sim, c, C_p, title="C")
-        plt.savefig('test_ensemble_array.test_multidim.pdf')
-        plt.close()
+    def plot(sim, a, p, title=""):
+        a_ref = np.tile(a, (len(t), 1))
+        a_sim = sim.data[p]
+        colors = ['b', 'g', 'r', 'c', 'm', 'y']
+        for i in range(a_sim.shape[1]):
+            plt.plot(t, a_ref[:, i], '--', color=colors[i % 6])
+            plt.plot(t, a_sim[:, i], '-', color=colors[i % 6])
+        plt.title(title)
+
+    plt.subplot(131)
+    plot(sim, a, A_p, title="A")
+    plt.subplot(132)
+    plot(sim, b, B_p, title="B")
+    plt.subplot(133)
+    plot(sim, c, C_p, title="C")
 
     a_sim = sim.data[A_p][t > 0.5].mean(axis=0)
     b_sim = sim.data[B_p][t > 0.5].mean(axis=0)
@@ -90,7 +88,7 @@ def _mmul_transforms(A_shape, B_shape, C_dim):
     return transformA, transformB
 
 
-def test_matrix_mul(Simulator, nl):
+def test_matrix_mul(Simulator, nl, plt):
     N = 100
 
     Amat = np.asarray([[0.5, -0.5]])
@@ -141,12 +139,9 @@ def test_matrix_mul(Simulator, nl):
     t = sim.trange()
     tmask = (t >= 0.2)
 
-    with Plotter(Simulator, nl) as plt:
-        plt.plot(t, sim.data[D_p])
-        for d in np.dot(Amat, Bmat).flatten():
-            plt.axhline(d, color='k')
-        plt.savefig('test_ensemble_array.test_matrix_mul.pdf')
-        plt.close()
+    plt.plot(t, sim.data[D_p])
+    for d in np.dot(Amat, Bmat).flatten():
+        plt.axhline(d, color='k')
 
     tols = dict(atol=0.1, rtol=0.01)
     for i in range(Amat.size):

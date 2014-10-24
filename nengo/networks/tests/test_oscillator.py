@@ -5,13 +5,12 @@ import pytest
 import nengo
 from nengo.utils.functions import piecewise
 from nengo.utils.numpy import rmse
-from nengo.utils.testing import Plotter
 
 
 logger = logging.getLogger(__name__)
 
 
-def test_oscillator(Simulator, nl):
+def test_oscillator(Simulator, nl, plt):
     model = nengo.Network(label='Oscillator', seed=789)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl()
@@ -36,14 +35,11 @@ def test_oscillator(Simulator, nl):
     sim = Simulator(model)
     sim.run(3.0)
 
-    with Plotter(Simulator, nl) as plt:
-        t = sim.trange()
-        plt.plot(t, sim.data[A_probe], label='Manual')
-        plt.plot(t, sim.data[T_probe], label='Template')
-        plt.plot(t, sim.data[in_probe], 'k', label='Input')
-        plt.legend(loc=0)
-        plt.savefig('test_oscillator.test_oscillator.pdf')
-        plt.close()
+    t = sim.trange()
+    plt.plot(t, sim.data[A_probe], label='Manual')
+    plt.plot(t, sim.data[T_probe], label='Template')
+    plt.plot(t, sim.data[in_probe], 'k', label='Input')
+    plt.legend(loc=0)
 
     assert rmse(sim.data[A_probe], sim.data[T_probe]) < 0.3
 
