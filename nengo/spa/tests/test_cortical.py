@@ -105,15 +105,6 @@ def test_errors():
     with pytest.raises(NotImplementedError):
         SPA()  # dot products not implemented
 
-    class SPA(spa.SPA):
-        def __init__(self):
-            self.unitary = spa.Buffer(dimensions=16)
-            self.cortical = spa.Cortical(spa.Actions(
-                'unitary=unitary*unitary'))
-
-    with pytest.raises(NotImplementedError):
-        SPA()  # convolution not implemented
-
 
 def test_direct(Simulator):
 
@@ -141,6 +132,74 @@ def test_direct(Simulator):
     match2 = np.dot(sim.data[p2], vocab2.parse('A+C').v)
     assert match1[199] > 0.45
     assert match2[199] > 0.45
+
+
+def test_convolution(Simulator, seed):
+    model = spa.SPA(seed=seed)
+    D = 5
+    with model:
+        model.inA = spa.Buffer(dimensions=D)
+        model.inB = spa.Buffer(dimensions=D)
+        model.outAB = spa.Buffer(dimensions=D)
+        model.outABinv = spa.Buffer(dimensions=D)
+        model.outAinvB = spa.Buffer(dimensions=D)
+        model.outAinvBinv = spa.Buffer(dimensions=D)
+
+        model.cortical = spa.Cortical(spa.Actions(
+            'outAB = inA * inB',
+            'outABinv = inA * ~inB',
+            'outAinvB = ~inA * inB',
+            'outAinvBinv = ~inA * ~inB',
+            ))
+        nengo.Connection(nengo.Node([0, 1, 0, 0, 0]), model.inA.state.input)
+        nengo.Connection(nengo.Node([0, 0, 1, 0, 0]), model.inB.state.input)
+
+        pAB = nengo.Probe(model.outAB.state.output, synapse=0.03)
+        pABinv = nengo.Probe(model.outABinv.state.output, synapse=0.03)
+        pAinvB = nengo.Probe(model.outAinvB.state.output, synapse=0.03)
+        pAinvBinv = nengo.Probe(model.outAinvBinv.state.output, synapse=0.03)
+
+    sim = Simulator(model)
+    sim.run(0.2)
+
+    # Check results.  Since A is [0,1,0,0,0] and B is [0,0,1,0,0], this means:
+    #    ~A = [0,0,0,0,1]
+    #    ~B = [0,0,0,1,0]
+    #   A*B = [0,0,0,1,0]
+    #  A*~B = [0,0,0,0,1]
+    #  ~A*B = [0,1,0,0,0]
+    # ~A*~B = [0,0,1,0,0]
+    # (Remember that X*[1,0,0,0,0]=X (identity transform) and X*[0,1,0,0,0]
+    #  is X rotated to the right once)
+
+    # Ideal answer: A*B = [0,0,0,1,0]
+    assert sim.data[pAB][-1][0] < 0.1
+    assert sim.data[pAB][-1][1] < 0.1
+    assert sim.data[pAB][-1][2] < 0.1
+    assert sim.data[pAB][-1][3] > 0.9
+    assert sim.data[pAB][-1][4] < 0.1
+
+    # Ideal answer: A*~B = [0,0,0,0,1]
+    assert sim.data[pABinv][-1][0] < 0.1
+    assert sim.data[pABinv][-1][1] < 0.1
+    assert sim.data[pABinv][-1][2] < 0.1
+    assert sim.data[pABinv][-1][3] < 0.1
+    assert sim.data[pABinv][-1][4] > 0.9
+
+    # Ideal answer: ~A*B = [0,1,0,0,0]
+    assert sim.data[pAinvB][-1][0] < 0.1
+    assert sim.data[pAinvB][-1][1] > 0.9
+    assert sim.data[pAinvB][-1][2] < 0.1
+    assert sim.data[pAinvB][-1][3] < 0.1
+    assert sim.data[pAinvB][-1][4] < 0.1
+
+    # Ideal answer: ~A*~B = [0,0,1,0,0]
+    assert sim.data[pAinvBinv][-1][0] < 0.1
+    assert sim.data[pAinvBinv][-1][1] < 0.1
+    assert sim.data[pAinvBinv][-1][2] > 0.9
+    assert sim.data[pAinvBinv][-1][3] < 0.1
+    assert sim.data[pAinvBinv][-1][4] < 0.1
+
 
 if __name__ == '__main__':
     nengo.log(debug=True)
