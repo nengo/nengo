@@ -176,8 +176,9 @@ function zoomCenter(d) { //zoom full screen and center the network clicked on
         }
     }
 
-    var width = nengoLayout.center.state.innerWidth;
-    var height = nengoLayout.center.state.innerHeight;
+    var width=400, height=400;
+    //var width = nengoLayout.center.state.innerWidth;
+    //var height = nengoLayout.center.state.innerHeight;
 
     if (zoomNet == -1) { //zoom out to full model
         var netWidth = d3.select('#modelGroup').node()
