@@ -7,7 +7,7 @@ import nengo
 import nengo.builder
 
 
-def test_seeding():
+def test_seeding(RefSimulator):
     """Test that setting the model seed fixes everything"""
 
     #  TODO: this really just checks random parameters in ensembles.
@@ -23,10 +23,10 @@ def test_seeding():
         C = nengo.Connection(A, B, function=lambda x: x ** 2)
 
     m.seed = 872
-    m1 = nengo.Simulator(m).model.params
-    m2 = nengo.Simulator(m).model.params
+    m1 = RefSimulator(m).model.params
+    m2 = RefSimulator(m).model.params
     m.seed = 873
-    m3 = nengo.Simulator(m).model.params
+    m3 = RefSimulator(m).model.params
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
@@ -51,7 +51,7 @@ def test_seeding():
     compare_objs(Cs[0], Cs[2], conn_attrs, equal=False)
 
 
-def test_hierarchical_seeding():
+def test_hierarchical_seeding(RefSimulator):
     """Changes to subnetworks shouldn't affect seeds in top-level network"""
 
     def create(make_extra, seed):
@@ -70,9 +70,9 @@ def test_hierarchical_seeding():
     same2, same2objs = create(True, 9)
     diff, diffobjs = create(True, 10)
 
-    same1seeds = nengo.Simulator(same1).model.seeds
-    same2seeds = nengo.Simulator(same2).model.seeds
-    diffseeds = nengo.Simulator(diff).model.seeds
+    same1seeds = RefSimulator(same1).model.seeds
+    same2seeds = RefSimulator(same2).model.seeds
+    diffseeds = RefSimulator(diff).model.seeds
 
     for diffobj, same2obj in zip(diffobjs, same2objs):
         # These seeds should all be different

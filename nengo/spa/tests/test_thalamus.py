@@ -93,7 +93,7 @@ def test_routing(Simulator):
         buff3_probe = nengo.Probe(model.buff3.state.output, synapse=0.03)
         thal_probe = nengo.Probe(model.thal.output, synapse=0.03)
 
-    sim = nengo.Simulator(model)
+    sim = Simulator(model)
     sim.run(0.5)
 
     data1 = sim.data[buff1_probe]

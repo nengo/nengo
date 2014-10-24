@@ -234,7 +234,7 @@ def test_function_and_transform(Simulator, nl, plt):
         ap = nengo.Probe(a, synapse=0.03)
         bp = nengo.Probe(b, synapse=0.03)
 
-    sim = nengo.Simulator(model)
+    sim = Simulator(model)
     sim.run(1.0)
     x0, x1 = np.dot(sim.data[ap]**2, [[1., -1]]).T
     y0, y1 = sim.data[bp].T
@@ -404,7 +404,7 @@ def test_slicing(Simulator, nl, plt):
             nengo.Connection(a[sa], b[sb], transform=T)
             probes.append(nengo.Probe(b, synapse=0.03))
 
-    sim = nengo.Simulator(m)
+    sim = Simulator(m)
     sim.run(0.2)
     t = sim.trange()
 
@@ -629,18 +629,18 @@ def test_nonexistant_prepost(Simulator):
         e1 = nengo.Ensemble(100, 1)
         nengo.Connection(a, e1)
     with pytest.raises(ValueError):
-        nengo.Simulator(model1)
+        Simulator(model1)
 
     with nengo.Network() as model2:
         e2 = nengo.Ensemble(100, 1)
         nengo.Connection(e2, a)
     with pytest.raises(ValueError):
-        nengo.Simulator(model2)
+        Simulator(model2)
 
     with nengo.Network() as model3:
         nengo.Probe(a)
     with pytest.raises(ValueError):
-        nengo.Simulator(model3)
+        Simulator(model3)
 
 
 def test_directneurons(Simulator, nl_nodirect):

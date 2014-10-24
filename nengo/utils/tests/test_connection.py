@@ -35,7 +35,7 @@ def test_target_function(Simulator, nl_nodirect, plt, dimension):
         probe1 = nengo.Probe(ens2, synapse=0.03)
         probe2 = nengo.Probe(ens3, synapse=0.03)
 
-    sim = nengo.Simulator(model)
+    sim = Simulator(model)
     sim.run(1)
 
     plt.plot(sim.trange(), sim.data[probe1])

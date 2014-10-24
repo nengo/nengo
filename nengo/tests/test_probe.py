@@ -48,7 +48,7 @@ def test_dts(Simulator):
             a = nengo.Node(output=0)
             ap = nengo.Probe(a, sample_every=dt2)
 
-        sim = nengo.Simulator(model, dt=dt)
+        sim = Simulator(model, dt=dt)
         sim.run(tend)
         t = sim.trange(dt2)
         x = sim.data[ap]
@@ -114,7 +114,7 @@ def test_simulator_dt(Simulator):
         nengo.Connection(a, b)
         bp = nengo.Probe(b)
 
-    sim = nengo.Simulator(model, dt=0.01)
+    sim = Simulator(model, dt=0.01)
     sim.run(1.)
     assert sim.data[bp].shape == (100, 1)
 
@@ -130,7 +130,7 @@ def test_multiple_probes(Simulator):
         p_01 = nengo.Probe(ens, sample_every=f * dt)
         p_1 = nengo.Probe(ens, sample_every=f**2 * dt)
 
-    sim = nengo.Simulator(model, dt=dt)
+    sim = Simulator(model, dt=dt)
     sim.run(1.)
     assert np.allclose(sim.data[p_001][f - 1::f], sim.data[p_01])
     assert np.allclose(sim.data[p_01][f - 1::f], sim.data[p_1])
@@ -147,7 +147,7 @@ def test_input_probe(Simulator):
         nengo.Connection(n2, ens, synapse=None)
         input_probe = nengo.Probe(ens, 'input')
 
-        sim = nengo.Simulator(model)
+        sim = Simulator(model)
         sim.run(1.)
         t = sim.trange()
         assert np.allclose(sim.data[input_probe][:, 0], np.sin(t) + 0.5)
@@ -165,7 +165,7 @@ def test_slice(Simulator, nl):
         bp1a = nengo.Probe(b[1], synapse=0.03)
         bp1b = nengo.Probe(b[1:], synapse=0.03)
 
-    sim = nengo.Simulator(model)
+    sim = Simulator(model)
     sim.run(1.0)
     assert np.allclose(sim.data[bp][:, 0], sim.data[bp0a][:, 0])
     assert np.allclose(sim.data[bp][:, 0], sim.data[bp0b][:, 0])

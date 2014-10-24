@@ -20,7 +20,7 @@ def test_missing_attribute():
 
 
 @pytest.mark.parametrize("n_dimensions", [1, 200])
-def test_encoders(n_dimensions, n_neurons=10, encoders=None):
+def test_encoders(RefSimulator, n_dimensions, n_neurons=10, encoders=None):
     if encoders is None:
         encoders = np.random.normal(size=(n_neurons, n_dimensions))
         encoders = npext.array(encoders, min_dims=2, dtype=np.float64)
@@ -32,26 +32,26 @@ def test_encoders(n_dimensions, n_neurons=10, encoders=None):
                              dimensions=n_dimensions,
                              encoders=encoders,
                              label="A")
-    sim = nengo.Simulator(model)
+    sim = RefSimulator(model)
 
     assert np.allclose(encoders, sim.data[ens].encoders)
 
 
-def test_encoders_wrong_shape():
+def test_encoders_wrong_shape(RefSimulator):
     n_dimensions = 3
     encoders = np.random.normal(size=n_dimensions)
     with pytest.raises(ValueError):
-        test_encoders(n_dimensions, encoders=encoders)
+        test_encoders(RefSimulator, n_dimensions, encoders=encoders)
 
 
-def test_encoders_negative_neurons():
+def test_encoders_negative_neurons(RefSimulator):
     with pytest.raises(ValueError):
-        test_encoders(1, n_neurons=-1)
+        test_encoders(RefSimulator, 1, n_neurons=-1)
 
 
-def test_encoders_no_dimensions():
+def test_encoders_no_dimensions(RefSimulator):
     with pytest.raises(ValueError):
-        test_encoders(0)
+        test_encoders(RefSimulator, 0)
 
 
 def test_constant_scalar(Simulator, nl, plt):

@@ -26,7 +26,7 @@ def run_synapse(Simulator, synapse, dt=1e-3, runtime=1., n_neurons=None):
         ref = nengo.Probe(target)
         filtered = nengo.Probe(target, synapse=synapse)
 
-    sim = nengo.Simulator(model, dt=dt)
+    sim = Simulator(model, dt=dt)
     sim.run(runtime)
 
     return sim.trange(), sim.data[ref], sim.data[filtered]
