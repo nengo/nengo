@@ -1,3 +1,4 @@
+import nengo
 
 
 class Vertex(object):
@@ -62,11 +63,46 @@ class CollapsedNetwork(Vertex):
 
 class Graph(object):
     def __init__(self):
-        pass
+        self._nengo_object_to_vertex = {}
 
-    def add_vertex(self, v):
-        pass
+    def add_vertex(self, v, parent=None):
+        self._nengo_object_to_vertex[v.nengo_object] = v
+        if parent is not None:
+            v.parent = parent
+            parent.children.append(v)
 
     def add_edge(self, source, target):
         source.outgoing.append(target)
         target.incoming.append(source)
+
+    def get_vertex(self, nengo_object):
+        return self._nengo_object_to_vertex[nengo_object]
+
+
+class ModelGraph(Graph):
+    def __init__(self, model=None):
+        super(ModelGraph, self).__init__()
+        if model is not None:
+            self.add_network(model)
+
+    def add_network(self, net):
+        v_net = Network(net)
+        self.add_vertex(v_net)
+
+        self._add_objects_with_conversion(
+            net.ensembles, Ensemble, parent=v_net)
+        self._add_objects_with_conversion(net.nodes, Node, parent=v_net)
+        self._add_objects_with_conversion(net.networks, Network, parent=v_net)
+
+        for conn in net.connections:
+            pre = conn.pre_obj
+            if isinstance(pre, nengo.ensemble.Neurons):
+                pre = pre.ensemble
+            post = conn.post_obj
+            if isinstance(post, nengo.ensemble.Neurons):
+                post = post.ensemble
+            self.add_edge(self.get_vertex(pre), self.get_vertex(post))
+
+    def _add_objects_with_conversion(self, objects, conversion, parent=None):
+        for obj in objects:
+            self.add_vertex(conversion(obj), parent=parent)
