@@ -1,7 +1,7 @@
 import pytest
 
 import nengo
-from nengo.vis.graph import Graph, ModelGraph, Vertex
+from nengo.vis.graph import Edge, Graph, ModelGraph, Vertex
 
 
 class TestVertex(object):
@@ -35,11 +35,12 @@ class TestGraph(object):
         g = Graph()
         for v in vertices:
             g.add_vertex(v)
-        g.add_edge(vertices[0], vertices[1])
-        g.add_edge(vertices[0], vertices[2])
-        g.add_edge(vertices[1], vertices[2])
-        g.add_edge(vertices[1], vertices[3])
+        g.add_edge(Edge(vertices[0], vertices[1]))
+        g.add_edge(Edge(vertices[0], vertices[2]))
+        g.add_edge(Edge(vertices[1], vertices[2]))
+        g.add_edge(Edge(vertices[1], vertices[3]))
 
+        assert sorted(g.vertices) == sorted(vertices)
         assert vertices[0].incoming == []
         assert vertices[0].outgoing == [vertices[1], vertices[2]]
         assert vertices[1].incoming == [vertices[0]]

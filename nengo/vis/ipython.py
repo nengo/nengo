@@ -53,4 +53,4 @@ class ModelGraphDisplay(object):
                     </g>
                 </defs>
             </svg></div>'''.format(
-                js=js, d3=d3, css=css, data=self.graph.to_json())))
+                js=js, d3=d3, css=css, data=self.graph)))
