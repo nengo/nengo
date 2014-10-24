@@ -17,6 +17,28 @@ class Distribution(object):
         raise NotImplementedError("Distributions should implement sample.")
 
 
+class PDF(Distribution):
+    """An arbitrary distribution from a PDF."""
+
+    def __init__(self, x, p):
+        psum = p.sum()
+        if np.abs(psum - 1) > 1e-8:
+            raise ValueError("PDF must sum to one (sums to %f)" % psum)
+
+        self.x = x
+        self.pdf = p
+
+        # make cumsum = [0] + cumsum, cdf = 0.5 * (cumsum[:-1] + cumsum[1:])
+        cumsum = np.cumsum(p)
+        cumsum *= 0.5
+        cumsum[1:] = cumsum[:-1] + cumsum[1:]
+        self.cdf = cumsum
+
+    def sample(self, n, d=None, rng=np.random):
+        shape = (n,) if d is None else (n, d)
+        return np.interp(rng.uniform(size=shape), self.cdf, self.x)
+
+
 class Uniform(Distribution):
     """A uniform distribution.
 

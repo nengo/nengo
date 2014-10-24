@@ -6,6 +6,29 @@ import nengo.utils.distributions as dists
 import nengo.utils.numpy as npext
 
 
+def test_pdf():
+    s = 0.25
+    f = lambda x: (np.exp(-0.5 * (x + 0.5)**2 / s**2) +
+                   np.exp(-0.5 * (x - 0.5)**2 / s**2))
+
+    xref = np.linspace(-2, 2, 101)
+    pref = f(xref)
+    pref /= pref.sum()
+    dist = dists.PDF(xref, pref)
+
+    rng = np.random.RandomState(9)
+
+    n = 100000
+    samples = dist.sample(n, rng=rng)
+    h, xedges = np.histogram(samples, bins=101)
+    x = 0.5 * (xedges[:-1] + xedges[1:])
+    dx = np.diff(xedges)
+    y = h / float(h.sum()) / dx
+    z = f(x)
+    z = z / z.sum() / dx
+    assert np.allclose(y, z, atol=0.05)
+
+
 @pytest.mark.parametrize("low,high", [(-2, -1), (-1, 1), (1, 2), (1, -1)])
 def test_uniform(low, high, rng):
     n = 100
