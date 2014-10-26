@@ -36,7 +36,7 @@ def test_gaussian(mean, std, rng):
 
 @pytest.mark.parametrize("dimensions", [0, 1, 2, 5])
 def test_hypersphere(dimensions, rng):
-    n = 100 * dimensions
+    n = 150 * dimensions
     if dimensions < 1:
         with pytest.raises(ValueError):
             dist = dists.UniformHypersphere().sample(1, dimensions)
@@ -44,26 +44,24 @@ def test_hypersphere(dimensions, rng):
         dist = dists.UniformHypersphere()
         samples = dist.sample(n, dimensions, rng=rng)
         assert samples.shape == (n, dimensions)
-        assert np.allclose(
-            np.mean(samples, axis=0), np.zeros(dimensions), atol=0.1)
+        assert np.allclose(np.mean(samples, axis=0), 0, atol=0.1)
         hist, _ = np.histogramdd(samples, bins=5)
         assert np.allclose(hist - np.mean(hist), 0, atol=0.1 * n)
 
 
 @pytest.mark.parametrize("dimensions", [1, 2, 5])
 def test_hypersphere_surface(dimensions, rng):
-    n = 500 * dimensions
+    n = 150 * dimensions
     dist = dists.UniformHypersphere(surface=True)
     samples = dist.sample(n, dimensions, rng=rng)
     assert samples.shape == (n, dimensions)
     assert np.allclose(npext.norm(samples, axis=1), 1)
-    assert np.allclose(
-        np.mean(samples, axis=0), np.zeros(dimensions), atol=0.1)
+    assert np.allclose(np.mean(samples, axis=0), 0, atol=0.2 / dimensions)
 
 
 @pytest.mark.parametrize("weights", [None, [5, 1, 2, 9], [3, 2, 1, 0]])
 def test_choice(weights, rng):
-    n = 2000
+    n = 1000
     choices = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
     N = len(choices)
 
@@ -80,7 +78,7 @@ def test_choice(weights, rng):
     p_empirical = hist / float(hist.sum())
     p = np.ones(N) / N if dist.p is None else dist.p
     sterr = 1. / np.sqrt(n)  # expected maximum standard error
-    assert np.allclose(p, p_empirical, atol=sterr)
+    assert np.allclose(p, p_empirical, atol=2 * sterr)
 
 
 if __name__ == "__main__":

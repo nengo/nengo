@@ -1,10 +1,15 @@
+import hashlib
+
 import numpy as np
 import pytest
 
 import nengo.utils.numpy as npext
 from nengo.neurons import LIF, LIFRate, Direct
 from nengo.simulator import Simulator as ReferenceSimulator
+from nengo.utils.compat import ensure_bytes
 from nengo.utils.testing import Plotter
+
+test_seed = 0  # changing this will change seeds for all tests
 
 
 @pytest.fixture(scope="session")
@@ -54,8 +59,11 @@ def plt(request):
 
 
 def function_seed(function, mod=0):
+    # take start of md5 hash of function file and name, should be pretty random
     c = function.__code__
-    return (hash((c.co_filename, c.co_name)) + mod) % npext.maxint
+    to_hash = ensure_bytes(c.co_filename + c.co_name)
+    i = int(hashlib.md5(to_hash).hexdigest()[:15], 16)
+    return (test_seed + i + mod) % npext.maxint
 
 
 @pytest.fixture
