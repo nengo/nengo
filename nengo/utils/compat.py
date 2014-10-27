@@ -31,6 +31,12 @@ if PY2:
     # We have to put this in an exec call because it's a syntax error in Py3+
     exec('def reraise(tp, value, tb):\n raise tp, value, tb')
 
+    def ensure_bytes(s):
+        if isinstance(s, unicode):
+            return s.encode('utf-8')
+        assert isinstance(s, bytes)
+        return s
+
 else:
     from io import StringIO
     string_types = (str,)
@@ -43,6 +49,13 @@ else:
 
     def reraise(tp, value, tb):
         raise value.with_traceback(tb)
+
+    def ensure_bytes(s):
+        if isinstance(s, str):
+            s = s.encode('utf-8')
+        assert isinstance(s, bytes)
+        return s
+
 
 assert StringIO
 
