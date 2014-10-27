@@ -27,6 +27,9 @@ class TestVertex(object):
 class TestGraph(object):
     def test_build_graph(self):
         vertices = [Vertex() for i in range(4)]
+        edges = [
+            Edge(vertices[0], vertices[1]), Edge(vertices[0], vertices[2]),
+            Edge(vertices[1], vertices[2]), Edge(vertices[1], vertices[3])]
 
         # Construct this graph:
         # 0 --+--> 1 ---+--> 3
@@ -35,12 +38,11 @@ class TestGraph(object):
         g = Graph()
         for v in vertices:
             g.add_vertex(v)
-        g.add_edge(Edge(vertices[0], vertices[1]))
-        g.add_edge(Edge(vertices[0], vertices[2]))
-        g.add_edge(Edge(vertices[1], vertices[2]))
-        g.add_edge(Edge(vertices[1], vertices[3]))
+        for e in edges:
+            g.add_edge(e)
 
         assert sorted(g.vertices) == sorted(vertices)
+        assert sorted(g.edges) == sorted(edges)
         assert vertices[0].incoming == []
         assert vertices[0].outgoing == [vertices[1], vertices[2]]
         assert vertices[1].incoming == [vertices[0]]
