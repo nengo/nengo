@@ -6,6 +6,7 @@ import pprint
 import nengo
 
 from nengo.vis.config import Config
+from nengo.vis.graph import Graph
 
 
 # TODO: method to add line numbers

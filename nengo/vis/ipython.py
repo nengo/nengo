@@ -2,10 +2,23 @@ import pkgutil
 
 from IPython.display import display, HTML
 
+from nengo.vis.modelgraph import Renderer
+
+
+# TODO move somewhere else
+class Identificator(object):
+    def get_id(self, obj):
+        raise NotImplementedError()
+
+
+class SimpleIdentificator(Identificator):
+    def get_id(self, obj):
+        return id(obj)
+
 
 class ModelGraphDisplay(object):
-    def __init__(self, graph):
-        self.graph = graph
+    def __init__(self, data):
+        self.data = data
 
     def _ipython_display_(self):
         js = pkgutil.get_data('nengo.vis', 'static/js/main.js')
@@ -53,4 +66,77 @@ class ModelGraphDisplay(object):
                     </g>
                 </defs>
             </svg></div>'''.format(
-                js=js, d3=d3, css=css, data=self.graph)))
+                js=js, d3=d3, css=css, data=self.data)))
+
+
+class D3DataRenderer(Renderer):
+    def __init__(self, cfg, identificator=SimpleIdentificator()):
+        self.cfg = cfg
+        self.identificator = identificator
+        self._vertex_to_index = {}
+
+    def render(self, model_graph):
+        for i, v in enumerate(model_graph.vertices):
+            self._vertex_to_index[v] = i
+        vertices = [self.render_vertex(v) for v in model_graph.vertices]
+        edges = [self.render_connection(e) for e in model_graph.edges]
+
+        global_scale = self.cfg[model_graph.top].scale
+        global_offset = self.cfg[model_graph.top].offset
+
+        data = dict(
+            nodes=vertices, links=edges,
+            global_scale=global_scale, global_offset=global_offset)
+        pprint.pprint(data)
+        return json.dumps(data)
+
+    def render_vertex(self, v):
+        pos = self.cfg[v.nengo_object].pos
+        scale = self.cfg[v.nengo_object].scale
+
+        if v.parent is None:
+            contained_by = -1
+        else:
+            contained_by = self._vertex_to_index[v.parent]
+
+        data = super(D3DataRenderer, self).render_vertex(v)
+        data.update({
+            'label': v.nengo_object.label,
+            'id': self.identificator.get_id(v.nengo_object),
+            'x': pos[0], 'y': pos[1], 'scale': scale,
+            'contained_by': contained_by,
+        })
+        return data
+
+    def render_ensemble(self, ens):
+        return {'type': 'ens'}
+
+    def render_node(self, node):
+        return {'type': 'nde', 'is_input': node.is_pure_input()}
+
+    def render_network(self, net):
+        size = self.cfg[net.nengo_object].size
+        return {
+            'type': 'net',
+            'contains': [self._vertex_to_index[v] for v in net.children],
+            'full_contains': [
+                self._vertex_to_index[v] for v in net.descendants],
+            'width': size[0], 'height': size[1],
+        }
+
+    def render_collapsed_network(self, cnet):
+        raise NotImplementedError()
+
+    def render_connection(self, conn):
+        pre_idx = self._vertex_to_index[conn.source]
+        post_idx = self._vertex_to_index[conn.target]
+        if pre_idx == post_idx:
+            connection_type = 'rec'
+        else:
+            connection_type = 'std'
+        return {
+            'source': pre_idx,
+            'target': post_idx,
+            'id': self.identificator.get_id(conn.nengo_object),
+            'type': connection_type
+        }
