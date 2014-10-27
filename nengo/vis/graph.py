@@ -43,7 +43,7 @@ class Edge(object):
 class Graph(object):
     def __init__(self):
         self.vertices = []
-        self.edges = []  # TODO test
+        self.edges = []
 
     def add_vertex(self, v, parent=None):
         if parent is not None:
