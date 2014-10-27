@@ -71,8 +71,9 @@ class SPA(nengo.Network):
         """
         super(SPA, self).__setattr__(key, value)
         if isinstance(value, Module):
-            value.label = key
-            self._modules[value.label] = value
+            if value.label is None:
+                value.label = key
+            self._modules[key] = value
             for k, (obj, v) in iteritems(value.inputs):
                 if type(v) == int:
                     value.inputs[k] = (obj, self.get_default_vocab(v))
