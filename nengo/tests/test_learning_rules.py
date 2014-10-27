@@ -67,7 +67,7 @@ def test_pes_nef_weights(Simulator, nl_nodirect, plt, seed):
         nengo.Connection(u, a)
         err_conn = nengo.Connection(e, u_learned, modulatory=True)
         nengo.Connection(a, u_learned,
-                         learning_rule_type=PES(err_conn, 5),
+                         learning_rule_type={'pes': PES(err_conn, 5)},
                          solver=LstsqL2nz(weights=True))
 
         nengo.Connection(u_learned, e, transform=-1)

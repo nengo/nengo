@@ -5,8 +5,10 @@ import pytest
 
 import nengo
 import nengo.simulator
-from nengo.builder import (
-    Model, Copy, Reset, DotInc, Signal, build_pyfunc, SimNoise)
+from nengo.builder import Model
+from nengo.builder.node import build_pyfunc
+from nengo.builder.operator import Copy, Reset, DotInc, SimNoise
+from nengo.builder.signal import Signal
 from nengo.solvers import LstsqL2nz
 from nengo.utils.compat import range
 from nengo.utils.functions import whitenoise

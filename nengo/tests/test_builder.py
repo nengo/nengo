@@ -4,7 +4,10 @@ import numpy as np
 import pytest
 
 import nengo
-import nengo.builder as nb
+from nengo.builder import Model
+from nengo.builder.ensemble import BuiltEnsemble
+from nengo.builder.operator import DotInc, PreserveValue
+from nengo.builder.signal import Signal, SignalDict
 
 
 def test_seeding(RefSimulator):
@@ -37,7 +40,7 @@ def test_seeding(RefSimulator):
                 print(attr, getattr(obj2, attr))
             assert check
 
-    ens_attrs = nb.BuiltEnsemble._fields
+    ens_attrs = BuiltEnsemble._fields
     As = [mi[A] for mi in [m1, m2, m3]]
     Bs = [mi[B] for mi in [m1, m2, m3]]
     compare_objs(As[0], As[1], ens_attrs)
@@ -88,18 +91,18 @@ def test_hierarchical_seeding(RefSimulator):
 
 def test_signal():
     """Make sure assert_named_signals works."""
-    nb.Signal(np.array(0.))
-    nb.Signal.assert_named_signals = True
+    Signal(np.array(0.))
+    Signal.assert_named_signals = True
     with pytest.raises(AssertionError):
-        nb.Signal(np.array(0.))
+        Signal(np.array(0.))
 
     # So that other tests that build signals don't fail...
-    nb.Signal.assert_named_signals = False
+    Signal.assert_named_signals = False
 
 
 def test_signal_values():
     """Make sure Signal.value and SignalView.value work."""
-    two_d = nb.Signal([[1], [1]])
+    two_d = Signal([[1], [1]])
     assert np.allclose(two_d.value, np.array([[1], [1]]))
     two_d_view = two_d[0, :]
     assert np.allclose(two_d_view.value, np.array([1]))
@@ -109,17 +112,17 @@ def test_signal_values():
 
 def test_signal_init_values(RefSimulator):
     """Tests that initial values are not overwritten."""
-    zero = nb.Signal([0])
-    one = nb.Signal([1])
-    five = nb.Signal([5.0])
-    zeroarray = nb.Signal([[0], [0], [0]])
-    array = nb.Signal([1, 2, 3])
+    zero = Signal([0])
+    one = Signal([1])
+    five = Signal([5.0])
+    zeroarray = Signal([[0], [0], [0]])
+    array = Signal([1, 2, 3])
 
-    m = nb.Model(dt=0)
-    m.operators += [nb.PreserveValue(five),
-                    nb.PreserveValue(array),
-                    nb.DotInc(zero, zero, five),
-                    nb.DotInc(zeroarray, one, array)]
+    m = Model(dt=0)
+    m.operators += [PreserveValue(five),
+                    PreserveValue(array),
+                    DotInc(zero, zero, five),
+                    DotInc(zeroarray, one, array)]
 
     sim = RefSimulator(None, model=m)
     assert sim.signals[zero][0] == 0
@@ -135,9 +138,9 @@ def test_signal_init_values(RefSimulator):
 
 def test_signaldict():
     """Tests SignalDict's dict overrides."""
-    signaldict = nb.SignalDict()
+    signaldict = SignalDict()
 
-    scalar = nb.Signal(1)
+    scalar = Signal(1)
 
     # Both __getitem__ and __setitem__ raise KeyError
     with pytest.raises(KeyError):
@@ -150,12 +153,12 @@ def test_signaldict():
     # __getitem__ handles scalars
     assert signaldict[scalar].shape == ()
 
-    one_d = nb.Signal([1])
+    one_d = Signal([1])
     signaldict.init(one_d)
     assert np.allclose(signaldict[one_d], np.array([1.]))
     assert signaldict[one_d].shape == (1,)
 
-    two_d = nb.Signal([[1], [1]])
+    two_d = Signal([[1], [1]])
     signaldict.init(two_d)
     assert np.allclose(signaldict[two_d], np.array([[1.], [1.]]))
     assert signaldict[two_d].shape == (2, 1)
@@ -189,8 +192,8 @@ def test_signaldict():
 
 def test_signaldict_reset():
     """Tests SignalDict's reset function."""
-    signaldict = nb.SignalDict()
-    two_d = nb.Signal([[1], [1]])
+    signaldict = SignalDict()
+    two_d = Signal([[1], [1]])
     signaldict.init(two_d)
 
     two_d_view = two_d[0, :]
