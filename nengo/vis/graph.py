@@ -22,14 +22,18 @@ class Vertex(object):
             ancestors.append(ancestors[-1].parent)
         return ancestors
 
+    # TODO unit test with repeated descendants (elements of returned list/set
+    # should be unique)
     @property
     def descendants(self):
         stack = list(self.children)
+        stacks = []
         descendants = []
         while len(stack) > 0:
             descendants.append(stack.pop())
+            stacks.append(list(descendants))
             stack.extend(descendants[-1].descendants)
-        return descendants
+        return set(descendants)
 
 
 class Edge(object):
@@ -67,7 +71,11 @@ class Graph(object):
         for e in list(self.edges):
             if e.source is v or e.target is v:
                 self.remove_edge(e)
+            elif e.source in v.descendants or e.target in v.descendants:
+                self.remove_edge(e)
         if v.parent is not None:
             v.parent.children.remove(v)
         v.parent = None
         self.vertices.remove(v)
+        for c in v.descendants:
+            self.vertices.remove(c)
