@@ -55,3 +55,19 @@ class Graph(object):
         e.source.outgoing.append(e.target)
         e.target.incoming.append(e.source)
         self.edges.append(e)
+
+    # TODO unit test
+    def remove_edge(self, e):
+        e.source.outgoing.remove(e.target)
+        e.target.incoming.remove(e.source)
+        self.edges.remove(e)
+
+    # TODO unit test
+    def remove_vertex(self, v):
+        for e in list(self.edges):
+            if e.source is v or e.target is v:
+                self.remove_edge(e)
+        if v.parent is not None:
+            v.parent.children.remove(v)
+        v.parent = None
+        self.vertices.remove(v)

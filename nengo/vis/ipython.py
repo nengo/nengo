@@ -1,6 +1,7 @@
 import json
 import pkgutil
 import pprint
+import uuid
 
 from IPython.display import display, HTML
 
@@ -127,7 +128,14 @@ class D3DataRenderer(Renderer):
         }
 
     def render_collapsed_network(self, cnet):
-        raise NotImplementedError()
+        size = self.cfg[net.nengo_object].size
+        return {
+            'type': 'net',
+            'contains': [self._vertex_to_index[v] for v in net.children],
+            'full_contains': [
+                self._vertex_to_index[v] for v in net.descendants],
+            'width': size[0], 'height': size[1],
+        }
 
     def render_connection(self, conn):
         pre_idx = self._vertex_to_index[conn.source]
@@ -136,9 +144,13 @@ class D3DataRenderer(Renderer):
             connection_type = 'rec'
         else:
             connection_type = 'std'
+        if hasattr(conn, 'nengo_object'):
+            conn_id = self.identificator.get_id(conn.nengo_object)
+        else:
+            conn_id = str(uuid.uuid4())
         return {
             'source': pre_idx,
             'target': post_idx,
-            'id': self.identificator.get_id(conn.nengo_object),
+            'id': conn_id,
             'type': connection_type
         }

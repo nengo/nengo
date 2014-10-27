@@ -49,6 +49,10 @@ class Connection(Edge):
         self.nengo_object = nengo_object
 
 
+class CollapsedConnection(Edge):
+    pass
+
+
 class ModelGraph(Graph):
     def __init__(self, model=None):
         super(ModelGraph, self).__init__()
@@ -61,9 +65,9 @@ class ModelGraph(Graph):
         self._nengo_object_to_vertex[v.nengo_object] = v
         super(ModelGraph, self).add_vertex(v, parent=parent)
 
-    def add_network(self, net):
+    def add_network(self, net, parent=None):
         v_net = Network(net)
-        self.add_vertex(v_net)
+        self.add_vertex(v_net, parent=parent)
 
         if self.top is None:
             self.top = v_net
@@ -71,7 +75,9 @@ class ModelGraph(Graph):
         self._add_objects_with_conversion(
             net.ensembles, Ensemble, parent=v_net)
         self._add_objects_with_conversion(net.nodes, Node, parent=v_net)
-        self._add_objects_with_conversion(net.networks, Network, parent=v_net)
+        # TODO unit test subnetworks
+        for subnet in net.networks:
+            self.add_network(subnet, parent=v_net)
 
         for conn in net.connections:
             pre = conn.pre_obj
