@@ -6,9 +6,8 @@ def collapse(model_graph, v_net):
     incoming = []
     outgoing = []
     for v in list(v_net.descendants):
-        incoming.extend(e for e in v.incoming if e.parent in v_net.ancestors)
-        outgoing.extend(e for e in v.outgoing if e.parent in v_net.ancestors)
-        model_graph.remove_vertex(v)
+        incoming.extend(e for e in v.incoming if e not in v_net.descendants)
+        outgoing.extend(e for e in v.outgoing if e not in v_net.descendants)
     parent = v_net.parent
 
     model_graph.remove_vertex(v_net)
