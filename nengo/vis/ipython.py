@@ -1,6 +1,5 @@
 import json
 import pkgutil
-import pprint
 import uuid
 
 from IPython.display import display, HTML
@@ -90,7 +89,6 @@ class D3DataRenderer(Renderer):
         data = dict(
             nodes=vertices, links=edges,
             global_scale=global_scale, global_offset=global_offset)
-        pprint.pprint(data)
         return json.dumps(data)
 
     def render_vertex(self, v):
