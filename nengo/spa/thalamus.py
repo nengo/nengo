@@ -222,53 +222,26 @@ class Thalamus(nengo.networks.Thalamus, Module):
                              synapse=self.synapse_channel)
 
     def add_conv_effect(self, index, target_name, effect):
-        source1 = effect.source1
-        source2 = effect.source2
+        """Set an action to combine two sources and send to target.
+
+        Parameters
+        ----------
+        index : int
+            The action number that will cause this effect
+        target_name : string
+            The name of the module input to affect
+        effect : action_objects.Convolution
+            The details of the convolution to implement
+        """
+        cconv = nengo.spa.action_build.convolution(self, target_name, effect,
+                                                   self.neurons_cconv,
+                                                   self.synapse_channel)
 
         gate = self.get_gate(index)
 
-        target, target_vocab = self.spa.get_module_input(target_name)
-        s1_output, s1_vocab = self.spa.get_module_output(source1.name)
-        s2_output, s2_vocab = self.spa.get_module_output(source2.name)
-
         with self:
-            channel = nengo.networks.CircularConvolution(
-                self.neurons_cconv, s1_vocab.dimensions,
-                invert_a=False,
-                invert_b=False,
-                label='cconv_%d_%s' % (index, str(effect)))
-
-            # inhibit the channel when the action is not chosen
+            # inhibit the convolution when the action is not chosen
             inhibit = [[-self.route_inhibit]] * (self.neurons_cconv)
-            for e in channel.product.all_ensembles:
+            for e in cconv.product.all_ensembles:
                 nengo.Connection(gate, e.neurons, transform=inhibit,
                                  synapse=self.synapse_inhibit)
-
-        with self.spa:
-            # compute the requested transform
-            t = s1_vocab.parse(str(effect.transform)).get_convolution_matrix()
-            # handle conversion between different Vocabularies
-            if target_vocab is not s1_vocab:
-                t = np.dot(s1_vocab.transform_to(target_vocab), t)
-
-            nengo.Connection(channel.output, target, transform=t,
-                             synapse=self.synapse_channel)
-
-            t1 = s1_vocab.parse(
-                source1.transform.symbol).get_convolution_matrix()
-            if source1.inverted:
-                D = s1_vocab.dimensions
-                t1 = np.dot(t1, np.eye(D)[-np.arange(D)])
-
-            nengo.Connection(s1_output, channel.A, transform=t1,
-                             synapse=self.synapse_channel)
-
-            t2 = s2_vocab.parse(
-                source2.transform.symbol).get_convolution_matrix()
-            if source2.inverted:
-                D = s2_vocab.dimensions
-                t2 = np.dot(t2, np.eye(D)[-np.arange(D)])
-            if s1_vocab is not s2_vocab:
-                t2 = np.dot(s2_vocab.transform_to(s1_vocab), t2)
-            nengo.Connection(s2_output, channel.B, transform=t2,
-                             synapse=self.synapse_channel)
