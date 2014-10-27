@@ -19,7 +19,7 @@ BuiltConnection = collections.namedtuple(
     'BuiltConnection', ['decoders', 'eval_points', 'transform', 'solver_info'])
 
 
-def build_linear_system(conn, model):
+def build_linear_system(model, conn):
     encoders = model.params[conn.pre_obj].encoders
     gain = model.params[conn.pre_obj].gain
     bias = model.params[conn.pre_obj].bias
@@ -50,7 +50,7 @@ def build_linear_system(conn, model):
 
 
 @Builder.register(Connection)  # noqa: C901
-def build_connection(conn, model, config):
+def build_connection(model, conn):
     # Create random number generator
     rng = np.random.RandomState(model.seeds[conn])
 
@@ -101,7 +101,7 @@ def build_connection(conn, model, config):
                                 tag="%s input" % conn))
     elif isinstance(conn.pre_obj, Ensemble):
         # Normal decoded connection
-        eval_points, activities, targets = build_linear_system(conn, model)
+        eval_points, activities, targets = build_linear_system(model, conn)
 
         if conn.solver.weights:
             # account for transform
@@ -134,7 +134,7 @@ def build_connection(conn, model, config):
 
     # Add operator for filtering
     if conn.synapse is not None:
-        signal = filtered_signal(conn, signal, conn.synapse, model, config)
+        signal = filtered_signal(model, conn, signal, conn.synapse)
 
     if conn.modulatory:
         # Make a new signal, effectively detaching from post

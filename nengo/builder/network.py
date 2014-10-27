@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @Builder.register(Network)  # noqa: C901
-def build_network(network, model):
+def build_network(model, network):
     """Takes a Network object and returns a Model.
 
     This determines the signals and operators necessary to simulate that model.
@@ -39,6 +39,10 @@ def build_network(network, model):
         model.sig['common'][1] = Signal(1.0, name='Common: One')
         model.seeds[network] = get_seed(network, np.random)
 
+    # Set config
+    old_config = model.config
+    model.config = network.config
+
     # assign seeds to children
     rng = np.random.RandomState(model.seeds[network])
     sorted_types = sorted(network.objects, key=lambda t: t.__name__)
@@ -48,27 +52,29 @@ def build_network(network, model):
 
     logger.info("Network step 1: Building ensembles and nodes")
     for obj in network.ensembles + network.nodes:
-        Builder.build(obj, model=model, config=network.config)
+        model.build(obj)
 
     logger.info("Network step 2: Building subnetworks")
     for subnetwork in network.networks:
-        Builder.build(subnetwork, model=model)
+        model.build(subnetwork)
 
     logger.info("Network step 3: Building connections")
     for conn in network.connections:
-        Builder.build(conn, model=model, config=network.config)
+        model.build(conn)
 
     logger.info("Network step 4: Building learning rules")
     for conn in network.connections:
         rule = conn.learning_rule
         if is_iterable(rule):
             for r in (itervalues(rule) if isinstance(rule, dict) else rule):
-                Builder.build(r, model=model, config=network.config)
+                model.build(r)
         elif rule is not None:
-            Builder.build(rule, model=model, config=network.config)
+            model.build(rule)
 
     logger.info("Network step 5: Building probes")
     for probe in network.probes:
-        Builder.build(probe, model=model, config=network.config)
+        model.build(probe)
 
+    # Unset config
+    model.config = old_config
     model.params[network] = None

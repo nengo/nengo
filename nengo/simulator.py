@@ -12,7 +12,7 @@ import logging
 import numpy as np
 
 import nengo.utils.numpy as npext
-from nengo.builder import Model, Builder
+from nengo.builder import Model
 from nengo.builder.signal import SignalDict
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
@@ -103,7 +103,7 @@ class Simulator(object):
 
         if network is not None:
             # Build the network into the model
-            Builder.build(network, model=self.model)
+            self.model.build(network)
 
         self.seed = np.random.randint(npext.maxint) if seed is None else seed
         self.rng = np.random.RandomState(self.seed)

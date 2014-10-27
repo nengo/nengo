@@ -38,9 +38,7 @@ class SimBCM(Operator):
 
 
 class SimOja(Operator):
-    """
-    Change the transform according to the OJA rule
-    """
+    """Change the transform according to the OJA rule."""
     def __init__(self, pre_filtered, post_filtered, transform, delta,
                  learning_rate, beta):
         self.post_filtered = post_filtered
@@ -75,13 +73,13 @@ class SimOja(Operator):
 
 
 @Builder.register(LearningRule)
-def build_learning_rule(rule, model, config):
+def build_learning_rule(model, rule):
     rule_type = rule.learning_rule_type
-    Builder.build(rule_type, rule, model=model, config=config)
+    model.build(rule_type, rule)
 
 
 @Builder.register(BCM)
-def build_bcm(bcm, rule, model, config):
+def build_bcm(model, bcm, rule):
     conn = rule.connection
     pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
            else conn.pre_obj.ensemble)
@@ -90,12 +88,9 @@ def build_bcm(bcm, rule, model, config):
     transform = model.sig[conn]['transform']
     pre_activities = model.sig[pre.neurons]['out']
     post_activities = model.sig[post.neurons]['out']
-    pre_filtered = filtered_signal(
-        bcm, pre_activities, bcm.pre_tau, model, config)
-    post_filtered = filtered_signal(
-        bcm, post_activities, bcm.post_tau, model, config)
-    theta = filtered_signal(
-        bcm, post_filtered, bcm.theta_tau, model, config)
+    pre_filtered = filtered_signal(model, bcm, pre_activities, bcm.pre_tau)
+    post_filtered = filtered_signal(model, bcm, post_activities, bcm.post_tau)
+    theta = filtered_signal(model, bcm, post_filtered, bcm.theta_tau)
     delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)),
                    name='BCM: Delta')
 
@@ -108,7 +103,7 @@ def build_bcm(bcm, rule, model, config):
 
 
 @Builder.register(Oja)
-def build_oja(oja, rule, model, config):
+def build_oja(model, oja, rule):
     conn = rule.connection
     pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
            else conn.pre_obj.ensemble)
@@ -117,10 +112,8 @@ def build_oja(oja, rule, model, config):
     transform = model.sig[conn]['transform']
     pre_activities = model.sig[pre.neurons]['out']
     post_activities = model.sig[post.neurons]['out']
-    pre_filtered = filtered_signal(
-        oja, pre_activities, oja.pre_tau, model, config)
-    post_filtered = filtered_signal(
-        oja, post_activities, oja.post_tau, model, config)
+    pre_filtered = filtered_signal(model, oja, pre_activities, oja.pre_tau)
+    post_filtered = filtered_signal(model, oja, post_activities, oja.post_tau)
     delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)),
                    name='Oja: Delta')
 
@@ -133,7 +126,8 @@ def build_oja(oja, rule, model, config):
 
 
 @Builder.register(PES)
-def build_pes(pes, rule, model, config):
+def build_pes(model, pes, rule):
+    # TODO: Filter activities
     conn = rule.connection
     activities = model.sig[conn.pre_obj]['out']
     error = model.sig[pes.error_connection]['out']

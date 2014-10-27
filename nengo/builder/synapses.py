@@ -60,7 +60,7 @@ class SimFilterSynapse(Operator):
         return step
 
 
-def filtered_signal(owner, sig, synapse, model, config):
+def filtered_signal(model, owner, sig, synapse):
     # Note: we add a filter here even if synapse < dt,
     # in order to avoid cycles in the op graph. If the filter
     # is explicitly set to None (e.g. for a passthrough node)
@@ -68,12 +68,11 @@ def filtered_signal(owner, sig, synapse, model, config):
     if is_number(synapse):
         synapse = Lowpass(synapse)
     assert isinstance(synapse, Synapse)
-    Builder.build(synapse, owner, sig, model=model, config=config)
+    model.build(synapse, owner, sig)
     return model.sig[owner]['synapse_out']
 
 
-def build_discrete_filter(
-        synapse, owner, input_signal, num, den, model, config):
+def build_discrete_filter(model, synapse, owner, input_signal, num, den):
     model.sig[owner]['synapse_in'] = input_signal
     model.sig[owner]['synapse_out'] = Signal(
         np.zeros(input_signal.size),
@@ -85,30 +84,28 @@ def build_discrete_filter(
 
 
 @Builder.register(LinearFilter)
-def build_filter(synapse, owner, input_signal, model, config):
+def build_filter(model, synapse, owner, input_signal):
     num, den, _ = cont2discrete(
         (synapse.num, synapse.den), model.dt, method='zoh')
     num = num.flatten()
     num = num[1:] if num[0] == 0 else num
     den = den[1:]  # drop first element (equal to 1)
-    build_discrete_filter(
-        synapse, owner, input_signal, num, den, model, config)
+    build_discrete_filter(model, synapse, owner, input_signal, num, den)
 
 
 @Builder.register(Lowpass)
-def build_lowpass(synapse, owner, input_signal, model, config):
+def build_lowpass(model, synapse, owner, input_signal):
     if synapse.tau > 0.03 * model.dt:
         d = -np.expm1(-model.dt / synapse.tau)
         num, den = [d], [d - 1]
     else:
         num, den = [1.], []
 
-    build_discrete_filter(
-        synapse, owner, input_signal, num, den, model, config)
+    build_discrete_filter(model, synapse, owner, input_signal, num, den)
 
 
 @Builder.register(Alpha)
-def build_alpha(synapse, owner, input_signal, model, config):
+def build_alpha(model, synapse, owner, input_signal):
     if synapse.tau > 0.03 * model.dt:
         a = model.dt / synapse.tau
         ea = np.exp(-a)
@@ -116,5 +113,4 @@ def build_alpha(synapse, owner, input_signal, model, config):
     else:
         num, den = [1.], []  # just copy the input
 
-    build_discrete_filter(
-        synapse, owner, input_signal, num, den, model, config)
+    build_discrete_filter(model, synapse, owner, input_signal, num, den)

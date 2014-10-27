@@ -10,8 +10,13 @@ class Model(object):
     """Output of the Builder, used by the Simulator."""
 
     def __init__(self, dt=0.001, label=None):
+        self.dt = dt
+        self.label = label
+
         # We want to keep track of the toplevel network
         self.toplevel = None
+        # Builders can set a config object to affect sub-builders
+        self.config = None
 
         # Resources used by the build process.
         self.operators = []
@@ -20,11 +25,11 @@ class Model(object):
         self.probes = []
         self.sig = collections.defaultdict(dict)
 
-        self.dt = dt
-        self.label = label
-
     def __str__(self):
         return "Model: %s" % self.label
+
+    def build(self, *objs):
+        return Builder.build(self, *objs)
 
     def add_op(self, op):
         self.operators.append(op)
@@ -52,9 +57,7 @@ class Builder(object):
         return register_builder
 
     @classmethod
-    def build(cls, obj, *args, **kwargs):
-        model = kwargs.setdefault('model', Model())
-
+    def build(cls, model, obj, *args, **kwargs):
         if model.has_built(obj):
             # TODO: Prevent this at pre-build validation time.
             warnings.warn("Object %s has already been built." % obj)
@@ -66,5 +69,4 @@ class Builder(object):
         else:
             raise TypeError("Cannot build object of type '%s'." %
                             obj.__class__.__name__)
-        cls.builders[obj_cls](obj, *args, **kwargs)
-        return model
+        cls.builders[obj_cls](model, obj, *args, **kwargs)

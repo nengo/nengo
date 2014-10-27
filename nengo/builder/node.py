@@ -41,7 +41,7 @@ class SimPyFunc(Operator):
         return step
 
 
-def build_pyfunc(fn, t_in, n_in, n_out, label, model):
+def build_pyfunc(model, fn, t_in, n_in, n_out, label):
     if n_in:
         sig_in = Signal(np.zeros(n_in), name="%s.input" % label)
         model.add_op(Reset(sig_in))
@@ -59,7 +59,7 @@ def build_pyfunc(fn, t_in, n_in, n_out, label, model):
 
 
 @Builder.register(Node)
-def build_node(node, model, config):
+def build_node(model, node):
     # Get input
     if node.output is None or callable(node.output):
         if node.size_in > 0:
@@ -74,12 +74,12 @@ def build_node(node, model, config):
     elif not callable(node.output):
         model.sig[node]['out'] = Signal(node.output, name=str(node))
     else:
-        sig_in, sig_out = build_pyfunc(fn=node.output,
+        sig_in, sig_out = build_pyfunc(model=model,
+                                       fn=node.output,
                                        t_in=True,
                                        n_in=node.size_in,
                                        n_out=node.size_out,
-                                       label="%s.pyfn" % node,
-                                       model=model)
+                                       label="%s.pyfn" % node)
         if sig_in is not None:
             model.add_op(DotInc(model.sig[node]['in'],
                                 model.sig['common'][1],
