@@ -11,7 +11,8 @@ from nengo.utils.compat import is_iterable, itervalues
 logger = logging.getLogger(__name__)
 
 
-def build_network(network, model):  # noqa: C901
+@Builder.register(Network)  # noqa: C901
+def build_network(network, model):
     """Takes a Network object and returns a Model.
 
     This determines the signals and operators necessary to simulate that model.
@@ -71,5 +72,3 @@ def build_network(network, model):  # noqa: C901
         Builder.build(probe, model=model, config=network.config)
 
     model.params[network] = None
-
-Builder.register_builder(build_network, Network)

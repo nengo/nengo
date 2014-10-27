@@ -58,6 +58,7 @@ probemap = {
 }
 
 
+@Builder.register(Probe)
 def build_probe(probe, model, config):
     # find the right parent class in `objtypes`, using `isinstance`
     for nengotype, probeables in iteritems(probemap):
@@ -76,5 +77,3 @@ def build_probe(probe, model, config):
 
     # Simulator will fill this list with probe data during simulation
     model.params[probe] = []
-
-Builder.register_builder(build_probe, Probe)

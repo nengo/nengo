@@ -74,13 +74,13 @@ class SimOja(Operator):
         return step
 
 
+@Builder.register(LearningRule)
 def build_learning_rule(rule, model, config):
     rule_type = rule.learning_rule_type
     Builder.build(rule_type, rule, model=model, config=config)
 
-Builder.register_builder(build_learning_rule, LearningRule)
 
-
+@Builder.register(BCM)
 def build_bcm(bcm, rule, model, config):
     conn = rule.connection
     pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
@@ -106,9 +106,8 @@ def build_bcm(bcm, rule, model, config):
 
     model.params[rule] = None
 
-Builder.register_builder(build_bcm, BCM)
 
-
+@Builder.register(Oja)
 def build_oja(oja, rule, model, config):
     conn = rule.connection
     pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
@@ -132,9 +131,8 @@ def build_oja(oja, rule, model, config):
 
     model.params[rule] = None
 
-Builder.register_builder(build_oja, Oja)
 
-
+@Builder.register(PES)
 def build_pes(pes, rule, model, config):
     conn = rule.connection
     activities = model.sig[conn.pre_obj]['out']
@@ -184,5 +182,3 @@ def build_pes(pes, rule, model, config):
             tag="PES:Inc Decoder"))
 
     model.params[rule] = None
-
-Builder.register_builder(build_pes, PES)
