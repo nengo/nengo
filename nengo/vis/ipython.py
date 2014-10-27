@@ -1,4 +1,6 @@
+import json
 import pkgutil
+import pprint
 
 from IPython.display import display, HTML
 
@@ -81,8 +83,8 @@ class D3DataRenderer(Renderer):
         vertices = [self.render_vertex(v) for v in model_graph.vertices]
         edges = [self.render_connection(e) for e in model_graph.edges]
 
-        global_scale = self.cfg[model_graph.top].scale
-        global_offset = self.cfg[model_graph.top].offset
+        global_scale = self.cfg[model_graph.top.nengo_object].scale
+        global_offset = self.cfg[model_graph.top.nengo_object].offset
 
         data = dict(
             nodes=vertices, links=edges,

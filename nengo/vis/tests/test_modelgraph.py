@@ -39,6 +39,18 @@ class TestModelGraph(object):
         assert v_d.incoming == [v_a, v_b]
         assert v_d.outgoing == []
 
+    def test_top_attribute(self):
+        model1 = nengo.Network()
+        with model1:
+            subnet = nengo.Network()
+        model2 = nengo.Network()
+
+        g = ModelGraph()
+        g.add_network(model1)
+        g.add_network(model2)
+
+        assert g.top.nengo_object == model1
+
 
 if __name__ == "__main__":
     nengo.log(debug=True)

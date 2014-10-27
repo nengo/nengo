@@ -62,11 +62,11 @@ class ModelGraph(Graph):
         super(ModelGraph, self).add_vertex(v, parent=parent)
 
     def add_network(self, net):
-        if self.top is None:
-            self.top = net  # TODO test top
-
         v_net = Network(net)
         self.add_vertex(v_net)
+
+        if self.top is None:
+            self.top = v_net
 
         self._add_objects_with_conversion(
             net.ensembles, Ensemble, parent=v_net)
