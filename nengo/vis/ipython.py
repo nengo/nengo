@@ -70,6 +70,17 @@ class ModelGraphDisplay(object):
             </svg></div>'''.format(
                 js=js, d3=d3, css=css, data=self.data)))
 
+    def save(self, filename='modelgraph.svg'):
+        display(HTML('''
+            <a id="graphsave" download="{filename}" href="#">Save</a>
+            <script>
+                var fig = d3.select('svg').node().parentNode.innerHTML;
+                var figsrc = 'data:image/svg+xml;base64,' + btoa(fig);
+                console.log($('#graphsave'));
+                $('#graphsave').attr("href", figsrc);
+            </script>
+        '''.format(filename=filename)))
+
 
 class D3DataRenderer(Renderer):
     def __init__(self, cfg, identificator=SimpleIdentificator()):
