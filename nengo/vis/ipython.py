@@ -64,7 +64,7 @@ class ModelGraphDisplay(object):
                     </g>
                     <g>
                         <path id = "recurTriangle"
-                        d="M 8 0 L 0 4 L 8 8 z""/>
+                        d="M 8 0 L 0 4 L 8 8 z"/>
                     </g>
                 </defs>
             </svg></div>'''.format(
