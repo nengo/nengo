@@ -1,3 +1,5 @@
+import numpy as np
+
 import nengo
 from nengo.spa.module import Module
 
@@ -46,6 +48,7 @@ class Buffer(Module):
             dimensions // subdimensions,
             ens_dimensions=subdimensions,
             neuron_type=nengo.Direct() if direct else nengo.LIF(),
+            radius=np.sqrt(float(subdimensions) / dimensions),
             label='state')
 
         self.inputs = dict(default=(self.state.input, vocab))

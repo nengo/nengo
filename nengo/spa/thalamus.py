@@ -196,6 +196,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
                 self.neurons_channel_dim * subdim,
                 dim // subdim,
                 ens_dimensions=subdim,
+                radius=np.sqrt(float(subdim) / dim),
                 label='channel_%d_%s' % (index, target_name))
 
             # inhibit the channel when the action is not chosen
