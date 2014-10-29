@@ -77,8 +77,9 @@ def test_run(Simulator):
     sim.run(0.5)
 
     data = np.dot(sim.data[p], vocab.vectors.T)
-    assert data[100, 0] > 1.5
-    assert data[300, 0] > 1.0
+    # value should peak above 1.0, then decay down to near 1.0
+    assert data[100, 0] > 1.2
+    assert data[300, 0] > 0.9
     assert data[499, 0] > 0.8
 
 

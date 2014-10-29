@@ -129,9 +129,11 @@ def test_direct(Simulator):
     sim.run(0.2)
 
     match1 = np.dot(sim.data[p1], vocab1.parse('A+C').v)
-    match2 = np.dot(sim.data[p2], vocab2.parse('A+C').v)
-    assert match1[199] > 0.45
-    assert match2[199] > 0.45
+    match2 = np.dot(sim.data[p2], vocab2.parse('B+C').v)
+    # both values should be near 1.0 since buffer1 is driven to both A and C
+    # and buffer2 is driven to both B and C.
+    assert match1[199] > 0.75
+    assert match2[199] > 0.75
 
 
 def test_convolution(Simulator, seed):
