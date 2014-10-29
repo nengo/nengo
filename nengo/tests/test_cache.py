@@ -129,7 +129,7 @@ def test_decoder_cache_shrinking(tmpdir):
 
     cache.wrap_solver(another_solver)(activities, targets, rng)
 
-    assert cache.get_size() > 0
+    assert cache.get_size_in_bytes() > 0
 
     cache.shrink(limit)
 

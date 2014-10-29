@@ -9,7 +9,8 @@ import struct
 import numpy as np
 
 from nengo.rc import rc
-from nengo.utils.compat import pickle, PY2
+from nengo.utils.cache import bytes2human, human2bytes
+from nengo.utils.compat import is_string, pickle, PY2
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +75,8 @@ class DecoderCache(object):
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
 
-    def get_size(self):
-        """Returns the size of the cache in bytes.
+    def get_size_in_bytes(self):
+        """Returns the size of the cache in bytes as an int.
 
         Returns
         -------
@@ -86,6 +87,15 @@ class DecoderCache(object):
             size += os.stat(os.path.join(self.cache_dir, filename)).st_size
         return size
 
+    def get_size(self, in_bytes=False):
+        """Returns the size of the cache with units as a string.
+
+        Returns
+        -------
+        str
+        """
+        return bytes2human(self.get_size_in_bytes())
+
     def shrink(self, limit=None):
         """Reduces the size of the cache to meet a limit.
 
@@ -95,7 +105,9 @@ class DecoderCache(object):
             Maximum size of the cache in bytes.
         """
         if limit is None:
-            limit = rc.getint('decoder_cache', 'size')
+            limit = rc.get('decoder_cache', 'size')
+        if is_string(limit):
+            limit = human2bytes(limit)
 
         filelist = []
         for filename in os.listdir(self.cache_dir):
@@ -107,7 +119,7 @@ class DecoderCache(object):
             filelist.append((stat.st_atime, key))
         filelist.sort()
 
-        excess = self.get_size() - limit
+        excess = self.get_size_in_bytes() - limit
         for _, key in filelist:
             if excess <= 0:
                 break
@@ -224,8 +236,11 @@ class NoDecoderCache(object):
     def wrap_solver(self, solver):
         return solver
 
-    def get_size(self):
+    def get_size_in_bytes(self):
         return 0
+
+    def get_size(self):
+        return '0 B'
 
     def shrink(self, limit=0):
         pass

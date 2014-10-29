@@ -36,7 +36,7 @@ RC_DEFAULTS = {
     'decoder_cache': {
         'enabled': True,
         'readonly': False,
-        'size': 512 * 1024 * 1024,  # in bytes
+        'size': '512 MB',
         'path': nengo.utils.paths.decoder_cache_dir
     }
 }
