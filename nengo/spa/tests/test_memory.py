@@ -83,7 +83,7 @@ def test_run(Simulator):
     assert data[499, 0] > 0.8
 
 
-def test_run_decay(Simulator):
+def test_run_decay(Simulator, plt, seed):
     class Basic(spa.SPA):
         def __init__(self):
             self.memory = spa.Memory(dimensions=32, tau=0.05)
@@ -95,7 +95,7 @@ def test_run_decay(Simulator):
                     return '0'
 
             self.input = spa.Input(memory=input)
-    model = Basic(seed=123)
+    model = Basic(seed=seed)
 
     memory, vocab = model.get_module_output('memory')
 
@@ -104,10 +104,13 @@ def test_run_decay(Simulator):
 
     sim = Simulator(model)
     sim.run(0.3)
-
     data = np.dot(sim.data[p], vocab.vectors.T)
-    assert data[50, 0] > 1.3
-    assert data[299, 0] < 0.5
+
+    t = sim.trange()
+    plt.plot(t, data)
+
+    assert data[t == 0.05, 0] > 1.0
+    assert data[t == 0.299, 0] < 0.4
 
 
 if __name__ == '__main__':

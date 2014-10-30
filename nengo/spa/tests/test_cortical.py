@@ -136,7 +136,7 @@ def test_direct(Simulator):
     assert match2[199] > 0.75
 
 
-def test_convolution(Simulator, seed):
+def test_convolution(Simulator, plt, seed):
     model = spa.SPA(seed=seed)
     D = 5
     with model:
@@ -164,6 +164,24 @@ def test_convolution(Simulator, seed):
     sim = Simulator(model)
     sim.run(0.2)
 
+    t = sim.trange()
+    plt.subplot(4, 1, 1)
+    plt.ylabel('A*B')
+    plt.axhline(0.85, c='k')
+    plt.plot(t, sim.data[pAB])
+    plt.subplot(4, 1, 2)
+    plt.ylabel('A*~B')
+    plt.axhline(0.85, c='k')
+    plt.plot(t, sim.data[pABinv])
+    plt.subplot(4, 1, 3)
+    plt.ylabel('~A*B')
+    plt.axhline(0.85, c='k')
+    plt.plot(t, sim.data[pAinvB])
+    plt.subplot(4, 1, 4)
+    plt.ylabel('~A*~B')
+    plt.axhline(0.85, c='k')
+    plt.plot(t, sim.data[pAinvBinv])
+
     # Check results.  Since A is [0,1,0,0,0] and B is [0,0,1,0,0], this means:
     #    ~A = [0,0,0,0,1]
     #    ~B = [0,0,0,1,0]
@@ -175,32 +193,20 @@ def test_convolution(Simulator, seed):
     #  is X rotated to the right once)
 
     # Ideal answer: A*B = [0,0,0,1,0]
-    assert sim.data[pAB][-1][0] < 0.1
-    assert sim.data[pAB][-1][1] < 0.1
-    assert sim.data[pAB][-1][2] < 0.1
-    assert sim.data[pAB][-1][3] > 0.9
-    assert sim.data[pAB][-1][4] < 0.1
+    assert np.allclose(np.mean(sim.data[pAB][-10:], axis=0),
+                       np.array([0, 0, 0, 1, 0]), atol=0.15)
 
     # Ideal answer: A*~B = [0,0,0,0,1]
-    assert sim.data[pABinv][-1][0] < 0.1
-    assert sim.data[pABinv][-1][1] < 0.1
-    assert sim.data[pABinv][-1][2] < 0.1
-    assert sim.data[pABinv][-1][3] < 0.1
-    assert sim.data[pABinv][-1][4] > 0.9
+    assert np.allclose(np.mean(sim.data[pABinv][-10:], axis=0),
+                       np.array([0, 0, 0, 0, 1]), atol=0.15)
 
     # Ideal answer: ~A*B = [0,1,0,0,0]
-    assert sim.data[pAinvB][-1][0] < 0.1
-    assert sim.data[pAinvB][-1][1] > 0.9
-    assert sim.data[pAinvB][-1][2] < 0.1
-    assert sim.data[pAinvB][-1][3] < 0.1
-    assert sim.data[pAinvB][-1][4] < 0.1
+    assert np.allclose(np.mean(sim.data[pAinvB][-10:], axis=0),
+                       np.array([0, 1, 0, 0, 0]), atol=0.15)
 
     # Ideal answer: ~A*~B = [0,0,1,0,0]
-    assert sim.data[pAinvBinv][-1][0] < 0.1
-    assert sim.data[pAinvBinv][-1][1] < 0.1
-    assert sim.data[pAinvBinv][-1][2] > 0.9
-    assert sim.data[pAinvBinv][-1][3] < 0.1
-    assert sim.data[pAinvBinv][-1][4] < 0.1
+    assert np.allclose(np.mean(sim.data[pAinvBinv][-10:], axis=0),
+                       np.array([0, 0, 1, 0, 0]), atol=0.15)
 
 
 if __name__ == '__main__':
