@@ -5,66 +5,37 @@ import nengo
 from nengo.utils.functions import piecewise
 
 
-def test_inputgatedmemory(Simulator, plt):
-    with nengo.Network(seed=123) as net:
-        test_input = nengo.Node(piecewise({0.0: 0, 0.3: 0.5, 1.0: 0}))
-
-        gate_input = nengo.Node(piecewise({0.0: 0, 0.8: 1}))
-
+def test_inputgatedmemory(Simulator, plt, seed):
+    to_memorize = 0.5
+    start_memorizing = 0.4
+    with nengo.Network(seed=seed) as net:
+        test_input = nengo.Node(piecewise(
+            {0.0: 0, 0.1: to_memorize, start_memorizing + 0.1: 0}))
+        gate_input = nengo.Node(piecewise({0.0: 0, start_memorizing: 1}))
         reset_input = nengo.Node(0)
 
         mem = nengo.networks.InputGatedMemory(100, 1, difference_gain=5.0)
         nengo.Connection(test_input, mem.input)
-
         nengo.Connection(gate_input, mem.gate)
-
-        nengo.Connection(reset_input, mem.reset_node)
-
-        mem_p = nengo.Probe(mem.output, synapse=0.01)
-
-    sim = Simulator(net)
-    sim.run(1.2)
-
-    data = sim.data[mem_p]
-    trange = sim.trange()
-
-    plt.plot(trange, data)
-
-    assert abs(np.mean(data[trange < 0.3])) < 0.01
-    assert abs(np.mean(data[(trange > 0.8) & (trange < 1.0)]) - 0.5) < 0.02
-    assert abs(np.mean(data[trange > 1.0]) - 0.5) < 0.02
-
-
-def test_feedbackgatedmemory(Simulator, plt):
-    with nengo.Network(seed=123) as net:
-        test_input = nengo.Node(piecewise({0.0: 0, 0.3: 0.5, 1.0: 0}))
-
-        gate_input = nengo.Node(piecewise({0.0: 0, 0.8: 1}))
-
-        reset_input = nengo.Node(0)
-
-        mem = nengo.networks.FeedbackGatedMemory(100, 1)
-        nengo.Connection(test_input, mem.input)
-
-        nengo.Connection(gate_input, mem.gate)
-
         nengo.Connection(reset_input, mem.reset)
 
         mem_p = nengo.Probe(mem.output, synapse=0.01)
 
     sim = Simulator(net)
-    sim.run(1.2)
+    sim.run(0.5)
 
     data = sim.data[mem_p]
-    trange = sim.trange()
+    t = sim.trange()
 
-    plt.plot(trange, data)
+    plt.title("gating at %.1f s" % start_memorizing)
+    plt.plot(t, data, label="value in memory")
+    plt.axhline(to_memorize, c='k', lw=2, label="value to remember")
+    plt.axvline(start_memorizing, c='k', ls=':', label="start gating")
+    plt.legend(loc='best')
 
-    assert abs(np.mean(data[trange < 0.3])) < 0.01
-    assert abs(np.mean(data[(trange > 0.5) & (trange < 0.7)]) - 0.50) < 0.02
-    assert abs(np.mean(data[trange > 0.9]) - 0.50) < 0.025
-    # Note: This type of memory is not the most stable of memory. Output tends
-    # to drift quite a lot w.r.t. the input gated memory.
+    assert abs(np.mean(data[t < 0.1])) < 0.01
+    assert abs(np.mean(data[(t > 0.2) & (t <= 0.4)]) - 0.5) < 0.02
+    assert abs(np.mean(data[t > 0.4]) - 0.5) < 0.02
 
 
 if __name__ == "__main__":

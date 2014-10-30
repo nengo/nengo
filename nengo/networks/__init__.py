@@ -5,4 +5,3 @@ from .integrator import Integrator
 from .oscillator import Oscillator
 from .product import Product
 from .workingmemory import InputGatedMemory
-from .workingmemory import FeedbackGatedMemory
