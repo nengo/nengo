@@ -60,14 +60,17 @@ class Plotter(object):
 
     def __exit__(self, type, value, traceback):
         if self.plot:
-            if hasattr(self.plt, 'saveas'):
-                if self.plt.saveas is None:
-                    del self.plt.saveas
-                    self.plt.close('all')
-                    return
+            if hasattr(self.plt, 'saveas') and self.plt.saveas is None:
+                del self.plt.saveas
+                self.plt.close('all')
+                return
+            elif hasattr(self.plt, 'saveas'):
                 self.filename = self.plt.saveas
                 del self.plt.saveas
-            self.plt.tight_layout()
+
+            if len(self.plt.gcf().get_axes()) > 0:
+                # tight_layout errors if no axes are present
+                self.plt.tight_layout()
             self.plt.savefig(os.path.join(self.dirname, self.filename))
             self.plt.close('all')
 
