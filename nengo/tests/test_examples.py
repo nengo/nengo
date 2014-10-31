@@ -13,13 +13,12 @@ import _pytest.capture
 _pytest.capture.DontReadFromInput.encoding = "utf-8"
 
 from nengo.utils.ipython import export_py, load_notebook
+from nengo.utils.paths import examples_dir
 from nengo.utils.stdlib import execfile
 
 
 def pytest_generate_tests(metafunc):
-    tests = os.path.dirname(os.path.realpath(__file__))
-    examples = os.path.realpath(os.path.join(tests, '..', '..', 'examples'))
-    examples = glob(examples + '/*.ipynb')
+    examples = glob('%s/*.ipynb' % examples_dir)
 
     # if `--optional` is not set, filter out time-consuming notebooks
     ignores = [] if metafunc.config.option.optional else [
@@ -28,7 +27,7 @@ def pytest_generate_tests(metafunc):
         'spa_parser.ipynb', 'question_control.ipynb',
         'learn_communication_channel.ipynb', 'learn_product.ipynb',
         'learn_unsupervised.ipynb']
-    argvalues = [pytest.mark.skipif(os.path.split(path)[1] in ignores,
+    argvalues = [pytest.mark.skipif(os.path.basename(path) in ignores,
                                     reason="Time-consuming")(path)
                  for path in examples]
 
@@ -40,7 +39,7 @@ def pytest_generate_tests(metafunc):
 def test_noexceptions(nb_path, tmpdir, plt):
     """Ensure that no cells raise an exception."""
     nb = load_notebook(nb_path)
-    pyfile = "%s.py" % str(
+    pyfile = "%s.py" % (
         tmpdir.join(os.path.splitext(os.path.basename(nb_path))[0]))
     export_py(nb, pyfile)
     execfile(pyfile, {})
