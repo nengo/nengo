@@ -10,14 +10,23 @@ from nengo.utils.ensemble import response_curves, tuning_curves
 
 
 def plot_tuning_curves(plt, eval_points, activities):
-    if len(eval_points) == 1:
-        plt.plot(eval_points[0], activities.T)
-    elif len(eval_points) == 2:
+    if eval_points.ndim <= 2:
+        plt.plot(eval_points, activities)
+    elif eval_points.ndim == 3:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(eval_points[0], eval_points[1], activities[0])
+        ax.plot_surface(eval_points.T[0], eval_points.T[1], activities.T[0])
     else:
         raise NotImplementedError()
+
+
+def test_tuning_curves_1d(Simulator, plt, seed):
+    """For 1D ensembles, should be able to do plt.plot(*tuning_curves(...))."""
+    model = nengo.Network(seed=seed)
+    with model:
+        ens_1d = nengo.Ensemble(10, dimensions=1, neuron_type=nengo.LIF())
+    sim = Simulator(model)
+    plt.plot(*tuning_curves(ens_1d, sim))
 
 
 @pytest.mark.parametrize('dimensions', [1, 2])
@@ -37,8 +46,8 @@ def test_tuning_curves(Simulator, plt, seed, dimensions):
     plot_tuning_curves(plt, eval_points, activities)
 
     # Check that eval_points cover up to the radius.
-    assert np.abs(radius - np.max(np.abs(eval_points))) <= 2 * radius / len(
-        eval_points[0])
+    assert np.abs(radius - np.max(np.abs(eval_points))) <= (
+        2 * radius / dimensions)
 
     assert np.all(activities >= 0)
 
@@ -73,7 +82,7 @@ def test_response_curves(Simulator, plt, seed):
     sim = Simulator(model)
 
     eval_points, activities = response_curves(ens, sim)
-    plt.plot(eval_points, activities)
+    plot_tuning_curves(plt, eval_points, activities)
 
     assert eval_points.ndim == 1 and eval_points.size > 0
     assert np.all(-1.0 <= eval_points) and np.all(eval_points <= 1.0)
@@ -96,7 +105,7 @@ def test_response_curves_direct_mode(Simulator, plt, seed, dimensions):
 
     plt.saveas = ('utils.test_ensemble.test_response_curves_direct_mode_%d.pdf'
                   % dimensions)
-    plt.plot(eval_points, activities)
+    plot_tuning_curves(plt, eval_points, activities)
 
     assert eval_points.ndim == 1 and eval_points.size > 0
     assert np.all(-1.0 <= eval_points) and np.all(eval_points <= 1.0)

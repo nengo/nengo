@@ -12,6 +12,9 @@ def tuning_curves(ens, sim, inputs=None):
     That is the neuron responses in dependence of the vector represented by the
     ensemble.
 
+    For 1-dimensional ensembles, the unpacked return value of this function
+    can be passed directly to :func:`matplotlib.pyplot.plot`.
+
     Parameters
     ----------
     ens : nengo.Ensemble
@@ -30,9 +33,11 @@ def tuning_curves(ens, sim, inputs=None):
     inputs : sequence of ndarray
         The passed or auto-generated `inputs`.
     activities : ndarray
-        The activities of the individual neurons given the `inputs`. The first
-        dimension enumerates the neurons, the remaining dimensions map to
-        `inputs`.
+        The activities of the individual neurons given the `inputs`.
+        For ensembles with 1 dimension, the rows correspond to the `inputs`
+        and the columns to individual neurons.
+        For ensembles with > 1 dimension, the first dimension enumerates the
+        neurons, the remaining dimensions map to `inputs`.
 
     See Also
     --------
@@ -45,13 +50,14 @@ def tuning_curves(ens, sim, inputs=None):
             inputs = npext.meshgrid_nd(*(ens.dimensions * [inputs]))
         else:
             inputs = [inputs]
+        inputs = np.asarray(inputs).T
 
-    flattened = np.column_stack([i.flat for i in inputs])
+    flattened = np.reshape(inputs, (-1, ens.dimensions))
     flattened /= ens.radius
     x = np.dot(flattened, sim.data[ens].encoders.T)
     activities = ens.neuron_type.rates(
         x, sim.data[ens].gain, sim.data[ens].bias)
-    activities = np.reshape(activities.T, (-1,) + inputs[0].shape)
+    activities = np.reshape(activities, inputs[..., 0].shape + (-1,))
 
     return inputs, activities
 
