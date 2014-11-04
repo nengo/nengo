@@ -10,8 +10,7 @@ from nengo.utils.ensemble import tuning_curves
 
 
 def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
-    """
-    Image plot of general data (like imshow but with non-pixel axes).
+    """Image plot of general data (like imshow but with non-pixel axes).
 
     Parameters
     ----------
@@ -44,7 +43,7 @@ def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
 
 
 def rasterplot(time, spikes, ax=None, **kwargs):
-    '''Generate a raster plot of the provided spike data
+    """Generate a raster plot of the provided spike data
 
     Parameters
     ----------
@@ -69,7 +68,7 @@ def rasterplot(time, spikes, ax=None, **kwargs):
     >>> sim = nengo.Simulator(model)
     >>> sim.run(1)
     >>> rasterplot(sim.trange(), sim.data[A_spikes])
-    '''
+    """
 
     if ax is None:
         ax = plt.gca()
@@ -117,6 +116,6 @@ def plot_tuning_curves(ensemble, sim, connection=None, ax=None):
     if connection is not None:
         if connection.dimensions > 1:
             warnings.warn("Ignoring dimensions > 1 in plot_tuning_curves")
-        cm = plt.cm.ScalarMappable(cmap=plt.cm.jet)
+        cm = plt.cm.ScalarMappable(cmap=plt.cm.coolwarm)
         ax.set_color_cycle(cm.to_rgba(sim.data[connection].decoders[0]))
     ax.plot(evals, t_curves)

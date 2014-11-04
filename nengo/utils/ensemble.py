@@ -53,7 +53,7 @@ def _similarity(encoders, index, rows, cols=1):
 
 
 def sorted_neurons(ensemble, sim, iterations=100, seed=None):
-    '''Sort neurons in an ensemble by encoder and intercept.
+    """Sort neurons in an ensemble by encoder and intercept.
 
     Parameters
     ----------
@@ -78,9 +78,9 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
     You can use this to generate an array of sorted indices for plotting. This
     can be done after collecting the data. E.g.
 
-    >>>indices = sorted_neurons(simulator, 'My neurons')
-    >>>plt.figure()
-    >>>rasterplot(sim.data['My neurons.spikes'][:,indices])
+    >>> indices = sorted_neurons(simulator, 'My neurons')
+    >>> plt.figure()
+    >>> rasterplot(sim.data['My neurons.spikes'][:,indices])
 
     Algorithm
     ---------
@@ -93,7 +93,7 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
     except for the ones on the edges which have fewer (no wrapping).
     This algorithm is repeated `iterations` times, so a total of
     `iterations*N` swaps are considered.
-    '''
+    """
 
     # Normalize all the encoders
     encoders = np.array(sim.data[ensemble].encoders)
