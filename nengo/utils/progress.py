@@ -163,15 +163,14 @@ if _HAS_WIDGETS:
 
           var NengoProgressBar = widget.DOMWidgetView.extend({
             render: function() {
-              this.$el.css({width: '100%'});
+              this.$el.css({width: '100%', marginBottom: '0.5em'});
               this.$el.html([
                 '<div style="',
                     'width: 100%;',
                     'border: 1px solid #cfcfcf;',
                     'border-radius: 4px;',
                     'text-align: center;',
-                    'position: relative;',
-                    'margin-bottom: 0.5em;">',
+                    'position: relative;">',
                   '<div class="pb-text" style="',
                       'position: absolute;',
                       'width: 100%;">',
@@ -187,7 +186,7 @@ if _HAS_WIDGETS:
             },
 
             update: function() {
-              this.$el.css({width: '100%'});
+              this.$el.css({width: '100%', marginBottom: '0.5em'});
               var progress = 100 * this.model.get('progress');
               var text = this.model.get('text');
               this.$el.find('div.pb-bar').width(progress.toString() + '%');
