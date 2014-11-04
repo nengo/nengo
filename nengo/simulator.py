@@ -194,15 +194,12 @@ class Simulator(object):
 
     def run_steps(self, steps, progress_bar=None):
         """Simulate for the given number of `dt` steps."""
-        progress = create_progress_tracker(steps, progress_bar)
-
-        progress.start()
-        for i in range(steps):
-            if i % 1000 == 0:
-                logger.debug("Step %d", i)
-            self.step()
-            progress.step()
-        progress.finish()
+        with create_progress_tracker(steps, progress_bar) as progress:
+            for i in range(steps):
+                if i % 1000 == 0:
+                    logger.debug("Step %d", i)
+                self.step()
+                progress.step()
 
     def reset(self):
         """Reset the simulator state."""

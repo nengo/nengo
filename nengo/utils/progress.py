@@ -250,10 +250,11 @@ class MaxNUpdater(object):
         self.max_updates = max_updates
         self.last_update_step = 0
 
-    def start(self):
+    def __enter__(self):
         self.last_update_step = 0
         self.progress.start()
         self.progress_bar.init()
+        return self
 
     def step(self, n=1):
         self.progress.step(n)
@@ -263,8 +264,8 @@ class MaxNUpdater(object):
             self.progress_bar.update(self.progress)
             self.last_update_step = self.progress.steps
 
-    def finish(self):
-        self.progress.finish()
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.progress.finish(success=exc_type is None)
         self.progress_bar.finish(self.progress)
 
 
@@ -275,9 +276,10 @@ class IntervalUpdater(object):
         self.last_update = 0
         self.update_interval = update_interval
 
-    def start(self):
+    def __enter__(self):
         self.progress.start()
         self.progress_bar.init()
+        return self
 
     def step(self, n=1):
         self.progress.step(n)
@@ -285,8 +287,8 @@ class IntervalUpdater(object):
             self.progress_bar.update(self.progress)
             self.last_update = time.time()
 
-    def finish(self):
-        self.progress.finish()
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.progress.finish(success=exc_type is None)
         self.progress_bar.finish(self.progress)
 
 
