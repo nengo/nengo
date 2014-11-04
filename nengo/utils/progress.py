@@ -28,11 +28,16 @@ warnings.filterwarnings('once', category=MemoryLeakWarning)
 
 
 class Progress(object):
-    def __init__(self, max_steps):
+    def __init__(self, max_steps, observers=None):
         self.steps = 0
         self.max_steps = max_steps
         self.start_time = self.end_time = time.time()
         self.finished = False
+        self.success = None
+        if observers is None:
+            self.observers = []
+        else:
+            self.observers = observers
 
     @property
     def progress(self):
@@ -52,40 +57,38 @@ class Progress(object):
         else:
             return -1
 
-    def start(self):
+    def __enter__(self):
         self.finished = False
+        self.success = None
         self.steps = 0
         self.start_time = time.time()
+        self.notify_observers()
+        return self
 
-    def finish(self, success=True):
-        if success:
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.success = exc_type is None
+        if self.success:
             self.steps = self.max_steps
         self.end_time = time.time()
         self.finished = True
+        self.notify_observers()
 
     def step(self, n=1):
         self.steps = min(self.steps + n, self.max_steps)
+        self.notify_observers()
+
+    def notify_observers(self):
+        for o in self.observers:
+            o.update(self)
 
 
 class ProgressBar(object):
-    def init(self):
-        raise NotImplementedError()
-
     def update(self, progress):
-        raise NotImplementedError()
-
-    def finish(self, progress):
         raise NotImplementedError()
 
 
 class NoProgressBar(ProgressBar):
-    def init(self):
-        pass
-
     def update(self, progress):
-        pass
-
-    def finish(self, progress):
         pass
 
 
@@ -107,10 +110,15 @@ class CmdProgressBar(ProgressBar):
                 ).format(cls=self.__class__.__name__, cr=os.linesep)))
             sys.stderr.flush()  # Show warning immediately.
 
-    def init(self):
-        pass
-
     def update(self, progress):
+        if progress.finished:
+            line = self._get_finished_line(progress)
+        else:
+            line = self._get_in_progress_line(progress)
+        sys.stdout.write(line)
+        sys.stdout.flush()
+
+    def _get_in_progress_line(self, progress):
         line = "[{{}}] ETA: {eta}".format(eta=timedelta(
             seconds=np.ceil(progress.eta)))
         percent_str = " {}% ".format(int(100 * progress.progress))
@@ -127,15 +135,13 @@ class CmdProgressBar(ProgressBar):
                 progress_str[:percent_pos] + percent_str +
                 progress_str[percent_pos + len(percent_str):])
 
-        sys.stdout.write('\r' + line.format(progress_str))
-        sys.stdout.flush()
+        return '\r' + line.format(progress_str)
 
-    def finish(self, progress):
+    def _get_finished_line(self, progress):
         width, _ = get_terminal_size()
         line = "Done in {}.".format(
             timedelta(seconds=np.ceil(progress.seconds_passed))).ljust(width)
-        sys.stdout.write('\r' + line + os.linesep)
-        sys.stdout.flush()
+        return '\r' + line + os.linesep
 
 
 if _HAS_WIDGETS:
@@ -197,24 +203,43 @@ if _HAS_WIDGETS:
             display(self.FRONTEND)
             widgets.DOMWidget._ipython_display_(self, **kwargs)
 
-    class IPython2ProgressBar(ProgressBar):
-        def __init__(self):
-            super(IPython2ProgressBar, self).__init__()
-            self._widget = IPythonProgressWidget()
 
-        def init(self):
-            display(self._widget)
+class IPython2ProgressBar(ProgressBar):
+    def __init__(self):
+        super(IPython2ProgressBar, self).__init__()
+        self._widget = IPythonProgressWidget()
+        self._initialized = False
 
-        def update(self, progress):
-            self._widget.progress = progress.progress
+    def init(self):
+        self._initialized = True
+        display(self._widget)
+
+    def update(self, progress):
+        if not self._initialized:
+            self.init()
+
+        self._widget.progress = progress.progress
+        if progress.finished:
+            self._widget.text = "Done in {}.".format(
+                timedelta(seconds=np.ceil(progress.seconds_passed)))
+        else:
             self._widget.text = "{progress:.0f}%, ETA: {eta}".format(
                 progress=100 * progress.progress,
                 eta=timedelta(seconds=np.ceil(progress.eta)))
 
-        def finish(self, progress):
-            self._widget.progress = 1.
-            self._widget.text = "Done in {}.".format(
+
+class LogSteps(ProgressBar):
+    def __init__(self, logger):
+        self.logger = logger
+        super(LogSteps, self).__init__()
+
+    def update(self, progress):
+        if progress.finished:
+            self.logger.debug(
+                "Simulation done in %s.",
                 timedelta(seconds=np.ceil(progress.seconds_passed)))
+        else:
+            self.logger.debug("Step %d", progress.steps)
 
 
 class AutoProgressBar(ProgressBar):
@@ -226,95 +251,52 @@ class AutoProgressBar(ProgressBar):
         self.min_eta = min_eta
         self._visible = False
 
-    def init(self):
-        pass
-
     def update(self, progress):
         min_delay = progress.start_time + 0.1
         if self._visible:
             self.delegate.update(progress)
         elif progress.eta > self.min_eta and min_delay < time.time():
-            self.delegate.init()
             self._visible = True
-            self.delegate.update(progress)
-
-    def finish(self, progress):
-        if self._visible:
             self.delegate.update(progress)
 
 
 class MaxNUpdater(object):
-    def __init__(self, progress, progress_bar, max_updates=100):
-        self.progress = progress
+    def __init__(self, progress_bar, max_updates=100):
         self.progress_bar = progress_bar
         self.max_updates = max_updates
         self.last_update_step = 0
 
-    def __enter__(self):
-        self.last_update_step = 0
-        self.progress.start()
-        self.progress_bar.init()
-        return self
-
-    def step(self, n=1):
-        self.progress.step(n)
+    def update(self, progress):
         next_update_step = (self.last_update_step +
-                            self.progress.max_steps / self.max_updates)
-        if next_update_step < self.progress.step:
-            self.progress_bar.update(self.progress)
-            self.last_update_step = self.progress.steps
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.progress.finish(success=exc_type is None)
-        self.progress_bar.finish(self.progress)
+                            progress.max_steps / self.max_updates)
+        if next_update_step < progress.steps or progress.finished:
+            self.progress_bar.update(progress)
+            self.last_update_step = progress.steps
 
 
 class EveryNUpdater(object):
-    def __init__(self, progress, progress_bar, every_n=1000):
-        self.progress = progress
+    def __init__(self, progress_bar, every_n=1000):
         self.progress_bar = progress_bar
         self.every_n = every_n
         self.next_update = every_n
 
-    def __enter__(self):
-        self.next_update = self.every_n
-        self.progress.start()
-        self.progress_bar.init()
-        return self
-
-    def step(self, n=1):
-        self.progress.step(n)
-        if self.next_update <= self.progress.step:
-            self.progress_bar.update(self.progress)
-            while self.next_update <= self.progress.step:
-                self.next_update += self.every_n
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.progress.finish(success=exc_type is None)
-        self.progress_bar.finish(self.progress)
+    def update(self, progress):
+        if self.next_update <= progress.steps or progress.finished:
+            self.progress_bar.update(progress)
+            assert self.every_n > 0
+            self.next_update = progress.steps + self.every_n
 
 
 class IntervalUpdater(object):
-    def __init__(self, progress, progress_bar, update_interval=0.05):
-        self.progress = progress
+    def __init__(self, progress_bar, update_interval=0.05):
         self.progress_bar = progress_bar
-        self.last_update = 0
+        self.next_update = 0
         self.update_interval = update_interval
 
-    def __enter__(self):
-        self.progress.start()
-        self.progress_bar.init()
-        return self
-
-    def step(self, n=1):
-        self.progress.step(n)
-        if self.last_update + self.update_interval < time.time():
-            self.progress_bar.update(self.progress)
-            self.last_update = time.time()
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.progress.finish(success=exc_type is None)
-        self.progress_bar.finish(self.progress)
+    def update(self, progress):
+        if self.next_update < time.time() or progress.finished:
+            self.progress_bar.update(progress)
+            self.next_update = time.time() + self.update_interval
 
 
 def _in_ipynb():
@@ -337,17 +319,16 @@ def get_default_progressbar():
         return AutoProgressBar(CmdProgressBar())
 
 
-def get_default_updater(progress_bar):
+def get_default_updater_class(progress_bar):
     if _in_ipynb() and not isinstance(progress_bar, IPython2ProgressBar):
         return MaxNUpdater
     else:
         return IntervalUpdater
 
 
-def create_progress_tracker(max_steps, progress_bar=None, updater_class=None):
+def create_progress_bar(progress_bar=None, updater_class=None):
     if progress_bar is None:
         progress_bar = get_default_progressbar()
     if updater_class is None:
-        updater_class = get_default_updater(progress_bar)
-    progress = Progress(max_steps)
-    return updater_class(progress, progress_bar)
+        updater_class = get_default_updater_class(progress_bar)
+    return updater_class(progress_bar)

@@ -17,7 +17,8 @@ from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
-from nengo.utils.progress import create_progress_tracker
+from nengo.utils.progress import (
+    create_progress_bar, EveryNUpdater, LogSteps, Progress)
 from nengo.utils.simulator import operator_depencency_graph
 
 logger = logging.getLogger(__name__)
@@ -194,10 +195,11 @@ class Simulator(object):
 
     def run_steps(self, steps, progress_bar=None):
         """Simulate for the given number of `dt` steps."""
-        with create_progress_tracker(steps, progress_bar) as progress:
+        with Progress(steps) as progress:
+            progress.observers.append(EveryNUpdater(LogSteps(logger), 1000))
+            progress.observers.append(create_progress_bar(progress_bar))
+
             for i in range(steps):
-                if i % 1000 == 0:
-                    logger.debug("Step %d", i)
                 self.step()
                 progress.step()
 
