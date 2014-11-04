@@ -10,4 +10,4 @@ class Oscillator(nengo.Network):
               [frequency * recurrent_tau, 1]]
         nengo.Connection(self.ensemble, self.ensemble,
                          synapse=recurrent_tau, transform=tA)
-        nengo.Connection(self.input, self.ensemble)
+        nengo.Connection(self.input, self.ensemble, synapse=None)

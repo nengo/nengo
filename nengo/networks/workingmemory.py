@@ -31,12 +31,14 @@ class InputGatedMemory(nengo.Network):
         neuron_trans = np.ones((n_neurons * dimensions, 1))
         self.gate = nengo.Node(size_in=1)
         nengo.Connection(self.gate, self.diff.neuron_input,
-                         transform=neuron_trans * -gate_gain)
+                         transform=neuron_trans * -gate_gain,
+                         synapse=None)
 
         # reset input (if reset=1, remove all values stored, and set values=0)
         self.reset = nengo.Node(size_in=1)
         nengo.Connection(self.reset, self.mem.neuron_input,
-                         transform=neuron_trans * -reset_gain)
+                         transform=neuron_trans * -reset_gain,
+                         synapse=None)
 
         self.input = self.diff.input
         self.output = self.mem.output
