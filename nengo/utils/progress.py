@@ -269,6 +269,31 @@ class MaxNUpdater(object):
         self.progress_bar.finish(self.progress)
 
 
+class EveryNUpdater(object):
+    def __init__(self, progress, progress_bar, every_n=1000):
+        self.progress = progress
+        self.progress_bar = progress_bar
+        self.every_n = every_n
+        self.next_update = every_n
+
+    def __enter__(self):
+        self.next_update = self.every_n
+        self.progress.start()
+        self.progress_bar.init()
+        return self
+
+    def step(self, n=1):
+        self.progress.step(n)
+        if self.next_update <= self.progress.step:
+            self.progress_bar.update(self.progress)
+            while self.next_update <= self.progress.step:
+                self.next_update += self.every_n
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.progress.finish(success=exc_type is None)
+        self.progress_bar.finish(self.progress)
+
+
 class IntervalUpdater(object):
     def __init__(self, progress, progress_bar, update_interval=0.05):
         self.progress = progress
