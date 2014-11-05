@@ -361,9 +361,36 @@ class LogSteps(ProgressBar):
         if progress.finished:
             self.logger.debug(
                 "Simulation done in %s.",
-                timedelta(seconds=np.ceil(progress.seconds_passed)))
+                _timestamp2timedelta(progress.seconds_passed))
         else:
             self.logger.debug("Step %d", progress.steps)
+
+
+class WriteProgressToFile(ProgressBar):
+    """Writes the progress to a files. This file will be overwritten on each
+    update of the progress!
+
+    Parameters
+    ----------
+    filename : str
+        Path to the file to write the progress to.
+    """
+
+    def __init__(self, filename):
+        self.filename = filename
+        super(WriteProgressToFile, self).__init__()
+
+    def update(self, progress):
+        if progress.finished:
+            text = "Done in {0}.".format(
+                _timestamp2timedelta(progress.seconds_passed))
+        else:
+            text = "{progress:.0f}%, ETA: {eta}".format(
+                progress=100 * progress.progress,
+                eta=_timestamp2timedelta(progress.eta))
+
+        with open(self.filename, 'w') as f:
+            f.write(text + os.linesep)
 
 
 class AutoProgressBar(ProgressBar):
