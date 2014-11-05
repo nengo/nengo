@@ -234,9 +234,9 @@ class CmdProgressBar(ProgressBar):
         sys.stdout.flush()
 
     def _get_in_progress_line(self, progress):
-        line = "[{{}}] ETA: {eta}".format(
+        line = "[{{0}}] ETA: {eta}".format(
             eta=_timestamp2timedelta(progress.eta))
-        percent_str = " {}% ".format(int(100 * progress.progress))
+        percent_str = " {0}% ".format(int(100 * progress.progress))
 
         width, _ = get_terminal_size()
         progress_width = max(0, width - len(line))
@@ -254,7 +254,7 @@ class CmdProgressBar(ProgressBar):
 
     def _get_finished_line(self, progress):
         width, _ = get_terminal_size()
-        line = "Done in {}.".format(
+        line = "Done in {0}.".format(
             _timestamp2timedelta(progress.seconds_passed)).ljust(width)
         return '\r' + line + os.linesep
 
@@ -317,8 +317,8 @@ if _HAS_WIDGETS:
         });'''
 
         def _ipython_display_(self, **kwargs):
-            # pylint: disable=undefined-variable
-            get_ipython().run_cell_magic('javascript', '', self.FRONTEND)
+            # pylint: disable=undefined-variable,line-too-long
+            get_ipython().run_cell_magic('javascript', '', self.FRONTEND)  # noqa
             widgets.DOMWidget._ipython_display_(self, **kwargs)
 
 
@@ -340,7 +340,7 @@ class IPython2ProgressBar(ProgressBar):
 
         self._widget.progress = progress.progress
         if progress.finished:
-            self._widget.text = "Done in {}.".format(
+            self._widget.text = "Done in {0}.".format(
                 _timestamp2timedelta(progress.seconds_passed))
         else:
             self._widget.text = "{progress:.0f}%, ETA: {eta}".format(
