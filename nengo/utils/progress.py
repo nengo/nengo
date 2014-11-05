@@ -314,8 +314,8 @@ if _HAS_WIDGETS:
         });'''
 
         def _ipython_display_(self, **kwargs):
-            # pylint: disable=undefined-variable
-            get_ipython().run_cell_magic('javascript', '', self.FRONTEND)
+            # pylint: disable=undefined-variable,line-too-long
+            get_ipython().run_cell_magic('javascript', '', self.FRONTEND)  # noqa
             widgets.DOMWidget._ipython_display_(self, **kwargs)
 
 
