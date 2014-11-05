@@ -80,7 +80,7 @@ class Progress(object):
         self.finished = False
         self.success = None
         if observers is None:
-            observers = []
+            self.observers = []
         else:
             self.observers = list(observers)
 
