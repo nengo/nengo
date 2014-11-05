@@ -113,7 +113,8 @@ class Progress(object):
         Returns
         -------
         float
-            The estimated number of seconds until the process is finished.
+            The estimated number of seconds until the process is finished. If
+            no estimate is available -1 will be returned.
         """
         if self.progress > 0.:
             return (1. - self.progress) * self.seconds_passed / self.progress
