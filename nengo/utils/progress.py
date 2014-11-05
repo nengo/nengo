@@ -13,7 +13,7 @@ from nengo.utils.compat import get_terminal_size
 
 try:
     from IPython.html import widgets
-    from IPython.display import display, Javascript
+    from IPython.display import display
     import IPython.utils.traitlets as traitlets
     _HAS_WIDGETS = True
 except ImportError:
@@ -151,7 +151,7 @@ if _HAS_WIDGETS:
         progress = traitlets.Float(0., sync=True)
         text = traitlets.Unicode(u'', sync=True)
 
-        FRONTEND = Javascript('''
+        FRONTEND = '''
         require(["widgets/js/widget", "widgets/js/manager"],
             function(widget, manager) {
           if (typeof widget.DOMWidgetView == 'undefined') {
@@ -196,10 +196,11 @@ if _HAS_WIDGETS:
 
           manager.WidgetManager.register_widget_view(
             'NengoProgressBar', NengoProgressBar);
-        });''')
+        });'''
 
         def _ipython_display_(self, **kwargs):
-            display(self.FRONTEND)
+            # pylint: disable=undefined-variable
+            get_ipython().run_cell_magic('javascript', '', self.FRONTEND)
             widgets.DOMWidget._ipython_display_(self, **kwargs)
 
 
