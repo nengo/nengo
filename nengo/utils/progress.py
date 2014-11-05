@@ -1,3 +1,7 @@
+"""
+Progress tracking.
+"""
+
 from __future__ import absolute_import, division
 
 from datetime import timedelta
@@ -28,6 +32,47 @@ warnings.filterwarnings('once', category=MemoryLeakWarning)
 
 
 class Progress(object):
+    """Stores and tracks information about the progress of some process.
+
+    This class is to be used as part of a ``with`` statement. Use ``step()`` to
+    update the progress.
+
+    Parameters
+    ----------
+    max_steps : int
+        The total number of calculation steps of the process.
+    observers : sequence of :class:`ProgressObserver`, optional
+        Observers to be notified whenever the progress changes.
+
+    Attributes
+    ----------
+    steps : int
+        Number of completed steps.
+    max_steps : int
+        The total number of calculation steps of the process.
+    start_time : float
+        Time stamp of the time the process was started.
+    end_time : float
+        Time stamp of the time the process was finished or aborted.
+    success : bool or None
+        Whether the process finished successfully. ``None`` if the process
+        did not finish yet.
+    observers : list of :class:`ProgressObserver`
+        Observers to be notified whenever the progress changes.
+
+    Examples
+    --------
+
+    .. code-block:: python
+
+        max_steps = 10
+        with Progress(max_steps) as progress:
+            for i in range(max_steps):
+                # do something
+                progress.step()
+
+    """
+
     def __init__(self, max_steps, observers=None):
         self.steps = 0
         self.max_steps = max_steps
@@ -35,16 +80,28 @@ class Progress(object):
         self.finished = False
         self.success = None
         if observers is None:
-            self.observers = []
+            observers = []
         else:
-            self.observers = observers
+            self.observers = list(observers)
 
     @property
     def progress(self):
+        """
+        Returns
+        -------
+        float
+            The current progress as a number from 0 to 1 (inclusive).
+        """
         return self.steps / self.max_steps
 
     @property
     def seconds_passed(self):
+        """
+        Returns
+        -------
+        float
+            The number of seconds passed since entering the ``with`` statement.
+        """
         if self.finished:
             return self.end_time - self.start_time
         else:
@@ -52,6 +109,12 @@ class Progress(object):
 
     @property
     def eta(self):
+        """
+        Returns
+        -------
+        float
+            The estimated number of seconds until the process is finished.
+        """
         if self.progress > 0.:
             return (1. - self.progress) * self.seconds_passed / self.progress
         else:
@@ -74,20 +137,45 @@ class Progress(object):
         self.notify_observers()
 
     def step(self, n=1):
+        """Advances the progress.
+
+        Parameters
+        ----------
+        n : int
+            Number of steps to advance the progress by.
+        """
         self.steps = min(self.steps + n, self.max_steps)
         self.notify_observers()
 
     def notify_observers(self):
+        """Notifies all observers about a change of the progress."""
         for o in self.observers:
             o.update(self)
 
 
 class ProgressObserver(object):
+    """Abstract base class taking notifications from :class:`Progress`."""
+
     def update(self, progress):
+        """Signals a change of the observed `progress`.
+
+        Parameters
+        ----------
+        progress : :class:`Progress`
+            The observed progress.
+        """
         raise NotImplementedError()
 
 
 class UpdateBehavior(ProgressObserver):
+    """Abstract base class for classes filtering the updates that are signaled
+    to a :class:`ProgressObserver`.
+
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressObserver`
+        The object to which updates are passed on.
+    """
     # pylint: disable=abstract-method
 
     def __init__(self, progress_bar):
@@ -95,16 +183,24 @@ class UpdateBehavior(ProgressObserver):
 
 
 class ProgressBar(ProgressObserver):
+    """Abstract base class for progress bars (classes displaying the progress
+    in some way).
+    """
+
     # pylint: disable=abstract-method
     pass
 
 
 class NoProgressBar(ProgressBar):
+    """A progress bar that does not display anything."""
+
     def update(self, progress):
         pass
 
 
 class CmdProgressBar(ProgressBar):
+    """A progress bar that is displayed as ASCII output on `stdout`."""
+
     def __init__(self):
         super(CmdProgressBar, self).__init__()
         if _in_ipynb():
@@ -158,6 +254,8 @@ class CmdProgressBar(ProgressBar):
 
 if _HAS_WIDGETS:
     class IPythonProgressWidget(widgets.DOMWidget):
+        """IPython widget for displaying a progress bar."""
+
         # pylint: disable=too-many-public-methods
         _view_name = traitlets.Unicode('NengoProgressBar', sync=True)
         progress = traitlets.Float(0., sync=True)
@@ -217,6 +315,8 @@ if _HAS_WIDGETS:
 
 
 class IPython2ProgressBar(ProgressBar):
+    """IPython progress bar based on widgets."""
+
     def __init__(self):
         super(IPython2ProgressBar, self).__init__()
         self._widget = IPythonProgressWidget()
@@ -241,6 +341,13 @@ class IPython2ProgressBar(ProgressBar):
 
 
 class LogSteps(ProgressBar):
+    """Logs the progress as debug messages.
+
+    Parameters
+    ----------
+    logger : logger
+        Logger to log the progress to.
+    """
     def __init__(self, logger):
         self.logger = logger
         super(LogSteps, self).__init__()
@@ -255,6 +362,17 @@ class LogSteps(ProgressBar):
 
 
 class AutoProgressBar(ProgressBar):
+    """Makes a progress are automatically appear if the ETA exceeds a
+    threshold.
+
+    Parameters
+    ----------
+    delegate : :class:`ProgressBar`
+        The actual progress bar to display.
+    min_eta : float, optional
+        The ETA threshold for displaying the progress bar.
+    """
+
     def __init__(self, delegate, min_eta=1.):
         self.delegate = delegate
 
@@ -273,6 +391,17 @@ class AutoProgressBar(ProgressBar):
 
 
 class MaxNUpdater(UpdateBehavior):
+    """Limits the number of updates relayed to a :class:`ProgressObserver`.
+
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressObserver`
+        The progress observer to relay the updates to.
+    max_updates : int
+        Maximum number of updates that will be relayed to the progress
+        observer.
+    """
+
     def __init__(self, progress_bar, max_updates=100):
         super(MaxNUpdater, self).__init__(progress_bar)
         self.max_updates = max_updates
@@ -287,6 +416,16 @@ class MaxNUpdater(UpdateBehavior):
 
 
 class EveryNUpdater(UpdateBehavior):
+    """Relays only every `n`-th update to a :class:`ProgressObserver`.
+
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressObserver`
+        The progress observer to relay the updates to.
+    every_n : int
+        The number of steps in-between relayed updates.
+    """
+
     def __init__(self, progress_bar, every_n=1000):
         super(EveryNUpdater, self).__init__(progress_bar)
         self.every_n = every_n
@@ -300,6 +439,16 @@ class EveryNUpdater(UpdateBehavior):
 
 
 class IntervalUpdater(UpdateBehavior):
+    """Updates a :class:`ProgressObserver` in regular time intervals.
+
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressObserver`
+        The progress observer to relay the updates to.
+    update_interval : float
+        Number of seconds in-between relayed updates.
+    """
+
     def __init__(self, progress_bar, update_interval=0.05):
         super(IntervalUpdater, self).__init__(progress_bar)
         self.next_update = 0
@@ -312,6 +461,20 @@ class IntervalUpdater(UpdateBehavior):
 
 
 def _in_ipynb():
+    """Determines if code is executed in an IPython notebook.
+
+    Returns
+    -------
+    bool
+       ``True`` if the code is executed in an IPython notebook, otherwise
+       ``False``.
+
+    Notes
+    -----
+    It is possible to connect to a kernel started from an IPython notebook
+    from outside of the notebook. Thus, this function might return ``True``
+    even though the code is not running in an IPython notebook.
+    """
     try:
         cfg = get_ipython().config  # pylint: disable=undefined-variable
         app_key = 'IPKernelApp'
@@ -325,6 +488,12 @@ def _in_ipynb():
 
 
 def get_default_progressbar():
+    """
+    Returns
+    -------
+    :class:`ProgressBar`
+        The default progress bar to use depending on the execution environment.
+    """
     if _in_ipynb() and _HAS_WIDGETS:  # IPython >= 2.0
         return AutoProgressBar(IPython2ProgressBar())
     else:  # IPython < 2.0
@@ -332,6 +501,18 @@ def get_default_progressbar():
 
 
 def get_default_updater_class(progress_bar):
+    """
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressBar`
+        The progress bar to obtain the default update behavior for.
+
+    Returns
+    -------
+    :class:`UpdateBehavior`
+        The default update behavior depending on the progress bar and
+        execution environment.
+    """
     if _in_ipynb() and not isinstance(progress_bar, IPython2ProgressBar):
         return MaxNUpdater
     else:
@@ -339,6 +520,19 @@ def get_default_updater_class(progress_bar):
 
 
 def wrap_with_update_behavior(progress_bar=None):
+    """Wraps a progress bar with the default update behavior if it is not
+    wrapped by an update behavior already.
+
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressObserver`
+        The progress bar to wrap.
+
+    Returns
+    -------
+    :class:`UpdateBehavior`
+        The wrapped progress bar.
+    """
     if progress_bar is None:
         progress_bar = get_default_progressbar()
     if not isinstance(progress_bar, UpdateBehavior):
