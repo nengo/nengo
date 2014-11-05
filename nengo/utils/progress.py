@@ -31,6 +31,10 @@ class MemoryLeakWarning(UserWarning):
 warnings.filterwarnings('once', category=MemoryLeakWarning)
 
 
+def _timestamp2timedelta(timestamp):
+    return timedelta(seconds=np.ceil(timestamp))
+
+
 class Progress(object):
     """Stores and tracks information about the progress of some process.
 
@@ -228,8 +232,8 @@ class CmdProgressBar(ProgressBar):
         sys.stdout.flush()
 
     def _get_in_progress_line(self, progress):
-        line = "[{{}}] ETA: {eta}".format(eta=timedelta(
-            seconds=np.ceil(progress.eta)))
+        line = "[{{}}] ETA: {eta}".format(
+            eta=_timestamp2timedelta(progress.eta))
         percent_str = " {}% ".format(int(100 * progress.progress))
 
         width, _ = get_terminal_size()
@@ -249,7 +253,7 @@ class CmdProgressBar(ProgressBar):
     def _get_finished_line(self, progress):
         width, _ = get_terminal_size()
         line = "Done in {}.".format(
-            timedelta(seconds=np.ceil(progress.seconds_passed))).ljust(width)
+            _timestamp2timedelta(progress.seconds_passed)).ljust(width)
         return '\r' + line + os.linesep
 
 
@@ -334,11 +338,11 @@ class IPython2ProgressBar(ProgressBar):
         self._widget.progress = progress.progress
         if progress.finished:
             self._widget.text = "Done in {}.".format(
-                timedelta(seconds=np.ceil(progress.seconds_passed)))
+                _timestamp2timedelta(progress.seconds_passed))
         else:
             self._widget.text = "{progress:.0f}%, ETA: {eta}".format(
                 progress=100 * progress.progress,
-                eta=timedelta(seconds=np.ceil(progress.eta)))
+                eta=_timestamp2timedelta(progress.eta))
 
 
 class LogSteps(ProgressBar):
