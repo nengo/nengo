@@ -1,6 +1,6 @@
 """
 Progress tracking. Allows progress bar to appear automatically in a shell
-and within an iPython notebook if the execution of the simulation is long enough
+and within an IPython notebook if the execution of the simulation is long enough
 """
 
 from __future__ import absolute_import, division
