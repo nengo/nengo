@@ -52,10 +52,14 @@ class TestProgress(object):
             pass
         assert not p2.success
 
-    def test_seconds_passed(self):
+    def test_seconds_passed(self, monkeypatch):
+        t = 1.
+        monkeypatch.setattr(time, 'time', lambda: t)
+
         with Progress(10) as p:
-            time.sleep(1)
-        assert p.seconds_passed > 0
+            t = 10.
+
+        assert p.seconds_passed == 9.
 
     def test_eta(self):
         with Progress(10) as p:
