@@ -4,7 +4,8 @@ import pytest
 
 import nengo
 from nengo.utils.progress import (
-    AutoProgressBar, EveryNUpdater, MaxNUpdater, Progress, ProgressObserver)
+    AutoProgressBar, EveryNUpdater, IntervalUpdater, MaxNUpdater, Progress,
+    ProgressObserver)
 
 
 class ProgressObserverMock(ProgressObserver):
@@ -118,6 +119,29 @@ class TestEveryNUpdater(object):
             assert observer.n_update_calls == 1
             p.step(3)
             assert observer.n_update_calls == 2
+
+
+class TestIntervalUpdater(object):
+    def test_updates_after_interval_has_passed(self, monkeypatch):
+        observer = ProgressObserverMock()
+        updater = IntervalUpdater(observer, update_interval=2.)
+        t = 1.
+        monkeypatch.setattr(time, 'time', lambda: t)
+
+        with Progress(100, [updater]) as p:
+            p.step()  # Update is allowed to happen on first step.
+
+            observer.n_update_calls = 0
+            p.step()
+            assert observer.n_update_calls == 0
+
+            t = 2.
+            p.step()
+            assert observer.n_update_calls == 0
+
+            t = 4.
+            p.step()
+            assert observer.n_update_calls == 1
 
 
 if __name__ == "__main__":
