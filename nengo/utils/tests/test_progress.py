@@ -3,7 +3,8 @@ import time
 import pytest
 
 import nengo
-from nengo.utils.progress import AutoProgressBar, Progress, ProgressObserver
+from nengo.utils.progress import (
+    AutoProgressBar, EveryNUpdater, MaxNUpdater, Progress, ProgressObserver)
 
 
 class ProgressObserverMock(ProgressObserver):
@@ -87,6 +88,36 @@ class TestAutoProgressBar(object):
             auto_progress.update(progress_mock)
 
         assert observer.n_update_calls >= 10
+
+
+class TestMaxNUpdater(object):
+    def test_at_most_n_updates_are_performed(self):
+        observer = ProgressObserverMock()
+        updater = MaxNUpdater(observer, max_updates=3)
+
+        with Progress(100, [updater]) as p:
+            for _ in range(100):
+                p.step()
+
+        assert observer.n_update_calls > 0
+        assert observer.n_update_calls <= 3
+
+
+class TestEveryNUpdater(object):
+    def test_updates_every_n_steps(self):
+        observer = ProgressObserverMock()
+        updater = EveryNUpdater(observer, every_n=5)
+
+        with Progress(100, [updater]) as p:
+            observer.n_update_calls = 0
+            for _ in range(5):
+                p.step()
+            assert observer.n_update_calls == 1
+
+            p.step(2)
+            assert observer.n_update_calls == 1
+            p.step(3)
+            assert observer.n_update_calls == 2
 
 
 if __name__ == "__main__":
