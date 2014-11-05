@@ -1,5 +1,6 @@
 """
-Progress tracking.
+Progress tracking. Allows progress bar to appear automatically in a shell
+and within an iPython notebook if the execution of the simulation is long enough
 """
 
 from __future__ import absolute_import, division
@@ -117,8 +118,8 @@ class Progress(object):
         Returns
         -------
         float
-            The estimated number of seconds until the process is finished. If
-            no estimate is available -1 will be returned.
+            The estimated number of seconds until the process is finished (ETA). 
+            If no estimate is available -1 will be returned.
         """
         if self.progress > 0.:
             return (1. - self.progress) * self.seconds_passed / self.progress
@@ -210,7 +211,8 @@ class CmdProgressBar(ProgressBar):
         super(CmdProgressBar, self).__init__()
         if _in_ipynb():
             warnings.warn(MemoryLeakWarning((
-                "The {cls} continuously adds invisible content to the "
+                "The {cls}, if used in an IPython notebook,"
+                " will continuously adds invisible content to the "
                 "IPython notebook which may lead to excessive memory usage "
                 "and ipynb files which cannot be opened anymore. Please "
                 "consider doing one of the following:{cr}{cr}"
@@ -278,6 +280,7 @@ if _HAS_WIDGETS:
 
           var NengoProgressBar = widget.DOMWidgetView.extend({
             render: function() {
+              // $el is the DOM of the widget
               this.$el.css({width: '100%', marginBottom: '0.5em'});
               this.$el.html([
                 '<div style="',
@@ -367,8 +370,9 @@ class LogSteps(ProgressBar):
 
 
 class WriteProgressToFile(ProgressBar):
-    """Writes the progress to a files. This file will be overwritten on each
-    update of the progress!
+    """Writes the progress to a file. This file will be overwritten on each
+    update of the progress! Useful for remotely and intermittently
+    monitoring progress.
 
     Parameters
     ----------
@@ -394,8 +398,8 @@ class WriteProgressToFile(ProgressBar):
 
 
 class AutoProgressBar(ProgressBar):
-    """Makes a progress are automatically appear if the ETA exceeds a
-    threshold.
+    """Makes a progress automatically appear if the expected time to completion
+     or arrival (ETA) exceeds a threshold.
 
     Parameters
     ----------
@@ -423,7 +427,9 @@ class AutoProgressBar(ProgressBar):
 
 
 class MaxNUpdater(UpdateBehavior):
-    """Limits the number of updates relayed to a :class:`ProgressObserver`.
+    """Limits the number of updates relayed to a :class:`ProgressObserver`. Used
+    for IPython 1.x progress bar, since updating the notebook saves the output, 
+    which will create a large amount of memory and cause the notebook to crash.
 
     Parameters
     ----------
