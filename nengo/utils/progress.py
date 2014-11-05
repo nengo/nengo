@@ -82,9 +82,21 @@ class Progress(object):
             o.update(self)
 
 
-class ProgressBar(object):
+class ProgressObserver(object):
     def update(self, progress):
         raise NotImplementedError()
+
+
+class UpdateBehavior(ProgressObserver):
+    # pylint: disable=abstract-method
+
+    def __init__(self, progress_bar):
+        self.progress_bar = progress_bar
+
+
+class ProgressBar(ProgressObserver):
+    # pylint: disable=abstract-method
+    pass
 
 
 class NoProgressBar(ProgressBar):
@@ -260,9 +272,9 @@ class AutoProgressBar(ProgressBar):
             self.delegate.update(progress)
 
 
-class MaxNUpdater(object):
+class MaxNUpdater(UpdateBehavior):
     def __init__(self, progress_bar, max_updates=100):
-        self.progress_bar = progress_bar
+        super(MaxNUpdater, self).__init__(progress_bar)
         self.max_updates = max_updates
         self.last_update_step = 0
 
@@ -274,9 +286,9 @@ class MaxNUpdater(object):
             self.last_update_step = progress.steps
 
 
-class EveryNUpdater(object):
+class EveryNUpdater(UpdateBehavior):
     def __init__(self, progress_bar, every_n=1000):
-        self.progress_bar = progress_bar
+        super(EveryNUpdater, self).__init__(progress_bar)
         self.every_n = every_n
         self.next_update = every_n
 
@@ -287,9 +299,9 @@ class EveryNUpdater(object):
             self.next_update = progress.steps + self.every_n
 
 
-class IntervalUpdater(object):
+class IntervalUpdater(UpdateBehavior):
     def __init__(self, progress_bar, update_interval=0.05):
-        self.progress_bar = progress_bar
+        super(IntervalUpdater, self).__init__(progress_bar)
         self.next_update = 0
         self.update_interval = update_interval
 
@@ -326,9 +338,10 @@ def get_default_updater_class(progress_bar):
         return IntervalUpdater
 
 
-def create_progress_bar(progress_bar=None, updater_class=None):
+def wrap_with_update_behavior(progress_bar=None):
     if progress_bar is None:
         progress_bar = get_default_progressbar()
-    if updater_class is None:
+    if not isinstance(progress_bar, UpdateBehavior):
         updater_class = get_default_updater_class(progress_bar)
-    return updater_class(progress_bar)
+        progress_bar = updater_class(progress_bar)
+    return progress_bar

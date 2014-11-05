@@ -18,7 +18,7 @@ from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
 from nengo.utils.progress import (
-    create_progress_bar, EveryNUpdater, LogSteps, Progress)
+    wrap_with_update_behavior, EveryNUpdater, LogSteps, Progress)
 from nengo.utils.simulator import operator_depencency_graph
 
 logger = logging.getLogger(__name__)
@@ -197,7 +197,7 @@ class Simulator(object):
         """Simulate for the given number of `dt` steps."""
         with Progress(steps) as progress:
             progress.observers.append(EveryNUpdater(LogSteps(logger), 1000))
-            progress.observers.append(create_progress_bar(progress_bar))
+            progress.observers.append(wrap_with_update_behavior(progress_bar))
 
             for i in range(steps):
                 self.step()
