@@ -1,6 +1,7 @@
 """
 Progress tracking. Allows progress bar to appear automatically in a shell
-and within an IPython notebook if the execution of the simulation is long enough
+and within an IPython notebook if the execution of the simulation
+is long enough
 """
 
 from __future__ import absolute_import, division
@@ -118,7 +119,8 @@ class Progress(object):
         Returns
         -------
         float
-            The estimated number of seconds until the process is finished (ETA). 
+            The estimated number of seconds until the process
+            is finished. Also called the estimated time of arrival (ETA).
             If no estimate is available -1 will be returned.
         """
         if self.progress > 0.:
@@ -427,9 +429,10 @@ class AutoProgressBar(ProgressBar):
 
 
 class MaxNUpdater(UpdateBehavior):
-    """Limits the number of updates relayed to a :class:`ProgressObserver`. Used
-    for IPython 1.x progress bar, since updating the notebook saves the output, 
-    which will create a large amount of memory and cause the notebook to crash.
+    """Limits the number of updates relayed to a :class:`ProgressObserver`.
+    Used for IPython 1.x progress bar, since updating
+    the notebook saves the output, which will create
+    a large amount of memory and cause the notebook to crash.
 
     Parameters
     ----------
