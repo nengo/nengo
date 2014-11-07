@@ -5,7 +5,7 @@ import numpy as np
 import nengo
 from nengo.solvers import NnlsL2nz
 from nengo.networks.ensemblearray import EnsembleArray
-from nengo.utils.distributions import Uniform
+from nengo.utils.distributions import Choice, Uniform
 
 
 class BasalGanglia(nengo.Network):
@@ -42,7 +42,7 @@ class BasalGanglia(nengo.Network):
                               "use default decoder solver. Installing SciPy "
                               "may improve BasalGanglia performance.")
                 solver = nengo.Default
-        encoders = np.ones((n_neurons_per_ensemble, 1))
+        encoders = Choice([[1]])
         ea_params = {
             'n_neurons': n_neurons_per_ensemble,
             'n_ensembles': dimensions,
@@ -149,7 +149,7 @@ class Thalamus(nengo.Network):
                  threshold=0):
         self.actions = EnsembleArray(n_neurons_per_ensemble, dimensions,
                                      intercepts=Uniform(threshold, 1),
-                                     encoders=[[1]] * n_neurons_per_ensemble,
+                                     encoders=Choice([[1]]),
                                      label="actions")
 
         self.input = self.actions.input

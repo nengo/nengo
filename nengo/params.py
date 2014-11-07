@@ -169,10 +169,12 @@ class NdarrayParam(Parameter):
             if attr == '*':
                 continue
 
-            if is_integer(attr):
-                desired = attr
-            elif is_string(attr):
-                desired = getattr(instance, attr)
+            desired = attr if is_integer(attr) else getattr(instance, attr)
+
+            if not is_integer(desired):
+                raise ValueError("%s not yet initialized; cannot determine "
+                                 "if shape is correct. Consider using a "
+                                 "distribution instead." % attr)
 
             if ndarray.shape[i] != desired:
                 raise ValueError("shape[%d] should be %d (got %d)"

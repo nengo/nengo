@@ -6,6 +6,7 @@ import pytest
 import numpy as np
 
 import nengo
+from nengo.utils.distributions import Choice
 from nengo.utils.functions import whitenoise
 from nengo.utils.matplotlib import implot
 from nengo.utils.neurons import rates_isi, rates_kernel
@@ -19,19 +20,17 @@ def _test_rates(Simulator, rates, plt, name=None):
         name = rates.__name__
 
     n = 100
-    max_rates = 50 * np.ones(n)
-    # max_rates = 200 * np.ones(n)
     intercepts = np.linspace(-0.99, 0.99, n)
-    encoders = np.ones((n, 1))
 
     model = nengo.Network()
     with model:
-        model.config[nengo.Ensemble].max_rates = max_rates
-        model.config[nengo.Ensemble].intercepts = intercepts
-        model.config[nengo.Ensemble].encoders = encoders
+        model.config[nengo.Ensemble].max_rates = Choice([50])
+        model.config[nengo.Ensemble].encoders = Choice([[1]])
         u = nengo.Node(output=whitenoise(1, 5, seed=8393))
-        a = nengo.Ensemble(n, 1, neuron_type=nengo.LIFRate())
-        b = nengo.Ensemble(n, 1, neuron_type=nengo.LIF())
+        a = nengo.Ensemble(n, 1,
+                           intercepts=intercepts, neuron_type=nengo.LIFRate())
+        b = nengo.Ensemble(n, 1,
+                           intercepts=intercepts, neuron_type=nengo.LIF())
         nengo.Connection(u, a, synapse=0)
         nengo.Connection(u, b, synapse=0)
         up = nengo.Probe(u)

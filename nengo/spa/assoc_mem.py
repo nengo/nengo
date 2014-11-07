@@ -4,7 +4,7 @@ import nengo
 from nengo.networks.ensemblearray import EnsembleArray
 from nengo.spa.module import Module
 from nengo.spa.vocab import Vocabulary
-from nengo.utils.distributions import Uniform
+from nengo.utils.distributions import Choice, Uniform
 from nengo.utils.compat import is_iterable
 
 
@@ -100,8 +100,7 @@ class AssociativeMemory(Module):
         n_eval_points = 500
         eval_point_margin = 0.1
         eval_points = Uniform(
-            threshold + eval_point_margin, 1 + eval_point_margin
-        ).sample(n_eval_points).reshape(-1, 1)
+            threshold + eval_point_margin, 1 + eval_point_margin)
 
         # Ensemble array parameters
         ea_params = {'radius': 1.0,
@@ -110,7 +109,8 @@ class AssociativeMemory(Module):
                      'n_ensembles': N,
                      'intercepts': Uniform(threshold, 1),
                      'max_rates': Uniform(100, 200),
-                     'encoders': np.ones((n_neurons_per_ensemble, 1)),
+                     'encoders': Choice([[1]]),
+                     'n_eval_points': n_eval_points,
                      'eval_points': eval_points}
 
         # Thresholding function
@@ -165,13 +165,14 @@ class AssociativeMemory(Module):
 
         # Configure default output vector
         if default_output_vector is not None:
-            eval_points = Uniform(0.8, 1).sample(n_eval_points).reshape(-1, 1)
+            eval_points = Uniform(0.8, 1)
             bias = nengo.Node(output=[1])
             default_vector_gate = nengo.Ensemble(
                 n_neurons_per_ensemble, dimensions=1,
-                encoders=np.ones((n_neurons_per_ensemble, 1)),
+                encoders=Choice([[1]]),
                 intercepts=Uniform(0.5, 1),
                 max_rates=ea_params['max_rates'],
+                n_eval_points=n_eval_points,
                 eval_points=eval_points,
                 label="default vector gate")
             nengo.Connection(bias, default_vector_gate, synapse=None)
