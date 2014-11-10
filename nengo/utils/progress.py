@@ -15,6 +15,7 @@ import warnings
 import numpy as np
 
 from nengo.utils.compat import get_terminal_size
+from nengo.utils.ipython import in_ipynb
 
 
 try:
@@ -211,7 +212,7 @@ class CmdProgressBar(ProgressBar):
 
     def __init__(self):
         super(CmdProgressBar, self).__init__()
-        if _in_ipynb():
+        if in_ipynb():
             warnings.warn(MemoryLeakWarning((
                 "The {cls}, if used in an IPython notebook,"
                 " will continuously adds invisible content to the "
@@ -501,33 +502,6 @@ class IntervalUpdater(UpdateBehavior):
             self.next_update = time.time() + self.update_interval
 
 
-def _in_ipynb():
-    """Determines if code is executed in an IPython notebook.
-
-    Returns
-    -------
-    bool
-       ``True`` if the code is executed in an IPython notebook, otherwise
-       ``False``.
-
-    Notes
-    -----
-    It is possible to connect to a kernel started from an IPython notebook
-    from outside of the notebook. Thus, this function might return ``True``
-    even though the code is not running in an IPython notebook.
-    """
-    try:
-        cfg = get_ipython().config  # pylint: disable=undefined-variable
-        app_key = 'IPKernelApp'
-        if 'parent_appname' not in cfg[app_key]:
-            app_key = 'KernelApp'  # was used by old IPython versions
-        if cfg[app_key]['parent_appname'] == 'ipython-notebook':
-            return True
-    except NameError:
-        pass
-    return False
-
-
 def get_default_progressbar():
     """
     Returns
@@ -535,7 +509,7 @@ def get_default_progressbar():
     :class:`ProgressBar`
         The default progress bar to use depending on the execution environment.
     """
-    if _in_ipynb() and _HAS_WIDGETS:  # IPython >= 2.0
+    if in_ipynb() and _HAS_WIDGETS:  # IPython >= 2.0
         return AutoProgressBar(IPython2ProgressBar())
     else:  # IPython < 2.0
         return AutoProgressBar(CmdProgressBar())
@@ -554,7 +528,7 @@ def get_default_updater_class(progress_bar):
         The default update behavior depending on the progress bar and
         execution environment.
     """
-    if _in_ipynb() and not isinstance(progress_bar, IPython2ProgressBar):
+    if in_ipynb() and not isinstance(progress_bar, IPython2ProgressBar):
         return MaxNUpdater
     else:
         return IntervalUpdater

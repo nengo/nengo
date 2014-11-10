@@ -88,3 +88,30 @@ def load_notebook(nb_path):
     with open(nb_path) as f:
         nb = current.reads(f.read(), 'json')
     return nb
+
+
+def in_ipynb():
+    """Determines if code is executed in an IPython notebook.
+
+    Returns
+    -------
+    bool
+       ``True`` if the code is executed in an IPython notebook, otherwise
+       ``False``.
+
+    Notes
+    -----
+    It is possible to connect to a kernel started from an IPython notebook
+    from outside of the notebook. Thus, this function might return ``True``
+    even though the code is not running in an IPython notebook.
+    """
+    try:
+        cfg = get_ipython().config  # pylint: disable=undefined-variable
+        app_key = 'IPKernelApp'
+        if 'parent_appname' not in cfg[app_key]:
+            app_key = 'KernelApp'  # was used by old IPython versions
+        if cfg[app_key]['parent_appname'] == 'ipython-notebook':
+            return True
+    except NameError:
+        pass
+    return False
