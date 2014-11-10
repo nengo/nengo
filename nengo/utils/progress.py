@@ -79,7 +79,7 @@ class Progress(object):
     """
 
     def __init__(self, max_steps, observers=None):
-        self.steps = 0
+        self.n_steps = 0
         self.max_steps = max_steps
         self.start_time = self.end_time = time.time()
         self.finished = False
@@ -97,7 +97,7 @@ class Progress(object):
         float
             The current progress as a number from 0 to 1 (inclusive).
         """
-        return self.steps / self.max_steps
+        return self.n_steps / self.max_steps
 
     def elapsed_seconds(self):
         """
@@ -129,7 +129,7 @@ class Progress(object):
     def __enter__(self):
         self.finished = False
         self.success = None
-        self.steps = 0
+        self.n_steps = 0
         self.start_time = time.time()
         self.notify_observers()
         return self
@@ -137,7 +137,7 @@ class Progress(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.success = exc_type is None
         if self.success:
-            self.steps = self.max_steps
+            self.n_steps = self.max_steps
         self.end_time = time.time()
         self.finished = True
         self.notify_observers()
@@ -150,7 +150,7 @@ class Progress(object):
         n : int
             Number of steps to advance the progress by.
         """
-        self.steps = min(self.steps + n, self.max_steps)
+        self.n_steps = min(self.n_steps + n, self.max_steps)
         self.notify_observers()
 
     def notify_observers(self):
@@ -366,7 +366,7 @@ class LogSteps(ProgressBar):
                 "Simulation done in %s.",
                 _timestamp2timedelta(progress.elapsed_seconds()))
         else:
-            self.logger.debug("Step %d", progress.steps)
+            self.logger.debug("Step %d", progress.n_steps)
 
 
 class WriteProgressToFile(ProgressBar):
@@ -449,9 +449,9 @@ class MaxNUpdater(UpdateBehavior):
     def update(self, progress):
         next_update_step = (self.last_update_step +
                             progress.max_steps / self.max_updates)
-        if next_update_step < progress.steps or progress.finished:
+        if next_update_step < progress.n_steps or progress.finished:
             self.progress_bar.update(progress)
-            self.last_update_step = progress.steps
+            self.last_update_step = progress.n_steps
 
 
 class EveryNUpdater(UpdateBehavior):
@@ -471,10 +471,10 @@ class EveryNUpdater(UpdateBehavior):
         self.next_update = every_n
 
     def update(self, progress):
-        if self.next_update <= progress.steps or progress.finished:
+        if self.next_update <= progress.n_steps or progress.finished:
             self.progress_bar.update(progress)
             assert self.every_n > 0
-            self.next_update = progress.steps + self.every_n
+            self.next_update = progress.n_steps + self.every_n
 
 
 class IntervalUpdater(UpdateBehavior):
