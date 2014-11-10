@@ -97,7 +97,7 @@ class Progress(object):
         float
             The current progress as a number from 0 to 1 (inclusive).
         """
-        return self.n_steps / self.max_steps
+        return min(1.0, self.n_steps / self.max_steps)
 
     def elapsed_seconds(self):
         """
@@ -150,7 +150,7 @@ class Progress(object):
         n : int
             Number of steps to advance the progress by.
         """
-        self.n_steps = min(self.n_steps + n, self.max_steps)
+        self.n_steps += n
         self.notify_observers()
 
     def notify_observers(self):
