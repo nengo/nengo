@@ -99,8 +99,7 @@ class Progress(object):
         """
         return self.steps / self.max_steps
 
-    @property
-    def seconds_passed(self):
+    def elapsed_seconds(self):
         """
         Returns
         -------
@@ -112,7 +111,6 @@ class Progress(object):
         else:
             return time.time() - self.start_time
 
-    @property
     def eta(self):
         """
         Returns
@@ -123,7 +121,8 @@ class Progress(object):
             If no estimate is available -1 will be returned.
         """
         if self.progress > 0.:
-            return (1. - self.progress) * self.seconds_passed / self.progress
+            return (
+                (1. - self.progress) * self.elapsed_seconds() / self.progress)
         else:
             return -1
 
@@ -236,7 +235,7 @@ class CmdProgressBar(ProgressBar):
 
     def _get_in_progress_line(self, progress):
         line = "[{{0}}] ETA: {eta}".format(
-            eta=_timestamp2timedelta(progress.eta))
+            eta=_timestamp2timedelta(progress.eta()))
         percent_str = " {0}% ".format(int(100 * progress.progress))
 
         width, _ = get_terminal_size()
@@ -256,7 +255,7 @@ class CmdProgressBar(ProgressBar):
     def _get_finished_line(self, progress):
         width, _ = get_terminal_size()
         line = "Done in {0}.".format(
-            _timestamp2timedelta(progress.seconds_passed)).ljust(width)
+            _timestamp2timedelta(progress.elapsed_seconds())).ljust(width)
         return '\r' + line + os.linesep
 
 
@@ -342,11 +341,11 @@ class IPython2ProgressBar(ProgressBar):
         self._widget.progress = progress.progress
         if progress.finished:
             self._widget.text = "Done in {0}.".format(
-                _timestamp2timedelta(progress.seconds_passed))
+                _timestamp2timedelta(progress.elapsed_seconds()))
         else:
             self._widget.text = "{progress:.0f}%, ETA: {eta}".format(
                 progress=100 * progress.progress,
-                eta=_timestamp2timedelta(progress.eta))
+                eta=_timestamp2timedelta(progress.eta()))
 
 
 class LogSteps(ProgressBar):
@@ -365,7 +364,7 @@ class LogSteps(ProgressBar):
         if progress.finished:
             self.logger.debug(
                 "Simulation done in %s.",
-                _timestamp2timedelta(progress.seconds_passed))
+                _timestamp2timedelta(progress.elapsed_seconds()))
         else:
             self.logger.debug("Step %d", progress.steps)
 
@@ -388,11 +387,11 @@ class WriteProgressToFile(ProgressBar):
     def update(self, progress):
         if progress.finished:
             text = "Done in {0}.".format(
-                _timestamp2timedelta(progress.seconds_passed))
+                _timestamp2timedelta(progress.elapsed_seconds()))
         else:
             text = "{progress:.0f}%, ETA: {eta}".format(
                 progress=100 * progress.progress,
-                eta=_timestamp2timedelta(progress.eta))
+                eta=_timestamp2timedelta(progress.eta()))
 
         with open(self.filename, 'w') as f:
             f.write(text + os.linesep)
@@ -422,7 +421,7 @@ class AutoProgressBar(ProgressBar):
         min_delay = progress.start_time + 0.1
         if self._visible:
             self.delegate.update(progress)
-        elif progress.eta > self.min_eta and min_delay < time.time():
+        elif progress.eta() > self.min_eta and min_delay < time.time():
             self._visible = True
             self.delegate.update(progress)
 

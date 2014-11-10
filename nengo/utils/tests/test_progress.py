@@ -52,26 +52,26 @@ class TestProgress(object):
             pass
         assert not p2.success
 
-    def test_seconds_passed(self, monkeypatch):
+    def test_elapsed_seconds(self, monkeypatch):
         t = 1.
         monkeypatch.setattr(time, 'time', lambda: t)
 
         with Progress(10) as p:
             t = 10.
 
-        assert p.seconds_passed == 9.
+        assert p.elapsed_seconds() == 9.
 
     def test_eta(self):
         with Progress(10) as p:
-            assert p.eta == -1  # no estimate available yet
+            assert p.eta() == -1  # no estimate available yet
             p.step()
-            assert p.eta > 0.
+            assert p.eta() > 0.
 
 
 class TestAutoProgressBar(object):
     class ProgressMock(object):
         def __init__(self, eta, start_time=1234.5):
-            self.eta = eta
+            self.eta = lambda: eta
             self.start_time = start_time
 
     def test_progress_not_shown_if_eta_below_threshold(self):
