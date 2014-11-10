@@ -70,13 +70,11 @@ class Progress(object):
     Examples
     --------
 
-    .. code-block:: python
-
-        max_steps = 10
-        with Progress(max_steps) as progress:
-            for i in range(max_steps):
-                # do something
-                progress.step()
+    >>> max_steps = 10
+    >>> with Progress(max_steps) as progress:
+    ...     for i in range(max_steps):
+    ...         # do something
+    ...         progress.step()
 
     """
 
