@@ -48,8 +48,6 @@ class Progress(object):
     ----------
     max_steps : int
         The total number of calculation steps of the process.
-    observers : sequence of :class:`ProgressObserver`, optional
-        Observers to be notified whenever the progress changes.
 
     Attributes
     ----------
@@ -64,8 +62,6 @@ class Progress(object):
     success : bool or None
         Whether the process finished successfully. ``None`` if the process
         did not finish yet.
-    observers : list of :class:`ProgressObserver`
-        Observers to be notified whenever the progress changes.
 
     Examples
     --------
@@ -78,16 +74,12 @@ class Progress(object):
 
     """
 
-    def __init__(self, max_steps, observers=None):
+    def __init__(self, max_steps):
         self.n_steps = 0
         self.max_steps = max_steps
         self.start_time = self.end_time = time.time()
         self.finished = False
         self.success = None
-        if observers is None:
-            self.observers = []
-        else:
-            self.observers = list(observers)
 
     @property
     def progress(self):
@@ -131,7 +123,6 @@ class Progress(object):
         self.success = None
         self.n_steps = 0
         self.start_time = time.time()
-        self.notify_observers()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -140,7 +131,6 @@ class Progress(object):
             self.n_steps = self.max_steps
         self.end_time = time.time()
         self.finished = True
-        self.notify_observers()
 
     def step(self, n=1):
         """Advances the progress.
@@ -151,31 +141,11 @@ class Progress(object):
             Number of steps to advance the progress by.
         """
         self.n_steps += n
-        self.notify_observers()
-
-    def notify_observers(self):
-        """Notifies all observers about a change of the progress."""
-        for o in self.observers:
-            o.update(self)
 
 
-class ProgressObserver(object):
-    """Abstract base class taking notifications from :class:`Progress`."""
-
-    def update(self, progress):
-        """Signals a change of the observed `progress`.
-
-        Parameters
-        ----------
-        progress : :class:`Progress`
-            The observed progress.
-        """
-        raise NotImplementedError()
-
-
-class UpdateBehavior(ProgressObserver):
-    """Abstract base class for classes filtering the updates that are signaled
-    to a :class:`ProgressObserver`.
+class UpdateBehavior(object):
+    """Abstract base class for classes controlling the updates to a progress
+    bar given some progress information.
 
     Parameters
     ----------
@@ -187,14 +157,31 @@ class UpdateBehavior(ProgressObserver):
     def __init__(self, progress_bar):
         self.progress_bar = progress_bar
 
+    def update(self, progress):
+        """Notify about changed progress and update progress bar if desired
 
-class ProgressBar(ProgressObserver):
+        Parameters
+        ----------
+        progress : :class:`Progress`
+            Changed progress information.
+        """
+        raise NotImplementedError()
+
+
+class ProgressBar(object):
     """Abstract base class for progress bars (classes displaying the progress
     in some way).
     """
 
-    # pylint: disable=abstract-method
-    pass
+    def update(self, progress):
+        """Updates the displayed progress.
+
+        Parameters
+        ----------
+        progress : :class:`Progress`
+            The progress information to display.
+        """
+        raise NotImplementedError()
 
 
 class NoProgressBar(ProgressBar):
@@ -348,27 +335,6 @@ class IPython2ProgressBar(ProgressBar):
                 eta=_timestamp2timedelta(progress.eta()))
 
 
-class LogSteps(ProgressBar):
-    """Logs the progress as debug messages.
-
-    Parameters
-    ----------
-    logger : logger
-        Logger to log the progress to.
-    """
-    def __init__(self, logger):
-        self.logger = logger
-        super(LogSteps, self).__init__()
-
-    def update(self, progress):
-        if progress.finished:
-            self.logger.debug(
-                "Simulation done in %s.",
-                _timestamp2timedelta(progress.elapsed_seconds()))
-        else:
-            self.logger.debug("Step %d", progress.n_steps)
-
-
 class WriteProgressToFile(ProgressBar):
     """Writes the progress to a file. This file will be overwritten on each
     update of the progress! Useful for remotely and intermittently
@@ -434,11 +400,11 @@ class MaxNUpdater(UpdateBehavior):
 
     Parameters
     ----------
-    progress_bar : :class:`ProgressObserver`
-        The progress observer to relay the updates to.
+    progress_bar : :class:`ProgressBar`
+        The progress bar to relay the updates to.
     max_updates : int
         Maximum number of updates that will be relayed to the progress
-        observer.
+        bar.
     """
 
     def __init__(self, progress_bar, max_updates=100):
@@ -455,12 +421,12 @@ class MaxNUpdater(UpdateBehavior):
 
 
 class EveryNUpdater(UpdateBehavior):
-    """Relays only every `n`-th update to a :class:`ProgressObserver`.
+    """Relays only every `n`-th update to a :class:`ProgressBar`.
 
     Parameters
     ----------
-    progress_bar : :class:`ProgressObserver`
-        The progress observer to relay the updates to.
+    progress_bar : :class:`ProgressBar`
+        The progress bar to relay the updates to.
     every_n : int
         The number of steps in-between relayed updates.
     """
@@ -478,12 +444,12 @@ class EveryNUpdater(UpdateBehavior):
 
 
 class IntervalUpdater(UpdateBehavior):
-    """Updates a :class:`ProgressObserver` in regular time intervals.
+    """Updates a :class:`ProgressBar` in regular time intervals.
 
     Parameters
     ----------
-    progress_bar : :class:`ProgressObserver`
-        The progress observer to relay the updates to.
+    progress_bar : :class:`ProgressBar`
+        The progress bar to relay the updates to.
     update_interval : float
         Number of seconds in-between relayed updates.
     """
