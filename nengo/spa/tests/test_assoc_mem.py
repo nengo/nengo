@@ -6,48 +6,46 @@ from nengo.spa import Vocabulary
 from nengo.spa.assoc_mem import AssociativeMemory
 
 
-def test_am_defaults(Simulator):
-    """Default assoc memory.
+def similarity(data, target):
+    return np.mean(np.dot(data, target.T))
 
-    Options: auto-associative, threshold = 0.3, non-inhibitable, non-wta,
-    does not output utilities or thresholded utilities.
-    """
 
-    rng = np.random.RandomState(1)
+def test_am_basic(Simulator, plt, seed, rng):
+    """Basic associative memory test."""
 
     D = 64
     vocab = Vocabulary(D, rng=rng)
     vocab.parse('A+B+C+D')
 
-    m = nengo.Network('model', seed=123)
-    with m:
+    with nengo.Network('model', seed=seed) as m:
         am = AssociativeMemory(vocab)
-        in_node = nengo.Node(output=vocab.parse("A").v,
-                             label='input')
-        out_node = nengo.Node(size_in=D, label='output')
+        in_node = nengo.Node(output=vocab.parse("A").v, label='input')
         nengo.Connection(in_node, am.input)
-        nengo.Connection(am.output, out_node, synapse=0.03)
 
         in_p = nengo.Probe(in_node)
-        out_p = nengo.Probe(out_node)
+        out_p = nengo.Probe(am.output, synapse=0.03)
 
     sim = Simulator(m)
-    sim.run(1.0)
+    sim.run(0.2)
+    t = sim.trange()
 
-    assert np.allclose(sim.data[in_p][-10:], vocab.parse("A").v,
-                       atol=.1, rtol=.01)
-    assert np.allclose(sim.data[out_p][-10:], vocab.parse("A").v,
-                       atol=.1, rtol=.01)
+    plt.subplot(2, 1, 1)
+    plt.plot(t, nengo.spa.similarity(sim.data, in_p, vocab))
+    plt.ylabel("Input")
+    plt.ylim(top=1.1)
+    plt.legend(vocab.keys, loc='best')
+    plt.subplot(2, 1, 2)
+    plt.plot(t, nengo.spa.similarity(sim.data, out_p, vocab))
+    plt.plot(t[t > 0.15], np.ones(t.shape)[t > 0.15] * 0.8, c='g', lw=2)
+    plt.ylabel("Output")
+    plt.legend(vocab.keys, loc='best')
+
+    assert similarity(sim.data[in_p][t > 0.15], vocab.parse("A").v) > 0.99
+    assert similarity(sim.data[out_p][t > 0.15], vocab.parse("A").v) > 0.8
 
 
-def test_am_assoc_mem_threshold(Simulator):
-    """Standard associative memory (differing input and output vocabularies).
-
-    Options: threshold = 0.5, non-inhibitable, non-wta, does not output
-    utilities or thresholded utilities.
-    """
-    rng = np.random.RandomState(1)
-
+def test_am_threshold(Simulator, plt, seed, rng):
+    """Associative memory thresholding with differing input/output vocabs."""
     D = 64
     vocab = Vocabulary(D, rng=rng)
     vocab.parse('A+B+C+D')
@@ -57,44 +55,90 @@ def test_am_assoc_mem_threshold(Simulator):
     vocab2.parse('A+B+C+D')
 
     def input_func(t):
-        if t < 0.5:
-            return vocab.parse('0.49*A').v
-        else:
-            return vocab.parse('0.79*A').v
+        return vocab.parse('0.49*A').v if t < 0.1 else vocab.parse('0.79*A').v
 
-    m = nengo.Network('model', seed=123)
-    with m:
+    with nengo.Network('model', seed=seed) as m:
         am = AssociativeMemory(vocab, vocab2, threshold=0.5)
         in_node = nengo.Node(output=input_func, label='input')
-        out_node = nengo.Node(size_in=D2, label='output')
         nengo.Connection(in_node, am.input)
-        nengo.Connection(am.output, out_node, synapse=0.03)
 
         in_p = nengo.Probe(in_node)
-        out_p = nengo.Probe(out_node)
+        out_p = nengo.Probe(am.output, synapse=0.03)
 
     sim = Simulator(m)
-    sim.run(1.0)
+    sim.run(0.3)
+    t = sim.trange()
+    below_th = t < 0.1
+    above_th = t > 0.25
 
-    assert np.allclose(sim.data[in_p][490:500], vocab.parse("0.49*A").v,
-                       atol=.15, rtol=.01)
-    assert np.allclose(sim.data[in_p][-10:], vocab.parse("0.79*A").v,
-                       atol=.15, rtol=.01)
-    assert np.allclose(sim.data[out_p][490:500], vocab2.parse("0").v,
-                       atol=.15, rtol=.01)
-    assert np.allclose(sim.data[out_p][-10:], vocab2.parse("A").v,
-                       atol=.15, rtol=.01)
+    plt.subplot(2, 1, 1)
+    plt.plot(t, nengo.spa.similarity(sim.data, in_p, vocab))
+    plt.ylabel("Input")
+    plt.legend(vocab.keys, loc='best')
+    plt.subplot(2, 1, 2)
+    plt.plot(t, nengo.spa.similarity(sim.data, out_p, vocab2))
+    plt.plot(t[above_th], np.ones(t.shape)[above_th] * 0.8, c='g', lw=2)
+    plt.ylabel("Output")
+    plt.legend(vocab.keys, loc='best')
+
+    assert similarity(sim.data[in_p][below_th], vocab.parse("A").v) > 0.48
+    assert similarity(sim.data[in_p][above_th], vocab.parse("A").v) > 0.78
+    assert similarity(sim.data[out_p][below_th], vocab2.parse("0").v) < 0.01
+    assert similarity(sim.data[out_p][above_th], vocab2.parse("A").v) > 0.8
 
 
-def test_am_default_output_inhibit_utilities(Simulator):
-    """Auto-associative memory (non-wta) complex test.
+def test_am_wta(Simulator, plt, seed, rng):
+    """Test the winner-take-all ability of the associative memory."""
 
-    Options: defaults to predefined vector if no match is found,
-    threshold = 0.3, inhibitable, non-wta, outputs utilities and thresholded
-    utilities.
+    D = 64
+    vocab = Vocabulary(D, rng=rng)
+    vocab.parse('A+B+C+D')
+
+    def input_func(t):
+        if t < 0.2:
+            return vocab.parse('A+0.8*B').v
+        elif t < 0.3:
+            return np.zeros(D)
+        else:
+            return vocab.parse('0.8*A+B').v
+
+    with nengo.Network('model', seed=seed) as m:
+        am = AssociativeMemory(vocab, wta_output=True)
+        in_node = nengo.Node(output=input_func, label='input')
+        nengo.Connection(in_node, am.input)
+
+        in_p = nengo.Probe(in_node)
+        out_p = nengo.Probe(am.output, synapse=0.03)
+
+    sim = Simulator(m)
+    sim.run(0.5)
+    t = sim.trange()
+    more_a = (t > 0.15) & (t < 0.2)
+    more_b = t > 0.45
+
+    plt.subplot(2, 1, 1)
+    plt.plot(t, nengo.spa.similarity(sim.data, in_p, vocab))
+    plt.ylabel("Input")
+    plt.ylim(top=1.1)
+    plt.legend(vocab.keys, loc='best')
+    plt.subplot(2, 1, 2)
+    plt.plot(t, nengo.spa.similarity(sim.data, out_p, vocab))
+    plt.plot(t[more_a], np.ones(t.shape)[more_a] * 0.8, c='g', lw=2)
+    plt.plot(t[more_b], np.ones(t.shape)[more_b] * 0.8, c='g', lw=2)
+    plt.ylabel("Output")
+    plt.legend(vocab.keys, loc='best')
+
+    assert similarity(sim.data[out_p][more_a], vocab.parse("A").v) > 0.8
+    assert similarity(sim.data[out_p][more_a], vocab.parse("B").v) < 0.2
+    assert similarity(sim.data[out_p][more_b], vocab.parse("B").v) > 0.8
+    assert similarity(sim.data[out_p][more_b], vocab.parse("A").v) < 0.2
+
+
+def test_am_complex(Simulator, plt, seed, rng):
+    """Complex auto-associative memory test.
+
+    Has a default output vector, outputs utilities, and becomes inhibited.
     """
-    rng = np.random.RandomState(1)
-
     D = 64
     vocab = Vocabulary(D, rng=rng)
     vocab.parse('A+B+C+D+E+F')
@@ -112,139 +156,71 @@ def test_am_default_output_inhibit_utilities(Simulator):
     def inhib_func(t):
         return int(t > 0.75)
 
-    m = nengo.Network('model', seed=1234)
-    with m:
+    with nengo.Network('model', seed=seed) as m:
         am = AssociativeMemory(vocab2,
                                default_output_vector=vocab.parse("F").v,
-                               inhibitable=True, output_utilities=True,
+                               inhibitable=True,
+                               output_utilities=True,
                                output_thresholded_utilities=True)
         in_node = nengo.Node(output=input_func, label='input')
         inhib_node = nengo.Node(output=inhib_func, label='inhib')
-        out_node = nengo.Node(size_in=D, label='output')
-        utils_node = nengo.Node(size_in=4, label='utils')
-        utils_th_node = nengo.Node(size_in=4, label='utils_th')
         nengo.Connection(in_node, am.input)
         nengo.Connection(inhib_node, am.inhibit)
-        nengo.Connection(am.output, out_node, synapse=0.03)
-        nengo.Connection(am.utilities, utils_node, synapse=0.05)
-        nengo.Connection(am.thresholded_utilities, utils_th_node, synapse=0.05)
 
         in_p = nengo.Probe(in_node)
-        out_p = nengo.Probe(out_node)
-        utils_p = nengo.Probe(utils_node)
-        utils_th_p = nengo.Probe(utils_th_node)
+        out_p = nengo.Probe(am.output, synapse=0.03)
+        utils_p = nengo.Probe(am.utilities, synapse=0.05)
+        utils_th_p = nengo.Probe(am.thresholded_utilities, synapse=0.05)
 
     sim = Simulator(m)
     sim.run(1.0)
-
     t = sim.trange()
-    t1 = (t >= 0.2) & (t < 0.25)
-    t2 = (t >= 0.45) & (t < 0.5)
-    t3 = (t >= 0.7) & (t < 0.75)
-    t4 = (t >= 0.95)
-    assert np.allclose(sim.data[in_p][t1], vocab.parse("A+0.8*B").v, atol=0.1)
-    assert np.allclose(sim.data[in_p][t2], vocab.parse("0.8*A+B").v, atol=0.1)
-    assert np.allclose(sim.data[in_p][t3], vocab.parse("E").v, atol=0.1)
-    assert np.allclose(sim.data[in_p][t4], vocab.parse("E").v, atol=0.1)
-    assert np.allclose(sim.data[out_p][t1], vocab.parse("A+B").v, atol=0.1)
-    assert np.allclose(sim.data[out_p][t2], vocab.parse("A+B").v, atol=0.1)
-    assert np.allclose(sim.data[out_p][t3], vocab.parse("F").v, atol=0.1)
-    assert np.allclose(sim.data[out_p][t4], vocab.parse("0").v, atol=0.1)
-    assert np.allclose(sim.data[utils_p][t1], [1, 0.75, 0, 0], atol=0.1)
-    assert np.allclose(sim.data[utils_p][t2], [0.75, 1, 0, 0], atol=0.1)
-    assert np.allclose(sim.data[utils_p][t3], [0, 0, 0, 0], atol=0.1)
-    assert np.allclose(sim.data[utils_p][t4], [0, 0, 0, 0], atol=0.1)
-    assert np.allclose(sim.data[utils_th_p][t1], [1.05, 1.05, 0, 0], atol=0.2)
-    assert np.allclose(sim.data[utils_th_p][t2], [1.05, 1.05, 0, 0], atol=0.15)
-    assert np.allclose(sim.data[utils_th_p][t3], [0, 0, 0, 0], atol=0.1)
-    assert np.allclose(sim.data[utils_th_p][t4], [0, 0, 0, 0], atol=0.1)
+    # Input: A+0.8B
+    more_a = (t >= 0.2) & (t < 0.25)
+    # Input: 0.8B+A
+    more_b = (t >= 0.45) & (t < 0.5)
+    # Input: E (but E isn't in the memory vocabulary, so should output F)
+    all_e = (t >= 0.7) & (t < 0.75)
+    # Input: E (but inhibited, so should output nothing)
+    inhib = (t >= 0.95)
+
+    def plot(i, y, ylabel):
+        plt.subplot(4, 1, i)
+        plt.plot(t, y)
+        plt.axvline(0.25, c='k')
+        plt.axvline(0.5, c='k')
+        plt.axvline(0.75, c='k')
+        plt.ylabel(ylabel)
+        plt.legend(vocab.keys[:y.shape[1]], loc='best', fontsize='xx-small')
+    plot(1, nengo.spa.similarity(sim.data, in_p, vocab), "Input")
+    plot(2, sim.data[utils_p], "Utilities")
+    plot(3, sim.data[utils_th_p], "Thresholded utilities")
+    plot(4, nengo.spa.similarity(sim.data, out_p, vocab), "Output")
+
+    assert all(np.mean(sim.data[utils_p][more_a], axis=0)[:2] > [0.8, 0.5])
+    assert all(np.mean(sim.data[utils_p][more_a], axis=0)[2:] < [0.01, 0.01])
+    assert all(np.mean(sim.data[utils_p][more_b], axis=0)[:2] > [0.5, 0.8])
+    assert all(np.mean(sim.data[utils_p][more_b], axis=0)[2:] < [0.01, 0.01])
+    assert similarity(sim.data[utils_p][all_e], np.ones((1, 4))) < 0.05
+    assert similarity(sim.data[utils_p][inhib], np.ones((1, 4))) < 0.05
+    assert all(np.mean(sim.data[utils_th_p][more_a], axis=0)[:2] > [0.8, 0.8])
+    assert all(
+        np.mean(sim.data[utils_th_p][more_a], axis=0)[2:] < [0.01, 0.01])
+    assert all(np.mean(sim.data[utils_th_p][more_b], axis=0)[:2] > [0.8, 0.8])
+    assert all(
+        np.mean(sim.data[utils_th_p][more_b], axis=0)[2:] < [0.01, 0.01])
+    assert similarity(sim.data[utils_th_p][all_e], np.ones((1, 4))) < 0.05
+    assert similarity(sim.data[utils_th_p][inhib], np.ones((1, 4))) < 0.05
+    assert similarity(sim.data[out_p][more_a], vocab.parse("A").v) > 0.8
+    assert similarity(sim.data[out_p][more_a], vocab.parse("B").v) > 0.8
+    assert similarity(sim.data[out_p][more_b], vocab.parse("A").v) > 0.8
+    assert similarity(sim.data[out_p][more_b], vocab.parse("B").v) > 0.8
+    assert similarity(sim.data[out_p][all_e], vocab.parse("F").v) > 0.8
+    assert similarity(sim.data[out_p][inhib], np.ones((1, D))) < 0.05
 
 
-def test_am_default_output_inhibit_utilities_wta(Simulator):
-    """Auto-associative memory (wta) complex test.
-
-    Options: defaults to predefined vector if no match is found,
-    threshold = 0.3, inhibitable, wta, outputs utilities and thresholded
-    utilities.
-    """
-    rng = np.random.RandomState(1)
-
-    D = 64
-    vocab = Vocabulary(D, rng=rng)
-    vocab.parse('A+B+C+D+E+F')
-
-    vocab2 = vocab.create_subset(["A", "B", "C", "D"])
-
-    def input_func(t):
-        if t < 0.25:
-            return vocab.parse('A+0.8*B').v
-        elif t < 0.5:
-            return vocab.parse('E').v
-        else:
-            return vocab.parse('0.8*A+B').v
-
-    def inhib_func(t):
-        if t < 0.75:
-            return 0
-        else:
-            return 1
-
-    m = nengo.Network('model', seed=123)
-    with m:
-        am = AssociativeMemory(vocab2, wta_output=True,
-                               default_output_vector=vocab.parse("F").v,
-                               inhibitable=True, output_utilities=True,
-                               output_thresholded_utilities=True)
-        in_node = nengo.Node(output=input_func, label='input')
-        inhib_node = nengo.Node(output=inhib_func, label='inhib')
-        out_node = nengo.Node(size_in=D, label='output')
-        utils_node = nengo.Node(size_in=4, label='utils')
-        utils_th_node = nengo.Node(size_in=4, label='utils_th')
-        nengo.Connection(in_node, am.input)
-        nengo.Connection(inhib_node, am.inhibit)
-        nengo.Connection(am.output, out_node, synapse=0.03)
-        nengo.Connection(am.utilities, utils_node, synapse=0.05)
-        nengo.Connection(am.thresholded_utilities, utils_th_node, synapse=0.05)
-
-        in_p = nengo.Probe(in_node)
-        out_p = nengo.Probe(out_node)
-        utils_p = nengo.Probe(utils_node)
-        utils_th_p = nengo.Probe(utils_th_node)
-
-    sim = Simulator(m)
-    sim.run(1.0)
-
-    t = sim.trange()
-    t1 = (t >= 0.2) & (t < 0.25)
-    t2 = (t >= 0.45) & (t < 0.5)
-    t3 = (t >= 0.7) & (t < 0.75)
-    t4 = (t >= 0.95)
-    assert np.allclose(sim.data[in_p][t1], vocab.parse("A+0.8*B").v, atol=0.1)
-    assert np.allclose(sim.data[in_p][t2], vocab.parse("E").v, atol=0.1)
-    assert np.allclose(sim.data[in_p][t3], vocab.parse("0.8*A+B").v, atol=0.1)
-    assert np.allclose(sim.data[in_p][t4], vocab.parse("0.8*A+B").v, atol=0.1)
-    assert np.allclose(sim.data[out_p][t1], vocab.parse("A").v, atol=0.1)
-    assert np.allclose(sim.data[out_p][t2], vocab.parse("F").v, atol=0.1)
-    assert np.allclose(sim.data[out_p][t3], vocab.parse("B").v, atol=0.1)
-    assert np.allclose(sim.data[out_p][t4], vocab.parse("0").v, atol=0.1)
-    assert np.allclose(sim.data[utils_p][t1], [1, 0, 0, 0], atol=0.1)
-    assert np.allclose(sim.data[utils_p][t2], [0, 0, 0, 0], atol=0.1)
-    assert np.allclose(sim.data[utils_p][t3], [0, 1, 0, 0], atol=0.1)
-    assert np.allclose(sim.data[utils_p][t4], [0, 0, 0, 0], atol=0.1)
-    assert np.allclose(sim.data[utils_th_p][t1], [1.05, 0, 0, 0], atol=0.15)
-    assert np.allclose(sim.data[utils_th_p][t2], [0, 0, 0, 0], atol=0.1)
-    assert np.allclose(sim.data[utils_th_p][t3], [0, 1.05, 0, 0], atol=0.15)
-    assert np.allclose(sim.data[utils_th_p][t4], [0, 0, 0, 0], atol=0.1)
-
-
-def test_am_spa_interaction(Simulator):
-    """Standard associative memory interacting with other SPA modules.
-
-    Options: threshold = 0.5, non-inhibitable, non-wta, does not output
-    utilities or thresholded utilities.
-    """
-    rng = np.random.RandomState(1)
-
+def test_am_spa_interaction(Simulator, seed, rng):
+    """Make sure associative memory interacts with other SPA modules."""
     D = 16
     vocab = Vocabulary(D, rng=rng)
     vocab.parse('A+B+C+D')
@@ -254,13 +230,9 @@ def test_am_spa_interaction(Simulator):
     vocab2.parse('A+B+C+D')
 
     def input_func(t):
-        if t < 0.5:
-            return '0.49*A'
-        else:
-            return '0.79*A'
+        return '0.49*A' if t < 0.5 else '0.79*A'
 
-    m = nengo.spa.SPA('model', seed=123)
-    with m:
+    with nengo.spa.SPA(seed=seed) as m:
         m.buf = nengo.spa.Buffer(D)
         m.input = nengo.spa.Input(buf=input_func)
 
