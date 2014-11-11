@@ -167,26 +167,24 @@ class Choice(Distribution):
     def __init__(self, options, weights=None):
         self.options = np.array(options)
 
-        if weights is None:
-            self.p = None
-        else:
-            weights = np.asarray(weights)
-            if len(weights) != len(self.options):
-                raise ValueError(
-                    "Number of weights (%d) must match number of options (%d)"
-                    % (len(weights), len(self.options)))
-            if not all(weights >= 0):
-                raise ValueError("All weights must be non-negative")
-            total = float(weights.sum())
-            if total <= 0:
-                raise ValueError(
-                    "Sum of weights must be positive (got %f)" % total)
-            self.p = weights / total
+        weights = (np.asarray(weights) if weights is not None else
+                   np.ones(len(options)))
+        if len(weights) != len(self.options):
+            raise ValueError(
+                "Number of weights (%d) must match number of options (%d)"
+                % (len(weights), len(self.options)))
+        if not all(weights >= 0):
+            raise ValueError("All weights must be non-negative")
+        total = float(weights.sum())
+        if total <= 0:
+            raise ValueError(
+                "Sum of weights must be positive (got %f)" % total)
+        self.p = weights / total
 
     def sample(self, n, d=None, rng=np.random):
-        i = rng.choice(len(self.options), p=self.p, size=n)
-        if d is not None:
-            if self.options[i].shape[1] != d:
-                raise ValueError("Options must be of dimensionality %d "
-                                 "(got %d)" % (d, self.options[i].shape[1]))
+        if d is not None and np.prod(self.options.shape[1:]) != d:
+            raise ValueError("Options must be of dimensionality %d "
+                             "(got %d)" % (d, np.prod(self.options.shape[1:])))
+
+        i = np.searchsorted(np.cumsum(self.p), rng.rand(n))
         return self.options[i]
