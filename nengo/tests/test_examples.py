@@ -11,8 +11,9 @@ import pytest
 #  doesn't have any side effects, so it's fine.
 import _pytest.capture
 _pytest.capture.DontReadFromInput.encoding = "utf-8"
+_pytest.capture.DontReadFromInput.write = lambda: None
+_pytest.capture.DontReadFromInput.flush = lambda: None
 
-from nengo.utils.ipython import export_py, load_notebook
 from nengo.utils.paths import examples_dir
 from nengo.utils.stdlib import execfile
 
@@ -38,6 +39,8 @@ def pytest_generate_tests(metafunc):
 @pytest.mark.example
 def test_noexceptions(nb_path, tmpdir, plt):
     """Ensure that no cells raise an exception."""
+    pytest.importorskip("IPython", minversion="1.0")
+    from nengo.utils.ipython import export_py, load_notebook
     nb = load_notebook(nb_path)
     pyfile = "%s.py" % (
         tmpdir.join(os.path.splitext(os.path.basename(nb_path))[0]))
@@ -50,6 +53,8 @@ def test_noexceptions(nb_path, tmpdir, plt):
 @pytest.mark.example
 def test_nooutput(nb_path):
     """Ensure that no cells have output."""
+    pytest.importorskip("IPython", minversion="1.0")
+    from nengo.utils.ipython import load_notebook
     nb = load_notebook(nb_path)
 
     for ws in nb.worksheets:
