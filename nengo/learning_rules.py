@@ -72,6 +72,7 @@ class BCM(LearningRuleType):
     """
 
     modifies = ['Neurons']
+    probeable = ['theta', 'pre_filtered', 'post_filtered']
 
     def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
                  learning_rate=1e-6):
@@ -104,6 +105,7 @@ class Oja(LearningRuleType):
     """
 
     modifies = ['Neurons']
+    probeable = ['pre_filtered', 'post_filtered']
 
     def __init__(self, pre_tau=0.005, post_tau=None, beta=1.0,
                  learning_rate=1e-6):

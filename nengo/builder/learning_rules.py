@@ -99,7 +99,12 @@ def build_bcm(model, bcm, rule):
     model.add_op(ElementwiseInc(
         model.sig['common'][1], delta, transform, tag="BCM: Inc Transform"))
 
-    model.params[rule] = None
+    # expose these for probes
+    model.sig[rule]['theta'] = theta
+    model.sig[rule]['pre_filtered'] = pre_filtered
+    model.sig[rule]['post_filtered'] = post_filtered
+
+    model.params[rule] = None  # no build-time info to return
 
 
 @Builder.register(Oja)
@@ -122,7 +127,11 @@ def build_oja(model, oja, rule):
     model.add_op(ElementwiseInc(
         model.sig['common'][1], delta, transform, tag="Oja: Inc Transform"))
 
-    model.params[rule] = None
+    # expose these for probes
+    model.sig[rule]['pre_filtered'] = pre_filtered
+    model.sig[rule]['post_filtered'] = post_filtered
+
+    model.params[rule] = None  # no build-time info to return
 
 
 @Builder.register(PES)
@@ -136,10 +145,6 @@ def build_pes(model, pes, rule):
                           name="PES:error * learning_rate")
     scaled_error_view = scaled_error.reshape((error.size, 1))
     activities_view = activities.reshape((1, activities.size))
-
-    model.sig[rule]['scaled_error'] = scaled_error
-    model.sig[rule]['activities'] = activities
-
     lr_sig = Signal(pes.learning_rate * model.dt, name="PES:learning_rate")
 
     model.add_op(Reset(scaled_error))
@@ -175,4 +180,8 @@ def build_pes(model, pes, rule):
             scaled_error_view, activities_view, decoders,
             tag="PES:Inc Decoder"))
 
-    model.params[rule] = None
+    # expose these for probes
+    model.sig[rule]['scaled_error'] = scaled_error
+    model.sig[rule]['activities'] = activities
+
+    model.params[rule] = None  # no build-time info to return
