@@ -10,7 +10,7 @@ from nengo.synapses import SynapseParam
 class TargetParam(NengoObjectParam):
     def validate(self, probe, target):
         obj = target.obj if isinstance(target, ObjView) else target
-        if not hasattr(obj, 'probeable') or len(obj.probeable) == 0:
+        if not hasattr(obj, 'probeable'):
             raise TypeError(
                 "Type '%s' is not probeable" % obj.__class__.__name__)
 
