@@ -5,12 +5,13 @@ import pytest
 import nengo
 from nengo.utils.progress import (
     AutoProgressBar, EveryNUpdater, IntervalUpdater, MaxNUpdater, Progress,
-    ProgressObserver)
+    ProgressBar)
 
 
-class ProgressObserverMock(ProgressObserver):
+class ProgressBarMock(ProgressBar):
     def __init__(self):
         self.n_update_calls = 0
+        super(ProgressBarMock, self).__init__()
 
     def update(self, progress):
         self.n_update_calls += 1
@@ -25,13 +26,6 @@ class TestProgress(object):
             assert p.progress == 0.5
             p.step(5)
             assert p.progress == 1.
-
-    def test_notifies_observers(self):
-        observer = ProgressObserverMock()
-        with Progress(10, [observer]) as p:
-            for _ in range(5):
-                p.step()
-        assert observer.n_update_calls >= 5
 
     def test_finished_property(self):
         with Progress(10) as p:
@@ -76,76 +70,84 @@ class TestAutoProgressBar(object):
 
     def test_progress_not_shown_if_eta_below_threshold(self):
         progress_mock = self.ProgressMock(0.2)
-        observer = ProgressObserverMock()
-        auto_progress = AutoProgressBar(observer, min_eta=10.)
+        progress_bar = ProgressBarMock()
+        auto_progress = AutoProgressBar(progress_bar, min_eta=10.)
 
         for _ in range(10):
             auto_progress.update(progress_mock)
 
-        assert observer.n_update_calls == 0
+        assert progress_bar.n_update_calls == 0
 
     def test_progress_shown_if_eta_above_threshold(self):
-        progress_mock = self.ProgressMock(20.)
-        observer = ProgressObserverMock()
-        auto_progress = AutoProgressBar(observer, min_eta=10.)
+        progress_mock = self.ProgressMock(20)
+        progress_bar = ProgressBarMock()
+        auto_progress = AutoProgressBar(progress_bar, min_eta=10.)
 
         for _ in range(10):
             auto_progress.update(progress_mock)
 
-        assert observer.n_update_calls >= 10
+        assert progress_bar.n_update_calls >= 10
 
 
 class TestMaxNUpdater(object):
     def test_at_most_n_updates_are_performed(self):
-        observer = ProgressObserverMock()
-        updater = MaxNUpdater(observer, max_updates=3)
+        progress_bar = ProgressBarMock()
+        updater = MaxNUpdater(progress_bar, max_updates=3)
 
-        with Progress(100, [updater]) as p:
+        with Progress(100) as p:
             for _ in range(100):
                 p.step()
+                updater.update(p)
 
-        assert observer.n_update_calls > 0
-        assert observer.n_update_calls <= 3
+        assert progress_bar.n_update_calls > 0
+        assert progress_bar.n_update_calls <= 3
 
 
 class TestEveryNUpdater(object):
     def test_updates_every_n_steps(self):
-        observer = ProgressObserverMock()
-        updater = EveryNUpdater(observer, every_n=5)
+        progress_bar = ProgressBarMock()
+        updater = EveryNUpdater(progress_bar, every_n=5)
 
-        with Progress(100, [updater]) as p:
-            observer.n_update_calls = 0
+        with Progress(100) as p:
+            progress_bar.n_update_calls = 0
             for _ in range(5):
                 p.step()
-            assert observer.n_update_calls == 1
+                updater.update(p)
+            assert progress_bar.n_update_calls == 1
 
             p.step(2)
-            assert observer.n_update_calls == 1
+            updater.update(p)
+            assert progress_bar.n_update_calls == 1
             p.step(3)
-            assert observer.n_update_calls == 2
+            updater.update(p)
+            assert progress_bar.n_update_calls == 2
 
 
 class TestIntervalUpdater(object):
     def test_updates_after_interval_has_passed(self, monkeypatch):
-        observer = ProgressObserverMock()
-        updater = IntervalUpdater(observer, update_interval=2.)
+        progress_bar = ProgressBarMock()
+        updater = IntervalUpdater(progress_bar, update_interval=2.)
         t = 1.
         monkeypatch.setattr(time, 'time', lambda: t)
 
-        with Progress(100, [updater]) as p:
+        with Progress(100) as p:
             p.step()  # Update is allowed to happen on first step.
+            updater.update(p)
 
-            observer.n_update_calls = 0
+            progress_bar.n_update_calls = 0
             p.step()
-            assert observer.n_update_calls == 0
+            updater.update(p)
+            assert progress_bar.n_update_calls == 0
 
             t = 2.
             p.step()
-            assert observer.n_update_calls == 0
+            updater.update(p)
+            assert progress_bar.n_update_calls == 0
 
             t = 4.
             p.step()
-            assert observer.n_update_calls == 1
+            progress_bar.update(p)
+            assert progress_bar.n_update_calls == 1
 
 
 if __name__ == "__main__":
