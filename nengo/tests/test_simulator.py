@@ -166,7 +166,7 @@ def test_noise(RefSimulator):
     n = 1000
     mean, std = 0.1, 0.8
     noise = Signal(np.zeros(n), name="noise")
-    dist = nengo.utils.distributions.Gaussian(mean, std)
+    dist = nengo.dists.Gaussian(mean, std)
 
     m = Model(dt=0.001)
     m.operators += [Reset(noise), SimNoise(noise, dist)]

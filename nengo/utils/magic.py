@@ -46,7 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
 import functools
 import inspect
 
-from nengo.utils.compat import iteritems, with_metaclass
+from .compat import iteritems, with_metaclass
 
 
 class ObjectProxyMethods(object):

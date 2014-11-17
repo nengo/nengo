@@ -1,6 +1,5 @@
-from nengo.network import Network
-from nengo.probe import Probe
-from nengo.utils.compat import iteritems
+import nengo
+from .compat import iteritems
 
 
 def probe_all(net, recursive=False, probe_options=None,  # noqa: C901
@@ -53,7 +52,7 @@ def probe_all(net, recursive=False, probe_options=None,  # noqa: C901
             for obj_type, obj_list in iteritems(net.objects):
 
                 # recursively probe subnetworks if required
-                if obj_type is Network and recursive:
+                if obj_type is nengo.Network and recursive:
                     for subnet in obj_list:
                         probe_helper(subnet, recursive=recursive,
                                      probe_options=probe_options)
@@ -65,7 +64,7 @@ def probe_all(net, recursive=False, probe_options=None,  # noqa: C901
                                 obj.probeable) > 0:
                             probes[obj] = {}
                             for probeable in obj.probeable:
-                                probes[obj][probeable] = Probe(
+                                probes[obj][probeable] = nengo.Probe(
                                     obj, probeable, **probe_args)
 
                 # probe specified objects only
@@ -81,7 +80,7 @@ def probe_all(net, recursive=False, probe_options=None,  # noqa: C901
                                     "'%s' is not probeable for '%s'" %
                                     (obj, attr))
                             probes[obj][
-                                attr] = Probe(obj, attr, **probe_args)
+                                attr] = nengo.Probe(obj, attr, **probe_args)
 
     probe_helper(net, recursive, probe_options)
     return probes

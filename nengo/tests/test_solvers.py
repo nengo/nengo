@@ -11,8 +11,8 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.dists import UniformHypersphere
 from nengo.utils.compat import range
-from nengo.utils.distributions import UniformHypersphere
 from nengo.utils.numpy import filtfilt, rms, norm
 from nengo.utils.testing import allclose, Timer
 from nengo.solvers import (

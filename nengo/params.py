@@ -3,8 +3,8 @@ import weakref
 
 import numpy as np
 
+from nengo.dists import Distribution
 from nengo.utils.compat import is_integer, is_number, is_string
-from nengo.utils.distributions import Distribution
 from nengo.utils.stdlib import checked_call
 
 

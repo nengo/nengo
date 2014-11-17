@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa
 import pytest
 
 import nengo
-from nengo.utils.distributions import Uniform
+from nengo.dists import Uniform
 from nengo.utils.ensemble import response_curves, tuning_curves
 
 

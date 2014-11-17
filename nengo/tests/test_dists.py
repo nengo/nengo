@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
-import nengo.utils.distributions as dists
+import nengo.dists as dists
 import nengo.utils.numpy as npext
 
 

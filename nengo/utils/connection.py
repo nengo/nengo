@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import numpy as np
 
-import nengo.utils.numpy as npext
+from . import numpy as npext
 
 
 def target_function(eval_points, targets):

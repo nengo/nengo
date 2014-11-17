@@ -5,7 +5,7 @@ import pytest
 
 import nengo
 import nengo.utils.numpy as npext
-from nengo.utils.distributions import Choice
+from nengo.dists import Choice
 from nengo.utils.testing import warns, allclose
 
 logger = logging.getLogger(__name__)

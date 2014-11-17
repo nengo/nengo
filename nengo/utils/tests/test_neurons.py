@@ -6,7 +6,7 @@ import pytest
 import numpy as np
 
 import nengo
-from nengo.utils.distributions import Choice
+from nengo.dists import Choice
 from nengo.utils.functions import whitenoise
 from nengo.utils.matplotlib import implot
 from nengo.utils.neurons import rates_isi, rates_kernel

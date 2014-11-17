@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.dists import UniformHypersphere
 from nengo.utils.connection import target_function
-from nengo.utils.distributions import UniformHypersphere
 
 logger = logging.getLogger(__name__)
 

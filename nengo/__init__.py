@@ -30,6 +30,7 @@ from .simulator import Simulator
 from .synapses import Lowpass
 from .utils.logging import log
 from . import networks
+from . import utils
 
 logger = logging.getLogger(__name__)
 try:

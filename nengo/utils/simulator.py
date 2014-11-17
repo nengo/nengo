@@ -1,9 +1,9 @@
 from collections import defaultdict
 import itertools
 
-from nengo.utils.compat import iteritems
-from nengo.utils.graphs import add_edges
-from nengo.utils.stdlib import groupby
+from .compat import iteritems
+from .graphs import add_edges
+from .stdlib import groupby
 
 
 def operator_depencency_graph(operators):  # noqa: C901

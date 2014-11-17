@@ -5,8 +5,8 @@ import pytest
 
 import nengo
 from nengo import params
+from nengo.dists import UniformHypersphere
 from nengo.utils.compat import PY2
-from nengo.utils.distributions import UniformHypersphere
 
 logger = logging.getLogger(__name__)
 

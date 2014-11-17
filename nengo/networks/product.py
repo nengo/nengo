@@ -1,8 +1,8 @@
 import numpy as np
 
 import nengo
+from nengo.dists import Choice
 from nengo.networks.ensemblearray import EnsembleArray
-from nengo.utils.distributions import Choice
 
 
 class Product(nengo.Network):

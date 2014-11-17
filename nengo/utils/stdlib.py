@@ -10,7 +10,7 @@ import itertools
 import os
 import shutil
 
-from nengo.utils.compat import iteritems
+from .compat import iteritems
 
 CheckedCall = collections.namedtuple('CheckedCall', ('value', 'invoked'))
 

@@ -1,10 +1,10 @@
 import numpy as np
 
 import nengo
+from nengo.dists import Choice, Uniform
 from nengo.networks.ensemblearray import EnsembleArray
 from nengo.spa.module import Module
 from nengo.spa.vocab import Vocabulary
-from nengo.utils.distributions import Choice, Uniform
 from nengo.utils.compat import is_iterable
 
 

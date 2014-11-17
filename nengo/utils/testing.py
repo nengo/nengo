@@ -11,7 +11,7 @@ import warnings
 import numpy as np
 import pytest
 
-from nengo.utils.compat import is_string
+from .compat import is_string
 
 
 class Plotter(object):

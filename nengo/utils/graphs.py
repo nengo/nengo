@@ -37,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from collections import defaultdict
 
-from nengo.utils.compat import iteritems
+from .compat import iteritems
 
 
 def graph(edges=None):

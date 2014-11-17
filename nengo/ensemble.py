@@ -1,8 +1,8 @@
 from nengo.base import NengoObject, ObjView
+from nengo.dists import Uniform, UniformHypersphere
 from nengo.neurons import LIF, NeuronTypeParam, Direct
 from nengo.params import (
     Default, DistributionParam, IntParam, ListParam, NumberParam, StringParam)
-from nengo.utils.distributions import Uniform, UniformHypersphere
 
 
 class Ensemble(NengoObject):

@@ -3,9 +3,9 @@ import warnings
 import numpy as np
 
 import nengo
-from nengo.solvers import NnlsL2nz
+from nengo.dists import Choice, Uniform
 from nengo.networks.ensemblearray import EnsembleArray
-from nengo.utils.distributions import Choice, Uniform
+from nengo.solvers import NnlsL2nz
 
 
 class BasalGanglia(nengo.Network):

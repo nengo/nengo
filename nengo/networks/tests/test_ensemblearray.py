@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.dists import Choice
 from nengo.utils.compat import range
-from nengo.utils.distributions import Choice
 from nengo.utils.testing import WarningCatcher
 
 logger = logging.getLogger(__name__)

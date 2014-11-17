@@ -7,10 +7,10 @@ import nengo.utils.numpy as npext
 from nengo.builder.builder import Builder
 from nengo.builder.operator import Copy, DotInc, Reset
 from nengo.builder.signal import Signal
+from nengo.dists import Distribution
 from nengo.ensemble import Ensemble
 from nengo.neurons import Direct
 from nengo.utils.builder import default_n_eval_points
-from nengo.utils.distributions import Distribution
 
 
 BuiltEnsemble = collections.namedtuple(
