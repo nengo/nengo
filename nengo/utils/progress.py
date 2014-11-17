@@ -303,10 +303,14 @@ if _HAS_WIDGETS:
             'NengoProgressBar', NengoProgressBar);
         });'''
 
-        def _ipython_display_(self, **kwargs):
+        @classmethod
+        def load_frontend(cls):
+            """Loads the JavaScript front-end code required by then widget."""
             # pylint: disable=undefined-variable,line-too-long
-            get_ipython().run_cell_magic('javascript', '', self.FRONTEND)  # noqa
-            widgets.DOMWidget._ipython_display_(self, **kwargs)
+            get_ipython().run_cell_magic('javascript', '', cls.FRONTEND)  # noqa
+
+    if in_ipynb():
+        IPythonProgressWidget.load_frontend()
 
 
 class IPython2ProgressBar(ProgressBar):
