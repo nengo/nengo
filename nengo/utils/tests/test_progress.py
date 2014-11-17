@@ -5,7 +5,7 @@ import pytest
 import nengo
 from nengo.utils.progress import (
     AutoProgressBar, EveryNUpdater, IntervalUpdater, MaxNUpdater, Progress,
-    ProgressBar)
+    ProgressBar, ProgressTracker)
 
 
 class ProgressBarMock(ProgressBar):
@@ -94,10 +94,9 @@ class TestMaxNUpdater(object):
         progress_bar = ProgressBarMock()
         updater = MaxNUpdater(progress_bar, max_updates=3)
 
-        with Progress(100) as p:
+        with ProgressTracker(100, updater) as p:
             for _ in range(100):
                 p.step()
-                updater.update(p)
 
         assert progress_bar.n_update_calls > 0
         assert progress_bar.n_update_calls <= 3
@@ -108,18 +107,15 @@ class TestEveryNUpdater(object):
         progress_bar = ProgressBarMock()
         updater = EveryNUpdater(progress_bar, every_n=5)
 
-        with Progress(100) as p:
+        with ProgressTracker(100, updater) as p:
             progress_bar.n_update_calls = 0
             for _ in range(5):
                 p.step()
-                updater.update(p)
             assert progress_bar.n_update_calls == 1
 
             p.step(2)
-            updater.update(p)
             assert progress_bar.n_update_calls == 1
             p.step(3)
-            updater.update(p)
             assert progress_bar.n_update_calls == 2
 
 
@@ -130,23 +126,19 @@ class TestIntervalUpdater(object):
         t = 1.
         monkeypatch.setattr(time, 'time', lambda: t)
 
-        with Progress(100) as p:
+        with ProgressTracker(100, updater) as p:
             p.step()  # Update is allowed to happen on first step.
-            updater.update(p)
 
             progress_bar.n_update_calls = 0
             p.step()
-            updater.update(p)
             assert progress_bar.n_update_calls == 0
 
             t = 2.
             p.step()
-            updater.update(p)
             assert progress_bar.n_update_calls == 0
 
             t = 4.
             p.step()
-            progress_bar.update(p)
             assert progress_bar.n_update_calls == 1
 
 

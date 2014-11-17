@@ -465,6 +465,41 @@ class IntervalUpdater(UpdateBehavior):
             self.next_update = time.time() + self.update_interval
 
 
+class ProgressTracker(object):
+    """Tracks the progress of some process with a progress bar.
+
+    Parameters
+    ----------
+    max_steps : int
+        Maximum number of steps of the process.
+    progress_bar : :class:`ProgressBar` or :class:`UpdateBehavior`
+        The progress bar to display the progress.
+    """
+    def __init__(self, max_steps, progress_bar):
+        self.progress = Progress(max_steps)
+        self.progress_bar = progress_bar
+
+    def __enter__(self):
+        self.progress.__enter__()
+        self.progress_bar.update(self.progress)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.progress.__exit__(exc_type, exc_value, traceback)
+        self.progress_bar.update(self.progress)
+
+    def step(self, n=1):
+        """Advance the progress and update the progress bar.
+
+        Parameters
+        ----------
+        n : int
+            Number of steps to advance the progress by.
+        """
+        self.progress.step(n)
+        self.progress_bar.update(self.progress)
+
+
 def get_default_progressbar():
     """
     Returns

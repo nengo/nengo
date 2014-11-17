@@ -17,7 +17,7 @@ from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
-from nengo.utils.progress import wrap_with_update_behavior, Progress
+from nengo.utils.progress import wrap_with_update_behavior, ProgressTracker
 from nengo.utils.simulator import operator_depencency_graph
 
 logger = logging.getLogger(__name__)
@@ -222,12 +222,10 @@ class Simulator(object):
         """
         update_behavior = wrap_with_update_behavior(progress_bar)
 
-        with Progress(steps) as progress:
+        with ProgressTracker(steps, update_behavior) as progress:
             for i in range(steps):
                 self.step()
                 progress.step()
-                update_behavior.update(progress)
-        update_behavior.update(progress)
 
     def reset(self):
         """Reset the simulator state."""
