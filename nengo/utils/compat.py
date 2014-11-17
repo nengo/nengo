@@ -1,8 +1,6 @@
 from __future__ import absolute_import
 
 import collections
-import os
-import shutil
 import sys
 
 import numpy as np
@@ -101,25 +99,3 @@ def with_metaclass(meta, *bases):
                 return type.__new__(cls, name, (), d)
             return meta(name, bases, d)
     return metaclass('temporary_class', None, {})
-
-
-if hasattr(os, 'terminal_size'):
-    terminal_size = os.terminal_size
-else:
-    terminal_size = collections.namedtuple(
-        'terminal_size', ['columns', 'lines'])
-
-if hasattr(shutil, 'get_terminal_size'):
-    get_terminal_size = shutil.get_terminal_size
-else:
-    def get_terminal_size(fallback=(80, 24)):
-        w, h = fallback
-        try:
-            w = int(os.environ['COLUMNS'])
-        except:
-            pass
-        try:
-            h = int(os.environ['LINES'])
-        except:
-            pass
-        return terminal_size(w, h)

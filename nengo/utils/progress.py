@@ -10,7 +10,7 @@ import warnings
 
 import numpy as np
 
-from nengo.utils.compat import get_terminal_size
+from nengo.utils.stdlib import get_terminal_size
 from nengo.utils.ipython import in_ipynb
 
 

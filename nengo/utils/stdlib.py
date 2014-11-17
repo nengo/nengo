@@ -7,6 +7,8 @@ from __future__ import absolute_import
 import collections
 import inspect
 import itertools
+import os
+import shutil
 
 from nengo.utils.compat import iteritems
 
@@ -100,3 +102,28 @@ def groupby(objects, key, hashable=None, force_list=True):
             return [(k, [v for v in g]) for k, g in keygroupers]
         else:
             return keygroupers
+
+
+# terminal_size was introduced in Python 3.3
+if hasattr(os, 'terminal_size'):
+    terminal_size = os.terminal_size
+else:
+    terminal_size = collections.namedtuple(
+        'terminal_size', ['columns', 'lines'])
+
+
+# get_terminal_size was introduced in Python 3.3
+if hasattr(shutil, 'get_terminal_size'):
+    get_terminal_size = shutil.get_terminal_size
+else:
+    def get_terminal_size(fallback=(80, 24)):
+        w, h = fallback
+        try:
+            w = int(os.environ['COLUMNS'])
+        except:
+            pass
+        try:
+            h = int(os.environ['LINES'])
+        except:
+            pass
+        return terminal_size(w, h)
