@@ -186,14 +186,40 @@ class Simulator(object):
         self._probe()
 
     def run(self, time_in_seconds, progress_bar=None):
-        """Simulate for the given length of time."""
+        """Simulate for the given length of time.
+
+        If the simulation is expected to exceed a run time of one second, a
+        progress bar will appear by default. Usually, this will be an ASCII
+        command line version, but it can be an HTML version in recent IPython
+        notebook versions. To disable the progress bar use
+        :class:`nengo.utils.progress.NoProgressBar`.
+
+        If the `progress_bar` argument is not an
+        :class:`nengo.utils.progress.UpdateBehavior`, it will be wrapped by a
+        default `UpdateBehavior` depending on the execution environment.
+
+        Parameters
+        ----------
+        steps : int
+            Number of steps to run the simulation for.
+        progress_bar : :class:`nengo.utils.progress.ProgressBar` or :class:`nengo.utils.progress.UpdateBehavior`, optional
+            Progress bar for displaying the progress.
+        """
         steps = int(np.round(float(time_in_seconds) / self.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.model.label, time_in_seconds, steps)
         self.run_steps(steps, progress_bar=progress_bar)
 
     def run_steps(self, steps, progress_bar=None):
-        """Simulate for the given number of `dt` steps."""
+        """Simulate for the given number of `dt` steps.
+
+        Parameters
+        ----------
+        steps : int
+            Number of steps to run the simulation for.
+        progress_bar : :class:`nengo.utils.progress.ProgressBar` or :class:`nengo.utils.progress.UpdateBehavior`, optional
+            Progress bar for displaying the progress.
+        """
         update_behavior = wrap_with_update_behavior(progress_bar)
 
         with Progress(steps) as progress:
