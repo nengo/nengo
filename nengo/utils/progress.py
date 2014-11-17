@@ -11,16 +11,13 @@ import warnings
 import numpy as np
 
 from nengo.utils.stdlib import get_terminal_size
-from nengo.utils.ipython import in_ipynb
+from nengo.utils.ipython import in_ipynb, has_ipynb_widgets
 
 
-try:
+if has_ipynb_widgets():
     from IPython.html import widgets
     from IPython.display import display
     import IPython.utils.traitlets as traitlets
-    _HAS_WIDGETS = True
-except ImportError:
-    _HAS_WIDGETS = False
 
 
 class MemoryLeakWarning(UserWarning):
@@ -242,7 +239,7 @@ class CmdProgressBar(ProgressBar):
         return '\r' + line + os.linesep
 
 
-if _HAS_WIDGETS:
+if has_ipynb_widgets():
     class IPythonProgressWidget(widgets.DOMWidget):
         """IPython widget for displaying a progress bar."""
 
@@ -507,7 +504,7 @@ def get_default_progressbar():
     :class:`ProgressBar`
         The default progress bar to use depending on the execution environment.
     """
-    if in_ipynb() and _HAS_WIDGETS:  # IPython >= 2.0
+    if in_ipynb() and has_ipynb_widgets():  # IPython >= 2.0
         return AutoProgressBar(IPython2ProgressBar())
     else:  # IPython < 2.0
         return AutoProgressBar(CmdProgressBar())

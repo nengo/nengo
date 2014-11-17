@@ -115,3 +115,20 @@ def in_ipynb():
     except NameError:
         pass
     return False
+
+
+def has_ipynb_widgets():
+    """Determines whether IPython widgets are available.
+
+    Returns
+    -------
+    bool
+        ``True`` if IPython widgets are available, otherwise ``False``.
+    """
+    try:
+        import IPython.html.widgets
+        import IPython.utils.traitlets
+    except ImportError:
+        return False
+    else:
+        return True
