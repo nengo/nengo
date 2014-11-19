@@ -1,9 +1,11 @@
 import warnings
 import weakref
 
+from nengo.base import ObjView
 from nengo.ensemble import Neurons
 from nengo.exceptions import ValidationError
-from nengo.params import FrozenObject, NumberParam, Parameter, IntParam
+from nengo.params import (FrozenObject, NumberParam, Parameter, IntParam,
+                          BoolParam)
 from nengo.utils.compat import is_iterable, itervalues
 
 
@@ -29,6 +31,9 @@ class LearningRule(object):
             self.size_in = (self.connection.post_obj.ensemble.size_in
                             if isinstance(self.connection.post_obj, Neurons)
                             else self.connection.size_out)
+
+    def __getitem__(self, key):
+        return ObjView(self, key)
 
     def __repr__(self):
         return "<LearningRule at 0x%x modifying %r with type %r>" % (
@@ -313,6 +318,43 @@ class Voja(LearningRuleType):
     def __init__(self, post_tau=0.005, learning_rate=1e-2):
         self.post_tau = post_tau
         super(Voja, self).__init__(learning_rate, size_in=1)
+
+
+class GenericRule(LearningRuleType):
+    """Learning rule implemented by generic Python function.
+
+    Parameters
+    ----------
+    function : callable
+        Accepts previous values of learned array and a data vector
+        as input, outputs a delta for the learned array.
+
+        Optionally the function may also accept a `params` argument, in which
+        case `model.params` will be passed to the function as well (can be used
+        to look up things like encoder values).
+    learning_rate : float
+        A scalar used to weight the output of the function
+    size_in : int
+        The dimensionality of the data vector input to the function
+    modifies : 'weights' or 'decoders' or 'encoders'
+        The signal targeted by the learning rule
+    pass_model_params : bool
+        Selects whether or not the compiled model parameters will be passed
+        to the learning rule function
+    """
+
+    probeable = ('target', 'data', 'delta')
+
+    pass_model_params = BoolParam('pass_model_params')
+
+    def __init__(self, function, learning_rate=1.0, size_in=0,
+                 modifies="decoders", pass_model_params=False):
+        self.modifies = modifies
+        self.function = function
+        self.pass_model_params = pass_model_params
+
+        super(GenericRule, self).__init__(learning_rate=learning_rate,
+                                          size_in=size_in)
 
 
 class LearningRuleTypeParam(Parameter):

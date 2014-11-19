@@ -5,7 +5,7 @@ from nengo.builder.operator import DotInc, ElementwiseInc, Reset
 from nengo.learning_rules import LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
-from nengo.learning_rules import BCM, Oja, PES, Voja
+from nengo.learning_rules import BCM, Oja, PES, Voja, GenericRule
 from nengo.node import Node
 from nengo.synapses import Lowpass
 
@@ -90,6 +90,7 @@ class SimBCM(Operator):
         def step_simbcm():
             delta[...] = np.outer(
                 alpha * post_filtered * (post_filtered - theta), pre_filtered)
+
         return step_simbcm
 
 
@@ -275,7 +276,69 @@ class SimVoja(Operator):
             delta[...] = alpha * learning_signal * (
                 scale * np.outer(post_filtered, pre_decoded) -
                 post_filtered[:, np.newaxis] * scaled_encoders)
+
         return step_simvoja
+
+
+class SimGenericRule(Operator):
+    """Compute change in target using the given function.
+
+    .. math:: \Delta \omega_{ij} = \kappa f(target, data)_{ij}
+
+    Parameters
+    ----------
+    target : Signal
+        The signal modified by the learning rule.
+    data : Signal
+        Input data for the learning rule (e.g., error information).
+    delta : Signal
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    learning_rate : float
+        The scalar learning rate.
+    params : dict, optional (Default: None)
+        The ``model.params`` attribute from the build process, will be passed
+        to the update function if not ``None``.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[]``
+    3. reads ``[data, target]``
+    4. updates ``[delta]``
+    """
+
+    def __init__(self, target, data, delta, function, learning_rate,
+                 params=None, tag=None):
+        super(SimGenericRule, self).__init__(tag=tag)
+
+        self.sets = []
+        self.incs = []
+        self.reads = [data, target]
+        self.updates = [delta]
+
+        self.target = target
+        self.delta = delta
+        self.data = data
+        self.function = function
+        self.learning_rate = learning_rate
+        self.params = params
+
+    def make_step(self, signals, dt, rng):
+        delta = signals[self.delta]
+        target = signals[self.target]
+        data = signals[self.data]
+
+        if self.params is None:
+            def step():
+                delta[...] = self.learning_rate * self.function(target, data)
+        else:
+            def step():
+                delta[...] = self.learning_rate * self.function(target, data,
+                                                                self.params)
+
+        return step
 
 
 def get_pre_ens(conn):
@@ -342,7 +405,7 @@ def build_learning_rule(model, rule):
                 np.zeros((post.n_neurons, pre.n_neurons)), name='Delta')
         else:
             delta = Signal(
-                np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
+                np.zeros((conn.size_out, pre.n_neurons)), name='Delta')
     else:
         raise BuildError("Unknown target %r" % rule.modifies)
 
@@ -568,3 +631,46 @@ def build_pes(model, pes, rule):
     model.sig[rule]['error'] = error
     model.sig[rule]['correction'] = correction
     model.sig[rule]['activities'] = acts
+
+
+@Builder.register(GenericRule)
+def build_generic_rule(model, gr, rule):
+    """Builds a `.GenericRule` object into a model.
+
+    Finds the appropriate target signal based on the ``modifies`` rule
+    attribute, creates the input signal for the learning rule, and adds a
+    `.SimGenericRule` operator to the model to implement the learning rule.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    gr : GenericRule
+        Learning rule type to build.
+    rule : LearningRule
+        The learning rule object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.GenericRule` instance.
+    """
+
+    # get signal for target of learning rule
+    if rule.modifies == 'encoders':
+        post = get_post_ens(rule.connection)
+        target = model.sig[post]['encoders']
+    elif rule.modifies in ('decoders', 'weights'):
+        target = model.sig[rule.connection]['weights']
+
+    # set up data signal
+    data = Signal(np.zeros(rule.size_in), name="GenericRule:data")
+    model.add_op(Reset(data))
+    model.sig[rule]['in'] = data  # data connection will attach here
+
+    model.add_op(SimGenericRule(
+        target, data, model.sig[rule]['delta'], gr.function, gr.learning_rate,
+        model.params if gr.pass_model_params else None))
+
+    model.sig[rule]['target'] = target
+    model.sig[rule]['data'] = data

@@ -74,16 +74,17 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
                     attr=self.name, obj=conn)
 
             # transform matrix must be 2D
-            pre_size = (
-                conn.pre_obj.n_neurons if isinstance(conn.pre_obj, Ensemble)
-                else conn.pre.size_out)
-            post_size = conn.post.size_in
-            if (not conn.solver.weights and
-                    conn.transform.shape != (post_size, pre_size)):
-                raise ValidationError(
-                    "Transform must be 2D array with shape post_neurons x "
-                    "pre_neurons (%d, %d)" % (pre_size, post_size),
-                    attr=self.name, obj=conn)
+            if not isinstance(conn.transform, Distribution):
+                pre_size = (conn.pre_obj.n_neurons
+                            if isinstance(conn.pre_obj, Ensemble)
+                            else conn.pre.size_out)
+                post_size = conn.post.size_in
+                if (not conn.solver.weights and
+                        conn.transform.shape != (post_size, pre_size)):
+                    raise ValidationError(
+                        "Transform must be 2D array with shape post_neurons x "
+                        "pre_neurons (%d, %d)" % (pre_size, post_size),
+                        attr=self.name, obj=conn)
 
 
 class ConnectionSolverParam(SolverParam):
