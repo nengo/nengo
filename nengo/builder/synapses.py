@@ -38,7 +38,7 @@ class SimFilterSynapse(Operator):
 
         if len(num) == 1 and len(den) == 0:
             def step(input=input, output=output, b=num[0]):
-                output[:] = b * input
+                output[...] = b * input
         elif len(num) == 1 and len(den) == 1:
             def step(input=input, output=output, a=den[0], b=num[0]):
                 output *= -a
@@ -48,7 +48,7 @@ class SimFilterSynapse(Operator):
             y = collections.deque(maxlen=len(den))
 
             def step(input=input, output=output, x=x, y=y, num=num, den=den):
-                output[:] = 0
+                output[...] = 0
 
                 x.appendleft(np.array(input))
                 for k, xk in enumerate(x):
@@ -75,7 +75,7 @@ def filtered_signal(model, owner, sig, synapse):
 def build_discrete_filter(model, synapse, owner, input_signal, num, den):
     model.sig[owner]['synapse_in'] = input_signal
     model.sig[owner]['synapse_out'] = Signal(
-        np.zeros(input_signal.size),
+        np.zeros(input_signal.shape),
         name="%s.%s" % (input_signal.name, synapse))
 
     model.add_op(SimFilterSynapse(input=model.sig[owner]['synapse_in'],
