@@ -232,6 +232,58 @@ def test_unsupervised(Simulator, nl_nodirect, learning_rule_type,
     assert not np.all(sim.data[trans_p][0] == sim.data[trans_p][-1])
 
 
+@pytest.mark.parametrize('learning_rule', [nengo.PES, nengo.BCM, nengo.Oja])
+def test_dt_dependence(Simulator, nl_nodirect, plt, learning_rule, seed, rng):
+    """Learning rules should work the same regardless of dt."""
+    with nengo.Network(seed=seed) as m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        u = nengo.Node(output=1.0)
+        pre = nengo.Ensemble(10, dimensions=1)
+        post = nengo.Ensemble(10, dimensions=1)
+        if learning_rule is nengo.PES:
+            err = nengo.Ensemble(10, dimensions=1)
+            # Always have error
+            nengo.Connection(u, err)
+            err_conn = nengo.Connection(err, post, modulatory=True)
+            conn = nengo.Connection(pre, post,
+                                    learning_rule_type=learning_rule(err_conn),
+                                    solver=LstsqL2nz(weights=True))
+        else:
+            initial_weights = rng.uniform(high=1e-3,
+                                          size=(pre.n_neurons, post.n_neurons))
+            conn = nengo.Connection(pre.neurons, post.neurons,
+                                    transform=initial_weights,
+                                    learning_rule_type=learning_rule())
+        activity_p = nengo.Probe(pre.neurons, synapse=0.01)
+        trans_p = nengo.Probe(conn, 'transform', synapse=.01, sample_every=.01)
+
+    trans_data = []
+    # Using dts greater near tau_ref (0.002 by default) causes learning to
+    # differ due to lowered presynaptic firing rate
+    dts = (0.0001, 0.001)
+    colors = ('b', 'g', 'r')
+    for c, dt in zip(colors, dts):
+        sim = Simulator(m, dt=dt)
+        sim.run(0.1)
+        trans_data.append(sim.data[trans_p])
+        plt.subplot(2, 1, 1)
+        plt.plot(sim.trange(dt=0.01), sim.data[trans_p][..., 0], c=c)
+        plt.subplot(2, 1, 2)
+        plt.plot(sim.trange(), sim.data[activity_p], c=c)
+
+    plt.subplot(2, 1, 1)
+    plt.xlim(right=sim.trange()[-1])
+    plt.ylabel("Connection weight")
+    plt.subplot(2, 1, 2)
+    plt.xlim(right=sim.trange()[-1])
+    plt.ylabel("Presynaptic activity")
+
+    plt.saveas = "test_learning_rules.test_dt_dependence_%s.pdf" % (
+        learning_rule.__name__)
+
+    assert np.allclose(trans_data[0], trans_data[1], atol=1e-3)
+
+
 def test_learningruletypeparam():
     """LearningRuleTypeParam must be one or many learning rules."""
     class Test(object):
