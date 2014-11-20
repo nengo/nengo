@@ -95,19 +95,10 @@ class SignalView(object):
     def reshape(self, *shape):
         if len(shape) == 1 and isinstance(shape[0], (list, tuple)):
             shape = shape[0]
-        if self.elemstrides == (1,):
-            size = int(np.prod(shape))
-            if size != self.size:
-                raise ValueError(shape, self.shape)
-            elemstrides = [1]
-            for si in reversed(shape[1:]):
-                elemstrides = [si * elemstrides[0]] + elemstrides
-            return SignalView(
-                base=self.base,
-                shape=shape,
-                elemstrides=elemstrides,
-                offset=self.offset)
-        elif self.size == 1:
+        if -1 in shape:
+            shape = list(shape)
+            shape[shape.index(-1)] = self.size / int(-1 * np.prod(shape))
+        if self.size == 1:
             # -- scalars can be reshaped to any number of (1, 1, 1...)
             size = int(np.prod(shape))
             if size != self.size:
@@ -119,11 +110,17 @@ class SignalView(object):
                 elemstrides=elemstrides,
                 offset=self.offset)
         else:
-            # -- there are cases where reshaping can still work
-            #    but there are limits too, because we can only
-            #    support view-based reshapes. So the strides have
-            #    to work.
-            raise NotImplementedError('reshape of strided view')
+            size = int(np.prod(shape))
+            if size != self.size:
+                raise ValueError(shape, self.shape)
+            elemstrides = [1]
+            for si in reversed(shape[1:]):
+                elemstrides = [si * elemstrides[0]] + elemstrides
+            return SignalView(
+                base=self.base,
+                shape=shape,
+                elemstrides=elemstrides,
+                offset=self.offset)
 
     def transpose(self, neworder=None):
         if neworder:
@@ -304,7 +301,9 @@ class Signal(SignalView):
     assert_named_signals = False
 
     def __init__(self, value, name=None):
-        self._value = np.asarray(value, dtype=np.float64)
+        self._value = np.ascontiguousarray(value, dtype=np.float64)
+        if np.asarray(value).shape == ():
+            self._value.shape = ()
         if name is not None:
             self._name = name
         if Signal.assert_named_signals:

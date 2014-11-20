@@ -212,6 +212,18 @@ def test_signaldict_reset():
     assert np.allclose(signaldict[two_d], np.array([[1], [1]]))
 
 
+def test_signal_reshape():
+    """Tests Signal.reshape"""
+    three_d = Signal(np.ones((2, 2, 2)))
+    assert three_d.reshape((8,)).shape == (8,)
+    assert three_d.reshape((4, 2)).shape == (4, 2)
+    assert three_d.reshape((2, 4)).shape == (2, 4)
+    assert three_d.reshape(-1).shape == (8,)
+    assert three_d.reshape((4, -1)).shape == (4, 2)
+    assert three_d.reshape((-1, 4)).shape == (2, 4)
+    assert three_d.reshape((2, -1, 2)).shape == (2, 2, 2)
+    assert three_d.reshape((1, 2, 1, 2, 2, 1)).shape == (1, 2, 1, 2, 2, 1)
+
 if __name__ == '__main__':
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
