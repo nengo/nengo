@@ -10,11 +10,12 @@ import warnings
 
 import numpy as np
 
-from nengo.utils.stdlib import get_terminal_size
-from nengo.utils.ipython import in_ipynb, has_ipynb_widgets
+from .stdlib import get_terminal_size
+from .ipython import in_ipynb, has_ipynb_widgets
 
 
 if has_ipynb_widgets():
+    from IPython import get_ipython
     from IPython.html import widgets
     from IPython.display import display
     import IPython.utils.traitlets as traitlets
@@ -76,20 +77,20 @@ class Progress(object):
 
     @property
     def progress(self):
-        """
+        """The current progress as a number from 0 to 1 (inclusive).
+
         Returns
         -------
         float
-            The current progress as a number from 0 to 1 (inclusive).
         """
         return min(1.0, self.n_steps / self.max_steps)
 
     def elapsed_seconds(self):
-        """
+        """The number of seconds passed since entering the ``with`` statement.
+
         Returns
         -------
         float
-            The number of seconds passed since entering the ``with`` statement.
         """
         if self.finished:
             return self.end_time - self.start_time
@@ -97,13 +98,14 @@ class Progress(object):
             return time.time() - self.start_time
 
     def eta(self):
-        """
+        """The estimated number of seconds until the process is finished.
+
+        Stands for estimated time of arrival (ETA).
+        If no estimate is available -1 will be returned.
+
         Returns
         -------
         float
-            The estimated number of seconds until the process
-            is finished. Also called the estimated time of arrival (ETA).
-            If no estimate is available -1 will be returned.
         """
         if self.progress > 0.:
             return (
@@ -118,7 +120,7 @@ class Progress(object):
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, dummy_exc_value, dummy_traceback):
         self.success = exc_type is None
         if self.success:
             self.n_steps = self.max_steps
@@ -136,16 +138,17 @@ class Progress(object):
         self.n_steps += n
 
 
-class UpdateBehavior(object):
-    """Abstract base class for classes controlling the updates to a progress
-    bar given some progress information.
+class ProgressUpdater(object):
+    """Controls how often a progress bar is updated.
+
+    This is an abstract base class that classes controlling the updates
+    to a progress bar should inherit from.
 
     Parameters
     ----------
-    progress_bar : :class:`ProgressObserver`
+    progress_bar : :class:`ProgressBar` instance
         The object to which updates are passed on.
     """
-    # pylint: disable=abstract-method
 
     def __init__(self, progress_bar):
         self.progress_bar = progress_bar
@@ -162,8 +165,10 @@ class UpdateBehavior(object):
 
 
 class ProgressBar(object):
-    """Abstract base class for progress bars (classes displaying the progress
-    in some way).
+    """Visualizes the progress of a process.
+
+    This is an abstract base class that progress bar classes some inherit from.
+    Progress bars should visually displaying the progress in some way.
     """
 
     def update(self, progress):
@@ -178,17 +183,20 @@ class ProgressBar(object):
 
 
 class NoProgressBar(ProgressBar):
-    """A progress bar that does not display anything."""
+    """A progress bar that does not display anything.
+
+    Helpful in headless situations or when using Nengo as a library.
+    """
 
     def update(self, progress):
         pass
 
 
-class CmdProgressBar(ProgressBar):
+class TerminalProgressBar(ProgressBar):
     """A progress bar that is displayed as ASCII output on `stdout`."""
 
     def __init__(self):
-        super(CmdProgressBar, self).__init__()
+        super(TerminalProgressBar, self).__init__()
         if in_ipynb():
             warnings.warn(MemoryLeakWarning((
                 "The {cls}, if used in an IPython notebook,"
@@ -299,8 +307,7 @@ if has_ipynb_widgets():
         @classmethod
         def load_frontend(cls):
             """Loads the JavaScript front-end code required by then widget."""
-            # pylint: disable=undefined-variable,line-too-long
-            get_ipython().run_cell_magic('javascript', '', cls.FRONTEND)  # noqa
+            get_ipython().run_cell_magic('javascript', '', cls.FRONTEND)
 
     if in_ipynb():
         IPythonProgressWidget.load_frontend()
@@ -314,13 +321,10 @@ class IPython2ProgressBar(ProgressBar):
         self._widget = IPythonProgressWidget()
         self._initialized = False
 
-    def init(self):
-        self._initialized = True
-        display(self._widget)
-
     def update(self, progress):
         if not self._initialized:
-            self.init()
+            display(self._widget)
+            self._initialized = True
 
         self._widget.progress = progress.progress
         if progress.finished:
@@ -333,9 +337,10 @@ class IPython2ProgressBar(ProgressBar):
 
 
 class WriteProgressToFile(ProgressBar):
-    """Writes the progress to a file. This file will be overwritten on each
-    update of the progress! Useful for remotely and intermittently
-    monitoring progress.
+    """Writes progress to a file.
+
+    This is useful for remotely and intermittently monitoring progress.
+    Note that this file will be overwritten on each update of the progress!
 
     Parameters
     ----------
@@ -361,15 +366,14 @@ class WriteProgressToFile(ProgressBar):
 
 
 class AutoProgressBar(ProgressBar):
-    """Makes a progress automatically appear if the expected time to completion
-     or arrival (ETA) exceeds a threshold.
+    """Suppresses the progress bar unless the ETA exceeds a threshold.
 
     Parameters
     ----------
     delegate : :class:`ProgressBar`
-        The actual progress bar to display.
+        The actual progress bar to display, if ETA is high enough.
     min_eta : float, optional
-        The ETA threshold for displaying the progress bar.
+        The minimum ETA threshold for displaying the progress bar.
     """
 
     def __init__(self, delegate, min_eta=1.):
@@ -389,23 +393,25 @@ class AutoProgressBar(ProgressBar):
             self.delegate.update(progress)
 
 
-class MaxNUpdater(UpdateBehavior):
-    """Limits the number of updates relayed to a :class:`ProgressObserver`.
-    Used for IPython 1.x progress bar, since updating
-    the notebook saves the output, which will create
-    a large amount of memory and cause the notebook to crash.
+class UpdateN(ProgressUpdater):
+    """Updates a :class:`ProgressBar` every step, up to a maximum of ``n``.
 
     Parameters
     ----------
     progress_bar : :class:`ProgressBar`
         The progress bar to relay the updates to.
     max_updates : int
-        Maximum number of updates that will be relayed to the progress
-        bar.
+        Maximum number of updates that will be relayed to the progress bar.
+
+    Notes
+    -----
+    This is especially useful in the IPython 1.x notebook, since updating
+    the notebook saves the output, which will create a large amount of memory
+    and cause the notebook to crash.
     """
 
     def __init__(self, progress_bar, max_updates=100):
-        super(MaxNUpdater, self).__init__(progress_bar)
+        super(UpdateN, self).__init__(progress_bar)
         self.max_updates = max_updates
         self.last_update_step = 0
 
@@ -417,8 +423,8 @@ class MaxNUpdater(UpdateBehavior):
             self.last_update_step = progress.n_steps
 
 
-class EveryNUpdater(UpdateBehavior):
-    """Relays only every `n`-th update to a :class:`ProgressBar`.
+class UpdateEveryN(ProgressUpdater):
+    """Updates a :class:`ProgressBar` every ``n`` steps.
 
     Parameters
     ----------
@@ -429,7 +435,7 @@ class EveryNUpdater(UpdateBehavior):
     """
 
     def __init__(self, progress_bar, every_n=1000):
-        super(EveryNUpdater, self).__init__(progress_bar)
+        super(UpdateEveryN, self).__init__(progress_bar)
         self.every_n = every_n
         self.next_update = every_n
 
@@ -440,8 +446,8 @@ class EveryNUpdater(UpdateBehavior):
             self.next_update = progress.n_steps + self.every_n
 
 
-class IntervalUpdater(UpdateBehavior):
-    """Updates a :class:`ProgressBar` in regular time intervals.
+class UpdateEveryT(ProgressUpdater):
+    """Updates a :class:`ProgressBar` every ``t`` seconds.
 
     Parameters
     ----------
@@ -451,10 +457,10 @@ class IntervalUpdater(UpdateBehavior):
         Number of seconds in-between relayed updates.
     """
 
-    def __init__(self, progress_bar, update_interval=0.05):
-        super(IntervalUpdater, self).__init__(progress_bar)
+    def __init__(self, progress_bar, every_t=0.05):
+        super(UpdateEveryT, self).__init__(progress_bar)
         self.next_update = 0
-        self.update_interval = update_interval
+        self.update_interval = every_t
 
     def update(self, progress):
         if self.next_update < time.time() or progress.finished:
@@ -469,12 +475,12 @@ class ProgressTracker(object):
     ----------
     max_steps : int
         Maximum number of steps of the process.
-    progress_bar : :class:`ProgressBar` or :class:`UpdateBehavior`
+    progress_bar : :class:`ProgressBar` or :class:`ProgressUpdater`
         The progress bar to display the progress.
     """
     def __init__(self, max_steps, progress_bar):
         self.progress = Progress(max_steps)
-        self.progress_bar = progress_bar
+        self.progress_bar = wrap_with_progressupdater(progress_bar)
 
     def __enter__(self):
         self.progress.__enter__()
@@ -498,54 +504,56 @@ class ProgressTracker(object):
 
 
 def get_default_progressbar():
-    """
+    """The default progress bar to use depending on the execution environment.
+
     Returns
     -------
     :class:`ProgressBar`
-        The default progress bar to use depending on the execution environment.
     """
-    if in_ipynb() and has_ipynb_widgets():  # IPython >= 2.0
+    if in_ipynb() and has_ipynb_widgets():  # IPython notebook >= 2.0
         return AutoProgressBar(IPython2ProgressBar())
-    else:  # IPython < 2.0
-        return AutoProgressBar(CmdProgressBar())
+    else:  # IPython notebook < 2.0 or any other environment
+        return AutoProgressBar(TerminalProgressBar())
 
 
-def get_default_updater_class(progress_bar):
-    """
+def get_default_progressupdater(progress_bar):
+    """The default progress updater.
+
+    The default depends on the progress bar and execution environment.
+
     Parameters
     ----------
     progress_bar : :class:`ProgressBar`
-        The progress bar to obtain the default update behavior for.
+        The progress bar to obtain the default progess updater for.
 
     Returns
     -------
-    :class:`UpdateBehavior`
-        The default update behavior depending on the progress bar and
-        execution environment.
+    :class:`ProgressUpdater`
     """
     if in_ipynb() and not isinstance(progress_bar, IPython2ProgressBar):
-        return MaxNUpdater
+        return UpdateN
     else:
-        return IntervalUpdater
+        return UpdateEveryT
 
 
-def wrap_with_update_behavior(progress_bar=None):
-    """Wraps a progress bar with the default update behavior if it is not
-    wrapped by an update behavior already.
+def wrap_with_progressupdater(progress_bar=None):
+    """Wraps a progress bar with the default progress updater.
+
+    If it is already wrapped by an progress updater, then this does nothing.
 
     Parameters
     ----------
-    progress_bar : :class:`ProgressObserver`
+    progress_bar : :class:`ProgressBar` or :class:`ProgressUpdater`
         The progress bar to wrap.
 
     Returns
     -------
-    :class:`UpdateBehavior`
+    :class:`ProgressUpdater`
         The wrapped progress bar.
     """
     if progress_bar is None:
         progress_bar = get_default_progressbar()
-    if not isinstance(progress_bar, UpdateBehavior):
-        updater_class = get_default_updater_class(progress_bar)
+    if not isinstance(progress_bar, ProgressUpdater):
+        updater_class = get_default_progressupdater(progress_bar)
         progress_bar = updater_class(progress_bar)
     return progress_bar

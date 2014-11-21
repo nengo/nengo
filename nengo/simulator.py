@@ -17,7 +17,7 @@ from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
-from nengo.utils.progress import wrap_with_update_behavior, ProgressTracker
+from nengo.utils.progress import ProgressTracker
 from nengo.utils.simulator import operator_depencency_graph
 
 logger = logging.getLogger(__name__)
@@ -195,14 +195,15 @@ class Simulator(object):
         :class:`nengo.utils.progress.NoProgressBar`.
 
         If the `progress_bar` argument is not an
-        :class:`nengo.utils.progress.UpdateBehavior`, it will be wrapped by a
-        default `UpdateBehavior` depending on the execution environment.
+        :class:`nengo.utils.progress.ProgressUpdater`, it will be wrapped by a
+        default ``ProgressUpdater`` depending on the execution environment.
 
         Parameters
         ----------
         steps : int
             Number of steps to run the simulation for.
-        progress_bar : :class:`nengo.utils.progress.ProgressBar` or :class:`nengo.utils.progress.UpdateBehavior`, optional
+        progress_bar : :class:`nengo.utils.progress.ProgressBar` or
+                       :class:`nengo.utils.progress.ProgressUpdater`, optional
             Progress bar for displaying the progress.
         """
         steps = int(np.round(float(time_in_seconds) / self.dt))
@@ -217,12 +218,11 @@ class Simulator(object):
         ----------
         steps : int
             Number of steps to run the simulation for.
-        progress_bar : :class:`nengo.utils.progress.ProgressBar` or :class:`nengo.utils.progress.UpdateBehavior`, optional
+        progress_bar : :class:`nengo.utils.progress.ProgressBar` or
+                        :class:`nengo.utils.progress.ProgressUpdater`, optional
             Progress bar for displaying the progress.
         """
-        update_behavior = wrap_with_update_behavior(progress_bar)
-
-        with ProgressTracker(steps, update_behavior) as progress:
+        with ProgressTracker(steps, progress_bar) as progress:
             for i in range(steps):
                 self.step()
                 progress.step()

@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import sys
 import unicodedata
 
+from IPython import get_ipython
 from IPython.display import HTML
 from IPython.nbconvert import PythonExporter
 from IPython.nbformat import current
@@ -105,15 +106,13 @@ def in_ipynb():
     from outside of the notebook. Thus, this function might return ``True``
     even though the code is not running in an IPython notebook.
     """
-    try:
-        cfg = get_ipython().config  # pylint: disable=undefined-variable
+    if get_ipython() is not None:
+        cfg = get_ipython().config
         app_key = 'IPKernelApp'
         if 'parent_appname' not in cfg[app_key]:
             app_key = 'KernelApp'  # was used by old IPython versions
         if cfg[app_key]['parent_appname'] == 'ipython-notebook':
             return True
-    except NameError:
-        pass
     return False
 
 
@@ -128,6 +127,8 @@ def has_ipynb_widgets():
     try:
         import IPython.html.widgets
         import IPython.utils.traitlets
+        assert IPython.html.widgets
+        assert IPython.utils.traitlets
     except ImportError:
         return False
     else:

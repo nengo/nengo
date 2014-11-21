@@ -4,7 +4,7 @@ import pytest
 
 import nengo
 from nengo.utils.progress import (
-    AutoProgressBar, EveryNUpdater, IntervalUpdater, MaxNUpdater, Progress,
+    AutoProgressBar, UpdateEveryN, UpdateEveryT, UpdateN, Progress,
     ProgressBar, ProgressTracker)
 
 
@@ -42,7 +42,7 @@ class TestProgress(object):
         try:
             with Progress(10) as p2:
                 raise Exception()
-        except:  # pylint: disable=bare-except
+        except:
             pass
         assert not p2.success
 
@@ -89,10 +89,10 @@ class TestAutoProgressBar(object):
         assert progress_bar.n_update_calls >= 10
 
 
-class TestMaxNUpdater(object):
+class TestUpdateN(object):
     def test_at_most_n_updates_are_performed(self):
         progress_bar = ProgressBarMock()
-        updater = MaxNUpdater(progress_bar, max_updates=3)
+        updater = UpdateN(progress_bar, max_updates=3)
 
         with ProgressTracker(100, updater) as p:
             for _ in range(100):
@@ -102,10 +102,10 @@ class TestMaxNUpdater(object):
         assert progress_bar.n_update_calls <= 3
 
 
-class TestEveryNUpdater(object):
+class TestUpdateEveryN(object):
     def test_updates_every_n_steps(self):
         progress_bar = ProgressBarMock()
-        updater = EveryNUpdater(progress_bar, every_n=5)
+        updater = UpdateEveryN(progress_bar, every_n=5)
 
         with ProgressTracker(100, updater) as p:
             progress_bar.n_update_calls = 0
@@ -119,10 +119,10 @@ class TestEveryNUpdater(object):
             assert progress_bar.n_update_calls == 2
 
 
-class TestIntervalUpdater(object):
+class TestUpdateEveryT(object):
     def test_updates_after_interval_has_passed(self, monkeypatch):
         progress_bar = ProgressBarMock()
-        updater = IntervalUpdater(progress_bar, update_interval=2.)
+        updater = UpdateEveryT(progress_bar, every_t=2.)
         t = 1.
         monkeypatch.setattr(time, 'time', lambda: t)
 
