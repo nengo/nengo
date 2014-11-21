@@ -144,11 +144,11 @@ def whitenoise(step, high, rms=0.5, seed=None, dimensions=None):
     if dimensions is not None:
         signals = [whitenoise(
             step, high, rms=rms, seed=rng.randint(0x7ffffff))
-            for i in range(dimensions)]
+            for _ in range(dimensions)]
 
-        def whitenoise_function(t, signals=signals):
+        def whitenoise_function_d(t):
             return [signal(t) for signal in signals]
-        return whitenoise_function
+        return whitenoise_function_d
 
     N = int(float(high) / step)  # number of samples
     frequencies = np.arange(1, N + 1) * step * 2 * np.pi  # frequency of each
@@ -160,7 +160,9 @@ def whitenoise(step, high, rms=0.5, seed=None, dimensions=None):
     amplitude = amplitude * rms / rawRMS  # rescale
 
     # create a function that computes the bases and weights them by amplitude
-    def whitenoise_function(t, f=frequencies, a=amplitude, p=phase):
-        return np.dot(np.sin(f * t[..., np.newaxis] + p), a)
+    def whitenoise_function(t):
+        return np.dot(np.sin(frequencies * np.asarray(t)[..., np.newaxis] + \
+                             phase),
+                      amplitude)
 
     return whitenoise_function
