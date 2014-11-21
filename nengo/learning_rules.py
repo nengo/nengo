@@ -80,7 +80,7 @@ class BCM(LearningRuleType):
     probeable = ['theta', 'pre_filtered', 'post_filtered']
 
     def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
-                 learning_rate=1e-6):
+                 learning_rate=1e-9):
         self.theta_tau = theta_tau
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
