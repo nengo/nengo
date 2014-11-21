@@ -254,9 +254,6 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, learning_rule, seed, rng):
             conn = nengo.Connection(pre.neurons, post.neurons,
                                     transform=initial_weights,
                                     learning_rule_type=learning_rule())
-        if learning_rule is nengo.BCM:
-            # BCM appears to need lower learning rates
-            conn.learning_rule.learning_rule_type.learning_rate *= 1e-3
         activity_p = nengo.Probe(pre.neurons, synapse=0.01)
         trans_p = nengo.Probe(conn, 'transform', synapse=.01, sample_every=.01)
 
