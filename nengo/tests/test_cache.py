@@ -26,52 +26,63 @@ class SolverMock(object):
             return np.random.rand(A.shape[1], E.shape[1]), {'info': 'v'}
 
 
-def test_decoder_cache(tmpdir):
-    cache_dir = str(tmpdir)
-
+def get_solver_test_args():
     M = 100
     N = 10
     D = 2
-    activities = np.ones((M, D))
-    targets = np.ones((M, N))
-    rng = np.random.RandomState(42)
+    return {
+        'activities': np.ones((M, D)),
+        'targets': np.ones((M, N)),
+        'rng': np.random.RandomState(42),
+    }
+
+
+def get_weight_solver_test_args():
+    M = 100
+    N = 10
+    N2 = 5
+    D = 2
+    return {
+        'activities': np.ones((M, D)),
+        'targets': np.ones((M, N)),
+        'rng': np.random.RandomState(42),
+        'E': np.ones((D, N2)),
+    }
+
+
+def test_decoder_cache(tmpdir):
+    cache_dir = str(tmpdir)
 
     # Basic test, that results are cached.
     cache = DecoderCache(cache_dir=cache_dir)
     solver_mock = SolverMock()
     decoders1, solver_info1 = cache.wrap_solver(solver_mock)(
-        activities, targets, rng)
+        **get_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 1
     decoders2, solver_info2 = cache.wrap_solver(solver_mock)(
-        activities, targets, rng)
+        **get_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 1  # result read from cache?
     assert_equal(decoders1, decoders2)
     assert solver_info1 == solver_info2
 
-    decoders3, solver_info3 = cache.wrap_solver(solver_mock)(
-        2 * activities, targets, rng)
+    solver_args = get_solver_test_args()
+    solver_args['activities'] *= 2
+    decoders3, solver_info3 = cache.wrap_solver(solver_mock)(**solver_args)
     assert SolverMock.n_calls[solver_mock] == 2
     assert np.any(decoders1 != decoders3)
 
     # Test that the cache does not load results of another solver.
     another_solver = SolverMock('another_solver')
-    cache.wrap_solver(another_solver)(activities, targets, rng)
+    cache.wrap_solver(another_solver)(**get_solver_test_args())
     assert SolverMock.n_calls[another_solver] == 1
 
 
 def test_corrupted_decoder_cache(tmpdir):
     cache_dir = str(tmpdir)
 
-    M = 100
-    N = 10
-    D = 2
-    activities = np.ones((M, D))
-    targets = np.ones((M, N))
-    rng = np.random.RandomState(42)
-
     cache = DecoderCache(cache_dir=cache_dir)
     solver_mock = SolverMock()
-    cache.wrap_solver(solver_mock)(activities, targets, rng)
+    cache.wrap_solver(solver_mock)(**get_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 1
 
     # corrupt the cache
@@ -79,7 +90,7 @@ def test_corrupted_decoder_cache(tmpdir):
         with open(os.path.join(cache_dir, filename), 'w') as f:
             f.write('corrupted')
 
-    cache.wrap_solver(solver_mock)(activities, targets, rng)
+    cache.wrap_solver(solver_mock)(**get_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 2
 
 
@@ -87,19 +98,12 @@ def test_decoder_cache_invalidation(tmpdir):
     cache_dir = str(tmpdir)
     solver_mock = SolverMock()
 
-    M = 100
-    N = 10
-    D = 2
-    activities = np.ones((M, D))
-    targets = np.ones((M, N))
-    rng = np.random.RandomState(42)
-
     # Basic test, that results are cached.
     cache = DecoderCache(cache_dir=cache_dir)
-    cache.wrap_solver(solver_mock)(activities, targets, rng)
+    cache.wrap_solver(solver_mock)(**get_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 1
     cache.invalidate()
-    cache.wrap_solver(solver_mock)(activities, targets, rng)
+    cache.wrap_solver(solver_mock)(**get_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 2
 
 
@@ -108,15 +112,8 @@ def test_decoder_cache_shrinking(tmpdir):
     solver_mock = SolverMock()
     another_solver = SolverMock('another_solver')
 
-    M = 100
-    N = 10
-    D = 2
-    activities = np.ones((M, D))
-    targets = np.ones((M, N))
-    rng = np.random.RandomState(42)
-
     cache = DecoderCache(cache_dir=cache_dir)
-    cache.wrap_solver(solver_mock)(activities, targets, rng)
+    cache.wrap_solver(solver_mock)(**get_solver_test_args())
     limit = cache.get_size()
 
     # Ensure differing time stamps (depending on the file system the timestamp
@@ -127,7 +124,7 @@ def test_decoder_cache_shrinking(tmpdir):
         timestamp -= 60 * 60 * 24 * 2  # 2 days
         os.utime(path, (timestamp, timestamp))
 
-    cache.wrap_solver(another_solver)(activities, targets, rng)
+    cache.wrap_solver(another_solver)(**get_solver_test_args())
 
     assert cache.get_size_in_bytes() > 0
 
@@ -135,8 +132,8 @@ def test_decoder_cache_shrinking(tmpdir):
 
     # check that older cached result was removed
     assert SolverMock.n_calls[solver_mock] == 1
-    cache.wrap_solver(another_solver)(activities, targets, rng)
-    cache.wrap_solver(solver_mock)(activities, targets, rng)
+    cache.wrap_solver(another_solver)(**get_solver_test_args())
+    cache.wrap_solver(solver_mock)(**get_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 2
     assert SolverMock.n_calls[another_solver] == 1
 
@@ -145,21 +142,12 @@ def test_decoder_cache_with_E_argument_to_solver(tmpdir):
     cache_dir = str(tmpdir)
     solver_mock = SolverMock()
 
-    M = 100
-    N = 10
-    N2 = 5
-    D = 2
-    activities = np.ones((M, D))
-    targets = np.ones((M, N))
-    rng = np.random.RandomState(42)
-    E = np.ones((D, N2))
-
     cache = DecoderCache(cache_dir=cache_dir)
     decoders1, solver_info1 = cache.wrap_solver(solver_mock)(
-        activities, targets, rng, E=E)
+        **get_weight_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 1
     decoders2, solver_info2 = cache.wrap_solver(solver_mock)(
-        activities, targets, rng, E=E)
+        **get_weight_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 1  # read from cache?
     assert_equal(decoders1, decoders2)
     assert solver_info1 == solver_info2
