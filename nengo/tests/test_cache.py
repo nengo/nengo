@@ -1,3 +1,4 @@
+import errno
 import os
 
 import numpy as np
@@ -136,6 +137,40 @@ def test_decoder_cache_shrinking(tmpdir):
     cache.wrap_solver(solver_mock)(**get_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 2
     assert SolverMock.n_calls[another_solver] == 1
+
+
+def test_decoder_cache_shrink_threadsafe(monkeypatch, tmpdir):
+    """Tests that shrink handles files deleted by other processes."""
+    cache_dir = str(tmpdir)
+    solver_mock = SolverMock()
+    another_solver = SolverMock('another_solver')
+
+    cache = DecoderCache(cache_dir=cache_dir)
+    cache.wrap_solver(solver_mock)(**get_solver_test_args())
+    limit = cache.get_size()
+
+    # Ensure differing time stamps (depending on the file system the timestamp
+    # resolution might be as bad as 1 day).
+    for filename in os.listdir(cache.cache_dir):
+        path = os.path.join(cache.cache_dir, filename)
+        timestamp = os.stat(path).st_atime
+        timestamp -= 60 * 60 * 24 * 2  # 2 days
+        os.utime(path, (timestamp, timestamp))
+
+    cache.wrap_solver(another_solver)(**get_solver_test_args())
+
+    cache_size = cache.get_size_in_bytes()
+    assert cache_size > 0
+
+    def raise_file_not_found(*args, **kwargs):
+        raise OSError(errno.ENOENT, "File not found.")
+
+    monkeypatch.setattr(cache, 'get_size_in_bytes', lambda: cache_size)
+    monkeypatch.setattr('os.stat', raise_file_not_found)
+    monkeypatch.setattr('os.remove', raise_file_not_found)
+    monkeypatch.setattr('os.unlink', raise_file_not_found)
+
+    cache.shrink(limit)
 
 
 def test_decoder_cache_with_E_argument_to_solver(tmpdir):

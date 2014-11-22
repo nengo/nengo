@@ -1,5 +1,6 @@
 """Caching capabilities for a faster build process."""
 
+import errno
 import hashlib
 import inspect
 import logging
@@ -13,6 +14,25 @@ from nengo.utils.cache import bytes2human, human2bytes
 from nengo.utils.compat import is_string, pickle, PY2
 
 logger = logging.getLogger(__name__)
+
+
+def safe_stat(path):
+    """Does os.stat, but fails gracefully if file not found."""
+    try:
+        return os.stat(path)
+    except OSError as err:
+        if err.errno != errno.ENOENT:
+            raise
+    return None
+
+
+def safe_remove(path):
+    """Does os.remove, but fails gracefully if file not found."""
+    try:
+        os.remove(path)
+    except OSError as err:
+        if err.errno != errno.ENOENT:
+            raise
 
 
 class Fingerprint(object):
@@ -75,6 +95,17 @@ class DecoderCache(object):
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
 
+    def get_files(self):
+        """Returns all of the files in the cache.
+
+        Returns
+        -------
+        list of (str, int) tuples
+        """
+        is_cache_file = lambda f: (f.endswith(self._DECODER_EXT) or
+                                   f.endswith(self._SOLVER_INFO_EXT))
+        return [f for f in os.listdir(self.cache_dir) if is_cache_file(f)]
+
     def get_size_in_bytes(self):
         """Returns the size of the cache in bytes as an int.
 
@@ -82,10 +113,9 @@ class DecoderCache(object):
         -------
         int
         """
-        size = 0
-        for filename in os.listdir(self.cache_dir):
-            size += os.stat(os.path.join(self.cache_dir, filename)).st_size
-        return size
+        stats = (safe_stat(os.path.join(self.cache_dir, f))
+                 for f in self.get_files())
+        return sum(st.st_size for st in stats if st is not None)
 
     def get_size(self, in_bytes=False):
         """Returns the size of the cache with units as a string.
@@ -109,50 +139,43 @@ class DecoderCache(object):
         if is_string(limit):
             limit = human2bytes(limit)
 
-        filelist = []
-        for filename in os.listdir(self.cache_dir):
-            key, ext = os.path.splitext(filename)
-            if ext == self._SOLVER_INFO_EXT:
-                continue
+        fileinfo = []
+        for filename in self.get_files():
             path = os.path.join(self.cache_dir, filename)
-            stat = os.stat(path)
-            filelist.append((stat.st_atime, key))
-        filelist.sort()
+            stat = safe_stat(path)
+            if stat is not None:
+                fileinfo.append((stat.st_atime, stat.st_size, path))
+
+        # Remove the least recently accessed first
+        fileinfo.sort()
 
         excess = self.get_size_in_bytes() - limit
-        for _, key in filelist:
+        for _, size, path in fileinfo:
             if excess <= 0:
                 break
 
-            decoder_path = os.path.join(
-                self.cache_dir, key + self._DECODER_EXT)
-            solver_info_path = os.path.join(
-                self.cache_dir, key + self._SOLVER_INFO_EXT)
+            excess -= size
+            safe_remove(path)
 
-            excess -= os.stat(decoder_path).st_size
-            os.remove(decoder_path)
-            if os.path.exists(solver_info_path):
-                excess -= os.stat(solver_info_path).st_size
-                os.remove(solver_info_path)
+        # We may have removed a decoder file but not solver_info file
+        # or vice versa, so we'll remove all orphans
+        self.remove_orphans()
 
     def remove_orphans(self):
         """Removes decoders that have no solver_info, and vice versa."""
-        for filename in os.listdir(self.cache_dir):
+        for filename in self.get_files():
             key, ext = os.path.splitext(filename)
             decoder = self._get_decoder_path(key)
             solver_info = self._get_solver_info_path(key)
             if ext == self._DECODER_EXT and not os.path.exists(solver_info):
-                os.remove(decoder)
+                safe_remove(decoder)
             elif ext == self._SOLVER_INFO_EXT and not os.path.exists(decoder):
-                os.remove(solver_info)
+                safe_remove(solver_info)
 
     def invalidate(self):
-        """Invalidates the cache (i.e. removes all stored decoder matrices)."""
-        for filename in os.listdir(self.cache_dir):
-            is_cache_file = (filename.endswith(self._DECODER_EXT) or
-                             filename.endswith(self._SOLVER_INFO_EXT))
-            if is_cache_file:
-                os.remove(os.path.join(self.cache_dir, filename))
+        """Invalidates the cache (i.e. removes all cache files)."""
+        for filename in self.get_files():
+            safe_remove(os.path.join(self.cache_dir, filename))
 
     @staticmethod
     def get_default_dir():
@@ -241,8 +264,7 @@ class DecoderCache(object):
 
 
 class NoDecoderCache(object):
-    """Provides the same interface as :class:`DecoderCache`, but does not
-    perform any caching."""
+    """Provides the same interface as :class:`DecoderCache` without caching."""
 
     def wrap_solver(self, solver):
         return solver
