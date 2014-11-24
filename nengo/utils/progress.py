@@ -362,7 +362,7 @@ class WriteProgressToFile(ProgressBar):
                 eta=_timestamp2timedelta(progress.eta()))
 
         with open(self.filename, 'w') as f:
-            f.write(text + os.linesep)
+            f.write(text + '\n')
 
 
 class AutoProgressBar(ProgressBar):
