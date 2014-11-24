@@ -17,6 +17,7 @@ from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
+from nengo.utils.progress import Progress, TerminalProgressBar
 from nengo.utils.simulator import operator_depencency_graph
 
 logger = logging.getLogger(__name__)
@@ -186,19 +187,45 @@ class Simulator(object):
 
         self._probe()
 
-    def run(self, time_in_seconds):
-        """Simulate for the given length of time."""
+    def run(self, time_in_seconds, progress_bar=None):
+        """Simulate for the given length of time.
+
+        If the simulation is expected to exceed a run time of one second, a
+        progress bar will appear by default. To disable the progress bar use
+        :class:`nengo.utils.progress.NoProgressBar`.
+
+        Parameters
+        ----------
+        steps : int
+            Number of steps to run the simulation for.
+        progress_bar : :class:`NoProgressBar` or
+                       :class:`TerminalProgressBar`, optional
+            Progress bar for displaying the progress.
+        """
         steps = int(np.round(float(time_in_seconds) / self.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.model.label, time_in_seconds, steps)
-        self.run_steps(steps)
+        self.run_steps(steps, progress_bar=progress_bar)
 
-    def run_steps(self, steps):
-        """Simulate for the given number of `dt` steps."""
-        for i in range(steps):
-            if i % 1000 == 0:
-                logger.debug("Step %d", i)
-            self.step()
+    def run_steps(self, steps, progress_bar=None):
+        """Simulate for the given number of `dt` steps.
+
+        Parameters
+        ----------
+        steps : int
+            Number of steps to run the simulation for.
+        progress_bar : :class:`NoProgressBar` or
+                       :class:`TerminalProgressBar`, optional
+            Progress bar for displaying the progress.
+        """
+        if progress_bar is None:
+            progress_bar = TerminalProgressBar()
+
+        with Progress(steps) as progress:
+            for i in range(steps):
+                self.step()
+                progress.step()
+                progress_bar.update(progress)
 
     def reset(self):
         """Reset the simulator state."""
