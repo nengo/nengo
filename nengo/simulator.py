@@ -17,9 +17,7 @@ from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
-from nengo.utils.ipython import has_ipynb_widgets, in_ipynb
-from nengo.utils.progress import (
-    IPython2ProgressBar, Progress, TerminalProgressBar)
+from nengo.utils.progress import ProgressTracker
 from nengo.utils.simulator import operator_depencency_graph
 
 logger = logging.getLogger(__name__)
@@ -222,17 +220,10 @@ class Simulator(object):
                        or :class:`IPython2ProgressBar`, optional
             Progress bar for displaying the progress.
         """
-        if progress_bar is None:
-            if in_ipynb() and has_ipynb_widgets():
-                progress_bar = IPython2ProgressBar()
-            else:
-                progress_bar = TerminalProgressBar()
-
-        with Progress(steps) as progress:
+        with ProgressTracker(steps, progress_bar) as progress:
             for i in range(steps):
                 self.step()
                 progress.step()
-                progress_bar.update(progress)
 
     def reset(self):
         """Reset the simulator state."""
