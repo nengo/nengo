@@ -138,7 +138,25 @@ class Progress(object):
         self.n_steps += n
 
 
-class NoProgressBar(object):
+class ProgressBar(object):
+    """Visualizes the progress of a process.
+
+    This is an abstract base class that progress bar classes some inherit from.
+    Progress bars should visually displaying the progress in some way.
+    """
+
+    def update(self, progress):
+        """Updates the displayed progress.
+
+        Parameters
+        ----------
+        progress : :class:`Progress`
+            The progress information to display.
+        """
+        raise NotImplementedError()
+
+
+class NoProgressBar(ProgressBar):
     """A progress bar that does not display anything.
 
     Helpful in headless situations or when using Nengo as a library.
@@ -148,10 +166,11 @@ class NoProgressBar(object):
         pass
 
 
-class TerminalProgressBar(object):
+class TerminalProgressBar(ProgressBar):
     """A progress bar that is displayed as ASCII output on `stdout`."""
 
     def __init__(self):
+        super(TerminalProgressBar, self).__init__()
         if in_ipynb():
             warnings.warn(MemoryLeakWarning((
                 "The {cls}, if used in an IPython notebook,"
@@ -265,10 +284,11 @@ if has_ipynb_widgets():
         IPythonProgressWidget.load_frontend()
 
 
-class IPython2ProgressBar(object):
+class IPython2ProgressBar(ProgressBar):
     """IPython progress bar based on widgets."""
 
     def __init__(self):
+        super(IPython2ProgressBar, self).__init__()
         self._widget = IPythonProgressWidget()
         self._initialized = False
 
@@ -285,6 +305,35 @@ class IPython2ProgressBar(object):
             self._widget.text = "{progress:.0f}%, ETA: {eta}".format(
                 progress=100 * progress.progress,
                 eta=_timestamp2timedelta(progress.eta()))
+
+
+class WriteProgressToFile(ProgressBar):
+    """Writes progress to a file.
+
+    This is useful for remotely and intermittently monitoring progress.
+    Note that this file will be overwritten on each update of the progress!
+
+    Parameters
+    ----------
+    filename : str
+        Path to the file to write the progress to.
+    """
+
+    def __init__(self, filename):
+        self.filename = filename
+        super(WriteProgressToFile, self).__init__()
+
+    def update(self, progress):
+        if progress.finished:
+            text = "Done in {0}.".format(
+                _timestamp2timedelta(progress.elapsed_seconds()))
+        else:
+            text = "{progress:.0f}%, ETA: {eta}".format(
+                progress=100 * progress.progress,
+                eta=_timestamp2timedelta(progress.eta()))
+
+        with open(self.filename, 'w') as f:
+            f.write(text + os.linesep)
 
 
 class ProgressTracker(object):
@@ -326,6 +375,10 @@ class ProgressTracker(object):
 
 def get_default_progressbar():
     """The default progress bar to use depending on the execution environment.
+
+    Returns
+    -------
+    :class:`ProgressBar`
     """
     if in_ipynb() and has_ipynb_widgets():  # IPython notebook >= 2.0
         return IPython2ProgressBar()

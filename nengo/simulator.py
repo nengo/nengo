@@ -200,8 +200,8 @@ class Simulator(object):
         ----------
         steps : int
             Number of steps to run the simulation for.
-        progress_bar : :class:`NoProgressBar` or :class:`TerminalProgressBar`
-                       or :class:`IPython2ProgressBar`, optional
+        progress_bar : :class:`nengo.utils.progress.ProgressBar` or
+                       :class:`nengo.utils.progress.ProgressUpdater`, optional
             Progress bar for displaying the progress.
         """
         steps = int(np.round(float(time_in_seconds) / self.dt))
@@ -216,8 +216,8 @@ class Simulator(object):
         ----------
         steps : int
             Number of steps to run the simulation for.
-        progress_bar : :class:`NoProgressBar` or :class:`TerminalProgressBar`
-                       or :class:`IPython2ProgressBar`, optional
+        progress_bar : :class:`nengo.utils.progress.ProgressBar` or
+                        :class:`nengo.utils.progress.ProgressUpdater`, optional
             Progress bar for displaying the progress.
         """
         with ProgressTracker(steps, progress_bar) as progress:
