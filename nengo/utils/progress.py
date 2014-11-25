@@ -6,10 +6,26 @@ from datetime import timedelta
 import os
 import sys
 import time
+import warnings
 
 import numpy as np
 
 from .stdlib import get_terminal_size
+from .ipython import in_ipynb, has_ipynb_widgets
+
+
+if has_ipynb_widgets():
+    from IPython import get_ipython
+    from IPython.html import widgets
+    from IPython.display import display
+    import IPython.utils.traitlets as traitlets
+
+
+class MemoryLeakWarning(UserWarning):
+    pass
+
+
+warnings.filterwarnings('once', category=MemoryLeakWarning)
 
 
 def _timestamp2timedelta(timestamp):
@@ -135,6 +151,20 @@ class NoProgressBar(object):
 class TerminalProgressBar(object):
     """A progress bar that is displayed as ASCII output on `stdout`."""
 
+    def __init__(self):
+        if in_ipynb():
+            warnings.warn(MemoryLeakWarning((
+                "The {cls}, if used in an IPython notebook,"
+                " will continuously adds invisible content to the "
+                "IPython notebook which may lead to excessive memory usage "
+                "and ipynb files which cannot be opened anymore. Please "
+                "consider doing one of the following:{cr}{cr}"
+                "  * Disable the progress bar.{cr}"
+                "  * Use IPython 2.0 or later and the IPython2ProgressBar "
+                "(this is the default behavior from IPython 2.0 onwards).{cr}"
+                ).format(cls=self.__class__.__name__, cr=os.linesep)))
+            sys.stderr.flush()  # Show warning immediately.
+
     def update(self, progress):
         if progress.finished:
             line = self._get_finished_line(progress)
@@ -167,3 +197,91 @@ class TerminalProgressBar(object):
         line = "Done in {0}.".format(
             _timestamp2timedelta(progress.elapsed_seconds())).ljust(width)
         return '\r' + line + os.linesep
+
+
+if has_ipynb_widgets():
+    class IPythonProgressWidget(widgets.DOMWidget):
+        """IPython widget for displaying a progress bar."""
+
+        # pylint: disable=too-many-public-methods
+        _view_name = traitlets.Unicode('NengoProgressBar', sync=True)
+        progress = traitlets.Float(0., sync=True)
+        text = traitlets.Unicode(u'', sync=True)
+
+        FRONTEND = '''
+        require(["widgets/js/widget", "widgets/js/manager"],
+            function(widget, manager) {
+          if (typeof widget.DOMWidgetView == 'undefined') {
+            widget = IPython;
+          }
+          if (typeof manager.WidgetManager == 'undefined') {
+            manager = IPython;
+          }
+
+          var NengoProgressBar = widget.DOMWidgetView.extend({
+            render: function() {
+              // $el is the DOM of the widget
+              this.$el.css({width: '100%', marginBottom: '0.5em'});
+              this.$el.html([
+                '<div style="',
+                    'width: 100%;',
+                    'border: 1px solid #cfcfcf;',
+                    'border-radius: 4px;',
+                    'text-align: center;',
+                    'position: relative;">',
+                  '<div class="pb-text" style="',
+                      'position: absolute;',
+                      'width: 100%;">',
+                    '0%',
+                  '</div>',
+                  '<div class="pb-bar" style="',
+                      'background-color: #bdd2e6;',
+                      'width: 0%;',
+                      'transition: width 0.1s linear;">',
+                    '&nbsp;',
+                  '</div>',
+                '</div>'].join(''));
+            },
+
+            update: function() {
+              this.$el.css({width: '100%', marginBottom: '0.5em'});
+              var progress = 100 * this.model.get('progress');
+              var text = this.model.get('text');
+              this.$el.find('div.pb-bar').width(progress.toString() + '%');
+              this.$el.find('div.pb-text').text(text);
+            },
+          });
+
+          manager.WidgetManager.register_widget_view(
+            'NengoProgressBar', NengoProgressBar);
+        });'''
+
+        @classmethod
+        def load_frontend(cls):
+            """Loads the JavaScript front-end code required by then widget."""
+            get_ipython().run_cell_magic('javascript', '', cls.FRONTEND)
+
+    if in_ipynb():
+        IPythonProgressWidget.load_frontend()
+
+
+class IPython2ProgressBar(object):
+    """IPython progress bar based on widgets."""
+
+    def __init__(self):
+        self._widget = IPythonProgressWidget()
+        self._initialized = False
+
+    def update(self, progress):
+        if not self._initialized:
+            display(self._widget)
+            self._initialized = True
+
+        self._widget.progress = progress.progress
+        if progress.finished:
+            self._widget.text = "Done in {0}.".format(
+                _timestamp2timedelta(progress.elapsed_seconds()))
+        else:
+            self._widget.text = "{progress:.0f}%, ETA: {eta}".format(
+                progress=100 * progress.progress,
+                eta=_timestamp2timedelta(progress.eta()))

@@ -3,9 +3,15 @@ from __future__ import absolute_import
 import sys
 import unicodedata
 
-from IPython.display import HTML
-from IPython.nbconvert import PythonExporter
-from IPython.nbformat import current
+try:
+    from IPython import get_ipython
+    from IPython.display import HTML
+    from IPython.nbconvert import PythonExporter
+    from IPython.nbformat import current
+except ImportError:
+    def get_ipython():
+        return None
+
 import numpy as np
 
 
@@ -88,3 +94,47 @@ def load_notebook(nb_path):
     with open(nb_path) as f:
         nb = current.reads(f.read(), 'json')
     return nb
+
+
+def in_ipynb():
+    """Determines if code is executed in an IPython notebook.
+
+    Returns
+    -------
+    bool
+       ``True`` if the code is executed in an IPython notebook, otherwise
+       ``False``.
+
+    Notes
+    -----
+    It is possible to connect to a kernel started from an IPython notebook
+    from outside of the notebook. Thus, this function might return ``True``
+    even though the code is not running in an IPython notebook.
+    """
+    if get_ipython() is not None:
+        cfg = get_ipython().config
+        app_key = 'IPKernelApp'
+        if 'parent_appname' not in cfg[app_key]:
+            app_key = 'KernelApp'  # was used by old IPython versions
+        if cfg[app_key].get('parent_appname') == 'ipython-notebook':
+            return True
+    return False
+
+
+def has_ipynb_widgets():
+    """Determines whether IPython widgets are available.
+
+    Returns
+    -------
+    bool
+        ``True`` if IPython widgets are available, otherwise ``False``.
+    """
+    try:
+        import IPython.html.widgets
+        import IPython.utils.traitlets
+        assert IPython.html.widgets
+        assert IPython.utils.traitlets
+    except ImportError:
+        return False
+    else:
+        return True

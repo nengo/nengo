@@ -17,7 +17,9 @@ from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
-from nengo.utils.progress import Progress, TerminalProgressBar
+from nengo.utils.ipython import has_ipynb_widgets, in_ipynb
+from nengo.utils.progress import (
+    IPython2ProgressBar, Progress, TerminalProgressBar)
 from nengo.utils.simulator import operator_depencency_graph
 
 logger = logging.getLogger(__name__)
@@ -191,15 +193,17 @@ class Simulator(object):
         """Simulate for the given length of time.
 
         If the simulation is expected to exceed a run time of one second, a
-        progress bar will appear by default. To disable the progress bar use
+        progress bar will appear by default. Usually, this will be an ASCII
+        command line version, but it can be an HTML version in recent IPython
+        notebook versions. To disable the progress bar use
         :class:`nengo.utils.progress.NoProgressBar`.
 
         Parameters
         ----------
         steps : int
             Number of steps to run the simulation for.
-        progress_bar : :class:`NoProgressBar` or
-                       :class:`TerminalProgressBar`, optional
+        progress_bar : :class:`NoProgressBar` or :class:`TerminalProgressBar`
+                       or :class:`IPython2ProgressBar`, optional
             Progress bar for displaying the progress.
         """
         steps = int(np.round(float(time_in_seconds) / self.dt))
@@ -214,12 +218,15 @@ class Simulator(object):
         ----------
         steps : int
             Number of steps to run the simulation for.
-        progress_bar : :class:`NoProgressBar` or
-                       :class:`TerminalProgressBar`, optional
+        progress_bar : :class:`NoProgressBar` or :class:`TerminalProgressBar`
+                       or :class:`IPython2ProgressBar`, optional
             Progress bar for displaying the progress.
         """
         if progress_bar is None:
-            progress_bar = TerminalProgressBar()
+            if in_ipynb() and has_ipynb_widgets():
+                progress_bar = IPython2ProgressBar()
+            else:
+                progress_bar = TerminalProgressBar()
 
         with Progress(steps) as progress:
             for i in range(steps):
