@@ -145,6 +145,9 @@ class ProgressBar(object):
     Progress bars should visually displaying the progress in some way.
     """
 
+    def __init__(self, task="Simulation"):
+        self.task = task
+
     def update(self, progress):
         """Updates the displayed progress.
 
@@ -169,8 +172,8 @@ class NoProgressBar(ProgressBar):
 class TerminalProgressBar(ProgressBar):
     """A progress bar that is displayed as ASCII output on `stdout`."""
 
-    def __init__(self):
-        super(TerminalProgressBar, self).__init__()
+    def __init__(self, task="Simulation"):
+        super(TerminalProgressBar, self).__init__(task)
         if in_ipynb():
             warnings.warn(MemoryLeakWarning((
                 "The {cls}, if used in an IPython notebook,"
@@ -216,7 +219,8 @@ class TerminalProgressBar(ProgressBar):
 
     def _get_finished_line(self, progress):
         width, _ = get_terminal_size()
-        line = "Done in {0}.".format(
+        line = "{0} finished in {1}.".format(
+            self.task,
             _timestamp2timedelta(progress.elapsed_seconds())).ljust(width)
         return '\r' + line + os.linesep
 
@@ -290,8 +294,8 @@ if has_ipynb_widgets():
 class IPython2ProgressBar(ProgressBar):
     """IPython progress bar based on widgets."""
 
-    def __init__(self):
-        super(IPython2ProgressBar, self).__init__()
+    def __init__(self, task="Simulation"):
+        super(IPython2ProgressBar, self).__init__(task)
         self._widget = IPythonProgressWidget()
         self._initialized = False
 
@@ -302,7 +306,8 @@ class IPython2ProgressBar(ProgressBar):
 
         self._widget.progress = progress.progress
         if progress.finished:
-            self._widget.text = "Done in {0}.".format(
+            self._widget.text = "{0} finished in {1}.".format(
+                self.task,
                 _timestamp2timedelta(progress.elapsed_seconds()))
         else:
             self._widget.text = "{progress:.0f}%, ETA: {eta}".format(
@@ -322,13 +327,14 @@ class WriteProgressToFile(ProgressBar):
         Path to the file to write the progress to.
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, task="Simulation"):
         self.filename = filename
-        super(WriteProgressToFile, self).__init__()
+        super(WriteProgressToFile, self).__init__(task)
 
     def update(self, progress):
         if progress.finished:
-            text = "Done in {0}.".format(
+            text = "{0} finished in {1}.".format(
+                self.task,
                 _timestamp2timedelta(progress.elapsed_seconds()))
         else:
             text = "{progress:.0f}%, ETA: {eta}".format(
@@ -350,19 +356,20 @@ class AutoProgressBar(ProgressBar):
         The minimum ETA threshold for displaying the progress bar.
     """
 
-    def __init__(self, delegate, min_eta=1.):
+    def __init__(self, delegate, min_eta=1., task="Simulation"):
         self.delegate = delegate
 
-        super(AutoProgressBar, self).__init__()
+        super(AutoProgressBar, self).__init__(task)
 
         self.min_eta = min_eta
         self._visible = False
 
     def update(self, progress):
         min_delay = progress.start_time + 0.1
+        long_eta = progress.eta() > self.min_eta and min_delay < time.time()
         if self._visible:
             self.delegate.update(progress)
-        elif progress.eta() > self.min_eta and min_delay < time.time():
+        elif long_eta or progress.finished:
             self._visible = True
             self.delegate.update(progress)
 
@@ -536,7 +543,7 @@ def get_default_progressupdater(progress_bar):
         return UpdateEveryT
 
 
-def wrap_with_progressupdater(progress_bar=None):
+def wrap_with_progressupdater(progress_bar=True):
     """Wraps a progress bar with the default progress updater.
 
     If it is already wrapped by an progress updater, then this does nothing.
@@ -551,9 +558,18 @@ def wrap_with_progressupdater(progress_bar=None):
     :class:`ProgressUpdater`
         The wrapped progress bar.
     """
-    if progress_bar is None:
+    if progress_bar is False or progress_bar is None:
+        return NoProgressBar()
+
+    if progress_bar is True:
         progress_bar = get_default_progressbar()
-    if not isinstance(progress_bar, ProgressUpdater):
+
+    if isinstance(progress_bar, ProgressUpdater):
+        return progress_bar
+    elif isinstance(progress_bar, ProgressBar):
         updater_class = get_default_progressupdater(progress_bar)
-        progress_bar = updater_class(progress_bar)
-    return progress_bar
+        return updater_class(progress_bar)
+    else:
+        raise ValueError("'progress_bar' must be a boolean or instance of "
+                         "ProgressBar or ProgressUpdater (got %s)" %
+                         type(progress_bar).__name__)

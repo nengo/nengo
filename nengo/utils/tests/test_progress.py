@@ -67,6 +67,7 @@ class TestAutoProgressBar(object):
         def __init__(self, eta, start_time=1234.5):
             self.eta = lambda: eta
             self.start_time = start_time
+            self.finished = False
 
     def test_progress_not_shown_if_eta_below_threshold(self):
         progress_mock = self.ProgressMock(0.2)
@@ -87,6 +88,17 @@ class TestAutoProgressBar(object):
             auto_progress.update(progress_mock)
 
         assert progress_bar.n_update_calls >= 10
+
+    def test_progress_shown_when_finished(self):
+        progress_mock = self.ProgressMock(0.2)
+        progress_bar = ProgressBarMock()
+        auto_progress = AutoProgressBar(progress_bar, min_eta=10.)
+
+        auto_progress.update(progress_mock)
+        assert progress_bar.n_update_calls == 0
+        progress_mock.finished = True
+        auto_progress.update(progress_mock)
+        assert progress_bar.n_update_calls >= 1
 
 
 class TestUpdateN(object):
