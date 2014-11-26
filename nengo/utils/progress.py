@@ -364,6 +364,28 @@ class AutoProgressBar(ProgressBar):
             self.delegate.update(progress)
 
 
+class UpdateEveryT(ProgressBar):
+    """Updates a :class:`ProgressBar` every ``t`` seconds.
+
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressBar`
+        The progress bar to relay the updates to.
+    update_interval : float
+        Number of seconds in-between relayed updates.
+    """
+
+    def __init__(self, progress_bar, every_t=0.05):
+        self.progress_bar = progress_bar
+        self.next_update = 0
+        self.update_interval = every_t
+
+    def update(self, progress):
+        if self.next_update < time.time() or progress.finished:
+            self.progress_bar.update(progress)
+            self.next_update = time.time() + self.update_interval
+
+
 class ProgressTracker(object):
     """Tracks the progress of some process with a progress bar.
 
@@ -409,6 +431,6 @@ def get_default_progressbar():
     :class:`ProgressBar`
     """
     if in_ipynb() and has_ipynb_widgets():  # IPython notebook >= 2.0
-        return AutoProgressBar(IPython2ProgressBar())
+        return UpdateEveryT(AutoProgressBar(IPython2ProgressBar()))
     else:  # IPython notebook < 2.0 or any other environment
-        return AutoProgressBar(TerminalProgressBar())
+        return UpdateEveryT(AutoProgressBar(TerminalProgressBar()))
