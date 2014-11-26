@@ -178,6 +178,9 @@ class TerminalProgressBar(ProgressBar):
                 "IPython notebook which may lead to excessive memory usage "
                 "and ipynb files which cannot be opened anymore. Please "
                 "consider doing one of the following:{cr}{cr}"
+                "  * Wrap {cls} in an UpdateEveryN class. This reduces the "
+                "memory consumption, but does not solve the problem "
+                "completely.{cr}"
                 "  * Disable the progress bar.{cr}"
                 "  * Use IPython 2.0 or later and the IPython2ProgressBar "
                 "(this is the default behavior from IPython 2.0 onwards).{cr}"
@@ -364,7 +367,86 @@ class AutoProgressBar(ProgressBar):
             self.delegate.update(progress)
 
 
-class UpdateEveryT(ProgressBar):
+class ProgressUpdater(object):
+    """Controls how often a progress bar is updated.
+
+    This is an abstract base class that classes controlling the updates
+    to a progress bar should inherit from.
+
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressBar` instance
+        The object to which updates are passed on.
+    """
+
+    def __init__(self, progress_bar):
+        self.progress_bar = progress_bar
+
+    def update(self, progress):
+        """Notify about changed progress and update progress bar if desired
+
+        Parameters
+        ----------
+        progress : :class:`Progress`
+            Changed progress information.
+        """
+        raise NotImplementedError()
+
+
+class UpdateN(ProgressUpdater):
+    """Updates a :class:`ProgressBar` every step, up to a maximum of ``n``.
+
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressBar`
+        The progress bar to relay the updates to.
+    max_updates : int
+        Maximum number of updates that will be relayed to the progress bar.
+
+    Notes
+    -----
+    This is especially useful in the IPython 1.x notebook, since updating
+    the notebook saves the output, which will create a large amount of memory
+    and cause the notebook to crash.
+    """
+
+    def __init__(self, progress_bar, max_updates=100):
+        super(UpdateN, self).__init__(progress_bar)
+        self.max_updates = max_updates
+        self.last_update_step = 0
+
+    def update(self, progress):
+        next_update_step = (self.last_update_step +
+                            progress.max_steps / self.max_updates)
+        if next_update_step < progress.n_steps or progress.finished:
+            self.progress_bar.update(progress)
+            self.last_update_step = progress.n_steps
+
+
+class UpdateEveryN(ProgressUpdater):
+    """Updates a :class:`ProgressBar` every ``n`` steps.
+
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressBar`
+        The progress bar to relay the updates to.
+    every_n : int
+        The number of steps in-between relayed updates.
+    """
+
+    def __init__(self, progress_bar, every_n=1000):
+        super(UpdateEveryN, self).__init__(progress_bar)
+        self.every_n = every_n
+        self.next_update = every_n
+
+    def update(self, progress):
+        if self.next_update <= progress.n_steps or progress.finished:
+            self.progress_bar.update(progress)
+            assert self.every_n > 0
+            self.next_update = progress.n_steps + self.every_n
+
+
+class UpdateEveryT(ProgressUpdater):
     """Updates a :class:`ProgressBar` every ``t`` seconds.
 
     Parameters
@@ -376,7 +458,7 @@ class UpdateEveryT(ProgressBar):
     """
 
     def __init__(self, progress_bar, every_t=0.05):
-        self.progress_bar = progress_bar
+        super(UpdateEveryT, self).__init__(progress_bar)
         self.next_update = 0
         self.update_interval = every_t
 
@@ -398,9 +480,7 @@ class ProgressTracker(object):
     """
     def __init__(self, max_steps, progress_bar):
         self.progress = Progress(max_steps)
-        if progress_bar is None:
-            progress_bar = get_default_progressbar()
-        self.progress_bar = progress_bar
+        self.progress_bar = wrap_with_progressupdater(progress_bar)
 
     def __enter__(self):
         self.progress.__enter__()
@@ -431,6 +511,49 @@ def get_default_progressbar():
     :class:`ProgressBar`
     """
     if in_ipynb() and has_ipynb_widgets():  # IPython notebook >= 2.0
-        return UpdateEveryT(AutoProgressBar(IPython2ProgressBar()))
+        return AutoProgressBar(IPython2ProgressBar())
     else:  # IPython notebook < 2.0 or any other environment
-        return UpdateEveryT(AutoProgressBar(TerminalProgressBar()))
+        return AutoProgressBar(TerminalProgressBar())
+
+
+def get_default_progressupdater(progress_bar):
+    """The default progress updater.
+
+    The default depends on the progress bar and execution environment.
+
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressBar`
+        The progress bar to obtain the default progess updater for.
+
+    Returns
+    -------
+    :class:`ProgressUpdater`
+    """
+    if in_ipynb() and not isinstance(progress_bar, IPython2ProgressBar):
+        return UpdateN
+    else:
+        return UpdateEveryT
+
+
+def wrap_with_progressupdater(progress_bar=None):
+    """Wraps a progress bar with the default progress updater.
+
+    If it is already wrapped by an progress updater, then this does nothing.
+
+    Parameters
+    ----------
+    progress_bar : :class:`ProgressBar` or :class:`ProgressUpdater`
+        The progress bar to wrap.
+
+    Returns
+    -------
+    :class:`ProgressUpdater`
+        The wrapped progress bar.
+    """
+    if progress_bar is None:
+        progress_bar = get_default_progressbar()
+    if not isinstance(progress_bar, ProgressUpdater):
+        updater_class = get_default_progressupdater(progress_bar)
+        progress_bar = updater_class(progress_bar)
+    return progress_bar

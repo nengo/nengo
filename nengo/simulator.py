@@ -196,6 +196,10 @@ class Simulator(object):
         notebook versions. To disable the progress bar use
         :class:`nengo.utils.progress.NoProgressBar`.
 
+        If the `progress_bar` argument is not an
+        :class:`nengo.utils.progress.ProgressUpdater`, it will be wrapped by a
+        default ``ProgressUpdater`` depending on the execution environment.
+
         Parameters
         ----------
         steps : int
