@@ -336,6 +336,34 @@ class WriteProgressToFile(ProgressBar):
             f.write(text + os.linesep)
 
 
+class AutoProgressBar(ProgressBar):
+    """Suppresses the progress bar unless the ETA exceeds a threshold.
+
+    Parameters
+    ----------
+    delegate : :class:`ProgressBar`
+        The actual progress bar to display, if ETA is high enough.
+    min_eta : float, optional
+        The minimum ETA threshold for displaying the progress bar.
+    """
+
+    def __init__(self, delegate, min_eta=1.):
+        self.delegate = delegate
+
+        super(AutoProgressBar, self).__init__()
+
+        self.min_eta = min_eta
+        self._visible = False
+
+    def update(self, progress):
+        min_delay = progress.start_time + 0.1
+        if self._visible:
+            self.delegate.update(progress)
+        elif progress.eta() > self.min_eta and min_delay < time.time():
+            self._visible = True
+            self.delegate.update(progress)
+
+
 class ProgressTracker(object):
     """Tracks the progress of some process with a progress bar.
 
@@ -381,6 +409,6 @@ def get_default_progressbar():
     :class:`ProgressBar`
     """
     if in_ipynb() and has_ipynb_widgets():  # IPython notebook >= 2.0
-        return IPython2ProgressBar()
+        return AutoProgressBar(IPython2ProgressBar())
     else:  # IPython notebook < 2.0 or any other environment
-        return TerminalProgressBar()
+        return AutoProgressBar(TerminalProgressBar())
