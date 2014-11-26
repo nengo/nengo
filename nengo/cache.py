@@ -135,6 +135,17 @@ class DecoderCache(object):
                 excess -= os.stat(solver_info_path).st_size
                 os.remove(solver_info_path)
 
+    def remove_orphans(self):
+        """Removes decoders that have no solver_info, and vice versa."""
+        for filename in os.listdir(self.cache_dir):
+            key, ext = os.path.splitext(filename)
+            decoder = self._get_decoder_path(key)
+            solver_info = self._get_solver_info_path(key)
+            if ext == self._DECODER_EXT and not os.path.exists(solver_info):
+                os.remove(decoder)
+            elif ext == self._SOLVER_INFO_EXT and not os.path.exists(decoder):
+                os.remove(solver_info)
+
     def invalidate(self):
         """Invalidates the cache (i.e. removes all stored decoder matrices)."""
         for filename in os.listdir(self.cache_dir):
