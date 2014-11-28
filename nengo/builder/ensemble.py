@@ -53,10 +53,12 @@ def build_ensemble(model, ens):
     if isinstance(ens.neuron_type, Direct):
         encoders = np.identity(ens.dimensions)
     elif isinstance(ens.encoders, Distribution):
-        encoders = ens.encoders.sample(ens.n_neurons, ens.dimensions, rng=rng)
+        encoders = ens.encoders.sample(
+            ens.n_neurons, ens.dimensions, rng=rng).astype(
+            np.float64, copy=False)
     else:
         encoders = npext.array(ens.encoders, min_dims=2, dtype=np.float64)
-        encoders /= npext.norm(encoders, axis=1, keepdims=True)
+    encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     # Determine max_rates and intercepts
     max_rates = sample(ens.max_rates, ens.n_neurons, rng=rng)

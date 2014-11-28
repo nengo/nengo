@@ -60,7 +60,7 @@ def test_thalamus(Simulator, seed):
     assert 0.4 < data2[1, 499] < 0.7
 
 
-def test_routing(Simulator, seed):
+def test_routing(Simulator, seed, plt):
     D = 3
     model = spa.SPA(seed=seed)
     with model:
@@ -99,9 +99,11 @@ def test_routing(Simulator, seed):
 
     data = sim.data[buff3_probe]
 
-    valueA = np.mean(data[100:200], axis=0)  # should be [0, 1, 0]
-    valueB = np.mean(data[300:400], axis=0)  # should be [0, 0, 1]
-    valueC = np.mean(data[500:600], axis=0)  # should be [1, 0, 0]
+    plt.plot(sim.trange(), data)
+
+    valueA = np.mean(data[150:200], axis=0)  # should be [0, 1, 0]
+    valueB = np.mean(data[350:400], axis=0)  # should be [0, 0, 1]
+    valueC = np.mean(data[550:600], axis=0)  # should be [1, 0, 0]
 
     assert valueA[0] < 0.2
     assert valueA[1] > 0.8
