@@ -61,11 +61,11 @@ def test_node_to_neurons(Simulator, nl_nodirect, plt, seed):
     assert np.allclose(sim.data[a_p][-10:], 0, atol=.1, rtol=.01)
 
 
-def test_ensemble_to_neurons(Simulator, nl_nodirect, plt):
+def test_ensemble_to_neurons(Simulator, nl_nodirect, plt, seed):
     name = 'ensemble_to_neurons'
     N = 30
 
-    m = nengo.Network(label=name, seed=123)
+    m = nengo.Network(label=name, seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         a = nengo.Ensemble(N, dimensions=1)
@@ -98,11 +98,11 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect, plt):
     assert np.allclose(sim.data[b_p][-10:], 1, atol=.1, rtol=.01)
 
 
-def test_node_to_ensemble(Simulator, nl_nodirect, plt):
+def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed):
     name = 'node_to_ensemble'
     N = 50
 
-    m = nengo.Network(label=name, seed=123)
+    m = nengo.Network(label=name, seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         input_node = nengo.Node(output=lambda t: [np.sin(t), np.cos(t)])
@@ -133,11 +133,11 @@ def test_node_to_ensemble(Simulator, nl_nodirect, plt):
                        atol=0.1, rtol=0.01)
 
 
-def test_neurons_to_ensemble(Simulator, nl_nodirect, plt):
+def test_neurons_to_ensemble(Simulator, nl_nodirect, plt, seed):
     name = 'neurons_to_ensemble'
     N = 20
 
-    m = nengo.Network(label=name, seed=123)
+    m = nengo.Network(label=name, seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         a = nengo.Ensemble(N * 2, dimensions=2)
@@ -161,11 +161,11 @@ def test_neurons_to_ensemble(Simulator, nl_nodirect, plt):
     assert np.all(sim.data[b_p][-10:] < 0)
 
 
-def test_neurons_to_node(Simulator, nl_nodirect, plt):
+def test_neurons_to_node(Simulator, nl_nodirect, plt, seed):
     name = 'neurons_to_node'
     N = 30
 
-    m = nengo.Network(label=name, seed=123)
+    m = nengo.Network(label=name, seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         a = nengo.Ensemble(N, dimensions=1)
@@ -190,11 +190,11 @@ def test_neurons_to_node(Simulator, nl_nodirect, plt):
     assert np.allclose(sim.data[a_spikes], sim.data[out_p])
 
 
-def test_neurons_to_neurons(Simulator, nl_nodirect, plt):
+def test_neurons_to_neurons(Simulator, nl_nodirect, plt, seed):
     name = 'neurons_to_neurons'
     N1, N2 = 30, 50
 
-    m = nengo.Network(label=name, seed=123)
+    m = nengo.Network(label=name, seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         a = nengo.Ensemble(N1, dimensions=1)
@@ -221,10 +221,10 @@ def test_neurons_to_neurons(Simulator, nl_nodirect, plt):
     assert np.allclose(sim.data[b_p][-10:], 0, atol=.1, rtol=.01)
 
 
-def test_function_and_transform(Simulator, nl, plt):
+def test_function_and_transform(Simulator, nl, plt, seed):
     """Test using both a function and a transform"""
 
-    model = nengo.Network(seed=742)
+    model = nengo.Network(seed=seed)
     with model:
         u = nengo.Node(output=lambda t: np.sin(6 * t))
         a = nengo.Ensemble(100, 1, neuron_type=nl())
@@ -250,7 +250,7 @@ def test_function_and_transform(Simulator, nl, plt):
     assert np.allclose(x1, y1, atol=.1, rtol=.01)
 
 
-def test_weights(Simulator, nl, plt):
+def test_weights(Simulator, nl, plt, seed):
     n1, n2 = 100, 50
 
     def func(t):
@@ -258,7 +258,7 @@ def test_weights(Simulator, nl, plt):
 
     transform = np.array([[0.6, -0.4]])
 
-    m = nengo.Network(label='test_weights', seed=3902)
+    m = nengo.Network(label='test_weights', seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl()
         u = nengo.Node(output=func)
@@ -280,12 +280,12 @@ def test_weights(Simulator, nl, plt):
     assert allclose(t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt)
 
 
-def test_vector(Simulator, nl, plt):
+def test_vector(Simulator, nl, plt, seed):
     name = 'vector'
     N1, N2 = 50, 50
     transform = [-1, 0.5]
 
-    m = nengo.Network(label=name, seed=123)
+    m = nengo.Network(label=name, seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl()
         u = nengo.Node(output=[0.5, 0.5])
@@ -460,12 +460,12 @@ def test_zerofilter(Simulator, seed):
     assert np.unique(sim.data[bp]).size == 2
 
 
-def test_function_output_size(Simulator, nl_nodirect, plt):
+def test_function_output_size(Simulator, nl_nodirect, plt, seed):
     """Try a function that outputs both 0-d and 1-d arrays"""
     def bad_function(x):
         return x if x > 0 else 0
 
-    model = nengo.Network(seed=9)
+    model = nengo.Network(seed=seed)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=lambda t: t - 1)
@@ -488,13 +488,13 @@ def test_function_output_size(Simulator, nl_nodirect, plt):
     assert np.allclose(x, y, atol=0.1)
 
 
-def test_slicing_function(Simulator, nl, plt):
+def test_slicing_function(Simulator, nl, plt, seed):
     """Test using a pre-slice and a function"""
     N = 300
     f_in = lambda t: [np.cos(3*t), np.sin(3*t)]
     f_x = lambda x: [x, -x**2]
 
-    with nengo.Network(seed=99) as model:
+    with nengo.Network(seed=seed) as model:
         model.config[nengo.Ensemble].neuron_type = nl()
         u = nengo.Node(output=f_in)
         a = nengo.Ensemble(N, 2, radius=1.5)

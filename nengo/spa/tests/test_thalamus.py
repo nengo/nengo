@@ -7,8 +7,8 @@ import numpy as np
 
 
 @pytest.mark.optional  # Too slow
-def test_thalamus(Simulator):
-    model = spa.SPA(seed=30)
+def test_thalamus(Simulator, seed):
+    model = spa.SPA(seed=seed)
 
     with model:
         model.vision = spa.Buffer(dimensions=16, neurons_per_dimension=80)
@@ -60,9 +60,9 @@ def test_thalamus(Simulator):
     assert 0.4 < data2[1, 499] < 0.7
 
 
-def test_routing(Simulator):
+def test_routing(Simulator, seed):
     D = 3
-    model = spa.SPA(seed=123)
+    model = spa.SPA(seed=seed)
     with model:
         model.ctrl = spa.Buffer(16, label='ctrl')
 

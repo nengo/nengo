@@ -13,10 +13,8 @@ logger = logging.getLogger(__name__)
 
 @pytest.mark.parametrize('invert_a', [True, False])
 @pytest.mark.parametrize('invert_b', [True, False])
-def test_circularconv_transforms(invert_a, invert_b):
+def test_circularconv_transforms(invert_a, invert_b, rng):
     """Test the circular convolution transforms"""
-    rng = np.random.RandomState(43232)
-
     dims = 100
     x = rng.randn(dims)
     y = rng.randn(dims)
@@ -31,20 +29,19 @@ def test_circularconv_transforms(invert_a, invert_b):
     assert np.allclose(z0, z1)
 
 
-def test_input_magnitude(Simulator, dims=16, magnitude=10):
+def test_input_magnitude(Simulator, seed, rng, dims=16, magnitude=10):
     """Test to make sure the magnitude scaling works.
 
     Builds two different CircularConvolution networks, one with the correct
     magnitude and one with 1.0 as the input_magnitude.
     """
-    rng = np.random.RandomState(4238)
     neurons_per_product = 128
 
     a = rng.normal(scale=np.sqrt(1./dims), size=dims) * magnitude
     b = rng.normal(scale=np.sqrt(1./dims), size=dims) * magnitude
     result = circconv(a, b)
 
-    model = nengo.Network(label="circular conv", seed=1)
+    model = nengo.Network(label="circular conv", seed=seed)
     model.config[nengo.Ensemble].neuron_type = nengo.LIFRate()
     with model:
         inputA = nengo.Node(a)
@@ -72,13 +69,12 @@ def test_input_magnitude(Simulator, dims=16, magnitude=10):
 
 
 @pytest.mark.parametrize('dims', [4, 32])
-def test_neural_accuracy(Simulator, dims, neurons_per_product=128):
-    rng = np.random.RandomState(4238)
+def test_neural_accuracy(Simulator, seed, rng, dims, neurons_per_product=128):
     a = rng.normal(scale=np.sqrt(1./dims), size=dims)
     b = rng.normal(scale=np.sqrt(1./dims), size=dims)
     result = circconv(a, b)
 
-    model = nengo.Network(label="circular conv", seed=1)
+    model = nengo.Network(label="circular conv", seed=seed)
     model.config[nengo.Ensemble].neuron_type = nengo.LIFRate()
     with model:
         inputA = nengo.Node(a)

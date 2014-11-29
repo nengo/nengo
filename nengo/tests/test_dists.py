@@ -6,7 +6,7 @@ import nengo.dists as dists
 import nengo.utils.numpy as npext
 
 
-def test_pdf():
+def test_pdf(rng):
     s = 0.25
     f = lambda x: (np.exp(-0.5 * (x + 0.5)**2 / s**2) +
                    np.exp(-0.5 * (x - 0.5)**2 / s**2))
@@ -15,8 +15,6 @@ def test_pdf():
     pref = f(xref)
     pref /= pref.sum()
     dist = dists.PDF(xref, pref)
-
-    rng = np.random.RandomState(9)
 
     n = 100000
     samples = dist.sample(n, rng=rng)

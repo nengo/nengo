@@ -42,8 +42,8 @@ def test_exception():
         model.buffer = spa.Buffer(dimensions=12, subdimensions=3)
 
 
-def test_run(Simulator):
-    with spa.SPA(seed=123) as model:
+def test_run(Simulator, seed):
+    with spa.SPA(seed=seed) as model:
         model.buffer = spa.Buffer(dimensions=32)
 
         def input(t):

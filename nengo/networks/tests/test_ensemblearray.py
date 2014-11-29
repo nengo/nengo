@@ -11,20 +11,19 @@ from nengo.utils.testing import WarningCatcher
 logger = logging.getLogger(__name__)
 
 
-def test_multidim(Simulator, nl, plt):
+def test_multidim(Simulator, nl, plt, seed, rng):
     """Test an ensemble array with multiple dimensions per ensemble"""
     dims = 3
     n_neurons = 60
     radius = 1.0
 
-    rng = np.random.RandomState(523887)
     a = rng.uniform(low=-0.7, high=0.7, size=dims)
     b = rng.uniform(low=-0.7, high=0.7, size=dims)
     c = np.zeros(2 * dims)
     c[::2] = a
     c[1::2] = b
 
-    model = nengo.Network(label='Multidim', seed=121)
+    model = nengo.Network(label='Multidim', seed=seed)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl()
         inputA = nengo.Node(a)
@@ -88,14 +87,14 @@ def _mmul_transforms(A_shape, B_shape, C_dim):
     return transformA, transformB
 
 
-def test_matrix_mul(Simulator, nl, plt):
+def test_matrix_mul(Simulator, nl, plt, seed):
     N = 100
 
     Amat = np.asarray([[0.5, -0.5]])
     Bmat = np.asarray([[0.8, 0.3], [0.2, 0.7]])
     radius = 1
 
-    model = nengo.Network(label='Matrix Multiplication', seed=123)
+    model = nengo.Network(label='Matrix Multiplication', seed=seed)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl()
         A = nengo.networks.EnsembleArray(
@@ -162,9 +161,9 @@ def test_arguments():
         nengo.networks.EnsembleArray(nengo.LIF(10), 1, dimensions=2)
 
 
-def test_neuronconnection(Simulator, nl):
+def test_neuronconnection(Simulator, nl, seed):
     catcher = WarningCatcher()
-    with nengo.Network(seed=123) as net:
+    with nengo.Network(seed=seed) as net:
         net.config[nengo.Ensemble].neuron_type = nl()
 
         input = nengo.Node([-10] * 20)

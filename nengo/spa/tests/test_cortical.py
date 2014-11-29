@@ -5,8 +5,8 @@ import nengo
 from nengo import spa
 
 
-def test_connect(Simulator):
-    with spa.SPA(seed=122) as model:
+def test_connect(Simulator, seed):
+    with spa.SPA(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=16)
         model.buffer3 = spa.Buffer(dimensions=16)
@@ -30,8 +30,8 @@ def test_connect(Simulator):
     assert match[199] > 0.9
 
 
-def test_transform(Simulator):
-    with spa.SPA(seed=123) as model:
+def test_transform(Simulator, seed):
+    with spa.SPA(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=16)
         model.cortical = spa.Cortical(spa.Actions('buffer2=buffer1*B'))
@@ -49,8 +49,8 @@ def test_transform(Simulator):
     assert match[199] > 0.7
 
 
-def test_translate(Simulator):
-    with spa.SPA(seed=123) as model:
+def test_translate(Simulator, seed):
+    with spa.SPA(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=32)
         model.input = spa.Input(buffer1='A')
@@ -90,8 +90,8 @@ def test_errors():
                 'scalar=dot(scalar, FOO)'))
 
 
-def test_direct(Simulator):
-    with spa.SPA(seed=123) as model:
+def test_direct(Simulator, seed):
+    with spa.SPA(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=32)
         model.cortical = spa.Cortical(spa.Actions('buffer1=A', 'buffer2=B',

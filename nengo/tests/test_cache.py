@@ -253,10 +253,10 @@ def test_fails_for_lambda_expression():
         Fingerprint(lambda x: x)
 
 
-def test_cache_works(tmpdir, Simulator):
+def test_cache_works(tmpdir, Simulator, seed):
     cache_dir = str(tmpdir)
 
-    model = nengo.Network(seed=1)
+    model = nengo.Network(seed=seed)
     with model:
         nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
@@ -271,10 +271,10 @@ def calc_relative_timer_diff(t1, t2):
 
 
 @pytest.mark.benchmark
-def test_cache_performance(tmpdir, Simulator):
+def test_cache_performance(tmpdir, Simulator, seed):
     cache_dir = str(tmpdir)
 
-    model = nengo.Network(seed=1)
+    model = nengo.Network(seed=seed)
     with model:
         nengo.Connection(nengo.Ensemble(2000, 10), nengo.Ensemble(2000, 10))
 

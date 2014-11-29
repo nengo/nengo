@@ -42,8 +42,8 @@ def test_exception():
         model.memory = spa.Memory(dimensions=12, subdimensions=3)
 
 
-def test_run(Simulator):
-    with spa.SPA(seed=123) as model:
+def test_run(Simulator, seed, plt):
+    with spa.SPA(seed=seed) as model:
         model.memory = spa.Memory(dimensions=32)
 
         def input(t):
@@ -61,12 +61,17 @@ def test_run(Simulator):
 
     sim = Simulator(model)
     sim.run(0.5)
+    t = sim.trange()
 
-    data = np.dot(sim.data[p], vocab.vectors.T)
+    similarity = np.dot(sim.data[p], vocab.vectors.T)
+    plt.plot(t, similarity)
+    plt.ylabel("Similarity to 'A'")
+    plt.xlabel("Time (s)")
+
     # value should peak above 1.0, then decay down to near 1.0
-    assert data[100, 0] > 1.2
-    assert data[300, 0] > 0.9
-    assert data[499, 0] > 0.8
+    assert np.mean(similarity[(t > 0.05) & (t < 0.1)]) > 1.2
+    assert np.mean(similarity[(t > 0.2) & (t < 0.3)]) > 0.85
+    assert np.mean(similarity[t > 0.49]) > 0.75
 
 
 def test_run_decay(Simulator, plt, seed):

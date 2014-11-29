@@ -101,21 +101,21 @@ def test_capital():
         v.parse('A+B+C+a')
 
 
-def test_transform():
-    v1 = Vocabulary(32, rng=np.random.RandomState(7))
-    v2 = Vocabulary(64, rng=np.random.RandomState(8))
+def test_transform(rng):
+    v1 = Vocabulary(32, rng=rng)
+    v2 = Vocabulary(64, rng=rng)
     A = v1.parse('A')
     B = v1.parse('B')
     C = v1.parse('C')
     t = v1.transform_to(v2)
 
     assert v2.parse('A').compare(np.dot(t, A.v)) > 0.95
-    assert v2.parse('C+B').compare(np.dot(t, C.v + B.v)) > 0.95
+    assert v2.parse('C+B').compare(np.dot(t, C.v + B.v)) > 0.9
 
     t = v1.transform_to(v2, keys=['A', 'B'])
 
     assert v2.parse('A').compare(np.dot(t, A.v)) > 0.95
-    assert v2.parse('B').compare(np.dot(t, C.v + B.v)) > 0.95
+    assert v2.parse('B').compare(np.dot(t, B.v)) > 0.95
 
 
 def test_prob_cleanup():

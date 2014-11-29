@@ -38,7 +38,7 @@ def test_time_steps(RefSimulator):
 
 
 def test_time_absolute(Simulator):
-    m = nengo.Network(label="test_time_absolute", seed=123)
+    m = nengo.Network()
     sim = Simulator(m)
     sim.run(0.003)
     assert np.allclose(sim.trange(), [0.001, 0.002, 0.003])
@@ -116,7 +116,7 @@ def test_probedict():
     assert np.all(probedict.get("list") == np.asarray(raw.get("list")))
 
 
-def test_reset(Simulator, nl_nodirect):
+def test_reset(Simulator, nl_nodirect, seed):
     """Make sure resetting actually resets.
 
     A learning network on weights is used as the example network as the
@@ -124,8 +124,8 @@ def test_reset(Simulator, nl_nodirect):
     if we're able to reset back to initial connection weights and everything
     then we're probably doing resetting right.
     """
-    noise = whitenoise(0.1, 5, dimensions=2, seed=328)
-    m = nengo.Network(seed=3902)
+    noise = whitenoise(0.1, 5, dimensions=2, seed=seed + 1)
+    m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=noise)
@@ -160,7 +160,7 @@ def test_reset(Simulator, nl_nodirect):
     assert np.all(sim.data[err_p] == first_err_p)
 
 
-def test_noise(RefSimulator):
+def test_noise(RefSimulator, seed):
     """Make sure that we can generate noise properly."""
 
     n = 1000
@@ -171,7 +171,7 @@ def test_noise(RefSimulator):
     m = Model(dt=0.001)
     m.operators += [Reset(noise), SimNoise(noise, dist)]
 
-    sim = RefSimulator(None, model=m, seed=9)
+    sim = RefSimulator(None, model=m, seed=seed)
     samples = np.zeros((100, n))
     for i in range(100):
         sim.step()

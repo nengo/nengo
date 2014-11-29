@@ -15,18 +15,18 @@ from nengo.utils.numpy import rms
 logger = logging.getLogger(__name__)
 
 
-def _test_rates(Simulator, rates, plt, name=None):
+def _test_rates(Simulator, rates, plt, seed, name=None):
     if name is None:
         name = rates.__name__
 
     n = 100
     intercepts = np.linspace(-0.99, 0.99, n)
 
-    model = nengo.Network()
+    model = nengo.Network(seed=seed)
     with model:
         model.config[nengo.Ensemble].max_rates = Choice([50])
         model.config[nengo.Ensemble].encoders = Choice([[1]])
-        u = nengo.Node(output=whitenoise(1, 5, seed=8393))
+        u = nengo.Node(output=whitenoise(1, 5, seed=seed + 1))
         a = nengo.Ensemble(n, 1,
                            intercepts=intercepts, neuron_type=nengo.LIFRate())
         b = nengo.Ensemble(n, 1,
@@ -67,18 +67,18 @@ def _test_rates(Simulator, rates, plt, name=None):
 
 
 @pytest.mark.optional  # requires Scipy
-def test_rates_isi(Simulator, plt):
-    rel_rmse = _test_rates(Simulator, rates_isi, plt)
+def test_rates_isi(Simulator, plt, seed):
+    rel_rmse = _test_rates(Simulator, rates_isi, plt, seed)
     assert rel_rmse < 0.3
 
 
-def test_rates_kernel(Simulator, plt):
-    rel_rmse = _test_rates(Simulator, rates_kernel, plt)
+def test_rates_kernel(Simulator, plt, seed):
+    rel_rmse = _test_rates(Simulator, rates_kernel, plt, seed)
     assert rel_rmse < 0.2
 
 
 @pytest.mark.benchmark
-def test_rates(Simulator, plt):
+def test_rates(Simulator, plt, seed):
     functions = [
         ('isi_zero', lambda t, s: rates_isi(
             t, s, midpoint=False, interp='zero')),
@@ -97,7 +97,7 @@ def test_rates(Simulator, plt):
 
     print("\ntest_rates:")
     for name, function in functions:
-        rel_rmse = _test_rates(Simulator, function, plt, name)
+        rel_rmse = _test_rates(Simulator, function, plt, seed, name)
         print("%20s relative rmse: %0.3f" % (name, rel_rmse))
 
 

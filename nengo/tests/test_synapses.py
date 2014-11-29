@@ -11,10 +11,10 @@ from nengo.utils.testing import allclose
 logger = logging.getLogger(__name__)
 
 
-def run_synapse(Simulator, synapse, dt=1e-3, runtime=1., n_neurons=None):
-    model = nengo.Network(seed=2984)
+def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=1., n_neurons=None):
+    model = nengo.Network(seed=seed)
     with model:
-        u = nengo.Node(output=whitenoise(0.1, 5, seed=328))
+        u = nengo.Node(output=whitenoise(0.1, 5, seed=seed + 1))
 
         if n_neurons is not None:
             a = nengo.Ensemble(n_neurons, 1)
@@ -32,17 +32,18 @@ def run_synapse(Simulator, synapse, dt=1e-3, runtime=1., n_neurons=None):
     return sim.trange(), sim.data[ref], sim.data[filtered]
 
 
-def test_lowpass(Simulator, plt):
+def test_lowpass(Simulator, plt, seed):
     dt = 1e-3
     tau = 0.03
 
-    t, x, yhat = run_synapse(Simulator, nengo.synapses.Lowpass(tau), dt=dt)
+    t, x, yhat = run_synapse(
+        Simulator, seed, nengo.synapses.Lowpass(tau), dt=dt)
     y = filt(x, tau / dt)
 
     assert allclose(t, y, yhat, delay=dt, plt=plt)
 
 
-def test_alpha(Simulator, plt):
+def test_alpha(Simulator, plt, seed):
     dt = 1e-3
     tau = 0.03
     b, a = [0.00054336, 0.00053142], [1, -1.9344322, 0.93550699]
@@ -53,25 +54,25 @@ def test_alpha(Simulator, plt):
     # a = [1, -1.9344322009640118, 0.93550698503161778]
     # ^^^ these coefficients found by the exact algorithm used in Builder
 
-    t, x, yhat = run_synapse(Simulator, nengo.synapses.Alpha(tau), dt=dt)
+    t, x, yhat = run_synapse(Simulator, seed, nengo.synapses.Alpha(tau), dt=dt)
     y = lti(x, (b, a))
 
     assert allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt)
 
 
-def test_decoders(Simulator, nl, plt):
+def test_decoders(Simulator, nl, plt, seed):
     dt = 1e-3
     tau = 0.01
 
     t, x, yhat = run_synapse(
-        Simulator, nengo.synapses.Lowpass(tau), dt=dt, n_neurons=100)
+        Simulator, seed, nengo.synapses.Lowpass(tau), dt=dt, n_neurons=100)
 
     y = filt(x, tau / dt)
     assert allclose(t, y, yhat, delay=dt, plt=plt)
 
 
 @pytest.mark.optional  # the test requires scipy
-def test_general(Simulator, plt):
+def test_general(Simulator, plt, seed):
     import scipy.signal
 
     dt = 1e-3
@@ -83,7 +84,7 @@ def test_general(Simulator, plt):
     numi, deni, dt = scipy.signal.cont2discrete((num, den), dt)
 
     t, x, yhat = run_synapse(
-        Simulator, nengo.synapses.LinearFilter(num, den), dt=dt)
+        Simulator, seed, nengo.synapses.LinearFilter(num, den), dt=dt)
     y = lti(x, (numi, deni))
 
     assert allclose(t, y, yhat, plt=plt)

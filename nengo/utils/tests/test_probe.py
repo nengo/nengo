@@ -1,5 +1,6 @@
-import nengo
 import pytest
+
+import nengo
 from nengo.utils.probe import probe_all
 
 

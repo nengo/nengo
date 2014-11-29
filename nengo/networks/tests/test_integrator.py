@@ -9,8 +9,8 @@ from nengo.utils.numpy import rmse
 logger = logging.getLogger(__name__)
 
 
-def test_integrator(Simulator, nl, plt):
-    model = nengo.Network(label='Integrator', seed=892)
+def test_integrator(Simulator, nl, plt, seed):
+    model = nengo.Network(label='Integrator', seed=seed)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl()
         inputs = {0: 0, 0.2: 1, 1: 0, 2: -2, 3: 0, 4: 1, 5: 0}

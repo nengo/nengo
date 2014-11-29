@@ -12,10 +12,8 @@ from nengo.utils.numpy import rms
 logger = logging.getLogger(__name__)
 
 
-def test_lif_builtin():
+def test_lif_builtin(rng):
     """Test that the dynamic model approximately matches the rates."""
-    rng = np.random.RandomState(85243)
-
     dt = 1e-3
     t_final = 1.0
 
@@ -39,10 +37,8 @@ def test_lif_builtin():
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 
 
-def test_lif(Simulator, plt):
+def test_lif(Simulator, plt, rng):
     """Test that the dynamic model approximately matches the rates"""
-    rng = np.random.RandomState(85243)
-
     dt = 0.001
     n = 5000
     x = 0.5

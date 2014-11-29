@@ -53,27 +53,25 @@ def test_str():
     assert str(a) == '[ 1.  1.]'
 
 
-def test_randomize():
-    rng = np.random.RandomState(0)
+def test_randomize(rng):
     a = SemanticPointer(100, rng=rng)
     std = np.std(a.v)
-    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.01)
+    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
 
     a = SemanticPointer(100)
     a.randomize(rng=rng)
     assert len(a) == 100
     std = np.std(a.v)
-    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.01)
+    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
 
     a = SemanticPointer(5)
     a.randomize(N=100, rng=rng)
     assert len(a) == 100
     std = np.std(a.v)
-    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.01)
+    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
 
 
-def test_make_unitary():
-    rng = np.random.RandomState(1)
+def test_make_unitary(rng):
     a = SemanticPointer(100, rng=rng)
     a.make_unitary()
     assert np.allclose(1, a.length())
@@ -96,11 +94,10 @@ def test_add_sub():
     assert np.allclose((a + b).v, (a - (-b)).v)
 
 
-def test_convolution():
-    rng = np.random.RandomState(3)
-    a = SemanticPointer(50, rng=rng)
-    b = SemanticPointer(50, rng=rng)
-    identity = SemanticPointer(np.eye(50)[0])
+def test_convolution(rng):
+    a = SemanticPointer(64, rng=rng)
+    b = SemanticPointer(64, rng=rng)
+    identity = SemanticPointer(np.eye(64)[0])
 
     c = a.copy()
     c *= b
@@ -111,7 +108,7 @@ def test_convolution():
     assert np.allclose(a.convolve(b).v, ans)
     assert np.allclose(c.v, ans)
     assert np.allclose((a * identity).v, a.v)
-    assert (a * b * ~b).compare(a) > 0.7
+    assert (a * b * ~b).compare(a) > 0.65
 
 
 def test_multiply():
@@ -130,29 +127,26 @@ def test_multiply():
         a * 'string'
 
 
-def test_compare():
-    rng = np.random.RandomState(5)
-    a = SemanticPointer(50, rng=rng)*10
-    b = SemanticPointer(50, rng=rng)*0.1
+def test_compare(rng):
+    a = SemanticPointer(50, rng=rng) * 10
+    b = SemanticPointer(50, rng=rng) * 0.1
 
-    assert np.allclose(a.compare(a), 1)
-    assert np.allclose(a.compare(b), 0, atol=0.01)
+    assert a.compare(a) > 0.99
+    assert a.compare(b) < 0.2
     assert np.allclose(a.compare(b), a.dot(b) / (a.length() * b.length()))
 
 
-def test_dot():
-    rng = np.random.RandomState(6)
+def test_dot(rng):
     a = SemanticPointer(50, rng=rng) * 1.1
     b = SemanticPointer(50, rng=rng) * (-1.5)
     assert np.allclose(a.dot(b), np.dot(a.v, b.v))
 
 
-def test_distance():
-    rng = np.random.RandomState(6)
+def test_distance(rng):
     a = SemanticPointer(50, rng=rng)
     b = SemanticPointer(50, rng=rng)
-    assert np.allclose(a.distance(a), 0)
-    assert np.allclose(a.distance(b), 1, atol=0.1)
+    assert a.distance(a) < 1e-5
+    assert a.distance(b) > 0.9
 
 
 def test_invert():

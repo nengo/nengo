@@ -10,8 +10,8 @@ from nengo.utils.numpy import rmse
 logger = logging.getLogger(__name__)
 
 
-def test_oscillator(Simulator, nl, plt):
-    model = nengo.Network(label='Oscillator', seed=789)
+def test_oscillator(Simulator, nl, plt, seed):
+    model = nengo.Network(label='Oscillator', seed=seed)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl()
         inputs = {0: [1, 0], 0.5: [0, 0]}

@@ -20,8 +20,8 @@ def test_basic():
     assert inputA[1].dimensions == 16
 
 
-def test_run(Simulator):
-    with spa.SPA(seed=2) as model:
+def test_run(Simulator, seed):
+    with spa.SPA(seed=seed) as model:
         model.compare = spa.Compare(dimensions=16)
 
         def inputA(t):

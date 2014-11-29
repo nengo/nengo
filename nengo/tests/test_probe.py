@@ -10,9 +10,8 @@ from nengo.utils.testing import Timer
 logger = logging.getLogger(__name__)
 
 
-def test_multirun(Simulator):
+def test_multirun(Simulator, rng):
     """Test probing the time on multiple runs"""
-    rng = np.random.RandomState(2239)
 
     # set rtol a bit higher, since OCL model.t accumulates error over time
     rtol = 0.0001
@@ -35,16 +34,15 @@ def test_multirun(Simulator):
         assert np.allclose(sim_t[-1], t_sum, rtol=rtol)
 
 
-def test_dts(Simulator):
+def test_dts(Simulator, seed, rng):
     """Test probes with different dts and runtimes"""
 
-    rng = np.random.RandomState(9)
     for i in range(100):
         dt = rng.uniform(0.001, 0.1)  # simulator dt
         dt2 = rng.uniform(dt, 0.15)   # probe dt
         tend = rng.uniform(0.2, 0.3)  # simulator runtime
 
-        with nengo.Network(seed=0) as model:
+        with nengo.Network(seed=seed) as model:
             a = nengo.Node(output=0)
             ap = nengo.Probe(a, sample_every=dt2)
 
@@ -57,7 +55,7 @@ def test_dts(Simulator):
             dt, dt2, tend, len(t), len(x))
 
 
-def test_large(Simulator):
+def test_large(Simulator, seed):
     """Test with a lot of big probes. Can also be used for speed."""
 
     n = 10
@@ -65,7 +63,7 @@ def test_large(Simulator):
     def input_fn(t):
         return list(range(1, 10))
 
-    model = nengo.Network(label='test_large_probes', seed=3249)
+    model = nengo.Network(label='test_large_probes', seed=seed)
     with model:
         probes = []
         for i in range(n):

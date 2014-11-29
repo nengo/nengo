@@ -49,9 +49,7 @@ def get_system(m, n, d, rng=None, sort=False):
     return rates(np.dot(eval_points, encoders)), eval_points
 
 
-def test_cholesky():
-    rng = np.random.RandomState(4829)
-
+def test_cholesky(rng):
     m, n = 100, 100
     A = rng.normal(size=(m, n))
     b = rng.normal(size=(m, ))
@@ -63,8 +61,7 @@ def test_cholesky():
     assert np.allclose(x0, x2)
 
 
-def test_conjgrad():
-    rng = np.random.RandomState(4829)
+def test_conjgrad(rng):
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
@@ -77,9 +74,7 @@ def test_conjgrad():
 
 @pytest.mark.parametrize('Solver', [
     Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqDrop])
-def test_decoder_solver(Solver, plt):
-    rng = np.random.RandomState(39408)
-
+def test_decoder_solver(Solver, plt, rng):
     dims = 1
     n_neurons = 100
     n_points = 500
@@ -102,15 +97,15 @@ def test_decoder_solver(Solver, plt):
     plt.title("relative RMSE: %0.2e" % rel_rmse)
     plt.saveas = 'test_solvers.test_decoder_solver.%s.pdf' % Solver.__name__
 
-    assert np.allclose(test, est, atol=3e-2, rtol=1e-3)
+    atol = 3.5e-2 if Solver is LstsqNoise else 1.5e-2
+    assert np.allclose(test, est, atol=atol, rtol=1e-3)
     assert rel_rmse < 0.02
 
 
 @pytest.mark.parametrize('Solver', [
     LstsqNoise, LstsqL2, LstsqL2nz])
-def test_subsolvers(Solver, tol=1e-2):
-    rng = np.random.RandomState(89)
-    get_rng = lambda: np.random.RandomState(87)
+def test_subsolvers(Solver, seed, rng, tol=1e-2):
+    get_rng = lambda: np.random.RandomState(seed)
 
     A, b = get_system(500, 100, 5, rng=rng)
     x0, _ = Solver(solver=cholesky)(A, b, rng=get_rng())
@@ -119,8 +114,8 @@ def test_subsolvers(Solver, tol=1e-2):
     for subsolver in subsolvers:
         x, info = Solver(solver=subsolver, tol=tol)(A, b, rng=get_rng())
         rel_rmse = rms(x - x0) / rms(x0)
-        assert rel_rmse < 3 * tol
-        # the above 3 * tol is just a heuristic; the main purpose of this
+        assert rel_rmse < 4 * tol
+        # the above 4 * tol is just a heuristic; the main purpose of this
         # test is to make sure that the subsolvers don't throw errors
         # in-situ. They are tested more robustly elsewhere.
 
@@ -132,9 +127,7 @@ def test_decoder_solver_extra(Solver):
 
 
 @pytest.mark.parametrize('Solver', [Lstsq, LstsqL2, LstsqL2nz])
-def test_weight_solver(Solver):
-    rng = np.random.RandomState(39408)
-
+def test_weight_solver(Solver, rng):
     dims = 2
     a_neurons, b_neurons = 100, 101
     n_points = 1000
@@ -166,8 +159,7 @@ def test_weight_solver(Solver):
 
 
 @pytest.mark.optional  # uses scipy
-def test_scipy_solvers():
-    rng = np.random.RandomState(4829)
+def test_scipy_solvers(rng):
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
@@ -180,8 +172,7 @@ def test_scipy_solvers():
 
 @pytest.mark.optional  # uses scipy
 @pytest.mark.parametrize('Solver', [Nnls, NnlsL2, NnlsL2nz])
-def test_nnls(Solver, plt):
-    rng = np.random.RandomState(39408)
+def test_nnls(Solver, plt, rng):
     A, x = get_system(500, 100, 1, rng=rng, sort=True)
     y = x**2
 
@@ -203,11 +194,10 @@ def test_nnls(Solver, plt):
 
 
 @pytest.mark.benchmark
-def test_subsolvers_L2():
+def test_subsolvers_L2(rng):
     ref_solver = cholesky
     solvers = [conjgrad, block_conjgrad, conjgrad_scipy, lsmr_scipy]
 
-    rng = np.random.RandomState(39408)
     A, B = get_system(m=2000, n=1000, d=10, rng=rng)
     sigma = 0.1 * A.max()
 
@@ -228,8 +218,7 @@ def test_subsolvers_L2():
 
 
 @pytest.mark.benchmark
-def test_subsolvers_L1():
-    rng = np.random.RandomState(39408)
+def test_subsolvers_L1(rng):
     A, B = get_system(m=2000, n=1000, d=10, rng=rng)
 
     l1 = 1e-4
@@ -239,7 +228,7 @@ def test_subsolvers_L1():
 
 
 @pytest.mark.benchmark
-def test_compare_solvers(Simulator, nl_nodirect, plt):
+def test_compare_solvers(Simulator, nl_nodirect, plt, seed):
 
     N = 70
     decoder_solvers = [
@@ -252,7 +241,7 @@ def test_compare_solvers(Simulator, nl_nodirect, plt):
     def input_function(t):
         return np.interp(t, [1, 3], [-1, 1], left=-1, right=1)
 
-    model = nengo.Network('test_solvers', seed=290)
+    model = nengo.Network(seed=seed)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=input_function)
@@ -263,7 +252,7 @@ def test_compare_solvers(Simulator, nl_nodirect, plt):
         probes = []
         names = []
         for solver in decoder_solvers + weight_solvers:
-            b = nengo.Ensemble(N, dimensions=1, seed=99)
+            b = nengo.Ensemble(N, dimensions=1, seed=seed + 1)
             nengo.Connection(a, b, solver=solver)
             probes.append(nengo.Probe(b))
             names.append("%s(%s)" % (
@@ -350,10 +339,9 @@ def test_regularization(Simulator, nl_nodirect, plt):
 
 
 @pytest.mark.benchmark
-def test_eval_points_static(Simulator, plt):
+def test_eval_points_static(Simulator, plt, rng):
     solver = LstsqL2()
 
-    rng = np.random.RandomState(0)
     n = 100
     d = 5
 
@@ -415,8 +403,7 @@ def test_eval_points_static(Simulator, plt):
 
 
 @pytest.mark.benchmark
-def test_eval_points(Simulator, nl_nodirect, plt):
-    rng = np.random.RandomState(0)
+def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
     n = 100
     d = 5
     filter = 0.08
@@ -441,8 +428,7 @@ def test_eval_points(Simulator, nl_nodirect, plt):
         x *= rng_j.uniform() / norm(x)
 
         for i, n_points in enumerate(eval_points):
-            model = nengo.Network(
-                'test_eval_points(%d,%d)' % (i, j), seed=seed)
+            model = nengo.Network(seed=seed)
             with model:
                 model.config[nengo.Ensemble].neuron_type = nl_nodirect()
                 u = nengo.Node(output=x)

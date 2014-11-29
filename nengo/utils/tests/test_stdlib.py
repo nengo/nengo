@@ -73,9 +73,7 @@ def test_checked_call_errors():
 @pytest.mark.parametrize(
     "hashable, force_list",
     [(False, False), (False, True), (True, False), (True, True)])
-def test_groupby(hashable, force_list):
-    rng = np.random.RandomState(96)
-
+def test_groupby(hashable, force_list, rng):
     if hashable:
         keys = list(range(1, 5))
     else:

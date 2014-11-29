@@ -5,8 +5,8 @@ import nengo
 from nengo import spa
 
 
-def test_basal_ganglia(Simulator):
-    model = spa.SPA(seed=128)
+def test_basal_ganglia(Simulator, seed):
+    model = spa.SPA(seed=seed)
 
     with model:
         model.vision = spa.Buffer(dimensions=16)

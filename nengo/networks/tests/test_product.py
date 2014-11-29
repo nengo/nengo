@@ -6,10 +6,10 @@ from nengo.utils.compat import range
 from nengo.utils.numpy import rmse
 
 
-def test_sine_waves(Simulator, nl, plt):
+def test_sine_waves(Simulator, nl, plt, seed):
     radius = 2
     dim = 5
-    product = nengo.Network(seed=63)
+    product = nengo.Network(seed=seed)
     product.config[nengo.Ensemble].neuron_type = nl()
     product = nengo.networks.Product(200, dim, radius, net=product)
 
