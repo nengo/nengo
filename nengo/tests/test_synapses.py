@@ -60,7 +60,7 @@ def test_alpha(Simulator, plt, seed):
     assert allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt)
 
 
-def test_decoders(Simulator, nl, plt, seed):
+def test_decoders(Simulator, plt, seed):
     dt = 1e-3
     tau = 0.01
 

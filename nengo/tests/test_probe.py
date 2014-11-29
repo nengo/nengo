@@ -151,7 +151,7 @@ def test_input_probe(Simulator):
         assert np.allclose(sim.data[input_probe][:, 0], np.sin(t) + 0.5)
 
 
-def test_slice(Simulator, nl):
+def test_slice(Simulator):
     with nengo.Network() as model:
         a = nengo.Node(output=lambda t: [np.cos(t), np.sin(t)])
         b = nengo.Ensemble(100, 2)
@@ -164,7 +164,7 @@ def test_slice(Simulator, nl):
         bp1b = nengo.Probe(b[1:], synapse=0.03)
 
     sim = Simulator(model)
-    sim.run(1.0)
+    sim.run(0.5)
     assert np.allclose(sim.data[bp][:, 0], sim.data[bp0a][:, 0])
     assert np.allclose(sim.data[bp][:, 0], sim.data[bp0b][:, 0])
     assert np.allclose(sim.data[bp][:, 1], sim.data[bp1a][:, 0])

@@ -146,14 +146,14 @@ def test_reset(Simulator, nl_nodirect, seed):
 
     sim = Simulator(m)
     sim.run(0.2)
-    sim.run(0.6)
+    sim.run(0.3)
 
     first_t = sim.trange()
     first_square_p = np.array(sim.data[square_p], copy=True)
     first_err_p = np.array(sim.data[err_p], copy=True)
 
     sim.reset()
-    sim.run(0.8)
+    sim.run(0.5)
 
     assert np.all(sim.trange() == first_t)
     assert np.all(sim.data[square_p] == first_square_p)

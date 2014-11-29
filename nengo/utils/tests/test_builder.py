@@ -5,12 +5,10 @@ import nengo
 from nengo.utils.builder import full_transform
 
 
-def test_full_transform(Simulator, nl_nodirect):
-    name = 'connection_slicing'
+def test_full_transform():
     N = 30
 
-    with nengo.Network(label=name) as m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+    with nengo.Network():
         neurons3 = nengo.Ensemble(3, dimensions=1).neurons
         ens1 = nengo.Ensemble(N, dimensions=1)
         ens2 = nengo.Ensemble(N, dimensions=2)

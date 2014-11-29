@@ -11,7 +11,7 @@ from nengo.utils.testing import WarningCatcher
 logger = logging.getLogger(__name__)
 
 
-def test_multidim(Simulator, nl, plt, seed, rng):
+def test_multidim(Simulator, plt, seed, rng):
     """Test an ensemble array with multiple dimensions per ensemble"""
     dims = 3
     n_neurons = 60
@@ -23,9 +23,8 @@ def test_multidim(Simulator, nl, plt, seed, rng):
     c[::2] = a
     c[1::2] = b
 
-    model = nengo.Network(label='Multidim', seed=seed)
+    model = nengo.Network(seed=seed)
     with model:
-        model.config[nengo.Ensemble].neuron_type = nl()
         inputA = nengo.Node(a)
         inputB = nengo.Node(b)
         A = nengo.networks.EnsembleArray(n_neurons, dims, radius=radius)
@@ -43,7 +42,7 @@ def test_multidim(Simulator, nl, plt, seed, rng):
         C_p = nengo.Probe(C.output, synapse=0.03)
 
     sim = Simulator(model)
-    sim.run(1.0)
+    sim.run(0.4)
 
     t = sim.trange()
 
@@ -54,6 +53,8 @@ def test_multidim(Simulator, nl, plt, seed, rng):
         for i in range(a_sim.shape[1]):
             plt.plot(t, a_ref[:, i], '--', color=colors[i % 6])
             plt.plot(t, a_sim[:, i], '-', color=colors[i % 6])
+        plt.xticks(np.linspace(0, 0.4, 5))
+        plt.xlim(right=t[-1])
         plt.title(title)
 
     plt.subplot(131)
@@ -63,9 +64,9 @@ def test_multidim(Simulator, nl, plt, seed, rng):
     plt.subplot(133)
     plot(sim, c, C_p, title="C")
 
-    a_sim = sim.data[A_p][t > 0.5].mean(axis=0)
-    b_sim = sim.data[B_p][t > 0.5].mean(axis=0)
-    c_sim = sim.data[C_p][t > 0.5].mean(axis=0)
+    a_sim = sim.data[A_p][t > 0.2].mean(axis=0)
+    b_sim = sim.data[B_p][t > 0.2].mean(axis=0)
+    c_sim = sim.data[C_p][t > 0.2].mean(axis=0)
 
     rtol, atol = 0.1, 0.05
     assert np.allclose(a, a_sim, atol=atol, rtol=rtol)
@@ -87,7 +88,7 @@ def _mmul_transforms(A_shape, B_shape, C_dim):
     return transformA, transformB
 
 
-def test_matrix_mul(Simulator, nl, plt, seed):
+def test_matrix_mul(Simulator, plt, seed):
     N = 100
 
     Amat = np.asarray([[0.5, -0.5]])
@@ -96,7 +97,6 @@ def test_matrix_mul(Simulator, nl, plt, seed):
 
     model = nengo.Network(label='Matrix Multiplication', seed=seed)
     with model:
-        model.config[nengo.Ensemble].neuron_type = nl()
         A = nengo.networks.EnsembleArray(
             N, Amat.size, radius=radius, label="A")
         B = nengo.networks.EnsembleArray(
@@ -175,7 +175,7 @@ def test_neuronconnection(Simulator, nl, seed):
         p = nengo.Probe(ea.neuron_output)
 
     s = Simulator(net)
-    s.run(1)
+    s.run(0.1)
 
     assert np.all(s.data[p][-1] == 0.0)
 

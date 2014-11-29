@@ -27,7 +27,8 @@ def pytest_generate_tests(metafunc):
         'spa_sequence-Class.ipynb', 'spa_sequence-Context.ipynb',
         'spa_parser.ipynb', 'question_control.ipynb',
         'learn_communication_channel.ipynb', 'learn_product.ipynb',
-        'learn_unsupervised.ipynb']
+        'learn_unsupervised.ipynb', 'learn_square.ipynb',
+        'inhibitory_gating.ipynb', 'nef_summary.ipynb']
     argvalues = [pytest.mark.skipif(os.path.basename(path) in ignores,
                                     reason="Time-consuming")(path)
                  for path in examples]

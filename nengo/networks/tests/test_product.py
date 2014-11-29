@@ -6,12 +6,11 @@ from nengo.utils.compat import range
 from nengo.utils.numpy import rmse
 
 
-def test_sine_waves(Simulator, nl, plt, seed):
+def test_sine_waves(Simulator, plt, seed):
     radius = 2
     dim = 5
-    product = nengo.Network(seed=seed)
-    product.config[nengo.Ensemble].neuron_type = nl()
-    product = nengo.networks.Product(200, dim, radius, net=product)
+    product = nengo.networks.Product(
+        200, dim, radius, net=nengo.Network(seed=seed))
 
     func_A = lambda t: np.sqrt(radius)*np.sin(np.arange(1, dim+1)*2*np.pi*t)
     func_B = lambda t: np.sqrt(radius)*np.sin(np.arange(dim, 0, -1)*2*np.pi*t)
@@ -34,6 +33,7 @@ def test_sine_waves(Simulator, nl, plt, seed):
         plt.subplot(dim+1, 1, i+1)
         plt.plot(t + delay, AB[:, i])
         plt.plot(t, sim.data[p][:, i])
+    plt.xlim(right=t[-1])
 
     assert rmse(AB[:len(offset), :], sim.data[p][offset, :]) < 0.2
 

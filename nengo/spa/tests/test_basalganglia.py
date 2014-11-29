@@ -5,7 +5,7 @@ import nengo
 from nengo import spa
 
 
-def test_basal_ganglia(Simulator, seed):
+def test_basal_ganglia(Simulator, seed, plt):
     model = spa.SPA(seed=seed)
 
     with model:
@@ -35,10 +35,14 @@ def test_basal_ganglia(Simulator, seed):
 
     sim = Simulator(model)
     sim.run(0.3)
+    t = sim.trange()
 
-    assert 0.55 > sim.data[p][100, 0] > 0.45
-    assert 1.1 > sim.data[p][200, 1] > 0.85
-    assert 0.8 > sim.data[p][299, 2] > 0.6
+    plt.plot(t, sim.data[p])
+    plt.title('Basal Ganglia output')
+
+    assert 0.6 > sim.data[p][t == 0.1, 0] > 0.4
+    assert sim.data[p][t == 0.2, 1] > 0.8
+    assert sim.data[p][-1, 2] > 0.6
 
     assert np.allclose(sim.data[p][:, 1], sim.data[p][:, 3])
     assert np.allclose(sim.data[p][:, 0], sim.data[p][:, 4])

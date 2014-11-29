@@ -177,7 +177,7 @@ def test_output_shape_error():
             nengo.Node(output=[1, 2, 3, 4, 5], size_out=4)
 
 
-def test_none(Simulator, nl_nodirect, seed):
+def test_none(Simulator, seed):
     """Test for nodes that output None."""
 
     model = nengo.Network(seed=seed)
@@ -191,7 +191,7 @@ def test_none(Simulator, nl_nodirect, seed):
 
     with model:
         u = nengo.Node(output=input_function)
-        a = nengo.Ensemble(10, neuron_type=nl_nodirect(), dimensions=1)
+        a = nengo.Ensemble(10, dimensions=1)
         nengo.Connection(u, a)
 
     sim = Simulator(model)

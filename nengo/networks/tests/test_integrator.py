@@ -9,10 +9,9 @@ from nengo.utils.numpy import rmse
 logger = logging.getLogger(__name__)
 
 
-def test_integrator(Simulator, nl, plt, seed):
-    model = nengo.Network(label='Integrator', seed=seed)
+def test_integrator(Simulator, plt, seed):
+    model = nengo.Network(seed=seed)
     with model:
-        model.config[nengo.Ensemble].neuron_type = nl()
         inputs = {0: 0, 0.2: 1, 1: 0, 2: -2, 3: 0, 4: 1, 5: 0}
         input = nengo.Node(piecewise(inputs))
 
@@ -24,20 +23,20 @@ def test_integrator(Simulator, nl, plt, seed):
         nengo.Connection(A, A, synapse=tau)
         nengo.Connection(input, A, transform=tau, synapse=tau)
 
-        input_p = nengo.Probe(input)
-        A_p = nengo.Probe(A, synapse=0.01)
-        T_p = nengo.Probe(T.ensemble, synapse=0.01)
+        input_p = nengo.Probe(input, sample_every=0.01)
+        A_p = nengo.Probe(A, synapse=0.01, sample_every=0.01)
+        T_p = nengo.Probe(T.ensemble, synapse=0.01, sample_every=0.01)
 
-    sim = Simulator(model, dt=0.001)
+    sim = Simulator(model)
     sim.run(6.0)
 
-    t = sim.trange()
+    t = sim.trange(dt=0.01)
     plt.plot(t, sim.data[A_p], label='Manual')
     plt.plot(t, sim.data[T_p], label='Template')
     plt.plot(t, sim.data[input_p], 'k', label='Input')
-    plt.legend(loc=0)
+    plt.legend(loc='best')
 
-    assert rmse(sim.data[A_p], sim.data[T_p]) < 0.2
+    assert rmse(sim.data[A_p], sim.data[T_p]) < 0.1
 
 
 if __name__ == "__main__":

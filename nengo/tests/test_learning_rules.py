@@ -7,7 +7,7 @@ from nengo.solvers import LstsqL2nz
 from nengo.utils.functions import whitenoise
 
 
-def test_pes_initial_weights(Simulator, nl_nodirect, plt, seed, rng):
+def test_pes_weights(Simulator, nl_nodirect, plt, seed, rng):
     n = 200
     learned_vector = [0.5, -0.5]
     rate = 10e-6
@@ -54,56 +54,10 @@ def test_pes_initial_weights(Simulator, nl_nodirect, plt, seed, rng):
     plt.ylabel("PES scaled error")
     plt.xlabel("Time (s)")
 
-    tmask = t > 0.9
-    assert np.allclose(sim.data[u_learned_p][tmask], learned_vector, atol=0.05)
-    assert np.allclose(sim.data[e_p][tmask], 0, atol=0.05)
-    assert np.allclose(sim.data[se_p][tmask] / rate, 0, atol=0.05)
-
-
-def test_pes_nef_weights(Simulator, nl_nodirect, plt, seed):
-    n = 200
-    learned_vector = [0.5, -0.5]
-
-    m = nengo.Network(seed=seed)
-    with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
-        u = nengo.Node(output=learned_vector)
-        a = nengo.Ensemble(n, dimensions=2)
-        u_learned = nengo.Ensemble(n, dimensions=2)
-        e = nengo.Ensemble(n, dimensions=2)
-
-        nengo.Connection(u, a)
-        err_conn = nengo.Connection(e, u_learned, modulatory=True)
-        conn = nengo.Connection(
-            a, u_learned,
-            learning_rule_type={'pes': PES(err_conn, 5e-6)},
-            solver=LstsqL2nz(weights=True))
-
-        nengo.Connection(u_learned, e, transform=-1)
-        nengo.Connection(u, e)
-
-        u_learned_p = nengo.Probe(u_learned, synapse=0.1)
-        e_p = nengo.Probe(e, synapse=0.1)
-        trans_p = nengo.Probe(conn, 'transform')
-
-    sim = Simulator(m)
-    sim.run(1.)
-    t = sim.trange()
-
-    plt.subplot(2, 1, 1)
-    plt.plot(sim.trange(), sim.data[u_learned_p], label="Post")
-    plt.plot(sim.trange(), sim.data[e_p], label="Error")
-    plt.legend(loc="best", fontsize="x-small")
-    plt.subplot(2, 1, 2)
-    plt.plot(sim.trange(), sim.data[trans_p][..., 5])
-    plt.title("Change in one transform row")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Connection weight")
-
-    tmask = t > 0.9
-    assert np.allclose(sim.data[u_learned_p][tmask], learned_vector, atol=0.05)
-    assert np.allclose(sim.data[e_p][tmask], 0, atol=0.05)
-    assert not np.all(sim.data[trans_p][0] == sim.data[trans_p][-1])
+    tend = t > 0.9
+    assert np.allclose(sim.data[u_learned_p][tend], learned_vector, atol=0.05)
+    assert np.allclose(sim.data[e_p][tend], 0, atol=0.05)
+    assert np.allclose(sim.data[se_p][tend] / rate, 0, atol=0.05)
 
 
 def test_pes_decoders(Simulator, nl_nodirect, seed, plt):
@@ -126,35 +80,35 @@ def test_pes_decoders(Simulator, nl_nodirect, seed, plt):
 
         u_learned_p = nengo.Probe(u_learned, synapse=0.1)
         e_p = nengo.Probe(e, synapse=0.1)
-        dec_p = nengo.Probe(conn, 'decoders')
+        dec_p = nengo.Probe(conn, 'decoders', sample_every=0.01)
 
     sim = Simulator(m)
-    sim.run(1.)
+    sim.run(0.5)
+    t = sim.trange()
 
     plt.subplot(2, 1, 1)
-    plt.plot(sim.trange(), sim.data[u_learned_p], label="Post")
-    plt.plot(sim.trange(), sim.data[e_p], label="Error")
+    plt.plot(t, sim.data[u_learned_p], label="Post")
+    plt.plot(t, sim.data[e_p], label="Error")
     plt.legend(loc="best", fontsize="x-small")
     plt.subplot(2, 1, 2)
-    plt.plot(sim.trange(), sim.data[dec_p][..., 0])
+    plt.plot(sim.trange(dt=0.01), sim.data[dec_p][..., 0])
     plt.title("Change in one 2D decoder")
     plt.xlabel("Time (s)")
     plt.ylabel("Decoding weight")
 
-    tmask = sim.trange() > 0.9
-    assert np.allclose(sim.data[u_learned_p][tmask], learned_vector, atol=0.05)
-    assert np.allclose(sim.data[e_p][tmask], 0, atol=0.05)
+    tend = t > 0.4
+    assert np.allclose(sim.data[u_learned_p][tend], learned_vector, atol=0.05)
+    assert np.allclose(sim.data[e_p][tend], 0, atol=0.05)
     assert not np.all(sim.data[dec_p][0] == sim.data[dec_p][-1])
 
 
-def test_pes_decoders_multidimensional(Simulator, nl_nodirect, seed):
+def test_pes_decoders_multidimensional(Simulator, seed, plt):
     n = 200
     input_vector = [0.5, -0.5]
     learned_vector = [input_vector[0]**2 + input_vector[1]**2]
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=input_vector)
         v = nengo.Node(output=learned_vector)
         a = nengo.Ensemble(n, dimensions=2)
@@ -165,8 +119,8 @@ def test_pes_decoders_multidimensional(Simulator, nl_nodirect, seed):
         err_conn = nengo.Connection(e, u_learned, modulatory=True)
 
         # initial decoded function is x[0] - x[1]
-        nengo.Connection(a, u_learned, function=lambda x: x[0] - x[1],
-                         learning_rule_type=PES(err_conn, 5e-6))
+        conn = nengo.Connection(a, u_learned, function=lambda x: x[0] - x[1],
+                                learning_rule_type=PES(err_conn, 5e-6))
 
         nengo.Connection(u_learned, e, transform=-1)
 
@@ -175,26 +129,36 @@ def test_pes_decoders_multidimensional(Simulator, nl_nodirect, seed):
 
         u_learned_p = nengo.Probe(u_learned, synapse=0.1)
         e_p = nengo.Probe(e, synapse=0.1)
+        dec_p = nengo.Probe(conn, 'decoders', sample_every=0.01)
 
     sim = Simulator(m)
-    sim.run(1.)
+    sim.run(0.5)
+    t = sim.trange()
 
-    tmask = sim.trange() > 0.9
-    assert np.allclose(sim.data[u_learned_p][tmask], learned_vector, atol=0.05)
-    assert np.allclose(sim.data[e_p][tmask], 0, atol=0.05)
+    plt.subplot(2, 1, 1)
+    plt.plot(t, sim.data[u_learned_p], label="Post")
+    plt.plot(t, sim.data[e_p], label="Error")
+    plt.legend(loc="best", fontsize="x-small")
+    plt.subplot(2, 1, 2)
+    plt.plot(sim.trange(dt=0.01), sim.data[dec_p][..., 0])
+    plt.title("Change in one 1D decoder")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Decoding weight")
+
+    tend = t > 0.4
+    assert np.allclose(sim.data[u_learned_p][tend], learned_vector, atol=0.05)
+    assert np.allclose(sim.data[e_p][tend], 0, atol=0.05)
 
 
 @pytest.mark.parametrize('learning_rule_type', [
     BCM(learning_rate=1e-8),
     Oja(learning_rate=1e-5),
     [Oja(learning_rate=1e-5), BCM(learning_rate=1e-8)]])
-def test_unsupervised(Simulator, nl_nodirect, learning_rule_type,
-                      seed, rng, plt):
+def test_unsupervised(Simulator, learning_rule_type, seed, rng, plt):
     n = 200
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(whitenoise(0.1, 5, dimensions=2, seed=seed+1))
         a = nengo.Ensemble(n, dimensions=2)
         u_learned = nengo.Ensemble(n, dimensions=2)
@@ -208,7 +172,7 @@ def test_unsupervised(Simulator, nl_nodirect, learning_rule_type,
                                 transform=initial_weights,
                                 learning_rule_type=learning_rule_type)
         inp_p = nengo.Probe(u)
-        trans_p = nengo.Probe(conn, 'transform')
+        trans_p = nengo.Probe(conn, 'transform', sample_every=0.01)
 
         ap = nengo.Probe(a, synapse=0.03)
         up = nengo.Probe(u_learned, synapse=0.03)
@@ -224,7 +188,7 @@ def test_unsupervised(Simulator, nl_nodirect, learning_rule_type,
     plt.plot(t, sim.data[up], label="Post")
     plt.legend(loc="best", fontsize="x-small")
     plt.subplot(2, 1, 2)
-    plt.plot(t, sim.data[trans_p][..., 4])
+    plt.plot(sim.trange(dt=0.01), sim.data[trans_p][..., 4])
     plt.xlabel("Time (s)")
     plt.ylabel("Transform weight")
     plt.saveas = 'test_learning_rules.test_unsupervised_%s.pdf' % name
@@ -282,6 +246,7 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, learning_rule, seed, rng):
         learning_rule.__name__)
 
     assert np.allclose(trans_data[0], trans_data[1], atol=1e-3)
+    assert not np.all(sim.data[trans_p][0] == sim.data[trans_p][-1])
 
 
 def test_learningruletypeparam():

@@ -70,8 +70,8 @@ def test_run(Simulator, seed, plt):
 
     # value should peak above 1.0, then decay down to near 1.0
     assert np.mean(similarity[(t > 0.05) & (t < 0.1)]) > 1.2
-    assert np.mean(similarity[(t > 0.2) & (t < 0.3)]) > 0.85
-    assert np.mean(similarity[t > 0.49]) > 0.75
+    assert np.mean(similarity[(t > 0.2) & (t < 0.3)]) > 0.8
+    assert np.mean(similarity[t > 0.49]) > 0.7
 
 
 def test_run_decay(Simulator, plt, seed):

@@ -19,18 +19,17 @@ def test_missing_attribute():
             a.dne = 9
 
 
-@pytest.mark.parametrize("n_dimensions", [1, 200])
-def test_encoders(RefSimulator, n_dimensions, seed,
-                  n_neurons=10, encoders=None):
+@pytest.mark.parametrize("dimensions", [1, 200])
+def test_encoders(RefSimulator, dimensions, seed, n_neurons=10, encoders=None):
     if encoders is None:
-        encoders = np.random.normal(size=(n_neurons, n_dimensions))
+        encoders = np.random.normal(size=(n_neurons, dimensions))
         encoders = npext.array(encoders, min_dims=2, dtype=np.float64)
         encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     model = nengo.Network(label="_test_encoders", seed=seed)
     with model:
         ens = nengo.Ensemble(n_neurons=n_neurons,
-                             dimensions=n_dimensions,
+                             dimensions=dimensions,
                              encoders=encoders,
                              label="A")
     sim = RefSimulator(model)
@@ -39,10 +38,10 @@ def test_encoders(RefSimulator, n_dimensions, seed,
 
 
 def test_encoders_wrong_shape(RefSimulator, seed):
-    n_dimensions = 3
-    encoders = np.random.normal(size=n_dimensions)
+    dimensions = 3
+    encoders = np.random.normal(size=dimensions)
     with pytest.raises(ValueError):
-        test_encoders(RefSimulator, n_dimensions, seed=seed, encoders=encoders)
+        test_encoders(RefSimulator, dimensions, seed=seed, encoders=encoders)
 
 
 def test_encoders_negative_neurons(RefSimulator, seed):
@@ -60,22 +59,23 @@ def test_constant_scalar(Simulator, nl, plt, seed):
     N = 30
     val = 0.5
 
-    m = nengo.Network(label='test_constant_scalar', seed=seed)
+    m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl()
         input = nengo.Node(output=val, label='input')
         A = nengo.Ensemble(N, 1)
         nengo.Connection(input, A)
         in_p = nengo.Probe(input, 'output')
-        A_p = nengo.Probe(A, 'decoded_output', synapse=0.1)
+        A_p = nengo.Probe(A, 'decoded_output', synapse=0.05)
 
-    sim = Simulator(m, dt=0.001)
-    sim.run(1.0)
+    sim = Simulator(m)
+    sim.run(0.3)
 
     t = sim.trange()
     plt.plot(t, sim.data[in_p], label='Input')
-    plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.1')
-    plt.ylim([0, 1.05 * val])
+    plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.05')
+    plt.ylim(top=1.05 * val)
+    plt.xlim(right=t[-1])
     plt.legend(loc=0)
 
     assert np.allclose(sim.data[in_p], val, atol=.1, rtol=.01)
@@ -87,22 +87,23 @@ def test_constant_vector(Simulator, nl, plt, seed):
     N = 30
     vals = [0.6, 0.1, -0.5]
 
-    m = nengo.Network(label='test_constant_vector', seed=seed)
+    m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl()
         input = nengo.Node(output=vals)
         A = nengo.Ensemble(N * len(vals), len(vals))
         nengo.Connection(input, A)
         in_p = nengo.Probe(input, 'output')
-        A_p = nengo.Probe(A, 'decoded_output', synapse=0.1)
+        A_p = nengo.Probe(A, 'decoded_output', synapse=0.05)
 
     sim = Simulator(m)
-    sim.run(1.0)
+    sim.run(0.3)
 
     t = sim.trange()
     plt.plot(t, sim.data[in_p], label='Input')
-    plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.1')
-    plt.legend(loc=0, prop={'size': 10})
+    plt.plot(t, sim.data[A_p], label='Neuron approximation, pstc=0.05')
+    plt.legend(loc='best', fontsize='small')
+    plt.xlim(right=t[-1])
 
     assert np.allclose(sim.data[in_p][-10:], vals, atol=.1, rtol=.01)
     assert np.allclose(sim.data[A_p][-10:], vals, atol=.1, rtol=.01)
@@ -111,7 +112,7 @@ def test_constant_vector(Simulator, nl, plt, seed):
 def test_scalar(Simulator, nl, plt, seed):
     """A network that represents sin(t)."""
     N = 40
-    f = lambda t: np.sin(6.3 * t)
+    f = lambda t: np.sin(2 * np.pi * t)
 
     m = nengo.Network(label='test_scalar', seed=seed)
     with m:
@@ -158,15 +159,15 @@ def test_vector(Simulator, nl, plt, seed):
 def test_product(Simulator, nl, plt, seed):
     N = 80
     dt2 = 0.002
-    f = lambda t: np.sin(6*t)
+    f = lambda t: np.sin(2 * np.pi * t)
 
-    m = nengo.Network(label='test_product', seed=seed)
+    m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl()
         sin = nengo.Node(output=f)
         cons = nengo.Node(output=-.5)
         factors = nengo.Ensemble(
-            2 * N, 2, radius=1.5,
+            2 * N, dimensions=2, radius=1.5,
             encoders=Choice([[1, 1], [-1, 1], [1, -1], [-1, -1]]))
         product = nengo.Ensemble(N, dimensions=1)
         nengo.Connection(sin, factors[0])
@@ -183,11 +184,11 @@ def test_product(Simulator, nl, plt, seed):
 
     plt.subplot(211)
     plt.plot(t, sim.data[factors_p])
-    plt.legend(['factor 1', 'factor 2'])
+    plt.legend(['factor 1', 'factor 2'], loc='best')
     plt.subplot(212)
     plt.plot(t, -.5 * f(t), 'k--')
     plt.plot(t, sim.data[product_p])
-    plt.legend(['exact product', 'neural product'], loc=4)
+    plt.legend(['exact product', 'neural product'], loc='best')
 
     assert npext.rmse(sim.data[factors_p][:, 0], f(t)) < 0.1
     assert npext.rmse(sim.data[factors_p][20:, 1], -0.5) < 0.1
@@ -195,10 +196,9 @@ def test_product(Simulator, nl, plt, seed):
 
 
 @pytest.mark.parametrize('dims, points', [(1, 528), (2, 823), (3, 937)])
-def test_eval_points_number(Simulator, nl, dims, points, seed):
+def test_eval_points_number(Simulator, dims, points, seed):
     model = nengo.Network(seed=seed)
     with model:
-        model.config[nengo.Ensemble].neuron_type = nl()
         A = nengo.Ensemble(5, dims, n_eval_points=points)
 
     sim = Simulator(model)
@@ -219,13 +219,12 @@ def test_eval_points_number_warning(Simulator, seed):
 
 @pytest.mark.parametrize('neurons, dims', [
     (10, 1), (392, 1), (2108, 1), (100, 2), (1290, 4), (20, 9)])
-def test_eval_points_heuristic(Simulator, nl_nodirect, neurons, dims, seed):
+def test_eval_points_heuristic(Simulator, neurons, dims, seed):
     def heuristic(neurons, dims):
         return max(np.clip(500 * dims, 750, 2500), 2 * neurons)
 
     model = nengo.Network(seed=seed)
     with model:
-        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         A = nengo.Ensemble(neurons, dims)
 
     sim = Simulator(model)
@@ -260,7 +259,7 @@ def test_invalid_rates(Simulator):
         Simulator(model)
 
 
-def test_gain_bias(Simulator, nl_nodirect):
+def test_gain_bias(Simulator):
 
     N = 17
     D = 2

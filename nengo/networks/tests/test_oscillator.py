@@ -10,10 +10,9 @@ from nengo.utils.numpy import rmse
 logger = logging.getLogger(__name__)
 
 
-def test_oscillator(Simulator, nl, plt, seed):
-    model = nengo.Network(label='Oscillator', seed=seed)
+def test_oscillator(Simulator, plt, seed):
+    model = nengo.Network(seed=seed)
     with model:
-        model.config[nengo.Ensemble].neuron_type = nl()
         inputs = {0: [1, 0], 0.5: [0, 0]}
         input = nengo.Node(piecewise(inputs), label='Input')
 
@@ -27,20 +26,20 @@ def test_oscillator(Simulator, nl, plt, seed):
                          transform=[[1, -freq*tau], [freq*tau, 1]])
         nengo.Connection(input, A)
 
-        in_probe = nengo.Probe(input)
-        A_probe = nengo.Probe(A, synapse=0.01)
-        T_probe = nengo.Probe(T.ensemble, synapse=0.01)
+        in_probe = nengo.Probe(input, sample_every=0.01)
+        A_probe = nengo.Probe(A, synapse=0.01, sample_every=0.01)
+        T_probe = nengo.Probe(T.ensemble, synapse=0.01, sample_every=0.01)
 
     sim = Simulator(model)
     sim.run(3.0)
 
-    t = sim.trange()
+    t = sim.trange(dt=0.01)
     plt.plot(t, sim.data[A_probe], label='Manual')
     plt.plot(t, sim.data[T_probe], label='Template')
     plt.plot(t, sim.data[in_probe], 'k', label='Input')
-    plt.legend(loc=0)
+    plt.legend(loc='best')
 
-    assert rmse(sim.data[A_probe], sim.data[T_probe]) < 0.3
+    assert rmse(sim.data[A_probe], sim.data[T_probe]) < 0.2
 
 
 if __name__ == "__main__":
