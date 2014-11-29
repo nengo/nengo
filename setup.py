@@ -69,6 +69,11 @@ setup(
     license="See LICENSE.rst",
     description=description,
     long_description=long_description,
+    # Without this, `setup.py install` fails to install NumPy.
+    # See https://github.com/nengo/nengo/issues/508 for details.
+    setup_requires=[
+        "numpy>=1.6",
+    ],
     install_requires=[
         "numpy>=1.6",
     ],
