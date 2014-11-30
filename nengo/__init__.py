@@ -20,7 +20,8 @@ from .config import Config
 from .connection import Connection
 from .ensemble import Ensemble
 from .node import Node
-from .neurons import Direct, LIF, LIFRate, AdaptiveLIF, AdaptiveLIFRate
+from .neurons import (
+    AdaptiveLIF, AdaptiveLIFRate, Direct, LIF, LIFRate, RectifiedLinear)
 from .network import Network
 from .learning_rules import PES, BCM, Oja
 from .params import Default

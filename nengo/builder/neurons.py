@@ -3,7 +3,8 @@ import numpy as np
 from nengo.builder.builder import Builder
 from nengo.builder.signal import Signal
 from nengo.builder.operator import Operator
-from nengo.neurons import LIF, LIFRate, AdaptiveLIF, AdaptiveLIFRate
+from nengo.neurons import (
+    AdaptiveLIF, AdaptiveLIFRate, LIF, LIFRate, RectifiedLinear)
 
 
 class SimNeurons(Operator):
@@ -28,6 +29,13 @@ class SimNeurons(Operator):
         def step():
             self.neurons.step_math(dt, J, output, *states)
         return step
+
+
+@Builder.register(RectifiedLinear)
+def build_rectifiedlinear(model, reclinear, neurons):
+    model.add_op(SimNeurons(neurons=reclinear,
+                            J=model.sig[neurons]['in'],
+                            output=model.sig[neurons]['out']))
 
 
 @Builder.register(LIFRate)

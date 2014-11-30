@@ -107,6 +107,22 @@ class Direct(NeuronType):
 #       but still simulate very fast
 
 
+class RectifiedLinear(NeuronType):
+    """A rectified linear neuron model."""
+
+    probeable = ['rates']
+
+    def gain_bias(self, max_rates, intercepts):
+        """Return gain and bias given maximum firing rate and x-intercept."""
+        gain = max_rates / (1 - intercepts)
+        bias = -intercepts * gain
+        return gain, bias
+
+    def step_math(self, dt, J, output):
+        """Compute rates in Hz for input current (incl. bias)"""
+        output[...] = np.maximum(0., J)
+
+
 class LIFRate(NeuronType):
     """Rate version of the leaky integrate-and-fire (LIF) neuron model."""
 

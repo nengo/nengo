@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import nengo.utils.numpy as npext
-from nengo.neurons import LIF, LIFRate, Direct
+from nengo.neurons import Direct, LIF, LIFRate, RectifiedLinear
 from nengo.rc import rc
 from nengo.simulator import Simulator as ReferenceSimulator
 from nengo.utils.compat import ensure_bytes
@@ -95,9 +95,9 @@ def seed(request):
 
 def pytest_generate_tests(metafunc):
     if "nl" in metafunc.funcargnames:
-        metafunc.parametrize("nl", [LIF, LIFRate, Direct])
+        metafunc.parametrize("nl", [Direct, LIF, LIFRate, RectifiedLinear])
     if "nl_nodirect" in metafunc.funcargnames:
-        metafunc.parametrize("nl_nodirect", [LIF, LIFRate])
+        metafunc.parametrize("nl_nodirect", [LIF, LIFRate, RectifiedLinear])
 
 
 def pytest_addoption(parser):
