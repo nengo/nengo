@@ -5,6 +5,7 @@ import logging
 import numpy as np
 
 from nengo.params import Parameter
+from nengo.utils.compat import range
 
 logger = logging.getLogger(__name__)
 
@@ -14,10 +15,80 @@ class NeuronType(object):
     probeable = []
 
     def rates(self, x, gain, bias):
-        raise NotImplementedError("Neurons must provide rates")
+        """Compute firing rates (in Hz) for given vector input, ``x``.
+
+        This default implementation takes the naive approach of running the
+        step function for a second. This should suffice for most rate-based
+        neuron types; for spiking neurons it will likely fail.
+
+        Parameters
+        ---------
+        x : ndarray
+            vector-space input
+        gain : ndarray
+            gains associated with each neuron
+        bias : ndarray
+            bias current associated with each neuron
+        """
+        J = gain * x + bias
+        out = np.zeros_like(J)
+        self.step_math(dt=1., J=J, output=out)
+        return out
 
     def gain_bias(self, max_rates, intercepts):
-        raise NotImplementedError("Neurons must provide gain_bias")
+        """Compute the gain and bias needed to satisfy max_rates, intercepts.
+
+        This takes the neurons, approximates their response function, and then
+        uses that approximation to find the gain and bias value that will give
+        the requested intercepts and max_rates.
+
+        Note that this default implementation is very slow! Whenever possible,
+        subclasses should override this with a neuron-specific implementation.
+
+        Parameters
+        ---------
+        max_rates : ndarray(dtype=float64)
+            Maximum firing rates of neurons.
+        intercepts : ndarray(dtype=float64)
+            X-intercepts of neurons.
+        """
+        J_max = 0
+        J_steps = 100
+        max_rate = max_rates.max()
+
+        # Start with dummy gain and bias so x == J in rate calculation
+        gain = np.ones(J_steps)
+        bias = np.zeros(J_steps)
+        rate = np.zeros(J_steps)
+
+        # Find range of J that will achieve max rates
+        while rate[-1] < max_rate and J_max < 100:
+            J_max += 10
+            J = np.linspace(-J_max, J_max, J_steps)
+            rate = self.rates(J, gain, bias)
+        J_threshold = J[np.where(rate <= 1e-16)[0][-1]]
+
+        gain = np.zeros_like(max_rates)
+        bias = np.zeros_like(max_rates)
+        for i in range(intercepts.size):
+            ix = np.where(rate > max_rates[i])[0]
+            if len(ix) == 0:
+                ix = -1
+            else:
+                ix = ix[0]
+            if rate[ix] == rate[ix - 1]:
+                p = 1
+            else:
+                p = (max_rates[i] - rate[ix - 1]) / (rate[ix] - rate[ix - 1])
+            J_top = p * J[ix] + (1 - p) * J[ix - 1]
+
+            gain[i] = (J_threshold - J_top) / (intercepts[i] - 1)
+            bias[i] = J_top - gain[i]
+
+        return gain, bias
+
+    def step_math(self, dt, J, output):
+        raise NotImplementedError("Neurons must provide step_math")
 
 
 class Direct(NeuronType):
@@ -45,35 +116,15 @@ class LIFRate(NeuronType):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
 
-    def step_math(self, dt, J, output):
-        """Compute rates in Hz/dt for input current (incl. bias)"""
-        j = J - 1
-        output[:] = 0  # faster than output[j <= 0] = 0
-        output[j > 0] = 1. / (
-            self.tau_ref + self.tau_rc * np.log1p(1. / j[j > 0]))
-        # the above line is designed to throw an error if any j is nan
-        # (nan > 0 -> error), and not pass x < -1 to log1p
-
-    def rates_from_current(self, J):
-        """LIF firing rates in Hz for input current (incl. bias)"""
-        r = np.zeros_like(J)
-        LIFRate.step_math(self, 1.0, J, r)  # don't use overriden version
-        return r
-
     def rates(self, x, gain, bias):
-        """LIF firing rates in Hz for vector space
-
-        Parameters
-        ---------
-        x: ndarray of any shape
-            vector-space inputs
-        """
         J = gain * x + bias
-        return self.rates_from_current(J)
+        out = np.zeros_like(J)
+        # Use LIFRate's step_math explicitly to ensure rate approximation
+        LIFRate.step_math(self, dt=1, J=J, output=out)
+        return out
 
     def gain_bias(self, max_rates, intercepts):
-        """Compute the alpha and bias needed to get the given max_rate
-        and intercept values.
+        """Compute the alpha and bias needed to satisfy max_rates, intercepts.
 
         Returns gain (alpha) and offset (j_bias) values of neurons.
 
@@ -83,10 +134,7 @@ class LIFRate(NeuronType):
             Maximum firing rates of neurons.
         intercepts : list of floats
             X-intercepts of neurons.
-
         """
-        max_rates = np.asarray(max_rates)
-        intercepts = np.asarray(intercepts)
         inv_tau_ref = 1. / self.tau_ref
         if (max_rates > inv_tau_ref).any():
             raise ValueError(
@@ -98,6 +146,15 @@ class LIFRate(NeuronType):
         gain = (1 - x) / (intercepts - 1.0)
         bias = 1 - gain * intercepts
         return gain, bias
+
+    def step_math(self, dt, J, output):
+        """Compute rates in Hz for input current (incl. bias)"""
+        j = J - 1
+        output[:] = 0  # faster than output[j <= 0] = 0
+        output[j > 0] = 1. / (
+            self.tau_ref + self.tau_rc * np.log1p(1. / j[j > 0]))
+        # the above line is designed to throw an error if any j is nan
+        # (nan > 0 -> error), and not pass x < -1 to log1p
 
 
 class LIF(LIFRate):
