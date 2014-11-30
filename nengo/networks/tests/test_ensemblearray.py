@@ -177,7 +177,8 @@ def test_neuronconnection(Simulator, nl, seed):
     s = Simulator(net)
     s.run(0.1)
 
-    assert np.all(s.data[p][-1] == 0.0)
+    # Some nls (e.g. Sigmoid) never go all the way to 0
+    assert np.all(s.data[p][-1] < 1e-2)
 
     if nl == nengo.Direct:
         assert (len(catcher.record) == 1 and

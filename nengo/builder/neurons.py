@@ -4,7 +4,7 @@ from nengo.builder.builder import Builder
 from nengo.builder.signal import Signal
 from nengo.builder.operator import Operator
 from nengo.neurons import (
-    AdaptiveLIF, AdaptiveLIFRate, LIF, LIFRate, RectifiedLinear)
+    AdaptiveLIF, AdaptiveLIFRate, LIF, LIFRate, RectifiedLinear, Sigmoid)
 
 
 class SimNeurons(Operator):
@@ -34,6 +34,13 @@ class SimNeurons(Operator):
 @Builder.register(RectifiedLinear)
 def build_rectifiedlinear(model, reclinear, neurons):
     model.add_op(SimNeurons(neurons=reclinear,
+                            J=model.sig[neurons]['in'],
+                            output=model.sig[neurons]['out']))
+
+
+@Builder.register(Sigmoid)
+def build_sigmoid(model, sigmoid, neurons):
+    model.add_op(SimNeurons(neurons=sigmoid,
                             J=model.sig[neurons]['in'],
                             output=model.sig[neurons]['out']))
 

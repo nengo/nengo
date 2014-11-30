@@ -53,7 +53,7 @@ class NeuronType(object):
             X-intercepts of neurons.
         """
         J_max = 0
-        J_steps = 100
+        J_steps = 101
         max_rate = max_rates.max()
 
         # Start with dummy gain and bias so x == J in rate calculation
@@ -101,6 +101,8 @@ class Direct(NeuronType):
     def gain_bias(self, max_rates, intercepts):
         return None, None
 
+    def step_math(self, dt, J, output):
+        raise TypeError("Direct mode neurons shouldn't be simulated.")
 
 # TODO: class BasisFunctions or Population or Express;
 #       uses non-neural basis functions to emulate neuron saturation,
@@ -121,6 +123,27 @@ class RectifiedLinear(NeuronType):
     def step_math(self, dt, J, output):
         """Compute rates in Hz for input current (incl. bias)"""
         output[...] = np.maximum(0., J)
+
+
+class Sigmoid(NeuronType):
+    """Neuron whose response curve is a sigmoid."""
+
+    probeable = ['rates']
+
+    def __init__(self, tau_ref=0.002):
+        self.tau_ref = tau_ref
+
+    def gain_bias(self, max_rates, intercepts):
+        """Return gain and bias given maximum firing rate and x-intercept."""
+        lim = 1. / self.tau_ref
+        gain = (-2. / (intercepts - 1.0)) * np.log(
+            (2.0 * lim - max_rates) / (lim - max_rates))
+        bias = -np.log(lim / max_rates - 1) - gain
+        return gain, bias
+
+    def step_math(self, dt, J, output):
+        """Compute rates in Hz for input current (incl. bias)"""
+        output[...] = (1. / self.tau_ref) / (1.0 + np.exp(-J))
 
 
 class LIFRate(NeuronType):
