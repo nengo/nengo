@@ -30,13 +30,13 @@ def test_tuning_curves_1d(Simulator, plt, seed):
 
 
 @pytest.mark.parametrize('dimensions', [1, 2])
-def test_tuning_curves(Simulator, plt, seed, dimensions):
+def test_tuning_curves(Simulator, nl_nodirect, plt, seed, dimensions):
     radius = 10
     max_rate = 400
     model = nengo.Network(seed=seed)
     with model:
         ens = nengo.Ensemble(
-            10, dimensions=dimensions, neuron_type=nengo.LIF(),
+            10, dimensions=dimensions, neuron_type=nl_nodirect(),
             max_rates=Uniform(200, max_rate), radius=radius)
     sim = Simulator(model)
 
@@ -72,12 +72,12 @@ def test_tuning_curves_direct_mode(Simulator, plt, seed, dimensions):
     assert np.allclose(eval_points, activities)
 
 
-def test_response_curves(Simulator, plt, seed):
+def test_response_curves(Simulator, nl_nodirect, plt, seed):
     max_rate = 400
     model = nengo.Network(seed=seed)
     with model:
         ens = nengo.Ensemble(
-            10, dimensions=10, neuron_type=nengo.LIF(), radius=1.5,
+            10, dimensions=10, neuron_type=nl_nodirect(), radius=1.5,
             max_rates=Uniform(200, max_rate))
     sim = Simulator(model)
 
