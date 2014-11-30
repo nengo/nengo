@@ -6,6 +6,7 @@ import numpy as np
 
 from nengo.params import Parameter
 from nengo.utils.compat import range
+from nengo.utils.neurons import settled_firingrate
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class NeuronType(object):
             X-intercepts of neurons.
         """
         J_max = 0
-        J_steps = 101
+        J_steps = 101  # Odd number so that 0 is a sample
         max_rate = max_rates.max()
 
         # Start with dummy gain and bias so x == J in rate calculation
@@ -259,6 +260,85 @@ class AdaptiveLIF(LIF):
         n = adaptation
         LIF.step_math(self, dt, J - n, output, voltage, ref)
         n += (dt / self.tau_n) * (self.inc_n * output - n)
+
+
+class Izhikevich(NeuronType):
+    """Izhikevich neuron model.
+
+    Implementation based on the original paper [1]_.
+    Note that we rename some variables for our clarity.
+    What was originally 'v' we term 'voltage', which represents the membrane
+    potential of each neuron. What was originally 'u' we term 'recovery',
+    which represents membrane recovery, "which accounts for the activation
+    of K+ ionic currents and inactivation of Na+ ionic currents".
+
+    We use default values that correspond to regular spiking ('RS') neurons.
+    For other classes of neurons, set the parameters as follows.
+
+    * Intrinsically bursting (IB): ``reset_voltage=-55, reset_recovery=4``
+    * Chattering (CH): ``reset_voltage=-50, reset_recovery=2``
+    * Fast spiking (FS): ``tau_recovery=0.1``
+    * Low-threshold spiking (LTS): ``coupling=0.25``
+    * Resonator (RZ): ``tau_recovery=0.1, coupling=0.26``
+
+    Parameters
+    ----------
+    tau_recovery : float
+        (Originally 'a') Ttime scale of the recovery varaible. Default: 0.02
+    coupling : float
+        (Originally 'b') How sensitive recovery is to subthreshold
+        fluctuations of voltage. Default: 0.2
+    reset_voltage : float
+        (Originally 'c') The voltage to reset to after a spike, in millivolts.
+        Default: -65
+    reset_recovery : float
+        (Originally 'd') The recovery value to reset to after a spike.
+        Default: 8.
+
+    References
+    ----------
+    .. [1] E. M. Izhikevich, "Simple model of spiking neurons."
+       IEEE Transactions on Neural Networks, vol. 14, no. 6, pp. 1569-1572.
+       (http://www.izhikevich.org/publications/spikes.pdf)
+    """
+
+    probeable = ['spikes', 'voltage', 'recovery']
+
+    def __init__(self, tau_recovery=0.02, coupling=0.2,
+                 reset_voltage=-65, reset_recovery=8):
+        self.tau_recovery = tau_recovery
+        self.coupling = coupling
+        self.reset_voltage = reset_voltage
+        self.reset_recovery = reset_recovery
+
+    def rates(self, x, gain, bias):
+        J = gain * x + bias
+        voltage = np.zeros_like(J)
+        recovery = np.zeros_like(J)
+        return settled_firingrate(self.step_math, J, [voltage, recovery],
+                                  settle_time=0.001, sim_time=1.0)
+
+    def step_math(self, dt, J, spiked, voltage, recovery):
+        # Numerical instability occurs for very low inputs.
+        # We'll clip them be greater than some value that was chosen by
+        # looking at the simulations for many parameter sets.
+        # A more principled minimum value would be better.
+        J = np.maximum(-30., J)
+
+        dV = (0.04 * voltage ** 2 + 5 * voltage + 140 - recovery + J) * 1000
+        voltage[:] += dV * dt
+
+        # We check for spikes and reset the voltage here rather than after,
+        # which differs from the original implementation by Izhikevich.
+        # However, calculating recovery for voltage values greater than
+        # threshold can cause the system to blow up, which we want
+        # to avoid at all costs.
+        spiked[:] = (voltage >= 30) / dt
+        voltage[spiked > 0] = self.reset_voltage
+
+        dU = (self.tau_recovery * (self.coupling * voltage - recovery)) * 1000
+        recovery[:] += dU * dt
+        recovery[spiked > 0] = recovery[spiked > 0] + self.reset_recovery
 
 
 class NeuronTypeParam(Parameter):

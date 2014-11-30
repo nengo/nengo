@@ -7,7 +7,7 @@ from nengo.neurons import NeuronTypeParam
 from nengo.solvers import LstsqL2nz
 from nengo.utils.ensemble import tuning_curves
 from nengo.utils.functions import whitenoise
-from nengo.utils.matplotlib import implot
+from nengo.utils.matplotlib import implot, rasterplot
 from nengo.utils.neurons import rates_kernel
 from nengo.utils.numpy import rms, rmse
 
@@ -182,6 +182,61 @@ def test_alif(Simulator, plt):
     ax.set_ylabel('input')
 
     assert rel_rmse < 0.07
+
+
+def test_izhikevich(Simulator, plt, seed, rng):
+    """Smoke test for using Izhikevich neurons.
+
+    Tests that the 6 parameter sets listed in the original paper can be
+    simulated in Nengo (but doesn't test any properties of them).
+    """
+    noise = whitenoise(0.1, 8, dimensions=1, seed=seed)
+    with nengo.Network() as m:
+        u = nengo.Node(output=noise)
+
+        # Seed the ensembles (not network) so we get the same sort of neurons
+        ens_args = {'n_neurons': 4, 'dimensions': 1, 'seed': seed}
+        rs = nengo.Ensemble(neuron_type=nengo.Izhikevich(), **ens_args)
+        ib = nengo.Ensemble(neuron_type=nengo.Izhikevich(
+            reset_voltage=-55, reset_recovery=4), **ens_args)
+        ch = nengo.Ensemble(neuron_type=nengo.Izhikevich(
+            reset_voltage=-50, reset_recovery=2), **ens_args)
+        fs = nengo.Ensemble(neuron_type=nengo.Izhikevich(tau_recovery=0.1),
+                            **ens_args)
+        lts = nengo.Ensemble(neuron_type=nengo.Izhikevich(coupling=0.25),
+                             **ens_args)
+        rz = nengo.Ensemble(neuron_type=nengo.Izhikevich(
+            tau_recovery=0.1, coupling=0.26), **ens_args)
+
+        ensembles = (rs, ib, ch, fs, lts, rz)
+        out = {}
+        spikes = {}
+        for ens in ensembles:
+            nengo.Connection(u, ens)
+            out[ens] = nengo.Probe(ens, synapse=0.05)
+            spikes[ens] = nengo.Probe(ens.neurons)
+        up = nengo.Probe(u)
+
+    sim = Simulator(m)
+    sim.run(0.6)
+    t = sim.trange()
+
+    def plot(ens, title, ix):
+        ax = plt.subplot(len(ensembles), 1, ix)
+        plt.title(title)
+        plt.plot(t, sim.data[out[ens]], c='k', lw=1.5)
+        plt.plot(t, sim.data[up], c='k', ls=':')
+        ax = ax.twinx()
+        ax.set_yticks(())
+        rasterplot(t, sim.data[spikes[ens]], ax=ax)
+
+    plt.figure(figsize=(10, 12))
+    plot(rs, "Regular spiking", 1)
+    plot(ib, "Intrinsically bursting", 2)
+    plot(ch, "Chattering", 3)
+    plot(fs, "Fast spiking", 4)
+    plot(lts, "Low-threshold spiking", 5)
+    plot(rz, "Resonator", 6)
 
 
 def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):

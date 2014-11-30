@@ -128,3 +128,37 @@ def rates_kernel(t, spikes, kind='gauss', tau=0.04):
         rates = lowpass_filter(spikes, tau_i, kind=kind)
 
     return rates.T
+
+
+def settled_firingrate(step_math, J, states,
+                       dt=0.001, settle_time=0.1, sim_time=1.0):
+    """Compute firing rates (in Hz) for given vector input, ``x``.
+
+    Unlike the default naive implementation, this approach takes into
+    account some characteristics of spiking neurons. We start
+    by simulating the neurons for a short amount of time, to let any
+    initial transients settle. Then, we run the neurons for a second
+    and find the average (which should approximate the firing rate).
+
+    Parameters
+    ---------
+    step_math : function
+        the step function of the neuron type
+    J : ndarray
+        a vector of currents to generate firing rates from
+    *states : list of ndarrays
+        additional state needed by the step function
+    """
+    out = np.zeros_like(J)
+    total = np.zeros_like(J)
+
+    # Simulate for the settle time
+    steps = int(settle_time / dt)
+    for _ in range(steps):
+        step_math(dt, J, out, *states)
+    # Simulate for sim time, and keep track
+    steps = int(sim_time / dt)
+    for _ in range(steps):
+        step_math(dt, J, out, *states)
+        total += out
+    return total / float(steps)

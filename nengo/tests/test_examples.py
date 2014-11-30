@@ -25,7 +25,7 @@ def pytest_generate_tests(metafunc):
     ignores = [] if metafunc.config.option.optional else [
         'lorenz_attractor.ipynb', 'spa_sequence_routed.ipynb',
         'spa_sequence-Class.ipynb', 'spa_sequence-Context.ipynb',
-        'spa_parser.ipynb', 'question_control.ipynb',
+        'spa_parser.ipynb', 'question_control.ipynb', 'izhikevich.ipynb',
         'learn_communication_channel.ipynb', 'learn_product.ipynb',
         'learn_unsupervised.ipynb', 'learn_square.ipynb',
         'inhibitory_gating.ipynb', 'nef_summary.ipynb']
