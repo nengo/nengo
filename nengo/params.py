@@ -5,6 +5,7 @@ import numpy as np
 
 from nengo.utils.compat import is_integer, is_number, is_string
 from nengo.utils.distributions import Distribution
+from nengo.utils.processes import StochasticProcess
 from nengo.utils.stdlib import checked_call
 
 
@@ -193,6 +194,35 @@ class DistributionParam(NdarrayParam):
         if dist is not None and not isinstance(dist, Distribution):
             dist = super(DistributionParam, self).validate(instance, dist)
         return dist
+
+
+class StochasticProcessParam(Parameter):
+    """Can be a StochasticProcess."""
+
+    def __init__(self, default, dimensions, optional=False, readonly=False):
+        super(StochasticProcessParam, self).__init__(
+            default, optional, readonly)
+        self.dimensions = dimensions
+
+    def validate(self, instance, dist):
+        super(StochasticProcessParam, self).validate(instance, dist)
+
+        if dist is not None and not isinstance(dist, StochasticProcess):
+            raise ValueError(
+                "Must be StochasticProcess (got type {0}).".format(
+                    dist.__class__.__name__))
+
+        if self.dimensions is None or is_integer(self.dimensions):
+            desired = self.dimensions
+        else:
+            desired = getattr(instance, self.dimensions)
+        if dist is not None and dist.dimensions != desired:
+            raise ValueError(
+                "Dimensionality of {0} does not match {1}.".format(
+                    dist.dimensions, desired))
+
+        return dist
+
 
 FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
 

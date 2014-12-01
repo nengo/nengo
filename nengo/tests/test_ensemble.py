@@ -6,6 +6,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.utils.distributions import Choice
+from nengo.utils.processes import SampledProcess
 from nengo.utils.testing import warns, allclose
 
 logger = logging.getLogger(__name__)
@@ -289,9 +290,11 @@ def test_noise(Simulator, nl_nodirect, seed, plt):
         model.config[nengo.Ensemble].gain = Choice([gain])
         model.config[nengo.Ensemble].bias = Choice([bias])
         const = nengo.Node(output=inp)
-        pos = nengo.Ensemble(1, 1, noise=Choice([pos_noise]))
+        pos = nengo.Ensemble(
+            1, 1, noise=SampledProcess(Choice([pos_noise])))
         normal = nengo.Ensemble(1, 1)
-        neg = nengo.Ensemble(1, 1, noise=Choice([neg_noise]))
+        neg = nengo.Ensemble(
+            1, 1, noise=SampledProcess(Choice([neg_noise])))
         nengo.Connection(const, pos)
         nengo.Connection(const, normal)
         nengo.Connection(const, neg)
