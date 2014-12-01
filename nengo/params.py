@@ -1,4 +1,5 @@
 import collections
+from copy import copy
 import weakref
 
 import numpy as np
@@ -203,6 +204,9 @@ class StochasticProcessParam(Parameter):
         super(StochasticProcessParam, self).__init__(
             default, optional, readonly)
         self.dimensions = dimensions
+
+    def __set__(self, instance, process):
+        super(StochasticProcessParam, self).__set__(instance, copy(process))
 
     def validate(self, instance, dist):
         super(StochasticProcessParam, self).validate(instance, dist)

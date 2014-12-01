@@ -6,7 +6,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.utils.distributions import Choice
-from nengo.utils.processes import SampledProcess
+from nengo.utils.processes import SampledProcess, StochasticProcess
 from nengo.utils.testing import warns, allclose
 
 logger = logging.getLogger(__name__)
@@ -315,6 +315,37 @@ def test_noise(Simulator, nl_nodirect, seed, plt):
     assert np.all(sim.data[normal_p] >= sim.data[neg_p])
     assert not np.all(sim.data[normal_p] == sim.data[pos_p])
     assert not np.all(sim.data[normal_p] == sim.data[neg_p])
+
+
+def test_copies_noise(Simulator, nl_nodirect, seed, plt):
+    class ProcessMock(StochasticProcess):
+        def __init__(self):
+            super(ProcessMock, self).__init__(1)
+            self.n_sample_calls = 0
+
+        def sample(self, dt, timesteps=None, rng=np.random):
+            self.n_sample_calls += 1
+            shape = (self.dimensions,) if timesteps is None else (
+                self.dimensions, timesteps)
+            return np.zeros(shape)
+
+    process = ProcessMock()
+    with nengo.Network(seed=seed) as model:
+        inp, gain, bias = 1, 5, 2
+        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        model.config[nengo.Ensemble].encoders = Choice([[1]])
+        model.config[nengo.Ensemble].gain = Choice([gain])
+        model.config[nengo.Ensemble].bias = Choice([bias])
+        const = nengo.Node(output=inp)
+        a = nengo.Ensemble(1, 1, noise=process)
+        b = nengo.Ensemble(1, 1, noise=process)
+        nengo.Connection(const, a)
+        nengo.Connection(const, b)
+    sim = Simulator(model)
+    sim.run(0.06)
+
+    assert process.n_sample_calls == 0
+
 
 if __name__ == "__main__":
     nengo.log(debug=True)
