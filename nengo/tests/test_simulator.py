@@ -120,10 +120,11 @@ def test_noise(RefSimulator, seed):
     n = 1000
     mean, std = 0.1, 0.8
     noise = Signal(np.zeros(n), name="noise")
-    dist = nengo.dists.Gaussian(mean, std)
+    process = nengo.processes.SampledProcess(
+        nengo.dists.Gaussian(mean, std), n)
 
     m = Model(dt=0.001)
-    m.operators += [Reset(noise), SimNoise(noise, dist)]
+    m.operators += [Reset(noise), SimNoise(noise, process)]
 
     sim = RefSimulator(None, model=m, seed=seed)
     samples = np.zeros((100, n))

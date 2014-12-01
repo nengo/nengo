@@ -307,9 +307,9 @@ class DotInc(Operator):
 
 
 class SimNoise(Operator):
-    def __init__(self, output, distribution):
+    def __init__(self, output, process):
         self.output = output
-        self.distribution = distribution
+        self.process = process
 
         self.sets = []
         self.incs = [output]
@@ -318,11 +318,10 @@ class SimNoise(Operator):
 
     def make_step(self, signals, dt, rng):
         Y = signals[self.output]
-        dist = self.distribution
-        n = Y.size
+        p = self.process
         Yview = Y.reshape(-1)
 
         def step():
-            Yview[...] += dist.sample(n, rng=rng)
+            Yview[...] += p.sample(dt, rng=rng)
 
         return step
