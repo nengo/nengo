@@ -68,7 +68,7 @@ class Ensemble(NengoObject):
                              optional=True,
                              sample_shape=('n_neurons',))
     noise = StochasticProcessParam(
-        default=None, optional=True, dimensions=None)
+        default=None, optional=True, dimensions='n_neurons')
     seed = IntParam(default=None, optional=True)
     label = StringParam(default=None, optional=True)
     probeable = ListParam(default=['decoded_output', 'input'])

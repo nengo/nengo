@@ -323,6 +323,6 @@ class SimNoise(Operator):
         Yview = Y.reshape(-1)
 
         def step():
-            Yview[...] += p.sample(n, dt, rng=rng)
+            Yview[...] += p.sample(dt, rng=rng)
 
         return step

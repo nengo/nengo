@@ -5,26 +5,26 @@ from nengo.utils.distributions import Distribution, Gaussian
 
 
 class StochasticProcess(object):
-    def __init__(self, dimensions=None):
+    def __init__(self, dimensions=1):
         self.dimensions = dimensions
 
-    def sample(self, n, dt, rng=np.random):
+    def sample(self, dt, timesteps=None, rng=np.random):
         raise NotImplementedError(
             "A StochasticProcess should implement sample.")
 
 
 class SampledProcess(StochasticProcess):
-    def __init__(self, dist, dimensions=None):
+    def __init__(self, dist, dimensions=1):
         super(SampledProcess, self).__init__(dimensions)
         self.dist = dist
 
-    def sample(self, n, dt, rng=np.random):
+    def sample(self, dt, timesteps=None, rng=np.random):
         # FIXME correct for dt here?
-        return self.dist.sample(n, self.dimensions, rng=rng)
+        return self.dist.sample(self.dimensions, timesteps, rng=rng)
 
 
 class MarkovProcess(StochasticProcess):
-    def __init__(self, dist, dimensions=None, initial_state=None):
+    def __init__(self, dist, dimensions=1, initial_state=None):
         super(MarkovProcess, self).__init__(dimensions)
         self.dist = dist
         if initial_state is None:
@@ -34,15 +34,16 @@ class MarkovProcess(StochasticProcess):
             if self.state.shape != (dimensions,):
                 raise ValueError("initial_state has to match dimensions.")
 
-    def sample(self, n, dt, rng=np.random):
+    def sample(self, dt, timesteps=None, rng=np.random):
         samples = self.state + np.cumsum(
-            self.dist.sample(n, self.dimensions, rng=rng) * np.sqrt(dt),
+            self.dist.sample(
+                self.dimensions, timesteps, rng=rng) * np.sqrt(dt),
             axis=0)
         self.state[:] = samples[-1]
         return samples
 
 
 class WienerProcess(MarkovProcess):
-    def __init__(self, dimensions=None, initial_state=None):
+    def __init__(self, dimensions=1, initial_state=None):
         super(WienerProcess, self).__init__(
             Gaussian(0, 1.), dimensions, initial_state)

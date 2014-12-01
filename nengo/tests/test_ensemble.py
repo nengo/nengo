@@ -291,10 +291,10 @@ def test_noise(Simulator, nl_nodirect, seed, plt):
         model.config[nengo.Ensemble].bias = Choice([bias])
         const = nengo.Node(output=inp)
         pos = nengo.Ensemble(
-            1, 1, noise=SampledProcess(Choice([pos_noise])))
+            1, 1, noise=SampledProcess(Choice([pos_noise]), 1))
         normal = nengo.Ensemble(1, 1)
         neg = nengo.Ensemble(
-            1, 1, noise=SampledProcess(Choice([neg_noise])))
+            1, 1, noise=SampledProcess(Choice([neg_noise]), 1))
         nengo.Connection(const, pos)
         nengo.Connection(const, normal)
         nengo.Connection(const, neg)
