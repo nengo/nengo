@@ -35,12 +35,12 @@ class MarkovProcess(StochasticProcess):
                 raise ValueError("initial_state has to match dimensions.")
 
     def sample(self, dt, timesteps=None, rng=np.random):
-        samples = self.state + np.cumsum(
+        samples = self.state[:, np.newaxis] + np.cumsum(
             self.dist.sample(
                 self.dimensions, timesteps, rng=rng) * np.sqrt(dt),
-            axis=0)
-        self.state[:] = samples[-1]
-        return samples
+            axis=0 if timesteps is None else 1)
+        self.state[:] = samples[:, -1]
+        return samples[:, 0] if timesteps is None else samples
 
 
 class WienerProcess(MarkovProcess):
