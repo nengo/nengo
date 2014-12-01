@@ -5,7 +5,7 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder.builder import Builder
-from nengo.builder.operator import Copy, DotInc, Reset
+from nengo.builder.operator import Copy, DotInc, Reset, SimNoise
 from nengo.builder.signal import Signal
 from nengo.dists import Distribution
 from nengo.ensemble import Ensemble
@@ -97,6 +97,10 @@ def build_ensemble(model, ens):
 
     model.sig[ens]['encoders'] = Signal(
         scaled_encoders, name="%s.scaled_encoders" % ens)
+
+    # Inject noise if specified
+    if ens.noise is not None:
+        model.add_op(SimNoise(model.sig[ens.neurons]['in'], ens.noise))
 
     # Create output signal, using built Neurons
     model.add_op(DotInc(

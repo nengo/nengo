@@ -279,6 +279,40 @@ def test_gain_bias(Simulator, nl_nodirect):
     assert np.array_equal(bias, sim.data[a].bias)
 
 
+def test_noise(Simulator, nl_nodirect, seed, plt):
+    """Ensure that setting Ensemble.noise generates noise."""
+    with nengo.Network(seed=seed) as model:
+        inp, gain, bias = 1, 5, 2
+        neg_noise, pos_noise = -4, 20
+        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        model.config[nengo.Ensemble].encoders = Choice([[1]])
+        model.config[nengo.Ensemble].gain = Choice([gain])
+        model.config[nengo.Ensemble].bias = Choice([bias])
+        const = nengo.Node(output=inp)
+        pos = nengo.Ensemble(1, 1, noise=Choice([pos_noise]))
+        normal = nengo.Ensemble(1, 1)
+        neg = nengo.Ensemble(1, 1, noise=Choice([neg_noise]))
+        nengo.Connection(const, pos)
+        nengo.Connection(const, normal)
+        nengo.Connection(const, neg)
+        pos_p = nengo.Probe(pos.neurons, synapse=0.1)
+        normal_p = nengo.Probe(normal.neurons, synapse=0.1)
+        neg_p = nengo.Probe(neg.neurons, synapse=0.1)
+    sim = Simulator(model)
+    sim.run(0.06)
+
+    t = sim.trange()
+    plt.title("input=%d, bias=%d, gain=%d" % (inp, bias, gain))
+    plt.plot(t, sim.data[pos_p], c='b', label="noise=%d" % pos_noise)
+    plt.plot(t, sim.data[normal_p], c='k', label="no noise")
+    plt.plot(t, sim.data[neg_p], c='r', label="noise=%d" % neg_noise)
+    plt.legend(loc="best")
+
+    assert np.all(sim.data[pos_p] >= sim.data[normal_p])
+    assert np.all(sim.data[normal_p] >= sim.data[neg_p])
+    assert not np.all(sim.data[normal_p] == sim.data[pos_p])
+    assert not np.all(sim.data[normal_p] == sim.data[neg_p])
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
