@@ -4,7 +4,8 @@ import pytest
 
 import nengo
 from nengo.utils.distributions import Distribution
-from nengo.utils.processes import SampledProcess, MarkovProcess, WienerProcess
+from nengo.utils.processes import (
+    GaussianWhiteNoise, MarkovProcess, SampledProcess, WienerProcess)
 
 
 class DistributionMock(Distribution):
@@ -43,6 +44,20 @@ def test_wiener_process(rng):
     atol = 3. * expected_std / np.sqrt(d)
     assert np.all(np.abs(np.mean(samples, axis=0)) < atol)
     assert np.all(np.abs(np.std(samples, axis=0) - expected_std) < atol)
+
+
+@pytest.mark.parametrize('rms', [0.5, 1, 100])
+def test_gaussian_white_noise(rms, rng):
+    d = 500
+    t = 100
+
+    values = GaussianWhiteNoise(rms, dimensions=d).sample(
+        dt=0.001, timesteps=t, rng=rng)
+    assert np.allclose(np.std(values), rms, rtol=0.02)
+
+    assert np.allclose(
+        np.std(np.abs(np.fft.rfft(values, axis=1)), axis=0) / np.sqrt(t) * 2.,
+        rms, rtol=0.25)
 
 
 if __name__ == "__main__":

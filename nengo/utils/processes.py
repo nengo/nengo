@@ -106,3 +106,17 @@ class WienerProcess(MarkovProcess):
     def __init__(self, dimensions=1, initial_state=None):
         super(WienerProcess, self).__init__(
             Gaussian(0, 1.), dimensions, initial_state)
+
+
+class GaussianWhiteNoise(SampledProcess):
+    """A Gaussian white noise process.
+
+    Parameters
+    ----------
+    rms : float
+        The RMS power of the signal.
+    dimensions : int
+        The number of dimensions of the process.
+    """
+    def __init__(self, rms=0.5, dimensions=1):
+        super(GaussianWhiteNoise, self).__init__(Gaussian(0., rms), dimensions)
