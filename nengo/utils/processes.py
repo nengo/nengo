@@ -120,3 +120,33 @@ class GaussianWhiteNoise(SampledProcess):
     """
     def __init__(self, rms=0.5, dimensions=1):
         super(GaussianWhiteNoise, self).__init__(Gaussian(0., rms), dimensions)
+
+
+class LimitedGaussianWhiteNoise(StochasticProcess):
+    def __init__(
+            self, duration, dimensions, rms=0.5, limit=None, dt=0.001,
+            rng=np.random):
+        super(LimitedGaussianWhiteNoise, self).__init__(dimensions)
+        self.duration = duration
+        self.dt = dt
+
+        n_coefficients = int(np.ceil(duration / dt / 2.))
+        shape = (dimensions, n_coefficients + 1)
+        sigma = rms * np.sqrt(0.5)
+        coefficients = 1j * rng.normal(0., sigma, size=shape)
+        coefficients += rng.normal(0., sigma, size=shape)
+        coefficients[:, 0] = 0.
+        coefficients[:, -1].imag = 0.
+        if limit is not None:
+            coefficients[
+                :, np.fft.rfftfreq(2 * n_coefficients, d=dt) > limit] = 0.
+        coefficients *= np.sqrt(2 * n_coefficients)
+
+        self.signal = np.fft.irfft(coefficients, axis=1)
+        self.t = 0
+
+    def sample(self, dt, timesteps, rng=np.random):
+        assert self.dt == dt
+        ts = (self.t + np.arange(timesteps)) % self.signal.shape[1]
+        self.t = ts[-1] + 1
+        return np.take(self.signal, ts, axis=1)

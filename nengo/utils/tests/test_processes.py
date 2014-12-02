@@ -5,7 +5,8 @@ import pytest
 import nengo
 from nengo.utils.distributions import Distribution
 from nengo.utils.processes import (
-    GaussianWhiteNoise, MarkovProcess, SampledProcess, WienerProcess)
+    GaussianWhiteNoise, LimitedGaussianWhiteNoise, MarkovProcess,
+    SampledProcess, WienerProcess)
 
 
 class DistributionMock(Distribution):
@@ -46,6 +47,11 @@ def test_wiener_process(rng):
     assert np.all(np.abs(np.std(samples, axis=0) - expected_std) < atol)
 
 
+def psd(values):
+    return 2. * np.std(np.abs(np.fft.rfft(
+        values, axis=1)), axis=0)[1:] / np.sqrt(np.asarray(values).shape[1])
+
+
 @pytest.mark.parametrize('rms', [0.5, 1, 100])
 def test_gaussian_white_noise(rms, rng):
     d = 500
@@ -54,10 +60,22 @@ def test_gaussian_white_noise(rms, rng):
     values = GaussianWhiteNoise(rms, dimensions=d).sample(
         dt=0.001, timesteps=t, rng=rng)
     assert np.allclose(np.std(values), rms, rtol=0.02)
+    assert np.allclose(psd(values), rms, rtol=0.25)
 
-    assert np.allclose(
-        np.std(np.abs(np.fft.rfft(values, axis=1)), axis=0) / np.sqrt(t) * 2.,
-        rms, rtol=0.25)
+
+@pytest.mark.parametrize('rms', [0.5, 1, 100])
+def test_limited_gaussian_white_noise(rms, rng):
+    d = 500
+    t = 100
+    dt = 0.001
+
+    values = LimitedGaussianWhiteNoise(
+        dt * t, d, rms=rms, dt=dt, rng=rng).sample(dt=dt, timesteps=t, rng=rng)
+    assert np.allclose(np.std(values, axis=0), rms, rtol=0.15)
+    assert np.allclose(psd(values), rms, rtol=0.2)
+
+    # TODO test limit
+    # TODO test non matching dt
 
 
 if __name__ == "__main__":
