@@ -170,9 +170,10 @@ class LimitedGaussianWhiteNoise(StochasticProcess):
         assert self.dt == dt, \
             "Sampling dt should match dt of generated signal."
         if timesteps is None:
-            ts = [self.t]
+            ts = np.array([self.t])
         else:
-            ts = (self.t + np.arange(timesteps)) % self.signal.shape[1]
+            ts = self.t + np.arange(timesteps)
+        ts %= self.signal.shape[1]
         self.t = ts[-1] + 1
         samples = np.take(self.signal, ts, axis=1)
         return samples[:, 0] if timesteps is None else samples

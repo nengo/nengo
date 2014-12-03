@@ -117,6 +117,11 @@ class TestLimitedGaussianWhiteNoise(object):
         values = process.sample(dt, timesteps=2 * t)
         assert_equal(values[:, :t], values[:, t:])
 
+        values2 = np.empty((d, 2 * t))
+        for i in range(2 * t):
+            values2[:, i] = process.sample(dt, timesteps=None)
+        assert_equal(values, values2)
+
 
 if __name__ == "__main__":
     nengo.log(debug=True)
