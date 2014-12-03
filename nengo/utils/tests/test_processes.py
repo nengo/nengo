@@ -81,16 +81,14 @@ class TestLimitedGaussianWhiteNoise(object):
     def test_limit(self, limit, rng):
         rms = 0.5
         d = 500
-        t = 100
+        t = 1000
         dt = 0.001
 
         values = LimitedGaussianWhiteNoise(
             dt * t, d, limit=limit, rms=rms, dt=dt, rng=rng).sample(
             dt=dt, timesteps=t, rng=rng)
-        spectral_power = psd(values)
-        assert_allclose(
-            spectral_power[np.fft.rfftfreq(t, dt) <= limit][1:], rms, rtol=0.2)
-        assert_almost_equal(spectral_power[np.fft.rfftfreq(t, dt) > limit], 0.)
+        assert_allclose(np.std(values, axis=0), rms, rtol=0.15)
+        assert_almost_equal(psd(values)[np.fft.rfftfreq(t, dt) > limit], 0.)
 
     def test_unequal_dt(self, rng):
         d = 1

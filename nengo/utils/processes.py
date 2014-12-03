@@ -134,7 +134,7 @@ class LimitedGaussianWhiteNoise(StochasticProcess):
     dimensions : int
         The number of dimensions of the process.
     rms : float, optional
-        The root mean square power of the unfiltered signal.
+        The root mean square power of the filtered signal.
     limit : float or ``None``, optional
         The cut-off frequency of the low-pass filter in cycles per second. If
         ``None``, no low-pass filtering will be done.
@@ -159,8 +159,12 @@ class LimitedGaussianWhiteNoise(StochasticProcess):
         coefficients[:, 0] = 0.
         coefficients[:, -1].imag = 0.
         if limit is not None:
-            coefficients[
-                :, np.fft.rfftfreq(2 * n_coefficients, d=dt) > limit] = 0.
+            set_to_zero = np.fft.rfftfreq(2 * n_coefficients, d=dt) > limit
+            coefficients[:, set_to_zero] = 0.
+            power_correction = np.sqrt(
+                1. - np.sum(set_to_zero, dtype=float) / n_coefficients)
+            if power_correction > 0.:
+                coefficients /= power_correction
         coefficients *= np.sqrt(2 * n_coefficients)
 
         self.signal = np.fft.irfft(coefficients, axis=1)
