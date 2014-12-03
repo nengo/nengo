@@ -123,6 +123,27 @@ class GaussianWhiteNoise(SampledProcess):
 
 
 class LimitedGaussianWhiteNoise(StochasticProcess):
+    """A low-pass filtered Gaussian white noise process.
+
+    Parameters
+    ----------
+    duration : float
+        A white noise signal for this duration will be generated. If more a
+        longer duration will be sampled, the samples will repeat after this
+        duration.
+    dimensions : int
+        The number of dimensions of the process.
+    rms : float, optional
+        The root mean square power of the unfiltered signal.
+    limit : float or ``None``, optional
+        The cut-off frequency of the low-pass filter in cycles per second. If
+        ``None``, no low-pass filtering will be done.
+    dt : float, optional
+        The discretization timestep. This has to be the same value as the `dt`
+        used for sampling.
+    rng : :class:`numpy.random.RandomState`
+        Random number generator state used to generate the signal.
+    """
     def __init__(
             self, duration, dimensions, rms=0.5, limit=None, dt=0.001,
             rng=np.random):
