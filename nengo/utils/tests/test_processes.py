@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import numpy as np
+from numpy.testing import assert_allclose, assert_almost_equal, assert_equal
 import pytest
 
 import nengo
@@ -49,7 +50,7 @@ def test_wiener_process(rng):
 
 def psd(values):
     return 2. * np.std(np.abs(np.fft.rfft(
-        values, axis=1)), axis=0)[1:] / np.sqrt(np.asarray(values).shape[1])
+        values, axis=1)), axis=0) / np.sqrt(np.asarray(values).shape[1])
 
 
 @pytest.mark.parametrize('rms', [0.5, 1, 100])
@@ -59,23 +60,62 @@ def test_gaussian_white_noise(rms, rng):
 
     values = GaussianWhiteNoise(rms, dimensions=d).sample(
         dt=0.001, timesteps=t, rng=rng)
-    assert np.allclose(np.std(values), rms, rtol=0.02)
-    assert np.allclose(psd(values), rms, rtol=0.25)
+    assert_allclose(np.std(values), rms, rtol=0.02)
+    assert_allclose(psd(values)[1:], rms, rtol=0.25)
 
 
-@pytest.mark.parametrize('rms', [0.5, 1, 100])
-def test_limited_gaussian_white_noise(rms, rng):
-    d = 500
-    t = 100
-    dt = 0.001
+class TestLimitedGaussianWhiteNoise(object):
+    @pytest.mark.parametrize('rms', [0.5, 1, 100])
+    def test_rms(self, rms, rng):
+        d = 500
+        t = 100
+        dt = 0.001
 
-    values = LimitedGaussianWhiteNoise(
-        dt * t, d, rms=rms, dt=dt, rng=rng).sample(dt=dt, timesteps=t, rng=rng)
-    assert np.allclose(np.std(values, axis=0), rms, rtol=0.15)
-    assert np.allclose(psd(values), rms, rtol=0.2)
+        values = LimitedGaussianWhiteNoise(
+            dt * t, d, rms=rms, dt=dt, rng=rng).sample(
+            dt=dt, timesteps=t, rng=rng)
+        assert_allclose(np.std(values, axis=0), rms, rtol=0.15)
+        assert_allclose(psd(values)[1:], rms, rtol=0.2)
 
-    # TODO test limit
-    # TODO test non matching dt
+    @pytest.mark.parametrize('limit', [5, 50])
+    def test_limit(self, limit, rng):
+        rms = 0.5
+        d = 500
+        t = 100
+        dt = 0.001
+
+        values = LimitedGaussianWhiteNoise(
+            dt * t, d, limit=limit, rms=rms, dt=dt, rng=rng).sample(
+            dt=dt, timesteps=t, rng=rng)
+        spectral_power = psd(values)
+        assert_allclose(
+            spectral_power[np.fft.rfftfreq(t, dt) <= limit][1:], rms, rtol=0.2)
+        assert_almost_equal(spectral_power[np.fft.rfftfreq(t, dt) > limit], 0.)
+
+    def test_unequal_dt(self, rng):
+        d = 1
+        t = 10
+        dt = 0.001
+        process = LimitedGaussianWhiteNoise(dt * t, d, dt=dt, rng=rng)
+        with pytest.raises(AssertionError):
+            process.sample(dt=1., rng=rng)
+
+    def test_sampling_shape(self, rng):
+        d = 2
+        t = 10
+        dt = 0.001
+        process = LimitedGaussianWhiteNoise(dt * t, d, dt=dt, rng=rng)
+        assert process.sample(dt, timesteps=None).shape == (2,)
+        assert process.sample(dt, timesteps=1).shape == (2, 1)
+        assert process.sample(dt, timesteps=5). shape == (2, 5)
+
+    def test_sampling_out_of_signal_length(self, rng):
+        d = 2
+        t = 10
+        dt = 0.001
+        process = LimitedGaussianWhiteNoise(dt * t, d, dt=dt, rng=rng)
+        values = process.sample(dt, timesteps=2 * t)
+        assert_equal(values[:, :t], values[:, t:])
 
 
 if __name__ == "__main__":

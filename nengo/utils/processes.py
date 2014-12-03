@@ -145,8 +145,13 @@ class LimitedGaussianWhiteNoise(StochasticProcess):
         self.signal = np.fft.irfft(coefficients, axis=1)
         self.t = 0
 
-    def sample(self, dt, timesteps, rng=np.random):
-        assert self.dt == dt
-        ts = (self.t + np.arange(timesteps)) % self.signal.shape[1]
+    def sample(self, dt, timesteps=None, rng=np.random):
+        assert self.dt == dt, \
+            "Sampling dt should match dt of generated signal."
+        if timesteps is None:
+            ts = [self.t]
+        else:
+            ts = (self.t + np.arange(timesteps)) % self.signal.shape[1]
         self.t = ts[-1] + 1
-        return np.take(self.signal, ts, axis=1)
+        samples = np.take(self.signal, ts, axis=1)
+        return samples[:, 0] if timesteps is None else samples
