@@ -104,17 +104,20 @@ def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed):
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         input_node = nengo.Node(output=lambda t: [np.sin(t*3), np.cos(t*3)])
         a = nengo.Ensemble(N * 1, dimensions=1)
-        b = nengo.Ensemble(N * 2, dimensions=2)
-        c = nengo.Ensemble(N, neuron_type=nengo.Direct(), dimensions=3)
+        b = nengo.Ensemble(N * 1, dimensions=1)
+        c = nengo.Ensemble(N * 2, dimensions=2)
+        d = nengo.Ensemble(N, neuron_type=nengo.Direct(), dimensions=3)
 
         nengo.Connection(input_node, a, function=lambda x: -x[0])
-        nengo.Connection(input_node, b, function=lambda x: -(x**2))
-        nengo.Connection(input_node, c,
+        nengo.Connection(input_node[:1], b, function=lambda x: -x)
+        nengo.Connection(input_node, c, function=lambda x: -(x**2))
+        nengo.Connection(input_node, d,
                          function=lambda x: [-x[0], -(x[0]**2), -(x[1]**2)])
 
         a_p = nengo.Probe(a, 'decoded_output', synapse=0.01)
         b_p = nengo.Probe(b, 'decoded_output', synapse=0.01)
         c_p = nengo.Probe(c, 'decoded_output', synapse=0.01)
+        d_p = nengo.Probe(d, 'decoded_output', synapse=0.01)
 
     sim = Simulator(m)
     sim.run(2.0)
@@ -123,12 +126,15 @@ def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed):
     plt.plot(t, sim.data[a_p])
     plt.plot(t, sim.data[b_p])
     plt.plot(t, sim.data[c_p])
-    plt.legend(['-sin', '-(sin ** 2)', '-(cos ** 2)', '-sin', '-(sin ** 2)',
-                '-(cos ** 2)'], loc='best', fontsize='small')
+    plt.plot(t, sim.data[d_p])
+    plt.legend(['-sin', '-sin', '-(sin ** 2)', '-(cos ** 2)', '-sin',
+                '-(sin ** 2)', '-(cos ** 2)'], loc='best', fontsize='small')
 
-    assert np.allclose(sim.data[a_p][-10:], sim.data[c_p][-10:][:, 0],
+    assert np.allclose(sim.data[a_p][-10:], sim.data[d_p][-10:][:, 0],
                        atol=0.1, rtol=0.01)
-    assert np.allclose(sim.data[b_p][-10:], sim.data[c_p][-10:][:, 1:3],
+    assert np.allclose(sim.data[b_p][-10:], sim.data[d_p][-10:][:, 0],
+                       atol=0.1, rtol=0.01)
+    assert np.allclose(sim.data[c_p][-10:], sim.data[d_p][-10:][:, 1:3],
                        atol=0.1, rtol=0.01)
 
 

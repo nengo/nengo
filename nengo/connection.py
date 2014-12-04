@@ -90,7 +90,7 @@ class ConnectionFunctionParam(FunctionParam):
                 "(%d)" % (type_pre, size_mid, transform.shape[1]))
 
         if (function is not None and isinstance(conn.pre_obj, Node) and
-                conn.pre.output is None):
+                conn.pre_obj.output is None):
             raise ValueError("Cannot apply functions to passthrough nodes")
 
 
