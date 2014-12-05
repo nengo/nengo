@@ -108,6 +108,23 @@ def test_decoder_cache_invalidation(tmpdir):
     assert SolverMock.n_calls[solver_mock] == 2
 
 
+def test_decoder_cache_size_includes_overhead(tmpdir):
+    cache_dir = str(tmpdir)
+    solver_mock = SolverMock()
+
+    cache = DecoderCache(cache_dir=cache_dir)
+    cache.wrap_solver(solver_mock)(**get_solver_test_args())
+
+    fragment_size = os.statvfs(cache_dir).f_frsize
+    actual_size = sum(os.stat(os.path.join(cache_dir, f)).st_size
+                      for f in cache.get_files())
+    assert actual_size % fragment_size != 0, (
+        'Test succeeded by chance. Adjust get_solver_test_args() to produce '
+        'date not aligned with the files system fragment size.')
+
+    assert cache.get_size_in_bytes() % fragment_size == 0
+
+
 def test_decoder_cache_shrinking(tmpdir):
     cache_dir = str(tmpdir)
     solver_mock = SolverMock()

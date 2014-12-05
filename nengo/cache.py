@@ -10,7 +10,7 @@ import struct
 import numpy as np
 
 from nengo.rc import rc
-from nengo.utils.cache import bytes2human, human2bytes
+from nengo.utils.cache import byte_align, bytes2human, human2bytes
 from nengo.utils.compat import is_string, pickle, PY2
 from nengo.utils import nco
 
@@ -94,6 +94,7 @@ class DecoderCache(object):
         self.cache_dir = cache_dir
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
+        self._fragment_size = os.statvfs(self.cache_dir).f_frsize
 
     def get_files(self):
         """Returns all of the files in the cache.
@@ -114,7 +115,8 @@ class DecoderCache(object):
         """
         stats = (safe_stat(os.path.join(self.cache_dir, f))
                  for f in self.get_files())
-        return sum(st.st_size for st in stats if st is not None)
+        return sum(byte_align(st.st_size, self._fragment_size)
+                   for st in stats if st is not None)
 
     def get_size(self, in_bytes=False):
         """Returns the size of the cache with units as a string.
@@ -143,7 +145,8 @@ class DecoderCache(object):
             path = os.path.join(self.cache_dir, filename)
             stat = safe_stat(path)
             if stat is not None:
-                fileinfo.append((stat.st_atime, stat.st_size, path))
+                aligned_size = byte_align(stat.st_size, self._fragment_size)
+                fileinfo.append((stat.st_atime, aligned_size, path))
 
         # Remove the least recently accessed first
         fileinfo.sort()
