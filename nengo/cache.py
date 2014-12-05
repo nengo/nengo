@@ -118,7 +118,7 @@ class DecoderCache(object):
         return sum(byte_align(st.st_size, self._fragment_size)
                    for st in stats if st is not None)
 
-    def get_size(self, in_bytes=False):
+    def get_size(self):
         """Returns the size of the cache with units as a string.
 
         Returns
