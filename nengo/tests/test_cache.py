@@ -188,28 +188,6 @@ def test_decoder_cache_with_E_argument_to_solver(tmpdir):
     assert solver_info1 == solver_info2
 
 
-def test_decoder_cache_remove_orphans(tmpdir):
-    cache_dir = str(tmpdir)
-    cache = DecoderCache(cache_dir=cache_dir)
-    assert os.listdir(cache_dir) == []
-
-    # Create some files; one matching pair, two mismatches, and a random
-    def touch(fname):
-        path = os.path.join(cache_dir, fname)
-        with open(path, 'w'):
-            os.utime(path, None)
-    files = ['a.npy', 'a.pkl', 'b.npy', 'c.pkl', 'rando.txt']
-    for f in files:
-        touch(f)
-    assert sorted(os.listdir(cache_dir)) == files
-
-    cache.remove_orphans()
-    # This should do
-    files.remove('b.npy')
-    files.remove('c.pkl')
-    assert sorted(os.listdir(cache_dir)) == files
-
-
 class DummyA(object):
     def __init__(self, attr=0):
         self.attr = attr
@@ -263,7 +241,7 @@ def test_cache_works(tmpdir, Simulator, seed):
     assert len(os.listdir(cache_dir)) == 0
     Simulator(model, model=nengo.builder.Model(
         dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
-    assert len(os.listdir(cache_dir)) == 2
+    assert len(os.listdir(cache_dir)) == 1
 
 
 def calc_relative_timer_diff(t1, t2):

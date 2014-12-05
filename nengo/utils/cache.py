@@ -47,3 +47,12 @@ def human2bytes(s):
     for i, s in enumerate(symbols[1:]):
         prefix[s] = 1 << (i + 1) * 10
     return int(num * prefix[letter])
+
+
+def byte_align(size, alignment):
+    """Returns the int larger than ``size`` aligned to ``alginment`` bytes."""
+    mask = alignment - 1
+    if size & mask == 0:
+        return size
+    else:
+        return (size | mask) + 1

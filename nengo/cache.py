@@ -12,6 +12,7 @@ import numpy as np
 from nengo.rc import rc
 from nengo.utils.cache import bytes2human, human2bytes
 from nengo.utils.compat import is_string, pickle, PY2
+from nengo.utils import nco
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +85,7 @@ class DecoderCache(object):
         :func:`get_default_dir`, if `None`.
     """
 
-    _DECODER_EXT = '.npy'
-    _SOLVER_INFO_EXT = '.pkl'
+    _CACHE_EXT = '.nco'
 
     def __init__(self, read_only=False, cache_dir=None):
         self.read_only = read_only
@@ -102,8 +102,7 @@ class DecoderCache(object):
         -------
         list of (str, int) tuples
         """
-        is_cache_file = lambda f: (f.endswith(self._DECODER_EXT) or
-                                   f.endswith(self._SOLVER_INFO_EXT))
+        is_cache_file = lambda f: f.endswith(self._CACHE_EXT)
         return [f for f in os.listdir(self.cache_dir) if is_cache_file(f)]
 
     def get_size_in_bytes(self):
@@ -157,21 +156,6 @@ class DecoderCache(object):
             excess -= size
             safe_remove(path)
 
-        # We may have removed a decoder file but not solver_info file
-        # or vice versa, so we'll remove all orphans
-        self.remove_orphans()
-
-    def remove_orphans(self):
-        """Removes decoders that have no solver_info, and vice versa."""
-        for filename in self.get_files():
-            key, ext = os.path.splitext(filename)
-            decoder = self._get_decoder_path(key)
-            solver_info = self._get_solver_info_path(key)
-            if ext == self._DECODER_EXT and not os.path.exists(solver_info):
-                safe_remove(decoder)
-            elif ext == self._SOLVER_INFO_EXT and not os.path.exists(decoder):
-                safe_remove(solver_info)
-
     def invalidate(self):
         """Invalidates the cache (i.e. removes all cache files)."""
         for filename in self.get_files():
@@ -212,20 +196,17 @@ class DecoderCache(object):
                 E = defaults[args.index('E')]
 
             key = self._get_cache_key(solver, activities, targets, rng, E)
-            decoder_path = self._get_decoder_path(key)
-            solver_info_path = self._get_solver_info_path(key)
+            path = self._key2path(key)
             try:
-                decoders = np.load(decoder_path)
-                with open(solver_info_path, 'rb') as f:
-                    solver_info = pickle.load(f)
+                with open(path, 'rb') as f:
+                    solver_info, decoders = nco.read(f)
             except:
                 logger.info("Cache miss [{0}].".format(key))
                 decoders, solver_info = solver(
                     activities, targets, rng=rng, E=E)
                 if not self.read_only:
-                    np.save(decoder_path, decoders)
-                    with open(solver_info_path, 'wb') as f:
-                        pickle.dump(solver_info, f)
+                    with open(path, 'wb') as f:
+                        nco.write(f, solver_info, decoders)
             else:
                 logger.info(
                     "Cache hit [{0}]: Loaded stored decoders.".format(key))
@@ -256,11 +237,8 @@ class DecoderCache(object):
             h.update(np.ascontiguousarray(E).data)
         return h.hexdigest()
 
-    def _get_decoder_path(self, key):
-        return os.path.join(self.cache_dir, key + self._DECODER_EXT)
-
-    def _get_solver_info_path(self, key):
-        return os.path.join(self.cache_dir, key + self._SOLVER_INFO_EXT)
+    def _key2path(self, key):
+        return os.path.join(self.cache_dir, key + self._CACHE_EXT)
 
 
 class NoDecoderCache(object):
