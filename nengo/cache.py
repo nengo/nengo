@@ -103,8 +103,12 @@ class DecoderCache(object):
         -------
         list of (str, int) tuples
         """
-        is_cache_file = lambda f: f.endswith(self._CACHE_EXT)
-        return [f for f in os.listdir(self.cache_dir) if is_cache_file(f)]
+        files = []
+        for subdir in os.listdir(self.cache_dir):
+            path = os.path.join(self.cache_dir, subdir)
+            if os.path.isdir(path):
+                files.extend(os.path.join(path, f) for f in os.listdir(path))
+        return files
 
     def get_size_in_bytes(self):
         """Returns the size of the cache in bytes as an int.
@@ -113,8 +117,7 @@ class DecoderCache(object):
         -------
         int
         """
-        stats = (safe_stat(os.path.join(self.cache_dir, f))
-                 for f in self.get_files())
+        stats = (safe_stat(f) for f in self.get_files())
         return sum(byte_align(st.st_size, self._fragment_size)
                    for st in stats if st is not None)
 
@@ -141,17 +144,17 @@ class DecoderCache(object):
             limit = human2bytes(limit)
 
         fileinfo = []
-        for filename in self.get_files():
-            path = os.path.join(self.cache_dir, filename)
+        excess = -limit
+        for path in self.get_files():
             stat = safe_stat(path)
             if stat is not None:
                 aligned_size = byte_align(stat.st_size, self._fragment_size)
+                excess += aligned_size
                 fileinfo.append((stat.st_atime, aligned_size, path))
 
         # Remove the least recently accessed first
         fileinfo.sort()
 
-        excess = self.get_size_in_bytes() - limit
         for _, size, path in fileinfo:
             if excess <= 0:
                 break
@@ -161,8 +164,8 @@ class DecoderCache(object):
 
     def invalidate(self):
         """Invalidates the cache (i.e. removes all cache files)."""
-        for filename in self.get_files():
-            safe_remove(os.path.join(self.cache_dir, filename))
+        for path in self.get_files():
+            safe_remove(path)
 
     @staticmethod
     def get_default_dir():
@@ -241,7 +244,12 @@ class DecoderCache(object):
         return h.hexdigest()
 
     def _key2path(self, key):
-        return os.path.join(self.cache_dir, key + self._CACHE_EXT)
+        prefix = key[:2]
+        suffix = key[2:]
+        directory = os.path.join(self.cache_dir, prefix)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        return os.path.join(directory, suffix + self._CACHE_EXT)
 
 
 class NoDecoderCache(object):

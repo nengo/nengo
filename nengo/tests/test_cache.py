@@ -87,8 +87,8 @@ def test_corrupted_decoder_cache(tmpdir):
     assert SolverMock.n_calls[solver_mock] == 1
 
     # corrupt the cache
-    for filename in os.listdir(cache_dir):
-        with open(os.path.join(cache_dir, filename), 'w') as f:
+    for path in cache.get_files():
+        with open(path, 'w') as f:
             f.write('corrupted')
 
     cache.wrap_solver(solver_mock)(**get_solver_test_args())
@@ -116,8 +116,7 @@ def test_decoder_cache_size_includes_overhead(tmpdir):
     cache.wrap_solver(solver_mock)(**get_solver_test_args())
 
     fragment_size = os.statvfs(cache_dir).f_frsize
-    actual_size = sum(os.stat(os.path.join(cache_dir, f)).st_size
-                      for f in cache.get_files())
+    actual_size = sum(os.stat(p).st_size for p in cache.get_files())
     assert actual_size % fragment_size != 0, (
         'Test succeeded by chance. Adjust get_solver_test_args() to produce '
         'date not aligned with the files system fragment size.')
@@ -132,21 +131,20 @@ def test_decoder_cache_shrinking(tmpdir):
 
     cache = DecoderCache(cache_dir=cache_dir)
     cache.wrap_solver(solver_mock)(**get_solver_test_args())
-    limit = cache.get_size()
 
     # Ensure differing time stamps (depending on the file system the timestamp
     # resolution might be as bad as 1 day).
-    for filename in os.listdir(cache.cache_dir):
-        path = os.path.join(cache.cache_dir, filename)
+    for path in cache.get_files():
         timestamp = os.stat(path).st_atime
         timestamp -= 60 * 60 * 24 * 2  # 2 days
         os.utime(path, (timestamp, timestamp))
 
     cache.wrap_solver(another_solver)(**get_solver_test_args())
 
-    assert cache.get_size_in_bytes() > 0
+    cache_size = cache.get_size_in_bytes()
+    assert cache_size > 0
 
-    cache.shrink(limit)
+    cache.shrink(cache_size - 1)
 
     # check that older cached result was removed
     assert SolverMock.n_calls[solver_mock] == 1
