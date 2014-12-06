@@ -196,11 +196,8 @@ def test_unsupervised(Simulator, learning_rule_type, seed, rng, plt):
     assert not np.all(sim.data[trans_p][0] == sim.data[trans_p][-1])
 
 
-@pytest.mark.parametrize('learning_rule', [nengo.PES, nengo.BCM, nengo.Oja])
-def test_dt_dependence(Simulator, nl_nodirect, plt, learning_rule, seed, rng):
-    """Learning rules should work the same regardless of dt."""
-    with nengo.Network(seed=seed) as m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+def learning_net(learning_rule, net, rng):
+    with net:
         u = nengo.Node(output=1.0)
         pre = nengo.Ensemble(10, dimensions=1)
         post = nengo.Ensemble(10, dimensions=1)
@@ -220,6 +217,14 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, learning_rule, seed, rng):
                                     learning_rule_type=learning_rule())
         activity_p = nengo.Probe(pre.neurons, synapse=0.01)
         trans_p = nengo.Probe(conn, 'transform', synapse=.01, sample_every=.01)
+    return net, activity_p, trans_p
+
+
+@pytest.mark.parametrize('learning_rule', [nengo.PES, nengo.BCM, nengo.Oja])
+def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
+    """Learning rules should work the same regardless of dt."""
+    m, activity_p, trans_p = learning_net(
+        learning_rule, nengo.Network(seed=seed), rng)
 
     trans_data = []
     # Using dts greater near tau_ref (0.002 by default) causes learning to
@@ -247,6 +252,42 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, learning_rule, seed, rng):
 
     assert np.allclose(trans_data[0], trans_data[1], atol=1e-3)
     assert not np.all(sim.data[trans_p][0] == sim.data[trans_p][-1])
+
+
+@pytest.mark.parametrize('learning_rule', [nengo.PES, nengo.BCM, nengo.Oja])
+def test_reset(Simulator, learning_rule, plt, seed, rng):
+    """Make sure resetting learning rules resets all state."""
+    m, activity_p, trans_p = learning_net(
+        learning_rule, nengo.Network(seed=seed), rng)
+
+    sim = Simulator(m)
+    sim.run(0.1)
+    sim.run(0.2)
+
+    first_t = sim.trange()
+    first_t_trans = sim.trange(dt=0.01)
+    first_activity_p = np.array(sim.data[activity_p], copy=True)
+    first_trans_p = np.array(sim.data[trans_p], copy=True)
+
+    sim.reset()
+    sim.run(0.3)
+
+    plt.subplot(2, 1, 1)
+    plt.ylabel("Neural activity")
+    plt.plot(first_t, first_activity_p, c='b')
+    plt.plot(sim.trange(), sim.data[activity_p], c='g')
+    plt.subplot(2, 1, 2)
+    plt.ylabel("Connection weight")
+    plt.plot(first_t_trans, first_trans_p[..., 0], c='b')
+    plt.plot(sim.trange(dt=0.01), sim.data[trans_p][..., 0], c='g')
+
+    plt.saveas = "test_learning_rules.test_reset_%s.pdf" % (
+        learning_rule.__name__)
+
+    assert np.all(sim.trange() == first_t)
+    assert np.all(sim.trange(dt=0.01) == first_t_trans)
+    assert np.all(sim.data[activity_p] == first_activity_p)
+    assert np.all(sim.data[trans_p] == first_trans_p)
 
 
 def test_learningruletypeparam():

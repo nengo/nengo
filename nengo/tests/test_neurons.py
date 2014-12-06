@@ -4,10 +4,12 @@ import pytest
 
 import nengo
 from nengo.neurons import NeuronTypeParam
+from nengo.solvers import LstsqL2nz
 from nengo.utils.ensemble import tuning_curves
+from nengo.utils.functions import whitenoise
 from nengo.utils.matplotlib import implot
 from nengo.utils.neurons import rates_kernel
-from nengo.utils.numpy import rms
+from nengo.utils.numpy import rms, rmse
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +182,76 @@ def test_alif(Simulator, plt):
     ax.set_ylabel('input')
 
     assert rel_rmse < 0.07
+
+
+def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
+    """Neurons should not wildly change with different dt."""
+    noise = whitenoise(0.1, 5, dimensions=2, seed=seed + 1)
+    with nengo.Network(seed=seed) as m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        u = nengo.Node(output=noise)
+        pre = nengo.Ensemble(60, dimensions=2)
+        square = nengo.Ensemble(60, dimensions=2)
+        nengo.Connection(u, pre)
+        nengo.Connection(pre, square, function=lambda x: x ** 2)
+
+        activity_p = nengo.Probe(square.neurons, synapse=.05,
+                                 sample_every=0.001)
+        out_p = nengo.Probe(square, synapse=.05, sample_every=0.001)
+
+    activity_data = []
+    out_data = []
+    dts = (0.0001, 0.001)
+    colors = ('b', 'g', 'r')
+    for c, dt in zip(colors, dts):
+        sim = Simulator(m, dt=dt)
+        sim.run(0.1)
+        t = sim.trange(dt=0.001)
+        activity_data.append(sim.data[activity_p])
+        out_data.append(sim.data[out_p])
+        plt.subplot(2, 1, 1)
+        plt.plot(t, sim.data[out_p], c=c)
+        plt.subplot(2, 1, 2)
+        # Just plot 5 neurons
+        plt.plot(t, sim.data[activity_p][..., :5], c=c)
+
+    plt.subplot(2, 1, 1)
+    plt.xlim(right=t[-1])
+    plt.ylabel("Decoded output")
+    plt.subplot(2, 1, 2)
+    plt.xlim(right=t[-1])
+    plt.ylabel("Neural activity")
+
+    assert rmse(activity_data[0], activity_data[1]) < ((1. / dt) * 0.01)
+    assert np.allclose(out_data[0], out_data[1], atol=0.05)
+
+
+def test_reset(Simulator, nl_nodirect, seed):
+    """Make sure resetting actually resets."""
+    noise = whitenoise(0.1, 5, dimensions=2, seed=seed + 1)
+    m = nengo.Network(seed=seed)
+    with m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        u = nengo.Node(output=noise)
+        ens = nengo.Ensemble(60, dimensions=2)
+        square = nengo.Ensemble(60, dimensions=2)
+        nengo.Connection(u, ens)
+        nengo.Connection(ens, square, function=lambda x: x ** 2,
+                         solver=LstsqL2nz(weights=True))
+        square_p = nengo.Probe(square, synapse=0.1)
+
+    sim = Simulator(m)
+    sim.run(0.1)
+    sim.run(0.2)
+
+    first_t = sim.trange()
+    first_square_p = np.array(sim.data[square_p], copy=True)
+
+    sim.reset()
+    sim.run(0.3)
+
+    assert np.all(sim.trange() == first_t)
+    assert np.all(sim.data[square_p] == first_square_p)
 
 
 def test_neurontypeparam():
