@@ -86,6 +86,8 @@ class DecoderCache(object):
     """
 
     _CACHE_EXT = '.nco'
+    _LEGACY = 'legacy.txt'
+    _LEGACY_VERSION = 0
 
     def __init__(self, read_only=False, cache_dir=None):
         self.read_only = read_only
@@ -95,6 +97,7 @@ class DecoderCache(object):
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
         self._fragment_size = os.statvfs(self.cache_dir).f_frsize
+        self._remove_legacy_files()
 
     def get_files(self):
         """Returns all of the files in the cache.
@@ -166,6 +169,39 @@ class DecoderCache(object):
         """Invalidates the cache (i.e. removes all cache files)."""
         for path in self.get_files():
             safe_remove(path)
+
+    def _check_legacy_file(self):
+        """Checks if the legacy file is up to date."""
+        legacy_file = os.path.join(self.cache_dir, self._LEGACY)
+        if os.path.exists(legacy_file):
+            with open(legacy_file, 'r') as lf:
+                version = int(lf.read().strip())
+        else:
+            version = -1
+        return version == self._LEGACY_VERSION
+
+    def _write_legacy_file(self):
+        """Writes a legacy file, indicating that legacy files do not exist."""
+        legacy_file = os.path.join(self.cache_dir, self._LEGACY)
+        with open(legacy_file, 'w') as lf:
+            lf.write("%d\n" % self._LEGACY_VERSION)
+
+    def _remove_legacy_files(self):
+        """Remove files from now invalid locations in the cache.
+
+        This will not remove any files if a legacy file exists and is
+        up to date. Once legacy files are removed, a legacy file will be
+        written to avoid a costly ``os.listdir`` after calling this.
+        """
+        if self._check_legacy_file():
+            return
+
+        for f in os.listdir(self.cache_dir):
+            path = os.path.join(self.cache_dir, f)
+            if not os.path.isdir(path):
+                safe_remove(path)
+
+        self._write_legacy_file()
 
     @staticmethod
     def get_default_dir():
