@@ -14,6 +14,25 @@ class Distribution(object):
     """
 
     def sample(self, n, d=None, rng=np.random):
+        """Samples the distribution.
+
+        Parameters
+        ----------
+        n : int
+            Number samples to take.
+        d : int or None, optional
+            The number of dimensions to return. If this is an int, the return
+            value will be of shape ``(n, d)``. If None (default), the return
+            value will be of shape ``(n,)``.
+        rng : RandomState, optional
+            Random number generator state.
+
+        Returns
+        -------
+        ndarray
+            Samples as a 1d or 2d array depending on ``d``. The second
+            dimension enumerates the dimensions of the process.
+        """
         raise NotImplementedError("Distributions should implement sample.")
 
 

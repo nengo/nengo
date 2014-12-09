@@ -167,7 +167,7 @@ def test_noise(RefSimulator):
     mean, std = 0.1, 0.8
     noise = Signal(np.zeros(n), name="noise")
     process = nengo.utils.processes.SampledProcess(
-        nengo.utils.distributions.Gaussian(mean, std), n)
+        nengo.utils.distributions.Gaussian(mean, std))
 
     m = Model(dt=0.001)
     m.operators += [Reset(noise), SimNoise(noise, process)]

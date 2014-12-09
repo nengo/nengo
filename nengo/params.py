@@ -1,5 +1,4 @@
 import collections
-from copy import copy
 import weakref
 
 import numpy as np
@@ -200,32 +199,15 @@ class DistributionParam(NdarrayParam):
 class StochasticProcessParam(Parameter):
     """Can be a StochasticProcess."""
 
-    def __init__(self, default, dimensions, optional=False, readonly=False):
-        super(StochasticProcessParam, self).__init__(
-            default, optional, readonly)
-        self.dimensions = dimensions
+    def validate(self, instance, process):
+        super(StochasticProcessParam, self).validate(instance, process)
 
-    def __set__(self, instance, process):
-        super(StochasticProcessParam, self).__set__(instance, copy(process))
-
-    def validate(self, instance, dist):
-        super(StochasticProcessParam, self).validate(instance, dist)
-
-        if dist is not None and not isinstance(dist, StochasticProcess):
+        if process is not None and not isinstance(process, StochasticProcess):
             raise ValueError(
                 "Must be StochasticProcess (got type {0}).".format(
-                    dist.__class__.__name__))
+                    process.__class__.__name__))
 
-        if self.dimensions is None or is_integer(self.dimensions):
-            desired = self.dimensions
-        else:
-            desired = getattr(instance, self.dimensions)
-        if dist is not None and dist.dimensions != desired:
-            raise ValueError(
-                "Dimensionality of {0} does not match {1}.".format(
-                    dist.dimensions, desired))
-
-        return dist
+        return process
 
 
 FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
