@@ -24,7 +24,12 @@ Release History
 
 **Improvements**
 
-- SqrtBeta distribution gives distribution of semantic pointer elements.
+- ``EnsembleArray.add_output`` now accepts a list of functions
+  to be computed by each ensemble.
+  (`#562 <https://github.com/nengo/nengo/issues/562>`_,
+  `#580 <https://github.com/nengo/nengo/pull/580>`_)
+- Added ``SqrtBeta`` distribution, which describes the distribution
+  of semantic pointer elements.
   (`#414 <https://github.com/nengo/nengo/issues/414>`_,
   `#430 <https://github.com/nengo/nengo/pull/430>`_)
 

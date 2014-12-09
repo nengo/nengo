@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def test_multidim(Simulator, plt, seed, rng):
-    """Test an ensemble array with multiple dimensions per ensemble"""
+    """Tests with multiple dimensions per ensemble"""
     dims = 3
     n_neurons = 60
     radius = 1.0
@@ -86,6 +86,51 @@ def _mmul_transforms(A_shape, B_shape, C_dim):
                 transformB[tmp * 2 + 1][k + j * B_shape[1]] = 1
 
     return transformA, transformB
+
+
+def test_multifunc(Simulator, plt, seed, rng):
+    """Tests with different functions computed by each ensemble."""
+    dims = 3
+    n_neurons = 60
+
+    inp = rng.uniform(low=-0.7, high=0.7, size=dims)
+    functions = [lambda x: [x*2],
+                 lambda x: [-x, -x*2],
+                 lambda x: [.5*x]]
+    output = []
+    for i in range(len(functions)):
+        output.extend(functions[i](inp[i]))
+
+    model = nengo.Network(seed=seed)
+    with model:
+        inp_node = nengo.Node(inp)
+        ea = nengo.networks.EnsembleArray(n_neurons, dims)
+        ea_funcs = ea.add_output('multiple functions', function=functions)
+
+        nengo.Connection(inp_node, ea.input)
+
+        ea_p = nengo.Probe(ea.output, synapse=0.03)
+        ea_funcs_p = nengo.Probe(ea_funcs, synapse=0.03)
+
+    sim = Simulator(model)
+    sim.run(0.4)
+
+    t = sim.trange()
+
+    def plot(sim, expected, probe, title=""):
+        simdata = sim.data[probe]
+        colors = ['b', 'g', 'r', 'c']
+        for i in range(simdata.shape[1]):
+            plt.axhline(expected[i], ls='--', color=colors[i % 4])
+            plt.plot(t, simdata[:, i], color=colors[i % 4])
+        plt.xticks(np.linspace(0, 0.4, 5))
+        plt.xlim(right=t[-1])
+        plt.title(title)
+
+    plt.subplot(121)
+    plot(sim, inp, ea_p, title="A")
+    plt.subplot(122)
+    plot(sim, output, ea_funcs_p, title="B")
 
 
 def test_matrix_mul(Simulator, plt, seed):

@@ -100,20 +100,38 @@ class EnsembleArray(nengo.Network):
 
     @with_self
     def add_output(self, name, function, synapse=None, **conn_kwargs):
-        if function is None:
-            function_d = self.dimensions_per_ensemble
+        if isinstance(function, list):
+            func_sizes = np.zeros(len(function)+1)
+            for i, func in enumerate(function):
+                func_sizes[i+1] = np.asarray(
+                    func(np.zeros(self.dimensions_per_ensemble))
+                ).size
+            dim = int(np.sum(func_sizes))
+            output = nengo.Node(output=None, size_in=dim, label=name)
+            setattr(self, name, output)
+
+            for i, e in enumerate(self.ea_ensembles):
+                dim_index_start = np.sum(func_sizes[:(i+1)])
+                dim_index_end = np.sum(func_sizes[:(i+2)])
+                nengo.Connection(
+                    e, output[dim_index_start:dim_index_end],
+                    function=function[i], synapse=synapse, **conn_kwargs
+                )
         else:
-            func_output = function(np.zeros(self.dimensions_per_ensemble))
-            function_d = np.asarray(func_output).size
+            if function is None:
+                function_d = self.dimensions_per_ensemble
+            else:
+                func_output = function(np.zeros(self.dimensions_per_ensemble))
+                function_d = np.asarray(func_output).size
 
-        dim = self.n_ensembles * function_d
-        output = nengo.Node(output=None, size_in=dim, label=name)
-        setattr(self, name, output)
+            dim = self.n_ensembles * function_d
+            output = nengo.Node(output=None, size_in=dim, label=name)
+            setattr(self, name, output)
 
-        for i, e in enumerate(self.ea_ensembles):
-            nengo.Connection(
-                e, output[i * function_d:(i + 1) * function_d],
-                function=function, synapse=synapse, **conn_kwargs)
+            for i, e in enumerate(self.ea_ensembles):
+                nengo.Connection(
+                    e, output[i * function_d:(i + 1) * function_d],
+                    function=function, synapse=synapse, **conn_kwargs)
         return output
 
     @property
