@@ -1,8 +1,15 @@
 from nengo.base import NengoObject, ObjView
 from nengo.dists import Uniform, UniformHypersphere
 from nengo.neurons import LIF, NeuronTypeParam, Direct
-from nengo.params import (
+from nengo.params import (Parameter,
     Default, DistributionParam, IntParam, ListParam, NumberParam, StringParam)
+from nengo.processes import StochasticProcess
+
+class ProcessParam(Parameter):
+    def validate(self, instance, process):
+        if process is not None and not isinstance(process, StochasticProcess):
+            raise ValueError("Must be a StochasticProcess; got '%s'" % process)
+        super(ProcessParam, self).validate(instance, process)
 
 
 class Ensemble(NengoObject):
@@ -66,7 +73,7 @@ class Ensemble(NengoObject):
     gain = DistributionParam(default=None,
                              optional=True,
                              sample_shape=('n_neurons',))
-    noise = DistributionParam(default=None, optional=True, sample_shape=(-1,))
+    noise = ProcessParam(default=None, optional=True)
     seed = IntParam(default=None, optional=True)
     label = StringParam(default=None, optional=True)
     probeable = ListParam(default=['decoded_output', 'input'])

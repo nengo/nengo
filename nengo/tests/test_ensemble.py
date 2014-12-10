@@ -5,7 +5,7 @@ import pytest
 
 import nengo
 import nengo.utils.numpy as npext
-from nengo.dists import Choice
+from nengo.dists import Choice, Uniform
 from nengo.utils.testing import warns, allclose
 
 logger = logging.getLogger(__name__)
@@ -278,39 +278,35 @@ def test_gain_bias(Simulator):
     assert np.array_equal(bias, sim.data[a].bias)
 
 
-def test_noise(Simulator, nl_nodirect, seed, plt):
+from nengo.processes import GaussianProcess
+def test_noise(Simulator, seed, plt):
     """Ensure that setting Ensemble.noise generates noise."""
     with nengo.Network(seed=seed) as model:
-        inp, gain, bias = 1, 5, 2
-        neg_noise, pos_noise = -4, 20
-        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        inp, gain, bias = -0.2, 5, 2
+        model.config[nengo.Ensemble].neuron_type = nengo.LIF()
         model.config[nengo.Ensemble].encoders = Choice([[1]])
-        model.config[nengo.Ensemble].gain = Choice([gain])
-        model.config[nengo.Ensemble].bias = Choice([bias])
+        model.config[nengo.Ensemble].intercepts = Choice([0])
+        model.config[nengo.Ensemble].max_rates = Choice([100])
         const = nengo.Node(output=inp)
-        pos = nengo.Ensemble(1, 1, noise=Choice([pos_noise]))
-        normal = nengo.Ensemble(1, 1)
-        neg = nengo.Ensemble(1, 1, noise=Choice([neg_noise]))
-        nengo.Connection(const, pos)
-        nengo.Connection(const, normal)
-        nengo.Connection(const, neg)
-        pos_p = nengo.Probe(pos.neurons, synapse=0.1)
-        normal_p = nengo.Probe(normal.neurons, synapse=0.1)
-        neg_p = nengo.Probe(neg.neurons, synapse=0.1)
-    sim = Simulator(model)
-    sim.run(0.06)
+        # ens = nengo.Ensemble(10, 1)
+        ens = nengo.Ensemble(10, 1, noise=GaussianProcess(0.01, synapse=nengo.synapses.Alpha(0.005)))
+
+        nengo.Connection(const, ens)
+        voltage_p = nengo.Probe(ens.neurons, 'voltage')
+        spikes_p = nengo.Probe(ens.neurons)
+
+    sim = Simulator(model, dt=0.001)
+    sim.run(1.)
 
     t = sim.trange()
-    plt.title("input=%d, bias=%d, gain=%d" % (inp, bias, gain))
-    plt.plot(t, sim.data[pos_p], c='b', label="noise=%d" % pos_noise)
-    plt.plot(t, sim.data[normal_p], c='k', label="no noise")
-    plt.plot(t, sim.data[neg_p], c='r', label="noise=%d" % neg_noise)
-    plt.legend(loc="best")
+    plt.subplot(211)
+    plt.plot(t, sim.data[voltage_p])
+    plt.subplot(212)
+    plt.plot(t, sim.data[spikes_p])
 
-    assert np.all(sim.data[pos_p] >= sim.data[normal_p])
-    assert np.all(sim.data[normal_p] >= sim.data[neg_p])
-    assert not np.all(sim.data[normal_p] == sim.data[pos_p])
-    assert not np.all(sim.data[normal_p] == sim.data[neg_p])
+    # y = sim.data[voltage_p]
+    # print npext.rms(y[t > 0.2] - y[t > 0.2].mean(), axis=0)
+
 
 if __name__ == "__main__":
     nengo.log(debug=True)
