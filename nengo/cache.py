@@ -96,7 +96,10 @@ class DecoderCache(object):
         self.cache_dir = cache_dir
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
-        self._fragment_size = os.statvfs(self.cache_dir).f_frsize
+        try:
+            self._fragment_size = os.statvfs(self.cache_dir).f_frsize
+        except AttributeError:  # no statvfs on Windows
+            self._fragment_size = 4096  # correct value in 99% of cases
         self._remove_legacy_files()
 
     def get_files(self):
