@@ -7,68 +7,9 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.utils.numpy import filt, filtfilt, lti, meshgrid_nd
+from nengo.utils.numpy import meshgrid_nd
 
 logger = logging.getLogger(__name__)
-
-
-def test_filt(plt, rng):
-    dt = 1e-3
-    tend = 3.
-    t = dt * np.arange(tend / dt)
-    nt = len(t)
-
-    tau = 0.1 / dt
-
-    u = rng.normal(size=nt)
-
-    tk = np.arange(0, 30 * tau)
-    k = 1. / tau * np.exp(-tk / tau)
-    x = np.convolve(u, k, mode='full')[:nt]
-
-    y = filt(u, tau)
-
-    plt.plot(t, x)
-    plt.plot(t, y, '--')
-
-    assert np.allclose(x, y, atol=1e-3, rtol=1e-2)
-
-
-def test_filtfilt(plt, rng):
-    dt = 1e-3
-    tend = 3.
-    t = dt * np.arange(tend / dt)
-    nt = len(t)
-
-    tau = 0.03 / dt
-
-    u = rng.normal(size=nt)
-    x = filt(u, tau)
-    x = filt(x[::-1], tau, x0=x[-1])[::-1]
-    y = filtfilt(u, tau)
-
-    plt.plot(t, x)
-    plt.plot(t, y, '--')
-
-    assert np.allclose(x, y)
-
-
-def test_lti_lowpass(rng):
-    dt = 1e-3
-    tend = 3.
-    t = dt * np.arange(tend / dt)
-    nt = len(t)
-
-    tau = 1e-2
-
-    d = -np.expm1(-dt / tau)
-    a = [d]
-    b = [1, d - 1]
-
-    u = rng.normal(size=(nt, 10))
-    x = filt(u, tau / dt)
-    y = lti(u, (a, b))
-    assert np.allclose(x, y)
 
 
 def test_meshgrid_nd():

@@ -8,4 +8,4 @@ from .network import build_network
 from .neurons import build_lif, build_lifrate, build_alif, build_alifrate
 from .node import build_node
 from .probe import build_probe
-from .synapses import build_filter, build_lowpass, build_alpha
+from .synapses import build_synapse

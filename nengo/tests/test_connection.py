@@ -7,7 +7,6 @@ import nengo
 from nengo.connection import ConnectionSolverParam
 from nengo.solvers import LstsqL2
 from nengo.utils.functions import piecewise
-from nengo.utils.numpy import filtfilt
 from nengo.utils.testing import allclose
 
 logger = logging.getLogger(__name__)
@@ -284,7 +283,7 @@ def test_weights(Simulator, nl, plt, seed):
     t = sim.trange()
     x = func(t).T
     y = np.dot(x, transform.T)
-    z = filtfilt(sim.data[bp], 10, axis=0)
+    z = nengo.synapses.filtfilt(sim.data[bp], 0.005, dt=sim.dt)
     assert allclose(t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt)
 
 
@@ -485,7 +484,7 @@ def test_function_output_size(Simulator, plt, seed):
     sim = Simulator(model)
     sim.run(0.2)
     t = sim.trange()
-    x = nengo.utils.numpy.filt(sim.data[up].clip(0, np.inf), 0.03 / sim.dt)
+    x = nengo.synapses.filt(sim.data[up].clip(0, np.inf), 0.03, dt=sim.dt)
     y = sim.data[bp]
 
     plt.plot(t, x, 'k')

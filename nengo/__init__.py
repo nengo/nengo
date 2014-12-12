@@ -28,7 +28,7 @@ from .params import Default
 from .probe import Probe
 from .rc import rc, RC_DEFAULTS
 from .simulator import Simulator
-from .synapses import Lowpass
+from .synapses import Alpha, LinearFilter, Lowpass
 from .utils.logging import log
 from . import networks
 from . import utils

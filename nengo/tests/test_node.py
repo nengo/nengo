@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.utils.numpy import filt
 from nengo.utils.testing import warns
 
 
@@ -121,7 +120,7 @@ def test_passthrough_filter(Simulator, plt, seed):
 
     t = sim.trange()
     x = sim.data[up]
-    y = filt(x, synapse / dt)
+    y = nengo.synapses.filt(x, synapse, dt=dt)
     z = sim.data[vp]
 
     plt.plot(t, x)

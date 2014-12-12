@@ -13,7 +13,7 @@ import pytest
 import nengo
 from nengo.dists import UniformHypersphere
 from nengo.utils.compat import range
-from nengo.utils.numpy import filtfilt, rms, norm
+from nengo.utils.numpy import rms, norm
 from nengo.utils.testing import allclose, Timer
 from nengo.solvers import (
     cholesky, conjgrad, block_conjgrad, conjgrad_scipy, lsmr_scipy,
@@ -235,7 +235,6 @@ def test_compare_solvers(Simulator, nl_nodirect, plt, seed):
         Lstsq(), LstsqNoise(), LstsqL2(), LstsqL2nz(), LstsqL1()]
     weight_solvers = [LstsqL1(weights=True), LstsqDrop(weights=True)]
 
-    dt = 1e-3
     tfinal = 4
 
     def input_function(t):
@@ -258,14 +257,14 @@ def test_compare_solvers(Simulator, nl_nodirect, plt, seed):
             names.append("%s(%s)" % (
                 solver.__class__.__name__, 'w' if solver.weights else 'd'))
 
-    sim = Simulator(model, dt=dt)
+    sim = Simulator(model)
     sim.run(tfinal)
     t = sim.trange()
 
     # ref = sim.data[up]
-    ref = filtfilt(sim.data[ap], 20)
+    ref = nengo.synapses.filtfilt(sim.data[ap], 0.02, dt=sim.dt)
     outputs = np.array([sim.data[probe][:, 0] for probe in probes]).T
-    outputs_f = filtfilt(outputs, 0.02 / dt, axis=0)
+    outputs_f = nengo.synapses.filtfilt(outputs, 0.02, dt=sim.dt)
 
     close = allclose(t, ref, outputs_f,
                      atol=0.05, rtol=0, buf=0.1, delay=0.007,
@@ -286,7 +285,6 @@ def test_regularization(Simulator, nl_nodirect, plt):
     filters = np.linspace(0, 0.03, 11)
 
     buf = 0.2  # buffer for initial transients
-    dt = 1e-3
     tfinal = 3 + buf
 
     def input_function(t):
@@ -312,7 +310,7 @@ def test_regularization(Simulator, nl_nodirect, plt):
                         probes[i, j, k, l] = nengo.Probe(
                             a, solver=Solver(reg=reg), synapse=synapse)
 
-    sim = Simulator(model, dt=dt)
+    sim = Simulator(model)
     sim.run(tfinal)
     t = sim.trange()
 
@@ -407,7 +405,6 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
     n = 100
     d = 5
     filter = 0.08
-    dt = 1e-3
 
     eval_points = np.logspace(np.log10(300), np.log10(5000), 11)
     eval_points = np.round(eval_points).astype('int')
@@ -439,12 +436,12 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
                 ap = nengo.Probe(a)
 
             with Timer() as timer:
-                sim = Simulator(model, dt=dt)
+                sim = Simulator(model)
             sim.run(10 * filter)
 
             t = sim.trange()
-            xt = filtfilt(sim.data[up], filter / dt)
-            yt = filtfilt(sim.data[ap], filter / dt)
+            xt = nengo.synapses.filtfilt(sim.data[up], filter, dt=sim.dt)
+            yt = nengo.synapses.filtfilt(sim.data[ap], filter, dt=sim.dt)
             t0 = 5 * filter
             t1 = 7 * filter
             tmask = (t > t0) & (t < t1)
