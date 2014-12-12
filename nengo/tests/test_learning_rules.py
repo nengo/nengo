@@ -250,7 +250,7 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
     plt.saveas = "test_learning_rules.test_dt_dependence_%s.pdf" % (
         learning_rule.__name__)
 
-    assert np.allclose(trans_data[0], trans_data[1], atol=1e-3)
+    assert np.allclose(trans_data[0], trans_data[1], atol=2e-3)
     assert not np.all(sim.data[trans_p][0] == sim.data[trans_p][-1])
 
 

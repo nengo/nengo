@@ -1,8 +1,10 @@
 import hashlib
+import os
 
 import numpy as np
 import pytest
 
+import nengo
 import nengo.utils.numpy as npext
 from nengo.neurons import Direct, LIF, LIFRate, RectifiedLinear, Sigmoid
 from nengo.rc import rc
@@ -65,11 +67,17 @@ def plt(request):
 
 
 def function_seed(function, mod=0):
-    # take start of md5 hash of function file and name, should be pretty random
     c = function.__code__
-    to_hash = ensure_bytes(c.co_filename + c.co_name)
-    i = int(hashlib.md5(to_hash).hexdigest()[:15], 16)
-    return (test_seed + i + mod) % npext.maxint
+
+    # get function file path relative to Nengo directory root
+    nengo_path = os.path.abspath(os.path.dirname(nengo.__file__))
+    path = os.path.relpath(c.co_filename, start=nengo_path)
+
+    # take start of md5 hash of function file and name, should be unique
+    hash_list = os.path.normpath(path).split(os.path.sep) + [c.co_name]
+    hash_string = ensure_bytes('/'.join(hash_list))
+    i = int(hashlib.md5(hash_string).hexdigest()[:15], 16)
+    return (i + mod) % npext.maxint
 
 
 @pytest.fixture
@@ -78,8 +86,8 @@ def rng(request):
 
     This should be used in lieu of np.random because we control its seed.
     """
-    # add 1 to seed to be different from network seed
-    seed = function_seed(request.function, mod=1)
+    # add 1 to seed to be different from `seed` fixture
+    seed = function_seed(request.function, mod=test_seed + 1)
     return np.random.RandomState(seed)
 
 
@@ -90,7 +98,7 @@ def seed(request):
     This should be used in lieu of an integer seed so that we can ensure that
     tests are not dependent on specific seeds.
     """
-    return function_seed(request.function)
+    return function_seed(request.function, mod=test_seed)
 
 
 def pytest_generate_tests(metafunc):
