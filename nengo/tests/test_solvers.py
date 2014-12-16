@@ -122,8 +122,8 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
 
 @pytest.mark.optional
 @pytest.mark.parametrize('Solver', [LstsqL1])
-def test_decoder_solver_extra(Solver):
-    test_decoder_solver(Solver)
+def test_decoder_solver_extra(Solver, plt, rng):
+    test_decoder_solver(Solver, plt, rng)
 
 
 @pytest.mark.parametrize('Solver', [Lstsq, LstsqL2, LstsqL2nz])
@@ -228,7 +228,7 @@ def test_subsolvers_L1(rng):
 
 
 @pytest.mark.benchmark
-def test_compare_solvers(Simulator, nl_nodirect, plt, seed):
+def test_compare_solvers(Simulator, plt, seed):
 
     N = 70
     decoder_solvers = [
@@ -242,7 +242,6 @@ def test_compare_solvers(Simulator, nl_nodirect, plt, seed):
 
     model = nengo.Network(seed=seed)
     with model:
-        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=input_function)
         a = nengo.Ensemble(N, dimensions=1)
         nengo.Connection(u, a)
@@ -267,7 +266,7 @@ def test_compare_solvers(Simulator, nl_nodirect, plt, seed):
     outputs_f = nengo.synapses.filtfilt(outputs, 0.02, dt=sim.dt)
 
     close = allclose(t, ref, outputs_f,
-                     atol=0.05, rtol=0, buf=0.1, delay=0.007,
+                     atol=0.07, rtol=0, buf=0.1, delay=0.007,
                      plt=plt, labels=names, individual_results=True)
 
     for name, c in zip(names, close):

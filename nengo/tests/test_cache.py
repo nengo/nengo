@@ -282,7 +282,7 @@ def test_cache_performance(tmpdir, Simulator, seed):
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
 
     assert calc_relative_timer_diff(t_no_cache, t_cache_miss) < 0.1
-    assert calc_relative_timer_diff(t_cache_hit, t_no_cache) < 0.4
+    assert calc_relative_timer_diff(t_cache_hit, t_no_cache) > 0.4
 
 
 if __name__ == "__main__":
