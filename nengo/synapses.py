@@ -71,8 +71,8 @@ class LinearFilter(Synapse):
             output -= den[k] * yk
         y.appendleft(np.array(output))
 
-    def make_step(self, dt, output):
-        num, den, _ = cont2discrete((self.num, self.den), dt, method='zoh')
+    def make_step(self, dt, output, method='zoh'):
+        num, den, _ = cont2discrete((self.num, self.den), dt, method=method)
         num = num.flatten()
         num = num[1:] if num[0] == 0 else num
         den = den[1:]  # drop first element (equal to 1)
