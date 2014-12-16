@@ -1,3 +1,18 @@
+include *.py
 include *.rst
-recursive-include docs *.rst
-recursive-include nengo-data *
+include *.sh
+include *.txt
+
+# Directories to include
+graft benchmarks
+graft docs
+graft examples
+graft nengo-data
+
+# Subdirectories to exclude, if they exist
+prune docs/_build
+
+# Patterns to exclude from any directory
+global-exclude .git
+global-exclude .ipynb_checkpoints
+global-exclude *.pyc *.pyo *.pyd
