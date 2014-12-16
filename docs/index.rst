@@ -53,6 +53,7 @@ how we develop Nengo, and to see how you can help.
    nef_minimal
    old_api
    contributing
+   releasing
    history
 
 Indices and tables

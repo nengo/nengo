@@ -12,6 +12,8 @@ Additionally, '-dev' will be added to the version unless the code base
 represents a release version. Commits for which the version doesn't have
 '-dev' should be git tagged with the version.
 
+Note that RC tags should only be used for release commits;
+the version after 2.0.0-rc1 should be 2.0.0-dev, **not** 2.0.0-rc2-dev.
 """
 
 name = "nengo"
