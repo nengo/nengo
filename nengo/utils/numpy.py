@@ -89,3 +89,10 @@ def rmse(x, y, axis=None, keepdims=False):
         newer versions of Numpy (>= 1.7).
     """
     return rms(x - y, axis=axis, keepdims=keepdims)
+
+
+if hasattr(np.fft, 'rfftfreq'):
+    rfftfreq = np.fft.rfftfreq
+else:
+    def rfftfreq(n, d=1.0):
+        return np.abs(np.fft.fftfreq(n=n, d=d)[:n // 2 + 1])

@@ -6,6 +6,7 @@ import numpy as np
 
 import nengo
 from nengo.utils.compat import range
+from nengo.utils.numpy import rfftfreq
 
 
 class StochasticProcess(object):
@@ -132,7 +133,7 @@ class WhiteNoise(StochasticProcess):
         coefficients[:, 0] = 0.
         coefficients[:, -1].imag = 0.
         if self.high is not None:
-            set_to_zero = np.fft.rfftfreq(2 * n_coefficients, d=dt) > self.high
+            set_to_zero = rfftfreq(2 * n_coefficients, d=dt) > self.high
             coefficients[:, set_to_zero] = 0.
             power_correction = np.sqrt(
                 1. - np.sum(set_to_zero, dtype=float) / n_coefficients)

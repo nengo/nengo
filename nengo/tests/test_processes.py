@@ -6,6 +6,7 @@ import pytest
 import nengo
 from nengo.dists import Distribution, Gaussian
 from nengo.processes import BrownNoise, StochasticProcess, WhiteNoise
+from nengo.utils.numpy import rfftfreq
 
 
 class DistributionMock(Distribution):
@@ -53,7 +54,7 @@ def test_brownnoise(rng, plt):
 
 
 def psd(values, dt=0.001):
-    freq = np.fft.rfftfreq(values.shape[0], d=dt)
+    freq = rfftfreq(values.shape[0], d=dt)
     power = 2. * np.std(np.abs(np.fft.rfft(
         values, axis=0)), axis=1) / np.sqrt(values.shape[0])
     return freq, power
@@ -131,7 +132,7 @@ def test_whitenoise_high(high, rng, plt):
     plt.saveas = 'test_processes.test_whitenoise_high_%d.pdf' % high
 
     assert np.allclose(np.std(values, axis=1), rms, rtol=0.15)
-    assert np.all(val_psd[np.fft.rfftfreq(t, dt) > high] < rms * 0.5)
+    assert np.all(val_psd[rfftfreq(t, dt) > high] < rms * 0.5)
 
 
 def test_whitenoise_dt(rng, plt):
@@ -156,7 +157,7 @@ def test_whitenoise_dt(rng, plt):
     plt.xlim(right=high * 2.0)
 
     assert np.allclose(np.std(values, axis=1), rms, rtol=0.15)
-    assert np.all(val_psd[np.fft.rfftfreq(t, dt) > high] < rms * 0.5)
+    assert np.all(val_psd[rfftfreq(t, dt) > high] < rms * 0.5)
 
 
 def test_sampling_shape():
