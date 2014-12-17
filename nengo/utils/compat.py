@@ -75,7 +75,8 @@ def is_iterable(obj):
 
 
 def is_number(obj, check_complex=False):
-    types = (float, complex) if check_complex else (float,)
+    types = ((float, complex, np.number) if check_complex else
+             (float, np.floating))
     return is_integer(obj) or isinstance(obj, types)
 
 
