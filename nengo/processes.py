@@ -74,7 +74,7 @@ class StochasticProcess(object):
 
 
 class BrownNoise(StochasticProcess):
-    """A Brown noise process; i.e., a Weiner process."""
+    """A Brown noise process; i.e., a Wiener process."""
 
     def __init__(self):
         pass
