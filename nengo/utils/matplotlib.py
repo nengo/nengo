@@ -89,7 +89,8 @@ def rasterplot(time, spikes, ax=None, **kwargs):
         ax.set_ylim(len(spikes) - 0.5, -0.5)
         if len(spikes) == 1:
             ax.set_ylim(0.4, 1.6)  # eventplot plots different for len==1
-        ax.set_xlim(left=0, right=max(time))
+        if time.any():
+            ax.set_xlim(left=0, right=max(time))
 
     else:
         # Older Matplotlib, doesn't have eventplot
