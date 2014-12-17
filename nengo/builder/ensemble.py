@@ -30,14 +30,14 @@ def gen_eval_points(ens, eval_points, rng):
         if n_points is None:
             n_points = default_n_eval_points(ens.n_neurons, ens.dimensions)
         eval_points = eval_points.sample(n_points, ens.dimensions, rng)
-        # eval_points should be in the ensemble's representational range
-        eval_points *= ens.radius
     else:
         if (ens.n_eval_points is not None
                 and eval_points.shape[0] != ens.n_eval_points):
             warnings.warn("Number of eval_points doesn't match "
                           "n_eval_points. Ignoring n_eval_points.")
         eval_points = np.array(eval_points, dtype=np.float64)
+
+    eval_points *= ens.radius  # scale by ensemble radius
     return eval_points
 
 

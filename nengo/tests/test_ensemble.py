@@ -5,7 +5,7 @@ import pytest
 
 import nengo
 import nengo.utils.numpy as npext
-from nengo.dists import Choice
+from nengo.dists import Choice, UniformHypersphere
 from nengo.processes import StochasticProcess
 from nengo.utils.testing import warns, allclose
 
@@ -231,6 +231,23 @@ def test_eval_points_heuristic(Simulator, neurons, dims, seed):
     sim = Simulator(model)
     points = sim.data[A].eval_points
     assert points.shape == (heuristic(neurons, dims), dims)
+
+
+@pytest.mark.parametrize('sample', [False, True])
+@pytest.mark.parametrize('radius', [0.5, 1, 1.5])
+def test_eval_points_scaling(Simulator, sample, radius, seed, rng):
+    eval_points = UniformHypersphere()
+    if sample:
+        eval_points = eval_points.sample(500, 3, rng=rng)
+
+    model = nengo.Network(seed=seed)
+    with model:
+        a = nengo.Ensemble(1, 3, eval_points=eval_points, radius=radius)
+
+    sim = Simulator(model)
+    dists = np.linalg.norm(sim.data[a].eval_points, axis=1)
+    assert np.all(dists <= radius)
+    assert np.any(dists >= 0.9 * radius)
 
 
 def test_len():

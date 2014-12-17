@@ -5,6 +5,7 @@ import pytest
 
 import nengo
 from nengo.connection import ConnectionSolverParam
+from nengo.dists import UniformHypersphere
 from nengo.solvers import LstsqL2
 from nengo.utils.functions import piecewise
 from nengo.utils.testing import allclose
@@ -610,6 +611,25 @@ def test_set_eval_points(Simulator):
             nengo.Connection(a.neurons, b, eval_points=[[0, 0], [0.5, 1]])
 
     Simulator(model)  # Builds fine
+
+
+@pytest.mark.parametrize('sample', [False, True])
+@pytest.mark.parametrize('radius', [0.5, 1., 1.5])
+def test_eval_points_scaling(Simulator, sample, radius, seed, rng):
+    eval_points = UniformHypersphere()
+    if sample:
+        eval_points = eval_points.sample(500, 3, rng=rng)
+
+    model = nengo.Network(seed=seed)
+    with model:
+        a = nengo.Ensemble(1, 3, radius=radius)
+        b = nengo.Ensemble(1, 3)
+        con = nengo.Connection(a, b, eval_points=eval_points)
+
+    sim = Simulator(model)
+    dists = np.linalg.norm(sim.data[con].eval_points, axis=1)
+    assert np.all(dists <= radius)
+    assert np.any(dists >= 0.9 * radius)
 
 
 def test_solverparam():
