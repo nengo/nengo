@@ -5,7 +5,7 @@ import pytest
 
 import nengo
 import nengo.utils.numpy as npext
-from nengo.dists import Choice
+from nengo.dists import Choice, Uniform
 from nengo.utils.testing import warns, allclose
 
 logger = logging.getLogger(__name__)
@@ -276,6 +276,36 @@ def test_gain_bias(Simulator):
     sim = Simulator(model)
     assert np.array_equal(gain, sim.data[a].gain)
     assert np.array_equal(bias, sim.data[a].bias)
+
+
+from nengo.processes import GaussianProcess
+def test_noise(Simulator, seed, plt):
+    """Ensure that setting Ensemble.noise generates noise."""
+    with nengo.Network(seed=seed) as model:
+        inp, gain, bias = -0.2, 5, 2
+        model.config[nengo.Ensemble].neuron_type = nengo.LIF()
+        model.config[nengo.Ensemble].encoders = Choice([[1]])
+        model.config[nengo.Ensemble].intercepts = Choice([0])
+        model.config[nengo.Ensemble].max_rates = Choice([100])
+        const = nengo.Node(output=inp)
+        # ens = nengo.Ensemble(10, 1)
+        ens = nengo.Ensemble(10, 1, noise=GaussianProcess(0.01, synapse=nengo.synapses.Alpha(0.005)))
+
+        nengo.Connection(const, ens)
+        voltage_p = nengo.Probe(ens.neurons, 'voltage')
+        spikes_p = nengo.Probe(ens.neurons)
+
+    sim = Simulator(model, dt=0.001)
+    sim.run(1.)
+
+    t = sim.trange()
+    plt.subplot(211)
+    plt.plot(t, sim.data[voltage_p])
+    plt.subplot(212)
+    plt.plot(t, sim.data[spikes_p])
+
+    # y = sim.data[voltage_p]
+    # print npext.rms(y[t > 0.2] - y[t > 0.2].mean(), axis=0)
 
 
 if __name__ == "__main__":

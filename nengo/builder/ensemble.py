@@ -5,7 +5,7 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder.builder import Builder
-from nengo.builder.operator import Copy, DotInc, Reset
+from nengo.builder.operator import Copy, DotInc, Reset, SimNoise
 from nengo.builder.signal import Signal
 from nengo.dists import Distribution
 from nengo.ensemble import Ensemble
@@ -100,6 +100,12 @@ def build_ensemble(model, ens):
     model.sig[ens]['encoders'] = Signal(
         scaled_encoders, name="%s.scaled_encoders" % ens)
 
+    # Inject noise if specified
+    if ens.noise is not None and not isinstance(ens.neuron_type, Direct):
+        # TODO: warning if noise specified on Direct?
+        model.build(ens.noise, ens)
+        # model.add_op(SimNoise(model.sig[ens.neurons]['in'], ens.noise))
+
     # Create output signal, using built Neurons
     model.add_op(DotInc(
         model.sig[ens]['encoders'],
@@ -117,3 +123,38 @@ def build_ensemble(model, ens):
                                       scaled_encoders=scaled_encoders,
                                       gain=gain,
                                       bias=bias)
+
+
+from nengo.processes import GaussianProcess
+from nengo.builder.synapses import filtered_signal
+from nengo.builder.operator import Operator
+
+class SimGaussianProcess(Operator):
+    def __init__(self, output, sigma):
+        self.output = output
+        self.sigma = sigma
+
+        self.sets = [output]
+        self.incs = []
+        self.reads = []
+        self.updates = []
+
+    def make_step(self, signals, dt, rng):
+        output = signals[self.output]
+
+        def step(sigma=self.sigma):
+            output[...] = rng.normal(scale=sigma / np.sqrt(dt), size=output.shape)
+        return step
+
+@Builder.register(GaussianProcess)
+def build_gaussian_process(model, gp, ens):
+
+    signal = Signal(np.zeros(ens.n_neurons), name="%s.noise" % ens)
+    model.add_op(SimGaussianProcess(sigma=gp.sigma, output=signal))
+
+    if gp.synapse is not None:
+        signal = filtered_signal(model, gp, signal, gp.synapse)
+
+    model.add_op(DotInc(model.sig['common'][1],
+                        signal,
+                        model.sig[ens.neurons]['in']))

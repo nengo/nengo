@@ -1,8 +1,15 @@
 from nengo.base import NengoObject, ObjView
 from nengo.dists import Uniform, UniformHypersphere
 from nengo.neurons import LIF, NeuronTypeParam, Direct
-from nengo.params import (
+from nengo.params import (Parameter,
     Default, DistributionParam, IntParam, ListParam, NumberParam, StringParam)
+from nengo.processes import StochasticProcess
+
+class ProcessParam(Parameter):
+    def validate(self, instance, process):
+        if process is not None and not isinstance(process, StochasticProcess):
+            raise ValueError("Must be a StochasticProcess; got '%s'" % process)
+        super(ProcessParam, self).validate(instance, process)
 
 
 class Ensemble(NengoObject):
@@ -35,6 +42,10 @@ class Ensemble(NengoObject):
         evaluation points.
     neuron_type : Neurons, optional
         The model that simulates all neurons in the ensemble.
+    noise : Distribution, optional
+        Random noise injected directly into each neuron in the ensemble
+        as current. A sample is drawn for each individual neuron on
+        every simulation step.
     seed : int, optional
         The seed used for random number generation.
     label : str, optional
@@ -62,6 +73,7 @@ class Ensemble(NengoObject):
     gain = DistributionParam(default=None,
                              optional=True,
                              sample_shape=('n_neurons',))
+    noise = ProcessParam(default=None, optional=True)
     seed = IntParam(default=None, optional=True)
     label = StringParam(default=None, optional=True)
     probeable = ListParam(default=['decoded_output', 'input'])
@@ -69,7 +81,7 @@ class Ensemble(NengoObject):
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
                  n_eval_points=Default, neuron_type=Default, gain=Default,
-                 bias=Default, seed=Default, label=Default):
+                 bias=Default, noise=Default, seed=Default, label=Default):
 
         self.n_neurons = n_neurons
         self.dimensions = dimensions
@@ -83,6 +95,7 @@ class Ensemble(NengoObject):
         self.bias = bias
         self.gain = gain
         self.neuron_type = neuron_type
+        self.noise = noise
         self.seed = seed
         self.probeable = Default
         self._neurons = Neurons(self)
