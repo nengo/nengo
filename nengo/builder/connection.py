@@ -30,6 +30,7 @@ def build_linear_system(model, conn):
             model.params[conn.pre_obj].eval_points, min_dims=2)
     else:
         eval_points = npext.array(eval_points, min_dims=2)
+        eval_points *= conn.pre_obj.radius
 
     x = np.dot(eval_points, encoders.T / conn.pre_obj.radius)
     activities = conn.pre_obj.neuron_type.rates(x, gain, bias)
