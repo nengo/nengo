@@ -17,4 +17,3 @@ from . import paths
 from . import probe
 from . import simulator
 from . import stdlib
-from . import testing
