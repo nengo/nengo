@@ -154,6 +154,21 @@ def test_noise(RefSimulator, seed):
         t_end = time.time()
         self.assertTrue( abs( t_end - t_start - 1 ) < tol )
 
+    def test_fixed_time_model(self, tol=.002):
+
+        import time
+
+        m = nengo.Model( "test_fixed_time_model" )
+        node = m.make_node( "node", [0] )
+        ens = m.make_ensemble( "ens", nengo.LIF(35), dimensions=1 )
+        m.connect( node, ens )
+
+        sim = m.simulator( sim_class=self.Simulator, fixed_time=True )
+        t_start = time.time()
+        sim.run( 1 )
+        t_end = time.time()
+        self.assertTrue( abs( t_end - t_start - 1 ) < tol )
+
 
 if __name__ == "__main__":
     nengo.log(debug=True)
