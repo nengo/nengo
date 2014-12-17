@@ -23,14 +23,17 @@ def spikes2events(t, spikes):
 def _rates_isi_events(t, events, midpoint, interp):
     import scipy.interpolate
 
+    if len(events) == 0:
+        return np.zeros_like(t)
+
     isis = np.diff(events)
 
-    rt = np.zeros(len(isis) + 2)
-    rt[1:-1] = 0.5*(events[:-1] + events[1:]) if midpoint else events[:-1]
+    rt = np.zeros(len(events) + (1 if midpoint else 2))
+    rt[1:-1] = 0.5*(events[:-1] + events[1:]) if midpoint else events
     rt[0], rt[-1] = t[0], t[-1]
 
     r = np.zeros_like(rt)
-    r[1:-1] = 1. / isis
+    r[1:len(isis) + 1] = 1. / isis
 
     f = scipy.interpolate.interp1d(rt, r, kind=interp, copy=False)
     return f(t)
