@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.processes import WhiteNoise
 from nengo.synapses import (
     Alpha, filt, filtfilt, LinearFilter, Lowpass, SynapseParam)
-from nengo.utils.functions import whitenoise
 from nengo.utils.testing import allclose
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=1., n_neurons=None):
     model = nengo.Network(seed=seed)
     with model:
-        u = nengo.Node(output=whitenoise(0.1, 5, seed=seed + 1))
+        u = nengo.Node(
+            output=WhiteNoise(runtime, 5).f(rng=np.random.RandomState(seed)))
 
         if n_neurons is not None:
             a = nengo.Ensemble(n_neurons, 1)

@@ -7,7 +7,7 @@ import numpy as np
 
 import nengo
 from nengo.dists import Choice
-from nengo.utils.functions import whitenoise
+from nengo.processes import WhiteNoise
 from nengo.utils.matplotlib import implot
 from nengo.utils.neurons import rates_isi, rates_kernel
 from nengo.utils.numpy import rms
@@ -26,7 +26,8 @@ def _test_rates(Simulator, rates, plt, seed, name=None):
     with model:
         model.config[nengo.Ensemble].max_rates = Choice([50])
         model.config[nengo.Ensemble].encoders = Choice([[1]])
-        u = nengo.Node(output=whitenoise(1, 5, seed=seed + 1))
+        u = nengo.Node(output=WhiteNoise(2., 5).f(
+            rng=np.random.RandomState(seed=seed)))
         a = nengo.Ensemble(n, 1,
                            intercepts=intercepts, neuron_type=nengo.LIFRate())
         b = nengo.Ensemble(n, 1,
@@ -37,8 +38,7 @@ def _test_rates(Simulator, rates, plt, seed, name=None):
         ap = nengo.Probe(a.neurons)
         bp = nengo.Probe(b.neurons)
 
-    dt = 1e-3
-    sim = Simulator(model, dt=dt)
+    sim = Simulator(model)
     sim.run(2.)
 
     t = sim.trange()

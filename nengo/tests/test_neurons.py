@@ -4,9 +4,9 @@ import pytest
 
 import nengo
 from nengo.neurons import NeuronTypeParam
+from nengo.processes import WhiteNoise
 from nengo.solvers import LstsqL2nz
 from nengo.utils.ensemble import tuning_curves
-from nengo.utils.functions import whitenoise
 from nengo.utils.matplotlib import implot, rasterplot
 from nengo.utils.neurons import rates_kernel
 from nengo.utils.numpy import rms, rmse
@@ -190,9 +190,8 @@ def test_izhikevich(Simulator, plt, seed, rng):
     Tests that the 6 parameter sets listed in the original paper can be
     simulated in Nengo (but doesn't test any properties of them).
     """
-    noise = whitenoise(0.1, 8, dimensions=1, seed=seed)
     with nengo.Network() as m:
-        u = nengo.Node(output=noise)
+        u = nengo.Node(output=WhiteNoise(0.6, 8).f(d=1, rng=rng))
 
         # Seed the ensembles (not network) so we get the same sort of neurons
         ens_args = {'n_neurons': 4, 'dimensions': 1, 'seed': seed}
@@ -241,10 +240,9 @@ def test_izhikevich(Simulator, plt, seed, rng):
 
 def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     """Neurons should not wildly change with different dt."""
-    noise = whitenoise(0.1, 5, dimensions=2, seed=seed + 1)
     with nengo.Network(seed=seed) as m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
-        u = nengo.Node(output=noise)
+        u = nengo.Node(output=WhiteNoise(0.1, 5).f(d=2, rng=rng))
         pre = nengo.Ensemble(60, dimensions=2)
         square = nengo.Ensemble(60, dimensions=2)
         nengo.Connection(u, pre)
@@ -281,13 +279,12 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     assert np.allclose(out_data[0], out_data[1], atol=0.05)
 
 
-def test_reset(Simulator, nl_nodirect, seed):
+def test_reset(Simulator, nl_nodirect, seed, rng):
     """Make sure resetting actually resets."""
-    noise = whitenoise(0.1, 5, dimensions=2, seed=seed + 1)
     m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
-        u = nengo.Node(output=noise)
+        u = nengo.Node(output=WhiteNoise(0.15, 5).f(d=2, rng=rng))
         ens = nengo.Ensemble(60, dimensions=2)
         square = nengo.Ensemble(60, dimensions=2)
         nengo.Connection(u, ens)

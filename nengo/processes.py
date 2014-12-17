@@ -54,6 +54,15 @@ class StochasticProcess(object):
         else:
             return functools.partial(self.sample_nostate, self.dist, d, rng)
 
+    def f(self, dt=0.001, d=1, rng=np.random):
+        """Return a function that can be passed to a Node."""
+        sample_f = self.make_sample(dt=dt, d=d, rng=rng)
+
+        def out_f(dummy_t, dummy_x=None):
+            assert dummy_x is None, "Processes should not be given input."
+            return sample_f()
+        return out_f
+
     @staticmethod
     def sample_nostate(dist, d, rng=np.random):
         return dist.sample(n=1, d=d, rng=rng)[0]

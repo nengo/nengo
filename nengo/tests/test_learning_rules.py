@@ -3,8 +3,8 @@ import pytest
 
 import nengo
 from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja
+from nengo.processes import WhiteNoise
 from nengo.solvers import LstsqL2nz
-from nengo.utils.functions import whitenoise
 
 
 def test_pes_weights(Simulator, nl_nodirect, plt, seed, rng):
@@ -159,7 +159,7 @@ def test_unsupervised(Simulator, learning_rule_type, seed, rng, plt):
 
     m = nengo.Network(seed=seed)
     with m:
-        u = nengo.Node(whitenoise(0.1, 5, dimensions=2, seed=seed+1))
+        u = nengo.Node(WhiteNoise(0.5, high=5).f(d=2, rng=rng))
         a = nengo.Ensemble(n, dimensions=2)
         u_learned = nengo.Ensemble(n, dimensions=2)
 
