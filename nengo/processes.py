@@ -1,165 +1,129 @@
 from __future__ import absolute_import
+
+import functools
+
 import numpy as np
 
-from nengo.dists import Gaussian
+import nengo
+from nengo.utils.compat import range
 
 
 class StochasticProcess(object):
-    """A base class for stochastic processes.
+    """A stochastic process.
+
+    A stochastic process is used to generate randomly varying signals.
+    Unlike distributions, a stochastic process may maintain state between
+    calls to ``sample``.
 
     Parameters
     ----------
-    dimensions : int
-        The number of dimensions of the process.
+    dist : Distribution
+        The distribution from which to generate random samples.
+    synapse : Synapse, optional
+        Synapse object describing a filter to apply to the samples.
+        If not provided, samples will be returned unfiltered.
     """
-    def __init__(self, dimensions=1):
-        self.dimensions = dimensions
 
-    def sample(self, dt, timesteps=None, rng=np.random):
+    def __init__(self, dist, synapse=None):
+        self.dist = dist
+        self.synapse = synapse
+
+    def make_sample(self, dt, d=1, rng=np.random):
         """Samples the process and advances the time.
 
         Parameters
         ----------
         dt : float
             Timestep for each sample.
-        timesteps : int or ``None``, optional
-            Number samples to take. If ``None`` a 1d array will be returned,
-            whereas a value of 1 returns a 2d array with a second dimension of
-            size 1.
+        d : int, optional
+            The number of dimensions to return. Default: 1.
         rng : RandomState, optional
             Random number generator state.
 
         Returns
         -------
-        ndarray
-            Samples as a 1d or 2d array depending on `timesteps`. The first
-            dimensions enumerates the dimensions of the process.
+        function
+            A sample function that, when called, returns a 1d array of
+            length ``d``.
         """
-        raise NotImplementedError(
-            "A StochasticProcess should implement sample.")
-
-
-class SampledProcess(StochasticProcess):
-    """A process where for every time point an independent sample of a
-    probability distribution function is taken.
-
-    Parameters
-    ----------
-    dist : :class:`Distribution`
-        Probability distribution to sample from.
-    dimensions : int
-        The number of dimensions of the process.
-    """
-    def __init__(self, dist, dimensions=1):
-        super(SampledProcess, self).__init__(dimensions)
-        self.dist = dist
-
-    def sample(self, dt, timesteps=None, rng=np.random):
-        # FIXME correct for dt here?
-        return self.dist.sample(self.dimensions, timesteps, rng=rng)
-
-
-class MarkovProcess(StochasticProcess):
-    """A Markov process (i.e. each new sample only depends on the current
-    state).
-
-    Parameters
-    ----------
-    dist : :class:`Distribution`
-        Probability distribution to sample from in each timestep.
-    dimensions : int
-        The number of dimensions of the process.
-    initial_state : 1d array, optional
-        The initial state. The length has to match `dimensions`. If not given,
-        an initial state of all zeros will be assumed.
-    """
-    def __init__(self, dist, dimensions=1, initial_state=None):
-        super(MarkovProcess, self).__init__(dimensions)
-        self.dist = dist
-        if initial_state is None:
-            self.state = np.zeros(dimensions)
+        if self.synapse is not None:
+            output = np.zeros(d)
+            step = self.synapse.make_step(dt, output=output)
+            return functools.partial(
+                self.sample, self.dist, d=d, step=step, output=output, rng=rng)
         else:
-            self.state = np.array(initial_state)
-            if self.state.shape != (dimensions,):
-                raise ValueError("initial_state has to match dimensions.")
+            return functools.partial(self.sample_nostate, self.dist, d, rng)
 
-    def sample(self, dt, timesteps=None, rng=np.random):
-        samples = self.state[:, np.newaxis] + np.cumsum(
-            self.dist.sample(
-                self.dimensions, timesteps, rng=rng) * np.sqrt(dt),
-            axis=0 if timesteps is None else 1)
-        self.state[:] = samples[:, -1]
-        return samples[:, 0] if timesteps is None else samples
+    @staticmethod
+    def sample_nostate(dist, d, rng=np.random):
+        return dist.sample(n=1, d=d, rng=rng)[0]
 
-
-class WienerProcess(MarkovProcess):
-    """A Wiener process.
-
-    Parameters
-    ----------
-    dimensions : int
-        The number of dimensions of the process.
-    initial_state : 1d array, optional
-        The initial state. The length has to match `dimensions`. If not given,
-        an initial state of all zeros will be assumed.
-    """
-    def __init__(self, dimensions=1, initial_state=None):
-        super(WienerProcess, self).__init__(
-            Gaussian(0, 1.), dimensions, initial_state)
+    @staticmethod
+    def sample(dist, d, step, output, rng=np.random):
+        step(dist.sample(n=1, d=d, rng=rng)[0])
+        return output
 
 
-class GaussianWhiteNoise(SampledProcess):
-    """A Gaussian white noise process.
+class BrownNoise(StochasticProcess):
+    """A Brown noise process; i.e., a Weiner process."""
 
-    Parameters
-    ----------
-    rms : float
-        The RMS power of the signal.
-    dimensions : int
-        The number of dimensions of the process.
-    """
-    def __init__(self, rms=0.5, dimensions=1):
-        super(GaussianWhiteNoise, self).__init__(Gaussian(0., rms), dimensions)
+    def __init__(self):
+        pass
+
+    def make_sample(self, dt, d=1, rng=np.random):
+        """Samples the process and advances the time.
+
+        Parameters
+        ----------
+        dt : float
+            Timestep for each sample.
+        d : int, optional
+            The number of dimensions to return. Default: 1.
+        rng : RandomState, optional
+            Random number generator state.
+
+        Returns
+        -------
+        function
+            A sample function that, when called, returns a 1d array of
+            length ``d``.
+        """
+        dist = nengo.dists.Gaussian(0., 1. / np.sqrt(dt))
+        output = np.zeros(d)
+        step = nengo.LinearFilter([1], [1, 0]).make_step(
+            dt, output, method='euler')
+        return functools.partial(self.sample, dist, d, step, output, rng)
 
 
-class LimitedGaussianWhiteNoise(StochasticProcess):
-    """A low-pass filtered Gaussian white noise process.
+class WhiteNoise(StochasticProcess):
+    """A low-pass filtered white noise process.
 
     Parameters
     ----------
     duration : float
-        A white noise signal for this duration will be generated. If more a
-        longer duration will be sampled, the samples will repeat after this
-        duration.
-    dimensions : int
-        The number of dimensions of the process.
+        A white noise signal for this duration will be generated.
+        Samples will repeat after this duration.
+    high : float, optional
+        The cut-off frequency of the low-pass filter, in Hz.
+        If not specified, no filtering will be done.
     rms : float, optional
-        The root mean square power of the filtered signal.
-    limit : float or ``None``, optional
-        The cut-off frequency of the low-pass filter in cycles per second. If
-        ``None``, no low-pass filtering will be done.
-    dt : float, optional
-        The discretization timestep. This has to be the same value as the `dt`
-        used for sampling.
-    rng : :class:`numpy.random.RandomState`
-        Random number generator state used to generate the signal.
+        The root mean square power of the filtered signal. Default: 0.5.
     """
-    def __init__(
-            self, duration, dimensions, rms=0.5, limit=None, dt=0.001,
-            rng=np.random):
-        super(LimitedGaussianWhiteNoise, self).__init__(dimensions)
+    def __init__(self, duration, high=None, rms=0.5):
         self.duration = duration
-        self.dt = dt
+        self.rms = rms
+        self.high = high
 
-        n_coefficients = int(np.ceil(duration / dt / 2.))
-        shape = (dimensions, n_coefficients + 1)
-        sigma = rms * np.sqrt(0.5)
+    def make_sample(self, dt, d=1, rng=np.random):
+        n_coefficients = int(np.ceil(self.duration / dt / 2.))
+        shape = (d, n_coefficients + 1)
+        sigma = self.rms * np.sqrt(0.5)
         coefficients = 1j * rng.normal(0., sigma, size=shape)
         coefficients += rng.normal(0., sigma, size=shape)
         coefficients[:, 0] = 0.
         coefficients[:, -1].imag = 0.
-        if limit is not None:
-            set_to_zero = np.fft.rfftfreq(2 * n_coefficients, d=dt) > limit
+        if self.high is not None:
+            set_to_zero = np.fft.rfftfreq(2 * n_coefficients, d=dt) > self.high
             coefficients[:, set_to_zero] = 0.
             power_correction = np.sqrt(
                 1. - np.sum(set_to_zero, dtype=float) / n_coefficients)
@@ -167,17 +131,25 @@ class LimitedGaussianWhiteNoise(StochasticProcess):
                 coefficients /= power_correction
         coefficients *= np.sqrt(2 * n_coefficients)
 
-        self.signal = np.fft.irfft(coefficients, axis=1)
-        self.t = 0
+        t = np.array([0])
+        signal = np.fft.irfft(coefficients, axis=1)
 
-    def sample(self, dt, timesteps=None, rng=np.random):
-        assert self.dt == dt, \
-            "Sampling dt should match dt of generated signal."
-        if timesteps is None:
-            ts = np.array([self.t])
+        return functools.partial(self.sample, t=t, signal=signal)
+
+    @staticmethod
+    def sample(t, signal):
+        t += 1
+        sh = signal.shape[1] - 1
+        if (t // sh) % 2 == 0:
+            ix = t % sh
         else:
-            ts = self.t + np.arange(timesteps)
-        ts %= self.signal.shape[1]
-        self.t = ts[-1] + 1
-        samples = np.take(self.signal, ts, axis=1)
-        return samples[:, 0] if timesteps is None else samples
+            ix = sh - t % sh
+        return signal[:, np.atleast_1d(ix)[0]]
+
+
+def sample(n, process, dt=0.001, d=None, rng=np.random):
+    out = np.zeros(n) if d is None else np.zeros((n, d))
+    sample_f = process.make_sample(dt=dt, d=1 if d is None else d, rng=rng)
+    for i in range(n):
+        out[i, ...] = sample_f()
+    return out

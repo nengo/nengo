@@ -30,8 +30,7 @@ from .rc import rc, RC_DEFAULTS
 from .simulator import Simulator
 from .synapses import Alpha, LinearFilter, Lowpass
 from .utils.logging import log
-from . import networks
-from . import utils
+from . import dists, networks, processes, utils
 
 logger = logging.getLogger(__name__)
 try:

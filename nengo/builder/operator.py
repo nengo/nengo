@@ -318,10 +318,10 @@ class SimNoise(Operator):
 
     def make_step(self, signals, dt, rng):
         Y = signals[self.output]
-        p = self.process
+        sample_f = self.process.make_sample(dt=dt, d=Y.size, rng=rng)
         Yview = Y.reshape(-1)
 
         def step():
-            Yview[...] += p.sample(dt, rng=rng)
+            Yview[...] += sample_f()
 
         return step
