@@ -6,7 +6,7 @@ from nengo.spa.vocab import Vocabulary
 from nengo.utils.compat import is_iterable
 
 
-def similarity(data, probe, vocab=None):
+def similarity(data, probe, vocab):
     """Return the similarity between the probed data and the vocabulary.
 
     Parameters
@@ -15,14 +15,12 @@ def similarity(data, probe, vocab=None):
         Collection of simulation data returned by sim.run() function call.
     probe: Probe
         Probe with desired data.
-    vocab: spa.Vocabulary, list, np.ndarray, np.matrix, optional
-        Optional vocabulary (or list of vectors) to use to calculate
+    vocab: spa.Vocabulary, list, np.ndarray, np.matrix
+        Vocabulary (or list of vectors) to use to calculate
         the similarity values
 
     """
-    if vocab is None:
-        probe_vectors = probe.target.vocab.vectors.T
-    elif isinstance(vocab, Vocabulary):
+    if isinstance(vocab, Vocabulary):
         probe_vectors = vocab.vectors.T
     elif is_iterable(vocab):
         probe_vectors = np.matrix(vocab).T

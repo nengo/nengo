@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 
+import nengo
 from nengo.spa import pointer
 from nengo.utils.compat import is_iterable, is_number, is_integer, range
 
@@ -406,3 +407,17 @@ class Vocabulary(object):
 
         # Return the result
         return result
+
+
+class VocabularyParam(nengo.params.Parameter):
+    """Can be a Vocabulary."""
+
+    def validate(self, instance, vocab):
+        super(VocabularyParam, self).validate(instance, vocab)
+
+        if vocab is not None and not isinstance(vocab, Vocabulary):
+            raise ValueError(
+                "Must be Vocabulary (got type {0}).".format(
+                    vocab.__class__.__name__))
+
+        return vocab

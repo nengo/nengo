@@ -1,7 +1,7 @@
 import numpy as np
 
 import nengo
-from nengo.spa.vocab import Vocabulary
+from nengo.spa.vocab import Vocabulary, VocabularyParam
 from nengo.spa.module import Module
 from nengo.utils.compat import iteritems
 
@@ -59,6 +59,9 @@ class SPA(nengo.Network):
 
     def __init__(self, label=None, seed=None, add_to_container=None):
         super(SPA, self).__init__(label, seed, add_to_container)
+        for obj_type in [nengo.Node, nengo.Ensemble]:
+            self.config[obj_type].set_param(
+                'vocab', VocabularyParam(None, optional=True))
         self._modules = {}
         self._default_vocabs = {}
 
@@ -76,11 +79,11 @@ class SPA(nengo.Network):
             for k, (obj, v) in iteritems(value.inputs):
                 if type(v) == int:
                     value.inputs[k] = (obj, self.get_default_vocab(v))
-                obj.vocab = value.inputs[k][1]
+                self.config[obj].vocab = value.inputs[k][1]
             for k, (obj, v) in iteritems(value.outputs):
                 if type(v) == int:
                     value.outputs[k] = (obj, self.get_default_vocab(v))
-                obj.vocab = value.outputs[k][1]
+                self.config[obj].vocab = value.outputs[k][1]
 
             value.on_add(self)
 
@@ -147,3 +150,17 @@ class SPA(nengo.Network):
 
     def get_output_vocab(self, name):
         return self.get_module_output(name)[1]
+
+    def similarity(self, data, probe):
+        """Return the similarity between the probed data and corresponding
+        vocabulary.
+
+        Parameters
+        ----------
+        data: ProbeDict
+            Collection of simulation data returned by sim.run() function call.
+        probe: Probe
+            Probe with desired data.
+        """
+        return nengo.spa.similarity(
+            data, probe, self.config[probe.target].vocab)
