@@ -1,8 +1,9 @@
 import numpy as np
 
 import nengo
-from nengo.spa.vocab import Vocabulary, VocabularyParam
+from nengo.spa.vocab import Vocabulary
 from nengo.spa.module import Module
+from nengo.spa.utils import enable_spa_params
 from nengo.utils.compat import iteritems
 
 
@@ -59,9 +60,7 @@ class SPA(nengo.Network):
 
     def __init__(self, label=None, seed=None, add_to_container=None):
         super(SPA, self).__init__(label, seed, add_to_container)
-        for obj_type in [nengo.Node, nengo.Ensemble]:
-            self.config[obj_type].set_param(
-                'vocab', VocabularyParam(None, optional=True))
+        enable_spa_params(self)
         self._modules = {}
         self._default_vocabs = {}
 
