@@ -59,7 +59,7 @@ class TestProgress(object):
         with Progress(10) as p:
             assert p.eta() == -1  # no estimate available yet
             p.step()
-            assert p.eta() > 0.
+            assert p.eta() >= 0.
 
 
 class TestAutoProgressBar(object):
