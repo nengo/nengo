@@ -17,6 +17,13 @@ from nengo.utils import nco
 logger = logging.getLogger(__name__)
 
 
+def get_fragment_size(path):
+    try:
+        return os.statvfs(path).f_frsize
+    except AttributeError:  # no statvfs on Windows
+        return 4096  # correct value in 99% of cases
+
+
 def safe_stat(path):
     """Does os.stat, but fails gracefully if file not found."""
     try:
@@ -96,10 +103,7 @@ class DecoderCache(object):
         self.cache_dir = cache_dir
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
-        try:
-            self._fragment_size = os.statvfs(self.cache_dir).f_frsize
-        except AttributeError:  # no statvfs on Windows
-            self._fragment_size = 4096  # correct value in 99% of cases
+        self._fragment_size = get_fragment_size(self.cache_dir)
         self._remove_legacy_files()
 
     def get_files(self):

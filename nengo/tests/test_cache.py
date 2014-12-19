@@ -6,7 +6,8 @@ from numpy.testing import assert_equal
 import pytest
 
 import nengo
-from nengo.cache import DecoderCache, Fingerprint, NoDecoderCache
+from nengo.cache import (
+    DecoderCache, Fingerprint, get_fragment_size, NoDecoderCache)
 from nengo.utils.compat import int_types
 from nengo.utils.testing import Timer
 
@@ -115,7 +116,7 @@ def test_decoder_cache_size_includes_overhead(tmpdir):
     cache = DecoderCache(cache_dir=cache_dir)
     cache.wrap_solver(solver_mock)(**get_solver_test_args())
 
-    fragment_size = os.statvfs(cache_dir).f_frsize
+    fragment_size = get_fragment_size(cache_dir)
     actual_size = sum(os.stat(p).st_size for p in cache.get_files())
     assert actual_size % fragment_size != 0, (
         'Test succeeded by chance. Adjust get_solver_test_args() to produce '
