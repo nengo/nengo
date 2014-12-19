@@ -50,8 +50,13 @@ def execfile(path, globals, locals=None):
     """
     if locals is None:
         locals = globals
+
     with open(path, 'rb') as fp:
         source = fp.read()
+
+    # Python 2.6 line endings issue, see http://bugs.python.org/issue12189
+    source = source.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
+
     code = compile(source, path, "exec")
     exec(code, globals, locals)
 
