@@ -175,7 +175,7 @@ class LIFRate(NeuronType):
         intercepts : list of floats
             X-intercepts of neurons.
         """
-        inv_tau_ref = 1. / self.tau_ref
+        inv_tau_ref = 1. / self.tau_ref if self.tau_ref > 0 else np.inf
         if (max_rates > inv_tau_ref).any():
             raise ValueError(
                 "Max rates must be below the inverse refractory period (%0.3f)"

@@ -90,6 +90,22 @@ def test_lif(Simulator, plt, rng):
     assert np.abs(np.diff(sim.data[ref_probe])).sum() > 1
 
 
+def test_lif_zero_tau_ref(Simulator):
+    """If we set tau_ref=0, we should be able to reach firing rate 1/dt."""
+    dt = 1e-3
+    max_rate = 1. / dt
+    with nengo.Network() as m:
+        ens = nengo.Ensemble(1, 1,
+                             encoders=[[1]],
+                             max_rates=[max_rate],
+                             neuron_type=nengo.LIF(tau_ref=0))
+        nengo.Connection(nengo.Node(output=10), ens)
+        p = nengo.Probe(ens.neurons)
+    sim = Simulator(m)
+    sim.run(0.02)
+    assert np.all(sim.data[p][1:] == max_rate)
+
+
 def test_alif_rate(Simulator, plt):
     n = 100
     max_rates = 50 * np.ones(n)
