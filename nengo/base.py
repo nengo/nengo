@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 from nengo.config import Config
-from nengo.params import Default, is_param, Parameter
+from nengo.params import Default, is_param, Parameter, Unconfigurable
 from nengo.utils.compat import with_metaclass
 
 
@@ -140,7 +140,7 @@ class ObjView(object):
 class NengoObjectParam(Parameter):
     def __init__(self, default=None, optional=False, readonly=True,
                  nonzero_size_in=False, nonzero_size_out=False):
-        assert default is None  # These can't have defaults
+        assert default in [None, Unconfigurable]  # These can't have defaults
         self.nonzero_size_in = nonzero_size_in
         self.nonzero_size_out = nonzero_size_out
         super(NengoObjectParam, self).__init__(default, optional, readonly)

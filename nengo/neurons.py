@@ -4,7 +4,7 @@ import logging
 
 import numpy as np
 
-from nengo.params import Parameter
+from nengo.params import Parameter, NumberParam, Unconfigurable
 from nengo.utils.compat import range
 from nengo.utils.neurons import settled_firingrate
 
@@ -136,6 +136,7 @@ class RectifiedLinear(NeuronType):
 class Sigmoid(NeuronType):
     """Neuron whose response curve is a sigmoid."""
 
+    tau_ref = NumberParam(default=Unconfigurable, low=0)
     probeable = ['rates']
 
     def __init__(self, tau_ref=0.002):
@@ -161,6 +162,8 @@ class Sigmoid(NeuronType):
 class LIFRate(NeuronType):
     """Rate version of the leaky integrate-and-fire (LIF) neuron model."""
 
+    tau_rc = NumberParam(default=Unconfigurable, low=0, low_open=True)
+    tau_ref = NumberParam(default=Unconfigurable, low=0)
     probeable = ['rates']
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002):
@@ -251,6 +254,8 @@ class LIF(LIFRate):
 class AdaptiveLIFRate(LIFRate):
     """Adaptive rate version of the LIF neuron model."""
 
+    tau_n = NumberParam(default=Unconfigurable, low=0, low_open=True)
+    inc_n = NumberParam(default=Unconfigurable, low=0)
     probeable = ['rates', 'adaptation']
 
     def __init__(self, tau_n=1, inc_n=0.01, **lif_args):
@@ -274,24 +279,10 @@ class AdaptiveLIFRate(LIFRate):
         n += (dt / self.tau_n) * (self.inc_n * output - n)
 
 
-class AdaptiveLIF(LIF):
+class AdaptiveLIF(AdaptiveLIFRate, LIF):
     """Adaptive spiking version of the LIF neuron model."""
 
     probeable = ['spikes', 'adaptation', 'voltage', 'refractory_time']
-
-    def __init__(self, tau_n=1, inc_n=0.01, **lif_args):
-        super(AdaptiveLIF, self).__init__(**lif_args)
-        self.tau_n = tau_n
-        self.inc_n = inc_n
-
-    @property
-    def _argreprs(self):
-        args = super(AdaptiveLIF, self)._argreprs
-        if self.tau_n != 1:
-            args.append("tau_n=%s" % self.tau_n)
-        if self.inc_n != 0.01:
-            args.append("inc_n=%s" % self.inc_n)
-        return args
 
     def step_math(self, dt, J, output, voltage, ref, adaptation):
         """Compute rates for input current (incl. bias)"""
@@ -340,6 +331,10 @@ class Izhikevich(NeuronType):
        (http://www.izhikevich.org/publications/spikes.pdf)
     """
 
+    tau_recovery = NumberParam(default=Unconfigurable, low=0, low_open=True)
+    coupling = NumberParam(default=Unconfigurable, low=0)
+    reset_voltage = NumberParam(default=Unconfigurable)
+    reset_recovery = NumberParam(default=Unconfigurable)
     probeable = ['spikes', 'voltage', 'recovery']
 
     def __init__(self, tau_recovery=0.02, coupling=0.2,

@@ -317,13 +317,13 @@ def test_learningrule_attr(seed):
 
     with nengo.Network(seed=seed):
         a, b, e = [nengo.Ensemble(10, 2) for i in range(3)]
-        r1, r2, r3 = PES(e), BCM(), Oja()
+        c = nengo.Connection(a, b, modulatory=True)  # dummy error connection
 
-        r1 = PES(e)
+        r1 = PES(c)
         c1 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r1)
         check_rule(c1.learning_rule, c1, r1)
 
-        r2 = [PES(e), BCM()]
+        r2 = [PES(c), BCM()]
         c2 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r2)
         assert isinstance(c2.learning_rule, list)
         for rule, rule_type in zip(c2.learning_rule, r2):

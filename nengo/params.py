@@ -6,6 +6,7 @@ import numpy as np
 from nengo.dists import Distribution
 from nengo.processes import StochasticProcess
 from nengo.utils.compat import is_integer, is_number, is_string
+from nengo.utils.numpy import compare
 from nengo.utils.stdlib import checked_call
 
 
@@ -18,6 +19,7 @@ class DefaultType:
 
 Default = DefaultType("Default")
 ConnectionDefault = DefaultType("ConnectionDefault")
+Unconfigurable = DefaultType("Unconfigurable")
 
 
 def is_param(obj):
@@ -43,7 +45,7 @@ class Parameter(object):
         self.optional = optional
         self.readonly = readonly
         # readonly Parameters must have default=None
-        assert not readonly or default is None
+        assert not readonly or default in [None, Unconfigurable]
         # use WeakKey dictionaries so items can still be garbage collected
         self.defaults = weakref.WeakKeyDictionary()
         self.data = weakref.WeakKeyDictionary()
@@ -71,6 +73,10 @@ class Parameter(object):
             self.optional,
             self.readonly)
 
+    @property
+    def is_configurable(self):
+        return self.default is not Unconfigurable
+
     def validate(self, instance, value):
         if value is Default:
             raise ValueError("Default is not a valid value. To reset a "
@@ -89,10 +95,13 @@ class BoolParam(Parameter):
 
 
 class NumberParam(Parameter):
-    def __init__(self, default, low=None, high=None,
+    def __init__(self, default,
+                 low=None, high=None, low_open=False, high_open=False,
                  optional=False, readonly=False):
         self.low = low
         self.high = high
+        self.low_open = low_open
+        self.high_open = high_open
         super(NumberParam, self).__init__(default, optional, readonly)
 
     def __set__(self, instance, value):
@@ -104,10 +113,14 @@ class NumberParam(Parameter):
         if num is not None:
             if not is_number(num):
                 raise ValueError("Must be a number; got '%s'" % num)
-            if self.low is not None and num < self.low:
-                raise ValueError("Number must be greater than %s" % self.low)
-            if self.high is not None and num > self.high:
-                raise ValueError("Number must be less than %s" % self.high)
+            low_comp = 0 if self.low_open else -1
+            if self.low is not None and compare(num, self.low) <= low_comp:
+                raise ValueError("Value must be greater than %s%s (got %s)" % (
+                    "" if self.low_open else "or equal to ", self.low, num))
+            high_comp = 0 if self.high_open else 1
+            if self.high is not None and compare(num, self.high) >= high_comp:
+                raise ValueError("Value must be less than %s%s (got %s)" % (
+                    "" if self.high_open else "or equal to ", self.high, num))
         super(NumberParam, self).validate(instance, num)
 
 

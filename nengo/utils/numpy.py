@@ -8,6 +8,10 @@ import numpy as np
 maxint = np.iinfo(np.int32).max
 
 
+def compare(a, b):
+    return 0 if a == b else 1 if a > b else -1 if a < b else None
+
+
 def broadcast_shape(shape, length):
     """Pad a shape with ones following standard Numpy broadcasting."""
     n = len(shape)

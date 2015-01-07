@@ -52,8 +52,12 @@ class ClassParams(object):
         if key.startswith("_"):
             super(ClassParams, self).__setattr__(key, value)
         else:
-            self.get_param(key).validate(self, value)
-            self.get_param(key).defaults[self] = value
+            param = self.get_param(key)
+            if not param.is_configurable:
+                raise ValueError("Parameter '%s' is not configurable" % key)
+
+            param.validate(self, value)
+            param.defaults[self] = value
 
     def __delattr__(self, key):
         if key.startswith("_"):
