@@ -138,9 +138,9 @@ class ObjView(object):
 
 
 class NengoObjectParam(Parameter):
-    def __init__(self, default=None, optional=False, readonly=True,
+    def __init__(self, optional=False, readonly=True,
                  nonzero_size_in=False, nonzero_size_out=False):
-        assert default in [None, Unconfigurable]  # These can't have defaults
+        default = Unconfigurable  # These can't have defaults
         self.nonzero_size_in = nonzero_size_in
         self.nonzero_size_out = nonzero_size_out
         super(NengoObjectParam, self).__init__(default, optional, readonly)

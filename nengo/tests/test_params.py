@@ -62,14 +62,6 @@ def test_readonly():
     assert inst.r == 'set'
 
 
-def test_readonly_assert():
-    """Readonly Parameters must default to None."""
-
-    with pytest.raises(AssertionError):
-        class Test(object):
-            p = params.Parameter(default=1, readonly=True)
-
-
 def test_boolparam():
     """BoolParams can only be booleans."""
 

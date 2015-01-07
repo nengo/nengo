@@ -53,7 +53,7 @@ class ClassParams(object):
             super(ClassParams, self).__setattr__(key, value)
         else:
             param = self.get_param(key)
-            if not param.is_configurable:
+            if not param.configurable:
                 raise ValueError("Parameter '%s' is not configurable" % key)
 
             param.validate(self, value)
@@ -249,6 +249,11 @@ class Config(object):
 
         # Get the descriptor
         desc = getattr(nengo_cls, param)
+        if not desc.configurable:
+            raise ValueError("Unconfigurable parameters have no defaults. "
+                             "Please ensure you are not using the 'Default' "
+                             "keyword with an unconfigurable parameter.")
+
         for config in reversed(Config.context):
 
             # If a default has been set for this config, return it
@@ -283,7 +288,8 @@ class Config(object):
         else:
             lines.append("Current defaults for %s:" % nengo_cls.__name__)
             for attr in dir(nengo_cls):
-                if is_param(getattr(nengo_cls, attr)):
+                desc = getattr(nengo_cls, attr)
+                if is_param(desc) and desc.configurable:
                     val = Config.default(nengo_cls, attr)
                     lines.append("  %s: %s" % (attr, val))
         return "\n".join(lines)

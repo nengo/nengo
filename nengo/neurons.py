@@ -4,7 +4,7 @@ import logging
 
 import numpy as np
 
-from nengo.params import Parameter, NumberParam, Unconfigurable
+from nengo.params import Parameter, NumberParam
 from nengo.utils.compat import range
 from nengo.utils.neurons import settled_firingrate
 
@@ -136,7 +136,7 @@ class RectifiedLinear(NeuronType):
 class Sigmoid(NeuronType):
     """Neuron whose response curve is a sigmoid."""
 
-    tau_ref = NumberParam(default=Unconfigurable, low=0)
+    tau_ref = NumberParam(low=0)
     probeable = ['rates']
 
     def __init__(self, tau_ref=0.002):
@@ -162,8 +162,8 @@ class Sigmoid(NeuronType):
 class LIFRate(NeuronType):
     """Rate version of the leaky integrate-and-fire (LIF) neuron model."""
 
-    tau_rc = NumberParam(default=Unconfigurable, low=0, low_open=True)
-    tau_ref = NumberParam(default=Unconfigurable, low=0)
+    tau_rc = NumberParam(low=0, low_open=True)
+    tau_ref = NumberParam(low=0)
     probeable = ['rates']
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002):
@@ -254,8 +254,8 @@ class LIF(LIFRate):
 class AdaptiveLIFRate(LIFRate):
     """Adaptive rate version of the LIF neuron model."""
 
-    tau_n = NumberParam(default=Unconfigurable, low=0, low_open=True)
-    inc_n = NumberParam(default=Unconfigurable, low=0)
+    tau_n = NumberParam(low=0, low_open=True)
+    inc_n = NumberParam(low=0)
     probeable = ['rates', 'adaptation']
 
     def __init__(self, tau_n=1, inc_n=0.01, **lif_args):
@@ -331,10 +331,10 @@ class Izhikevich(NeuronType):
        (http://www.izhikevich.org/publications/spikes.pdf)
     """
 
-    tau_recovery = NumberParam(default=Unconfigurable, low=0, low_open=True)
-    coupling = NumberParam(default=Unconfigurable, low=0)
-    reset_voltage = NumberParam(default=Unconfigurable)
-    reset_recovery = NumberParam(default=Unconfigurable)
+    tau_recovery = NumberParam(low=0, low_open=True)
+    coupling = NumberParam(low=0)
+    reset_voltage = NumberParam()
+    reset_recovery = NumberParam()
     probeable = ['spikes', 'voltage', 'recovery']
 
     def __init__(self, tau_recovery=0.02, coupling=0.2,

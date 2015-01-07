@@ -1,7 +1,7 @@
 import warnings
 
 from nengo.base import NengoObjectParam
-from nengo.params import Parameter, NumberParam, Unconfigurable
+from nengo.params import Parameter, NumberParam
 from nengo.utils.compat import is_iterable, itervalues
 
 
@@ -20,7 +20,7 @@ class LearningRuleType(object):
     the Connection on which you want to do learning.
     """
 
-    learning_rate = NumberParam(default=Unconfigurable, low=0, low_open=True)
+    learning_rate = NumberParam(low=0, low_open=True)
     probeable = []
 
     def __init__(self, learning_rate=1e-6):
@@ -56,7 +56,7 @@ class PES(LearningRuleType):
         The modulatory connection created to project the error signal.
     """
 
-    error_connection = ConnectionParam(default=Unconfigurable)
+    error_connection = ConnectionParam()
     modifies = ['Ensemble', 'Neurons']
     probeable = ['scaled_error', 'activities']
 
@@ -87,9 +87,9 @@ class BCM(LearningRuleType):
     TODO
     """
 
-    pre_tau = NumberParam(default=Unconfigurable, low=0, low_open=True)
-    post_tau = NumberParam(default=Unconfigurable, low=0, low_open=True)
-    theta_tau = NumberParam(default=Unconfigurable, low=0, low_open=True)
+    pre_tau = NumberParam(low=0, low_open=True)
+    post_tau = NumberParam(low=0, low_open=True)
+    theta_tau = NumberParam(low=0, low_open=True)
     modifies = ['Neurons']
     probeable = ['theta', 'pre_filtered', 'post_filtered']
 
@@ -123,9 +123,9 @@ class Oja(LearningRuleType):
     TODO
     """
 
-    pre_tau = NumberParam(default=Unconfigurable, low=0, low_open=True)
-    post_tau = NumberParam(default=Unconfigurable, low=0, low_open=True)
-    beta = NumberParam(default=Unconfigurable, low=0)
+    pre_tau = NumberParam(low=0, low_open=True)
+    post_tau = NumberParam(low=0, low_open=True)
+    beta = NumberParam(low=0)
     modifies = ['Neurons']
     probeable = ['pre_filtered', 'post_filtered']
 

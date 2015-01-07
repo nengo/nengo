@@ -40,12 +40,11 @@ class Parameter(object):
         Whether the parameter can be set multiple times.
         By default, parameters can be set multiple times.
     """
-    def __init__(self, default, optional=False, readonly=False):
+    def __init__(self, default=Unconfigurable, optional=False, readonly=False):
         self.default = default
         self.optional = optional
         self.readonly = readonly
-        # readonly Parameters must have default=None
-        assert not readonly or default in [None, Unconfigurable]
+
         # use WeakKey dictionaries so items can still be garbage collected
         self.defaults = weakref.WeakKeyDictionary()
         self.data = weakref.WeakKeyDictionary()
@@ -60,6 +59,10 @@ class Parameter(object):
         if instance is None:
             # Return self so default can be inspected
             return self
+        if not self.configurable and instance not in self.data:
+            raise ValueError("Unconfigurable parameters have no defaults. "
+                             "Please ensure the value of the parameter is "
+                             "set before trying to access it.")
         return self.data.get(instance, self.default)
 
     def __set__(self, instance, value):
@@ -74,11 +77,11 @@ class Parameter(object):
             self.readonly)
 
     @property
-    def is_configurable(self):
+    def configurable(self):
         return self.default is not Unconfigurable
 
     def validate(self, instance, value):
-        if value is Default:
+        if isinstance(value, DefaultType):
             raise ValueError("Default is not a valid value. To reset a "
                              "parameter, use `del`.")
         if self.readonly and instance in self.data:
@@ -95,7 +98,7 @@ class BoolParam(Parameter):
 
 
 class NumberParam(Parameter):
-    def __init__(self, default,
+    def __init__(self, default=Unconfigurable,
                  low=None, high=None, low_open=False, high_open=False,
                  optional=False, readonly=False):
         self.low = low
@@ -155,7 +158,8 @@ class DictParam(Parameter):
 class NdarrayParam(Parameter):
     """Can be a NumPy ndarray, or something that can be coerced into one."""
 
-    def __init__(self, default, shape, optional=False, readonly=False):
+    def __init__(self, default=Unconfigurable, shape=None,
+                 optional=False, readonly=False):
         assert shape is not None
         self.shape = shape
         super(NdarrayParam, self).__init__(default, optional, readonly)
@@ -199,7 +203,8 @@ class NdarrayParam(Parameter):
 class DistributionParam(NdarrayParam):
     """Can be a Distribution or samples from a distribution."""
 
-    def __init__(self, default, sample_shape, optional=False, readonly=False):
+    def __init__(self, default=Unconfigurable, sample_shape=None,
+                 optional=False, readonly=False):
         super(DistributionParam, self).__init__(
             default, sample_shape, optional, readonly)
 
