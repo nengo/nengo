@@ -612,11 +612,9 @@ def test_set_eval_points(Simulator):
     Simulator(model)  # Builds fine
 
 
-@pytest.mark.parametrize('eval_points, radius', [
-    (UniformHypersphere().sample(500, 1), 0.5),
-    (UniformHypersphere().sample(500, 1), 1.),
-    (UniformHypersphere().sample(500, 1), 1.5)])
-def test_eval_points_scaling(Simulator, eval_points, radius, seed):
+@pytest.mark.parametrize('radius', [0.5, 1., 1.5])
+def test_eval_points_scaling(Simulator, radius, seed, rng):
+    eval_points = UniformHypersphere().sample(500, 1, rng=rng)
     model = nengo.Network(seed=seed)
     with model:
         a = nengo.Ensemble(1, 1, radius=radius)
