@@ -24,25 +24,29 @@ def sample(dist, n_samples, rng):
     return np.array(dist)
 
 
+def gen_eval_points(ens, eval_points, rng):
+    if isinstance(eval_points, Distribution):
+        n_points = ens.n_eval_points
+        if n_points is None:
+            n_points = default_n_eval_points(ens.n_neurons, ens.dimensions)
+        eval_points = eval_points.sample(n_points, ens.dimensions, rng)
+        # eval_points should be in the ensemble's representational range
+        eval_points *= ens.radius
+    else:
+        if (ens.n_eval_points is not None
+                and eval_points.shape[0] != ens.n_eval_points):
+            warnings.warn("Number of eval_points doesn't match "
+                          "n_eval_points. Ignoring n_eval_points.")
+        eval_points = np.array(eval_points, dtype=np.float64)
+    return eval_points
+
+
 @Builder.register(Ensemble)  # noqa: C901
 def build_ensemble(model, ens):
     # Create random number generator
     rng = np.random.RandomState(model.seeds[ens])
 
-    # Generate eval points
-    if isinstance(ens.eval_points, Distribution):
-        n_points = ens.n_eval_points
-        if n_points is None:
-            n_points = default_n_eval_points(ens.n_neurons, ens.dimensions)
-        eval_points = ens.eval_points.sample(n_points, ens.dimensions, rng)
-        # eval_points should be in the ensemble's representational range
-        eval_points *= ens.radius
-    else:
-        if (ens.n_eval_points is not None
-                and ens.eval_points.shape[0] != ens.n_eval_points):
-            warnings.warn("Number of eval_points doesn't match "
-                          "n_eval_points. Ignoring n_eval_points.")
-        eval_points = np.array(ens.eval_points, dtype=np.float64)
+    eval_points = gen_eval_points(ens, ens.eval_points, rng=rng)
 
     # Set up signal
     model.sig[ens]['in'] = Signal(np.zeros(ens.dimensions),

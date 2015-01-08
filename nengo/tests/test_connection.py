@@ -605,6 +605,7 @@ def test_set_eval_points(Simulator):
         b = nengo.Ensemble(10, 2)
         # ConnEvalPoints parameter checks that pre is an ensemble
         nengo.Connection(a, b, eval_points=[[0, 0], [0.5, 1]])
+        nengo.Connection(a, b, eval_points=nengo.dists.Uniform(0, 1))
         with pytest.raises(ValueError):
             nengo.Connection(a.neurons, b, eval_points=[[0, 0], [0.5, 1]])
 

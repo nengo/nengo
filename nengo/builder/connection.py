@@ -4,6 +4,7 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder.builder import Builder
+from nengo.builder.ensemble import gen_eval_points
 from nengo.builder.node import build_pyfunc
 from nengo.builder.operator import DotInc, ElementwiseInc, PreserveValue, Reset
 from nengo.builder.signal import Signal
@@ -19,17 +20,16 @@ BuiltConnection = collections.namedtuple(
     'BuiltConnection', ['decoders', 'eval_points', 'transform', 'solver_info'])
 
 
-def build_linear_system(model, conn):
+def build_linear_system(model, conn, rng):
     encoders = model.params[conn.pre_obj].encoders
     gain = model.params[conn.pre_obj].gain
     bias = model.params[conn.pre_obj].bias
 
-    eval_points = conn.eval_points
-    if eval_points is None:
+    if conn.eval_points is None:
         eval_points = npext.array(
             model.params[conn.pre_obj].eval_points, min_dims=2)
     else:
-        eval_points = npext.array(eval_points, min_dims=2)
+        eval_points = gen_eval_points(conn.pre_obj, conn.eval_points, rng)
 
     x = np.dot(eval_points, encoders.T / conn.pre_obj.radius)
     activities = conn.pre_obj.neuron_type.rates(x, gain, bias)
@@ -101,7 +101,8 @@ def build_connection(model, conn):
                                 tag="%s input" % conn))
     elif isinstance(conn.pre_obj, Ensemble):
         # Normal decoded connection
-        eval_points, activities, targets = build_linear_system(model, conn)
+        eval_points, activities, targets = build_linear_system(
+            model, conn, rng)
 
         # Use cached solver, if configured
         solver = model.decoder_cache.wrap_solver(conn.solver)
