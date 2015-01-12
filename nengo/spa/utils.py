@@ -20,16 +20,14 @@ def enable_spa_params(model):
             'vocab', VocabularyParam(None, optional=True))
 
 
-def similarity(data, probe, vocab):
-    """Return the similarity between the probed data and the vocabulary.
+def similarity(data, vocab):
+    """Return the similarity between some data and the vocabulary.
 
     Parameters
     ----------
-    data: ProbeDict
-        Collection of simulation data returned by sim.run() function call.
-    probe: Probe
-        Probe with desired data.
-    vocab: spa.Vocabulary, list, np.ndarray, np.matrix
+    data: array_like
+        The data used for comparison.
+    vocab: spa.Vocabulary, array_like
         Vocabulary (or list of vectors) to use to calculate
         the similarity values
 
@@ -41,4 +39,4 @@ def similarity(data, probe, vocab):
     else:
         probe_vectors = vocab.T
 
-    return np.dot(data[probe], probe_vectors)
+    return np.dot(data, probe_vectors)

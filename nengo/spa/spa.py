@@ -150,7 +150,7 @@ class SPA(nengo.Network):
     def get_output_vocab(self, name):
         return self.get_module_output(name)[1]
 
-    def similarity(self, data, probe):
+    def similarity(self, data, probe, vocab=None):
         """Return the similarity between the probed data and corresponding
         vocabulary.
 
@@ -161,5 +161,6 @@ class SPA(nengo.Network):
         probe: Probe
             Probe with desired data.
         """
-        return nengo.spa.similarity(
-            data, probe, self.config[probe.target].vocab)
+        if vocab is None:
+            vocab = self.config[probe.target].vocab
+        return nengo.spa.similarity(data[probe], vocab)
