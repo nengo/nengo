@@ -143,44 +143,6 @@ def test_config_property():
     assert len(nengo.config.Config.context) == 0
 
 
-def test_config_str():
-    """Ensure that string representations are nice."""
-    with nengo.Network() as net1:
-        assert net1.config[nengo.Ensemble].params == list(
-            nengo.Ensemble.param_list())
-
-        net1.config[nengo.Ensemble].radius = 3.0
-        net1.config[nengo.Ensemble].seed = 10
-        assert str(net1.config[nengo.Ensemble]) == (
-            "All parameters for Ensemble:\n"
-            "  radius: 3.0\n"
-            "  seed: 10")
-
-        ens = nengo.Ensemble(10, 1, radius=2.0, label="A")
-        assert str(net1.config[ens]) == ("Parameters set for %s:" % ens)
-
-        with nengo.Network() as net2:
-            assert str(net2.config[nengo.Ensemble]) == (
-                "All parameters for Ensemble:")
-            net2.config[nengo.Ensemble].radius = 5.0
-            assert str(net2.config[nengo.Ensemble]) == (
-                "All parameters for Ensemble:\n"
-                "  radius: 5.0")
-
-            with nengo.Network() as net3:
-                net3.config[nengo.Ensemble].set_param(
-                    "extra", Parameter(default="20"))
-                net3.config[nengo.Ensemble].seed = 20
-                assert str(net3.config[nengo.Ensemble]) == (
-                    "All parameters for Ensemble:\n"
-                    "  seed: 20\n"
-                    "  extra: 20")
-                net3.config[ens].extra = 50
-                assert str(net3.config[ens]) == (
-                    "Parameters set for %s:\n"
-                    "  extra: 50" % ens)
-
-
 def test_external_class():
     class A(object):
         thing = Parameter(default='hey')
@@ -220,6 +182,11 @@ def test_instance_fallthrough():
     assert config[A].amount == 3
     assert config[inst1].amount == 2
     assert config[inst2].amount == 3
+    # If class default is deleted, unset instances go back
+    del config[A].amount
+    assert config[A].amount == 1
+    assert config[inst1].amount == 2
+    assert config[inst2].amount == 1
 
 
 if __name__ == '__main__':

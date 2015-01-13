@@ -16,6 +16,7 @@ import collections
 import inspect
 
 from nengo.params import is_param
+from nengo.utils.compat import itervalues
 
 
 class ClassParams(object):
@@ -61,18 +62,26 @@ class ClassParams(object):
             del self.get_param(key).defaults[self]
 
     def __str__(self):
-        lines = ["All parameters for %s:" % self._configures.__name__]
-
-        # Only print defaults if we've configured them
-        for attr in self.default_params:
+        name = self._configures.__name__
+        lines = ["Parameters configured for %s:" % name]
+        for attr in list(self.default_params) + list(self.extra_params):
             if self in self.get_param(attr):
                 lines.append("  %s: %s" % (attr, getattr(self, attr)))
+        if len(lines) > 1:
+            return "\n".join(lines)
+        else:
+            return "No parameters configured for %s." % name
 
-        # Print all extra params
-        for attr in self.extra_params:
-            lines.append("  %s: %s" % (attr, getattr(self, attr)))
+    def __repr__(self):
+        # Only print defaults if we've configured them
+        params = []
+        filled_defaults = [attr for attr in self.default_params
+                           if self in self.get_param(attr)]
+        for attr in filled_defaults + sorted(self.extra_params):
+            params.append("%s: %s" % (attr, getattr(self, attr)))
 
-        return "\n".join(lines)
+        return "<%s[%s]{%s}>" % (self.__class__.__name__,
+                                 self._configures.__name__, ", ".join(params))
 
     def get_param(self, key):
         if key in self._extraparams:
@@ -158,6 +167,16 @@ class InstanceParams(object):
         else:
             self._clsparams.get_param(key).__delete__(self)
 
+    def __repr__(self):
+        params = []
+        filled_params = [attr for attr in self._clsparams.params
+                         if self in self._clsparams.get_param(attr)]
+        for attr in filled_params:
+            params.append("%s: %s" % (attr, getattr(self, attr)))
+
+        return "<%s[%s]{%s}>" % (self.__class__.__name__,
+                                 self._configures, ", ".join(params))
+
     def __str__(self):
         lines = ["Parameters set for %s:" % str(self._configures)]
         for attr in self._clsparams.params:
@@ -235,6 +254,36 @@ class Config(object):
         # Otherwise, return the param default
         return desc.default
 
+    @staticmethod
+    def all_defaults(nengo_cls=None):
+        """Look up all of the default values in the current context.
+
+        Parameters
+        ----------
+        nengo_cls : class, optional
+            If specified, only the defaults for a particular class will
+            be returned. If not specified, the defaults for all configured
+            classes will be returned.
+
+        Returns
+        -------
+        str
+        """
+        lines = []
+        if nengo_cls is None:
+            all_configured = set()
+            for config in Config.context:
+                all_configured.update(key for key in config.params
+                                      if inspect.isclass(key))
+            lines.extend([Config.all_defaults(key) for key in all_configured])
+        else:
+            lines.append("Current defaults for %s:" % nengo_cls.__name__)
+            for attr in dir(nengo_cls):
+                if is_param(getattr(nengo_cls, attr)):
+                    val = Config.default(nengo_cls, attr)
+                    lines.append("  %s: %s" % (attr, val))
+        return "\n".join(lines)
+
     def __enter__(self):
         Config.context.append(self)
 
@@ -278,6 +327,13 @@ class Config(object):
         raise KeyError(
             "Type '%(name)s' is not set up for configuration. Call "
             "configures('%(name)s') first." % {'name': key.__class__.__name__})
+
+    def __repr__(self):
+        classes = [key.__name__ for key in self.params if inspect.isclass(key)]
+        return "<%s(%s)>" % (self.__class__.__name__, ', '.join(classes))
+
+    def __str__(self):
+        return "\n".join(str(v) for v in itervalues(self.params))
 
     def configures(self, cls):
         """Start configuring a particular class and its instances."""
