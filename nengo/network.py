@@ -172,6 +172,9 @@ class Network(object):
         raise AttributeError("config cannot be overwritten. See help("
                              "nengo.Config) for help on modifying configs.")
 
+    def __contains__(self, obj):
+        return type(obj) in self.objects and obj in self.objects[type(obj)]
+
     def __enter__(self):
         Network.context.append(self)
         self._config.__enter__()
