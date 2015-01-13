@@ -40,7 +40,7 @@ class PDF(Distribution):
     """An arbitrary distribution from a PDF."""
 
     def __init__(self, x, p):
-        psum = p.sum()
+        psum = np.sum(p)
         if np.abs(psum - 1) > 1e-8:
             raise ValueError("PDF must sum to one (sums to %f)" % psum)
 
@@ -52,6 +52,9 @@ class PDF(Distribution):
         cumsum *= 0.5
         cumsum[1:] = cumsum[:-1] + cumsum[1:]
         self.cdf = cumsum
+
+    def __repr__(self):
+        return "PDF(x=%r, p=%r)" % (self.x, self.pdf)
 
     def sample(self, n, d=None, rng=np.random):
         shape = (n,) if d is None else (n, d)
@@ -88,6 +91,10 @@ class Uniform(Distribution):
                 and self.low == other.low
                 and self.high == other.high
                 and self.integer == other.integer)
+
+    def __repr__(self):
+        return "Uniform(low=%r, high=%r%s)" % (
+            self.low, self.high, ", integer=True" if self.integer else "")
 
     def sample(self, n, d=None, rng=np.random):
         shape = (n,) if d is None else (n, d)
@@ -127,6 +134,9 @@ class Gaussian(Distribution):
                 and self.mean == other.mean
                 and self.std == other.std)
 
+    def __repr__(self):
+        return "Gaussian(mean=%r, std=%r)" % (self.mean, self.std)
+
     def sample(self, n, d=None, rng=np.random):
         shape = (n,) if d is None else (n, d)
         return rng.normal(loc=self.mean, scale=self.std, size=shape)
@@ -147,6 +157,10 @@ class UniformHypersphere(Distribution):
 
     def __init__(self, surface=False):
         self.surface = surface
+
+    def __repr__(self):
+        return "UniformHypersphere(%s)" % (
+            "surface=True" if self.surface else "")
 
     def sample(self, n, d, rng=np.random):
         if d is None or d < 1:  # check this, since other dists allow d = None
@@ -185,6 +199,7 @@ class Choice(Distribution):
 
     def __init__(self, options, weights=None):
         self.options = np.array(options)
+        self.weights = weights
 
         weights = (np.asarray(weights) if weights is not None else
                    np.ones(len(options)))
@@ -199,6 +214,11 @@ class Choice(Distribution):
             raise ValueError(
                 "Sum of weights must be positive (got %f)" % total)
         self.p = weights / total
+
+    def __repr__(self):
+        return "Choice(options=%r%s)" % (
+            self.options,
+            "" if self.weights is None else ", weights=%r" % self.weights)
 
     def sample(self, n, d=None, rng=np.random):
         if d is not None and np.prod(self.options.shape[1:]) != d:
