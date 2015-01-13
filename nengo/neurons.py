@@ -15,6 +15,13 @@ class NeuronType(object):
 
     probeable = []
 
+    @property
+    def _argreprs(self):
+        return []
+
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, ", ".join(self._argreprs))
+
     def rates(self, x, gain, bias):
         """Compute firing rates (in Hz) for given vector input, ``x``.
 
@@ -134,6 +141,10 @@ class Sigmoid(NeuronType):
     def __init__(self, tau_ref=0.002):
         self.tau_ref = tau_ref
 
+    @property
+    def _argreprs(self):
+        return [] if self.tau_ref == 0.002 else ["tau_ref=%s" % self.tau_ref]
+
     def gain_bias(self, max_rates, intercepts):
         """Return gain and bias given maximum firing rate and x-intercept."""
         lim = 1. / self.tau_ref
@@ -155,6 +166,15 @@ class LIFRate(NeuronType):
     def __init__(self, tau_rc=0.02, tau_ref=0.002):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
+
+    @property
+    def _argreprs(self):
+        args = []
+        if self.tau_rc != 0.02:
+            args.append("tau_rc=%s" % self.tau_rc)
+        if self.tau_ref != 0.002:
+            args.append("tau_ref=%s" % self.tau_ref)
+        return args
 
     def rates(self, x, gain, bias):
         J = gain * x + bias
@@ -233,10 +253,19 @@ class AdaptiveLIFRate(LIFRate):
 
     probeable = ['rates', 'adaptation']
 
-    def __init__(self, tau_n=1, inc_n=10e-3, **lif_args):
+    def __init__(self, tau_n=1, inc_n=0.01, **lif_args):
         super(AdaptiveLIFRate, self).__init__(**lif_args)
         self.tau_n = tau_n
         self.inc_n = inc_n
+
+    @property
+    def _argreprs(self):
+        args = super(AdaptiveLIFRate, self)._argreprs
+        if self.tau_n != 1:
+            args.append("tau_n=%s" % self.tau_n)
+        if self.inc_n != 0.01:
+            args.append("inc_n=%s" % self.inc_n)
+        return args
 
     def step_math(self, dt, J, output, adaptation):
         """Compute rates for input current (incl. bias)"""
@@ -250,10 +279,19 @@ class AdaptiveLIF(LIF):
 
     probeable = ['spikes', 'adaptation', 'voltage', 'refractory_time']
 
-    def __init__(self, tau_n=1, inc_n=10e-3, **lif_args):
+    def __init__(self, tau_n=1, inc_n=0.01, **lif_args):
         super(AdaptiveLIF, self).__init__(**lif_args)
         self.tau_n = tau_n
         self.inc_n = inc_n
+
+    @property
+    def _argreprs(self):
+        args = super(AdaptiveLIF, self)._argreprs
+        if self.tau_n != 1:
+            args.append("tau_n=%s" % self.tau_n)
+        if self.inc_n != 0.01:
+            args.append("inc_n=%s" % self.inc_n)
+        return args
 
     def step_math(self, dt, J, output, voltage, ref, adaptation):
         """Compute rates for input current (incl. bias)"""
@@ -310,6 +348,19 @@ class Izhikevich(NeuronType):
         self.coupling = coupling
         self.reset_voltage = reset_voltage
         self.reset_recovery = reset_recovery
+
+    @property
+    def _argreprs(self):
+        args = []
+
+        def add(attr, default):
+            if getattr(self, attr) != default:
+                args.append("%s=%s" % (attr, getattr(self, attr)))
+        add("tau_recovery", 0.02)
+        add("coupling", 0.2)
+        add("reset_voltage", -65)
+        add("reset_recovery", 8)
+        return args
 
     def rates(self, x, gain, bias):
         J = gain * x + bias
