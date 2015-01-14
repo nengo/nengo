@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import absolute_import
 
 import os
+import warnings
 
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives
@@ -92,8 +93,14 @@ class NotebookDirective(Directive):
         ipext.export_py(nb, dest_path_py)
 
         # Create evaluated ipynb (if necessary)
-        nb_eval = ipext.export_evaluated(
-            nb, dest_path, skip_exceptions=skip_exceptions)
+        try:
+            nb_eval = ipext.export_evaluated(
+                nb, dest_path, skip_exceptions=skip_exceptions)
+        except Exception as e:
+            warnings.warn(
+                "Notebook conversion failed with the following traceback: \n"
+                + str(e))
+            nb_eval = nb
         evaluated_html = ipext.export_html(nb_eval)
 
         # Create link to notebook and script files
