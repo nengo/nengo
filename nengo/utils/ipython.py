@@ -229,12 +229,7 @@ def export_evaluated(nb, dest_path=None, skip_exceptions=False):
     Optionally saves the notebook to dest_path.
     """
     nb_runner = NotebookRunner(nb)
-    try:
-        nb_runner.run_notebook(skip_exceptions=skip_exceptions)
-    except Exception as e:
-        return ("Notebook conversion failed with the following traceback: \n%s"
-                % re.sub(r'\\033[\[\]]([0-9]{1,2}([;@][0-9]{0,2})*)*[mKP]?',
-                         '', str(e)))
+    nb_runner.run_notebook(skip_exceptions=skip_exceptions)
     if dest_path is not None:
         with open(dest_path, 'w') as f:
             current.write(nb_runner.nb, f, 'json')
