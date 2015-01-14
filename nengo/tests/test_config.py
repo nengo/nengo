@@ -41,8 +41,6 @@ def test_config_basic():
     with pytest.raises(AttributeError):
         model.config[a].something_else = 1
         model.config[a2b].something = 1
-    with pytest.raises(AttributeError):
-        model.config[model].something
 
     with pytest.raises(KeyError):
         model.config['a'].something
