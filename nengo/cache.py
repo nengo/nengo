@@ -1,6 +1,5 @@
 """Caching capabilities for a faster build process."""
 
-import errno
 import hashlib
 import inspect
 import logging
@@ -25,22 +24,20 @@ def get_fragment_size(path):
 
 
 def safe_stat(path):
-    """Does os.stat, but fails gracefully if file not found."""
+    """Does os.stat, but fails gracefully in case of an OSError."""
     try:
         return os.stat(path)
     except OSError as err:
-        if err.errno != errno.ENOENT:
-            raise
+        logger.warning("OSError during safe_stat: %s", err)
     return None
 
 
 def safe_remove(path):
-    """Does os.remove, but fails gracefully if file not found."""
+    """Does os.remove, but fails gracefully in case of an OSError."""
     try:
         os.remove(path)
     except OSError as err:
-        if err.errno != errno.ENOENT:
-            raise
+        logger.warning("OSError during safe_remove: %s", err)
 
 
 class Fingerprint(object):
