@@ -142,7 +142,7 @@ class Simulator(object):
     @dt.setter
     def dt(self, dummy):
         raise AttributeError("Cannot change simulator 'dt'. Please file "
-                             "an issue at http://github.com/ctn-waterloo/nengo"
+                             "an issue at http://github.com/nengo/nengo"
                              "/issues and describe your use case.")
 
     @property

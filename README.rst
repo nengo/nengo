@@ -1,13 +1,13 @@
-.. image:: https://travis-ci.org/ctn-waterloo/nengo.png?branch=master
-  :target: https://travis-ci.org/ctn-waterloo/nengo
+.. image:: https://travis-ci.org/nengo/nengo.png?branch=master
+  :target: https://travis-ci.org/nengo/nengo
   :alt: Travis-CI build status
 
-.. image:: https://coveralls.io/repos/ctn-waterloo/nengo/badge.png?branch=master
-  :target: https://coveralls.io/r/ctn-waterloo/nengo?branch=master
+.. image:: https://coveralls.io/repos/nengo/nengo/badge.png?branch=master
+  :target: https://coveralls.io/r/nengo/nengo?branch=master
   :alt: Test coverage
 
-.. image:: https://requires.io/github/ctn-waterloo/nengo/requirements.png?branch=master
-  :target: https://requires.io/github/ctn-waterloo/nengo/requirements/?branch=master
+.. image:: https://requires.io/github/nengo/nengo/requirements.png?branch=master
+  :target: https://requires.io/github/nengo/nengo/requirements/?branch=master
   :alt: Requirements Status
 
 .. image:: https://pypip.in/v/nengo/badge.png
@@ -28,39 +28,31 @@ Nengo: Large-scale brain modelling in Python
 Installation
 ============
 
-We will be making a release on PyPI soon,
-meaning you will be able to ``pip install nengo``.
-For now, you can do the following::
+To install Nengo, use::
 
-  pip install -e git://github.com/ctn-waterloo/nengo.git#egg=nengo
+  pip install nengo
 
-Nengo supports Python 2.6, 2.7, and 3.3+ in a single codebase.
+Nengo depends on `NumPy <http://www.numpy.org/>`_.
+If you have difficulty installing,
+try install NumPy first.
 
-Usage
-=====
-
-TODO
+Nengo supports Python 2.6, 2.7, and 3.3+.
 
 Documentation & Examples
 ========================
 
-Documentation and examples can be found at
-`ReadTheDocs <https://nengo.readthedocs.org/en/latest/>`_.
+Documentation and examples can be found
+`<https://pythonhosted.org/nengo/>`_.
 
 
-Testing
-=======
+Running tests
+=============
 
 One way to verify that your installation is working correctly
 is to run the unit tests. We use ``py.test``,
 so you can run the Nengo unit tests with::
 
   py.test --pyargs nengo
-
-The test suite can take some time to run,
-so we recommend install the ``pytest-xdist`` plugin
-and running ``py.test --pyargs nengo -n 4``
-or however many free CPU cores you have available.
 
 Running individual tests
 ------------------------
@@ -88,6 +80,11 @@ for easier debugging. To enable this feature, set the environment variable
 ``NENGO_TEST_PLOT=1``, for example::
 
   NENGO_TEST_PLOT=1 py.test --pyargs nengo
+
+Or, for the current terminal session::
+
+  export NENGO_TEST_PLOT=1
+  py.test --pyargs nengo
 
 Plots are placed in ``nengo.simulator.plots`` in whatever directory
 ``py.test`` is invoked from.

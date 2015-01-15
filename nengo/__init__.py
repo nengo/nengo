@@ -5,7 +5,7 @@ Nengo
 Nengo provides a package for doing large-scale brain modelling in Python.
 
 The source code repository for this package is found at
-https://www.github.com/ctn-waterloo/nengo. Examples of models can be found
+https://www.github.com/nengo/nengo. Examples of models can be found
 in the `examples` directory of the source code repository.
 """
 

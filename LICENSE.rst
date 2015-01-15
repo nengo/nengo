@@ -178,7 +178,7 @@ This contributor agreement ("Agreement") documents the rights granted
 by contributors to Us. To make this document effective, please sign it
 and send it to Us by electronic submission, following the instructions
 at
-<https://github.com/ctn-waterloo/nengo/blob/master/CONTRIBUTORS.rst>.
+<https://github.com/nengo/nengo/blob/master/CONTRIBUTORS.rst>.
 This is a legally binding document, so please read it carefully before
 agreeing to it. The Agreement may cover more than one software project
 managed by Us.
@@ -192,7 +192,7 @@ managed by Us.
 to Us in which You own or assert ownership of the Copyright. If You do
 not own the Copyright in the entire work of authorship, please follow
 the instructions in
-<https://github.com/ctn-waterloo/nengo/blob/master/CONTRIBUTORS.rst>.
+<https://github.com/nengo/nengo/blob/master/CONTRIBUTORS.rst>.
 
 "Copyright" means all rights protecting works of authorship owned or
 controlled by You, including copyright, moral and neighboring rights,
@@ -323,7 +323,7 @@ You confirm that:
     Your parents or guardian sign the Agreement.
 
 (d) You have followed the instructions in
-    <https://github.com/ctn-waterloo/nengo/blob/master/CONTRIBUTORS.rst>,
+    <https://github.com/nengo/nengo/blob/master/CONTRIBUTORS.rst>,
     if You do not own the Copyright in the entire work of authorship
     Submitted.
 
