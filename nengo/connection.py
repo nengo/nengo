@@ -165,6 +165,9 @@ class Connection(NengoObject):
     eval_points : (n_eval_points, pre_size) array_like or int, optional
         Points at which to evaluate `function` when computing decoders,
         spanning the interval (-pre.radius, pre.radius) in each dimension.
+    scale_eval_points : bool
+        Indicates whether the eval_points should be scaled by the radius of
+        the pre Ensemble. Defaults to True.
     learning_rule_type : instance or list or dict of LearningRuleType, optional
         Methods of modifying the connection weights during simulation.
 
@@ -209,12 +212,14 @@ class Connection(NengoObject):
         default=None, optional=True)
     eval_points = EvalPointsParam(
         default=None, optional=True, sample_shape=('*', 'size_in'))
+    scale_eval_points = BoolParam(default=True)
     seed = IntParam(default=None, optional=True)
     probeable = ListParam(default=['output', 'input', 'transform', 'decoders'])
 
     def __init__(self, pre, post, synapse=Default, transform=Default,
                  solver=Default, learning_rule_type=Default, function=Default,
-                 modulatory=Default, eval_points=Default, seed=Default):
+                 modulatory=Default, eval_points=Default,
+                 scale_eval_points=Default, seed=Default):
         self.pre = pre
         self.post = post
 
@@ -224,6 +229,7 @@ class Connection(NengoObject):
         self.modulatory = modulatory
         self.synapse = synapse
         self.transform = transform
+        self.scale_eval_points = scale_eval_points
         self.eval_points = eval_points  # Must be set before function
         self.function_info = function  # Must be set after transform
 

@@ -11,16 +11,19 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("dimensions", [1, 4])
-def test_target_function(Simulator, nl_nodirect, plt, dimensions, seed, rng):
+@pytest.mark.parametrize("radius", [1, 2.0])
+def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
+                         seed, rng):
     eval_points = UniformHypersphere().sample(1000, dimensions, rng=rng)
+    eval_points *= radius
     f = lambda x: x ** 2
     targets = f(eval_points)
 
     model = nengo.Network(seed=seed)
     with model:
         model.config[nengo.Ensemble].neuron_type = nl_nodirect()
-        inp = nengo.Node(lambda t: np.sin(t * 2 * np.pi))
-        ens1 = nengo.Ensemble(40 * dimensions, dimensions)
+        inp = nengo.Node(lambda t: np.sin(t * 2 * np.pi) * radius)
+        ens1 = nengo.Ensemble(40 * dimensions, dimensions, radius=radius)
         n1 = nengo.Node(size_in=dimensions)
         n2 = nengo.Node(size_in=dimensions)
         transform = np.linspace(1, -1, num=dimensions).reshape(-1, 1)
@@ -41,7 +44,7 @@ def test_target_function(Simulator, nl_nodirect, plt, dimensions, seed, rng):
     plt.subplot(2, 1, 2)
     plt.plot(sim.trange(), sim.data[probe2])
     plt.title('Square by passing in function to connection')
-    plt.saveas = ('utils.test_connection.test_target_function_%d.pdf'
-                  % dimensions)
+    plt.saveas = ('utils.test_connection.test_target_function_%d_%g.pdf'
+                  % (dimensions, radius))
 
-    assert np.allclose(sim.data[probe1], sim.data[probe2], atol=0.2)
+    assert np.allclose(sim.data[probe1], sim.data[probe2], atol=0.2 * radius)

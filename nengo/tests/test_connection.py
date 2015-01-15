@@ -615,7 +615,8 @@ def test_set_eval_points(Simulator):
 
 @pytest.mark.parametrize('sample', [False, True])
 @pytest.mark.parametrize('radius', [0.5, 1., 1.5])
-def test_eval_points_scaling(Simulator, sample, radius, seed, rng):
+@pytest.mark.parametrize('scale', [False, True])
+def test_eval_points_scaling(Simulator, sample, radius, seed, rng, scale):
     eval_points = UniformHypersphere()
     if sample:
         eval_points = eval_points.sample(500, 3, rng=rng)
@@ -624,12 +625,14 @@ def test_eval_points_scaling(Simulator, sample, radius, seed, rng):
     with model:
         a = nengo.Ensemble(1, 3, radius=radius)
         b = nengo.Ensemble(1, 3)
-        con = nengo.Connection(a, b, eval_points=eval_points)
+        con = nengo.Connection(a, b, eval_points=eval_points,
+                               scale_eval_points=scale)
 
     sim = Simulator(model)
     dists = np.linalg.norm(sim.data[con].eval_points, axis=1)
-    assert np.all(dists <= radius)
-    assert np.any(dists >= 0.9 * radius)
+    limit = radius if scale else 1.0
+    assert np.all(dists <= limit)
+    assert np.any(dists >= 0.9 * limit)
 
 
 def test_solverparam():

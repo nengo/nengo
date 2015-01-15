@@ -24,7 +24,7 @@ def sample(dist, n_samples, rng):
     return np.array(dist)
 
 
-def gen_eval_points(ens, eval_points, rng):
+def gen_eval_points(ens, eval_points, rng, scale_eval_points=True):
     if isinstance(eval_points, Distribution):
         n_points = ens.n_eval_points
         if n_points is None:
@@ -37,7 +37,8 @@ def gen_eval_points(ens, eval_points, rng):
                           "n_eval_points. Ignoring n_eval_points.")
         eval_points = np.array(eval_points, dtype=np.float64)
 
-    eval_points *= ens.radius  # scale by ensemble radius
+    if scale_eval_points:
+        eval_points *= ens.radius  # scale by ensemble radius
     return eval_points
 
 

@@ -54,4 +54,6 @@ def target_function(eval_points, targets):
         x = tuple(x)
         return func_dict[x]
 
-    return {'function': function, 'eval_points': eval_points}
+    return {'function': function,
+            'eval_points': eval_points,
+            'scale_eval_points': False}
