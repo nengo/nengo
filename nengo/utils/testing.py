@@ -22,6 +22,9 @@ class Plotter(object):
         def __call__(self, *args, **kwargs):
             return Plotter.Mock()
 
+        def __mul__(self, other):
+            return 1.0
+
         @classmethod
         def __getattr__(cls, name):
             if name in ('__file__', '__path__'):

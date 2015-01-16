@@ -9,6 +9,31 @@ from nengo.utils.compat import range
 from nengo.utils.ensemble import tuning_curves
 
 
+def axis_size(ax=None):
+    """Get axis width and height in pixels.
+
+    Based on a StackOverflow response:
+    http://stackoverflow.com/questions/19306510/
+        determine-matplotlib-axis-size-in-pixels
+
+    Parameters
+    ----------
+    ax : axis object
+        The axes to determine the size of. Defaults to current axes.
+
+    Returns
+    -------
+    width : float
+        Width of axes in pixels.
+    height : float
+        Height of axes in pixels.
+    """
+    ax = plt.gca() if ax is None else ax
+    fig = ax.figure
+    bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    return bbox.width * fig.dpi, bbox.height * fig.dpi
+
+
 def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
     """Image plot of general data (like imshow but with non-pixel axes).
 
@@ -42,7 +67,7 @@ def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
         plt.colorbar(image, ax=ax)
 
 
-def rasterplot(time, spikes, ax=None, use_eventplot=None, **kwargs):  # noqa: C901
+def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa: C901
     """Generate a raster plot of the provided spike data
 
     Parameters
@@ -54,8 +79,8 @@ def rasterplot(time, spikes, ax=None, use_eventplot=None, **kwargs):  # noqa: C9
     ax: matplotlib.axes.Axes
         The figure axes to plot into.
     use_eventplot: boolean
-        Whether to use the new Matplotlib `eventplot` routine. By default,
-        we use the routine if it exists (newer Matplotlib).
+        Whether to use the new Matplotlib `eventplot` routine. It is slower
+        and makes larger image files, so we do not use it by default.
 
     Returns
     -------
@@ -79,9 +104,6 @@ def rasterplot(time, spikes, ax=None, use_eventplot=None, **kwargs):  # noqa: C9
 
     # older Matplotlib doesn't have eventplot
     has_eventplot = hasattr(ax, 'eventplot')
-    if use_eventplot is None:
-        use_eventplot = has_eventplot
-
     if use_eventplot and not has_eventplot:
         raise ValueError("Your Matplotlib version does not have 'eventplot'")
 
@@ -105,7 +127,14 @@ def rasterplot(time, spikes, ax=None, use_eventplot=None, **kwargs):  # noqa: C9
     else:
         kwargs.setdefault('linestyle', 'None')
         kwargs.setdefault('marker', '|')
-        kwargs.setdefault('markersize', 3)  # looks good for 100 neurons
+        # Default markersize determined by matching eventplot
+        ax_height = axis_size(ax)[1]
+        markersize = max(ax_height * 0.965 / n_neurons, 1)
+        # For 1 - 3 neurons, we need an extra fudge factor to match eventplot
+        markersize -= max(4 - n_neurons, 0) ** 2 * ax_height * 0.005
+        kwargs.setdefault('markersize', markersize)
+        kwargs.setdefault('markeredgewidth', 1)
+
         for i in range(n_neurons):
             spiketimes = time[spikes[:, i] > 0].ravel()
             ax.plot(spiketimes, np.zeros_like(spiketimes) + (i + 1),
@@ -119,6 +148,10 @@ def rasterplot(time, spikes, ax=None, use_eventplot=None, **kwargs):  # noqa: C9
     if n_neurons < 5:
         # make sure only integer ticks for small neuron numbers
         ax.set_yticks(np.arange(1, n_neurons + 1))
+
+    # --- remove ticks as these are distracting in rasters
+    ax.xaxis.set_ticks_position('none')
+    ax.yaxis.set_ticks_position('none')
 
     return ax
 
