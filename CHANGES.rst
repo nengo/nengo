@@ -19,8 +19,8 @@ Release History
    - Bugfixes
    - Documentation
 
-2.0.0 (unreleased)
-==================
+2.0.0 (January 15, 2015)
+========================
 
 Initial release of Nengo 2.0!
 Supports Python 2.6+ and 3.3+.
