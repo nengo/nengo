@@ -23,12 +23,14 @@ def pytest_generate_tests(metafunc):
 
     # if `--optional` is not set, filter out time-consuming notebooks
     ignores = [] if metafunc.config.option.optional else [
-        'lorenz_attractor.ipynb', 'spa_sequence_routed.ipynb',
-        'spa_sequence-Class.ipynb', 'spa_sequence-Context.ipynb',
-        'spa_parser.ipynb', 'question_control.ipynb', 'izhikevich.ipynb',
+        'inhibitory_gating.ipynb', 'izhikevich.ipynb',
         'learn_communication_channel.ipynb', 'learn_product.ipynb',
-        'learn_unsupervised.ipynb', 'learn_square.ipynb',
-        'inhibitory_gating.ipynb', 'nef_summary.ipynb']
+        'learn_square.ipynb', 'learn_unsupervised.ipynb',
+        'lorenz_attractor.ipynb', 'nef_summary.ipynb', 'network_design.ipynb',
+        'network_design_advanced.ipynb', 'question.ipynb',
+        'question_control.ipynb', 'question_memory.ipynb',
+        'spa_parser.ipynb', 'spa_sequence.ipynb',
+        'spa_sequence_routed.ipynb']
     argvalues = [pytest.mark.skipif(os.path.basename(path) in ignores,
                                     reason="Time-consuming")(path)
                  for path in examples]
