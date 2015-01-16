@@ -247,8 +247,13 @@ Configs and Factories
 
 In the old API, the defaults for an object were defined by
 creating a factory.
-
 In the new API, there is a config system instead.
+
+The following example summarizes the config system:
+
+.. toctree::
+
+   examples/config
 
 See the documentation on the config system for more details.
 

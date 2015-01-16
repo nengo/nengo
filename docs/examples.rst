@@ -7,6 +7,14 @@ Nengo creates these models using the principles of the
 The first set of examples explains these three principles:
 *representation*, *transformation*, and *dynamics*.
 
+For a summary of these principles, see the following example:
+
+.. toctree::
+
+   examples/nef_summary
+
+The following examples give a more detailed presentation:
+
 .. toctree::
    :maxdepth: 2
 
@@ -17,16 +25,19 @@ The first set of examples explains these three principles:
 Putting these three principles together allows us to scale
 these examples up to larger networks that do more complex functions.
 
-.. toctree::
-
-   examples/nef_summary
-
 Nodes
 =====
 
 .. toctree::
 
    examples/delay_node
+
+Ensembles
+=========
+
+.. toctree::
+
+   examples/tuning_curves
 
 Connections
 ===========
@@ -55,22 +66,16 @@ Networks
    examples/basal_ganglia
    examples/template_integrator
 
-Control
-=======
-
-.. toctree::
-
-   examples/armcontrol
-   examples/vehicle
-
 Semantic Pointer Architecture
 =============================
 
 .. toctree::
 
+   examples/convolution
    examples/question
    examples/question_control
    examples/question_memory
+   examples/spa_sequence
    examples/spa_sequence_routed
    examples/spa_parser
 
@@ -80,3 +85,4 @@ Extending Nengo
 .. toctree::
 
    examples/rectified_linear
+   examples/izhikevich
