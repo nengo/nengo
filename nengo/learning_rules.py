@@ -54,7 +54,6 @@ class PES(LearningRuleType):
         The given learning rate.
     error_connection : Connection
         The modulatory connection created to project the error signal.
-
     """
 
     error_connection = ConnectionParam()
@@ -85,8 +84,14 @@ class BCM(LearningRuleType):
 
     Attributes
     ----------
-    TODO
-
+    learning_rate : float
+        The given learning rate.
+    theta_tau : float
+        A scalar indicating the time constant for theta integration.
+    pre_tau : float
+        Filter constant on activities of neurons in pre population.
+    post_tau : float
+        Filter constant on activities of neurons in post population.
     """
 
     pre_tau = NumberParam(low=0, low_open=True)
@@ -122,8 +127,14 @@ class Oja(LearningRuleType):
 
     Attributes
     ----------
-    TODO
-
+    learning_rate : float
+        The given learning rate.
+    beta : float
+        A scalar governing the amount of forgetting. Larger => more forgetting.
+    pre_tau : float
+        Filter constant on activities of neurons in pre population.
+    post_tau : float
+        Filter constant on activities of neurons in post population.
     """
 
     pre_tau = NumberParam(low=0, low_open=True)

@@ -8,6 +8,38 @@ from nengo.utils.network import with_self
 
 
 class EnsembleArray(nengo.Network):
+    """An array of ensembles.
+
+    This acts, in some ways, like a single high-dimensional ensemble,
+    but actually consists of many sub-ensembles, each one representing
+    a separate dimension. This tends to be much faster to create
+    and can be more accurate than having one huge high-dimensional ensemble.
+    However, since the neurons represent different dimensions separately,
+    we cannot compute nonlinear interactions between those dimensions.
+
+    Parameters
+    ----------
+    n_neurons : int
+        The number of neurons in each sub-ensemble.
+    n_ensembles : int
+        The number of sub-ensembles to create.
+    ens_dimensions: int, optional
+        The dimensionality of each sub-ensemble. Default: 1.
+    neuron_nodes : bool, optional
+        Whether to create a node that provides each access to each individual
+        neuron, typically for the purpose of inibiting the entire
+        EnsembleArray. Default: False.
+    label : str, optional
+        A name to assign this EnsmbleArray.
+        Used for visualization and debugging.
+    seed : int, optional
+        Random number seed that will be used in the build step.
+    add_to_container : bool, optional
+        Whether this network will be added to the current context.
+
+    Additional parameters for each sub-ensemble can be passed through
+    ``**ens_kwargs``.
+    """
 
     def __init__(self, n_neurons, n_ensembles, ens_dimensions=1,
                  neuron_nodes=False, label=None, seed=None,

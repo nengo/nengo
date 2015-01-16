@@ -34,7 +34,7 @@ To install Nengo, use::
 
 Nengo depends on `NumPy <http://www.numpy.org/>`_.
 If you have difficulty installing,
-try install NumPy first (see below).
+try installing NumPy first (see below).
 
 Nengo supports Python 2.6, 2.7, and 3.3+.
 
@@ -47,6 +47,8 @@ Developer install
    cd nengo
    python setup.py develop --user
 
+If you're using a ``virtualenv``
+(recommended!) then you can omit the ``--user`` flag.
 
 Installing requirements
 -----------------------

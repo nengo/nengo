@@ -121,14 +121,13 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
     Examples
     --------
 
-        A = EnsembleArray(50, n_ensembles=10)
-        B = EnsembleArray(50, n_ensembles=10)
-        C = EnsembleArray(50, n_ensembles=10)
-        cconv = nengo.networks.CircularConvolution(50, dimensions=10)
-
-        nengo.Connection(A.output, cconv.A)
-        nengo.Connection(B.output, cconv.B)
-        nengo.Connection(cconv.output, C.input)
+    >>> A = EnsembleArray(50, n_ensembles=10)
+    >>> B = EnsembleArray(50, n_ensembles=10)
+    >>> C = EnsembleArray(50, n_ensembles=10)
+    >>> cconv = nengo.networks.CircularConvolution(50, dimensions=10)
+    >>> nengo.Connection(A.output, cconv.A)
+    >>> nengo.Connection(B.output, cconv.B)
+    >>> nengo.Connection(cconv.output, C.input)
 
     Notes
     -----

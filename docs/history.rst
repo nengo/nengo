@@ -3,16 +3,16 @@ Nengo history
 *************
 
 Some form of Nengo has existed since 2003.
-From then until now
+From then until now,
 students and researchers have used Nengo to create models
 which help us understand the brain.
 Nengo has evolved with that understanding.
 
-We're currently in what could be called the third generation
+We're currently in what could be called the fifth generation
 of Nengo development. Many of the design decisions of this generation
 are a result of lessons learnt from the first four generations.
 
-Summary:
+**Summary**
 
 Generation 1: NESim (Matlab) -> Nemo (Matlab)
 
@@ -20,9 +20,7 @@ Generation 2: NEO (Java) -> Nengo (Java) -> Nengo GUI (Piccolo2D)
 
 Generation 3: Nengo scripting layer (Jython) -> Nengo Theano backend (Python)
 
-Generation 4: Nengo API -> Nengo reference implementation (Python)
-                        -> Nengo reference implementation (Jython)
-                        -> Nengo backends (Theano, PyNN)
+Generation 4: Nengo AP -> Nengo reference implementation (Python, Jython, Theano, PyNN)
 
 Generation 5: Nengo 2.0
 
@@ -39,15 +37,13 @@ to facilitate the use of these methods in theoretical neuroscience research.
 NESim (Neural Engineering Simulator) was that set of Matlab scripts,
 along with a basic graphical user interface that allowed users
 to set the parameters of simulations.
-Its primary developers were Chris Eliasmith and Bryan Tripp (???).
+Its primary developers were Chris Eliasmith and Bryan Tripp.
 
 NESim offered fast simulations by leveraging the computational power
 of Matlab. And while the GUI may not have been pretty,
 it enabled researchers to quickly test out ideas before
 making a full model. The use of Matlab also meant that researchers could
-do their simulation and analysis in the same environment.
-
-Nemo stuff
+do their simulation and analysis in the same Nemo.
 
 However, there were some downsides to NESim. It was difficult
 to communicate with other simulation environments.
@@ -56,11 +52,6 @@ The object model of Matlab is limited.
 And, even though NESim is open source software,
 Matlab itself is not, meaning that NESim
 was not accessible to everyone.
-
-Important publications that used NESim:
-
-* cite1
-* cite2
 
 Generation 2
 ============
@@ -87,11 +78,11 @@ is quite easy.
 
 Nengo was a robust neural simulator, but required modelers
 to be proficient in Java. To overcome this,
-in the summer of 2008 (???), a graphical user interface
+in the summer of 2008, a graphical user interface
 was created to make model creation and simulation
 easy for anyone.
 
-???YT link
+Check out `a demo video of this interface <https://www.youtube.com/watch?v=q4jxI26gUtA>`_.
 
 The GUI leveraged the Java graphical toolkit Piccolo2D.java,
 which makes it easy to make zoomable interfaces that
@@ -112,10 +103,11 @@ efforts to leverage non-standard computing devices
 like GPUs were difficult to implement
 in a cross-platform manner.
 
-Important publications that used Nengo (Java):
-
-* cite3
-* cite4
+While new versions of Nengo followed,
+this version remains in use to this day.
+`nengo.ca <http://www.nengo.ca/>`_
+contains documentation for this version,
+now referred to as Nengo 1.4.
 
 Generation 3
 ============
@@ -135,8 +127,8 @@ thanks for a Java implementation of Python called Jython.
 
 Although this boost in productivity allowed for the creation of Spaun,
 the simulation speed was still much to be desired. Because of that,
-a project that used the nef.py scripts, but instead
-of creating objects using Nengo (Java), used Theano was created.
+a project that had the same interface as the ``nef.py`` scripts,
+but with an implementation that used Theano.
 
 However, there were concerns that the Jython
 and the Theano backed implementations would soon
@@ -170,17 +162,18 @@ that a modeler would want to run.
 Generation 5
 ============
 
-Both the old version of the Nengo API and the Theano back-end have been
-abbandoned in favour of Numpy and OpenCL driven back-ends.
+Issues with the implementation of Theano led to
+a new effort to create an OpenCL-backed version of Nengo.
+With so many possible backends, the Nengo API
+switched focus to being able to provide a consistent
+front-end experience while being able to run models
+on different backends. The Nengo API, and a NumPy-backed
+reference simulator, matured into what we have now released as
+Nengo 2.0.
 
-There are various other back-ends in development for BlueGene, Neurogrid,
-Spinnaker and various other hardwares.
-
-This generation is currently pushing forward!
-This documentation lives in the same repository
-as the Nengo API is now a standard with any proposed changes facing
-much scrutiny.
-The reference implementation is moving forward at BLAH.
+Since standardizing on the scripting frontend of Nengo 2.0,
+new backends have begun development, for the BlueGene, Neurogrid,
+SpiNNaker and other hardware.
 
 We hope that, in this generation,
 we have made all the right compromises such that
@@ -190,13 +183,6 @@ those models much more quickly than before.
 Further, by making this API available,
 we hope to be able to interact even further with
 the rest of the neuroscience packages written in Python.
-
-If you'd like to contribute to the development of Nengo,
-please take a look one of the repositories below
-and look at the list of issues to see what remains to be implemented!
-
-The document describes the major differences
-between the old and new APIs.
 
 Citations
 =========

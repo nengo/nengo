@@ -17,30 +17,27 @@ Python itself.
 Basic installation
 ------------------
 
-This isn't quite true yet, but once we put Nengo
-on PyPI, you will be able to
+To install Nengo, we recommend using ``pip``.
 
 .. code:: bash
 
    pip install nengo
-
-For now, do a developer installation.
 
 Developer installation
 ----------------------
 
 If you plan to make changes to Nengo,
 you should clone its git repository
-and install from it.
+and do a developer (editable) install instead.
 
 .. code:: bash
 
    git clone https://github.com/nengo/nengo.git
    cd nengo
-   python setup.py develop
+   python setup.py develop --user
 
-If you get an error relating to permissions, try
-``python setup.py develop --user``.
+If you're using a ``virtualenv``
+(recommended!) then you can omit the ``--user`` flag.
 
 Usage
 =====
@@ -148,6 +145,7 @@ Functions can be computed over multiple dimensions, as well.
 
   def product(x):
       return x[0] * x[1]
+
   with model:
       product_ensemble = nengo.Ensemble(n_neurons=40, dimensions=1)
       nengo.Connection(two_d_ensemble, product_ensemble, function=product)
@@ -164,7 +162,7 @@ If we wanted to collect data from
 our 2D Ensemble and the Product of those two dimensions::
 
   with model:
-      2d_probe = nengo.Probe(two_d_ensemble, synapse=0.01)
+      two_d_probe = nengo.Probe(two_d_ensemble, synapse=0.01)
       product_probe = nengo.Probe(product_ensemble, synapse=0.01)
 
 The argument ``synapse`` defines the time constant
@@ -201,4 +199,17 @@ for analysis or visualization.
   print(sim.data[product_probe][-10:])
 
 For more details on these objects,
-see `the basic API documentation <user_api.html>`_.
+see `the API documentation <user_api.html>`_.
+
+Next steps
+==========
+
+* If you're wondering how this works and you're not
+  familiar with the Neural Engineering Framework,
+  we recommend reading
+  `this technical overview <http://compneuro.uwaterloo.ca/files/publications/stewart.2012d.pdf>`_.
+* If you have some understanding of the NEF already,
+  or just want to dive in headfirst,
+  check out `our extensive set of examples <examples.html>`_.
+* If you want to see the real capabilities of Nengo, see our
+  `publications created with the NEF and Nengo <http://compneuro.uwaterloo.ca/publications.html>`_.

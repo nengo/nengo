@@ -17,7 +17,7 @@ class Ensemble(NengoObject):
         The number of representational dimensions.
     radius : int, optional
         The representational radius of the ensemble.
-    encoders : ndarray (`n_neurons`, `dimensions`), optional
+    encoders : Distribution or ndarray (`n_neurons`, `dimensions`), optional
         The encoders, used to transform from representational space
         to neuron space. Each row is a neuron's encoder, each column is a
         representational dimension.
@@ -28,12 +28,14 @@ class Ensemble(NengoObject):
     max_rates : Distribution or ndarray (`n_neurons`), optional
         The activity of each neuron when dot(x, e) = 1, where e is the neuron's
         encoder.
-    eval_points : ndarray (n_eval_points, `dimensions`) or int, optional
+    eval_points : Distribution or ndarray (`n_eval_points`, `dims`), optional
         The evaluation points used for decoder solving, spanning the interval
-        (-radius, radius) in each dimension. If an int is provided, this
-        sets the number of evaluation points to be drawn from a hypersphere.
-        If None, then a heuristic is used to determine the number of
-        evaluation points.
+        (-radius, radius) in each dimension, or a distribution from which to
+        choose evaluation points. Default: ``UniformHypersphere``.
+    n_eval_points : int, optional
+        The number of evaluation points to be drawn from the `eval_points`
+        distribution. If None (the default), then a heuristic is used to
+        determine the number of evaluation points.
     neuron_type : Neurons, optional
         The model that simulates all neurons in the ensemble.
     noise : StochasticProcess, optional

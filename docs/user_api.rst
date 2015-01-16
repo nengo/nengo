@@ -47,10 +47,19 @@ Probe
 .. autoclass:: nengo.probe.Probe
    :members:
 
-Neurons
-=======
+Neuron types
+============
+
+.. autoclass:: nengo.neurons.NeuronType
+   :members:
 
 .. autoclass:: nengo.neurons.Direct
+   :members:
+
+.. autoclass:: nengo.neurons.RectifiedLinear
+   :members:
+
+.. autoclass:: nengo.neurons.Sigmoid
    :members:
 
 .. autoclass:: nengo.neurons.LIF
@@ -65,8 +74,13 @@ Neurons
 .. autoclass:: nengo.neurons.AdaptiveLIFRate
    :members:
 
-Learning rules
-==============
+.. autoclass:: nengo.neurons.Izhikevich
+   :members:
+
+Learning rule types
+===================
+
+.. autoclass:: nengo.learning_rules.LearningRuleType
 
 .. autoclass:: nengo.learning_rules.PES
    :members:

@@ -49,7 +49,14 @@ class Probe(NengoObject):
 
     Probes cannot directly affect the simulation.
 
-    TODO: Example usage for each object.
+    All Nengo objects can be probed (except Probes themselves).
+    Each object has different attributes that can be probed.
+    To see what is probeable for each object, print its `probeable` attribute.
+
+    >>> with nengo.Network():
+    ...     ens = nengo.Ensemble(10, 1)
+    >>> print(ens.probeable)
+    ['decoded_output', 'input']
 
     Parameters
     ----------

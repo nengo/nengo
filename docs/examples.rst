@@ -24,6 +24,9 @@ The following examples give a more detailed presentation:
 
 Putting these three principles together allows us to scale
 these examples up to larger networks that do more complex functions.
+Below are some of these complex functions,
+as well as other examples that we hope will be helpful
+as reference when building your own Nengo models.
 
 Nodes
 =====
@@ -38,6 +41,7 @@ Ensembles
 .. toctree::
 
    examples/tuning_curves
+   examples/izhikevich
 
 Connections
 ===========
@@ -64,7 +68,7 @@ Networks
    examples/ensemble_array
    examples/matrix_multiplication
    examples/basal_ganglia
-   examples/template_integrator
+   examples/integrator_network
 
 Semantic Pointer Architecture
 =============================
@@ -85,4 +89,3 @@ Extending Nengo
 .. toctree::
 
    examples/rectified_linear
-   examples/izhikevich

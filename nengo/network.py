@@ -40,9 +40,6 @@ class Network(object):
             right_eye = OcularDominance()
             nengo.Connection(left_eye.column, right_eye.column)
 
-    For more information and advanced usage, please see the Nengo
-    documentation at http://nengo.readthedocs.org/.
-
     Parameters
     ----------
     label : str, optional

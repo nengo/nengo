@@ -1,12 +1,16 @@
+**************************************
+Converting from Nengo 1.4 to Nengo 2.0
+**************************************
+
 On this page, we'll go over the changes between Nengo 1.4 and 2.0.
 They will first be reviewed heuristically in the section Big Changes, before
 being broken down practically in Changes to Common Functions
 
 Big Changes
------------
+===========
 
 Objects instead of strings
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------
 
 In the old API each object had to be assigned it's own unique string.
 
@@ -15,7 +19,7 @@ but they are not unique. Instead, if you want to identify an object, you just
 make sure to assign it a variable in your network
 
 No Origins and Terminations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------
 
 Previously, each object had a set of origins and terminations,
 which determined how the object produced output and
@@ -32,7 +36,7 @@ origins and terminations can be accomplished
 during the build phase of the model instead.
 
 Only Ensembles, Nodes, Networks and Probes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------------
 
 Many other objects have been removed,
 in order to start with a very minimal
@@ -44,13 +48,14 @@ Basically:
 - Anything made with neurons is an Ensemble.
 - Anything not made with neurons (inputs, interfaces) are Nodes.
 - Probes are how you get data out of Nodes and Ensembles after simulating.
-- Networks are dumb containers for Ensembles and Nodes.
+- Networks are dumb containers
+  for Ensembles, Nodes, Probes, and other Networks.
 
 A power user can easily divide his code and stop from repeating themselves
 by encapsulating code that appears in multiple places in a Network.
 
 Model and Simulator separation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------
 
 There is now a clear separation between
 model definition and model creation/simulation.
@@ -89,7 +94,7 @@ Many commonly used functions have been
 simplified or changed to be more explicit.
 
 Making ensembles
-^^^^^^^^^^^^^^^^
+----------------
 
 Old API signature::
 
@@ -111,7 +116,7 @@ See `Ensemble documentation <user_api.html#ensemble>`_
 for a list of properties that can be manipulated.
 
 Making ensemble arrays (i.e., network arrays)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------------------
 
 Network arrays were very tightly coupled
 with the old API. In the new API,
@@ -131,12 +136,12 @@ New API::
 See `EnsembleArray documentation <networks.html#ensemblearray>`_
 for more information.
 
-**************************
-Converting from 1.4 to 2.0
-**************************
+Changes to Common Functions
+===========================
+
 
 Making nodes
-^^^^^^^^^^^^
+------------
 
 Previously, there were several different ways
 to provide input to a Nengo model:
@@ -161,7 +166,7 @@ See `Node documentation <user_api.html#node>`_
 for more information.
 
 Making inputs
-^^^^^^^^^^^^^
+-------------
 
 In the old API, inputs were defined as::
 
@@ -176,7 +181,7 @@ See the first example `Node documentation <user_api.html#node>`_
 for an example of this.
 
 Terminations and Origins
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 Practically, to convert from one to the other, consider this table
 that uses an example ensemble called ``ens`` who's input needs to be
@@ -216,7 +221,7 @@ Nengo 2.0::
 
 
 Connecting things
-^^^^^^^^^^^^^^^^^
+-----------------
 
 A lot of the complexity of the old API
 has been pushed down to the constructors
@@ -242,32 +247,8 @@ to route dimensions easily::
 
 The keyword argument ``pstc`` has been renamed to ``synapse``.
 
-Configs and Factories
-^^^^^^^^^^^^^^^^^^^^^
-
-In the old API, the defaults for an object were defined by
-creating a factory.
-In the new API, there is a config system instead.
-
-The following example summarizes the config system:
-
-.. toctree::
-
-   examples/config
-
-See the documentation on the config system for more details.
-
-Learning
-^^^^^^^^
-
-In the old API there was a very confusing distinction between learning
-decoders and learning connection weights. Now, all learning is accomplished
-via decoder learning.
-
-See the communication channel example for more details.
-
 Under the hood changes
-----------------------
+======================
 
 Under the hood, Nengo has been completely rewritten.
 If you want to know the underlying structure of

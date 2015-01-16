@@ -17,16 +17,31 @@ The following examples will help you to build your own networks:
    examples/network_design
    examples/network_design_advanced
 
+You may also find the following documentation on the ``config`` system
+useful:
+
+.. toctree::
+
+   examples/config
+
+
 Ensemble Array
 ==============
 
 .. autoclass:: nengo.networks.EnsembleArray
    :members:
 
-Basal Ganglia
-=============
+Action Selection
+================
 
 .. autofunction:: nengo.networks.BasalGanglia
+
+.. autofunction:: nengo.networks.Thalamus
+
+Working Memory
+==============
+
+.. autofunction:: nengo.networks.InputGatedMemory
 
 Product
 =======

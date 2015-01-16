@@ -132,7 +132,19 @@ class TransformParam(NdarrayParam):
 class Connection(NengoObject):
     """Connects two objects together.
 
-    TODO: Document slice syntax here and in the transform parameter.
+    Almost any Nengo object can act as the pre or post side of a connection.
+    Additionally, you can use Python slice syntax to access only some of the
+    dimensions of the pre or post object.
+
+    For example, if ``node`` has ``size_out=2`` and ``ensemble`` has
+    ``size_in=1``, we could not create the following connection::
+
+        nengo.Connection(node, ensemble)
+
+    But, we could create either of these two connections.
+
+        nengo.Connection(node[0], ensemble)
+        nengo.Connection(ndoe[1], ensemble)
 
     Parameters
     ----------
@@ -153,6 +165,9 @@ class Connection(NengoObject):
         Post-synaptic time constant (PSTC) to use for filtering.
     transform : (post_size, pre_size) array_like, optional
         Linear transform mapping the pre output to the post input.
+        This transform is in terms of the sliced size; if either pre
+        or post is a slice, the transform must be of shape
+        (len(pre_slice), len(post_slice)).
     solver : Solver
         Instance of a Solver class to compute decoders or weights
         (see `nengo.solvers`). If solver.weights is True, a full

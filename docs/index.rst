@@ -12,6 +12,7 @@ with sensible defaults in few lines of code::
     import nengo
     import numpy as np
     import matplotlib.pyplot as plt
+
     with nengo.Network() as net:
         sin_input = nengo.Node(output=np.sin)
         # A population of 100 neurons representing a sine wave
@@ -22,6 +23,7 @@ with sensible defaults in few lines of code::
         nengo.Connection(sin_ens, sin_squared, function=np.square)
         # View the decoded output of sin_squared
         squared_probe = nengo.Probe(sin_squared, synapse=0.01)
+
     sim = nengo.Simulator(net)
     sim.run(5.0)
     plt.plot(sim.trange(), sim.data[squared_probe])
