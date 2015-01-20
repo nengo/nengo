@@ -58,9 +58,8 @@ def build_ensemble(model, ens):
     if isinstance(ens.neuron_type, Direct):
         encoders = np.identity(ens.dimensions)
     elif isinstance(ens.encoders, Distribution):
-        encoders = ens.encoders.sample(
-            ens.n_neurons, ens.dimensions, rng=rng).astype(
-            np.float64, copy=False)
+        encoders = ens.encoders.sample(ens.n_neurons, ens.dimensions, rng=rng)
+        encoders = np.asarray(encoders, dtype=np.float64)
     else:
         encoders = npext.array(ens.encoders, min_dims=2, dtype=np.float64)
     encoders /= npext.norm(encoders, axis=1, keepdims=True)
