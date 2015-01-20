@@ -29,6 +29,16 @@ Release History
   (`#626 <https://github.com/nengo/nengo/issues/626>`_,
   `#628 <https://github.com/nengo/nengo/pull/628>`_)
 
+**Improvements**
+
+- ``rasterplot`` works with 0 neurons, and generates much smaller PDFs.
+  (`#601 <https://github.com/nengo/nengo/pull/601>`_)
+
+**Bug fixes**
+
+- Fix compatibility with NumPy 1.6.
+  (`#627 <https://github.com/nengo/nengo/pull/627>`_)
+
 2.0.0 (January 15, 2015)
 ========================
 
