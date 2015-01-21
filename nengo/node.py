@@ -40,7 +40,7 @@ class OutputParam(Parameter):
         self.data[node] = output
 
     def validate_callable(self, node, output):
-        t, x = np.asarray(0.0), np.zeros(node.size_in)
+        t, x = 0.0, np.zeros(node.size_in)
         args = (t, x) if node.size_in > 0 else (t,)
         result, invoked = checked_call(output, *args)
         if not invoked:

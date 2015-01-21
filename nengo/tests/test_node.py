@@ -316,6 +316,22 @@ def test_delay(Simulator, plt):
     plt.plot(sim.trange(), -sim.data[bp])
 
 
+def test_args(Simulator, plt):
+    def fn(t, x):
+        assert isinstance(t, float)
+        assert isinstance(x, np.ndarray)
+        assert x.flags.writeable is False
+        assert x[0] == t
+
+    with nengo.Network() as model:
+        u = nengo.Node(lambda t: t)
+        v = nengo.Node(fn, size_in=1, size_out=0)
+        nengo.Connection(u, v, synapse=None)
+
+    sim = Simulator(model)
+    sim.run(0.01)
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])

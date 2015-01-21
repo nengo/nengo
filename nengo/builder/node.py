@@ -24,15 +24,20 @@ class SimPyFunc(Operator):
         return "SimPyFunc(%s -> %s '%s')" % (self.x, self.output, self.fn)
 
     def make_step(self, signals, dt, rng):
-        if self.output is not None:
-            output = signals[self.output]
+        output = signals[self.output] if self.output is not None else None
         fn = self.fn
-        args = [signals['__time__']] if self.t_in else []
-        args += [signals[self.x]] if self.x is not None else []
+        t_in = self.t_in
+        t_sig = signals['__time__']
+
+        args = []
+        if self.x is not None:
+            x_sig = signals[self.x].view()
+            x_sig.flags.writeable = False
+            args += [x_sig]
 
         def step():
-            y = fn(*args)
-            if self.output is not None:
+            y = fn(t_sig.item(), *args) if t_in else fn(*args)
+            if output is not None:
                 if y is None:
                     raise ValueError(
                         "Function '%s' returned invalid value" % fn.__name__)
