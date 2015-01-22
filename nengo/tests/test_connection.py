@@ -416,7 +416,7 @@ def test_slicing(Simulator, nl, plt, seed):
     t = sim.trange()
 
     for i, [y, p] in enumerate(zip(ys, probes)):
-        plt.subplot(len(ys), 1, i)
+        plt.subplot(len(ys), 1, i + 1)
         plt.plot(t, np.tile(y, (len(t), 1)), '--')
         plt.plot(t, sim.data[p])
 
