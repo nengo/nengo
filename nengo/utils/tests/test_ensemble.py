@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D  # noqa
+import mpl_toolkits.mplot3d  # noqa  Make 3d projection available.
 import pytest
 
 import nengo
