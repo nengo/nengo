@@ -9,8 +9,8 @@ from nengo.utils.filter_design import expm, cont2discrete
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.optional
 def test_expm(rng):
+    pytest.importorskip('scipy')
     import scipy.linalg as linalg
     for a in [np.eye(3), rng.randn(10, 10)]:
         assert np.allclose(linalg.expm(a), expm(a))

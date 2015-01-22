@@ -66,8 +66,8 @@ def _test_rates(Simulator, rates, plt, seed, name=None):
     return relative_rmse
 
 
-@pytest.mark.optional  # requires Scipy
 def test_rates_isi(Simulator, plt, seed):
+    pytest.importorskip('scipy')
     rel_rmse = _test_rates(Simulator, rates_isi, plt, seed)
     assert rel_rmse < 0.3
 

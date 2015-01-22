@@ -120,9 +120,9 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
         # in-situ. They are tested more robustly elsewhere.
 
 
-@pytest.mark.optional
 @pytest.mark.parametrize('Solver', [LstsqL1])
 def test_decoder_solver_extra(Solver, plt, rng):
+    pytest.importorskip('sklearn')
     test_decoder_solver(Solver, plt, rng)
 
 
@@ -158,8 +158,9 @@ def test_weight_solver(Solver, rng):
     assert np.allclose(W1, W2)
 
 
-@pytest.mark.optional  # uses scipy
 def test_scipy_solvers(rng):
+    pytest.importorskip('scipy')
+
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
@@ -170,9 +171,10 @@ def test_scipy_solvers(rng):
     assert np.allclose(x0, x2, atol=2e-5, rtol=1e-3)
 
 
-@pytest.mark.optional  # uses scipy
 @pytest.mark.parametrize('Solver', [Nnls, NnlsL2, NnlsL2nz])
 def test_nnls(Solver, plt, rng):
+    pytest.importorskip('scipy')
+
     A, x = get_system(500, 100, 1, rng=rng, sort=True)
     y = x**2
 
@@ -195,6 +197,8 @@ def test_nnls(Solver, plt, rng):
 
 @pytest.mark.benchmark
 def test_subsolvers_L2(rng):
+    pytest.importorskip('scipy')
+
     ref_solver = cholesky
     solvers = [conjgrad, block_conjgrad, conjgrad_scipy, lsmr_scipy]
 
@@ -219,6 +223,8 @@ def test_subsolvers_L2(rng):
 
 @pytest.mark.benchmark
 def test_subsolvers_L1(rng):
+    pytest.importorskip('sklearn')
+
     A, B = get_system(m=2000, n=1000, d=10, rng=rng)
 
     l1 = 1e-4
@@ -229,6 +235,7 @@ def test_subsolvers_L1(rng):
 
 @pytest.mark.benchmark
 def test_compare_solvers(Simulator, plt, seed):
+    pytest.importorskip('sklearn')
 
     N = 70
     decoder_solvers = [
