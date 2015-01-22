@@ -43,6 +43,7 @@ def pytest_generate_tests(metafunc):
 def test_noexceptions(nb_path, tmpdir, plt):
     """Ensure that no cells raise an exception."""
     pytest.importorskip("IPython", minversion="1.0")
+    pytest.importorskip("jinja2")
     from nengo.utils.ipython import export_py, load_notebook
     nb = load_notebook(nb_path)
     pyfile = "%s.py" % (
@@ -57,6 +58,7 @@ def test_noexceptions(nb_path, tmpdir, plt):
 def test_nooutput(nb_path):
     """Ensure that no cells have output."""
     pytest.importorskip("IPython", minversion="1.0")
+    pytest.importorskip("jinja2")
     from nengo.utils.ipython import load_notebook
     nb = load_notebook(nb_path)
 
