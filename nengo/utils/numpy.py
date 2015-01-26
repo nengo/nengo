@@ -7,6 +7,7 @@ import numpy as np
 
 from .compat import PY2, is_integer, is_iterable
 from ..exceptions import ValidationError
+from .magic import FunctionWrapper
 
 maxint = np.iinfo(np.int32).max
 
@@ -201,3 +202,53 @@ if hasattr(np.fft, 'rfftfreq'):
 else:
     def rfftfreq(n, d=1.0):
         return np.abs(np.fft.fftfreq(n=n, d=d)[:n // 2 + 1])
+
+
+class array_like(object):
+    """Decorator to apply `np.asarray` to function arguments
+
+    We actually use `np.array` with the `copy` argument defaulting
+    to false, since this is more configurable than `np.asarray`.
+
+    Parameters
+    ----------
+    *args : strings
+        The names of the arguments to ensure are arrays.
+    **kwargs
+        Keyword arguments to pass to `np.array`. `copy` defaults to False,
+        so that it acts like `asarray`.
+
+    Example
+    -------
+    A function that adds a scaled version of an array to another array:
+
+    >>> @array_like('A', 'B')
+    >>> def A_plus_scaled_B(A, beta, B):
+    >>>     return A + beta * B
+
+    This function will work as expected even if `A` and `B` are lists.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.arguments = args  # the arguments to run `asarray` on
+        self.array_kwargs = dict(copy=False)
+        self.array_kwargs.update(kwargs)
+
+    def __call__(self, wrapped):
+        import inspect
+
+        # check that self.arguments are valid
+        argspec = inspect.getargspec(wrapped)
+        for arg in self.arguments:
+            if arg not in argspec.args:
+                raise ValueError("'%s' is not an argument of '%s'" %
+                                 (arg, wrapped.__name__))
+
+        # make the wrapper
+        def wrapper(_wrapped, _instance, args, kwargs):
+            callargs = inspect.getcallargs(_wrapped, *args, **kwargs)
+            for arg in self.arguments:
+                callargs[arg] = np.array(callargs[arg], **self.array_kwargs)
+            return wrapped(**callargs)
+
+        return FunctionWrapper(wrapped, wrapper)

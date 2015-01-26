@@ -8,6 +8,7 @@ from nengo.exceptions import SimulationError, ValidationError
 from nengo.params import Parameter, NumberParam, FrozenObject
 from nengo.utils.compat import range
 from nengo.utils.neurons import settled_firingrate
+from nengo.utils.numpy import array_like
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class NeuronType(FrozenObject):
     def _argreprs(self):
         return []
 
+    @array_like('max_rates', 'intercepts', ndmin=1)
     def gain_bias(self, max_rates, intercepts):
         """Compute the gain and bias needed to satisfy max_rates, intercepts.
 
@@ -42,9 +44,9 @@ class NeuronType(FrozenObject):
 
         Parameters
         ----------
-        max_rates : ndarray(dtype=float64)
+        max_rates : array_like
             Maximum firing rates of neurons.
-        intercepts : ndarray(dtype=float64)
+        intercepts : array_like
             X-intercepts of neurons.
 
         Returns
@@ -89,6 +91,7 @@ class NeuronType(FrozenObject):
 
         return gain, bias
 
+    @array_like('x', 'gain', 'bias', ndmin=1)
     def rates(self, x, gain, bias):
         """Compute firing rates (in Hz) for given vector input, ``x``.
 
@@ -99,12 +102,17 @@ class NeuronType(FrozenObject):
 
         Parameters
         ----------
-        x : ndarray(dtype=float64)
+        x : array_like
             Vector-space input.
-        gain : ndarray(dtype=float64)
+        gain : array_like
             Gains associated with each neuron.
-        bias : ndarray(dtype=float64)
+        bias : array_like
             Bias current associated with each neuron.
+
+        Returns
+        -------
+        rates : ndarray
+            The firing rates at each given value of `x`.
         """
         J = gain * x + bias
         out = np.zeros_like(J)
@@ -170,6 +178,7 @@ class RectifiedLinear(NeuronType):
 
     probeable = ('rates',)
 
+    @array_like('max_rates', 'intercepts', ndmin=1)
     def gain_bias(self, max_rates, intercepts):
         """Determine gain and bias by shifting and scaling the lines."""
         gain = max_rates / (1 - intercepts)
@@ -196,6 +205,7 @@ class Sigmoid(NeuronType):
     def _argreprs(self):
         return [] if self.tau_ref == 0.002 else ["tau_ref=%s" % self.tau_ref]
 
+    @array_like('max_rates', 'intercepts', ndmin=1)
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
         lim = 1. / self.tau_ref
@@ -241,6 +251,7 @@ class LIFRate(NeuronType):
             args.append("tau_ref=%s" % self.tau_ref)
         return args
 
+    @array_like('max_rates', 'intercepts', ndmin=1)
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
         inv_tau_ref = 1. / self.tau_ref if self.tau_ref > 0 else np.inf
@@ -255,6 +266,7 @@ class LIFRate(NeuronType):
         bias = 1 - gain * intercepts
         return gain, bias
 
+    @array_like('x', 'gain', 'bias', ndmin=1)
     def rates(self, x, gain, bias):
         """Always use LIFRate to determine rates."""
         J = gain * x + bias
@@ -492,6 +504,7 @@ class Izhikevich(NeuronType):
         add("reset_recovery", 8.)
         return args
 
+    @array_like('x', 'gain', 'bias', ndmin=1)
     def rates(self, x, gain, bias):
         """Estimates steady-state firing rate given gain and bias.
 
