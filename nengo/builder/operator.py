@@ -231,7 +231,10 @@ class ElementwiseInc(Operator):
         Yshape = npext.broadcast_shape(Y.shape, 2)
         assert all(len(s) == 2 for s in [Ashape, Xshape, Yshape])
         for da, dx, dy in zip(Ashape, Xshape, Yshape):
-            assert da in [1, dy] and dx in [1, dy] and max(da, dx) == dy
+            if not (da in [1, dy] and dx in [1, dy] and max(da, dx) == dy):
+                raise ValueError("Incompatible shapes in ElementwiseInc: "
+                                 "Trying to do %s += %s * %s" %
+                                 (Yshape, Ashape, Xshape))
 
         def step():
             Y[...] += A * X
