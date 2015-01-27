@@ -276,7 +276,7 @@ class AdaptiveLIFRate(LIFRate):
         """Compute rates for input current (incl. bias)"""
         n = adaptation
         LIFRate.step_math(self, dt, J - n, output)
-        n += (dt / self.tau_n) * (self.inc_n * output - n)
+        n += -np.expm1(-dt / self.tau_n) * (self.inc_n * output - n)
 
 
 class AdaptiveLIF(AdaptiveLIFRate, LIF):
@@ -284,11 +284,11 @@ class AdaptiveLIF(AdaptiveLIFRate, LIF):
 
     probeable = ['spikes', 'adaptation', 'voltage', 'refractory_time']
 
-    def step_math(self, dt, J, output, voltage, ref, adaptation):
+    def step_math(self, dt, J, spiked, voltage, ref, adaptation):
         """Compute rates for input current (incl. bias)"""
         n = adaptation
-        LIF.step_math(self, dt, J - n, output, voltage, ref)
-        n += (dt / self.tau_n) * (self.inc_n * output - n)
+        LIF.step_math(self, dt, J - n, spiked, voltage, ref)
+        n += -np.expm1(-dt / self.tau_n) * (self.inc_n * spiked - n)
 
 
 class Izhikevich(NeuronType):
