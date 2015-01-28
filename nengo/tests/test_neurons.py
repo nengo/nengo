@@ -106,15 +106,16 @@ def test_lif_zero_tau_ref(Simulator):
     assert np.all(sim.data[p][1:] == max_rate)
 
 
-def test_alif_rate(Simulator, plt):
+def test_alifrate(Simulator, plt):
+    """Test that ALIFRate dynamics decreases firing rates"""
     n = 100
     max_rates = 50 * np.ones(n)
     # max_rates = 200 * np.ones(n)
     intercepts = np.linspace(-0.99, 0.99, n)
     encoders = np.ones((n, 1))
 
-    model = nengo.Network()
-    with model:
+    net = nengo.Network()
+    with net:
         u = nengo.Node(output=0.5)
         a = nengo.Ensemble(n, 1,
                            max_rates=max_rates,
@@ -125,7 +126,7 @@ def test_alif_rate(Simulator, plt):
         ap = nengo.Probe(a.neurons)
 
     dt = 1e-3
-    sim = Simulator(model, dt=dt)
+    sim = Simulator(net, dt=dt)
     sim.run(2.)
 
     t = sim.trange()
@@ -140,7 +141,7 @@ def test_alif_rate(Simulator, plt):
     ax.plot(intercepts, ref[::-1].T, 'k--')
     ax.plot(intercepts, rates[[1, 500, 1000, -1], ::-1].T)
     ax.set_xlabel('input')
-    ax.set_xlabel('rate')
+    ax.set_ylabel('rate')
 
     # check that initial tuning curve is the same as LIF rates
     assert np.allclose(rates[1], ref, atol=0.1, rtol=1e-3)
@@ -153,29 +154,28 @@ def test_alif(Simulator, plt):
     """Test ALIF and ALIFRate by comparing them to each other"""
 
     n = 100
+    d = 1
     max_rates = 50 * np.ones(n)
     intercepts = np.linspace(-0.99, 0.99, n)
     encoders = np.ones((n, 1))
-    nparams = dict(tau_n=1, inc_n=10e-3)
-    eparams = dict(n_neurons=n, max_rates=max_rates,
+    nparams = dict(tau_n=1., inc_n=.01)
+    eparams = dict(n_neurons=n, dimensions=d, max_rates=max_rates,
                    intercepts=intercepts, encoders=encoders)
 
-    model = nengo.Network()
-    with model:
+    net = nengo.Network()
+    with net:
         u = nengo.Node(output=0.5)
         a = nengo.Ensemble(neuron_type=nengo.AdaptiveLIFRate(**nparams),
-                           dimensions=1,
                            **eparams)
         b = nengo.Ensemble(neuron_type=nengo.AdaptiveLIF(**nparams),
-                           dimensions=1,
                            **eparams)
-        nengo.Connection(u, a, synapse=0)
-        nengo.Connection(u, b, synapse=0)
+        nengo.Connection(u, a, synapse=None)
+        nengo.Connection(u, b, synapse=None)
         ap = nengo.Probe(a.neurons)
         bp = nengo.Probe(b.neurons)
 
     dt = 1e-3
-    sim = Simulator(model, dt=dt)
+    sim = Simulator(net, dt=dt)
     sim.run(2.)
 
     t = sim.trange()
