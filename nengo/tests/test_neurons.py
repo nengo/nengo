@@ -8,7 +8,6 @@ from nengo.processes import WhiteNoise
 from nengo.solvers import LstsqL2nz
 from nengo.utils.ensemble import tuning_curves
 from nengo.utils.matplotlib import implot, rasterplot
-from nengo.utils.neurons import rates_kernel
 from nengo.utils.numpy import rms, rmse
 
 logger = logging.getLogger(__name__)
@@ -183,7 +182,7 @@ def test_alif(Simulator, plt, rng):
     i = 3
     t = sim.trange()
     idx = t < t_ss
-    plt.figure(figsize=(10,6))
+    plt.figure(figsize=(10, 6))
     plt.subplot(411)
     plt.plot(t[idx], sim.data[spike_probe][idx, :i])
     plt.subplot(412)
