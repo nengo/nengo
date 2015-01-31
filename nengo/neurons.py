@@ -226,7 +226,6 @@ class LIF(LIFRate):
     probeable = ['spikes', 'voltage', 'refractory_time']
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
-
         # update voltage using accurate exponential integration scheme
         dV = -np.expm1(-dt / self.tau_rc) * (J - voltage)
         voltage += dV
@@ -385,8 +384,13 @@ class AdaptiveLIF(AdaptiveLIFRate, LIF):
     def step_math(self, dt, J, spiked, voltage, ref, adaptation):
         """Compute rates for input current (incl. bias)"""
         n = adaptation
+        k = np.expm1(-dt / self.tau_n)
+        inc = -k
+        dec = k+1
+
+        n *= dec  # decay adaptation
         LIF.step_math(self, dt, J - n, spiked, voltage, ref)
-        n += -np.expm1(-dt / self.tau_n) * (self.inc_n * spiked - n)
+        n += inc * (self.inc_n * spiked)  # increment adaptation
 
 
 class Izhikevich(NeuronType):
