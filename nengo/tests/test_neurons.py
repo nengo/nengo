@@ -208,6 +208,60 @@ def test_alif(Simulator, plt, rng):
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.001)
 
 
+def test_nengo_alif_rates(Simulator, plt):
+    tau_n = .1
+    inc_n = 10.
+    max_rates = np.array([8.095])
+    intercepts = np.array([.059])
+    # tau_n = .1
+    # inc_n = .1
+    # max_rates = np.array([200.])
+    # intercepts = np.array([.2])
+
+    alif_neuron = nengo.AdaptiveLIF(tau_rc=.05, tau_ref=.002,
+                                    tau_n=tau_n, inc_n=inc_n)
+    u_vals = np.array([
+        0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.])
+    Ts = [
+        .1, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0]
+    sim_rates = np.zeros_like(u_vals)
+    num_rates = np.zeros_like(u_vals)
+    for idx, (u, T) in enumerate(zip(u_vals, Ts)):
+        net = nengo.Network()
+        with net:
+            stim = nengo.Node(u)
+            net.ens = nengo.Ensemble(
+                1, 1, neuron_type=alif_neuron,
+                max_rates=max_rates, intercepts=intercepts)
+            nengo.Connection(stim, net.ens.neurons, transform=np.array([[1.]]),
+                             synapse=None)
+            net.ps = nengo.Probe(net.ens.neurons, 'spikes')
+        sim = Simulator(net)
+        est_rate = net.ens.neuron_type.rates(
+            u, sim.data[net.ens].gain, sim.data[net.ens].bias)
+        sim.run(T)
+
+        num_rates[idx] = est_rate
+        spks = sim.data[net.ps]
+        spk_times = np.nonzero(spks)[0]*sim.dt
+        if len(spk_times) > 1:
+            isi = np.diff(spk_times)
+            sim_rates[idx] = 1. / np.mean(isi[-10:])
+        if est_rate > 0.:
+            rel_diff = abs(est_rate - sim_rates[idx]) / est_rate
+            assert rel_diff < .01, (
+                'Estimated rate differs from rate extracted from simulation' +
+                ' by more than 1\% for u=%f' % (u))
+        else:
+            assert sim_rates[idx] == 0.
+
+    plt.plot(u_vals, sim_rates, 'bo', ms=6, label='simulated rate')
+    plt.plot(u_vals, num_rates, 'ro', ms=6, label='numerically estimated rate')
+    plt.legend(loc='upper left')
+    plt.xlabel('input')
+    plt.ylabel('rate')
+
+
 def test_izhikevich(Simulator, plt, seed, rng):
     """Smoke test for using Izhikevich neurons.
 
