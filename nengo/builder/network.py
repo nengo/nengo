@@ -6,7 +6,6 @@ import nengo.utils.numpy as npext
 from nengo.builder.builder import Builder
 from nengo.builder.signal import Signal
 from nengo.network import Network
-from nengo.utils.compat import is_iterable, itervalues
 
 logger = logging.getLogger(__name__)
 
@@ -64,16 +63,7 @@ def build_network(model, network):
     for conn in network.connections:
         model.build(conn)
 
-    logger.debug("Network step 4: Building learning rules")
-    for conn in network.connections:
-        rule = conn.learning_rule
-        if is_iterable(rule):
-            for r in (itervalues(rule) if isinstance(rule, dict) else rule):
-                model.build(r)
-        elif rule is not None:
-            model.build(rule)
-
-    logger.debug("Network step 5: Building probes")
+    logger.debug("Network step 4: Building probes")
     for probe in network.probes:
         model.build(probe)
 

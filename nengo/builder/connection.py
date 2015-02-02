@@ -14,6 +14,7 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.utils.builder import full_transform
+from nengo.utils.compat import is_iterable, itervalues
 
 
 BuiltConnection = collections.namedtuple(
@@ -136,13 +137,6 @@ def build_connection(model, conn):
     if conn.synapse is not None:
         signal = filtered_signal(model, conn, signal, conn.synapse)
 
-    if conn.modulatory:
-        # Make a new signal, effectively detaching from post
-        model.sig[conn]['out'] = Signal(
-            np.zeros(model.sig[conn]['out'].size),
-            name="%s.mod_output" % conn)
-        model.add_op(Reset(model.sig[conn]['out']))
-
     # Add operator for transform
     if isinstance(conn.post_obj, Neurons):
         if not model.has_built(conn.post_obj.ensemble):
@@ -176,10 +170,9 @@ def build_connection(model, conn):
                             model.sig[conn]['out'],
                             tag=str(conn)))
 
-    if conn.learning_rule_type:
-        # Forcing update of signal that is modified by learning rules.
-        # Learning rules themselves apply DotIncs.
-
+    if conn.learning_rule:
+        # Force update of signal (i.e. transform or decoders) that is modified
+        # by learning rules, by adding a PreserveValue op.
         if isinstance(conn.pre_obj, Neurons):
             modified_signal = model.sig[conn]['transform']
         elif isinstance(conn.pre_obj, Ensemble):
@@ -199,6 +192,15 @@ def build_connection(model, conn):
                                type(conn.post_obj).__name__))
 
         model.add_op(PreserveValue(modified_signal))
+
+        # Build learning rules
+        rule = conn.learning_rule
+        if is_iterable(rule):
+            rules = itervalues(rule) if isinstance(rule, dict) else rule
+            for r in rules:
+                model.build(r)
+        elif rule is not None:
+            model.build(rule)
 
     model.params[conn] = BuiltConnection(decoders=decoders,
                                          eval_points=eval_points,

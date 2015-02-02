@@ -118,16 +118,16 @@ def test_configstack():
     inhib = nengo.Config(nengo.Connection)
     inhib[nengo.Connection].synapse = nengo.synapses.Lowpass(0.00848)
     with nengo.Network() as net:
-        net.config[nengo.Connection].modulatory = True
+        net.config[nengo.Connection].transform = -1
         e1 = nengo.Ensemble(5, dimensions=1)
         e2 = nengo.Ensemble(6, dimensions=1)
         excite = nengo.Connection(e1, e2)
         with inhib:
             inhibit = nengo.Connection(e1, e2)
     assert excite.synapse == nengo.Connection.synapse.default
-    assert excite.modulatory
+    assert excite.transform == -1
     assert inhibit.synapse == inhib[nengo.Connection].synapse
-    assert inhibit.modulatory
+    assert inhibit.transform == -1
 
 
 def test_config_property():

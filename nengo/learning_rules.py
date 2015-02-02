@@ -21,6 +21,7 @@ class LearningRuleType(object):
     """
 
     learning_rate = NumberParam(low=0, low_open=True)
+    error_type = 'none'
     probeable = []
 
     def __init__(self, learning_rate=1e-6):
@@ -56,12 +57,11 @@ class PES(LearningRuleType):
         The modulatory connection created to project the error signal.
     """
 
-    error_connection = ConnectionParam()
+    error_type = 'decoder'
     modifies = ['Ensemble', 'Neurons']
-    probeable = ['scaled_error', 'activities']
+    probeable = ['error', 'scaled_error', 'activities']
 
-    def __init__(self, error_connection, learning_rate=1e-6):
-        self.error_connection = error_connection
+    def __init__(self, learning_rate=1e-6):
         super(PES, self).__init__(learning_rate)
 
 
@@ -97,6 +97,7 @@ class BCM(LearningRuleType):
     pre_tau = NumberParam(low=0, low_open=True)
     post_tau = NumberParam(low=0, low_open=True)
     theta_tau = NumberParam(low=0, low_open=True)
+    error_type = 'none'
     modifies = ['Neurons']
     probeable = ['theta', 'pre_filtered', 'post_filtered']
 
@@ -140,6 +141,7 @@ class Oja(LearningRuleType):
     pre_tau = NumberParam(low=0, low_open=True)
     post_tau = NumberParam(low=0, low_open=True)
     beta = NumberParam(low=0)
+    error_type = 'none'
     modifies = ['Neurons']
     probeable = ['pre_filtered', 'post_filtered']
 

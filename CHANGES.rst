@@ -34,6 +34,16 @@ Release History
   further improvements are pending, and the current implementation
   SHOULD NOT BE RELEASED!
   (`#652 <https://github.com/nengo/nengo/pull/652>`_)
+- The ``PES`` learning rule no longer accepts a connection as an argument.
+  Instead, error information is transmitted by making a connection to the
+  learning rule object (e.g.,
+  ``nengo.Connection(error_ensemble, connection.learning_rule)``.
+  (`#344 <https://github.com/nengo/nengo/issues/344>`_,
+  `#642 <https://github.com/nengo/nengo/pull/642>`_)
+- The ``modulatory`` attribute has been removed from ``nengo.Connection``.
+  This was only used for learning rules to this point, and has been removed
+  in favor of connecting directly to the learning rule.
+  (`#642 <https://github.com/nengo/nengo/pull/642>`_)
 
 **Behavioural changes**
 
@@ -72,6 +82,8 @@ Release History
 
 - Fixed issue where setting ``Connection.seed`` through the constructor had
   no effect. (`#724 <https://github.com/nengo/nengo/issues/725>`_)
+- Fixed issue in which learning connections could not be sliced.
+  (`#632 <https://github.com/nengo/nengo/issues/632>`_)
 - Fixed issue when probing scalar transforms.
   (`#667 <https://github.com/nengo/nengo/issues/667>`_,
   `#671 <https://github.com/nengo/nengo/pull/671>`_)

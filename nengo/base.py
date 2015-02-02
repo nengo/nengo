@@ -159,7 +159,9 @@ class NengoObjectParam(Parameter):
 
     def validate(self, instance, nengo_obj):
         from nengo.ensemble import Neurons
-        if not isinstance(nengo_obj, (NengoObject, Neurons, ObjView)):
+        from nengo.connection import LearningRule
+        if not isinstance(nengo_obj, (
+                NengoObject, ObjView, Neurons, LearningRule)):
             raise ValueError("'%s' is not a Nengo object" % nengo_obj)
         if self.nonzero_size_in and nengo_obj.size_in < 1:
             raise ValueError("'%s' must have size_in > 0." % nengo_obj)
