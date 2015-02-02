@@ -136,10 +136,15 @@ def build_oja(model, oja, rule):
 
 @Builder.register(PES)
 def build_pes(model, pes, rule):
-    # TODO: Filter activities
     conn = rule.connection
+
+    # Create input error signal
+    error = Signal(np.zeros(rule.size_in), name="PES:error")
+    model.add_op(Reset(error))
+    model.sig[rule]['in'] = error  # error connection will attach here
+
+    # TODO: Filter activities
     activities = model.sig[conn.pre_obj]['out']
-    error = model.sig[pes.error_connection]['out']
 
     scaled_error = Signal(np.zeros(error.shape),
                           name="PES:error * learning_rate")
@@ -181,6 +186,7 @@ def build_pes(model, pes, rule):
             tag="PES:Inc Decoder"))
 
     # expose these for probes
+    model.sig[rule]['error'] = error
     model.sig[rule]['scaled_error'] = scaled_error
     model.sig[rule]['activities'] = activities
 

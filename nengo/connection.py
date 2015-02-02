@@ -1,10 +1,11 @@
 import logging
+import weakref
 
 import numpy as np
 
 from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.dists import DistOrArrayParam
-from nengo.ensemble import Ensemble
+from nengo.ensemble import Ensemble, Neurons
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.node import Node
 from nengo.params import (
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
     """Connection-specific validation for learning rules."""
+
     def __set__(self, conn, rule):
         conn._learning_rule = None
         super(ConnectionLearningRuleTypeParam, self).__set__(conn, rule)
@@ -97,6 +99,7 @@ class ConnectionFunctionParam(FunctionParam):
 
 class TransformParam(NdarrayParam):
     """The transform additionally validates size_out."""
+
     def __init__(self, default, optional=False, readonly=False):
         super(TransformParam, self).__init__(default, (), optional, readonly)
 
@@ -175,9 +178,6 @@ class Connection(NengoObject):
         connection weight matrix is computed instead of decoders.
     function : callable, optional
         Function to compute using the pre population (pre must be Ensemble).
-    modulatory : bool, optional
-        Specifies whether the connection is modulatory (does not physically
-        connect to post, for use by learning rules), or not (default).
     eval_points : (n_eval_points, pre_size) array_like or int, optional
         Points at which to evaluate `function` when computing decoders,
         spanning the interval (-pre.radius, pre.radius) in each dimension.
@@ -210,9 +210,6 @@ class Connection(NengoObject):
         The given pre object.
     transform : (post_size, pre_size) array_like
         Linear transform mapping the pre output to the post input.
-    modulatory : bool
-        Whether the output of this signal is to act as an error signal for a
-        learning rule.
     seed : int
         The seed used for random number generation.
     """
@@ -223,7 +220,6 @@ class Connection(NengoObject):
     transform = TransformParam(default=np.array(1.0))
     solver = ConnectionSolverParam(default=LstsqL2())
     function_info = ConnectionFunctionParam(default=None, optional=True)
-    modulatory = BoolParam(default=False)
     learning_rule_type = ConnectionLearningRuleTypeParam(
         default=None, optional=True)
     eval_points = EvalPointsParam(
@@ -233,14 +229,12 @@ class Connection(NengoObject):
 
     def __init__(self, pre, post, synapse=Default, transform=Default,
                  solver=Default, learning_rule_type=Default, function=Default,
-                 modulatory=Default, eval_points=Default,
-                 scale_eval_points=Default, seed=Default):
+                 eval_points=Default, scale_eval_points=Default, seed=Default):
         self.pre = pre
         self.post = post
 
         self.solver = solver  # Must be set before learning rule
         self.learning_rule_type = learning_rule_type
-        self.modulatory = modulatory
         self.synapse = synapse
         self.transform = transform
         self.scale_eval_points = scale_eval_points
@@ -332,7 +326,7 @@ class Connection(NengoObject):
 
 class LearningRule(object):
     def __init__(self, connection, learning_rule_type):
-        self.connection = connection
+        self._connection = weakref.ref(connection)
         self.learning_rule_type = learning_rule_type
 
     def __repr__(self):
@@ -344,5 +338,33 @@ class LearningRule(object):
             self.connection, self.learning_rule_type)
 
     @property
+    def connection(self):
+        return self._connection()
+
+    @property
     def probeable(self):
         return self.learning_rule_type.probeable
+
+    @property
+    def size_in(self):  # size of error signal
+        error_type = self.learning_rule_type.error_type.lower()
+        if error_type == 'none':
+            return 0
+        elif error_type == 'decoder':
+            if isinstance(self.connection.pre_obj, Neurons):
+                return self.connection.pre_obj.ensemble.dimensions
+            elif isinstance(self.connection.pre_obj, Ensemble):
+                return self.connection.size_mid
+            else:
+                raise ValueError("Cannot learn on '%s' type" % (
+                    self.connection.pre_obj.__class__.__name__))
+        elif error_type == 'neuron':
+            raise NotImplementedError()
+        else:
+            raise ValueError("Unrecognized error type '%s'" % (
+                self.learning_rule_type.error_type))
+
+    @property
+    def size_out(self):
+        return 0  # since a learning rule can't connect to anything
+        # TODO: allow probing individual learning rules
