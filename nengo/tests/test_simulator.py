@@ -10,6 +10,7 @@ from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc
 from nengo.builder.signal import Signal
 from nengo.exceptions import ObsoleteError, SimulatorClosed, ValidationError
+from nengo.rc import rc
 from nengo.utils.progress import ProgressBar
 
 
@@ -28,6 +29,36 @@ def test_steps(RefSimulator):
 
         assert np.isscalar(sim.n_steps)
         assert np.isscalar(sim.time)
+
+
+@pytest.mark.parametrize('bits', ["16", "32", "64"])
+def test_dtype(RefSimulator, request, seed, bits):
+    # Ensure dtype is set back to default after the test, even if it fails
+    request.addfinalizer(lambda: rc.set("precision", "bits", "64"))
+
+    float_dtype = np.dtype(getattr(np, "float%s" % bits))
+    int_dtype = np.dtype(getattr(np, "int%s" % bits))
+
+    with nengo.Network() as model:
+        u = nengo.Node([0.5, -0.4])
+        a = nengo.Ensemble(10, 2)
+        nengo.Connection(u, a)
+        p = nengo.Probe(a)
+
+    rc.set("precision", "bits", bits)
+    with RefSimulator(model) as sim:
+        sim.step()
+
+        for k, v in sim.signals.items():
+            assert v.dtype in (
+                float_dtype, int_dtype), "Signal '%s' wrong dtype" % k
+
+        objs = (obj for obj in model.all_objects if sim.data[obj] is not None)
+        for obj in objs:
+            for x in (x for x in sim.data[obj] if isinstance(x, np.ndarray)):
+                assert x.dtype == float_dtype, obj
+
+        assert sim.data[p].dtype == float_dtype
 
 
 def test_time_absolute(Simulator):

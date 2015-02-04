@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 
+import nengo
 from . import numpy as npext
 from ..exceptions import ValidationError
 
@@ -42,8 +43,9 @@ def target_function(eval_points, targets):
                   "the 'function' argument. That approach is faster, so this "
                   "function is deprecated and will be removed in the future.")
 
-    eval_points = npext.array(eval_points, dtype=np.float64, min_dims=2)
-    targets = npext.array(targets, dtype=np.float64, min_dims=2)
+    dtype = nengo.rc.float_dtype
+    eval_points = npext.array(eval_points, dtype=dtype, min_dims=2)
+    targets = npext.array(targets, dtype=dtype, min_dims=2)
 
     if len(eval_points) != len(targets):
         raise ValidationError(
@@ -93,15 +95,16 @@ def eval_point_decoding(conn, sim, eval_points=None):
     """
     from nengo.builder.ensemble import get_activities
     from nengo.builder.connection import get_targets
+    dtype = nengo.rc.float_dtype
 
     if eval_points is None:
         eval_points = sim.data[conn].eval_points
     else:
-        eval_points = np.asarray(eval_points)
+        eval_points = np.asarray(eval_points, dtype=dtype)
 
     ens = conn.pre_obj
     weights = sim.data[conn].weights
     activities = get_activities(sim.data[ens], ens, eval_points)
     decoded = np.dot(activities, weights.T)
-    targets = get_targets(conn, eval_points)
+    targets = get_targets(conn, eval_points, dtype=dtype)
     return eval_points, targets, decoded

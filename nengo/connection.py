@@ -17,6 +17,7 @@ from nengo.params import (
     Parameter,
     Unconfigurable,
 )
+from nengo.rc import rc
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.transforms import Dense, Transform
@@ -180,7 +181,7 @@ class ConnectionFunctionParam(Parameter):
         elif isinstance(function, FunctionInfo):
             function_info = function
         elif is_array_like(function):
-            array = np.array(function, copy=False, dtype=np.float64)
+            array = np.array(function, copy=False, dtype=rc.float_dtype)
             self.check_array(conn, array)
             function_info = FunctionInfo(function=array, size=array.shape[1])
         elif callable(function):

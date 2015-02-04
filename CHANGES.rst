@@ -44,6 +44,9 @@ Release History
 - Added a ``--memory`` option for pytest that prints the total memory
   consumed by the tests when they complete (Linux and Mac OS X only).
   (`#640 <https://github.com/nengo/nengo/pull/640>`__)
+- Added a bit precision setting to change the number of bits allocated
+  to each value tracked by Nengo.
+  (`#640 <https://github.com/nengo/nengo/pull/640>`__)
 
 **Changed**
 

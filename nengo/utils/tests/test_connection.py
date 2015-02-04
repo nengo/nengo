@@ -47,15 +47,23 @@ def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
     assert np.allclose(sim.data[probe1], sim.data[probe2], atol=0.2 * radius)
 
 
-def test_eval_point_decoding(Simulator, nl_nodirect, plt, seed):
+@pytest.mark.parametrize("points_arg", [False, True])
+def test_eval_point_decoding(points_arg, Simulator, nl_nodirect, plt, seed):
     with nengo.Network(seed=seed) as model:
         model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         a = nengo.Ensemble(200, 2)
         b = nengo.Ensemble(100, 1)
         c = nengo.Connection(a, b, function=lambda x: x[0] * x[1])
 
+    kwargs = {}
+    if points_arg:
+        x = np.linspace(-1, 1, 51)
+        y = np.linspace(-1, 1, 51)
+        X, Y = np.meshgrid(x, y)
+        kwargs['eval_points'] = np.column_stack([X.ravel(), Y.ravel()])
+
     with Simulator(model) as sim:
-        eval_points, targets, decoded = eval_point_decoding(c, sim)
+        eval_points, targets, decoded = eval_point_decoding(c, sim, **kwargs)
 
     def contour(xy, z):
         xi, yi = np.meshgrid(np.linspace(-1, 1, 101), np.linspace(-1, 1, 101))

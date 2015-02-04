@@ -3,6 +3,7 @@ import numpy as np
 from nengo.builder import Builder, Operator, Signal
 from nengo.neurons import (AdaptiveLIF, AdaptiveLIFRate, Izhikevich, LIF,
                            NeuronType, SpikingRectifiedLinear)
+from nengo.rc import rc
 
 
 class SimNeurons(Operator):
@@ -130,7 +131,7 @@ def build_spikingrectifiedlinear(model, spikingrectifiedlinear, neurons):
     """
 
     model.sig[neurons]['voltage'] = Signal(
-        np.zeros(neurons.size_in), name="%s.voltage" % neurons)
+        shape=neurons.size_in, name="%s.voltage" % neurons)
     model.add_op(SimNeurons(
         neurons=spikingrectifiedlinear,
         J=model.sig[neurons]['in'],
@@ -161,9 +162,9 @@ def build_lif(model, lif, neurons):
     """
 
     model.sig[neurons]['voltage'] = Signal(
-        np.zeros(neurons.size_in), name="%s.voltage" % neurons)
+        shape=neurons.size_in, name="%s.voltage" % neurons)
     model.sig[neurons]['refractory_time'] = Signal(
-        np.zeros(neurons.size_in), name="%s.refractory_time" % neurons)
+        shape=neurons.size_in, name="%s.refractory_time" % neurons)
     model.add_op(SimNeurons(
         neurons=lif,
         J=model.sig[neurons]['in'],
@@ -195,7 +196,7 @@ def build_alifrate(model, alifrate, neurons):
     """
 
     model.sig[neurons]['adaptation'] = Signal(
-        np.zeros(neurons.size_in), name="%s.adaptation" % neurons)
+        shape=neurons.size_in, name="%s.adaptation" % neurons)
     model.add_op(SimNeurons(neurons=alifrate,
                             J=model.sig[neurons]['in'],
                             output=model.sig[neurons]['out'],
@@ -226,11 +227,11 @@ def build_alif(model, alif, neurons):
     """
 
     model.sig[neurons]['voltage'] = Signal(
-        np.zeros(neurons.size_in), name="%s.voltage" % neurons)
+        shape=neurons.size_in, name="%s.voltage" % neurons)
     model.sig[neurons]['refractory_time'] = Signal(
-        np.zeros(neurons.size_in), name="%s.refractory_time" % neurons)
+        shape=neurons.size_in, name="%s.refractory_time" % neurons)
     model.sig[neurons]['adaptation'] = Signal(
-        np.zeros(neurons.size_in), name="%s.adaptation" % neurons)
+        shape=neurons.size_in, name="%s.adaptation" % neurons)
     model.add_op(SimNeurons(neurons=alif,
                             J=model.sig[neurons]['in'],
                             output=model.sig[neurons]['out'],
@@ -262,12 +263,16 @@ def build_izhikevich(model, izhikevich, neurons):
     """
 
     model.sig[neurons]['voltage'] = Signal(
-        np.ones(neurons.size_in) * izhikevich.reset_voltage,
-        name="%s.voltage" % neurons)
+        np.ones(neurons.size_in, dtype=rc.float_dtype)
+        * izhikevich.reset_voltage,
+        name="%s.voltage" % neurons,
+    )
     model.sig[neurons]['recovery'] = Signal(
-        np.ones(neurons.size_in)
+        np.ones(neurons.size_in, dtype=rc.float_dtype)
         * izhikevich.reset_voltage
-        * izhikevich.coupling, name="%s.recovery" % neurons)
+        * izhikevich.coupling,
+        name="%s.recovery" % neurons,
+    )
     model.add_op(SimNeurons(neurons=izhikevich,
                             J=model.sig[neurons]['in'],
                             output=model.sig[neurons]['out'],

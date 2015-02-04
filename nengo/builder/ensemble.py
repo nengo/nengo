@@ -10,6 +10,7 @@ from nengo.dists import Distribution, get_samples
 from nengo.ensemble import Ensemble
 from nengo.exceptions import BuildError, NengoWarning
 from nengo.neurons import Direct
+from nengo.rc import rc
 from nengo.utils.builder import default_n_eval_points
 
 built_attrs = ['eval_points',
@@ -58,18 +59,21 @@ class BuiltEnsemble(collections.namedtuple('BuiltEnsemble', built_attrs)):
                                    max_rates, scaled_encoders, gain, bias))
 
 
-def gen_eval_points(ens, eval_points, rng, scale_eval_points=True):
+def gen_eval_points(
+        ens, eval_points, rng, scale_eval_points=True, dtype=None):
+    dtype = rc.float_dtype if dtype is None else dtype
     if isinstance(eval_points, Distribution):
         n_points = ens.n_eval_points
         if n_points is None:
             n_points = default_n_eval_points(ens.n_neurons, ens.dimensions)
         eval_points = eval_points.sample(n_points, ens.dimensions, rng)
+        eval_points = eval_points.astype(dtype)
     else:
         if (ens.n_eval_points is not None
                 and eval_points.shape[0] != ens.n_eval_points):
             warnings.warn("Number of eval_points doesn't match "
                           "n_eval_points. Ignoring n_eval_points.")
-        eval_points = np.array(eval_points, dtype=np.float64)
+        eval_points = np.array(eval_points, dtype=dtype)
         assert eval_points.ndim == 2
 
     if scale_eval_points:
@@ -82,7 +86,8 @@ def get_activities(built_ens, ens, eval_points):
     return ens.neuron_type.rates(x, built_ens.gain, built_ens.bias)
 
 
-def get_gain_bias(ens, rng=np.random):
+def get_gain_bias(ens, rng=np.random, dtype=None):
+    dtype = rc.float_dtype if dtype is None else dtype
     if ens.gain is not None and ens.bias is not None:
         gain = get_samples(ens.gain, ens.n_neurons, rng=rng)
         bias = get_samples(ens.bias, ens.n_neurons, rng=rng)
@@ -114,6 +119,11 @@ def get_gain_bias(ens, rng=np.random):
                 "LIF neurons) this is achieved by reducing the maximum "
                 "intercept value to below 1." % ens)
 
+    gain = gain.astype(dtype) if gain is not None else gain
+    bias = bias.astype(dtype) if bias is not None else bias
+    max_rates = max_rates.astype(dtype) if max_rates is not None else max_rates
+    intercepts = (intercepts.astype(dtype) if intercepts is not None
+                  else intercepts)
     return gain, bias, max_rates, intercepts
 
 
@@ -153,37 +163,39 @@ def build_ensemble(model, ens):
     # Create random number generator
     rng = np.random.RandomState(model.seeds[ens])
 
-    eval_points = gen_eval_points(ens, ens.eval_points, rng=rng)
+    eval_points = gen_eval_points(ens, ens.eval_points,
+                                  rng=rng, dtype=rc.float_dtype)
 
     # Set up signal
-    model.sig[ens]['in'] = Signal(np.zeros(ens.dimensions),
-                                  name="%s.signal" % ens)
+    model.sig[ens]['in'] = Signal(shape=ens.dimensions, name="%s.signal" % ens)
     model.add_op(Reset(model.sig[ens]['in']))
 
     # Set up encoders
     if isinstance(ens.neuron_type, Direct):
-        encoders = np.identity(ens.dimensions)
+        encoders = np.identity(ens.dimensions, dtype=rc.float_dtype)
     elif isinstance(ens.encoders, Distribution):
         encoders = get_samples(
             ens.encoders, ens.n_neurons, ens.dimensions, rng=rng)
+        encoders = np.asarray(encoders, dtype=rc.float_dtype)
     else:
-        encoders = npext.array(ens.encoders, min_dims=2, dtype=np.float64)
+        encoders = npext.array(ens.encoders, min_dims=2, dtype=rc.float_dtype)
     if ens.normalize_encoders:
         encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     # Build the neurons
-    gain, bias, max_rates, intercepts = get_gain_bias(ens, rng)
+    gain, bias, max_rates, intercepts = get_gain_bias(ens, rng,
+                                                      dtype=rc.float_dtype)
 
     if isinstance(ens.neuron_type, Direct):
         model.sig[ens.neurons]['in'] = Signal(
-            np.zeros(ens.dimensions), name='%s.neuron_in' % ens)
+            shape=ens.dimensions, name='%s.neuron_in' % ens)
         model.sig[ens.neurons]['out'] = model.sig[ens.neurons]['in']
         model.add_op(Reset(model.sig[ens.neurons]['in']))
     else:
         model.sig[ens.neurons]['in'] = Signal(
-            np.zeros(ens.n_neurons), name="%s.neuron_in" % ens)
+            shape=ens.n_neurons, name="%s.neuron_in" % ens)
         model.sig[ens.neurons]['out'] = Signal(
-            np.zeros(ens.n_neurons), name="%s.neuron_out" % ens)
+            shape=ens.n_neurons, name="%s.neuron_out" % ens)
         model.sig[ens.neurons]['bias'] = Signal(
             bias, name="%s.bias" % ens, readonly=True)
         model.add_op(Copy(model.sig[ens.neurons]['bias'],

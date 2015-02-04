@@ -1,6 +1,6 @@
 """Utilities to convert to and from bytes.
 
-Used by nengo.runcom in order to present file sizes to users in
+Used by nengo.rc in order to present file sizes to users in
 human-readable formats.
 
 This code adapted from https://goo.gl/zeJZl under the MIT License.

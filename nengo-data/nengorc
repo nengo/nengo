@@ -26,6 +26,12 @@
 
 ### CONFIGURATION BEGINS HERE
 
+# --- Settings for controlling the precision of all calculations
+[precision]
+
+# Default bit precision for all NumPy arrays made by Nengo (e.g., bits: 64
+# would use float64/int64 dtypes). Must be one of '16', '32', or '64'. (string)
+#bits: 64
 
 # --- Settings for the decoder cache
 [decoder_cache]

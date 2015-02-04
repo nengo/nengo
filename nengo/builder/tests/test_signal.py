@@ -352,3 +352,13 @@ def test_signal_init(sig_type):
     signals.init(sig)
     with pytest.raises((ValueError, RuntimeError, TypeError)):
         signals[sig].data[0] = -1
+
+
+def test_signal_shape():
+    shape = (3, 4)
+    sig = Signal(shape=shape)
+    assert sig.shape == shape
+
+    Signal(np.zeros(shape), shape=shape)
+    with pytest.raises(AssertionError):
+        Signal(np.zeros((2, 3)), shape=shape)

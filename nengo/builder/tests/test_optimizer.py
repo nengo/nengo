@@ -126,6 +126,9 @@ def test_sigmerger_merge_views():
 
 @pytest.mark.parametrize("net", (thalamus_net, learning_net))
 def test_optimizer_does_not_change_result(seed, net):
+    dtype_resolution = np.finfo(nengo.rc.float_dtype).resolution
+    dtype_decimal = int(np.floor(-np.log10(dtype_resolution) * 0.5))
+
     model = net()
     model.seed = seed
 
@@ -144,4 +147,5 @@ def test_optimizer_does_not_change_result(seed, net):
         sim_opt.run(0.1)
 
     for probe in probes:
-        assert_almost_equal(sim.data[probe], sim_opt.data[probe])
+        assert_almost_equal(sim.data[probe], sim_opt.data[probe],
+                            decimal=dtype_decimal)

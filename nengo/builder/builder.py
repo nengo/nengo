@@ -3,11 +3,11 @@ import warnings
 
 import numpy as np
 
-from nengo import rc
 from nengo.builder.signal import Signal, SignalDict
 from nengo.builder.operator import TimeUpdate
 from nengo.cache import NoDecoderCache
 from nengo.exceptions import BuildError
+from nengo.rc import rc
 
 
 class Model:
@@ -21,6 +21,9 @@ class Model:
         A name or description to differentiate models.
     decoder_cache : DecoderCache, optional
         Interface to a cache for expensive parts of the build process.
+    builder : `nengo.builder.Builder`, optional
+        A ``Builder`` instance to use for building. Defaults to a
+        new ``Builder()``.
 
     Attributes
     ----------
@@ -82,11 +85,13 @@ class Model:
         self.seeded = {}
 
         self.sig = collections.defaultdict(dict)
-        self.sig['common'][0] = Signal(0., readonly=True, name='ZERO')
-        self.sig['common'][1] = Signal(1., readonly=True, name='ONE')
+        self.sig['common'][0] = Signal(
+            np.array(0., dtype=rc.float_dtype), readonly=True, name='ZERO')
+        self.sig['common'][1] = Signal(
+            np.array(1., dtype=rc.float_dtype), readonly=True, name='ONE')
 
-        self.step = Signal(np.array(0, dtype=np.int64), name='step')
-        self.time = Signal(np.array(0, dtype=np.float64), name='time')
+        self.step = Signal(np.array(0, dtype=rc.int_dtype), name='step')
+        self.time = Signal(np.array(0, dtype=rc.float_dtype), name='time')
         self.add_op(TimeUpdate(self.step, self.time))
 
         self.builder = Builder() if builder is None else builder

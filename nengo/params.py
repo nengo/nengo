@@ -5,6 +5,7 @@ import numpy as np
 
 from nengo.exceptions import (
     ConfigError, ObsoleteError, ReadonlyError, ValidationError)
+from nengo.rc import rc
 from nengo.utils.numpy import (
     array_hash, compare, is_array, is_array_like, is_integer, is_number)
 from nengo.utils.stdlib import WeakKeyIDDictionary, checked_call
@@ -380,12 +381,12 @@ class NdarrayParam(Parameter):
     equatable = True
 
     def __init__(self, name, default=Unconfigurable, shape=None,
-                 dtype=np.float64, optional=False, readonly=None):
+                 dtype=None, optional=False, readonly=None):
         if shape is not None:
             assert shape.count('...') <= 1, (
                 "Cannot have more than one ellipsis")
         self.shape = shape
-        self.dtype = dtype
+        self._dtype = dtype
         super().__init__(name, default, optional, readonly)
 
     @property
@@ -394,6 +395,12 @@ class NdarrayParam(Parameter):
             return True
         return all(is_integer(dim) or dim in ('...', '*')
                    for dim in self.shape)
+
+    @property
+    def dtype(self):
+        if self._dtype is not None:
+            return self._dtype
+        return rc.float_dtype
 
     def hashvalue(self, instance):
         return array_hash(self.__get__(instance, None))

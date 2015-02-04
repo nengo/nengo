@@ -19,9 +19,10 @@ def test_missing_attribute():
 
 @pytest.mark.parametrize("dimensions", [1, 200])
 def test_encoders(RefSimulator, dimensions, seed, n_neurons=10, encoders=None):
+    dtype = nengo.rc.float_dtype
     if encoders is None:
         encoders = np.random.normal(size=(n_neurons, dimensions))
-        encoders = npext.array(encoders, min_dims=2, dtype=np.float64)
+        encoders = npext.array(encoders, min_dims=2, dtype=dtype)
         encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     model = nengo.Network(label="_test_encoders", seed=seed)

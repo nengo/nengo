@@ -8,6 +8,7 @@ from nengo.base import NengoObject, ObjView
 from nengo.exceptions import ValidationError
 from nengo.params import Default, IntParam, Parameter
 from nengo.processes import Process
+from nengo.rc import rc
 from nengo.utils.numpy import is_array_like
 from nengo.utils.stdlib import checked_call
 
@@ -65,7 +66,7 @@ class OutputParam(Parameter):
         elif is_array_like(output):
             # Make into correctly shaped numpy array before validation
             output = npext.array(
-                output, min_dims=1, copy=False, dtype=np.float64)
+                output, min_dims=1, copy=False, dtype=rc.float_dtype)
             self.check_ndarray(node, output)
             if not np.all(np.isfinite(output)):
                 raise ValidationError("Output value must be finite.",

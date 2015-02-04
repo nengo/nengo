@@ -3,6 +3,7 @@ from io import StringIO
 import numpy as np
 
 from nengo.exceptions import SignalError
+from nengo.rc import rc
 from nengo.transforms import SparseMatrix
 import nengo.utils.numpy as npext
 
@@ -50,11 +51,17 @@ class Signal:
     # up in a model.
     assert_named_signals = False
 
-    def __init__(self, initial_value,
+    def __init__(self, initial_value=None, shape=None,
                  name=None, base=None, readonly=False, offset=0):
         if self.assert_named_signals:
             assert name
         self._name = name
+
+        if initial_value is None:
+            assert shape is not None
+            initial_value = np.zeros(shape, dtype=rc.float_dtype)
+        elif shape is not None:
+            assert initial_value.shape == shape
 
         self._initial_value = initial_value
         if self.sparse:
@@ -63,7 +70,6 @@ class Signal:
             assert base is None
             if npext.is_spmatrix(initial_value):
                 self._initial_value.data.setflags(write=False)
-
         else:
             # To ensure we do not modify data passed into the signal,
             # we make a view of the data and mark it as not writeable.
@@ -108,7 +114,8 @@ class Signal:
         if not self.sparse:
             shape, base, offset, strides = self._initial_value
             self._initial_value = np.ndarray(
-                shape, buffer=base, offset=offset, strides=strides)
+                shape, buffer=base, dtype=base.dtype,
+                offset=offset, strides=strides)
             self._initial_value.setflags(write=False)
 
     def __getitem__(self, item):

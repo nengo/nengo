@@ -394,7 +394,8 @@ class Copy(Operator):
         # If there are repeated indices in dst_slice, special handling needed.
         repeats = False
         if npext.is_array_like(dst_slice):
-            dst_slice = np.array(dst_slice)  # copy because we might modify it
+            # copy because we might modify it
+            dst_slice = np.array(dst_slice)
             if dst_slice.dtype.kind != "b":
                 # get canonical, positive indices first
                 dst_slice[dst_slice < 0] += len(dst)
@@ -696,7 +697,7 @@ class BsrDotInc(DotInc):
             mat_A = self.bsr_matrix((A, self.indices, self.indptr))
             inc = mat_A.dot(X)
             if self.reshape:
-                inc = np.asarray(inc).reshape(Y.shape)
+                inc = inc.reshape(Y.shape)
             Y[...] += inc
         return step_dotinc
 
