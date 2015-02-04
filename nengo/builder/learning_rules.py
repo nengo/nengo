@@ -144,16 +144,16 @@ def build_pes(model, pes, rule):
     model.sig[rule]['in'] = error  # error connection will attach here
 
     # TODO: Filter activities
-    activities = model.sig[conn.pre_obj]['out']
+    acts = model.sig[conn.pre_obj]['out']
+    acts_view = acts.reshape((1, acts.size))
 
-    scaled_error = Signal(np.zeros(error.shape),
-                          name="PES:error * learning_rate")
-    scaled_error_view = scaled_error.reshape((error.size, 1))
-    activities_view = activities.reshape((1, activities.size))
-    lr_sig = Signal(pes.learning_rate * model.dt, name="PES:learning_rate")
+    # Compute the correction, i.e. the scaled negative error
+    correction = Signal(np.zeros(error.shape), name="PES:correction")
+    correction_view = correction.reshape((error.size, 1))
+    model.add_op(Reset(correction))
 
-    model.add_op(Reset(scaled_error))
-    model.add_op(DotInc(lr_sig, error, scaled_error, tag="PES:scale error"))
+    lr_sig = Signal(-pes.learning_rate * model.dt, name="PES:learning_rate")
+    model.add_op(DotInc(lr_sig, error, correction, tag="PES:correct"))
 
     if conn.solver.weights or (
             isinstance(conn.pre_obj, Neurons) and
@@ -162,32 +162,29 @@ def build_pes(model, pes, rule):
                 else conn.post_obj)
         transform = model.sig[conn]['transform']
         encoders = model.sig[post]['encoders']
-        encoded_error = Signal(np.zeros(transform.shape[0]),
-                               name="PES: encoded error")
 
-        model.add_op(Reset(encoded_error))
-        model.add_op(DotInc(
-            encoders, scaled_error, encoded_error, tag="PES:Encode error"))
+        encoded = Signal(np.zeros(transform.shape[0]), name="PES:encoded")
+        model.add_op(Reset(encoded))
+        model.add_op(DotInc(encoders, correction, encoded, tag="PES:encode"))
 
-        encoded_error_view = encoded_error.reshape((encoded_error.size, 1))
-        model.add_op(ElementwiseInc(
-            encoded_error_view, activities_view, transform,
-            tag="PES:Inc Transform"))
+        encoded_view = encoded.reshape((encoded.size, 1))
+        model.add_op(ElementwiseInc(encoded_view, acts_view, transform,
+                                    tag="PES:Inc Transform"))
     elif isinstance(conn.pre_obj, Neurons):
         transform = model.sig[conn]['transform']
-        model.add_op(ElementwiseInc(
-            scaled_error_view, activities_view, transform,
-            tag="PES:Inc Transform"))
-    else:
-        assert isinstance(conn.pre_obj, Ensemble)
+        model.add_op(ElementwiseInc(correction_view, acts_view, transform,
+                                    tag="PES:Inc Transform"))
+    elif isinstance(conn.pre_obj, Ensemble):
         decoders = model.sig[conn]['decoders']
-        model.add_op(ElementwiseInc(
-            scaled_error_view, activities_view, decoders,
-            tag="PES:Inc Decoder"))
+        model.add_op(ElementwiseInc(correction_view, acts_view, decoders,
+                                    tag="PES:Inc Decoder"))
+    else:
+        raise ValueError("'pre' object '%s' not suitable for PES learning"
+                         % (conn.pre_obj))
 
     # expose these for probes
     model.sig[rule]['error'] = error
-    model.sig[rule]['scaled_error'] = scaled_error
-    model.sig[rule]['activities'] = activities
+    model.sig[rule]['correction'] = correction
+    model.sig[rule]['activities'] = acts
 
     model.params[rule] = None  # no build-time info to return

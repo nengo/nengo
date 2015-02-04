@@ -47,6 +47,9 @@ Release History
 
 **Behavioural changes**
 
+- The sign on the ``PES`` learning rule's error has been flipped to conform
+  with most learning rules, in which error is minimized. The error should be
+  ``actual - target``. (`#642 <https://github.com/nengo/nengo/pull/642>`_)
 - The ``probeable`` attribute of all Nengo objects is now implemented
   as a property, rather than a configurable parameter.
   (`#671 <https://github.com/nengo/nengo/pull/671>`_)
