@@ -30,14 +30,14 @@ def test_pes_weights(Simulator, nl_nodirect, plt, seed, rng):
                                 learning_rule_type=PES(rate))
         nengo.Connection(e, conn.learning_rule)
 
-        nengo.Connection(b, e, transform=-1)
-        nengo.Connection(u, e)
+        nengo.Connection(b, e)
+        nengo.Connection(u, e, transform=-1)
 
         b_p = nengo.Probe(b, synapse=0.05)
         e_p = nengo.Probe(e, synapse=0.05)
 
         # test probing rule itself
-        se_p = nengo.Probe(conn.learning_rule, 'scaled_error', synapse=0.05)
+        se_p = nengo.Probe(conn.learning_rule, 'correction', synapse=0.05)
 
     sim = Simulator(m)
     sim.run(1.)
@@ -51,7 +51,7 @@ def test_pes_weights(Simulator, nl_nodirect, plt, seed, rng):
     plt.ylabel("Error decoded value")
     plt.subplot(313)
     plt.plot(t, sim.data[se_p] / rate)
-    plt.ylabel("PES scaled error")
+    plt.ylabel("PES correction")
     plt.xlabel("Time (s)")
 
     tend = t > 0.9
@@ -73,8 +73,8 @@ def test_pes_decoders(Simulator, nl_nodirect, seed, plt):
         e = nengo.Ensemble(n, dimensions=2)
 
         nengo.Connection(u, a)
-        nengo.Connection(b, e, transform=-1)
-        nengo.Connection(u, e)
+        nengo.Connection(b, e)
+        nengo.Connection(u, e, transform=-1)
         conn = nengo.Connection(a, b, learning_rule_type=PES())
         nengo.Connection(e, conn.learning_rule)
 
@@ -122,10 +122,10 @@ def test_pes_decoders_multidimensional(Simulator, seed, plt):
                                 learning_rule_type=PES(5e-6))
         nengo.Connection(e, conn.learning_rule)
 
-        nengo.Connection(b[0], e, transform=-1)
+        nengo.Connection(b[0], e)
 
         # learned function is sum of squares
-        nengo.Connection(v, e)
+        nengo.Connection(v, e, transform=-1)
 
         b_p = nengo.Probe(b[0], synapse=0.1)
         e_p = nengo.Probe(e, synapse=0.1)

@@ -59,7 +59,7 @@ class PES(LearningRuleType):
 
     error_type = 'decoder'
     modifies = ['Ensemble', 'Neurons']
-    probeable = ['error', 'scaled_error', 'activities']
+    probeable = ['error', 'correction', 'activities']
 
     def __init__(self, learning_rate=1e-6):
         super(PES, self).__init__(learning_rate)
