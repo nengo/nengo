@@ -140,7 +140,7 @@ travis_yml:
     - stage: basic
       script: static
     - script: test-coverage-scipy
-      test_args: --plots
+      test_args: --memory --plots
     - script: test-coverage
       test_args: --plots
       python: 3.5

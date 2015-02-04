@@ -30,7 +30,7 @@ jobs:
   -
     env:
       SCRIPT="test-coverage-scipy"
-      TEST_ARGS="--plots"
+      TEST_ARGS="--memory --plots"
   -
     env:
       SCRIPT="test-coverage"

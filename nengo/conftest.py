@@ -4,7 +4,12 @@ import inspect
 import importlib
 import os
 import re
+try:
+    import resource
+except ImportError:  # pragma: no cover
+    resource = None  # `resource` not available on Windows
 import shlex
+import sys
 import warnings
 
 import matplotlib
@@ -55,6 +60,9 @@ class TestConfig:
 def pytest_configure(config):
     matplotlib.use('agg')
     warnings.simplefilter('always')
+
+    if config.getoption('memory') and resource is None:  # pragma: no cover
+        raise ValueError("'--memory' option not supported on this platform")
 
     if config.getoption('simulator'):
         TestConfig.Simulator = load_class(config.getoption('simulator')[0])
@@ -419,10 +427,24 @@ def pytest_runtest_setup(item):
 
 def pytest_terminal_summary(terminalreporter):
     reports = terminalreporter.getreports('passed')
-    if not reports or terminalreporter.config.getvalue('compare') is None:
-        return
-    terminalreporter.write_sep("=", "PASSED")
-    for rep in reports:
-        for name, content in rep.sections:
-            terminalreporter.writer.sep("-", name)
-            terminalreporter.writer.line(content)
+    do_compare = terminalreporter.config.getvalue('compare') is not None
+    if reports and do_compare:  # pragma: no cover
+        terminalreporter.write_sep("=", "PASSED")
+        for rep in reports:
+            for name, content in rep.sections:
+                terminalreporter.writer.sep("-", name)
+                terminalreporter.writer.line(content)
+
+    if resource and terminalreporter.config.option.memory:
+        # Calculate memory usage; details at
+        # http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/  # noqa, pylint: disable=line-too-long
+        rusage_denom = 1024.
+        if sys.platform == 'darwin':  # pragma: no cover
+            # ... it seems that in OSX the output is in different units ...
+            rusage_denom = rusage_denom * rusage_denom
+        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
+        terminalreporter.write_sep("=",
+                                   "total memory consumed: %.2f MiB" % mem)
+
+        # Ensure we only print once
+        terminalreporter.config.option.memory = False
