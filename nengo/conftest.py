@@ -5,6 +5,7 @@ import importlib
 import os
 import re
 import shlex
+import sys
 import warnings
 
 import matplotlib
@@ -17,6 +18,22 @@ from nengo.neurons import (Direct, LIF, LIFRate, RectifiedLinear,
                            Sigmoid, SpikingRectifiedLinear)
 from nengo.rc import rc
 from nengo.utils.testing import Analytics, Logger, Plotter
+
+
+def pytest_terminal_summary(terminalreporter):
+    import resource
+
+    if not terminalreporter.config.option.memory:
+        return
+    # Calculate memory usage; details at
+    # http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/  # noqa
+    rusage_denom = 1024.
+    if sys.platform == 'darwin':
+        # ... it seems that in OSX the output is in different units ...
+        rusage_denom = rusage_denom * rusage_denom
+    mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
+    terminalreporter.write_sep("=", "total memory consumed: %.2f MiB" % mem)
+    terminalreporter.config.option.memory = False  # Ensure we only print once
 
 
 class TestConfig:
