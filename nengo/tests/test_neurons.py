@@ -149,65 +149,11 @@ def test_alifrate(Simulator, plt):
     assert np.all(np.diff(rates[1:, intercepts < 0.4], axis=0) < 0)
 
 
-def test_alif(Simulator, plt, rng):
-    """Test that the dynamic model approximately matches the rates"""
+def test_alif_neuron(Simulator, plt):
+    """Test that the adaptive LIF dynamic model matches the predicted rates
 
-    dt = 0.001
-    n = 100
-    x = .5
-    encoders = np.ones((n, 1))
-    max_rates = rng.uniform(low=10, high=200, size=n)
-    intercepts = rng.uniform(low=-1, high=1, size=n)
-
-    net = nengo.Network()
-    with net:
-        ins = nengo.Node(x)
-        ens = nengo.Ensemble(
-            n, dimensions=1, encoders=encoders,
-            max_rates=max_rates, intercepts=intercepts,
-            neuron_type=nengo.AdaptiveLIF(tau_n=.1, inc_n=.1))
-        nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)),
-                         synapse=None)
-        spike_probe = nengo.Probe(ens.neurons)
-        voltage_probe = nengo.Probe(ens.neurons, 'voltage')
-        adaptation_probe = nengo.Probe(ens.neurons, 'adaptation')
-        ref_probe = nengo.Probe(ens.neurons, 'refractory_time')
-
-    sim = Simulator(net, dt=dt)
-
-    t_final = 3.0
-    t_ss = 1.0  # time to consider neurons at steady state
-    sim.run(t_final)
-
-    i = 3
-    t = sim.trange()
-    idx = t < t_ss
-    plt.figure(figsize=(10, 6))
-    plt.subplot(411)
-    plt.plot(t[idx], sim.data[spike_probe][idx, :i])
-    plt.subplot(412)
-    plt.plot(t[idx], sim.data[voltage_probe][idx, :i])
-    plt.subplot(413)
-    plt.plot(t[idx], sim.data[adaptation_probe][idx, :i])
-    plt.subplot(414)
-    plt.plot(t[idx], sim.data[ref_probe][idx, :i])
-    plt.ylim([-dt, ens.neuron_type.tau_ref + dt])
-
-    # check rates against analytic rates
-    math_rates = ens.neuron_type.rates(
-        x, *ens.neuron_type.gain_bias(max_rates, intercepts))
-    idx = t >= t_ss
-    spikes = sim.data[spike_probe][idx, :]
-    sim_rates = (spikes > 0).sum(0) / (t_final - t_ss)
-    logger.debug("ME = %f", (sim_rates - math_rates).mean())
-    logger.debug("RMSE = %f",
-                 rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
-    assert np.sum(math_rates > 0) > 0.5 * n, (
-        "At least 50% of neurons must fire")
-    assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.001)
-
-
-def test_nengo_alif_rates(Simulator, plt):
+    Tests a single neuron across multiple input currents
+    """
     tau_n = .1
     inc_n = 10.
     max_rates = np.array([8.095])
@@ -259,6 +205,71 @@ def test_nengo_alif_rates(Simulator, plt):
     plt.legend(loc='upper left')
     plt.xlabel('input')
     plt.ylabel('rate')
+
+
+def test_alif_neurons(Simulator, plt, rng):
+    """Test that the adaptive LIF dynamic model matches the predicted rates
+
+    Tests an Ensemble of neurons at a single input value
+    """
+    dt = 0.001
+    n = 100
+    x = .5
+    encoders = np.ones((n, 1))
+    max_rates = rng.uniform(low=10, high=200, size=n)
+    intercepts = rng.uniform(low=-1, high=1, size=n)
+
+    net = nengo.Network()
+    with net:
+        ins = nengo.Node(x)
+        ens = nengo.Ensemble(
+            n, dimensions=1, encoders=encoders,
+            max_rates=max_rates, intercepts=intercepts,
+            neuron_type=nengo.AdaptiveLIF(tau_n=.1, inc_n=.1))
+        nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)),
+                         synapse=None)
+        spike_probe = nengo.Probe(ens.neurons)
+        voltage_probe = nengo.Probe(ens.neurons, 'voltage')
+        adaptation_probe = nengo.Probe(ens.neurons, 'adaptation')
+        ref_probe = nengo.Probe(ens.neurons, 'refractory_time')
+
+    sim = Simulator(net, dt=dt)
+
+    t_final = 3.0
+    t_ss = 1.0  # time to consider neurons at steady state
+    sim.run(t_final)
+
+    n_select = rng.choice(n)  # pick a random neuron
+    t = sim.trange()
+    idx = t < t_ss
+    plt.figure(figsize=(10, 6))
+    plt.subplot(411)
+    plt.plot(t[idx], sim.data[spike_probe][idx, n_select])
+    plt.ylabel('spikes')
+    plt.subplot(412)
+    plt.plot(t[idx], sim.data[voltage_probe][idx, n_select])
+    plt.ylabel('voltage')
+    plt.subplot(413)
+    plt.plot(t[idx], sim.data[adaptation_probe][idx, n_select])
+    plt.ylabel('adaptation')
+    plt.subplot(414)
+    plt.plot(t[idx], sim.data[ref_probe][idx, n_select])
+    plt.ylim([-dt, ens.neuron_type.tau_ref + dt])
+    plt.xlabel('time')
+    plt.ylabel('ref time')
+
+    # check rates against analytic rates
+    math_rates = ens.neuron_type.rates(
+        x, *ens.neuron_type.gain_bias(max_rates, intercepts))
+    idx = t >= t_ss
+    spikes = sim.data[spike_probe][idx, :]
+    sim_rates = (spikes > 0).sum(0) / (t_final - t_ss)
+    logger.debug("ME = %f", (sim_rates - math_rates).mean())
+    logger.debug("RMSE = %f",
+                 rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
+    assert np.sum(math_rates > 0) > 0.5 * n, (
+        "At least 50% of neurons must fire")
+    assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.001)
 
 
 def test_izhikevich(Simulator, plt, seed, rng):
