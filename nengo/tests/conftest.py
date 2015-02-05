@@ -10,7 +10,7 @@ from nengo.neurons import Direct, LIF, LIFRate, RectifiedLinear, Sigmoid
 from nengo.rc import rc
 from nengo.simulator import Simulator as ReferenceSimulator
 from nengo.utils.compat import ensure_bytes
-from nengo.utils.testing import Plotter
+from nengo.utils.testing import Analytics, Plotter
 
 test_seed = 0  # changing this will change seeds for all tests
 
@@ -64,6 +64,20 @@ def plt(request):
     plotter = Plotter(simulator, request.module, request.function, nl=nl)
     request.addfinalizer(lambda p=plotter: p.__exit__(None, None, None))
     return plotter.__enter__()
+
+
+@pytest.fixture
+def analytics(request):
+    simulator, nl = ReferenceSimulator, None
+    if 'Simulator' in request.funcargnames:
+        simulator = request.getfuncargvalue('Simulator')
+    if 'nl' in request.funcargnames:
+        nl = request.getfuncargvalue('nl')
+    elif 'nl_nodirect' in request.funcargnames:
+        nl = request.getfuncargvalue('nl_nodirect')
+    analytics = Analytics(simulator, request.module, request.function, nl=nl)
+    request.addfinalizer(lambda: analytics.__exit__(None, None, None))
+    return analytics.__enter__()
 
 
 def function_seed(function, mod=0):

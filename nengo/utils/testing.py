@@ -78,6 +78,49 @@ class Plotter(object):
             self.plt.close('all')
 
 
+class Analytics(object):
+    def __init__(self, simulator, module, function, nl=None, store=None):
+        if store is None:
+            self.store = int(os.getenv("NENGO_ANALYTICS", 0))
+        else:
+            self.store = store
+
+        self.dirname = "%s.analytics" % simulator.__module__
+        if nl is not None:
+            self.dirname = os.path.join(self.dirname, nl.__name__)
+
+        modparts = module.__name__.split('.')
+        modparts = modparts[1:]
+        modparts.remove('tests')
+        self.data_filename = "%s.%s.npz" % (
+            '.'.join(modparts), function.__name__)
+        self.desc_filename = "%s.%s.txt" % (
+            '.'.join(modparts), function.__name__)
+
+        self.data = {}
+        self.desc = {}
+
+    def __enter__(self):
+        return self
+
+    def add_data(self, name, data, desc=""):
+        if self.store:
+            self.data[name] = data
+            self.desc[name] = desc
+
+    def __exit__(self, type, value, traceback):
+        if self.store:
+            if not os.path.exists(self.dirname):
+                os.makedirs(self.dirname)
+
+            np.savez(
+                os.path.join(self.dirname, self.data_filename), **self.data)
+            desc_path = os.path.join(self.dirname, self.desc_filename)
+            with open(desc_path, 'w') as f:
+                for k, v in sorted(self.desc.items()):
+                    f.write('{k}: {v}\n\n'.format(k=k, v=v))
+
+
 class Timer(object):
     """A context manager for timing a block of code.
 
