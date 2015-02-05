@@ -223,38 +223,18 @@ class LIFRate(NeuronType):
 class LIF(LIFRate):
     """Spiking version of the leaky integrate-and-fire (LIF) neuron model."""
 
+    clip = NumberParam(high=0.)
     probeable = ['spikes', 'voltage', 'refractory_time']
+
+    def __init__(self, clip=0., **kwargs):
+        super(LIF, self).__init__(**kwargs)
+        self.clip = clip
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
         # update voltage using accurate exponential integration scheme
         dV = -np.expm1(-dt / self.tau_rc) * (J - voltage)
         voltage += dV
-        voltage[voltage < 0] = 0  # clip values below zero
-
-        # update refractory period assuming no spikes for now
-        refractory_time -= dt
-
-        # set voltages of neurons still in their refractory period to 0
-        # and reduce voltage of neurons partway out of their ref. period
-        voltage *= (1 - refractory_time / dt).clip(0, 1)
-
-        # determine which neurons spike (if v > 1 set spiked = 1/dt, else 0)
-        spiked[:] = (voltage > 1) / dt
-
-        # linearly approximate time since neuron crossed spike threshold
-        overshoot = (voltage[spiked > 0] - 1) / dV[spiked > 0]
-        spiketime = dt * (1 - overshoot)
-
-        # set spiking neurons' voltages to zero, and ref. time to tau_ref
-        voltage[spiked > 0] = 0
-        refractory_time[spiked > 0] = self.tau_ref + spiketime
-
-    def step_math_noclip(self, dt, J, spiked, voltage, refractory_time):
-        """Same as step_math but does not clip the voltage < 0 to 0"""
-        # update voltage using accurate exponential integration scheme
-        dV = -np.expm1(-dt / self.tau_rc) * (J - voltage)
-        voltage += dV
-        # voltage[voltage < 0] = 0  # clip values below zero
+        voltage.clip(self.clip, out=voltage)
 
         # update refractory period assuming no spikes for now
         refractory_time -= dt
@@ -282,8 +262,8 @@ class AdaptiveLIFRate(LIFRate):
     inc_n = NumberParam(low=0)
     probeable = ['rates', 'adaptation']
 
-    def __init__(self, tau_n=1, inc_n=0.01, **lif_args):
-        super(AdaptiveLIFRate, self).__init__(**lif_args)
+    def __init__(self, tau_n=1, inc_n=0.01, **kwargs):
+        super(AdaptiveLIFRate, self).__init__(**kwargs)
         self.tau_n = tau_n
         self.inc_n = inc_n
 
@@ -307,6 +287,10 @@ class AdaptiveLIF(AdaptiveLIFRate, LIF):
     """Adaptive spiking version of the LIF neuron model."""
 
     probeable = ['spikes', 'adaptation', 'voltage', 'refractory_time']
+
+    def __init__(self, **kwargs):
+        super(AdaptiveLIF, self).__init__(**kwargs)
+        self.clip = -np.inf
 
     def _J_tspk(self, tspk):
         """Computes the input J that produces a steady state spike interval"""
@@ -414,8 +398,7 @@ class AdaptiveLIF(AdaptiveLIFRate, LIF):
         dec = k+1
 
         n *= dec  # decay adaptation
-        # LIF.step_math(self, dt, J - n, spiked, voltage, ref)
-        LIF.step_math_noclip(self, dt, J - n, spiked, voltage, ref)
+        LIF.step_math(self, dt, J - n, spiked, voltage, ref)
         n += inc * (self.inc_n * spiked)  # increment adaptation
 
 

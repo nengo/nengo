@@ -34,7 +34,7 @@ def get_eval_points(n_points, dims, rng=None, sort=False):
 
 
 def get_rate_function(n_neurons, dims, neuron_type=nengo.LIF, rng=None):
-    neurons = neuron_type(n_neurons)
+    neurons = neuron_type()
     gain, bias = neurons.gain_bias(
         rng.uniform(50, 100, n_neurons), rng.uniform(-1, 1, n_neurons))
     rates = lambda x: neurons.rates(x, gain, bias)

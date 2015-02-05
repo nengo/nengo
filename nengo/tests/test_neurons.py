@@ -196,7 +196,7 @@ def test_alif_neuron(Simulator, plt):
             rel_diff = abs(est_rate - sim_rates[idx]) / est_rate
             assert rel_diff < .01, (
                 'Estimated rate differs from rate extracted from simulation' +
-                ' by more than 1\% for u=%f' % (u))
+                ' by more than 1%% for u=%f' % (u))
         else:
             assert sim_rates[idx] == 0.
 
