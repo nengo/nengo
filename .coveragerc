@@ -1,2 +1,3 @@
 [run]
-omit = nengo/tests/test*
+source = nengo
+omit = */tests/test*

@@ -94,5 +94,6 @@ setup(
     cmdclass={
         'test': PyTest,
         'tox': Tox,
-    }
+    },
+    zip_safe=False,
 )
