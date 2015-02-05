@@ -35,6 +35,10 @@ source_suffix = '.rst'
 source_encoding = 'utf-8'
 master_doc = 'index'
 
+# Need to include https Mathjax path for sphinx < v1.3
+mathjax_path = ("https://cdn.mathjax.org/mathjax/latest/MathJax.js"
+                "?config=TeX-AMS-MML_HTMLorMML")
+
 project = u'Nengo'
 authors = u'Applied Brain Research'
 copyright = nengo.__copyright__
