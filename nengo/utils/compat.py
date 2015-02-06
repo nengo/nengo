@@ -84,6 +84,14 @@ def is_string(obj):
     return isinstance(obj, string_types)
 
 
+def is_array(obj):
+    return isinstance(obj, np.ndarray)
+
+
+def is_array_like(obj):
+    return is_array(obj) or is_iterable(obj) or is_number(obj)
+
+
 def with_metaclass(meta, *bases):
     """Function for creating a class with a metaclass.
 

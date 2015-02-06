@@ -22,13 +22,12 @@ class OutputParam(Parameter):
                 warnings.warn("'Node.size_out' is being overwritten with "
                               "'Node.size_in' since 'Node.output=None'")
             node.size_out = node.size_in
-        elif callable(output) and node.size_out is not None:
+        elif callable(output):
             # We trust user's size_out if set, because calling output
             # may have unintended consequences (e.g., network communication)
-            pass
-        elif callable(output):
-            result = self.validate_callable(node, output)
-            node.size_out = 0 if result is None else result.size
+            if node.size_out is None:
+                result = self.validate_callable(node, output)
+                node.size_out = 0 if result is None else result.size
         else:
             # Make into correctly shaped numpy array before validation
             output = npext.array(
