@@ -330,3 +330,43 @@ class SimNoise(Operator):
             Yview[...] += sample_f()
 
         return step
+
+
+class SimPyFunc(Operator):
+    """Set signal `output` by some Python function of x, possibly t."""
+
+    def __init__(self, output, fn, t_in, x):
+        self.output = output
+        self.fn = fn
+        self.t_in = t_in
+        self.x = x
+
+        self.sets = [] if output is None else [output]
+        self.incs = []
+        self.reads = [] if x is None else [x]
+        self.updates = []
+
+    def __str__(self):
+        return "SimPyFunc(%s -> %s '%s')" % (self.x, self.output, self.fn)
+
+    def make_step(self, signals, dt, rng):
+        output = signals[self.output] if self.output is not None else None
+        fn = self.fn
+        t_in = self.t_in
+        t_sig = signals['__time__']
+
+        args = []
+        if self.x is not None:
+            x_sig = signals[self.x].view()
+            x_sig.flags.writeable = False
+            args += [x_sig]
+
+        def step():
+            y = fn(t_sig.item(), *args) if t_in else fn(*args)
+            if output is not None:
+                if y is None:
+                    raise ValueError(
+                        "Function '%s' returned invalid value" % fn.__name__)
+                output[...] = y
+
+        return step

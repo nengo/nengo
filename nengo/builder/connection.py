@@ -5,7 +5,7 @@ import numpy as np
 import nengo.utils.numpy as npext
 from nengo.builder.builder import Builder
 from nengo.builder.ensemble import gen_eval_points, get_activities
-from nengo.builder.node import build_pyfunc
+from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import DotInc, ElementwiseInc, PreserveValue, Reset
 from nengo.builder.signal import Signal
 from nengo.builder.synapses import filtered_signal
@@ -91,18 +91,11 @@ def build_connection(model, conn):
                 (conn.pre_slice.step is None or conn.pre_slice.step == 1)):
             signal = model.sig[conn]['in'][conn.pre_slice]
         else:
-            sig_in, signal = build_pyfunc(
-                fn=(lambda x: x[conn.pre_slice]) if conn.function is None else
-                   (lambda x: conn.function(x[conn.pre_slice])),
-                t_in=False,
-                n_in=model.sig[conn]['in'].size,
-                n_out=conn.size_mid,
-                label=str(conn),
-                model=model)
-            model.add_op(DotInc(model.sig[conn]['in'],
-                                model.sig['common'][1],
-                                sig_in,
-                                tag="%s input" % conn))
+            signal = Signal(np.zeros(conn.size_mid), name='%s.func' % conn)
+            fn = ((lambda x: x[conn.pre_slice]) if conn.function is None else
+                  (lambda x: conn.function(x[conn.pre_slice])))
+            model.add_op(SimPyFunc(
+                output=signal, fn=fn, t_in=False, x=model.sig[conn]['in']))
     elif isinstance(conn.pre_obj, Ensemble):
         # Normal decoded connection
         eval_points, activities, targets = build_linear_system(

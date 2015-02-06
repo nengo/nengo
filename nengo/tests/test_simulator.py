@@ -3,7 +3,6 @@ import numpy as np
 import nengo
 import nengo.simulator
 from nengo.builder import Model
-from nengo.builder.node import build_pyfunc
 from nengo.builder.operator import Copy, Reset, DotInc, SimNoise
 from nengo.builder.signal import Signal
 from nengo.utils.compat import range
@@ -76,27 +75,6 @@ def test_signal_indexing_1(RefSimulator):
     assert np.all(sim.signals[one] == 3)
     assert np.all(sim.signals[two] == [4, 2])
     assert np.all(sim.signals[three] == [1, 2, 3])
-
-
-def test_simple_pyfunc(RefSimulator):
-    dt = 0.001
-    time = Signal(np.zeros(1), name="time")
-    sig = Signal(np.zeros(1), name="sig")
-    m = Model(dt=dt)
-    sig_in, sig_out = build_pyfunc(m, lambda t, x: np.sin(x), True, 1, 1, None)
-    m.operators += [
-        Reset(sig),
-        DotInc(Signal([[1.0]]), time, sig_in),
-        DotInc(Signal([[1.0]]), sig_out, sig),
-        DotInc(Signal(dt), Signal(1), time, as_update=True),
-    ]
-
-    sim = RefSimulator(None, model=m)
-    for i in range(5):
-        sim.step()
-        t = i * dt
-        assert np.allclose(sim.signals[sig], np.sin(t))
-        assert np.allclose(sim.signals[time], t + dt)
 
 
 def test_probedict():
