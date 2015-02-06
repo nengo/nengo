@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.processes import WhiteNoise
+from nengo.processes import WhiteSignal
 from nengo.synapses import (
     Alpha, filt, filtfilt, LinearFilter, Lowpass, SynapseParam, Triangle)
 from nengo.utils.testing import allclose
@@ -11,8 +11,7 @@ from nengo.utils.testing import allclose
 def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=1., n_neurons=None):
     model = nengo.Network(seed=seed)
     with model:
-        u = nengo.Node(
-            output=WhiteNoise(runtime, 5).f(rng=np.random.RandomState(seed)))
+        u = nengo.Node(output=WhiteSignal(runtime, 5))
 
         if n_neurons is not None:
             a = nengo.Ensemble(n_neurons, 1)

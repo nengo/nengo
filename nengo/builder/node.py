@@ -4,6 +4,7 @@ from nengo.builder.builder import Builder
 from nengo.builder.signal import Signal
 from nengo.builder.operator import Reset, SimPyFunc
 from nengo.node import Node
+from nengo.processes import Process
 from nengo.utils.compat import is_array_like
 
 
@@ -19,6 +20,9 @@ def build_node(model, node):
     # Provide output
     if node.output is None:
         sig_out = sig_in
+    elif isinstance(node.output, Process):
+        sig_out = Signal(np.zeros(node.size_out), name="%s.out" % node)
+        model.build(node.output, sig_in, sig_out)
     elif callable(node.output):
         sig_out = (Signal(np.zeros(node.size_out), name="%s.out" % node)
                    if node.size_out > 0 else None)

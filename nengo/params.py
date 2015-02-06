@@ -3,7 +3,6 @@ import weakref
 
 import numpy as np
 
-from nengo.processes import StochasticProcess
 from nengo.utils.compat import is_integer, is_number, is_string
 from nengo.utils.numpy import compare
 from nengo.utils.stdlib import checked_call
@@ -190,20 +189,6 @@ class NdarrayParam(Parameter):
                 raise ValueError("shape[%d] should be %d (got %d)"
                                  % (i, desired, ndarray.shape[i]))
         return ndarray
-
-
-class StochasticProcessParam(Parameter):
-    """Can be a StochasticProcess."""
-
-    def validate(self, instance, process):
-        super(StochasticProcessParam, self).validate(instance, process)
-
-        if process is not None and not isinstance(process, StochasticProcess):
-            raise ValueError(
-                "Must be StochasticProcess (got type {0}).".format(
-                    process.__class__.__name__))
-
-        return process
 
 
 FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])

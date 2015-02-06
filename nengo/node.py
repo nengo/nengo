@@ -5,6 +5,7 @@ import numpy as np
 import nengo.utils.numpy as npext
 from nengo.base import NengoObject, ObjView
 from nengo.params import Default, IntParam, Parameter, StringParam
+from nengo.processes import Process
 from nengo.utils.stdlib import checked_call
 
 
@@ -22,6 +23,9 @@ class OutputParam(Parameter):
                 warnings.warn("'Node.size_out' is being overwritten with "
                               "'Node.size_in' since 'Node.output=None'")
             node.size_out = node.size_in
+        elif isinstance(output, Process):
+            if node.size_out is None:
+                node.size_out = output.default_size_out
         elif callable(output):
             # We trust user's size_out if set, because calling output
             # may have unintended consequences (e.g., network communication)
