@@ -30,8 +30,8 @@ class Model(object):
     def __str__(self):
         return "Model: %s" % self.label
 
-    def build(self, *objs):
-        return Builder.build(self, *objs)
+    def build(self, obj, *args, **kwargs):
+        return Builder.build(self, obj, *args, **kwargs)
 
     def add_op(self, op):
         self.operators.append(op)

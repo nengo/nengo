@@ -1,112 +1,152 @@
 from __future__ import absolute_import
 
-import functools
-
 import numpy as np
 
-import nengo
+import nengo.utils.numpy as npext
+from nengo.dists import DistributionParam, Gaussian
+from nengo.params import BoolParam, IntParam, NumberParam, Parameter
+from nengo.synapses import LinearFilter, LinearFilterParam, Lowpass
 from nengo.utils.compat import range
-from nengo.utils.numpy import rfftfreq
 
 
-class StochasticProcess(object):
-    """A stochastic process.
+class Process(object):
+    """A general system with input, output, and state.
+    """
+    default_size_out = IntParam(low=0)
+    default_dt = NumberParam(low=0, low_open=True)
 
-    A stochastic process is used to generate randomly varying signals.
-    Unlike distributions, a stochastic process may maintain state between
-    calls to ``sample``.
+    def __init__(self):
+        self.default_size_out = 1
+        self.default_dt = 0.001
+
+    def make_step(self, size_in, size_out, dt, rng):
+        raise NotImplementedError("Process must implement `make_step` method.")
+
+    def run_steps(self, n_steps, d=None, dt=None, rng=np.random):
+        # TODO: allow running with input
+        d = self.default_size_out if d is None else d
+        dt = self.default_dt if dt is None else dt
+        step = self.make_step(0, d, dt, rng)
+        output = np.zeros((n_steps, d))
+        for i in range(n_steps):
+            output[i] = step()
+        return output
+
+    def run(self, t, d=None, dt=None, rng=np.random):
+        # TODO: allow running with input
+        dt = self.default_dt if dt is None else dt
+        n_steps = int(np.round(float(t) / dt))
+        return self.run_steps(n_steps, d=d, dt=dt, rng=rng)
+
+    def ntrange(self, n_steps, dt=None):
+        dt = self.default_dt if dt is None else dt
+        return dt * np.arange(1, n_steps + 1)
+
+    def trange(self, t, dt=None):
+        dt = self.default_dt if dt is None else dt
+        n_steps = int(np.round(float(t) / dt))
+        return self.ntrange(n_steps, dt=dt)
+
+
+class WhiteNoise(Process):
+    """Full-spectrum white noise process.
 
     Parameters
     ----------
-    dist : Distribution
-        The distribution from which to generate random samples.
-    synapse : Synapse, optional
-        Synapse object describing a filter to apply to the samples.
-        If not provided, samples will be returned unfiltered.
+    dist : Distribution, optional
+        The distribution to draw samples from.
+    scale : bool, optional
+        Whether to scale the white noise for integration. Integrating white
+        noise requires using a time constant of `sqrt(dt)` instead of `dt`
+        on the noise term [1]_, to ensure the magnitude of the integrated
+        noise does not change with `dt`. Defaults to True.
+
+    References
+    ----------
+    .. [1] Gillespie, D.T. (1996) Exact numerical simulation of the Ornstein-
+       Uhlenbeck process and its integral. Phys. Rev. E 54, pp. 2084-91.
     """
 
-    def __init__(self, dist, synapse=None):
+    dist = DistributionParam()
+    scale = BoolParam()
+
+    def __init__(self, dist=Gaussian(0, 1), scale=True):
+        super(WhiteNoise, self).__init__()
         self.dist = dist
+        self.scale = scale
+
+    def make_step(self, size_in, size_out, dt, rng):
+        assert size_in == 0
+
+        dist = self.dist
+        scale = self.scale
+        alpha = 1. / np.sqrt(dt)
+        # ^ need sqrt(dt) when integrating, so divide by sqrt(dt) here,
+        #   since dt / sqrt(dt) = sqrt(dt).
+
+        # separate RNG for simulation for step order independence
+        sim_rng = np.random.RandomState(rng.randint(npext.maxint))
+
+        def step():
+            x = dist.sample(n=1, d=size_out, rng=sim_rng)[0]
+            return alpha * x if scale else x
+
+        return step
+
+
+class FilteredNoise(Process):
+
+    synapse = LinearFilterParam()
+    dist = DistributionParam()
+    scale = BoolParam()
+
+    def __init__(self, synapse=Lowpass(0.005), synapse_kwargs={},
+                 dist=Gaussian(0, 1), scale=True):
+        super(FilteredNoise, self).__init__()
         self.synapse = synapse
+        self.synapse_kwargs = synapse_kwargs
+        self.dist = dist
+        self.scale = scale
 
-    def make_sample(self, dt, d=1, rng=np.random):
-        """Samples the process and advances the time.
+    def make_step(self, size_in, size_out, dt, rng):
+        assert size_in == 0
 
-        Parameters
-        ----------
-        dt : float
-            Timestep for each sample.
-        d : int, optional
-            The number of dimensions to return. Default: 1.
-        rng : RandomState, optional
-            Random number generator state.
+        dist = self.dist
+        scale = self.scale
+        alpha = 1. / np.sqrt(dt)
+        output = np.zeros(size_out)
+        filter_step = self.synapse.make_step(
+            dt, output, **self.synapse_kwargs)
 
-        Returns
-        -------
-        function
-            A sample function that, when called, returns a 1d array of
-            length ``d``.
-        """
-        if self.synapse is not None:
-            output = np.zeros(d)
-            step = self.synapse.make_step(dt, output=output)
-            return functools.partial(
-                self.sample, self.dist, d=d, step=step, output=output, rng=rng)
-        else:
-            return functools.partial(self.sample_nostate, self.dist, d, rng)
+        # separate RNG for simulation for step order independence
+        sim_rng = np.random.RandomState(rng.randint(npext.maxint))
 
-    def f(self, dt=0.001, d=1, rng=np.random):
-        """Return a function that can be passed to a Node."""
-        sample_f = self.make_sample(dt=dt, d=d, rng=rng)
+        def step():
+            x = dist.sample(n=1, d=size_out, rng=sim_rng)[0]
+            if scale:
+                x *= alpha
+            filter_step(x)
+            return output
 
-        def out_f(dummy_t, dummy_x=None):
-            assert dummy_x is None, "Processes should not be given input."
-            return sample_f()
-        return out_f
-
-    @staticmethod
-    def sample_nostate(dist, d, rng=np.random):
-        return dist.sample(n=1, d=d, rng=rng)[0]
-
-    @staticmethod
-    def sample(dist, d, step, output, rng=np.random):
-        step(dist.sample(n=1, d=d, rng=rng)[0])
-        return output
+        return step
 
 
-class BrownNoise(StochasticProcess):
+class BrownNoise(FilteredNoise):
     """A Brown noise process; i.e., a Wiener process."""
 
-    def __init__(self):
-        pass
-
-    def make_sample(self, dt, d=1, rng=np.random):
-        """Samples the process and advances the time.
-
-        Parameters
-        ----------
-        dt : float
-            Timestep for each sample.
-        d : int, optional
-            The number of dimensions to return. Default: 1.
-        rng : RandomState, optional
-            Random number generator state.
-
-        Returns
-        -------
-        function
-            A sample function that, when called, returns a 1d array of
-            length ``d``.
-        """
-        dist = nengo.dists.Gaussian(0., 1. / np.sqrt(dt))
-        output = np.zeros(d)
-        step = nengo.LinearFilter([1], [1, 0]).make_step(
-            dt, output, method='euler')
-        return functools.partial(self.sample, dist, d, step, output, rng)
+    def __init__(self, dist=Gaussian(0, 1)):
+        super(BrownNoise, self).__init__(
+            synapse=LinearFilter([1], [1, 0]),
+            synapse_kwargs=dict(method='euler'),
+            dist=dist)
 
 
-class WhiteNoise(StochasticProcess):
-    """A low-pass filtered white noise process.
+class WhiteSignal(Process):
+    """An ideal low-pass filtered white noise process.
+
+    This signal is created in the frequency domain, and designed to have
+    exactly equal power at all frequencies below the cut-off frequency,
+    and no power above the cut-off.
 
     Parameters
     ----------
@@ -120,11 +160,15 @@ class WhiteNoise(StochasticProcess):
         The root mean square power of the filtered signal. Default: 0.5.
     """
     def __init__(self, duration, high=None, rms=0.5):
+        super(WhiteSignal, self).__init__()
         self.duration = duration
-        self.rms = rms
         self.high = high
+        self.rms = rms
 
-    def make_sample(self, dt, d=1, rng=np.random):
+    def make_step(self, size_in, size_out, dt, rng):
+        assert size_in == 0
+        d = size_out
+
         n_coefficients = int(np.ceil(self.duration / dt / 2.))
         shape = (d, n_coefficients + 1)
         sigma = self.rms * np.sqrt(0.5)
@@ -133,7 +177,7 @@ class WhiteNoise(StochasticProcess):
         coefficients[:, 0] = 0.
         coefficients[:, -1].imag = 0.
         if self.high is not None:
-            set_to_zero = rfftfreq(2 * n_coefficients, d=dt) > self.high
+            set_to_zero = npext.rfftfreq(2 * n_coefficients, d=dt) > self.high
             coefficients[:, set_to_zero] = 0.
             power_correction = np.sqrt(
                 1. - np.sum(set_to_zero, dtype=float) / n_coefficients)
@@ -141,25 +185,28 @@ class WhiteNoise(StochasticProcess):
                 coefficients /= power_correction
         coefficients *= np.sqrt(2 * n_coefficients)
 
-        t = np.array([0])
+        t = np.array(0)
         signal = np.fft.irfft(coefficients, axis=1)
-
-        return functools.partial(self.sample, t=t, signal=signal)
-
-    @staticmethod
-    def sample(t, signal):
-        t += 1
         sh = signal.shape[1] - 1
-        if (t // sh) % 2 == 0:
-            ix = t % sh
-        else:
-            ix = sh - t % sh
-        return signal[:, np.atleast_1d(ix)[0]]
+
+        def step():
+            t[...] += 1
+            if (t // sh) % 2 == 0:
+                ix = t % sh
+            else:
+                ix = sh - t % sh
+            return signal[:, ix]
+
+        return step
 
 
-def sample(n, process, dt=0.001, d=None, rng=np.random):
-    out = np.zeros(n) if d is None else np.zeros((n, d))
-    sample_f = process.make_sample(dt=dt, d=1 if d is None else d, rng=rng)
-    for i in range(n):
-        out[i, ...] = sample_f()
-    return out
+class ProcessParam(Parameter):
+    """Must be a Process."""
+
+    def validate(self, instance, process):
+        super(ProcessParam, self).validate(instance, process)
+        if process is not None and not isinstance(process, Process):
+            raise ValueError("Must be Process (got type '%s')" % (
+                process.__class__.__name__))
+
+        return process

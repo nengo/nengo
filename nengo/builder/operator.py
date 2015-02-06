@@ -311,27 +311,6 @@ class DotInc(Operator):
         return step
 
 
-class SimNoise(Operator):
-    def __init__(self, output, process):
-        self.output = output
-        self.process = process
-
-        self.sets = []
-        self.incs = [output]
-        self.reads = []
-        self.updates = []
-
-    def make_step(self, signals, dt, rng):
-        Y = signals[self.output]
-        sample_f = self.process.make_sample(dt=dt, d=Y.size, rng=rng)
-        Yview = Y.reshape(-1)
-
-        def step():
-            Yview[...] += sample_f()
-
-        return step
-
-
 class SimPyFunc(Operator):
     """Set signal `output` by some non-linear function of x, possibly t"""
 

@@ -2,8 +2,8 @@ from nengo.base import NengoObject, ObjView
 from nengo.dists import DistOrArrayParam, Uniform, UniformHypersphere
 from nengo.neurons import LIF, NeuronTypeParam, Direct
 from nengo.params import (
-    Default, IntParam, ListParam, NumberParam,
-    StochasticProcessParam, StringParam)
+    Default, IntParam, ListParam, NumberParam, StringParam)
+from nengo.processes import ProcessParam
 
 
 class Ensemble(NengoObject):
@@ -38,7 +38,7 @@ class Ensemble(NengoObject):
         determine the number of evaluation points.
     neuron_type : Neurons, optional
         The model that simulates all neurons in the ensemble.
-    noise : StochasticProcess, optional
+    noise : Process, optional
         Random noise injected directly into each neuron in the ensemble
         as current. A sample is drawn for each individual neuron on
         every simulation step.
@@ -69,7 +69,7 @@ class Ensemble(NengoObject):
     gain = DistOrArrayParam(default=None,
                             optional=True,
                             sample_shape=('n_neurons',))
-    noise = StochasticProcessParam(default=None, optional=True)
+    noise = ProcessParam(default=None, optional=True)
     seed = IntParam(default=None, optional=True)
     label = StringParam(default=None, optional=True)
     probeable = ListParam(default=['decoded_output', 'input'])

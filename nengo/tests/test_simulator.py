@@ -6,10 +6,8 @@ import pytest
 import nengo
 import nengo.simulator
 from nengo.builder import Model
-from nengo.builder.operator import Copy, Reset, DotInc, SimNoise
+from nengo.builder.operator import Copy, Reset, DotInc
 from nengo.builder.signal import Signal
-from nengo.utils.compat import range
-
 
 logger = logging.getLogger(__name__)
 
@@ -90,32 +88,6 @@ def test_probedict():
     probedict = nengo.simulator.ProbeDict(raw)
     assert np.all(probedict["scalar"] == np.asarray(raw["scalar"]))
     assert np.all(probedict.get("list") == np.asarray(raw.get("list")))
-
-
-def test_noise(RefSimulator, seed):
-    """Make sure that we can generate noise properly."""
-
-    n = 1000
-    mean, std = 0.1, 0.8
-    noise = Signal(np.zeros(n), name="noise")
-    process = nengo.processes.StochasticProcess(
-        nengo.dists.Gaussian(mean, std))
-
-    m = Model(dt=0.001)
-    m.operators += [Reset(noise), SimNoise(noise, process)]
-
-    sim = RefSimulator(None, model=m, seed=seed)
-    samples = np.zeros((100, n))
-    for i in range(100):
-        sim.step()
-        samples[i] = sim.signals[noise]
-
-    h, xedges = np.histogram(samples.flat, bins=51)
-    x = 0.5 * (xedges[:-1] + xedges[1:])
-    dx = np.diff(xedges)
-    z = 1./np.sqrt(2 * np.pi * std**2) * np.exp(-0.5 * (x - mean)**2 / std**2)
-    y = h / float(h.sum()) / dx
-    assert np.allclose(y, z, atol=0.02)
 
 
 if __name__ == "__main__":

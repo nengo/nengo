@@ -3,7 +3,6 @@ import weakref
 
 import numpy as np
 
-from nengo.processes import StochasticProcess
 from nengo.utils.compat import is_integer, is_number, is_string
 from nengo.utils.numpy import compare
 from nengo.utils.stdlib import checked_call
