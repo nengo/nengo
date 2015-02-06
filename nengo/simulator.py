@@ -110,7 +110,7 @@ class Simulator(object):
         self.model.decoder_cache.shrink()
 
         # -- map from Signal.base -> ndarray
-        self.signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
+        self.signals = self.model.default_signaldict()
         for op in self.model.operators:
             op.init_signals(self.signals)
 
@@ -144,6 +144,11 @@ class Simulator(object):
         """The current time of the simulator"""
         return self.signals['__time__'].copy()
 
+    @property
+    def n_steps(self):
+        """The number of steps that have been simulated"""
+        return self.signals['__step__'].copy()
+
     def trange(self, dt=None):
         """Create a range of times matching probe data.
 
@@ -160,20 +165,11 @@ class Simulator(object):
         n_steps = int(self.n_steps * (self.dt / dt))
         return dt * np.arange(1, n_steps + 1)
 
-    def _probe(self):
-        """Copy all probed signals to buffers"""
-        for probe in self.model.probes:
-            period = (1 if probe.sample_every is None else
-                      probe.sample_every / self.dt)
-            if self.n_steps % period < 1:
-                tmp = self.signals[self.model.sig[probe]['in']].copy()
-                self._probe_outputs[probe].append(tmp)
-
     def step(self):
         """Advance the simulator by `self.dt` seconds.
         """
-        self.n_steps += 1
-        self.signals['__time__'][...] = self.n_steps * self.dt
+        self.signals['__step__'][...] += 1
+        self.signals['__time__'][...] = self.signals['__step__'] * self.dt
 
         old_err = np.seterr(invalid='raise', divide='ignore')
         try:
@@ -181,8 +177,6 @@ class Simulator(object):
                 step_fn()
         finally:
             np.seterr(**old_err)
-
-        self._probe()
 
     def run(self, time_in_seconds, progress_bar=True):
         """Simulate for the given length of time.
@@ -248,19 +242,15 @@ class Simulator(object):
         if seed is not None:
             self.seed = seed
 
-        self.n_steps = 0
+        self.signals['__step__'][...] = 0
         self.signals['__time__'][...] = 0
 
         # reset signals
         for key in self.signals:
-            if key != '__time__':
+            if key not in ['__step__', '__time__']:
                 self.signals.reset(key)
 
         # rebuild steps (resets ops with their own state, like Processes)
         self.rng = np.random.RandomState(self.seed)
         self._steps = [op.make_step(self.signals, self.dt, self.rng)
                        for op in self._step_order]
-
-        # clear probe data
-        for probe in self.model.probes:
-            self._probe_outputs[probe] = []

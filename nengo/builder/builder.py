@@ -24,11 +24,15 @@ class Model(object):
         self.operators = []
         self.params = {}
         self.seeds = {}
-        self.probes = []
         self.sig = collections.defaultdict(dict)
 
     def __str__(self):
         return "Model: %s" % self.label
+
+    def default_signaldict(self):
+        return SignalDict(
+            __step__=np.array(0, dtype=np.int32),
+            __time__=np.array(0, dtype=np.float64))
 
     def build(self, obj, *args, **kwargs):
         return Builder.build(self, obj, *args, **kwargs)
@@ -36,7 +40,7 @@ class Model(object):
     def add_op(self, op):
         self.operators.append(op)
         # Fail fast by trying make_step with a temporary sigdict
-        signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
+        signals = self.default_signaldict()
         op.init_signals(signals)
         op.make_step(signals, self.dt, np.random)
 

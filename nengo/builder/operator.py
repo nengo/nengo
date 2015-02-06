@@ -128,6 +128,9 @@ class Operator(object):
             if sig.base not in signals:
                 signals.init(sig.base)
 
+    def reset(self):
+        pass
+
 
 class PreserveValue(Operator):
     """Marks a signal as `set` for the graph checker.
