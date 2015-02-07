@@ -245,7 +245,7 @@ def test_eval_points_scaling(Simulator, sample, radius, seed, rng):
         a = nengo.Ensemble(1, 3, eval_points=eval_points, radius=radius)
 
     sim = Simulator(model)
-    dists = np.linalg.norm(sim.data[a].eval_points, axis=1)
+    dists = npext.norm(sim.data[a].eval_points, axis=1)
     assert np.all(dists <= radius)
     assert np.any(dists >= 0.9 * radius)
 
