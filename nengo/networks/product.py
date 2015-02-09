@@ -1,7 +1,6 @@
 import numpy as np
 
 import nengo
-from nengo.dists import Choice
 from nengo.networks.ensemblearray import EnsembleArray
 from nengo.utils.stdlib import nested
 
@@ -13,20 +12,30 @@ def Product(n_neurons, dimensions, input_magnitude=1, config=None, net=None):
 
     if config is None:
         config = nengo.Config(nengo.Ensemble)
-        config[nengo.Ensemble].encoders = Choice(
-            [[1, 1], [1, -1], [-1, 1], [-1, -1]])
 
     with nested(net, config):
         net.A = nengo.Node(size_in=dimensions, label="A")
         net.B = nengo.Node(size_in=dimensions, label="B")
         net.output = nengo.Node(size_in=dimensions, label="output")
 
-        net.product = EnsembleArray(n_neurons, n_ensembles=dimensions,
-                                    ens_dimensions=2,
-                                    radius=input_magnitude * np.sqrt(2))
-        nengo.Connection(net.A, net.product.input[::2], synapse=None)
-        nengo.Connection(net.B, net.product.input[1::2], synapse=None)
-        net.output = net.product.add_output('product', lambda x: x[0] * x[1])
+        net.sq1 = EnsembleArray(
+            n_neurons // 2, n_ensembles=dimensions, ens_dimensions=1,
+            radius=input_magnitude * np.sqrt(2))
+        net.sq2 = EnsembleArray(
+            n_neurons // 2, n_ensembles=dimensions, ens_dimensions=1,
+            radius=input_magnitude * np.sqrt(2))
+
+        tr = 1. / np.sqrt(2.)
+        nengo.Connection(net.A, net.sq1.input, transform=tr, synapse=None)
+        nengo.Connection(net.B, net.sq1.input, transform=tr, synapse=None)
+        nengo.Connection(net.A, net.sq2.input, transform=tr, synapse=None)
+        nengo.Connection(net.B, net.sq2.input, transform=-tr, synapse=None)
+
+        sq1_out = net.sq1.add_output('square', np.square)
+        nengo.Connection(sq1_out, net.output, transform=.5)
+        sq2_out = net.sq2.add_output('square', np.square)
+        nengo.Connection(sq2_out, net.output, transform=-.5)
+
     return net
 
 
