@@ -142,18 +142,15 @@ Plotting the results of tests
 -----------------------------
 
 Many Nengo test routines have the built-in ability to plot test results
-for easier debugging. To enable this feature, set the environment variable
-``NENGO_TEST_PLOT=1``, for example::
+for easier debugging. To enable this feature, set the ``--plots`` flag,
+for example::
 
-  NENGO_TEST_PLOT=1 py.test --pyargs nengo
-
-Or, for the current terminal session::
-
-  export NENGO_TEST_PLOT=1
-  py.test --pyargs nengo
+  py.test --plots --pyargs nengo
 
 Plots are placed in ``nengo.simulator.plots`` in whatever directory
-``py.test`` is invoked from.
+``py.test`` is invoked from. You can also set a different directory::
+
+  py.test --plots=path-to-plots --pyargs nengo
 
 Contributing
 ============

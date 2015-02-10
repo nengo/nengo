@@ -1,3 +1,4 @@
+import errno
 import logging
 import os
 
@@ -16,41 +17,36 @@ def test_timer():
     assert timer.duration < 1.0  # Pretty bad worst case
 
 
-class MockWithName(object):
-    def __init__(self, name):
-        self.__name__ = name
-
-
-def test_analytics_store():
-    analytics = Analytics(nengo.Simulator,
-                          MockWithName('nengo.utils.tests.test_testing'),
-                          MockWithName('test_analytics_store'),
-                          store=True)
+def test_analytics_record():
+    analytics = Analytics('nengo.simulator.analytics',
+                          'nengo.utils.tests.test_testing',
+                          'test_analytics_record')
     with analytics:
         analytics.add_data('test', 1, "Test analytics implementation")
         assert analytics.data['test'] == 1
         assert analytics.desc['test'] == "Test analytics implementation"
-    datapath = os.path.join(analytics.dirname, analytics.data_filename)
-    descpath = os.path.join(analytics.dirname, analytics.desc_filename)
-    assert os.path.exists(datapath)
-    assert os.path.exists(descpath)
-    os.remove(datapath)
-    os.remove(descpath)
+        with pytest.raises(ValueError):
+            analytics.add_data('descriptions', '')
+    path = analytics.get_filepath(ext='npz')
+    assert os.path.exists(path)
+    os.remove(path)
+    # This will remove the analytics directory, only if it's empty
+    try:
+        os.rmdir(analytics.dirname)
+    except OSError as ex:
+        assert ex.errno == errno.ENOTEMPTY
 
 
-def test_analytics_nostore():
-    analytics = Analytics(nengo.Simulator,
-                          MockWithName('nengo.utils.tests.test_testing'),
-                          MockWithName('test_analytics_nostore'),
-                          store=False)
+def test_analytics_norecord():
+    analytics = Analytics(None,
+                          'nengo.utils.tests.test_testing',
+                          'test_analytics_norecord')
     with analytics:
         analytics.add_data('test', 1, "Test analytics implementation")
         assert 'test' not in analytics.data
         assert 'test' not in analytics.desc
-    datapath = os.path.join(analytics.dirname, analytics.data_filename)
-    descpath = os.path.join(analytics.dirname, analytics.desc_filename)
-    assert not os.path.exists(datapath)
-    assert not os.path.exists(descpath)
+    with pytest.raises(ValueError):
+        analytics.get_filepath(ext='npz')
 
 
 if __name__ == "__main__":

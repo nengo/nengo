@@ -14,7 +14,48 @@ import pytest
 from .compat import is_string
 
 
-class Plotter(object):
+class Recorder(object):
+    def __init__(self, dirname, module_name, function_name):
+        self.dirname = dirname
+        self.module_name = module_name
+        self.function_name = function_name
+
+        if self.record and not os.path.exists(self.dirname):
+            os.makedirs(self.dirname)
+
+    @property
+    def record(self):
+        return self.dirname is not None
+
+    @property
+    def dirname(self):
+        return self._dirname
+
+    @dirname.setter
+    def dirname(self, _dirname):
+        if _dirname is not None and not os.path.exists(_dirname):
+            os.makedirs(_dirname)
+
+        self._dirname = _dirname
+
+    def get_filename(self, ext=''):
+        modparts = self.module_name.split('.')[1:]
+        modparts.remove('tests')
+        return "%s.%s.%s" % ('.'.join(modparts), self.function_name, ext)
+
+    def get_filepath(self, ext=''):
+        if not self.record:
+            raise ValueError("Cannot construct path when not recording")
+        return os.path.join(self.dirname, self.get_filename(ext=ext))
+
+    def __enter__(self):
+        raise NotImplementedError()
+
+    def __exit__(self, type, value, traceback):
+        raise NotImplementedError()
+
+
+class Plotter(Recorder):
     class Mock(object):
         def __init__(self, *args, **kwargs):
             pass
@@ -36,40 +77,26 @@ class Plotter(object):
             else:
                 return Plotter.Mock()
 
-    def __init__(self, simulator, module, function, nl=None, plot=None):
-        if plot is None:
-            self.plot = int(os.getenv("NENGO_TEST_PLOT", 0))
-        else:
-            self.plot = plot
-
-        self.dirname = "%s.plots" % simulator.__module__
-        if nl is not None:
-            self.dirname = os.path.join(self.dirname, nl.__name__)
-
-        modparts = module.__name__.split('.')
-        modparts = modparts[1:]
-        modparts.remove('tests')
-        self.filename = "%s.%s.pdf" % ('.'.join(modparts), function.__name__)
-
     def __enter__(self):
-        if self.plot:
+        if self.record:
             import matplotlib.pyplot as plt
             self.plt = plt
-            if not os.path.exists(self.dirname):
-                os.makedirs(self.dirname)
         else:
             self.plt = Plotter.Mock()
         return self.plt
 
     def __exit__(self, type, value, traceback):
-        if self.plot:
+        if self.record:
             if hasattr(self.plt, 'saveas') and self.plt.saveas is None:
                 del self.plt.saveas
                 self.plt.close('all')
                 return
-            elif hasattr(self.plt, 'saveas'):
+
+            if hasattr(self.plt, 'saveas'):
                 self.filename = self.plt.saveas
                 del self.plt.saveas
+            else:
+                self.filename = self.get_filename(ext='pdf')
 
             if len(self.plt.gcf().get_axes()) > 0:
                 # tight_layout errors if no axes are present
@@ -78,24 +105,11 @@ class Plotter(object):
             self.plt.close('all')
 
 
-class Analytics(object):
-    def __init__(self, simulator, module, function, nl=None, store=None):
-        if store is None:
-            self.store = int(os.getenv("NENGO_ANALYTICS", 0))
-        else:
-            self.store = store
+class Analytics(Recorder):
+    DESC_KEY = 'descriptions'
 
-        self.dirname = "%s.analytics" % simulator.__module__
-        if nl is not None:
-            self.dirname = os.path.join(self.dirname, nl.__name__)
-
-        modparts = module.__name__.split('.')
-        modparts = modparts[1:]
-        modparts.remove('tests')
-        self.data_filename = "%s.%s.npz" % (
-            '.'.join(modparts), function.__name__)
-        self.desc_filename = "%s.%s.txt" % (
-            '.'.join(modparts), function.__name__)
+    def __init__(self, dirname, module_name, function_name):
+        super(Analytics, self).__init__(dirname, module_name, function_name)
 
         self.data = {}
         self.desc = {}
@@ -104,21 +118,19 @@ class Analytics(object):
         return self
 
     def add_data(self, name, data, desc=""):
-        if self.store:
+        if name == self.DESC_KEY:
+            raise ValueError("The name '{0}' is reserved.".format(
+                self.DESC_KEY))
+
+        if self.record:
             self.data[name] = data
             self.desc[name] = desc
 
     def __exit__(self, type, value, traceback):
-        if self.store:
-            if not os.path.exists(self.dirname):
-                os.makedirs(self.dirname)
-
-            np.savez(
-                os.path.join(self.dirname, self.data_filename), **self.data)
-            desc_path = os.path.join(self.dirname, self.desc_filename)
-            with open(desc_path, 'w') as f:
-                for k, v in sorted(self.desc.items()):
-                    f.write('{k}: {v}\n\n'.format(k=k, v=v))
+        if self.record:
+            npz_data = dict(self.data)
+            npz_data.update({self.DESC_KEY: self.desc})
+            np.savez(self.get_filepath(ext='npz'), **npz_data)
 
 
 class Timer(object):
