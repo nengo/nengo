@@ -6,7 +6,7 @@ from nengo import spa
 import numpy as np
 
 
-@pytest.mark.optional  # Too slow
+@pytest.mark.slow
 def test_thalamus(Simulator, plt, seed):
     model = spa.SPA(seed=seed)
 

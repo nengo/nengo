@@ -21,8 +21,8 @@ from nengo.utils.stdlib import execfile
 def pytest_generate_tests(metafunc):
     examples = glob('%s/*.ipynb' % examples_dir)
 
-    # if `--optional` is not set, filter out time-consuming notebooks
-    ignores = [] if metafunc.config.option.optional else [
+    # if `--slow` is not set, filter out time-consuming notebooks
+    ignores = [] if metafunc.config.option.slow else [
         'inhibitory_gating.ipynb', 'izhikevich.ipynb',
         'learn_communication_channel.ipynb', 'learn_product.ipynb',
         'learn_square.ipynb', 'learn_unsupervised.ipynb',
@@ -32,7 +32,7 @@ def pytest_generate_tests(metafunc):
         'spa_parser.ipynb', 'spa_sequence.ipynb',
         'spa_sequence_routed.ipynb']
     argvalues = [pytest.mark.skipif(os.path.basename(path) in ignores,
-                                    reason="Time-consuming")(path)
+                                    reason="slow")(path)
                  for path in examples]
 
     if "nb_path" in metafunc.funcargnames:
