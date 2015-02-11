@@ -172,6 +172,25 @@ def test_sampling_shape():
     assert process.run_steps(1, d=2). shape == (1, 2)
 
 
+def test_reset(seed):
+    trun = 0.1
+
+    with nengo.Network() as model:
+        u = nengo.Node(WhiteNoise(Gaussian(0, 1), scale=False))
+        up = nengo.Probe(u)
+
+    sim = nengo.Simulator(model, seed=seed)
+
+    sim.run(trun)
+    x = np.array(sim.data[up])
+
+    sim.reset()
+    sim.run(trun)
+    y = np.array(sim.data[up])
+
+    assert (x == y).all()
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, "-v"])
