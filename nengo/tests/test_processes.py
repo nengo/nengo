@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import numpy as np
 import pytest
 
+import nengo
 import nengo.utils.numpy as npext
 from nengo.dists import Distribution, Gaussian
 from nengo.processes import BrownNoise, WhiteNoise, WhiteSignal
@@ -183,3 +184,22 @@ def test_sampling_shape():
     assert process.run_steps(1).shape == (1, 1)
     assert process.run_steps(5, d=1).shape == (5, 1)
     assert process.run_steps(1, d=2). shape == (1, 2)
+
+
+def test_reset(seed):
+    trun = 0.1
+
+    with nengo.Network() as model:
+        u = nengo.Node(WhiteNoise(Gaussian(0, 1), scale=False))
+        up = nengo.Probe(u)
+
+    sim = nengo.Simulator(model, seed=seed)
+
+    sim.run(trun)
+    x = np.array(sim.data[up])
+
+    sim.reset()
+    sim.run(trun)
+    y = np.array(sim.data[up])
+
+    assert (x == y).all()
