@@ -1,9 +1,8 @@
 from nengo.base import NengoObject, ObjView
-from nengo.dists import Uniform, UniformHypersphere
+from nengo.dists import DistOrArrayParam, Uniform, UniformHypersphere
 from nengo.neurons import LIF, NeuronTypeParam, Direct
 from nengo.params import (
-    Default, DistributionParam, IntParam, NumberParam,
-    StochasticProcessParam, StringParam)
+    Default, IntParam, NumberParam, StochasticProcessParam, StringParam)
 
 
 class Ensemble(NengoObject):
@@ -52,23 +51,23 @@ class Ensemble(NengoObject):
     dimensions = IntParam(default=None, low=1)
     radius = NumberParam(default=1.0, low=1e-10)
     neuron_type = NeuronTypeParam(default=LIF())
-    encoders = DistributionParam(default=UniformHypersphere(surface=True),
-                                 sample_shape=('n_neurons', 'dimensions'))
-    intercepts = DistributionParam(default=Uniform(-1.0, 1.0),
-                                   optional=True,
-                                   sample_shape=('n_neurons',))
-    max_rates = DistributionParam(default=Uniform(200, 400),
+    encoders = DistOrArrayParam(default=UniformHypersphere(surface=True),
+                                sample_shape=('n_neurons', 'dimensions'))
+    intercepts = DistOrArrayParam(default=Uniform(-1.0, 1.0),
                                   optional=True,
                                   sample_shape=('n_neurons',))
+    max_rates = DistOrArrayParam(default=Uniform(200, 400),
+                                 optional=True,
+                                 sample_shape=('n_neurons',))
     n_eval_points = IntParam(default=None, optional=True)
-    eval_points = DistributionParam(default=UniformHypersphere(),
-                                    sample_shape=('*', 'dimensions'))
-    bias = DistributionParam(default=None,
-                             optional=True,
-                             sample_shape=('n_neurons',))
-    gain = DistributionParam(default=None,
-                             optional=True,
-                             sample_shape=('n_neurons',))
+    eval_points = DistOrArrayParam(default=UniformHypersphere(),
+                                   sample_shape=('*', 'dimensions'))
+    bias = DistOrArrayParam(default=None,
+                            optional=True,
+                            sample_shape=('n_neurons',))
+    gain = DistOrArrayParam(default=None,
+                            optional=True,
+                            sample_shape=('n_neurons',))
     noise = StochasticProcessParam(default=None, optional=True)
     seed = IntParam(default=None, optional=True)
     label = StringParam(default=None, optional=True)

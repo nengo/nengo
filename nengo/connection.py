@@ -3,11 +3,12 @@ import logging
 import numpy as np
 
 from nengo.base import NengoObject, NengoObjectParam, ObjView
+from nengo.dists import DistOrArrayParam
 from nengo.ensemble import Ensemble
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.node import Node
-from nengo.params import (Default, BoolParam, DistributionParam, FunctionParam,
-                          IntParam, NdarrayParam)
+from nengo.params import (
+    Default, BoolParam, FunctionParam, IntParam, NdarrayParam)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_iterable, iteritems
@@ -47,7 +48,7 @@ class ConnectionSolverParam(SolverParam):
                     "(got '%s')" % conn.post.__class__.__name__)
 
 
-class EvalPointsParam(DistributionParam):
+class EvalPointsParam(DistOrArrayParam):
     def validate(self, conn, ndarray):
         """Eval points are only valid when pre is an ensemble."""
         if not isinstance(conn.pre, Ensemble):
