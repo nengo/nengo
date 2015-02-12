@@ -2,6 +2,10 @@ from glob import glob
 import os
 
 import pytest
+import _pytest.capture
+
+from nengo.utils.paths import examples_dir
+from nengo.utils.stdlib import execfile
 
 # Monkeypatch _pytest.capture.DontReadFromInput
 #  If we don't do this, importing IPython will choke as it reads the current
@@ -9,13 +13,9 @@ import pytest
 #  DontReadFromInput as sys.stdin to capture output.
 #  Running with -s option doesn't have this issue, but this monkeypatch
 #  doesn't have any side effects, so it's fine.
-import _pytest.capture
 _pytest.capture.DontReadFromInput.encoding = "utf-8"
 _pytest.capture.DontReadFromInput.write = lambda: None
 _pytest.capture.DontReadFromInput.flush = lambda: None
-
-from nengo.utils.paths import examples_dir
-from nengo.utils.stdlib import execfile
 
 
 def pytest_generate_tests(metafunc):
