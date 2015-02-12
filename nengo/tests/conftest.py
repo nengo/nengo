@@ -95,7 +95,7 @@ def analytics(request):
     ``analytics.add_summary_data``; these will be saved
     in a single ``.csv`` file.
     """
-    dirname = recorder_dirname(request, 'benchmarks')
+    dirname = recorder_dirname(request, 'analytics')
     analytics = Analytics(
         dirname, request.module.__name__, request.function.__name__)
     request.addfinalizer(lambda: analytics.__exit__(None, None, None))
@@ -149,11 +149,10 @@ def pytest_generate_tests(metafunc):
 def pytest_addoption(parser):
     parser.addoption(
         '--plots', nargs='?', default=False, const=True,
-        help='Save plots (optional with directory to save them in).')
+        help='Save plots (can optionally specify a directory for plots).')
     parser.addoption(
-        '--benchmarks', nargs='?', default=False, const=True,
-        help='Also run benchmarking tests (optional with directory to save ' +
-        'the data in).')
+        '--analytics', nargs='?', default=False, const=True,
+        help='Save analytics (can optionally specify a directory for data).')
     parser.addoption('--noexamples', action='store_false', default=True,
                      help='Do not run examples')
     parser.addoption(
@@ -163,9 +162,21 @@ def pytest_addoption(parser):
 
 def pytest_runtest_setup(item):
     for mark, option, message in [
-            ('benchmark', 'benchmarks', "benchmarks not requested"),
             ('example', 'noexamples', "examples not requested"),
-            ('plot', 'plots', "plots not requested"),
             ('slow', 'slow', "slow tests not requested")]:
         if getattr(item.obj, mark, None) and not item.config.getvalue(option):
             pytest.skip(message)
+
+    if getattr(item.obj, 'noassertions', None):
+        skip = True
+        skipreasons = []
+        for fixture_name, option, message in [
+                ('analytics', 'analytics', "analytics not requested"),
+                ('plt', 'plots', "plots not requested")]:
+            if fixture_name in item.fixturenames:
+                if item.config.getvalue(option):
+                    skip = False
+                else:
+                    skipreasons.append(message)
+        if skip:
+            pytest.skip(" and ".join(skipreasons))

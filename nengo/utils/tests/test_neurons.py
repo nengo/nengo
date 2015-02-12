@@ -77,7 +77,7 @@ def test_rates_kernel(Simulator, plt, seed):
     assert rel_rmse < 0.2
 
 
-@pytest.mark.benchmark
+@pytest.mark.noassertions
 def test_rates(Simulator, plt, seed):
     functions = [
         ('isi_zero', lambda t, s: rates_isi(
@@ -95,10 +95,11 @@ def test_rates(Simulator, plt, seed):
         ('kernel_alpha', lambda t, s: rates_kernel(t, s, kind='alpha')),
     ]
 
-    print("\ntest_rates:")
     for name, function in functions:
         rel_rmse = _test_rates(Simulator, function, plt, seed, name)
-        print("%20s relative rmse: %0.3f" % (name, rel_rmse))
+        logger.info('rate estimator: %s', name)
+        logger.info('relative RMSE: %0.4f', rel_rmse)
+    plt.saveas = None
 
 
 if __name__ == "__main__":

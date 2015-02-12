@@ -264,7 +264,7 @@ def calc_relative_timer_diff(t1, t2):
     return (t2.duration - t1.duration) / (t2.duration + t1.duration)
 
 
-@pytest.mark.benchmark
+@pytest.mark.slow
 def test_cache_performance(tmpdir, Simulator, seed):
     cache_dir = str(tmpdir)
 

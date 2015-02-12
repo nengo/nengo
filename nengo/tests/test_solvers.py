@@ -195,7 +195,7 @@ def test_nnls(Solver, plt, rng):
     assert rel_rmse < 0.02
 
 
-@pytest.mark.benchmark
+@pytest.mark.slow
 def test_subsolvers_L2(rng):
     pytest.importorskip('scipy')
 
@@ -209,19 +209,21 @@ def test_subsolvers_L2(rng):
         x0, _ = ref_solver(A, B, sigma)
 
     xs = np.zeros((len(solvers),) + x0.shape)
-    print()
     for i, solver in enumerate(solvers):
         with Timer() as t:
             xs[i], info = solver(A, B, sigma)
-        print("%s: %0.3f (%0.2f) %s" % (
-            solver.__name__, t.duration, t.duration / t0.duration, info))
+        logger.info('solver: %s', solver.__name__)
+        logger.info('duration: %0.3f', t.duration)
+        logger.info('duration relative to reference solver: %0.2f',
+                    (t.duration / t0.duration))
+        logger.info('info: %s', info)
 
     for solver, x in zip(solvers, xs):
         assert np.allclose(x0, x, atol=1e-5, rtol=1e-3), (
             "Solver %s" % solver.__name__)
 
 
-@pytest.mark.benchmark
+@pytest.mark.noassertions
 def test_subsolvers_L1(rng):
     pytest.importorskip('sklearn')
 
@@ -230,10 +232,9 @@ def test_subsolvers_L1(rng):
     l1 = 1e-4
     with Timer() as t:
         LstsqL1(l1=l1, l2=0)(A, B, rng=rng)
-    print(t.duration)
+    logger.info('duration: %0.3f', t.duration)
 
 
-@pytest.mark.benchmark
 def test_compare_solvers(Simulator, plt, seed):
     pytest.importorskip('sklearn')
 
@@ -280,7 +281,8 @@ def test_compare_solvers(Simulator, plt, seed):
         assert c, "Solver '%s' does not meet tolerances" % name
 
 
-@pytest.mark.benchmark  # noqa: C901
+@pytest.mark.slow
+@pytest.mark.noassertions
 def test_regularization(Simulator, nl_nodirect, plt):
 
     # TODO: multiple trials per parameter set, with different seeds
@@ -342,7 +344,8 @@ def test_regularization(Simulator, nl_nodirect, plt):
     plt.tight_layout()
 
 
-@pytest.mark.benchmark
+@pytest.mark.slow
+@pytest.mark.noassertions
 def test_eval_points_static(Simulator, plt, rng):
     solver = LstsqL2()
 
@@ -406,7 +409,8 @@ def test_eval_points_static(Simulator, plt, rng):
     plt.ylabel('(rmse - mean) / std')
 
 
-@pytest.mark.benchmark
+@pytest.mark.slow
+@pytest.mark.noassertions
 def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
     n = 100
     d = 5
@@ -453,7 +457,9 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
             tmask = (t > t0) & (t < t1)
 
             rmses[i, j] = rms(yt[tmask] - xt[tmask])
-            print("done %d (%d) in %0.3f s" % (n_points, j, timer.duration))
+            logger.info('trial %d', j)
+            logger.info('  n_points: %d', n_points)
+            logger.info('  duration: %0.3f s', timer.duration)
 
     # subtract out mean for each model
     rmses_norm = rmses - rmses.mean(0, keepdims=True)

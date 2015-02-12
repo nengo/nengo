@@ -8,7 +8,7 @@ import nengo
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.plot
+@pytest.mark.noassertions
 @pytest.mark.parametrize('use_eventplot', [True, False])
 def test_rasterplot(use_eventplot, Simulator, seed, plt):
     from nengo.utils.matplotlib import rasterplot
