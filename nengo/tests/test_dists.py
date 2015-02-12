@@ -102,6 +102,41 @@ def test_choice(weights, rng):
     assert np.allclose(p, p_empirical, atol=2 * sterr)
 
 
+def test_distributionparam():
+    """DistOrArrayParams can be distributions or samples."""
+    class Test(object):
+        dp = dists.DistOrArrayParam(default=None, sample_shape=['*', '*'])
+
+    inst = Test()
+    inst.dp = dists.UniformHypersphere()
+    assert isinstance(inst.dp, dists.UniformHypersphere)
+    inst.dp = np.array([[1], [2], [3]])
+    assert np.all(inst.dp == np.array([[1], [2], [3]]))
+    with pytest.raises(ValueError):
+        inst.dp = 'a'
+    # Sample must have correct dims
+    with pytest.raises(ValueError):
+        inst.dp = np.array([1])
+
+
+def test_distributionparam_sample_shape():
+    """sample_shape dictates the shape of the sample that can be set."""
+    class Test(object):
+        dp = dists.DistOrArrayParam(default=None, sample_shape=['d1', 10])
+        d1 = 4
+
+    inst = Test()
+    # Distributions are still cool
+    inst.dp = dists.UniformHypersphere()
+    assert isinstance(inst.dp, dists.UniformHypersphere)
+    # Must be shape (4, 10)
+    inst.dp = np.ones((4, 10))
+    assert np.all(inst.dp == np.ones((4, 10)))
+    with pytest.raises(ValueError):
+        inst.dp = np.ones((10, 4))
+    assert np.all(inst.dp == np.ones((4, 10)))
+
+
 if __name__ == "__main__":
     nengo.log(debug=True)
     pytest.main([__file__, '-v'])
