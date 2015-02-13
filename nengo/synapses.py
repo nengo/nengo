@@ -3,7 +3,7 @@ import functools
 
 import numpy as np
 
-from nengo.params import Parameter
+from nengo.params import Parameter, Unconfigurable
 from nengo.utils.compat import is_number
 from nengo.utils.filter_design import cont2discrete
 
@@ -233,18 +233,22 @@ def filtfilt(signal, synapse, dt, axis=0, copy=True):
 
 
 class SynapseParam(Parameter):
-    def __init__(self, default, optional=True, readonly=False):
-        assert optional  # None has meaning (no filtering)
-        super(SynapseParam, self).__init__(
-            default, optional, readonly)
+    def __init__(self, default=Unconfigurable, optional=True, readonly=False):
+        super(SynapseParam, self).__init__(default, optional, readonly)
 
-    def __set__(self, conn, synapse):
+    def __set__(self, instance, synapse):
         if is_number(synapse):
             synapse = Lowpass(synapse)
-        self.validate(conn, synapse)
-        self.data[conn] = synapse
+        super(SynapseParam, self).__set__(instance, synapse)
 
-    def validate(self, conn, synapse):
+    def validate(self, instance, synapse):
         if synapse is not None and not isinstance(synapse, Synapse):
             raise ValueError("'%s' is not a synapse type" % synapse)
-        super(SynapseParam, self).validate(conn, synapse)
+        super(SynapseParam, self).validate(instance, synapse)
+
+
+class LinearFilterParam(SynapseParam):
+    def validate(self, instance, synapse):
+        if synapse is not None and not isinstance(synapse, LinearFilter):
+            raise ValueError("'%s' is not a LinearFilter" % synapse)
+        super(SynapseParam, self).validate(instance, synapse)
