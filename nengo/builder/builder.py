@@ -22,9 +22,13 @@ class Model(object):
 
         # Resources used by the build process.
         self.operators = []
+        self.probe_operators = []  # like operators, but done last
         self.params = {}
         self.seeds = {}
         self.sig = collections.defaultdict(dict)
+
+        # Dummy RNG for checking ops, to not disturb the main RNG
+        self._try_rng = np.random.RandomState(9)
 
     def __str__(self):
         return "Model: %s" % self.label
@@ -37,12 +41,18 @@ class Model(object):
     def build(self, obj, *args, **kwargs):
         return Builder.build(self, obj, *args, **kwargs)
 
-    def add_op(self, op):
-        self.operators.append(op)
+    def add_op(self, op, probe=False):
+        if probe:
+            self.probe_operators.append(op)
+        else:
+            self.operators.append(op)
+        self.try_op(op)
+
+    def try_op(self, op):
         # Fail fast by trying make_step with a temporary sigdict
         signals = self.default_signaldict()
         op.init_signals(signals)
-        op.make_step(signals, self.dt, np.random)
+        op.make_step(signals, self.dt, self._try_rng)
 
     def has_built(self, obj):
         """Returns true iff obj has been processed by build."""

@@ -48,7 +48,7 @@ class SimProbeBuffer(SimProbeOutput):
 @Builder.register(ProbeBuffer)
 def build_probe_buffer(model, probe_buffer, probe):
     op = SimProbeBuffer(model.sig[probe]['in'], probe.sample_every)
-    model.add_op(op)
+    model.add_op(op, probe=True)
 
     # Add a reference so that Simulator can get this data for the user
     model.params[probe] = op.buffer

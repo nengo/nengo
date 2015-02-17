@@ -118,6 +118,7 @@ class Simulator(object):
         self.dg = operator_depencency_graph(self.model.operators)
         self._step_order = [op for op in toposort(self.dg)
                             if hasattr(op, 'make_step')]
+        self._step_order.extend(op for op in self.model.probe_operators)
 
         # Add built states to the probe dictionary
         self._probe_outputs = self.model.params
