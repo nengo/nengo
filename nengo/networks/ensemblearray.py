@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 import nengo
-from nengo.utils.compat import range
+from nengo.utils.compat import is_iterable, range
 from nengo.utils.network import with_self
 
 
@@ -100,38 +100,37 @@ class EnsembleArray(nengo.Network):
 
     @with_self
     def add_output(self, name, function, synapse=None, **conn_kwargs):
-        if isinstance(function, list):
-            func_sizes = np.zeros(len(function)+1)
+        dims_per_ens = self.dimensions_per_ensemble
+
+        # get output size for each ensemble
+        sizes = np.zeros(self.n_ensembles, dtype=int)
+
+        if is_iterable(function) and all(callable(f) for f in function):
+            if len(function) != self.n_ensembles:
+                raise ValueError("Must have one function per ensemble")
+
             for i, func in enumerate(function):
-                func_sizes[i+1] = np.asarray(
-                    func(np.zeros(self.dimensions_per_ensemble))
-                ).size
-            dim = int(np.sum(func_sizes))
-            output = nengo.Node(output=None, size_in=dim, label=name)
-            setattr(self, name, output)
-
-            for i, e in enumerate(self.ea_ensembles):
-                dim_index_start = np.sum(func_sizes[:(i+1)])
-                dim_index_end = np.sum(func_sizes[:(i+2)])
-                nengo.Connection(
-                    e, output[dim_index_start:dim_index_end],
-                    function=function[i], synapse=synapse, **conn_kwargs
-                )
+                sizes[i] = np.asarray(func(np.zeros(dims_per_ens))).size
+        elif callable(function):
+            sizes[:] = np.asarray(function(np.zeros(dims_per_ens))).size
+            function = [function] * self.n_ensembles
+        elif function is None:
+            sizes[:] = dims_per_ens
+            function = [None] * self.n_ensembles
         else:
-            if function is None:
-                function_d = self.dimensions_per_ensemble
-            else:
-                func_output = function(np.zeros(self.dimensions_per_ensemble))
-                function_d = np.asarray(func_output).size
+            raise ValueError(
+                "'function' must be a callable, list of callables, or 'None'")
 
-            dim = self.n_ensembles * function_d
-            output = nengo.Node(output=None, size_in=dim, label=name)
-            setattr(self, name, output)
+        output = nengo.Node(output=None, size_in=sizes.sum(), label=name)
+        setattr(self, name, output)
 
-            for i, e in enumerate(self.ea_ensembles):
-                nengo.Connection(
-                    e, output[i * function_d:(i + 1) * function_d],
-                    function=function, synapse=synapse, **conn_kwargs)
+        indices = np.zeros(len(sizes) + 1)
+        indices[1:] = np.cumsum(sizes)
+        for i, e in enumerate(self.ea_ensembles):
+            nengo.Connection(
+                e, output[indices[i]:indices[i+1]], function=function[i],
+                synapse=synapse, **conn_kwargs)
+
         return output
 
     @property
