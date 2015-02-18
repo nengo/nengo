@@ -27,6 +27,23 @@ class ProbeBuffer(ProbeOutput):
     pass
 
 
+class ProbeFunction(ProbeOutput):
+    def __init__(self, function):
+        self.function = function
+
+
+class ProbeOutputParam(Parameter):
+    def __set__(self, instance, value):
+        if not isinstance(value, ProbeOutput) and callable(value):
+            value = ProbeFunction(value)
+
+        super(ProbeOutputParam, self).__set__(instance, value)
+
+    def validate(self, probe, probe_output):
+        if not isinstance(probe_output, ProbeOutput):
+            raise ValueError("Must be a 'ProbeOutput' object")
+
+
 class TargetParam(NengoObjectParam):
     def validate(self, probe, target):
         obj = target.obj if isinstance(target, ObjView) else target
@@ -59,12 +76,6 @@ class ProbeSolverParam(SolverParam):
         if solver is not None and solver.weights:
             raise ValueError("weight solvers only work for ensemble to "
                              "ensemble connections, not probes")
-
-
-class ProbeOutputParam(Parameter):
-    def validate(self, probe, probe_output):
-        if not isinstance(probe_output, ProbeOutput):
-            raise ValueError("Must be a 'ProbeOutput' object")
 
 
 class Probe(NengoObject):
