@@ -13,7 +13,6 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder import Model
-from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
