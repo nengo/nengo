@@ -4,7 +4,6 @@ import pytest
 import nengo
 from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja
 from nengo.processes import WhiteSignal
-from nengo.solvers import LstsqL2nz
 
 
 def test_pes_weights(Simulator, nl_nodirect, plt, seed, rng):
@@ -199,20 +198,16 @@ def learning_net(learning_rule, net, rng):
         u = nengo.Node(output=1.0)
         pre = nengo.Ensemble(10, dimensions=1)
         post = nengo.Ensemble(10, dimensions=1)
+        initial_weights = rng.uniform(high=1e-3,
+                                      size=(pre.n_neurons, post.n_neurons))
+        conn = nengo.Connection(pre.neurons, post.neurons,
+                                transform=initial_weights,
+                                learning_rule_type=learning_rule())
         if learning_rule is nengo.PES:
             err = nengo.Ensemble(10, dimensions=1)
-            # Always have error
             nengo.Connection(u, err)
-            conn = nengo.Connection(pre, post,
-                                    learning_rule_type=learning_rule(),
-                                    solver=LstsqL2nz(weights=True))
             nengo.Connection(err, conn.learning_rule)
-        else:
-            initial_weights = rng.uniform(high=1e-3,
-                                          size=(pre.n_neurons, post.n_neurons))
-            conn = nengo.Connection(pre.neurons, post.neurons,
-                                    transform=initial_weights,
-                                    learning_rule_type=learning_rule())
+
         activity_p = nengo.Probe(pre.neurons, synapse=0.01)
         trans_p = nengo.Probe(conn, 'transform', synapse=.01, sample_every=.01)
     return net, activity_p, trans_p
@@ -245,7 +240,7 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
     plt.xlim(right=sim.trange()[-1])
     plt.ylabel("Presynaptic activity")
 
-    assert np.allclose(trans_data[0], trans_data[1], atol=2e-3)
+    assert np.allclose(trans_data[0], trans_data[1], atol=3e-3)
     assert not np.all(sim.data[trans_p][0] == sim.data[trans_p][-1])
 
 
