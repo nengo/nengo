@@ -13,7 +13,6 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder import Model
-from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
@@ -84,22 +83,19 @@ class Simulator(object):
             A network object to the built and then simulated.
             If a fully built ``model`` is passed in, then you can skip
             building the network by passing in network=None.
-        dt : float
+        dt : float, optional
             The length of a simulator timestep, in seconds.
-        seed : int
+        seed : int, optional
             A seed for all stochastic operators used in this simulator.
-            Note that there are not stochastic operators implemented
-            currently, so this parameters does nothing.
-        model : nengo.builder.Model instance or None
+        model : nengo.builder.Model instance or None, optional
             A model object that contains build artifacts to be simulated.
             Usually the simulator will build this model for you; however,
             if you want to build the network manually, or to inject some
             build artifacts in the Model before building the network,
             then you can pass in a ``nengo.builder.Model`` instance.
         """
-        dt = float(dt)  # make sure it's a float (for division purposes)
-
         if model is None:
+            dt = float(dt)  # make sure it's a float (for division purposes)
             self.model = Model(dt=dt,
                                label="%s, dt=%f" % (network, dt),
                                decoder_cache=get_default_decoder_cache())
@@ -112,19 +108,16 @@ class Simulator(object):
 
         self.model.decoder_cache.shrink()
 
-        self.seed = np.random.randint(npext.maxint) if seed is None else seed
-        self.rng = np.random.RandomState(self.seed)
-
         # -- map from Signal.base -> ndarray
-        self.signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
+        self.signals = self.model.default_signaldict()
         for op in self.model.operators:
             op.init_signals(self.signals)
 
+        # Order the steps (they are made in `Simulator.reset`)
         self.dg = operator_depencency_graph(self.model.operators)
-        self._step_order = [node for node in toposort(self.dg)
-                            if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self.signals, dt, self.rng)
-                       for node in self._step_order]
+        self._step_order = [op for op in toposort(self.dg)
+                            if hasattr(op, 'make_step')]
+        self._step_order.extend(op for op in self.model.probe_operators)
 
         # Add built states to the probe dictionary
         self._probe_outputs = self.model.params
@@ -132,7 +125,8 @@ class Simulator(object):
         # Provide a nicer interface to probe outputs
         self.data = ProbeDict(self._probe_outputs)
 
-        self.reset()
+        seed = np.random.randint(npext.maxint) if seed is None else seed
+        self.reset(seed=seed)
 
     @property
     def dt(self):
@@ -150,6 +144,11 @@ class Simulator(object):
         """The current time of the simulator"""
         return self.signals['__time__'].copy()
 
+    @property
+    def n_steps(self):
+        """The number of steps that have been simulated"""
+        return self.signals['__step__'].copy()
+
     def trange(self, dt=None):
         """Create a range of times matching probe data.
 
@@ -166,20 +165,11 @@ class Simulator(object):
         n_steps = int(self.n_steps * (self.dt / dt))
         return dt * np.arange(1, n_steps + 1)
 
-    def _probe(self):
-        """Copy all probed signals to buffers"""
-        for probe in self.model.probes:
-            period = (1 if probe.sample_every is None else
-                      probe.sample_every / self.dt)
-            if self.n_steps % period < 1:
-                tmp = self.signals[self.model.sig[probe]['in']].copy()
-                self._probe_outputs[probe].append(tmp)
-
     def step(self):
         """Advance the simulator by `self.dt` seconds.
         """
-        self.n_steps += 1
-        self.signals['__time__'][...] = self.n_steps * self.dt
+        self.signals['__step__'][...] += 1
+        self.signals['__time__'][...] = self.signals['__step__'] * self.dt
 
         old_err = np.seterr(invalid='raise', divide='ignore')
         try:
@@ -187,8 +177,6 @@ class Simulator(object):
                 step_fn()
         finally:
             np.seterr(**old_err)
-
-        self._probe()
 
     def run(self, time_in_seconds, progress_bar=True):
         """Simulate for the given length of time.
@@ -240,14 +228,29 @@ class Simulator(object):
                 self.step()
                 progress.step()
 
-    def reset(self):
-        """Reset the simulator state."""
-        self.n_steps = 0
+    def reset(self, seed=None):
+        """Reset the simulator state.
+
+        Parameters
+        ----------
+        seed : int, optional
+            A seed for all stochastic operators used in the simulator.
+            This will change the random sequences generated for noise
+            or inputs (e.g. from Processes), but not the built objects
+            (e.g. ensembles, connections).
+        """
+        if seed is not None:
+            self.seed = seed
+
+        self.signals['__step__'][...] = 0
         self.signals['__time__'][...] = 0
 
+        # reset signals
         for key in self.signals:
-            if key != '__time__':
+            if key not in ['__step__', '__time__']:
                 self.signals.reset(key)
 
-        for probe in self.model.probes:
-            self._probe_outputs[probe] = []
+        # rebuild steps (resets ops with their own state, like Processes)
+        self.rng = np.random.RandomState(self.seed)
+        self._steps = [op.make_step(self.signals, self.dt, self.rng)
+                       for op in self._step_order]

@@ -5,7 +5,6 @@ import pytest
 
 import nengo
 from nengo import params
-from nengo.dists import UniformHypersphere
 from nengo.utils.compat import PY2
 
 logger = logging.getLogger(__name__)
@@ -198,41 +197,6 @@ def test_dictparam():
     # Non-dicts no good
     with pytest.raises(ValueError):
         inst2.dp = [('a', 1), ('b', 2)]
-
-
-def test_distributionparam():
-    """DistributionParams can be distributions or samples."""
-    class Test(object):
-        dp = params.DistributionParam(default=None, sample_shape=['*', '*'])
-
-    inst = Test()
-    inst.dp = UniformHypersphere()
-    assert isinstance(inst.dp, UniformHypersphere)
-    inst.dp = np.array([[1], [2], [3]])
-    assert np.all(inst.dp == np.array([[1], [2], [3]]))
-    with pytest.raises(ValueError):
-        inst.dp = 'a'
-    # Sample must have correct dims
-    with pytest.raises(ValueError):
-        inst.dp = np.array([1])
-
-
-def test_distributionparam_sample_shape():
-    """sample_shape dictates the shape of the sample that can be set."""
-    class Test(object):
-        dp = params.DistributionParam(default=None, sample_shape=['d1', 10])
-        d1 = 4
-
-    inst = Test()
-    # Distributions are still cool
-    inst.dp = UniformHypersphere()
-    assert isinstance(inst.dp, UniformHypersphere)
-    # Must be shape (4, 10)
-    inst.dp = np.ones((4, 10))
-    assert np.all(inst.dp == np.ones((4, 10)))
-    with pytest.raises(ValueError):
-        inst.dp = np.ones((10, 4))
-    assert np.all(inst.dp == np.ones((4, 10)))
 
 
 def test_ndarrayparam():

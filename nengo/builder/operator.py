@@ -128,6 +128,9 @@ class Operator(object):
             if sig.base not in signals:
                 signals.init(sig.base)
 
+    def reset(self):
+        pass
+
 
 class PreserveValue(Operator):
     """Marks a signal as `set` for the graph checker.
@@ -311,22 +314,41 @@ class DotInc(Operator):
         return step
 
 
-class SimNoise(Operator):
-    def __init__(self, output, process):
-        self.output = output
-        self.process = process
+class SimPyFunc(Operator):
+    """Set signal `output` by some non-linear function of x, possibly t"""
 
-        self.sets = []
-        self.incs = [output]
-        self.reads = []
+    def __init__(self, output, fn, t_in, x):
+        self.output = output
+        self.fn = fn
+        self.t_in = t_in
+        self.x = x
+
+        self.sets = [] if output is None else [output]
+        self.incs = []
+        self.reads = [] if x is None else [x]
         self.updates = []
 
+    def __str__(self):
+        return "SimPyFunc(%s -> %s '%s')" % (self.x, self.output, self.fn)
+
     def make_step(self, signals, dt, rng):
-        Y = signals[self.output]
-        sample_f = self.process.make_sample(dt=dt, d=Y.size, rng=rng)
-        Yview = Y.reshape(-1)
+        output = signals[self.output] if self.output is not None else None
+        fn = self.fn
+        t_in = self.t_in
+        t_sig = signals['__time__']
+
+        args = []
+        if self.x is not None:
+            x_sig = signals[self.x].view()
+            x_sig.flags.writeable = False
+            args += [x_sig]
 
         def step():
-            Yview[...] += sample_f()
+            y = fn(t_sig.item(), *args) if t_in else fn(*args)
+            if output is not None:
+                if y is None:
+                    raise ValueError(
+                        "Function '%s' returned invalid value" % fn.__name__)
+                output[...] = y
 
         return step

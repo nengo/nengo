@@ -2,9 +2,46 @@ from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.config import Config
 from nengo.connection import Connection, LearningRule
 from nengo.params import (
-    Default, ConnectionDefault, IntParam, NumberParam, StringParam)
+    Default, ConnectionDefault, Parameter, IntParam, NumberParam, StringParam)
 from nengo.solvers import SolverParam
 from nengo.synapses import SynapseParam
+
+
+class ProbeOutput(object):
+    """Abstract base class for output of a probe (buffer, file, etc.)."""
+    pass
+
+
+class ProbeBuffer(ProbeOutput):
+    """Output of probe writes to a buffer in memory.
+
+    This probe data can be accessed through Simulator.data:
+
+    >>> with nengo.Network() as model:
+    >>>     a = nengo.Ensemble(10, 1)
+    >>>     ap = nengo.Probe(a, output=ProbeBuffer())
+    >>> sim = nengo.Simulator(model)
+    >>> sim.run(1.0)
+    >>> print(sim.data[ap])  # the buffered data
+    """
+    pass
+
+
+class ProbeFunction(ProbeOutput):
+    def __init__(self, function):
+        self.function = function
+
+
+class ProbeOutputParam(Parameter):
+    def __set__(self, instance, value):
+        if not isinstance(value, ProbeOutput) and callable(value):
+            value = ProbeFunction(value)
+
+        super(ProbeOutputParam, self).__set__(instance, value)
+
+    def validate(self, probe, probe_output):
+        if not isinstance(probe_output, ProbeOutput):
+            raise ValueError("Must be a 'ProbeOutput' object")
 
 
 class TargetParam(NengoObjectParam):
@@ -86,9 +123,11 @@ class Probe(NengoObject):
     solver = ProbeSolverParam(default=ConnectionDefault)
     seed = IntParam(default=None, optional=True)
     label = StringParam(default=None, optional=True)
+    output = ProbeOutputParam(default=ProbeBuffer())
 
     def __init__(self, target, attr=None, sample_every=Default,
-                 synapse=Default, solver=Default, seed=Default, label=Default):
+                 synapse=Default, solver=Default, seed=Default, label=Default,
+                 output=Default):
         self.target = target
         self.attr = attr if attr is not None else self.obj.probeable[0]
         self.sample_every = sample_every
@@ -96,6 +135,7 @@ class Probe(NengoObject):
         self.solver = solver
         self.seed = seed
         self.label = label
+        self.output = output
 
     @property
     def obj(self):

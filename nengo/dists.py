@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import numpy as np
 
+from nengo.params import NdarrayParam, Parameter, Unconfigurable
 import nengo.utils.numpy as npext
 
 
@@ -227,3 +228,26 @@ class Choice(Distribution):
 
         i = np.searchsorted(np.cumsum(self.p), rng.rand(n))
         return self.options[i]
+
+
+class DistributionParam(Parameter):
+    """A Distribution."""
+
+    def validate(self, instance, dist):
+        if dist is not None and not isinstance(dist, Distribution):
+            raise ValueError("'%s' is not a Distribution type" % dist)
+        super(DistributionParam, self).validate(instance, dist)
+
+
+class DistOrArrayParam(NdarrayParam):
+    """Can be a Distribution or samples from a distribution."""
+
+    def __init__(self, default=Unconfigurable, sample_shape=None,
+                 optional=False, readonly=False):
+        super(DistOrArrayParam, self).__init__(
+            default, sample_shape, optional, readonly)
+
+    def validate(self, instance, dist):
+        if dist is not None and not isinstance(dist, Distribution):
+            dist = super(DistOrArrayParam, self).validate(instance, dist)
+        return dist
