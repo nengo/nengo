@@ -168,16 +168,16 @@ def build_pes(model, pes, rule):
         model.add_op(DotInc(encoders, correction, encoded, tag="PES:encode"))
 
         encoded_view = encoded.reshape((encoded.size, 1))
-        model.add_op(ElementwiseInc(encoded_view, acts_view, transform,
-                                    tag="PES:Inc Transform"))
+        model.add_op(ElementwiseInc(
+            encoded_view, acts_view, transform, tag="PES:Inc Transform"))
     elif isinstance(conn.pre_obj, Neurons):
         transform = model.sig[conn]['transform']
-        model.add_op(ElementwiseInc(correction_view, acts_view, transform,
-                                    tag="PES:Inc Transform"))
+        model.add_op(ElementwiseInc(
+            correction_view, acts_view, transform, tag="PES:Inc Transform"))
     elif isinstance(conn.pre_obj, Ensemble):
         decoders = model.sig[conn]['decoders']
-        model.add_op(ElementwiseInc(correction_view, acts_view, decoders,
-                                    tag="PES:Inc Decoder"))
+        model.add_op(ElementwiseInc(
+            correction_view, acts_view, decoders, tag="PES:Inc Decoder"))
     else:
         raise ValueError("'pre' object '%s' not suitable for PES learning"
                          % (conn.pre_obj))

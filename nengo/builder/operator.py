@@ -132,10 +132,9 @@ class Operator(object):
 class PreserveValue(Operator):
     """Marks a signal as `set` for the graph checker.
 
-    This is a silly operator that does no computation. It simply marks
-    a signal as `set`, allowing us to apply other ops to signals that
-    we want to preserve their value across multiple time steps. It is
-    used primarily for learning rules.
+    This operator does no computation. It simply marks a signal as `set`,
+    allowing us to apply other ops to signals that we want to preserve their
+    value across multiple time steps. It is used primarily for learning rules.
     """
     def __init__(self, dst):
         self.dst = dst
