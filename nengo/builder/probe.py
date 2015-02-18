@@ -12,8 +12,9 @@ from nengo.utils.compat import iteritems
 
 
 class SimProbeOutput(Operator):
-    def __init__(self, signal):
+    def __init__(self, signal, probe_dt=None):
         self.signal = signal
+        self.probe_dt = probe_dt
 
         self.sets = []
         self.incs = []
@@ -23,31 +24,29 @@ class SimProbeOutput(Operator):
 
 class SimProbeBuffer(SimProbeOutput):
 
-    def __init__(self, signal, sampling_dt=None):
-        super(SimProbeBuffer, self).__init__(signal)
-        self.sampling_dt = sampling_dt
-
+    def __init__(self, signal, probe_dt=None):
+        super(SimProbeBuffer, self).__init__(signal, probe_dt=probe_dt)
         self.buffer = []
 
     def make_step(self, signals, dt, rng):
         # clear buffer, in case this has been run before
         del self.buffer[:]
 
-        period = 1 if self.sampling_dt is None else self.sampling_dt / dt
-        target = signals[self.signal]
+        period = 1 if self.probe_dt is None else self.probe_dt / dt
         sim_step = signals['__step__']
+        signal = signals[self.signal]
         buf = self.buffer
 
         def step():
             if sim_step % period < 1:
-                buf.append(target.copy())
+                buf.append(signal.copy())
 
         return step
 
 
 @Builder.register(ProbeBuffer)
 def build_probe_buffer(model, probe_buffer, probe):
-    op = SimProbeBuffer(model.sig[probe]['in'], probe.sample_every)
+    op = SimProbeBuffer(model.sig[probe]['in'], probe_dt=probe.sample_every)
     model.add_op(op, probe=True)
 
     # Add a reference so that Simulator can get this data for the user
