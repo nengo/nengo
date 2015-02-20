@@ -175,7 +175,7 @@ def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
     if x0 is not None:
         if x0.shape != filt_view[0].shape:
             raise ValueError("'x0' with shape %s must have shape %s" %
-                             x0.shape, filt_view[0].shape)
+                             (x0.shape, filt_view[0].shape))
         signal_out = np.array(x0)
     else:
         # signal_out is our buffer for the current filter state
