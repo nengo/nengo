@@ -117,6 +117,15 @@ class Analytics(Recorder):
         self.data = {}
         self.doc = {}
 
+    @staticmethod
+    def load(path, module, function_name):
+        modparts = module.split('.')
+        modparts = modparts[1:]
+        modparts.remove('tests')
+
+        return np.load(os.path.join(path, "%s.%s.npz" % (
+            '.'.join(modparts), function_name)))
+
     def __enter__(self):
         return self
 
