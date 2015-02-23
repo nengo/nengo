@@ -39,7 +39,7 @@ def test_sine_waves(Simulator, plt, seed):
 
 class HilbertCurve(object):
     # Implementation based on http://en.wikipedia.org/w/index.php?title=Hilbert_curve&oldid=633637210
-    
+
     def __init__(self, n):
         self.n = n
         self.n_corners = (2 ** n) ** 2
@@ -121,3 +121,14 @@ def test_product_benchmark(analytics, seed):
     analytics.add_raw_data(
         'error', error_data, "Multiplication RMSE. Shape: n_trials")
     analytics.add_summary_data('avg_rmse', np.mean(error_data))
+
+
+@pytest.mark.compare
+def test_compare_product_benchmark(analytics_data):
+    stats = pytest.importorskip('scipy.stats')
+    data1, data2 = (d['error'] for d in analytics_data)
+    improvement = np.mean(data1) - np.mean(data2)
+    p = np.ceil(1000. * 2. * stats.mannwhitneyu(data1, data2)[1]) / 1000.
+    print "Multiplication improvement by {0:f} ({1:.0f}%, p < {2:.3f})".format(
+        improvement, (1. - np.mean(data2) / np.mean(data1)) * 100., p)
+    assert improvement >= 0. or p >= 0.05
