@@ -147,6 +147,38 @@ class Alpha(LinearFilter):
         return super(Alpha, self).make_step(dt, output)
 
 
+class Triangle(Synapse):
+    """Triangular FIR synapse.
+
+    This synapse has a triangular and finite impulse response. The length of
+    the triangle is `t` seconds, thus the digital filter will have `t / dt + 1`
+    taps.
+    """
+    def __init__(self, t):
+        self.t = t
+
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, self.t)
+
+    def make_step(self, dt, output):
+        n_taps = int(np.round(self.t / float(dt))) + 1
+        num = np.arange(n_taps, 0, -1, dtype=output.dtype)
+        num /= num.sum()
+
+        # Minimal multiply implementation finds the difference between
+        # coefficients and subtracts a scaled signal at each time step.
+        n0, ndiff = num[0], num[-1]
+        x = collections.deque(maxlen=n_taps)
+
+        def step(signal, output=output, x=x, num=num):
+            output[...] += n0 * signal
+            for xk in x:
+                output -= xk
+            x.appendleft(ndiff * signal)
+
+        return step
+
+
 def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
     """Filter ``signal`` with ``synapse``.
 
