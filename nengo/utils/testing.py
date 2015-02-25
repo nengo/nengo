@@ -328,8 +328,8 @@ def load_functions(modules, pattern='^test_', arg_pattern='^Simulator$'):
     for module in modules:
         m = __import__('.'.join(module), globals(), locals(), ['*'])
         for k in dir(m):
-            if re.search(pattern, k):
-                test = getattr(m, k)
+            test = getattr(m, k)
+            if callable(test) and re.search(pattern, k):
                 args = inspect.getargspec(test).args
                 if any(re.search(arg_pattern, arg) for arg in args):
                     tests['.'.join(['test'] + module + [k])] = test
