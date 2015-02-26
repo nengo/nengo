@@ -1,5 +1,6 @@
 import hashlib
 import inspect
+import importlib
 import os
 import re
 
@@ -11,15 +12,40 @@ import nengo
 import nengo.utils.numpy as npext
 from nengo.neurons import Direct, LIF, LIFRate, RectifiedLinear, Sigmoid
 from nengo.rc import rc
-from nengo.simulator import Simulator as ReferenceSimulator
 from nengo.utils.compat import ensure_bytes, is_string
 from nengo.utils.testing import Analytics, Logger, Plotter
 
-test_seed = 0  # changing this will change seeds for all tests
+
+class TestConfig(object):
+    """Parameters affecting all Nengo tests.
+
+    These are essentially global variables used by py.test to modify aspects
+    of the Nengo tests. We collect them in this class to provide a
+    mini namespace and to avoid using the ``global`` keyword.
+
+    The values below are defaults. The functions in the remainder of this
+    module modify these values accordingly.
+    """
+
+    test_seed = 0  # changing this will change seeds for all tests
+    Simulator = nengo.Simulator
+    RefSimulator = nengo.Simulator
 
 
 def pytest_configure(config):
     matplotlib.use('agg')
+
+    if config.getoption('simulator'):
+        TestConfig.Simulator = load_class(config.getoption('simulator')[0])
+    if config.getoption('ref_simulator'):
+        refsim = config.getoption('ref_simulator')[0]
+        TestConfig.RefSimulator = load_class(refsim)
+
+
+def load_class(fully_qualified_name):
+    mod_name, cls_name = fully_qualified_name.rsplit('.', 1)
+    mod = importlib.import_module(mod_name)
+    return getattr(mod, cls_name)
 
 
 @pytest.fixture(scope="session")
@@ -29,7 +55,7 @@ def Simulator(request):
     Please use this, and not ``nengo.Simulator`` directly. If the test is
     reference simulator specific, then use ``RefSimulator`` below.
     """
-    return ReferenceSimulator
+    return TestConfig.Simulator
 
 
 @pytest.fixture(scope="session")
@@ -40,7 +66,7 @@ def RefSimulator(request):
     Other simulators may choose to implement the same API as the
     reference simulator; this allows them to test easily.
     """
-    return ReferenceSimulator
+    return TestConfig.RefSimulator
 
 
 def recorder_dirname(request, name):
@@ -50,7 +76,7 @@ def recorder_dirname(request, name):
     elif not record:
         return None
 
-    simulator, nl = ReferenceSimulator, None
+    simulator, nl = TestConfig.RefSimulator, None
     if 'Simulator' in request.funcargnames:
         simulator = request.getfuncargvalue('Simulator')
     if 'nl' in request.funcargnames:
@@ -169,7 +195,7 @@ def rng(request):
     This should be used in lieu of np.random because we control its seed.
     """
     # add 1 to seed to be different from `seed` fixture
-    seed = function_seed(request.function, mod=test_seed + 1)
+    seed = function_seed(request.function, mod=TestConfig.test_seed + 1)
     return np.random.RandomState(seed)
 
 
@@ -180,7 +206,7 @@ def seed(request):
     This should be used in lieu of an integer seed so that we can ensure that
     tests are not dependent on specific seeds.
     """
-    return function_seed(request.function, mod=test_seed)
+    return function_seed(request.function, mod=TestConfig.test_seed)
 
 
 def pytest_generate_tests(metafunc):

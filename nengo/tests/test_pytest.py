@@ -1,8 +1,8 @@
 import nengo.utils.numpy as npext
-from nengo.conftest import test_seed
+from nengo.conftest import TestConfig
 
 
 def test_seed_fixture(seed):
     """The seed should be the same on all machines"""
-    i = (seed - test_seed) % npext.maxint
+    i = (seed - TestConfig.test_seed) % npext.maxint
     assert i == 1832276344
