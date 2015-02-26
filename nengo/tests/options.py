@@ -3,6 +3,8 @@ def pytest_addoption(parser):
                      help='Specify simulator under test.')
     parser.addoption('--ref-simulator', nargs=1, type=str, default=None,
                      help='Specify reference simulator under test.')
+    parser.addoption('--neurons', nargs=1, type=str, default=None,
+                     help='Neuron types under test (comma separated).')
     parser.addoption(
         '--plots', nargs='?', default=False, const=True,
         help='Save plots (can optionally specify a directory for plots).')
