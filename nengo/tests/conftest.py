@@ -1,5 +1,6 @@
 import hashlib
 import inspect
+import importlib
 import os
 import re
 
@@ -10,16 +11,32 @@ import nengo
 import nengo.utils.numpy as npext
 from nengo.neurons import Direct, LIF, LIFRate, RectifiedLinear, Sigmoid
 from nengo.rc import rc
-from nengo.simulator import Simulator as ReferenceSimulator
+import nengo.simulator
 from nengo.utils.compat import ensure_bytes, is_string
 from nengo.utils.testing import Analytics, Logger, Plotter
 
 test_seed = 0  # changing this will change seeds for all tests
 
+_Simulator = nengo.simulator.Simulator
+_RefSimulator = nengo.simulator.Simulator
+
 
 def pytest_configure(config):
+    global _Simulator, _RefSimulator
+
     rc.reload_rc([])
     rc.set('decoder_cache', 'enabled', 'false')
+
+    if config.getoption('simulator'):
+        _Simulator = load_class(config.getoption('simulator')[0])
+    if config.getoption('ref_simulator'):
+        _RefSimulator = load_class(config.getoption('ref_simulator')[0])
+
+
+def load_class(fully_qualified_name):
+    mod_name, cls_name = fully_qualified_name.rsplit('.', 1)
+    mod = importlib.import_module(mod_name)
+    return getattr(mod, cls_name)
 
 
 @pytest.fixture(scope="session")
@@ -29,7 +46,7 @@ def Simulator(request):
     Please use this, and not nengo.Simulator directly,
     unless the test is reference simulator specific.
     """
-    return ReferenceSimulator
+    return _Simulator
 
 
 @pytest.fixture(scope="session")
@@ -40,7 +57,7 @@ def RefSimulator(request):
     Other simulators may choose to implement the same API as the
     reference simulator; this allows them to test easily.
     """
-    return ReferenceSimulator
+    return _RefSimulator
 
 
 def recorder_dirname(request, name):
