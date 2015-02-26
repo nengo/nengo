@@ -22,6 +22,13 @@ Release History
 2.1.0 (unreleased)
 ==================
 
+**API changes**
+
+- Spiking ``LIF`` neuron models now accept an additional argument,
+  ``min_voltage``. Voltages are clipped such that they do not drop below
+  this value (previously, this was fixed at 0).
+  (`#666 <https://github.com/nengo/nengo/pull/666>`_)
+
 **Behavioural changes**
 
 - The ``probeable`` attribute of all Nengo objects is now implemented
