@@ -30,6 +30,7 @@ class TestConfig(object):
     test_seed = 0  # changing this will change seeds for all tests
     Simulator = nengo.Simulator
     RefSimulator = nengo.Simulator
+    neuron_types = [Direct, LIF, LIFRate, RectifiedLinear, Sigmoid]
 
 
 def pytest_configure(config):
@@ -40,6 +41,10 @@ def pytest_configure(config):
     if config.getoption('ref_simulator'):
         refsim = config.getoption('ref_simulator')[0]
         TestConfig.RefSimulator = load_class(refsim)
+
+    if config.getoption('neurons'):
+        ntypes = config.getoption('neurons')[0].split(',')
+        TestConfig.neuron_types = [load_class(n) for n in ntypes]
 
 
 def load_class(fully_qualified_name):
@@ -211,11 +216,10 @@ def seed(request):
 
 def pytest_generate_tests(metafunc):
     if "nl" in metafunc.funcargnames:
-        metafunc.parametrize(
-            "nl", [Direct, LIF, LIFRate, RectifiedLinear, Sigmoid])
+        metafunc.parametrize("nl", TestConfig.neuron_types)
     if "nl_nodirect" in metafunc.funcargnames:
-        metafunc.parametrize(
-            "nl_nodirect", [LIF, LIFRate, RectifiedLinear, Sigmoid])
+        nodirect = [n for n in TestConfig.neuron_types if n is not Direct]
+        metafunc.parametrize("nl_nodirect", nodirect)
 
 
 def pytest_runtest_setup(item):
