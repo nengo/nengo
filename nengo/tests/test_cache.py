@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import errno
 import os
 import timeit
@@ -264,7 +266,7 @@ def calc_relative_timer_diff(t1, t2):
 
 
 class TestCacheBenchmark(object):
-    n_trials = 5
+    n_trials = 25
 
     setup = '''
 import numpy as np
@@ -316,11 +318,18 @@ sim = nengo.Simulator(model)
     }
 
     labels = ["no cache", "cache miss", "cache miss ro", "cache hit"]
+    keys = [l.replace(' ', '_') for l in labels]
+    param_to_axis_label = {
+        'D': "dimensions",
+        'N': "neurons",
+        'M': "evaluation points"
+    }
+    defaults = {'D': 1, 'N': 50, 'M': 1000}
 
     def time_code(self, code, args):
-        return min(timeit.repeat(
+        return timeit.repeat(
             stmt=code['stmt'], setup=self.setup.format(**args) + code['rc'],
-            number=3, repeat=self.n_trials))
+            number=1, repeat=self.n_trials)
 
     def time_all(self, args):
         return (self.time_code(self.without_cache, args),
@@ -328,8 +337,8 @@ sim = nengo.Simulator(model)
                 self.time_code(self.with_cache_miss_ro, args),
                 self.time_code(self.with_cache_hit, args))
 
-    def get_args(self, varying_param, value, defaults):
-        args = dict(defaults)  # make a copy
+    def get_args(self, varying_param, value):
+        args = dict(self.defaults)  # make a copy
         args[varying_param] = value
         return args
 
@@ -337,29 +346,60 @@ sim = nengo.Simulator(model)
     @pytest.mark.noassertions
     @pytest.mark.parametrize('varying_param', ['D', 'N', 'M'])
     def test_cache_benchmark(self, varying_param, analytics, plt):
-        defaults = {'D': 1, 'N': 50, 'M': 1000}
         varying = {
             'D': np.asarray(np.linspace(1, 512, 10), dtype=int),
             'N': np.asarray(np.linspace(10, 500, 8), dtype=int),
             'M': np.asarray(np.linspace(750, 2500, 8), dtype=int)
         }[varying_param]
+        axis_label = self.param_to_axis_label[varying_param]
 
-        axis_label = {
-            'D': "dimensions",
-            'N': "neurons",
-            'M': "evaluation points"
-        }[varying_param]
-
-        times = [
-            self.time_all(self.get_args(varying_param, v, defaults))
-            for v in varying
-        ]
+        times = [self.time_all(self.get_args(varying_param, v))
+                 for v in varying]
 
         for i, data in enumerate(zip(*times)):
-            plt.plot(varying, data, label=self.labels[i])
+            plt.plot(varying, np.median(data, axis=1), label=self.labels[i])
             analytics.add_data(varying_param, varying, axis_label)
-            analytics.add_data(self.labels[i].replace(' ', '_'), data)
+            analytics.add_data(self.keys[i], data)
 
         plt.xlabel("Number of %s" % axis_label)
-        plt.ylabel("Build time [s]")
+        plt.ylabel("Build time (s)")
+        plt.legend(loc='best')
+
+    @staticmethod
+    def reject_outliers(data):
+        med = np.median(data)
+        limits = 1.5 * (np.percentile(data, [25, 75]) - med) + med
+        return data[np.logical_and(data > limits[0], data < limits[1])]
+
+    @pytest.mark.compare
+    @pytest.mark.parametrize('varying_param', ['D', 'N', 'M'])
+    def test_compare_cache_benchmark(self, varying_param, analytics_data, plt):
+        stats = pytest.importorskip('scipy.stats')
+
+        d1, d2 = analytics_data
+        assert np.all(d1[varying_param] == d2[varying_param]), (
+            'Cannot compare different parametrizations')
+        axis_label = self.param_to_axis_label[varying_param]
+
+        print("Cache, varying {0}:".format(axis_label))
+        for label, key in zip(self.labels, self.keys):
+            clean_d1 = [self.reject_outliers(d) for d in d1[key]]
+            clean_d2 = [self.reject_outliers(d) for d in d2[key]]
+            diff = [np.median(b) - np.median(a)
+                    for a, b in zip(clean_d1, clean_d2)]
+
+            p_values = np.array([2. * stats.mannwhitneyu(a, b)[1]
+                                 for a, b in zip(clean_d1, clean_d2)])
+            overall_p = 1. - np.prod(1. - p_values)
+            if overall_p < .05:
+                print("  {label}: Significant change (p <= {p:.3f}). See plots"
+                      " for details.".format(
+                          label=label, p=np.ceil(overall_p * 1000.) / 1000.))
+            else:
+                print("  {label}: No significant change.".format(label=label))
+
+            plt.plot(d1[varying_param], diff, label=label)
+
+        plt.xlabel("Number of %s" % axis_label)
+        plt.ylabel("Difference in build time (s)")
         plt.legend(loc='best')
