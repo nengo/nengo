@@ -1,15 +1,14 @@
 import errno
 import os
+import timeit
 
 import numpy as np
 from numpy.testing import assert_equal
 import pytest
 
 import nengo
-from nengo.cache import (
-    DecoderCache, Fingerprint, get_fragment_size, NoDecoderCache)
+from nengo.cache import DecoderCache, Fingerprint, get_fragment_size
 from nengo.utils.compat import int_types
-from nengo.utils.testing import Timer
 
 
 class SolverMock(object):
@@ -264,23 +263,103 @@ def calc_relative_timer_diff(t1, t2):
     return (t2.duration - t1.duration) / (t2.duration + t1.duration)
 
 
-@pytest.mark.slow
-def test_cache_performance(tmpdir, Simulator, seed):
-    cache_dir = str(tmpdir)
+class TestCacheBenchmark(object):
+    n_trials = 5
 
-    model = nengo.Network(seed=seed)
-    with model:
-        nengo.Connection(nengo.Ensemble(2000, 10), nengo.Ensemble(2000, 10))
+    setup = '''
+import numpy as np
+import nengo
+import nengo.cache
+from nengo.rc import rc
 
-    with Timer() as t_no_cache:
-        Simulator(model, model=nengo.builder.Model(
-            dt=0.001, decoder_cache=NoDecoderCache()))
-    with Timer() as t_cache_miss:
-        Simulator(model, model=nengo.builder.Model(
-            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
-    with Timer() as t_cache_hit:
-        Simulator(model, model=nengo.builder.Model(
-            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
+model = nengo.Network(seed=1)
+with model:
+    a = nengo.Ensemble({N}, dimensions={D}, n_eval_points={M})
+    b = nengo.Ensemble({N}, dimensions={D}, n_eval_points={M})
+    conn = nengo.Connection(a, b)
+    '''
 
-    assert calc_relative_timer_diff(t_no_cache, t_cache_miss) < 0.1
-    assert calc_relative_timer_diff(t_cache_hit, t_no_cache) > 0.4
+    without_cache = {
+        'rc': 'rc.set("decoder_cache", "enabled", "False")',
+        'stmt': 'sim = nengo.Simulator(model)'
+    }
+
+    with_cache_miss_ro = {
+        'rc': '''
+rc.set("decoder_cache", "enabled", "True")
+rc.set("decoder_cache", "readonly", "True")
+''',
+        'stmt': '''
+nengo.cache.DecoderCache().invalidate()
+sim = nengo.Simulator(model)
+'''
+    }
+
+    with_cache_miss = {
+        'rc': '''
+rc.set("decoder_cache", "enabled", "True")
+rc.set("decoder_cache", "readonly", "False")
+''',
+        'stmt': '''
+nengo.cache.DecoderCache().invalidate()
+sim = nengo.Simulator(model)
+'''
+    }
+
+    with_cache_hit = {
+        'rc': '''
+rc.set("decoder_cache", "enabled", "True")
+rc.set("decoder_cache", "readonly", "False")
+sim = nengo.Simulator(model)
+''',
+        'stmt': 'sim = nengo.Simulator(model)'
+    }
+
+    labels = ["no cache", "cache miss", "cache miss ro", "cache hit"]
+
+    def time_code(self, code, args):
+        return min(timeit.repeat(
+            stmt=code['stmt'], setup=self.setup.format(**args) + code['rc'],
+            number=3, repeat=self.n_trials))
+
+    def time_all(self, args):
+        return (self.time_code(self.without_cache, args),
+                self.time_code(self.with_cache_miss, args),
+                self.time_code(self.with_cache_miss_ro, args),
+                self.time_code(self.with_cache_hit, args))
+
+    def get_args(self, varying_param, value, defaults):
+        args = dict(defaults)  # make a copy
+        args[varying_param] = value
+        return args
+
+    @pytest.mark.slow
+    @pytest.mark.noassertions
+    @pytest.mark.parametrize('varying_param', ['D', 'N', 'M'])
+    def test_cache_benchmark(self, varying_param, analytics, plt):
+        defaults = {'D': 1, 'N': 50, 'M': 1000}
+        varying = {
+            'D': np.asarray(np.linspace(1, 512, 10), dtype=int),
+            'N': np.asarray(np.linspace(10, 500, 8), dtype=int),
+            'M': np.asarray(np.linspace(750, 2500, 8), dtype=int)
+        }[varying_param]
+
+        axis_label = {
+            'D': "dimensions",
+            'N': "neurons",
+            'M': "evaluation points"
+        }[varying_param]
+
+        times = [
+            self.time_all(self.get_args(varying_param, v, defaults))
+            for v in varying
+        ]
+
+        for i, data in enumerate(zip(*times)):
+            plt.plot(varying, data, label=self.labels[i])
+            analytics.add_data(varying_param, varying, axis_label)
+            analytics.add_data(self.labels[i].replace(' ', '_'), data)
+
+        plt.xlabel("Number of %s" % axis_label)
+        plt.ylabel("Build time [s]")
+        plt.legend(loc='best')
