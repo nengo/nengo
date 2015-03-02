@@ -21,6 +21,10 @@ BuiltConnection = collections.namedtuple(
     'BuiltConnection', ['eval_points', 'solver_info', 'weights'])
 
 
+class ZeroActivityError(RuntimeError):
+    pass
+
+
 def get_eval_points(model, conn, rng):
     if conn.eval_points is None:
         return npext.array(
@@ -52,6 +56,48 @@ def build_linear_system(model, conn, rng):
 
     targets = get_targets(model, conn, eval_points)
     return eval_points, activities, targets
+
+
+def build_decoders(model, conn, rng):
+    encoders = model.params[conn.pre_obj].encoders
+    gain = model.params[conn.pre_obj].gain
+    bias = model.params[conn.pre_obj].bias
+
+    eval_points = get_eval_points(model, conn, rng)
+    targets = get_targets(model, conn, eval_points)
+
+    x = np.dot(eval_points, encoders.T / conn.pre_obj.radius)
+    E = None
+    if conn.solver.weights:
+        E = model.params[conn.post_obj].scaled_encoders.T[conn.post_slice]
+        # include transform in solved weights
+        targets = multiply(targets, conn.transform.T)
+
+    try:
+        decoders, solver_info = solve_for_decoders(
+            conn.solver, conn.pre_obj.neuron_type, gain, bias, x, targets,
+            rng=rng, E=E)
+    except ZeroActivityError:
+        raise ZeroActivityError(
+            "Building %s: 'activities' matrix is all zero for %s. "
+            "This is because no evaluation points fall in the firing "
+            "ranges of any neurons." % (conn, conn.pre_obj))
+
+    return eval_points, decoders, solver_info
+
+
+def solve_for_decoders(
+        solver, neuron_type, gain, bias, x, targets, rng, E=None):
+    activities = neuron_type.rates(x, gain, bias)
+    if np.count_nonzero(activities) == 0:
+        raise ZeroActivityError()
+
+    if solver.weights:
+        decoders, solver_info = solver(activities, targets, rng=rng, E=E)
+    else:
+        decoders, solver_info = solver(activities, targets, rng=rng)
+
+    return decoders, solver_info
 
 
 def multiply(x, y):
@@ -124,23 +170,14 @@ def build_connection(model, conn):
             in_signal = sliced_in
 
     elif isinstance(conn.pre_obj, Ensemble):  # Normal decoded connection
-        eval_points, activities, targets = build_linear_system(
-            model, conn, rng)
-
-        # Use cached solver, if configured
-        solver = model.decoder_cache.wrap_solver(conn.solver)
+        eval_points, decoders, solver_info = build_decoders(model, conn, rng)
 
         if conn.solver.weights:
-            # include transform in solved weights
-            targets = multiply(targets, conn.transform.T)
-            E = model.params[conn.post_obj].scaled_encoders.T[post_slice]
-            decoders, solver_info = solver(activities, targets, rng=rng, E=E)
             model.sig[conn]['out'] = model.sig[conn.post_obj.neurons]['in']
             signal_size = conn.post_obj.neurons.size_in
             post_slice = Ellipsis  # don't apply slice later
             weights = decoders.T
         else:
-            decoders, solver_info = solver(activities, targets, rng=rng)
             weights = multiply(conn.transform, decoders.T)
     else:
         in_signal = slice_signal(model, in_signal, conn.pre_slice)
