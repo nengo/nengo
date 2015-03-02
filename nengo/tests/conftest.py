@@ -62,6 +62,18 @@ def recorder_dirname(request, name):
     return dirname
 
 
+def parametrize_function_name(request, function_name):
+    suffixes = []
+    if 'parametrize' in request.keywords:
+        argnames = [
+            x.strip()
+            for x in request.keywords['parametrize'].args[0].split(',')]
+        for name in argnames:
+            suffixes.append('{0}={1}'.format(
+                name, request.getfuncargvalue(name)))
+    return '_'.join([function_name] + suffixes)
+
+
 @pytest.fixture
 def plt(request):
     """a pyplot-compatible plotting interface.
@@ -77,7 +89,8 @@ def plt(request):
     """
     dirname = recorder_dirname(request, 'plots')
     plotter = Plotter(
-        dirname, request.module.__name__, request.function.__name__)
+        dirname, request.module.__name__,
+        parametrize_function_name(request, request.function.__name__))
     request.addfinalizer(lambda: plotter.__exit__(None, None, None))
     return plotter.__enter__()
 
@@ -97,7 +110,8 @@ def analytics(request):
     """
     dirname = recorder_dirname(request, 'analytics')
     analytics = Analytics(
-        dirname, request.module.__name__, request.function.__name__)
+        dirname, request.module.__name__,
+        parametrize_function_name(request, request.function.__name__))
     request.addfinalizer(lambda: analytics.__exit__(None, None, None))
     return analytics.__enter__()
 
