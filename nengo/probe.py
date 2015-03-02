@@ -105,7 +105,7 @@ class Probe(NengoObject):
     @property
     def slice(self):
         return (self.target.slice if isinstance(self.target, ObjView) else
-                slice(None))
+                None)
 
     @property
     def size_in(self):

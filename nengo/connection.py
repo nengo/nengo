@@ -7,7 +7,7 @@ from nengo.ensemble import Ensemble
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.node import Node
 from nengo.params import (Default, BoolParam, DistributionParam, FunctionParam,
-                          IntParam, ListParam, NdarrayParam)
+                          IntParam, NdarrayParam)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_iterable, iteritems
@@ -229,7 +229,6 @@ class Connection(NengoObject):
         default=None, optional=True, sample_shape=('*', 'size_in'))
     scale_eval_points = BoolParam(default=True)
     seed = IntParam(default=None, optional=True)
-    probeable = ListParam(default=['output', 'input', 'transform', 'decoders'])
 
     def __init__(self, pre, post, synapse=Default, transform=Default,
                  solver=Default, learning_rule_type=Default, function=Default,
@@ -238,7 +237,6 @@ class Connection(NengoObject):
         self.pre = pre
         self.post = post
 
-        self.probeable = Default
         self.solver = solver  # Must be set before learning rule
         self.learning_rule_type = learning_rule_type
         self.modulatory = modulatory
@@ -255,6 +253,14 @@ class Connection(NengoObject):
     @function.setter
     def function(self, function):
         self.function_info = function
+
+    @property
+    def probeable(self):
+        probeables = ["output", "input", "transform"]
+        if isinstance(self.pre, Ensemble):
+            probeables += ["decoders"]
+
+        return probeables
 
     @property
     def pre_obj(self):

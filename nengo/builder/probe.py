@@ -33,10 +33,8 @@ def synapse_probe(model, key, probe):
         raise ValueError("Attribute '%s' is not probable on %s."
                          % (key, probe.obj))
 
-    if isinstance(probe.slice, slice):
+    if probe.slice is not None:
         sig = sig[probe.slice]
-    else:
-        raise NotImplementedError("Indexing slices not implemented")
 
     if probe.synapse is None:
         model.sig[probe]['in'] = sig
