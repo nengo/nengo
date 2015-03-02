@@ -9,8 +9,8 @@ env:
     - NUMPY="1.9"
     - SETUP_CMD="test -a 'nengo -n 2 -v'"
     - EXTRA_CMD=""
-    - CONDA_DEPS="matplotlib ipython-notebook pytest"
-    - PIP_DEPS="pytest-xdist"
+    - CONDA_DEPS="matplotlib ipython-notebook pygments pytest"
+    - PIP_DEPS="mistune pytest-xdist"
 
 matrix:
   include:

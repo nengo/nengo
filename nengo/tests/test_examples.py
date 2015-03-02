@@ -60,13 +60,18 @@ def test_nooutput(nb_path):
     pytest.importorskip("IPython", minversion="1.0")
     pytest.importorskip("jinja2")
     from nengo.utils.ipython import load_notebook
-    nb = load_notebook(nb_path)
 
-    for ws in nb.worksheets:
-        for cell in ws.cells:
+    def check_all(cells):
+        for cell in cells:
             if cell.cell_type == 'code':
-                assert cell.outputs == [], (
-                    "Clear all cell outputs in " + nb_path)
+                assert cell.outputs == [], ("Clear outputs in %s" % nb_path)
+
+    nb = load_notebook(nb_path)
+    if nb.nbformat <= 3:
+        for ws in nb.worksheets:
+            check_all(ws.cells)
+    else:
+        check_all(nb.cells)
 
 
 if __name__ == "__main__":
