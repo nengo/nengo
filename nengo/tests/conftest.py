@@ -123,8 +123,8 @@ def analytics(request):
 @pytest.fixture
 def analytics_data(request):
     paths = request.config.getvalue('compare')
-    function_name = re.sub(
-        '^test_[a-zA-Z0-9]*_', 'test_', request.function.__name__, count=1)
+    function_name = parametrize_function_name(request, re.sub(
+        '^test_[a-zA-Z0-9]*_', 'test_', request.function.__name__, count=1))
     return [Analytics.load(
         p, request.module.__name__, function_name) for p in paths]
 
