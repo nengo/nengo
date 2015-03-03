@@ -24,7 +24,7 @@ class NetworkMember(type):
         inst.__init__(*args, **kwargs)
         if add_to_container:
             Network.add(inst)
-        inst._initialized = True  # value doesn't matter, just existance
+        inst._initialized = True  # value doesn't matter, just existence
         return inst
 
 

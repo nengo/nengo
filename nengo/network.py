@@ -111,6 +111,12 @@ class Network(object):
         if not isinstance(network, Network):
             raise RuntimeError("Current context is not a network: %s" %
                                network)
+
+        if (len(Network.context) > 1 and
+                hasattr(obj, 'label') and obj.label is not None and
+                network.label is not None):
+            obj.label = network.label + "_" + obj.label
+
         for cls in obj.__class__.__mro__:
             if cls in network.objects:
                 network.objects[cls].append(obj)
