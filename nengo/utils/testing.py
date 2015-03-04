@@ -106,30 +106,30 @@ class Plotter(Recorder):
 
 
 class Analytics(Recorder):
-    DESC_KEY = 'descriptions'
+    DOC_KEY = 'documentation'
 
     def __init__(self, dirname, module_name, function_name):
         super(Analytics, self).__init__(dirname, module_name, function_name)
 
         self.data = {}
-        self.desc = {}
+        self.doc = {}
 
     def __enter__(self):
         return self
 
-    def add_data(self, name, data, desc=""):
-        if name == self.DESC_KEY:
+    def add_data(self, name, data, doc=""):
+        if name == self.DOC_KEY:
             raise ValueError("The name '{0}' is reserved.".format(
-                self.DESC_KEY))
+                self.DOC_KEY))
 
         if self.record:
             self.data[name] = data
-            self.desc[name] = desc
+            self.doc[name] = doc
 
     def __exit__(self, type, value, traceback):
         if self.record:
             npz_data = dict(self.data)
-            npz_data.update({self.DESC_KEY: self.desc})
+            npz_data.update({self.DOC_KEY: self.doc})
             np.savez(self.get_filepath(ext='npz'), **npz_data)
 
 

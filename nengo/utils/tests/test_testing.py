@@ -24,9 +24,9 @@ def test_analytics_record():
     with analytics:
         analytics.add_data('test', 1, "Test analytics implementation")
         assert analytics.data['test'] == 1
-        assert analytics.desc['test'] == "Test analytics implementation"
+        assert analytics.doc['test'] == "Test analytics implementation"
         with pytest.raises(ValueError):
-            analytics.add_data('descriptions', '')
+            analytics.add_data('documentation', '')
     path = analytics.get_filepath(ext='npz')
     assert os.path.exists(path)
     os.remove(path)
@@ -44,7 +44,7 @@ def test_analytics_norecord():
     with analytics:
         analytics.add_data('test', 1, "Test analytics implementation")
         assert 'test' not in analytics.data
-        assert 'test' not in analytics.desc
+        assert 'test' not in analytics.doc
     with pytest.raises(ValueError):
         analytics.get_filepath(ext='npz')
 
