@@ -673,7 +673,7 @@ def test_nonexistant_prepost(Simulator):
         Simulator(model3)
 
 
-def test_directneurons(Simulator, nl_nodirect):
+def test_directneurons(nl_nodirect):
     with nengo.Network():
         a = nengo.Ensemble(1, 1, neuron_type=nl_nodirect())
         b = nengo.Ensemble(1, 1, neuron_type=nengo.Direct())
@@ -683,6 +683,47 @@ def test_directneurons(Simulator, nl_nodirect):
             nengo.Connection(a, b.neurons)
         with pytest.raises(ValueError):
             nengo.Connection(b.neurons, a)
+
+
+def test_decoder_probe(Simulator):
+    """Ensures we can only probe decoders in connections from ensembles."""
+    with nengo.Network() as net:
+        pre = nengo.Ensemble(10, 10)
+        post = nengo.Ensemble(10, 10)
+
+        c_ens = nengo.Connection(pre, post)
+        c_ens_neurons = nengo.Connection(pre, post.neurons)
+        c_neurons_ens = nengo.Connection(pre.neurons, post)
+        c_neurons = nengo.Connection(pre.neurons, post.neurons)
+
+        # OK
+        nengo.Probe(c_ens, "decoders")
+        nengo.Probe(c_ens_neurons, "decoders")
+
+        # Not OK
+        with pytest.raises(ValueError):
+            nengo.Probe(c_neurons_ens, "decoders")
+        with pytest.raises(ValueError):
+            nengo.Probe(c_neurons, "decoders")
+    assert Simulator(net)
+
+
+def test_transform_probe(Simulator):
+    """Ensures we can always probe transform in connections."""
+    with nengo.Network() as net:
+        pre = nengo.Ensemble(10, 10)
+        post = nengo.Ensemble(10, 10)
+
+        c_ens = nengo.Connection(pre, post)
+        c_ens_neurons = nengo.Connection(pre, post.neurons)
+        c_neurons_ens = nengo.Connection(pre.neurons, post)
+        c_neurons = nengo.Connection(pre.neurons, post.neurons)
+
+        nengo.Probe(c_neurons_ens, "transform")
+        nengo.Probe(c_neurons, "transform")
+        nengo.Probe(c_ens, "transform")
+        nengo.Probe(c_ens_neurons, "transform")
+    assert Simulator(net)
 
 
 if __name__ == "__main__":
