@@ -2,7 +2,7 @@ from nengo.base import NengoObject, ObjView
 from nengo.dists import Uniform, UniformHypersphere
 from nengo.neurons import LIF, NeuronTypeParam, Direct
 from nengo.params import (
-    Default, DistributionParam, IntParam, ListParam, NumberParam,
+    Default, DistributionParam, IntParam, NumberParam,
     StochasticProcessParam, StringParam)
 
 
@@ -72,7 +72,6 @@ class Ensemble(NengoObject):
     noise = StochasticProcessParam(default=None, optional=True)
     seed = IntParam(default=None, optional=True)
     label = StringParam(default=None, optional=True)
-    probeable = ListParam(default=['decoded_output', 'input'])
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
@@ -93,7 +92,6 @@ class Ensemble(NengoObject):
         self.neuron_type = neuron_type
         self.noise = noise
         self.seed = seed
-        self.probeable = Default
         self._neurons = Neurons(self)
 
     def __getitem__(self, key):
@@ -109,6 +107,10 @@ class Ensemble(NengoObject):
     @neurons.setter
     def neurons(self, dummy):
         raise AttributeError("neurons cannot be overwritten.")
+
+    @property
+    def probeable(self):
+        return ["decoded_output", "input"]
 
     @property
     def size_in(self):

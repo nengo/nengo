@@ -4,7 +4,7 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.base import NengoObject, ObjView
-from nengo.params import Default, IntParam, ListParam, Parameter, StringParam
+from nengo.params import Default, IntParam, Parameter, StringParam
 from nengo.utils.stdlib import checked_call
 
 
@@ -113,7 +113,6 @@ class Node(NengoObject):
     size_in = IntParam(default=0, low=0)
     size_out = IntParam(default=None, low=0, optional=True)
     label = StringParam(default=None, optional=True)
-    probeable = ListParam(default=['output'])
 
     def __init__(self, output=Default,
                  size_in=Default, size_out=Default, label=Default):
@@ -121,10 +120,13 @@ class Node(NengoObject):
         self.size_out = size_out
         self.label = label
         self.output = output  # Must be set after size_out; may modify size_out
-        self.probeable = Default
 
     def __getitem__(self, key):
         return ObjView(self, key)
 
     def __len__(self):
         return self.size_out
+
+    @property
+    def probeable(self):
+        return ['output']
