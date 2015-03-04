@@ -1,4 +1,3 @@
-from glob import glob
 import os
 
 import pytest
@@ -18,33 +17,29 @@ _pytest.capture.DontReadFromInput.write = lambda: None
 _pytest.capture.DontReadFromInput.flush = lambda: None
 
 
-def pytest_generate_tests(metafunc):
-    examples = glob('%s/*.ipynb' % examples_dir)
+all_examples = set([os.path.splitext(f)[0] for f in os.listdir(examples_dir)])
+slow_examples = set(['inhibitory_gating',
+                     'izhikevich',
+                     'learn_communication_channel',
+                     'learn_product',
+                     'learn_square',
+                     'learn_unsupervised',
+                     'lorenz_attractor',
+                     'nef_summary',
+                     'network_design',
+                     'network_design_advanced',
+                     'question',
+                     'question_control',
+                     'question_memory',
+                     'spa_parser',
+                     'spa_sequence',
+                     'spa_sequence_routed'])
+fast_examples = all_examples - slow_examples
 
-    # if `--slow` is not set, filter out time-consuming notebooks
-    ignores = [] if metafunc.config.option.slow else [
-        'inhibitory_gating.ipynb', 'izhikevich.ipynb',
-        'learn_communication_channel.ipynb', 'learn_product.ipynb',
-        'learn_square.ipynb', 'learn_unsupervised.ipynb',
-        'lorenz_attractor.ipynb', 'nef_summary.ipynb', 'network_design.ipynb',
-        'network_design_advanced.ipynb', 'question.ipynb',
-        'question_control.ipynb', 'question_memory.ipynb',
-        'spa_parser.ipynb', 'spa_sequence.ipynb',
-        'spa_sequence_routed.ipynb']
-    argvalues = [pytest.mark.skipif(os.path.basename(path) in ignores,
-                                    reason="slow")(path)
-                 for path in examples]
 
-    if "nb_path" in metafunc.funcargnames:
-        metafunc.parametrize("nb_path", argvalues)
-
-
-@pytest.mark.example
-def test_noexceptions(nb_path, tmpdir, plt):
-    """Ensure that no cells raise an exception."""
-    pytest.importorskip("IPython", minversion="1.0")
-    pytest.importorskip("jinja2")
+def assert_noexceptions(nb_file, tmpdir, plt):
     from nengo.utils.ipython import export_py, load_notebook
+    nb_path = os.path.join(examples_dir, "%s.ipynb" % nb_file)
     nb = load_notebook(nb_path)
     pyfile = "%s.py" % (
         tmpdir.join(os.path.splitext(os.path.basename(nb_path))[0]))
@@ -55,7 +50,27 @@ def test_noexceptions(nb_path, tmpdir, plt):
 
 
 @pytest.mark.example
-def test_nooutput(nb_path):
+@pytest.mark.parametrize('nb_file', fast_examples)
+def test_fast_noexceptions(nb_file, tmpdir, plt):
+    """Ensure that no cells raise an exception."""
+    pytest.importorskip("IPython", minversion="1.0")
+    pytest.importorskip("jinja2")
+    assert_noexceptions(nb_file, tmpdir, plt)
+
+
+@pytest.mark.slow
+@pytest.mark.example
+@pytest.mark.parametrize('nb_file', slow_examples)
+def test_slow_noexceptions(nb_file, tmpdir, plt):
+    """Ensure that no cells raise an exception."""
+    pytest.importorskip("IPython", minversion="1.0")
+    pytest.importorskip("jinja2")
+    assert_noexceptions(nb_file, tmpdir, plt)
+
+
+@pytest.mark.example
+@pytest.mark.parametrize('nb_file', all_examples)
+def test_nooutput(nb_file):
     """Ensure that no cells have output."""
     pytest.importorskip("IPython", minversion="1.0")
     pytest.importorskip("jinja2")
@@ -66,6 +81,7 @@ def test_nooutput(nb_path):
             if cell.cell_type == 'code':
                 assert cell.outputs == [], ("Clear outputs in %s" % nb_path)
 
+    nb_path = os.path.join(examples_dir, "%s.ipynb" % nb_file)
     nb = load_notebook(nb_path)
     if nb.nbformat <= 3:
         for ws in nb.worksheets:
