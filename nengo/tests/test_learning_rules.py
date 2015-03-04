@@ -181,7 +181,6 @@ def test_unsupervised(Simulator, learning_rule_type, seed, rng, plt):
     sim.run(0.5)
     t = sim.trange()
 
-    name = learning_rule_type.__class__.__name__
     plt.subplot(2, 1, 1)
     plt.plot(t, sim.data[inp_p], label="Input")
     plt.plot(t, sim.data[ap], label="Pre")
@@ -191,7 +190,6 @@ def test_unsupervised(Simulator, learning_rule_type, seed, rng, plt):
     plt.plot(sim.trange(dt=0.01), sim.data[trans_p][..., 4])
     plt.xlabel("Time (s)")
     plt.ylabel("Transform weight")
-    plt.saveas = 'test_learning_rules.test_unsupervised_%s.pdf' % name
 
     assert not np.all(sim.data[trans_p][0] == sim.data[trans_p][-1])
 
@@ -247,9 +245,6 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
     plt.xlim(right=sim.trange()[-1])
     plt.ylabel("Presynaptic activity")
 
-    plt.saveas = "test_learning_rules.test_dt_dependence_%s.pdf" % (
-        learning_rule.__name__)
-
     assert np.allclose(trans_data[0], trans_data[1], atol=2e-3)
     assert not np.all(sim.data[trans_p][0] == sim.data[trans_p][-1])
 
@@ -280,9 +275,6 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
     plt.ylabel("Connection weight")
     plt.plot(first_t_trans, first_trans_p[..., 0], c='b')
     plt.plot(sim.trange(dt=0.01), sim.data[trans_p][..., 0], c='g')
-
-    plt.saveas = "test_learning_rules.test_reset_%s.pdf" % (
-        learning_rule.__name__)
 
     assert np.all(sim.trange() == first_t)
     assert np.all(sim.trange(dt=0.01) == first_t_trans)

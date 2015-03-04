@@ -42,7 +42,6 @@ def test_tuning_curves(Simulator, nl_nodirect, plt, seed, dimensions):
 
     eval_points, activities = tuning_curves(ens, sim)
 
-    plt.saveas = 'utils.test_ensemble.test_tuning_curves_%d.pdf' % dimensions
     plot_tuning_curves(plt, eval_points, activities)
 
     # Check that eval_points cover up to the radius.
@@ -64,8 +63,6 @@ def test_tuning_curves_direct_mode(Simulator, plt, seed, dimensions):
 
     eval_points, activities = tuning_curves(ens, sim)
 
-    plt.saveas = ('utils.test_ensemble.test_tuning_curves_direct_mode_%d.pdf'
-                  % dimensions)
     plot_tuning_curves(plt, eval_points, activities)
 
     # eval_points is passed through in direct mode neurons
@@ -103,8 +100,6 @@ def test_response_curves_direct_mode(Simulator, plt, seed, dimensions):
 
     eval_points, activities = response_curves(ens, sim)
 
-    plt.saveas = ('utils.test_ensemble.test_response_curves_direct_mode_%d.pdf'
-                  % dimensions)
     plot_tuning_curves(plt, eval_points, activities)
 
     assert eval_points.ndim == 1 and eval_points.size > 0

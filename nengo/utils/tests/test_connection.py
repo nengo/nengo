@@ -44,7 +44,5 @@ def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
     plt.subplot(2, 1, 2)
     plt.plot(sim.trange(), sim.data[probe2])
     plt.title('Square by passing in function to connection')
-    plt.saveas = ('utils.test_connection.test_target_function_%d_%g.pdf'
-                  % (dimensions, radius))
 
     assert np.allclose(sim.data[probe1], sim.data[probe2], atol=0.2 * radius)

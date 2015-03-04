@@ -29,8 +29,8 @@ class LearningRuleType(object):
                           "in floating point errors from too much current.")
         self.learning_rate = learning_rate
 
-    def __str__(self):
-        return self.__class__.__name__
+    def __repr__(self):
+        return '<%s>' % self.__class__.__name__
 
 
 class PES(LearningRuleType):

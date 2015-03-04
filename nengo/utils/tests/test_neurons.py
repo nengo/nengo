@@ -15,10 +15,7 @@ from nengo.utils.numpy import rms
 logger = logging.getLogger(__name__)
 
 
-def _test_rates(Simulator, rates, plt, seed, name=None):
-    if name is None:
-        name = rates.__name__
-
+def _test_rates(Simulator, rates, plt, seed):
     n = 100
     intercepts = np.linspace(-0.99, 0.99, n)
 
@@ -59,7 +56,6 @@ def _test_rates(Simulator, rates, plt, seed, name=None):
     implot(plt, t, intercepts, (b_rates - a_rates).T, ax=ax)
     ax.set_xlabel('time [s]')
     ax.set_ylabel('intercept')
-    plt.saveas = 'utils.test_neurons.test_rates.%s.pdf' % name
 
     tmask = (t > 0.1) & (t < 1.9)
     relative_rmse = rms(b_rates[tmask] - a_rates[tmask]) / rms(a_rates[tmask])
@@ -96,7 +92,7 @@ def test_rates(Simulator, plt, seed):
     ]
 
     for name, function in functions:
-        rel_rmse = _test_rates(Simulator, function, plt, seed, name)
+        rel_rmse = _test_rates(Simulator, function, plt, seed)
         logger.info('rate estimator: %s', name)
         logger.info('relative RMSE: %0.4f', rel_rmse)
     plt.saveas = None

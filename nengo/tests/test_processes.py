@@ -79,7 +79,6 @@ def test_gaussian_whitenoise(rms, rng, plt):
     plt.subplot(2, 1, 2)
     plt.title("Power spectrum")
     plt.plot(freq, val_psd, drawstyle='steps')
-    plt.saveas = 'test_processes.test_gaussian_white_noise_rms%.1f.pdf' % rms
 
     assert np.allclose(np.std(values), rms, rtol=0.02)
     assert np.allclose(val_psd[1:-1], rms, rtol=0.2)
@@ -103,7 +102,6 @@ def test_whitenoise_rms(rms, rng, plt):
     plt.subplot(2, 1, 2)
     plt.title("Power spectrum")
     plt.plot(freq, val_psd, drawstyle='steps')
-    plt.saveas = 'test_processes.test_whitenoise_rms_%.1f.pdf' % rms
 
     assert np.allclose(np.std(values), rms, rtol=0.02)
     assert np.allclose(val_psd[1:-1], rms, rtol=0.35)
@@ -129,7 +127,6 @@ def test_whitenoise_high(high, rng, plt):
     plt.title("Power spectrum")
     plt.plot(freq, val_psd, drawstyle='steps')
     plt.xlim(right=high * 2.0)
-    plt.saveas = 'test_processes.test_whitenoise_high_%d.pdf' % high
 
     assert np.allclose(np.std(values, axis=1), rms, rtol=0.15)
     assert np.all(val_psd[rfftfreq(t, dt) > high] < rms * 0.5)

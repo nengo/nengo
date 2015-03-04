@@ -23,5 +23,3 @@ def test_rasterplot(use_eventplot, Simulator, seed, plt):
     sim.run(1.0)
 
     rasterplot(sim.trange(), sim.data[ap], use_eventplot=use_eventplot)
-    if use_eventplot:
-        plt.saveas = 'utils.test_matplotlib.test_rasterplot.eventplot.pdf'

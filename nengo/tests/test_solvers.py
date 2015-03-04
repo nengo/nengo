@@ -95,7 +95,6 @@ def test_decoder_solver(Solver, plt, rng):
     plt.plot(test, np.zeros_like(test), 'k--')
     plt.plot(test, test - est)
     plt.title("relative RMSE: %0.2e" % rel_rmse)
-    plt.saveas = 'test_solvers.test_decoder_solver.%s.pdf' % Solver.__name__
 
     atol = 3.5e-2 if Solver is LstsqNoise else 1.5e-2
     assert np.allclose(test, est, atol=atol, rtol=1e-3)
@@ -189,7 +188,6 @@ def test_nnls(Solver, plt, rng):
     plt.subplot(212)
     plt.plot(x, np.zeros_like(x), 'k--')
     plt.plot(x, yest - y)
-    plt.saveas = 'test_solvers.test_nnls.%s.pdf' % Solver.__name__
 
     assert np.allclose(yest, y, atol=3e-2, rtol=1e-3)
     assert rel_rmse < 0.02

@@ -1,4 +1,5 @@
 import hashlib
+import inspect
 import os
 
 import numpy as np
@@ -69,8 +70,10 @@ def parametrize_function_name(request, function_name):
             x.strip()
             for x in request.keywords['parametrize'].args[0].split(',')]
         for name in argnames:
-            suffixes.append('{0}={1}'.format(
-                name, request.getfuncargvalue(name)))
+            value = request.getfuncargvalue(name)
+            if inspect.isclass(value):
+                value = value.__name__
+            suffixes.append('{0}={1}'.format(name, value))
     return '_'.join([function_name] + suffixes)
 
 
