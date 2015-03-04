@@ -124,13 +124,21 @@ class Analytics(Recorder):
 
         if self.record:
             self.data[name] = data
-            self.doc[name] = doc
+            if doc != "":
+                self.doc[name] = doc
+
+    def save_data(self):
+        if len(self.data) == 0:
+            return
+
+        npz_data = dict(self.data)
+        if len(self.doc) > 0:
+            npz_data.update({self.DOC_KEY: self.doc})
+        np.savez(self.get_filepath(ext='npz'), **npz_data)
 
     def __exit__(self, type, value, traceback):
         if self.record:
-            npz_data = dict(self.data)
-            npz_data.update({self.DOC_KEY: self.doc})
-            np.savez(self.get_filepath(ext='npz'), **npz_data)
+            self.save_data()
 
 
 class Timer(object):

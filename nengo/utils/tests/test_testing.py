@@ -17,6 +17,16 @@ def test_timer():
     assert timer.duration < 1.0  # Pretty bad worst case
 
 
+def test_analytics_empty():
+    analytics = Analytics('nengo.simulator.analytics',
+                          'nengo.utils.tests.test_testing',
+                          'test_analytics_empty')
+    with analytics:
+        pass
+    path = analytics.get_filepath(ext='npz')
+    assert not os.path.exists(path)
+
+
 def test_analytics_record():
     analytics = Analytics('nengo.simulator.analytics',
                           'nengo.utils.tests.test_testing',
