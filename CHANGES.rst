@@ -22,6 +22,12 @@ Release History
 2.1.0 (unreleased)
 ==================
 
+**Behavioural changes**
+
+- The ``probeable`` attribute of all Nengo objects is now implemented
+  as a property, rather than a configurable parameter.
+  (`#671 <https://github.com/nengo/nengo/pull/671>`_)
+
 **Improvements**
 
 - ``EnsembleArray.add_output`` now accepts a list of functions
@@ -32,6 +38,12 @@ Release History
   of semantic pointer elements.
   (`#414 <https://github.com/nengo/nengo/issues/414>`_,
   `#430 <https://github.com/nengo/nengo/pull/430>`_)
+
+**Bug fixes**
+
+- Fixed issue when probing scalar transforms.
+  (`#667 <https://github.com/nengo/nengo/issues/667>`_,
+  `#671 <https://github.com/nengo/nengo/pull/671>`_)
 
 2.0.1 (January 27, 2015)
 ========================
