@@ -164,24 +164,6 @@ def test_stringparam():
         inst.sp = 1
 
 
-def test_listparam():
-    """ListParams must be lists."""
-    class Test(object):
-        lp = params.ListParam(default=[1])
-
-    inst1 = Test()
-    assert inst1.lp == [1]
-    inst1.lp.append(2)
-
-    # The default list is mutable -- other instances will get the same list
-    inst2 = Test()
-    assert len(inst2.lp) == 2
-
-    # Non-lists no good
-    with pytest.raises(ValueError):
-        inst2.lp = (1, 2)
-
-
 def test_dictparam():
     """DictParams must be dictionaries."""
     class Test(object):

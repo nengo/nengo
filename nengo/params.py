@@ -141,13 +141,6 @@ class StringParam(Parameter):
         super(StringParam, self).validate(instance, string)
 
 
-class ListParam(Parameter):
-    def validate(self, instance, lst):
-        if lst is not None and not isinstance(lst, list):
-            raise ValueError("Must be a list; got '%s'" % str(lst))
-        super(ListParam, self).validate(instance, lst)
-
-
 class DictParam(Parameter):
     def validate(self, instance, dct):
         if dct is not None and not isinstance(dct, dict):
