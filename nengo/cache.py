@@ -217,7 +217,7 @@ class DecoderCache(object):
         """
         return rc.get('decoder_cache', 'path')
 
-    def wrap_solver(self, solver):
+    def wrap_solver(self, solver_fn):
         """Takes a decoder solver and wraps it to use caching.
 
         Parameters
@@ -230,7 +230,8 @@ class DecoderCache(object):
         func
             Wrapped decoder solver.
         """
-        def cached_solver(activities, targets, rng=None, E=None):
+        def cached_solver(solver, neuron_type, gain, bias, x, targets,
+                          rng=None, E=None):
             try:
                 args, _, _, defaults = inspect.getargspec(solver)
             except TypeError:
@@ -241,15 +242,16 @@ class DecoderCache(object):
             if E is None and 'E' in args:
                 E = defaults[args.index('E')]
 
-            key = self._get_cache_key(solver, activities, targets, rng, E)
+            key = self._get_cache_key(
+                solver_fn, solver, neuron_type, gain, bias, x, targets, rng, E)
             path = self._key2path(key)
             try:
                 with open(path, 'rb') as f:
                     solver_info, decoders = nco.read(f)
             except:
                 logger.info("Cache miss [{0}].".format(key))
-                decoders, solver_info = solver(
-                    activities, targets, rng=rng, E=E)
+                decoders, solver_info = solver_fn(
+                    solver, neuron_type, gain, bias, x, targets, rng=rng, E=E)
                 if not self.read_only:
                     with open(path, 'wb') as f:
                         nco.write(f, solver_info, decoders)
@@ -259,15 +261,22 @@ class DecoderCache(object):
             return decoders, solver_info
         return cached_solver
 
-    def _get_cache_key(self, solver, activities, targets, rng, E):
+    def _get_cache_key(self, solver_fn, solver, neuron_type, gain, bias,
+                       x, targets, rng, E):
         h = hashlib.sha1()
 
         if PY2:
+            h.update(str(Fingerprint(solver_fn)))
             h.update(str(Fingerprint(solver)))
+            h.update(str(Fingerprint(neuron_type)))
         else:
+            h.update(str(Fingerprint(solver_fn)).encode('utf-8'))
             h.update(str(Fingerprint(solver)).encode('utf-8'))
+            h.update(str(Fingerprint(neuron_type)).encode('utf-8'))
 
-        h.update(np.ascontiguousarray(activities).data)
+        h.update(np.ascontiguousarray(gain).data)
+        h.update(np.ascontiguousarray(bias).data)
+        h.update(np.ascontiguousarray(x).data)
         h.update(np.ascontiguousarray(targets).data)
 
         # rng format doc:
@@ -295,8 +304,8 @@ class DecoderCache(object):
 class NoDecoderCache(object):
     """Provides the same interface as :class:`DecoderCache` without caching."""
 
-    def wrap_solver(self, solver):
-        return solver
+    def wrap_solver(self, solver_fn):
+        return solver_fn
 
     def get_size_in_bytes(self):
         return 0

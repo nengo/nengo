@@ -21,12 +21,13 @@ class SolverMock(object):
         self.__module__ = __name__
         self.__name__ = name
 
-    def __call__(self, A, Y, rng=np.random, E=None):
+    def __call__(self, solver, neuron_type, gain, bias, x, targets,
+                 rng=np.random, E=None):
         self.n_calls[self] += 1
         if E is None:
-            return np.random.rand(A.shape[1], Y.shape[1]), {'info': 'v'}
+            return np.random.rand(x.shape[1], targets.shape[1]), {'info': 'v'}
         else:
-            return np.random.rand(A.shape[1], E.shape[1]), {'info': 'v'}
+            return np.random.rand(x.shape[1], E.shape[1]), {'info': 'v'}
 
 
 def get_solver_test_args():
@@ -34,7 +35,11 @@ def get_solver_test_args():
     N = 10
     D = 2
     return {
-        'activities': np.ones((M, D)),
+        'solver': nengo.solvers.LstsqL2nz(),
+        'neuron_type': nengo.LIF(),
+        'gain': np.ones(N),
+        'bias': np.ones(N),
+        'x': np.ones((M, D)),
         'targets': np.ones((M, N)),
         'rng': np.random.RandomState(42),
     }
@@ -46,7 +51,11 @@ def get_weight_solver_test_args():
     N2 = 5
     D = 2
     return {
-        'activities': np.ones((M, D)),
+        'solver': nengo.solvers.LstsqL2nz(),
+        'neuron_type': nengo.LIF(),
+        'gain': np.ones(N),
+        'bias': np.ones(N),
+        'x': np.ones((M, D)),
         'targets': np.ones((M, N)),
         'rng': np.random.RandomState(42),
         'E': np.ones((D, N2)),
@@ -69,7 +78,7 @@ def test_decoder_cache(tmpdir):
     assert solver_info1 == solver_info2
 
     solver_args = get_solver_test_args()
-    solver_args['activities'] *= 2
+    solver_args['gain'] *= 2
     decoders3, solver_info3 = cache.wrap_solver(solver_mock)(**solver_args)
     assert SolverMock.n_calls[solver_mock] == 2
     assert np.any(decoders1 != decoders3)
