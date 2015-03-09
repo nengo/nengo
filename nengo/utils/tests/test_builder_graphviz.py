@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import nengo
 from nengo.utils.builder import (
@@ -33,7 +32,3 @@ def test_create_dot():
         *remove_passthrough_nodes(objs, conns))
     assert len(dot.splitlines()) == 27
     # not sure what else to check here
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

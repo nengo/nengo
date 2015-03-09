@@ -1,6 +1,5 @@
 import pytest
 
-import nengo
 from nengo.spa.action_objects import Symbol, Source, DotProduct
 
 A = Symbol('A')
@@ -239,8 +238,3 @@ def test_vector_list():
 
     assert str(-xy) == '-1 * x + -1 * y'
     assert str(-(-xy)) == 'x + y'
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

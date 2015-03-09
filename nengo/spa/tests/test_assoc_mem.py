@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import nengo
 from nengo.spa import Vocabulary
@@ -243,8 +242,3 @@ def test_am_spa_interaction(Simulator, seed, rng):
 
     # Check to see if model builds properly. No functionality test needed
     Simulator(m)
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

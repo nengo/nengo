@@ -1,7 +1,5 @@
 import numpy as np
-import pytest
 
-import nengo
 from nengo import spa
 
 
@@ -87,7 +85,3 @@ def test_predefined_vocabs():
     assert np.dot(a1, a2) < 0.95
     assert np.dot(b1, b2) < 0.95
     assert np.dot(c1, c2) < 0.95
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

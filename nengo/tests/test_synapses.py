@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import pytest
 
@@ -8,8 +6,6 @@ from nengo.processes import WhiteNoise
 from nengo.synapses import (
     Alpha, filt, filtfilt, LinearFilter, Lowpass, SynapseParam)
 from nengo.utils.testing import allclose
-
-logger = logging.getLogger(__name__)
 
 
 def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=1., n_neurons=None):
@@ -161,8 +157,3 @@ def test_synapseparam():
     # Non-synapse not OK
     with pytest.raises(ValueError):
         inst.sp = 'a'
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

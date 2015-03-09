@@ -1,8 +1,5 @@
 import time
 
-import pytest
-
-import nengo
 from nengo.utils.progress import (
     AutoProgressBar, UpdateEveryN, UpdateEveryT, UpdateN, Progress,
     ProgressBar, ProgressTracker)
@@ -152,8 +149,3 @@ class TestUpdateEveryT(object):
             t = 4.
             p.step()
             assert progress_bar.n_update_calls == 1
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

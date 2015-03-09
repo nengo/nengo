@@ -1,11 +1,7 @@
-import logging
-
 import numpy as np
 import pytest
 
 import nengo
-
-logger = logging.getLogger(__name__)
 
 
 @pytest.mark.noassertions

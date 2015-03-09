@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import pytest
 
@@ -7,8 +5,6 @@ import nengo
 from nengo.dists import Choice
 from nengo.utils.compat import range
 from nengo.utils.testing import WarningCatcher
-
-logger = logging.getLogger(__name__)
 
 
 def test_multidim(Simulator, plt, seed, rng):
@@ -230,8 +226,3 @@ def test_neuronconnection(Simulator, nl, seed):
                 catcher.record[0].category is UserWarning)
     else:
         assert len(catcher.record) == 0
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

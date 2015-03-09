@@ -3,11 +3,14 @@ from __future__ import absolute_import
 import logging
 import sys
 
-logger = logging.getLogger(__name__)
+from nengo.utils.compat import TextIO
+
 console_formatter = logging.Formatter('[%(levelname)s] %(message)s')
 file_formatter = logging.Formatter(
     ('%(asctime)s [%(levelname)s] %(name)s.%(funcName)s'
      '@ L%(lineno)d\n  %(message)s'))
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(console_formatter)
 
 
 def log(debug=False, path=None):
@@ -22,21 +25,11 @@ def log(debug=False, path=None):
     function to get log output.
     """
     level = logging.DEBUG if debug else logging.WARNING
-    if logging.root.getEffectiveLevel() > level:
-        logging.root.setLevel(level)
+    logging.root.setLevel(level)
 
     if path is None:
-        logger.info("Logging to console")
-        for handler in logging.root.handlers:
-            if (isinstance(handler, logging.StreamHandler)
-                    and handler.formatter == console_formatter):
-                break
-        else:
-            handler = logging.StreamHandler(sys.stdout)
-            handler.setFormatter(console_formatter)
-            logging.root.addHandler(handler)
+        handler = console_handler
     else:
-        logger.info("Logging to %s", path)
         for handler in logging.root.handlers:
             if (isinstance(handler, logging.FileHandler)
                     and handler.baseFilename == path
@@ -45,10 +38,32 @@ def log(debug=False, path=None):
         else:
             handler = logging.FileHandler(path, encoding='utf-8')
             handler.setFormatter(file_formatter)
-            logging.root.addHandler(handler)
+
+    if handler not in logging.root.handlers:
+        logging.root.addHandler(handler)
     handler.setLevel(level)
     try:
         logging.captureWarnings(True)
     except AttributeError:
         # logging.captureWarnings doesn't exist in Python 2.6; ignore it
         pass
+
+
+class CaptureLogHandler(logging.StreamHandler):
+    """A logging handler that stores log records and the log text."""
+
+    def __init__(self):
+        """Creates a new log handler."""
+        logging.StreamHandler.__init__(self)
+        self.records = []
+        self.stream = TextIO()
+
+    def close(self):
+        """Close this log handler and its underlying stream."""
+        self.stream.close()
+        logging.StreamHandler.close(self)
+
+    def emit(self, record):
+        """Keep the log records in a list in addition to the log text."""
+        self.records.append(record)
+        logging.StreamHandler.emit(self, record)

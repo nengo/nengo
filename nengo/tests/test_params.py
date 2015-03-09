@@ -1,14 +1,9 @@
-import logging
-
 import numpy as np
 import pytest
 
-import nengo
 from nengo import params
 from nengo.dists import UniformHypersphere
 from nengo.utils.compat import PY2
-
-logger = logging.getLogger(__name__)
 
 
 def test_default():
@@ -267,8 +262,3 @@ def test_functionparam():
     # Not OK: not a function
     with pytest.raises(ValueError):
         inst.fp = 0
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

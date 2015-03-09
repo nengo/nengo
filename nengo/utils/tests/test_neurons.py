@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import logging
 import pytest
 
 import numpy as np
@@ -11,8 +10,6 @@ from nengo.processes import WhiteNoise
 from nengo.utils.matplotlib import implot
 from nengo.utils.neurons import rates_isi, rates_kernel
 from nengo.utils.numpy import rms
-
-logger = logging.getLogger(__name__)
 
 
 def _test_rates(Simulator, rates, plt, seed):
@@ -74,7 +71,8 @@ def test_rates_kernel(Simulator, plt, seed):
 
 
 @pytest.mark.noassertions
-def test_rates(Simulator, plt, seed):
+def test_rates(Simulator, plt, seed, logger):
+    pytest.importorskip('scipy')
     functions = [
         ('isi_zero', lambda t, s: rates_isi(
             t, s, midpoint=False, interp='zero')),
@@ -96,8 +94,3 @@ def test_rates(Simulator, plt, seed):
         logger.info('rate estimator: %s', name)
         logger.info('relative RMSE: %0.4f', rel_rmse)
     plt.saveas = None
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

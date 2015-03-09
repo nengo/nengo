@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import nengo
 from nengo.utils.functions import piecewise
@@ -36,8 +35,3 @@ def test_inputgatedmemory(Simulator, plt, seed):
     assert abs(np.mean(data[t < 0.1])) < 0.01
     assert abs(np.mean(data[(t > 0.2) & (t <= 0.4)]) - 0.5) < 0.02
     assert abs(np.mean(data[t > 0.4]) - 0.5) < 0.02
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

@@ -1,13 +1,8 @@
-import logging
-
 import numpy as np
 import pytest
 
 import nengo
 from nengo.utils.testing import warns
-
-
-logger = logging.getLogger(__name__)
 
 
 def test_time(Simulator):
@@ -330,8 +325,3 @@ def test_args(Simulator, plt):
 
     sim = Simulator(model)
     sim.run(0.01)
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

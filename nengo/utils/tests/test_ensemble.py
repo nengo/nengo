@@ -106,8 +106,3 @@ def test_response_curves_direct_mode(Simulator, plt, seed, dimensions):
     assert np.all(-1.0 <= eval_points) and np.all(eval_points <= 1.0)
     # eval_points is passed through in direct mode neurons
     assert np.allclose(eval_points, activities)
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

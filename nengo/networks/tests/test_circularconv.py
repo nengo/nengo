@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import pytest
 
@@ -7,8 +5,6 @@ import nengo
 from nengo.networks.circularconvolution import (
     circconv, transform_in, transform_out)
 from nengo.utils.numpy import rmse
-
-logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize('invert_a', [True, False])
@@ -90,8 +86,3 @@ def test_neural_accuracy(Simulator, seed, rng, dims, neurons_per_product=128):
     error = rmse(result, sim.data[res_p][-1])
 
     assert error < 0.1
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

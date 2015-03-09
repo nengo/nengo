@@ -59,8 +59,3 @@ def test_pickle():
             pickle.dump(a, f)
         with pytest.raises(NotImplementedError):
             pickle.dump(a[:2], f)
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

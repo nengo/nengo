@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import inspect
 import itertools
+import logging
 import os
 import re
 import sys
@@ -12,6 +13,29 @@ import numpy as np
 import pytest
 
 from .compat import is_string
+from .logging import CaptureLogHandler, console_formatter
+
+
+class Mock(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return Mock()
+
+    def __mul__(self, other):
+        return 1.0
+
+    @classmethod
+    def __getattr__(cls, name):
+        if name in ('__file__', '__path__'):
+            return '/dev/null'
+        elif name[0] == name[0].upper():
+            mockType = type(name, (), {})
+            mockType.__module__ = __name__
+            return mockType
+        else:
+            return Mock()
 
 
 class Recorder(object):
@@ -56,33 +80,12 @@ class Recorder(object):
 
 
 class Plotter(Recorder):
-    class Mock(object):
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def __call__(self, *args, **kwargs):
-            return Plotter.Mock()
-
-        def __mul__(self, other):
-            return 1.0
-
-        @classmethod
-        def __getattr__(cls, name):
-            if name in ('__file__', '__path__'):
-                return '/dev/null'
-            elif name[0] == name[0].upper():
-                mockType = type(name, (), {})
-                mockType.__module__ = __name__
-                return mockType
-            else:
-                return Plotter.Mock()
-
     def __enter__(self):
         if self.record:
             import matplotlib.pyplot as plt
             self.plt = plt
         else:
-            self.plt = Plotter.Mock()
+            self.plt = Mock()
         return self.plt
 
     def __exit__(self, type, value, traceback):
@@ -139,6 +142,31 @@ class Analytics(Recorder):
     def __exit__(self, type, value, traceback):
         if self.record:
             self.save_data()
+
+
+class Logger(Recorder):
+    def __enter__(self):
+        if self.record:
+            self.handler = CaptureLogHandler()
+            self.handler.setFormatter(console_formatter)
+            self.logger = logging.getLogger()
+            self.logger.addHandler(self.handler)
+            self.old_level = self.logger.getEffectiveLevel()
+            self.logger.setLevel(logging.INFO)
+            self.logger.info("=== Test run at %s ===",
+                             time.strftime("%Y-%m-%d %H:%M:%S"))
+        else:
+            self.logger = Mock()
+        return self.logger
+
+    def __exit__(self, type, value, traceback):
+        if self.record:
+            self.logger.removeHandler(self.handler)
+            self.logger.setLevel(self.old_level)
+            with open(self.get_filepath(ext='txt'), 'a') as fp:
+                fp.write(self.handler.stream.getvalue())
+            self.handler.close()
+            del self.handler
 
 
 class Timer(object):

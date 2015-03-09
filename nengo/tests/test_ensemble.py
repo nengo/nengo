@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import pytest
 
@@ -8,8 +6,6 @@ import nengo.utils.numpy as npext
 from nengo.dists import Choice, UniformHypersphere
 from nengo.processes import StochasticProcess
 from nengo.utils.testing import warns, allclose
-
-logger = logging.getLogger(__name__)
 
 
 def test_missing_attribute():
@@ -372,8 +368,3 @@ def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt):
 
     assert np.allclose(sim.data[ap], sim.data[bp])
     assert np.allclose(sim.data[bp], sim.data[cp])
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

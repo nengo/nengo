@@ -4,7 +4,6 @@ import numpy as np
 from numpy.testing import assert_equal
 import pytest
 
-import nengo
 import nengo.utils.nco as nco
 from nengo.utils.nco import Subfile
 
@@ -104,8 +103,3 @@ def test_nco_roundtrip(tmpdir):
 
     assert pickle_data == pickle_data2
     assert_equal(array, array2)
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

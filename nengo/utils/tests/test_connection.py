@@ -1,13 +1,9 @@
-import logging
-
 import numpy as np
 import pytest
 
 import nengo
 from nengo.dists import UniformHypersphere
 from nengo.utils.connection import target_function
-
-logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("dimensions", [1, 4])

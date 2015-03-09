@@ -185,8 +185,3 @@ def test_instance_fallthrough():
     assert config[A].amount == 1
     assert config[inst1].amount == 2
     assert config[inst2].amount == 1
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

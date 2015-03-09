@@ -1,6 +1,5 @@
 import pytest
 
-import nengo
 from nengo import spa
 from nengo.spa.actions import Expression, Effect, Action, Actions
 
@@ -122,8 +121,3 @@ def test_actions():
     assert str(a.actions[1].effect) == 'state=A'
     assert str(a.actions[2].condition) == '1.0'
     assert str(a.actions[2].effect) == 'state=C'
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

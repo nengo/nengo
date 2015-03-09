@@ -39,10 +39,19 @@ if PY2:
         assert isinstance(s, bytes)
         return s
 
+    class TextIO(StringIO):
+        def write(self, data):
+            if not isinstance(data, unicode):
+                data = unicode(data,
+                               getattr(self, '_encoding', 'UTF-8'),
+                               'replace')
+            StringIO.write(self, data)
+
 else:
     import pickle
     import configparser
     from io import StringIO
+    TextIO = StringIO
     string_types = (str,)
     int_types = (int,)
     range = range
@@ -63,7 +72,7 @@ else:
 
 assert configparser
 assert pickle
-assert StringIO
+assert TextIO
 
 
 def is_integer(obj):

@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import pytest
 
@@ -10,8 +8,6 @@ from nengo.dists import UniformHypersphere
 from nengo.solvers import LstsqL2
 from nengo.utils.functions import piecewise
 from nengo.utils.testing import allclose
-
-logger = logging.getLogger(__name__)
 
 
 def test_args(nl, seed, rng):
@@ -724,8 +720,3 @@ def test_transform_probe(Simulator):
         nengo.Probe(c_ens, "transform")
         nengo.Probe(c_ens_neurons, "transform")
     assert Simulator(net)
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

@@ -1,13 +1,6 @@
-import logging
-
-import pytest
-
 import nengo
 from nengo.utils.functions import piecewise
 from nengo.utils.numpy import rmse
-
-
-logger = logging.getLogger(__name__)
 
 
 def test_oscillator(Simulator, plt, seed):
@@ -40,8 +33,3 @@ def test_oscillator(Simulator, plt, seed):
     plt.legend(loc='best')
 
     assert rmse(sim.data[A_probe], sim.data[T_probe]) < 0.2
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

@@ -1,12 +1,7 @@
 import inspect
-import logging
 
-import pytest
-
-import nengo
 from nengo.utils.magic import decorator, memoize
 
-logger = logging.getLogger(__name__)
 state = None  # Used to make sure decorators are running
 
 
@@ -267,8 +262,3 @@ def test_memoize():  # noqa: C901
 
     # Second run should be all hits
     check_all(inst, 1, 1)
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

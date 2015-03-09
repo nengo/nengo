@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import nengo
 from nengo.utils.builder import full_transform
@@ -100,8 +99,3 @@ def test_full_transform():
         conn = nengo.Connection(ens3, ens2[[0, 1, 0]])
         assert np.all(full_transform(conn) == np.array([[1, 0, 1],
                                                        [0, 1, 0]]))
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

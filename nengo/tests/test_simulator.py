@@ -1,7 +1,4 @@
-import logging
-
 import numpy as np
-import pytest
 
 import nengo
 import nengo.simulator
@@ -10,9 +7,6 @@ from nengo.builder.node import build_pyfunc
 from nengo.builder.operator import Copy, Reset, DotInc, SimNoise
 from nengo.builder.signal import Signal
 from nengo.utils.compat import range
-
-
-logger = logging.getLogger(__name__)
 
 
 def test_steps(RefSimulator):
@@ -138,8 +132,3 @@ def test_noise(RefSimulator, seed):
     z = 1./np.sqrt(2 * np.pi * std**2) * np.exp(-0.5 * (x - mean)**2 / std**2)
     y = h / float(h.sum()) / dx
     assert np.allclose(y, z, atol=0.02)
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, "-v"])

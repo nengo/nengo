@@ -100,8 +100,3 @@ def test_run_decay(Simulator, plt, seed):
 
     assert data[t == 0.05, 0] > 1.0
     assert data[t == 0.299, 0] < 0.4
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

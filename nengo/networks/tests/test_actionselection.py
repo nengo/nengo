@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import nengo
 
@@ -48,8 +47,3 @@ def test_thalamus(Simulator, plt, seed):
 
     assert output[0] > 0.8
     assert np.all(output[1:] < 0.01)
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

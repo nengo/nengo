@@ -1,6 +1,3 @@
-import pytest
-
-import nengo
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
 
 
@@ -22,8 +19,3 @@ def test_byte_align():
     assert byte_align(13, 1) == 13
     assert byte_align(0, 16) == 0
     assert byte_align(32, 8) == 32
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

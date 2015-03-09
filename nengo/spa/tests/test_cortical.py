@@ -185,8 +185,3 @@ def test_convolution(Simulator, plt, seed):
     # Ideal answer: ~A*~B = [0,0,1,0,0]
     assert np.allclose(np.mean(sim.data[pAinvBinv][-10:], axis=0),
                        np.array([0, 0, 1, 0, 0]), atol=0.15)
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

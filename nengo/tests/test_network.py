@@ -134,8 +134,3 @@ def test_pickle():
     with tempfile.TemporaryFile() as f:
         with pytest.raises(NotImplementedError):
             pickle.dump(model, f)
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

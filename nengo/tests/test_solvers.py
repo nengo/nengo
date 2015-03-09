@@ -5,8 +5,6 @@ TODO:
 """
 from __future__ import print_function
 
-import logging
-
 import numpy as np
 import pytest
 
@@ -20,8 +18,6 @@ from nengo.solvers import (
     Lstsq, LstsqNoise, LstsqL2, LstsqL2nz,
     LstsqL1, LstsqDrop,
     Nnls, NnlsL2, NnlsL2nz)
-
-logger = logging.getLogger(__name__)
 
 
 def get_encoders(n_neurons, dims, rng=None):
@@ -194,7 +190,7 @@ def test_nnls(Solver, plt, rng):
 
 
 @pytest.mark.slow
-def test_subsolvers_L2(rng):
+def test_subsolvers_L2(rng, logger):
     pytest.importorskip('scipy')
 
     ref_solver = cholesky
@@ -222,7 +218,7 @@ def test_subsolvers_L2(rng):
 
 
 @pytest.mark.noassertions
-def test_subsolvers_L1(rng):
+def test_subsolvers_L1(rng, logger):
     pytest.importorskip('sklearn')
 
     A, B = get_system(m=2000, n=1000, d=10, rng=rng)
@@ -409,7 +405,7 @@ def test_eval_points_static(Simulator, plt, rng):
 
 @pytest.mark.slow
 @pytest.mark.noassertions
-def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
+def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
     n = 100
     d = 5
     filter = 0.08
@@ -470,8 +466,3 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
     plt.semilogx(eval_points, low, 'b-')
     plt.xlim([eval_points[0], eval_points[-1]])
     plt.xticks(eval_points, eval_points)
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

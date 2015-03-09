@@ -50,19 +50,19 @@ def build_network(model, network):
         for obj in network.objects[obj_type]:
             model.seeds[obj] = get_seed(obj, rng)
 
-    logger.info("Network step 1: Building ensembles and nodes")
+    logger.debug("Network step 1: Building ensembles and nodes")
     for obj in network.ensembles + network.nodes:
         model.build(obj)
 
-    logger.info("Network step 2: Building subnetworks")
+    logger.debug("Network step 2: Building subnetworks")
     for subnetwork in network.networks:
         model.build(subnetwork)
 
-    logger.info("Network step 3: Building connections")
+    logger.debug("Network step 3: Building connections")
     for conn in network.connections:
         model.build(conn)
 
-    logger.info("Network step 4: Building learning rules")
+    logger.debug("Network step 4: Building learning rules")
     for conn in network.connections:
         rule = conn.learning_rule
         if is_iterable(rule):
@@ -71,7 +71,7 @@ def build_network(model, network):
         elif rule is not None:
             model.build(rule)
 
-    logger.info("Network step 5: Building probes")
+    logger.debug("Network step 5: Building probes")
     for probe in network.probes:
         model.build(probe)
 

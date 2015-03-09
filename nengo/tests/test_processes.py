@@ -162,8 +162,3 @@ def test_sampling_shape():
     assert nengo.processes.sample(1, process).shape == (1,)
     assert nengo.processes.sample(5, process, d=1).shape == (5, 1)
     assert nengo.processes.sample(1, process, d=2). shape == (1, 2)
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, "-v"])

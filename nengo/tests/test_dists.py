@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-import nengo
 import nengo.dists as dists
 import nengo.utils.numpy as npext
 
@@ -119,8 +118,3 @@ def test_sqrt_beta(n, m):
     hist, _ = np.histogram(samples, bins=num_bins)
 
     assert np.all(np.abs(np.asfarray(hist - expectation) / num_samples) < 0.16)
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

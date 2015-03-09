@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import nengo
 from nengo import spa
@@ -44,8 +43,3 @@ def test_run(Simulator, seed):
 
     assert data[100] > 0.8
     assert data[199] < 0.2
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

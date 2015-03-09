@@ -79,8 +79,3 @@ def test_errors():
             model.motor = spa.Buffer(dimensions=16)
             actions = spa.Actions('scalar --> motor=A')
             model.bg = spa.BasalGanglia(actions)
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

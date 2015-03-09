@@ -1,12 +1,6 @@
-import logging
-
-import pytest
-
 import nengo
 from nengo.utils.functions import piecewise
 from nengo.utils.numpy import rmse
-
-logger = logging.getLogger(__name__)
 
 
 def test_integrator(Simulator, plt, seed):
@@ -37,8 +31,3 @@ def test_integrator(Simulator, plt, seed):
     plt.legend(loc='best')
 
     assert rmse(sim.data[A_p], sim.data[T_p]) < 0.1
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

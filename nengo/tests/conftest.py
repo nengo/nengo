@@ -11,7 +11,7 @@ from nengo.neurons import Direct, LIF, LIFRate, RectifiedLinear, Sigmoid
 from nengo.rc import rc
 from nengo.simulator import Simulator as ReferenceSimulator
 from nengo.utils.compat import ensure_bytes, is_string
-from nengo.utils.testing import Analytics, Plotter
+from nengo.utils.testing import Analytics, Logger, Plotter
 
 test_seed = 0  # changing this will change seeds for all tests
 
@@ -119,6 +119,23 @@ def analytics(request):
     return analytics.__enter__()
 
 
+@pytest.fixture
+def logger(request):
+    """a logging.Logger object.
+
+    Please use this if your test emits log messages.
+
+    This will keep saved logs organized in a simulator-specific folder,
+    with an automatically generated name.
+    """
+    dirname = recorder_dirname(request, 'logs')
+    logger = Logger(
+        dirname, request.module.__name__,
+        parametrize_function_name(request, request.function.__name__))
+    request.addfinalizer(lambda: logger.__exit__(None, None, None))
+    return logger.__enter__()
+
+
 def function_seed(function, mod=0):
     c = function.__code__
 
@@ -170,6 +187,9 @@ def pytest_addoption(parser):
     parser.addoption(
         '--analytics', nargs='?', default=False, const=True,
         help='Save analytics (can optionally specify a directory for data).')
+    parser.addoption(
+        '--logs', nargs='?', default=False, const=True,
+        help='Save logs (can optionally specify a directory for logs).')
     parser.addoption('--noexamples', action='store_false', default=True,
                      help='Do not run examples')
     parser.addoption(
@@ -189,7 +209,8 @@ def pytest_runtest_setup(item):
         skipreasons = []
         for fixture_name, option, message in [
                 ('analytics', 'analytics', "analytics not requested"),
-                ('plt', 'plots', "plots not requested")]:
+                ('plt', 'plots', "plots not requested"),
+                ('logger', 'logs', "logs not requested")]:
             if fixture_name in item.fixturenames:
                 if item.config.getvalue(option):
                     skip = False

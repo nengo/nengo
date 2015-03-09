@@ -1,8 +1,3 @@
-try:
-    # Reload moved to the imp module in Python 3
-    from imp import reload
-except AttributeError:
-    pass
 import logging
 
 import pytest
@@ -12,34 +7,29 @@ import nengo.utils.logging
 
 
 def test_log_to_console():
-    logging.shutdown()
-    reload(logging)
     nengo.log(debug=False, path=None)
     assert logging.root.getEffectiveLevel() == logging.WARNING
-    assert len(logging.root.handlers) == 1
-    handler = logging.root.handlers[0]
-    assert isinstance(handler, logging.StreamHandler)
-    assert handler.formatter == nengo.utils.logging.console_formatter
+    assert nengo.utils.logging.console_handler in logging.root.handlers
+    n_handlers = len(logging.root.handlers)
     nengo.log(debug=True, path=None)
     assert logging.root.getEffectiveLevel() == logging.DEBUG
-    assert len(logging.root.handlers) == 1
+    assert len(logging.root.handlers) == n_handlers
+    logging.root.handlers.remove(nengo.utils.logging.console_handler)
 
 
 def test_log_to_file(tmpdir):
-    logging.shutdown()
-    reload(logging)
     tmpfile = str(tmpdir.join("log.txt"))
     nengo.log(debug=False, path=tmpfile)
+    n_handlers = len(logging.root.handlers)
+    handler = logging.root.handlers[-1]
     assert logging.root.getEffectiveLevel() == logging.WARNING
-    assert len(logging.root.handlers) == 1
-    handler = logging.root.handlers[0]
     assert isinstance(handler, logging.FileHandler)
-    assert handler.formatter == nengo.utils.logging.file_formatter
+    assert handler.baseFilename == tmpfile
     nengo.log(debug=True, path=tmpfile)
     assert logging.root.getEffectiveLevel() == logging.DEBUG
-    assert len(logging.root.handlers) == 1
-
+    assert len(logging.root.handlers) == n_handlers
+    logging.root.handlers.remove(handler)
 
 if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])
+    import sys
+    pytest.main(sys.argv)

@@ -1,13 +1,8 @@
-import logging
-
 import numpy as np
-import pytest
 
 import nengo
 from nengo.utils.compat import range
 from nengo.utils.testing import Timer
-
-logger = logging.getLogger(__name__)
 
 
 def test_multirun(Simulator, rng):
@@ -55,7 +50,7 @@ def test_dts(Simulator, seed, rng):
             dt, dt2, tend, len(t), len(x))
 
 
-def test_large(Simulator, seed):
+def test_large(Simulator, seed, logger):
     """Test with a lot of big probes. Can also be used for speed."""
 
     n = 10
@@ -75,8 +70,8 @@ def test_large(Simulator, seed):
 
     with Timer() as timer:
         sim.run(simtime)
-    logger.debug("Ran %d probes for %f sec simtime in %0.3f sec",
-                 n, simtime, timer.duration)
+    logger.info("Ran %d probes for %f sec simtime in %0.3f sec",
+                n, simtime, timer.duration)
 
     t = sim.trange()
     x = np.asarray([input_fn(ti) for ti in t])
@@ -202,8 +197,3 @@ def test_solver_defaults(Simulator):
     assert d.solver is solver2
     assert e.solver is solver1
     assert f.solver is solver3
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

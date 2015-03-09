@@ -1,12 +1,8 @@
-import logging
 import pytest
 
 import numpy as np
 
-import nengo
 from nengo.utils.filter_design import expm, cont2discrete
-
-logger = logging.getLogger(__name__)
 
 
 def test_expm(rng):
@@ -46,8 +42,3 @@ def test_cont2discrete_zoh(dt):
     num1, den1, _ = cont2discrete((num, den), dt)
     assert np.allclose(num0, num1)
     assert np.allclose(den0, den1)
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

@@ -70,8 +70,3 @@ def test_run(Simulator, seed):
     assert data[400, 1] > 0.9
     assert data[499, 0] < 0.2
     assert data[499, 1] < 0.2
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

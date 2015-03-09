@@ -3,7 +3,6 @@ import re
 import numpy as np
 import pytest
 
-import nengo
 from nengo.spa import Vocabulary
 
 
@@ -128,8 +127,3 @@ def test_prob_cleanup():
     assert 0.999 > v.prob_cleanup(0.4, 1000) > 0.997
     assert 0.99 > v.prob_cleanup(0.4, 10000) > 0.97
     assert 0.9 > v.prob_cleanup(0.4, 100000) > 0.8
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

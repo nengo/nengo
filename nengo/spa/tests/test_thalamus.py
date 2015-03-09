@@ -142,8 +142,3 @@ def test_errors():
             actions = spa.Actions('0.5 --> scalar=dot(scalar, FOO)')
             model.bg = spa.BasalGanglia(actions)
             model.thalamus = spa.Thalamus(model.bg)
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

@@ -1,10 +1,4 @@
-import logging
-
-import pytest
-
 import nengo
-
-logger = logging.getLogger(__name__)
 
 
 def test_withself():
@@ -25,8 +19,3 @@ def test_withself():
             e2 = nengo.Ensemble(10, dimensions=1)
             assert e2 in ea1.ensembles
     assert len(nengo.Network.context) == 0
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

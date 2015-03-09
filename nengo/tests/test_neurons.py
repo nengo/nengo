@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 import pytest
 
@@ -10,8 +9,6 @@ from nengo.utils.ensemble import tuning_curves
 from nengo.utils.matplotlib import implot, rasterplot
 from nengo.utils.neurons import rates_kernel
 from nengo.utils.numpy import rms, rmse
-
-logger = logging.getLogger(__name__)
 
 
 def test_lif_builtin(rng):
@@ -39,7 +36,7 @@ def test_lif_builtin(rng):
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 
 
-def test_lif(Simulator, plt, rng):
+def test_lif(Simulator, plt, rng, logger):
     """Test that the dynamic model approximately matches the rates"""
     dt = 0.001
     n = 5000
@@ -78,9 +75,9 @@ def test_lif(Simulator, plt, rng):
         x, *ens.neuron_type.gain_bias(max_rates, intercepts))
     spikes = sim.data[spike_probe]
     sim_rates = (spikes > 0).sum(0) / t_final
-    logger.debug("ME = %f", (sim_rates - math_rates).mean())
-    logger.debug("RMSE = %f",
-                 rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
+    logger.info("ME = %f", (sim_rates - math_rates).mean())
+    logger.info("RMSE = %f",
+                rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
     assert np.sum(math_rates > 0) > 0.5 * n, (
         "At least 50% of neurons must fire")
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
@@ -359,8 +356,3 @@ def test_neurontypeparam():
     assert isinstance(inst.ntp, nengo.LIF)
     with pytest.raises(ValueError):
         inst.ntp = 'a'
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

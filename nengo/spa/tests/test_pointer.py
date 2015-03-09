@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-import nengo
 from nengo.spa.pointer import SemanticPointer
 from nengo.utils.compat import range
 
@@ -186,8 +185,3 @@ def test_conv_matrix():
     m = b.get_convolution_matrix()
 
     assert np.allclose((a*b).v, np.dot(m, a.v))
-
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])

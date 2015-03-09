@@ -17,7 +17,8 @@ _pytest.capture.DontReadFromInput.write = lambda: None
 _pytest.capture.DontReadFromInput.flush = lambda: None
 
 
-all_examples = set([os.path.splitext(f)[0] for f in os.listdir(examples_dir)])
+all_examples = set([os.path.splitext(f)[0] for f in os.listdir(examples_dir)
+                    if f.endswith('.ipynb')])
 slow_examples = set(['inhibitory_gating',
                      'izhikevich',
                      'learn_communication_channel',
@@ -88,7 +89,3 @@ def test_nooutput(nb_file):
             check_all(ws.cells)
     else:
         check_all(nb.cells)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, '-v'])

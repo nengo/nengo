@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import nengo
 from nengo.utils.compat import range
@@ -36,8 +35,3 @@ def test_sine_waves(Simulator, plt, seed):
     plt.xlim(right=t[-1])
 
     assert rmse(AB[:len(offset), :], sim.data[p][offset, :]) < 0.2
-
-
-if __name__ == "__main__":
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])
