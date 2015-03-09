@@ -223,14 +223,19 @@ class LIFRate(NeuronType):
 class LIF(LIFRate):
     """Spiking version of the leaky integrate-and-fire (LIF) neuron model."""
 
+    min_voltage = NumberParam(high=0)
     probeable = ['spikes', 'voltage', 'refractory_time']
+
+    def __init__(self, tau_rc=0.02, tau_ref=0.002, min_voltage=0):
+        super(LIF, self).__init__(tau_rc=tau_rc, tau_ref=tau_ref)
+        self.min_voltage = min_voltage
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
 
         # update voltage using accurate exponential integration scheme
         dV = -np.expm1(-dt / self.tau_rc) * (J - voltage)
         voltage += dV
-        voltage[voltage < 0] = 0  # clip values below zero
+        voltage[voltage < self.min_voltage] = self.min_voltage
 
         # update refractory period assuming no spikes for now
         refractory_time -= dt

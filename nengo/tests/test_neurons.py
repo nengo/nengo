@@ -90,6 +90,33 @@ def test_lif(Simulator, plt, rng):
     assert np.abs(np.diff(sim.data[ref_probe])).sum() > 1
 
 
+@pytest.mark.parametrize('min_voltage', [-np.inf, -1, 0])
+def test_lif_min_voltage(Simulator, plt, min_voltage, seed):
+    model = nengo.Network(seed=seed)
+    with model:
+        stim = nengo.Node(lambda t: np.sin(t * 4 * np.pi))
+        ens = nengo.Ensemble(n_neurons=10, dimensions=1,
+                             neuron_type=nengo.LIF(min_voltage=min_voltage))
+        nengo.Connection(stim, ens, synapse=None)
+        p_val = nengo.Probe(ens, synapse=0.01)
+        p_voltage = nengo.Probe(ens.neurons, 'voltage')
+
+    sim = Simulator(model)
+    sim.run(0.5)
+
+    plt.subplot(2, 1, 1)
+    plt.plot(sim.trange(), sim.data[p_val])
+    plt.ylabel("Decoded value")
+    plt.subplot(2, 1, 2)
+    plt.plot(sim.trange(), sim.data[p_voltage])
+    plt.ylabel("Voltage")
+
+    if min_voltage < -100:
+        assert np.min(sim.data[p_voltage]) < -100
+    else:
+        assert np.min(sim.data[p_voltage]) == min_voltage
+
+
 def test_lif_zero_tau_ref(Simulator):
     """If we set tau_ref=0, we should be able to reach firing rate 1/dt."""
     dt = 1e-3
