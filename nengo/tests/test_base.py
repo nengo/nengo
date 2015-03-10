@@ -1,3 +1,6 @@
+import pickle
+import tempfile
+
 import pytest
 
 import nengo
@@ -45,6 +48,17 @@ def test_nengoobjectparam_nonzero():
 
         inst.nin = nout
         inst.nout = nin
+
+
+def test_pickle():
+    with nengo.Network():
+        a = nengo.Ensemble(10, 3)
+
+    with tempfile.TemporaryFile() as f:
+        with pytest.raises(NotImplementedError):
+            pickle.dump(a, f)
+        with pytest.raises(NotImplementedError):
+            pickle.dump(a[:2], f)
 
 
 if __name__ == "__main__":

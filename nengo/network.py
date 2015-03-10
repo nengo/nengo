@@ -94,6 +94,12 @@ class Network(object):
         if add_to_container:
             Network.add(self)
 
+    def __getstate__(self):
+        raise NotImplementedError("Nengo Networks do not support pickling")
+
+    def __setstate__(self, state):
+        raise NotImplementedError("Nengo Networks do not support pickling")
+
     @staticmethod
     def default_config():
         """Constructs a Config object for setting Nengo object defaults."""

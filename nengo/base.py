@@ -68,6 +68,12 @@ class NengoObject(with_metaclass(NetworkMember)):
             e.args = (arg0,) + e.args[1:]
             raise
 
+    def __getstate__(self):
+        raise NotImplementedError("Nengo objects do not support pickling")
+
+    def __setstate__(self, state):
+        raise NotImplementedError("Nengo objects do not support pickling")
+
     @classmethod
     def param_list(cls):
         """Returns a list of parameter names that can be set."""
@@ -113,6 +119,12 @@ class ObjView(object):
         if self.size_in is None and self.size_out is None:
             raise IndexError("Invalid slice '%s' of %s"
                              % (self.slice, self.obj))
+
+    def __getstate__(self):
+        raise NotImplementedError("Nengo objects do not support pickling")
+
+    def __setstate__(self, state):
+        raise NotImplementedError("Nengo objects do not support pickling")
 
     def __len__(self):
         return self.size_out
