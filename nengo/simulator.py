@@ -247,7 +247,7 @@ class Simulator(object):
 
         for key in self.signals:
             if key != '__time__':
-                self.signals.reset(key)
+                key.reset()
 
         for probe in self.model.probes:
             self._probe_outputs[probe] = []

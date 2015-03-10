@@ -125,8 +125,8 @@ class Operator(object):
         that use extra buffers should create them here.
         """
         for sig in self.all_signals:
-            if sig.base not in signals:
-                signals.init(sig.base)
+            if sig not in signals:
+                signals.init(sig)
 
 
 class PreserveValue(Operator):
