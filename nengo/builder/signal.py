@@ -47,12 +47,13 @@ class Signal(object):
     # up in a model.
     assert_named_signals = False
 
-    def __init__(self, value, name=None, base=None):
+    def __init__(self, value, name=None, base=None, slc=None):
         # Make sure we use a C-contiguous array
         self._value = np.array(value, copy=(base is None),
                                order='C', dtype=np.float64)
         self.init_val = np.array(value, copy=True, order='C', dtype=np.float64)
         self._base = base
+        self._slc = slc
         if name is not None:
             self._name = name
         if Signal.assert_named_signals:
@@ -69,7 +70,10 @@ class Signal(object):
         return str(self)
 
     def reset(self):
-        self.value = self.init_val
+        if self._slc is None:
+            self.value = self.init_val
+        else:
+            self.value = self.init_val[self._slc]
 
     @property
     def dtype(self):
@@ -104,17 +108,32 @@ class Signal(object):
 
     @property
     def value(self):
-        return self._value
+        if self._slc is None:
+            return self._value
+        else:
+            return self._value[self._slc]
 
     @value.setter
     def value(self, val):
-        self._value[...] = val
+        if self._slc is None:
+            self._value[...] = val
+        else:
+            self._value[self._slc] = val
 
-    def __getitem__(self, item):
+    def __getitem__(self, sl):
         # indexing/slicing into array
-        return Signal(self._value[item],
-                      name="%s[%s]" % (self.name, item),
-                      base=self)
+
+        if isinstance(sl, (list, np.ndarray)):
+            if self._slc is not None:
+                raise NotImplementedError("Cannot do advanced indexing on "
+                                          "an already indexed signal")
+
+            return Signal(self._value,
+                          name="%s[%s]" % (self.name, sl),
+                          base=self, slc=sl)
+        else:
+            return Signal(self._value[sl],
+                          name="%s[%s]" % (self.name, sl), base=self)
 
     def reshape(self, *shape):
         return Signal(self._value.reshape(*shape),
@@ -124,40 +143,30 @@ class Signal(object):
 
 class SignalDict(dict):
     """Map from Signal -> ndarray
-
-    This dict subclass ensures that the ndarray values aren't overwritten,
-    and instead data are written into them, which ensures that
-    these arrays never get copied, which wastes time and space.
-
-    Use ``init`` to set the ndarray initially.
     """
 
-    def __getitem__(self, obj):
-        """SignalDict overrides __getitem__ for two reasons.
-
-        1. so that scalars are returned as 0-d ndarrays
-        2. so that a SignalView lookup returns a views of its base
+    def __getitem__(self, key):
+        """SignalDict overrides __getitem__ to provide a simple way of
+        organizing signals.
         """
-        if obj not in self:
-            raise KeyError("%s is not in SignalDict,"
-                           "call SignalDict.init first" % obj)
 
-        if isinstance(obj, Signal):
-            return obj.value
-        else:
-            return dict.__getitem__(self, obj)
-
-    def __setitem__(self, key, val):
-        """Ensures that ndarrays stay in the same place in memory.
-
-        Unlike normal dicts, this means that you cannot add a new key
-        to a SignalDict using __setitem__. This is by design, to avoid
-        silent typos when debugging Simulator. Every key must instead
-        be explicitly initialized with SignalDict.init.
-        """
         if key not in self:
             raise KeyError("%s is not in SignalDict,"
-                           "call SignalDict.init first" % key)
+                           " call SignalDict.init first" % key)
+
+        if isinstance(key, Signal):
+            return key.value
+        else:
+            return dict.__getitem__(self, key)
+
+    def __setitem__(self, key, val):
+        """SignalDict overrides __setitem__ to provide a simple way of
+        organizing signals.
+        """
+
+        if key not in self:
+            raise KeyError("%s is not in SignalDict,"
+                           " call SignalDict.init first" % key)
 
         if isinstance(key, Signal):
             key.value = val

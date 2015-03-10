@@ -119,6 +119,8 @@ class Simulator(object):
         self.signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
         for op in self.model.operators:
             op.init_signals(self.signals)
+        for probe in self.model.probes:
+            self.signals.init(self.model.sig[probe]['in'])
 
         self.dg = operator_depencency_graph(self.model.operators)
         self._step_order = [node for node in toposort(self.dg)
