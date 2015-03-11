@@ -7,28 +7,6 @@ Feel free to fork any of our repositories and send a pull request!
 However, note that we ask contributors to sign
 `a copyright assignment agreement <https://github.com/nengo/nengo/blob/master/LICENSE.rst>`_.
 
-Code style
-==========
-
-We adhere to
-`PEP8 <http://www.python.org/dev/peps/pep-0008/#introduction>`_,
-and use ``flake8`` to automatically check for adherence on all commits.
-
-We use ``numpydoc`` and
-`NumPy guidelines <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_
-for docstrings, as they are a bit nicer to read in plain text,
-and produce decent output with Sphinx.
-
-Unit testing
-============
-
-We use `PyTest <http://pytest.org/latest/>`_ to run our unit tests
-on `Travis-CI <https://travis-ci.com/>`_.
-To ensure Python 2/3 compatibility, we test with
-`Tox <https://tox.readthedocs.org/en/latest/>`_.
-
-For more information on running tests, see the README.
-
 Git
 ===
 

@@ -13,3 +13,4 @@ how Nengo builds and simulates brain models.
    nef_minimal
    workflow
    releasing
+   license

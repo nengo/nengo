@@ -28,133 +28,55 @@ Nengo: Large-scale brain modelling in Python
 Installation
 ============
 
-To install Nengo, use::
+Nengo depends on NumPy, and we recommend that you
+install NumPy before installing Nengo.
+If you're not sure how to do this, we recommend using
+`Anaconda <https://store.continuum.io/cshop/anaconda/>`_.
 
-  pip install nengo
+To install Nengo::
 
-Nengo depends on `NumPy <http://www.numpy.org/>`_.
-If you have difficulty installing,
-try installing NumPy first (see below).
+    pip install nengo
 
-Nengo supports Python 2.7 and 3.3+.
+If you have difficulty installing Nengo or NumPy,
+please read the more detailed
+`Nengo installation instructions
+<https://pythonhosted.org/nengo/getting_started.html#installation>`_ first.
 
-Developer install
------------------
+If you'd like to install Nengo from source,
+please read the `development installation instructions
+<https://pythonhosted.org/nengo/dev_introduction.html>`_.
 
-.. code-block:: bash
+Nengo is tested to work on Python 2.7 and 3.4+.
 
-   git clone https://github.com/nengo/nengo.git
-   cd nengo
-   python setup.py develop --user
+Examples
+========
 
-If you're using a ``virtualenv``
-(recommended!) then you can omit the ``--user`` flag.
+Here are six of
+`many examples <https://pythonhosted.org/nengo/examples.html>`_
+showing how Nengo enables the creation and simulation of
+large-scale neural models in few lines of code.
 
-Installing requirements
------------------------
+1. `100 LIF neurons representing a sine wave
+   <https://pythonhosted.org/nengo/examples/many_neurons.html>`_
+2. `Computing the square across a neural connection
+   <https://pythonhosted.org/nengo/examples/squaring.html>`_
+3. `Controlled oscillatory dynamics with a recurrent connection
+   <https://pythonhosted.org/nengo/examples/controlled_oscillator.html>`_
+4. `Learning a communication channel with the PES rule
+   <https://pythonhosted.org/nengo/examples/learn_communication_channel.html>`_
+5. `Simple question answering with the Semantic Pointer Architecture
+   <https://pythonhosted.org/nengo/examples/question.html>`_
+6. `A summary of the principles underlying all of these examples
+   <https://pythonhosted.org/nengo/examples/nef_summary.html>`_
 
-Nengo's main requirement is Numpy
-(and optionally Scipy for better performance).
-Currently, installing Numpy from ``pip`` will install
-an unoptimized (slow) version,
-so it is preferable to install Numpy
-using one of the following methods.
-It is important to install Numpy
-before installing the other requirements.
-
-Anaconda
-^^^^^^^^
-
-Numpy is included as part of the
-[Anaconda](https://store.continuum.io/cshop/anaconda/)
-Python distribution.
-This is a straightforward solution to get Numpy working on
-Windows, Mac, or Linux.
-
-Ubuntu
-^^^^^^
-
-On Ubuntu and derivatives (e.g. Linux Mint),
-Numpy and Scipy can be installed using ``apt-get``:
-
-.. code-block:: bash
-
-   sudo apt-get install python-numpy python-scipy
-
-From source
-^^^^^^^^^^^
-
-Numpy can be installed from source.
-This is the most complicated method,
-but is also the most flexible
-and results in the best performance.
-See the detailed instructions
-[here](http://hunseblog.wordpress.com/2014/09/15/installing-numpy-and-openblas/).
-
-Other requirements
-^^^^^^^^^^^^^^^^^^
-
-To install optional requirements to enable additional features, do
-
-.. code-block:: bash
-
-   pip install -r requirements.txt
-   pip install -r requirements-optional.txt
-
-The testing and documentation requirements
-can be found in similarly named files.
-
-Documentation & Examples
-========================
-
-Documentation and examples can be found at
-`<https://pythonhosted.org/nengo/>`_.
-
-
-Running tests
+Documentation
 =============
 
-One way to verify that your installation is working correctly
-is to run the unit tests. We use ``py.test``,
-so you can run the Nengo unit tests with::
+Usage and API documentation can be found at
+`<https://pythonhosted.org/nengo/>`_.
 
-  py.test --pyargs nengo
+Development
+===========
 
-Running individual tests
-------------------------
-
-Tests in a specific test file can be run by calling ``py.test`` on that file.
-For example::
-
-  py.test nengo/tests/test_node.py
-
-will run all the tests in ``test_node.py``.
-
-Individual tests can be run using the ``-k EXPRESSION`` argument. Only tests
-that match the given substring expression are run. For example::
-
-  py.test nengo/tests/test_node.py -k test_circular
-
-will run any tests with `test_circular` in the name, in the file
-``test_node.py``.
-
-Plotting the results of tests
------------------------------
-
-Many Nengo test routines have the built-in ability to plot test results
-for easier debugging. To enable this feature, set the ``--plots`` flag,
-for example::
-
-  py.test --plots --pyargs nengo
-
-Plots are placed in ``nengo.simulator.plots`` in whatever directory
-``py.test`` is invoked from. You can also set a different directory::
-
-  py.test --plots=path-to-plots --pyargs nengo
-
-Contributing
-============
-
-Please read the ``LICENSE.rst`` file to understand what becoming a contributor entails.
-Once you have read and understood the liscence agreement, add yourself to the ``CONTRIBUTORS.rst`` file.
-Note that all pull requests must be commited by someone else other than the original requestor.
+Information for current or prospective developers can be found
+at `<https://pythonhosted.org/nengo/dev_guide.html>`_.

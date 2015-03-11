@@ -5,39 +5,98 @@ Getting Started
 Installation
 ============
 
-Using the basic functions of Nengo requires ``NumPy``.
-To do any kind of visualization, you will need ``matplotlib``.
-It is highly recommended that ``IPython`` is installed as
-well, in order to fully appreciate the IPython notebook
-examples. For Python beginners, an all-in-one solution
-like `Anaconda <https://store.continuum.io/cshop/anaconda/>`_
-is recommended to install these packages, as well as
-Python itself.
-
-Basic installation
-------------------
-
 To install Nengo, we recommend using ``pip``.
 
 .. code:: bash
 
    pip install nengo
 
-Developer installation
-----------------------
+``pip`` will do its best to install
+all of Nengo's requirements when it installs Nengo.
+However, if anything goes wrong during this process,
+you can install Nengo's requirements manually
+before doing ``pip install nengo`` again.
 
-If you plan to make changes to Nengo,
-you should clone its git repository
-and do a developer (editable) install instead.
+Installing NumPy
+----------------
 
-.. code:: bash
+Nengo's only required dependency is NumPy,
+and we recommend that you install it first.
+The best way to install NumPy depends
+on several factors, such as your operating system.
+Briefly, what we have found to work best
+on each operating system is:
 
-   git clone https://github.com/nengo/nengo.git
-   cd nengo
-   python setup.py develop --user
+- Windows: Use Anaconda_ or
+  the `official installer <https://www.python.org/downloads/>`_ and
+  `unofficial binaries <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_
+- Mac OS X: Use Anaconda_ or Homebrew_
+- Linux: Use a package manager or install from source
 
-If you're using a ``virtualenv``
-(recommended!) then you can omit the ``--user`` flag.
+For more options, see
+`SciPy.org's installation page <http://www.scipy.org/install.html>`_.
+For our recommended options, read on.
+
+Anaconda
+^^^^^^^^
+
+If you're new to Python and just want to get up and running,
+Anaconda_ is the best way to get started.
+Anaconda provides an all-in-one solution
+that will install Python, NumPy,
+and other optional Nengo dependencies.
+It works on all operating systems (Windows, Mac, Linux)
+and does not require administrator privileges.
+It includes GUI tools,
+as well as a robust command line tool, ``conda``,
+for managing your Python installation.
+
+Package managers
+^^^^^^^^^^^^^^^^
+
+If you are comfortable with the command line,
+operating systems other than Windows
+have a package manager that can install Python and NumPy.
+
+- **Mac OS X:** Homebrew_ has excellent Python support.
+  After installing Homebrew, ``brew install python`` and ``pip install numpy``.
+- **Linux:** Linux distributions come with a package manager
+  capable of installing Python and NumPy.
+  In Debian, Ubuntu, and other distributions with ``apt`` use:
+  ``sudo apt-get install python-numpy``.
+  In Fedora and others distributions with ``yum`` use:
+  ``sudo yum install python-numpy``.
+  For other package managers,
+  try searching the package list for ``numpy``.
+
+From source
+^^^^^^^^^^^
+
+If speed is an issue
+and you know your way around a terminal,
+installing NumPy from source
+is flexible and performant.
+See the detailed instructions
+`here <http://hunseblog.wordpress.com/2014/09/15/installing-numpy-and-openblas/>`_.
+
+Installing other packages
+-------------------------
+
+While NumPy is the only hard dependency,
+some optional Nengo features require other packages.
+These can be installed either through
+Anaconda, a package manager, or through
+Python's own package manager, ``pip``.
+
+- Additional decoder solvers and other speedups
+  are tracked in ``requirements-optional.txt``.
+- Running the test suite requires the packages
+  listed in ``requirements-test.txt``.
+- Building the documentation requires the packages
+  listed in ``requirements-test.txt`` and ``requirements-docs.txt``.
+
+.. _Anaconda: https://store.continuum.io/cshop/anaconda/
+.. _Homebrew: http://brew.sh/
 
 Usage
 =====
