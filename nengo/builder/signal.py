@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 
+import nengo.utils.numpy as npext
 from nengo.utils.compat import StringIO
 
 
@@ -87,6 +88,10 @@ class SignalView(object):
     @property
     def ndim(self):
         return len(self.shape)
+
+    @property
+    def readonly(self):
+        return not self.value.flags.writeable
 
     @property
     def size(self):
@@ -404,8 +409,10 @@ class SignalDict(dict):
     def init(self, signal):
         """Set up a permanent mapping from signal -> ndarray."""
         # Make a copy of base.value to start
-        dict.__setitem__(self, signal.base, np.array(signal.base.value))
+        val = npext.array(signal.base.value, readonly=signal.readonly)
+        dict.__setitem__(self, signal.base, val)
 
     def reset(self, signal):
         """Reset ndarray to the base value of the signal that maps to it"""
-        self[signal] = signal.value
+        if not signal.readonly:
+            self[signal] = signal.value

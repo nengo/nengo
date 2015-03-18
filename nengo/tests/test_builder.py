@@ -231,8 +231,8 @@ def test_commonsig_readonly(RefSimulator):
     net = nengo.Network(label="test_commonsig")
     sim = RefSimulator(net)
     for sig in itervalues(sim.model.sig['common']):
-        sim.signals.init(sig, sig.value)
-        with pytest.raises(ValueError):
+        sim.signals.init(sig)
+        with pytest.raises((ValueError, RuntimeError)):
             sim.signals[sig] = np.array([-1])
-        with pytest.raises(ValueError):
+        with pytest.raises((ValueError, RuntimeError)):
             sim.signals[sig][...] = np.array([-1])
