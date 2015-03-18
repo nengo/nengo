@@ -144,7 +144,7 @@ class Connection(NengoObject):
     But, we could create either of these two connections.
 
         nengo.Connection(node[0], ensemble)
-        nengo.Connection(ndoe[1], ensemble)
+        nengo.Connection(node[1], ensemble)
 
     Parameters
     ----------
