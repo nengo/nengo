@@ -1,6 +1,8 @@
 from collections import defaultdict
 import itertools
 
+import numpy as np
+
 from .compat import iteritems
 from .graphs import add_edges
 from .stdlib import groupby
@@ -94,11 +96,11 @@ def validate_ops(sets, ups, incs):
     # -- assert that no two views are both set and aliased
     for _, base_group in groupby(sets, lambda x: x.base, hashable=True):
         for node, other in itertools.combinations(base_group, 2):
-            assert not node.shares_memory_with(other), (
+            assert not np.may_share_memory(node.value, other.value), (
                 "%s shares memory with %s" % (node, other))
 
     # -- assert that no two views are both updated and aliased
     for _, base_group in groupby(ups, lambda x: x.base, hashable=True):
         for node, other in itertools.combinations(base_group, 2):
-            assert not node.shares_memory_with(other), (
+            assert not np.may_share_memory(node.value, other.value), (
                 "%s shares memory with %s" % (node, other))

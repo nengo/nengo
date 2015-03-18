@@ -166,6 +166,7 @@ def test_signaldict():
 
     # __getitem__ handles views
     two_d_view = two_d[0, :]
+    signaldict.init(two_d_view)
     assert np.allclose(signaldict[two_d_view], np.array([1.]))
     assert signaldict[two_d_view].shape == (1,)
 
@@ -191,28 +192,6 @@ def test_signaldict():
         assert "%s %s" % (repr(k), repr(signaldict[k])) in str(signaldict)
 
 
-def test_signaldict_reset():
-    """Tests SignalDict's reset function."""
-    signaldict = SignalDict()
-    two_d = Signal([[1], [1]])
-    signaldict.init(two_d)
-
-    two_d_view = two_d[0, :]
-    signaldict[two_d_view] = -0.5
-    assert np.allclose(signaldict[two_d], np.array([[-0.5], [1]]))
-
-    signaldict[two_d] = np.array([[-1], [-1]])
-    assert np.allclose(signaldict[two_d], np.array([[-1], [-1]]))
-    assert np.allclose(signaldict[two_d_view], np.array([-1]))
-
-    signaldict.reset(two_d_view)
-    assert np.allclose(signaldict[two_d_view], np.array([1]))
-    assert np.allclose(signaldict[two_d], np.array([[1], [-1]]))
-
-    signaldict.reset(two_d)
-    assert np.allclose(signaldict[two_d], np.array([[1], [1]]))
-
-
 def test_signal_reshape():
     """Tests Signal.reshape"""
     three_d = Signal(np.ones((2, 2, 2)))
@@ -231,8 +210,7 @@ def test_commonsig_readonly(RefSimulator):
     net = nengo.Network(label="test_commonsig")
     sim = RefSimulator(net)
     for sig in itervalues(sim.model.sig['common']):
-        sim.signals.init(sig, sig.value)
-        with pytest.raises(ValueError):
+        with pytest.raises((ValueError, RuntimeError)):
             sim.signals[sig] = np.array([-1])
-        with pytest.raises(ValueError):
+        with pytest.raises((ValueError, RuntimeError)):
             sim.signals[sig][...] = np.array([-1])

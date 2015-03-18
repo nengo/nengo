@@ -12,6 +12,10 @@ from nengo.utils.compat import iteritems
 
 
 def conn_probe(model, probe):
+    # Connection probes create a connection from the target, and probe
+    # the resulting signal (used when you want to probe the default
+    # output of an object, which may not have a predefined signal)
+
     conn = Connection(probe.target, probe, synapse=probe.synapse,
                       solver=probe.solver, add_to_container=False)
 
@@ -26,11 +30,13 @@ def conn_probe(model, probe):
     model.build(conn)
 
 
-def synapse_probe(model, key, probe):
+def signal_probe(model, key, probe):
+    # Signal probes directly probe a target signal
+
     try:
         sig = model.sig[probe.obj][key]
     except IndexError:
-        raise ValueError("Attribute '%s' is not probable on %s."
+        raise ValueError("Attribute '%s' is not probeable on %s."
                          % (key, probe.obj))
 
     if probe.slice is not None:
@@ -52,7 +58,7 @@ probemap = {
     Node: {'output': None},
     Connection: {'output': 'out',
                  'input': 'in'},
-    LearningRule: {},  # make LR signals probable, but no mapping required
+    LearningRule: {},  # make LR signals probeable, but no mapping required
 }
 
 
@@ -69,7 +75,7 @@ def build_probe(model, probe):
     if key is None:
         conn_probe(model, probe)
     else:
-        synapse_probe(model, key, probe)
+        signal_probe(model, key, probe)
 
     model.probes.append(probe)
 
