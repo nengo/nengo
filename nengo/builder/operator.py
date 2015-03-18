@@ -178,11 +178,13 @@ class Reset(Operator):
 class Copy(Operator):
     """Assign the value of one signal to another."""
 
-    def __init__(self, dst, src, as_update=False, tag=None):
+    def __init__(self, dst, src, as_update=False, tag=None,
+                 pre_slice=None):
         self.dst = dst
         self.src = src
         self.as_update = as_update
         self.tag = tag
+        self.slice = pre_slice
 
         self.sets = [] if as_update else [dst]
         self.incs = []
@@ -197,8 +199,12 @@ class Copy(Operator):
         dst = signals[self.dst]
         src = signals[self.src]
 
-        def step():
-            dst[...] = src
+        if self.slice is None:
+            def step():
+                dst[...] = src
+        else:
+            def step():
+                dst[...] = src[self.slice]
         return step
 
 

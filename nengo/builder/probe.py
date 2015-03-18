@@ -1,7 +1,7 @@
 import numpy as np
 
 from nengo.builder.builder import Builder
-from nengo.builder.operator import Reset
+from nengo.builder.operator import Reset, Copy
 from nengo.builder.signal import Signal
 from nengo.builder.synapses import filtered_signal
 from nengo.connection import Connection, LearningRule
@@ -40,7 +40,11 @@ def signal_probe(model, key, probe):
                          % (key, probe.obj))
 
     if probe.slice is not None:
-        sig = sig[probe.slice]
+        model.sig[probe]['slice_in'] = (
+            Signal(np.zeros_like(sig.value[probe.slice])))
+        model.add_op(Copy(model.sig[probe]['slice_in'], sig,
+                          as_update=True, pre_slice=probe.slice))
+        sig = model.sig[probe]['slice_in']
 
     if probe.synapse is None:
         model.sig[probe]['in'] = sig
