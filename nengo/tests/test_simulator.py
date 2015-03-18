@@ -22,11 +22,11 @@ def test_steps(RefSimulator):
 def test_time_steps(RefSimulator):
     m = nengo.Network(label="test_time_steps")
     sim = RefSimulator(m)
-    assert np.allclose(sim.signals["__time__"], 0.00)
+    assert np.allclose(sim.time, 0.00)
     sim.step()
-    assert np.allclose(sim.signals["__time__"], 0.001)
+    assert np.allclose(sim.time, 0.001)
     sim.step()
-    assert np.allclose(sim.signals["__time__"], 0.002)
+    assert np.allclose(sim.time, 0.002)
 
 
 def test_time_absolute(Simulator):
@@ -67,15 +67,15 @@ def test_signal_indexing_1(RefSimulator):
     ]
 
     sim = RefSimulator(None, model=m)
-    sim.signals[three] = np.asarray([1, 2, 3])
+    three.value = np.asarray([1, 2, 3])
     sim.step()
-    assert np.all(sim.signals[one] == 1)
-    assert np.all(sim.signals[two] == [4, 6])
-    assert np.all(sim.signals[three] == [3, 2, 1])
+    assert np.all(one.value == 1)
+    assert np.all(two.value == [4, 6])
+    assert np.all(three.value == [3, 2, 1])
     sim.step()
-    assert np.all(sim.signals[one] == 3)
-    assert np.all(sim.signals[two] == [4, 2])
-    assert np.all(sim.signals[three] == [1, 2, 3])
+    assert np.all(one.value == 3)
+    assert np.all(two.value == [4, 2])
+    assert np.all(three.value == [1, 2, 3])
 
 
 def test_simple_pyfunc(RefSimulator):
@@ -83,7 +83,7 @@ def test_simple_pyfunc(RefSimulator):
     time = Signal(np.zeros(1), name="time")
     sig = Signal(np.zeros(1), name="sig")
     m = Model(dt=dt)
-    sig_in, sig_out = build_pyfunc(m, lambda t, x: np.sin(x), True, 1, 1, None)
+    sig_in, sig_out = build_pyfunc(m, lambda t, x: np.sin(x), time, 1, 1, None)
     m.operators += [
         Reset(sig),
         DotInc(Signal([[1.0]]), time, sig_in),
@@ -95,8 +95,8 @@ def test_simple_pyfunc(RefSimulator):
     for i in range(5):
         sim.step()
         t = i * dt
-        assert np.allclose(sim.signals[sig], np.sin(t))
-        assert np.allclose(sim.signals[time], t + dt)
+        assert np.allclose(sig.value, np.sin(t))
+        assert np.allclose(time.value, t + dt)
 
 
 def test_probedict():
@@ -124,7 +124,7 @@ def test_noise(RefSimulator, seed):
     samples = np.zeros((100, n))
     for i in range(100):
         sim.step()
-        samples[i] = sim.signals[noise]
+        samples[i] = noise.value
 
     h, xedges = np.histogram(samples.flat, bins=51)
     x = 0.5 * (xedges[:-1] + xedges[1:])

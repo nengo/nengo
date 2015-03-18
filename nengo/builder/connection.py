@@ -91,7 +91,7 @@ def build_connection(model, conn):
             sig_in, signal = build_pyfunc(
                 fn=(lambda x: x[conn.pre_slice]) if conn.function is None else
                    (lambda x: conn.function(x[conn.pre_slice])),
-                t_in=False,
+                t_in=None,
                 n_in=model.sig[conn]['in'].size,
                 n_out=conn.size_mid,
                 label=str(conn),

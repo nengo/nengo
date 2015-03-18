@@ -24,11 +24,11 @@ class SimBCM(Operator):
         self.reads = [pre_filtered, post_filtered, theta]
         self.updates = [delta]
 
-    def make_step(self, signals, dt, rng):
-        pre_filtered = signals[self.pre_filtered]
-        post_filtered = signals[self.post_filtered]
-        theta = signals[self.theta]
-        delta = signals[self.delta]
+    def make_step(self, dt, rng):
+        pre_filtered = self.pre_filtered.value
+        post_filtered = self.post_filtered.value
+        theta = self.theta.value
+        delta = self.delta.value
         alpha = self.learning_rate * dt
 
         def step():
@@ -53,11 +53,11 @@ class SimOja(Operator):
         self.reads = [pre_filtered, post_filtered, transform]
         self.updates = [delta]
 
-    def make_step(self, signals, dt, rng):
-        transform = signals[self.transform]
-        pre_filtered = signals[self.pre_filtered]
-        post_filtered = signals[self.post_filtered]
-        delta = signals[self.delta]
+    def make_step(self, dt, rng):
+        transform = self.transform.value
+        pre_filtered = self.pre_filtered.value
+        post_filtered = self.post_filtered.value
+        delta = self.delta.value
         alpha = self.learning_rate * dt
         beta = self.beta
 

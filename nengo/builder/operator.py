@@ -117,17 +117,6 @@ class Operator(object):
     def all_signals(self):
         return self.reads + self.sets + self.incs + self.updates
 
-    def init_signals(self, signals):
-        """Initialize simulator.signals
-
-        Install any buffers into the signals view that
-        this operator will need. Classes for neurons
-        that use extra buffers should create them here.
-        """
-        for sig in self.all_signals:
-            if sig not in signals:
-                signals.init(sig)
-
 
 class PreserveValue(Operator):
     """Marks a signal as `set` for the graph checker.
@@ -145,7 +134,7 @@ class PreserveValue(Operator):
         self.reads = []
         self.updates = []
 
-    def make_step(self, signals, dt, rng):
+    def make_step(self, dt, rng):
         def step():
             pass
         return step
@@ -166,8 +155,8 @@ class Reset(Operator):
     def __str__(self):
         return 'Reset(%s)' % str(self.dst)
 
-    def make_step(self, signals, dt, rng):
-        target = signals[self.dst]
+    def make_step(self, dt, rng):
+        target = self.dst.value
         value = self.value
 
         def step():
@@ -195,9 +184,9 @@ class Copy(Operator):
         return 'Copy(%s -> %s, as_update=%s)' % (
             str(self.src), str(self.dst), self.as_update)
 
-    def make_step(self, signals, dt, rng):
-        dst = signals[self.dst]
-        src = signals[self.src]
+    def make_step(self, dt, rng):
+        dst = self.dst.value
+        src = self.src.value
 
         if self.slice is None:
             def step():
@@ -226,10 +215,10 @@ class ElementwiseInc(Operator):
         return 'ElementwiseInc(%s, %s -> %s "%s")' % (
             str(self.A), str(self.X), str(self.Y), self.tag)
 
-    def make_step(self, signals, dt, rng):
-        A = signals[self.A]
-        X = signals[self.X]
-        Y = signals[self.Y]
+    def make_step(self, dt, rng):
+        A = self.A.value
+        X = self.X.value
+        Y = self.Y.value
 
         # check broadcasting shapes
         Ashape = npext.broadcast_shape(A.shape, 2)
@@ -303,10 +292,10 @@ class DotInc(Operator):
         return 'DotInc(%s, %s -> %s "%s")' % (
             self.A, self.X, self.Y, self.tag)
 
-    def make_step(self, signals, dt, rng):
-        X = signals[self.X]
-        A = signals[self.A]
-        Y = signals[self.Y]
+    def make_step(self, dt, rng):
+        X = self.X.value
+        A = self.A.value
+        Y = self.Y.value
         reshape = reshape_dot(A, X, Y, self.tag)
 
         def step():
@@ -327,8 +316,8 @@ class SimNoise(Operator):
         self.reads = []
         self.updates = []
 
-    def make_step(self, signals, dt, rng):
-        Y = signals[self.output]
+    def make_step(self, dt, rng):
+        Y = self.output.value
         sample_f = self.process.make_sample(dt=dt, d=Y.size, rng=rng)
         Yview = Y.reshape(-1)
 

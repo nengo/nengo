@@ -19,9 +19,9 @@ class SimSynapse(Operator):
         self.reads = [input]
         self.updates = [output]
 
-    def make_step(self, signals, dt, rng):
-        input = signals[self.input]
-        output = signals[self.output]
+    def make_step(self, dt, rng):
+        input = self.input.value
+        output = self.output.value
         step_f = self.synapse.make_step(dt, output)
 
         def step(input=input):

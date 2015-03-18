@@ -21,10 +21,10 @@ class SimNeurons(Operator):
         self.reads = [J]
         self.updates = []
 
-    def make_step(self, signals, dt, rng):
-        J = signals[self.J]
-        output = signals[self.output]
-        states = [signals[state] for state in self.states]
+    def make_step(self, dt, rng):
+        J = self.J.value
+        output = self.output.value
+        states = [state.value for state in self.states]
 
         def step():
             self.neurons.step_math(dt, J, output, *states)

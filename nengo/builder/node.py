@@ -23,20 +23,19 @@ class SimPyFunc(Operator):
     def __str__(self):
         return "SimPyFunc(%s -> %s '%s')" % (self.x, self.output, self.fn)
 
-    def make_step(self, signals, dt, rng):
-        output = signals[self.output] if self.output is not None else None
+    def make_step(self, dt, rng):
+        output = self.output.value if self.output is not None else None
         fn = self.fn
         t_in = self.t_in
-        t_sig = signals['__time__']
 
         args = []
         if self.x is not None:
-            x_sig = signals[self.x].view()
+            x_sig = self.x.value.view()
             x_sig.flags.writeable = False
             args += [x_sig]
 
         def step():
-            y = fn(t_sig.item(), *args) if t_in else fn(*args)
+            y = fn(t_in.value.item(), *args) if t_in is not None else fn(*args)
             if output is not None:
                 if y is None:
                     raise ValueError(
@@ -81,7 +80,7 @@ def build_node(model, node):
     else:
         sig_in, sig_out = build_pyfunc(model=model,
                                        fn=node.output,
-                                       t_in=True,
+                                       t_in=model.sig['__time__'],
                                        n_in=node.size_in,
                                        n_out=node.size_out,
                                        label="%s.pyfn" % node)

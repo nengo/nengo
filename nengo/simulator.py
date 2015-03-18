@@ -13,7 +13,7 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder import Model
-from nengo.builder.signal import SignalDict
+from nengo.builder.signal import Signal
 from nengo.cache import get_default_decoder_cache
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
@@ -106,6 +106,9 @@ class Simulator(object):
         else:
             self.model = model
 
+        self._time = Signal(np.asarray(0.0, dtype=np.float64), name="time")
+        self.model.sig['__time__'] = self._time
+
         if network is not None:
             # Build the network into the model
             self.model.build(network)
@@ -115,15 +118,11 @@ class Simulator(object):
         self.seed = np.random.randint(npext.maxint) if seed is None else seed
         self.rng = np.random.RandomState(self.seed)
 
-        # -- map from Signal.base -> ndarray
-        self.signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
-        for op in self.model.operators:
-            op.init_signals(self.signals)
-
         self.dg = operator_depencency_graph(self.model.operators)
         self._step_order = [node for node in toposort(self.dg)
                             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self.signals, dt, self.rng)
+
+        self._steps = [node.make_step(dt, self.rng)
                        for node in self._step_order]
 
         # Add built states to the probe dictionary
@@ -148,7 +147,8 @@ class Simulator(object):
     @property
     def time(self):
         """The current time of the simulator"""
-        return self.signals['__time__'].copy()
+
+        return self._time.value.copy()
 
     def trange(self, dt=None):
         """Create a range of times matching probe data.
@@ -172,14 +172,14 @@ class Simulator(object):
             period = (1 if probe.sample_every is None else
                       probe.sample_every / self.dt)
             if self.n_steps % period < 1:
-                tmp = self.signals[self.model.sig[probe]['in']].copy()
+                tmp = self.model.sig[probe]['in'].value.copy()
                 self._probe_outputs[probe].append(tmp)
 
     def step(self):
         """Advance the simulator by `self.dt` seconds.
         """
         self.n_steps += 1
-        self.signals['__time__'][...] = self.n_steps * self.dt
+        self._time.value = self.n_steps * self.dt
 
         old_err = np.seterr(invalid='raise', divide='ignore')
         try:
@@ -243,11 +243,9 @@ class Simulator(object):
     def reset(self):
         """Reset the simulator state."""
         self.n_steps = 0
-        self.signals['__time__'][...] = 0
+        self._time.value = 0
 
-        for key in self.signals:
-            if key != '__time__':
-                key.reset()
+        self.model.reset()
 
         for probe in self.model.probes:
             self._probe_outputs[probe] = []

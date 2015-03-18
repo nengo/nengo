@@ -7,7 +7,7 @@ import nengo
 from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc, PreserveValue
-from nengo.builder.signal import Signal, SignalDict
+from nengo.builder.signal import Signal
 from nengo.utils.compat import itervalues
 
 
@@ -126,70 +126,54 @@ def test_signal_init_values(RefSimulator):
                     DotInc(zeroarray, one, array)]
 
     sim = RefSimulator(None, model=m)
-    assert sim.signals[zero][0] == 0
-    assert sim.signals[one][0] == 1
-    assert sim.signals[five][0] == 5.0
-    assert np.all(np.array([1, 2, 3]) == sim.signals[array])
+    assert zero.value[0] == 0
+    assert one.value[0] == 1
+    assert five.value[0] == 5.0
+    assert np.all(np.array([1, 2, 3]) == array.value)
     sim.step()
-    assert sim.signals[zero][0] == 0
-    assert sim.signals[one][0] == 1
-    assert sim.signals[five][0] == 5.0
-    assert np.all(np.array([1, 2, 3]) == sim.signals[array])
+    assert zero.value[0] == 0
+    assert one.value[0] == 1
+    assert five.value[0] == 5.0
+    assert np.all(np.array([1, 2, 3]) == array.value)
 
 
-def test_signaldict():
-    """Tests SignalDict's dict overrides."""
-    signaldict = SignalDict()
+def test_signal_views():
+    """Tests Signal view/slicing properties."""
 
     scalar = Signal(1)
 
-    # Both __getitem__ and __setitem__ raise KeyError
-    with pytest.raises(KeyError):
-        signaldict[scalar]
-    with pytest.raises(KeyError):
-        signaldict[scalar] = np.array(1.)
-
-    signaldict.init(scalar)
-    assert np.allclose(signaldict[scalar], np.array(1.))
+    assert np.allclose(scalar.value, np.array(1.))
     # __getitem__ handles scalars
-    assert signaldict[scalar].shape == ()
+    assert scalar.value.shape == ()
 
     one_d = Signal([1])
-    signaldict.init(one_d)
-    assert np.allclose(signaldict[one_d], np.array([1.]))
-    assert signaldict[one_d].shape == (1,)
+    assert np.allclose(one_d.value, np.array([1.]))
+    assert one_d.value.shape == (1,)
 
     two_d = Signal([[1], [1]])
-    signaldict.init(two_d)
-    assert np.allclose(signaldict[two_d], np.array([[1.], [1.]]))
-    assert signaldict[two_d].shape == (2, 1)
+    assert np.allclose(two_d.value, np.array([[1.], [1.]]))
+    assert two_d.value.shape == (2, 1)
 
     # __getitem__ handles views
     two_d_view = two_d[0, :]
-    signaldict.init(two_d_view)
-    assert np.allclose(signaldict[two_d_view], np.array([1.]))
-    assert signaldict[two_d_view].shape == (1,)
+    assert np.allclose(two_d_view.value, np.array([1.]))
+    assert two_d_view.value.shape == (1,)
 
     # __setitem__ ensures memory location stays the same
-    memloc = signaldict[scalar].__array_interface__['data'][0]
-    signaldict[scalar] = np.array(0.)
-    assert np.allclose(signaldict[scalar], np.array(0.))
-    assert signaldict[scalar].__array_interface__['data'][0] == memloc
+    memloc = scalar.value.__array_interface__['data'][0]
+    scalar.value = np.array(0.)
+    assert np.allclose(scalar.value, np.array(0.))
+    assert scalar.value.__array_interface__['data'][0] == memloc
 
-    memloc = signaldict[one_d].__array_interface__['data'][0]
-    signaldict[one_d] = np.array([0.])
-    assert np.allclose(signaldict[one_d], np.array([0.]))
-    assert signaldict[one_d].__array_interface__['data'][0] == memloc
+    memloc = one_d.value.__array_interface__['data'][0]
+    one_d.value = np.array([0.])
+    assert np.allclose(one_d.value, np.array([0.]))
+    assert one_d.value.__array_interface__['data'][0] == memloc
 
-    memloc = signaldict[two_d].__array_interface__['data'][0]
-    signaldict[two_d] = np.array([[0.], [0.]])
-    assert np.allclose(signaldict[two_d], np.array([[0.], [0.]]))
-    assert signaldict[two_d].__array_interface__['data'][0] == memloc
-
-    # __str__ pretty-prints signals and current values
-    # Order not guaranteed for dicts, so we have to loop
-    for k in signaldict:
-        assert "%s %s" % (repr(k), repr(signaldict[k])) in str(signaldict)
+    memloc = two_d.value.__array_interface__['data'][0]
+    two_d.value = np.array([[0.], [0.]])
+    assert np.allclose(two_d.value, np.array([[0.], [0.]]))
+    assert two_d.value.__array_interface__['data'][0] == memloc
 
 
 def test_signal_reshape():
@@ -211,6 +195,6 @@ def test_commonsig_readonly(RefSimulator):
     sim = RefSimulator(net)
     for sig in itervalues(sim.model.sig['common']):
         with pytest.raises((ValueError, RuntimeError)):
-            sim.signals[sig] = np.array([-1])
+            sig.value = np.array([-1])
         with pytest.raises((ValueError, RuntimeError)):
-            sim.signals[sig][...] = np.array([-1])
+            sig.value[...] = np.array([-1])

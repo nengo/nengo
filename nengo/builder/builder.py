@@ -3,7 +3,6 @@ import warnings
 
 import numpy as np
 
-from nengo.builder.signal import SignalDict
 from nengo.cache import NoDecoderCache
 
 
@@ -26,6 +25,7 @@ class Model(object):
         self.seeds = {}
         self.probes = []
         self.sig = collections.defaultdict(dict)
+        self.all_sigs = []
 
     def __str__(self):
         return "Model: %s" % self.label
@@ -35,14 +35,20 @@ class Model(object):
 
     def add_op(self, op):
         self.operators.append(op)
-        # Fail fast by trying make_step with a temporary sigdict
-        signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
-        op.init_signals(signals)
-        op.make_step(signals, self.dt, np.random)
+        # Fail fast by trying make_step
+        op.make_step(self.dt, np.random)
+
+        for s in op.all_signals:
+            if s not in self.all_sigs:
+                self.all_sigs += [s]
 
     def has_built(self, obj):
         """Returns true iff obj has been processed by build."""
         return obj in self.params
+
+    def reset(self):
+        for s in self.all_sigs:
+            s.reset()
 
 
 class Builder(object):
