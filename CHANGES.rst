@@ -22,6 +22,18 @@ Release History
 2.0.2 (unreleased)
 ==================
 
+**Behavioural changes**
+
+- The IPython notebook progress bar has to be activated with
+  ``%load_ext nengo.ipynb``.
+  (`#693 <https://github.com/nengo/nengo/pull/693>`_)
+
+**Improvements**
+
+- Added ``[progress]`` section to ``nengorc`` which allows setting
+  ``progress_bar`` and ``updater``.
+  (`#693 <https://github.com/nengo/nengo/pull/693>`_)
+
 2.0.1 (January 27, 2015)
 ========================
 
