@@ -68,31 +68,6 @@ except ImportError:
         return None
 
 
-def in_ipynb():
-    """Determines if code is executed in an IPython notebook.
-
-    Returns
-    -------
-    bool
-       ``True`` if the code is executed in an IPython notebook, otherwise
-       ``False``.
-
-    Notes
-    -----
-    It is possible to connect to a kernel started from an IPython notebook
-    from outside of the notebook. Thus, this function might return ``True``
-    even though the code is not running in an IPython notebook.
-    """
-    if get_ipython() is not None:
-        cfg = get_ipython().config
-        app_key = 'IPKernelApp'
-        if 'parent_appname' not in cfg[app_key]:
-            app_key = 'KernelApp'  # was used by old IPython versions
-        if cfg[app_key].get('parent_appname') == 'ipython-notebook':
-            return True
-    return False
-
-
 def has_ipynb_widgets():
     """Determines whether IPython widgets are available.
 

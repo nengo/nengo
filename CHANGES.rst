@@ -76,6 +76,9 @@ Release History
   vector).
   (`#775 <https://github.com/nengo/nengo/issues/775>`_,
   `#782 <https://github.com/nengo/nengo/pull/782>`_)
+- The IPython notebook progress bar has to be activated with
+  ``%load_ext nengo.ipynb``.
+  (`#693 <https://github.com/nengo/nengo/pull/693>`_)
 
 **Improvements**
 
@@ -112,6 +115,9 @@ Release History
   `#791 <https://github.com/nengo/nengo/pull/791>`_)
 - The ``Product`` network is now more accurate.
   (`#651 <https://github.com/nengo/nengo/pull/651>`_)
+- Added ``[progress]`` section to ``nengorc`` which allows setting
+  ``progress_bar`` and ``updater``.
+  (`#693 <https://github.com/nengo/nengo/pull/693>`_)
 
 **Bug fixes**
 

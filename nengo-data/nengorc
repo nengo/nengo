@@ -45,3 +45,19 @@
 
 # Path where the cached decoders will be stored. (string)
 #path: ~/.cache/nengo/decoders  # Linux default
+
+
+# Settings for the progress bar
+[progress]
+
+# Progress bar to use. Can be 'none' (disable the progress bar), 'auto'
+# (automatically show the progress bar for long running simulations), or the
+# name of some class implementing the nengo.utils.progress.ProgressBar
+# interface (e.g., 'nengo.utils.progress.ProgressBar').
+#progress_bar: auto
+
+# Progress updating scheme. Can be 'auto' (automatically determine the updating
+# scheme) or the name of some class implementing the
+# nengo.utils.progress.ProgressUpdater interface (e.g.,
+# 'nengo.utils.progress.UpdateEveryT').
+#updater: auto

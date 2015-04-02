@@ -17,7 +17,7 @@ matrix:
     - env: >
         PYTHON="2.6"
         CONDA_DEPS="$CONDA_DEPS ordereddict pygments"
-        PIP_DEPS="$PIP_DEPS counter IPython==1.2.1"
+        PIP_DEPS="$PIP_DEPS counter importlib IPython==1.2.1"
     - env: >
         PYTHON="2.7"
         SETUP_CMD="test -a '--cov-config .coveragerc --cov nengo nengo -n 2 -v'"

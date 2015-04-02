@@ -37,7 +37,11 @@ RC_DEFAULTS = {
         'enabled': True,
         'readonly': False,
         'size': '512 MB',
-        'path': nengo.utils.paths.decoder_cache_dir
+        'path': nengo.utils.paths.decoder_cache_dir,
+    },
+    'progress': {
+        'updater': 'auto',
+        'progress_bar': 'auto',
     }
 }
 
