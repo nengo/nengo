@@ -182,6 +182,10 @@ Release History
   evaluate the filter response to sine waves of given frequencies. This can
   be used to create Bode plots, for example.
   (`#945 <https://github.com/nengo/nengo/pull/945>`_)
+- ``nengo.spa.Vocabulary`` objects now have a ``readonly`` attribute that
+  can be used to disallow adding new semantic pointers. Vocabulary subsets
+  are read-only by default.
+  (`#699 <https://github.com/nengo/nengo/pull/699>`_)
 
 **Bug fixes**
 

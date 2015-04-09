@@ -30,7 +30,7 @@ def test_include_pairs(rng):
     v['D']
     assert v.key_pairs == ['A*B', 'A*C', 'B*C', 'A*D', 'B*D', 'C*D']
 
-    v = Vocabulary(12, include_pairs=True)
+    v = Vocabulary(12, include_pairs=True, rng=rng)
     v['A']
     v['B']
     v['C']
@@ -108,15 +108,56 @@ def test_transform(rng):
     A = v1.parse('A')
     B = v1.parse('B')
     C = v1.parse('C')
+
+    # Test transform from v1 to v2 (full vocbulary)
+    # Expected: np.dot(t, A.v) ~= v2.parse('A')
+    # Expected: np.dot(t, B.v) ~= v2.parse('B')
+    # Expected: np.dot(t, C.v) ~= v2.parse('C')
     t = v1.transform_to(v2)
 
     assert v2.parse('A').compare(np.dot(t, A.v)) > 0.95
     assert v2.parse('C+B').compare(np.dot(t, C.v + B.v)) > 0.9
 
+    # Test transform from v1 to v2 (only 'A' and 'B')
     t = v1.transform_to(v2, keys=['A', 'B'])
 
     assert v2.parse('A').compare(np.dot(t, A.v)) > 0.95
-    assert v2.parse('B').compare(np.dot(t, B.v)) > 0.95
+    assert v2.parse('B').compare(np.dot(t, C.v + B.v)) > 0.95
+
+    # Test transform_to when either vocabulary is read-only
+    v1.parse('D')
+    v2.parse('E')
+
+    # When both are read-only, transform_to shouldn't add any new items to
+    # either and the transform should be using keys that are the intersection
+    # of both vocabularies
+    v1.readonly = True
+    v2.readonly = True
+
+    t = v1.transform_to(v2)
+
+    assert v1.keys == ['A', 'B', 'C', 'D']
+    assert v2.keys == ['A', 'B', 'C', 'E']
+
+    # When one is read-only, transform_to should add any new items to the non
+    # read-only vocabulary
+    v1.readonly = False
+    v2.readonly = True
+
+    t = v1.transform_to(v2)
+
+    assert v1.keys == ['A', 'B', 'C', 'D', 'E']
+    assert v2.keys == ['A', 'B', 'C', 'E']
+
+    # When one is read-only, transform_to should add any new items to the non
+    # read-only vocabulary
+    v1.readonly = True
+    v2.readonly = False
+
+    t = v1.transform_to(v2)
+
+    assert v1.keys == ['A', 'B', 'C', 'D', 'E']
+    assert v2.keys == ['A', 'B', 'C', 'E', 'D']
 
 
 def test_prob_cleanup(rng):
@@ -141,3 +182,67 @@ def test_create_pointer_warning(rng):
         v.parse('C')
         v.parse('D')
         v.parse('E')
+
+
+def test_readonly(rng):
+    v1 = Vocabulary(32, rng=rng)
+    v1.parse('A+B+C')
+
+    v1.readonly = True
+
+    with pytest.raises(ValueError):
+        v1.parse('D')
+
+
+def test_subset(rng):
+    v1 = Vocabulary(32, rng=rng)
+    v1.parse('A+B+C+D+E+F+G')
+
+    # Test creating a vocabulary subset
+    v2 = v1.create_subset(['A', 'C', 'E'])
+    assert v2.keys == ['A', 'C', 'E']
+    assert v2['A'] == v1['A']
+    assert v2['C'] == v1['C']
+    assert v2['E'] == v1['E']
+    assert v2.parent is v1
+
+    # Test creating a subset from a subset (it should create off the parent)
+    v3 = v2.create_subset(['C', 'E'])
+    assert v3.parent is v2.parent and v2.parent is v1
+
+    v3.include_pairs = True
+    assert v3.key_pairs == ['C*E']
+    assert not v1.include_pairs
+    assert not v2.include_pairs
+
+    # Test transform_to between subsets (should be identity transform)
+    t = v1.transform_to(v2)
+
+    assert v2.parse('A').compare(np.dot(t, v1.parse('A').v)) >= 0.99999999
+
+
+def test_extend(rng):
+    v = Vocabulary(16, rng=rng)
+    v.parse('A+B')
+    assert v.keys == ['A', 'B']
+    assert not v.unitary
+
+    # Test extending the vocabulary
+    v.extend(['C', 'D'])
+    assert v.keys == ['A', 'B', 'C', 'D']
+
+    # Test extending the vocabulary with various unitary options
+    v.extend(['E', 'F'], unitary=['E'])
+    assert v.keys == ['A', 'B', 'C', 'D', 'E', 'F']
+    assert v.unitary == ['E']
+
+    # Check if 'E' is unitary
+    fft_val = np.fft.fft(v['E'].v)
+    fft_imag = fft_val.imag
+    fft_real = fft_val.real
+    fft_norms = np.sqrt(fft_imag ** 2 + fft_real ** 2)
+    assert np.allclose(fft_norms, np.ones(16))
+
+    v.extend(['G', 'H'], unitary=True)
+    assert v.keys == ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+    assert v.unitary == ['E', 'G', 'H']

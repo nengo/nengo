@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 import nengo
-from nengo.exceptions import SpaParseError, ValidationError
+from nengo.exceptions import ReadonlyError, SpaParseError, ValidationError
 from nengo.spa import pointer
 from nengo.utils.compat import is_iterable, is_number, is_integer, range
 
@@ -81,6 +81,8 @@ class Vocabulary(object):
         self.include_pairs = include_pairs
         self._identity = None
         self.rng = rng
+        self.readonly = False
+        self.parent = None
 
     def create_pointer(self, attempts=100, unitary=False):
         """Create a new semantic pointer.
@@ -150,6 +152,11 @@ class Vocabulary(object):
 
         The pointer value can be a SemanticPointer or a vector.
         """
+        if self.readonly:
+            raise ReadonlyError(attr='Vocabulary',
+                                msg="Cannot add semantic pointer '%s' to "
+                                    "read-only vocabulary." % key)
+
         if not key[0].isupper():
             raise SpaParseError(
                 "Semantic pointers must begin with a capital letter.")
@@ -343,18 +350,32 @@ class Vocabulary(object):
             terms in this list that do not exist in the Vocabularies will
             be created.
         """
-        if keys is None:
-            keys = list(self.keys)
-            for k in other.keys:
-                if k not in keys:
-                    keys.append(k)
+        # If the parent vocabs of self and other are the same, then no
+        # transform is needed between the two vocabularies, so return an
+        # identity matrix.
+        my_parent = self if self.parent is None else self.parent
+        other_parent = other if other.parent is None else other.parent
 
-        t = np.zeros((other.dimensions, self.dimensions), dtype=float)
-        for k in keys:
-            a = self[k].v
-            b = other[k].v
-            t += np.outer(b, a)
-        return t
+        if my_parent is other_parent:
+            return np.eye(self.dimensions)
+        else:
+            if keys is None:
+                if self.readonly and other.readonly:
+                    keys = [k for k in self.keys if k in other.keys]
+                elif self.readonly:
+                    keys = list(self.keys)
+                elif other.readonly:
+                    keys = list(other.keys)
+                else:
+                    keys = list(self.keys)
+                    keys.extend([k for k in other.keys if k not in self.keys])
+
+            t = np.zeros((other.dimensions, self.dimensions), dtype=float)
+            for k in keys:
+                a = self[k].v
+                b = other[k].v
+                t += np.outer(b, a)
+            return t
 
     def prob_cleanup(self, similarity, vocab_size, steps=10000):
         """Estimate the chance of successful cleanup.
@@ -394,6 +415,37 @@ class Vocabulary(object):
         pcorrect = (1 - perror1) ** vocab_size
         return pcorrect
 
+    def extend(self, keys, unitary=False):
+        """Extends the vocabulary with additional keys.
+
+        Creates and adds the semantic pointers listed in keys to the
+        vocabulary.
+
+        Parameters
+        ----------
+        keys : list of strings
+            List of semantic pointer names to be added to the vocabulary.
+
+        unitary : bool or list of strings, optional
+                If True, all generated pointers to be unitary.  If a list of
+                names, any pointer whose name is on the list will be forced to
+                be unitary when created.
+        """
+        if is_iterable(unitary):
+            if is_iterable(self.unitary):
+                self.unitary.extend(unitary)
+            else:
+                self.unitary = list(unitary)
+        elif unitary:
+            if is_iterable(self.unitary):
+                self.unitary.extend(keys)
+            else:
+                self.unitary = list(keys)
+
+        for key in keys:
+            if key not in self.keys:
+                self[key]
+
     def create_subset(self, keys):
         """Returns the subset of this vocabulary.
 
@@ -407,21 +459,28 @@ class Vocabulary(object):
             new vocabulary.
 
         """
-
-        # Make new vocabulary object
-        result = Vocabulary(self.dimensions,
+        # Make new Vocabulary object
+        subset = Vocabulary(self.dimensions,
                             self.randomize,
                             self.unitary,
                             self.max_similarity,
                             self.include_pairs,
                             self.rng)
 
-        # Make a copy of the desired keys
+        # Copy over the new keys
         for key in keys:
-            result.add(key, self[key])
+            subset.add(key, self.pointers[key])
 
-        # Return the result
-        return result
+        # Assign the parent
+        if self.parent is not None:
+            subset.parent = self.parent
+        else:
+            subset.parent = self
+
+        # Make the subset read only
+        subset.readonly = True
+
+        return subset
 
 
 class VocabularyParam(nengo.params.Parameter):
