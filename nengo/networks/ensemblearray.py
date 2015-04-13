@@ -106,7 +106,7 @@ class EnsembleArray(nengo.Network):
         sizes = np.zeros(self.n_ensembles, dtype=int)
 
         if is_iterable(function) and all(callable(f) for f in function):
-            if len(function) != self.n_ensembles:
+            if len(list(function)) != self.n_ensembles:
                 raise ValueError("Must have one function per ensemble")
 
             for i, func in enumerate(function):
