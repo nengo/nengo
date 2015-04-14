@@ -2,4 +2,4 @@
 Basal Ganglia example
 *********************
 
-.. notebook:: ../../examples/basal_ganglia.ipynb
+.. notebook:: ../../examples/networks/basal_ganglia.ipynb

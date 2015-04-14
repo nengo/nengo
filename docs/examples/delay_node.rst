@@ -2,4 +2,4 @@
 Delay Node example
 ******************
 
-.. notebook:: ../../examples/delay_node.ipynb
+.. notebook:: ../../examples/usage/delay_node.ipynb

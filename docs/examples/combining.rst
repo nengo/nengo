@@ -2,4 +2,4 @@
 Combining example
 *****************
 
-.. notebook:: ../../examples/combining.ipynb
+.. notebook:: ../../examples/basic/combining.ipynb

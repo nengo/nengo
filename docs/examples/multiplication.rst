@@ -2,4 +2,4 @@
 Multiplication example
 **********************
 
-.. notebook:: ../../examples/multiplication.ipynb
+.. notebook:: ../../examples/basic/multiplication.ipynb

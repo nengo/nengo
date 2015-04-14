@@ -2,4 +2,4 @@
 Oscillator example
 ******************
 
-.. notebook:: ../../examples/oscillator.ipynb
+.. notebook:: ../../examples/dynamics/oscillator.ipynb

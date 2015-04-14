@@ -2,4 +2,4 @@
 Unsupervised Learning example
 *****************************
 
-.. notebook:: ../../examples/learn_unsupervised.ipynb
+.. notebook:: ../../examples/learning/learn_unsupervised.ipynb

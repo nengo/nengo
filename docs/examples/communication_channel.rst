@@ -2,4 +2,4 @@
 Communication Channel example
 *****************************
 
-.. notebook:: ../../examples/communication_channel.ipynb
+.. notebook:: ../../examples/basic/communication_channel.ipynb

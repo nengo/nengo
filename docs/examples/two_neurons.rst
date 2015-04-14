@@ -2,4 +2,4 @@
 Two Neurons example
 *******************
 
-.. notebook:: ../../examples/two_neurons.ipynb
+.. notebook:: ../../examples/basic/two_neurons.ipynb

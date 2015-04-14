@@ -2,4 +2,4 @@
 Square Learning example
 ***********************
 
-.. notebook:: ../../examples/learn_square.ipynb
+.. notebook:: ../../examples/learning/learn_square.ipynb

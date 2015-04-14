@@ -2,4 +2,4 @@
 Matrix Multiplication example
 *****************************
 
-.. notebook:: ../../examples/matrix_multiplication.ipynb
+.. notebook:: ../../examples/advanced/matrix_multiplication.ipynb

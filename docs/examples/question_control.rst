@@ -2,4 +2,4 @@
 Question Control example
 ************************
 
-.. notebook:: ../../examples/question_control.ipynb
+.. notebook:: ../../examples/spa/question_control.ipynb

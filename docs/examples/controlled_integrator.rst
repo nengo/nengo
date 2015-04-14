@@ -2,4 +2,4 @@
 Controlled Integrator example
 *****************************
 
-.. notebook:: ../../examples/controlled_integrator.ipynb
+.. notebook:: ../../examples/dynamics/controlled_integrator.ipynb

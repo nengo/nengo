@@ -2,4 +2,4 @@
 Squaring example
 ****************
 
-.. notebook:: ../../examples/squaring.ipynb
+.. notebook:: ../../examples/basic/squaring.ipynb

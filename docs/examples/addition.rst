@@ -2,4 +2,4 @@
 Addition example
 ****************
 
-.. notebook:: ../../examples/addition.ipynb
+.. notebook:: ../../examples/basic/addition.ipynb

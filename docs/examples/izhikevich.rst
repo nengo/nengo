@@ -2,4 +2,4 @@
 Izhikevich neuron example
 *************************
 
-.. notebook:: ../../examples/izhikevich.ipynb
+.. notebook:: ../../examples/advanced/izhikevich.ipynb

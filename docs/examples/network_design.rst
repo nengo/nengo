@@ -2,4 +2,4 @@
 Network design example
 **********************
 
-.. notebook:: ../../examples/network_design.ipynb
+.. notebook:: ../../examples/usage/network_design.ipynb
