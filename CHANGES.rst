@@ -69,6 +69,8 @@ Release History
 - Fixed issue when probing scalar transforms.
   (`#667 <https://github.com/nengo/nengo/issues/667>`_,
   `#671 <https://github.com/nengo/nengo/pull/671>`_)
+- Fix for SPA actions that route to a module with multiple inputs.
+  (`#714 <https://github.com/nengo/nengo/pull/714>`_)
 
 2.0.1 (January 27, 2015)
 ========================
