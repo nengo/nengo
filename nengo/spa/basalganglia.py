@@ -26,13 +26,16 @@ class BasalGanglia(Module):
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
-    def __init__(self, actions, input_synapse=0.002,
+    def __init__(self, actions, input_synapse=0.002, weights={},
+                 split_GPi_SNr=False,
                  label=None, seed=None, add_to_container=None):
         self.actions = actions
         self.input_synapse = input_synapse
         self._bias = None
         Module.__init__(self, label, seed, add_to_container)
-        nengo.networks.BasalGanglia(dimensions=self.actions.count, net=self)
+        nengo.networks.BasalGanglia(dimensions=self.actions.count, net=self,
+                                    weights=weights,
+                                    split_GPi_SNr=split_GPi_SNr)
 
     @property
     def bias(self):
