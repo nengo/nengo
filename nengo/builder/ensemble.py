@@ -42,6 +42,12 @@ def gen_eval_points(ens, eval_points, rng, scale_eval_points=True):
     return eval_points
 
 
+def get_activities(model, ens, eval_points):
+    x = np.dot(eval_points, model.params[ens].encoders.T / ens.radius)
+    return ens.neuron_type.rates(
+        x, model.params[ens].gain, model.params[ens].bias)
+
+
 @Builder.register(Ensemble)  # noqa: C901
 def build_ensemble(model, ens):
     # Create random number generator

@@ -57,3 +57,49 @@ def target_function(eval_points, targets):
     return {'function': function,
             'eval_points': eval_points,
             'scale_eval_points': False}
+
+
+def eval_point_decoding(conn, sim, eval_points=None):
+    """Get the targets and actual decoded values for a set of eval points.
+
+    This function evaluates the static decoding (i.e. using the neuron type's
+    `rates` function) of a connection for a given set of evaluation points.
+
+    Parameters
+    ----------
+    conn : Connection
+        The Connection to evaluate the decoding of.
+    sim : Simulator
+        A Nengo simulator storing the built connection.
+    eval_points : array_like (N, E) (optional)
+        An N x E array of evaluation points to evaluate the decoding for, where
+        N is the number of points and E is the dimensionality of the input
+        ensemble (i.e. `conn.size_in`). If None (default), use the connection's
+        training evaluation points.
+
+    Returns
+    -------
+    eval_points : ndarray (N, E)
+        A shallow copy of the evaluation points used. E is the dimensionality
+        of the connection input ensemble (i.e. `conn.size_in`).
+    targets : ndarray (N, D)
+        The target function value at each evaluation point.
+    decoded : ndarray (N, D)
+        The decoded function value at each evaluation point.
+    """
+    from nengo.builder.ensemble import get_activities
+    from nengo.builder.connection import get_targets
+
+    if eval_points is None:
+        eval_points = sim.data[conn].eval_points
+    else:
+        eval_points = np.asarray(eval_points)
+
+    decoders = sim.data[conn].decoders
+    if decoders is None:
+        raise ValueError("Connection must have decoders")
+
+    activities = get_activities(sim.model, conn.pre_obj, eval_points)
+    decoded = np.dot(activities, decoders.T)
+    targets = get_targets(sim.model, conn, eval_points)
+    return eval_points, targets, decoded
