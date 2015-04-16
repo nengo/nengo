@@ -45,6 +45,9 @@ Release History
   of semantic pointer elements.
   (`#414 <https://github.com/nengo/nengo/issues/414>`_,
   `#430 <https://github.com/nengo/nengo/pull/430>`_)
+- Added ``utils.connection.eval_point_decoding`` function, which
+  provides a connection's static decoding of a list of evaluation points.
+  (`#700 https://github.com/nengo/nengo/pull/700`_)
 
 **Bug fixes**
 

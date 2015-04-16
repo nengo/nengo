@@ -43,6 +43,7 @@ def tuning_curves(ens, sim, inputs=None):
     --------
     response_curves
     """
+    from nengo.builder.ensemble import get_activities
 
     if inputs is None:
         inputs = np.linspace(-ens.radius, ens.radius)
@@ -52,14 +53,9 @@ def tuning_curves(ens, sim, inputs=None):
             inputs = [inputs]
         inputs = np.asarray(inputs).T
 
-    flattened = np.reshape(inputs, (-1, ens.dimensions))
-    flattened /= ens.radius
-    x = np.dot(flattened, sim.data[ens].encoders.T)
-    activities = ens.neuron_type.rates(
-        x, sim.data[ens].gain, sim.data[ens].bias)
-    activities = np.reshape(activities, inputs[..., 0].shape + (-1,))
-
-    return inputs, activities
+    eval_points = inputs.reshape((-1, ens.dimensions))
+    activities = get_activities(sim.model, ens, eval_points)
+    return inputs, activities.reshape(inputs.shape[:-1] + (-1,))
 
 
 def response_curves(ens, sim, inputs=None):
@@ -74,7 +70,7 @@ def response_curves(ens, sim, inputs=None):
     ens : nengo.Ensemble
         Ensemble to calculate the response curves of.
     sim : nengo.Simulator
-        Simulator providing information about the build ensemble. (An unbuild
+        Simulator providing information about the built ensemble. (An unbuilt
         ensemble does not have response curves assigned to it.)
     inputs : 1d array, optional
         The inputs between -1 and 1 at which the neuron responses will be
@@ -145,13 +141,12 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
 
     Parameters
     ----------
-    ensemble: nengo.Ensemble
+    ensemble : Ensemble
         The population of neurons to be sorted.
-        The ensemble must have its encoders specified.
-
+    sim : Simulator
+        Simulator providing information about the built ensemble.
     iterations: int
         The number of times to iterate during the sort.
-
     seed: float
         A random number seed.
 
@@ -162,7 +157,6 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
 
     Examples
     --------
-
     You can use this to generate an array of sorted indices for plotting. This
     can be done after collecting the data. E.g.
 
@@ -172,7 +166,6 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
 
     Algorithm
     ---------
-
     The algorithm is for each encoder in the initial set, randomly
     pick another encoder and check to see if swapping those two
     encoders would reduce the average difference between the
