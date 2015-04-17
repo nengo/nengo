@@ -54,7 +54,7 @@ def test_am_threshold(Simulator, plt, seed, rng):
     vocab2.parse('A+B+C+D')
 
     def input_func(t):
-        return vocab.parse('0.49*A').v if t < 0.1 else vocab.parse('0.79*A').v
+        return vocab.parse('0.49*A').v if t < 0.1 else vocab.parse('0.8*A').v
 
     with nengo.Network('model', seed=seed) as m:
         am = AssociativeMemory(vocab, vocab2, threshold=0.5)
@@ -81,9 +81,9 @@ def test_am_threshold(Simulator, plt, seed, rng):
     plt.legend(vocab.keys, loc='best')
 
     assert similarity(sim.data[in_p][below_th], vocab.parse("A").v) > 0.48
-    assert similarity(sim.data[in_p][above_th], vocab.parse("A").v) > 0.78
+    assert similarity(sim.data[in_p][above_th], vocab.parse("A").v) > 0.79
     assert similarity(sim.data[out_p][below_th], vocab2.parse("0").v) < 0.01
-    assert similarity(sim.data[out_p][above_th], vocab2.parse("A").v) > 0.8
+    assert similarity(sim.data[out_p][above_th], vocab2.parse("A").v) > 0.79
 
 
 def test_am_wta(Simulator, plt, seed, rng):
@@ -127,10 +127,10 @@ def test_am_wta(Simulator, plt, seed, rng):
     plt.ylabel("Output")
     plt.legend(vocab.keys, loc='best')
 
-    assert similarity(sim.data[out_p][more_a], vocab.parse("A").v) > 0.8
-    assert similarity(sim.data[out_p][more_a], vocab.parse("B").v) < 0.2
-    assert similarity(sim.data[out_p][more_b], vocab.parse("B").v) > 0.8
-    assert similarity(sim.data[out_p][more_b], vocab.parse("A").v) < 0.2
+    assert similarity(sim.data[out_p][more_a], vocab.parse("A").v) > 0.79
+    assert similarity(sim.data[out_p][more_a], vocab.parse("B").v) < 0.19
+    assert similarity(sim.data[out_p][more_b], vocab.parse("B").v) > 0.79
+    assert similarity(sim.data[out_p][more_b], vocab.parse("A").v) < 0.19
 
 
 def test_am_complex(Simulator, plt, seed, rng):
@@ -156,11 +156,10 @@ def test_am_complex(Simulator, plt, seed, rng):
         return int(t > 0.75)
 
     with nengo.Network('model', seed=seed) as m:
-        am = AssociativeMemory(vocab2,
-                               default_output_vector=vocab.parse("F").v,
+        am = AssociativeMemory(vocab2, vocab,
+                               default_output_key="F",
                                inhibitable=True,
-                               output_utilities=True,
-                               output_thresholded_utilities=True)
+                               threshold_output=True)
         in_node = nengo.Node(output=input_func, label='input')
         inhib_node = nengo.Node(output=inhib_func, label='inhib')
         nengo.Connection(in_node, am.input)

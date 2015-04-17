@@ -53,6 +53,10 @@ Release History
 - The ``spa.State`` object replaces the old ``spa.Memory`` and ``spa.Buffer``.
   These old modules are deprecated and will be removed in 2.2.
   (`#796 <https://github.com/nengo/nengo/pull/796>`_)
+- A version of the AssociativeMemory SPA module is now available as a
+  stand-alone network in ``nengo.networks``. The AssociativeMemory SPA module
+  also has an updated argument list.
+  (`#702 <https://github.com/nengo/nengo/pull/702>`_)
 
 **Behavioural changes**
 
