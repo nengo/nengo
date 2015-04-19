@@ -4,6 +4,46 @@ import itertools
 from .compat import iteritems
 from .graphs import add_edges
 from .stdlib import groupby
+from .testing import CaptureStdout
+
+
+def supports(simulator, test_expression, pkg='nengo'):
+    """Test whether a backend supports a certain feature.
+
+    Features are defined by unit tests. If a tests passes, the backend supports
+    the feature, otherwise it does not.
+
+    Arguments
+    ---------
+    simulator : class
+        The simulator class to test.
+    test_expression : str
+        Python evaluable expression to select features to test. All names are
+        substring matched to the test names. See the documentation of the
+        py.test -k option for further details.
+    pkg : str, optional
+        Python package providing the tests.
+
+    Returns
+    -------
+    boolean
+        ``True`` if the queried features are supported, otherwise ``False``.
+    str
+        The py.test output.
+
+    Notes
+    -----
+    This functions requires pytest.
+    """
+    import pytest
+    with CaptureStdout() as output:
+        retval = pytest.main([
+            '--pyargs', pkg,
+            '-s',  # Disable pytest stdout capture
+            '-k', test_expression,
+            '--simulator', '.'.join(
+                (simulator.__module__, simulator.__name__))])
+    return retval == 0, output.getvalue()
 
 
 def operator_depencency_graph(operators):  # noqa: C901
