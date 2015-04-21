@@ -3,6 +3,7 @@ import inspect
 import importlib
 import os
 import re
+from fnmatch import fnmatch
 
 import matplotlib
 import numpy as np
@@ -222,13 +223,14 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("nl_nodirect", nodirect)
 
 
-def pytest_runtest_setup(item):
+def pytest_runtest_setup(item):  # noqa: C901
     rc.reload_rc([])
     rc.set('decoder_cache', 'enabled', 'False')
     rc.set('exceptions', 'simplified', 'False')
 
     if not hasattr(item, 'obj'):
         return
+
     for mark, option, message in [
             ('example', 'noexamples', "examples not requested"),
             ('slow', 'slow', "slow tests not requested")]:
@@ -236,7 +238,6 @@ def pytest_runtest_setup(item):
             pytest.skip(message)
 
     if getattr(item.obj, 'noassertions', None):
-        skip = True
         skipreasons = []
         for fixture_name, option, message in [
                 ('analytics', 'analytics', "analytics not requested"),
@@ -244,11 +245,18 @@ def pytest_runtest_setup(item):
                 ('logger', 'logs', "logs not requested")]:
             if fixture_name in item.fixturenames:
                 if item.config.getvalue(option):
-                    skip = False
+                    break
                 else:
                     skipreasons.append(message)
-        if skip:
+        else:
             pytest.skip(" and ".join(skipreasons))
+
+    if 'Simulator' in item.fixturenames:
+        for test, reason in TestConfig.Simulator.unsupported:
+            # We add a '*' before test to eliminate the surprise of needing
+            # a '*' before the name of a test function.
+            if fnmatch(item.nodeid, '*' + test):
+                pytest.xfail(reason)
 
 
 def pytest_collection_modifyitems(session, config, items):
