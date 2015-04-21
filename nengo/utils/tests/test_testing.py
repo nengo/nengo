@@ -1,10 +1,11 @@
 import errno
 import os
+import sys
 
 import pytest
 
 from nengo.utils.compat import range
-from nengo.utils.testing import Analytics, Logger, Timer
+from nengo.utils.testing import Analytics, Logger, CaptureStdout, Timer
 
 
 def test_timer():
@@ -81,3 +82,11 @@ def test_logger_norecord():
         logger.info("Testing that logger doesn't record")
     with pytest.raises(ValueError):
         logger_obj.get_filepath(ext='txt')
+
+
+def test_capture_stdout():
+    original = sys.stdout
+    with CaptureStdout() as capture:
+        sys.stdout.write('test')
+    assert capture.getvalue() == 'test'
+    assert sys.stdout == original

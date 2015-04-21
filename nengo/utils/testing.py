@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from cStringIO import StringIO
 import inspect
 import itertools
 import logging
@@ -176,6 +177,30 @@ class Logger(Recorder):
                 fp.write(self.handler.stream.getvalue())
             self.handler.close()
             del self.handler
+
+
+class CaptureStdout(object):
+    """Captures stdout.
+
+    Notes
+    -----
+    py.test already captures stdout and provides access with the capsys
+    fixture. Thus, this context manager is usually not needed.
+    """
+    def __init__(self):
+        self._original = None
+        self._buffer = StringIO()
+
+    def __enter__(self):
+        self._original = sys.stdout
+        sys.stdout = self._buffer
+        return self
+
+    def __exit__(self, exc_type, exc_value, tb):
+        sys.stdout = self._original
+
+    def getvalue(self):
+        return self._buffer.getvalue()
 
 
 class Timer(object):
