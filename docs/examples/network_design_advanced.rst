@@ -2,4 +2,4 @@
 Advanced network design example
 *******************************
 
-.. notebook:: ../../examples/network_design_advanced.ipynb
+.. notebook:: ../../examples/usage/network_design_advanced.ipynb

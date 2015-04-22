@@ -2,4 +2,4 @@
 Controlled Oscillator example
 *****************************
 
-.. notebook:: ../../examples/controlled_oscillator.ipynb
+.. notebook:: ../../examples/dynamics/controlled_oscillator.ipynb

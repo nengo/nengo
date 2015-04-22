@@ -2,4 +2,4 @@
 Integrator network example
 ***************************
 
-.. notebook:: ../../examples/integrator_network.ipynb
+.. notebook:: ../../examples/networks/integrator_network.ipynb

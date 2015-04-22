@@ -2,4 +2,4 @@
 NEF Summary
 ***********
 
-.. notebook:: ../../examples/nef_summary.ipynb
+.. notebook:: ../../examples/advanced/nef_summary.ipynb

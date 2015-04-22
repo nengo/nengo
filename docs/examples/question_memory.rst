@@ -2,4 +2,4 @@
 Question Memory example
 ***********************
 
-.. notebook:: ../../examples/question_memory.ipynb
+.. notebook:: ../../examples/spa/question_memory.ipynb

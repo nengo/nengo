@@ -2,4 +2,4 @@
 Single Neuron example
 *********************
 
-.. notebook:: ../../examples/single_neuron.ipynb
+.. notebook:: ../../examples/basic/single_neuron.ipynb

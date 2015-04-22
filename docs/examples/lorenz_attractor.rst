@@ -2,4 +2,4 @@
 Lorenz Attractor example
 ************************
 
-.. notebook:: ../../examples/lorenz_attractor.ipynb
+.. notebook:: ../../examples/dynamics/lorenz_attractor.ipynb

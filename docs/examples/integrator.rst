@@ -2,4 +2,4 @@
 Integrator example
 ******************
 
-.. notebook:: ../../examples/integrator.ipynb
+.. notebook:: ../../examples/dynamics/integrator.ipynb

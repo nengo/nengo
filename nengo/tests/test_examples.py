@@ -17,25 +17,33 @@ _pytest.capture.DontReadFromInput.write = lambda: None
 _pytest.capture.DontReadFromInput.flush = lambda: None
 
 
-all_examples = set([os.path.splitext(f)[0] for f in os.listdir(examples_dir)
-                    if f.endswith('.ipynb')])
-slow_examples = set(['inhibitory_gating',
-                     'izhikevich',
-                     'learn_communication_channel',
-                     'learn_product',
-                     'learn_square',
-                     'learn_unsupervised',
-                     'lorenz_attractor',
-                     'nef_summary',
-                     'network_design',
-                     'network_design_advanced',
-                     'question',
-                     'question_control',
-                     'question_memory',
-                     'spa_parser',
-                     'spa_sequence',
-                     'spa_sequence_routed'])
-fast_examples = all_examples - slow_examples
+too_slow = ['inhibitory_gating',
+            'izhikevich',
+            'learn_communication_channel',
+            'learn_product',
+            'learn_square',
+            'learn_unsupervised',
+            'lorenz_attractor',
+            'nef_summary',
+            'network_design',
+            'network_design_advanced',
+            'question',
+            'question_control',
+            'question_memory',
+            'spa_parser',
+            'spa_sequence',
+            'spa_sequence_routed']
+
+all_examples, slow_examples, fast_examples = [], [], []
+
+for subdir, _, files in os.walk(examples_dir):
+    examples = [os.path.join(subdir, os.path.splitext(f)[0]) for f in files
+                if f.endswith('.ipynb')]
+    all_examples.extend(examples)
+    slow_examples.extend([e for e, f in zip(examples, files)
+                          if os.path.splitext(f)[0] in too_slow])
+    fast_examples.extend([e for e, f in zip(examples, files)
+                          if os.path.splitext(f)[0] not in too_slow])
 
 
 def assert_noexceptions(nb_file, tmpdir, plt):

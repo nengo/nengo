@@ -2,4 +2,4 @@
 Inhibitory Gating example
 *************************
 
-.. notebook:: ../../examples/inhibitory_gating.ipynb
+.. notebook:: ../../examples/advanced/inhibitory_gating.ipynb

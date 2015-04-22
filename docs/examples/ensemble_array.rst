@@ -2,4 +2,4 @@
 Ensemble Array example
 **********************
 
-.. notebook:: ../../examples/ensemble_array.ipynb
+.. notebook:: ../../examples/networks/ensemble_array.ipynb

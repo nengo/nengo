@@ -2,4 +2,4 @@
 SPA Left-corner Parser
 **********************
 
-.. notebook:: ../../examples/spa_parser.ipynb
+.. notebook:: ../../examples/spa/spa_parser.ipynb

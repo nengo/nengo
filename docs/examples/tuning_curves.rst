@@ -2,4 +2,4 @@
 Tuning Curves example
 *********************
 
-.. notebook:: ../../examples/tuning_curves.ipynb
+.. notebook:: ../../examples/usage/tuning_curves.ipynb

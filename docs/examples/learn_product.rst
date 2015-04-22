@@ -2,4 +2,4 @@
 Product Learning example
 ************************
 
-.. notebook:: ../../examples/learn_product.ipynb
+.. notebook:: ../../examples/learning/learn_product.ipynb

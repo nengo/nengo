@@ -2,4 +2,4 @@
 Circular Convolution example
 ****************************
 
-.. notebook:: ../../examples/convolution.ipynb
+.. notebook:: ../../examples/spa/convolution.ipynb

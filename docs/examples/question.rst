@@ -2,4 +2,4 @@
 Question example
 ****************
 
-.. notebook:: ../../examples/question.ipynb
+.. notebook:: ../../examples/spa/question.ipynb

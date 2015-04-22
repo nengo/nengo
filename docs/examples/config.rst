@@ -2,4 +2,4 @@
 Configuration system example
 ****************************
 
-.. notebook:: ../../examples/config.ipynb
+.. notebook:: ../../examples/usage/config.ipynb
