@@ -127,6 +127,56 @@ def test_routing(Simulator, seed, plt):
     assert valueC[2] < 0.2
 
 
+def test_nondefault_routing(Simulator, seed, plt):
+    D = 3
+    model = spa.SPA(seed=seed)
+    with model:
+        model.ctrl = spa.Buffer(16, label='ctrl')
+
+        def input_func(t):
+            if t < 0.2:
+                return 'A'
+            elif t < 0.4:
+                return 'B'
+            else:
+                return 'C'
+        model.input = spa.Input(ctrl=input_func)
+
+        model.buff1 = spa.Buffer(D, label='buff1')
+        model.buff2 = spa.Buffer(D, label='buff2')
+        model.cmp = spa.Compare(D)
+
+        node1 = nengo.Node([0, 1, 0])
+        node2 = nengo.Node([0, 0, 1])
+
+        nengo.Connection(node1, model.buff1.state.input)
+        nengo.Connection(node2, model.buff2.state.input)
+
+        actions = spa.Actions('dot(ctrl, A) --> cmp_A=buff1, cmp_B=buff1',
+                              'dot(ctrl, B) --> cmp_A=buff1, cmp_B=buff2',
+                              'dot(ctrl, C) --> cmp_A=buff2, cmp_B=buff2',
+                              )
+        model.bg = spa.BasalGanglia(actions)
+        model.thal = spa.Thalamus(model.bg)
+
+        compare_probe = nengo.Probe(model.cmp.output, synapse=0.03)
+
+    sim = Simulator(model)
+    sim.run(0.6)
+
+    vocab = model.get_output_vocab('cmp')
+    data = sim.data[compare_probe]
+    similarity = np.dot(data, vocab.parse('YES').v)
+
+    valueA = np.mean(similarity[150:200], axis=0)  # should be [1]
+    valueB = np.mean(similarity[350:400], axis=0)  # should be [0]
+    valueC = np.mean(similarity[550:600], axis=0)  # should be [1]
+
+    assert valueA > 0.6
+    assert valueB < 0.3
+    assert valueC > 0.6
+
+
 def test_errors():
     # motor does not exist
     with pytest.raises(NameError):
