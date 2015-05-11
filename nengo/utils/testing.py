@@ -219,6 +219,7 @@ class WarningCatcher(object):
     def __enter__(self):
         self.catcher = warnings.catch_warnings(record=True)
         self.record = self.catcher.__enter__()
+        warnings.simplefilter('always', append=True)
 
     def __exit__(self, type, value, traceback):
         self.catcher.__exit__(type, value, traceback)
