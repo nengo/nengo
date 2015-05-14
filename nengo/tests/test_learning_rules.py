@@ -177,7 +177,7 @@ def test_unsupervised(Simulator, learning_rule_type, seed, rng, plt):
         ap = nengo.Probe(a, synapse=0.03)
         up = nengo.Probe(u_learned, synapse=0.03)
 
-    sim = Simulator(m)
+    sim = Simulator(m, seed=seed+1)
     sim.run(0.5)
     t = sim.trange()
 

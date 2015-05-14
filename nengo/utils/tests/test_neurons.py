@@ -31,7 +31,7 @@ def _test_rates(Simulator, rates, plt, seed):
         ap = nengo.Probe(a.neurons)
         bp = nengo.Probe(b.neurons)
 
-    sim = Simulator(model)
+    sim = Simulator(model, seed=seed+1)
     sim.run(2.)
 
     t = sim.trange()
@@ -66,7 +66,7 @@ def test_rates_isi(Simulator, plt, seed):
 
 def test_rates_kernel(Simulator, plt, seed):
     rel_rmse = _test_rates(Simulator, rates_kernel, plt, seed)
-    assert rel_rmse < 0.2
+    assert rel_rmse < 0.25
 
 
 @pytest.mark.noassertions

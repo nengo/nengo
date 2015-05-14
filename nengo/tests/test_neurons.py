@@ -256,7 +256,7 @@ def test_izhikevich(Simulator, plt, seed, rng):
             spikes[ens] = nengo.Probe(ens.neurons)
         up = nengo.Probe(u)
 
-    sim = Simulator(m)
+    sim = Simulator(m, seed=seed+1)
     sim.run(0.6)
     t = sim.trange()
 
@@ -297,7 +297,7 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     dts = (0.0001, 0.001)
     colors = ('b', 'g', 'r')
     for c, dt in zip(colors, dts):
-        sim = Simulator(m, dt=dt)
+        sim = Simulator(m, dt=dt, seed=seed+1)
         sim.run(0.1)
         t = sim.trange(dt=0.001)
         activity_data.append(sim.data[activity_p])
@@ -332,7 +332,7 @@ def test_reset(Simulator, nl_nodirect, seed, rng):
                          solver=LstsqL2nz(weights=True))
         square_p = nengo.Probe(square, synapse=0.1)
 
-    sim = Simulator(m)
+    sim = Simulator(m, seed=seed+1)
     sim.run(0.1)
     sim.run(0.2)
 
