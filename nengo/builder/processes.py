@@ -21,6 +21,7 @@ class SimProcess(Operator):
         self.updates = []
 
     def make_step(self, signals, dt, rng):
+        t = signals['__time__']
         input = signals[self.input] if self.input is not None else None
         output = signals[self.output] if self.output is not None else None
         size_in = input.size if input is not None else 0
@@ -29,7 +30,8 @@ class SimProcess(Operator):
         inc = self.inc
 
         def step():
-            result = step_f(input) if input is not None else step_f()
+            result = (step_f(t.item(), input) if input is not None else
+                      step_f(t.item()))
             if output is not None:
                 if inc:
                     output[...] += result

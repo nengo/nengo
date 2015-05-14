@@ -38,7 +38,7 @@ class Process(object):
         step = self.make_step(0, d, dt, rng)
         output = np.zeros((n_steps, d))
         for i in range(n_steps):
-            output[i] = step()
+            output[i] = step(i * dt)
         return output
 
     def run(self, t, d=None, dt=None, rng=np.random):
@@ -97,7 +97,7 @@ class WhiteNoise(Process):
         # separate RNG for simulation for step order independence
         sim_rng = np.random.RandomState(rng.randint(npext.maxint))
 
-        def step():
+        def step(t):
             x = dist.sample(n=1, d=size_out, rng=sim_rng)[0]
             return alpha * x if scale else x
 
@@ -146,7 +146,7 @@ class FilteredNoise(Process):
         # separate RNG for simulation for step order independence
         sim_rng = np.random.RandomState(rng.randint(npext.maxint))
 
-        def step():
+        def step(t):
             x = dist.sample(n=1, d=size_out, rng=sim_rng)[0]
             if scale:
                 x *= alpha
@@ -220,13 +220,11 @@ class WhiteSignal(Process):
             if power_correction > 0.:
                 coefficients /= power_correction
         coefficients *= np.sqrt(2 * n_coefficients)
-
-        t = np.array(0)
         signal = np.fft.irfft(coefficients, axis=1)
 
-        def step():
-            t[...] += 1
-            return signal[:, t % signal.shape[1]]
+        def step(t):
+            i = int(round(t / dt))
+            return signal[:, i % signal.shape[1]]
 
         return step
 
