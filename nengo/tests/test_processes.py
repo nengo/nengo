@@ -160,6 +160,24 @@ def test_whitesignal_dt(rng, plt):
     assert np.all(val_psd[npext.rfftfreq(t, dt) > high] < rms * 0.5)
 
 
+def test_whitesignal_continuity(rng, plt):
+    """Test that WhiteSignal is continuous over multiple periods."""
+    rms = 0.5
+    high = 10
+    dt = 0.001
+    t = 1
+    process = WhiteSignal(t, high=high, rms=rms)
+    x = process.run(4 * t, d=1, dt=dt, rng=rng)
+
+    plt.plot(process.ntrange(len(x), dt=dt), x)
+
+    # tolerances approximated from derivatives of sine wave of highest freq
+    safety_factor = 2.
+    a, f = np.sqrt(2) * rms, (2 * np.pi * high) * dt
+    assert abs(np.diff(x, axis=0)).max() <= safety_factor * a * f
+    assert abs(np.diff(x, n=2, axis=0)).max() <= safety_factor**2 * a * f**2
+
+
 def test_sampling_shape():
     process = WhiteSignal(0.1)
     assert process.run_steps(1).shape == (1, 1)

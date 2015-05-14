@@ -181,10 +181,13 @@ class WhiteSignal(Process):
     exactly equal power at all frequencies below the cut-off frequency,
     and no power above the cut-off.
 
+    The signal is naturally periodic, so it can be used beyond its period
+    while still being continuous with continuous derivatives.
+
     Parameters
     ----------
-    duration : float
-        A white noise signal for this duration will be generated.
+    period : float
+        A white noise signal with this period will be generated.
         Samples will repeat after this duration.
     high : float, optional
         The cut-off frequency of the low-pass filter, in Hz.
@@ -192,9 +195,9 @@ class WhiteSignal(Process):
     rms : float, optional
         The root mean square power of the filtered signal. Default: 0.5.
     """
-    def __init__(self, duration, high=None, rms=0.5):
+    def __init__(self, period, high=None, rms=0.5):
         super(WhiteSignal, self).__init__()
-        self.duration = duration
+        self.period = period
         self.high = high
         self.rms = rms
 
@@ -202,7 +205,7 @@ class WhiteSignal(Process):
         assert size_in == 0
         d = size_out
 
-        n_coefficients = int(np.ceil(self.duration / dt / 2.))
+        n_coefficients = int(np.ceil(self.period / dt / 2.))
         shape = (d, n_coefficients + 1)
         sigma = self.rms * np.sqrt(0.5)
         coefficients = 1j * rng.normal(0., sigma, size=shape)
@@ -220,13 +223,10 @@ class WhiteSignal(Process):
 
         t = np.array(0)
         signal = np.fft.irfft(coefficients, axis=1)
-        sh = signal.shape[1] - 1
 
         def step():
             t[...] += 1
-            # once t >= sh, go through signal backwards (i.e. reflect it)
-            ix = t % sh if (t // sh) % 2 == 0 else sh - t % sh
-            return signal[:, ix]
+            return signal[:, t % signal.shape[1]]
 
         return step
 
