@@ -37,6 +37,9 @@ too_slow = ['inhibitory_gating',
 all_examples, slow_examples, fast_examples = [], [], []
 
 for subdir, _, files in os.walk(examples_dir):
+    if (os.path.sep + '.') in subdir:
+        continue
+
     examples = [os.path.join(subdir, os.path.splitext(f)[0]) for f in files
                 if f.endswith('.ipynb')]
     all_examples.extend(examples)
