@@ -28,6 +28,12 @@ Release History
   ``min_voltage``. Voltages are clipped such that they do not drop below
   this value (previously, this was fixed at 0).
   (`#666 <https://github.com/nengo/nengo/pull/666>`_)
+- ``Process`` objects can now be passed directly as node outputs,
+  making them easier to use. The ``Process`` interface is also improved
+  and is currently the same as the ``Synapse`` interface. However,
+  further improvements are pending, and the current implementation
+  SHOULD NOT BE RELEASED!
+  (`#652 <https://github.com/nengo/nengo/pull/652>`_)
 
 **Behavioural changes**
 
@@ -50,6 +56,13 @@ Release History
 - Added ``utils.connection.eval_point_decoding`` function, which
   provides a connection's static decoding of a list of evaluation points.
   (`#700 <https://github.com/nengo/nengo/pull/700>`_)
+- Resetting the Simulator now resets all Processes, meaning the
+  injected random signals and noise are identical between runs,
+  unless the seed is changed (which can be done through
+  ``Simulator.reset``).
+  (`#582 <https://github.com/nengo/nengo/pull/582>`_,
+  `#616 <https://github.com/nengo/nengo/pull/616>`_,
+  `#652 <https://github.com/nengo/nengo/pull/652>`_)
 
 **Bug fixes**
 
