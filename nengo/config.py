@@ -34,15 +34,9 @@ class ClassParams(object):
     def __contains__(self, key):
         return self in self.get_param(key)
 
-    def __getattribute__(self, key):
-        """Overridden to handle instance descriptors manually."""
-        try:
-            # Parameters are never stored in __dict__
-            return super(ClassParams, self).__getattribute__(key)
-        except AttributeError:
-            # get_param gives a good error message, so this is sufficient
-            param = self.get_param(key)
-            return param.defaults[self] if self in param else param.default
+    def __getattr__(self, key):
+        param = self.get_param(key)
+        return param.defaults[self] if self in param else param.default
 
     def __setattr__(self, key, value):
         """Overridden to handle instance descriptors manually.
@@ -139,16 +133,13 @@ class InstanceParams(object):
     def __contains__(self, key):
         return self in self._clsparams.get_param(key)
 
-    def __getattribute__(self, key):
-        try:
-            return super(InstanceParams, self).__getattribute__(key)
-        except AttributeError:
-            if key in self._clsparams.default_params:
-                raise
-            param = self._clsparams.get_param(key)
-            if self in param:
-                return param.__get__(self, self.__class__)
-            return getattr(self._clsparams, key)
+    def __getattr__(self, key):
+        if key in self._clsparams.default_params:
+            raise AttributeError()
+        param = self._clsparams.get_param(key)
+        if self in param:
+            return param.__get__(self, self.__class__)
+        return getattr(self._clsparams, key)
 
     def __setattr__(self, key, value):
         """Everything not starting with _ is assumed to be a parameter."""
