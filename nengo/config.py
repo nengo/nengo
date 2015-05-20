@@ -87,10 +87,8 @@ class ClassParams(object):
     def get_param(self, key):
         if key in self._extraparams:
             return self._extraparams[key]
-        elif key in dir(self._configures):
-            return getattr(self._configures, key)
-        else:
-            raise AttributeError("Unknown config parameter '%s'" % key)
+
+        return getattr(self._configures, key)
 
     def set_param(self, key, value):
         if not is_param(value):
