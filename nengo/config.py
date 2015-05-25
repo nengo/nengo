@@ -135,7 +135,10 @@ class InstanceParams(object):
 
     def __getattr__(self, key):
         if key in self._clsparams.default_params:
-            raise AttributeError()
+            raise AttributeError(
+                "Cannot configure the built-in parameter '%s' on an instance "
+                "of '%s'. Please get the attribute directly from the object."
+                % (key, self._configures.__class__.__name__))
         param = self._clsparams.get_param(key)
         if self in param:
             return param.__get__(self, self.__class__)
@@ -147,8 +150,10 @@ class InstanceParams(object):
             super(InstanceParams, self).__setattr__(key, value)
         elif key in dir(self._configures):
             # Disallow configuring attributes the instance already has
-            raise AttributeError("'%s' object has no attribute '%s'"
-                                 % (self.__class__.__name__, key))
+            raise AttributeError(
+                "Cannot configure the built-in parameter '%s' on an instance "
+                "of '%s'. Please set the attribute directly on the object."
+                % (key, self._configures.__class__.__name__))
         else:
             self._clsparams.get_param(key).__set__(self, value)
 
@@ -157,8 +162,10 @@ class InstanceParams(object):
             super(InstanceParams, self).__delattr__(key)
         elif key in dir(self._configures):
             # Disallow configuring attributes the instance already has
-            raise AttributeError("'%s' object has no attribute '%s'"
-                                 % (self.__class__.__name__, key))
+            raise AttributeError(
+                "Cannot configure the built-in parameter '%s' on an instance "
+                "of '%s'. Please delete the attribute directly on the object."
+                % (key, self._configures.__class__.__name__))
         else:
             self._clsparams.get_param(key).__delete__(self)
 
