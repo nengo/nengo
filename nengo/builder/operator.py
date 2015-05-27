@@ -334,13 +334,8 @@ class SimPyFunc(Operator):
         t_in = self.t_in
         t_sig = signals['__time__']
 
-        args = []
-        if self.x is not None:
-            x_sig = signals[self.x].view()
-            x_sig.flags.writeable = False
-            args += [x_sig]
-
         def step():
+            args = () if self.x is None else (np.copy(signals[self.x]),)
             y = fn(t_sig.item(), *args) if t_in else fn(*args)
             if output is not None:
                 if y is None:

@@ -40,6 +40,10 @@ Release History
 - The ``probeable`` attribute of all Nengo objects is now implemented
   as a property, rather than a configurable parameter.
   (`#671 <https://github.com/nengo/nengo/pull/671>`_)
+- Node functions receive ``x`` as a copied NumPy array (instead of a readonly
+  view).
+  (`#716 <https://github.com/nengo/nengo/issues/716>`_,
+  `#722 <https://github.com/nengo/nengo/pull/722>`_)
 
 **Improvements**
 
