@@ -167,6 +167,9 @@ def export_py(nb, dest_path=None):
     # We'll remove %matplotlib inline magic, but leave the rest
     body = body.replace("get_ipython().magic(u'matplotlib inline')\n", "")
     body = body.replace("get_ipython().magic('matplotlib inline')\n", "")
+    # Also remove the IPython notebook extension
+    body = body.replace("get_ipython().magic(u'load_ext nengo.ipynb')\n", "")
+    body = body.replace("get_ipython().magic('load_ext nengo.ipynb')\n", "")
     if dest_path is not None:
         with open(dest_path, 'w') as f:
             f.write(body)
