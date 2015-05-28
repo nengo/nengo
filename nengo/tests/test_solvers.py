@@ -154,7 +154,7 @@ def test_weight_solver(Solver, rng):
 
 
 def test_scipy_solvers(rng):
-    pytest.importorskip('scipy')
+    pytest.importorskip('scipy', minversion='0.11')  # version for lsmr
 
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
@@ -191,7 +191,7 @@ def test_nnls(Solver, plt, rng):
 
 @pytest.mark.slow
 def test_subsolvers_L2(rng, logger):
-    pytest.importorskip('scipy')
+    pytest.importorskip('scipy', minversion='0.11')  # version for lsmr
 
     ref_solver = cholesky
     solvers = [conjgrad, block_conjgrad, conjgrad_scipy, lsmr_scipy]
