@@ -9,7 +9,8 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.node import Node
 from nengo.params import (
-    Default, BoolParam, FunctionParam, IntParam, NdarrayParam)
+    Default, Unconfigurable, ObsoleteParam, BoolParam, FunctionParam,
+    IntParam, NdarrayParam)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_iterable, iteritems
@@ -226,10 +227,15 @@ class Connection(NengoObject):
         default=None, optional=True, sample_shape=('*', 'size_in'))
     scale_eval_points = BoolParam(default=True)
     seed = IntParam(default=None, optional=True)
+    modulatory = ObsoleteParam("Modulatory connections have been removed. "
+                               "Connect to a learning rule instead.",
+                               "https://github.com/nengo/nengo/issues/632"
+                               "#issuecomment-71663849")
 
     def __init__(self, pre, post, synapse=Default, transform=Default,
                  solver=Default, learning_rule_type=Default, function=Default,
-                 eval_points=Default, scale_eval_points=Default, seed=Default):
+                 eval_points=Default, scale_eval_points=Default, seed=Default,
+                 modulatory=Unconfigurable):
         self.pre = pre
         self.post = post
 
@@ -241,6 +247,7 @@ class Connection(NengoObject):
         self.eval_points = eval_points  # Must be set before function
         self.function_info = function  # Must be set after transform
         self.seed = seed
+        self.modulatory = modulatory
 
     @property
     def function(self):

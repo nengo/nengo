@@ -88,6 +88,32 @@ class Parameter(object):
             raise ValueError("Parameter is not optional; cannot set to None")
 
 
+class ObsoleteParam(Parameter):
+    """A parameter that is no longer supported."""
+
+    def __init__(self, short_msg, url=None):
+        self.short_msg = short_msg
+        self.url = url
+        super(ObsoleteParam, self).__init__(optional=True)
+
+    def __get__(self, instance, type_):
+        if instance is None:
+            # Return self so default can be inspected
+            return self
+        self.raise_error()
+
+    def validate(self, instance, value):
+        if value is not Unconfigurable:
+            # don't allow setting to anything other than unconfigurable default
+            self.raise_error()
+
+    def raise_error(self):
+        raise ValueError("This parameter is no longer supported. %s%s" % (
+            self.short_msg,
+            "\nFor more information, please visit %s" % self.url
+            if self.url is not None else ""))
+
+
 class BoolParam(Parameter):
     def validate(self, instance, boolean):
         if boolean is not None and not isinstance(boolean, bool):

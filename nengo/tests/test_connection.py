@@ -717,3 +717,11 @@ def test_transform_probe(Simulator):
         nengo.Probe(c_ens, "transform")
         nengo.Probe(c_ens_neurons, "transform")
     assert Simulator(net)
+
+
+def test_nomodulatory(Simulator):
+    """Make sure you cannot set modulatory=True on connections."""
+    with nengo.Network():
+        a = nengo.Ensemble(10, 1)
+        with pytest.raises(ValueError):
+            nengo.Connection(a, a, modulatory=True)

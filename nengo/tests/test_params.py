@@ -56,6 +56,24 @@ def test_readonly():
     assert inst.r == 'set'
 
 
+def test_obsoleteparam():
+    """ObsoleteParams must not be set."""
+
+    class Test(object):
+        ab = params.ObsoleteParam(123, "msg")
+
+    inst = Test()
+
+    # cannot be read
+    with pytest.raises(ValueError):
+        inst.ab
+
+    # can only be assigned Unconfigurable
+    inst.ab = params.Unconfigurable
+    with pytest.raises(ValueError):
+        inst.ab = True
+
+
 def test_boolparam():
     """BoolParams can only be booleans."""
 
