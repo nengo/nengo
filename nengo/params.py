@@ -88,6 +88,32 @@ class Parameter(object):
             raise ValueError("Parameter is not optional; cannot set to None")
 
 
+class ObsoleteParam(Parameter):
+    """A parameter that is no longer supported."""
+
+    def __init__(self, pull_request, msg):
+        self._pull_request = pull_request
+        self._msg = msg
+        super(ObsoleteParam, self).__init__(optional=True)
+
+    def __get__(self, instance, type_):
+        if instance is None:
+            # Return self so default can be inspected
+            return self
+        # raise a nice error if the parameter is accessed
+        self._raise_error()
+
+    def validate(self, instance, value):
+        if value is not Unconfigurable:
+            # don't allow setting to anything other than unconfigurable default
+            self._raise_error()
+
+    def _raise_error(self):
+        raise ValueError("Parameter is no longer supported; please refer to "
+                         "pull-request #%d: %s" % (
+                             self._pull_request, self._msg))
+
+
 class BoolParam(Parameter):
     def validate(self, instance, boolean):
         if boolean is not None and not isinstance(boolean, bool):
