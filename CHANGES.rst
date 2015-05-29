@@ -66,6 +66,9 @@ Release History
 
 **Improvements**
 
+- Added ``PES.pre_tau`` attribute, which sets the time constant on a lowpass
+  filter of the presynaptic activity.
+  (`#643 <https://github.com/nengo/nengo/issues/643>`_)
 - ``EnsembleArray.add_output`` now accepts a list of functions
   to be computed by each ensemble.
   (`#562 <https://github.com/nengo/nengo/issues/562>`_,
