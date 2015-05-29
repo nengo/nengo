@@ -162,8 +162,8 @@ def build_pes(model, pes, rule):
     model.add_op(Reset(error))
     model.sig[rule]['in'] = error  # error connection will attach here
 
-    # TODO: Filter activities
-    acts = model.sig[conn.pre_obj]['out']
+    acts = filtered_signal(
+        model, pes, model.sig[conn.pre_obj]['out'], pes.pre_tau)
     acts_view = acts.reshape((1, acts.size))
 
     # Compute the correction, i.e. the scaled negative error

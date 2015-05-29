@@ -41,27 +41,30 @@ class PES(LearningRuleType):
 
     Parameters
     ----------
-    error : NengoObject
-        The Node, Ensemble, or Neurons providing the error signal. Must be
-        connectable to the post-synaptic object that is being used for this
-        learning rule.
+    pre_tau : float, optional
+        Filter constant on activities of neurons in pre population.
+        Defaults to 0.005.
     learning_rate : float, optional
         A scalar indicating the rate at which decoders will be adjusted.
         Defaults to 1e-5.
 
     Attributes
     ----------
+    pre_tau : float
+        Filter constant on activities of neurons in pre population.
     learning_rate : float
         The given learning rate.
     error_connection : Connection
         The modulatory connection created to project the error signal.
     """
 
+    pre_tau = NumberParam(low=0, low_open=True)
     error_type = 'decoder'
     modifies = ['Ensemble', 'Neurons']
     probeable = ['error', 'correction', 'activities', 'delta']
 
-    def __init__(self, learning_rate=1e-4):
+    def __init__(self, learning_rate=1e-4, pre_tau=0.005):
+        self.pre_tau = pre_tau
         super(PES, self).__init__(learning_rate)
 
 
