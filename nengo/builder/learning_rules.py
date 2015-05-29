@@ -171,8 +171,11 @@ def build_pes(model, pes, rule):
     local_error = correction.reshape((error.size, 1))
     model.add_op(Reset(correction))
 
-    # correction = -learning_rate * dt * error
-    lr_sig = Signal(-pes.learning_rate * model.dt, name="PES:learning_rate")
+    # correction = -learning_rate * (dt / n_neurons) * error
+    n_neurons = (conn.pre_obj.n_neurons if isinstance(conn.pre_obj, Ensemble)
+                 else conn.pre_obj.size_in)
+    lr_sig = Signal(-pes.learning_rate * model.dt / n_neurons,
+                    name="PES:learning_rate")
     model.add_op(DotInc(lr_sig, error, correction, tag="PES:correct"))
 
     if conn.solver.weights or (

@@ -50,6 +50,12 @@ Release History
 - The sign on the ``PES`` learning rule's error has been flipped to conform
   with most learning rules, in which error is minimized. The error should be
   ``actual - target``. (`#642 <https://github.com/nengo/nengo/pull/642>`_)
+- The ``PES`` rule's learning rate is invariant to the number of neurons
+  in the presynaptic population. The effective speed of learning should now
+  be unaffected by changes in the size of the presynaptic population.
+  Existing learning networks may need to be updated; to achieve identical
+  behavior, scale the learning rate by ``pre.n_neurons / 100``.
+  (`#643 <https://github.com/nengo/nengo/issues/643>`_)
 - The ``probeable`` attribute of all Nengo objects is now implemented
   as a property, rather than a configurable parameter.
   (`#671 <https://github.com/nengo/nengo/pull/671>`_)
