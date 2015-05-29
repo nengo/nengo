@@ -9,7 +9,7 @@ from nengo.processes import WhiteSignal
 def test_pes_weights(Simulator, nl_nodirect, plt, seed, rng):
     n = 200
     learned_vector = [0.5, -0.5]
-    rate = 10e-6
+    rate = 2e-3
 
     m = nengo.Network(seed=seed)
     with m:
@@ -118,7 +118,7 @@ def test_pes_decoders_multidimensional(Simulator, seed, plt):
 
         # initial decoded function is x[0] - x[1]
         conn = nengo.Connection(a, b[0], function=lambda x: x[0] - x[1],
-                                learning_rule_type=PES(5e-6))
+                                learning_rule_type=PES(1e-3))
         nengo.Connection(e, conn.learning_rule)
 
         nengo.Connection(b[0], e)
@@ -204,6 +204,7 @@ def learning_net(learning_rule, net, rng):
                                 transform=initial_weights,
                                 learning_rule_type=learning_rule())
         if learning_rule is nengo.PES:
+            learning_rule.learning_rate = 1e-5
             err = nengo.Ensemble(10, dimensions=1)
             nengo.Connection(u, err)
             nengo.Connection(err, conn.learning_rule)
