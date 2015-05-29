@@ -246,6 +246,7 @@ class Connection(NengoObject):
         self.scale_eval_points = scale_eval_points
         self.eval_points = eval_points  # Must be set before function
         self.function_info = function  # Must be set after transform
+        self.seed = seed
 
     @property
     def function(self):

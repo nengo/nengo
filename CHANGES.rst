@@ -70,6 +70,8 @@ Release History
 
 **Bug fixes**
 
+- Fixed issue where setting ``Connection.seed`` through the constructor had
+  no effect. (`#724 <https://github.com/nengo/nengo/issues/725>`_)
 - Fixed issue when probing scalar transforms.
   (`#667 <https://github.com/nengo/nengo/issues/667>`_,
   `#671 <https://github.com/nengo/nengo/pull/671>`_)
