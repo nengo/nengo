@@ -13,15 +13,7 @@ import numpy as np
 
 from ..rc import rc
 from .stdlib import get_terminal_size
-from .ipython import get_ipython, has_ipynb_widgets
-
-
-if has_ipynb_widgets():
-    from IPython.html.widgets import DOMWidget
-    from IPython.display import display
-    import IPython.utils.traitlets as traitlets
-else:
-    DOMWidget = object
+from .ipython import get_ipython
 
 
 class MemoryLeakWarning(UserWarning):
@@ -31,7 +23,7 @@ class MemoryLeakWarning(UserWarning):
 warnings.filterwarnings('once', category=MemoryLeakWarning)
 
 
-def _timestamp2timedelta(timestamp):
+def timestamp2timedelta(timestamp):
     return timedelta(seconds=np.ceil(timestamp))
 
 
@@ -154,6 +146,8 @@ class ProgressBar(object):
     Progress bars should visually displaying the progress in some way.
     """
 
+    supports_fast_ipynb_updates = False
+
     def __init__(self, task="Simulation"):
         self.task = task
 
@@ -194,7 +188,7 @@ class TerminalProgressBar(ProgressBar):
 
     def _get_in_progress_line(self, progress):
         line = "[{{0}}] ETA: {eta}".format(
-            eta=_timestamp2timedelta(progress.eta()))
+            eta=timestamp2timedelta(progress.eta()))
         percent_str = " {0}% ".format(int(100 * progress.progress))
 
         width, _ = get_terminal_size()
@@ -215,94 +209,8 @@ class TerminalProgressBar(ProgressBar):
         width, _ = get_terminal_size()
         line = "{0} finished in {1}.".format(
             self.task,
-            _timestamp2timedelta(progress.elapsed_seconds())).ljust(width)
+            timestamp2timedelta(progress.elapsed_seconds())).ljust(width)
         return '\r' + line + os.linesep
-
-
-class IPythonProgressWidget(DOMWidget):
-    """IPython widget for displaying a progress bar."""
-
-    # pylint: disable=too-many-public-methods
-    _view_name = traitlets.Unicode('NengoProgressBar', sync=True)
-    progress = traitlets.Float(0., sync=True)
-    text = traitlets.Unicode(u'', sync=True)
-
-    FRONTEND = '''
-    require(["widgets/js/widget", "widgets/js/manager"],
-        function(widget, manager) {
-      if (typeof widget.DOMWidgetView == 'undefined') {
-        widget = IPython;
-      }
-      if (typeof manager.WidgetManager == 'undefined') {
-        manager = IPython;
-      }
-
-      var NengoProgressBar = widget.DOMWidgetView.extend({
-        render: function() {
-          // $el is the DOM of the widget
-          this.$el.css({width: '100%', marginBottom: '0.5em'});
-          this.$el.html([
-            '<div style="',
-                'width: 100%;',
-                'border: 1px solid #cfcfcf;',
-                'border-radius: 4px;',
-                'text-align: center;',
-                'position: relative;">',
-              '<div class="pb-text" style="',
-                  'position: absolute;',
-                  'width: 100%;">',
-                '0%',
-              '</div>',
-              '<div class="pb-bar" style="',
-                  'background-color: #bdd2e6;',
-                  'width: 0%;',
-                  'transition: width 0.1s linear;">',
-                '&nbsp;',
-              '</div>',
-            '</div>'].join(''));
-        },
-
-        update: function() {
-          this.$el.css({width: '100%', marginBottom: '0.5em'});
-          var progress = 100 * this.model.get('progress');
-          var text = this.model.get('text');
-          this.$el.find('div.pb-bar').width(progress.toString() + '%');
-          this.$el.find('div.pb-text').text(text);
-        },
-      });
-
-      manager.WidgetManager.register_widget_view(
-        'NengoProgressBar', NengoProgressBar);
-    });'''
-
-    @classmethod
-    def load_frontend(cls):
-        """Loads the JavaScript front-end code required by then widget."""
-        get_ipython().run_cell_magic('javascript', '', cls.FRONTEND)
-
-
-class IPython2ProgressBar(ProgressBar):
-    """IPython progress bar based on widgets."""
-
-    def __init__(self, task="Simulation"):
-        super(IPython2ProgressBar, self).__init__(task)
-        self._widget = IPythonProgressWidget()
-        self._initialized = False
-
-    def update(self, progress):
-        if not self._initialized:
-            display(self._widget)
-            self._initialized = True
-
-        self._widget.progress = progress.progress
-        if progress.finished:
-            self._widget.text = "{0} finished in {1}.".format(
-                self.task,
-                _timestamp2timedelta(progress.elapsed_seconds()))
-        else:
-            self._widget.text = "{progress:.0f}%, ETA: {eta}".format(
-                progress=100 * progress.progress,
-                eta=_timestamp2timedelta(progress.eta()))
 
 
 class WriteProgressToFile(ProgressBar):
@@ -325,11 +233,11 @@ class WriteProgressToFile(ProgressBar):
         if progress.finished:
             text = "{0} finished in {1}.".format(
                 self.task,
-                _timestamp2timedelta(progress.elapsed_seconds()))
+                timestamp2timedelta(progress.elapsed_seconds()))
         else:
             text = "{progress:.0f}%, ETA: {eta}".format(
                 progress=100 * progress.progress,
-                eta=_timestamp2timedelta(progress.eta()))
+                eta=timestamp2timedelta(progress.eta()))
 
         with open(self.filename, 'w') as f:
             f.write(text + os.linesep)
@@ -546,8 +454,7 @@ def get_default_progressupdater(progress_bar):
     updater = rc.get('progress', 'updater')
 
     if updater.lower() == 'auto':
-        if get_ipython() is None or isinstance(
-                progress_bar, IPython2ProgressBar):
+        if get_ipython() is None or progress_bar.supports_fast_ipynb_updates:
             return UpdateEveryT
         else:
             return UpdateN
