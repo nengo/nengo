@@ -44,6 +44,12 @@ Release History
   This was only used for learning rules to this point, and has been removed
   in favor of connecting directly to the learning rule.
   (`#642 <https://github.com/nengo/nengo/pull/642>`_)
+- Connection weights can now be probed with ``nengo.Probe(conn, 'weights')``,
+  and these are always the weights that will change with learning
+  regardless of the type of connection. Previously, either ``decoders`` or
+  ``transform`` may have changed depending on the type of connection;
+  it is now no longer possible to probe ``decoders`` or ``transform``.
+  (`#729 <https://github.com/nengo/nengo/pull/729>`_)
 
 **Behavioural changes**
 

@@ -49,7 +49,7 @@ def test_seeding(RefSimulator):
     compare_objs(As[0], As[2], ens_attrs, equal=False)
     compare_objs(Bs[0], Bs[2], ens_attrs, equal=False)
 
-    conn_attrs = ('decoders', 'eval_points')  # transform is static, unchecked
+    conn_attrs = ('eval_points', 'weights')
     Cs = [mi[C] for mi in [m1, m2, m3]]
     compare_objs(Cs[0], Cs[1], conn_attrs)
     compare_objs(Cs[0], Cs[2], conn_attrs, equal=False)

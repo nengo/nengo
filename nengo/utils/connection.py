@@ -95,11 +95,8 @@ def eval_point_decoding(conn, sim, eval_points=None):
     else:
         eval_points = np.asarray(eval_points)
 
-    decoders = sim.data[conn].decoders
-    if decoders is None:
-        raise ValueError("Connection must have decoders")
-
+    weights = sim.data[conn].weights
     activities = get_activities(sim.model, conn.pre_obj, eval_points)
-    decoded = np.dot(activities, decoders.T)
+    decoded = np.dot(activities, weights.T)
     targets = get_targets(sim.model, conn, eval_points)
     return eval_points, targets, decoded

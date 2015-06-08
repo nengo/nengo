@@ -40,22 +40,22 @@ class SimBCM(Operator):
 
 class SimOja(Operator):
     """Calculate delta omega according to the Oja rule."""
-    def __init__(self, pre_filtered, post_filtered, transform, delta,
+    def __init__(self, pre_filtered, post_filtered, weights, delta,
                  learning_rate, beta):
         self.post_filtered = post_filtered
         self.pre_filtered = pre_filtered
-        self.transform = transform
+        self.weights = weights
         self.delta = delta
         self.learning_rate = learning_rate
         self.beta = beta
 
         self.sets = []
         self.incs = []
-        self.reads = [pre_filtered, post_filtered, transform]
+        self.reads = [pre_filtered, post_filtered, weights]
         self.updates = [delta]
 
     def make_step(self, signals, dt, rng):
-        transform = signals[self.transform]
+        weights = signals[self.weights]
         pre_filtered = signals[self.pre_filtered]
         post_filtered = signals[self.post_filtered]
         delta = signals[self.delta]
@@ -65,7 +65,7 @@ class SimOja(Operator):
         def step():
             # perform forgetting
             post_squared = alpha * post_filtered * post_filtered
-            delta[...] = -beta * transform * post_squared[:, None]
+            delta[...] = -beta * weights * post_squared[:, None]
 
             # perform update
             delta[...] += np.outer(alpha * post_filtered, pre_filtered)
@@ -97,19 +97,19 @@ def build_learning_rule(model, rule):
         delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)), name='Delta')
         model.add_op(ElementwiseInc(model.sig['common'][1],
                                     delta,
-                                    model.sig[conn]['transform'],
+                                    model.sig[conn]['weights'],
                                     tag="omega += delta"))
     elif isinstance(conn.pre_obj, Neurons):
         delta = Signal(np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
         model.add_op(ElementwiseInc(model.sig['common'][1],
                                     delta,
-                                    model.sig[conn]['transform'],
+                                    model.sig[conn]['weights'],
                                     tag="omega += delta"))
     else:
         delta = Signal(np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
         model.add_op(ElementwiseInc(model.sig['common'][1],
                                     delta,
-                                    model.sig[conn]['decoders'],
+                                    model.sig[conn]['weights'],
                                     tag="decoders += delta"))
     model.sig[rule]['delta'] = delta
     model.build(rule_type, rule)  # Updates delta
@@ -148,7 +148,7 @@ def build_oja(model, oja, rule):
 
     model.add_op(SimOja(pre_filtered,
                         post_filtered,
-                        model.sig[conn]['transform'],
+                        model.sig[conn]['weights'],
                         model.sig[rule]['delta'],
                         learning_rate=oja.learning_rate,
                         beta=oja.beta))
@@ -189,11 +189,11 @@ def build_pes(model, pes, rule):
             isinstance(conn.pre_obj, Neurons) and
             isinstance(conn.post_obj, Neurons)):
         post = get_post_ens(conn)
-        transform = model.sig[conn]['transform']
+        weights = model.sig[conn]['weights']
         encoders = model.sig[post]['encoders']
 
         # encoded = dot(encoders, correction)
-        encoded = Signal(np.zeros(transform.shape[0]), name="PES:encoded")
+        encoded = Signal(np.zeros(weights.shape[0]), name="PES:encoded")
         model.add_op(Reset(encoded))
         model.add_op(DotInc(encoders, correction, encoded, tag="PES:encode"))
         local_error = encoded.reshape((encoded.size, 1))

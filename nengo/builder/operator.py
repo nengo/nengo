@@ -201,6 +201,41 @@ class Copy(Operator):
         return step
 
 
+class SlicedCopy(Operator):
+    """Copy from `a` to `b` with slicing: `b[b_slice] = a[a_slice]`"""
+    def __init__(self, a, b, a_slice=Ellipsis, b_slice=Ellipsis,
+                 inc=False, tag=None):
+        self.a = a
+        self.b = b
+        self.a_slice = a_slice
+        self.b_slice = b_slice
+        self.inc = inc
+        self.tag = tag
+
+        self.sets = [] if inc else [b]
+        self.incs = [b] if inc else []
+        self.reads = [a]
+        self.updates = []
+
+    def __str__(self):
+        return 'SlicedCopy(%s[%s] -> %s[%s], inc=%s)' % (
+            self.a, self.a_slice, self.b, self.b_slice, self.inc)
+
+    def make_step(self, signals, dt, rng):
+        a = signals[self.a]
+        b = signals[self.b]
+        a_slice = self.a_slice
+        b_slice = self.b_slice
+        inc = self.inc
+
+        def step():
+            if inc:
+                b[b_slice] += a[a_slice]
+            else:
+                b[b_slice] = a[a_slice]
+        return step
+
+
 class ElementwiseInc(Operator):
     """Increment signal Y by A * X (with broadcasting)"""
 

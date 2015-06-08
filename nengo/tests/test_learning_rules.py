@@ -42,8 +42,7 @@ def _test_pes(Simulator, nl, plt, seed,
         b_p = nengo.Probe(bslice, synapse=0.03)
         e_p = nengo.Probe(e, synapse=0.03)
 
-        target = 'transform' if pre_neurons or weight_solver else 'decoders'
-        weights_p = nengo.Probe(conn, target, sample_every=0.01)
+        weights_p = nengo.Probe(conn, 'weights', sample_every=0.01)
         corr_p = nengo.Probe(conn.learning_rule, 'correction', synapse=0.03)
 
     sim = Simulator(model)
@@ -126,7 +125,7 @@ def test_unsupervised(Simulator, learning_rule_type, seed, rng, plt):
                                 transform=initial_weights,
                                 learning_rule_type=learning_rule_type)
         inp_p = nengo.Probe(u)
-        trans_p = nengo.Probe(conn, 'transform', sample_every=0.01)
+        weights_p = nengo.Probe(conn, 'weights', sample_every=0.01)
 
         ap = nengo.Probe(a, synapse=0.03)
         up = nengo.Probe(b, synapse=0.03)
@@ -141,11 +140,11 @@ def test_unsupervised(Simulator, learning_rule_type, seed, rng, plt):
     plt.plot(t, sim.data[up], label="Post")
     plt.legend(loc="best", fontsize="x-small")
     plt.subplot(2, 1, 2)
-    plt.plot(sim.trange(dt=0.01), sim.data[trans_p][..., 4])
+    plt.plot(sim.trange(dt=0.01), sim.data[weights_p][..., 4])
     plt.xlabel("Time (s)")
-    plt.ylabel("Transform weight")
+    plt.ylabel("Weights")
 
-    assert not np.all(sim.data[trans_p][0] == sim.data[trans_p][-1])
+    assert not np.all(sim.data[weights_p][0] == sim.data[weights_p][-1])
 
 
 def learning_net(learning_rule, net, rng):
@@ -165,8 +164,8 @@ def learning_net(learning_rule, net, rng):
             nengo.Connection(err, conn.learning_rule)
 
         activity_p = nengo.Probe(pre.neurons, synapse=0.01)
-        trans_p = nengo.Probe(conn, 'transform', synapse=.01, sample_every=.01)
-    return net, activity_p, trans_p
+        weights_p = nengo.Probe(conn, 'weights', synapse=.01, sample_every=.01)
+    return net, activity_p, weights_p
 
 
 @pytest.mark.parametrize('learning_rule', [nengo.PES, nengo.BCM, nengo.Oja])
