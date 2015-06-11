@@ -254,6 +254,77 @@ class LIF(LIFRate):
         # set spiking neurons' voltages to zero, and ref. time to tau_ref
         voltage[spiked > 0] = 0
         refractory_time[spiked > 0] = self.tau_ref + spiketime
+        
+class LIF2C(NeuronType):
+    
+    probeable = ['spikes', 'V_A', 'V_S', 'g_shunt']
+    
+    V_T = NumberParam()
+    V_R = NumberParam()
+    C_A = NumberParam()
+    C_S = NumberParam()
+    g_c = NumberParam()
+    g_l = NumberParam()
+    
+    def __init__(self, g_l=0.1, g_c=1, C_A=0.1, C_S=1, V_T=1, V_R=-1):
+        
+        self.g_l = g_l
+        self.g_c = g_c
+        self.C_A = C_A
+        self.C_S = C_S
+        self.V_T = V_T
+        self.V_R = V_R
+        
+
+    def rates(self, x, gain, bias):
+        """
+        Returns an approximation of the rate, based on the input dimension x. The
+        gain and bias determine the cell's linear RF in terms of the input vector.
+        
+        Have an exact approximation, so no need for calling step math?        
+        
+        @param x: input vector
+        @param gain: RF gain
+        @param bias: RF bias
+        
+        """
+                
+        J = gain * x + bias
+        
+        V_A = np.zeros_like(J)
+        V_S = np.zeros_like(J)
+        g_shunt = np.ones_like(J)
+        
+        m = 1./(self.C_A * (self.V_T - self.V_R))
+        gamma = self.g_c/(self.g_c + g_shunt)
+        b = - self.g_l * (self.V_T + self.V_R) / (2 * (self.C_A * (self.V_T - self.V_R)))
+        
+        rate = m * gamma * J + b
+        
+        return rate
+        
+        
+    def step_math(self, dt, J, spiked, V_A, V_S, g_shunt):
+        """
+        Equations for 2C LIF 
+        """
+        
+        dV_A = -self.g_l * V_A + self.g_c * (V_S - V_A) 
+        dV_S = -self.g_l * V_S + self.g_c * (V_A - V_S) - g_shunt * V_S + J
+        
+        # does equation for g_shunt go here or in synapse?
+        tau_g_shunt = 0.1
+        dg_shunt = (1-g_shunt) / tau_g_shunt
+        
+        V_A[:] += dV_A * dt
+        V_S[:] += dV_S * dt
+        g_shunt[:] += dg_shunt * dt
+        
+        spiked[:] = (V_A > self.V_T) / dt
+        V_A[spiked > 0] = self.V_R
+        #g_shunt[:] += sum(0.1 * (spiked > 0))
+        
+        
 
 
 class AdaptiveLIFRate(LIFRate):

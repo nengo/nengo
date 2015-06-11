@@ -21,7 +21,7 @@ from .connection import Connection
 from .ensemble import Ensemble
 from .node import Node
 from .neurons import (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich, LIF,
-                      LIFRate, RectifiedLinear, Sigmoid)
+                      LIFRate, LIF2C, RectifiedLinear, Sigmoid)
 from .network import Network
 from .learning_rules import PES, BCM, Oja
 from .params import Default

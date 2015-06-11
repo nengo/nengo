@@ -4,7 +4,7 @@ from nengo.builder.builder import Builder
 from nengo.builder.signal import Signal
 from nengo.builder.operator import Operator
 from nengo.neurons import (AdaptiveLIF, AdaptiveLIFRate, Izhikevich, LIF,
-                           LIFRate, RectifiedLinear, Sigmoid)
+                           LIFRate, LIF2C, RectifiedLinear, Sigmoid)
 
 
 class SimNeurons(Operator):
@@ -64,7 +64,21 @@ def build_lif(model, lif, neurons):
         output=model.sig[neurons]['out'],
         states=[model.sig[neurons]['voltage'],
                 model.sig[neurons]['refractory_time']]))
-
+                
+@Builder.register(LIF2C)
+def build_lif2c(model, lif2c, neurons):
+    model.sig[neurons]['V_A'] = Signal(np.ones(neurons.size_in) * lif2c.V_R,
+                                       name="%s.V_A" % neurons)
+    model.sig[neurons]['V_S'] = Signal(np.ones(neurons.size_in) * lif2c.V_R,
+                                       name="%s.V_S" % neurons)
+    model.sig[neurons]['g_shunt'] = Signal(np.ones(neurons.size_in), 
+                                           name="%s.g_shunt" % neurons)
+                                           
+    model.add_op(SimNeurons(neurons=lif2c, J=model.sig[neurons]['in'],
+                            output=model.sig[neurons]['out'], 
+                            states=[model.sig[neurons]['V_A'],
+                                    model.sig[neurons]['V_S'],
+                                    model.sig[neurons]['g_shunt']]))
 
 @Builder.register(AdaptiveLIFRate)
 def build_alifrate(model, alifrate, neurons):
