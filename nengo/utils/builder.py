@@ -27,7 +27,8 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
         If false, these scalars will be turned into scaled identity matrices.
     """
     transform = conn.transform
-    pre_slice = conn.pre_slice if slice_pre else slice(None)
+    pre_slice = (conn.pre_slice if slice_pre and conn.function is None else
+                 slice(None))
     post_slice = conn.post_slice if slice_post else slice(None)
 
     if pre_slice == slice(None) and post_slice == slice(None):
