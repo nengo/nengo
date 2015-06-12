@@ -227,7 +227,10 @@ class Connection(NengoObject):
         default=None, optional=True, sample_shape=('*', 'size_in'))
     scale_eval_points = BoolParam(default=True)
     seed = IntParam(default=None, optional=True)
-    modulatory = ObsoleteParam(642, "modulatory connections removed")
+    modulatory = ObsoleteParam("Modulatory connections have been removed. "
+                               "Connect to a learning rule instead.",
+                               "https://github.com/nengo/nengo/issues/632"
+                               "#issuecomment-71663849")
 
     def __init__(self, pre, post, synapse=Default, transform=Default,
                  solver=Default, learning_rule_type=Default, function=Default,

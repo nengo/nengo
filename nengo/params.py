@@ -91,27 +91,27 @@ class Parameter(object):
 class ObsoleteParam(Parameter):
     """A parameter that is no longer supported."""
 
-    def __init__(self, pull_request, msg):
-        self._pull_request = pull_request
-        self._msg = msg
+    def __init__(self, short_msg, url=None):
+        self.short_msg = short_msg
+        self.url = url
         super(ObsoleteParam, self).__init__(optional=True)
 
     def __get__(self, instance, type_):
         if instance is None:
             # Return self so default can be inspected
             return self
-        # raise a nice error if the parameter is accessed
-        self._raise_error()
+        self.raise_error()
 
     def validate(self, instance, value):
         if value is not Unconfigurable:
             # don't allow setting to anything other than unconfigurable default
-            self._raise_error()
+            self.raise_error()
 
-    def _raise_error(self):
-        raise ValueError("Parameter is no longer supported; please refer to "
-                         "pull-request #%d: %s" % (
-                             self._pull_request, self._msg))
+    def raise_error(self):
+        raise ValueError("This parameter is no longer supported. %s%s" % (
+            self.short_msg,
+            "\nFor more information, please visit %s" % self.url
+            if self.url is not None else ""))
 
 
 class BoolParam(Parameter):
