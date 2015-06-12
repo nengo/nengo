@@ -14,7 +14,7 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.utils.builder import full_transform
-from nengo.utils.compat import is_iterable
+from nengo.utils.compat import is_iterable, itervalues
 
 
 BuiltConnection = collections.namedtuple(
@@ -187,10 +187,7 @@ def build_connection(model, conn):
 
         rule = conn.learning_rule
         if is_iterable(rule):
-            if isinstance(rule, dict):
-                # sort keys to ensure consistent ordering
-                rule = (rule[k] for k in sorted(rule))
-            for r in rule:
+            for r in itervalues(rule) if isinstance(rule, dict) else rule:
                 model.build(r)
         elif rule is not None:
             model.build(rule)

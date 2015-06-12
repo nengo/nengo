@@ -10,7 +10,7 @@ from nengo.learning_rules import BCM, Oja, PES
 
 
 class SimBCM(Operator):
-    """Change the transform according to the BCM rule."""
+    """Calculate delta omega according to the BCM rule."""
     def __init__(self, pre_filtered, post_filtered, theta, delta,
                  learning_rate):
         self.post_filtered = post_filtered
@@ -38,7 +38,7 @@ class SimBCM(Operator):
 
 
 class SimOja(Operator):
-    """Change the transform according to the OJA rule."""
+    """Calculate delta omega according to the Oja rule."""
     def __init__(self, pre_filtered, post_filtered, transform, delta,
                  learning_rate, beta):
         self.post_filtered = post_filtered
@@ -72,32 +72,56 @@ class SimOja(Operator):
         return step
 
 
+def get_pre_ens(conn):
+    return (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
+            else conn.pre_obj.ensemble)
+
+
+def get_post_ens(conn):
+    return (conn.post_obj if isinstance(conn.post_obj, Ensemble)
+            else conn.post_obj.ensemble)
+
+
 @Builder.register(LearningRule)
 def build_learning_rule(model, rule):
+    conn = rule.connection
     rule_type = rule.learning_rule_type
-    model.build(rule_type, rule)
+    pre = get_pre_ens(conn)
+    post = get_post_ens(conn)
+
+    # --- Set up delta signal and += transform / decoders
+    if conn.solver.weights or (
+            isinstance(conn.pre_obj, Neurons) and
+            isinstance(conn.post_obj, Neurons)):
+        delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)), name='Delta')
+        model.add_op(ElementwiseInc(model.sig['common'][1],
+                                    delta,
+                                    model.sig[conn]['transform'],
+                                    tag="omega += delta"))
+    else:
+        delta = Signal(np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
+        model.add_op(ElementwiseInc(model.sig['common'][1],
+                                    delta,
+                                    model.sig[conn]['decoders'],
+                                    tag="decoders += delta"))
+    model.sig[rule]['delta'] = delta
+    model.build(rule_type, rule)  # Updates delta
 
 
 @Builder.register(BCM)
 def build_bcm(model, bcm, rule):
     conn = rule.connection
-    pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
-           else conn.pre_obj.ensemble)
-    post = (conn.post_obj if isinstance(conn.post_obj, Ensemble)
-            else conn.post_obj.ensemble)
-    transform = model.sig[conn]['transform']
-    pre_activities = model.sig[pre.neurons]['out']
-    post_activities = model.sig[post.neurons]['out']
+    pre_activities = model.sig[get_pre_ens(conn).neurons]['out']
     pre_filtered = filtered_signal(model, bcm, pre_activities, bcm.pre_tau)
+    post_activities = model.sig[get_post_ens(conn).neurons]['out']
     post_filtered = filtered_signal(model, bcm, post_activities, bcm.post_tau)
     theta = filtered_signal(model, bcm, post_filtered, bcm.theta_tau)
-    delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)),
-                   name='BCM: Delta')
 
-    model.add_op(SimBCM(pre_filtered, post_filtered, theta, delta,
+    model.add_op(SimBCM(pre_filtered,
+                        post_filtered,
+                        theta,
+                        model.sig[rule]['delta'],
                         learning_rate=bcm.learning_rate))
-    model.add_op(ElementwiseInc(
-        model.sig['common'][1], delta, transform, tag="BCM: Inc Transform"))
 
     # expose these for probes
     model.sig[rule]['theta'] = theta
@@ -110,22 +134,17 @@ def build_bcm(model, bcm, rule):
 @Builder.register(Oja)
 def build_oja(model, oja, rule):
     conn = rule.connection
-    pre = (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
-           else conn.pre_obj.ensemble)
-    post = (conn.post_obj if isinstance(conn.post_obj, Ensemble)
-            else conn.post_obj.ensemble)
-    transform = model.sig[conn]['transform']
-    pre_activities = model.sig[pre.neurons]['out']
-    post_activities = model.sig[post.neurons]['out']
+    pre_activities = model.sig[get_pre_ens(conn).neurons]['out']
+    post_activities = model.sig[get_post_ens(conn).neurons]['out']
     pre_filtered = filtered_signal(model, oja, pre_activities, oja.pre_tau)
     post_filtered = filtered_signal(model, oja, post_activities, oja.post_tau)
-    delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)),
-                   name='Oja: Delta')
 
-    model.add_op(SimOja(pre_filtered, post_filtered, transform, delta,
-                        learning_rate=oja.learning_rate, beta=oja.beta))
-    model.add_op(ElementwiseInc(
-        model.sig['common'][1], delta, transform, tag="Oja: Inc Transform"))
+    model.add_op(SimOja(pre_filtered,
+                        post_filtered,
+                        model.sig[conn]['transform'],
+                        model.sig[rule]['delta'],
+                        learning_rate=oja.learning_rate,
+                        beta=oja.beta))
 
     # expose these for probes
     model.sig[rule]['pre_filtered'] = pre_filtered
@@ -149,38 +168,33 @@ def build_pes(model, pes, rule):
 
     # Compute the correction, i.e. the scaled negative error
     correction = Signal(np.zeros(error.shape), name="PES:correction")
-    correction_view = correction.reshape((error.size, 1))
+    local_error = correction.reshape((error.size, 1))
     model.add_op(Reset(correction))
 
+    # correction = -learning_rate * dt * error
     lr_sig = Signal(-pes.learning_rate * model.dt, name="PES:learning_rate")
     model.add_op(DotInc(lr_sig, error, correction, tag="PES:correct"))
 
     if conn.solver.weights or (
             isinstance(conn.pre_obj, Neurons) and
             isinstance(conn.post_obj, Neurons)):
-        post = (conn.post_obj.ensemble if isinstance(conn.post_obj, Neurons)
-                else conn.post_obj)
+        post = get_post_ens(conn)
         transform = model.sig[conn]['transform']
         encoders = model.sig[post]['encoders']
 
+        # encoded = dot(encoders, correction)
         encoded = Signal(np.zeros(transform.shape[0]), name="PES:encoded")
         model.add_op(Reset(encoded))
         model.add_op(DotInc(encoders, correction, encoded, tag="PES:encode"))
-
-        encoded_view = encoded.reshape((encoded.size, 1))
-        model.add_op(ElementwiseInc(
-            encoded_view, acts_view, transform, tag="PES:Inc Transform"))
-    elif isinstance(conn.pre_obj, Neurons):
-        transform = model.sig[conn]['transform']
-        model.add_op(ElementwiseInc(
-            correction_view, acts_view, transform, tag="PES:Inc Transform"))
-    elif isinstance(conn.pre_obj, Ensemble):
-        decoders = model.sig[conn]['decoders']
-        model.add_op(ElementwiseInc(
-            correction_view, acts_view, decoders, tag="PES:Inc Decoder"))
-    else:
+        local_error = encoded.reshape((encoded.size, 1))
+    elif not isinstance(conn.pre_obj, (Ensemble, Neurons)):
         raise ValueError("'pre' object '%s' not suitable for PES learning"
                          % (conn.pre_obj))
+
+    # delta = local_error * activities
+    model.add_op(Reset(model.sig[rule]['delta']))
+    model.add_op(ElementwiseInc(
+        local_error, acts_view, model.sig[rule]['delta'], tag="PES:Inc Delta"))
 
     # expose these for probes
     model.sig[rule]['error'] = error

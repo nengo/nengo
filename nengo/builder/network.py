@@ -61,6 +61,14 @@ def build_network(model, network):
 
     logger.debug("Network step 3: Building connections")
     for conn in network.connections:
+        # NB: we do these in the order in which they're defined, and build the
+        # learning rule in the connection builder. Because learning rules are
+        # attached to connections, the connection that contains the learning
+        # rule (and the learning rule) are always built *before* a connection
+        # that attaches to that learning rule. Therefore, we don't have to
+        # worry about connection ordering here.
+        # TODO: Except perhaps if the connection being learned
+        # is in a subnetwork?
         model.build(conn)
 
     logger.debug("Network step 4: Building probes")
