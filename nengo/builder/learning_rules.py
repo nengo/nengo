@@ -6,6 +6,7 @@ from nengo.builder.signal import Signal
 from nengo.builder.synapses import filtered_signal
 from nengo.connection import LearningRule
 from nengo.ensemble import Ensemble, Neurons
+from nengo.node import Node
 from nengo.learning_rules import BCM, Oja, PES
 
 
@@ -78,8 +79,8 @@ def get_pre_ens(conn):
 
 
 def get_post_ens(conn):
-    return (conn.post_obj if isinstance(conn.post_obj, Ensemble)
-            else conn.post_obj.ensemble)
+    return (conn.post_obj if isinstance(conn.post_obj, (Ensemble, Node))
+             else conn.post_obj.ensemble)
 
 
 @Builder.register(LearningRule)
