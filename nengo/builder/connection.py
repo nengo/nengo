@@ -55,13 +55,8 @@ def build_linear_system(model, conn, rng):
 
 @Builder.register(Connection)  # noqa: C901
 def build_connection(model, conn):
-    print "Building Connection..."
     # Create random number generator
     rng = np.random.RandomState(model.seeds[conn])
-    
-    print model.sig[conn.post_obj].keys()    
-    print model.sig[conn.post_obj]['in']
-    print conn.target
     
     # Get input and output connections from pre and post
     def get_prepost_signal(is_pre):
@@ -82,10 +77,6 @@ def build_connection(model, conn):
     model.sig[conn]['in'] = get_prepost_signal(is_pre=True)
     model.sig[conn]['out'] = get_prepost_signal(is_pre=False)
     
-    
-    print model.sig[conn].keys()
-    
-
     decoders = None
     eval_points = None
     solver_info = None
@@ -176,7 +167,6 @@ def build_connection(model, conn):
     model.sig[conn]['transform'] = Signal(transform,
                                           name="%s.transform" % conn)
                                           
-    print signal
     if transform.ndim < 2:
         model.add_op(ElementwiseInc(model.sig[conn]['transform'],
                                     signal,
@@ -211,12 +201,6 @@ def build_connection(model, conn):
                                type(conn.post_obj).__name__))
 
         model.add_op(PreserveValue(modified_signal))
-
-    print "Finishing Connection..."
-    print model.sig[conn].keys()
-    print model.sig[conn.pre_obj].keys()
-    print model.sig[conn.post_obj].keys()
-
 
     model.params[conn] = BuiltConnection(decoders=decoders,
                                          eval_points=eval_points,

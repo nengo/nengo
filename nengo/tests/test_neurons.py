@@ -276,16 +276,6 @@ def test_izhikevich(Simulator, plt, seed, rng):
     plot(fs, "Fast spiking", 4)
     plot(lts, "Low-threshold spiking", 5)
     plot(rz, "Resonator", 6)
-    
-    
-#def test_lif2c():
-#    """Smoke test for using Izhikevich neurons.
-#
-#    Tests that the 6 parameter sets listed in the original paper can be
-#    simulated in Nengo (but doesn't test any properties of them).
-#    """
-#    with nengo.Network() as m:
-
 
 
 def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
