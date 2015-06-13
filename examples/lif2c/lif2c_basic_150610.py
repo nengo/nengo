@@ -2,6 +2,11 @@
 """
 Created on Wed Jun 10 16:38:28 2015
 
+This script creates a 2-compartmental LIF model, which can implement direct
+multiplicative scaling of the neuronal firing rate. This requires a new 
+parameter for Connections, called target, which allows a Connection to influence
+any state variable in the Neuron Model.
+
 @author: Paxon
 """
 
@@ -12,16 +17,19 @@ import pylab
 with nengo.Network() as m:
 
     n_lif2c_pop = 80
-    n_lif2c_dim = 2
+    n_lif2c_dim = 1
     n_gain_pop = 80   
     
+    # Specifying the encoders and parameters to try and deal with multiply by
+    # negative numbers.
     encoders = nengo.dists.UniformHypersphere(surface=True).sample(n_lif2c_pop, n_lif2c_dim)    
     
     lif_model = nengo.LIF2C()
     gain, bias = lif_model.gain_bias(intercepts=nengo.dists.Uniform(0.2, 0.9).sample(n_lif2c_pop),
                                      max_rates=nengo.dists.Uniform(50, 80).sample(n_lif2c_pop))
                                      
-    
+    # The lif2c model needs to specify its own gain and bias such that the 
+    # direct scaling does not scale the bias.                                
     lif2c = nengo.Ensemble(neuron_type=nengo.LIF2C(g_c=5.0, g_l=0.5, C_A=0.05, C_S=0.2, V_T=0.2, V_R=-0.2, bias=bias), 
                            n_neurons=n_lif2c_pop, dimensions=n_lif2c_dim, radius=1, encoders=encoders, bias=bias, gain=gain)
     gain_pop = nengo.Ensemble(n_neurons=n_gain_pop, dimensions=n_lif2c_dim)
@@ -41,6 +49,7 @@ with nengo.Network() as m:
             return 0 * np.ones((n_lif2c_dim,))
         else:
             return 1 * np.ones((n_lif2c_dim,))
+            
     #input_node = nengo.Node(lambda t: np.ones((n_lif2c_dim,)) * np.sin(5.0 * t))
     #gain_node = nengo.Node(lambda t: np.ones((2,)) * sin(2.0*t)) #(t > 1.0))
     input_node = nengo.Node(input_steps)
@@ -60,8 +69,9 @@ with nengo.Network() as m:
     nengo.Connection(gain_node, gain_pop)
     
     #g_shunt_weights = .12 * abs(encoders[:,:1]) #np.ones((n_lif2c_pop, 1))
-    g_shunt_weights = .2 * encoders[:, :1]
+    g_shunt_weights = .04 * np.ones_like(encoders[:,:1])
     #g_shunt_weights[g_shunt_weights < 0] = 0
+    # connection made to the neurons of lif2c, with target of g_shunt.
     nengo.Connection(gain_pop[0], lif2c.neurons, synapse=0.01, transform=g_shunt_weights, target='g_shunt')
 
 #    
@@ -109,8 +119,8 @@ clf()
 plot(sim.trange(), [input_steps(t) * np.ceil(-(gain_steps(t)-1)) for t in sim.trange()])
 plot(sim.trange(), 1.0 * sim.data[probe_lif2c][:, :1])
 
-figure(8)
-plot(sim.trange(), 1.0 * sim.data[probe_lif2c][:, 1:2])
+#figure(8)
+#plot(sim.trange(), 1.0 * sim.data[probe_lif2c][:, 1:2])
 #if __name__=='__main__':
 #    import nengo_gui
 #    nengo_gui.Viz(__file__).start()
