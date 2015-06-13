@@ -266,7 +266,7 @@ class LIF2C(NeuronType):
     g_c = NumberParam()
     g_l = NumberParam()
     
-    def __init__(self, g_l=0.1, g_c=1, C_A=0.1, C_S=1, V_T=1, V_R=-1):
+    def __init__(self, g_l=1.0, g_c=20.0, C_A=0.01, C_S=0.2, V_T=1.0, V_R=-1.0, bias=0):
         
         self.g_l = g_l
         self.g_c = g_c
@@ -274,6 +274,7 @@ class LIF2C(NeuronType):
         self.C_S = C_S
         self.V_T = V_T
         self.V_R = V_R
+        self.bias = bias
         
 
     def rates(self, x, gain, bias):
@@ -291,16 +292,16 @@ class LIF2C(NeuronType):
                 
         J = gain * x + bias
         
-        V_A = np.zeros_like(J)
-        V_S = np.zeros_like(J)
-        g_shunt = np.ones_like(J)
+        g_shunt = 0 * self.g_c * np.ones_like(J)
         
         m = 1./(self.C_A * (self.V_T - self.V_R))
-        gamma = self.g_c/(self.g_c + g_shunt)
-        b = - self.g_l * (self.V_T + self.V_R) / (2 * (self.C_A * (self.V_T - self.V_R)))
+        b = -self.g_l * (self.V_T + self.V_R) / (2 * (self.C_A * (self.V_T - self.V_R)))
+        
+        gamma = self.g_c/(self.g_c + g_shunt + self.g_l)
+
         
         rate = m * gamma * J + b
-        
+        rate[rate<1] = 0
         return rate
         
         
@@ -308,17 +309,28 @@ class LIF2C(NeuronType):
         """
         Equations for 2C LIF 
         """
+        J = J - self.bias
         
-        dV_A = -self.g_l * V_A + self.g_c * (V_S - V_A) 
-        dV_S = -self.g_l * V_S + self.g_c * (V_A - V_S) - g_shunt * V_S + J
+        g_shunt_t = g_shunt
+        g_shunt_t[g_shunt < 0] = 0
+        
+        g_shunt_t[g_shunt > 10] = 10
+        # making g_shunt inside an exp, so it stays positive always
+        dV_A = -self.g_l * V_A + self.g_c * (V_S - V_A) + self.bias
+        dV_S = -self.g_l * V_S + self.g_c * (V_A - V_S) - self.g_c * g_shunt_t * V_S + J
         
         # does equation for g_shunt go here or in synapse?
-        tau_g_shunt = 0.1
-        dg_shunt = (1-g_shunt) / tau_g_shunt
+        tau_g_shunt = 0.01
+        dg_shunt = (0-g_shunt) / tau_g_shunt
         
-        V_A[:] += dV_A * dt
-        V_S[:] += dV_S * dt
+
+        V_A[:] += dV_A * dt / self.C_A
+        V_S[:] += dV_S * dt / self.C_S
         g_shunt[:] += dg_shunt * dt
+        
+        V_A[V_A < self.V_R] = self.V_R
+        V_S[V_S < -2] = -2
+        V_S[V_S > 10] = 10
         
         spiked[:] = (V_A > self.V_T) / dt
         V_A[spiked > 0] = self.V_R

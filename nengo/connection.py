@@ -8,7 +8,7 @@ from nengo.ensemble import Ensemble
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.node import Node
 from nengo.params import (
-    Default, BoolParam, FunctionParam, IntParam, NdarrayParam)
+    Default, BoolParam, FunctionParam, IntParam, NdarrayParam, StringParam)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_iterable, iteritems
@@ -230,11 +230,12 @@ class Connection(NengoObject):
         default=None, optional=True, sample_shape=('*', 'size_in'))
     scale_eval_points = BoolParam(default=True)
     seed = IntParam(default=None, optional=True)
+    target = StringParam(default='in')
 
     def __init__(self, pre, post, synapse=Default, transform=Default,
                  solver=Default, learning_rule_type=Default, function=Default,
                  modulatory=Default, eval_points=Default,
-                 scale_eval_points=Default, seed=Default):
+                 scale_eval_points=Default, seed=Default, target=Default):
         self.pre = pre
         self.post = post
 
@@ -246,6 +247,8 @@ class Connection(NengoObject):
         self.scale_eval_points = scale_eval_points
         self.eval_points = eval_points  # Must be set before function
         self.function_info = function  # Must be set after transform
+        
+        self.target = target
 
     @property
     def function(self):

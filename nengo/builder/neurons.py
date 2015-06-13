@@ -71,7 +71,7 @@ def build_lif2c(model, lif2c, neurons):
                                        name="%s.V_A" % neurons)
     model.sig[neurons]['V_S'] = Signal(np.ones(neurons.size_in) * lif2c.V_R,
                                        name="%s.V_S" % neurons)
-    model.sig[neurons]['g_shunt'] = Signal(np.ones(neurons.size_in), 
+    model.sig[neurons]['g_shunt'] = Signal(0 * np.ones(neurons.size_in), 
                                            name="%s.g_shunt" % neurons)
                                            
     model.add_op(SimNeurons(neurons=lif2c, J=model.sig[neurons]['in'],
