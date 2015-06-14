@@ -99,6 +99,12 @@ def build_learning_rule(model, rule):
                                     delta,
                                     model.sig[conn]['transform'],
                                     tag="omega += delta"))
+    elif isinstance(conn.pre_obj, Neurons):
+        delta = Signal(np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
+        model.add_op(ElementwiseInc(model.sig['common'][1],
+                                    delta,
+                                    model.sig[conn]['transform'],
+                                    tag="omega += delta"))
     else:
         delta = Signal(np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
         model.add_op(ElementwiseInc(model.sig['common'][1],

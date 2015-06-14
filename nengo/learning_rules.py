@@ -22,6 +22,7 @@ class LearningRuleType(object):
 
     learning_rate = NumberParam(low=0, low_open=True)
     error_type = 'none'
+    modifies = []
     probeable = []
 
     def __init__(self, learning_rate=1e-6):
@@ -60,7 +61,7 @@ class PES(LearningRuleType):
 
     pre_tau = NumberParam(low=0, low_open=True)
     error_type = 'decoder'
-    modifies = ['Ensemble', 'Neurons']
+    modifies = ['transform', 'decoders']
     probeable = ['error', 'correction', 'activities', 'delta']
 
     def __init__(self, learning_rate=1e-4, pre_tau=0.005):
@@ -101,7 +102,7 @@ class BCM(LearningRuleType):
     post_tau = NumberParam(low=0, low_open=True)
     theta_tau = NumberParam(low=0, low_open=True)
     error_type = 'none'
-    modifies = ['Neurons']
+    modifies = ['transform']
     probeable = ['theta', 'pre_filtered', 'post_filtered', 'delta']
 
     def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
@@ -145,7 +146,7 @@ class Oja(LearningRuleType):
     post_tau = NumberParam(low=0, low_open=True)
     beta = NumberParam(low=0)
     error_type = 'none'
-    modifies = ['Neurons']
+    modifies = ['transform']
     probeable = ['pre_filtered', 'post_filtered', 'delta']
 
     def __init__(self, pre_tau=0.005, post_tau=None, beta=1.0,

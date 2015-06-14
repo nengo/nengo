@@ -27,12 +27,24 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
 
     def validate_rule(self, conn, rule):
         super(ConnectionLearningRuleTypeParam, self).validate_rule(conn, rule)
-        rule_type = ('Neurons' if conn.solver.weights
-                     else type(conn.pre).__name__)
+        rule_type = 'decoders'
+        if conn.solver.weights or (isinstance(conn.pre_obj, Neurons)
+                                   and isinstance(conn.post_obj, Neurons)):
+            rule_type = 'transform'
+
         if rule_type not in rule.modifies:
             raise ValueError("Learning rule '%s' cannot be applied to "
-                             "connection with pre of type '%s'"
-                             % (rule, type(conn.pre).__name__))
+                             "a %s-based connection." % (rule, rule_type))
+
+        if not isinstance(conn.pre_obj, (Ensemble, Neurons)):
+            raise ValueError("'pre' must be of type 'Ensemble' or 'Neurons' "
+                             "for learning rule '%s' (got type '%s')" % (
+                                 rule, conn.pre_obj.__class__.__name__))
+
+        if not isinstance(conn.post_obj, (Ensemble, Neurons, Node)):
+            raise ValueError("'post' must be of type 'Ensemble', 'Neurons' "
+                             "or 'Node' for learning rule '%s' (got type '%s')"
+                             % (rule, conn.post_obj.__class__.__name__))
 
 
 class ConnectionSolverParam(SolverParam):
