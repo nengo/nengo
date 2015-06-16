@@ -57,7 +57,7 @@ def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
     return y
 
 
-def array_hash(a, n=100):
+def array_hash(a, n=10000):
     """Simple fast array hash function.
 
     For arrays with size larger than ``n``, pick ``n`` elements at random
@@ -67,7 +67,7 @@ def array_hash(a, n=100):
     if not isinstance(a, np.ndarray):
         return hash(a)
 
-    if a.size < n:
+    if a.size <= n:
         # hash all elements
         v = a.view()
         v.setflags(write=False)
