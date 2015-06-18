@@ -28,8 +28,10 @@ class UDPSocket:
                  timeout=30, max_idle_time=1):
         self.local_addr = '127.0.0.1'
         self.local_port = local_port
-        self.dest_addr = dest_addr
-        self.dest_port = dest_port
+        self.dest_addr = (dest_addr if isinstance(dest_addr, list)
+                          else [dest_addr])
+        self.dest_port = (dest_port if isinstance(dest_port, list)
+                          else [dest_port])
         self.timeout = timeout
         self.byte_order = '!'
 
@@ -48,8 +50,8 @@ class UDPSocket:
 
         self.send_socket = None
         self.recv_socket = None
-        self.is_sender = dest_port > 0
-        self.is_receiver = local_port > 0
+        self.is_sender = dest_port != -1
+        self.is_receiver = local_port != -1
         self.ignore_timestamp = False
 
         self.send_dim = send_dim
@@ -118,18 +120,18 @@ class UDPSocket:
 
     def _terminate_alive_check_thread(self):
         self.max_idle_time_current = self.max_idle_time_timeout
-        if (not self.alive_check_thread is None):
+        if self.alive_check_thread is not None:
             self.last_active = 0
             self.alive_check_thread.join()
         self.alive_check_thread = None
 
     def _close_send_socket(self):
-        if (not self.send_socket is None):
+        if self.send_socket is not None:
             self.send_socket.close()
         self.send_socket = None
 
     def _close_recv_socket(self):
-        if (not self.recv_socket is None):
+        if self.recv_socket is not None:
             self.recv_socket.close()
         self.recv_socket = None
 
@@ -209,6 +211,9 @@ class UDPSocket:
         value = data[1:]
         return t_data, value
 
+    def __call__(self, t, x=None):
+        return self.run(t, x)
+
     def run(self, t, x=None):
         # If t == 0, return array of zeros. Terminate any open sockets to
         # reset system
@@ -232,8 +237,10 @@ class UDPSocket:
             # Time to send next packet if time between last packet and current
             # t + half of dt is >= remote dt
             if (t - self.last_packet_t + self.dt / 2.0 >= self.dt_remote):
-                self.send_socket.sendto(self.pack_packet(t * 1.0, x),
-                                        (self.dest_addr, self.dest_port))
+                for addr in self.dest_addr:
+                    for port in self.dest_port:
+                        self.send_socket.sendto(self.pack_packet(t * 1.0, x),
+                                                (addr, port))
                 self.last_packet_t = t * 1.0   # Copy t (which is an np.scalar)
 
         if (self.is_receiver):
