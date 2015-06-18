@@ -17,9 +17,9 @@ class SimThread(threading.Thread):
         self.wait = wait
 
     def run(self):
-        if not self.lock is None and self.wait:
+        if self.lock is not None and self.wait:
             self.lock.wait()
-        if not self.lock is None and not self.wait:
+        if self.lock is not None and not self.wait:
             self.lock.set()
         self.sim.run(self.sim_time)
 
