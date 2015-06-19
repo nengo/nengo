@@ -22,9 +22,9 @@ def target_function(eval_points, targets):
     Returns
     -------
     dict:
-       A diciontary with two keys: ``function`` and ``eval_points``.
+       A dictionary with two keys: ``function`` and ``eval_points``.
        function is the mapping between the evaluation points and the
-       targets. ``eval_points`` are the evalutaion points that will
+       targets. ``eval_points`` are the evaluation points that will
        be passed to the connection
 
     Examples
