@@ -36,7 +36,10 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
             # transform is already full, so return a copy
             return np.array(transform)
         elif transform.size == 1 and allow_scalars:
-            return np.array(transform)
+            if transform.ndim == 1:
+                return np.array(transform[0])
+            else:
+                return np.array(transform)
 
     # Create the new transform matching the pre/post dimensions
     func_size = conn.function_info.size
