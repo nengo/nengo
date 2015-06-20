@@ -4,7 +4,7 @@ import numpy as np
 
 from nengo.config import Config
 from nengo.params import Default, is_param, Parameter, Unconfigurable
-from nengo.utils.compat import with_metaclass
+from nengo.utils.compat import is_integer, with_metaclass
 
 
 class NetworkMember(type):
@@ -89,15 +89,15 @@ class ObjView(object):
     """Container for a slice with respect to some object.
 
     This is used by the __getitem__ of Neurons, Node, and Ensemble, in order
-    to pass slices of those objects to Connect. This is a notational
-    convenience for creating transforms. See Connect for details.
+    to pass slices of those objects to Connection. This is a notational
+    convenience for creating transforms. See Connection for details.
 
     Does not currently support any other view-like operations.
     """
 
     def __init__(self, obj, key=slice(None)):
         self.obj = obj
-        if isinstance(key, int):
+        if is_integer(key):
             # single slices of the form [i] should be cast into
             # slice objects for convenience
             if key == -1:
@@ -131,16 +131,15 @@ class ObjView(object):
 
     @property
     def _slice_string(self):
-        if isinstance(self.slice, list):
-            sl_str = self.slice
-        else:
+        if isinstance(self.slice, slice):
             sl_start = "" if self.slice.start is None else self.slice.start
             sl_stop = "" if self.slice.stop is None else self.slice.stop
             if self.slice.step is None:
-                sl_str = "%s:%s" % (sl_start, sl_stop)
+                return "%s:%s" % (sl_start, sl_stop)
             else:
-                sl_str = "%s:%s:%s" % (sl_start, sl_stop, self.slice.step)
-        return str(sl_str)
+                return "%s:%s:%s" % (sl_start, sl_stop, self.slice.step)
+        else:
+            return str(self.slice)
 
     def __str__(self):
         return "%s[%s]" % (self.obj, self._slice_string)

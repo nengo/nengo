@@ -384,7 +384,7 @@ def test_slicing(Simulator, nl, plt, seed):
     y2[s2b] = np.dot(T2, x[s2a])
 
     s3a = [2, 0]
-    s3b = [0, 2]
+    s3b = np.asarray([0, 2])  # test slicing with numpy array
     T3 = [0.5, 0.75]
     y3 = np.zeros(3)
     y3[s3b] = np.dot(np.diag(T3), x[s3a])

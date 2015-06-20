@@ -118,6 +118,8 @@ Release History
 - Added ``[progress]`` section to ``nengorc`` which allows setting
   ``progress_bar`` and ``updater``.
   (`#693 <https://github.com/nengo/nengo/pull/693>`_)
+- Numpy arrays can now be used as indices for slicing objects.
+  (`#754 <https://github.com/nengo/nengo/pull/754>`_)
 
 **Bug fixes**
 

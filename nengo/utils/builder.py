@@ -31,7 +31,8 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
                  slice(None))
     post_slice = conn.post_slice if slice_post else slice(None)
 
-    if pre_slice == slice(None) and post_slice == slice(None):
+    eq_none_slice = lambda s: isinstance(s, slice) and s == slice(None)
+    if eq_none_slice(pre_slice) and eq_none_slice(post_slice):
         if transform.ndim == 2:
             # transform is already full, so return a copy
             return np.array(transform)
