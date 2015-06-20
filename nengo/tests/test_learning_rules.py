@@ -103,6 +103,40 @@ def test_pes_neuron_ens(Simulator, plt, seed, rng):
               n=n, transform=initial_weights)
 
 
+def test_pes_transform(Simulator, seed):
+    """Test behaviour of PES when function and transform both defined."""
+    n = 200
+    # error must be with respect to transformed vector (conn.size_out)
+    T = np.asarray([[0.5], [-0.5]])  # transform to output
+
+    m = nengo.Network(seed=seed)
+    with m:
+        u = nengo.Node(output=[1])
+        a = nengo.Ensemble(n, dimensions=1)
+        b = nengo.Node(size_in=2)
+        e = nengo.Node(size_in=1)
+
+        nengo.Connection(u, a)
+        learned_conn = nengo.Connection(
+            a, b, function=lambda x: [0], transform=T,
+            learning_rule_type=nengo.PES(learning_rate=1e-3))
+        assert T.shape[0] == learned_conn.size_out
+        assert T.shape[1] == learned_conn.size_mid
+
+        nengo.Connection(b[0], e, synapse=None)
+        nengo.Connection(nengo.Node(output=-1), e)
+        nengo.Connection(
+            e, learned_conn.learning_rule, transform=T, synapse=None)
+
+        p_b = nengo.Probe(b, synapse=0.05)
+
+    sim = nengo.Simulator(m)
+    sim.run(1.0)
+    tend = sim.trange() > 0.7
+
+    assert np.allclose(sim.data[p_b][tend], [1, -1], atol=1e-2)
+
+
 @pytest.mark.parametrize('learning_rule_type', [
     BCM(learning_rate=1e-8),
     Oja(learning_rate=1e-5),

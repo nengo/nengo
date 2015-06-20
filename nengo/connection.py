@@ -370,7 +370,7 @@ class LearningRule(object):
             if isinstance(self.connection.pre_obj, Neurons):
                 return self.connection.pre_obj.ensemble.dimensions
             elif isinstance(self.connection.pre_obj, Ensemble):
-                return self.connection.size_mid
+                return self.connection.size_out
             else:
                 raise ValueError("Cannot learn on '%s' type" % (
                     self.connection.pre_obj.__class__.__name__))
