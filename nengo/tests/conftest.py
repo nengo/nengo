@@ -157,7 +157,10 @@ def function_seed(function, mod=0):
     hash_list = os.path.normpath(path).split(os.path.sep) + [c.co_name]
     hash_string = ensure_bytes('/'.join(hash_list))
     i = int(hashlib.md5(hash_string).hexdigest()[:15], 16)
-    return (i + mod) % npext.maxint
+    s = (i + mod) % npext.maxint
+    int_s = int(s)  # numpy 1.8.0 bug when RandomState on long type inputs
+    assert type(int_s) == int  # should not still be a long because < maxint
+    return int_s
 
 
 @pytest.fixture
