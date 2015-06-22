@@ -184,3 +184,24 @@ def test_synapseparam():
     # Non-synapse not OK
     with pytest.raises(ValueError):
         inst.sp = 'a'
+
+
+def test_frozen():
+    """Test attributes inherited from FrozenObject"""
+    a = LinearFilter([1], [0.04, 1])
+    b = LinearFilter([1], [0.04, 1])
+    c = LinearFilter([1], [0.04, 1.1])
+
+    assert hash(a) == hash(a)
+    assert hash(b) == hash(b)
+    assert hash(c) == hash(c)
+
+    assert a == b
+    assert hash(a) == hash(b)
+    assert a != c
+    assert hash(a) != hash(c)  # not guaranteed, but highly likely
+    assert b != c
+    assert hash(b) != hash(c)  # not guaranteed, but highly likely
+
+    with pytest.raises((ValueError, RuntimeError)):
+        a.den[0] = 9

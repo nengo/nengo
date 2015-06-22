@@ -356,3 +356,30 @@ def test_neurontypeparam():
     assert isinstance(inst.ntp, nengo.LIF)
     with pytest.raises(ValueError):
         inst.ntp = 'a'
+
+
+def test_frozen():
+    """Test attributes inherited from FrozenObject"""
+    a = nengo.LIF()
+    b = nengo.LIF()
+    c = nengo.LIF(tau_rc=0.3)
+    d = nengo.neurons.Izhikevich()
+
+    assert hash(a) == hash(a)
+    assert hash(b) == hash(b)
+    assert hash(c) == hash(c)
+    assert hash(d) == hash(d)
+
+    assert a == b
+    assert hash(a) == hash(b)
+    assert a != c
+    assert hash(a) != hash(c)  # not guaranteed, but highly likely
+    assert b != c
+    assert hash(b) != hash(c)  # not guaranteed, but highly likely
+    assert a != d
+    assert hash(a) != hash(d)  # not guaranteed, but highly likely
+
+    with pytest.raises(ValueError):
+        a.tau_rc = 0.3
+    with pytest.raises(ValueError):
+        d.coupling = 8

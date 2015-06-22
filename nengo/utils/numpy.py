@@ -5,6 +5,8 @@ from __future__ import absolute_import
 
 import numpy as np
 
+from .compat import PY2
+
 maxint = np.iinfo(np.int32).max
 
 
@@ -37,6 +39,30 @@ def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
         y.flags.writeable = False
 
     return y
+
+
+def array_hash(a, n=100):
+    """Simple fast array hash function.
+
+    For arrays with size larger than ``n``, pick ``n`` elements at random
+    to hash. This strategy should work well for dense matrices, but for
+    sparse ones it is more likely to give hash collisions.
+    """
+    if not isinstance(a, np.ndarray):
+        return hash(a)
+
+    if a.size < n:
+        # hash all elements
+        v = a.view()
+        v.setflags(write=False)
+        return hash(v.data if PY2 else v.data.tobytes())
+    else:
+        # pick random elements to hash
+        rng = np.random.RandomState(a.size)
+        inds = [rng.randint(0, a.shape[i], size=n) for i in range(a.ndim)]
+        v = a[inds]
+        v.setflags(write=False)
+        return hash(v.data if PY2 else v.data.tobytes())
 
 
 def expm(A, n_factors=None, normalize=False):

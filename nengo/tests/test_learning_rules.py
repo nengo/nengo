@@ -403,3 +403,24 @@ def test_voja_modulate(Simulator, nl_nodirect, seed, plt):
     # Check that encoders changed during first 0.5s
     i = np.where(tend)[0][0]  # first time point after changeover
     assert not np.allclose(sim.data[p_enc][0], sim.data[p_enc][i])
+
+
+def test_frozen():
+    """Test attributes inherited from FrozenObject"""
+    a = PES(2e-3, 4e-3)
+    b = PES(2e-3, 4e-3)
+    c = PES(2e-3, 5e-3)
+
+    assert hash(a) == hash(a)
+    assert hash(b) == hash(b)
+    assert hash(c) == hash(c)
+
+    assert a == b
+    assert hash(a) == hash(b)
+    assert a != c
+    assert hash(a) != hash(c)  # not guaranteed, but highly likely
+    assert b != c
+    assert hash(b) != hash(c)  # not guaranteed, but highly likely
+
+    with pytest.raises((ValueError, RuntimeError)):
+        a.learning_rate = 1e-1

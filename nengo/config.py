@@ -38,8 +38,7 @@ class ClassParams(object):
         return self in self.get_param(key)
 
     def __getattr__(self, key):
-        param = self.get_param(key)
-        return param.defaults[self] if self in param else param.default
+        return self.get_param(key).get_default(self)
 
     def __setattr__(self, key, value):
         """Overridden to handle instance descriptors manually.
@@ -52,15 +51,13 @@ class ClassParams(object):
             param = self.get_param(key)
             if not param.configurable:
                 raise ValueError("Parameter '%s' is not configurable" % key)
-
-            param.validate(self, value)
-            param.defaults[self] = value
+            param.set_default(self, value)
 
     def __delattr__(self, key):
         if key.startswith("_"):
             super(ClassParams, self).__delattr__(key)
         else:
-            del self.get_param(key).defaults[self]
+            self.get_param(key).del_default(self)
 
     def __str__(self):
         name = self._configures.__name__

@@ -274,3 +274,21 @@ def test_distorarrayparam_sample_shape():
     with pytest.raises(ValueError):
         inst.dp = np.ones((10, 4))
     assert np.all(inst.dp == np.ones((4, 10)))
+
+
+def test_frozen():
+    """Test attributes inherited from FrozenObject"""
+    a = dists.Uniform(-0.3, 0.6)
+    b = dists.Uniform(-0.3, 0.6)
+    c = dists.Uniform(-0.2, 0.6)
+
+    assert hash(a) == hash(a)
+    assert hash(b) == hash(b)
+    assert hash(c) == hash(c)
+
+    assert a == b
+    assert hash(a) == hash(b)
+    assert a != c
+    assert hash(a) != hash(c)  # not guaranteed, but highly likely
+    assert b != c
+    assert hash(b) != hash(c)  # not guaranteed, but highly likely

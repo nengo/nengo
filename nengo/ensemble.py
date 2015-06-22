@@ -169,4 +169,4 @@ class Neurons(object):
 
     @property
     def probeable(self):
-        return ['output', 'input'] + self.ensemble.neuron_type.probeable
+        return ('output', 'input') + self.ensemble.neuron_type.probeable

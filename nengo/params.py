@@ -1,11 +1,12 @@
 import collections
-import weakref
+import inspect
 
 import numpy as np
 
-from nengo.utils.compat import is_array, is_integer, is_number, is_string
-from nengo.utils.numpy import compare
-from nengo.utils.stdlib import checked_call
+from nengo.utils.compat import (
+    is_array, is_integer, is_number, is_string, itervalues)
+from nengo.utils.numpy import array_hash, compare
+from nengo.utils.stdlib import WeakKeyIDDictionary, checked_call
 
 
 class DefaultType:
@@ -38,17 +39,25 @@ class Parameter(object):
         If true, the parameter can only be set once.
         By default, parameters can be set multiple times.
     """
-    def __init__(self, default=Unconfigurable, optional=False, readonly=False):
+    equatable = False
+
+    def __init__(self, default=Unconfigurable, optional=False, readonly=None):
         self.default = default
         self.optional = optional
+
+        if readonly is None:
+            # freeze Unconfigurables by default
+            readonly = default is Unconfigurable
         self.readonly = readonly
 
-        # use WeakKey dictionaries so items can still be garbage collected
-        self.defaults = weakref.WeakKeyDictionary()
-        self.data = weakref.WeakKeyDictionary()
+        # default values set by config system
+        self._defaults = WeakKeyIDDictionary()
+
+        # param values set on objects
+        self.data = WeakKeyIDDictionary()
 
     def __contains__(self, key):
-        return key in self.data or key in self.defaults
+        return key in self.data or key in self._defaults
 
     def __delete__(self, instance):
         del self.data[instance]
@@ -78,6 +87,18 @@ class Parameter(object):
     def configurable(self):
         return self.default is not Unconfigurable
 
+    def get_default(self, obj):
+        return self._defaults.get(obj, self.default)
+
+    def set_default(self, obj, value):
+        if not self.configurable:
+            raise ValueError("Parameter '%s' is not configurable" % self)
+        self.validate(obj, value)
+        self._defaults[obj] = value
+
+    def del_default(self, obj):
+        del self._defaults[obj]
+
     def validate(self, instance, value):
         if isinstance(value, DefaultType):
             raise ValueError("Default is not a valid value. To reset a "
@@ -86,6 +107,23 @@ class Parameter(object):
             raise ValueError("Parameter is read-only; cannot be changed.")
         if not self.optional and value is None:
             raise ValueError("Parameter is not optional; cannot set to None")
+
+    def equal(self, instance_a, instance_b):
+        a = self.__get__(instance_a, None)
+        b = self.__get__(instance_b, None)
+        if self.equatable:
+            # always use array_equal, in case one argument is an array
+            return np.array_equal(a, b)
+        else:
+            return a is b
+
+    def hashvalue(self, instance):
+        """Returns a hashable value (`hash` can be called on the output)."""
+        value = self.__get__(instance, None)
+        if self.equatable:
+            return value
+        else:
+            return id(value)
 
 
 class ObsoleteParam(Parameter):
@@ -115,6 +153,8 @@ class ObsoleteParam(Parameter):
 
 
 class BoolParam(Parameter):
+    equatable = True
+
     def validate(self, instance, boolean):
         if boolean is not None and not isinstance(boolean, bool):
             raise ValueError("Must be a boolean; got '%s'" % boolean)
@@ -122,9 +162,11 @@ class BoolParam(Parameter):
 
 
 class NumberParam(Parameter):
+    equatable = True
+
     def __init__(self, default=Unconfigurable,
                  low=None, high=None, low_open=False, high_open=False,
-                 optional=False, readonly=False):
+                 optional=False, readonly=None):
         self.low = low
         self.high = high
         self.low_open = low_open
@@ -159,6 +201,8 @@ class IntParam(NumberParam):
 
 
 class StringParam(Parameter):
+    equatable = True
+
     def validate(self, instance, string):
         if string is not None and not is_string(string):
             raise ValueError("Must be a string; got '%s'" % string)
@@ -174,10 +218,12 @@ class DictParam(Parameter):
 
 class NdarrayParam(Parameter):
     """Can be a NumPy ndarray, or something that can be coerced into one."""
+    equatable = True
 
     def __init__(self, default=Unconfigurable, shape=None,
-                 optional=False, readonly=False):
+                 optional=False, readonly=None):
         assert shape is not None
+        assert shape.count('...') <= 1, "Cannot have more than one ellipsis"
         self.shape = shape
         super(NdarrayParam, self).__init__(default, optional, readonly)
 
@@ -187,18 +233,38 @@ class NdarrayParam(Parameter):
             ndarray = self.validate(instance, ndarray)
         self.data[instance] = ndarray
 
-    def validate(self, instance, ndarray):
-        ndim = len(self.shape)
-        try:
-            ndarray = np.asarray(ndarray, dtype=np.float64)
-        except TypeError:
-            raise ValueError("Must be a float NumPy array (got type '%s')"
-                             % ndarray.__class__.__name__)
+    def validate(self, instance, ndarray):  # noqa: C901
+        if isinstance(ndarray, np.ndarray):
+            ndarray = ndarray.view()
+        else:
+            try:
+                ndarray = np.array(ndarray, dtype=np.float64)
+            except TypeError:
+                raise ValueError("Must be a float NumPy array (got type '%s')"
+                                 % ndarray.__class__.__name__)
+        if self.readonly:
+            ndarray.setflags(write=False)
 
-        if ndarray.ndim != ndim:
+        if '...' in self.shape:
+            # Convert '...' to the appropriate number of '*'s
+            nfixed = len(self.shape) - 1
+            n = ndarray.ndim - nfixed
+            if n < 0:
+                raise ValueError("ndarray must be at least %dD (got %dD)"
+                                 % (nfixed, ndarray.ndim))
+
+            i = self.shape.index('...')
+            shape = list(self.shape[:i]) + (['*'] * n)
+            if i < len(self.shape) - 1:
+                shape.extend(self.shape[i+1:])
+        else:
+            shape = self.shape
+
+        if ndarray.ndim != len(shape):
             raise ValueError("ndarray must be %dD (got %dD)"
-                             % (ndim, ndarray.ndim))
-        for i, attr in enumerate(self.shape):
+                             % (len(shape), ndarray.ndim))
+
+        for i, attr in enumerate(shape):
             assert is_integer(attr) or is_string(attr), (
                 "shape can only be an int or str representing an attribute")
             if attr == '*':
@@ -215,6 +281,9 @@ class NdarrayParam(Parameter):
                 raise ValueError("shape[%d] should be %d (got %d)"
                                  % (i, desired, ndarray.shape[i]))
         return ndarray
+
+    def hashvalue(self, instance):
+        return array_hash(self.__get__(instance, None))
 
 
 FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
@@ -243,3 +312,41 @@ class FunctionParam(Parameter):
         if function is not None and not callable(function):
             raise ValueError("function '%s' must be callable" % function)
         super(FunctionParam, self).validate(instance, function)
+
+
+class FrozenObject(object):
+    def __init__(self):
+        self._paramdict = dict(
+            (k, v) for k, v in inspect.getmembers(self.__class__)
+            if isinstance(v, Parameter))
+        if not all(p.readonly for p in self._params):
+            raise ValueError(
+                "All parameters of a FrozenObject must be readonly")
+
+    @property
+    def _params(self):
+        return itervalues(self._paramdict)
+
+    def __eq__(self, other):
+        if self is other:  # quick check for speed
+            return True
+        return self.__class__ == other.__class__ and all(
+            p.equal(self, other) for p in self._params)
+
+    def __hash__(self):
+        return hash((self.__class__, tuple(
+            p.hashvalue(self) for p in self._params)))
+
+    def __getstate__(self):
+        d = dict(self.__dict__)
+        d.pop('_paramdict')  # do not pickle the param dict itself
+        for k in self._paramdict:
+            d[k] = getattr(self, k)
+
+        return d
+
+    def __setstate__(self, state):
+        FrozenObject.__init__(self)  # set up the param dict
+        for k in self._paramdict:
+            setattr(self, k, state.pop(k))
+        self.__dict__.update(state)

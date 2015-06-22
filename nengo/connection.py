@@ -84,13 +84,13 @@ class ConnectionSolverParam(SolverParam):
 
 
 class EvalPointsParam(DistOrArrayParam):
-    def validate(self, conn, ndarray):
+    def validate(self, conn, distorarray):
         """Eval points are only valid when pre is an ensemble."""
         if not isinstance(conn.pre, Ensemble):
             msg = ("eval_points are only valid on connections from ensembles "
                    "(got type '%s')" % conn.pre.__class__.__name__)
             raise ValueError(msg)
-        return super(EvalPointsParam, self).validate(conn, ndarray)
+        return super(EvalPointsParam, self).validate(conn, distorarray)
 
 
 class ConnectionFunctionParam(FunctionParam):

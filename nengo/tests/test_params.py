@@ -198,6 +198,8 @@ def test_ndarrayparam():
     """NdarrayParams must be able to be made into float ndarrays."""
     class Test(object):
         ndp = params.NdarrayParam(default=None, shape=('*',))
+        ella = params.NdarrayParam(default=None, shape=(3, '...'))
+        ellb = params.NdarrayParam(default=None, shape=(3, '...', 2))
 
     inst = Test()
     inst.ndp = np.ones(10)
@@ -211,6 +213,16 @@ def test_ndarrayparam():
     # Must be convertible to float array
     with pytest.raises(ValueError):
         inst.ndp = 'a'
+
+    inst.ella = np.ones((3,))
+    inst.ella = np.ones((3, 1))
+    inst.ella = np.ones((3, 2, 3))
+    with pytest.raises(ValueError):
+        inst.ella = np.ones(4)
+    inst.ellb = np.ones((3, 2))
+    inst.ellb = np.ones((3, 1, 2))
+    with pytest.raises(ValueError):
+        inst.ellb = np.ones(3)
 
 
 def test_ndarrayparam_sample_shape():

@@ -6,7 +6,8 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.dists import Distribution, Gaussian
-from nengo.processes import BrownNoise, WhiteNoise, WhiteSignal
+from nengo.processes import BrownNoise, FilteredNoise, WhiteNoise, WhiteSignal
+from nengo.synapses import Lowpass
 
 
 class DistributionMock(Distribution):
@@ -230,3 +231,26 @@ def test_reset(Simulator, seed):
 
     assert x.shape == y.shape
     assert (x == y).all()
+
+
+def test_frozen():
+    """Test attributes inherited from FrozenObject"""
+    a = WhiteNoise(dist=Gaussian(0.3, 0.2))
+    b = WhiteNoise(dist=Gaussian(0.3, 0.2))
+    c = FilteredNoise(dist=Gaussian(0.3, 0.2), synapse=Lowpass(0.02))
+
+    assert hash(a) == hash(a)
+    assert hash(b) == hash(b)
+    assert hash(c) == hash(c)
+
+    assert a == b
+    assert hash(a) == hash(b)
+    assert a != c
+    assert hash(a) != hash(c)  # not guaranteed, but highly likely
+    assert b != c
+    assert hash(b) != hash(c)  # not guaranteed, but highly likely
+
+    with pytest.raises(ValueError):
+        a.dist = Gaussian(0.3, 0.5)  # test that dist param is frozen
+    with pytest.raises(ValueError):
+        a.dist.std = 0.4  # test that dist object is frozen

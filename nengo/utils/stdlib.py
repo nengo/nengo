@@ -12,8 +12,52 @@ import os
 import shutil
 import sys
 import time
+import weakref
 
-from .compat import iteritems, reraise
+from .compat import iteritems, itervalues, reraise
+
+
+class WeakKeyIDDictionary(object):
+    """WeakKeyDictionary that uses object ID to hash.
+
+    This ignores the ``__eq__`` and ``__hash__`` functions on objects,
+    so that objects are only considered equal if one is the other.
+    """
+
+    def __init__(self):
+        self._keyrefs = weakref.WeakValueDictionary()
+        self._keyvalues = {}
+
+    def __getitem__(self, k):
+        if k in self:
+            return self._keyvalues[id(k)]
+        else:
+            raise KeyError(str(k))
+
+    def __setitem__(self, k, v):
+        if k is None:
+            raise ValueError("Cannot use `None` as a key")
+        self._keyrefs[id(k)] = k
+        self._keyvalues[id(k)] = v
+
+    def __contains__(self, k):
+        if k is None:
+            return False
+        return k is self._keyrefs.get(id(k))
+
+    def __delitem__(self, k):
+        if k in self:
+            del self._keyrefs[id(k)]
+            del self._keyvalues[id(k)]
+        else:
+            raise KeyError(str(k))
+
+    def __iter__(self):
+        return itervalues(self._keyrefs)
+
+    def get(self, k, default=None):
+        return self._keyvalues[id(k)] if k in self else default
+
 
 CheckedCall = collections.namedtuple('CheckedCall', ('value', 'invoked'))
 

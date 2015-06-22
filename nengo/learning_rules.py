@@ -1,7 +1,7 @@
 import warnings
 
 from nengo.base import NengoObjectParam
-from nengo.params import Parameter, NumberParam
+from nengo.params import FrozenObject, NumberParam, Parameter
 from nengo.utils.compat import is_iterable, itervalues
 
 
@@ -13,7 +13,7 @@ class ConnectionParam(NengoObjectParam):
         super(ConnectionParam, self).validate(instance, conn)
 
 
-class LearningRuleType(object):
+class LearningRuleType(FrozenObject):
     """Base class for all learning rule objects.
 
     To use a learning rule, pass it as a ``learning_rule`` keyword argument to
@@ -40,6 +40,7 @@ class LearningRuleType(object):
     probeable = []
 
     def __init__(self, learning_rate=1e-6):
+        super(LearningRuleType, self).__init__()
         self.learning_rate = learning_rate
 
     @property
