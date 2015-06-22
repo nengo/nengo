@@ -29,7 +29,7 @@ class SimProcess(Operator):
         step_f = self.process.make_step(size_in, size_out, dt, rng)
         inc = self.inc
 
-        def step():
+        def step_simprocess():
             result = (step_f(t.item(), input) if input is not None else
                       step_f(t.item()))
             if output is not None:
@@ -38,7 +38,7 @@ class SimProcess(Operator):
                 else:
                     output[...] = result
 
-        return step
+        return step_simprocess
 
 
 @Builder.register(Process)

@@ -26,9 +26,9 @@ class SimNeurons(Operator):
         output = signals[self.output]
         states = [signals[state] for state in self.states]
 
-        def step():
+        def step_simneurons():
             self.neurons.step_math(dt, J, output, *states)
-        return step
+        return step_simneurons
 
 
 @Builder.register(RectifiedLinear)

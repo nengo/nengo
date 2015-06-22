@@ -32,10 +32,10 @@ class SimBCM(Operator):
         delta = signals[self.delta]
         alpha = self.learning_rate * dt
 
-        def step():
+        def step_simbcm():
             delta[...] = np.outer(
                 alpha * post_filtered * (post_filtered - theta), pre_filtered)
-        return step
+        return step_simbcm
 
 
 class SimOja(Operator):
@@ -62,7 +62,7 @@ class SimOja(Operator):
         alpha = self.learning_rate * dt
         beta = self.beta
 
-        def step():
+        def step_simoja():
             # perform forgetting
             post_squared = alpha * post_filtered * post_filtered
             delta[...] = -beta * weights * post_squared[:, None]
@@ -70,7 +70,7 @@ class SimOja(Operator):
             # perform update
             delta[...] += np.outer(alpha * post_filtered, pre_filtered)
 
-        return step
+        return step_simoja
 
 
 def get_pre_ens(conn):

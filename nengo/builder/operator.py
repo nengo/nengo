@@ -145,9 +145,9 @@ class PreserveValue(Operator):
         self.updates = []
 
     def make_step(self, signals, dt, rng):
-        def step():
+        def step_preservevalue():
             pass
-        return step
+        return step_preservevalue
 
 
 class Reset(Operator):
@@ -169,9 +169,9 @@ class Reset(Operator):
         target = signals[self.dst]
         value = self.value
 
-        def step():
+        def step_reset():
             target[...] = value
-        return step
+        return step_reset
 
 
 class Copy(Operator):
@@ -194,9 +194,9 @@ class Copy(Operator):
         dst = signals[self.dst]
         src = signals[self.src]
 
-        def step():
+        def step_copy():
             dst[...] = src
-        return step
+        return step_copy
 
 
 class SlicedCopy(Operator):
@@ -268,9 +268,9 @@ class ElementwiseInc(Operator):
                                  "Trying to do %s += %s * %s" %
                                  (Yshape, Ashape, Xshape))
 
-        def step():
+        def step_elementwiseinc():
             Y[...] += A * X
-        return step
+        return step_elementwiseinc
 
 
 def reshape_dot(A, X, Y, tag=None):
@@ -334,12 +334,12 @@ class DotInc(Operator):
         Y = signals[self.Y]
         reshape = reshape_dot(A, X, Y, self.tag)
 
-        def step():
+        def step_dotinc():
             inc = np.dot(A, X)
             if reshape:
                 inc = np.asarray(inc).reshape(Y.shape)
             Y[...] += inc
-        return step
+        return step_dotinc
 
 
 class SimPyFunc(Operator):
@@ -365,7 +365,7 @@ class SimPyFunc(Operator):
         t_in = self.t_in
         t_sig = signals['__time__']
 
-        def step():
+        def step_simpyfunc():
             args = () if self.x is None else (np.copy(signals[self.x]),)
             y = fn(t_sig.item(), *args) if t_in else fn(*args)
             if output is not None:
@@ -374,4 +374,4 @@ class SimPyFunc(Operator):
                         "Function '%s' returned invalid value" % fn.__name__)
                 output[...] = y
 
-        return step
+        return step_simpyfunc

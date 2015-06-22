@@ -24,10 +24,10 @@ class SimSynapse(Operator):
         output = signals[self.output]
         step_f = self.synapse.make_step(dt, output)
 
-        def step(input=input):
+        def step_simsynapse(input=input):
             step_f(input)
 
-        return step
+        return step_simsynapse
 
 
 def filtered_signal(model, owner, sig, synapse):
