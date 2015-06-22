@@ -177,20 +177,18 @@ class Reset(Operator):
 class Copy(Operator):
     """Assign the value of one signal to another."""
 
-    def __init__(self, dst, src, as_update=False, tag=None):
+    def __init__(self, dst, src, tag=None):
         self.dst = dst
         self.src = src
-        self.as_update = as_update
         self.tag = tag
 
-        self.sets = [] if as_update else [dst]
+        self.sets = [dst]
         self.incs = []
         self.reads = [src]
-        self.updates = [dst] if as_update else []
+        self.updates = []
 
     def __str__(self):
-        return 'Copy(%s -> %s, as_update=%s)' % (
-            str(self.src), str(self.dst), self.as_update)
+        return 'Copy(%s -> %s)' % (self.src, self.dst)
 
     def make_step(self, signals, dt, rng):
         dst = signals[self.dst]
@@ -310,7 +308,7 @@ class DotInc(Operator):
     with NengoOCL.
     """
 
-    def __init__(self, A, X, Y, as_update=False, tag=None):
+    def __init__(self, A, X, Y, tag=None):
         if X.ndim >= 2 and any(d > 1 for d in X.shape[1:]):
             raise ValueError("X must be a column vector")
         if Y.ndim >= 2 and any(d > 1 for d in Y.shape[1:]):
@@ -319,13 +317,12 @@ class DotInc(Operator):
         self.A = A
         self.X = X
         self.Y = Y
-        self.as_update = as_update
         self.tag = tag
 
         self.sets = []
-        self.incs = [] if as_update else [Y]
+        self.incs = [Y]
         self.reads = [A, X]
-        self.updates = [Y] if as_update else []
+        self.updates = []
 
     def __str__(self):
         return 'DotInc(%s, %s -> %s "%s")' % (

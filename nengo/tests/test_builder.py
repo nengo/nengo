@@ -6,7 +6,7 @@ import pytest
 import nengo
 from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
-from nengo.builder.operator import DotInc
+from nengo.builder.operator import DotInc, PreserveValue
 from nengo.builder.signal import Signal, SignalDict
 from nengo.utils.compat import itervalues
 
@@ -120,8 +120,8 @@ def test_signal_init_values(RefSimulator):
     array = Signal([1, 2, 3])
 
     m = Model(dt=0)
-    m.operators += [DotInc(zero, zero, five, as_update=True),
-                    DotInc(zeroarray, one, array, as_update=True)]
+    m.operators += [PreserveValue(five), PreserveValue(array),
+                    DotInc(zero, zero, five), DotInc(zeroarray, one, array)]
 
     sim = RefSimulator(None, model=m)
     assert sim.signals[zero][0] == 0
