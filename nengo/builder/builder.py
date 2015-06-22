@@ -41,7 +41,11 @@ class Model(object):
         op.make_step(signals, self.dt, np.random)
 
     def has_built(self, obj):
-        """Returns true iff obj has been processed by build."""
+        """Returns true if obj has built parameters.
+
+        Some objects (e.g. synapses) do not add params and can be built more
+        than once (i.e. this function returns false), allowing re-use.
+        """
         return obj in self.params
 
 
@@ -63,7 +67,7 @@ class Builder(object):
         if model.has_built(obj):
             # TODO: Prevent this at pre-build validation time.
             warnings.warn("Object %s has already been built." % obj)
-            return
+            return None
 
         for obj_cls in obj.__class__.__mro__:
             if obj_cls in cls.builders:
@@ -71,4 +75,5 @@ class Builder(object):
         else:
             raise TypeError("Cannot build object of type '%s'." %
                             obj.__class__.__name__)
-        cls.builders[obj_cls](model, obj, *args, **kwargs)
+
+        return cls.builders[obj_cls](model, obj, *args, **kwargs)

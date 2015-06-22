@@ -3,11 +3,11 @@ import numpy as np
 from nengo.builder.builder import Builder
 from nengo.builder.operator import DotInc, ElementwiseInc, Operator, Reset
 from nengo.builder.signal import Signal
-from nengo.builder.synapses import filtered_signal
 from nengo.connection import LearningRule
 from nengo.ensemble import Ensemble, Neurons
-from nengo.node import Node
 from nengo.learning_rules import BCM, Oja, PES
+from nengo.node import Node
+from nengo.synapses import Lowpass
 
 
 class SimBCM(Operator):
@@ -119,10 +119,10 @@ def build_learning_rule(model, rule):
 def build_bcm(model, bcm, rule):
     conn = rule.connection
     pre_activities = model.sig[get_pre_ens(conn).neurons]['out']
-    pre_filtered = filtered_signal(model, bcm, pre_activities, bcm.pre_tau)
+    pre_filtered = model.build(Lowpass(bcm.pre_tau), pre_activities)
     post_activities = model.sig[get_post_ens(conn).neurons]['out']
-    post_filtered = filtered_signal(model, bcm, post_activities, bcm.post_tau)
-    theta = filtered_signal(model, bcm, post_filtered, bcm.theta_tau)
+    post_filtered = model.build(Lowpass(bcm.post_tau), post_activities)
+    theta = model.build(Lowpass(bcm.theta_tau), post_filtered)
 
     model.add_op(SimBCM(pre_filtered,
                         post_filtered,
@@ -143,8 +143,8 @@ def build_oja(model, oja, rule):
     conn = rule.connection
     pre_activities = model.sig[get_pre_ens(conn).neurons]['out']
     post_activities = model.sig[get_post_ens(conn).neurons]['out']
-    pre_filtered = filtered_signal(model, oja, pre_activities, oja.pre_tau)
-    post_filtered = filtered_signal(model, oja, post_activities, oja.post_tau)
+    pre_filtered = model.build(Lowpass(oja.pre_tau), pre_activities)
+    post_filtered = model.build(Lowpass(oja.post_tau), post_activities)
 
     model.add_op(SimOja(pre_filtered,
                         post_filtered,
@@ -169,8 +169,7 @@ def build_pes(model, pes, rule):
     model.add_op(Reset(error))
     model.sig[rule]['in'] = error  # error connection will attach here
 
-    acts = filtered_signal(
-        model, pes, model.sig[conn.pre_obj]['out'], pes.pre_tau)
+    acts = model.build(Lowpass(pes.pre_tau), model.sig[conn.pre_obj]['out'])
     acts_view = acts.reshape((1, acts.size))
 
     # Compute the correction, i.e. the scaled negative error

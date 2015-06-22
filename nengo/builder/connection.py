@@ -9,7 +9,6 @@ from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import (
     DotInc, ElementwiseInc, PreserveValue, Reset, SlicedCopy)
 from nengo.builder.signal import Signal
-from nengo.builder.synapses import filtered_signal
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble, Neurons
 from nengo.neurons import Direct
@@ -205,7 +204,7 @@ def build_connection(model, conn):
 
     # Add operator for filtering
     if conn.synapse is not None:
-        signal = filtered_signal(model, conn, signal, conn.synapse)
+        signal = model.build(conn.synapse, signal)
 
     # Copy to the proper slice
     model.add_op(SlicedCopy(

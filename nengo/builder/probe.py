@@ -3,7 +3,6 @@ import numpy as np
 from nengo.builder.builder import Builder
 from nengo.builder.operator import Reset
 from nengo.builder.signal import Signal
-from nengo.builder.synapses import filtered_signal
 from nengo.connection import Connection, LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.node import Node
@@ -39,8 +38,8 @@ def synapse_probe(model, key, probe):
     if probe.synapse is None:
         model.sig[probe]['in'] = sig
     else:
-        model.sig[probe]['in'] = filtered_signal(
-            model, probe, sig, probe.synapse)
+        model.sig[probe]['in'] = model.build(probe.synapse, sig)
+
 
 probemap = {
     Ensemble: {'decoded_output': None,

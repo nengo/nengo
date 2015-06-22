@@ -3,52 +3,37 @@ import numpy as np
 from nengo.builder.builder import Builder
 from nengo.builder.signal import Signal
 from nengo.builder.operator import Operator
-from nengo.synapses import Lowpass, Synapse
-from nengo.utils.compat import is_number
+from nengo.synapses import Synapse
 
 
 class SimSynapse(Operator):
     """Simulate a Synapse object."""
-    def __init__(self, input, output, synapse):
-        self.input = input
-        self.output = output
+    def __init__(self, input_sig, output_sig, synapse):
+        self.input = input_sig
+        self.output = output_sig
         self.synapse = synapse
 
         self.sets = []
         self.incs = []
-        self.reads = [input]
-        self.updates = [output]
+        self.reads = [input_sig]
+        self.updates = [output_sig]
 
     def make_step(self, signals, dt, rng):
-        input = signals[self.input]
-        output = signals[self.output]
-        step_f = self.synapse.make_step(dt, output)
+        input_sig = signals[self.input]
+        output_sig = signals[self.output]
+        step_f = self.synapse.make_step(dt, output_sig)
 
-        def step_simsynapse(input=input):
-            step_f(input)
+        def step_simsynapse():
+            step_f(input_sig)
 
         return step_simsynapse
 
 
-def filtered_signal(model, owner, sig, synapse):
-    # Note: we add a filter here even if synapse < dt,
-    # in order to avoid cycles in the op graph. If the filter
-    # is explicitly set to None (e.g. for a passthrough node)
-    # then cycles can still occur.
-    if is_number(synapse):
-        synapse = Lowpass(synapse)
-    assert isinstance(synapse, Synapse)
-    model.build(synapse, owner, sig)
-    return model.sig[owner]['synapse_out']
-
-
 @Builder.register(Synapse)
-def build_synapse(model, synapse, owner, input_signal):
-    model.sig[owner]['synapse_in'] = input_signal
-    model.sig[owner]['synapse_out'] = Signal(
-        np.zeros(input_signal.shape),
-        name="%s.%s" % (input_signal.name, synapse))
+def build_synapse(model, synapse, input_sig, output=None):
+    if output is None:
+        output = Signal(np.zeros(input_sig.shape),
+                        name="%s.%s" % (input_sig.name, synapse))
 
-    model.add_op(SimSynapse(input=model.sig[owner]['synapse_in'],
-                            output=model.sig[owner]['synapse_out'],
-                            synapse=synapse))
+    model.add_op(SimSynapse(input_sig, output, synapse))
+    return output
