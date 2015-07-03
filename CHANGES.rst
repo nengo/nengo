@@ -146,6 +146,10 @@ Release History
 - Added a clipped exponential distribution useful for thresholding, in
   particular in the AssociativeMemory.
   (`#582 <https://github.com/nengo/nengo/pull/779>`_)
+- Added a cosine similarity distribution, which is the distribution of the
+  cosine of the angle between two random vectors. It is useful for setting
+  intercepts, in particular when using the ``Voja`` learning rule.
+  (`#768 <https://github.com/nengo/nengo/pull/768>`_)
 
 **Bug fixes**
 

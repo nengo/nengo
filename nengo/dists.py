@@ -11,8 +11,11 @@ class Distribution(object):
     The only thing that a probabilities distribution need to define is a
     ``sample`` function. This base class ensures that all distributions
     accept the same arguments for the sample function.
-
     """
+
+    def _sample_shape(self, n, d=None):
+        """Returns output shape for sample method."""
+        return (n,) if d is None else (n, d)
 
     def sample(self, n, d=None, rng=np.random):
         """Samples the distribution.
@@ -58,7 +61,7 @@ class PDF(Distribution):
         return "PDF(x=%r, p=%r)" % (self.x, self.pdf)
 
     def sample(self, n, d=None, rng=np.random):
-        shape = (n,) if d is None else (n, d)
+        shape = self._sample_shape(n, d)
         return np.interp(rng.uniform(size=shape), self.cdf, self.x)
 
 
@@ -98,7 +101,7 @@ class Uniform(Distribution):
             self.low, self.high, ", integer=True" if self.integer else "")
 
     def sample(self, n, d=None, rng=np.random):
-        shape = (n,) if d is None else (n, d)
+        shape = self._sample_shape(n, d)
         if self.integer:
             return rng.randint(low=self.low, high=self.high, size=shape)
         else:
@@ -139,7 +142,7 @@ class Gaussian(Distribution):
         return "Gaussian(mean=%r, std=%r)" % (self.mean, self.std)
 
     def sample(self, n, d=None, rng=np.random):
-        shape = (n,) if d is None else (n, d)
+        shape = self._sample_shape(n, d)
         return rng.normal(loc=self.mean, scale=self.std, size=shape)
 
 
@@ -178,7 +181,7 @@ class Exponential(Distribution):
         self.high = high
 
     def sample(self, n, d=None, rng=np.random):
-        shape = (n,) if d is None else (n, d)
+        shape = self._sample_shape(n, d)
         x = rng.exponential(self.scale, shape) + self.shift
         high = np.nextafter(self.high, np.asarray(-np.inf, dtype=x.dtype))
         return np.clip(x, self.shift, high)
@@ -286,13 +289,14 @@ class SqrtBeta(Distribution):
     --------
     SubvectorLength
     """
+
     def __init__(self, n, m=1):
         super(SqrtBeta, self).__init__()
         self.n = n
         self.m = m
 
     def sample(self, num, d=None, rng=np.random):
-        shape = (num,) if d is None else (num, d)
+        shape = self._sample_shape(num, d)
         return np.sqrt(rng.beta(self.m / 2.0, self.n / 2.0, size=shape))
 
     def pdf(self, x):
@@ -335,6 +339,25 @@ class SqrtBeta(Distribution):
             sq_x < 1., betainc(self.m / 2.0, self.n / 2.0, sq_x),
             np.ones_like(x))
 
+    def ppf(self, y):
+        """Percent point function (inverse cumulative distribution).
+
+        Requires Scipy.
+
+        Parameters
+        ----------
+        y : ndarray
+            Cumulative probabilities in [0, 1].
+
+        Returns
+        -------
+        ndarray
+            Evaluation points `x` in [0, 1] such that `P(X <= x) = y`.
+        """
+        from scipy.special import betaincinv
+        sq_x = betaincinv(self.m / 2.0, self.n / 2.0, y)
+        return np.sqrt(sq_x)
+
 
 class SubvectorLength(SqrtBeta):
     """Distribution of the length of a subvectors of a unit vector.
@@ -350,9 +373,55 @@ class SubvectorLength(SqrtBeta):
     --------
     SqrtBeta
     """
+
     def __init__(self, dimensions, subdimensions=1):
         super(SubvectorLength, self).__init__(
             dimensions - subdimensions, subdimensions)
+
+
+class CosineSimilarity(SubvectorLength):
+    """Distribution of the cosine of the angle between two random vectors.
+
+    The "cosine similarity" is the cosine of the angle between two vectors,
+    which is equal to the dot product of the vectors, divided by the L2-norms
+    of the individual vectors. When these vectors are unit length, this is then
+    simply the distribution of their dot product.
+
+    This is also equivalent to the distribution of a single coefficient from a
+    unit vector (a single dimension of `UniformHypersphere(surface=True)`).
+
+    This can be used to calculate an intercept `c = ppf(1 - p)` such that
+    `dot(u, v) >= c` with probability `p`, for random unit vectors `u` and `v`.
+    In other words, a neuron with intercept `ppf(1 - p)` will fire with
+    probability `p` for a random unit length input.
+
+    Parameters
+    ----------
+    dimensions: int
+        Dimensionality of the complete unit vector.
+
+    See also
+    --------
+    SqrtBeta
+    """
+
+    def __init__(self, dimensions):
+        super(CosineSimilarity, self).__init__(dimensions)
+
+    def sample(self, num, d=None, rng=np.random):
+        shape = self._sample_shape(num, d)
+        sign = Choice((1, -1)).sample(np.prod(shape), rng=rng).reshape(*shape)
+        return sign * super(CosineSimilarity, self).sample(num, d, rng=rng)
+
+    def pdf(self, x):
+        return super(CosineSimilarity, self).pdf(x) / 2.0
+
+    def cdf(self, x):
+        return (super(CosineSimilarity, self).cdf(x) * np.sign(x) + 1) / 2.0
+
+    def ppf(self, y):
+        x = super(CosineSimilarity, self).ppf(abs(y*2 - 1))
+        return np.where(y > 0.5, x, -x)
 
 
 class DistributionParam(Parameter):
