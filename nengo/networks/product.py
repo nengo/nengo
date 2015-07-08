@@ -26,7 +26,8 @@ def Product(n_neurons, dimensions, input_magnitude=1, config=None, net=None):
                                     radius=input_magnitude * np.sqrt(2))
         nengo.Connection(net.A, net.product.input[::2], synapse=None)
         nengo.Connection(net.B, net.product.input[1::2], synapse=None)
-        net.output = net.product.add_output('product', lambda x: x[0] * x[1])
+        net.product.add_output('product', lambda x: x[0] * x[1])
+        nengo.Connection(net.product.product, net.output, synapse=None)
 
     return net
 
