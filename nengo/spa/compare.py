@@ -3,7 +3,6 @@ import numpy as np
 import nengo
 from nengo.dists import Choice
 from nengo.spa.module import Module
-from nengo.utils.compat import range
 
 
 class Compare(Module):
@@ -34,6 +33,7 @@ class Compare(Module):
             vocab = dimensions
 
         self.output_scaling = output_scaling
+        self.dimensions = dimensions
 
         with self:
             self.compare = nengo.networks.EnsembleArray(
@@ -45,32 +45,23 @@ class Compare(Module):
 
             self.inputA = nengo.Node(size_in=dimensions, label='inputA')
             self.inputB = nengo.Node(size_in=dimensions, label='inputB')
-            self.output = nengo.Node(size_in=dimensions, label='output')
+            self.output = nengo.Node(size_in=1, label='output')
 
         self.inputs = dict(A=(self.inputA, vocab), B=(self.inputB, vocab))
-        self.outputs = dict(default=(self.output, vocab))
-
-        t1 = np.zeros((dimensions * 2, dimensions), dtype='float')
-        t2 = np.zeros((dimensions * 2, dimensions), dtype='float')
-        for i in range(dimensions):
-            t1[i * 2, i] = 1.0
-            t2[i * 2 + 1, i] = 1.0
+        self.outputs = dict(default=(self.output, None))
 
         with self:
-            nengo.Connection(self.inputA, self.compare.input, transform=t1)
-            nengo.Connection(self.inputB, self.compare.input, transform=t2)
-
-        def multiply(x):
-            return [x[0] * x[1]]
-        self.compare.add_output('product', function=multiply)
+            nengo.Connection(self.inputA,
+                             self.compare.input[::2], synapse=None)
+            nengo.Connection(self.inputB,
+                             self.compare.input[1::2], synapse=None)
+            self.compare.add_output('product', lambda x: x[0] * x[1])
 
     def on_add(self, spa):
         Module.on_add(self, spa)
 
-        vocab = self.outputs['default'][1]
-
-        transform = np.array([vocab.parse('YES').v] * vocab.dimensions)
-
         with self:
-            nengo.Connection(self.compare.product, self.output,
-                             transform=transform.T * self.output_scaling)
+            nengo.Connection(self.compare.product,
+                             self.output,
+                             transform=self.output_scaling *
+                             np.ones((1, self.dimensions)))

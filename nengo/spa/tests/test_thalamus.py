@@ -164,9 +164,7 @@ def test_nondefault_routing(Simulator, seed, plt):
     sim = Simulator(model)
     sim.run(0.6)
 
-    vocab = model.get_output_vocab('cmp')
-    data = sim.data[compare_probe]
-    similarity = np.dot(data, vocab.parse('YES').v)
+    similarity = sim.data[compare_probe]
 
     valueA = np.mean(similarity[150:200], axis=0)  # should be [1]
     valueB = np.mean(similarity[350:400], axis=0)  # should be [0]

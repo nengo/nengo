@@ -11,13 +11,17 @@ def test_basal_ganglia(Simulator, seed, plt):
     with model:
         model.vision = spa.Buffer(dimensions=16)
         model.motor = spa.Buffer(dimensions=16)
+        model.compare = spa.Compare(dimensions=16)
 
+        # test all acceptable condition formats
         actions = spa.Actions(
             '0.5 --> motor=A',
             'dot(vision,CAT) --> motor=B',
             'dot(vision*CAT,DOG) --> motor=C',
             '2*dot(vision,CAT*0.5) --> motor=D',
             'dot(vision,CAT)+0.5-dot(vision,CAT) --> motor=E',
+            'dot(vision,PARROT) + compare --> motor=F',
+            '0.5*dot(vision,MOUSE) + 0.5*compare --> motor=G',
         )
         model.bg = spa.BasalGanglia(actions)
 
@@ -28,23 +32,39 @@ def test_basal_ganglia(Simulator, seed, plt):
                 return 'CAT'
             elif t < 0.3:
                 return 'DOG*~CAT'
+            elif t < 0.4:
+                return 'PARROT'
+            elif t < 0.5:
+                return 'MOUSE'
             else:
                 return '0'
-        model.input = spa.Input(vision=input)
+        model.input = spa.Input(vision=input,
+                                compare_A='SHOOP', compare_B='SHOOP')
         p = nengo.Probe(model.bg.input, 'output', synapse=0.03)
 
     sim = Simulator(model)
-    sim.run(0.3)
+    sim.run(0.5)
     t = sim.trange()
 
     plt.plot(t, sim.data[p])
+    plt.legend(["A", "B", "C", "D", "E", "F", "G"])
     plt.title('Basal Ganglia output')
 
+    # assert the basal ganglia is prioritizing things correctly
+    # Motor F
+    assert sim.data[p][t == 0.4, 5] > 0.8
+    # Motor G
+    assert sim.data[p][t == 0.5, 6] > 0.8
+    # Motor A
     assert 0.6 > sim.data[p][t == 0.1, 0] > 0.4
+    # Motor B
     assert sim.data[p][t == 0.2, 1] > 0.8
-    assert sim.data[p][-1, 2] > 0.6
+    # Motor C
+    assert sim.data[p][t == 0.3, 2] > 0.6
 
+    # Motor B should be the same as Motor D
     assert np.allclose(sim.data[p][:, 1], sim.data[p][:, 3])
+    # Motor A should be the same as Motor E
     assert np.allclose(sim.data[p][:, 0], sim.data[p][:, 4])
 
 
@@ -77,12 +97,4 @@ def test_errors():
         with spa.SPA() as model:
             model.scalar = spa.Buffer(dimensions=1, subdimensions=1)
             actions = spa.Actions('scalar*scalar --> scalar=1')
-            model.bg = spa.BasalGanglia(actions)
-
-    # bias source inputs not implemented
-    with pytest.raises(NotImplementedError):
-        with spa.SPA() as model:
-            model.scalar = spa.Buffer(dimensions=1, subdimensions=1)
-            model.motor = spa.Buffer(dimensions=16)
-            actions = spa.Actions('scalar --> motor=A')
             model.bg = spa.BasalGanglia(actions)
