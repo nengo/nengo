@@ -139,6 +139,9 @@ Release History
   ensemble's encoders to fire selectively for its inputs. (see
   ``examples/learning/learn_associations.ipynb``).
   (`#727 <https://github.com/nengo/nengo/issues/727>`_)
+- Added a clipped exponential distribution useful for thresholding, in
+  particular in the AssociativeMemory.
+  (`#582 <https://github.com/nengo/nengo/pull/779>`_)
 
 **Bug fixes**
 

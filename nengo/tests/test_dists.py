@@ -54,6 +54,20 @@ def test_gaussian(mean, std, rng):
         assert abs(np.std(samples) - std) < 0.25  # using chi2 for n=100
 
 
+@pytest.mark.parametrize("scale,shift,high", [
+    (1., 0., np.inf), (10., 0., 1.), (0.1, 0.3, 1.0)])
+def test_exponential(scale, shift, high, rng):
+    n = 100
+    dist = dists.Exponential(scale, shift=shift, high=high)
+    samples = dist.sample(n, rng=rng)
+    assert np.all(samples >= shift)
+    assert np.all(samples <= high)
+    # approximation of 95% confidence interval
+    ci = scale * 1.96 / np.sqrt(n)
+    if scale + ci < high:
+        assert abs(np.mean(samples - shift) - scale) < ci
+
+
 @pytest.mark.parametrize("dimensions", [0, 1, 2, 5])
 def test_hypersphere(dimensions, rng):
     n = 150 * dimensions

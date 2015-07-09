@@ -143,6 +143,31 @@ class Gaussian(Distribution):
         return rng.normal(loc=self.mean, scale=self.std, size=shape)
 
 
+class Exponential(Distribution):
+    """An exponential distribution where high values are clipped.
+
+    Parameters
+    ----------
+    scale : float
+        The scale parameter (inverse of the rate parameter lambda).
+    shift : float, optional
+        Amount to shift the distribution by. There will be no values smaller
+        than this shift when sampling from the distribution.
+    high : float, optional
+        All values larger than this value will be clipped to this value.
+    """
+    def __init__(self, scale, shift=0., high=np.inf):
+        self.scale = scale
+        self.shift = shift
+        self.high = high
+
+    def sample(self, n, d=None, rng=np.random):
+        shape = (n,) if d is None else (n, d)
+        return np.clip(
+            rng.exponential(self.scale, shape) + self.shift,
+            self.shift, self.high)
+
+
 class UniformHypersphere(Distribution):
     """Distributions over an n-dimensional unit hypersphere.
 
