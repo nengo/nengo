@@ -66,6 +66,10 @@ Release History
   to specify any logging level, instead of the old binary ``debug`` parameter.
   Cache messages are logged at DEBUG instead of INFO level.
   (`#883 <https://github.com/nengo/nengo/pull/883>`_)
+- Reorganised the Associative Memory code, including removing many extra
+  parameters from ``nengo.networks.assoc_mem.AssociativeMemory`` and modifying
+  the defaults of others.
+  (`#797 <https://github.com/nengo/nengo/pull/797>`_)
 
 **Behavioural changes**
 

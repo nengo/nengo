@@ -1,4 +1,4 @@
-import nengo
+from nengo.networks.assoc_mem import AssociativeMemory as AssocMem
 from nengo.spa.module import Module
 
 
@@ -57,11 +57,11 @@ class AssociativeMemory(Module):
 
     def __init__(self, input_vocab, output_vocab=None,  # noqa: C901
                  input_keys=None, output_keys=None,
-                 default_output_key=None, threshold=0.3, input_scale=1.0,
-                 inhibitable=False, inhibit_scale=1.5, wta_output=False,
+                 default_output_key=None, threshold=0.3,
+                 inhibitable=False, wta_output=False,
                  wta_inhibit_scale=3.0, wta_synapse=0.005,
                  threshold_output=False, label=None, seed=None,
-                 add_to_container=None, **ens_args):
+                 add_to_container=None):
         super(AssociativeMemory, self).__init__(label, seed, add_to_container)
 
         if input_keys is None:
@@ -75,7 +75,6 @@ class AssociativeMemory(Module):
         if output_vocab is None:
             output_vocab = input_vocab
             output_vectors = input_vectors
-            output_keys = input_keys
         else:
             if output_keys is None:
                 output_keys = input_keys
@@ -88,27 +87,21 @@ class AssociativeMemory(Module):
 
         # Create nengo network
         with self:
-            self.am = nengo.networks.AssociativeMemory(
-                input_vectors=input_vectors,
-                output_vectors=output_vectors,
-                default_output_vector=default_output_vector,
-                threshold=threshold, input_scale=input_scale,
-                inhibitable=inhibitable,
-                inhibit_scale=inhibit_scale,
-                wta_output=wta_output,
-                wta_inhibit_scale=wta_inhibit_scale,
-                wta_synapse=wta_synapse,
-                threshold_output=threshold_output,
-                label=label, seed=seed,
-                add_to_container=add_to_container,
-                **ens_args)
+            self.am = AssocMem(input_vectors=input_vectors,
+                               output_vectors=output_vectors,
+                               threshold=threshold,
+                               inhibitable=inhibitable,
+                               label=label, seed=seed,
+                               add_to_container=add_to_container)
 
-            for ens, inkey, outkey in zip(
-                    self.am.am_ensembles, input_keys, output_keys):
-                if inkey != outkey:
-                    ens.label = "%s->%s" % (inkey, outkey)
-                else:
-                    ens.label = str(inkey)
+            if default_output_vector is not None:
+                self.am.add_default_output_vector(default_output_vector)
+
+            if wta_output:
+                self.am.add_wta_network(wta_inhibit_scale, wta_synapse)
+
+            if threshold_output:
+                self.am.add_threshold_to_outputs()
 
             self.input = self.am.input
             self.output = self.am.output
