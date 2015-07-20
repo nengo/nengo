@@ -11,9 +11,8 @@ def InputGatedMemory(n_neurons, dimensions, fdbk_scale=1.0, gate_gain=10,
     if net is None:
         net = nengo.Network(label="Input Gated Memory")
 
-    if mem_config is None:
-        mem_config = nengo.Config(nengo.Connection)
-        mem_config[nengo.Connection].synapse = nengo.Lowpass(0.1)
+    mem_config, override_ampa = config_with_default_synapse(
+        mem_config, nengo.Lowpass(0.1))
 
     n_total_neurons = n_neurons * dimensions
 

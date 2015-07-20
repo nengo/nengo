@@ -1,5 +1,6 @@
 from .magic import decorator
 
+import nengo
 
 @decorator
 def with_self(method, network, args, kwargs):
@@ -25,3 +26,12 @@ def with_self(method, network, args, kwargs):
     """
     with network:
         return method(*args, **kwargs)
+
+def config_with_default_synapse(config, synapse):
+    if config is None:
+        config = nengo.Config(nengo.Connection)
+        config[nengo.Connection].synapse = synapse
+    override = 'synapse' not in config[nengo.Connection]
+    if override:
+        config[nengo.Connection].synapse = synapse
+    return config, override
