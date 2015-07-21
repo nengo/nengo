@@ -22,6 +22,12 @@ Release History
 2.0.3 (unreleased)
 ==================
 
+**API changes**
+
+- The ``spa.State`` object replaces the old ``spa.Memory`` and ``spa.Buffer``.
+  These old modules are deprecated and will be removed in 2.2.
+  (`#796 <https://github.com/nengo/nengo/pull/796>`_)
+
 2.0.2 (October 13, 2015)
 ========================
 

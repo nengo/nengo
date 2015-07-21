@@ -1,3 +1,5 @@
+import warnings
+
 import nengo
 from nengo.spa.buffer import Buffer
 
@@ -12,13 +14,15 @@ class Memory(Buffer):
     synapse : float
         synaptic filter to use on recurrent connection
     tau : float or None
-        Effective time constant of the integrator.  If None, it should
+        Effective time constant of the integrator. If None, it should
         have an infinite time constant.
     """
 
     def __init__(self, dimensions, subdimensions=16, neurons_per_dimension=50,
                  synapse=0.01, vocab=None, tau=None, direct=False,
                  label=None, seed=None, add_to_container=None):
+        warnings.warn("Memory is deprecated in favour of spa.State",
+                      DeprecationWarning)
         super(Memory, self).__init__(
             dimensions=dimensions,
             subdimensions=subdimensions,
