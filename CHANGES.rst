@@ -50,6 +50,9 @@ Release History
   ``transform`` may have changed depending on the type of connection;
   it is now no longer possible to probe ``decoders`` or ``transform``.
   (`#729 <https://github.com/nengo/nengo/pull/729>`_)
+- The ``spa.State`` object replaces the old ``spa.Memory`` and ``spa.Buffer``.
+  These old modules are deprecated and will be removed in 2.2.
+  (`#796 <https://github.com/nengo/nengo/pull/796>`_)
 
 **Behavioural changes**
 

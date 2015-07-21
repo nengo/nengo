@@ -111,7 +111,7 @@ class SPA(nengo.Network):
             # Since there are no attributes to distinguish what's been added
             # and what hasn't, we have to ask the network
             if isinstance(net, Module) and (net not in module_list):
-                raise ValueError("%s was not added as an attribute of"
+                raise ValueError("%s was not added as an attribute of "
                                  "the SPA network and won't be detected"
                                  % (net))
 
