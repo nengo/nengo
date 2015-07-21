@@ -52,8 +52,8 @@ def test_checked_call():
 
     assert checked_call(np.sin) == (None, False)
     assert checked_call(np.sin, 0) == (0, True)
-    assert checked_call(np.sin, 0, np.array([1])) == (np.array([0]), True)
-    assert checked_call(np.sin, 0, np.array([1]), 1) == (None, False)
+    assert checked_call(np.sin, 0, np.array([1.])) == (np.array([0.]), True)
+    assert checked_call(np.sin, 0, np.array([1.]), 1) == (None, False)
 
 
 def test_checked_call_errors():
