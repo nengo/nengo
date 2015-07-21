@@ -163,9 +163,10 @@ class Exponential(Distribution):
 
     def sample(self, n, d=None, rng=np.random):
         shape = (n,) if d is None else (n, d)
-        return np.clip(
-            rng.exponential(self.scale, shape) + self.shift,
-            self.shift, self.high)
+        exp_val = rng.exponential(self.scale, shape) + self.shift
+        high = np.nextafter(self.high,
+                            np.asarray(-np.inf, dtype=exp_val.dtype))
+        return np.clip(exp_val, self.shift, high)
 
 
 class UniformHypersphere(Distribution):
