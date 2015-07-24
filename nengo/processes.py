@@ -5,7 +5,8 @@ import numpy as np
 import nengo.utils.numpy as npext
 from nengo.dists import DistributionParam, Gaussian
 from nengo.params import (
-    BoolParam, IntParam, NdarrayParam, NumberParam, Parameter, FrozenObject)
+    BoolParam, IntParam, NdarrayParam, NumberParam, TupleParam,
+    Parameter, FrozenObject)
 from nengo.synapses import LinearFilter, LinearFilterParam, Lowpass
 from nengo.utils.compat import range
 
@@ -310,6 +311,100 @@ class PresentInput(Process):
             return inputs[i % n]
 
         return step_image_input
+
+
+class Conv2d(Process):
+    """Perform 2-D (image) convolution on an input.
+
+    Parameters
+    ----------
+    filters : array_like (n_filters, n_channels, f_height, f_width)
+        Static filters to convolve with the input. Shape is number of filters,
+        number of input channels, filter height, and filter width. Shape can
+        also be (n_filters, height, width, n_channels, f_height, f_width)
+        to apply different filters at each point in the image, where 'height'
+        and 'width' are the input image height and width.
+    shape_in : 3-tuple (n_channels, height, width)
+        Shape of the input images: channels, height, width.
+    """
+
+    shape_in = TupleParam(length=3)
+    shape_out = TupleParam(length=3)
+    filters = NdarrayParam(shape=('...',))
+    biases = NdarrayParam(shape=('...',), optional=True)
+
+    def __init__(self, shape_in, filters, biases=None):
+        self.shape_in = tuple(shape_in)
+        if len(self.shape_in) != 3:
+            raise ValueError("`shape_in` must have three dimensions "
+                             "(channels, height, width)")
+
+        self.filters = filters
+        self.shape_out = (self.filters.shape[0],) + self.shape_in[1:]
+        if len(self.filters.shape) not in [4, 6]:
+            raise ValueError(
+                "`filters` must have four or six dimensions "
+                "(filters, [height, width,] channels, f_height, f_width)")
+        if self.filters.shape[-3] != self.shape_in[0]:
+            raise ValueError(
+                "Filter channels (%d) and input channels (%d) must match"
+                % (self.filters.shape[-3], self.shape_in[0]))
+
+        self.biases = biases if biases is not None else None
+        if self.biases is not None:
+            if self.biases.size == 1:
+                self.biases.shape = (1, 1, 1)
+            elif self.biases.size == np.prod(self.shape_out):
+                self.biases.shape = self.shape_out
+            elif self.biases.size == self.shape_out[0]:
+                self.biases.shape = (self.shape_out[0], 1, 1)
+            elif self.biases.size == np.prod(self.shape_out[1:]):
+                self.biases.shape = (1,) + self.shape_out[1:]
+            else:
+                raise ValueError(
+                    "Biases size (%d) does not match output shape %s"
+                    % (self.biases.size, self.shape_out))
+
+        super(Conv2d, self).__init__(
+            default_size_in=np.prod(self.shape_in),
+            default_size_out=np.prod(self.shape_out))
+
+    def make_step(self, size_in, size_out, dt, rng):
+        assert size_in == np.prod(self.shape_in)
+        assert size_out == np.prod(self.shape_out)
+
+        filters = self.filters
+        local_filters = filters.ndim == 6
+        biases = self.biases
+        shape_in = self.shape_in
+        shape_out = self.shape_out
+
+        def step_conv2d(t, x):
+            x = x.reshape(shape_in)
+            ni, nj = shape_in[-2:]
+            f = filters.shape[0]
+            si, sj = filters.shape[-2:]
+            si2 = (si - 1) / 2
+            sj2 = (sj - 1) / 2
+
+            y = np.zeros(shape_out)
+            for i in range(ni):
+                for j in range(nj):
+                    i0, i1 = i - si2, i + si2 + 1
+                    j0, j1 = j - sj2, j + sj2 + 1
+                    sli = slice(max(-i0, 0), min(ni + si - i1, si))
+                    slj = slice(max(-j0, 0), min(nj + sj - j1, sj))
+                    w = (filters[:, i, j, :, sli, slj] if local_filters else
+                         filters[:, :, sli, slj])
+                    xij = x[:, max(i0, 0):min(i1, ni), max(j0, 0):min(j1, nj)]
+                    y[:, i, j] = np.dot(xij.ravel(), w.reshape(f, -1).T)
+
+            if biases is not None:
+                y += biases
+
+            return y.ravel()
+
+        return step_conv2d
 
 
 class ProcessParam(Parameter):

@@ -302,3 +302,43 @@ def test_present_input(Simulator, rng):
     y = sim.data[up].reshape(len(t), c, ni, nj)
     for k, [ii, image] in enumerate(zip(i, y)):
         assert np.allclose(image, images[ii], rtol=1e-4, atol=1e-7), (k, ii)
+
+
+@pytest.mark.parametrize('local', [False, True])
+def test_conv2d(local, Simulator, rng):
+    f = 4
+    c = 2
+    ni, nj = 30, 32
+    si, sj = 5, 3
+
+    fshape = (f, ni, nj, c, si, sj) if local else (f, c, si, sj)
+    filters = rng.normal(size=fshape)
+    biases = rng.normal(size=f)
+    image = rng.normal(size=(c, ni, nj))
+
+    result = np.zeros((f, ni, nj))
+    result += biases.reshape(-1, 1, 1)
+    si2 = (si - 1) / 2
+    sj2 = (sj - 1) / 2
+    for i in range(ni):
+        for j in range(nj):
+            i0, i1 = i - si2, i + si2 + 1
+            j0, j1 = j - sj2, j + sj2 + 1
+            sli = slice(max(-i0, 0), min(ni + si - i1, si))
+            slj = slice(max(-j0, 0), min(nj + sj - j1, sj))
+            w = (filters[:, i, j, :, sli, slj] if local else
+                 filters[:, :, sli, slj])
+            xij = image[:, max(i0, 0):min(i1, ni), max(j0, 0):min(j1, nj)]
+            result[:, i, j] += np.dot(xij.ravel(), w.reshape(f, -1).T)
+
+    model = nengo.Network()
+    with model:
+        u = nengo.Node(image.ravel())
+        v = nengo.Node(nengo.processes.Conv2d((c, ni, nj), filters, biases))
+        nengo.Connection(u, v, synapse=None)
+        vp = nengo.Probe(v)
+
+    sim = Simulator(model)
+    sim.step()
+    y = sim.data[vp][-1].reshape((f, ni, nj))
+    assert np.allclose(result, y, rtol=1e-4, atol=1e-7)
