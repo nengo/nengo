@@ -31,6 +31,8 @@ Release History
 - Added a new example showing how adjusting ensemble tuning curves can
   improve function approximation.
   (`#1129 <https://github.com/nengo/nengo/pull/1129>`_)
+- Added a minimum magnitude option to ``UniformHypersphere``.
+  (`#799 <https://github.com/nengo/nengo/pull/799>`_)
 
 **Changed**
 

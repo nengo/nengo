@@ -3,6 +3,7 @@ import pytest
 
 import nengo.dists as dists
 import nengo.utils.numpy as npext
+from nengo.utils.testing import warns
 from nengo.exceptions import ValidationError
 
 
@@ -69,19 +70,15 @@ def test_exponential(scale, shift, high, rng):
         assert abs(np.mean(samples - shift) - scale) < ci
 
 
-@pytest.mark.parametrize("dimensions", [0, 1, 2, 5])
-def test_hypersphere(dimensions, rng):
-    n = 150 * dimensions
-    if dimensions < 1:
-        with pytest.raises(ValueError):
-            dist = dists.UniformHypersphere().sample(1, dimensions)
-    else:
-        dist = dists.UniformHypersphere()
-        samples = dist.sample(n, dimensions, rng=rng)
-        assert samples.shape == (n, dimensions)
-        assert np.allclose(np.mean(samples, axis=0), 0, atol=0.1)
-        hist, _ = np.histogramdd(samples, bins=5)
-        assert np.allclose(hist - np.mean(hist), 0, atol=0.1 * n)
+@pytest.mark.parametrize(
+    "min_magnitude,d", [(0, 1), (0, 2), (0, 5), (0.6, 1), (0.3, 2), (0.4, 5)])
+def test_hypersphere_volume(min_magnitude, d, rng):
+    n = 150 * d
+    dist = dists.UniformHypersphere(min_magnitude=min_magnitude)
+    samples = dist.sample(n, d, rng=rng)
+    assert samples.shape == (n, d)
+    assert np.allclose(np.mean(samples, axis=0), 0, atol=0.1)
+    assert np.all(npext.norm(samples, axis=1) >= min_magnitude)
 
 
 @pytest.mark.parametrize("dimensions", [1, 2, 5])
@@ -92,6 +89,16 @@ def test_hypersphere_surface(dimensions, rng):
     assert samples.shape == (n, dimensions)
     assert np.allclose(npext.norm(samples, axis=1), 1)
     assert np.allclose(np.mean(samples, axis=0), 0, atol=0.25 / dimensions)
+
+
+def test_hypersphere_dimension_fail(rng):
+    with pytest.raises(ValueError):
+        dists.UniformHypersphere(0).sample(1, 0)
+
+
+def test_hypersphere_warns(rng):
+    with warns(UserWarning):
+        dists.UniformHypersphere(surface=True, min_magnitude=0.1)
 
 
 @pytest.mark.parametrize("weights", [None, [5, 1, 2, 9], [3, 2, 1, 0]])

@@ -1,4 +1,7 @@
 from __future__ import absolute_import
+
+import warnings
+
 import numpy as np
 
 from nengo.exceptions import ValidationError
@@ -222,17 +225,29 @@ class UniformHypersphere(Distribution):
         Whether sample points should be distributed uniformly
         over the surface of the hyperphere (True),
         or within the hypersphere (False).
+    min_magnitude : Number, optional (Default: 0)
+        Lower bound on the returned vector magnitudes (such that they are in
+        the range ``[min_magnitude, 1]``). Must be in the range [0, 1).
+        Ignored if ``surface`` is ``True``.
     """
 
     surface = BoolParam('surface')
+    min_magnitude = NumberParam('min_magnitude', low=0, high=1, high_open=True)
 
-    def __init__(self, surface=False):
+    def __init__(self, surface=False, min_magnitude=0):
         super(UniformHypersphere, self).__init__()
+        if surface and min_magnitude > 0:
+            warnings.warn("min_magnitude ignored because surface is True")
         self.surface = surface
+        self.min_magnitude = min_magnitude
 
     def __repr__(self):
-        return "UniformHypersphere(%s)" % (
-            "surface=True" if self.surface else "")
+        args = []
+        if self.surface:
+            args.append("surface=%s" % self.surface)
+        if self.min_magnitude > 0:
+            args.append("min_magnitude=%r" % self.min_magnitude)
+        return "%s(%s)" % (type(self).__name__, ', '.join(args))
 
     def sample(self, n, d, rng=np.random):
         if d is None or d < 1:  # check this, since other dists allow d = None
@@ -247,7 +262,8 @@ class UniformHypersphere(Distribution):
         # Generate magnitudes for vectors from uniform distribution.
         # The (1 / d) exponent ensures that samples are uniformly distributed
         # in n-space and not all bunched up at the centre of the sphere.
-        samples *= rng.rand(n, 1) ** (1.0 / d)
+        samples *= rng.uniform(
+            low=self.min_magnitude**d, high=1, size=(n, 1)) ** (1. / d)
 
         return samples
 
