@@ -31,6 +31,7 @@ class SimProcess(Operator):
         output = signals[self.output] if self.output is not None else None
         size_in = input.size if input is not None else 0
         size_out = output.size if output is not None else 0
+        rng = self.process.get_rng(rng)
         step_f = self.process.make_step(size_in, size_out, dt, rng)
         inc = self.inc
 
