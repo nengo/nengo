@@ -124,7 +124,7 @@ class EnsembleArray(nengo.Network):
         output = nengo.Node(output=None, size_in=sizes.sum(), label=name)
         setattr(self, name, output)
 
-        indices = np.zeros(len(sizes) + 1)
+        indices = np.zeros(len(sizes) + 1, dtype=int)
         indices[1:] = np.cumsum(sizes)
         for i, e in enumerate(self.ea_ensembles):
             nengo.Connection(

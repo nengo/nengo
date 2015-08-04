@@ -3,7 +3,7 @@ import weakref
 
 import numpy as np
 
-from nengo.utils.compat import is_integer, is_number, is_string
+from nengo.utils.compat import is_integer, is_ndarray, is_number, is_string
 from nengo.utils.numpy import compare
 from nengo.utils.stdlib import checked_call
 
@@ -132,7 +132,7 @@ class NumberParam(Parameter):
         super(NumberParam, self).__init__(default, optional, readonly)
 
     def __set__(self, instance, value):
-        if isinstance(value, np.ndarray) and value.shape == ():
+        if is_ndarray(value) and value.shape == ():
             value = value.item()  # convert scalar array to Python object
         super(NumberParam, self).__set__(instance, value)
 
