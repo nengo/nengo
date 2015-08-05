@@ -25,7 +25,7 @@ def _rmses(A, X, Y):
     return npext.rms(Y - np.dot(A, X), axis=0)
 
 
-def cholesky(A, y, sigma, transpose=None):
+def cholesky(A, y, sigma, rng=None, transpose=None):
     """Solve the least-squares system using the Cholesky decomposition."""
     m, n = A.shape
     if transpose is None:
@@ -58,7 +58,7 @@ def cholesky(A, y, sigma, transpose=None):
     return x, info
 
 
-def conjgrad_scipy(A, Y, sigma, tol=1e-4):
+def conjgrad_scipy(A, Y, sigma, rng=None, tol=1e-4):
     """Solve the least-squares system using Scipy's conjugate gradient."""
     import scipy.sparse.linalg
     Y, m, n, d, matrix_in = _format_system(A, Y)
@@ -83,7 +83,7 @@ def conjgrad_scipy(A, Y, sigma, tol=1e-4):
     return X if matrix_in else X.flatten(), info
 
 
-def lsmr_scipy(A, Y, sigma, tol=1e-4):
+def lsmr_scipy(A, Y, sigma, rng=None, tol=1e-4):
     """Solve the least-squares system using Scipy's LSMR."""
     import scipy.sparse.linalg
     Y, m, n, d, matrix_in = _format_system(A, Y)
@@ -132,7 +132,7 @@ def _conjgrad_iters(calcAx, b, x, maxiters=None, rtol=1e-6):
     return x, i+1
 
 
-def conjgrad(A, Y, sigma, X0=None, maxiters=None, tol=1e-2):
+def conjgrad(A, Y, sigma, rng=None, X0=None, maxiters=None, tol=1e-2):
     """Solve the least-squares system using conjugate gradient."""
     Y, m, n, d, matrix_in = _format_system(A, Y)
 
@@ -151,7 +151,7 @@ def conjgrad(A, Y, sigma, X0=None, maxiters=None, tol=1e-2):
     return X if matrix_in else X.flatten(), info
 
 
-def block_conjgrad(A, Y, sigma, X0=None, tol=1e-2):
+def block_conjgrad(A, Y, sigma, rng=None, X0=None, tol=1e-2):
     """Solve a multiple-RHS least-squares system using block conjuate gradient.
     """
     Y, m, n, d, matrix_in = _format_system(A, Y)
@@ -186,6 +186,50 @@ def block_conjgrad(A, Y, sigma, X0=None, tol=1e-2):
         Rsold = Rsnew
 
     info = {'rmses': _rmses(A, X, Y), 'iterations': i + 1}
+    return X if matrix_in else X.flatten(), info
+
+
+def svd(A, Y, sigma, rng=None):
+    """Solve the least-squares system using a full SVD."""
+    Y, m, _, _, matrix_in = _format_system(A, Y)
+    U, s, V = np.linalg.svd(A, full_matrices=0)
+    si = s / (s**2 + m * sigma**2)
+    X = np.dot(V.T, si[:, None] * np.dot(U.T, Y))
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0)}
+    return X if matrix_in else X.flatten(), info
+
+
+def randomized_svd(A, Y, sigma, rng=np.random,
+                   n_components=60, n_oversamples=10, **kwargs):
+    """Solve the least-squares system using a randomized (partial) SVD.
+
+    Parameters
+    ----------
+    n_components : int (default is 50)
+        The number of SVD components to compute. A small survey of activity
+        matrices suggests that the first 50 components capture almost all
+        the variance.
+    n_oversamples: int (default is 10)
+        The number of additional samples on the range of A.
+    n_iter : int (default is 0)
+        The number of power iterations to perform (can help with noisy data).
+
+    See also
+    --------
+    ``sklearn.utils.extmath.randomized_svd`` for details about the parameters.
+    """
+    from sklearn.utils.extmath import randomized_svd as sklearn_randomized_svd
+
+    Y, m, n, _, matrix_in = _format_system(A, Y)
+    if min(m, n) <= n_components + n_oversamples:
+        # more efficient to do a full SVD
+        return svd(A, Y, sigma, rng=rng)
+
+    U, s, V = sklearn_randomized_svd(
+        A, n_components, random_state=rng, **kwargs)
+    si = s / (s**2 + m * sigma**2)
+    X = np.dot(V.T, si[:, None] * np.dot(U.T, Y))
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0)}
     return X if matrix_in else X.flatten(), info
 
 
@@ -322,7 +366,7 @@ class LstsqNoise(_LstsqNoiseSolver):
         rng = np.random if rng is None else rng
         sigma = self.noise * A.max()
         A = A + rng.normal(scale=sigma, size=A.shape)
-        X, info = self.solver(A, Y, 0, **self.kwargs)
+        X, info = self.solver(A, Y, 0, rng=rng, **self.kwargs)
         info['time'] = time.time() - tstart
         return self.mul_encoders(X, E), info
 
@@ -334,7 +378,7 @@ class LstsqMultNoise(_LstsqNoiseSolver):
         tstart = time.time()
         rng = np.random if rng is None else rng
         A = A + rng.normal(scale=self.noise, size=A.shape) * A
-        X, info = self.solver(A, Y, 0, **self.kwargs)
+        X, info = self.solver(A, Y, 0, rng=rng, **self.kwargs)
         info['time'] = time.time() - tstart
         return self.mul_encoders(X, E), info
 
@@ -365,7 +409,7 @@ class LstsqL2(_LstsqL2Solver):
     def __call__(self, A, Y, rng=None, E=None):
         tstart = time.time()
         sigma = self.reg * A.max()
-        X, info = self.solver(A, Y, sigma, **self.kwargs)
+        X, info = self.solver(A, Y, sigma, rng=rng, **self.kwargs)
         info['time'] = time.time() - tstart
         return self.mul_encoders(X, E), info
 
@@ -384,7 +428,7 @@ class LstsqL2nz(_LstsqL2Solver):
         # we have to make sigma != 0 for numeric reasons.
         sigma[sigma == 0] = sigma.max()
 
-        X, info = self.solver(A, Y, sigma, **self.kwargs)
+        X, info = self.solver(A, Y, sigma, rng=rng, **self.kwargs)
         info['time'] = time.time() - tstart
         return self.mul_encoders(X, E), info
 

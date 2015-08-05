@@ -105,6 +105,9 @@ Release History
 
 **Improvements**
 
+- Added a ``randomized_svd`` subsolver for the L2 solvers. This can be much
+  quicker for large numbers of neurons or evaluation points.
+  (`#803 <https://github.com/nengo/nengo/pull/803>`_)
 - Added ``PES.pre_tau`` attribute, which sets the time constant on a lowpass
   filter of the presynaptic activity.
   (`#643 <https://github.com/nengo/nengo/issues/643>`_)
