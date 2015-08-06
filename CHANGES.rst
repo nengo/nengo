@@ -69,6 +69,10 @@ Release History
   view).
   (`#716 <https://github.com/nengo/nengo/issues/716>`_,
   `#722 <https://github.com/nengo/nengo/pull/722>`_)
+- The SPA Compare module produces a scalar output (instead of a specific
+  vector).
+  (`#775 <https://github.com/nengo/nengo/issues/775>`_,
+  `#782 <https://github.com/nengo/nengo/pull/782>`_)
 
 **Improvements**
 
@@ -95,6 +99,10 @@ Release History
   (`#582 <https://github.com/nengo/nengo/pull/582>`_,
   `#616 <https://github.com/nengo/nengo/pull/616>`_,
   `#652 <https://github.com/nengo/nengo/pull/652>`_)
+- An exception is raised if SPA modules are not properly assigned to an SPA
+  attribute.
+  (`#730 <https://github.com/nengo/nengo/issues/730>`_,
+  `#791 <https://github.com/nengo/nengo/pull/791>`_)
 
 **Bug fixes**
 
