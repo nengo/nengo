@@ -11,20 +11,25 @@ This IPython extension cannot be unloaded.
 """
 
 from nengo.rc import rc
-from nengo.utils.ipython import get_ipython, has_ipynb_widgets
+from nengo.utils.ipython import has_ipynb_widgets
 from nengo.utils.progress import ProgressBar, timestamp2timedelta
 
 if has_ipynb_widgets():
-    from IPython.html.widgets import DOMWidget
+    import IPython
+    if IPython.version_info[0] <= 3:
+        from IPython.html.widgets import DOMWidget
+        import IPython.utils.traitlets as traitlets
+    else:
+        from ipywidgets import DOMWidget
+        import traitlets
     from IPython.display import display
-    import IPython.utils.traitlets as traitlets
 else:
     DOMWidget = object
 
 
 def load_ipython_extension(ipython):
-    IPythonProgressWidget.load_frontend()
-    if rc.get('progress', 'progress_bar') == 'auto':
+    if has_ipynb_widgets() and rc.get('progress', 'progress_bar') == 'auto':
+        IPythonProgressWidget.load_frontend(ipython)
         rc.set('progress', 'progress_bar', '.'.join((
             __name__, IPython2ProgressBar.__name__)))
 
@@ -49,6 +54,8 @@ class IPythonProgressWidget(DOMWidget):
 
       var NengoProgressBar = widget.DOMWidgetView.extend({
         render: function() {
+          // Work-around for messed up CSS in IPython 4
+          $('.widget-subarea').css({flex: '2 1 0%'});
           // $el is the DOM of the widget
           this.$el.css({width: '100%', marginBottom: '0.5em'});
           this.$el.html([
@@ -86,9 +93,9 @@ class IPythonProgressWidget(DOMWidget):
     });'''
 
     @classmethod
-    def load_frontend(cls):
+    def load_frontend(cls, ipython):
         """Loads the JavaScript front-end code required by then widget."""
-        get_ipython().run_cell_magic('javascript', '', cls.FRONTEND)
+        ipython.run_cell_magic('javascript', '', cls.FRONTEND)
 
 
 class IPython2ProgressBar(ProgressBar):

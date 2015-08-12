@@ -38,17 +38,44 @@ import time
 import unicodedata
 import uuid
 
+import numpy as np
+
 try:
+    import IPython
     from IPython import get_ipython
-    from IPython.config import Config
     from IPython.display import HTML
-    from IPython.nbconvert import HTMLExporter, PythonExporter
-    from IPython.nbformat import current
+
+    if IPython.version_info[0] <= 3:
+        from IPython.config import Config
+        from IPython.nbconvert import HTMLExporter, PythonExporter
+    else:
+        from traitlets.config import Config
+        from nbconvert import HTMLExporter, PythonExporter
+
+    # nbformat.current deprecated in IPython 3.0
+    if IPython.version_info[0] <= 2:
+        from IPython.nbformat import current
+        from IPython.nbformat.current import write as write_nb
+        from IPython.nbformat.current import NotebookNode
+
+        def read_nb(fp):
+            return current.read(fp, 'json')
+    else:
+        if IPython.version_info[0] == 3:
+            from IPython import nbformat
+            from IPython.nbformat import write as write_nb
+            from IPython.nbformat import NotebookNode
+        else:
+            import nbformat
+            from nbformat import write as write_nb
+            from nbformat import NotebookNode
+
+        def read_nb(fp):
+            # Have to load as version 4 or running notebook fails
+            return nbformat.read(fp, 4)
 except ImportError:
     def get_ipython():
         return None
-
-import numpy as np
 
 
 def has_ipynb_widgets():
@@ -60,10 +87,14 @@ def has_ipynb_widgets():
         ``True`` if IPython widgets are available, otherwise ``False``.
     """
     try:
-        import IPython.html.widgets
-        import IPython.utils.traitlets
-        assert IPython.html.widgets
-        assert IPython.utils.traitlets
+        if IPython.version_info[0] <= 3:
+            from IPython.html import widgets as ipywidgets
+            from IPython.utils import traitlets
+        else:
+            import ipywidgets
+            import traitlets
+        assert ipywidgets
+        assert traitlets
     except ImportError:
         return False
     else:
@@ -134,7 +165,7 @@ def hide_input():
 
 def load_notebook(nb_path):
     with open(nb_path) as f:
-        nb = current.read(f, 'json')
+        nb = read_nb(f)
     return nb
 
 
@@ -231,7 +262,7 @@ def export_evaluated(nb, dest_path=None, skip_exceptions=False):
 
     if dest_path is not None:
         with open(dest_path, 'w') as f:
-            current.write(nb_runner.nb, f, 'json')
+            write_nb(nb_runner.nb, f)
     return nb_runner.nb
 
 
@@ -306,7 +337,7 @@ class NotebookRunner(object):
             }
             msg_type = notebook3_format_conversions.get(msg_type, msg_type)
 
-            out = current.NotebookNode(output_type=msg_type)
+            out = NotebookNode(output_type=msg_type)
 
             if 'execution_count' in content:
                 cell['prompt_number'] = content['execution_count']
