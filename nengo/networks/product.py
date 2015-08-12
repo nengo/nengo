@@ -19,10 +19,10 @@ def Product(n_neurons, dimensions, input_magnitude=1, config=None, net=None):
         net.output = nengo.Node(size_in=dimensions, label="output")
 
         net.sq1 = EnsembleArray(
-            n_neurons // 2, n_ensembles=dimensions, ens_dimensions=1,
+            max(1, n_neurons // 2), n_ensembles=dimensions, ens_dimensions=1,
             radius=input_magnitude * np.sqrt(2))
         net.sq2 = EnsembleArray(
-            n_neurons // 2, n_ensembles=dimensions, ens_dimensions=1,
+            max(1, n_neurons // 2), n_ensembles=dimensions, ens_dimensions=1,
             radius=input_magnitude * np.sqrt(2))
 
         tr = 1. / np.sqrt(2.)
