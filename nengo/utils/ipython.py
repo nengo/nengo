@@ -43,9 +43,14 @@ import numpy as np
 try:
     import IPython
     from IPython import get_ipython
-    from IPython.config import Config
     from IPython.display import HTML
-    from IPython.nbconvert import HTMLExporter, PythonExporter
+
+    if IPython.version_info[0] <= 3:
+        from IPython.config import Config
+        from IPython.nbconvert import HTMLExporter, PythonExporter
+    else:
+        from traitlets.config import Config
+        from nbconvert import HTMLExporter, PythonExporter
 
     # nbformat.current deprecated in IPython 3.0
     if IPython.version_info[0] <= 2:
@@ -56,9 +61,14 @@ try:
         def read_nb(fp):
             return current.read(fp, 'json')
     else:
-        from IPython import nbformat
-        from IPython.nbformat import write as write_nb
-        from IPython.nbformat import NotebookNode
+        if IPython.version_info[0] == 3:
+            from IPython import nbformat
+            from IPython.nbformat import write as write_nb
+            from IPython.nbformat import NotebookNode
+        else:
+            import nbformat
+            from nbformat import write as write_nb
+            from nbformat import NotebookNode
 
         def read_nb(fp):
             # Have to load as version 4 or running notebook fails
@@ -77,10 +87,14 @@ def has_ipynb_widgets():
         ``True`` if IPython widgets are available, otherwise ``False``.
     """
     try:
-        import IPython.html.widgets
-        import IPython.utils.traitlets
-        assert IPython.html.widgets
-        assert IPython.utils.traitlets
+        if IPython.version_info[0] <= 3:
+            from IPython.html import widgets as ipywidgets
+            from IPython.utils import traitlets
+        else:
+            import ipywidgets
+            import traitlets
+        assert ipywidgets
+        assert traitlets
     except ImportError:
         return False
     else:
