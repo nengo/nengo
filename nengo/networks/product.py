@@ -6,7 +6,15 @@ from nengo.utils.stdlib import nested
 
 
 def Product(n_neurons, dimensions, input_magnitude=1, config=None, net=None):
-    """Computes the element-wise product of two equally sized vectors."""
+    """Computes the element-wise product of two equally sized vectors.
+
+    The network used to calculate the product is described in
+    `Precise multiplications with the NEF
+    <http://nbviewer.ipython.org/github/ctn-archive/technical-reports/blob/master/Precise-multiplications-with-the-NEF.ipynb#An-alternative-network>`_.
+
+    A simpler version of this network can be found in the `Multiplication
+    example <http://pythonhosted.org/nengo/examples/multiplication.html>`_.
+    """
     if net is None:
         net = nengo.Network(label="Product")
 
