@@ -246,7 +246,7 @@ class Thalamus(Module):
 
         with self:
             # inhibit the convolution when the action is not chosen
-            inhibit = [[-self.route_inhibit]] * (self.neurons_cconv)
             for e in cconv.product.all_ensembles:
+                inhibit = -np.ones((e.n_neurons, 1)) * self.route_inhibit
                 nengo.Connection(gate, e.neurons, transform=inhibit,
                                  synapse=self.synapse_inhibit)
