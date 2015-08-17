@@ -259,7 +259,7 @@ def test_weights(Simulator, nl, plt, seed):
     n1, n2 = 100, 50
 
     def func(t):
-        return np.array([np.sin(4 * t), np.cos(12 * t)])
+        return [np.sin(4 * t), np.cos(12 * t)]
 
     transform = np.array([[0.6, -0.4]])
 
@@ -279,7 +279,7 @@ def test_weights(Simulator, nl, plt, seed):
     sim.run(1.)
 
     t = sim.trange()
-    x = func(t).T
+    x = np.array(func(t)).T
     y = np.dot(x, transform.T)
     z = nengo.synapses.filtfilt(sim.data[bp], 0.005, dt=sim.dt)
     assert allclose(t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt)
