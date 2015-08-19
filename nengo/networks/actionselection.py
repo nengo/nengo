@@ -7,6 +7,7 @@ from nengo.dists import Choice, Uniform
 from nengo.networks.ensemblearray import EnsembleArray
 from nengo.solvers import NnlsL2nz
 from nengo.utils.stdlib import nested
+from nengo.utils.network import config_with_default_synapse
 
 
 # connection weights from (Gurney, Prescott, & Redgrave, 2001)
@@ -51,16 +52,6 @@ class Weights(object):
         if x < cls.eg:
             return 0
         return cls.mg * (x - cls.eg)
-
-
-def config_with_default_synapse(config, synapse):
-    if config is None:
-        config = nengo.Config(nengo.Connection)
-        config[nengo.Connection].synapse = synapse
-    override = 'synapse' not in config[nengo.Connection]
-    if override:
-        config[nengo.Connection].synapse = synapse
-    return config, override
 
 
 def BasalGanglia(dimensions, n_neurons_per_ensemble=100, output_weight=-3,
