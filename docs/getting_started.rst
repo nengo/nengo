@@ -156,7 +156,9 @@ Probing Nengo objects
 Once you have defined the objects in your model
 and how they're connected,
 you can decide what data you want to collect
-by probing those objects.
+by probing those objects. (In the GUI, you don't define
+probes, but rather right click on network objects and select
+the desired graphs.)
 
 If we wanted to collect data from
 our 2D Ensemble and the Product of those two dimensions::
@@ -175,9 +177,10 @@ Running an experiment
 ---------------------
 
 Once a model has been constructed and we have probed
-certain objects, we can run it to collect data.
+certain objects, we can run it to collect data. (In the GUI, you can
+simply hit the play button.)
 
-To run a model, we must first build a simulator
+To run a model in Python, we must first build a simulator
 based on the model we've defined.
 
 ::
