@@ -206,25 +206,25 @@ class WhiteSignal(Process):
         d = size_out
 
         n_coefficients = int(np.ceil(self.period / dt / 2.))
-        shape = (d, n_coefficients + 1)
+        shape = (n_coefficients + 1, d)
         sigma = self.rms * np.sqrt(0.5)
         coefficients = 1j * rng.normal(0., sigma, size=shape)
         coefficients += rng.normal(0., sigma, size=shape)
-        coefficients[:, 0] = 0.
-        coefficients[:, -1].imag = 0.
+        coefficients[0] = 0.
+        coefficients[-1].imag = 0.
         if self.high is not None:
             set_to_zero = npext.rfftfreq(2 * n_coefficients, d=dt) > self.high
-            coefficients[:, set_to_zero] = 0.
+            coefficients[set_to_zero] = 0.
             power_correction = np.sqrt(
                 1. - np.sum(set_to_zero, dtype=float) / n_coefficients)
             if power_correction > 0.:
                 coefficients /= power_correction
         coefficients *= np.sqrt(2 * n_coefficients)
-        signal = np.fft.irfft(coefficients, axis=1)
+        signal = np.fft.irfft(coefficients, axis=0)
 
         def step(t):
             i = int(round(t / dt))
-            return signal[:, i % signal.shape[1]]
+            return signal[i % signal.shape[0]]
 
         return step
 

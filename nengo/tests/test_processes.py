@@ -30,16 +30,20 @@ def test_whitenoise(rng):
     assert process.run_steps(2, d=3, rng=rng).shape == (2, 3)
 
 
-def test_brownnoise(rng, plt):
+def test_brownnoise(Simulator, seed, plt):
     d = 5000
     t = 0.5
-    dt = 0.001
     std = 1.5
-
     process = BrownNoise(dist=Gaussian(0, std))
-    samples = process.run(t, d=d, dt=dt, rng=rng)
+    with nengo.Network() as model:
+        u = nengo.Node(process, size_out=d)
+        up = nengo.Probe(u)
 
-    trange = process.trange(t, dt=dt)
+    sim = Simulator(model, seed=seed)
+    sim.run(t)
+    samples = sim.data[up]
+
+    trange = sim.trange()
     expected_std = std * np.sqrt(trange)
     atol = 3.5 * expected_std / np.sqrt(d)
 
@@ -64,17 +68,19 @@ def psd(values, dt=0.001):
 
 
 @pytest.mark.parametrize('rms', [0.5, 1, 100])
-def test_gaussian_whitenoise(rms, rng, plt):
+def test_gaussian_whitenoise(Simulator, rms, seed, plt):
     d = 500
-    t = 0.1
-    dt = 0.001
+    process = WhiteNoise(Gaussian(0., rms), scale=False)
+    with nengo.Network() as model:
+        u = nengo.Node(process, size_out=d)
+        up = nengo.Probe(u)
 
-    process = WhiteNoise(Gaussian(0., rms))
+    sim = Simulator(model, seed=seed)
+    sim.run(0.3)
+    values = sim.data[up]
+    freq, val_psd = psd(values, dt=sim.dt)
 
-    values = process.run(t, d=d, dt=dt, rng=rng)
-    freq, val_psd = psd(values)
-
-    trange = process.trange(t, dt=dt)
+    trange = sim.trange()
     plt.subplot(2, 1, 1)
     plt.title("First two dimensions of white noise process, rms=%.1f" % rms)
     plt.plot(trange, values[:, :2])
@@ -83,22 +89,26 @@ def test_gaussian_whitenoise(rms, rng, plt):
     plt.title("Power spectrum")
     plt.plot(freq, val_psd, drawstyle='steps')
 
-    val_rms = npext.rms(values, axis=0) * np.sqrt(dt)
+    val_rms = npext.rms(values, axis=0)
     assert np.allclose(val_rms.mean(), rms, rtol=0.02)
-    assert np.allclose(val_psd[1:-1] * np.sqrt(dt), rms, rtol=0.2)
+    assert np.allclose(val_psd[1:-1], rms, rtol=0.2)
 
 
 @pytest.mark.parametrize('rms', [0.5, 1, 100])
-def test_whitesignal_rms(rms, rng, plt):
+def test_whitesignal_rms(Simulator, rms, seed, plt):
+    t = 1.
     d = 500
-    t = 1
-    dt = 0.001
-
     process = WhiteSignal(t, rms=rms)
-    values = process.run(t, d=d, dt=dt, rng=rng)
-    freq, val_psd = psd(values)
+    with nengo.Network() as model:
+        u = nengo.Node(process, size_out=d)
+        up = nengo.Probe(u)
 
-    trange = process.trange(t, dt=dt)
+    sim = Simulator(model, seed=seed)
+    sim.run(t)
+    values = sim.data[up]
+    freq, val_psd = psd(values, dt=sim.dt)
+
+    trange = sim.trange()
     plt.subplot(2, 1, 1)
     plt.title("First two D of white noise process, rms=%.1f" % rms)
     plt.plot(trange, values[:, :2])
@@ -112,17 +122,22 @@ def test_whitesignal_rms(rms, rng, plt):
 
 
 @pytest.mark.parametrize('high', [5, 50])
-def test_whitesignal_high(high, rng, plt):
+def test_whitesignal_high(Simulator, high, seed, plt):
+    t = 1.
     rms = 0.5
     d = 500
-    t = 1
-    dt = 0.001
-
     process = WhiteSignal(t, high, rms=rms)
-    values = process.run(t, d=d, dt=dt, rng=rng)
-    freq, val_psd = psd(values)
+    with nengo.Network() as model:
+        u = nengo.Node(process, size_out=d)
+        up = nengo.Probe(u)
 
-    trange = process.trange(t, dt=dt)
+    sim = Simulator(model, seed=seed)
+    sim.run(t)
+    values = sim.data[up]
+    freq, val_psd = psd(values, dt=sim.dt)
+
+    dt = sim.dt
+    trange = sim.trange()
     plt.subplot(2, 1, 1)
     plt.title("First two D of white noise process, high=%d Hz" % high)
     plt.plot(trange, values[:, :2])
@@ -133,21 +148,26 @@ def test_whitesignal_high(high, rng, plt):
     plt.xlim(right=high * 2.0)
 
     assert np.allclose(np.std(values, axis=1), rms, rtol=0.15)
-    assert np.all(val_psd[npext.rfftfreq(t, dt) > high] < rms * 0.5)
+    assert np.all(val_psd[npext.rfftfreq(len(trange), dt) > high] < rms * 0.5)
 
 
-def test_whitesignal_dt(rng, plt):
-    rms = 0.5
-    high = 10
-    d = 500
-    t = 1
+def test_whitesignal_dt(Simulator, seed, plt):
+    t = 1.
     dt = 0.01
-
+    high = 10
+    rms = 0.5
+    d = 500
     process = WhiteSignal(t, high, rms=rms)
-    values = process.run(t, d=d, dt=dt, rng=rng)
+    with nengo.Network() as model:
+        u = nengo.Node(process, size_out=d)
+        up = nengo.Probe(u)
+
+    sim = Simulator(model, seed=seed, dt=dt)
+    sim.run(t)
+    values = sim.data[up]
     freq, val_psd = psd(values, dt=dt)
 
-    trange = process.trange(t, dt=dt)
+    trange = sim.trange()
     plt.subplot(2, 1, 1)
     plt.title("First two D of white noise process, high=%d Hz" % high)
     plt.plot(trange, values[:, :2])
@@ -158,19 +178,25 @@ def test_whitesignal_dt(rng, plt):
     plt.xlim(right=high * 2.0)
 
     assert np.allclose(np.std(values, axis=1), rms, rtol=0.15)
-    assert np.all(val_psd[npext.rfftfreq(t, dt) > high] < rms * 0.5)
+    assert np.all(val_psd[npext.rfftfreq(len(trange), dt) > high] < rms * 0.5)
 
 
-def test_whitesignal_continuity(rng, plt):
+def test_whitesignal_continuity(Simulator, seed, plt):
     """Test that WhiteSignal is continuous over multiple periods."""
-    rms = 0.5
+    t = 1.
     high = 10
-    dt = 0.001
-    t = 1
+    rms = 0.5
     process = WhiteSignal(t, high=high, rms=rms)
-    x = process.run(4 * t, d=1, dt=dt, rng=rng)
+    with nengo.Network() as model:
+        u = nengo.Node(process, size_out=1)
+        up = nengo.Probe(u)
 
-    plt.plot(process.ntrange(len(x), dt=dt), x)
+    sim = Simulator(model, seed=seed)
+    sim.run(4 * t)
+    dt = sim.dt
+    x = sim.data[up]
+
+    plt.plot(sim.trange(), x)
 
     # tolerances approximated from derivatives of sine wave of highest freq
     safety_factor = 2.
@@ -186,14 +212,14 @@ def test_sampling_shape():
     assert process.run_steps(1, d=2). shape == (1, 2)
 
 
-def test_reset(seed):
+def test_reset(Simulator, seed):
     trun = 0.1
 
     with nengo.Network() as model:
         u = nengo.Node(WhiteNoise(Gaussian(0, 1), scale=False))
         up = nengo.Probe(u)
 
-    sim = nengo.Simulator(model, seed=seed)
+    sim = Simulator(model, seed=seed)
 
     sim.run(trun)
     x = np.array(sim.data[up])
@@ -202,4 +228,5 @@ def test_reset(seed):
     sim.run(trun)
     y = np.array(sim.data[up])
 
+    assert x.shape == y.shape
     assert (x == y).all()
