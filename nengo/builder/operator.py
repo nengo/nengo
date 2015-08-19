@@ -226,12 +226,12 @@ class SlicedCopy(Operator):
         b_slice = self.b_slice
         inc = self.inc
 
-        def step():
+        def step_slicedcopy():
             if inc:
                 b[b_slice] += a[a_slice]
             else:
                 b[b_slice] = a[a_slice]
-        return step
+        return step_slicedcopy
 
 
 class ElementwiseInc(Operator):

@@ -63,7 +63,7 @@ def expm(A, n_factors=None, normalize=False):
         A = A / float(a)
 
     if n_factors is None:
-        n_factors = 20 if normalize else max(20, int(a))
+        n_factors = 20 if normalize else min(max(int(a), 20), 1000)
 
     Y = np.zeros_like(A)
     for i in range(n_factors, 0, -1):

@@ -95,6 +95,16 @@ def test_linearfilter(Simulator, plt, seed):
     assert allclose(t, y, yhat, delay=dt, plt=plt)
 
 
+def test_step_errors():
+    output = np.zeros(3)
+    with pytest.raises(ValueError):
+        LinearFilter.NoDen([1], [1], output)
+    with pytest.raises(ValueError):
+        LinearFilter.Simple([1, 2], [1], output)
+    with pytest.raises(ValueError):
+        LinearFilter.Simple([1], [1, 2], output)
+
+
 def test_filt(plt, rng):
     dt = 1e-3
     tend = 3.

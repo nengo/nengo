@@ -1,5 +1,4 @@
 import collections
-import functools
 
 import numpy as np
 
@@ -42,36 +41,6 @@ class LinearFilter(Synapse):
     def __repr__(self):
         return "%s(%s, %s)" % (self.__class__.__name__, self.num, self.den)
 
-    @staticmethod
-    def no_den_step(signal, output, b):
-        output[...] = b * signal
-
-    @staticmethod
-    def simple_step(signal, output, a, b):
-        output *= -a
-        output += b * signal
-
-    @staticmethod
-    def general_step(signal, output, x, y, num, den):
-        """Filter an LTI system with the given transfer function.
-
-        Implements a discrete-time LTI system using the difference equation
-        [1]_ for the given transfer function (num, den).
-
-        References
-        ----------
-        .. [1] http://en.wikipedia.org/wiki/Digital_filter#Difference_equation
-        """
-
-        output[...] = 0
-
-        x.appendleft(np.array(signal))
-        for k, xk in enumerate(x):
-            output += num[k] * xk
-        for k, yk in enumerate(y):
-            output -= den[k] * yk
-        y.appendleft(np.array(output))
-
     def make_step(self, dt, output, method='zoh'):
         num, den = self.num, self.den
         if self.analog:
@@ -84,16 +53,79 @@ class LinearFilter(Synapse):
         den = den[1:]  # drop first element (equal to 1)
 
         if len(num) == 1 and len(den) == 0:
-            return functools.partial(
-                LinearFilter.no_den_step, output=output, b=num[0])
+            return LinearFilter.NoDen(num, den, output)
         elif len(num) == 1 and len(den) == 1:
-            return functools.partial(
-                LinearFilter.simple_step, output=output, a=den[0], b=num[0])
-        else:
-            x = collections.deque(maxlen=len(num))
-            y = collections.deque(maxlen=len(den))
-            return functools.partial(LinearFilter.general_step,
-                                     output=output, x=x, y=y, num=num, den=den)
+            return LinearFilter.Simple(num, den, output)
+        return LinearFilter.General(num, den, output)
+
+    class Step(object):
+        """Abstract base class for LTI filtering step functions."""
+        def __init__(self, num, den, output):
+            self.num = num
+            self.den = den
+            self.output = output
+
+        def __call__(self, signal):
+            raise NotImplementedError
+
+    class NoDen(Step):
+        """An LTI step function for transfer functions with no denominator.
+
+        This step function should be much faster than the equivalent general
+        step function.
+        """
+        def __init__(self, num, den, output):
+            if len(den) > 0:
+                raise ValueError("`den` must be empty (got length %d)"
+                                 % (len(den)))
+            super(LinearFilter.NoDen, self).__init__(num, den, output)
+            self.b = num[0]
+
+        def __call__(self, signal):
+            self.output[...] = self.b * signal
+
+    class Simple(Step):
+        """An LTI step function for transfer functions with one num and den.
+
+        This step function should be much faster than the equivalent general
+        step function.
+        """
+        def __init__(self, num, den, output):
+            if len(num) != 1 or len(den) != 1:
+                raise ValueError("`num` and `den` must both be length 1 "
+                                 "(got %d and %d)" % (len(num), len(den)))
+            super(LinearFilter.Simple, self).__init__(num, den, output)
+            self.b = num[0]
+            self.a = den[0]
+
+        def __call__(self, signal):
+            self.output *= -self.a
+            self.output += self.b * signal
+
+    class General(Step):
+        """An LTI step function for any given transfer function.
+
+        Implements a discrete-time LTI system using the difference equation
+        [1]_ for the given transfer function (num, den).
+
+        References
+        ----------
+        .. [1] http://en.wikipedia.org/wiki/Digital_filter#Difference_equation
+        """
+        def __init__(self, num, den, output):
+            super(LinearFilter.General, self).__init__(num, den, output)
+            self.x = collections.deque(maxlen=len(num))
+            self.y = collections.deque(maxlen=len(den))
+
+        def __call__(self, signal):
+            self.output[...] = 0
+
+            self.x.appendleft(np.array(signal))
+            for k, xk in enumerate(self.x):
+                self.output += self.num[k] * xk
+            for k, yk in enumerate(self.y):
+                self.output -= self.den[k] * yk
+            self.y.appendleft(np.array(self.output))
 
 
 class Lowpass(LinearFilter):
@@ -114,8 +146,7 @@ class Lowpass(LinearFilter):
     def make_step(self, dt, output):
         # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
         if self.tau <= .03 * dt:
-            return functools.partial(
-                LinearFilter.no_den_step, output=output, b=1.)
+            return LinearFilter.NoDen(np.array([1.]), np.array([]), output)
         return super(Lowpass, self).make_step(dt, output)
 
 
@@ -148,8 +179,7 @@ class Alpha(LinearFilter):
     def make_step(self, dt, output):
         # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
         if self.tau <= .03 * dt:
-            return functools.partial(
-                LinearFilter.no_den_step, output=output, b=1.)
+            return LinearFilter.NoDen(np.array([1.]), np.array([]), output)
         return super(Alpha, self).make_step(dt, output)
 
 
@@ -176,13 +206,13 @@ class Triangle(Synapse):
         n0, ndiff = num[0], num[-1]
         x = collections.deque(maxlen=n_taps)
 
-        def step(signal, output=output, x=x, num=num):
+        def step_triangle(signal):
             output[...] += n0 * signal
             for xk in x:
-                output -= xk
+                output[...] -= xk
             x.appendleft(ndiff * signal)
 
-        return step
+        return step_triangle
 
 
 def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
