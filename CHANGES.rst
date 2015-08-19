@@ -57,6 +57,8 @@ Release History
   stand-alone network in ``nengo.networks``. The AssociativeMemory SPA module
   also has an updated argument list.
   (`#702 <https://github.com/nengo/nengo/pull/702>`_)
+- The ``Product`` and ``InputGatedMemory`` networks no longer accept a
+  ``config`` argument. (`#814 <https://github.com/nengo/nengo/pull/814>`_)
 
 **Behavioural changes**
 

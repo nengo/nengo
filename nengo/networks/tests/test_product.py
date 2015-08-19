@@ -47,8 +47,9 @@ def test_direct_mode_with_single_neuron(Simulator, plt, seed):
 
     config = nengo.Config(nengo.Ensemble)
     config[nengo.Ensemble].neuron_type = nengo.Direct()
-    product = nengo.networks.Product(
-        1, dim, radius, net=nengo.Network(seed=seed), config=config)
+    with config:
+        product = nengo.networks.Product(
+            1, dim, radius, net=nengo.Network(seed=seed))
 
     func_A = lambda t: np.sqrt(radius)*np.sin(np.arange(1, dim+1)*2*np.pi*t)
     func_B = lambda t: np.sqrt(radius)*np.sin(np.arange(dim, 0, -1)*2*np.pi*t)

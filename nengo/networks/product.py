@@ -2,10 +2,9 @@ import numpy as np
 
 import nengo
 from nengo.networks.ensemblearray import EnsembleArray
-from nengo.utils.stdlib import nested
 
 
-def Product(n_neurons, dimensions, input_magnitude=1, config=None, net=None):
+def Product(n_neurons, dimensions, input_magnitude=1, net=None):
     """Computes the element-wise product of two equally sized vectors.
 
     The network used to calculate the product is described in
@@ -18,10 +17,7 @@ def Product(n_neurons, dimensions, input_magnitude=1, config=None, net=None):
     if net is None:
         net = nengo.Network(label="Product")
 
-    if config is None:
-        config = nengo.Config(nengo.Ensemble)
-
-    with nested(net, config):
+    with net:
         net.A = nengo.Node(size_in=dimensions, label="A")
         net.B = nengo.Node(size_in=dimensions, label="B")
         net.output = nengo.Node(size_in=dimensions, label="output")
