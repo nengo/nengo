@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 
 from nengo.utils.compat import range
-from nengo.utils.stdlib import checked_call, groupby, Timer
+from nengo.utils.stdlib import (
+    checked_call, groupby, Timer, WeakKeyIDDictionary)
 
 
 def test_checked_call():
@@ -105,3 +106,104 @@ def test_timer():
             2 + 2
     assert timer.duration > 0.0
     assert timer.duration < 1.0  # Pretty bad worst case
+
+
+class C:
+    def method(self):
+        pass
+
+
+def test_make_weakkeydict_from_dict():
+    o = C()
+    d = WeakKeyIDDictionary({o: 364})
+    assert d[o] == 364
+
+
+def test_make_weakkeydict_from_weakkeydict():
+    o = C()
+    d1 = WeakKeyIDDictionary({o: 364})
+    d2 = WeakKeyIDDictionary(d1)
+    assert d1[o] == 364
+    assert d2[o] == 364
+
+
+def test_weakkeydict_popitem(key1=C(), key2=C(), value1="v1", value2="v2"):
+    d = WeakKeyIDDictionary()
+    d[key1] = value1
+    d[key2] = value2
+    assert len(d) == 2
+    k, v = d.popitem()
+    assert len(d) == 1
+    if k is key1:
+        assert v is value1
+    else:
+        assert v is value2
+    k, v = d.popitem()
+    assert len(d) == 0
+    if k is key1:
+        assert v is value1
+    else:
+        assert v is value2
+
+
+def test_weakkeydict_setdefault(key=C(), value1="v1", value2="v2"):
+    d = WeakKeyIDDictionary()
+    o = d.setdefault(key, value1)
+    assert o is value1
+    assert key in d
+    assert d.get(key) is value1
+    assert d[key] is value1
+
+    o = d.setdefault(key, value2)
+    assert o is value1
+    assert key in d
+    assert d.get(key) is value1
+    assert d[key] is value1
+
+
+def test_weakkeydict_update(in_d={C(): 1, C(): 2, C(): 3}):
+    """This exercises d.update(), len(d), d.keys(), in d,  d.get(), d[]."""
+    d = WeakKeyIDDictionary()
+    d.update(in_d)
+    assert len(d) == len(in_d)
+    for k in d.keys():
+        assert k in in_d, "mysterious new key appeared in weak dict"
+        v = in_d.get(k)
+        assert v is d[k]
+        assert v is d.get(k)
+    for k in in_d.keys():
+        assert k in d, "original key disappeared in weak dict"
+        v = in_d[k]
+        assert v is d[k]
+        assert v is d.get(k)
+
+
+def test_weakkeydict_delitem():
+    d = WeakKeyIDDictionary()
+    o1 = C()
+    o2 = C()
+    d[o1] = 'something'
+    d[o2] = 'something'
+    assert len(d) == 2
+    del d[o1]
+    assert len(d) == 1
+    assert list(d.keys()) == [o2]
+
+
+def test_weakkeydict_bad_delitem():
+    d = WeakKeyIDDictionary()
+    o = C()
+    # An attempt to delete an object that isn't there should raise KeyError.
+    with pytest.raises(KeyError):
+        del d[o]
+    with pytest.raises(KeyError):
+        d[o]
+
+    # If a key isn't of a weakly referencable type, __getitem__ and
+    # __setitem__ raise TypeError.  __delitem__ should too.
+    with pytest.raises(TypeError):
+        del d[13]
+    with pytest.raises(TypeError):
+        d[13]
+    with pytest.raises(TypeError):
+        d[13] = 13

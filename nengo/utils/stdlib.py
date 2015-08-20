@@ -17,46 +17,73 @@ import weakref
 from .compat import iteritems, itervalues, reraise
 
 
-class WeakKeyIDDictionary(object):
+class WeakKeyIDDictionary(collections.MutableMapping):
     """WeakKeyDictionary that uses object ID to hash.
 
     This ignores the ``__eq__`` and ``__hash__`` functions on objects,
     so that objects are only considered equal if one is the other.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self._keyrefs = weakref.WeakValueDictionary()
         self._keyvalues = {}
+        if len(args) > 0 or len(kwargs) > 0:
+            self.update(*args, **kwargs)
 
     def __getitem__(self, k):
+        assert weakref.ref(k)
         if k in self:
             return self._keyvalues[id(k)]
         else:
             raise KeyError(str(k))
 
     def __setitem__(self, k, v):
-        if k is None:
-            raise ValueError("Cannot use `None` as a key")
+        assert weakref.ref(k)
         self._keyrefs[id(k)] = k
         self._keyvalues[id(k)] = v
 
-    def __contains__(self, k):
-        if k is None:
-            return False
-        return k is self._keyrefs.get(id(k))
-
     def __delitem__(self, k):
+        assert weakref.ref(k)
         if k in self:
             del self._keyrefs[id(k)]
             del self._keyvalues[id(k)]
         else:
             raise KeyError(str(k))
 
+    def keys(self):
+        return itervalues(self._keyrefs)
+
+    def iterkeys(self):
+        return itervalues(self._keyrefs)
+
+    def items(self):
+        for k in self:
+            yield k, self[k]
+
+    def iteritems(self):
+        for k in self:
+            yield k, self[k]
+
     def __iter__(self):
         return itervalues(self._keyrefs)
 
+    def __contains__(self, k):
+        if k is None:
+            return False
+        return k is self._keyrefs.get(id(k))
+
+    def __len__(self):
+        return len(self._keyrefs)
+
     def get(self, k, default=None):
         return self._keyvalues[id(k)] if k in self else default
+
+    def update(self, in_dict=None, **kwargs):
+        if in_dict is not None:
+            for key, value in iteritems(in_dict):
+                self.__setitem__(key, value)
+        if len(kwargs) > 0:
+            self.update(kwargs)
 
 
 CheckedCall = collections.namedtuple('CheckedCall', ('value', 'invoked'))
