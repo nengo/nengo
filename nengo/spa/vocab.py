@@ -86,18 +86,24 @@ class Vocabulary(object):
         """Create a new semantic pointer.
 
         This will take into account the randomize and max_similarity
-        parameters from self.
+        parameters from self. If a pointer satisfying max_similarity
+        is not generated after the specified number of attempts, the
+        candidate pointer with lowest maximum cosine with all existing
+        pointers is returned.
         """
         if self.randomize:
-            count = 0
-            p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
-            if self.vectors.shape[0] > 0:
-                while count < 100:
-                    similarity = np.dot(self.vectors, p.v)
-                    if max(similarity) < self.max_similarity:
-                        break
-                    p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
-                    count += 1
+            if self.vectors.shape[0] == 0:
+                p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
+            else:
+                p_sim = np.inf
+                for _ in range(attempts):
+                    pp = pointer.SemanticPointer(self.dimensions, rng=self.rng)
+                    pp_sim = max(np.dot(self.vectors, pp.v))
+                    if pp_sim < p_sim:
+                        p = pp
+                        p_sim = pp_sim
+                        if p_sim < self.max_similarity:
+                            break
                 else:
                     warnings.warn(
                         'Could not create a semantic pointer with '

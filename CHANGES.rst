@@ -135,6 +135,10 @@ Release History
 - Corrected the ``rmses`` values in ``BuiltConnection.solver_info`` when using
   ``NNls`` and ``Nnl2sL2`` solvers, and the ``reg`` argument for ``Nnl2sL2``.
   (`#839 <https://github.com/nengo/nengo/pull/839>`_)
+- ``spa.Vocabulary.create_pointer`` now respects the specified number of
+  creation attempts, and returns the most dissimilar pointer if none can be
+  found below the similarity threshold.
+  (`#817 <https://github.com/nengo/nengo/pull/817>`_)
 
 2.0.1 (January 27, 2015)
 ========================
