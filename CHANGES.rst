@@ -86,6 +86,10 @@ Release History
   to be computed by each ensemble.
   (`#562 <https://github.com/nengo/nengo/issues/562>`_,
   `#580 <https://github.com/nengo/nengo/pull/580>`_)
+- ``LinearFilter`` now has an ``analog`` argument which can be set
+  through its constructor. Linear filters with digital coefficients
+  can be specified by setting ``analog`` to ``False``.
+  (`#819 <https://github.com/nengo/nengo/pull/819>`_)
 - Added ``SqrtBeta`` distribution, which describes the distribution
   of semantic pointer elements.
   (`#414 <https://github.com/nengo/nengo/issues/414>`_,

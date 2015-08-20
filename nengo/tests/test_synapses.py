@@ -83,13 +83,14 @@ def test_linearfilter(Simulator, plt, seed):
     dt = 1e-3
 
     # The following num, den are for a 4th order analog Butterworth filter,
-    # generated with `scipy.signal.butter(4, 1. / 0.03, analog=True)`
-    num = np.array([1234567.90123457])
-    den = np.array([1.0, 87.104197658425107, 3793.5706248589954,
-                    96782.441842694592, 1234567.9012345686])
+    # generated with `scipy.signal.butter(4, 0.2, analog=False)`
+    num = np.array(
+        [0.00482434, 0.01929737, 0.02894606, 0.01929737, 0.00482434])
+    den = np.array([1., -2.36951301,  2.31398841, -1.05466541,  0.18737949])
 
-    t, x, yhat = run_synapse(Simulator, seed, LinearFilter(num, den), dt=dt)
-    y = filt(x, LinearFilter(num, den), dt=dt)
+    synapse = LinearFilter(num, den, analog=False)
+    t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
+    y = filt(x, synapse, dt=dt)
 
     assert allclose(t, y, yhat, delay=dt, plt=plt)
 

@@ -34,9 +34,10 @@ class LinearFilter(Synapse):
     .. [1] http://en.wikipedia.org/wiki/Filter_%28signal_processing%29
     """
 
-    def __init__(self, num, den):
+    def __init__(self, num, den, analog=True):
         self.num = num
         self.den = den
+        self.analog = analog
 
     def __repr__(self):
         return "%s(%s, %s)" % (self.__class__.__name__, self.num, self.den)
@@ -72,8 +73,13 @@ class LinearFilter(Synapse):
         y.appendleft(np.array(output))
 
     def make_step(self, dt, output, method='zoh'):
-        num, den, _ = cont2discrete((self.num, self.den), dt, method=method)
-        num = num.flatten()
+        num, den = self.num, self.den
+        if self.analog:
+            num, den, _ = cont2discrete((num, den), dt, method=method)
+            num = num.flatten()
+
+        if den[0] != 1.:
+            raise ValueError("First element of the denominator must be 1")
         num = num[1:] if num[0] == 0 else num
         den = den[1:]  # drop first element (equal to 1)
 
