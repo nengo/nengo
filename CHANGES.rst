@@ -103,6 +103,8 @@ Release History
   attribute.
   (`#730 <https://github.com/nengo/nengo/issues/730>`_,
   `#791 <https://github.com/nengo/nengo/pull/791>`_)
+- The ``Product`` network is now more accurate.
+  (`#651 <https://github.com/nengo/nengo/pull/651>`_)
 
 **Bug fixes**
 
