@@ -16,12 +16,13 @@ def test_basal_ganglia(Simulator, seed, plt):
         # test all acceptable condition formats
         actions = spa.Actions(
             '0.5 --> motor=A',
-            'dot(vision,CAT) --> motor=B',
-            'dot(vision*CAT,DOG) --> motor=C',
-            '2*dot(vision,CAT*0.5) --> motor=D',
-            'dot(vision,CAT)+0.5-dot(vision,CAT) --> motor=E',
-            'dot(vision,PARROT) + compare --> motor=F',
-            '0.5*dot(vision,MOUSE) + 0.5*compare --> motor=G',
+            'dot(vision, CAT) --> motor=B',
+            'dot(vision*CAT, DOG) --> motor=C',
+            '2*dot(vision, CAT*0.5) --> motor=D',
+            'dot(vision, CAT) + 0.5 - dot(vision,CAT) --> motor=E',
+            'dot(vision, PARROT) + compare --> motor=F',
+            '0.5*dot(vision, MOUSE) + 0.5*compare --> motor=G',
+            '( dot(vision, MOUSE) - compare ) * 0.5 --> motor=H'
         )
         model.bg = spa.BasalGanglia(actions)
 
@@ -47,7 +48,7 @@ def test_basal_ganglia(Simulator, seed, plt):
     t = sim.trange()
 
     plt.plot(t, sim.data[p])
-    plt.legend(["A", "B", "C", "D", "E", "F", "G"])
+    plt.legend(["A", "B", "C", "D", "E", "F", "G", "H"])
     plt.title('Basal Ganglia output')
 
     # assert the basal ganglia is prioritizing things correctly
