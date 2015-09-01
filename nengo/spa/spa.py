@@ -104,8 +104,12 @@ class SPA(nengo.Network):
 
             value.on_add(self)
 
-    def __exit__(self, *args):
-        super(SPA, self).__exit__(*args)
+    def __exit__(self, ex_type, ex_value, traceback):
+        super(SPA, self).__exit__(ex_type, ex_value, traceback)
+        if ex_type is not None:
+            # re-raise the exception that triggered this __exit__
+            return False
+
         module_list = frozenset(self._modules.values())
         for net in self.networks:
             # Since there are no attributes to distinguish what's been added

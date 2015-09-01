@@ -40,7 +40,10 @@ class Input(Module):
         Module.on_add(self, spa)
 
         for name, value in iteritems(self.kwargs):
-            target, vocab = spa.get_module_input(name)
+            try:
+                target, vocab = spa.get_module_input(name)
+            except TypeError:
+                raise ValueError('Could not find input called "%s"' % name)
             if callable(value):
                 val = make_parse_func(value, vocab)
             else:
