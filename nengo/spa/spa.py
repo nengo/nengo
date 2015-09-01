@@ -125,7 +125,9 @@ class SPA(nengo.Network):
             return self._modules[name]
         elif '_' in name:
             module, name = name.rsplit('_', 1)
-            return self._modules[module]
+            if module in self._modules:
+                return self._modules[module]
+        raise KeyError('Could not find module "%s"' % name)
 
     def get_default_vocab(self, dimensions):
         """Return a Vocabulary with the desired dimensions.
@@ -151,7 +153,11 @@ class SPA(nengo.Network):
             return self._modules[name].inputs['default']
         elif '_' in name:
             module, name = name.rsplit('_', 1)
-            return self._modules[module].inputs[name]
+            if module in self._modules:
+                m = self._modules[module]
+                if name in m.inputs:
+                    return m.inputs[name]
+        raise KeyError('Could not find module input "%s"' % name)
 
     def get_module_inputs(self):
         for name, module in iteritems(self._modules):
@@ -174,7 +180,11 @@ class SPA(nengo.Network):
             return self._modules[name].outputs['default']
         elif '_' in name:
             module, name = name.rsplit('_', 1)
-            return self._modules[module].outputs[name]
+            if module in self._modules:
+                m = self._modules[module]
+                if name in m.outputs:
+                    return m.outputs[name]
+        raise KeyError('Could not find module output "%s"' % name)
 
     def get_module_outputs(self):
         for name, module in iteritems(self._modules):
