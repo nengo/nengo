@@ -342,3 +342,35 @@ def test_conv2d(local, Simulator, rng):
     sim.step()
     y = sim.data[vp][-1].reshape((f, ni, nj))
     assert np.allclose(result, y, rtol=1e-4, atol=1e-7)
+
+
+@pytest.mark.parametrize('s, st', [(2, 2), (3, 1), (3, 3)])
+def test_pool2d(s, st, Simulator, rng):
+    c = 3
+    nxi, nxj = 30, 32
+    image = rng.normal(size=(c, nxi, nxj))
+
+    # compute correct result
+    result = np.zeros_like(image[:, ::st, ::st])
+    count = np.zeros_like(result)
+    for i in range(s):
+        for j in range(s):
+            xij = image[:, i::st, j::st]
+            ni, nj = xij.shape[-2:]
+            result[:, :ni, :nj] += xij
+            count[:, :ni, :nj] += 1
+
+    result /= count
+
+    # run simulation
+    model = nengo.Network()
+    with model:
+        u = nengo.Node(image.ravel())
+        v = nengo.Node(nengo.processes.Pool2d(image.shape, s, stride=st))
+        nengo.Connection(u, v, synapse=None)
+        vp = nengo.Probe(v)
+
+    sim = Simulator(model)
+    sim.step()
+    y = sim.data[vp][-1].reshape(result.shape)
+    assert np.allclose(result, y, rtol=1e-4, atol=1e-7)

@@ -5,7 +5,7 @@ import numpy as np
 import nengo.utils.numpy as npext
 from nengo.dists import DistributionParam, Gaussian
 from nengo.params import (
-    BoolParam, IntParam, NdarrayParam, NumberParam, TupleParam,
+    BoolParam, EnumParam, IntParam, NdarrayParam, NumberParam, TupleParam,
     Parameter, FrozenObject)
 from nengo.synapses import LinearFilter, LinearFilterParam, Lowpass
 from nengo.utils.compat import range
@@ -405,6 +405,67 @@ class Conv2d(Process):
             return y.ravel()
 
         return step_conv2d
+
+
+class Pool2d(Process):
+    """Perform 2-D (image) pooling on an input."""
+    shape_in = TupleParam(length=3)
+    shape_out = TupleParam(length=3)
+    size = IntParam(low=1)
+    stride = IntParam(low=1)
+    kind = EnumParam(values=('avg', 'max'))
+
+    def __init__(self, shape_in, size, stride=None, kind='avg'):
+        self.shape_in = shape_in
+        self.size = size
+        self.stride = stride if stride is not None else size
+        self.kind = kind
+        if self.stride > self.size:
+            raise ValueError("Stride (%d) must be <= size (%d)" %
+                             (self.stride, self.size))
+
+        c, nxi, nxj = self.shape_in
+        nyi = int(np.floor(float(nxi - 1) / self.stride)) + 1
+        nyj = int(np.floor(float(nxj - 1) / self.stride)) + 1
+        self.shape_out = (c, nyi, nyj)
+
+        super(Pool2d, self).__init__(
+            default_size_in=np.prod(self.shape_in),
+            default_size_out=np.prod(self.shape_out))
+
+    def make_step(self, size_in, size_out, dt, rng):
+        assert size_in == np.prod(self.shape_in)
+        assert size_out == np.prod(self.shape_out)
+        c, nxi, nxj = self.shape_in
+        c, nyi, nyj = self.shape_out
+        s = self.size
+        st = self.stride
+        kind = self.kind
+
+        def step_pool2d(t, x):
+            x = x.reshape(c, nxi, nxj)
+            y = np.zeros_like(x[:, ::st, ::st])
+            n = np.zeros((nyi, nyj))
+            assert y.shape[-2:] == (nyi, nyj)
+
+            for i in range(s):
+                for j in range(s):
+                    xij = x[:, i::st, j::st]
+                    ni, nj = xij.shape[-2:]
+                    if kind == 'max':
+                        y[:, :ni, :nj] = np.maximum(y[:, :ni, :nj], xij)
+                    elif kind == 'avg':
+                        y[:, :ni, :nj] += xij
+                        n[:ni, :nj] += 1
+                    else:
+                        raise NotImplementedError(kind)
+
+            if kind == 'avg':
+                y /= n
+
+            return y.ravel()
+
+        return step_pool2d
 
 
 class ProcessParam(Parameter):
