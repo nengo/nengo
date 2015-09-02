@@ -48,6 +48,11 @@ for subdir, _, files in os.walk(examples_dir):
     fast_examples.extend([e for e, f in zip(examples, files)
                           if os.path.splitext(f)[0] not in too_slow])
 
+# os.walk goes in arbitrary order, so sort after the fact to keep pytest happy
+all_examples.sort()
+slow_examples.sort()
+fast_examples.sort()
+
 
 def assert_noexceptions(nb_file, tmpdir, plt):
     plt.saveas = None  # plt used to ensure figures are closed, but don't save
