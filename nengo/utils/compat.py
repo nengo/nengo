@@ -83,11 +83,6 @@ def is_iterable(obj):
     return isinstance(obj, collections.Iterable)
 
 
-def is_ndarray(obj):
-    # np.generic allows us to return true for scalars as well as true arrays
-    return isinstance(obj, (np.ndarray, np.generic))
-
-
 def is_number(obj, check_complex=False):
     types = ((float, complex, np.number) if check_complex else
              (float, np.floating))
@@ -99,7 +94,8 @@ def is_string(obj):
 
 
 def is_array(obj):
-    return isinstance(obj, np.ndarray)
+    # np.generic allows us to return true for scalars as well as true arrays
+    return isinstance(obj, (np.ndarray, np.generic))
 
 
 def is_array_like(obj):
