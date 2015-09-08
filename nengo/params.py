@@ -323,6 +323,10 @@ class FrozenObject(object):
             raise ValueError(
                 "All parameters of a FrozenObject must be readonly")
 
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, ', '.join(
+            "%s=%r" % (k, getattr(self, k)) for k in sorted(self._paramdict)))
+
     @property
     def _params(self):
         return itervalues(self._paramdict)

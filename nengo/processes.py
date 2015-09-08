@@ -87,6 +87,10 @@ class WhiteNoise(Process):
         self.dist = dist
         self.scale = scale
 
+    def __repr__(self):
+        return "%s(%r, scale=%r)" % (
+            self.__class__.__name__, self.dist, self.scale)
+
     def make_step(self, size_in, size_out, dt, rng):
         assert size_in == 0
 
@@ -137,6 +141,10 @@ class FilteredNoise(Process):
         self.dist = dist
         self.scale = scale
 
+    def __repr__(self):
+        return "%s(synapse=%r, dist=%r, scale=%r)" % (
+            self.__class__.__name__, self.synapse, self.dist, self.scale)
+
     def make_step(self, size_in, size_out, dt, rng):
         assert size_in == 0
 
@@ -176,6 +184,9 @@ class BrownNoise(FilteredNoise):
             synapse_kwargs=dict(method='euler'),
             dist=dist)
 
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__.__name__, self.dist)
+
 
 class WhiteSignal(Process):
     """An ideal low-pass filtered white noise process.
@@ -207,6 +218,10 @@ class WhiteSignal(Process):
         self.period = period
         self.high = high
         self.rms = rms
+
+    def __repr__(self):
+        return "%s(period=%r, high=%r, rms=%r)" % (
+            self.__class__.__name__, self.period, self.high, self.rms)
 
     def make_step(self, size_in, size_out, dt, rng):
         assert size_in == 0

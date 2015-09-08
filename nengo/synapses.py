@@ -45,7 +45,8 @@ class LinearFilter(Synapse):
         self.analog = analog
 
     def __repr__(self):
-        return "%s(%s, %s)" % (self.__class__.__name__, self.num, self.den)
+        return "%s(%s, %s, analog=%r)" % (
+            self.__class__.__name__, self.num, self.den, self.analog)
 
     def make_step(self, dt, output, method='zoh'):
         num, den = self.num, self.den
@@ -149,7 +150,7 @@ class Lowpass(LinearFilter):
         self.tau = tau
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, self.tau)
+        return "%s(%r)" % (self.__class__.__name__, self.tau)
 
     def make_step(self, dt, output):
         # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
@@ -184,7 +185,7 @@ class Alpha(LinearFilter):
         self.tau = tau
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, self.tau)
+        return "%s(%r)" % (self.__class__.__name__, self.tau)
 
     def make_step(self, dt, output):
         # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
@@ -207,7 +208,7 @@ class Triangle(Synapse):
         self.t = t
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, self.t)
+        return "%s(%r)" % (self.__class__.__name__, self.t)
 
     def make_step(self, dt, output):
         n_taps = int(np.round(self.t / float(dt))) + 1
