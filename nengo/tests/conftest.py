@@ -194,6 +194,8 @@ def pytest_generate_tests(metafunc):
 
 
 def pytest_runtest_setup(item):
+    if not hasattr(item, 'obj'):
+        return
     for mark, option, message in [
             ('example', 'noexamples', "examples not requested"),
             ('slow', 'slow', "slow tests not requested")]:
@@ -219,6 +221,8 @@ def pytest_runtest_setup(item):
 def pytest_collection_modifyitems(session, config, items):
     compare = config.getvalue('compare') is None
     for item in list(items):
+        if not hasattr(item, 'obj'):
+            continue
         if (getattr(item.obj, 'compare', None) is None) != compare:
             items.remove(item)
 
