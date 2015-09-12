@@ -133,7 +133,7 @@ Release History
 - Fix for SPA actions that route to a module with multiple inputs.
   (`#714 <https://github.com/nengo/nengo/pull/714>`_)
 - Corrected the ``rmses`` values in ``BuiltConnection.solver_info`` when using
-  ``NNls`` and ``Nnl2sL2`` solvers.
+  ``NNls`` and ``Nnl2sL2`` solvers, and the ``reg`` argument for ``Nnl2sL2``.
   (`#839 <https://github.com/nengo/nengo/pull/839>`_)
 
 2.0.1 (January 27, 2015)

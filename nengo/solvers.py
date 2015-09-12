@@ -517,7 +517,7 @@ class NnlsL2(Nnls):
         # form Gram matrix so we can add regularization
         GA = np.dot(A.T, A)
         GY = np.dot(A.T, Y)
-        np.fill_diagonal(GA, GA.diagonal() + sigma)
+        np.fill_diagonal(GA, GA.diagonal() + A.shape[0] * sigma**2)
         X, info = super(NnlsL2, self).__call__(GA, GY, rng=rng, E=E)
         # recompute the RMSE in terms of the original matrices
         info = {'rmses': _rmses(A, X, Y), 'gram_info': info}
