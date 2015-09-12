@@ -19,6 +19,11 @@ from nengo.utils.magic import DocstringInheritor
 logger = logging.getLogger(__name__)
 
 
+def _rmses(A, X, Y):
+    """Returns the root-mean-squared error (RMSE) of the solution X."""
+    return npext.rms(Y - np.dot(A, X), axis=0)
+
+
 def cholesky(A, y, sigma, transpose=None):
     """Solve the least-squares system using the Cholesky decomposition."""
     m, n = A.shape
@@ -48,7 +53,7 @@ def cholesky(A, y, sigma, transpose=None):
         x = np.dot(L, np.dot(L.T, b))
 
     x = np.dot(A.T, x) if transpose else x
-    info = {'rmses': npext.rms(y - np.dot(A, x), axis=0)}
+    info = {'rmses': _rmses(A, x, y)}
     return x, info
 
 
@@ -73,9 +78,7 @@ def conjgrad_scipy(A, Y, sigma, tol=1e-4):
         X[:, i], infos[i] = scipy.sparse.linalg.cg(
             G, B[:, i], tol=tol, callback=callback)
 
-    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
-            'iterations': itns,
-            'info': infos}
+    info = {'rmses': _rmses(A, X, Y), 'iterations': itns, 'info': infos}
     return X if matrix_in else X.flatten(), info
 
 
@@ -91,8 +94,7 @@ def lsmr_scipy(A, Y, sigma, tol=1e-4):
         X[:, i], _, itns[i], _, _, _, _, _ = scipy.sparse.linalg.lsmr(
             A, Y[:, i], damp=damp, atol=tol, btol=tol)
 
-    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
-            'iterations': itns}
+    info = {'rmses': _rmses(A, X, Y), 'iterations': itns}
     return X if matrix_in else X.flatten(), info
 
 
@@ -144,8 +146,7 @@ def conjgrad(A, Y, sigma, X0=None, maxiters=None, tol=1e-2):
         X[:, i], iters[i] = _conjgrad_iters(
             G, B[:, i], X[:, i], maxiters=maxiters, rtol=rtol)
 
-    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
-            'iterations': iters}
+    info = {'rmses': _rmses(A, X, Y), 'iterations': iters}
     return X if matrix_in else X.flatten(), info
 
 
@@ -183,8 +184,7 @@ def block_conjgrad(A, Y, sigma, X0=None, tol=1e-2):
         P = R + np.dot(P, beta)
         Rsold = Rsnew
 
-    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
-            'iterations': i + 1}
+    info = {'rmses': _rmses(A, X, Y), 'iterations': i + 1}
     return X if matrix_in else X.flatten(), info
 
 
@@ -284,7 +284,7 @@ class Lstsq(Solver):
     def __call__(self, A, Y, rng=None, E=None):
         Y = self.mul_encoders(Y, E)
         X, residuals2, rank, s = np.linalg.lstsq(A, Y, rcond=self.rcond)
-        return X, {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+        return X, {'rmses': _rmses(A, X, Y),
                    'residuals': np.sqrt(residuals2),
                    'rank': rank,
                    'singular_values': s}
@@ -417,7 +417,7 @@ class LstsqL1(Solver):
         model.fit(A, Y)
         X = model.coef_.T
         X.shape = (A.shape[1], Y.shape[1]) if Y.ndim > 1 else (A.shape[1],)
-        infos = {'rmses': npext.rms(Y - np.dot(A, X), axis=0)}
+        infos = {'rmses': _rmses(A, X, Y)}
         return X, infos
 
 
@@ -465,8 +465,7 @@ class LstsqDrop(Solver):
                 X[nonzero, i], info1 = self.solver2(
                     A[:, nonzero], Y[:, i], rng=rng)
 
-        info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
-                'info0': info0, 'info1': info1}
+        info = {'rmses': _rmses(A, X, Y), 'info0': info0, 'info1': info1}
         return X if matrix_in else X.flatten(), info
 
 
@@ -495,8 +494,7 @@ class Nnls(Solver):
         for i in range(d):
             X[:, i], residuals[i] = scipy.optimize.nnls(A, Y[:, i])
 
-        info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
-                'residuals': residuals}
+        info = {'rmses': _rmses(A, X, Y), 'residuals': residuals}
         return X if matrix_in else X.flatten(), info
 
 
@@ -515,39 +513,30 @@ class NnlsL2(Nnls):
         super(NnlsL2, self).__init__(weights)
         self.reg = reg
 
-    def __call__(self, A, Y, rng=None, E=None):
+    def _solve(self, A, Y, rng, E, sigma):
         # form Gram matrix so we can add regularization
-        sigma = self.reg * A.max()
-        G = np.dot(A.T, A)
-        Y = np.dot(A.T, Y)
-        np.fill_diagonal(G, G.diagonal() + sigma)
-        return super(NnlsL2, self).__call__(G, Y, rng=rng, E=E)
+        GA = np.dot(A.T, A)
+        GY = np.dot(A.T, Y)
+        np.fill_diagonal(GA, GA.diagonal() + sigma)
+        X, info = super(NnlsL2, self).__call__(GA, GY, rng=rng, E=E)
+        # recompute the RMSE in terms of the original matrices
+        info = {'rmses': _rmses(A, X, Y), 'gram_info': info}
+        return X, info
+
+    def __call__(self, A, Y, rng=None, E=None):
+        return self._solve(A, Y, rng, E, sigma=self.reg * A.max())
 
 
-class NnlsL2nz(Nnls):
+class NnlsL2nz(NnlsL2):
     """Non-negative least-squares with L2 regularization on nonzero components.
 
     Similar to `lstsq_L2nz`, except the output values are non-negative.
     """
-    def __init__(self, weights=False, reg=0.1):
-        """
-        weights : boolean, optional
-            If false solve for decoders (default), otherwise solve for weights.
-        reg : float, optional
-            Amount of regularization, as a fraction of the neuron activity.
-        """
-        super(NnlsL2nz, self).__init__(weights)
-        self.reg = reg
 
     def __call__(self, A, Y, rng=None, E=None):
         sigma = (self.reg * A.max()) * np.sqrt((A > 0).mean(axis=0))
         sigma[sigma == 0] = 1
-
-        # form Gram matrix so we can add regularization
-        G = np.dot(A.T, A)
-        Y = np.dot(A.T, Y)
-        np.fill_diagonal(G, G.diagonal() + sigma)
-        return super(NnlsL2nz, self).__call__(G, Y, rng=rng, E=E)
+        return self._solve(A, Y, rng, E, sigma=sigma)
 
 
 class SolverParam(Parameter):

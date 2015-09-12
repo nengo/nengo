@@ -132,6 +132,9 @@ Release History
   `#671 <https://github.com/nengo/nengo/pull/671>`_)
 - Fix for SPA actions that route to a module with multiple inputs.
   (`#714 <https://github.com/nengo/nengo/pull/714>`_)
+- Corrected the ``rmses`` values in ``BuiltConnection.solver_info`` when using
+  ``NNls`` and ``Nnl2sL2`` solvers.
+  (`#839 <https://github.com/nengo/nengo/pull/839>`_)
 
 2.0.1 (January 27, 2015)
 ========================
