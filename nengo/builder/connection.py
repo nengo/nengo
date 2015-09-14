@@ -193,8 +193,8 @@ def build_connection(model, conn):
     if conn.learning_rule is not None and weights.ndim < 2:
         raise ValueError("Learning connection must have full transform matrix")
 
-    model.sig[conn]['weights'] = Signal(weights, name="%s.weights")
-    signal = Signal(np.zeros(signal_size), name="%s.weighted")
+    model.sig[conn]['weights'] = Signal(weights, name="%s.weights" % conn)
+    signal = Signal(np.zeros(signal_size), name="%s.weighted" % conn)
     model.add_op(Reset(signal))
     op = ElementwiseInc if weights.ndim < 2 else DotInc
     model.add_op(op(model.sig[conn]['weights'],
