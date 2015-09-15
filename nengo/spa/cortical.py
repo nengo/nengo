@@ -58,7 +58,7 @@ class Cortical(Module):
         """Return a bias node; create it if needed."""
         if self._bias is None:
             with self:
-                self._bias = nengo.Node([1])
+                self._bias = nengo.Node([1], label='cortical bias')
         return self._bias
 
     def add_direct_effect(self, target_name, value):

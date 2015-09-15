@@ -13,17 +13,22 @@ from nengo.synapses import Lowpass
 class SimBCM(Operator):
     """Calculate delta omega according to the BCM rule."""
     def __init__(self, pre_filtered, post_filtered, theta, delta,
-                 learning_rate):
+                 learning_rate, tag=None):
         self.post_filtered = post_filtered
         self.pre_filtered = pre_filtered
         self.theta = theta
         self.delta = delta
         self.learning_rate = learning_rate
+        self.tag = tag
 
         self.sets = []
         self.incs = []
         self.reads = [pre_filtered, post_filtered, theta]
         self.updates = [delta]
+
+    def __str__(self):
+        return 'SimBCM(pre=%s, post=%s -> %s%s)' % (
+            self.pre_filtered, self.post_filtered, self.delta, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         pre_filtered = signals[self.pre_filtered]
@@ -41,18 +46,23 @@ class SimBCM(Operator):
 class SimOja(Operator):
     """Calculate delta omega according to the Oja rule."""
     def __init__(self, pre_filtered, post_filtered, weights, delta,
-                 learning_rate, beta):
+                 learning_rate, beta, tag=None):
         self.post_filtered = post_filtered
         self.pre_filtered = pre_filtered
         self.weights = weights
         self.delta = delta
         self.learning_rate = learning_rate
         self.beta = beta
+        self.tag = tag
 
         self.sets = []
         self.incs = []
         self.reads = [pre_filtered, post_filtered, weights]
         self.updates = [delta]
+
+    def __str__(self):
+        return 'SimOja(pre=%s, post=%s -> %s%s)' % (
+            self.pre_filtered, self.post_filtered, self.delta, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         weights = signals[self.weights]

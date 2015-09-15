@@ -114,7 +114,8 @@ def BasalGanglia(dimensions, n_neurons_per_ensemble=100, output_weight=-3,
 
         # add bias input (BG performs best in the range 0.5--1.5)
         if abs(input_bias) > 0.0:
-            net.bias_input = nengo.Node(np.ones(dimensions) * input_bias)
+            net.bias_input = nengo.Node(np.ones(dimensions) * input_bias,
+                                        label="basal ganglia bias")
             nengo.Connection(net.bias_input, net.input)
 
         # spread the input to StrD1, StrD2, and STN
@@ -179,7 +180,7 @@ def Thalamus(dimensions, n_neurons_per_ensemble=50,
                                     label="actions")
         nengo.Connection(net.actions.output, net.actions.input,
                          transform=(np.eye(dimensions) - 1) * mutual_inhib)
-        net.bias = nengo.Node([1])
+        net.bias = nengo.Node([1], label="thalamus bias")
         nengo.Connection(net.bias, net.actions.input,
                          transform=np.ones((dimensions, 1)))
 

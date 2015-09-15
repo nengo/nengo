@@ -8,15 +8,20 @@ from nengo.synapses import Synapse
 
 class SimSynapse(Operator):
     """Simulate a Synapse object."""
-    def __init__(self, input_sig, output_sig, synapse):
+    def __init__(self, input_sig, output_sig, synapse, tag=None):
         self.input = input_sig
         self.output = output_sig
         self.synapse = synapse
+        self.tag = tag
 
         self.sets = []
         self.incs = []
         self.reads = [input_sig]
         self.updates = [output_sig]
+
+    def __str__(self):
+        return "SimSynapse(%s, %s -> %s%s)" % (
+            self.synapse, self.input, self.output, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         input_sig = signals[self.input]

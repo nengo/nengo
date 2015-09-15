@@ -29,7 +29,7 @@ class BasalGanglia(Module):
         """Create a bias node, when needed."""
         if self._bias is None:
             with self:
-                self._bias = nengo.Node([1])
+                self._bias = nengo.Node([1], label="basal ganglia bias")
         return self._bias
 
     def on_add(self, spa):

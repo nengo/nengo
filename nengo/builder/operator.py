@@ -65,6 +65,13 @@ class Operator(object):
     Each operator should explicitly set each of these properties.
     """
 
+    def __init__(self, tag=None):
+        self.tag = tag
+
+    @property
+    def _tagstr(self):
+        return ' "%s"' % self.tag if self.tag is not None else ''
+
     @property
     def reads(self):
         """Signals that are read and not modified"""
@@ -136,13 +143,17 @@ class PreserveValue(Operator):
     allowing us to apply other ops to signals that we want to preserve their
     value across multiple time steps. It is used primarily for learning rules.
     """
-    def __init__(self, dst):
+    def __init__(self, dst, tag=None):
         self.dst = dst
+        self.tag = tag
 
         self.sets = [dst]
         self.incs = []
         self.reads = []
         self.updates = []
+
+    def __str__(self):
+        return 'PreserveValue(%s%s)' % (self.dst, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         def step_preservevalue():
@@ -153,9 +164,10 @@ class PreserveValue(Operator):
 class Reset(Operator):
     """Assign a constant value to a Signal."""
 
-    def __init__(self, dst, value=0):
+    def __init__(self, dst, value=0, tag=None):
         self.dst = dst
         self.value = float(value)
+        self.tag = tag
 
         self.sets = [dst]
         self.incs = []
@@ -163,7 +175,7 @@ class Reset(Operator):
         self.updates = []
 
     def __str__(self):
-        return 'Reset(%s)' % str(self.dst)
+        return 'Reset(%s%s)' % (self.dst, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         target = signals[self.dst]
@@ -188,7 +200,7 @@ class Copy(Operator):
         self.updates = []
 
     def __str__(self):
-        return 'Copy(%s -> %s)' % (self.src, self.dst)
+        return 'Copy(%s -> %s%s)' % (self.src, self.dst, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         dst = signals[self.dst]
@@ -216,8 +228,8 @@ class SlicedCopy(Operator):
         self.updates = []
 
     def __str__(self):
-        return 'SlicedCopy(%s[%s] -> %s[%s], inc=%s)' % (
-            self.a, self.a_slice, self.b, self.b_slice, self.inc)
+        return 'SlicedCopy(%s[%s] -> %s[%s], inc=%s%s)' % (
+            self.a, self.a_slice, self.b, self.b_slice, self.inc, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         a = signals[self.a]
@@ -249,8 +261,8 @@ class ElementwiseInc(Operator):
         self.updates = []
 
     def __str__(self):
-        return 'ElementwiseInc(%s, %s -> %s "%s")' % (
-            str(self.A), str(self.X), str(self.Y), self.tag)
+        return 'ElementwiseInc(%s, %s -> %s%s)' % (
+            str(self.A), str(self.X), str(self.Y), self._tagstr)
 
     def make_step(self, signals, dt, rng):
         A = signals[self.A]
@@ -325,8 +337,8 @@ class DotInc(Operator):
         self.updates = []
 
     def __str__(self):
-        return 'DotInc(%s, %s -> %s "%s")' % (
-            self.A, self.X, self.Y, self.tag)
+        return 'DotInc(%s, %s -> %s%s)' % (
+            self.A, self.X, self.Y, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         X = signals[self.X]
@@ -345,11 +357,12 @@ class DotInc(Operator):
 class SimPyFunc(Operator):
     """Set signal `output` by some Python function of x, possibly t."""
 
-    def __init__(self, output, fn, t_in, x):
+    def __init__(self, output, fn, t_in, x, tag=None):
         self.output = output
         self.fn = fn
         self.t_in = t_in
         self.x = x
+        self.tag = tag
 
         self.sets = [] if output is None else [output]
         self.incs = []
@@ -357,7 +370,8 @@ class SimPyFunc(Operator):
         self.updates = []
 
     def __str__(self):
-        return "SimPyFunc(%s -> %s '%s')" % (self.x, self.output, self.fn)
+        return "SimPyFunc(%s -> %s, fn='%s'%s)" % (
+            self.x, self.output, self.fn.__name__, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         output = signals[self.output] if self.output is not None else None

@@ -10,16 +10,21 @@ from nengo.neurons import (AdaptiveLIF, AdaptiveLIFRate, Izhikevich, LIF,
 class SimNeurons(Operator):
     """Set output to neuron model output for the given input current."""
 
-    def __init__(self, neurons, J, output, states=[]):
+    def __init__(self, neurons, J, output, states=[], tag=None):
         self.neurons = neurons
         self.J = J
         self.output = output
         self.states = states
+        self.tag = tag
 
         self.sets = [output] + states
         self.incs = []
         self.reads = [J]
         self.updates = []
+
+    def __str__(self):
+        return "SimNeurons(%s, %s, %s, %s%s)" % (
+            self.neurons, self.J, self.output, self.states, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         J = signals[self.J]

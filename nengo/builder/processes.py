@@ -5,11 +5,12 @@ from nengo.processes import Process
 
 class SimProcess(Operator):
     """Simulate a Process object."""
-    def __init__(self, process, input, output, inc=False):
+    def __init__(self, process, input, output, inc=False, tag=None):
         self.process = process
         self.input = input
         self.output = output
         self.inc = inc
+        self.tag = tag
 
         if inc:
             self.sets = []
@@ -19,6 +20,10 @@ class SimProcess(Operator):
             self.incs = []
         self.reads = [input] if input is not None else []
         self.updates = []
+
+    def __str__(self):
+        return 'SimProcess(%s, %s -> %s%s)' % (
+            self.process, self.input, self.output, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         t = signals['__time__']
