@@ -182,7 +182,8 @@ class Simulator(object):
         finally:
             np.seterr(**old_err)
 
-        self._probe()
+        if len(self.model.probes) > 0:
+            self._probe()
 
     def run(self, time_in_seconds, progress_bar=True):
         """Simulate for the given length of time.
