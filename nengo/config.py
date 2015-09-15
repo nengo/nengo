@@ -231,8 +231,8 @@ class Config(object):
 
     def __init__(self, *configures):
         self.params = {}
-        for cls in configures:
-            self.configures(cls)
+        if len(configures) > 0:
+            self.configures(*configures)
 
     @staticmethod
     def default(nengo_cls, param):
@@ -343,6 +343,9 @@ class Config(object):
     def __str__(self):
         return "\n".join(str(v) for v in itervalues(self.params))
 
-    def configures(self, cls):
+    def configures(self, *classes):
         """Start configuring a particular class and its instances."""
-        self.params[cls] = ClassParams(cls)
+        if len(classes) == 0:
+            raise TypeError("configures() takes 1 or more arguments (0 given)")
+        for klass in classes:
+            self.params[klass] = ClassParams(klass)

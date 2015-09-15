@@ -124,6 +124,8 @@ Release History
   (`#693 <https://github.com/nengo/nengo/pull/693>`_)
 - Numpy arrays can now be used as indices for slicing objects.
   (`#754 <https://github.com/nengo/nengo/pull/754>`_)
+- ``Config.configures`` now accepts multiple classes rather than
+  just one. (`#842 <https://github.com/nengo/nengo/pull/842>`_)
 
 **Bug fixes**
 
