@@ -95,22 +95,18 @@ def build_learning_rule(model, rule):
             isinstance(conn.pre_obj, Neurons) and
             isinstance(conn.post_obj, Neurons)):
         delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)), name='Delta')
-        model.add_op(ElementwiseInc(model.sig['common'][1],
-                                    delta,
-                                    model.sig[conn]['weights'],
-                                    tag="omega += delta"))
+        tag = "omega += delta"
     elif isinstance(conn.pre_obj, Neurons):
         delta = Signal(np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
-        model.add_op(ElementwiseInc(model.sig['common'][1],
-                                    delta,
-                                    model.sig[conn]['weights'],
-                                    tag="omega += delta"))
+        tag = "omega += delta"
     else:
         delta = Signal(np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
-        model.add_op(ElementwiseInc(model.sig['common'][1],
-                                    delta,
-                                    model.sig[conn]['weights'],
-                                    tag="decoders += delta"))
+        tag = "decoders += delta"
+
+    model.add_op(ElementwiseInc(model.sig['common'][1],
+                                delta,
+                                model.sig[conn]['weights'],
+                                tag=tag))
     model.sig[rule]['delta'] = delta
     model.build(rule_type, rule)  # Updates delta
 
