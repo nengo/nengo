@@ -31,8 +31,13 @@ class LearningRuleType(object):
                           "in floating point errors from too much current.")
         self.learning_rate = learning_rate
 
+    @property
+    def _argreprs(self):
+        return (["learning_rate=%g" % self.learning_rate]
+                if self.learning_rate != 1e-6 else [])
+
     def __repr__(self):
-        return '<%s>' % self.__class__.__name__
+        return '%s(%s)' % (self.__class__.__name__, ", ".join(self._argreprs))
 
 
 class PES(LearningRuleType):
@@ -67,6 +72,15 @@ class PES(LearningRuleType):
     def __init__(self, learning_rate=1e-4, pre_tau=0.005):
         self.pre_tau = pre_tau
         super(PES, self).__init__(learning_rate)
+
+    @property
+    def _argreprs(self):
+        args = []
+        if self.learning_rate != 1e-4:
+            args.append("learning_rate=%g" % self.learning_rate)
+        if self.pre_tau != 0.005:
+            args.append("pre_tau=%f" % self.pre_tau)
+        return args
 
 
 class BCM(LearningRuleType):
@@ -112,6 +126,19 @@ class BCM(LearningRuleType):
         self.post_tau = post_tau if post_tau is not None else pre_tau
         super(BCM, self).__init__(learning_rate)
 
+    @property
+    def _argreprs(self):
+        args = []
+        if self.pre_tau != 0.005:
+            args.append("pre_tau=%f" % self.pre_tau)
+        if self.post_tau != self.pre_tau:
+            args.append("post_tau=%f" % self.post_tau)
+        if self.theta_tau != 1.0:
+            args.append("theta_tau=%f" % self.theta_tau)
+        if self.learning_rate != 1e-9:
+            args.append("learning_rate=%g" % self.learning_rate)
+        return args
+
 
 class Oja(LearningRuleType):
     """Oja's learning rule
@@ -155,6 +182,19 @@ class Oja(LearningRuleType):
         self.post_tau = post_tau if post_tau is not None else pre_tau
         self.beta = beta
         super(Oja, self).__init__(learning_rate)
+
+    @property
+    def _argreprs(self):
+        args = []
+        if self.pre_tau != 0.005:
+            args.append("pre_tau=%f" % self.pre_tau)
+        if self.post_tau != self.pre_tau:
+            args.append("post_tau=%f" % self.post_tau)
+        if self.beta != 1.0:
+            args.append("beta=%f" % self.beta)
+        if self.learning_rate != 1e-6:
+            args.append("learning_rate=%g" % self.learning_rate)
+        return args
 
 
 class LearningRuleTypeParam(Parameter):
