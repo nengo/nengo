@@ -101,9 +101,7 @@ def build_learning_rule(model, rule):
     post = get_post_ens(conn)
 
     # --- Set up delta signal and += transform / decoders
-    if conn.solver.weights or (
-            isinstance(conn.pre_obj, Neurons) and
-            isinstance(conn.post_obj, Neurons)):
+    if not conn.is_decoded:
         delta = Signal(np.zeros((post.n_neurons, pre.n_neurons)), name='Delta')
         tag = "omega += delta"
     elif isinstance(conn.pre_obj, Neurons):
@@ -190,9 +188,7 @@ def build_pes(model, pes, rule):
                     name="PES:learning_rate")
     model.add_op(DotInc(lr_sig, error, correction, tag="PES:correct"))
 
-    if conn.solver.weights or (
-            isinstance(conn.pre_obj, Neurons) and
-            isinstance(conn.post_obj, Neurons)):
+    if not conn.is_decoded:
         post = get_post_ens(conn)
         weights = model.sig[conn]['weights']
         encoders = model.sig[post]['encoders']

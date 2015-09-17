@@ -36,15 +36,22 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
 
     def validate_rule(self, conn, rule):
         super(ConnectionLearningRuleTypeParam, self).validate_rule(conn, rule)
-        rule_type = 'decoders'
-        if conn.solver.weights or (isinstance(conn.pre_obj, Neurons)
-                                   and isinstance(conn.post_obj, Neurons)):
-            rule_type = 'transform'
 
-        if rule_type not in rule.modifies:
-            raise ValueError("Learning rule '%s' cannot be applied to "
-                             "a %s-based connection." % (rule, rule_type))
+        assert rule.modifies in ('transform', 'weights')
 
+        # If the rule modifies 'transform', then it must have weights.
+        if rule.modifies == 'transform':
+            if conn.is_decoded:
+                raise ValueError(
+                    "Learning rule '%s' can not be applied to decoded "
+                    "connections. Try setting solver.weights to True or "
+                    "connecting between two Neurons objects." % rule)
+
+        # If the rule modifies 'weights', then it can be either transform-based
+        # or decoder-based, so we don't need to check.
+
+        # If the rule modifies 'weights' or 'transform' then it can't be from
+        # a Node or to a Probe.
         if not isinstance(conn.pre_obj, (Ensemble, Neurons)):
             raise ValueError("'pre' must be of type 'Ensemble' or 'Neurons' "
                              "for learning rule '%s' (got type '%s')" % (
@@ -196,7 +203,7 @@ class Connection(NengoObject):
         (len(pre_slice), len(post_slice)).
     solver : Solver
         Instance of a Solver class to compute decoders or weights
-        (see `nengo.solvers`). If solver.weights is True, a full
+        (see `nengo.solvers`). If `solver.weights` is True, a full
         connection weight matrix is computed instead of decoders.
     function : callable, optional
         Function to compute using the pre population (pre must be Ensemble).
@@ -218,6 +225,9 @@ class Connection(NengoObject):
         The given function.
     function_size : int
         The output dimensionality of the given function. Defaults to 0.
+    is_decoded: bool
+        True if and only if the weight matrix is factored. This will not occur
+        when `solver.weights` is True or both `pre` and `post` are `Neurons`.
     label : str
         A human-readable connection label for debugging and visualization.
         Incorporates the labels of the pre and post objects.
@@ -347,6 +357,12 @@ class Connection(NengoObject):
                 raise ValueError("Invalid type for `learning_rule_type`: %s"
                                  % (types.__class__.__name__))
         return self._learning_rule
+
+    @property
+    def is_decoded(self):
+        return not (self.solver.weights or (
+            isinstance(self.pre_obj, Neurons) and
+            isinstance(self.post_obj, Neurons)))
 
 
 class LearningRule(object):
