@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 import nengo
@@ -76,11 +78,19 @@ class SPA(nengo.Network):
                 self.thal = spa.Thalamus(self.bg)
     """
 
-    def __init__(self, label=None, seed=None, add_to_container=None):
+    def __init__(self, label=None, seed=None, add_to_container=None,
+                 vocabs=[]):
         super(SPA, self).__init__(label, seed, add_to_container)
         enable_spa_params(self)
         self._modules = {}
         self._default_vocabs = {}
+
+        for vo in vocabs:
+            if vo.dimensions in self._default_vocabs:
+                warnings.warn("Duplicate vocabularies with dimension %d. "
+                              "Using the last entry in the vocab list with "
+                              "that dimensionality." % (vo.dimensions))
+            self._default_vocabs[vo.dimensions] = vo
 
     def __setattr__(self, key, value):
         """A setattr that handles Modules being added specially.
