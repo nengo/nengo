@@ -80,7 +80,10 @@ def is_integer(obj):
 
 
 def is_iterable(obj):
-    return isinstance(obj, collections.Iterable)
+    if isinstance(obj, np.ndarray):
+        return obj.ndim > 0  # 0-d arrays give error if iterated over
+    else:
+        return isinstance(obj, collections.Iterable)
 
 
 def is_number(obj, check_complex=False):
