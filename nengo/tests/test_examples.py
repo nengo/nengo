@@ -97,6 +97,8 @@ def test_nooutput(nb_file):
 
     nb_path = os.path.join(examples_dir, "%s.ipynb" % nb_file)
     nb = load_notebook(nb_path)
+
+    assert 'signature' not in nb.metadata, "Remove signature in %s" % nb_path
     if nb.nbformat <= 3:
         for ws in nb.worksheets:
             check_all(ws.cells)
