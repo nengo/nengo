@@ -69,8 +69,8 @@ def test_spa_get():
     assert model.get_module('buf2') is model.buf2
     assert model.get_module_input('buf1')[0] is model.buf1.input
     assert model.get_module_output('buf1')[0] is model.buf1.output
-    assert model.get_module_input('compare_A')[0] is model.compare.inputA
-    assert model.get_module_input('compare_B')[0] is model.compare.inputB
+    assert model.get_module_input('compare_A')[0] is model.compare.product.A
+    assert model.get_module_input('compare_B')[0] is model.compare.product.B
 
     with pytest.raises(KeyError):
         model.get_module('dummy')
