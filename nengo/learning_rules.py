@@ -18,9 +18,23 @@ class LearningRuleType(object):
 
     To use a learning rule, pass it as a ``learning_rule`` keyword argument to
     the Connection on which you want to do learning.
+
+    Attributes
+    ----------
+    error_type : str
+        The type (which determines the dimensionality) of the incoming error
+        signal. Options are 'none': no error signal; 'scalar': scalar error
+        signal; 'decoded': vector error signal in decoded space;
+        'neuron': vector error signal in neuron space.
+    modifies : str
+        The signal targeted by the learning rule. Options are 'encoders',
+        'decoders' (will also be adapted to modify a full weight matrix by
+        multiplying by the post population encoders), or 'weights' (only works
+        on full weight matrices).
     """
 
     learning_rate = NumberParam(low=0, low_open=True)
+
     error_type = 'none'
     modifies = None
     probeable = []
@@ -62,8 +76,9 @@ class PES(LearningRuleType):
     """
 
     pre_tau = NumberParam(low=0, low_open=True)
-    error_type = 'decoder'
-    modifies = 'weights'
+
+    error_type = 'decoded'
+    modifies = 'decoders'
     probeable = ['error', 'correction', 'activities', 'delta']
 
     def __init__(self, learning_rate=1e-4, pre_tau=0.005):
@@ -115,8 +130,9 @@ class BCM(LearningRuleType):
     pre_tau = NumberParam(low=0, low_open=True)
     post_tau = NumberParam(low=0, low_open=True)
     theta_tau = NumberParam(low=0, low_open=True)
+
     error_type = 'none'
-    modifies = 'transform'
+    modifies = 'weights'
     probeable = ['theta', 'pre_filtered', 'post_filtered', 'delta']
 
     def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
@@ -172,8 +188,9 @@ class Oja(LearningRuleType):
     pre_tau = NumberParam(low=0, low_open=True)
     post_tau = NumberParam(low=0, low_open=True)
     beta = NumberParam(low=0)
+
     error_type = 'none'
-    modifies = 'transform'
+    modifies = 'weights'
     probeable = ['pre_filtered', 'post_filtered', 'delta']
 
     def __init__(self, pre_tau=0.005, post_tau=None, beta=1.0,
@@ -223,9 +240,10 @@ class Voja(LearningRuleType):
     """
 
     post_tau = NumberParam(low=0, low_open=True, optional=True)
+
+    error_type = 'scalar'
     modifies = 'encoders'
     probeable = ['post_filtered', 'scaled_encoders', 'delta']
-    error_type = 'scalar'
 
     def __init__(self, post_tau=0.005, learning_rate=1e-2):
         self.post_tau = post_tau
@@ -245,3 +263,7 @@ class LearningRuleTypeParam(Parameter):
         if not isinstance(rule, LearningRuleType):
             raise ValueError("'%s' must be a learning rule type or a dict or "
                              "list of such types." % rule)
+        if rule.error_type not in ('none', 'scalar', 'decoded', 'neuron'):
+            raise ValueError("Unrecognized error type %r" % rule.error_type)
+        if rule.modifies not in ('encoders', 'decoders', 'weights'):
+            raise ValueError("Unrecognized target %r" % rule.modifies)

@@ -149,11 +149,10 @@ def test_unsupervised(Simulator, learning_rule_type, seed, rng, plt):
     with m:
         u = nengo.Node(WhiteSignal(0.5, high=5), size_out=2)
         a = nengo.Ensemble(n, dimensions=2)
-        b = nengo.Ensemble(n, dimensions=2)
+        b = nengo.Ensemble(n+1, dimensions=2)
 
         initial_weights = rng.uniform(
-            high=1e-3,
-            size=(a.n_neurons, b.n_neurons))
+            high=1e-3, size=(b.n_neurons, a.n_neurons))
 
         nengo.Connection(u, a)
         conn = nengo.Connection(a.neurons, b.neurons,

@@ -210,14 +210,20 @@ def build_connection(model, conn):
 
     # Build learning rules
     if conn.learning_rule is not None:
-        model.add_op(PreserveValue(model.sig[conn]['weights']))
-
         rule = conn.learning_rule
-        if is_iterable(rule):
-            for r in itervalues(rule) if isinstance(rule, dict) else rule:
-                model.build(r)
-        elif rule is not None:
-            model.build(rule)
+        rule = [rule] if not is_iterable(rule) else rule
+        targets = []
+        for r in itervalues(rule) if isinstance(rule, dict) else rule:
+            model.build(r)
+            targets.append(r.modifies)
+
+        if 'encoders' in targets:
+            model.add_op(PreserveValue(model.sig[conn.post_obj]['encoders']))
+        if 'decoders' in targets or 'weights' in targets:
+            if weights.ndim < 2:
+                raise ValueError(
+                    "'transform' must be a 2-dimensional array for learning")
+            model.add_op(PreserveValue(model.sig[conn]['weights']))
 
     model.params[conn] = BuiltConnection(eval_points=eval_points,
                                          solver_info=solver_info,

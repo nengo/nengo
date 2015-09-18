@@ -107,31 +107,34 @@ class SimVoja(Operator):
         Scalar applied to the delta.
     """
 
-    def __init__(self, post_filtered, scaled_encoders, scale, x,
-                 learning_signal, learning_rate):
+    def __init__(self, pre_decoded, post_filtered, scaled_encoders, delta,
+                 scale, learning_signal, learning_rate):
+        self.pre_decoded = pre_decoded
         self.post_filtered = post_filtered
         self.scaled_encoders = scaled_encoders
+        self.delta = delta
         self.scale = scale
-        self.x = x
         self.learning_signal = learning_signal
         self.learning_rate = learning_rate
 
-        self.reads = [post_filtered, x, learning_signal]
-        self.updates = [scaled_encoders]
+        self.reads = [
+            pre_decoded, post_filtered, scaled_encoders, learning_signal]
+        self.updates = [delta]
         self.sets = []
         self.incs = []
 
     def make_step(self, signals, dt, rng):
+        pre_decoded = signals[self.pre_decoded]
         post_filtered = signals[self.post_filtered]
         scaled_encoders = signals[self.scaled_encoders]
-        x = signals[self.x]
+        delta = signals[self.delta]
         learning_signal = signals[self.learning_signal]
-        learning_rate = self.learning_rate * dt
+        alpha = self.learning_rate * dt
         scale = self.scale[:, np.newaxis]
 
         def step_simvoja():
-            scaled_encoders[...] += learning_rate * learning_signal * (
-                scale * np.outer(post_filtered, x) -
+            delta[...] = alpha * learning_signal * (
+                scale * np.outer(post_filtered, pre_decoded) -
                 post_filtered[:, np.newaxis] * scaled_encoders)
         return step_simvoja
 
@@ -149,11 +152,21 @@ def get_post_ens(conn):
 @Builder.register(LearningRule)
 def build_learning_rule(model, rule):
     conn = rule.connection
-    rule_type = rule.learning_rule_type
 
-    # --- Set up delta signal and += transform / decoders
-    if rule_type.modifies != 'encoders':
+    # --- Set up delta signal
+    if rule.modifies == 'encoders':
+        if not conn.is_decoded:
+            ValueError("The connection must be decoded in order to use "
+                       "encoder learning.")
+        post = get_post_ens(conn)
+        target = model.sig[post]['encoders']
+        tag = "encoders += delta"
+        delta = Signal(
+            np.zeros((post.n_neurons, post.dimensions)), name='Delta')
+    elif rule.modifies in ('decoders', 'weights'):
         pre = get_pre_ens(conn)
+        target = model.sig[conn]['weights']
+        tag = "weights += delta"
         if not conn.is_decoded:
             post = get_post_ens(conn)
             delta = Signal(
@@ -161,12 +174,14 @@ def build_learning_rule(model, rule):
         else:
             delta = Signal(
                 np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
-        model.add_op(ElementwiseInc(
-            model.sig['common'][1], delta, model.sig[conn]['weights'],
-            tag="omega += delta"))
-        model.sig[rule]['delta'] = delta
+    else:
+        raise ValueError("Unknown target %r" % rule.modifies)
 
-    model.build(rule_type, rule)
+    assert delta.shape == target.shape
+    model.add_op(
+        ElementwiseInc(model.sig['common'][1], delta, target, tag=tag))
+    model.sig[rule]['delta'] = delta
+    model.build(rule.learning_rule_type, rule)  # updates delta
 
 
 @Builder.register(BCM)
@@ -233,23 +248,23 @@ def build_voja(model, voja, rule):
     model.add_op(Reset(learning, value=1.0))
     model.sig[rule]['in'] = learning  # optional connection will attach here
 
-    encoders = model.sig[post]['encoders']  # scaled encoders
+    scaled_encoders = model.sig[post]['encoders']
     # The gain and radius are folded into the encoders during the ensemble
     # build process, so we need to make sure that the deltas are proportional
     # to this scaling factor
-    encoder_scale = Signal(
-        model.params[post].gain / post.radius, name="Voja:encoder_scale")
+    encoder_scale = model.params[post].gain / post.radius
     assert post_filtered.shape == encoder_scale.shape
 
     model.operators.append(
-        SimVoja(post_filtered=post_filtered,
-                scaled_encoders=model.sig[conn.post]['encoders'],
-                scale=model.params[post].gain / post.radius,
-                x=model.sig[conn]['out'],
+        SimVoja(pre_decoded=model.sig[conn]['out'],
+                post_filtered=post_filtered,
+                scaled_encoders=scaled_encoders,
+                delta=model.sig[rule]['delta'],
+                scale=encoder_scale,
                 learning_signal=learning,
                 learning_rate=voja.learning_rate))
 
-    model.sig[rule]['scaled_encoders'] = encoders
+    model.sig[rule]['scaled_encoders'] = scaled_encoders
     model.sig[rule]['post_filtered'] = post_filtered
 
     model.params[rule] = None  # no build-time info to return
@@ -265,11 +280,9 @@ def build_pes(model, pes, rule):
     model.sig[rule]['in'] = error  # error connection will attach here
 
     acts = model.build(Lowpass(pes.pre_tau), model.sig[conn.pre_obj]['out'])
-    acts_view = acts.row()
 
     # Compute the correction, i.e. the scaled negative error
     correction = Signal(np.zeros(error.shape), name="PES:correction")
-    local_error = correction.column()
     model.add_op(Reset(correction))
 
     # correction = -learning_rate * (dt / n_neurons) * error
@@ -288,15 +301,18 @@ def build_pes(model, pes, rule):
         encoded = Signal(np.zeros(weights.shape[0]), name="PES:encoded")
         model.add_op(Reset(encoded))
         model.add_op(DotInc(encoders, correction, encoded, tag="PES:encode"))
-        local_error = encoded.column()
-    elif not isinstance(conn.pre_obj, (Ensemble, Neurons)):
+        local_error = encoded
+    elif isinstance(conn.pre_obj, (Ensemble, Neurons)):
+        local_error = correction
+    else:
         raise ValueError("'pre' object '%s' not suitable for PES learning"
                          % (conn.pre_obj))
 
     # delta = local_error * activities
     model.add_op(Reset(model.sig[rule]['delta']))
     model.add_op(ElementwiseInc(
-        local_error, acts_view, model.sig[rule]['delta'], tag="PES:Inc Delta"))
+        local_error.column(), acts.row(), model.sig[rule]['delta'],
+        tag="PES:Inc Delta"))
 
     # expose these for probes
     model.sig[rule]['error'] = error
