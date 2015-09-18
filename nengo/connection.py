@@ -37,7 +37,7 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
     def validate_rule(self, conn, rule):
         super(ConnectionLearningRuleTypeParam, self).validate_rule(conn, rule)
 
-        assert rule.modifies in ('transform', 'weights')
+        assert rule.modifies in ('transform', 'weights', 'encoders')
 
         # If the rule modifies 'transform', then it must have weights.
         if rule.modifies == 'transform':
@@ -50,17 +50,26 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
         # If the rule modifies 'weights', then it can be either transform-based
         # or decoder-based, so we don't need to check.
 
-        # If the rule modifies 'weights' or 'transform' then it can't be from
-        # a Node or to a Probe.
-        if not isinstance(conn.pre_obj, (Ensemble, Neurons)):
-            raise ValueError("'pre' must be of type 'Ensemble' or 'Neurons' "
-                             "for learning rule '%s' (got type '%s')" % (
-                                 rule, conn.pre_obj.__class__.__name__))
+        # If the rule modifies 'encoders', then it needs to connect to an
+        # Ensemble. Else the rule modifies 'weights' or 'transform', so it
+        # can't be from a Node or to a Probe.
+        if rule.modifies == 'encoders':
+            if not isinstance(conn.post_obj, Ensemble):
+                raise ValueError("'post' must be of type 'Ensemble' for "
+                                 "learning rule '%s' (got type '%s')" % (
+                                     rule, conn.pre_obj.__class__.__name__))
+        else:
+            if not isinstance(conn.pre_obj, (Ensemble, Neurons)):
+                raise ValueError(
+                    "'pre' must be of type 'Ensemble' or 'Neurons' for "
+                    "learning rule '%s' (got type '%s')" % (
+                        rule, conn.pre_obj.__class__.__name__))
 
-        if not isinstance(conn.post_obj, (Ensemble, Neurons, Node)):
-            raise ValueError("'post' must be of type 'Ensemble', 'Neurons' "
-                             "or 'Node' for learning rule '%s' (got type '%s')"
-                             % (rule, conn.post_obj.__class__.__name__))
+            if not isinstance(conn.post_obj, (Ensemble, Neurons, Node)):
+                raise ValueError(
+                    "'post' must be of type 'Ensemble', 'Neurons' or 'Node' "
+                    "for learning rule '%s' (got type '%s')" % (
+                        rule, conn.post_obj.__class__.__name__))
 
 
 class ConnectionSolverParam(SolverParam):
@@ -391,6 +400,8 @@ class LearningRule(object):
         error_type = self.learning_rule_type.error_type.lower()
         if error_type == 'none':
             return 0
+        elif error_type == 'scalar':
+            return 1
         elif error_type == 'decoder':
             if isinstance(self.connection.pre_obj, Neurons):
                 return self.connection.pre_obj.ensemble.dimensions

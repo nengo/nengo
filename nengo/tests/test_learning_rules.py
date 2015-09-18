@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja
+from nengo.dists import UniformHypersphere
+from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja, Voja
 from nengo.processes import WhiteSignal
 
 
@@ -311,3 +312,91 @@ def test_learningrule_attr(seed):
         assert set(c3.learning_rule) == set(r3)  # assert same keys
         for key in r3:
             check_rule(c3.learning_rule[key], c3, r3[key])
+
+
+def test_voja_encoders(Simulator, nl_nodirect, rng, seed, plt):
+    """Tests that voja changes active encoders to the input."""
+    n = 200
+    learned_vector = np.asarray([0.3, -0.4, 0.6])
+    learned_vector /= np.linalg.norm(learned_vector)
+    n_change = n // 2  # modify first half of the encoders
+
+    # Set the first half to always fire with random encoders, and the
+    # remainder to never fire due to their encoder's dot product with the input
+    intercepts = np.asarray([-1]*n_change + [0.99]*(n - n_change))
+    rand_encoders = UniformHypersphere(surface=True).sample(
+        n_change, len(learned_vector), rng=rng)
+    encoders = np.append(
+        rand_encoders, [-learned_vector] * (n - n_change), axis=0)
+
+    m = nengo.Network(seed=seed)
+    with m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        u = nengo.Node(output=learned_vector)
+        x = nengo.Ensemble(n, dimensions=len(learned_vector),
+                           intercepts=intercepts, encoders=encoders,
+                           radius=2.0)  # to test encoder scaling
+
+        conn = nengo.Connection(
+            u, x, synapse=None, learning_rule_type=Voja(learning_rate=1e-1))
+        p_enc = nengo.Probe(conn.learning_rule, 'scaled_encoders')
+
+    sim = Simulator(m)
+    sim.run(1.0)
+    t = sim.trange()
+    tend = t > 0.5
+
+    # Voja's rule relies on knowing exactly how the encoders were scaled
+    # during the build process, because it modifies the scaled_encoders signal
+    # proportional to this factor. Therefore, we should check that its
+    # assumption actually holds.
+    encoder_scale = (sim.model.params[x].gain / x.radius)[:, np.newaxis]
+    assert np.allclose(sim.data[x].encoders,
+                       sim.data[x].scaled_encoders / encoder_scale)
+
+    # Check that the last half kept the same encoders throughout the simulation
+    assert np.allclose(
+        sim.data[p_enc][0, n_change:], sim.data[p_enc][:, n_change:])
+    # and that they are also equal to their originally assigned value
+    assert np.allclose(
+        sim.data[p_enc][0, n_change:] / encoder_scale[n_change:],
+        -learned_vector)
+
+    # Check that the first half converged to the input
+    assert np.allclose(
+        sim.data[p_enc][tend, :n_change] / encoder_scale[:n_change],
+        learned_vector, atol=0.01)
+
+
+def test_voja_modulate(Simulator, nl_nodirect, seed, plt):
+    """Tests that voja's rule can be modulated on/off."""
+    n = 200
+    learned_vector = np.asarray([0.5])
+
+    def control_signal(t):
+        """Modulates the learning on/off."""
+        return 0 if t < 0.5 else -1
+
+    m = nengo.Network(seed=seed)
+    with m:
+        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        control = nengo.Node(output=control_signal)
+        u = nengo.Node(output=learned_vector)
+        x = nengo.Ensemble(n, dimensions=len(learned_vector))
+
+        conn = nengo.Connection(
+            u, x, synapse=None, learning_rule_type=Voja(None))
+        nengo.Connection(control, conn.learning_rule, synapse=None)
+
+        p_enc = nengo.Probe(conn.learning_rule, 'scaled_encoders')
+
+    sim = Simulator(m)
+    sim.run(1.0)
+    tend = sim.trange() > 0.5
+
+    # Check that encoders stop changing after 0.5s
+    assert np.allclose(sim.data[p_enc][tend], sim.data[p_enc][-1])
+
+    # Check that encoders changed during first 0.5s
+    i = np.where(tend)[0][0]  # first time point after changeover
+    assert not np.allclose(sim.data[p_enc][0], sim.data[p_enc][i])

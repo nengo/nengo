@@ -123,6 +123,14 @@ class SignalView(object):
                           elemstrides=elemstrides,
                           offset=self.offset)
 
+    def column(self):
+        """Reshape into a column vector."""
+        return self.reshape((self.size, 1))
+
+    def row(self):
+        """Reshape into a row vector."""
+        return self.reshape((1, self.size))
+
     def transpose(self, neworder=None):
         if neworder:
             raise NotImplementedError()

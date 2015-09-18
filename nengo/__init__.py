@@ -23,7 +23,7 @@ from .node import Node
 from .neurons import (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich, LIF,
                       LIFRate, RectifiedLinear, Sigmoid)
 from .network import Network
-from .learning_rules import PES, BCM, Oja
+from .learning_rules import PES, BCM, Oja, Voja
 from .params import Default
 from .probe import Probe
 from .rc import rc, RC_DEFAULTS

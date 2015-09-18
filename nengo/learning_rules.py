@@ -26,9 +26,6 @@ class LearningRuleType(object):
     probeable = []
 
     def __init__(self, learning_rate=1e-6):
-        if learning_rate >= 1.0:
-            warnings.warn("This learning rate is very high, and can result "
-                          "in floating point errors from too much current.")
         self.learning_rate = learning_rate
 
     @property
@@ -70,6 +67,9 @@ class PES(LearningRuleType):
     probeable = ['error', 'correction', 'activities', 'delta']
 
     def __init__(self, learning_rate=1e-4, pre_tau=0.005):
+        if learning_rate >= 1.0:
+            warnings.warn("This learning rate is very high, and can result "
+                          "in floating point errors from too much current.")
         self.pre_tau = pre_tau
         super(PES, self).__init__(learning_rate)
 
@@ -195,6 +195,41 @@ class Oja(LearningRuleType):
         if self.learning_rate != 1e-6:
             args.append("learning_rate=%g" % self.learning_rate)
         return args
+
+
+class Voja(LearningRuleType):
+    """Vector Oja's learning rule.
+
+    Modifies an ensemble's encoders to be selective to its inputs.
+
+    A connection to the learning rule will provide a scalar weight for the
+    learning rate (minus 1). For instance, 0 is normal learning, -1 is no
+    learning, and less than -1 causes anti-learning or "forgetting".
+
+    Parameters
+    ----------
+    learning_rate : float, optional
+        A scalar indicating the rate at which encoders will be adjusted.
+        Defaults to 1e-2.
+    post_tau : float, optional
+        Filter constant on activities of neurons in post population.
+
+    Attributes
+    ----------
+    learning_rate : float
+        The given learning rate.
+    post_tau : float
+        Filter constant on activities of neurons in post population.
+    """
+
+    post_tau = NumberParam(low=0, low_open=True, optional=True)
+    modifies = 'encoders'
+    probeable = ['post_filtered', 'scaled_encoders', 'delta']
+    error_type = 'scalar'
+
+    def __init__(self, post_tau=0.005, learning_rate=1e-2):
+        self.post_tau = post_tau
+        super(Voja, self).__init__(learning_rate)
 
 
 class LearningRuleTypeParam(Parameter):
