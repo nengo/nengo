@@ -133,6 +133,8 @@ Release History
   actions to be added after module has been initialized.
   (`#861 <https://github.com/nengo/nengo/issues/861>`_,
   `#862 <https://github.com/nengo/nengo/pull/862>`_)
+- Added SPA wrapper for circular convolution networks, ``spa.Bind``
+  (`#849 <https://github.com/nengo/nengo/pull/849>`_)
 
 **Bug fixes**
 

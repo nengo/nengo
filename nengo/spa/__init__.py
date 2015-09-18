@@ -1,6 +1,7 @@
 from .actions import Actions
 from .assoc_mem import AssociativeMemory
 from .basalganglia import BasalGanglia
+from .bind import Bind
 from .buffer import Buffer
 from .compare import Compare
 from .cortical import Cortical
