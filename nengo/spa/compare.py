@@ -32,15 +32,12 @@ class Compare(Module):
                 neurons_per_multiply, dimensions,
                 input_magnitude=input_magnitude)
 
-            self.inputA = nengo.Node(size_in=dimensions, label='inputA')
-            self.inputB = nengo.Node(size_in=dimensions, label='inputB')
             self.output = nengo.Node(size_in=1, label='output')
 
-        self.inputs = dict(A=(self.inputA, vocab), B=(self.inputB, vocab))
+        self.inputs = dict(A=(self.product.A, vocab),
+                           B=(self.product.B, vocab))
         self.outputs = dict(default=(self.output, None))
 
         with self:
-            nengo.Connection(self.inputA, self.product.A, synapse=None)
-            nengo.Connection(self.inputB, self.product.B, synapse=None)
             nengo.Connection(self.product.output, self.output,
                              transform=np.ones((1, dimensions)))
