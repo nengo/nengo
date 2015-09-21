@@ -75,6 +75,7 @@ class AssociativeMemory(Module):
         if output_vocab is None:
             output_vocab = input_vocab
             output_vectors = input_vectors
+            output_keys = input_keys
         else:
             if output_keys is None:
                 output_keys = input_keys
@@ -101,6 +102,14 @@ class AssociativeMemory(Module):
                 label=label, seed=seed,
                 add_to_container=add_to_container,
                 **ens_args)
+
+            for ens, inkey, outkey in zip(
+                    self.am.am_ensembles, input_keys, output_keys):
+                if inkey != outkey:
+                    ens.label = "%s->%s" % (inkey, outkey)
+                else:
+                    ens.label = str(inkey)
+
             self.input = self.am.input
             self.output = self.am.output
 
