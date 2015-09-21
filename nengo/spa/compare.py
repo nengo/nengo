@@ -31,11 +31,13 @@ class Compare(Module):
             self.product = nengo.networks.Product(
                 neurons_per_multiply, dimensions,
                 input_magnitude=input_magnitude)
+            self.A = self.product.A
+            self.B = self.product.B
 
             self.output = nengo.Node(size_in=1, label='output')
 
-        self.inputs = dict(A=(self.product.A, vocab),
-                           B=(self.product.B, vocab))
+        self.inputs = dict(A=(self.A, vocab),
+                           B=(self.B, vocab))
         self.outputs = dict(default=(self.output, None))
 
         with self:
