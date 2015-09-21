@@ -108,14 +108,13 @@ class DecoderCache(object):
 
         Returns
         -------
-        list of (str, int) tuples
+        generator of (str, int) tuples
         """
-        files = []
         for subdir in os.listdir(self.cache_dir):
             path = os.path.join(self.cache_dir, subdir)
             if os.path.isdir(path):
-                files.extend(os.path.join(path, f) for f in os.listdir(path))
-        return files
+                for f in os.listdir(path):
+                    yield os.path.join(path, f)
 
     def get_size_in_bytes(self):
         """Returns the size of the cache in bytes as an int.
