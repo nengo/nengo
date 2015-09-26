@@ -34,6 +34,7 @@ matrix:
     - env: PYTHON="2.7" NUMPY="1.7"
     - env: PYTHON="2.7" NUMPY="1.8"
     - env: PYTHON="3.4"
+    - env: PYTHON="3.5"
 
 # Setup Miniconda
 before_install:

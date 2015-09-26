@@ -253,7 +253,7 @@ def test_fingerprinting(reference, equal, different):
 
 
 def test_fails_for_lambda_expression():
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, AttributeError)):
         Fingerprint(lambda x: x)
 
 
