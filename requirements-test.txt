@@ -1,4 +1,4 @@
 matplotlib>=1.4
 jupyter
-pytest
+pytest==2.7.3
 pytest-xdist
