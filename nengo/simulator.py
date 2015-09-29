@@ -39,7 +39,7 @@ class ProbeDict(Mapping):
         rval = self.raw[key]
         if isinstance(rval, list):
             rval = np.asarray(rval)
-            rval.flags.writeable = False
+            rval.setflags(write=False)
         return rval
 
     def __str__(self):

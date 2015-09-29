@@ -36,6 +36,7 @@ def gen_eval_points(ens, eval_points, rng, scale_eval_points=True):
             warnings.warn("Number of eval_points doesn't match "
                           "n_eval_points. Ignoring n_eval_points.")
         eval_points = np.array(eval_points, dtype=np.float64)
+        assert eval_points.ndim == 2
 
     if scale_eval_points:
         eval_points *= ens.radius  # scale by ensemble radius
@@ -94,8 +95,8 @@ def build_ensemble(model, ens):
             np.zeros(ens.n_neurons), name="%s.neuron_in" % ens)
         model.sig[ens.neurons]['out'] = Signal(
             np.zeros(ens.n_neurons), name="%s.neuron_out" % ens)
-        model.add_op(Copy(src=Signal(bias, name="%s.bias" % ens),
-                          dst=model.sig[ens.neurons]['in']))
+        bias_sig = Signal(bias, name="%s.bias" % ens, readonly=True)
+        model.add_op(Copy(src=bias_sig, dst=model.sig[ens.neurons]['in']))
         # This adds the neuron's operator and sets other signals
         model.build(ens.neuron_type, ens.neurons)
 
@@ -106,7 +107,7 @@ def build_ensemble(model, ens):
         scaled_encoders = encoders * (gain / ens.radius)[:, np.newaxis]
 
     model.sig[ens]['encoders'] = Signal(
-        scaled_encoders, name="%s.scaled_encoders" % ens)
+        scaled_encoders, name="%s.scaled_encoders" % ens, readonly=True)
 
     # Inject noise if specified
     if ens.noise is not None:

@@ -2,7 +2,6 @@ import collections
 
 import numpy as np
 
-import nengo.utils.numpy as npext
 from nengo.builder.builder import Builder
 from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
@@ -26,8 +25,9 @@ class ZeroActivityError(RuntimeError):
 
 def get_eval_points(model, conn, rng):
     if conn.eval_points is None:
-        return npext.array(
-            model.params[conn.pre_obj].eval_points, min_dims=2)
+        view = model.params[conn.pre_obj].eval_points.view()
+        view.setflags(write=False)
+        return view
     else:
         return gen_eval_points(
             conn.pre_obj, conn.eval_points, rng, conn.scale_eval_points)
@@ -190,7 +190,8 @@ def build_connection(model, conn):
         gain = model.params[conn.post_obj.ensemble].gain[post_slice]
         weights = multiply(gain, weights)
 
-    model.sig[conn]['weights'] = Signal(weights, name="%s.weights" % conn)
+    model.sig[conn]['weights'] = Signal(
+        weights, name="%s.weights" % conn, readonly=True)
     signal = Signal(np.zeros(signal_size), name="%s.weighted" % conn)
     model.add_op(Reset(signal))
     op = ElementwiseInc if weights.ndim < 2 else DotInc
@@ -218,11 +219,13 @@ def build_connection(model, conn):
             targets.append(r.modifies)
 
         if 'encoders' in targets:
+            model.sig[conn.post_obj]['encoders'].readonly = False
             model.add_op(PreserveValue(model.sig[conn.post_obj]['encoders']))
         if 'decoders' in targets or 'weights' in targets:
             if weights.ndim < 2:
                 raise ValueError(
                     "'transform' must be a 2-dimensional array for learning")
+            model.sig[conn]['weights'].readonly = False
             model.add_op(PreserveValue(model.sig[conn]['weights']))
 
     model.params[conn] = BuiltConnection(eval_points=eval_points,

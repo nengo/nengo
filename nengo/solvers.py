@@ -230,7 +230,7 @@ class Solver(with_metaclass(DocstringInheritor)):
         """
         raise NotImplementedError("Solvers must implement '__call__'")
 
-    def mul_encoders(self, Y, E):
+    def mul_encoders(self, Y, E, copy=False):
         if self.weights:
             if E is None:
                 raise ValueError("Encoders must be provided for weight solver")
@@ -238,7 +238,7 @@ class Solver(with_metaclass(DocstringInheritor)):
         else:
             if E is not None:
                 raise ValueError("Encoders must be 'None' for decoder solver")
-            return Y
+            return Y.copy() if copy else Y
 
     def __hash__(self):
         items = list(self.__dict__.items())
@@ -399,7 +399,7 @@ class LstsqL1(Solver):
 
     def __call__(self, A, Y, rng=None, E=None):
         import sklearn.linear_model
-        Y = self.mul_encoders(Y, E)
+        Y = self.mul_encoders(Y, E, copy=True)  # copy since 'fit' may modify Y
 
         # TODO: play around with regularization constants (I just guessed).
         #   Do we need to scale regularization by number of neurons, to get
