@@ -4,7 +4,6 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder.builder import Builder
-from nengo.builder.signal import Signal
 from nengo.network import Network
 
 logger = logging.getLogger(__name__)
@@ -34,10 +33,6 @@ def build_network(model, network):
 
     if model.toplevel is None:
         model.toplevel = network
-        model.sig['common'][0] = Signal(
-            npext.array(0.0, readonly=True), name='Common: Zero')
-        model.sig['common'][1] = Signal(
-            npext.array(1.0, readonly=True), name='Common: One')
         model.seeds[network] = get_seed(network, np.random)
 
     # Set config
