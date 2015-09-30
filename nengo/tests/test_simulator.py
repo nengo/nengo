@@ -70,3 +70,21 @@ def test_close(Simulator):
         sim.step()
     with pytest.raises(ValueError):
         sim.reset()
+
+
+def test_usage_in_with_statement(Simulator):
+    m = nengo.Network()
+    with m:
+        nengo.Ensemble(10, 1)
+
+    with Simulator(m) as sim:
+        sim.run(0.01)
+
+    with pytest.raises(ValueError):
+        sim.run(1.)
+    with pytest.raises(ValueError):
+        sim.run_steps(1)
+    with pytest.raises(ValueError):
+        sim.step()
+    with pytest.raises(ValueError):
+        sim.reset()

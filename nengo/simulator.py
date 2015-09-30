@@ -130,6 +130,12 @@ class Simulator(object):
         seed = np.random.randint(npext.maxint) if seed is None else seed
         self.reset(seed=seed)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
     @property
     def dt(self):
         """The time step of the simulator"""
