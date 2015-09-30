@@ -8,9 +8,9 @@ from .stdlib import groupby
 
 def operator_depencency_graph(operators):  # noqa: C901
     # -- all views of a base object in a particular dictionary
-    by_base_sets = defaultdict(list)
-    by_base_writes = defaultdict(list)
-    by_base_reads = defaultdict(list)
+    by_base_sets = defaultdict(set)
+    by_base_writes = defaultdict(set)
+    by_base_reads = defaultdict(set)
     reads = defaultdict(list)
     sets = defaultdict(list)
     incs = defaultdict(list)
@@ -18,13 +18,13 @@ def operator_depencency_graph(operators):  # noqa: C901
 
     for op in operators:
         for sig in op.sets:
-            by_base_sets[sig.base].append(sig)
+            by_base_sets[sig.base].add(sig)
 
         for sig in op.sets + op.incs:
-            by_base_writes[sig.base].append(sig)
+            by_base_writes[sig.base].add(sig)
 
         for sig in op.reads:
-            by_base_reads[sig.base].append(sig)
+            by_base_reads[sig.base].add(sig)
 
         for sig in op.reads:
             reads[sig].append(op)
@@ -67,7 +67,7 @@ def operator_depencency_graph(operators):  # noqa: C901
     # -- updates depend on reads, sets, and incs.
     for sig, post_ops in iteritems(ups):
         pre_ops = sets[sig] + incs[sig] + reads[sig]
-        for sig2 in by_base_writes[sig.base] + by_base_reads[sig.base]:
+        for sig2 in by_base_reads[sig.base].union(by_base_writes[sig.base]):
             if sig.may_share_memory(sig2):
                 pre_ops.extend(sets[sig2] + incs[sig2] + reads[sig2])
         add_edges(dg, itertools.product(set(pre_ops), post_ops))
@@ -78,15 +78,20 @@ def operator_depencency_graph(operators):  # noqa: C901
 def validate_ops(sets, ups, incs):
     # -- assert that only one op sets any particular view
     for sig in sets:
-        assert len(sets[sig]) == 1, (sig, sets[sig])
+        sig_sets = sets[sig] + (sets.get(sig.base, []) if sig.is_view else [])
+        assert len(sig_sets) == 1, (sig, sig_sets)
 
     # -- assert that only one op updates any particular view
     for sig in ups:
-        assert len(ups[sig]) == 1, (sig, ups[sig])
+        sig_ups = ups[sig] + (ups.get(sig.base, []) if sig.is_view else [])
+        assert len(sig_ups) == 1, (sig, sig_ups)
 
     # --- assert that any sig that is incremented is also set/updated
     for sig in incs:
-        assert len(sets[sig] + ups[sig]) > 0, (sig)
+        sig_sets_ups = sets.get(sig, []) + ups.get(sig, []) + (
+            sets.get(sig.base, []) + ups.get(sig.base, [])
+            if sig.is_view else [])
+        assert len(sig_sets_ups) > 0, (sig)
 
     # -- assert that no two views are both set and aliased
     for _, base_group in groupby(sets, lambda x: x.base, hashable=True):

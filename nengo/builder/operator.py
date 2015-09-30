@@ -215,6 +215,14 @@ class SlicedCopy(Operator):
     """Copy from `a` to `b` with slicing: `b[b_slice] = a[a_slice]`"""
     def __init__(self, a, b, a_slice=Ellipsis, b_slice=Ellipsis,
                  inc=False, tag=None):
+        if isinstance(a_slice, slice):
+            a = a[a_slice]
+            a_slice = Ellipsis
+        if isinstance(b_slice, slice):
+            b = b[b_slice]
+            b_slice = Ellipsis
+        # ^ a_slice and b_slice are now either lists of indices or `Ellipsis`
+
         self.a = a
         self.b = b
         self.a_slice = a_slice
