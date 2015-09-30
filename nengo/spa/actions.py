@@ -1,6 +1,7 @@
 """Expressions and Effects used to define all Actions."""
 
 import re
+import warnings
 
 from nengo.spa.action_objects import Symbol, Source, DotProduct, Summation
 from nengo.utils.compat import iteritems, OrderedDict
@@ -148,13 +149,23 @@ class Actions(object):
     The *args and **kwargs are treated as unnamed and named Actions,
     respectively.  The list of actions are only generated once process()
     is called, since it needs access to the list of module inputs and
-    outputs from the SPA object.
+    outputs from the SPA object. The **kwargs are sorted alphabetically before
+    being processed.
     """
 
     def __init__(self, *args, **kwargs):
         self.actions = None
         self.args = args
         self.kwargs = kwargs
+
+    def add(self, *args, **kwargs):
+        if self.actions is not None:
+            warnings.warn("The actions currently being added must be processed"
+                          " either by spa.BasalGanglia or spa.Cortical"
+                          " to be added to the model.")
+
+        self.args += args
+        self.kwargs.update(kwargs)
 
     @property
     def count(self):
@@ -168,7 +179,9 @@ class Actions(object):
         sources = list(spa.get_module_outputs())
         sinks = list(spa.get_module_inputs())
 
+        sorted_kwargs = sorted(self.kwargs.items())
+
         for action in self.args:
             self.actions.append(Action(sources, sinks, action, name=None))
-        for name, action in iteritems(self.kwargs):
+        for name, action in sorted_kwargs:
             self.actions.append(Action(sources, sinks, action, name=name))

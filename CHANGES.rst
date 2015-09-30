@@ -128,6 +128,10 @@ Release History
   (`#754 <https://github.com/nengo/nengo/pull/754>`_)
 - ``Config.configures`` now accepts multiple classes rather than
   just one. (`#842 <https://github.com/nengo/nengo/pull/842>`_)
+- Added ``add`` method to ``spa.Actions``, which allows
+  actions to be added after module has been initialized.
+  (`#861 <https://github.com/nengo/nengo/issues/861>`_,
+  `#862 <https://github.com/nengo/nengo/pull/862>`_)
 
 **Bug fixes**
 

@@ -113,7 +113,7 @@ def test_actions():
 
     model = spa.SPA()
     with model:
-        model.state = spa.Buffer(16)
+        model.state = spa.State(16)
     a.process(model)
     assert str(a.actions[0].condition) == 'dot(state, A)'
     assert str(a.actions[0].effect) == 'state=B'
@@ -121,3 +121,11 @@ def test_actions():
     assert str(a.actions[1].effect) == 'state=A'
     assert str(a.actions[2].condition) == '1.0'
     assert str(a.actions[2].effect) == 'state=C'
+
+    a.add('dot(state, D) --> state=E')
+    a.add(added='dot(state, E) --> state=F')
+    a.process(model)
+    assert str(a.actions[2].condition) == 'dot(state, D)'
+    assert str(a.actions[2].effect) == 'state=E'
+    assert str(a.actions[3].condition) == 'dot(state, E)'
+    assert str(a.actions[3].effect) == 'state=F'
