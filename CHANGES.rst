@@ -70,6 +70,10 @@ Release History
   parameters from ``nengo.networks.assoc_mem.AssociativeMemory`` and modifying
   the defaults of others.
   (`#797 <https://github.com/nengo/nengo/pull/797>`_)
+- Add ``close`` method to ``Simulator``.
+  (`#857 <https://github.com/nengo/nengo/issues/857`_,
+  `#739 <https://github.com/nengo/nengo/issues/739>`_,
+  `#859 <https://github.com/nengo/nengo/pull/859>`_)
 
 **Behavioural changes**
 

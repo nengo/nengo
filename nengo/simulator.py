@@ -95,6 +95,8 @@ class Simulator(object):
             build artifacts in the Model before building the network,
             then you can pass in a ``nengo.builder.Model`` instance.
         """
+        self.closed = False
+
         if model is None:
             dt = float(dt)  # make sure it's a float (for division purposes)
             self.model = Model(dt=dt,
@@ -172,6 +174,9 @@ class Simulator(object):
     def step(self):
         """Advance the simulator by `self.dt` seconds.
         """
+        if self.closed:
+            raise ValueError("Simulator cannot run because it is closed.")
+
         self.n_steps += 1
         self.signals['__time__'][...] = self.n_steps * self.dt
 
@@ -246,6 +251,9 @@ class Simulator(object):
             or inputs (e.g. from Processes), but not the built objects
             (e.g. ensembles, connections).
         """
+        if self.closed:
+            raise ValueError("Simulator closed.")
+
         if seed is not None:
             self.seed = seed
 
@@ -265,3 +273,11 @@ class Simulator(object):
         # clear probe data
         for probe in self.model.probes:
             self._probe_outputs[probe] = []
+
+    def close(self):
+        """Closes the simulator.
+
+        Any call to ``run``, ``run_steps``, ``step``, and ``reset`` on a closed
+        simulator will raise a ``ValueError``.
+        """
+        self.closed = True

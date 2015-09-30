@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import nengo
 import nengo.simulator
@@ -52,3 +53,20 @@ def test_probedict():
     probedict = nengo.simulator.ProbeDict(raw)
     assert np.all(probedict["scalar"] == np.asarray(raw["scalar"]))
     assert np.all(probedict.get("list") == np.asarray(raw.get("list")))
+
+
+def test_close(Simulator):
+    m = nengo.Network()
+    with m:
+        nengo.Ensemble(10, 1)
+
+    sim = Simulator(m)
+    sim.close()
+    with pytest.raises(ValueError):
+        sim.run(1.)
+    with pytest.raises(ValueError):
+        sim.run_steps(1)
+    with pytest.raises(ValueError):
+        sim.step()
+    with pytest.raises(ValueError):
+        sim.reset()
