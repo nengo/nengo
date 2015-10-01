@@ -6,7 +6,7 @@ notifications:
 
 env:
   global:
-    - NUMPY="1.9"
+    - NUMPY="1.9.2"
     - SETUP_CMD="test -a 'nengo -n 2 -v --durations 20'"
     - EXTRA_CMD=""
     - CONDA_DEPS="matplotlib jupyter pygments"
@@ -57,6 +57,7 @@ install:
 script:
   - "echo 'backend : Agg' > matplotlibrc"
   - if [[ -n $SETUP_CMD ]]; then
+      python -c "import numpy; numpy.show_config()"
       python setup.py -q install;
       eval python setup.py "$SETUP_CMD";
     fi
