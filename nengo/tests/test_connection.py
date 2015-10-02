@@ -687,22 +687,39 @@ def test_solverparam():
         inst.sp = 'a'
 
 
-def test_nonexistant_prepost(Simulator):
+def test_prepost_errors(Simulator):
     with nengo.Network():
-        a = nengo.Ensemble(100, 1)
+        x = nengo.Ensemble(10, 1)
+        y = nengo.Ensemble(10, 1)
+        c = nengo.Connection(x, y)
+        with pytest.raises(ValueError):
+            nengo.Connection(3, x)  # from non-NengoObject
+        with pytest.raises(ValueError):
+            nengo.Connection(x, 3)  # to non-NengoObject
+        with pytest.raises(ValueError):
+            nengo.Connection(c, x)  # from connection
+        with pytest.raises(ValueError):
+            nengo.Connection(x, c)  # to connection
 
+    # --- non-existent objects
+    with nengo.Network():
+        a = nengo.Ensemble(10, 1)
+
+    # non-existent pre
     with nengo.Network() as model1:
-        e1 = nengo.Ensemble(100, 1)
+        e1 = nengo.Ensemble(10, 1)
         nengo.Connection(a, e1)
     with pytest.raises(ValueError):
         Simulator(model1)
 
+    # non-existent post
     with nengo.Network() as model2:
-        e2 = nengo.Ensemble(100, 1)
+        e2 = nengo.Ensemble(10, 1)
         nengo.Connection(e2, a)
     with pytest.raises(ValueError):
         Simulator(model2)
 
+    # probe non-existent object
     with nengo.Network() as model3:
         nengo.Probe(a)
     with pytest.raises(ValueError):

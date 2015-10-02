@@ -18,6 +18,15 @@ from nengo.utils.compat import is_iterable, iteritems
 logger = logging.getLogger(__name__)
 
 
+class PrePostParam(NengoObjectParam):
+    def validate(self, conn, nengo_obj):
+        super(PrePostParam, self).validate(conn, nengo_obj)
+        if isinstance(nengo_obj, Connection):
+            raise ValueError(
+                "Cannot connect to or from connections. "
+                "Did you mean to connect to the connection's learning rule?")
+
+
 class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
     """Connection-specific validation for learning rules."""
 
@@ -227,8 +236,8 @@ class Connection(NengoObject):
         The seed used for random number generation.
     """
 
-    pre = NengoObjectParam(nonzero_size_out=True)
-    post = NengoObjectParam(nonzero_size_in=True)
+    pre = PrePostParam(nonzero_size_out=True)
+    post = PrePostParam(nonzero_size_in=True)
     synapse = SynapseParam(default=Lowpass(0.005))
     transform = TransformParam(default=np.array(1.0))
     solver = ConnectionSolverParam(default=LstsqL2())
