@@ -29,8 +29,10 @@ class EnsembleArray(nengo.Network):
         Whether to create a node that provides each access to each individual
         neuron, typically for the purpose of inibiting the entire
         EnsembleArray. Default: False.
+        *Note: this parameter is deprecated. Please call add_neuron_input
+        or add_neuron_output instead.*
     label : str, optional
-        A name to assign this EnsmbleArray.
+        A name to assign this EnsembleArray.
         Used for visualization and debugging.
     seed : int, optional
         Random number seed that will be used in the build step.
@@ -60,43 +62,90 @@ class EnsembleArray(nengo.Network):
         self.n_ensembles = n_ensembles
         self.dimensions_per_ensemble = ens_dimensions
 
+        # These may be set in add_neuron_input and add_neuron_output
+        self.neuron_input, self.neuron_output = None, None
+
         self.ea_ensembles = []
 
         with self:
             self.input = nengo.Node(size_in=self.dimensions, label="input")
 
-            if neuron_nodes:
-                self.neuron_input = nengo.Node(
-                    size_in=n_neurons * n_ensembles, label="neuron_input")
-                self.neuron_output = nengo.Node(
-                    size_in=n_neurons * n_ensembles, label="neuron_output")
-
             for i in range(n_ensembles):
-                e = nengo.Ensemble(
-                    n_neurons, self.dimensions_per_ensemble,
-                    label=label_prefix + str(i))
-
+                e = nengo.Ensemble(n_neurons, self.dimensions_per_ensemble,
+                                   label="%s%d" % (label_prefix, i))
                 nengo.Connection(self.input[i * ens_dimensions:
                                             (i + 1) * ens_dimensions],
                                  e, synapse=None)
-
-                if (neuron_nodes
-                        and not isinstance(e.neuron_type, nengo.Direct)):
-                    nengo.Connection(self.neuron_input[i * n_neurons:
-                                                       (i + 1) * n_neurons],
-                                     e.neurons, synapse=None)
-                    nengo.Connection(e.neurons,
-                                     self.neuron_output[i * n_neurons:
-                                                        (i + 1) * n_neurons],
-                                     synapse=None)
-
                 self.ea_ensembles.append(e)
 
-            if neuron_nodes and isinstance(e.neuron_type, nengo.Direct):
-                warnings.warn("Creating neuron nodes in an EnsembleArray"
-                              " with Direct neurons")
+        if neuron_nodes:
+            self.add_neuron_input()
+            self.add_neuron_output()
+            warnings.warn(
+                "'neuron_nodes' argument will be removed in Nengo 2.2. Use "
+                "'add_neuron_input' and 'add_neuron_output' methods instead.",
+                DeprecationWarning)
 
         self.add_output('output', function=None)
+
+    @property
+    def dimensions(self):
+        return self.n_ensembles * self.dimensions_per_ensemble
+
+    @with_self
+    def add_neuron_input(self):
+        """Adds a node that provides input to the neurons of all ensembles.
+
+        Direct neuron input is useful for inhibiting the activity of all
+        neurons in the ensemble array.
+
+        This node is accessible through the 'neuron_input' attribute
+        of this ensemble array.
+        """
+        if self.neuron_input is not None:
+            warnings.warn("neuron_input already exists. Returning.")
+            return self.neuron_input
+
+        if isinstance(self.ea_ensembles[0].neuron_type, nengo.Direct):
+            raise TypeError("Ensembles use Direct neuron type. "
+                            "Cannot give neuron input to Direct neurons.")
+
+        self.neuron_input = nengo.Node(
+            size_in=self.n_neurons * self.n_ensembles, label="neuron_input")
+
+        for i, ens in enumerate(self.ea_ensembles):
+            nengo.Connection(self.neuron_input[i * self.n_neurons:
+                                               (i + 1) * self.n_neurons],
+                             ens.neurons, synapse=None)
+        return self.neuron_input
+
+    @with_self
+    def add_neuron_output(self):
+        """Adds a node that collects the neural output of all ensembles.
+
+        Direct neuron output is useful for plotting the spike raster of
+        all neurons in the ensemble array.
+
+        This node is accessible through the 'neuron_output' attribute
+        of this ensemble array.
+        """
+        if self.neuron_output is not None:
+            warnings.warn("neuron_output already exists. Returning.")
+            return self.neuron_output
+
+        if isinstance(self.ea_ensembles[0].neuron_type, nengo.Direct):
+            raise TypeError("Ensembles use Direct neuron type. "
+                            "Cannot get neuron output from Direct neurons.")
+
+        self.neuron_output = nengo.Node(
+            size_in=self.n_neurons * self.n_ensembles, label="neuron_output")
+
+        for i, ens in enumerate(self.ea_ensembles):
+            nengo.Connection(ens.neurons,
+                             self.neuron_output[i * self.n_neurons:
+                                                (i + 1) * self.n_neurons],
+                             synapse=None)
+        return self.neuron_output
 
     @with_self
     def add_output(self, name, function, synapse=None, **conn_kwargs):
@@ -132,7 +181,3 @@ class EnsembleArray(nengo.Network):
                 synapse=synapse, **conn_kwargs)
 
         return output
-
-    @property
-    def dimensions(self):
-        return self.n_ensembles * self.dimensions_per_ensemble

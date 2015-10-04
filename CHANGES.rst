@@ -59,6 +59,9 @@ Release History
   (`#702 <https://github.com/nengo/nengo/pull/702>`_)
 - The ``Product`` and ``InputGatedMemory`` networks no longer accept a
   ``config`` argument. (`#814 <https://github.com/nengo/nengo/pull/814>`_)
+- The ``EnsembleArray`` network's ``neuron_nodes`` argument is deprecated.
+  Instead, call the new ``add_neuron_input`` or ``add_neuron_output`` methods.
+  (`#868 <https://github.com/nengo/nengo/pull/868>`_)
 
 **Behavioural changes**
 
