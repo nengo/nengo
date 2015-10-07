@@ -6,58 +6,6 @@ from . import numpy as npext
 from .compat import range
 
 
-def tuning_curves(ens, sim, inputs=None):
-    """Calculates the tuning curves of an ensemble.
-
-    That is the neuron responses in dependence of the vector represented by the
-    ensemble.
-
-    For 1-dimensional ensembles, the unpacked return value of this function
-    can be passed directly to :func:`matplotlib.pyplot.plot`.
-
-    Parameters
-    ----------
-    ens : nengo.Ensemble
-        Ensemble to calculate the tuning curves of.
-    sim : nengo.Simulator
-        Simulator providing information about the built ensemble. (An unbuilt
-        ensemble does not have tuning curves assigned to it.)
-    inputs : sequence of ndarray, optional
-        The inputs at which the tuning curves will be evaluated. For each of
-        the `D` ensemble dimensions one array of dimensionality `D` is needed.
-        The output of :func:`numpy.meshgrid` with ``indexing='ij'`` is in the
-        right format.
-
-    Returns
-    -------
-    inputs : sequence of ndarray
-        The passed or auto-generated `inputs`.
-    activities : ndarray
-        The activities of the individual neurons given the `inputs`.
-        For ensembles with 1 dimension, the rows correspond to the `inputs`
-        and the columns to individual neurons.
-        For ensembles with > 1 dimension, the first dimension enumerates the
-        neurons, the remaining dimensions map to `inputs`.
-
-    See Also
-    --------
-    response_curves
-    """
-    from nengo.builder.ensemble import get_activities
-
-    if inputs is None:
-        inputs = np.linspace(-ens.radius, ens.radius)
-        if ens.dimensions > 1:
-            inputs = npext.meshgrid_nd(*(ens.dimensions * [inputs]))
-        else:
-            inputs = [inputs]
-        inputs = np.asarray(inputs).T
-
-    eval_points = inputs.reshape((-1, ens.dimensions))
-    activities = get_activities(sim.model, ens, eval_points)
-    return inputs, activities.reshape(inputs.shape[:-1] + (-1,))
-
-
 def response_curves(ens, sim, inputs=None):
     """Calculates the response curves of an ensemble.
 
@@ -279,3 +227,55 @@ def tune_ens_parameters(ens, function=None, solver=None, rng=None, n=1000):
     # --- set parameters to those with the lowest error
     errors.sort(key=lambda x: x[0])
     ens.encoders, ens.gain, ens.bias, ens.eval_points = errors[0][1:]
+
+
+def tuning_curves(ens, sim, inputs=None):
+    """Calculates the tuning curves of an ensemble.
+
+    That is the neuron responses in dependence of the vector represented by the
+    ensemble.
+
+    For 1-dimensional ensembles, the unpacked return value of this function
+    can be passed directly to :func:`matplotlib.pyplot.plot`.
+
+    Parameters
+    ----------
+    ens : nengo.Ensemble
+        Ensemble to calculate the tuning curves of.
+    sim : nengo.Simulator
+        Simulator providing information about the built ensemble. (An unbuilt
+        ensemble does not have tuning curves assigned to it.)
+    inputs : sequence of ndarray, optional
+        The inputs at which the tuning curves will be evaluated. For each of
+        the `D` ensemble dimensions one array of dimensionality `D` is needed.
+        The output of :func:`numpy.meshgrid` with ``indexing='ij'`` is in the
+        right format.
+
+    Returns
+    -------
+    inputs : sequence of ndarray
+        The passed or auto-generated `inputs`.
+    activities : ndarray
+        The activities of the individual neurons given the `inputs`.
+        For ensembles with 1 dimension, the rows correspond to the `inputs`
+        and the columns to individual neurons.
+        For ensembles with > 1 dimension, the first dimension enumerates the
+        neurons, the remaining dimensions map to `inputs`.
+
+    See Also
+    --------
+    response_curves
+    """
+    from nengo.builder.ensemble import get_activities
+
+    if inputs is None:
+        inputs = np.linspace(-ens.radius, ens.radius)
+        if ens.dimensions > 1:
+            inputs = npext.meshgrid_nd(*(ens.dimensions * [inputs]))
+        else:
+            inputs = [inputs]
+        inputs = np.asarray(inputs).T
+
+    eval_points = inputs.reshape((-1, ens.dimensions))
+    activities = get_activities(sim.model, ens, eval_points)
+    return inputs, activities.reshape(inputs.shape[:-1] + (-1,))
