@@ -18,10 +18,10 @@ BuiltEnsemble = collections.namedtuple(
                       'scaled_encoders', 'gain', 'bias'])
 
 
-def sample(dist, n_samples, rng):
+def sample(dist, n, d=None, rng=None):
     if isinstance(dist, Distribution):
-        return dist.sample(n_samples, rng=rng)
-    return np.array(dist)
+        return dist.sample(n, d=d, rng=rng).astype(np.float64)
+    return np.array(dist, dtype=np.float64)
 
 
 def gen_eval_points(ens, eval_points, rng, scale_eval_points=True):
@@ -64,26 +64,24 @@ def build_ensemble(model, ens):
     if isinstance(ens.neuron_type, Direct):
         encoders = np.identity(ens.dimensions)
     elif isinstance(ens.encoders, Distribution):
-        encoders = ens.encoders.sample(ens.n_neurons, ens.dimensions, rng=rng)
-        encoders = np.asarray(encoders, dtype=np.float64)
+        encoders = sample(ens.encoders, ens.n_neurons, ens.dimensions, rng=rng)
     else:
         encoders = npext.array(ens.encoders, min_dims=2, dtype=np.float64)
     encoders /= npext.norm(encoders, axis=1, keepdims=True)
-
-    # Determine max_rates and intercepts
-    max_rates = sample(ens.max_rates, ens.n_neurons, rng=rng)
-    intercepts = sample(ens.intercepts, ens.n_neurons, rng=rng)
 
     # Build the neurons
     if ens.gain is not None and ens.bias is not None:
         gain = sample(ens.gain, ens.n_neurons, rng=rng)
         bias = sample(ens.bias, ens.n_neurons, rng=rng)
+        max_rates, intercepts = None, None  # TODO: determine from gain & bias
     elif ens.gain is not None or ens.bias is not None:
         # TODO: handle this instead of error
         raise NotImplementedError("gain or bias set for %s, but not both. "
                                   "Solving for one given the other is not "
                                   "implemented yet." % ens)
     else:
+        max_rates = sample(ens.max_rates, ens.n_neurons, rng=rng)
+        intercepts = sample(ens.intercepts, ens.n_neurons, rng=rng)
         gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
 
     if isinstance(ens.neuron_type, Direct):
