@@ -85,9 +85,6 @@ Release History
   vector).
   (`#775 <https://github.com/nengo/nengo/issues/775>`_,
   `#782 <https://github.com/nengo/nengo/pull/782>`_)
-- The IPython notebook progress bar has to be activated with
-  ``%load_ext nengo.ipynb``.
-  (`#693 <https://github.com/nengo/nengo/pull/693>`_)
 
 **Improvements**
 
@@ -124,9 +121,6 @@ Release History
   `#791 <https://github.com/nengo/nengo/pull/791>`_)
 - The ``Product`` network is now more accurate.
   (`#651 <https://github.com/nengo/nengo/pull/651>`_)
-- Added ``[progress]`` section to ``nengorc`` which allows setting
-  ``progress_bar`` and ``updater``.
-  (`#693 <https://github.com/nengo/nengo/pull/693>`_)
 - Numpy arrays can now be used as indices for slicing objects.
   (`#754 <https://github.com/nengo/nengo/pull/754>`_)
 - ``Config.configures`` now accepts multiple classes rather than
@@ -154,6 +148,30 @@ Release History
   creation attempts, and returns the most dissimilar pointer if none can be
   found below the similarity threshold.
   (`#817 <https://github.com/nengo/nengo/pull/817>`_)
+
+2.0.2 (October 13, 2015)
+========================
+
+2.0.2 is a bug fix release to ensure that Nengo continues
+to work with more recent versions of Jupyter
+(formerly known as the IPython notebook).
+
+**Behavioural changes**
+
+- The IPython notebook progress bar has to be activated with
+  ``%load_ext nengo.ipynb``.
+  (`#693 <https://github.com/nengo/nengo/pull/693>`_)
+
+**Improvements**
+
+- Added ``[progress]`` section to ``nengorc`` which allows setting
+  ``progress_bar`` and ``updater``.
+  (`#693 <https://github.com/nengo/nengo/pull/693>`_)
+
+**Bug fixes**
+
+- Fix compatibility issues with newer versions of IPython,
+  and Jupyter. (`#693 <https://github.com/nengo/nengo/pull/693>`_)
 
 2.0.1 (January 27, 2015)
 ========================
