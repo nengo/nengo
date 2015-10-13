@@ -262,7 +262,7 @@ def export_evaluated(nb, dest_path=None, skip_exceptions=False):
 
     if dest_path is not None:
         with open(dest_path, 'w') as f:
-            write_nb(nb_runner.nb, f)
+            write_nb(nb_runner.nb, f, 'ipynb')
     return nb_runner.nb
 
 
@@ -343,7 +343,8 @@ class NotebookRunner(object):
                 cell['prompt_number'] = content['execution_count']
                 out.prompt_number = content['execution_count']
 
-            if msg_type in ('status', 'pyin', 'execute_input'):
+            if msg_type in ('status', 'pyin', 'execute_input',
+                            'comm_open', 'comm_msg'):
                 continue
             elif msg_type == 'stream':
                 out.stream = content['name']
@@ -355,6 +356,8 @@ class NotebookRunner(object):
                     except KeyError:
                         raise NotImplementedError(
                             'unhandled mime type: %s' % mime)
+                    if "widgets/js/widget" in data:
+                        continue
                     setattr(out, attr, data)
             elif msg_type == 'pyerr':
                 out.ename = content['ename']

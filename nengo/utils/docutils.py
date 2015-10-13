@@ -37,6 +37,7 @@ import logging
 import os
 import shutil
 import tempfile
+import traceback
 import warnings
 
 from docutils import nodes
@@ -105,9 +106,9 @@ class NotebookDirective(Directive):
         try:
             nb = ipext.export_evaluated(
                 nb, dest_path, skip_exceptions=skip_exceptions)
-        except Exception as e:
+        except:
             warnings.warn("Notebook conversion failed with the following "
-                          "traceback: \n%s" % e)
+                          "traceback: \n%s" % traceback.format_exc())
         evaluated_html = ipext.export_html(
             nb, image_dir=image_dir, image_rel_dir=image_rel_dir)
 
