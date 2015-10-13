@@ -19,8 +19,12 @@ Release History
    - Bugfixes
    - Documentation
 
-2.0.2 (unreleased)
-==================
+2.0.2 (October 13, 2015)
+========================
+
+2.0.2 is a bug fix release to ensure that Nengo continues
+to work with more recent versions of Jupyter
+(formerly known as the IPython notebook).
 
 **Behavioural changes**
 
@@ -33,6 +37,11 @@ Release History
 - Added ``[progress]`` section to ``nengorc`` which allows setting
   ``progress_bar`` and ``updater``.
   (`#693 <https://github.com/nengo/nengo/pull/693>`_)
+
+**Bug fixes**
+
+- Fix compatibility issues with newer versions of IPython,
+  and Jupyter. (`#693 <https://github.com/nengo/nengo/pull/693>`_)
 
 2.0.1 (January 27, 2015)
 ========================
