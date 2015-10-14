@@ -21,9 +21,12 @@ class PyTest(TestCommand):
         TestCommand.initialize_options(self)
         self.pytest_args = None
 
+    def _test_args(self):
+        return []
+
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        self.test_args = []
+        del self.test_args[:]
         self.test_suite = True
 
     def run_tests(self):
@@ -39,9 +42,12 @@ class Tox(TestCommand):
         TestCommand.initialize_options(self)
         self.tox_args = None
 
+    def _test_args(self):
+        return []
+
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        self.test_args = []
+        del self.test_args[:]
         self.test_suite = True
 
     def run_tests(self):
