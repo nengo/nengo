@@ -257,7 +257,13 @@ class LIF(LIFRate):
 
 
 class AdaptiveLIFRate(LIFRate):
-    """Adaptive rate version of the LIF neuron model."""
+    """Adaptive rate version of the LIF neuron model.
+
+    References
+    ----------
+    .. [1] Koch, Christof. Biophysics of Computation: Information Processing
+       in Single Neurons. Oxford University Press, 1999.
+    """
 
     tau_n = NumberParam(low=0, low_open=True)
     inc_n = NumberParam(low=0)
@@ -285,7 +291,13 @@ class AdaptiveLIFRate(LIFRate):
 
 
 class AdaptiveLIF(AdaptiveLIFRate, LIF):
-    """Adaptive spiking version of the LIF neuron model."""
+    """Adaptive spiking version of the LIF neuron model.
+
+    References
+    ----------
+    .. [1] Koch, Christof. Biophysics of Computation: Information Processing
+       in Single Neurons. Oxford University Press, 1999.
+    """
 
     probeable = ['spikes', 'adaptation', 'voltage', 'refractory_time']
 
