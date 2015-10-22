@@ -13,7 +13,7 @@ console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setFormatter(console_formatter)
 
 
-def log(debug=False, path=None):
+def log(level='warning', path=None):
     """Log messages.
 
     If path is None, logging messages will be printed to the console (stdout).
@@ -23,8 +23,20 @@ def log(debug=False, path=None):
     logging things, and Nengo will just populate their log.
     However, if the user is using Nengo directly, they can use this
     function to get log output.
+
+    Parameters
+    ----------
+    level : string (optional)
+        Collect messages targeting this level and above. The levels from
+        highest to lowest are: 'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'.
+    path : string (optional)
+        Path of a file to append log messages to. If ``None`` (default),
+        messages are logged to the console.
     """
-    level = logging.DEBUG if debug else logging.WARNING
+    if level.upper() not in ('CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'):
+        raise ValueError("Invalid logging level")
+
+    level = getattr(logging, level.upper())
     logging.root.setLevel(level)
 
     if path is None:

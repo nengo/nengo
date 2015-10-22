@@ -206,8 +206,8 @@ class Simulator(object):
             or :class:`nengo.utils.progress.ProgressUpdater` instance.
         """
         steps = int(np.round(float(time_in_seconds) / self.dt))
-        logger.debug("Running %s for %f seconds, or %d steps",
-                     self.model.label, time_in_seconds, steps)
+        logger.info("Running %s for %f seconds, or %d steps",
+                    self.model.label, time_in_seconds, steps)
         self.run_steps(steps, progress_bar=progress_bar)
 
     def run_steps(self, steps, progress_bar=True):

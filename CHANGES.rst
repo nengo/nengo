@@ -62,6 +62,10 @@ Release History
 - The ``EnsembleArray`` network's ``neuron_nodes`` argument is deprecated.
   Instead, call the new ``add_neuron_input`` or ``add_neuron_output`` methods.
   (`#868 <https://github.com/nengo/nengo/pull/868>`_)
+- The ``nengo.log`` utility function now takes a string ``level`` parameter
+  to specify any logging level, instead of the old binary ``debug`` parameter.
+  Cache messages are logged at DEBUG instead of INFO level.
+  (`#883 <https://github.com/nengo/nengo/pull/883>`_)
 
 **Behavioural changes**
 

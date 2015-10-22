@@ -249,14 +249,14 @@ class DecoderCache(object):
                 with open(path, 'rb') as f:
                     solver_info, decoders = nco.read(f)
             except:
-                logger.info("Cache miss [{0}].".format(key))
+                logger.debug("Cache miss [{0}].".format(key))
                 decoders, solver_info = solver_fn(
                     solver, neuron_type, gain, bias, x, targets, rng=rng, E=E)
                 if not self.read_only:
                     with open(path, 'wb') as f:
                         nco.write(f, solver_info, decoders)
             else:
-                logger.info(
+                logger.debug(
                     "Cache hit [{0}]: Loaded stored decoders.".format(key))
             return decoders, solver_info
         return cached_solver
