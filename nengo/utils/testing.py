@@ -9,7 +9,6 @@ import time
 import warnings
 
 import numpy as np
-import pytest
 
 from .compat import is_string
 from .logging import CaptureLogHandler, console_formatter
@@ -189,11 +188,13 @@ class WarningCatcher(object):
 
 class warns(WarningCatcher):
     def __init__(self, warning_type):
+        import pytest
+        self._pytest = pytest
         self.warning_type = warning_type
 
     def __exit__(self, type, value, traceback):
         if not any(r.category is self.warning_type for r in self.record):
-            pytest.fail("DID NOT RAISE")
+            self._pytest.fail("DID NOT WARN")
 
         super(warns, self).__exit__(type, value, traceback)
 
