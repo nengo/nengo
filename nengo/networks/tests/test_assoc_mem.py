@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import nengo
 from nengo.networks.assoc_mem import AssociativeMemory
@@ -21,6 +22,12 @@ def test_am_basic(Simulator, plt, seed, rng):
     """Basic associative memory test."""
 
     D = 64
+    vocab = np.array([])
+
+    with pytest.raises(ValueError):
+        with nengo.Network():
+            am = AssociativeMemory(vocab)
+
     vocab = make_vocab(4, D, rng)
 
     with nengo.Network('model', seed=seed) as m:

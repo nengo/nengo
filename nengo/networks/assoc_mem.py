@@ -60,6 +60,19 @@ class AssociativeMemory(nengo.Network):
             input_vectors = np.array(input_vectors, ndmin=2)
         if is_iterable(output_vectors):
             output_vectors = np.array(output_vectors, ndmin=2)
+
+        if input_vectors.shape[0] == 0:
+            raise ValueError('Number of input vectors cannot be 0.')
+        elif input_vectors.shape[0] != output_vectors.shape[0]:
+            # Fail if number of input items and number of output items don't
+            # match
+            raise ValueError(
+                'Number of input vectors does not match number of output '
+                'vectors. %d != %d'
+                % (input_vectors.shape[0], output_vectors.shape[0]))
+
+        # Handle possible different threshold / input_scale values for each
+        # element in the associative memory
         if not is_iterable(threshold):
             threshold = threshold * np.ones(input_vectors.shape[0])
         else:
