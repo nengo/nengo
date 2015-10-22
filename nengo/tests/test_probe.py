@@ -2,7 +2,7 @@ import numpy as np
 
 import nengo
 from nengo.utils.compat import range
-from nengo.utils.testing import Timer
+from nengo.utils.stdlib import Timer
 
 
 def test_multirun(Simulator, rng):

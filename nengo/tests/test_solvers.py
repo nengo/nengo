@@ -12,7 +12,8 @@ import nengo
 from nengo.dists import UniformHypersphere
 from nengo.utils.compat import range
 from nengo.utils.numpy import rms, norm
-from nengo.utils.testing import allclose, Timer
+from nengo.utils.stdlib import Timer
+from nengo.utils.testing import allclose
 from nengo.solvers import (
     cholesky, conjgrad, block_conjgrad, conjgrad_scipy, lsmr_scipy,
     Lstsq, LstsqNoise, LstsqL2, LstsqL2nz,

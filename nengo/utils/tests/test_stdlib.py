@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-from nengo.utils.stdlib import checked_call, groupby
+from nengo.utils.compat import range
+from nengo.utils.stdlib import checked_call, groupby, Timer
 
 
 def test_checked_call():
@@ -96,3 +97,11 @@ def test_groupby(hashable, force_list, rng):
         group = groups[keys.index(key2)]
         group2 = map(lambda x: x[1], keygroup2)
         assert sorted(group2) == sorted(group)
+
+
+def test_timer():
+    with Timer() as timer:
+        for i in range(1000):
+            2 + 2
+    assert timer.duration > 0.0
+    assert timer.duration < 1.0  # Pretty bad worst case

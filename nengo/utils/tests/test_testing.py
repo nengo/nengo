@@ -3,16 +3,7 @@ import os
 
 import pytest
 
-from nengo.utils.compat import range
-from nengo.utils.testing import Analytics, Logger, Timer
-
-
-def test_timer():
-    with Timer() as timer:
-        for i in range(1000):
-            2 + 2
-    assert timer.duration > 0.0
-    assert timer.duration < 1.0  # Pretty bad worst case
+from nengo.utils.testing import Analytics, Logger
 
 
 def test_analytics_empty():
