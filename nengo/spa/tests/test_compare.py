@@ -10,8 +10,8 @@ def test_basic():
     inputB = model.get_module_input('compare_B')
     output = model.get_module_output('compare')
     # all nodes should be acquired correctly
-    assert inputA[0] is model.compare.product.A
-    assert inputB[0] is model.compare.product.B
+    assert inputA[0] is model.compare.A
+    assert inputB[0] is model.compare.B
     assert output[0] is model.compare.output
     # all inputs should share the same vocab
     assert inputA[1] is inputB[1]
