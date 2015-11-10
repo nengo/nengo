@@ -6,6 +6,7 @@ import nengo.utils.numpy as npext
 from nengo.base import NengoObject, ObjView
 from nengo.params import Default, IntParam, Parameter, StringParam
 from nengo.processes import Process
+from nengo.utils.compat import is_array_like
 from nengo.utils.stdlib import checked_call
 
 
@@ -37,12 +38,15 @@ class OutputParam(Parameter):
             if node.size_out is None:
                 result = self.validate_callable(node, output)
                 node.size_out = 0 if result is None else result.size
-        else:
+        elif is_array_like(output):
             # Make into correctly shaped numpy array before validation
             output = npext.array(
                 output, min_dims=1, copy=False, dtype=np.float64)
             self.validate_ndarray(node, output)
             node.size_out = output.size
+        else:
+            raise ValueError("Invalid node output type %r" %
+                             node.output.__class__.__name__)
 
         # --- Set output
         self.data[node] = output

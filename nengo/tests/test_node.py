@@ -327,3 +327,13 @@ def test_args(Simulator, plt):
 
     with Simulator(model) as sim:
         sim.run(0.01)
+
+
+def test_wrong_output():
+    """Setting a node as an input used to cause unbounded memory allocation."""
+
+    with nengo.Network():
+        node1 = nengo.Node(output=lambda t: t)
+
+        with pytest.raises(ValueError):
+            nengo.Node(node1)
