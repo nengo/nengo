@@ -78,6 +78,10 @@ Release History
 - All Nengo objects (``Connection``, ``Ensemble``, ``Node``, and ``Probe``)
   now accept a ``label`` and ``seed`` argument if they didn't previously.
   (`#958 <https://github.com/nengo/nengo/pull/859>`_)
+- In ``nengo.synapses``, ``filt`` and ``filtfilt`` are deprecated. Every
+  synapse type now has ``filt`` and ``filtfilt`` methods that filter
+  using the synapse.
+  (`#945 <https://github.com/nengo/nengo/pull/945>`_)
 
 **Behavioural changes**
 

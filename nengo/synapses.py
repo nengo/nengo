@@ -1,4 +1,5 @@
 import collections
+import warnings
 
 import numpy as np
 
@@ -11,6 +12,69 @@ from nengo.utils.filter_design import cont2discrete
 
 class Synapse(FrozenObject):
     """Abstract base class for synapse objects"""
+
+    def __init__(self, analog=True):
+        super(Synapse, self).__init__()
+        self.analog = analog
+
+    def filt(self, signal, dt=None, axis=0, y0=None, copy=True,
+             filtfilt=False):
+        """Filter ``signal`` with this synapse.
+
+        Parameters
+        ----------
+        signal : array_like
+            The signal to filter.
+        dt : float
+            The time-step of the input signal, for analog synapses.
+        axis : integer, optional (default: 0)
+            The axis along which to filter.
+        y0 : array_like, optional (default: np.zeros(d))
+            The starting state of the filter output.
+        copy : boolean, optional (default: True)
+            Whether to copy the input data, or simply work in-place.
+        filtfilt : boolean, optional (default: False)
+            If true, runs the process forwards then backwards on the signal,
+            for zero-phase filtering (like MATLAB's ``filtfilt``).
+        """
+        if self.analog and dt is None:
+            raise ValueError("`dt` must be provided for analog synapses.")
+
+        filtered = np.array(signal, copy=copy)
+        filt_view = np.rollaxis(filtered, axis=axis)  # rolled view on filtered
+
+        # --- buffer method
+        if y0 is not None:
+            if y0.shape != filt_view[0].shape:
+                raise ValidationError(
+                    "'y0' with shape %s must have shape %s" %
+                    (y0.shape, filt_view[0].shape), attr='y0')
+            signal_out = np.array(y0)
+        else:
+            # signal_out is our buffer for the current filter state
+            signal_out = np.zeros_like(filt_view[0])
+
+        step = self.make_step(dt, signal_out)
+
+        for i, signal_in in enumerate(filt_view):
+            step(signal_in)
+            filt_view[i] = signal_out
+
+        if filtfilt:
+            # Flip the filt_view and filter again
+            filt_view = filt_view[::-1]
+            for i, signal_in in enumerate(filt_view):
+                step(signal_in)
+                filt_view[i] = signal_out
+
+        return filtered
+
+    def filtfilt(self, *args, **kwargs):
+        """Zero-phase filtering of ``signal`` using this filter.
+
+        Equivalent to ``filt(*args, **kwargs, filtfilt=True)``.
+        """
+        return self.filt(*args, filtfilt=True, **kwargs)
 
     def make_step(self, dt, output):
         raise NotImplementedError("Synapses should implement make_step.")
@@ -40,10 +104,9 @@ class LinearFilter(Synapse):
     analog = BoolParam('analog')
 
     def __init__(self, num, den, analog=True):
-        super(LinearFilter, self).__init__()
+        super(LinearFilter, self).__init__(analog=analog)
         self.num = num
         self.den = den
-        self.analog = analog
 
     def __repr__(self):
         return "%s(%s, %s, analog=%r)" % (
@@ -210,7 +273,7 @@ class Triangle(Synapse):
     t = NumberParam('t', low=0)
 
     def __init__(self, t):
-        super(Triangle, self).__init__()
+        super(Triangle, self).__init__(analog=True)
         self.t = t
 
     def __repr__(self):
@@ -238,6 +301,8 @@ class Triangle(Synapse):
 def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
     """Filter ``signal`` with ``synapse``.
 
+    Deprecated: use ``synapse.filt`` instead.
+
     Parameters
     ----------
     signal : array_like
@@ -246,6 +311,8 @@ def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
         The synapse model with which to filter the signal.
         If a float is passed in, it will be interpreted as the ``tau``
         parameter of a lowpass filter.
+    dt : float
+        The time-step of the input signal, for analog synapses.
     axis : integer, optional
         The axis along which to filter. Default: 0.
     x0 : array_like, optional
@@ -253,29 +320,8 @@ def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
     copy : boolean, optional
         Whether to copy the input data, or simply work in-place. Default: True.
     """
-    if is_number(synapse):
-        synapse = Lowpass(synapse)
-
-    filtered = np.array(signal, copy=copy)
-    filt_view = np.rollaxis(filtered, axis=axis)  # rolled view on filtered
-
-    # --- buffer method
-    if x0 is not None:
-        if x0.shape != filt_view[0].shape:
-            raise ValidationError("'x0' with shape %s must have shape %s" %
-                                  (x0.shape, filt_view[0].shape), attr='x0')
-        signal_out = np.array(x0)
-    else:
-        # signal_out is our buffer for the current filter state
-        signal_out = np.zeros_like(filt_view[0])
-
-    step = synapse.make_step(dt, signal_out)
-
-    for i, signal_in in enumerate(filt_view):
-        step(signal_in)
-        filt_view[i] = signal_out
-
-    return filtered
+    warnings.warn("Use ``synapse.filt`` instead", DeprecationWarning)
+    synapse.filt(signal, dt=dt, axis=axis, y0=x0, copy=copy)
 
 
 def filtfilt(signal, synapse, dt, axis=0, copy=True):
@@ -294,30 +340,15 @@ def filtfilt(signal, synapse, dt, axis=0, copy=True):
         The synapse model with which to filter the signal.
         If a float is passed in, it will be interpreted as the ``tau``
         parameter of a lowpass filter.
+    dt : float
+        The time-step of the input signal, for analog synapses.
     axis : integer, optional
         The axis along which to filter. Default: 0.
     copy : boolean, optional
         Whether to copy the input data, or simply work in-place. Default: True.
     """
-    if is_number(synapse):
-        synapse = Lowpass(synapse)
-
-    filtered = np.array(signal, copy=copy)
-    filt_view = np.rollaxis(filtered, axis=axis)
-    signal_out = np.zeros_like(filt_view[0])
-    step = synapse.make_step(dt, signal_out)
-
-    for i, signal_in in enumerate(filt_view):
-        step(signal_in)
-        filt_view[i] = signal_out
-
-    # Flip the filt_view and filter again
-    filt_view = filt_view[::-1]
-    for i, signal_in in enumerate(filt_view):
-        step(signal_in)
-        filt_view[i] = signal_out
-
-    return filtered
+    warnings.warn("Use ``synapse.filtfilt`` instead", DeprecationWarning)
+    synapse.filtfilt(signal, dt=dt, axis=axis, copy=copy)
 
 
 class SynapseParam(Parameter):

@@ -100,7 +100,7 @@ def test_passthrough_filter(Simulator, plt, seed):
         passthrough = nengo.Node(size_in=1)
         v = nengo.Node(output=lambda t, x: x, size_in=1)
 
-        synapse = 0.3
+        synapse = nengo.Lowpass(0.3)
         nengo.Connection(u, passthrough, synapse=None)
         nengo.Connection(passthrough, v, synapse=synapse)
 
@@ -112,7 +112,7 @@ def test_passthrough_filter(Simulator, plt, seed):
 
     t = sim.trange()
     x = sim.data[up]
-    y = nengo.synapses.filt(x, synapse, dt=sim.dt)
+    y = synapse.filt(x, dt=sim.dt)
     z = sim.data[vp]
 
     plt.plot(t, x)

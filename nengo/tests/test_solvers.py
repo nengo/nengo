@@ -269,9 +269,9 @@ def test_compare_solvers(Simulator, plt, seed):
     t = sim.trange()
 
     # ref = sim.data[up]
-    ref = nengo.synapses.filtfilt(sim.data[ap], 0.02, dt=sim.dt)
+    ref = nengo.Lowpass(0.02).filtfilt(sim.data[ap], dt=sim.dt)
     outputs = np.array([sim.data[probe][:, 0] for probe in probes]).T
-    outputs_f = nengo.synapses.filtfilt(outputs, 0.02, dt=sim.dt)
+    outputs_f = nengo.Lowpass(0.02).filtfilt(outputs, dt=sim.dt)
 
     close = allclose(t, ref, outputs_f,
                      atol=0.07, rtol=0, buf=0.1, delay=0.007,
@@ -451,8 +451,8 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
             sim.close()
 
             t = sim.trange()
-            xt = nengo.synapses.filtfilt(sim.data[up], filter, dt=sim.dt)
-            yt = nengo.synapses.filtfilt(sim.data[ap], filter, dt=sim.dt)
+            xt = nengo.Lowpass(filter).filtfilt(sim.data[up], dt=sim.dt)
+            yt = nengo.Lowpass(filter).filtfilt(sim.data[ap], dt=sim.dt)
             t0 = 5 * filter
             t1 = 7 * filter
             tmask = (t > t0) & (t < t1)

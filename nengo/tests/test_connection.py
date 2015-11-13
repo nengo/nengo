@@ -284,7 +284,7 @@ def test_weights(Simulator, nl, plt, seed):
     t = sim.trange()
     x = np.array(func(t)).T
     y = np.dot(x, transform.T)
-    z = nengo.synapses.filtfilt(sim.data[bp], 0.005, dt=sim.dt)
+    z = nengo.Lowpass(0.005).filtfilt(sim.data[bp], dt=sim.dt)
     assert allclose(t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt)
 
 
@@ -529,7 +529,7 @@ def test_function_output_size(Simulator, plt, seed):
     with Simulator(model) as sim:
         sim.run(0.2)
     t = sim.trange()
-    x = nengo.synapses.filt(sim.data[up].clip(0, np.inf), 0.03, dt=sim.dt)
+    x = nengo.Lowpass(0.03).filt(sim.data[up].clip(0, np.inf), dt=sim.dt)
     y = sim.data[bp]
 
     plt.plot(t, x, 'k')
