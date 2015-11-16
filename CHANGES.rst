@@ -169,6 +169,10 @@ Release History
   cosine of the angle between two random vectors. It is useful for setting
   intercepts, in particular when using the ``Voja`` learning rule.
   (`#768 <https://github.com/nengo/nengo/pull/768>`_)
+- ``nengo.synapses.LinearFilter`` now has an ``evaluate`` method to
+  evaluate the filter response to sine waves of given frequencies. This can
+  be used to create Bode plots, for example.
+  (`#945 <https://github.com/nengo/nengo/pull/945>`_)
 
 **Bug fixes**
 
