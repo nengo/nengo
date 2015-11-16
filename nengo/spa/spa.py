@@ -98,6 +98,10 @@ class SPA(nengo.Network):
         This is so that we can use the variable name for the Module as
         the name that all of the SPA system will use to access that module.
         """
+        if hasattr(self, key) and isinstance(getattr(self, key), Module):
+            raise ValueError("Cannot re-assign module-attribute %s to %s. "
+                             "SPA module-attributes can only be assigned "
+                             "once." % (key, value))
         super(SPA, self).__setattr__(key, value)
         if isinstance(value, Module):
             if value.label is None:

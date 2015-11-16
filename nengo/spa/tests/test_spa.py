@@ -9,24 +9,33 @@ def test_spa_verification(Simulator, seed, plt):
     d = 16
 
     model = spa.SPA(seed=seed)
-    # build a normal model that shouldn't raise a warning
+
+    # building a normal model that shouldn't raise a warning
     with model:
         model.buf = spa.Buffer(d)
         model.input_node = spa.Input(buf='B')
         # make sure errors aren't fired for non-spa modules
         prod = nengo.networks.Product(10, 2)  # noqa: F841
+        model.int_val = 1
+
+        # reassignment is fine for non-modules
+        model.int_val = 2
+
+    # reassignment of modules should throw an error
+    with pytest.raises(ValueError):
+        with model:
+            model.buf = spa.State(d, feedback=1)
 
     with pytest.raises(ValueError):
         model = spa.SPA(seed=seed)
-        # build a model that should raise a warning because no variable
+        # build a model that should raise an error because no variable
         with model:
             model.buf = spa.Buffer(d)
             spa.Input(buf='B')
 
     with pytest.raises(ValueError):
         model = spa.SPA(seed=seed)
-        # build a model that should raise a warning because no attribute
-        # for the input
+        # build a model that should raise an error because no input attribute
         with model:
             model.buf = spa.Buffer(d)
             input_node = spa.Input(buf='B')
@@ -34,8 +43,7 @@ def test_spa_verification(Simulator, seed, plt):
 
     with pytest.raises(KeyError):
         model = spa.SPA(seed=seed)
-        # build a model that should raise a warning because no attribute
-        # for the buffer
+        # build a model that should raise an error because no buf attribute
         with model:
             buf = spa.Buffer(d)
             model.input_node = spa.Input(buf='B')
