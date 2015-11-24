@@ -51,6 +51,28 @@ class FunctionSpaceDistribution(nengo.dists.Distribution):
             data = self.data
         return np.dot(data, self.fs.basis)
 
+class Combined(nengo.dists.Distribution):
+    def __init__(self, distributions, dimensions,
+                 weights=None, normalize_weights=True):
+        if weights is None:
+            weights = np.ones(len(distributions))
+        if normalize_weights:
+            weights = weights / np.linalg.norm(weights)
+
+        self.weights = weights
+        self.distributions = distributions
+        self.dimensions = dimensions
+        self.n_dimensions = sum(dimensions)
+
+    def sample(self, n, d=None, rng=np.random):
+        assert d == self.n_dimensions
+
+        data = [dist.sample(n, d=self.dimensions[i], rng=rng) * self.weights[i]
+                for i, dist in enumerate(self.distributions)]
+
+        return np.hstack(data)
+
+
 
 
 class FunctionSpace(object):
