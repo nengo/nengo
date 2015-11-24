@@ -25,7 +25,6 @@ class Cortical(Module):
         self.actions = actions
         self.synapse = synapse
         self.neurons_cconv = neurons_cconv
-        self._bias = None
 
     def on_add(self, spa):
         Module.on_add(self, spa)
@@ -53,14 +52,6 @@ class Cortical(Module):
                             "Subexpression '%s' from action '%s' is not "
                             "supported by the cortex." % (effect, action))
 
-    @property
-    def bias(self):
-        """Return a bias node; create it if needed."""
-        if self._bias is None:
-            with self:
-                self._bias = nengo.Node([1], label='cortical bias')
-        return self._bias
-
     def add_direct_effect(self, target_name, value):
         """Make a fixed constant input to a module.
 
@@ -71,11 +62,15 @@ class Cortical(Module):
         value : string
             A semantic pointer to be sent to the module input
         """
+        target_module = self.spa.get_module(target_name)
         sink, vocab = self.spa.get_module_input(target_name)
         transform = np.array([vocab.parse(value).v]).T
 
-        with self.spa:
-            nengo.Connection(self.bias, sink, transform=transform,
+        with target_module:
+            if not hasattr(target_module, 'bias'):
+                target_module.bias = nengo.Node([1],
+                                                label=target_name + " bias")
+            nengo.Connection(target_module.bias, sink, transform=transform,
                              synapse=self.synapse)
 
     def add_route_effect(self, target_name, source_name, transform, inverted):

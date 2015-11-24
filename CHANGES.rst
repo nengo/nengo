@@ -89,6 +89,10 @@ Release History
   vector).
   (`#775 <https://github.com/nengo/nengo/issues/775>`_,
   `#782 <https://github.com/nengo/nengo/pull/782>`_)
+- Bias nodes in ``spa.Cortical``, and gate ensembles and connections in
+  ``spa.Thalamus`` are now stored in the target modules.
+  (`#894 <https://github.com/nengo/nengo/issues/894>`_,
+  `#906 <https://github.com/nengo/nengo/pull/906>`_)
 
 **Improvements**
 

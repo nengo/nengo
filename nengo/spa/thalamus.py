@@ -145,8 +145,10 @@ class Thalamus(Module):
                                       intercepts=intercepts,
                                       label='gate[%d]' % index,
                                       encoders=[[1]] * self.neurons_gate)
-                target_bias = nengo.Node([1], label=target_name + " bias")
-                nengo.Connection(target_bias, gate, synapse=None)
+                if not hasattr(target_module, 'bias'):
+                    target_module.bias = nengo.Node([1], label=target_name
+                                                    + " bias")
+                nengo.Connection(target_module.bias, gate, synapse=None)
 
             with self.spa:
                 nengo.Connection(self.actions.ensembles[index], gate,
