@@ -144,17 +144,33 @@ class Gaussian(Distribution):
 
 
 class Exponential(Distribution):
-    """An exponential distribution where high values are clipped.
+    """An exponential distribution (optionally with high values clipped).
+
+    If `high` is left to its default value of infinity, this is a standard
+    exponential distribution. If `high` is set, then any sampled values at
+    or above `high` will be clipped so they are slightly below `high`. This is
+    useful for thresholding and by extension, the AssociativeMemory.
+
+    The probability distribution function (PDF) is given by
+               |  0                                 if x < shift
+        p(x) = | 1/scale * exp(-(x - shift)/scale)  if x >= shift and x < high
+               |  n                                 if x == high - eps
+               |  0                                 if x >= high
+    where `n` is such that the PDF integrates to one, and `eps` is an
+    infintesimally small number such that samples of `x` are strictly less than
+    `high` (in practice, `eps` depends on the floating point precision).
 
     Parameters
     ----------
     scale : float
-        The scale parameter (inverse of the rate parameter lambda).
+        The scale parameter (inverse of the rate parameter lambda). Larger
+        values make the distribution narrower (sharper peak).
     shift : float, optional
         Amount to shift the distribution by. There will be no values smaller
         than this shift when sampling from the distribution.
     high : float, optional
-        All values larger than this value will be clipped to this value.
+        All values larger than or equal to this value will be clipped to
+        slightly less than this value.
     """
     def __init__(self, scale, shift=0., high=np.inf):
         self.scale = scale
@@ -163,10 +179,9 @@ class Exponential(Distribution):
 
     def sample(self, n, d=None, rng=np.random):
         shape = (n,) if d is None else (n, d)
-        exp_val = rng.exponential(self.scale, shape) + self.shift
-        high = np.nextafter(self.high,
-                            np.asarray(-np.inf, dtype=exp_val.dtype))
-        return np.clip(exp_val, self.shift, high)
+        x = rng.exponential(self.scale, shape) + self.shift
+        high = np.nextafter(self.high, np.asarray(-np.inf, dtype=x.dtype))
+        return np.clip(x, self.shift, high)
 
 
 class UniformHypersphere(Distribution):
