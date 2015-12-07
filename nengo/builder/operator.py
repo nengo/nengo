@@ -69,6 +69,10 @@ class Operator(object):
     def __init__(self, tag=None):
         self.tag = tag
 
+    def __repr__(self):
+        return "<%s%s at 0x%x>" % (
+            self.__class__.__name__, self._tagstr, id(self))
+
     @property
     def _tagstr(self):
         return ' "%s"' % self.tag if self.tag is not None else ''

@@ -233,8 +233,11 @@ def build_connection(model, conn):
             targets.append(r.modifies)
 
         if 'encoders' in targets:
-            model.sig[conn.post_obj]['encoders'].readonly = False
-            model.add_op(PreserveValue(model.sig[conn.post_obj]['encoders']))
+            encoder_sig = model.sig[conn.post_obj]['encoders']
+            if not any(isinstance(op, PreserveValue) and op.dst is encoder_sig
+                       for op in model.operators):
+                encoder_sig.readonly = False
+                model.add_op(PreserveValue(encoder_sig))
         if 'decoders' in targets or 'weights' in targets:
             if weights.ndim < 2:
                 raise BuildError(
