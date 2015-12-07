@@ -19,8 +19,8 @@ Release History
    - Bugfixes
    - Documentation
 
-2.0.3 (unreleased)
-==================
+2.0.3 (December 7, 2015)
+========================
 
 **API changes**
 
