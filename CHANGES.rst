@@ -19,6 +19,9 @@ Release History
    - Bugfixes
    - Documentation
 
+2.0.3 (unreleased)
+==================
+
 2.0.2 (October 13, 2015)
 ========================
 
