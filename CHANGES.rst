@@ -50,9 +50,6 @@ Release History
   ``transform`` may have changed depending on the type of connection;
   it is now no longer possible to probe ``decoders`` or ``transform``.
   (`#729 <https://github.com/nengo/nengo/pull/729>`_)
-- The ``spa.State`` object replaces the old ``spa.Memory`` and ``spa.Buffer``.
-  These old modules are deprecated and will be removed in 2.2.
-  (`#796 <https://github.com/nengo/nengo/pull/796>`_)
 - A version of the AssociativeMemory SPA module is now available as a
   stand-alone network in ``nengo.networks``. The AssociativeMemory SPA module
   also has an updated argument list.
@@ -181,6 +178,15 @@ Release History
   creation attempts, and returns the most dissimilar pointer if none can be
   found below the similarity threshold.
   (`#817 <https://github.com/nengo/nengo/pull/817>`_)
+
+2.0.3 (December 7, 2015)
+========================
+
+**API changes**
+
+- The ``spa.State`` object replaces the old ``spa.Memory`` and ``spa.Buffer``.
+  These old modules are deprecated and will be removed in 2.2.
+  (`#796 <https://github.com/nengo/nengo/pull/796>`_)
 
 2.0.2 (October 13, 2015)
 ========================
