@@ -114,9 +114,12 @@ class FunctionSpace(object):
             data = self.space
 
         U, S, V = np.linalg.svd(data)
-        #self.scale = (np.mean(self.S[:self.n_basis])) ** 2
-        #self.scale = (self.S[0] / self.n_basis) ** 2
-        self._scale = np.linalg.norm(S[:self.n_basis])
+
+        proj = np.dot(data, V[:self.n_basis].T)
+        self._scale = np.mean(np.linalg.norm(proj, axis=1))**2
+        #self._scale = (np.mean(S[:self.n_basis])) ** 2
+        #self._scale = (S[0] / self.n_basis) ** 2
+        #self._scale = np.linalg.norm(S[:self.n_basis])**2
         #TODO: which of those scalings works better?
         self._basis = V[:self.n_basis].T / np.sqrt(self.scale)
         self._S = S
