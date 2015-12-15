@@ -10,11 +10,11 @@
   :target: https://requires.io/github/nengo/nengo/requirements/?branch=master
   :alt: Requirements Status
 
-.. image:: https://pypip.in/v/nengo/badge.png
+.. image:: https://img.shields.io/pypi/v/nengo.svg
   :target: https://pypi.python.org/pypi/nengo
   :alt: Latest PyPI version
 
-.. image:: https://pypip.in/d/nengo/badge.png
+.. image:: https://img.shields.io/pypi/dm/nengo.svg
   :target: https://pypi.python.org/pypi/nengo
   :alt: Number of PyPI downloads
 
