@@ -255,7 +255,7 @@ def build_voja(model, voja, rule):
     encoder_scale = model.params[post].gain / post.radius
     assert post_filtered.shape == encoder_scale.shape
 
-    model.operators.append(
+    model.add_op(
         SimVoja(pre_decoded=model.sig[conn]['out'],
                 post_filtered=post_filtered,
                 scaled_encoders=scaled_encoders,
