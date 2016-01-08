@@ -383,9 +383,12 @@ class SimPyFunc(Operator):
             args = () if self.x is None else (np.copy(signals[self.x]),)
             y = fn(t_sig.item(), *args) if t_in else fn(*args)
             if output is not None:
-                if y is None:
-                    raise ValueError(
-                        "Function '%s' returned invalid value" % fn.__name__)
-                output[...] = y
+                if y is None:  # required since Numpy turns None into NaN
+                    raise ValueError("Function %r returned None" % fn.__name__)
+                try:
+                    output[...] = y
+                except ValueError:
+                    raise ValueError("Function %r returned invalid value %r"
+                                     % (fn.__name__, y))
 
         return step_simpyfunc
