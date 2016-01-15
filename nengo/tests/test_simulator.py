@@ -1,9 +1,13 @@
+import gc
+
 import numpy as np
 import pytest
 
 import nengo
 import nengo.simulator
 from nengo.exceptions import SimulatorClosed
+from nengo.utils.compat import ResourceWarning
+from nengo.utils.testing import warns
 
 
 def test_steps(RefSimulator):
@@ -99,3 +103,15 @@ def test_close_steps(RefSimulator):
         sim.run_steps(1)
     with pytest.raises(SimulatorClosed):
         sim.step()
+
+
+def test_warn_on_opensim_gc(Simulator):
+    with nengo.Network() as net:
+        nengo.Ensemble(10, 1)
+
+    sim = Simulator(net)
+    assert sim
+
+    with warns(ResourceWarning):
+        sim = None
+        gc.collect()

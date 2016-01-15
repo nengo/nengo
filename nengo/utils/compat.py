@@ -38,6 +38,17 @@ if PY2:
                                'replace')
             StringIO.write(self, data)
 
+    class ResourceWarning(DeprecationWarning):
+        """A warning about resource usage.
+
+        Note that we subclass from DeprecationWarning here solely because
+        DeprecationWarnings are filtered out by default in Python 2.7,
+        while in Python 3.2+ both DeprecationWarnings and ResourceWarnings
+        are filtered out. Subclassing from DeprecationWarning gives
+        the same (or at least very similar) behavior in Python 2 and 3
+        without having to modify filters in the warnings module.
+        """
+
 else:
     import pickle
     import configparser
@@ -46,6 +57,7 @@ else:
     string_types = (str,)
     int_types = (int,)
     range = range
+    ResourceWarning = ResourceWarning
 
     # No iterkeys; use ``for key in dict:`` instead
     iteritems = lambda d: iter(d.items())

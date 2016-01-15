@@ -2,8 +2,9 @@
 
 from __future__ import print_function
 
-from collections import Mapping
 import logging
+import warnings
+from collections import Mapping
 
 import numpy as np
 
@@ -12,7 +13,7 @@ from nengo.builder import Model
 from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.exceptions import ReadonlyError, SimulatorClosed
-from nengo.utils.compat import range
+from nengo.utils.compat import range, ResourceWarning
 from nengo.utils.graphs import toposort
 from nengo.utils.progress import ProgressTracker
 from nengo.utils.simulator import operator_depencency_graph
@@ -135,6 +136,14 @@ class Simulator(object):
 
         seed = np.random.randint(npext.maxint) if seed is None else seed
         self.reset(seed=seed)
+
+    def __del__(self):
+        """Raise a ResourceWarning if we are deallocated while open."""
+        if not self.closed:
+            warnings.warn(
+                "Simulator with model=%s was deallocated while open. Please "
+                "close simulators manually to ensure resources are properly "
+                "freed." % self.model, ResourceWarning)
 
     def __enter__(self):
         return self
