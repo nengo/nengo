@@ -56,10 +56,9 @@ def test_lif(Simulator, plt, rng, logger):
         voltage_probe = nengo.Probe(ens.neurons, 'voltage')
         ref_probe = nengo.Probe(ens.neurons, 'refractory_time')
 
-    sim = Simulator(m, dt=dt)
-
     t_final = 1.0
-    sim.run(t_final)
+    with Simulator(m, dt=dt) as sim:
+        sim.run(t_final)
 
     i = 3
     plt.subplot(311)
@@ -98,8 +97,8 @@ def test_lif_min_voltage(Simulator, plt, min_voltage, seed):
         p_val = nengo.Probe(ens, synapse=0.01)
         p_voltage = nengo.Probe(ens.neurons, 'voltage')
 
-    sim = Simulator(model)
-    sim.run(0.5)
+    with Simulator(model) as sim:
+        sim.run(0.5)
 
     plt.subplot(2, 1, 1)
     plt.plot(sim.trange(), sim.data[p_val])
@@ -125,8 +124,8 @@ def test_lif_zero_tau_ref(Simulator):
                              neuron_type=nengo.LIF(tau_ref=0))
         nengo.Connection(nengo.Node(output=10), ens)
         p = nengo.Probe(ens.neurons)
-    sim = Simulator(m)
-    sim.run(0.02)
+    with Simulator(m) as sim:
+        sim.run(0.02)
     assert np.all(sim.data[p][1:] == max_rate)
 
 
@@ -149,8 +148,8 @@ def test_alif_rate(Simulator, plt):
         ap = nengo.Probe(a.neurons)
 
     dt = 1e-3
-    sim = Simulator(model, dt=dt)
-    sim.run(2.)
+    with Simulator(model, dt=dt) as sim:
+        sim.run(2.)
 
     t = sim.trange()
     rates = sim.data[ap]
@@ -199,8 +198,8 @@ def test_alif(Simulator, plt):
         bp = nengo.Probe(b.neurons)
 
     dt = 1e-3
-    sim = Simulator(model, dt=dt)
-    sim.run(2.)
+    with Simulator(model, dt=dt) as sim:
+        sim.run(2.)
 
     t = sim.trange()
     a_rates = sim.data[ap]
@@ -256,8 +255,8 @@ def test_izhikevich(Simulator, plt, seed, rng):
             spikes[ens] = nengo.Probe(ens.neurons)
         up = nengo.Probe(u)
 
-    sim = Simulator(m, seed=seed+1)
-    sim.run(0.6)
+    with Simulator(m, seed=seed+1) as sim:
+        sim.run(0.6)
     t = sim.trange()
 
     def plot(ens, title, ix):
@@ -297,8 +296,8 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     dts = (0.0001, 0.001)
     colors = ('b', 'g', 'r')
     for c, dt in zip(colors, dts):
-        sim = Simulator(m, dt=dt, seed=seed+1)
-        sim.run(0.1)
+        with Simulator(m, dt=dt, seed=seed+1) as sim:
+            sim.run(0.1)
         t = sim.trange(dt=0.001)
         activity_data.append(sim.data[activity_p])
         out_data.append(sim.data[out_p])
@@ -332,15 +331,15 @@ def test_reset(Simulator, nl_nodirect, seed, rng):
                          solver=LstsqL2nz(weights=True))
         square_p = nengo.Probe(square, synapse=0.1)
 
-    sim = Simulator(m, seed=seed+1)
-    sim.run(0.1)
-    sim.run(0.2)
+    with Simulator(m, seed=seed+1) as sim:
+        sim.run(0.1)
+        sim.run(0.2)
 
-    first_t = sim.trange()
-    first_square_p = np.array(sim.data[square_p], copy=True)
+        first_t = sim.trange()
+        first_square_p = np.array(sim.data[square_p], copy=True)
 
-    sim.reset()
-    sim.run(0.3)
+        sim.reset()
+        sim.run(0.3)
 
     assert np.all(sim.trange() == first_t)
     assert np.all(sim.data[square_p] == first_square_p)

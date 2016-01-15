@@ -265,9 +265,9 @@ def test_cache_works(tmpdir, Simulator, seed):
         nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
     assert len(os.listdir(cache_dir)) == 0
-    Simulator(model, model=nengo.builder.Model(
-        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
-    assert len(os.listdir(cache_dir)) == 2  # legacy.txt and *.nco
+    with Simulator(model, model=nengo.builder.Model(
+            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
+        assert len(os.listdir(cache_dir)) == 2  # legacy.txt and *.nco
 
 
 def calc_relative_timer_diff(t1, t2):

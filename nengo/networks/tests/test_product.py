@@ -24,8 +24,8 @@ def test_sine_waves(Simulator, plt, seed):
         nengo.Connection(input_B, product.B)
         p = nengo.Probe(product.output, synapse=0.005)
 
-    sim = Simulator(product)
-    sim.run(1.0)
+    with Simulator(product) as sim:
+        sim.run(1.0)
 
     t = sim.trange()
     AB = np.asarray(list(map(func_A, t))) * np.asarray(list(map(func_B, t)))
@@ -60,8 +60,8 @@ def test_direct_mode_with_single_neuron(Simulator, plt, seed):
         nengo.Connection(input_B, product.B)
         p = nengo.Probe(product.output, synapse=0.005)
 
-    sim = Simulator(product)
-    sim.run(1.0)
+    with Simulator(product) as sim:
+        sim.run(1.0)
 
     t = sim.trange()
     AB = np.asarray(list(map(func_A, t))) * np.asarray(list(map(func_B, t)))
@@ -79,7 +79,7 @@ def test_direct_mode_with_single_neuron(Simulator, plt, seed):
 
 @pytest.mark.benchmark
 @pytest.mark.slow
-def test_product_benchmark(analytics, rng):
+def test_product_benchmark(Simulator, analytics, rng):
     n_trials = 50
     hc = HilbertCurve(n=4)  # Increase n to cover the input space more densely
     duration = 5.           # Simulation duration (s)
@@ -114,8 +114,8 @@ def test_product_benchmark(analytics, rng):
                 synapse=None)
             probe_direct = nengo.Probe(result_direct)
 
-        sim = nengo.Simulator(model)
-        sim.run(duration + wait_duration, progress_bar=False)
+        with Simulator(model) as sim:
+            sim.run(duration + wait_duration, progress_bar=False)
 
         selection = sim.trange() > wait_duration
         test = sim.data[probe_test][selection]

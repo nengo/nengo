@@ -27,10 +27,13 @@ def test_seeding(RefSimulator):
         C = nengo.Connection(A, B, function=lambda x: x ** 2)
 
     m.seed = 872
-    m1 = RefSimulator(m).model.params
-    m2 = RefSimulator(m).model.params
+    with RefSimulator(m) as sim:
+        m1 = sim.model.params
+    with RefSimulator(m) as sim:
+        m2 = sim.model.params
     m.seed = 873
-    m3 = RefSimulator(m).model.params
+    with RefSimulator(m) as sim:
+        m3 = sim.model.params
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
@@ -74,9 +77,12 @@ def test_hierarchical_seeding(RefSimulator):
     same2, same2objs = create(True, 9)
     diff, diffobjs = create(True, 10)
 
-    same1seeds = RefSimulator(same1).model.seeds
-    same2seeds = RefSimulator(same2).model.seeds
-    diffseeds = RefSimulator(diff).model.seeds
+    with RefSimulator(same1) as sim:
+        same1seeds = sim.model.seeds
+    with RefSimulator(same2) as sim:
+        same2seeds = sim.model.seeds
+    with RefSimulator(diff) as sim:
+        diffseeds = sim.model.seeds
 
     for diffobj, same2obj in zip(diffobjs, same2objs):
         # These seeds should all be different
@@ -127,16 +133,16 @@ def test_signal_init_values(RefSimulator):
     m.operators += [PreserveValue(five), PreserveValue(array),
                     DotInc(zero, zero, five), DotInc(zeroarray, one, array)]
 
-    sim = RefSimulator(None, model=m)
-    assert sim.signals[zero][0] == 0
-    assert sim.signals[one][0] == 1
-    assert sim.signals[five][0] == 5.0
-    assert np.all(np.array([1, 2, 3]) == sim.signals[array])
-    sim.step()
-    assert sim.signals[zero][0] == 0
-    assert sim.signals[one][0] == 1
-    assert sim.signals[five][0] == 5.0
-    assert np.all(np.array([1, 2, 3]) == sim.signals[array])
+    with RefSimulator(None, model=m) as sim:
+        assert sim.signals[zero][0] == 0
+        assert sim.signals[one][0] == 1
+        assert sim.signals[five][0] == 5.0
+        assert np.all(np.array([1, 2, 3]) == sim.signals[array])
+        sim.step()
+        assert sim.signals[zero][0] == 0
+        assert sim.signals[one][0] == 1
+        assert sim.signals[five][0] == 5.0
+        assert np.all(np.array([1, 2, 3]) == sim.signals[array])
 
 
 def test_signaldict():
@@ -255,10 +261,10 @@ def test_signal_slicing(rng):
 def test_commonsig_readonly(RefSimulator):
     """Test that the common signals cannot be modified."""
     net = nengo.Network(label="test_commonsig")
-    sim = RefSimulator(net)
-    for sig in itervalues(sim.model.sig['common']):
-        sim.signals.init(sig)
-        with pytest.raises((ValueError, RuntimeError)):
-            sim.signals[sig] = np.array([-1])
-        with pytest.raises((ValueError, RuntimeError)):
-            sim.signals[sig][...] = np.array([-1])
+    with RefSimulator(net) as sim:
+        for sig in itervalues(sim.model.sig['common']):
+            sim.signals.init(sig)
+            with pytest.raises((ValueError, RuntimeError)):
+                sim.signals[sig] = np.array([-1])
+            with pytest.raises((ValueError, RuntimeError)):
+                sim.signals[sig][...] = np.array([-1])

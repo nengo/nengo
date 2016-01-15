@@ -43,8 +43,8 @@ def test_basal_ganglia(Simulator, seed, plt):
                                 compare_A='SHOOP', compare_B='SHOOP')
         p = nengo.Probe(model.bg.input, 'output', synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.5)
+    with Simulator(model) as sim:
+        sim.run(0.5)
     t = sim.trange()
 
     plt.plot(t, sim.data[p])

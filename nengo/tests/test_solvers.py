@@ -264,8 +264,8 @@ def test_compare_solvers(Simulator, plt, seed):
             names.append("%s(%s)" % (
                 solver.__class__.__name__, 'w' if solver.weights else 'd'))
 
-    sim = Simulator(model)
-    sim.run(tfinal)
+    with Simulator(model) as sim:
+        sim.run(tfinal)
     t = sim.trange()
 
     # ref = sim.data[up]
@@ -318,8 +318,8 @@ def test_regularization(Simulator, nl_nodirect, plt):
                         probes[i, j, k, l] = nengo.Probe(
                             a, solver=Solver(reg=reg), synapse=synapse)
 
-    sim = Simulator(model)
-    sim.run(tfinal)
+    with Simulator(model) as sim:
+        sim.run(tfinal)
     t = sim.trange()
 
     ref = sim.data[up]
@@ -346,7 +346,7 @@ def test_regularization(Simulator, nl_nodirect, plt):
 
 @pytest.mark.slow
 @pytest.mark.noassertions
-def test_eval_points_static(Simulator, plt, rng):
+def test_eval_points_static(plt, rng):
     solver = LstsqL2()
 
     n = 100
@@ -448,6 +448,7 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
             with Timer() as timer:
                 sim = Simulator(model)
             sim.run(10 * filter)
+            sim.close()
 
             t = sim.trange()
             xt = nengo.synapses.filtfilt(sim.data[up], filter, dt=sim.dt)

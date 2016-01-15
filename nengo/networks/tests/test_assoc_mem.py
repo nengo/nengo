@@ -39,8 +39,8 @@ def test_am_basic(Simulator, plt, seed, rng):
         out_p = nengo.Probe(am.output, synapse=0.03)
         utils_p = nengo.Probe(am.utilities, synapse=0.03)
 
-    sim = Simulator(m)
-    sim.run(0.2)
+    with Simulator(m) as sim:
+        sim.run(0.2)
     t = sim.trange()
 
     plt.subplot(3, 1, 1)
@@ -84,8 +84,8 @@ def test_am_threshold(Simulator, plt, seed, rng):
         out_p = nengo.Probe(am.output, synapse=0.03)
         utils_p = nengo.Probe(am.utilities, synapse=0.03)
 
-    sim = Simulator(m)
-    sim.run(0.3)
+    with Simulator(m) as sim:
+        sim.run(0.3)
     t = sim.trange()
     below_th = t < 0.1
     above_th = t > 0.25
@@ -133,8 +133,8 @@ def test_am_wta(Simulator, plt, seed, rng):
         out_p = nengo.Probe(am.output, synapse=0.03)
         utils_p = nengo.Probe(am.utilities, synapse=0.03)
 
-    sim = Simulator(m)
-    sim.run(0.5)
+    with Simulator(m) as sim:
+        sim.run(0.5)
     t = sim.trange()
     more_a = (t > 0.15) & (t < 0.2)
     more_b = t > 0.45
@@ -198,8 +198,8 @@ def test_am_complex(Simulator, plt, seed, rng):
         utils_p = nengo.Probe(am.utilities, synapse=0.05)
         utils_th_p = nengo.Probe(am.thresholded_utilities, synapse=0.05)
 
-    sim = Simulator(m)
-    sim.run(1.0)
+    with Simulator(m) as sim:
+        sim.run(1.0)
     t = sim.trange()
     # Input: A+0.8B
     more_a = (t >= 0.2) & (t < 0.25)

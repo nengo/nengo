@@ -54,8 +54,8 @@ def test_input_magnitude(Simulator, seed, rng, dims=16, magnitude=10):
         nengo.Connection(inputA, cconv_bad.A, synapse=None)
         nengo.Connection(inputB, cconv_bad.B, synapse=None)
         res_p_bad = nengo.Probe(cconv_bad.output)
-    sim = Simulator(model)
-    sim.run(0.01)
+    with Simulator(model) as sim:
+        sim.run(0.01)
 
     error = rmse(result, sim.data[res_p][-1]) / (magnitude ** 2)
     error_bad = rmse(result, sim.data[res_p_bad][-1]) / (magnitude ** 2)
@@ -80,8 +80,8 @@ def test_neural_accuracy(Simulator, seed, rng, dims, neurons_per_product=128):
         nengo.Connection(inputA, cconv.A, synapse=None)
         nengo.Connection(inputB, cconv.B, synapse=None)
         res_p = nengo.Probe(cconv.output)
-    sim = Simulator(model)
-    sim.run(0.01)
+    with Simulator(model) as sim:
+        sim.run(0.01)
 
     error = rmse(result, sim.data[res_p][-1])
 

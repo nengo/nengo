@@ -42,8 +42,8 @@ def test_run(Simulator, seed):
     with model:
         p = nengo.Probe(bind, 'output', synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.2)
+    with Simulator(model) as sim:
+        sim.run(0.2)
 
     error = rmse(vocab.parse("B*A").v, sim.data[p][-1])
     assert error < 0.1

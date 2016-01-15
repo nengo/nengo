@@ -10,8 +10,8 @@ def test_time(Simulator):
         u = nengo.Node(output=lambda t: t)
         up = nengo.Probe(u)
 
-    sim = Simulator(model)
-    sim.run(1.0)
+    with Simulator(model) as sim:
+        sim.run(1.0)
 
     t = sim.trange()
     x = sim.data[up].flatten()
@@ -24,9 +24,8 @@ def test_simple(Simulator, plt, seed):
         input = nengo.Node(output=lambda t: np.sin(t))
         p = nengo.Probe(input, 'output')
 
-    sim = Simulator(m)
-    runtime = 0.5
-    sim.run(runtime)
+    with Simulator(m) as sim:
+        sim.run(0.5)
 
     plt.plot(sim.trange(), sim.data[p], label='sin')
     plt.legend(loc='best')
@@ -47,9 +46,8 @@ def test_connected(Simulator, plt, seed):
         p_in = nengo.Probe(input, 'output')
         p_out = nengo.Probe(output, 'output')
 
-    sim = Simulator(m)
-    runtime = 0.5
-    sim.run(runtime)
+    with Simulator(m) as sim:
+        sim.run(0.5)
 
     t = sim.trange()
     plt.plot(t, sim.data[p_in], label='sin')
@@ -81,9 +79,8 @@ def test_passthrough(Simulator, plt, seed):
         in2_p = nengo.Probe(in2, 'output')
         out_p = nengo.Probe(out, 'output')
 
-    sim = Simulator(m)
-    runtime = 0.5
-    sim.run(runtime)
+    with Simulator(m) as sim:
+        sim.run(0.5)
 
     plt.plot(sim.trange(), sim.data[in1_p]+sim.data[in2_p], label='in+in2')
     plt.plot(sim.trange()[:-2], sim.data[out_p][2:], label='out')
@@ -109,13 +106,12 @@ def test_passthrough_filter(Simulator, plt, seed):
         up = nengo.Probe(u)
         vp = nengo.Probe(v)
 
-    dt = 0.001
-    sim = Simulator(m, dt=dt)
-    sim.run(1.0)
+    with Simulator(m) as sim:
+        sim.run(1.0)
 
     t = sim.trange()
     x = sim.data[up]
-    y = nengo.synapses.filt(x, synapse, dt=dt)
+    y = nengo.synapses.filt(x, synapse, dt=sim.dt)
     z = sim.data[vp]
 
     plt.plot(t, x)
@@ -136,9 +132,8 @@ def test_circular(Simulator, seed):
         a_p = nengo.Probe(a, 'output')
         b_p = nengo.Probe(b, 'output')
 
-    sim = Simulator(m)
-    runtime = 0.5
-    sim.run(runtime)
+    with Simulator(m) as sim:
+        sim.run(0.5)
 
     assert np.allclose(sim.data[a_p], sim.data[b_p])
 
@@ -156,7 +151,8 @@ def test_function_args_error(Simulator):
             nengo.Node(output=[0], size_in=1)
         with pytest.raises(TypeError):
             nengo.Node(output=0, size_in=1)
-    Simulator(model)
+    with Simulator(model):
+        pass
 
 
 def test_output_shape_error():
@@ -188,9 +184,9 @@ def test_none(Simulator, seed):
         a = nengo.Ensemble(10, dimensions=1)
         nengo.Connection(u, a)
 
-    sim = Simulator(model)
-    with pytest.raises(ValueError):
-        sim.run(0.01)
+    with Simulator(model) as sim:
+        with pytest.raises(ValueError):
+            sim.run(0.01)
 
     # This function will pass (with a warning), because it will
     # be determined at run time that the output function
@@ -202,8 +198,8 @@ def test_none(Simulator, seed):
     with model2:
         nengo.Node(output=none_function)
 
-    sim = Simulator(model2)
-    sim.run(0.01)
+    with Simulator(model2) as sim:
+        sim.run(0.01)
 
 
 def test_unconnected_node(Simulator):
@@ -215,12 +211,12 @@ def test_unconnected_node(Simulator):
     model = nengo.Network()
     with model:
         nengo.Node(f, size_in=0, size_out=0)
-    sim = Simulator(model)
-    assert hits == 0
-    sim.step()
-    assert hits == 1
-    sim.step()
-    assert hits == 2
+    with Simulator(model) as sim:
+        assert hits == 0
+        sim.step()
+        assert hits == 1
+        sim.step()
+        assert hits == 2
 
 
 def test_len():
@@ -292,7 +288,8 @@ def test_set_output(Simulator):
         noreturn_func = nengo.Node(noreturn)
         assert noreturn_func.size_out == 0
 
-    Simulator(model)  # Ensure it all builds
+    with Simulator(model):  # Ensure it all builds
+        pass
 
 
 def test_delay(Simulator, plt):
@@ -304,8 +301,8 @@ def test_delay(Simulator, plt):
         ap = nengo.Probe(a)
         bp = nengo.Probe(b)
 
-    sim = Simulator(model)
-    sim.run(0.005)
+    with Simulator(model) as sim:
+        sim.run(0.005)
 
     plt.plot(sim.trange(), sim.data[ap])
     plt.plot(sim.trange(), -sim.data[bp])
@@ -328,5 +325,5 @@ def test_args(Simulator, plt):
         v = nengo.Node(Fn(), size_in=1, size_out=0)
         nengo.Connection(u, v, synapse=None)
 
-    sim = Simulator(model)
-    sim.run(0.01)
+    with Simulator(model) as sim:
+        sim.run(0.01)

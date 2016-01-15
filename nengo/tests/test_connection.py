@@ -42,8 +42,8 @@ def test_node_to_neurons(Simulator, nl_nodirect, plt, seed):
         a_p = nengo.Probe(a, 'decoded_output', synapse=0.1)
         inh_p = nengo.Probe(inh, 'output')
 
-    sim = Simulator(m)
-    sim.run(1.0)
+    with Simulator(m) as sim:
+        sim.run(1.0)
     t = sim.trange()
     ideal = np.sin(t)
     ideal[t >= 0.5] = 0
@@ -76,8 +76,8 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect, plt, seed):
         b_p = nengo.Probe(b, 'decoded_output', synapse=0.1)
         inh_p = nengo.Probe(inh, 'output')
 
-    sim = Simulator(m)
-    sim.run(1.0)
+    with Simulator(m) as sim:
+        sim.run(1.0)
     t = sim.trange()
     ideal = np.sin(t)
     ideal[t >= 0.5] = 0
@@ -116,8 +116,8 @@ def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed):
         c_p = nengo.Probe(c, 'decoded_output', synapse=0.01)
         d_p = nengo.Probe(d, 'decoded_output', synapse=0.01)
 
-    sim = Simulator(m)
-    sim.run(2.0)
+    with Simulator(m) as sim:
+        sim.run(2.0)
     t = sim.trange()
 
     plt.plot(t, sim.data[a_p])
@@ -150,8 +150,8 @@ def test_neurons_to_ensemble(Simulator, nl_nodirect, plt, seed):
         b_p = nengo.Probe(b, 'decoded_output', synapse=0.01)
         c_p = nengo.Probe(c, 'decoded_output', synapse=0.01)
 
-    sim = Simulator(m)
-    sim.run(0.1)
+    with Simulator(m) as sim:
+        sim.run(0.1)
     t = sim.trange()
 
     plt.plot(t, sim.data[b_p], c='b')
@@ -176,8 +176,8 @@ def test_neurons_to_node(Simulator, nl_nodirect, plt, seed):
         a_spikes = nengo.Probe(a.neurons, synapse=0.005)
         out_p = nengo.Probe(out, synapse=0.005)
 
-    sim = Simulator(m)
-    sim.run(0.1)
+    with Simulator(m) as sim:
+        sim.run(0.1)
     t = sim.trange()
 
     plt.subplot(2, 1, 1)
@@ -210,8 +210,8 @@ def test_neurons_to_neurons(Simulator, nl_nodirect, plt, seed):
         a_p = nengo.Probe(a, 'decoded_output', synapse=0.1)
         b_p = nengo.Probe(b, 'decoded_output', synapse=0.1)
 
-    sim = Simulator(m)
-    sim.run(0.6)
+    with Simulator(m) as sim:
+        sim.run(0.6)
     t = sim.trange()
 
     plt.plot(t, sim.data[inp_p], label='Input')
@@ -238,8 +238,8 @@ def test_function_and_transform(Simulator, plt, seed):
         ap = nengo.Probe(a, synapse=0.03)
         bp = nengo.Probe(b, synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.8)
+    with Simulator(model) as sim:
+        sim.run(0.8)
     x0, x1 = np.dot(sim.data[ap]**2, [[1., -1]]).T
     y0, y1 = sim.data[bp].T
 
@@ -275,8 +275,8 @@ def test_weights(Simulator, nl, plt, seed):
         nengo.Connection(a, b, transform=transform,
                          solver=LstsqL2(weights=True))
 
-    sim = Simulator(m)
-    sim.run(1.)
+    with Simulator(m) as sim:
+        sim.run(1.)
 
     t = sim.trange()
     x = np.array(func(t)).T
@@ -301,8 +301,8 @@ def test_vector(Simulator, nl, plt, seed):
         up = nengo.Probe(u, 'output')
         bp = nengo.Probe(b, synapse=0.03)
 
-    sim = Simulator(m)
-    sim.run(0.2)
+    with Simulator(m) as sim:
+        sim.run(0.2)
     t = sim.trange()
     x = sim.data[up]
     y = x * transform
@@ -415,8 +415,8 @@ def test_slicing(Simulator, nl, plt, seed):
             nengo.Connection(a[sa], b[sb], transform=T, solver=weight_solver)
             weight_probes.append(nengo.Probe(b, synapse=0.03))
 
-    sim = Simulator(m)
-    sim.run(0.2)
+    with Simulator(m) as sim:
+        sim.run(0.2)
     t = sim.trange()
 
     for i, [y, p] in enumerate(zip(ys, probes)):
@@ -450,8 +450,8 @@ def test_neuron_slicing(Simulator, plt, seed, rng):
         ap = nengo.Probe(a.neurons, synapse=0.03)
         bp = nengo.Probe(b.neurons, synapse=0.03)
 
-    sim = Simulator(m)
-    sim.run(0.2)
+    with Simulator(m) as sim:
+        sim.run(0.2)
     t = sim.trange()
 
     x = sim.data[ap]
@@ -476,8 +476,9 @@ def test_shortfilter(Simulator, nl):
         nengo.Connection(a, b, synapse=0)
         nengo.Connection(b, a, synapse=0)
 
-    Simulator(m, dt=.01)
-    # This test passes if there are no cycles in the op graph
+    with Simulator(m, dt=.01):
+        # This test passes if there are no cycles in the op graph
+        pass
 
     # We will still get a cycle if the user explicitly sets the
     # filter to None
@@ -501,8 +502,8 @@ def test_zerofilter(Simulator, seed):
                            neuron_type=nengo.LIF())
         bp = nengo.Probe(b.neurons)
 
-    sim = Simulator(m)
-    sim.run(1.)
+    with Simulator(m) as sim:
+        sim.run(1.)
     # assert that we have spikes (binary)
     assert np.unique(sim.data[bp]).size == 2
 
@@ -522,8 +523,8 @@ def test_function_output_size(Simulator, plt, seed):
         up = nengo.Probe(u)
         bp = nengo.Probe(b, synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.2)
+    with Simulator(model) as sim:
+        sim.run(0.2)
     t = sim.trange()
     x = nengo.synapses.filt(sim.data[up].clip(0, np.inf), 0.03, dt=sim.dt)
     y = sim.data[bp]
@@ -550,8 +551,8 @@ def test_slicing_function(Simulator, plt, seed):
         up = nengo.Probe(u, synapse=0.03)
         bp = nengo.Probe(b, synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(1.)
+    with Simulator(model) as sim:
+        sim.run(1.)
 
     t = sim.trange()
     v = sim.data[up]
@@ -618,14 +619,16 @@ def test_set_function(Simulator):
         conn_2d = nengo.Connection(a, b)
         conn_1d = nengo.Connection(b, c, function=lambda x: x[0] * x[1])
 
-    Simulator(model)  # Builds fine
+    with Simulator(model):
+        pass  # Builds fine
 
     with model:
         # Can change to another function with correct dimensionality
         conn_2d.function = lambda x: x ** 2
         conn_1d.function = lambda x: x[0] + x[1]
 
-    Simulator(model)  # Builds fine
+    with Simulator(model):
+        pass  # Builds fine
 
     with model:
         # Cannot change to a function with different dimensionality
@@ -635,7 +638,8 @@ def test_set_function(Simulator):
         with pytest.raises(ValueError):
             conn_1d.function = None
 
-    Simulator(model)  # Builds fine
+    with Simulator(model):
+        pass  # Builds fine
 
 
 def test_set_eval_points(Simulator):
@@ -648,7 +652,8 @@ def test_set_eval_points(Simulator):
         with pytest.raises(ValueError):
             nengo.Connection(a.neurons, b, eval_points=[[0, 0], [0.5, 1]])
 
-    Simulator(model)  # Builds fine
+    with Simulator(model):
+        pass  # Builds fine
 
 
 @pytest.mark.parametrize('sample', [False, True])
@@ -666,8 +671,8 @@ def test_eval_points_scaling(Simulator, sample, radius, seed, rng, scale):
         con = nengo.Connection(a, b, eval_points=eval_points,
                                scale_eval_points=scale)
 
-    sim = Simulator(model)
-    dists = npext.norm(sim.data[con].eval_points, axis=1)
+    with Simulator(model) as sim:
+        dists = npext.norm(sim.data[con].eval_points, axis=1)
     limit = radius if scale else 1.0
     assert np.all(dists <= limit)
     assert np.any(dists >= 0.9 * limit)
@@ -749,7 +754,8 @@ def test_decoder_probe(Simulator):
         nengo.Probe(c_ens, 'weights')
         nengo.Probe(c_ens_neurons, 'weights')
 
-    assert Simulator(net)
+    with Simulator(net) as sim:
+        assert sim
 
 
 def test_transform_probe(Simulator):
@@ -767,10 +773,12 @@ def test_transform_probe(Simulator):
         nengo.Probe(c_neurons, 'weights')
         nengo.Probe(c_ens, 'weights')
         nengo.Probe(c_ens_neurons, 'weights')
-    assert Simulator(net)
+
+    with Simulator(net) as sim:
+        assert sim
 
 
-def test_nomodulatory(Simulator):
+def test_nomodulatory():
     """Make sure you cannot set modulatory=True on connections."""
     with nengo.Network():
         a = nengo.Ensemble(10, 1)

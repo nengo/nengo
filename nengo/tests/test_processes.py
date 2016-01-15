@@ -40,8 +40,8 @@ def test_brownnoise(Simulator, seed, plt):
         u = nengo.Node(process, size_out=d)
         up = nengo.Probe(u)
 
-    sim = Simulator(model, seed=seed)
-    sim.run(t)
+    with Simulator(model, seed=seed) as sim:
+        sim.run(t)
     samples = sim.data[up]
 
     trange = sim.trange()
@@ -76,8 +76,8 @@ def test_gaussian_whitenoise(Simulator, rms, seed, plt):
         u = nengo.Node(process, size_out=d)
         up = nengo.Probe(u)
 
-    sim = Simulator(model, seed=seed)
-    sim.run(0.3)
+    with Simulator(model, seed=seed) as sim:
+        sim.run(0.3)
     values = sim.data[up]
     freq, val_psd = psd(values, dt=sim.dt)
 
@@ -104,8 +104,8 @@ def test_whitesignal_rms(Simulator, rms, seed, plt):
         u = nengo.Node(process, size_out=d)
         up = nengo.Probe(u)
 
-    sim = Simulator(model, seed=seed)
-    sim.run(t)
+    with Simulator(model, seed=seed) as sim:
+        sim.run(t)
     values = sim.data[up]
     freq, val_psd = psd(values, dt=sim.dt)
 
@@ -132,8 +132,8 @@ def test_whitesignal_high(Simulator, high, seed, plt):
         u = nengo.Node(process, size_out=d)
         up = nengo.Probe(u)
 
-    sim = Simulator(model, seed=seed)
-    sim.run(t)
+    with Simulator(model, seed=seed) as sim:
+        sim.run(t)
     values = sim.data[up]
     freq, val_psd = psd(values, dt=sim.dt)
 
@@ -163,8 +163,8 @@ def test_whitesignal_dt(Simulator, seed, plt):
         u = nengo.Node(process, size_out=d)
         up = nengo.Probe(u)
 
-    sim = Simulator(model, seed=seed, dt=dt)
-    sim.run(t)
+    with Simulator(model, seed=seed, dt=dt) as sim:
+        sim.run(t)
     values = sim.data[up]
     freq, val_psd = psd(values, dt=dt)
 
@@ -192,8 +192,8 @@ def test_whitesignal_continuity(Simulator, seed, plt):
         u = nengo.Node(process, size_out=1)
         up = nengo.Probe(u)
 
-    sim = Simulator(model, seed=seed)
-    sim.run(4 * t)
+    with Simulator(model, seed=seed) as sim:
+        sim.run(4 * t)
     dt = sim.dt
     x = sim.data[up]
 
@@ -220,14 +220,12 @@ def test_reset(Simulator, seed):
         u = nengo.Node(WhiteNoise(Gaussian(0, 1), scale=False))
         up = nengo.Probe(u)
 
-    sim = Simulator(model, seed=seed)
-
-    sim.run(trun)
-    x = np.array(sim.data[up])
-
-    sim.reset()
-    sim.run(trun)
-    y = np.array(sim.data[up])
+    with Simulator(model, seed=seed) as sim:
+        sim.run(trun)
+        x = np.array(sim.data[up])
+        sim.reset()
+        sim.run(trun)
+        y = np.array(sim.data[up])
 
     assert x.shape == y.shape
     assert (x == y).all()
@@ -269,11 +267,11 @@ def test_seed(Simulator, seed):
         dp = nengo.Probe(d)
         ep = nengo.Probe(e)
 
-    sim1 = nengo.Simulator(model)
-    sim1.run(0.1)
+    with Simulator(model) as sim1:
+        sim1.run(0.1)
 
-    sim2 = nengo.Simulator(model)
-    sim2.run(0.1)
+    with Simulator(model) as sim2:
+        sim2.run(0.1)
 
     tols = dict(atol=1e-7, rtol=1e-4)
     assert np.allclose(sim1.data[ap], sim2.data[ap], **tols)
@@ -295,8 +293,9 @@ def test_present_input(Simulator, rng):
         u = nengo.Node(nengo.processes.PresentInput(images, pres_time))
         up = nengo.Probe(u)
 
-    sim = Simulator(model)
-    sim.run(1.0)
+    with Simulator(model) as sim:
+        sim.run(1.0)
+
     t = sim.trange()
     i = np.floor(t / pres_time + 1e-7) % n
     y = sim.data[up].reshape(len(t), c, ni, nj)

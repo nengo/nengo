@@ -25,8 +25,8 @@ def test_tuning_curves_1d(Simulator, plt, seed):
     model = nengo.Network(seed=seed)
     with model:
         ens_1d = nengo.Ensemble(10, dimensions=1, neuron_type=nengo.LIF())
-    sim = Simulator(model)
-    plt.plot(*tuning_curves(ens_1d, sim))
+    with Simulator(model) as sim:
+        plt.plot(*tuning_curves(ens_1d, sim))
 
 
 @pytest.mark.parametrize('dimensions', [1, 2])
@@ -38,9 +38,8 @@ def test_tuning_curves(Simulator, nl_nodirect, plt, seed, dimensions):
         ens = nengo.Ensemble(
             10, dimensions=dimensions, neuron_type=nl_nodirect(),
             max_rates=Uniform(200, max_rate), radius=radius)
-    sim = Simulator(model)
-
-    eval_points, activities = tuning_curves(ens, sim)
+    with Simulator(model) as sim:
+        eval_points, activities = tuning_curves(ens, sim)
 
     plot_tuning_curves(plt, eval_points, activities)
 
@@ -59,9 +58,9 @@ def test_tuning_curves_direct_mode(Simulator, plt, seed, dimensions):
     model = nengo.Network(seed=seed)
     with model:
         ens = nengo.Ensemble(10, dimensions, neuron_type=nengo.Direct())
-    sim = Simulator(model)
 
-    eval_points, activities = tuning_curves(ens, sim)
+    with Simulator(model) as sim:
+        eval_points, activities = tuning_curves(ens, sim)
 
     plot_tuning_curves(plt, eval_points, activities)
 
@@ -76,9 +75,10 @@ def test_response_curves(Simulator, nl_nodirect, plt, seed):
         ens = nengo.Ensemble(
             10, dimensions=10, neuron_type=nl_nodirect(), radius=1.5,
             max_rates=Uniform(200, max_rate))
-    sim = Simulator(model)
 
-    eval_points, activities = response_curves(ens, sim)
+    with Simulator(model) as sim:
+        eval_points, activities = response_curves(ens, sim)
+
     plot_tuning_curves(plt, eval_points, activities)
 
     assert eval_points.ndim == 1 and eval_points.size > 0
@@ -96,9 +96,9 @@ def test_response_curves_direct_mode(Simulator, plt, seed, dimensions):
     with model:
         ens = nengo.Ensemble(
             10, dimensions=dimensions, neuron_type=nengo.Direct(), radius=1.5)
-    sim = Simulator(model)
 
-    eval_points, activities = response_curves(ens, sim)
+    with Simulator(model) as sim:
+        eval_points, activities = response_curves(ens, sim)
 
     plot_tuning_curves(plt, eval_points, activities)
 

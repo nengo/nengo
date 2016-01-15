@@ -11,8 +11,8 @@ def test_basic(Simulator, plt, seed):
         nengo.Connection(input, bg.input, synapse=None)
         p = nengo.Probe(bg.output, synapse=0.01)
 
-    sim = Simulator(bg)
-    sim.run(0.2)
+    with Simulator(bg) as sim:
+        sim.run(0.2)
 
     t = sim.trange()
     output = np.mean(sim.data[p][t > 0.1], axis=0)
@@ -36,8 +36,8 @@ def test_thalamus(Simulator, plt, seed):
 
         p = nengo.Probe(thal.output, synapse=0.01)
 
-    sim = Simulator(net)
-    sim.run(0.2)
+    with Simulator(net) as sim:
+        sim.run(0.2)
 
     t = sim.trange()
     output = np.mean(sim.data[p][t > 0.1], axis=0)

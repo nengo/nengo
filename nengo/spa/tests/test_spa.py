@@ -5,7 +5,7 @@ from nengo import spa
 from nengo.utils.testing import warns
 
 
-def test_spa_verification(Simulator, seed, plt):
+def test_spa_verification(seed, plt):
     d = 16
 
     model = spa.SPA(seed=seed)

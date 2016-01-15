@@ -37,8 +37,8 @@ def test_run(Simulator, seed):
     with model:
         p = nengo.Probe(compare, 'output', synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.2)
+    with Simulator(model) as sim:
+        sim.run(0.2)
 
     assert sim.data[p][100] > 0.8
     assert sim.data[p][199] < 0.2

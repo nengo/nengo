@@ -29,9 +29,9 @@ def test_encoders(RefSimulator, dimensions, seed, n_neurons=10, encoders=None):
                              dimensions=dimensions,
                              encoders=encoders,
                              label="A")
-    sim = RefSimulator(model)
 
-    assert np.allclose(encoders, sim.data[ens].encoders)
+    with RefSimulator(model) as sim:
+        assert np.allclose(encoders, sim.data[ens].encoders)
 
 
 def test_encoders_wrong_shape(RefSimulator, seed):
@@ -65,8 +65,8 @@ def test_constant_scalar(Simulator, nl, plt, seed):
         in_p = nengo.Probe(input, 'output')
         A_p = nengo.Probe(A, 'decoded_output', synapse=0.05)
 
-    sim = Simulator(m)
-    sim.run(0.3)
+    with Simulator(m) as sim:
+        sim.run(0.3)
 
     t = sim.trange()
     plt.plot(t, sim.data[in_p], label='Input')
@@ -93,8 +93,8 @@ def test_constant_vector(Simulator, nl, plt, seed):
         in_p = nengo.Probe(input, 'output')
         A_p = nengo.Probe(A, 'decoded_output', synapse=0.05)
 
-    sim = Simulator(m)
-    sim.run(0.3)
+    with Simulator(m) as sim:
+        sim.run(0.3)
 
     t = sim.trange()
     plt.plot(t, sim.data[in_p], label='Input')
@@ -120,8 +120,8 @@ def test_scalar(Simulator, nl, plt, seed):
         in_p = nengo.Probe(input, 'output')
         A_p = nengo.Probe(A, 'decoded_output', synapse=0.02)
 
-    sim = Simulator(m)
-    sim.run(1.0)
+    with Simulator(m) as sim:
+        sim.run(1.0)
     t = sim.trange()
     target = f(t)
 
@@ -143,8 +143,8 @@ def test_vector(Simulator, nl, plt, seed):
         in_p = nengo.Probe(input)
         A_p = nengo.Probe(A, synapse=0.03)
 
-    sim = Simulator(m)
-    sim.run(1.0)
+    with Simulator(m) as sim:
+        sim.run(1.0)
     t = sim.trange()
     target = np.vstack(f(t)).T
 
@@ -175,8 +175,8 @@ def test_product(Simulator, nl, plt, seed):
         factors_p = nengo.Probe(factors, sample_every=dt2, synapse=0.01)
         product_p = nengo.Probe(product, sample_every=dt2, synapse=0.01)
 
-    sim = Simulator(m)
-    sim.run(1)
+    with Simulator(m) as sim:
+        sim.run(1)
     t = sim.trange(dt=dt2)
 
     plt.subplot(211)
@@ -198,8 +198,8 @@ def test_eval_points_number(Simulator, dims, points, seed):
     with model:
         A = nengo.Ensemble(5, dims, n_eval_points=points)
 
-    sim = Simulator(model)
-    assert sim.data[A].eval_points.shape == (points, dims)
+    with Simulator(model) as sim:
+        assert sim.data[A].eval_points.shape == (points, dims)
 
 
 def test_eval_points_number_warning(Simulator, seed):
@@ -209,7 +209,8 @@ def test_eval_points_number_warning(Simulator, seed):
 
     with warns(UserWarning):
         # n_eval_points doesn't match actual passed eval_points, which warns
-        sim = Simulator(model)
+        with Simulator(model) as sim:
+            pass
 
     assert np.allclose(sim.data[A].eval_points, [[0.1], [0.2]])
 
@@ -224,9 +225,9 @@ def test_eval_points_heuristic(Simulator, neurons, dims, seed):
     with model:
         A = nengo.Ensemble(neurons, dims)
 
-    sim = Simulator(model)
-    points = sim.data[A].eval_points
-    assert points.shape == (heuristic(neurons, dims), dims)
+    with Simulator(model) as sim:
+        points = sim.data[A].eval_points
+        assert points.shape == (heuristic(neurons, dims), dims)
 
 
 @pytest.mark.parametrize('sample', [False, True])
@@ -240,10 +241,10 @@ def test_eval_points_scaling(Simulator, sample, radius, seed, rng):
     with model:
         a = nengo.Ensemble(1, 3, eval_points=eval_points, radius=radius)
 
-    sim = Simulator(model)
-    dists = npext.norm(sim.data[a].eval_points, axis=1)
-    assert np.all(dists <= radius)
-    assert np.any(dists >= 0.9 * radius)
+    with Simulator(model) as sim:
+        dists = npext.norm(sim.data[a].eval_points, axis=1)
+        assert np.all(dists <= radius)
+        assert np.any(dists >= 0.9 * radius)
 
 
 def test_len():
@@ -287,9 +288,9 @@ def test_gain_bias(Simulator):
         a.gain = gain
         a.bias = bias
 
-    sim = Simulator(model)
-    assert np.array_equal(gain, sim.data[a].gain)
-    assert np.array_equal(bias, sim.data[a].bias)
+    with Simulator(model) as sim:
+        assert np.array_equal(gain, sim.data[a].gain)
+        assert np.array_equal(bias, sim.data[a].bias)
 
 
 def test_noise_gen(Simulator, nl_nodirect, seed, plt):
@@ -309,8 +310,8 @@ def test_noise_gen(Simulator, nl_nodirect, seed, plt):
         pos_p = nengo.Probe(pos.neurons, synapse=0.1)
         normal_p = nengo.Probe(normal.neurons, synapse=0.1)
         neg_p = nengo.Probe(neg.neurons, synapse=0.1)
-    sim = Simulator(model)
-    sim.run(0.06)
+    with Simulator(model) as sim:
+        sim.run(0.06)
 
     t = sim.trange()
     plt.title("bias=%d, gain=%d" % (bias, gain))
@@ -349,8 +350,8 @@ def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt):
         ap = nengo.Probe(a.neurons, synapse=0.01)
         bp = nengo.Probe(b.neurons, synapse=0.01)
         cp = nengo.Probe(c.neurons, synapse=0.01)
-    sim = Simulator(model)
-    sim.run(0.06)
+    with Simulator(model) as sim:
+        sim.run(0.06)
     t = sim.trange()
 
     plt.subplot(2, 1, 1)

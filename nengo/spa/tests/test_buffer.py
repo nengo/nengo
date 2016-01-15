@@ -60,8 +60,8 @@ def test_run(Simulator, seed):
     with model:
         p = nengo.Probe(buffer, 'output', synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.5)
+    with Simulator(model) as sim:
+        sim.run(0.5)
 
     data = np.dot(sim.data[p], vocab.vectors.T)
     assert data[200, 0] > 0.9

@@ -60,8 +60,8 @@ def test_no_feedback_run(Simulator, seed):
     with model:
         p = nengo.Probe(state, 'output', synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.5)
+    with Simulator(model) as sim:
+        sim.run(0.5)
 
     data = np.dot(sim.data[p], vocab.vectors.T)
     assert data[200, 0] > 0.9
@@ -90,8 +90,8 @@ def test_memory_run(Simulator, seed, plt):
     with model:
         p = nengo.Probe(memory, 'output', synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.5)
+    with Simulator(model) as sim:
+        sim.run(0.5)
     t = sim.trange()
 
     similarity = np.dot(sim.data[p], vocab.vectors.T)
@@ -123,8 +123,8 @@ def test_memory_run_decay(Simulator, plt, seed):
     with model:
         p = nengo.Probe(memory, 'output', synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.3)
+    with Simulator(model) as sim:
+        sim.run(0.3)
     data = np.dot(sim.data[p], vocab.vectors.T)
 
     t = sim.trange()

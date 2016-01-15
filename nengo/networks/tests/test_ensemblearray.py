@@ -36,8 +36,8 @@ def test_multidim(Simulator, plt, seed, rng):
         B_p = nengo.Probe(B.output, synapse=0.03)
         C_p = nengo.Probe(C.output, synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.4)
+    with Simulator(model) as sim:
+        sim.run(0.4)
 
     t = sim.trange()
 
@@ -107,8 +107,8 @@ def test_multifunc(Simulator, plt, seed, rng):
         ea_p = nengo.Probe(ea.output, synapse=0.03)
         ea_funcs_p = nengo.Probe(ea_funcs, synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.4)
+    with Simulator(model) as sim:
+        sim.run(0.4)
 
     t = sim.trange()
 
@@ -172,8 +172,8 @@ def test_matrix_mul(Simulator, plt, seed):
         nengo.Connection(prod, D.input, transform=transformC)
         D_p = nengo.Probe(D.output, synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.3)
+    with Simulator(model) as sim:
+        sim.run(0.3)
 
     t = sim.trange()
     tmask = (t >= 0.2)
@@ -220,9 +220,9 @@ def test_neuroninput(Simulator, seed):
         nengo.Connection(inp, ea.neuron_input, synapse=None)
         p = nengo.Probe(ea.output)
 
-    s = Simulator(net)
-    s.run(0.01)
-    assert np.all(s.data[p] < 1e-2) and np.all(s.data[p] > -1e-2)
+    with Simulator(net) as sim:
+        sim.run(0.01)
+    assert np.all(sim.data[p] < 1e-2) and np.all(sim.data[p] > -1e-2)
 
 
 def test_neuronoutput(Simulator, seed):
@@ -234,6 +234,6 @@ def test_neuronoutput(Simulator, seed):
         nengo.Connection(inp, ea.input, synapse=None)
         p = nengo.Probe(ea.neuron_output)
 
-    s = Simulator(net)
-    s.run(0.01)
-    assert np.all(s.data[p] < 1e-2)
+    with Simulator(net) as sim:
+        sim.run(0.01)
+    assert np.all(sim.data[p] < 1e-2)

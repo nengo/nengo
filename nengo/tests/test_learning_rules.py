@@ -46,8 +46,8 @@ def _test_pes(Simulator, nl, plt, seed,
         weights_p = nengo.Probe(conn, 'weights', sample_every=0.01)
         corr_p = nengo.Probe(conn.learning_rule, 'correction', synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.5)
+    with Simulator(model) as sim:
+        sim.run(0.5)
     t = sim.trange()
     weights = sim.data[weights_p]
 
@@ -131,8 +131,8 @@ def test_pes_transform(Simulator, seed):
 
         p_b = nengo.Probe(b, synapse=0.05)
 
-    sim = nengo.Simulator(m)
-    sim.run(1.0)
+    with Simulator(m) as sim:
+        sim.run(1.0)
     tend = sim.trange() > 0.7
 
     assert np.allclose(sim.data[p_b][tend], [1, -1], atol=1e-2)
@@ -170,8 +170,8 @@ def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt):
         ap = nengo.Probe(a, synapse=0.03)
         up = nengo.Probe(b, synapse=0.03)
 
-    sim = Simulator(m, seed=seed+1)
-    sim.run(0.5)
+    with Simulator(m, seed=seed+1) as sim:
+        sim.run(0.5)
     t = sim.trange()
 
     plt.subplot(2, 1, 1)
@@ -224,8 +224,8 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
     dts = (0.0001, 0.001)
     colors = ('b', 'g', 'r')
     for c, dt in zip(colors, dts):
-        sim = Simulator(m, dt=dt)
-        sim.run(0.1)
+        with Simulator(m, dt=dt) as sim:
+            sim.run(0.1)
         trans_data.append(sim.data[trans_p])
         plt.subplot(2, 1, 1)
         plt.plot(sim.trange(dt=0.01), sim.data[trans_p][..., 0], c=c)
@@ -249,17 +249,17 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
     m, activity_p, trans_p = learning_net(
         learning_rule, nengo.Network(seed=seed), rng)
 
-    sim = Simulator(m)
-    sim.run(0.1)
-    sim.run(0.2)
+    with Simulator(m) as sim:
+        sim.run(0.1)
+        sim.run(0.2)
 
-    first_t = sim.trange()
-    first_t_trans = sim.trange(dt=0.01)
-    first_activity_p = np.array(sim.data[activity_p], copy=True)
-    first_trans_p = np.array(sim.data[trans_p], copy=True)
+        first_t = sim.trange()
+        first_t_trans = sim.trange(dt=0.01)
+        first_activity_p = np.array(sim.data[activity_p], copy=True)
+        first_trans_p = np.array(sim.data[trans_p], copy=True)
 
-    sim.reset()
-    sim.run(0.3)
+        sim.reset()
+        sim.run(0.3)
 
     plt.subplot(2, 1, 1)
     plt.ylabel("Neural activity")
@@ -352,8 +352,8 @@ def test_voja_encoders(Simulator, nl_nodirect, rng, seed, plt):
             u, x, synapse=None, learning_rule_type=Voja(learning_rate=1e-1))
         p_enc = nengo.Probe(conn.learning_rule, 'scaled_encoders')
 
-    sim = Simulator(m)
-    sim.run(1.0)
+    with Simulator(m) as sim:
+        sim.run(1.0)
     t = sim.trange()
     tend = t > 0.5
 
@@ -401,8 +401,8 @@ def test_voja_modulate(Simulator, nl_nodirect, seed, plt):
 
         p_enc = nengo.Probe(conn.learning_rule, 'scaled_encoders')
 
-    sim = Simulator(m)
-    sim.run(1.0)
+    with Simulator(m) as sim:
+        sim.run(1.0)
     tend = sim.trange() > 0.5
 
     # Check that encoders stop changing after 0.5s

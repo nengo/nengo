@@ -26,8 +26,8 @@ def pytest_configure(config):
 def Simulator(request):
     """the Simulator class being tested.
 
-    Please use this, and not nengo.Simulator directly,
-    unless the test is reference simulator specific.
+    Please use this, and not ``nengo.Simulator`` directly. If the test is
+    reference simulator specific, then use ``RefSimulator`` below.
     """
     return ReferenceSimulator
 

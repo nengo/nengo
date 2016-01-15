@@ -7,7 +7,7 @@ import nengo
 from nengo.utils.compat import Counter
 
 
-def test_basic_context(Simulator):
+def test_basic_context():
     # We must give the two Networks different labels because object comparison
     # is done using identifiers that stem from the top-level Network label.
     model1 = nengo.Network(label="test1")
@@ -34,7 +34,7 @@ def test_basic_context(Simulator):
         assert e4 in model2.ensembles
 
 
-def test_nested_context(Simulator):
+def test_nested_context():
     model = nengo.Network()
     with model:
         con1 = nengo.Network()
@@ -67,7 +67,7 @@ def test_nested_context(Simulator):
         assert e6 not in con1.ensembles
 
 
-def test_context_errors(Simulator):
+def test_context_errors():
     def add_something():
         nengo.Ensemble(1, dimensions=1)
 
@@ -91,7 +91,7 @@ def test_context_errors(Simulator):
     nengo.Node(output=[0], add_to_container=False)
 
 
-def test_get_objects(Simulator):
+def test_get_objects():
     model = nengo.Network()
     with model:
         ens1 = nengo.Ensemble(10, 1)

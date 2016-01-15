@@ -33,8 +33,8 @@ def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
         probe1 = nengo.Probe(n1, synapse=0.03)
         probe2 = nengo.Probe(n2, synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.5)
+    with Simulator(model) as sim:
+        sim.run(0.5)
 
     plt.subplot(2, 1, 1)
     plt.plot(sim.trange(), sim.data[probe1])
@@ -53,8 +53,8 @@ def test_eval_point_decoding(Simulator, nl_nodirect, plt, seed):
         b = nengo.Ensemble(100, 1)
         c = nengo.Connection(a, b, function=lambda x: x[0] * x[1])
 
-    sim = Simulator(model)
-    eval_points, targets, decoded = eval_point_decoding(c, sim)
+    with Simulator(model) as sim:
+        eval_points, targets, decoded = eval_point_decoding(c, sim)
 
     def contour(xy, z):
         xi = np.linspace(-1, 1, 101)

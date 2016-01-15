@@ -40,8 +40,8 @@ def test_thalamus(Simulator, plt, seed):
         p = nengo.Probe(input, 'output', synapse=0.03)
         p2 = nengo.Probe(input2, 'output', synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.5)
+    with Simulator(model) as sim:
+        sim.run(0.5)
 
     t = sim.trange()
     data = vocab.dot(sim.data[p].T)
@@ -103,8 +103,8 @@ def test_routing(Simulator, seed, plt):
 
         buff3_probe = nengo.Probe(model.buff3.state.output, synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.6)
+    with Simulator(model) as sim:
+        sim.run(0.6)
 
     data = sim.data[buff3_probe]
 
@@ -161,8 +161,8 @@ def test_nondefault_routing(Simulator, seed, plt):
 
         compare_probe = nengo.Probe(model.cmp.output, synapse=0.03)
 
-    sim = Simulator(model)
-    sim.run(0.6)
+    with Simulator(model) as sim:
+        sim.run(0.6)
 
     similarity = sim.data[compare_probe]
 

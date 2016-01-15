@@ -20,8 +20,8 @@ def test_inputgatedmemory(Simulator, plt, seed):
 
         mem_p = nengo.Probe(mem.output, synapse=0.01)
 
-    sim = Simulator(net)
-    sim.run(0.5)
+    with Simulator(net) as sim:
+        sim.run(0.5)
 
     data = sim.data[mem_p]
     t = sim.trange()

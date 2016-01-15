@@ -7,28 +7,28 @@ import nengo.simulator
 
 def test_steps(RefSimulator):
     m = nengo.Network(label="test_steps")
-    sim = RefSimulator(m)
-    assert sim.n_steps == 0
-    sim.step()
-    assert sim.n_steps == 1
-    sim.step()
-    assert sim.n_steps == 2
+    with RefSimulator(m) as sim:
+        assert sim.n_steps == 0
+        sim.step()
+        assert sim.n_steps == 1
+        sim.step()
+        assert sim.n_steps == 2
 
 
 def test_time_steps(RefSimulator):
     m = nengo.Network(label="test_time_steps")
-    sim = RefSimulator(m)
-    assert np.allclose(sim.signals["__time__"], 0.00)
-    sim.step()
-    assert np.allclose(sim.signals["__time__"], 0.001)
-    sim.step()
-    assert np.allclose(sim.signals["__time__"], 0.002)
+    with RefSimulator(m) as sim:
+        assert np.allclose(sim.signals["__time__"], 0.00)
+        sim.step()
+        assert np.allclose(sim.signals["__time__"], 0.001)
+        sim.step()
+        assert np.allclose(sim.signals["__time__"], 0.002)
 
 
 def test_time_absolute(Simulator):
     m = nengo.Network()
-    sim = Simulator(m)
-    sim.run(0.003)
+    with Simulator(m) as sim:
+        sim.run(0.003)
     assert np.allclose(sim.trange(), [0.001, 0.002, 0.003])
 
 
@@ -40,8 +40,8 @@ def test_trange_with_probes(Simulator):
         u = nengo.Node(output=np.sin)
         probes = [nengo.Probe(u, sample_every=p, synapse=5*p) for p in periods]
 
-    sim = Simulator(m, dt=dt)
-    sim.run(0.333)
+    with Simulator(m, dt=dt) as sim:
+        sim.run(0.333)
     for i, p in enumerate(periods):
         assert len(sim.trange(p)) == len(sim.data[probes[i]])
 

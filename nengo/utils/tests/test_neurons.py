@@ -31,8 +31,8 @@ def _test_rates(Simulator, rates, plt, seed):
         ap = nengo.Probe(a.neurons)
         bp = nengo.Probe(b.neurons)
 
-    sim = Simulator(model, seed=seed+1)
-    sim.run(2.)
+    with Simulator(model, seed=seed+1) as sim:
+        sim.run(2.)
 
     t = sim.trange()
     x = sim.data[up]
