@@ -102,17 +102,17 @@ def test_signal():
 
 
 def test_signal_values():
-    """Make sure Signal.value and SignalView.value work."""
+    """Make sure Signal.initial_value works."""
     two_d = Signal([[1.], [1.]])
-    assert np.allclose(two_d.value, np.array([[1], [1]]))
+    assert np.allclose(two_d.initial_value, np.array([[1], [1]]))
     two_d_view = two_d[0, :]
-    assert np.allclose(two_d_view.value, np.array([1]))
+    assert np.allclose(two_d_view.initial_value, np.array([1]))
 
     # cannot change signal value after creation
     with pytest.raises(RuntimeError):
-        two_d.value = np.array([[0.5], [-0.5]])
+        two_d.initial_value = np.array([[0.5], [-0.5]])
     with pytest.raises((ValueError, RuntimeError)):
-        two_d.value[...] = np.array([[0.5], [-0.5]])
+        two_d.initial_value[...] = np.array([[0.5], [-0.5]])
 
 
 def test_signal_init_values(RefSimulator):
@@ -243,8 +243,8 @@ def test_signal_slicing(rng):
     for i in range(100):
         si0, si1 = rng.randint(0, len(slices), size=2)
         s0, s1 = slices[si0], slices[si1]
-        assert np.array_equiv(a[s0].value, x[s0])
-        assert np.array_equiv(b[s0, s1].value, y[s0, s1])
+        assert np.array_equiv(a[s0].initial_value, x[s0])
+        assert np.array_equiv(b[s0, s1].initial_value, y[s0, s1])
 
     with pytest.raises(ValueError):
         a[[0, 2]]

@@ -17,14 +17,15 @@ class Signal(object):
     # up in a model.
     assert_named_signals = False
 
-    def __init__(self, value, name=None, base=None, readonly=False):
-        self._value = np.asarray(value).view()
-        self._value.setflags(write=False)
+    def __init__(self, initial_value, name=None, base=None, readonly=False):
+        self._initial_value = np.asarray(initial_value).view()
+        self._initial_value.setflags(write=False)
 
         if base is not None:
             assert isinstance(base, Signal) and not base.is_view
-            # make sure value uses the same data as base.value
-            assert npext.array_base(value) is npext.array_base(base.value)
+            # make sure initial_value uses the same data as base.initial_value
+            assert (npext.array_base(initial_value) is
+                    npext.array_base(base.initial_value))
         self._base = base
 
         if self.assert_named_signals:
@@ -42,11 +43,19 @@ class Signal(object):
 
     @property
     def dtype(self):
-        return self.value.dtype
+        return self.initial_value.dtype
 
     @property
     def elemstrides(self):
-        return tuple(s / self.itemsize for s in self.value.strides)
+        return tuple(s / self.itemsize for s in self.initial_value.strides)
+
+    @property
+    def initial_value(self):
+        return self._initial_value
+
+    @initial_value.setter
+    def initial_value(self, val):
+        raise RuntimeError("Cannot change initial value after initialization")
 
     @property
     def is_view(self):
@@ -54,7 +63,7 @@ class Signal(object):
 
     @property
     def itemsize(self):
-        return self._value.itemsize
+        return self._initial_value.itemsize
 
     @property
     def name(self):
@@ -66,11 +75,11 @@ class Signal(object):
 
     @property
     def ndim(self):
-        return self.value.ndim
+        return self.initial_value.ndim
 
     @property
     def offset(self):
-        return npext.array_offset(self.value) / self.itemsize
+        return npext.array_offset(self.initial_value) / self.itemsize
 
     @property
     def readonly(self):
@@ -82,19 +91,11 @@ class Signal(object):
 
     @property
     def shape(self):
-        return self.value.shape
+        return self.initial_value.shape
 
     @property
     def size(self):
-        return self.value.size
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, val):
-        raise RuntimeError("Cannot change signal value after initialization")
+        return self.initial_value.size
 
     def __getitem__(self, item):
         """Index or slice into array"""
@@ -108,12 +109,12 @@ class Signal(object):
             # turn one index into slice to get a view from numpy
             item = item[:-1] + (slice(item[-1], item[-1]+1),)
 
-        return Signal(self._value[item],
+        return Signal(self._initial_value[item],
                       name="%s[%s]" % (self.name, item),
                       base=self.base)
 
     def reshape(self, *shape):
-        return Signal(self._value.reshape(*shape),
+        return Signal(self._initial_value.reshape(*shape),
                       name="%s.reshape(%s)" % (self.name, shape),
                       base=self.base)
 
@@ -126,7 +127,7 @@ class Signal(object):
         return self.reshape((1, self.size))
 
     def may_share_memory(self, other):
-        return np.may_share_memory(self.value, other.value)
+        return np.may_share_memory(self.initial_value, other.initial_value)
 
 
 class SignalDict(dict):
@@ -161,23 +162,22 @@ class SignalDict(dict):
         if signal in self:
             raise ValueError("Cannot add signal twice")
 
+        x = signal.initial_value
         if signal.is_view:
             if signal.base not in self:
                 self.init(signal.base)
 
             # get a view onto the base data
-            v = signal.value
-            offset = npext.array_offset(v)
-            view = np.ndarray(shape=v.shape, strides=v.strides, offset=offset,
-                              dtype=v.dtype, buffer=self[signal.base].data)
+            offset = npext.array_offset(x)
+            view = np.ndarray(shape=x.shape, strides=x.strides, offset=offset,
+                              dtype=x.dtype, buffer=self[signal.base].data)
             view.setflags(write=not signal.readonly)
             dict.__setitem__(self, signal, view)
         else:
-            val = signal.value
-            val = val.view() if signal.readonly else val.copy()
-            dict.__setitem__(self, signal, val)
+            x = x.view() if signal.readonly else x.copy()
+            dict.__setitem__(self, signal, x)
 
     def reset(self, signal):
         """Reset ndarray to the base value of the signal that maps to it"""
         if not signal.readonly:
-            self[signal] = signal.value
+            self[signal] = signal.initial_value
