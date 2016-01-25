@@ -317,9 +317,8 @@ def test_conv2d(local, Simulator, rng):
     image = rng.normal(size=(c, ni, nj))
 
     result = np.zeros((f, ni, nj))
-    result += biases.reshape(-1, 1, 1)
-    si2 = (si - 1) / 2
-    sj2 = (sj - 1) / 2
+    si2 = int((si - 1) / 2.)
+    sj2 = int((sj - 1) / 2.)
     for i in range(ni):
         for j in range(nj):
             i0, i1 = i - si2, i + si2 + 1
@@ -331,10 +330,13 @@ def test_conv2d(local, Simulator, rng):
             xij = image[:, max(i0, 0):min(i1, ni), max(j0, 0):min(j1, nj)]
             result[:, i, j] += np.dot(xij.ravel(), w.reshape(f, -1).T)
 
+    result += biases.reshape(-1, 1, 1)
+
     model = nengo.Network()
     with model:
         u = nengo.Node(image.ravel())
-        v = nengo.Node(nengo.processes.Conv2d((c, ni, nj), filters, biases))
+        v = nengo.Node(nengo.processes.Conv2d(
+            (c, ni, nj), filters, biases, padding=(si2, sj2)))
         nengo.Connection(u, v, synapse=None)
         vp = nengo.Probe(v)
 
@@ -346,19 +348,22 @@ def test_conv2d(local, Simulator, rng):
 
 @pytest.mark.parametrize('s, st', [(2, 2), (3, 1), (3, 3)])
 def test_pool2d(s, st, Simulator, rng):
-    c = 3
+    nc = 3
     nxi, nxj = 30, 32
-    image = rng.normal(size=(c, nxi, nxj))
+    image = rng.normal(size=(nc, nxi, nxj))
 
     # compute correct result
-    result = np.zeros_like(image[:, ::st, ::st])
-    count = np.zeros_like(result)
+    nyi = 1 + int(np.ceil(float(nxi - s) / st))
+    nyj = 1 + int(np.ceil(float(nxj - s) / st))
+    nxi2, nxj2 = nyi * st, nyj * st
+    result = np.zeros((nc, nyi, nyj))
+    count = np.zeros((nyi, nyj))
     for i in range(s):
         for j in range(s):
-            xij = image[:, i::st, j::st]
+            xij = image[:, i:min(nxi2+i, nxi):st, j:min(nxj2+j, nxj):st]
             ni, nj = xij.shape[-2:]
             result[:, :ni, :nj] += xij
-            count[:, :ni, :nj] += 1
+            count[:ni, :nj] += 1
 
     result /= count
 
