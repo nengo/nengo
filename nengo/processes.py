@@ -48,7 +48,6 @@ class Process(FrozenObject):
         raise NotImplementedError("Process must implement `make_step` method.")
 
     def run_steps(self, n_steps, d=None, dt=None, rng=np.random):
-        # TODO: allow running with input
         d = self.default_size_out if d is None else d
         dt = self.default_dt if dt is None else dt
         rng = self.get_rng(rng)
@@ -59,10 +58,21 @@ class Process(FrozenObject):
         return output
 
     def run(self, t, d=None, dt=None, rng=np.random):
-        # TODO: allow running with input
         dt = self.default_dt if dt is None else dt
         n_steps = int(np.round(float(t) / dt))
         return self.run_steps(n_steps, d=d, dt=dt, rng=rng)
+
+    def run_input(self, x, d=None, dt=None, rng=np.random):
+        n_steps = len(x)
+        size_in = np.asarray(x[0]).size
+        size_out = self.default_size_out if d is None else d
+        dt = self.default_dt if dt is None else dt
+        rng = self.get_rng(rng)
+        step = self.make_step(size_in, size_out, dt, rng)
+        output = np.zeros((n_steps, size_out))
+        for i, xi in enumerate(x):
+            output[i] = step(i * dt, xi)
+        return output
 
     def ntrange(self, n_steps, dt=None):
         dt = self.default_dt if dt is None else dt
