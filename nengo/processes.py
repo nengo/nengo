@@ -29,9 +29,9 @@ class Process(FrozenObject):
     default_dt = NumberParam(low=0, low_open=True)
     seed = IntParam(low=0, high=npext.maxint, optional=True)
 
-    def __init__(self, seed=None):
+    def __init__(self, default_size_out=1, seed=None):
         super(Process, self).__init__()
-        self.default_size_out = 1
+        self.default_size_out = default_size_out
         self.default_dt = 0.001
         self.seed = seed
 
