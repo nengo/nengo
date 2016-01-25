@@ -15,6 +15,8 @@ class Process(FrozenObject):
 
     Attributes
     ----------
+    default_size_in : int
+        Sets the default size in for nodes using this process. Default: 0.
     default_size_out : int
         Sets the default size out for nodes running this process. Also,
         if `d` isn't specified in `run` or `run_steps`, this will be used.
@@ -25,12 +27,14 @@ class Process(FrozenObject):
     seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
+    default_size_in = IntParam(low=0)
     default_size_out = IntParam(low=0)
     default_dt = NumberParam(low=0, low_open=True)
     seed = IntParam(low=0, high=npext.maxint, optional=True)
 
-    def __init__(self, default_size_out=1, seed=None):
+    def __init__(self, default_size_in=0, default_size_out=1, seed=None):
         super(Process, self).__init__()
+        self.default_size_in = default_size_in
         self.default_size_out = default_size_out
         self.default_dt = 0.001
         self.seed = seed
