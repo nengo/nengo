@@ -343,7 +343,7 @@ def test_conv2d(local, Simulator, rng):
     sim = Simulator(model)
     sim.step()
     y = sim.data[vp][-1].reshape((f, ni, nj))
-    assert np.allclose(result, y, rtol=1e-4, atol=1e-7)
+    assert np.allclose(result, y, rtol=1e-3, atol=1e-6)
 
 
 @pytest.mark.parametrize('s, st', [(2, 2), (3, 1), (3, 3)])
@@ -378,4 +378,4 @@ def test_pool2d(s, st, Simulator, rng):
     sim = Simulator(model)
     sim.step()
     y = sim.data[vp][-1].reshape(result.shape)
-    assert np.allclose(result, y, rtol=1e-4, atol=1e-7)
+    assert np.allclose(result, y, rtol=1e-3, atol=1e-6)
