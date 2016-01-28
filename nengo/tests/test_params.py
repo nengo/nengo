@@ -176,6 +176,24 @@ def test_stringparam():
         inst.sp = 1
 
 
+def test_enumparam():
+    class Test(object):
+        ep = params.EnumParam(default='a', values=('a', 'b', 'c'))
+
+    inst = Test()
+    assert inst.ep == 'a'
+    inst.ep = 'b'
+    assert inst.ep == 'b'
+    inst.ep = 'c'
+    assert inst.ep == 'c'
+    inst.ep = 'A'
+    assert inst.ep == 'a'
+    with pytest.raises(ValueError):
+        inst.ep = 'd'
+    with pytest.raises(ValueError):
+        inst.ep = 3
+
+
 def test_dictparam():
     """DictParams must be dictionaries."""
     class Test(object):

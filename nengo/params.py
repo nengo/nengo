@@ -209,6 +209,52 @@ class StringParam(Parameter):
         super(StringParam, self).validate(instance, string)
 
 
+class EnumParam(StringParam):
+    def __init__(self, default=Unconfigurable, values=(), lower=True,
+                 optional=False, readonly=None):
+        assert all(is_string(s) for s in values)
+        if lower:
+            values = tuple(s.lower() for s in values)
+        value_set = set(values)
+        assert len(values) == len(value_set)
+        self.values = values
+        self.value_set = value_set
+        self.lower = lower
+        super(EnumParam, self).__init__(default, optional, readonly)
+
+    def __set__(self, instance, value):
+        self.validate(instance, value)
+        self.data[instance] = value.lower() if self.lower else value
+
+    def validate(self, instance, string):
+        super(EnumParam, self).validate(instance, string)
+        string = string.lower() if self.lower else string
+        if string not in self.value_set:
+            raise ValueError("String %r must be one of %s"
+                             % (string, list(self.values)))
+
+
+class TupleParam(Parameter):
+    def __init__(self, default=Unconfigurable, length=None,
+                 optional=False, readonly=None):
+        self.length = length
+        super(TupleParam, self).__init__(default, optional, readonly)
+
+    def __set__(self, instance, value):
+        try:
+            value = tuple(value)
+        except TypeError:
+            raise ValueError("Value must be castable to a tuple")
+        super(TupleParam, self).__set__(instance, value)
+
+    def validate(self, instance, value):
+        if value is not None:
+            if self.length is not None and len(value) != self.length:
+                raise ValueError("Must be %d items (got %d)"
+                                 % (self.length, len(value)))
+        super(TupleParam, self).validate(instance, value)
+
+
 class DictParam(Parameter):
     def validate(self, instance, dct):
         if dct is not None and not isinstance(dct, dict):

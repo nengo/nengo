@@ -17,6 +17,9 @@ class OutputParam(Parameter):
     def __set__(self, node, output):
         super(OutputParam, self).validate(node, output)
 
+        size_in_set = node.size_in is not None
+        node.size_in = node.size_in if size_in_set else 0
+
         # --- Validate and set the new size_out
         if output is None:
             if node.size_out is not None:
@@ -24,6 +27,8 @@ class OutputParam(Parameter):
                               "'Node.size_in' since 'Node.output=None'")
             node.size_out = node.size_in
         elif isinstance(output, Process):
+            if not size_in_set:
+                node.size_in = output.default_size_in
             if node.size_out is None:
                 node.size_out = output.default_size_out
         elif callable(output):
@@ -113,7 +118,7 @@ class Node(NengoObject):
     """
 
     output = OutputParam(default=None)
-    size_in = IntParam(default=0, low=0)
+    size_in = IntParam(default=None, low=0, optional=True)
     size_out = IntParam(default=None, low=0, optional=True)
     label = StringParam(default=None, optional=True)
 
