@@ -275,3 +275,72 @@ def test_functionparam():
     # Not OK: not a function
     with pytest.raises(ValidationError):
         inst.fp = 0
+
+
+def test_deferrable():
+    """The value Deferrable of  is either set to a fixed value or
+    determined at some later time via a function call."""
+
+    mock = params.Deferral(lambda x: 2. * x)
+
+    class Test(object):
+        p_def_fn = params.Deferrable(
+            params.NumberParam('p_def_fn', low=0., high=10.), default=mock)
+        p_def_num = params.Deferrable(params.NumberParam(
+            'p_def_num', default=2., low=0., high=10.))
+
+    inst = Test()
+
+    # defaults
+    assert inst.p_def_fn is mock
+    assert inst.p_def_num == 2.
+
+    # assign numbers
+    inst.p_def_fn = 3.
+    inst.p_def_num = 4.
+    assert inst.p_def_fn == 3.
+    assert inst.p_def_num == 4.
+
+    # assign deferral
+    inst.p_def_fn = mock
+    inst.p_def_num = mock
+    assert inst.p_def_fn is mock
+    assert inst.p_def_num is mock
+
+    # assign invalid values
+    with pytest.raises(ValueError):
+        inst.p_def_fn = -1.
+    with pytest.raises(ValueError):
+        inst.p_def_num = 11.
+    with pytest.raises(ValueError):
+        inst.p_def_fn = lambda x: 2. * x
+
+
+def test_undeferred():
+    class DeferralFn(params.Deferral):
+        def __init__(self):
+            super(DeferralFn, self).__init__()
+            self.n_calls = 0
+
+        def __call__(self, *args, **kwargs):
+            self.n_calls += 1
+            return 42.
+
+    deferral = DeferralFn()
+
+    class Test(object):
+        p = params.Deferrable(params.NumberParam('p'), default=deferral)
+
+    inst = Test()
+
+    undeferred = params.Undeferred(inst)
+    assert undeferred.p == 42.
+    assert undeferred.p == 42.  # check twice to check caching
+    assert deferral.n_calls == 1
+
+    assert hash(inst) == hash(undeferred)
+    assert inst == undeferred
+
+    inst.p = params.Deferral(lambda: 'str')
+    with pytest.raises(ValueError):
+        params.Undeferred(inst).p

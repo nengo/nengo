@@ -463,3 +463,69 @@ class FrozenObject(object):
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, ', '.join(
             "%s=%r" % (k, getattr(self, k)) for k in sorted(self._paramdict)))
+
+
+class Deferral(object):
+    def __init__(self, fn=None):
+        super(Deferral, self).__init__()
+        self.fn = fn
+
+    def __call__(self, *args, **kwargs):
+        return self.fn(*args, **kwargs)
+
+
+class Deferrable(Parameter):
+    def __init__(
+            self, static, default=None):
+        name = static.name
+        if default is None:
+            default = static.default
+        optional = static.optional
+        readonly = static.readonly
+        super(Deferrable, self).__init__(
+            name, default=default, optional=optional, readonly=readonly)
+        self.static = static
+
+    def __set__(self, instance, value):
+        if isinstance(value, Deferral):
+            super(Deferrable, self).__set__(instance, value)
+        else:
+            self.static.validate(instance, value)
+            self.data[instance] = value
+
+    def validate(self, instance, value):
+        if not isinstance(value, Deferral):
+            self.static.validate(instance, value)
+
+
+class Undeferred(object):
+    def __init__(self, inst, *args, **kwargs):
+        super(Undeferred, self).__init__()
+        self.inst = inst
+        self.args = args
+        self.kwargs = kwargs
+        self.cache = {}
+
+    def __hash__(self):
+        return hash(super(Undeferred, self).__getattribute__('inst'))
+
+    def __eq__(self, other):
+        return super(Undeferred, self).__getattribute__('inst') == other
+
+    def __getattribute__(self, name):
+        inst = super(Undeferred, self).__getattribute__('inst')
+        args = super(Undeferred, self).__getattribute__('args')
+        kwargs = super(Undeferred, self).__getattribute__('kwargs')
+        cache = super(Undeferred, self).__getattribute__('cache')
+
+        if name in cache:
+            return cache[name]
+
+        attr = getattr(inst, name)
+        if isinstance(attr, Deferral):
+            value = attr(*args, **kwargs)
+            getattr(inst.__class__, name).validate(inst, value)
+            cache[name] = value
+            return value
+        else:
+            return attr
