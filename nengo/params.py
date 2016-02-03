@@ -510,12 +510,12 @@ class Deferrable(Parameter):
 
 
 class Undeferred(object):
-    def __init__(self, inst, *args, **kwargs):
+    def __init__(self, inst, args=None, kwargs=None, cache=None):
         super(Undeferred, self).__init__()
         self.inst = inst
-        self.args = args
-        self.kwargs = kwargs
-        self.cache = {}
+        self.args = tuple() if args is None else args
+        self.kwargs = {} if kwargs is None else kwargs
+        self.cache = {} if cache is None else cache
 
     def __hash__(self):
         return hash(super(Undeferred, self).__getattribute__('inst'))

@@ -9,6 +9,7 @@ from nengo.builder.operator import Copy, DotInc, Reset
 from nengo.dists import Distribution
 from nengo.ensemble import Ensemble
 from nengo.neurons import Direct
+from nengo.params import Undeferred
 from nengo.utils.builder import default_n_eval_points
 
 built_attrs = ['eval_points',
@@ -138,6 +139,8 @@ def build_ensemble(model, ens):
     -----
     Sets ``model.params[ens]`` to a `.BuiltEnsemble` instance.
     """
+
+    ens = Undeferred(ens, args=(model, ens))
 
     # Create random number generator
     rng = np.random.RandomState(model.seeds[ens])

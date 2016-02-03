@@ -128,7 +128,7 @@ def test_signal_init_values(RefSimulator):
     zeroarray = Signal([[0], [0], [0]])
     array = Signal([1, 2, 3])
 
-    m = Model(dt=0)
+    m = Model(RefSimulator, dt=0)
     m.operators += [PreserveValue(five), PreserveValue(array),
                     DotInc(zero, zero, five), DotInc(zeroarray, one, array)]
 

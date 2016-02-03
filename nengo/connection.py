@@ -9,7 +9,7 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.node import Node
-from nengo.params import (Default, Unconfigurable, ObsoleteParam,
+from nengo.params import (Default, Deferrable, Unconfigurable, ObsoleteParam,
                           BoolParam, FunctionParam)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
@@ -315,18 +315,18 @@ class Connection(NengoObject):
 
     pre = PrePostParam('pre', nonzero_size_out=True)
     post = PrePostParam('post', nonzero_size_in=True)
-    synapse = SynapseParam('synapse', default=Lowpass(tau=0.005))
-    function_info = ConnectionFunctionParam(
-        'function', default=None, optional=True)
-    transform = TransformParam('transform', default=np.array(1.0))
-    solver = ConnectionSolverParam('solver', default=LstsqL2())
-    learning_rule_type = ConnectionLearningRuleTypeParam(
-        'learning_rule_type', default=None, optional=True)
-    eval_points = EvalPointsParam('eval_points',
-                                  default=None,
-                                  optional=True,
-                                  sample_shape=('*', 'size_in'))
-    scale_eval_points = BoolParam('scale_eval_points', default=True)
+    synapse = Deferrable(SynapseParam('synapse', default=Lowpass(0.005)))
+    function_info = Deferrable(ConnectionFunctionParam(
+        'function', default=None, optional=True))
+    transform = Deferrable(TransformParam('transform', default=np.array(1.0)))
+    solver = Deferrable(ConnectionSolverParam('solver', default=LstsqL2()))
+    learning_rule_type = Deferrable(ConnectionLearningRuleTypeParam(
+        'learning_rule_type', default=None, optional=True))
+    eval_points = Deferrable(EvalPointsParam(
+        'eval_points', default=None, optional=True,
+        sample_shape=('*', 'size_in')))
+    scale_eval_points = Deferrable(
+        BoolParam('scale_eval_points', default=True))
     modulatory = ObsoleteParam(
         'modulatory',
         "Modulatory connections have been removed. "

@@ -13,6 +13,7 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
 from nengo.node import Node
+from nengo.params import Undeferred
 from nengo.utils.compat import is_iterable, itervalues
 
 built_attrs = ['eval_points', 'solver_info', 'weights', 'transform']

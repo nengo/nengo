@@ -6,6 +6,7 @@ from nengo.connection import Connection, LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
 from nengo.node import Node
+from nengo.params import Undeferred
 from nengo.probe import Probe
 from nengo.utils.compat import iteritems
 
@@ -91,6 +92,8 @@ def build_probe(model, probe):
     Sets ``model.params[probe]`` to a list.
     `.Simulator` appends to that list when running a simulation.
     """
+
+    probe = Undeferred(probe, args=(model, probe))
 
     # find the right parent class in `objtypes`, using `isinstance`
     for nengotype, probeables in iteritems(probemap):

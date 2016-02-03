@@ -2,7 +2,8 @@ from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.config import Config
 from nengo.connection import Connection, LearningRule
 from nengo.exceptions import ObsoleteError, ValidationError
-from nengo.params import Default, ConnectionDefault, NumberParam, StringParam
+from nengo.params import (
+    Default, ConnectionDefault, Deferrable, NumberParam, StringParam)
 from nengo.solvers import SolverParam
 from nengo.synapses import SynapseParam
 
@@ -108,11 +109,11 @@ class Probe(NengoObject):
     """
 
     target = TargetParam('target', nonzero_size_out=True)
-    attr = AttributeParam('attr', default=None)
-    sample_every = NumberParam(
-        'sample_every', default=None, optional=True, low=1e-10)
-    synapse = SynapseParam('synapse', default=None)
-    solver = ProbeSolverParam('solver', default=ConnectionDefault)
+    attr = Deferrable(AttributeParam('attr', default=None))
+    sample_every = Deferrable(NumberParam(
+        'sample_every', default=None, optional=True, low=1e-10))
+    synapse = Deferrable(SynapseParam('synapse', default=None))
+    solver = Deferrable(ProbeSolverParam('solver', default=ConnectionDefault))
 
     def __init__(self, target, attr=None, sample_every=Default,
                  synapse=Default, solver=Default, label=Default, seed=Default):
