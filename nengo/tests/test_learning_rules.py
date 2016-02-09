@@ -138,11 +138,13 @@ def test_pes_transform(Simulator, seed):
     assert np.allclose(sim.data[p_b][tend], [1, -1], atol=1e-2)
 
 
-@pytest.mark.parametrize('learning_rule_type', [
-    BCM(learning_rate=1e-8),
-    Oja(learning_rate=1e-5),
-    [Oja(learning_rate=1e-5), BCM(learning_rate=1e-8)]])
-def test_unsupervised(Simulator, learning_rule_type, seed, rng, plt):
+@pytest.mark.parametrize('rule_type, solver', [
+    (BCM(learning_rate=1e-8), False),
+    (Oja(learning_rate=1e-5), False),
+    ([Oja(learning_rate=1e-5), BCM(learning_rate=1e-8)], False),
+    ([Oja(learning_rate=1e-5), BCM(learning_rate=1e-8)], True),
+])
+def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt):
     n = 200
 
     m = nengo.Network(seed=seed)
@@ -150,14 +152,18 @@ def test_unsupervised(Simulator, learning_rule_type, seed, rng, plt):
         u = nengo.Node(WhiteSignal(0.5, high=5), size_out=2)
         a = nengo.Ensemble(n, dimensions=2)
         b = nengo.Ensemble(n+1, dimensions=2)
-
-        initial_weights = rng.uniform(
-            high=1e-3, size=(b.n_neurons, a.n_neurons))
-
         nengo.Connection(u, a)
-        conn = nengo.Connection(a.neurons, b.neurons,
-                                transform=initial_weights,
-                                learning_rule_type=learning_rule_type)
+
+        if solver:
+            conn = nengo.Connection(
+                a, b, solver=nengo.solvers.LstsqL2(weights=True))
+        else:
+            initial_weights = rng.uniform(
+                high=1e-3, size=(b.n_neurons, a.n_neurons))
+            conn = nengo.Connection(
+                a.neurons, b.neurons, transform=initial_weights)
+        conn.learning_rule_type = rule_type
+
         inp_p = nengo.Probe(u)
         weights_p = nengo.Probe(conn, 'weights', sample_every=0.01)
 
@@ -297,20 +303,22 @@ def test_learningrule_attr(seed):
 
     with nengo.Network(seed=seed):
         a, b, e = [nengo.Ensemble(10, 2) for i in range(3)]
-        # nengo.Connection(e, b)  # dummy error connection
+        T = np.ones((10, 10))
 
         r1 = PES()
         c1 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r1)
         check_rule(c1.learning_rule, c1, r1)
 
         r2 = [PES(), BCM()]
-        c2 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r2)
+        c2 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r2,
+                              transform=T)
         assert isinstance(c2.learning_rule, list)
         for rule, rule_type in zip(c2.learning_rule, r2):
             check_rule(rule, c2, rule_type)
 
         r3 = dict(oja=Oja(), bcm=BCM())
-        c3 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r3)
+        c3 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r3,
+                              transform=T)
         assert isinstance(c3.learning_rule, dict)
         assert set(c3.learning_rule) == set(r3)  # assert same keys
         for key in r3:

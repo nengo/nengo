@@ -59,12 +59,25 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
                     "(got %r) for learning rule '%s'"
                     % (conn.post_obj.__class__.__name__, rule))
 
-        # If the rule modifies 'weights', then it must have full weights
-        if rule.modifies == 'weights' and conn.is_decoded:
-            raise ValueError(
-                "Learning rule '%s' can not be applied to decoded "
-                "connections. Try setting solver.weights to True or "
-                "connecting between two Neurons objects." % rule)
+        if rule.modifies == 'weights':
+            # If the rule modifies 'weights', then it must have full weights
+            if conn.is_decoded:
+                raise ValueError(
+                    "Learning rule '%s' can not be applied to decoded "
+                    "connections. Try setting solver.weights to True or "
+                    "connecting between two Neurons objects." % rule)
+
+            # transform matrix must be 2D
+            pre_size = (
+                conn.pre_obj.n_neurons if isinstance(conn.pre_obj, Ensemble)
+                else conn.pre.size_out)
+            post_size = conn.post.size_in
+            if (not conn.solver.weights and
+                    conn.transform.shape != (post_size, pre_size)):
+                raise ValueError(
+                    "Transform must be 2D array with shape "
+                    "post_neurons x pre_neurons (%d, %d)"
+                    % (pre_size, post_size))
 
 
 class ConnectionSolverParam(SolverParam):
@@ -274,13 +287,13 @@ class Connection(NengoObject):
         self.pre = pre
         self.post = post
 
-        self.solver = solver  # Must be set before learning rule
-        self.learning_rule_type = learning_rule_type
         self.synapse = synapse
         self.transform = transform
         self.scale_eval_points = scale_eval_points
         self.eval_points = eval_points  # Must be set before function
         self.function_info = function  # Must be set after transform
+        self.solver = solver  # Must be set before learning rule
+        self.learning_rule_type = learning_rule_type  # set after transform
         self.seed = seed
         self.modulatory = modulatory
 

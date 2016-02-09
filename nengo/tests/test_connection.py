@@ -586,7 +586,8 @@ def test_set_learning_rule():
         nengo.Connection(a, b, learning_rule_type=nengo.PES(),
                          solver=LstsqL2(weights=True))
         nengo.Connection(a.neurons, b.neurons, learning_rule_type=nengo.PES())
-        nengo.Connection(a.neurons, b.neurons, learning_rule_type=nengo.Oja())
+        nengo.Connection(a.neurons, b.neurons, learning_rule_type=nengo.Oja(),
+                         transform=np.ones((10, 10)))
 
         n = nengo.Node(output=lambda t, x: t * x, size_in=2)
         with pytest.raises(ValueError):
@@ -775,3 +776,16 @@ def test_nomodulatory(Simulator):
         a = nengo.Ensemble(10, 1)
         with pytest.raises(ValueError):
             nengo.Connection(a, a, modulatory=True)
+
+
+def test_connectionlearningruletypeparam():
+    with nengo.Network():
+        a = nengo.Ensemble(10, 1)
+        b = nengo.Ensemble(11, 1)
+
+        with pytest.raises(ValueError):  # need a 2D transform for BCM
+            nengo.Connection(a, b, learning_rule_type=nengo.BCM())
+
+        with pytest.raises(ValueError):  # transform must be correct shape
+            nengo.Connection(a, b, transform=np.ones((10, 11)),
+                             learning_rule_type=nengo.BCM())
