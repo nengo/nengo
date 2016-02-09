@@ -67,15 +67,14 @@ def recorder_dirname(request, name):
 def parametrize_function_name(request, function_name):
     suffixes = []
     if 'parametrize' in request.keywords:
-        argnames = [
-            x.strip()
-            for x in request.keywords['parametrize'].args[0].split(',')]
+        argnames = request.keywords['parametrize'].args[::2]
+        argnames = [x.strip() for names in argnames for x in names.split(',')]
         for name in argnames:
             value = request.getfuncargvalue(name)
             if inspect.isclass(value):
                 value = value.__name__
             suffixes.append('{0}={1}'.format(name, value))
-    return '_'.join([function_name] + suffixes)
+    return '+'.join([function_name] + suffixes)
 
 
 @pytest.fixture
