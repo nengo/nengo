@@ -34,6 +34,7 @@ def build_network(model, network):
     if model.toplevel is None:
         model.toplevel = network
         model.seeds[network] = get_seed(network, np.random)
+        model.seeded[network] = getattr(network, 'seed', None) is not None
 
     # Set config
     old_config = model.config
@@ -44,6 +45,8 @@ def build_network(model, network):
     sorted_types = sorted(network.objects, key=lambda t: t.__name__)
     for obj_type in sorted_types:
         for obj in network.objects[obj_type]:
+            model.seeded[obj] = (model.seeded[network] or
+                                 getattr(obj, 'seed', None) is not None)
             model.seeds[obj] = get_seed(obj, rng)
 
     logger.debug("Network step 1: Building ensembles and nodes")

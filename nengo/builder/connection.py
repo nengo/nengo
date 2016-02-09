@@ -80,7 +80,8 @@ def build_decoders(model, conn, rng, transform):
         targets = multiply(targets, transform.T)
 
     try:
-        wrapped_solver = model.decoder_cache.wrap_solver(solve_for_decoders)
+        wrapped_solver = (model.decoder_cache.wrap_solver(solve_for_decoders)
+                          if model.seeded[conn] else solve_for_decoders)
         decoders, solver_info = wrapped_solver(
             conn.solver, conn.pre_obj.neuron_type, gain, bias, x, targets,
             rng=rng, E=E)

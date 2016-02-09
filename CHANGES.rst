@@ -186,6 +186,9 @@ Release History
   can be used to disallow adding new semantic pointers. Vocabulary subsets
   are read-only by default.
   (`#699 <https://github.com/nengo/nengo/pull/699>`_)
+- Improved performance of the decoder cache by writing all decoders
+  of a network into a single file.
+  (`#946 <https://github.com/nengo/nengo/pull/946>`_)
 
 **Bug fixes**
 

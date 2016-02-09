@@ -271,6 +271,19 @@ def test_cache_works(tmpdir, RefSimulator, seed):
         assert len(os.listdir(cache_dir)) == 2  # legacy.txt and *.nco
 
 
+def test_cache_not_used_without_seed(tmpdir, Simulator):
+    cache_dir = str(tmpdir)
+
+    model = nengo.Network()
+    with model:
+        nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
+
+    assert len(os.listdir(cache_dir)) == 0
+    Simulator(model, model=nengo.builder.Model(
+        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
+    assert len(os.listdir(cache_dir)) == 1  # legacy.txt
+
+
 def calc_relative_timer_diff(t1, t2):
     return (t2.duration - t1.duration) / (t2.duration + t1.duration)
 

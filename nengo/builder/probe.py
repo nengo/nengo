@@ -20,6 +20,7 @@ def conn_probe(model, probe):
                       solver=probe.solver, add_to_container=False)
 
     # Set connection's seed to probe's (which isn't used elsewhere)
+    model.seeded[conn] = model.seeded[probe]
     model.seeds[conn] = model.seeds[probe]
 
     # Make a sink signal for the connection
