@@ -3,27 +3,28 @@ import warnings
 
 import numpy as np
 
+from nengo.base import Process
 from nengo.exceptions import ValidationError
 from nengo.params import (BoolParam, NdarrayParam, NumberParam, Parameter,
-                          FrozenObject, Unconfigurable)
+                          Unconfigurable)
 from nengo.utils.compat import is_number
 from nengo.utils.filter_design import cont2discrete
+from nengo.utils.numpy import as_shape
 
 
-class Synapse(FrozenObject):
+class Synapse(Process):
     """Abstract base class for synapse objects"""
 
     def __init__(self, analog=True):
         super(Synapse, self).__init__()
         self.analog = analog
 
-    def filt(self, signal, dt=None, axis=0, y0=None, copy=True,
-             filtfilt=False):
-        """Filter ``signal`` with this synapse.
+    def filt(self, x, dt=None, axis=0, y0=None, copy=True, filtfilt=False):
+        """Filter ``x`` with this synapse.
 
         Parameters
         ----------
-        signal : array_like
+        x : array_like
             The signal to filter.
         dt : float
             The time-step of the input signal, for analog synapses.
@@ -37,46 +38,37 @@ class Synapse(FrozenObject):
             If true, runs the process forwards then backwards on the signal,
             for zero-phase filtering (like MATLAB's ``filtfilt``).
         """
+        # This function is very similar to `Process.apply`, but allows for
+        # a) filtering along any axis, and b) zero-phase filtering (filtfilt).
+
         if self.analog and dt is None:
             raise ValueError("`dt` must be provided for analog synapses.")
 
-        filtered = np.array(signal, copy=copy)
+        filtered = np.array(x, copy=copy)
         filt_view = np.rollaxis(filtered, axis=axis)  # rolled view on filtered
 
-        # --- buffer method
-        if y0 is not None:
-            if y0.shape != filt_view[0].shape:
-                raise ValidationError(
-                    "'y0' with shape %s must have shape %s" %
-                    (y0.shape, filt_view[0].shape), attr='y0')
-            signal_out = np.array(y0)
-        else:
-            # signal_out is our buffer for the current filter state
-            signal_out = np.zeros_like(filt_view[0])
-
-        step = self.make_step(dt, signal_out)
+        shape_in = shape_out = as_shape(filt_view[0].shape, min_dim=1)
+        step = self.make_step(shape_in, shape_out, dt, None, y0=y0)
 
         for i, signal_in in enumerate(filt_view):
-            step(signal_in)
-            filt_view[i] = signal_out
+            filt_view[i] = step(i * dt, signal_in)
 
-        if filtfilt:
-            # Flip the filt_view and filter again
+        if filtfilt:  # Flip the filt_view and filter again
+            n = len(filt_view) - 1
             filt_view = filt_view[::-1]
             for i, signal_in in enumerate(filt_view):
-                step(signal_in)
-                filt_view[i] = signal_out
+                filt_view[i] = step((n - i) * dt, signal_in)
 
         return filtered
 
-    def filtfilt(self, *args, **kwargs):
-        """Zero-phase filtering of ``signal`` using this filter.
+    def filtfilt(self, x, **kwargs):
+        """Zero-phase filtering of ``x`` using this filter.
 
-        Equivalent to ``filt(*args, **kwargs, filtfilt=True)``.
+        Equivalent to ``filt(x, filtfilt=True, **kwargs)``.
         """
-        return self.filt(*args, filtfilt=True, **kwargs)
+        return self.filt(x, filtfilt=True, **kwargs)
 
-    def make_step(self, dt, output):
+    def make_step(self, shape_in, shape_out, dt, rng, y0=None):
         raise NotImplementedError("Synapses should implement make_step.")
 
 
@@ -131,7 +123,9 @@ class LinearFilter(Synapse):
         y = np.polyval(self.num, w) / np.polyval(self.den, w)
         return y
 
-    def make_step(self, dt, output, method='zoh'):
+    def make_step(self, shape_in, shape_out, dt, rng, y0=None, method='zoh'):
+        assert shape_in == shape_out
+
         num, den = self.num, self.den
         if self.analog:
             num, den, _ = cont2discrete((num, den), dt, method=method)
@@ -143,11 +137,23 @@ class LinearFilter(Synapse):
         num = num[1:] if num[0] == 0 else num
         den = den[1:]  # drop first element (equal to 1)
 
+        output = np.zeros(shape_out)
+        if y0 is not None:
+            output[:] = y0
+
         if len(num) == 1 and len(den) == 0:
             return LinearFilter.NoDen(num, den, output)
         elif len(num) == 1 and len(den) == 1:
             return LinearFilter.Simple(num, den, output)
         return LinearFilter.General(num, den, output)
+
+    @staticmethod
+    def _make_zero_step(shape_in, shape_out, dt, rng, y0=None):
+        output = np.zeros(shape_out)
+        if y0 is not None:
+            output[:] = y0
+
+        return LinearFilter.NoDen(np.array([1.]), np.array([]), output)
 
     class Step(object):
         """Abstract base class for LTI filtering step functions."""
@@ -156,7 +162,7 @@ class LinearFilter(Synapse):
             self.den = den
             self.output = output
 
-        def __call__(self, signal):
+        def __call__(self, t, signal):
             raise NotImplementedError("Step functions must implement __call__")
 
     class NoDen(Step):
@@ -172,8 +178,9 @@ class LinearFilter(Synapse):
             super(LinearFilter.NoDen, self).__init__(num, den, output)
             self.b = num[0]
 
-        def __call__(self, signal):
+        def __call__(self, t, signal):
             self.output[...] = self.b * signal
+            return self.output
 
     class Simple(Step):
         """An LTI step function for transfer functions with one num and den.
@@ -193,9 +200,10 @@ class LinearFilter(Synapse):
             self.b = num[0]
             self.a = den[0]
 
-        def __call__(self, signal):
+        def __call__(self, t, signal):
             self.output *= -self.a
             self.output += self.b * signal
+            return self.output
 
     class General(Step):
         """An LTI step function for any given transfer function.
@@ -212,7 +220,7 @@ class LinearFilter(Synapse):
             self.x = collections.deque(maxlen=len(num))
             self.y = collections.deque(maxlen=len(den))
 
-        def __call__(self, signal):
+        def __call__(self, t, signal):
             self.output[...] = 0
 
             self.x.appendleft(np.array(signal))
@@ -221,6 +229,8 @@ class LinearFilter(Synapse):
             for k, yk in enumerate(self.y):
                 self.output -= self.den[k] * yk
             self.y.appendleft(np.array(self.output))
+
+            return self.output
 
 
 class Lowpass(LinearFilter):
@@ -240,11 +250,12 @@ class Lowpass(LinearFilter):
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.tau)
 
-    def make_step(self, dt, output):
+    def make_step(self, shape_in, shape_out, dt, rng, y0=None, **kwargs):
         # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
         if self.tau <= .03 * dt:
-            return LinearFilter.NoDen(np.array([1.]), np.array([]), output)
-        return super(Lowpass, self).make_step(dt, output)
+            return self._make_zero_step(shape_in, shape_out, dt, rng, y0=y0)
+        return super(Lowpass, self).make_step(
+            shape_in, shape_out, dt, rng, y0=y0, **kwargs)
 
 
 class Alpha(LinearFilter):
@@ -275,11 +286,12 @@ class Alpha(LinearFilter):
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.tau)
 
-    def make_step(self, dt, output):
+    def make_step(self, shape_in, shape_out, dt, rng, y0=None, **kwargs):
         # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
         if self.tau <= .03 * dt:
-            return LinearFilter.NoDen(np.array([1.]), np.array([]), output)
-        return super(Alpha, self).make_step(dt, output)
+            return self._make_zero_step(shape_in, shape_out, dt, rng, y0=y0)
+        return super(Alpha, self).make_step(
+            shape_in, shape_out, dt, rng, y0=y0, **kwargs)
 
 
 class Triangle(Synapse):
@@ -298,9 +310,11 @@ class Triangle(Synapse):
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.t)
 
-    def make_step(self, dt, output):
+    def make_step(self, shape_in, shape_out, dt, rng, y0=None):
+        assert shape_in == shape_out
+
         n_taps = int(np.round(self.t / float(dt))) + 1
-        num = np.arange(n_taps, 0, -1, dtype=output.dtype)
+        num = np.arange(n_taps, 0, -1, dtype=float)
         num /= num.sum()
 
         # Minimal multiply implementation finds the difference between
@@ -308,11 +322,16 @@ class Triangle(Synapse):
         n0, ndiff = num[0], num[-1]
         x = collections.deque(maxlen=n_taps)
 
-        def step_triangle(signal):
+        output = np.zeros(shape_out)
+        if y0 is not None:
+            output[:] = y0
+
+        def step_triangle(t, signal):
             output[...] += n0 * signal
             for xk in x:
                 output[...] -= xk
             x.appendleft(ndiff * signal)
+            return output
 
         return step_triangle
 
@@ -321,23 +340,6 @@ def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
     """Filter ``signal`` with ``synapse``.
 
     Deprecated: use ``synapse.filt`` instead.
-
-    Parameters
-    ----------
-    signal : array_like
-        The signal to filter.
-    syanpse : float, Synapse
-        The synapse model with which to filter the signal.
-        If a float is passed in, it will be interpreted as the ``tau``
-        parameter of a lowpass filter.
-    dt : float
-        The time-step of the input signal, for analog synapses.
-    axis : integer, optional
-        The axis along which to filter. Default: 0.
-    x0 : array_like, optional
-        The starting state of the filter output.
-    copy : boolean, optional
-        Whether to copy the input data, or simply work in-place. Default: True.
     """
     warnings.warn("Use ``synapse.filt`` instead", DeprecationWarning)
     synapse.filt(signal, dt=dt, axis=axis, y0=x0, copy=copy)
@@ -346,25 +348,7 @@ def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
 def filtfilt(signal, synapse, dt, axis=0, copy=True):
     """Zero-phase filtering of ``signal`` using the ``syanpse`` filter.
 
-    This is done by filtering the input in forward and reverse directions.
-
-    Equivalent to scipy and Matlab's filtfilt function using the filter
-    defined by the synapse object passed in.
-
-    Parameters
-    ----------
-    signal : array_like
-        The signal to filter.
-    synapse : float, Synapse
-        The synapse model with which to filter the signal.
-        If a float is passed in, it will be interpreted as the ``tau``
-        parameter of a lowpass filter.
-    dt : float
-        The time-step of the input signal, for analog synapses.
-    axis : integer, optional
-        The axis along which to filter. Default: 0.
-    copy : boolean, optional
-        Whether to copy the input data, or simply work in-place. Default: True.
+    Deprecated: use ``synapse.filtfilt`` instead.
     """
     warnings.warn("Use ``synapse.filtfilt`` instead", DeprecationWarning)
     synapse.filtfilt(signal, dt=dt, axis=axis, copy=copy)

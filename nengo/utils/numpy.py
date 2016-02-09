@@ -5,7 +5,7 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from .compat import PY2
+from .compat import PY2, is_integer, is_iterable
 from ..exceptions import ValidationError
 
 maxint = np.iinfo(np.int32).max
@@ -13,6 +13,21 @@ maxint = np.iinfo(np.int32).max
 
 def compare(a, b):
     return 0 if a == b else 1 if a > b else -1 if a < b else None
+
+
+def as_shape(x, min_dim=0):
+    """Return a tuple if ``x`` is iterable or ``(x,)`` if ``x`` is integer."""
+    if is_iterable(x):
+        shape = tuple(x)
+    elif is_integer(x):
+        shape = (x,)
+    else:
+        raise ValueError("%r cannot be safely converted to a shape" % x)
+
+    if len(shape) < min_dim:
+        shape = tuple([1] * (min_dim - len(shape))) + shape
+
+    return shape
 
 
 def broadcast_shape(shape, length):

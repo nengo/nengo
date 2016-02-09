@@ -41,8 +41,9 @@ class WhiteNoise(Process):
         return "%s(%r, scale=%r)" % (
             self.__class__.__name__, self.dist, self.scale)
 
-    def make_step(self, size_in, size_out, dt, rng):
-        assert size_in == 0
+    def make_step(self, shape_in, shape_out, dt, rng):
+        assert shape_in == (0,)
+        assert len(shape_out) == 1
 
         dist = self.dist
         scale = self.scale
@@ -51,7 +52,7 @@ class WhiteNoise(Process):
         #   since dt / sqrt(dt) = sqrt(dt).
 
         def step_whitenoise(t):
-            x = dist.sample(n=1, d=size_out, rng=rng)[0]
+            x = dist.sample(n=1, d=shape_out[0], rng=rng)[0]
             return alpha * x if scale else x
 
         return step_whitenoise
@@ -94,21 +95,21 @@ class FilteredNoise(Process):
         return "%s(synapse=%r, dist=%r, scale=%r)" % (
             self.__class__.__name__, self.synapse, self.dist, self.scale)
 
-    def make_step(self, size_in, size_out, dt, rng):
-        assert size_in == 0
+    def make_step(self, shape_in, shape_out, dt, rng):
+        assert shape_in == (0,)
+        assert len(shape_out) == 1
 
         dist = self.dist
         scale = self.scale
         alpha = 1. / np.sqrt(dt)
-        output = np.zeros(size_out)
-        filter_step = self.synapse.make_step(dt, output, **self.synapse_kwargs)
+        filter_step = self.synapse.make_step(
+            shape_out, shape_out, dt, None, **self.synapse_kwargs)
 
         def step_filterednoise(t):
-            x = dist.sample(n=1, d=size_out, rng=rng)[0]
+            x = dist.sample(n=1, d=shape_out[0], rng=rng)[0]
             if scale:
                 x *= alpha
-            filter_step(x)
-            return output
+            return filter_step(t, x)
 
         return step_filterednoise
 
@@ -173,12 +174,11 @@ class WhiteSignal(Process):
         return "%s(period=%r, high=%r, rms=%r)" % (
             self.__class__.__name__, self.period, self.high, self.rms)
 
-    def make_step(self, size_in, size_out, dt, rng):
-        assert size_in == 0
-        d = size_out
+    def make_step(self, shape_in, shape_out, dt, rng):
+        assert shape_in == (0,)
 
         n_coefficients = int(np.ceil(self.period / dt / 2.))
-        shape = (n_coefficients + 1, d)
+        shape = (n_coefficients + 1,) + shape_out
         sigma = self.rms * np.sqrt(0.5)
         coefficients = 1j * rng.normal(0., sigma, size=shape)
         coefficients += rng.normal(0., sigma, size=shape)
@@ -220,9 +220,9 @@ class PresentInput(Process):
         super(PresentInput, self).__init__(
             default_size_out=self.inputs[0].size)
 
-    def make_step(self, size_in, size_out, dt, rng):
-        assert size_in == 0
-        assert size_out == self.inputs[0].size
+    def make_step(self, shape_in, shape_out, dt, rng):
+        assert shape_in == (0,)
+        assert shape_out == (self.inputs[0].size,)
 
         n = len(self.inputs)
         inputs = self.inputs.reshape(n, -1)

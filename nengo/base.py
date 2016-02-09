@@ -3,7 +3,6 @@ import warnings
 
 import numpy as np
 
-import nengo.utils.numpy as npext
 from nengo.config import Config
 from nengo.exceptions import ValidationError
 from nengo.params import (
@@ -11,6 +10,7 @@ from nengo.params import (
     StringParam, Unconfigurable)
 from nengo.rc import rc
 from nengo.utils.compat import is_integer, range, reraise, with_metaclass
+from nengo.utils.numpy import as_shape, maxint
 
 
 class NetworkMember(type):
@@ -207,7 +207,7 @@ class Process(FrozenObject):
     default_size_in = IntParam('default_size_in', low=0)
     default_size_out = IntParam('default_size_out', low=0)
     default_dt = NumberParam('default_dt', low=0, low_open=True)
-    seed = IntParam('seed', low=0, high=npext.maxint, optional=True)
+    seed = IntParam('seed', low=0, high=maxint, optional=True)
 
     def __init__(self, default_size_in=0, default_size_out=1, seed=None):
         super(Process, self).__init__()
@@ -218,35 +218,38 @@ class Process(FrozenObject):
 
     def get_rng(self, rng):
         """Get a properly seeded independent RNG for the process step"""
-        seed = rng.randint(npext.maxint) if self.seed is None else self.seed
+        seed = rng.randint(maxint) if self.seed is None else self.seed
         return np.random.RandomState(seed)
 
-    def make_step(self, size_in, size_out, dt, rng):
+    def make_step(self, shape_in, shape_out, dt, rng):
         raise NotImplementedError("Process must implement `make_step` method.")
 
-    def run_steps(self, n_steps, d=None, dt=None, rng=np.random):
-        d = self.default_size_out if d is None else d
+    def run(self, t, d=None, dt=None, rng=np.random, **kwargs):
+        """Run process without input for given length of time."""
+        dt = self.default_dt if dt is None else dt
+        n_steps = int(np.round(float(t) / dt))
+        return self.run_steps(n_steps, d=d, dt=dt, rng=rng, **kwargs)
+
+    def run_steps(self, n_steps, d=None, dt=None, rng=np.random, **kwargs):
+        """Run process without input for given number of steps."""
+        shape_in = as_shape(0)
+        shape_out = as_shape(self.default_size_out if d is None else d)
         dt = self.default_dt if dt is None else dt
         rng = self.get_rng(rng)
-        step = self.make_step(0, d, dt, rng)
-        output = np.zeros((n_steps, d))
+        step = self.make_step(shape_in, shape_out, dt, rng, **kwargs)
+        output = np.zeros((n_steps,) + shape_out)
         for i in range(n_steps):
             output[i] = step(i * dt)
         return output
 
-    def run(self, t, d=None, dt=None, rng=np.random):
-        dt = self.default_dt if dt is None else dt
-        n_steps = int(np.round(float(t) / dt))
-        return self.run_steps(n_steps, d=d, dt=dt, rng=rng)
-
-    def run_input(self, x, d=None, dt=None, rng=np.random):
-        n_steps = len(x)
-        size_in = np.asarray(x[0]).size
-        size_out = self.default_size_out if d is None else d
+    def apply(self, x, d=None, dt=None, rng=np.random, copy=True, **kwargs):
+        """Run process on a given input."""
+        shape_in = as_shape(np.asarray(x[0]).shape, min_dim=1)
+        shape_out = as_shape(self.default_size_out if d is None else d)
         dt = self.default_dt if dt is None else dt
         rng = self.get_rng(rng)
-        step = self.make_step(size_in, size_out, dt, rng)
-        output = np.zeros((n_steps, size_out))
+        step = self.make_step(shape_in, shape_out, dt, rng, **kwargs)
+        output = np.zeros((len(x),) + shape_out) if copy else x
         for i, xi in enumerate(x):
             output[i] = step(i * dt, xi)
         return output
