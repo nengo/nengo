@@ -3,12 +3,14 @@ import warnings
 
 import numpy as np
 
+import nengo.utils.numpy as npext
 from nengo.config import Config
 from nengo.exceptions import ValidationError
 from nengo.params import (
-    Default, is_param, IntParam, Parameter, StringParam, Unconfigurable)
+    Default, FrozenObject, is_param, IntParam, NumberParam, Parameter,
+    StringParam, Unconfigurable)
 from nengo.rc import rc
-from nengo.utils.compat import is_integer, reraise, with_metaclass
+from nengo.utils.compat import is_integer, range, reraise, with_metaclass
 
 
 class NetworkMember(type):
@@ -183,3 +185,89 @@ class NengoObjectParam(Parameter):
             raise ValidationError("'%s' must have size_out > 0." % nengo_obj,
                                   attr=self.name, obj=instance)
         super(NengoObjectParam, self).validate(instance, nengo_obj)
+
+
+class Process(FrozenObject):
+    """A general system with input, output, and state.
+
+    Attributes
+    ----------
+    default_size_in : int
+        Sets the default size in for nodes using this process. Default: 0.
+    default_size_out : int
+        Sets the default size out for nodes running this process. Also,
+        if `d` isn't specified in `run` or `run_steps`, this will be used.
+        Default: 1.
+    default_dt : float
+        If `dt` isn't specified in `run`, `run_steps`, `ntrange`, or `trange`,
+        this will be used. Default: 0.001 (1 millisecond).
+    seed : int, optional
+        Random number seed. Ensures noise will be the same each run.
+    """
+    default_size_in = IntParam('default_size_in', low=0)
+    default_size_out = IntParam('default_size_out', low=0)
+    default_dt = NumberParam('default_dt', low=0, low_open=True)
+    seed = IntParam('seed', low=0, high=npext.maxint, optional=True)
+
+    def __init__(self, default_size_in=0, default_size_out=1, seed=None):
+        super(Process, self).__init__()
+        self.default_size_in = default_size_in
+        self.default_size_out = default_size_out
+        self.default_dt = 0.001
+        self.seed = seed
+
+    def get_rng(self, rng):
+        """Get a properly seeded independent RNG for the process step"""
+        seed = rng.randint(npext.maxint) if self.seed is None else self.seed
+        return np.random.RandomState(seed)
+
+    def make_step(self, size_in, size_out, dt, rng):
+        raise NotImplementedError("Process must implement `make_step` method.")
+
+    def run_steps(self, n_steps, d=None, dt=None, rng=np.random):
+        d = self.default_size_out if d is None else d
+        dt = self.default_dt if dt is None else dt
+        rng = self.get_rng(rng)
+        step = self.make_step(0, d, dt, rng)
+        output = np.zeros((n_steps, d))
+        for i in range(n_steps):
+            output[i] = step(i * dt)
+        return output
+
+    def run(self, t, d=None, dt=None, rng=np.random):
+        dt = self.default_dt if dt is None else dt
+        n_steps = int(np.round(float(t) / dt))
+        return self.run_steps(n_steps, d=d, dt=dt, rng=rng)
+
+    def run_input(self, x, d=None, dt=None, rng=np.random):
+        n_steps = len(x)
+        size_in = np.asarray(x[0]).size
+        size_out = self.default_size_out if d is None else d
+        dt = self.default_dt if dt is None else dt
+        rng = self.get_rng(rng)
+        step = self.make_step(size_in, size_out, dt, rng)
+        output = np.zeros((n_steps, size_out))
+        for i, xi in enumerate(x):
+            output[i] = step(i * dt, xi)
+        return output
+
+    def ntrange(self, n_steps, dt=None):
+        dt = self.default_dt if dt is None else dt
+        return dt * np.arange(1, n_steps + 1)
+
+    def trange(self, t, dt=None):
+        dt = self.default_dt if dt is None else dt
+        n_steps = int(np.round(float(t) / dt))
+        return self.ntrange(n_steps, dt=dt)
+
+
+class ProcessParam(Parameter):
+    """Must be a Process."""
+
+    def validate(self, instance, process):
+        super(ProcessParam, self).validate(instance, process)
+        if process is not None and not isinstance(process, Process):
+            raise ValidationError(
+                "Must be Process (got type %r)" % process.__class__.__name__,
+                attr=self.name, obj=instance)
+        return process
