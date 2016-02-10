@@ -313,22 +313,22 @@ with model:
 
     with_cache_miss_ro = {
         'rc': '''
+nengo.cache.DecoderCache().invalidate()
 rc.set("decoder_cache", "enabled", "True")
 rc.set("decoder_cache", "readonly", "True")
 ''',
         'stmt': '''
-nengo.cache.DecoderCache().invalidate()
 sim = nengo.Simulator(model)
 '''
     }
 
     with_cache_miss = {
         'rc': '''
+nengo.cache.DecoderCache().invalidate()
 rc.set("decoder_cache", "enabled", "True")
 rc.set("decoder_cache", "readonly", "False")
 ''',
         'stmt': '''
-nengo.cache.DecoderCache().invalidate()
 sim = nengo.Simulator(model)
 '''
     }
