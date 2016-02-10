@@ -127,11 +127,11 @@ class WhiteNoise(Process):
         # ^ need sqrt(dt) when integrating, so divide by sqrt(dt) here,
         #   since dt / sqrt(dt) = sqrt(dt).
 
-        def step(t):
+        def step_whitenoise(t):
             x = dist.sample(n=1, d=size_out, rng=rng)[0]
             return alpha * x if scale else x
 
-        return step
+        return step_whitenoise
 
 
 class FilteredNoise(Process):
@@ -180,14 +180,14 @@ class FilteredNoise(Process):
         output = np.zeros(size_out)
         filter_step = self.synapse.make_step(dt, output, **self.synapse_kwargs)
 
-        def step(t):
+        def step_filterednoise(t):
             x = dist.sample(n=1, d=size_out, rng=rng)[0]
             if scale:
                 x *= alpha
             filter_step(x)
             return output
 
-        return step
+        return step_filterednoise
 
 
 class BrownNoise(FilteredNoise):
@@ -271,11 +271,11 @@ class WhiteSignal(Process):
         coefficients *= np.sqrt(2 * n_coefficients)
         signal = np.fft.irfft(coefficients, axis=0)
 
-        def step(t):
+        def step_whitesignal(t):
             i = int(round(t / dt))
             return signal[i % signal.shape[0]]
 
-        return step
+        return step_whitesignal
 
 
 class PresentInput(Process):
@@ -305,11 +305,11 @@ class PresentInput(Process):
         inputs = self.inputs.reshape(n, -1)
         presentation_time = float(self.presentation_time)
 
-        def step_image_input(t):
+        def step_presentinput(t):
             i = int(t / presentation_time + 1e-7)
             return inputs[i % n]
 
-        return step_image_input
+        return step_presentinput
 
 
 class ProcessParam(Parameter):
