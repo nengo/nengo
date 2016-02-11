@@ -188,13 +188,21 @@ def test_decoder_cache_shrink_threadsafe(monkeypatch, tmpdir):
     cache_size = cache.get_size_in_bytes()
     assert cache_size > 0
 
-    def raise_file_not_found(*args, **kwargs):
-        raise OSError(errno.ENOENT, "File not found.")
+
+    class RaiseFileNotFound(object):
+        def __init__(self, fn):
+            self.fn = fn
+
+        def __call__(self, *args, **kwargs):
+            if args[0].endswith('.nco'):
+                raise OSError(errno.ENOENT, "File not found.")
+            else:
+                return self.fn(*args, **kwargs)
 
     monkeypatch.setattr(cache, 'get_size_in_bytes', lambda: cache_size)
-    monkeypatch.setattr('os.stat', raise_file_not_found)
-    monkeypatch.setattr('os.remove', raise_file_not_found)
-    monkeypatch.setattr('os.unlink', raise_file_not_found)
+    monkeypatch.setattr('os.stat', RaiseFileNotFound(os.stat))
+    monkeypatch.setattr('os.remove', RaiseFileNotFound(os.remove))
+    monkeypatch.setattr('os.unlink', RaiseFileNotFound(os.unlink))
 
     cache.shrink(limit)
 
@@ -267,7 +275,8 @@ def test_cache_works(tmpdir, Simulator, seed):
     assert len(os.listdir(cache_dir)) == 0
     Simulator(model, model=nengo.builder.Model(
         dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
-    assert len(os.listdir(cache_dir)) == 2  # legacy.txt and *.nco
+    assert len([x for x in os.listdir(cache_dir)
+               if x not in DecoderCache.RESERVED_FILES]) == 1
 
 
 def calc_relative_timer_diff(t1, t2):
