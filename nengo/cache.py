@@ -1,18 +1,23 @@
 """Caching capabilities for a faster build process."""
 
+import errno
 import hashlib
 import inspect
 import logging
 import os
+import shutil
 import struct
+from uuid import uuid1
+import warnings
 
 import numpy as np
 
-from nengo.exceptions import FingerprintError
+from nengo.exceptions import FingerprintError, TimeoutError
 from nengo.rc import rc
+from nengo.utils import nco
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
 from nengo.utils.compat import is_string, pickle, PY2
-from nengo.utils import nco
+from nengo.utils.lock import FileLock
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +73,68 @@ class Fingerprint(object):
         return self.fingerprint.hexdigest()
 
 
+class CacheIndex(object):
+    def __init__(self, filename):
+        self.filename = filename
+        self._lock = FileLock(self.filename + '.lock')
+        with self._lock:
+            self._index = self._load_index()
+        self._updates = {}
+        self._deletes = set()
+        self._removed_files = set()
+
+    def __getitem__(self, key):
+        if key in self._updates:
+            return self._updates[key]
+        else:
+            return self._index[key]
+
+    def __setitem__(self, key, value):
+        self._updates[key] = value
+
+    def __delitem__(self, key):
+        self._deletes.add(key)
+
+    def remove_file_entry(self, filename):
+        self._removed_files.add(filename)
+
+    def __del__(self):
+        self.sync()
+
+    def _load_index(self):
+        assert self._lock.acquired
+        try:
+            with open(self.filename, 'rb') as f:
+                return pickle.load(f)
+        except IOError as err:
+            if err.errno == errno.ENOENT:
+                return {}
+            else:
+                raise
+
+    def sync(self):
+        try:
+            with self._lock:
+                self._index = self._load_index()
+                self._index.update(self._updates)
+
+                for key in self._deletes:
+                    del self._index[key]
+
+                with open(self.filename, 'wb') as f:
+                    pickle.dump(
+                        {k: v for k, v in self._index.items()
+                         if v[0] not in self._removed_files},
+                        f, pickle.HIGHEST_PROTOCOL)
+        except TimeoutError:
+            warnings.warn(
+                "Decoder cache index could not acquire lock. "
+                "Cache index was not synced.")
+
+        self._updates.clear()
+        self._deletes.clear()
+
+
 class DecoderCache(object):
     """Cache for decoders.
 
@@ -90,8 +157,9 @@ class DecoderCache(object):
     """
 
     _CACHE_EXT = '.nco'
+    _INDEX = 'index'
     _LEGACY = 'legacy.txt'
-    _LEGACY_VERSION = 0
+    _LEGACY_VERSION = 1
 
     def __init__(self, readonly=False, cache_dir=None):
         self.readonly = readonly
@@ -101,7 +169,28 @@ class DecoderCache(object):
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
         self._fragment_size = get_fragment_size(self.cache_dir)
-        self._remove_legacy_files()
+        try:
+            self._remove_legacy_files()
+            self._index = CacheIndex(os.path.join(self.cache_dir, self._INDEX))
+        except TimeoutError:
+            warnings.warn(
+                "Decoder cache could not acquire lock and was deactivated.")
+            self._index = {}
+            self.readonly = True
+        self._fd = None
+
+    def _get_fd(self):
+        if self._fd is None:
+            self._fd = open(self._key2path(str(uuid1())), 'wb')
+        return self._fd
+
+    def _close_fd(self):
+        if self._fd is not None:
+            self._fd.close()
+            self._fd = None
+
+    def __del__(self):
+        self._close_fd()
 
     def get_files(self):
         """Returns all of the files in the cache.
@@ -145,10 +234,15 @@ class DecoderCache(object):
         limit : int, optional
             Maximum size of the cache in bytes.
         """
+        if self.readonly:
+            return
+
         if limit is None:
             limit = rc.get('decoder_cache', 'size')
         if is_string(limit):
             limit = human2bytes(limit)
+
+        self._close_fd()
 
         fileinfo = []
         excess = -limit
@@ -167,10 +261,14 @@ class DecoderCache(object):
                 break
 
             excess -= size
+            self._index.remove_file_entry(path)
             safe_remove(path)
+
+        self._index.sync()
 
     def invalidate(self):
         """Invalidates the cache (i.e. removes all cache files)."""
+        self._close_fd()
         for path in self.get_files():
             safe_remove(path)
 
@@ -202,8 +300,10 @@ class DecoderCache(object):
 
         for f in os.listdir(self.cache_dir):
             path = os.path.join(self.cache_dir, f)
-            if not os.path.isdir(path):
-                safe_remove(path)
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
 
         self._write_legacy_file()
 
@@ -244,20 +344,25 @@ class DecoderCache(object):
 
             key = self._get_cache_key(
                 solver_fn, solver, neuron_type, gain, bias, x, targets, rng, E)
-            path = self._key2path(key)
             try:
+                path, start, end = self._index[key]
+                if self._fd is not None:
+                    self._fd.flush()
                 with open(path, 'rb') as f:
+                    f.seek(start)
                     solver_info, decoders = nco.read(f)
             except:
-                logger.debug("Cache miss [{}].".format(key))
+                logger.debug("Cache miss [%s].", key)
                 decoders, solver_info = solver_fn(
                     solver, neuron_type, gain, bias, x, targets, rng=rng, E=E)
                 if not self.readonly:
-                    with open(path, 'wb') as f:
-                        nco.write(f, solver_info, decoders)
+                    fd = self._get_fd()
+                    start = fd.tell()
+                    nco.write(fd, solver_info, decoders)
+                    end = fd.tell()
+                    self._index[key] = (fd.name, start, end)
             else:
-                logger.debug(
-                    "Cache hit [{}]: Loaded stored decoders.".format(key))
+                logger.debug("Cache hit [%s]: Loaded stored decoders.", key)
             return decoders, solver_info
         return cached_solver
 

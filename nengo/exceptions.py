@@ -94,3 +94,7 @@ class Unconvertible(NengoException, ValueError):
 
 class CacheIOError(NengoException, IOError):
     """An IO error in reading from or writing to the decoder cache."""
+
+
+class TimeoutError(NengoException):
+    """A timeout occurred while waiting for a resource."""

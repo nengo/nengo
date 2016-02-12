@@ -214,6 +214,8 @@ Release History
   `#974 <https://github.com/nengo/nengo/pull/974>`_)
 - Fixed thread-safety of using networks and config in ``with`` statements.
   (`#989 <https://github.com/nengo/nengo/pull/989>`_)
+- The decoder cache will only be used when a seed is specified.
+  (`#946 <https://github.com/nengo/nengo/pull/946>`_)
 
 2.0.3 (December 7, 2015)
 ========================

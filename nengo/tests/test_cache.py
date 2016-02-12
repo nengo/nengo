@@ -151,6 +151,7 @@ def test_decoder_cache_shrinking(tmpdir):
         timestamp -= 60 * 60 * 24 * 2  # 2 days
         os.utime(path, (timestamp, timestamp))
 
+    cache = DecoderCache(cache_dir=cache_dir)
     cache.wrap_solver(another_solver)(**get_solver_test_args())
 
     cache_size = cache.get_size_in_bytes()
@@ -189,13 +190,17 @@ def test_decoder_cache_shrink_threadsafe(monkeypatch, tmpdir):
     cache_size = cache.get_size_in_bytes()
     assert cache_size > 0
 
-    def raise_file_not_found(*args, **kwargs):
-        raise OSError(errno.ENOENT, "File not found.")
+    def raise_file_not_found(orig_fn):
+        def fn(filename, *args, **kwargs):
+            if filename.endswith('.lock'):
+                return orig_fn(filename, *args, **kwargs)
+            raise OSError(errno.ENOENT, "File not found.")
+        return fn
 
     monkeypatch.setattr(cache, 'get_size_in_bytes', lambda: cache_size)
-    monkeypatch.setattr('os.stat', raise_file_not_found)
-    monkeypatch.setattr('os.remove', raise_file_not_found)
-    monkeypatch.setattr('os.unlink', raise_file_not_found)
+    monkeypatch.setattr('os.stat', raise_file_not_found(os.stat))
+    monkeypatch.setattr('os.remove', raise_file_not_found(os.remove))
+    monkeypatch.setattr('os.unlink', raise_file_not_found(os.unlink))
 
     cache.shrink(limit)
 
@@ -268,7 +273,7 @@ def test_cache_works(tmpdir, RefSimulator, seed):
     assert len(os.listdir(cache_dir)) == 0
     with RefSimulator(model, model=nengo.builder.Model(
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
-        assert len(os.listdir(cache_dir)) == 2  # legacy.txt and *.nco
+        assert len(os.listdir(cache_dir)) == 3  # legacy.txt, index, and *.nco
 
 
 def test_cache_not_used_without_seed(tmpdir, Simulator):
@@ -281,11 +286,13 @@ def test_cache_not_used_without_seed(tmpdir, Simulator):
     assert len(os.listdir(cache_dir)) == 0
     Simulator(model, model=nengo.builder.Model(
         dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
-    assert len(os.listdir(cache_dir)) == 1  # legacy.txt
+    assert len(os.listdir(cache_dir)) == 2  # legacy.txt and index
 
 
-def calc_relative_timer_diff(t1, t2):
-    return (t2.duration - t1.duration) / (t2.duration + t1.duration)
+def reject_outliers(data):
+    med = np.median(data)
+    limits = 1.5 * (np.percentile(data, [25, 75]) - med) + med
+    return np.asarray(data)[np.logical_and(data > limits[0], data < limits[1])]
 
 
 class TestCacheBenchmark(object):
@@ -392,12 +399,6 @@ sim = nengo.Simulator(model)
         plt.ylabel("Build time (s)")
         plt.legend(loc='best')
 
-    @staticmethod
-    def reject_outliers(data):
-        med = np.median(data)
-        limits = 1.5 * (np.percentile(data, [25, 75]) - med) + med
-        return data[np.logical_and(data > limits[0], data < limits[1])]
-
     @pytest.mark.compare
     @pytest.mark.parametrize('varying_param', ['D', 'N', 'M'])
     def test_compare_cache_benchmark(self, varying_param, analytics_data, plt):
@@ -410,8 +411,8 @@ sim = nengo.Simulator(model)
 
         print("Cache, varying {0}:".format(axis_label))
         for label, key in zip(self.labels, self.keys):
-            clean_d1 = [self.reject_outliers(d) for d in d1[key]]
-            clean_d2 = [self.reject_outliers(d) for d in d2[key]]
+            clean_d1 = [reject_outliers(d) for d in d1[key]]
+            clean_d2 = [reject_outliers(d) for d in d2[key]]
             diff = [np.median(b) - np.median(a)
                     for a, b in zip(clean_d1, clean_d2)]
 
@@ -430,3 +431,64 @@ sim = nengo.Simulator(model)
         plt.xlabel("Number of %s" % axis_label)
         plt.ylabel("Difference in build time (s)")
         plt.legend(loc='best')
+
+
+class TestCacheShrinkBenchmark(object):
+    n_trials = 50
+
+    setup = '''
+import numpy as np
+import nengo
+import nengo.cache
+from nengo.rc import rc
+
+rc.set("decoder_cache", "path", {tmpdir!r})
+
+for i in range(10):
+    model = nengo.Network(seed=i)
+    with model:
+        a = nengo.networks.EnsembleArray(10, 128, 1)
+        b = nengo.networks.EnsembleArray(10, 128, 1)
+        conn = nengo.Connection(a.output, b.input)
+    with nengo.Simulator(model):
+        pass
+
+rc.set("decoder_cache", "size", "0KB")
+cache = nengo.cache.DecoderCache()
+    '''
+
+    stmt = 'cache.shrink()'
+
+    @pytest.mark.slow
+    @pytest.mark.noassertions
+    def test_cache_shrink_benchmark(self, tmpdir, analytics, logger):
+        times = timeit.repeat(
+            stmt=self.stmt, setup=self.setup.format(tmpdir=str(tmpdir)),
+            number=1, repeat=self.n_trials)
+        logger.info("Shrink took a minimum of %f seconds.", np.min(times))
+        logger.info("Shrink took a %f seconds on average.", np.mean(times))
+        logger.info(
+            "Shrink took a %f seconds on average with outliers rejected.",
+            np.mean(reject_outliers(times)))
+        analytics.add_data('times', times)
+
+    @pytest.mark.compare
+    def test_compare_cache_shrink_benchmark(self, analytics_data, plt):
+        stats = pytest.importorskip('scipy.stats')
+
+        d1, d2 = (x['times'] for x in analytics_data)
+        clean_d1 = reject_outliers(d1)
+        clean_d2 = reject_outliers(d2)
+
+        diff = np.median(clean_d2) - np.median(clean_d1)
+
+        p_value = 2. * stats.mannwhitneyu(clean_d1, clean_d2)[1]
+        if p_value < .05:
+            print("Significant change of {d} seconds (p <= {p:.3f}).".format(
+                d=diff, p=np.ceil(p_value * 1000.) / 1000.))
+        else:
+            print("No significant change ({d}).".format(d=diff))
+        print("Speed up:", np.median(clean_d1) / np.median(clean_d2))
+
+        plt.scatter(np.ones_like(d1), d1, c='b')
+        plt.scatter(2 * np.ones_like(d2), d2, c='g')
