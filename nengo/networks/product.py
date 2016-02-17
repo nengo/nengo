@@ -36,9 +36,9 @@ def Product(n_neurons, dimensions, input_magnitude=1, net=None):
         nengo.Connection(net.B, net.sq2.input, transform=-tr, synapse=None)
 
         sq1_out = net.sq1.add_output('square', np.square)
-        nengo.Connection(sq1_out, net.output, transform=.5)
+        nengo.Connection(sq1_out, net.output, transform=.5, synapse=None)
         sq2_out = net.sq2.add_output('square', np.square)
-        nengo.Connection(sq2_out, net.output, transform=-.5)
+        nengo.Connection(sq2_out, net.output, transform=-.5, synapse=None)
 
     return net
 
