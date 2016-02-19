@@ -46,7 +46,7 @@ def operator_depencency_graph(operators):  # noqa: C901
     #    3) All reads on a given memory block
     #    4) All updates on a given memory block
 
-    dg = dict((op, set()) for op in operators)  # ops are nodes of the graph
+    dg = {op: set() for op in operators}  # ops are nodes of the graph
 
     # -- incs depend on sets
     for sig, post_ops in iteritems(incs):

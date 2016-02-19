@@ -87,7 +87,7 @@ class Subfile(object):
 
 MAGIC_STRING = ensure_bytes('NCO')
 SUPPORTED_PROTOCOLS = [0]
-HEADER_FORMAT = '@{0}sBLLLL'.format(len(MAGIC_STRING))
+HEADER_FORMAT = '@{}sBLLLL'.format(len(MAGIC_STRING))
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 ALIGNMENT = 16
 
@@ -142,7 +142,7 @@ def read(fileobj):
     if magic != MAGIC_STRING:
         raise IOError("Not a Nengo cache object file.")
     if version not in SUPPORTED_PROTOCOLS:
-        raise IOError("NCO protocol version {0} is not supported.".format(
+        raise IOError("NCO protocol version {} is not supported.".format(
             version))
 
     metadata = pickle.load(Subfile(fileobj, pickle_start, pickle_end))

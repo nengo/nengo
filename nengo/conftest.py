@@ -73,7 +73,7 @@ def parametrize_function_name(request, function_name):
             value = request.getfuncargvalue(name)
             if inspect.isclass(value):
                 value = value.__name__
-            suffixes.append('{0}={1}'.format(name, value))
+            suffixes.append('{}={}'.format(name, value))
     return '+'.join([function_name] + suffixes)
 
 

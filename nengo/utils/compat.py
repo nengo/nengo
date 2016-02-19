@@ -8,15 +8,6 @@ import numpy as np
 # Only test for Python 2 so that we have less changes for Python 4
 PY2 = sys.version_info[0] == 2
 
-# OrderedDict and Counter were introduced in Python 2.7
-try:
-    from collections import Counter, OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
-    from counter import Counter
-assert Counter
-assert OrderedDict
-
 # If something's changed from Python 2 to 3, we handle that here
 if PY2:
     import cPickle as pickle

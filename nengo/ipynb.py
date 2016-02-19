@@ -115,7 +115,7 @@ class IPython2ProgressBar(ProgressBar):
 
         self._widget.progress = progress.progress
         if progress.finished:
-            self._widget.text = "{0} finished in {1}.".format(
+            self._widget.text = "{} finished in {}.".format(
                 self.task,
                 timestamp2timedelta(progress.elapsed_seconds()))
         else:

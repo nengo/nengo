@@ -133,6 +133,6 @@ def test_compare_product_benchmark(analytics_data):
     data1, data2 = (d['error'] for d in analytics_data)
     improvement = np.mean(data1) - np.mean(data2)
     p = np.ceil(1000. * 2. * stats.mannwhitneyu(data1, data2)[1]) / 1000.
-    print("Multiplication improvement by {0:f} ({1:.0f}%, p < {2:.3f})".format(
+    print("Multiplication improvement by {:f} ({:.0f}%, p < {:.3f})".format(
         improvement, (1. - np.mean(data2) / np.mean(data1)) * 100., p))
     assert improvement >= 0. or p >= 0.05

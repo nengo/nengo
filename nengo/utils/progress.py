@@ -187,9 +187,9 @@ class TerminalProgressBar(ProgressBar):
         sys.stdout.flush()
 
     def _get_in_progress_line(self, progress):
-        line = "[{{0}}] ETA: {eta}".format(
+        line = "[{{}}] ETA: {eta}".format(
             eta=timestamp2timedelta(progress.eta()))
-        percent_str = " {0}% ".format(int(100 * progress.progress))
+        percent_str = " {}% ".format(int(100 * progress.progress))
 
         width, _ = get_terminal_size()
         progress_width = max(0, width - len(line))
@@ -207,7 +207,7 @@ class TerminalProgressBar(ProgressBar):
 
     def _get_finished_line(self, progress):
         width, _ = get_terminal_size()
-        line = "{0} finished in {1}.".format(
+        line = "{} finished in {}.".format(
             self.task,
             timestamp2timedelta(progress.elapsed_seconds())).ljust(width)
         return '\r' + line + os.linesep
@@ -231,7 +231,7 @@ class WriteProgressToFile(ProgressBar):
 
     def update(self, progress):
         if progress.finished:
-            text = "{0} finished in {1}.".format(
+            text = "{} finished in {}.".format(
                 self.task,
                 timestamp2timedelta(progress.elapsed_seconds()))
         else:

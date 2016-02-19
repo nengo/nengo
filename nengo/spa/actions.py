@@ -2,9 +2,10 @@
 
 import re
 import warnings
+from collections import OrderedDict
 
 from nengo.spa.action_objects import Symbol, Source, DotProduct, Summation
-from nengo.utils.compat import iteritems, OrderedDict
+from nengo.utils.compat import iteritems
 
 
 class Expression(object):

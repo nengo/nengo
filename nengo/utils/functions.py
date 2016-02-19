@@ -1,8 +1,10 @@
 from __future__ import absolute_import
 
+from collections import OrderedDict
+
 import numpy as np
 
-from nengo.utils.compat import is_number, OrderedDict, iteritems
+from nengo.utils.compat import is_number, iteritems
 
 
 def piecewise(data):

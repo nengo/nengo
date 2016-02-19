@@ -7,7 +7,6 @@ from .ensemblearray import EnsembleArray
 from nengo.dists import Choice, Exponential, Uniform
 from nengo.utils.compat import is_iterable, range
 from nengo.utils.network import with_self
-from nengo.utils.stdlib import nested
 
 
 def filtered_step(t, shift=0.5, scale=50, step_val=1):
@@ -98,7 +97,7 @@ class AssociativeMemory(nengo.Network):
         self._inhib_scale = 1.5
 
         # -- Create the core network
-        with nested(self, self.am_ens_config):
+        with self, self.am_ens_config:
             self.bias_node = nengo.Node(output=1)
             self.elem_input = nengo.Node(
                 size_in=self.n_items, label="element input")

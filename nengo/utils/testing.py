@@ -129,8 +129,7 @@ class Analytics(Recorder):
 
     def add_data(self, name, data, doc=""):
         if name == self.DOC_KEY:
-            raise ValueError("The name '{0}' is reserved.".format(
-                self.DOC_KEY))
+            raise ValueError("The name '{}' is reserved.".format(self.DOC_KEY))
 
         if self.record:
             self.data[name] = data

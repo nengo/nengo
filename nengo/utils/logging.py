@@ -54,11 +54,7 @@ def log(level='warning', path=None):
     if handler not in logging.root.handlers:
         logging.root.addHandler(handler)
     handler.setLevel(level)
-    try:
-        logging.captureWarnings(True)
-    except AttributeError:
-        # logging.captureWarnings doesn't exist in Python 2.6; ignore it
-        pass
+    logging.captureWarnings(True)
 
 
 class CaptureLogHandler(logging.StreamHandler):

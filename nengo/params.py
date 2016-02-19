@@ -362,9 +362,9 @@ class FunctionParam(Parameter):
 
 class FrozenObject(object):
     def __init__(self):
-        self._paramdict = dict(
-            (k, v) for k, v in inspect.getmembers(self.__class__)
-            if isinstance(v, Parameter))
+        self._paramdict = {
+            k: v for k, v in inspect.getmembers(self.__class__)
+            if isinstance(v, Parameter)}
         if not all(p.readonly for p in self._params):
             raise ValueError(
                 "All parameters of a FrozenObject must be readonly")

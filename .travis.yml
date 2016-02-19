@@ -15,10 +15,6 @@ env:
 matrix:
   include:
     - env: >
-        PYTHON="2.6"
-        CONDA_DEPS="matplotlib ipython-notebook ordereddict pygments"
-        PIP_DEPS="$PIP_DEPS counter importlib IPython==1.2.1"
-    - env: >
         PYTHON="2.7"
         SETUP_CMD="test -a '--cov-config .coveragerc --cov nengo nengo -n 2 -v --durations 20'"
         EXTRA_CMD="coveralls"

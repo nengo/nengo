@@ -36,7 +36,7 @@ Nengo depends on `NumPy <http://www.numpy.org/>`_.
 If you have difficulty installing,
 try installing NumPy first (see below).
 
-Nengo supports Python 2.6, 2.7, and 3.3+.
+Nengo supports Python 2.7 and 3.3+.
 
 Developer install
 -----------------

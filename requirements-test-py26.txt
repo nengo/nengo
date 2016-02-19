@@ -1,9 +1,0 @@
-matplotlib>=1.4
-IPython==1.2.1
-jinja2
-counter
-importlib
-ordereddict
-pygments
-pytest==2.7.3
-pytest-xdist
