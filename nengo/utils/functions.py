@@ -4,6 +4,7 @@ from collections import OrderedDict
 
 import numpy as np
 
+from nengo.exceptions import ValidationError
 from nengo.utils.compat import is_number, iteritems
 
 
@@ -77,8 +78,8 @@ def piecewise(data):
     output_length = None  # the dimensionality of the returned values
     for time in data:
         if not is_number(time):
-            raise TypeError('Keys must be times (floats or ints), not "%s"'
-                            % repr(time.__class__))
+            raise ValidationError("Keys must be times (floats or ints), not %r"
+                                  % time.__class__.__name__, attr='data')
 
         # figure out the length of this item
         if callable(data[time]):
@@ -89,9 +90,8 @@ def piecewise(data):
 
         # make sure this is the same length as previous items
         if length != output_length and output_length is not None:
-            raise ValueError('Invalid data for piecewise function: '
-                             'time %4g has %d items instead of %d' %
-                             (time, length, output_length))
+            raise ValidationError("time %g has %d items instead of %d" %
+                                  (time, length, output_length), attr='data')
         output_length = length
 
     # make a default output of 0 when t before what was passed

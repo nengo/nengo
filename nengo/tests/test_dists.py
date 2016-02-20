@@ -3,6 +3,7 @@ import pytest
 
 import nengo.dists as dists
 import nengo.utils.numpy as npext
+from nengo.exceptions import ValidationError
 
 
 def test_pdf(rng):
@@ -244,7 +245,8 @@ def test_cosine_intercept(d, p, rng):
 def test_distorarrayparam():
     """DistOrArrayParams can be distributions or samples."""
     class Test(object):
-        dp = dists.DistOrArrayParam(default=None, sample_shape=['*', '*'])
+        dp = dists.DistOrArrayParam('dp',
+                                    default=None, sample_shape=['*', '*'])
 
     inst = Test()
     inst.dp = dists.UniformHypersphere()
@@ -261,7 +263,8 @@ def test_distorarrayparam():
 def test_distorarrayparam_sample_shape():
     """sample_shape dictates the shape of the sample that can be set."""
     class Test(object):
-        dp = dists.DistOrArrayParam(default=None, sample_shape=['d1', 10])
+        dp = dists.DistOrArrayParam(
+            'dp', default=None, sample_shape=['d1', 10])
         d1 = 4
 
     inst = Test()
@@ -271,7 +274,7 @@ def test_distorarrayparam_sample_shape():
     # Must be shape (4, 10)
     inst.dp = np.ones((4, 10))
     assert np.all(inst.dp == np.ones((4, 10)))
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         inst.dp = np.ones((10, 4))
     assert np.all(inst.dp == np.ones((4, 10)))
 

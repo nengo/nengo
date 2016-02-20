@@ -1,4 +1,5 @@
 import nengo
+from nengo.exceptions import ValidationError
 from nengo.spa.module import Module
 
 
@@ -29,9 +30,10 @@ class Bind(Module):
             # use the default vocab for this number of dimensions
             vocab = dimensions
         elif vocab.dimensions != dimensions:
-            raise ValueError('Dimensionality of given vocabulary (%d) does not'
-                             'match dimensionality of buffer (%d)' %
-                             (vocab.dimensions, dimensions))
+            raise ValidationError(
+                "Dimensionality of given vocabulary (%d) does "
+                "not match dimensionality of buffer (%d)" %
+                (vocab.dimensions, dimensions), attr='dimensions', obj=self)
 
         with self:
             self.cc = nengo.networks.CircularConvolution(

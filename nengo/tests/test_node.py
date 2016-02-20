@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.exceptions import ValidationError
 from nengo.utils.testing import warns
 
 
@@ -140,16 +141,16 @@ def test_circular(Simulator, seed):
 
 def test_function_args_error(Simulator):
     with nengo.Network() as model:
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             nengo.Node(output=lambda t, x: x+1)
         nengo.Node(output=lambda t, x=[0]: t+1, size_in=1)
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             nengo.Node(output=lambda t: t+1, size_in=1)
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             nengo.Node(output=lambda t, x, y: t+1, size_in=2)
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             nengo.Node(output=[0], size_in=1)
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             nengo.Node(output=0, size_in=1)
     with Simulator(model):
         pass
@@ -157,13 +158,13 @@ def test_function_args_error(Simulator):
 
 def test_output_shape_error():
     with nengo.Network():
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Node(output=[[1, 2], [3, 4]])
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Node(output=lambda t: [[t, t+1]])
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Node(output=[[3, 1], [2, 9]], size_out=4)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Node(output=[1, 2, 3, 4, 5], size_out=4)
 
 
@@ -253,13 +254,13 @@ def test_set_output(Simulator):
 
         # if output is an array-like...
         # size_in must be 0
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             nengo.Node(np.ones(1), size_in=1)
         # size_out must match
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Node(np.ones(3), size_out=2)
         # must be scalar or vector, not matrix
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Node(np.ones((2, 2)))
         # scalar gets promoted to float vector
         scalar = nengo.Node(2)
@@ -272,13 +273,13 @@ def test_set_output(Simulator):
 
         # if output is callable...
         # if size_in is 0, should only take in t
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             nengo.Node(lambda t, x: 2.0, size_in=0)
         # if size_in > 0, should take both t and x
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             nengo.Node(lambda t: t ** 2, size_in=1)
         # function must return a scalar or vector, not matrix
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Node(lambda t: np.ones((2, 2)))
         # if we pass size_out, function should not be called
         assert len(counter) == 0

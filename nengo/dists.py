@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import numpy as np
 
+from nengo.exceptions import ValidationError
 from nengo.params import (BoolParam, IntParam, NdarrayParam, NumberParam,
                           Parameter, Unconfigurable, FrozenObject)
 import nengo.utils.numpy as npext
@@ -51,20 +52,22 @@ class PDF(Distribution):
     p : vector_like (n,)
         Probabilities of the `x` points.
     """
-    x = NdarrayParam(shape='*')
-    p = NdarrayParam(shape='*')
+    x = NdarrayParam('x', shape='*')
+    p = NdarrayParam('p', shape='*')
 
     def __init__(self, x, p):
         super(PDF, self).__init__()
 
         psum = np.sum(p)
         if np.abs(psum - 1) > 1e-8:
-            raise ValueError("PDF must sum to one (sums to %f)" % psum)
+            raise ValidationError(
+                "PDF must sum to one (sums to %f)" % psum, attr='p', obj=self)
 
         self.x = x
         self.p = p
         if len(self.x) != len(self.p):
-            raise ValueError("`x` and `p` must be the same length")
+            raise ValidationError(
+                "`x` and `p` must be the same length", attr='p', obj=self)
 
         # make cumsum = [0] + cumsum, cdf = 0.5 * (cumsum[:-1] + cumsum[1:])
         cumsum = np.cumsum(p)
@@ -99,9 +102,9 @@ class Uniform(Distribution):
         If true, sample from a uniform distribution of integers. In this case,
         low and high should be integers.
     """
-    low = NumberParam()
-    high = NumberParam()
-    integer = BoolParam()
+    low = NumberParam('low')
+    high = NumberParam('high')
+    integer = BoolParam('integer')
 
     def __init__(self, low, high, integer=False):
         super(Uniform, self).__init__()
@@ -136,11 +139,11 @@ class Gaussian(Distribution):
 
     Raises
     ------
-    ValueError if ``std <= 0``
+    ValidationError if ``std <= 0``
 
     """
-    mean = NumberParam()
-    std = NumberParam(low=0, low_open=True)
+    mean = NumberParam('mean')
+    std = NumberParam('std', low=0, low_open=True)
 
     def __init__(self, mean, std):
         super(Gaussian, self).__init__()
@@ -211,7 +214,7 @@ class UniformHypersphere(Distribution):
         Default: False
 
     """
-    surface = BoolParam()
+    surface = BoolParam('surface')
 
     def __init__(self, surface=False):
         super(UniformHypersphere, self).__init__()
@@ -223,7 +226,7 @@ class UniformHypersphere(Distribution):
 
     def sample(self, n, d, rng=np.random):
         if d is None or d < 1:  # check this, since other dists allow d = None
-            raise ValueError("Dimensions must be a positive integer")
+            raise ValidationError("Dimensions must be a positive integer", 'd')
 
         samples = rng.randn(n, d)
         samples /= npext.norm(samples, axis=1, keepdims=True)
@@ -255,8 +258,8 @@ class Choice(Distribution):
         Weights controlling the probability of selecting each option. Will
         automatically be normalized. Defaults to a uniform distribution.
     """
-    options = NdarrayParam(shape=('*', '...'))
-    weights = NdarrayParam(shape=('*'), optional=True)
+    options = NdarrayParam('options', shape=('*', '...'))
+    weights = NdarrayParam('weights', shape=('*'), optional=True)
 
     def __init__(self, options, weights=None):
         super(Choice, self).__init__()
@@ -266,15 +269,16 @@ class Choice(Distribution):
         weights = (np.ones(len(self.options)) if self.weights is None else
                    self.weights)
         if len(weights) != len(self.options):
-            raise ValueError(
+            raise ValidationError(
                 "Number of weights (%d) must match number of options (%d)"
-                % (len(weights), len(self.options)))
+                % (len(weights), len(self.options)), attr='weights', obj=self)
         if not all(weights >= 0):
-            raise ValueError("All weights must be non-negative")
+            raise ValidationError("All weights must be non-negative",
+                                  attr='weights', obj=self)
         total = float(weights.sum())
         if total <= 0:
-            raise ValueError(
-                "Sum of weights must be positive (got %f)" % total)
+            raise ValidationError("Sum of weights must be positive (got %f)"
+                                  % total, attr='weights', obj=self)
         self.p = weights / total
 
     def __repr__(self):
@@ -282,10 +286,15 @@ class Choice(Distribution):
             self.options,
             "" if self.weights is None else ", weights=%r" % self.weights)
 
+    @property
+    def dimensions(self):
+        return np.prod(self.options.shape[1:])
+
     def sample(self, n, d=None, rng=np.random):
-        if d is not None and np.prod(self.options.shape[1:]) != d:
-            raise ValueError("Options must be of dimensionality %d "
-                             "(got %d)" % (d, np.prod(self.options.shape[1:])))
+        if d is not None and self.dimensions != d:
+            raise ValidationError("Options must be of dimensionality %d "
+                                  "(got %d)" % (d, self.dimensions),
+                                  attr='options', obj=self)
 
         i = np.searchsorted(np.cumsum(self.p), rng.rand(n))
         return self.options[i]
@@ -306,8 +315,8 @@ class SqrtBeta(Distribution):
     --------
     SubvectorLength
     """
-    n = IntParam(low=0)
-    m = IntParam(low=0)
+    n = IntParam('n', low=0)
+    m = IntParam('m', low=0)
 
     def __init__(self, n, m=1):
         super(SqrtBeta, self).__init__()
@@ -456,17 +465,18 @@ class DistributionParam(Parameter):
 
     def validate(self, instance, dist):
         if dist is not None and not isinstance(dist, Distribution):
-            raise ValueError("'%s' is not a Distribution type" % dist)
+            raise ValidationError("'%s' is not a Distribution type" % dist,
+                                  attr=self.name, obj=instance)
         super(DistributionParam, self).validate(instance, dist)
 
 
 class DistOrArrayParam(NdarrayParam):
     """Can be a Distribution or samples from a distribution."""
 
-    def __init__(self, default=Unconfigurable, sample_shape=None,
+    def __init__(self, name, default=Unconfigurable, sample_shape=None,
                  optional=False, readonly=None):
         super(DistOrArrayParam, self).__init__(
-            default, sample_shape, optional, readonly)
+            name, default, sample_shape, optional, readonly)
 
     def validate(self, instance, distorarray):
         if isinstance(distorarray, Distribution):

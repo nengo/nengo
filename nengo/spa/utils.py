@@ -4,6 +4,7 @@ import numpy as np
 
 import nengo
 import nengo.utils.numpy as npext
+from nengo.exceptions import ValidationError
 from nengo.utils.compat import is_iterable
 
 
@@ -46,8 +47,8 @@ def similarity(data, vocab, normalize=False):
     elif is_iterable(vocab):
         vectors = np.array(vocab, copy=False, ndmin=2)
     else:
-        raise ValueError("'%s' object is not a valid vocabulary"
-                         % (vocab.__class__.__name__))
+        raise ValidationError("%r object is not a valid vocabulary"
+                              % (vocab.__class__.__name__), attr='vocab')
 
     data = np.array(data, copy=False, ndmin=2)
     dots = np.dot(data, vectors.T)

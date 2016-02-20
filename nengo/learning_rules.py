@@ -1,6 +1,7 @@
 import warnings
 
 from nengo.base import NengoObjectParam
+from nengo.exceptions import ValidationError
 from nengo.params import FrozenObject, NumberParam, Parameter
 from nengo.utils.compat import is_iterable, itervalues
 
@@ -9,7 +10,8 @@ class ConnectionParam(NengoObjectParam):
     def validate(self, instance, conn):
         from nengo.connection import Connection
         if not isinstance(conn, Connection):
-            raise ValueError("'%s' is not a Connection" % conn)
+            raise ValidationError("'%s' is not a Connection" % conn,
+                                  attr=self.name, obj=instance)
         super(ConnectionParam, self).validate(instance, conn)
 
 
@@ -33,7 +35,7 @@ class LearningRuleType(FrozenObject):
         on full weight matrices).
     """
 
-    learning_rate = NumberParam(low=0, low_open=True)
+    learning_rate = NumberParam('learning_rate', low=0, low_open=True)
 
     error_type = 'none'
     modifies = None
@@ -76,7 +78,7 @@ class PES(LearningRuleType):
         The modulatory connection created to project the error signal.
     """
 
-    pre_tau = NumberParam(low=0, low_open=True)
+    pre_tau = NumberParam('pre_tau', low=0, low_open=True)
 
     error_type = 'decoded'
     modifies = 'decoders'
@@ -128,9 +130,9 @@ class BCM(LearningRuleType):
         Filter constant on activities of neurons in post population.
     """
 
-    pre_tau = NumberParam(low=0, low_open=True)
-    post_tau = NumberParam(low=0, low_open=True)
-    theta_tau = NumberParam(low=0, low_open=True)
+    pre_tau = NumberParam('pre_tau', low=0, low_open=True)
+    post_tau = NumberParam('post_tau', low=0, low_open=True)
+    theta_tau = NumberParam('theta_tau', low=0, low_open=True)
 
     error_type = 'none'
     modifies = 'weights'
@@ -186,9 +188,9 @@ class Oja(LearningRuleType):
         Filter constant on activities of neurons in post population.
     """
 
-    pre_tau = NumberParam(low=0, low_open=True)
-    post_tau = NumberParam(low=0, low_open=True)
-    beta = NumberParam(low=0)
+    pre_tau = NumberParam('pre_tau', low=0, low_open=True)
+    post_tau = NumberParam('post_tau', low=0, low_open=True)
+    beta = NumberParam('beta', low=0)
 
     error_type = 'none'
     modifies = 'weights'
@@ -240,7 +242,7 @@ class Voja(LearningRuleType):
         Filter constant on activities of neurons in post population.
     """
 
-    post_tau = NumberParam(low=0, low_open=True, optional=True)
+    post_tau = NumberParam('post_tau', low=0, low_open=True, optional=True)
 
     error_type = 'scalar'
     modifies = 'encoders'
@@ -262,9 +264,13 @@ class LearningRuleTypeParam(Parameter):
 
     def validate_rule(self, instance, rule):
         if not isinstance(rule, LearningRuleType):
-            raise ValueError("'%s' must be a learning rule type or a dict or "
-                             "list of such types." % rule)
+            raise ValidationError(
+                "'%s' must be a learning rule type or a dict or "
+                "list of such types." % rule, attr=self.name, obj=instance)
         if rule.error_type not in ('none', 'scalar', 'decoded', 'neuron'):
-            raise ValueError("Unrecognized error type %r" % rule.error_type)
+            raise ValidationError(
+                "Unrecognized error type %r" % rule.error_type,
+                attr=self.name, obj=instance)
         if rule.modifies not in ('encoders', 'decoders', 'weights'):
-            raise ValueError("Unrecognized target %r" % rule.modifies)
+            raise ValidationError("Unrecognized target %r" % rule.modifies,
+                                  attr=self.name, obj=instance)

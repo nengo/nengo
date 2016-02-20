@@ -4,6 +4,7 @@ import logging
 
 import numpy as np
 
+from nengo.exceptions import ValidationError
 from nengo.params import Parameter, NumberParam, FrozenObject
 from nengo.utils.compat import range
 from nengo.utils.neurons import settled_firingrate
@@ -136,7 +137,7 @@ class RectifiedLinear(NeuronType):
 class Sigmoid(NeuronType):
     """Neuron whose response curve is a sigmoid."""
 
-    tau_ref = NumberParam(low=0)
+    tau_ref = NumberParam('tau_ref', low=0)
     probeable = ('rates',)
 
     def __init__(self, tau_ref=0.002):
@@ -163,8 +164,8 @@ class Sigmoid(NeuronType):
 class LIFRate(NeuronType):
     """Rate version of the leaky integrate-and-fire (LIF) neuron model."""
 
-    tau_rc = NumberParam(low=0, low_open=True)
-    tau_ref = NumberParam(low=0)
+    tau_rc = NumberParam('tau_rc', low=0, low_open=True)
+    tau_ref = NumberParam('tau_ref', low=0)
     probeable = ('rates',)
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002):
@@ -201,10 +202,10 @@ class LIFRate(NeuronType):
             X-intercepts of neurons.
         """
         inv_tau_ref = 1. / self.tau_ref if self.tau_ref > 0 else np.inf
-        if (max_rates > inv_tau_ref).any():
-            raise ValueError(
-                "Max rates must be below the inverse refractory period (%0.3f)"
-                % (inv_tau_ref))
+        if np.any(max_rates > inv_tau_ref):
+            raise ValidationError("Max rates must be below the inverse "
+                                  "refractory period (%0.3f)" % inv_tau_ref,
+                                  attr='max_rates', obj=self)
 
         x = 1.0 / (1 - np.exp(
             (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
@@ -225,7 +226,7 @@ class LIFRate(NeuronType):
 class LIF(LIFRate):
     """Spiking version of the leaky integrate-and-fire (LIF) neuron model."""
 
-    min_voltage = NumberParam(high=0)
+    min_voltage = NumberParam('min_voltage', high=0)
     probeable = ('spikes', 'voltage', 'refractory_time')
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002, min_voltage=0):
@@ -267,8 +268,8 @@ class AdaptiveLIFRate(LIFRate):
        in Single Neurons. Oxford University Press, 1999.
     """
 
-    tau_n = NumberParam(low=0, low_open=True)
-    inc_n = NumberParam(low=0)
+    tau_n = NumberParam('tau_n', low=0, low_open=True)
+    inc_n = NumberParam('inc_n', low=0)
     probeable = ('rates', 'adaptation')
 
     def __init__(self, tau_n=1, inc_n=0.01, **lif_args):
@@ -350,10 +351,10 @@ class Izhikevich(NeuronType):
        (http://www.izhikevich.org/publications/spikes.pdf)
     """
 
-    tau_recovery = NumberParam(low=0, low_open=True)
-    coupling = NumberParam(low=0)
-    reset_voltage = NumberParam()
-    reset_recovery = NumberParam()
+    tau_recovery = NumberParam('tau_recovery', low=0, low_open=True)
+    coupling = NumberParam('coupling', low=0)
+    reset_voltage = NumberParam('reset_voltage')
+    reset_recovery = NumberParam('reset_recovery')
     probeable = ('spikes', 'voltage', 'recovery')
 
     def __init__(self, tau_recovery=0.02, coupling=0.2,
@@ -410,5 +411,6 @@ class Izhikevich(NeuronType):
 class NeuronTypeParam(Parameter):
     def validate(self, instance, neurons):
         if neurons is not None and not isinstance(neurons, NeuronType):
-            raise ValueError("'%s' is not a neuron type" % neurons)
+            raise ValidationError("'%s' is not a neuron type" % neurons,
+                                  attr=self.name, obj=instance)
         super(NeuronTypeParam, self).validate(instance, neurons)

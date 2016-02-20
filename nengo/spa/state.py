@@ -1,6 +1,7 @@
 import numpy as np
 
 import nengo
+from nengo.exceptions import ValidationError
 from nengo.spa.module import Module
 from nengo.networks.ensemblearray import EnsembleArray
 
@@ -38,16 +39,18 @@ class State(Module):
             # use the default one for this dimensionality
             vocab = dimensions
         elif vocab.dimensions != dimensions:
-            raise ValueError('Dimensionality of given vocabulary (%d) does not'
-                             'match dimensionality of buffer (%d)' %
-                             (vocab.dimensions, dimensions))
+            raise ValidationError(
+                "Dimensionality of given vocabulary (%d) does not "
+                "match dimensionality of buffer (%d)" %
+                (vocab.dimensions, dimensions), attr='dimensions', obj=self)
 
         # Subdimensions should be at most the number of dimensions
         subdimensions = min(dimensions, subdimensions)
 
         if dimensions % subdimensions != 0:
-            raise ValueError("Dimensions (%d) must be divisible by sub"
-                             "dimensions (%d)" % (dimensions, subdimensions))
+            raise ValidationError(
+                "Dimensions (%d) must be divisible by subdimensions (%d)"
+                % (dimensions, subdimensions), attr='dimensions', obj=self)
 
         with self:
             self.state_ensembles = EnsembleArray(

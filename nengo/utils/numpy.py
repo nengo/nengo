@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import numpy as np
 
 from .compat import PY2
+from ..exceptions import ValidationError
 
 maxint = np.iinfo(np.int32).max
 
@@ -32,8 +33,8 @@ def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
         shape[:y.ndim] = y.shape
         y.shape = shape
     elif y.ndim > dims:
-        raise ValueError(
-            "Input cannot be cast to array with %d dimensions" % dims)
+        raise ValidationError("Input cannot be cast to array with "
+                              "%d dimensions" % dims, attr='dims')
 
     if readonly:
         y.flags.writeable = False
@@ -103,7 +104,7 @@ def expm(A, n_factors=None, normalize=False):
     the matrices should be small, both in dimensions and norm.
     """
     if A.ndim != 2 or A.shape[0] != A.shape[1]:
-        raise ValueError("Argument must be a square matrix")
+        raise ValidationError("'A' must be a square matrix", attr='A')
 
     a = np.linalg.norm(A)
     if normalize:

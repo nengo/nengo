@@ -5,6 +5,7 @@ import nengo
 import nengo.utils.numpy as npext
 from nengo.connection import ConnectionSolverParam
 from nengo.dists import UniformHypersphere
+from nengo.exceptions import ValidationError
 from nengo.solvers import LstsqL2
 from nengo.utils.functions import piecewise
 from nengo.utils.testing import allclose
@@ -334,35 +335,35 @@ def test_dimensionality_errors(nl_nodirect, seed, rng):
         nengo.Connection(e2, e2, transform=np.ones(2))
 
         # these should not work
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(n02, e1)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(e1, e2)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(e2.neurons, e1, transform=rng.randn(1, N+1))
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(e2.neurons, e1, transform=rng.randn(2, N))
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(e2, e1, function=lambda x: x, transform=[[1]])
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             nengo.Connection(e2, e1, function=lambda: 0, transform=[[1]])
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(n21, e2, transform=np.ones((2, 2)))
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(e2, e2, transform=np.ones((2, 2, 2)))
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(e2, e2, transform=np.ones(3))
 
         # these should not work because of indexing mismatches
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(n02[0], e2)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(n02, e2[0])
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(n02[1], e2[0], transform=[[1, 2], [3, 4]])
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(n02, e2[0], transform=[[1], [2]])
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(e2[0], e2, transform=[[1, 2]])
 
 
@@ -570,11 +571,11 @@ def test_set_weight_solver():
         a = nengo.Ensemble(10, 2)
         b = nengo.Ensemble(10, 2)
         nengo.Connection(a, b, solver=LstsqL2(weights=True))
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(a.neurons, b, solver=LstsqL2(weights=True))
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(a, b.neurons, solver=LstsqL2(weights=True))
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(a.neurons, b.neurons,
                              solver=LstsqL2(weights=True))
 
@@ -591,7 +592,7 @@ def test_set_learning_rule():
                          transform=np.ones((10, 10)))
 
         n = nengo.Node(output=lambda t, x: t * x, size_in=2)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(n, a, learning_rule_type=nengo.PES())
 
 
@@ -603,16 +604,16 @@ def test_set_function(Simulator):
         d = nengo.Node(size_in=1)
 
         # Function only OK from node or ensemble
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(a.neurons, b, function=lambda x: x)
 
         # Function and transform must match up
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(a, b, function=lambda x: x[0] * x[1],
                              transform=np.eye(2))
 
         # No functions allowed on passthrough nodes
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(d, c, function=lambda x: [1])
 
         # These initial functions have correct dimensionality
@@ -633,9 +634,9 @@ def test_set_function(Simulator):
     with model:
         # Cannot change to a function with different dimensionality
         # because that would require a change in transform
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             conn_2d.function = lambda x: x[0] * x[1]
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             conn_1d.function = None
 
     with Simulator(model):
@@ -649,7 +650,7 @@ def test_set_eval_points(Simulator):
         # ConnEvalPoints parameter checks that pre is an ensemble
         nengo.Connection(a, b, eval_points=[[0, 0], [0.5, 1]])
         nengo.Connection(a, b, eval_points=nengo.dists.Uniform(0, 1))
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(a.neurons, b, eval_points=[[0, 0], [0.5, 1]])
 
     with Simulator(model):
@@ -681,7 +682,7 @@ def test_eval_points_scaling(Simulator, sample, radius, seed, rng, scale):
 def test_solverparam():
     """SolverParam must be a solver."""
     class Test(object):
-        sp = ConnectionSolverParam(default=None)
+        sp = ConnectionSolverParam('sp', default=None)
 
     inst = Test()
     assert inst.sp is None
@@ -689,7 +690,7 @@ def test_solverparam():
     assert isinstance(inst.sp, LstsqL2)
     assert not inst.sp.weights
     # Non-solver not OK
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         inst.sp = 'a'
 
 
@@ -738,9 +739,9 @@ def test_directneurons(nl_nodirect):
         b = nengo.Ensemble(1, 1, neuron_type=nengo.Direct())
 
         # cannot connect to or from direct neurons
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(a, b.neurons)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             nengo.Connection(b.neurons, a)
 
 

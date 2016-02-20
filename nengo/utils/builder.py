@@ -8,6 +8,7 @@ import collections
 import numpy as np
 
 import nengo
+from nengo.exceptions import ValidationError
 
 
 def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
@@ -57,9 +58,11 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
         repeated_inds = lambda x: (
             not isinstance(x, slice) and np.unique(x).size != len(x))
         if repeated_inds(pre_slice):
-            raise ValueError("Input object selection has repeated indices")
+            raise NotImplementedError(
+                "Input object selection has repeated indices")
         if repeated_inds(post_slice):
-            raise ValueError("Output object selection has repeated indices")
+            raise NotImplementedError(
+                "Output object selection has repeated indices")
 
         rows_transform = np.array(new_transform[post_slice])
         rows_transform[:, pre_slice] = transform
@@ -69,7 +72,8 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
         #  just individual items
         return new_transform
     else:
-        raise ValueError("Transforms with > 2 dims not supported")
+        raise ValidationError("Transforms with > 2 dims not supported",
+                              attr='transform', obj=conn)
 
 
 def default_n_eval_points(n_neurons, dimensions):

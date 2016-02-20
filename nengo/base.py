@@ -1,10 +1,16 @@
+import logging
+import sys
 import warnings
 
 import numpy as np
 
 from nengo.config import Config
+from nengo.exceptions import ValidationError
 from nengo.params import Default, is_param, Parameter, Unconfigurable
-from nengo.utils.compat import is_integer, with_metaclass
+from nengo.rc import rc
+from nengo.utils.compat import is_integer, reraise, with_metaclass
+
+logger = logging.getLogger(__name__)
 
 
 class NetworkMember(type):
@@ -59,14 +65,15 @@ class NengoObject(with_metaclass(NetworkMember)):
                 SyntaxWarning)
         if val is Default:
             val = Config.default(type(self), name)
-        try:
+
+        if rc.getboolean('exceptions', 'simplified'):
+            try:
+                super(NengoObject, self).__setattr__(name, val)
+            except ValidationError:
+                exc_info = sys.exc_info()
+                reraise(exc_info[0], exc_info[1], None)
+        else:
             super(NengoObject, self).__setattr__(name, val)
-        except Exception as e:
-            arg0 = '' if len(e.args) == 0 else e.args[0]
-            arg0 = ("Validation error when setting '%s.%s': %s"
-                    % (self.__class__.__name__, name, arg0))
-            e.args = (arg0,) + e.args[1:]
-            raise
 
     def __getstate__(self):
         raise NotImplementedError("Nengo objects do not support pickling")
@@ -117,8 +124,8 @@ class ObjView(object):
         except IndexError:
             self.size_out = None
         if self.size_in is None and self.size_out is None:
-            raise IndexError("Invalid slice '%s' of %s"
-                             % (self.slice, self.obj))
+            raise ValidationError("Invalid slice '%s' of %s"
+                                  % (self.slice, self.obj), attr='key')
 
     def __getstate__(self):
         raise NotImplementedError("Nengo objects do not support pickling")
@@ -149,21 +156,25 @@ class ObjView(object):
 
 
 class NengoObjectParam(Parameter):
-    def __init__(self, optional=False, readonly=True,
+    def __init__(self, name, optional=False, readonly=True,
                  nonzero_size_in=False, nonzero_size_out=False):
         default = Unconfigurable  # These can't have defaults
         self.nonzero_size_in = nonzero_size_in
         self.nonzero_size_out = nonzero_size_out
-        super(NengoObjectParam, self).__init__(default, optional, readonly)
+        super(NengoObjectParam, self).__init__(
+            name, default, optional, readonly)
 
     def validate(self, instance, nengo_obj):
         from nengo.ensemble import Neurons
         from nengo.connection import LearningRule
         if not isinstance(nengo_obj, (
                 NengoObject, ObjView, Neurons, LearningRule)):
-            raise ValueError("'%s' is not a Nengo object" % nengo_obj)
+            raise ValidationError("'%s' is not a Nengo object" % nengo_obj,
+                                  attr=self.name, obj=instance)
         if self.nonzero_size_in and nengo_obj.size_in < 1:
-            raise ValueError("'%s' must have size_in > 0." % nengo_obj)
+            raise ValidationError("'%s' must have size_in > 0." % nengo_obj,
+                                  attr=self.name, obj=instance)
         if self.nonzero_size_out and nengo_obj.size_out < 1:
-            raise ValueError("'%s' must have size_out > 0." % nengo_obj)
+            raise ValidationError("'%s' must have size_out > 0." % nengo_obj,
+                                  attr=self.name, obj=instance)
         super(NengoObjectParam, self).validate(instance, nengo_obj)

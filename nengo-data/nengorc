@@ -61,3 +61,13 @@
 # nengo.utils.progress.ProgressUpdater interface (e.g.,
 # 'nengo.utils.progress.UpdateEveryT').
 #updater: auto
+
+
+# Settings for error messages due to exceptions
+[exceptions]
+
+# Use simplified exceptions. In most cases, simplified exceptions will be
+# easier to read and more useful for model development. However,
+# developers of Nengo internals or tools extending Nengo
+# may benefit from full exception tracebacks.
+#simplified: True

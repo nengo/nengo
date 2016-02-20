@@ -1,6 +1,7 @@
 import numpy as np
 
 import nengo
+from nengo.exceptions import ValidationError
 from nengo.networks.product import Product
 from nengo.utils.compat import range
 from nengo.utils.magic import memoize
@@ -34,7 +35,7 @@ def transform_in(dims, align, invert):
         Whether to reverse the order of elements.
     """
     if align not in ('A', 'B'):
-        raise ValueError("'align' must be either 'A' or 'B'")
+        raise ValidationError("'align' must be either 'A' or 'B'", 'align')
 
     dims2 = 4 * (dims // 2 + 1)
     tr = np.zeros((dims2, dims))

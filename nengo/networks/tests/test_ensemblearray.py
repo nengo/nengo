@@ -3,6 +3,7 @@ import pytest
 
 import nengo
 from nengo.dists import Choice
+from nengo.exceptions import ValidationError
 from nengo.utils.compat import range
 
 
@@ -197,7 +198,7 @@ def test_matrix_mul(Simulator, plt, seed):
 
 def test_arguments():
     """Make sure EnsembleArray accepts the right arguments."""
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         nengo.networks.EnsembleArray(nengo.LIF(10), 1, dimensions=2)
 
 
@@ -206,9 +207,9 @@ def test_directmode_errors():
         net.config[nengo.Ensemble].neuron_type = nengo.Direct()
 
         ea = nengo.networks.EnsembleArray(10, 2)
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             ea.add_neuron_input()
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             ea.add_neuron_output()
 
 

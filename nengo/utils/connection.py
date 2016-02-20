@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import numpy as np
 
 from . import numpy as npext
+from ..exceptions import ValidationError
 
 
 def target_function(eval_points, targets):
@@ -42,9 +43,9 @@ def target_function(eval_points, targets):
     targets = npext.array(targets, dtype=np.float64, min_dims=2)
 
     if len(eval_points) != len(targets):
-        raise ValueError("Number of evaluation points %s "
-                         "is not equal to number of targets "
-                         "%s" % (len(eval_points), len(targets)))
+        raise ValidationError(
+            "Number of evaluation points (%d) is not equal to the number of "
+            "targets (%s)" % (len(eval_points), len(targets)), 'eval_points')
 
     func_dict = {}
     for eval_point, target in zip(eval_points, targets):

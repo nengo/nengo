@@ -11,9 +11,10 @@ import warnings
 
 import numpy as np
 
-from ..rc import rc
 from .stdlib import get_terminal_size
 from .ipython import get_ipython
+from ..exceptions import ValidationError
+from ..rc import rc
 
 
 class MemoryLeakWarning(UserWarning):
@@ -492,6 +493,6 @@ def wrap_with_progressupdater(progress_bar=True):
         updater_class = get_default_progressupdater(progress_bar)
         return updater_class(progress_bar)
     else:
-        raise ValueError("'progress_bar' must be a boolean or instance of "
-                         "ProgressBar or ProgressUpdater (got %s)" %
-                         type(progress_bar).__name__)
+        raise ValidationError(
+            "must be a boolean or instance of ProgressBar or ProgressUpdater "
+            "(got %r)" % type(progress_bar).__name__,  attr='progress_bar')

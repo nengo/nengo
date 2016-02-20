@@ -42,7 +42,10 @@ RC_DEFAULTS = {
     'progress': {
         'updater': 'auto',
         'progress_bar': 'auto',
-    }
+    },
+    'exceptions': {
+        'simplified': True,
+    },
 }
 
 # The RC files in the order in which they will be read.

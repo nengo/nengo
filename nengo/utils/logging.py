@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import logging
 import sys
 
-from nengo.utils.compat import TextIO
+from .compat import TextIO
 
 console_formatter = logging.Formatter('[%(levelname)s] %(message)s')
 file_formatter = logging.Formatter(

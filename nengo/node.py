@@ -4,6 +4,7 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.base import NengoObject, ObjView
+from nengo.exceptions import ValidationError
 from nengo.params import Default, IntParam, Parameter, StringParam
 from nengo.processes import Process
 from nengo.utils.compat import is_array_like
@@ -11,9 +12,9 @@ from nengo.utils.stdlib import checked_call
 
 
 class OutputParam(Parameter):
-    def __init__(self, default, optional=True, readonly=False):
+    def __init__(self, name, default, optional=True, readonly=False):
         assert optional  # None has meaning (passthrough node)
-        super(OutputParam, self).__init__(default, optional, readonly)
+        super(OutputParam, self).__init__(name, default, optional, readonly)
 
     def __set__(self, node, output):
         super(OutputParam, self).validate(node, output)
@@ -45,8 +46,9 @@ class OutputParam(Parameter):
             self.validate_ndarray(node, output)
             node.size_out = output.size
         else:
-            raise ValueError("Invalid node output type %r" %
-                             node.output.__class__.__name__)
+            raise ValidationError("Invalid node output type %r" %
+                                  node.output.__class__.__name__,
+                                  attr=self.name, obj=node)
 
         # --- Set output
         self.data[node] = output
@@ -60,24 +62,29 @@ class OutputParam(Parameter):
                    "%d argument" % (output, len(args)))
             msg += (' (time, as a float)' if len(args) == 1 else
                     's (time, as a float and data, as a NumPy array)')
-            raise TypeError(msg)
+            raise ValidationError(msg, attr=self.name, obj=node)
 
         if result is not None:
             result = np.asarray(result)
             if len(result.shape) > 1:
-                raise ValueError("Node output must be a vector (got shape %s)"
-                                 % (result.shape,))
+                raise ValidationError("Node output must be a vector (got shape"
+                                      " %s)" % (result.shape,),
+                                      attr=self.name, obj=node)
         return result
 
     def validate_ndarray(self, node, output):
         if len(output.shape) > 1:
-            raise ValueError("Node output must be a vector (got shape %s)"
-                             % (output.shape,))
+            raise ValidationError("Node output must be a vector (got shape "
+                                  "%s)" % (output.shape,),
+                                  attr=self.name, obj=node)
         if node.size_in != 0:
-            raise TypeError("output must be callable if size_in != 0")
+            raise ValidationError("output must be callable if size_in != 0",
+                                  attr=self.name, obj=node)
         if node.size_out is not None and node.size_out != output.size:
-            raise ValueError("Size of Node output (%d) does not match size_out"
-                             "(%d)" % (output.size, node.size_out))
+            raise ValidationError("Size of Node output (%d) does not match "
+                                  "size_out (%d)"
+                                  % (output.size, node.size_out),
+                                  attr=self.name, obj=node)
 
 
 class Node(NengoObject):
@@ -121,10 +128,10 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
-    output = OutputParam(default=None)
-    size_in = IntParam(default=None, low=0, optional=True)
-    size_out = IntParam(default=None, low=0, optional=True)
-    label = StringParam(default=None, optional=True)
+    output = OutputParam('output', default=None)
+    size_in = IntParam('size_in', default=None, low=0, optional=True)
+    size_out = IntParam('silze_out', default=None, low=0, optional=True)
+    label = StringParam('label', default=None, optional=True)
 
     def __init__(self, output=Default,
                  size_in=Default, size_out=Default, label=Default):

@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 
 import nengo
+from nengo.exceptions import ValidationError
 from nengo.spa import pointer
 from nengo.utils.compat import is_iterable, is_number, is_integer, range
 
@@ -64,10 +65,9 @@ class Vocabulary(object):
     def __init__(self, dimensions, randomize=True, unitary=False,
                  max_similarity=0.1, include_pairs=False, rng=None):
 
-        if not is_integer(dimensions):
-            raise TypeError('dimensions must be an integer')
-        if dimensions < 1:
-            raise ValueError('dimensions must be positive')
+        if not is_integer(dimensions) or dimensions < 1:
+            raise ValidationError("dimensions must be a positive integer",
+                                  attr='dimensions', obj=self)
         self.dimensions = dimensions
         self.randomize = randomize
         self.unitary = unitary
@@ -118,8 +118,10 @@ class Vocabulary(object):
         else:
             index = len(self.pointers)
             if index >= self.dimensions:
-                raise IndexError('Tried to make more semantic pointers than' +
-                                 ' dimensions with non-randomized Vocabulary')
+                raise ValidationError(
+                    "Tried to make more semantic pointers than "
+                    "dimensions with non-randomized Vocabulary",
+                    attr='dimensions', obj=self)
             p = pointer.SemanticPointer(np.eye(self.dimensions)[index])
         return p
 
@@ -153,7 +155,8 @@ class Vocabulary(object):
             p = pointer.SemanticPointer(p)
 
         if key in self.pointers:
-            raise KeyError("The semantic pointer '%s' already exists" % key)
+            raise ValidationError("The semantic pointer %r already exists"
+                                  % key, attr='pointers', obj=self)
 
         self.pointers[key] = p
         self.keys.append(key)
@@ -312,7 +315,10 @@ class Vocabulary(object):
         Input parameter can either be a SemanticPointer or a vector.
         """
         if not self.include_pairs:
-            raise Exception('include_pairs must be True to call dot_pairs')
+            raise ValidationError(
+                "'include_pairs' must be True to call dot_pairs",
+                attr='include_pairs', obj=self)
+
         if isinstance(v, pointer.SemanticPointer):
             v = v.v
         return np.dot(self.vector_pairs, v)
@@ -422,8 +428,8 @@ class VocabularyParam(nengo.params.Parameter):
         super(VocabularyParam, self).validate(instance, vocab)
 
         if vocab is not None and not isinstance(vocab, Vocabulary):
-            raise ValueError(
-                "Must be Vocabulary (got type {0}).".format(
-                    vocab.__class__.__name__))
+            raise ValidationError("Must be of type 'Vocabulary' (got type %r)."
+                                  % vocab.__class__.__name__,
+                                  attr=self.name, obj=instance)
 
         return vocab

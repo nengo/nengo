@@ -7,9 +7,12 @@ from nengo.params import Parameter
 
 def test_config_basic():
     model = nengo.Network()
-    model.config[nengo.Ensemble].set_param('something', Parameter(None))
-    model.config[nengo.Ensemble].set_param('other', Parameter(default=0))
-    model.config[nengo.Connection].set_param('something_else', Parameter(None))
+    model.config[nengo.Ensemble].set_param('something',
+                                           Parameter('something', None))
+    model.config[nengo.Ensemble].set_param('other',
+                                           Parameter('other', default=0))
+    model.config[nengo.Connection].set_param('something_else',
+                                             Parameter('something_else', None))
 
     with pytest.raises(TypeError):
         model.config[nengo.Ensemble].set_param('fails', 1.0)
@@ -142,11 +145,11 @@ def test_config_property():
 
 def test_external_class():
     class A(object):
-        thing = Parameter(default='hey')
+        thing = Parameter('thing', default='hey')
 
     inst = A()
     config = nengo.Config(A)
-    config[A].set_param('amount', Parameter(default=1))
+    config[A].set_param('amount', Parameter('amount', default=1))
 
     # Extra param
     assert config[inst].amount == 1
@@ -165,7 +168,7 @@ def test_instance_fallthrough():
     inst1 = A()
     inst2 = A()
     config = nengo.Config(A)
-    config[A].set_param('amount', Parameter(default=1))
+    config[A].set_param('amount', Parameter('amount', default=1))
     assert config[A].amount == 1
     assert config[inst1].amount == 1
     assert config[inst2].amount == 1

@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from nengo.exceptions import ValidationError
 from nengo.utils.functions import piecewise
 
 
@@ -29,19 +30,19 @@ def test_lists():
 
 
 def test_invalid_key():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         f = piecewise({0.5: 1, 1: 0, 'a': 0.2})
         assert f
 
 
 def test_invalid_length():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         f = piecewise({0.5: [1, 0], 1.0: [1, 0, 0]})
         assert f
 
 
 def test_invalid_function_length():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         f = piecewise({0.5: 0, 1.0: lambda t: [t, t ** 2]})
         assert f
 

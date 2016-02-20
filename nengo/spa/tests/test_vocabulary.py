@@ -3,6 +3,7 @@ import re
 import numpy as np
 import pytest
 
+from nengo.exceptions import ValidationError
 from nengo.spa import Vocabulary
 from nengo.utils.testing import warns
 
@@ -57,11 +58,11 @@ def test_parse(rng):
 
 
 def test_invalid_dimensions():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         Vocabulary(1.5)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         Vocabulary(0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         Vocabulary(-1)
 
 

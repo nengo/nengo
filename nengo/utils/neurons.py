@@ -4,6 +4,7 @@ import logging
 import numpy as np
 
 from . import numpy as npext
+from ..exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -12,9 +13,11 @@ def spikes2events(t, spikes):
     """Return an event-based representation of spikes (i.e. spike times)"""
     spikes = npext.array(spikes, copy=False, min_dims=2)
     if spikes.ndim > 2:
-        raise ValueError("Cannot handle %d-dimensional arrays" % spikes.ndim)
+        raise ValidationError("Cannot handle %d-dimensional arrays"
+                              % spikes.ndim, attr='spikes')
     if spikes.shape[-1] != len(t):
-        raise ValueError("Last dimension of `spikes` must equal `len(t)`")
+        raise ValidationError("Last dimension of 'spikes' must equal 'len(t)'",
+                              attr='spikes')
 
     # find nonzero elements (spikes) in each row, and translate to times
     return [t[spike != 0] for spike in spikes]
@@ -86,7 +89,7 @@ def lowpass_filter(x, tau, kind='expon'):
         kern = alpha**2 * t * np.exp(-alpha * t)
         delay = tau
     else:
-        raise ValueError("Unrecognized filter kind '%s'" % kind)
+        raise ValidationError("Unrecognized filter kind '%s'" % kind, 'kind')
 
     delay = int(np.round(delay))
     return np.array(
@@ -115,9 +118,11 @@ def rates_kernel(t, spikes, kind='gauss', tau=0.04):
     spikes = spikes.T
     spikes = npext.array(spikes, copy=False, min_dims=2)
     if spikes.ndim > 2:
-        raise ValueError("Cannot handle %d-dimensional arrays" % spikes.ndim)
+        raise ValidationError("Cannot handle %d-dimensional arrays"
+                              % spikes.ndim, attr='spikes')
     if spikes.shape[-1] != len(t):
-        raise ValueError("Last dimension of `spikes` must equal `len(t)`")
+        raise ValidationError("Last dimension of 'spikes' must equal 'len(t)'",
+                              attr='spikes')
 
     n, nt = spikes.shape
     dt = t[1] - t[0]

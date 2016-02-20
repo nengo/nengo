@@ -279,7 +279,7 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
 def test_learningruletypeparam():
     """LearningRuleTypeParam must be one or many learning rules."""
     class Test(object):
-        lrp = LearningRuleTypeParam(default=None)
+        lrp = LearningRuleTypeParam('lrp', default=None)
 
     inst = Test()
     assert inst.lrp is None

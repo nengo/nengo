@@ -12,8 +12,9 @@ import time
 
 import numpy as np
 
-from nengo.params import Parameter
 import nengo.utils.numpy as npext
+from nengo.exceptions import ValidationError
+from nengo.params import Parameter
 from nengo.utils.compat import range, with_metaclass, iteritems
 from nengo.utils.magic import DocstringInheritor
 
@@ -278,11 +279,13 @@ class Solver(with_metaclass(DocstringInheritor)):
     def mul_encoders(self, Y, E, copy=False):
         if self.weights:
             if E is None:
-                raise ValueError("Encoders must be provided for weight solver")
+                raise ValidationError(
+                    "Encoders must be provided for weight solver", attr='E')
             return np.dot(Y, E)
         else:
             if E is not None:
-                raise ValueError("Encoders must be 'None' for decoder solver")
+                raise ValidationError(
+                    "Encoders must be 'None' for decoder solver", attr='E')
             return Y.copy() if copy else Y
 
     def __hash__(self):
@@ -297,7 +300,7 @@ class Solver(with_metaclass(DocstringInheritor)):
                     a.setflags(write=False)
                     hashes.append(hash(a))
                 else:
-                    raise ValueError("array is too large to hash")
+                    raise ValidationError("array is too large to hash", attr=k)
             elif isinstance(v, collections.Iterable):
                 hashes.append(hash(tuple(v)))
             elif isinstance(v, collections.Callable):
@@ -607,5 +610,6 @@ class NnlsL2nz(NnlsL2):
 class SolverParam(Parameter):
     def validate(self, instance, solver):
         if solver is not None and not isinstance(solver, Solver):
-            raise ValueError("'%s' is not a solver" % solver)
+            raise ValidationError("'%s' is not a solver" % solver,
+                                  attr=self.name, obj=instance)
         super(SolverParam, self).validate(instance, solver)

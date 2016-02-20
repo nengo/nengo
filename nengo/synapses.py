@@ -2,6 +2,7 @@ import collections
 
 import numpy as np
 
+from nengo.exceptions import ValidationError
 from nengo.params import (BoolParam, NdarrayParam, NumberParam, Parameter,
                           FrozenObject, Unconfigurable)
 from nengo.utils.compat import is_number
@@ -34,9 +35,9 @@ class LinearFilter(Synapse):
     .. [1] http://en.wikipedia.org/wiki/Filter_%28signal_processing%29
     """
 
-    num = NdarrayParam(shape='*')
-    den = NdarrayParam(shape='*')
-    analog = BoolParam()
+    num = NdarrayParam('num', shape='*')
+    den = NdarrayParam('den', shape='*')
+    analog = BoolParam('analog')
 
     def __init__(self, num, den, analog=True):
         super(LinearFilter, self).__init__()
@@ -55,7 +56,8 @@ class LinearFilter(Synapse):
             num = num.flatten()
 
         if den[0] != 1.:
-            raise ValueError("First element of the denominator must be 1")
+            raise ValidationError("First element of the denominator must be 1",
+                                  attr='den', obj=self)
         num = num[1:] if num[0] == 0 else num
         den = den[1:]  # drop first element (equal to 1)
 
@@ -73,7 +75,7 @@ class LinearFilter(Synapse):
             self.output = output
 
         def __call__(self, signal):
-            raise NotImplementedError
+            raise NotImplementedError("Step functions must implement __call__")
 
     class NoDen(Step):
         """An LTI step function for transfer functions with no denominator.
@@ -83,8 +85,8 @@ class LinearFilter(Synapse):
         """
         def __init__(self, num, den, output):
             if len(den) > 0:
-                raise ValueError("`den` must be empty (got length %d)"
-                                 % (len(den)))
+                raise ValidationError("'den' must be empty (got length %d)"
+                                      % len(den), attr='den', obj=self)
             super(LinearFilter.NoDen, self).__init__(num, den, output)
             self.b = num[0]
 
@@ -98,9 +100,13 @@ class LinearFilter(Synapse):
         step function.
         """
         def __init__(self, num, den, output):
-            if len(num) != 1 or len(den) != 1:
-                raise ValueError("`num` and `den` must both be length 1 "
-                                 "(got %d and %d)" % (len(num), len(den)))
+            if len(num) != 1:
+                raise ValidationError("'num' must be length 1 (got %d)"
+                                      % len(num), attr='num', obj=self)
+            if len(den) != 1:
+                raise ValidationError("'den' must be length 1 (got %d)"
+                                      % len(den), attr='den', obj=self)
+
             super(LinearFilter.Simple, self).__init__(num, den, output)
             self.b = num[0]
             self.a = den[0]
@@ -143,7 +149,7 @@ class Lowpass(LinearFilter):
     tau : float
         The time constant of the filter in seconds.
     """
-    tau = NumberParam(low=0)
+    tau = NumberParam('tau', low=0)
 
     def __init__(self, tau):
         super(Lowpass, self).__init__([1], [tau, 1])
@@ -178,7 +184,7 @@ class Alpha(LinearFilter):
     .. [1] Mainen, Z.F. and Sejnowski, T.J. (1995). Reliability of spike timing
        in neocortical neurons. Science (New York, NY), 268(5216):1503-6.
     """
-    tau = NumberParam(low=0)
+    tau = NumberParam('tau', low=0)
 
     def __init__(self, tau):
         super(Alpha, self).__init__([1], [tau**2, 2*tau, 1])
@@ -201,7 +207,7 @@ class Triangle(Synapse):
     the triangle is `t` seconds, thus the digital filter will have `t / dt + 1`
     taps.
     """
-    t = NumberParam(low=0)
+    t = NumberParam('t', low=0)
 
     def __init__(self, t):
         super(Triangle, self).__init__()
@@ -256,8 +262,8 @@ def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
     # --- buffer method
     if x0 is not None:
         if x0.shape != filt_view[0].shape:
-            raise ValueError("'x0' with shape %s must have shape %s" %
-                             (x0.shape, filt_view[0].shape))
+            raise ValidationError("'x0' with shape %s must have shape %s" %
+                                  (x0.shape, filt_view[0].shape), attr='x0')
         signal_out = np.array(x0)
     else:
         # signal_out is our buffer for the current filter state
@@ -317,8 +323,9 @@ def filtfilt(signal, synapse, dt, axis=0, copy=True):
 class SynapseParam(Parameter):
     equatable = True
 
-    def __init__(self, default=Unconfigurable, optional=True, readonly=None):
-        super(SynapseParam, self).__init__(default, optional, readonly)
+    def __init__(self, name,
+                 default=Unconfigurable, optional=True, readonly=None):
+        super(SynapseParam, self).__init__(name, default, optional, readonly)
 
     def __set__(self, instance, synapse):
         if is_number(synapse):
@@ -327,12 +334,14 @@ class SynapseParam(Parameter):
 
     def validate(self, instance, synapse):
         if synapse is not None and not isinstance(synapse, Synapse):
-            raise ValueError("'%s' is not a synapse type" % synapse)
+            raise ValidationError("'%s' is not a synapse type" % synapse,
+                                  attr=self.name, obj=instance)
         super(SynapseParam, self).validate(instance, synapse)
 
 
 class LinearFilterParam(SynapseParam):
     def validate(self, instance, synapse):
         if synapse is not None and not isinstance(synapse, LinearFilter):
-            raise ValueError("'%s' is not a LinearFilter" % synapse)
+            raise ValidationError("'%s' is not a LinearFilter" % synapse,
+                                  attr=self.name, obj=instance)
         super(SynapseParam, self).validate(instance, synapse)

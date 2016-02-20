@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import warnings
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 
 from nengo.utils.compat import range
@@ -102,10 +103,11 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa: C
     if ax is None:
         ax = plt.gca()
 
-    # older Matplotlib doesn't have eventplot
-    has_eventplot = hasattr(ax, 'eventplot')
-    if use_eventplot and not has_eventplot:
-        raise ValueError("Your Matplotlib version does not have 'eventplot'")
+    if use_eventplot and not hasattr(ax, 'eventplot'):
+        warnings.warn("Matplotlib version %s does not have 'eventplot'. "
+                      "Falling back to non-eventplot version."
+                      % matplotlib.__version__)
+        use_eventplot = False
 
     colors = kwargs.pop('colors', None)
     if colors is None:

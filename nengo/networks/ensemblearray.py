@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 
 import nengo
+from nengo.exceptions import ValidationError
 from nengo.utils.compat import is_iterable, range
 from nengo.utils.network import with_self
 
@@ -47,10 +48,11 @@ class EnsembleArray(nengo.Network):
                  neuron_nodes=False, label=None, seed=None,
                  add_to_container=None, **ens_kwargs):
         if "dimensions" in ens_kwargs:
-            raise TypeError(
+            raise ValidationError(
                 "'dimensions' is not a valid argument to EnsembleArray. "
                 "To set the number of ensembles, use 'n_ensembles'. To set "
-                "the number of dimensions per ensemble, use 'ens_dimensions'.")
+                "the number of dimensions per ensemble, use 'ens_dimensions'.",
+                attr='dimensions', obj=self)
 
         super(EnsembleArray, self).__init__(label, seed, add_to_container)
 
@@ -107,8 +109,10 @@ class EnsembleArray(nengo.Network):
             return self.neuron_input
 
         if isinstance(self.ea_ensembles[0].neuron_type, nengo.Direct):
-            raise TypeError("Ensembles use Direct neuron type. "
-                            "Cannot give neuron input to Direct neurons.")
+            raise ValidationError(
+                "Ensembles use Direct neuron type. "
+                "Cannot give neuron input to Direct neurons.",
+                attr='ea_ensembles[0].neuron_type', obj=self)
 
         self.neuron_input = nengo.Node(
             size_in=self.n_neurons * self.n_ensembles, label="neuron_input")
@@ -134,8 +138,10 @@ class EnsembleArray(nengo.Network):
             return self.neuron_output
 
         if isinstance(self.ea_ensembles[0].neuron_type, nengo.Direct):
-            raise TypeError("Ensembles use Direct neuron type. "
-                            "Cannot get neuron output from Direct neurons.")
+            raise ValidationError(
+                "Ensembles use Direct neuron type. "
+                "Cannot get neuron output from Direct neurons.",
+                attr='ea_ensembles[0].neuron_type', obj=self)
 
         self.neuron_output = nengo.Node(
             size_in=self.n_neurons * self.n_ensembles, label="neuron_output")
@@ -156,7 +162,8 @@ class EnsembleArray(nengo.Network):
 
         if is_iterable(function) and all(callable(f) for f in function):
             if len(list(function)) != self.n_ensembles:
-                raise ValueError("Must have one function per ensemble")
+                raise ValidationError(
+                    "Must have one function per ensemble", attr='function')
 
             for i, func in enumerate(function):
                 sizes[i] = np.asarray(func(np.zeros(dims_per_ens))).size
@@ -167,8 +174,8 @@ class EnsembleArray(nengo.Network):
             sizes[:] = dims_per_ens
             function = [None] * self.n_ensembles
         else:
-            raise ValueError(
-                "'function' must be a callable, list of callables, or 'None'")
+            raise ValidationError("'function' must be a callable, list of "
+                                  "callables, or None", attr='function')
 
         output = nengo.Node(output=None, size_in=sizes.sum(), label=name)
         setattr(self, name, output)

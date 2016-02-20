@@ -1,6 +1,7 @@
 from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.config import Config
 from nengo.connection import Connection, LearningRule
+from nengo.exceptions import ValidationError
 from nengo.params import (
     Default, ConnectionDefault, IntParam, NumberParam, StringParam)
 from nengo.solvers import SolverParam
@@ -11,8 +12,9 @@ class TargetParam(NengoObjectParam):
     def validate(self, probe, target):
         obj = target.obj if isinstance(target, ObjView) else target
         if not hasattr(obj, 'probeable'):
-            raise TypeError(
-                "Type '%s' is not probeable" % obj.__class__.__name__)
+            raise ValidationError("Type %r is not probeable"
+                                  % obj.__class__.__name__,
+                                  attr=self.name, obj=probe)
 
         # do this after; better to know that type is not Probable first
         if not isinstance(obj, LearningRule):
@@ -23,8 +25,9 @@ class AttributeParam(StringParam):
     def validate(self, probe, attr):
         super(AttributeParam, self).validate(probe, attr)
         if attr not in probe.obj.probeable:
-            raise ValueError("Attribute '%s' is not probeable on %s."
-                             % (attr, probe.obj))
+            raise ValidationError("Attribute %r is not probeable on %s."
+                                  % (attr, probe.obj),
+                                  attr=self.name, obj=probe)
 
 
 class ProbeSolverParam(SolverParam):
@@ -37,8 +40,9 @@ class ProbeSolverParam(SolverParam):
     def validate(self, conn, solver):
         super(ProbeSolverParam, self).validate(conn, solver)
         if solver is not None and solver.weights:
-            raise ValueError("weight solvers only work for ensemble to "
-                             "ensemble connections, not probes")
+            raise ValidationError("weight solvers only work for ensemble to "
+                                  "ensemble connections, not probes",
+                                  attr=self.name, obj=conn)
 
 
 class Probe(NengoObject):
@@ -79,13 +83,14 @@ class Probe(NengoObject):
         A name for the probe. Used for debugging and visualization.
     """
 
-    target = TargetParam(nonzero_size_out=True)
-    attr = AttributeParam(default=None)
-    sample_every = NumberParam(default=None, optional=True, low=1e-10)
-    synapse = SynapseParam(default=None)
-    solver = ProbeSolverParam(default=ConnectionDefault)
-    seed = IntParam(default=None, optional=True)
-    label = StringParam(default=None, optional=True)
+    target = TargetParam('target', nonzero_size_out=True)
+    attr = AttributeParam('attr', default=None)
+    sample_every = NumberParam(
+        'sample_ever', default=None, optional=True, low=1e-10)
+    synapse = SynapseParam('synapse', default=None)
+    solver = ProbeSolverParam('solver', default=ConnectionDefault)
+    seed = IntParam('seed', default=None, optional=True)
+    label = StringParam('label', default=None, optional=True)
 
     def __init__(self, target, attr=None, sample_every=Default,
                  synapse=Default, solver=Default, seed=Default, label=Default):

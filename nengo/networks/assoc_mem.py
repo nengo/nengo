@@ -5,6 +5,7 @@ import numpy as np
 import nengo
 from .ensemblearray import EnsembleArray
 from nengo.dists import Choice, Exponential, Uniform
+from nengo.exceptions import ValidationError
 from nengo.utils.compat import is_iterable, range
 from nengo.utils.network import with_self
 
@@ -61,14 +62,16 @@ class AssociativeMemory(nengo.Network):
             output_vectors = np.array(output_vectors, ndmin=2)
 
         if input_vectors.shape[0] == 0:
-            raise ValueError('Number of input vectors cannot be 0.')
+            raise ValidationError("Number of input vectors cannot be 0.",
+                                  attr='input_vectors', obj=self)
         elif input_vectors.shape[0] != output_vectors.shape[0]:
             # Fail if number of input items and number of output items don't
             # match
-            raise ValueError(
-                'Number of input vectors does not match number of output '
-                'vectors. %d != %d'
-                % (input_vectors.shape[0], output_vectors.shape[0]))
+            raise ValidationError(
+                "Number of input vectors does not match number of output "
+                "vectors. %d != %d"
+                % (input_vectors.shape[0], output_vectors.shape[0]),
+                attr='input_vectors', obj=self.__class__)
 
         # Handle possible different threshold / input_scale values for each
         # element in the associative memory
@@ -80,13 +83,15 @@ class AssociativeMemory(nengo.Network):
         # --- Check preconditions
         self.n_items = input_vectors.shape[0]
         if self.n_items != output_vectors.shape[0]:
-            raise ValueError(
+            raise ValidationError(
                 "Number of input vectors (%d) does not match number of output "
-                "vectors (%d)" % (self.n_items, output_vectors.shape[0]))
+                "vectors (%d)" % (self.n_items, output_vectors.shape[0]),
+                attr='input_vectors', obj=self)
         if threshold.shape[0] != self.n_items:
-            raise ValueError(
+            raise ValidationError(
                 "Number of threshold values (%d) does not match number of "
-                "input vectors (%d)." % (threshold.shape[0], self.n_items))
+                "input vectors (%d)." % (threshold.shape[0], self.n_items),
+                attr='threshold', obj=self)
 
         # --- Set parameters
         self.out_conns = []  # Used in `add_threshold_to_output`
@@ -200,12 +205,13 @@ class AssociativeMemory(nengo.Network):
 
         # --- Check some preconditions
         if input_scales.shape[1] != n_vectors:
-            raise ValueError("Number of input_scale values (%d) does not "
-                             "match number of input vectors (%d)."
-                             % (input_scales.shape[1], n_vectors))
+            raise ValidationError("Number of input_scale values (%d) does not "
+                                  "match number of input vectors (%d)."
+                                  % (input_scales.shape[1], n_vectors),
+                                  attr='input_scales')
         if hasattr(self, name):
-            raise NameError("Name '%s' already exists as a node in the "
-                            "associative memory." % name)
+            raise ValidationError("Name '%s' already exists as a node in the "
+                                  "associative memory." % name, attr='name')
 
         # --- Finally, make the input node and connect it
         in_node = nengo.Node(size_in=d_vectors, label=name)
@@ -237,8 +243,8 @@ class AssociativeMemory(nengo.Network):
 
         # --- Check preconditions
         if hasattr(self, name):
-            raise NameError("Name '%s' already exists as a node in the "
-                            "associative memory." % name)
+            raise ValidationError("Name '%s' already exists as a node in the "
+                                  "associative memory." % name, attr='name')
 
         # --- Make the output node and connect it
         output = nengo.Node(size_in=output_vectors.shape[1], label=name)

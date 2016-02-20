@@ -50,30 +50,36 @@ class Ensemble(NengoObject):
         A name for the ensemble. Used for debugging and visualization.
     """
 
-    n_neurons = IntParam(default=None, low=1)
-    dimensions = IntParam(default=None, low=1)
-    radius = NumberParam(default=1.0, low=1e-10)
-    neuron_type = NeuronTypeParam(default=LIF())
-    encoders = DistOrArrayParam(default=UniformHypersphere(surface=True),
+    n_neurons = IntParam('n_neurons', default=None, low=1)
+    dimensions = IntParam('dimensions', default=None, low=1)
+    radius = NumberParam('radius', default=1.0, low=1e-10)
+    neuron_type = NeuronTypeParam('neuron_type', default=LIF())
+    encoders = DistOrArrayParam('encoders',
+                                default=UniformHypersphere(surface=True),
                                 sample_shape=('n_neurons', 'dimensions'))
-    intercepts = DistOrArrayParam(default=Uniform(-1.0, 1.0),
+    intercepts = DistOrArrayParam('intercepts',
+                                  default=Uniform(-1.0, 1.0),
                                   optional=True,
                                   sample_shape=('n_neurons',))
-    max_rates = DistOrArrayParam(default=Uniform(200, 400),
+    max_rates = DistOrArrayParam('max_rates',
+                                 default=Uniform(200, 400),
                                  optional=True,
                                  sample_shape=('n_neurons',))
-    n_eval_points = IntParam(default=None, optional=True)
-    eval_points = DistOrArrayParam(default=UniformHypersphere(),
+    n_eval_points = IntParam('n_eval_points', default=None, optional=True)
+    eval_points = DistOrArrayParam('eval_points',
+                                   default=UniformHypersphere(),
                                    sample_shape=('*', 'dimensions'))
-    bias = DistOrArrayParam(default=None,
+    bias = DistOrArrayParam('bias',
+                            default=None,
                             optional=True,
                             sample_shape=('n_neurons',))
-    gain = DistOrArrayParam(default=None,
+    gain = DistOrArrayParam('gain',
+                            default=None,
                             optional=True,
                             sample_shape=('n_neurons',))
-    noise = ProcessParam(default=None, optional=True)
-    seed = IntParam(default=None, optional=True)
-    label = StringParam(default=None, optional=True)
+    noise = ProcessParam('noise', default=None, optional=True)
+    seed = IntParam('seed', default=None, optional=True)
+    label = StringParam('label', default=None, optional=True)
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,

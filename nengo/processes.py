@@ -4,6 +4,7 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.dists import DistributionParam, Gaussian
+from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam, IntParam, NdarrayParam, NumberParam, Parameter, FrozenObject)
 from nengo.synapses import LinearFilter, LinearFilterParam, Lowpass
@@ -27,10 +28,10 @@ class Process(FrozenObject):
     seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
-    default_size_in = IntParam(low=0)
-    default_size_out = IntParam(low=0)
-    default_dt = NumberParam(low=0, low_open=True)
-    seed = IntParam(low=0, high=npext.maxint, optional=True)
+    default_size_in = IntParam('default_size_in', low=0)
+    default_size_out = IntParam('default_size_out', low=0)
+    default_dt = NumberParam('default_dt', low=0, low_open=True)
+    seed = IntParam('seed', low=0, high=npext.maxint, optional=True)
 
     def __init__(self, default_size_in=0, default_size_out=1, seed=None):
         super(Process, self).__init__()
@@ -106,8 +107,8 @@ class WhiteNoise(Process):
        Uhlenbeck process and its integral. Phys. Rev. E 54, pp. 2084-91.
     """
 
-    dist = DistributionParam()
-    scale = BoolParam()
+    dist = DistributionParam('dist')
+    scale = BoolParam('scale')
 
     def __init__(self, dist=Gaussian(mean=0, std=1), scale=True, seed=None):
         super(WhiteNoise, self).__init__(seed=seed)
@@ -155,9 +156,9 @@ class FilteredNoise(Process):
         Random number seed. Ensures noise will be the same each run.
     """
 
-    synapse = LinearFilterParam()
-    dist = DistributionParam()
-    scale = BoolParam()
+    synapse = LinearFilterParam('synapse')
+    dist = DistributionParam('dist')
+    scale = BoolParam('scale')
 
     def __init__(self, synapse=Lowpass(tau=0.005), synapse_kwargs={},
                  dist=Gaussian(mean=0, std=1), scale=True, seed=None):
@@ -236,9 +237,9 @@ class WhiteSignal(Process):
     seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
-    period = NumberParam(low=0, low_open=True)
-    high = NumberParam(low=0, low_open=True, optional=True)
-    rms = NumberParam(low=0, low_open=True)
+    period = NumberParam('period', low=0, low_open=True)
+    high = NumberParam('high', low=0, low_open=True, optional=True)
+    rms = NumberParam('rms', low=0, low_open=True)
 
     def __init__(self, period, high=None, rms=0.5, seed=None):
         super(WhiteSignal, self).__init__(seed=seed)
@@ -288,8 +289,8 @@ class PresentInput(Process):
     presentation_time : float
         Show each input for `presentation_time` seconds.
     """
-    inputs = NdarrayParam(shape=('...',))
-    presentation_time = NumberParam(low=0, low_open=True)
+    inputs = NdarrayParam('inputs', shape=('...',))
+    presentation_time = NumberParam('presentation_time', low=0, low_open=True)
 
     def __init__(self, inputs, presentation_time):
         self.inputs = inputs
@@ -318,7 +319,7 @@ class ProcessParam(Parameter):
     def validate(self, instance, process):
         super(ProcessParam, self).validate(instance, process)
         if process is not None and not isinstance(process, Process):
-            raise ValueError("Must be Process (got type '%s')" % (
-                process.__class__.__name__))
-
+            raise ValidationError(
+                "Must be Process (got type %r)" % process.__class__.__name__,
+                attr=self.name, obj=instance)
         return process

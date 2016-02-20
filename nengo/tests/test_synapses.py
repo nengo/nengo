@@ -169,7 +169,7 @@ def test_lti_lowpass(rng, plt):
 def test_synapseparam():
     """SynapseParam must be a Synapse, and converts numbers to LowPass."""
     class Test(object):
-        sp = SynapseParam(default=Lowpass(0.1))
+        sp = SynapseParam('sp', default=Lowpass(0.1))
 
     inst = Test()
     assert isinstance(inst.sp, Lowpass)
