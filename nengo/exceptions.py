@@ -58,3 +58,7 @@ class ObsoleteError(NengoException):
 
 class ConfigError(NengoException, ValueError):
     """A ValueError encountered in the config system."""
+
+
+class SpaParseError(NengoException, ValueError):
+    """An error encountered while parsing a SPA expression."""

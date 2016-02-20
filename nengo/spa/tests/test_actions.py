@@ -1,6 +1,7 @@
 import pytest
 
 from nengo import spa
+from nengo.exceptions import SpaParseError
 from nengo.spa.actions import Expression, Effect, Action, Actions
 
 
@@ -14,7 +15,7 @@ def test_expression():
     c = Expression(['a'], '1')
     assert str(c.expression) == '1'
 
-    with pytest.raises(NameError):
+    with pytest.raises(SpaParseError):
         c = Expression(['a', 'b'], 'dot(c, C)')
 
 
@@ -54,17 +55,17 @@ def test_effect():
     e = Effect(['a', 'b'], ['foo', 'bar'], '  foo = dot(a, b)  , bar = b')
     assert str(e) == 'foo=dot(a, b), bar=b'
 
-    with pytest.raises(NameError):
+    with pytest.raises(SpaParseError):
         Effect(['a', 'b'], ['q'], 'q=z')
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SpaParseError):
         Effect(['a', 'b'], ['q'], 'q=a, q=b')  # lvalue appears twice
 
 
 def test_inverted():
-    with pytest.raises(ValueError):
+    with pytest.raises(SpaParseError):
         Effect(['b'], ['a'], 'a = ~2*b')
-    with pytest.raises(ValueError):
+    with pytest.raises(SpaParseError):
         Effect(['b'], ['a'], 'a = ~2*C*b')
 
 
@@ -79,26 +80,26 @@ def test_action():
     assert a.condition is None
     assert str(a.effect) == 'motor=A * vision'
 
-    with pytest.raises(NameError):
+    with pytest.raises(SpaParseError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    'motor=vis*A', 'test_action')
 
-    with pytest.raises(NameError):
+    with pytest.raises(SpaParseError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    '0.5 --> motor=vis*A', 'test_action')
 
-    with pytest.raises(NameError):
+    with pytest.raises(SpaParseError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    '0.5*dot(mem, a) --> motor=B', name=None)
 
-    with pytest.raises(TypeError):
+    with pytest.raises(SpaParseError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    '0.5*dot(memory+1, vision) --> motor=B', name='test_action')
 
-    with pytest.raises(NameError):
+    with pytest.raises(SpaParseError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    'motor2=B', name='test_action')
-    with pytest.raises(NameError):
+    with pytest.raises(SpaParseError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    'motor=A, motor2=B', name='test_action')
 

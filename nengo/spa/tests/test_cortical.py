@@ -3,6 +3,7 @@ import pytest
 
 import nengo
 from nengo import spa
+from nengo.exceptions import SpaParseError
 
 
 def test_connect(Simulator, seed):
@@ -70,7 +71,7 @@ def test_translate(Simulator, seed):
 
 def test_errors():
     # buffer2 does not exist
-    with pytest.raises(NameError):
+    with pytest.raises(SpaParseError):
         with spa.SPA() as model:
             model.buffer = spa.Buffer(dimensions=16)
             model.cortical = spa.Cortical(spa.Actions('buffer2=buffer'))

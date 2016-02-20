@@ -1,5 +1,6 @@
 import pytest
 
+from nengo.exceptions import SpaParseError
 from nengo.spa.action_objects import Symbol, Source, DotProduct
 
 A = Symbol('A')
@@ -90,11 +91,11 @@ def test_dotproduct():
     assert str(DotProduct(x, A)) == 'dot(x, A)'
     assert str(DotProduct(B, y)) == 'dot(B, y)'
 
-    with pytest.raises(TypeError):
+    with pytest.raises(SpaParseError):
         DotProduct(B, A)
-    with pytest.raises(TypeError):
+    with pytest.raises(SpaParseError):
         DotProduct(A, "B")
-    with pytest.raises(TypeError):
+    with pytest.raises(SpaParseError):
         DotProduct(1, A)
 
     assert str(0.5*DotProduct(x, y)) == '0.5 * dot(x, y)'

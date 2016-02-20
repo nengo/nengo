@@ -4,6 +4,7 @@ import re
 import warnings
 from collections import OrderedDict
 
+from nengo.exceptions import SpaParseError
 from nengo.spa.action_objects import Symbol, Source, DotProduct, Summation
 from nengo.utils.compat import iteritems
 
@@ -39,11 +40,11 @@ class Expression(object):
         try:
             self.expression = eval(sanitized_exp, {}, self)
         except NameError as e:
-            raise NameError("Unknown module in expression '%s': %s" %
-                            (expression, e))
+            raise SpaParseError("Unknown module in expression '%s': %s" %
+                                (expression, e))
         except TypeError as e:
-            raise TypeError("Invalid operator in expression '%s': %s" %
-                            (expression, e))
+            raise SpaParseError("Invalid operator in expression '%s': %s" %
+                                (expression, e))
 
         # normalize the result to a summation
         if not isinstance(self.expression, Summation):
@@ -52,8 +53,8 @@ class Expression(object):
     def validate_string(self, text):
         m = re.search('~[^a-zA-Z]', text)
         if m is not None:
-            raise ValueError("~ is only permitted before names (e.g., DOG) "
-                             "or modules (e.g., vision): %s" % text)
+            raise SpaParseError("~ is only permitted before names (e.g., DOG) "
+                                "or modules (e.g., vision): %s" % text)
 
     def __getitem__(self, key):
         # this gets used by the eval in the constructor to create new
@@ -61,7 +62,8 @@ class Expression(object):
         item = self.objects.get(key, None)
         if item is None:
             if not key[0].isupper():
-                raise KeyError("Semantic pointers must begin with a capital")
+                raise SpaParseError(
+                    "Semantic pointers must begin with a capital letter.")
             item = Symbol(key)
             self.objects[key] = item
         return item
@@ -97,13 +99,15 @@ class Effect(object):
         for lvalue, rvalue in re.findall("(.*?)=([^=]*)(?:,|$)", effect):
             sink = lvalue.strip()
             if sink not in sinks:
-                raise NameError("Left-hand module '%s' from effect '%s=%s' "
-                                "is not defined." %
-                                (lvalue, lvalue, rvalue))
+                raise SpaParseError(
+                    "Left-hand module '%s' from effect '%s=%s' "
+                    "is not defined." %
+                    (lvalue, lvalue, rvalue))
             if sink in self.effect:
-                raise ValueError("Left-hand module '%s' from effect '%s=%s' "
-                                 "is assigned to multiple times in '%s'." %
-                                 (lvalue, lvalue, rvalue, effect))
+                raise SpaParseError(
+                    "Left-hand module '%s' from effect '%s=%s' "
+                    "is assigned to multiple times in '%s'." %
+                    (lvalue, lvalue, rvalue, effect))
             self.effect[sink] = Expression(sources, rvalue)
 
     def __str__(self):

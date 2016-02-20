@@ -3,7 +3,7 @@ import re
 import numpy as np
 import pytest
 
-from nengo.exceptions import ValidationError
+from nengo.exceptions import SpaParseError, ValidationError
 from nengo.spa import Vocabulary
 from nengo.utils.testing import warns
 
@@ -53,7 +53,7 @@ def test_parse(rng):
 
     with pytest.raises(SyntaxError):
         v.parse('A((')
-    with pytest.raises(TypeError):
+    with pytest.raises(SpaParseError):
         v.parse('"hello"')
 
 
@@ -96,9 +96,9 @@ def test_text(rng):
 
 def test_capital(rng):
     v = Vocabulary(16, rng=rng)
-    with pytest.raises(KeyError):
+    with pytest.raises(SpaParseError):
         v.parse('a')
-    with pytest.raises(KeyError):
+    with pytest.raises(SpaParseError):
         v.parse('A+B+C+a')
 
 

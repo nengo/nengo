@@ -2,6 +2,7 @@ import pytest
 
 import nengo
 from nengo import spa
+from nengo.exceptions import SpaParseError
 
 import numpy as np
 
@@ -177,7 +178,7 @@ def test_nondefault_routing(Simulator, seed, plt):
 
 def test_errors():
     # motor does not exist
-    with pytest.raises(NameError):
+    with pytest.raises(SpaParseError):
         with spa.SPA() as model:
             model.vision = spa.Buffer(dimensions=16)
             actions = spa.Actions('0.5 --> motor=A')

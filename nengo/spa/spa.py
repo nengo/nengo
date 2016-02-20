@@ -163,7 +163,7 @@ class SPA(nengo.Network):
         The name will be either the same as a module, or of the form
         <module_name>_<input_name>.
         """
-        if name in self._modules:
+        if name in self._modules and 'default' in self._modules[name].inputs:
             return self._modules[name].inputs['default']
         elif '_' in name:
             module, name = name.rsplit('_', 1)

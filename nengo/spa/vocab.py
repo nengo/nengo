@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 import nengo
-from nengo.exceptions import ValidationError
+from nengo.exceptions import SpaParseError, ValidationError
 from nengo.spa import pointer
 from nengo.utils.compat import is_iterable, is_number, is_integer, range
 
@@ -133,7 +133,8 @@ class Vocabulary(object):
         with a capital letter.
         """
         if not key[0].isupper():
-            raise KeyError('Semantic pointers must begin with a capital')
+            raise SpaParseError(
+                "Semantic pointers must begin with a capital letter.")
         value = self.pointers.get(key, None)
         if value is None:
             if is_iterable(self.unitary):
@@ -150,7 +151,8 @@ class Vocabulary(object):
         The pointer value can be a SemanticPointer or a vector.
         """
         if not key[0].isupper():
-            raise KeyError('Semantic pointers must begin with a capital')
+            raise SpaParseError(
+                "Semantic pointers must begin with a capital letter.")
         if not isinstance(p, pointer.SemanticPointer):
             p = pointer.SemanticPointer(p)
 
@@ -216,13 +218,14 @@ class Vocabulary(object):
         try:
             value = eval(text, {}, self)
         except NameError:
-            raise KeyError('Semantic pointers must start with a capital')
+            raise SpaParseError(
+                "Semantic pointers must start with a capital letter.")
 
         if is_number(value):
             value = value * self.identity
         if not isinstance(value, pointer.SemanticPointer):
-            raise TypeError('The result of "%s" was not a SemanticPointer' %
-                            text)
+            raise SpaParseError(
+                "The result of parsing '%s' is not a SemanticPointer" % text)
         return value
 
     @property
