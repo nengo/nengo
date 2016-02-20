@@ -34,3 +34,7 @@ class ReadonlyError(ValidationError):
         if msg is None:
             msg = "%s is read-only and cannot be changed" % attr
         super(ReadonlyError, self).__init__(msg, attr, obj)
+
+
+class BuildError(NengoException, ValueError):
+    """A ValueError encountered during the build process."""

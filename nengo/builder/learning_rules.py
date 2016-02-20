@@ -5,6 +5,7 @@ from nengo.builder.operator import DotInc, ElementwiseInc, Operator, Reset
 from nengo.builder.signal import Signal
 from nengo.connection import LearningRule
 from nengo.ensemble import Ensemble, Neurons
+from nengo.exceptions import BuildError
 from nengo.learning_rules import BCM, Oja, PES, Voja
 from nengo.node import Node
 from nengo.synapses import Lowpass
@@ -175,7 +176,7 @@ def build_learning_rule(model, rule):
             delta = Signal(
                 np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
     else:
-        raise ValueError("Unknown target %r" % rule.modifies)
+        raise BuildError("Unknown target %r" % rule.modifies)
 
     assert delta.shape == target.shape
     model.add_op(
@@ -305,7 +306,7 @@ def build_pes(model, pes, rule):
     elif isinstance(conn.pre_obj, (Ensemble, Neurons)):
         local_error = correction
     else:
-        raise ValueError("'pre' object '%s' not suitable for PES learning"
+        raise BuildError("'pre' object '%s' not suitable for PES learning"
                          % (conn.pre_obj))
 
     # delta = local_error * activities

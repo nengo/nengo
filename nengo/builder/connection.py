@@ -10,6 +10,7 @@ from nengo.builder.operator import (
 from nengo.builder.signal import Signal
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble, Neurons
+from nengo.exceptions import BuildError
 from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.utils.compat import is_iterable, itervalues
@@ -17,10 +18,6 @@ from nengo.utils.compat import is_iterable, itervalues
 
 BuiltConnection = collections.namedtuple(
     'BuiltConnection', ['eval_points', 'solver_info', 'weights'])
-
-
-class ZeroActivityError(RuntimeError):
-    pass
 
 
 def get_eval_points(model, conn, rng):
@@ -48,7 +45,7 @@ def build_linear_system(model, conn, rng):
     eval_points = get_eval_points(model, conn, rng)
     activities = get_activities(model, conn.pre_obj, eval_points)
     if np.count_nonzero(activities) == 0:
-        raise RuntimeError(
+        raise BuildError(
             "Building %s: 'activites' matrix is all zero for %s. "
             "This is because no evaluation points fall in the firing "
             "ranges of any neurons." % (conn, conn.pre_obj))
@@ -77,8 +74,8 @@ def build_decoders(model, conn, rng):
         decoders, solver_info = wrapped_solver(
             conn.solver, conn.pre_obj.neuron_type, gain, bias, x, targets,
             rng=rng, E=E)
-    except ZeroActivityError:
-        raise ZeroActivityError(
+    except BuildError:
+        raise BuildError(
             "Building %s: 'activities' matrix is all zero for %s. "
             "This is because no evaluation points fall in the firing "
             "ranges of any neurons." % (conn, conn.pre_obj))
@@ -90,7 +87,7 @@ def solve_for_decoders(
         solver, neuron_type, gain, bias, x, targets, rng, E=None):
     activities = neuron_type.rates(x, gain, bias)
     if np.count_nonzero(activities) == 0:
-        raise ZeroActivityError()
+        raise BuildError()
 
     if solver.weights:
         decoders, solver_info = solver(activities, targets, rng=rng, E=E)
@@ -108,7 +105,7 @@ def multiply(x, y):
     elif x.ndim == 2 and y.ndim == 2:
         return np.dot(x, y)
     else:
-        raise ValueError("Tensors not supported (x.ndim = %d, y.ndim = %d)"
+        raise BuildError("Tensors not supported (x.ndim = %d, y.ndim = %d)"
                          % (x.ndim, y.ndim))
 
 
@@ -134,13 +131,13 @@ def build_connection(model, conn):
         key = 'out' if is_pre else 'in'
 
         if target not in model.sig:
-            raise ValueError("Building %s: the '%s' object %s "
-                             "is not in the model, or has a size of zero."
+            raise BuildError("Building %s: the %r object %s is not in the "
+                             "model, or has a size of zero."
                              % (conn, 'pre' if is_pre else 'post', target))
         if key not in model.sig[target]:
-            raise ValueError("Error building %s: the '%s' object %s "
-                             "has a '%s' size of zero." %
-                             (conn, 'pre' if is_pre else 'post', target, key))
+            raise BuildError(
+                "Building %s: the %r object %s has a %r size of zero."
+                % (conn, 'pre' if is_pre else 'post', target, key))
 
         return model.sig[target][key]
 
@@ -223,7 +220,7 @@ def build_connection(model, conn):
             model.add_op(PreserveValue(model.sig[conn.post_obj]['encoders']))
         if 'decoders' in targets or 'weights' in targets:
             if weights.ndim < 2:
-                raise ValueError(
+                raise BuildError(
                     "'transform' must be a 2-dimensional array for learning")
             model.sig[conn]['weights'].readonly = False
             model.add_op(PreserveValue(model.sig[conn]['weights']))

@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 
 import nengo.utils.numpy as npext
+from nengo.exceptions import BuildError
 
 
 class Operator(object):
@@ -284,7 +285,7 @@ class ElementwiseInc(Operator):
         assert all(len(s) == 2 for s in [Ashape, Xshape, Yshape])
         for da, dx, dy in zip(Ashape, Xshape, Yshape):
             if not (da in [1, dy] and dx in [1, dy] and max(da, dx) == dy):
-                raise ValueError("Incompatible shapes in ElementwiseInc: "
+                raise BuildError("Incompatible shapes in ElementwiseInc: "
                                  "Trying to do %s += %s * %s" %
                                  (Yshape, Ashape, Xshape))
 
@@ -314,8 +315,8 @@ def reshape_dot(A, X, Y, tag=None):
         incshape = ashape[:-1] + xshape[:-2] + xshape[-1:]
 
     if (badshape or incshape != Y.shape) and incshape != ():
-        raise ValueError('shape mismatch in %s: %s x %s -> %s' % (
-            tag, A.shape, X.shape, Y.shape))
+        raise BuildError("shape mismatch in %s: %s x %s -> %s"
+                         % (tag, A.shape, X.shape, Y.shape))
 
     # Reshape to handle case when np.dot(A, X) and Y are both scalars
     return (np.dot(A, X)).size == Y.size == 1
@@ -330,9 +331,9 @@ class DotInc(Operator):
 
     def __init__(self, A, X, Y, tag=None):
         if X.ndim >= 2 and any(d > 1 for d in X.shape[1:]):
-            raise ValueError("X must be a column vector")
+            raise BuildError("X must be a column vector")
         if Y.ndim >= 2 and any(d > 1 for d in Y.shape[1:]):
-            raise ValueError("Y must be a column vector")
+            raise BuildError("Y must be a column vector")
 
         self.A = A
         self.X = X

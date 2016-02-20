@@ -5,6 +5,7 @@ import numpy as np
 
 from nengo.builder.signal import Signal, SignalDict
 from nengo.cache import NoDecoderCache
+from nengo.exceptions import BuildError
 
 
 class Model(object):
@@ -76,7 +77,7 @@ class Builder(object):
             if obj_cls in cls.builders:
                 break
         else:
-            raise TypeError("Cannot build object of type '%s'." %
-                            obj.__class__.__name__)
+            raise BuildError(
+                "Cannot build object of type %r" % obj.__class__.__name__)
 
         return cls.builders[obj_cls](model, obj, *args, **kwargs)

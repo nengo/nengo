@@ -3,6 +3,7 @@ import numpy as np
 from nengo.builder.builder import Builder
 from nengo.builder.signal import Signal
 from nengo.builder.operator import Reset, SimPyFunc
+from nengo.exceptions import BuildError
 from nengo.node import Node
 from nengo.processes import Process
 from nengo.utils.compat import is_array_like
@@ -31,8 +32,8 @@ def build_node(model, node):
     elif is_array_like(node.output):
         sig_out = Signal(node.output, name="%s.out" % node)
     else:
-        raise ValueError("Invalid node output type '%s'" % (
-            node.output.__class__.__name__))
+        raise BuildError(
+            "Invalid node output type %r" % node.output.__class__.__name__)
 
     model.sig[node]['in'] = sig_in
     model.sig[node]['out'] = sig_out

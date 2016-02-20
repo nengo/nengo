@@ -5,6 +5,7 @@ from nengo.builder.operator import Reset
 from nengo.builder.signal import Signal
 from nengo.connection import Connection, LearningRule
 from nengo.ensemble import Ensemble, Neurons
+from nengo.exceptions import BuildError
 from nengo.node import Node
 from nengo.probe import Probe
 from nengo.utils.compat import iteritems
@@ -35,8 +36,8 @@ def signal_probe(model, key, probe):
     try:
         sig = model.sig[probe.obj][key]
     except IndexError:
-        raise ValueError("Attribute '%s' is not probeable on %s."
-                         % (key, probe.obj))
+        raise BuildError(
+            "Attribute %r is not probeable on %s." % (key, probe.obj))
 
     if probe.slice is not None:
         sig = sig[probe.slice]
@@ -68,7 +69,8 @@ def build_probe(model, probe):
         if isinstance(probe.obj, nengotype):
             break
     else:
-        raise ValueError("Type '%s' is not probeable" % type(probe.obj))
+        raise BuildError(
+            "Type %r is not probeable" % probe.obj.__class__.__name__)
 
     key = probeables[probe.attr] if probe.attr in probeables else probe.attr
     if key is None:

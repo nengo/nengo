@@ -38,6 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from collections import defaultdict
 
 from .compat import iteritems
+from ..exceptions import BuildError
 
 
 def graph(edges=None):
@@ -90,9 +91,10 @@ def toposort(edges):
             if not incoming_edges[m]:
                 vertices.add(m)
     if any(incoming_edges.get(v, None) for v in edges):
-        raise ValueError("Input graph has cycles. This usually occurs because "
-                         "too many connections have no synapses. Try setting "
-                         "more synapses to '0' instead of 'None'.")
+        raise BuildError(
+            "Input graph has cycles. This usually occurs because "
+            "too many connections have no synapses. Try setting "
+            "more synapses to '0' instead of 'None'.")
     return ordered
 
 
