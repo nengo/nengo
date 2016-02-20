@@ -3,6 +3,7 @@ import pytest
 
 import nengo
 import nengo.simulator
+from nengo.exceptions import SimulatorClosed
 
 
 def test_steps(RefSimulator):
@@ -62,9 +63,9 @@ def test_close_function(Simulator):
 
     sim = Simulator(m)
     sim.close()
-    with pytest.raises(ValueError):
+    with pytest.raises(SimulatorClosed):
         sim.run(1.)
-    with pytest.raises(ValueError):
+    with pytest.raises(SimulatorClosed):
         sim.reset()
 
 
@@ -76,9 +77,9 @@ def test_close_context(Simulator):
     with Simulator(m) as sim:
         sim.run(0.01)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SimulatorClosed):
         sim.run(1.)
-    with pytest.raises(ValueError):
+    with pytest.raises(SimulatorClosed):
         sim.reset()
 
 
@@ -91,16 +92,16 @@ def test_close_steps(RefSimulator):
     # test close function
     sim = RefSimulator(m)
     sim.close()
-    with pytest.raises(ValueError):
+    with pytest.raises(SimulatorClosed):
         sim.run_steps(1)
-    with pytest.raises(ValueError):
+    with pytest.raises(SimulatorClosed):
         sim.step()
 
     # test close context
     with RefSimulator(m) as sim:
         sim.run(0.01)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SimulatorClosed):
         sim.run_steps(1)
-    with pytest.raises(ValueError):
+    with pytest.raises(SimulatorClosed):
         sim.step()

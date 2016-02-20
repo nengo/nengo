@@ -1,8 +1,4 @@
-"""
-Simulator.py
-
-Reference simulator for nengo models.
-"""
+"""Reference simulator for nengo models."""
 
 from __future__ import print_function
 
@@ -15,7 +11,7 @@ import nengo.utils.numpy as npext
 from nengo.builder import Model
 from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
-from nengo.exceptions import ReadonlyError
+from nengo.exceptions import ReadonlyError, SimulatorClosed
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
 from nengo.utils.progress import ProgressTracker
@@ -180,7 +176,7 @@ class Simulator(object):
         """Advance the simulator by `self.dt` seconds.
         """
         if self.closed:
-            raise ValueError("Simulator cannot run because it is closed.")
+            raise SimulatorClosed("Simulator cannot run because it is closed.")
 
         self.n_steps += 1
         self.signals['__time__'][...] = self.n_steps * self.dt
@@ -257,7 +253,7 @@ class Simulator(object):
             (e.g. ensembles, connections).
         """
         if self.closed:
-            raise ValueError("Simulator closed.")
+            raise SimulatorClosed("Cannot reset closed Simulator.")
 
         if seed is not None:
             self.seed = seed
@@ -283,6 +279,6 @@ class Simulator(object):
         """Closes the simulator.
 
         Any call to ``run``, ``run_steps``, ``step``, and ``reset`` on a closed
-        simulator will raise a ``ValueError``.
+        simulator will raise ``SimulatorClosed``.
         """
         self.closed = True

@@ -62,3 +62,7 @@ class ConfigError(NengoException, ValueError):
 
 class SpaParseError(NengoException, ValueError):
     """An error encountered while parsing a SPA expression."""
+
+
+class SimulatorClosed(NengoException):
+    """Raised when attempting to run a closed simulator."""
