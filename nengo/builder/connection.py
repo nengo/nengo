@@ -10,14 +10,29 @@ from nengo.builder.operator import (
 from nengo.builder.signal import Signal
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble, Neurons
-from nengo.exceptions import BuildError
+from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.utils.compat import is_iterable, itervalues
 
 
-BuiltConnection = collections.namedtuple(
+BuiltConnection_ = collections.namedtuple(
     'BuiltConnection', ['eval_points', 'solver_info', 'weights'])
+
+
+class BuiltConnection(BuiltConnection_):
+    """Subclassing the namedtuple to provide better error messages."""
+    @property
+    def decoders(self):
+        raise ObsoleteError("decoders are now part of 'weights'. "
+                            "Access BuiltConnection.weights instead.",
+                            since="v2.1.0")
+
+    @property
+    def transform(self):
+        raise ObsoleteError("transform is now part of 'weights'. "
+                            "Access BuiltConnection.weights instead.",
+                            since="v2.1.0")
 
 
 def get_eval_points(model, conn, rng):

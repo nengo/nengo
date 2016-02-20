@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from nengo import params
-from nengo.exceptions import ValidationError
+from nengo.exceptions import ObsoleteError, ValidationError
 from nengo.utils.compat import PY2
 
 
@@ -66,12 +66,12 @@ def test_obsoleteparam():
     inst = Test()
 
     # cannot be read
-    with pytest.raises(ValueError):
+    with pytest.raises(ObsoleteError):
         inst.ab
 
     # can only be assigned Unconfigurable
     inst.ab = params.Unconfigurable
-    with pytest.raises(ValueError):
+    with pytest.raises(ObsoleteError):
         inst.ab = True
 
 

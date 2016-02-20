@@ -1,6 +1,8 @@
 import numpy as np
+import pytest
 
 import nengo
+from nengo.exceptions import ObsoleteError
 from nengo.utils.compat import range
 from nengo.utils.stdlib import Timer
 
@@ -196,3 +198,14 @@ def test_solver_defaults():
     assert d.solver is solver2
     assert e.solver is solver1
     assert f.solver is solver3
+
+
+def test_obsolete_probes():
+    with nengo.Network():
+        pre = nengo.Ensemble(10, 1)
+        post = nengo.Ensemble(10, 1)
+        conn = nengo.Connection(pre, post)
+        with pytest.raises(ObsoleteError):
+            nengo.Probe(conn, "decoders")
+        with pytest.raises(ObsoleteError):
+            nengo.Probe(conn, "transform")

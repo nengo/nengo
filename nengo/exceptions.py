@@ -38,3 +38,19 @@ class ReadonlyError(ValidationError):
 
 class BuildError(NengoException, ValueError):
     """A ValueError encountered during the build process."""
+
+
+class ObsoleteError(NengoException):
+    """A feature that has been removed in a backwards-incompatible way."""
+
+    def __init__(self, msg, since=None, url=None):
+        self.since = since
+        self.url = url
+        super(ObsoleteError, self).__init__(msg)
+
+    def __str__(self):
+        return "Obsolete%s: %s%s" % (
+            "" if self.since is None else " since %s" % self.since,
+            super(ObsoleteError, self).__str__(),
+            "\nFor more information, please visit %s" % self.url
+            if self.url is not None else "")

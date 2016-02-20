@@ -1,7 +1,7 @@
 from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.config import Config
 from nengo.connection import Connection, LearningRule
-from nengo.exceptions import ValidationError
+from nengo.exceptions import ObsoleteError, ValidationError
 from nengo.params import (
     Default, ConnectionDefault, IntParam, NumberParam, StringParam)
 from nengo.solvers import SolverParam
@@ -24,6 +24,10 @@ class TargetParam(NengoObjectParam):
 class AttributeParam(StringParam):
     def validate(self, probe, attr):
         super(AttributeParam, self).validate(probe, attr)
+        if attr in ('decoders', 'transform'):
+            raise ObsoleteError("'decoders' and 'transform' are now combined "
+                                "into 'weights'. Probe 'weights' instead.",
+                                since="v2.1.0")
         if attr not in probe.obj.probeable:
             raise ValidationError("Attribute %r is not probeable on %s."
                                   % (attr, probe.obj),

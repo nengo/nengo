@@ -3,7 +3,7 @@ import inspect
 
 import numpy as np
 
-from nengo.exceptions import ReadonlyError, ValidationError
+from nengo.exceptions import ObsoleteError, ReadonlyError, ValidationError
 from nengo.utils.compat import (
     is_array, is_integer, is_number, is_string, itervalues)
 from nengo.utils.numpy import array_hash, compare
@@ -153,10 +153,7 @@ class ObsoleteParam(Parameter):
             self.raise_error()
 
     def raise_error(self):
-        raise ValueError("This parameter is no longer supported. %s%s" % (
-            self.short_msg,
-            "\nFor more information, please visit %s" % self.url
-            if self.url is not None else ""))
+        raise ObsoleteError(self.short_msg, since=self.since, url=self.url)
 
 
 class BoolParam(Parameter):

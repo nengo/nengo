@@ -8,6 +8,7 @@ from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc, PreserveValue
 from nengo.builder.signal import Signal, SignalDict
+from nengo.exceptions import ObsoleteError
 from nengo.utils.compat import itervalues, range
 
 
@@ -267,3 +268,15 @@ def test_commonsig_readonly(RefSimulator):
                 sim.signals[sig] = np.array([-1])
             with pytest.raises((ValueError, RuntimeError)):
                 sim.signals[sig][...] = np.array([-1])
+
+
+def test_obsolete_params(RefSimulator):
+    with nengo.Network() as net:
+        e = nengo.Ensemble(10, 1)
+        c = nengo.Connection(e, e)
+    with RefSimulator(net) as sim:
+        pass
+    with pytest.raises(ObsoleteError):
+        sim.data[c].decoders
+    with pytest.raises(ObsoleteError):
+        sim.data[c].transform

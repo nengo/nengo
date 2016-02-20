@@ -5,7 +5,7 @@ import nengo
 import nengo.utils.numpy as npext
 from nengo.connection import ConnectionSolverParam
 from nengo.dists import UniformHypersphere
-from nengo.exceptions import ValidationError
+from nengo.exceptions import ObsoleteError, ValidationError
 from nengo.solvers import LstsqL2
 from nengo.utils.functions import piecewise
 from nengo.utils.testing import allclose
@@ -783,7 +783,7 @@ def test_nomodulatory():
     """Make sure you cannot set modulatory=True on connections."""
     with nengo.Network():
         a = nengo.Ensemble(10, 1)
-        with pytest.raises(ValueError):
+        with pytest.raises(ObsoleteError):
             nengo.Connection(a, a, modulatory=True)
 
 
