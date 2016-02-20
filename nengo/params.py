@@ -3,7 +3,8 @@ import inspect
 
 import numpy as np
 
-from nengo.exceptions import ObsoleteError, ReadonlyError, ValidationError
+from nengo.exceptions import (
+    ConfigError, ObsoleteError, ReadonlyError, ValidationError)
 from nengo.utils.compat import (
     is_array, is_integer, is_number, is_string, itervalues)
 from nengo.utils.numpy import array_hash, compare
@@ -96,7 +97,7 @@ class Parameter(object):
 
     def set_default(self, obj, value):
         if not self.configurable:
-            raise ValueError("Parameter '%s' is not configurable" % self)
+            raise ConfigError("Parameter '%s' is not configurable" % self)
         self.validate(obj, value)
         self._defaults[obj] = value
 

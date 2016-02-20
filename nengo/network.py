@@ -3,7 +3,7 @@ import collections
 from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
-from nengo.exceptions import ReadonlyError
+from nengo.exceptions import ConfigError, ReadonlyError
 from nengo.node import Node
 from nengo.probe import Probe
 
@@ -190,9 +190,9 @@ class Network(object):
 
         config = Config.context[-1]
         if config is not self._config:
-            raise RuntimeError("Config.context in bad state; was expecting "
-                               "current context to be '%s' but instead got "
-                               "'%s'." % (self._config, config))
+            raise ConfigError("Config.context in bad state; was expecting "
+                              "current context to be '%s' but instead got "
+                              "'%s'." % (self._config, config))
 
         network = Network.context.pop()
         if network is not self:

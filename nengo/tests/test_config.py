@@ -2,7 +2,7 @@ import pytest
 
 import nengo
 import nengo.synapses
-from nengo.exceptions import ReadonlyError
+from nengo.exceptions import ConfigError, ReadonlyError
 from nengo.params import Parameter
 
 
@@ -15,7 +15,7 @@ def test_config_basic():
     model.config[nengo.Connection].set_param('something_else',
                                              Parameter('something_else', None))
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigError):
         model.config[nengo.Ensemble].set_param('fails', 1.0)
 
     with model:
@@ -23,8 +23,8 @@ def test_config_basic():
         b = nengo.Ensemble(90, dimensions=1)
         a2b = nengo.Connection(a, b, synapse=0.01)
 
-    with pytest.raises(ValueError):
-        model.config[a].set_param('thing', Parameter(None))
+    with pytest.raises(ConfigError):
+        model.config[a].set_param('thing', Parameter('thing', None))
 
     assert model.config[a].something is None
     assert model.config[b].something is None
@@ -46,9 +46,9 @@ def test_config_basic():
         model.config[a].something_else = 1
         model.config[a2b].something = 1
 
-    with pytest.raises(KeyError):
+    with pytest.raises(ConfigError):
         model.config['a'].something
-    with pytest.raises(KeyError):
+    with pytest.raises(ConfigError):
         model.config[None].something
 
 
@@ -73,7 +73,7 @@ def test_network_nesting():
         assert ens1.radius == 2.0
 
         # It's an error to configure an actual param with the config
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigError):
             net1.config[ens1].radius = 3.0
 
         with nengo.Network() as net2:
@@ -157,7 +157,7 @@ def test_external_class():
 
     # Default still works like Nengo object
     assert inst.thing == 'hey'
-    with pytest.raises(AttributeError):
+    with pytest.raises(ConfigError):
         config[inst].thing
 
 

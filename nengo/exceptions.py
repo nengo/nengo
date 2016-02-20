@@ -54,3 +54,7 @@ class ObsoleteError(NengoException):
             super(ObsoleteError, self).__str__(),
             "\nFor more information, please visit %s" % self.url
             if self.url is not None else "")
+
+
+class ConfigError(NengoException, ValueError):
+    """A ValueError encountered in the config system."""
