@@ -205,6 +205,7 @@ def test_none(Simulator, seed):
 def test_unconnected_node(Simulator):
     """Make sure unconnected nodes still run."""
     hits = np.array(0)
+    dt = 0.001
 
     def f(t):
         hits[...] += 1
@@ -213,9 +214,9 @@ def test_unconnected_node(Simulator):
         nengo.Node(f, size_in=0, size_out=0)
     with Simulator(model) as sim:
         assert hits == 0
-        sim.step()
+        sim.run(dt)
         assert hits == 1
-        sim.step()
+        sim.run(dt)
         assert hits == 2
 
 

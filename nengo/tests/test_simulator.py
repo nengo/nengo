@@ -55,7 +55,7 @@ def test_probedict():
     assert np.all(probedict.get("list") == np.asarray(raw.get("list")))
 
 
-def test_close(Simulator):
+def test_close_function(Simulator):
     m = nengo.Network()
     with m:
         nengo.Ensemble(10, 1)
@@ -65,14 +65,10 @@ def test_close(Simulator):
     with pytest.raises(ValueError):
         sim.run(1.)
     with pytest.raises(ValueError):
-        sim.run_steps(1)
-    with pytest.raises(ValueError):
-        sim.step()
-    with pytest.raises(ValueError):
         sim.reset()
 
 
-def test_usage_in_with_statement(Simulator):
+def test_close_context(Simulator):
     m = nengo.Network()
     with m:
         nengo.Ensemble(10, 1)
@@ -83,8 +79,28 @@ def test_usage_in_with_statement(Simulator):
     with pytest.raises(ValueError):
         sim.run(1.)
     with pytest.raises(ValueError):
+        sim.reset()
+
+
+def test_close_steps(RefSimulator):
+    """For RefSimulator, closed simulators should fail for ``step``"""
+    m = nengo.Network()
+    with m:
+        nengo.Ensemble(10, 1)
+
+    # test close function
+    sim = RefSimulator(m)
+    sim.close()
+    with pytest.raises(ValueError):
         sim.run_steps(1)
     with pytest.raises(ValueError):
         sim.step()
+
+    # test close context
+    with RefSimulator(m) as sim:
+        sim.run(0.01)
+
     with pytest.raises(ValueError):
-        sim.reset()
+        sim.run_steps(1)
+    with pytest.raises(ValueError):
+        sim.step()

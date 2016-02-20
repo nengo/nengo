@@ -257,7 +257,7 @@ def test_fails_for_lambda_expression():
         Fingerprint(lambda x: x)
 
 
-def test_cache_works(tmpdir, Simulator, seed):
+def test_cache_works(tmpdir, RefSimulator, seed):
     cache_dir = str(tmpdir)
 
     model = nengo.Network(seed=seed)
@@ -265,7 +265,7 @@ def test_cache_works(tmpdir, Simulator, seed):
         nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
     assert len(os.listdir(cache_dir)) == 0
-    with Simulator(model, model=nengo.builder.Model(
+    with RefSimulator(model, model=nengo.builder.Model(
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
         assert len(os.listdir(cache_dir)) == 2  # legacy.txt and *.nco
 
