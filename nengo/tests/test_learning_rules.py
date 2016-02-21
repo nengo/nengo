@@ -138,6 +138,30 @@ def test_pes_transform(Simulator, seed):
     assert np.allclose(sim.data[p_b][tend], [1, -1], atol=1e-2)
 
 
+@pytest.mark.parametrize('weights', [True, False])
+def test_pes_multidim_error(Simulator, rng, weights):
+    """Test that PES works on error connections mapping from N to 1 dims.
+
+    Note that the transform is applied before the learning rule, so the error
+    signal should be 1-dimensional.
+    """
+
+    with nengo.Network() as net:
+        err = nengo.Node(output=[0])
+        ens1 = nengo.Ensemble(20, 3)
+        ens2 = nengo.Ensemble(10, 1)
+
+        conn = nengo.Connection(ens1, ens2,
+                                transform=np.ones((1, 3)),
+                                learning_rule_type={"pes": nengo.PES()},
+                                solver=nengo.solvers.LstsqL2(weights=weights))
+
+        nengo.Connection(err, conn.learning_rule["pes"])
+
+    with Simulator(net) as sim:
+        sim.run(0.01)
+
+
 @pytest.mark.parametrize('rule_type, solver', [
     (BCM(learning_rate=1e-8), False),
     (Oja(learning_rate=1e-5), False),
