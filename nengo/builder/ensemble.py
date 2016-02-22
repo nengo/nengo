@@ -12,7 +12,6 @@ from nengo.ensemble import Ensemble
 from nengo.neurons import Direct
 from nengo.utils.builder import default_n_eval_points
 
-
 BuiltEnsemble = collections.namedtuple(
     'BuiltEnsemble', ['eval_points', 'encoders', 'intercepts', 'max_rates',
                       'scaled_encoders', 'gain', 'bias'])
@@ -49,6 +48,24 @@ def get_activities(model, ens, eval_points):
         x, model.params[ens].gain, model.params[ens].bias)
 
 
+def get_gain_bias(ens, rng=np.random):
+    if ens.gain is not None and ens.bias is not None:
+        gain = sample(ens.gain, ens.n_neurons, rng=rng)
+        bias = sample(ens.bias, ens.n_neurons, rng=rng)
+        max_rates, intercepts = None, None  # TODO: determine from gain & bias
+    elif ens.gain is not None or ens.bias is not None:
+        # TODO: handle this instead of error
+        raise NotImplementedError("gain or bias set for %s, but not both. "
+                                  "Solving for one given the other is not "
+                                  "implemented yet." % ens)
+    else:
+        max_rates = sample(ens.max_rates, ens.n_neurons, rng=rng)
+        intercepts = sample(ens.intercepts, ens.n_neurons, rng=rng)
+        gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
+
+    return gain, bias, max_rates, intercepts
+
+
 @Builder.register(Ensemble)  # noqa: C901
 def build_ensemble(model, ens):
     # Create random number generator
@@ -71,19 +88,7 @@ def build_ensemble(model, ens):
     encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     # Build the neurons
-    if ens.gain is not None and ens.bias is not None:
-        gain = sample(ens.gain, ens.n_neurons, rng=rng)
-        bias = sample(ens.bias, ens.n_neurons, rng=rng)
-        max_rates, intercepts = None, None  # TODO: determine from gain & bias
-    elif ens.gain is not None or ens.bias is not None:
-        # TODO: handle this instead of error
-        raise NotImplementedError("gain or bias set for %s, but not both. "
-                                  "Solving for one given the other is not "
-                                  "implemented yet." % ens)
-    else:
-        max_rates = sample(ens.max_rates, ens.n_neurons, rng=rng)
-        intercepts = sample(ens.intercepts, ens.n_neurons, rng=rng)
-        gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
+    gain, bias, max_rates, intercepts = get_gain_bias(ens, rng)
 
     if isinstance(ens.neuron_type, Direct):
         model.sig[ens.neurons]['in'] = Signal(
