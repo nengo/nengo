@@ -339,3 +339,10 @@ def test_wrong_output():
 
         with pytest.raises(ValueError):
             nengo.Node(node1)
+
+
+def test_seed_error():
+    """Setting a Node seed is currently not implemented."""
+    with nengo.Network():
+        with pytest.raises(NotImplementedError):
+            nengo.Node(seed=1)

@@ -4,8 +4,7 @@ from nengo.base import NengoObject, ObjView
 from nengo.dists import DistOrArrayParam, Uniform, UniformHypersphere
 from nengo.exceptions import ReadonlyError
 from nengo.neurons import LIF, NeuronTypeParam, Direct
-from nengo.params import (
-    Default, IntParam, NumberParam, StringParam)
+from nengo.params import Default, IntParam, NumberParam
 from nengo.processes import ProcessParam
 
 
@@ -79,28 +78,24 @@ class Ensemble(NengoObject):
                             optional=True,
                             sample_shape=('n_neurons',))
     noise = ProcessParam('noise', default=None, optional=True)
-    seed = IntParam('seed', default=None, optional=True)
-    label = StringParam('label', default=None, optional=True)
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
                  n_eval_points=Default, neuron_type=Default, gain=Default,
-                 bias=Default, noise=Default, seed=Default, label=Default):
-
+                 bias=Default, noise=Default, label=Default, seed=Default):
+        super(Ensemble, self).__init__(label=label, seed=seed)
         self.n_neurons = n_neurons
         self.dimensions = dimensions
         self.radius = radius
         self.encoders = encoders
         self.intercepts = intercepts
         self.max_rates = max_rates
-        self.label = label
         self.n_eval_points = n_eval_points
         self.eval_points = eval_points
         self.bias = bias
         self.gain = gain
         self.neuron_type = neuron_type
         self.noise = noise
-        self.seed = seed
         self._neurons = Neurons(self)
 
     def __getitem__(self, key):

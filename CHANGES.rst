@@ -75,6 +75,9 @@ Release History
 - Most exceptions that Nengo can raise are now custom exception classes
   that can be found in the ``nengo.exceptions`` module.
   (`#781 <https://github.com/nengo/nengo/pull/781>`_)
+- All Nengo objects (``Connection``, ``Ensemble``, ``Node``, and ``Probe``)
+  now accept a ``label`` and ``seed`` argument if they didn't previously.
+  (`#958 <https://github.com/nengo/nengo/pull/859>`_)
 
 **Behavioural changes**
 

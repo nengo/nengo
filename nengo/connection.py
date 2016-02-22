@@ -9,9 +9,8 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.node import Node
-from nengo.params import (
-    Default, Unconfigurable, ObsoleteParam, BoolParam, FunctionParam,
-    IntParam, NdarrayParam)
+from nengo.params import (Default, Unconfigurable, ObsoleteParam,
+                          BoolParam, FunctionParam, NdarrayParam)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_iterable, iteritems
@@ -288,16 +287,15 @@ class Connection(NengoObject):
     synapse = SynapseParam('synapse', default=Lowpass(0.005))
     transform = TransformParam('transform', default=np.array(1.0))
     solver = ConnectionSolverParam('solver', default=LstsqL2())
-    function_info = ConnectionFunctionParam(
-        'function', default=None, optional=True)
     learning_rule_type = ConnectionLearningRuleTypeParam(
         'learning_rule_type', default=None, optional=True)
+    function_info = ConnectionFunctionParam(
+        'function', default=None, optional=True)
     eval_points = EvalPointsParam('eval_points',
                                   default=None,
                                   optional=True,
                                   sample_shape=('*', 'size_in'))
     scale_eval_points = BoolParam('scale_eval_points', default=True)
-    seed = IntParam('seed', default=None, optional=True)
     modulatory = ObsoleteParam(
         'modulatory',
         "Modulatory connections have been removed. "
@@ -307,8 +305,10 @@ class Connection(NengoObject):
 
     def __init__(self, pre, post, synapse=Default, transform=Default,
                  solver=Default, learning_rule_type=Default, function=Default,
-                 eval_points=Default, scale_eval_points=Default, seed=Default,
-                 modulatory=Unconfigurable):
+                 eval_points=Default, scale_eval_points=Default,
+                 label=Default, seed=Default, modulatory=Unconfigurable):
+        super(Connection, self).__init__(label=label, seed=seed)
+
         self.pre = pre
         self.post = post
 
@@ -319,7 +319,6 @@ class Connection(NengoObject):
         self.function_info = function  # Must be set after transform
         self.solver = solver  # Must be set before learning rule
         self.learning_rule_type = learning_rule_type  # set after transform
-        self.seed = seed
         self.modulatory = modulatory
 
     @property
@@ -371,17 +370,20 @@ class Connection(NengoObject):
         return self.post.size_in
 
     @property
-    def _label(self):
+    def _str(self):
+        if self.label is not None:
+            return self.label
+
         return "from %s to %s%s" % (
             self.pre, self.post,
             " computing '%s'" % self.function.__name__
             if self.function is not None else "")
 
     def __str__(self):
-        return "<Connection %s>" % self._label
+        return "<Connection %s>" % self._str
 
     def __repr__(self):
-        return "<Connection at 0x%x %s>" % (id(self), self._label)
+        return "<Connection at 0x%x %s>" % (id(self), self._str)
 
     @property
     def learning_rule(self):

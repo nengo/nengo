@@ -5,7 +5,7 @@ import numpy as np
 import nengo.utils.numpy as npext
 from nengo.base import NengoObject, ObjView
 from nengo.exceptions import ValidationError
-from nengo.params import Default, IntParam, Parameter, StringParam
+from nengo.params import Default, IntParam, Parameter
 from nengo.processes import Process
 from nengo.utils.compat import is_array_like
 from nengo.utils.stdlib import checked_call
@@ -131,13 +131,16 @@ class Node(NengoObject):
     output = OutputParam('output', default=None)
     size_in = IntParam('size_in', default=None, low=0, optional=True)
     size_out = IntParam('silze_out', default=None, low=0, optional=True)
-    label = StringParam('label', default=None, optional=True)
 
-    def __init__(self, output=Default,
-                 size_in=Default, size_out=Default, label=Default):
+    def __init__(self, output=Default, size_in=Default, size_out=Default,
+                 label=Default, seed=Default):
+        if not (seed is Default or seed is None):
+            raise NotImplementedError(
+                "Changing the seed of a node has no effect")
+        super(Node, self).__init__(label=label, seed=seed)
+
         self.size_in = size_in
         self.size_out = size_out
-        self.label = label
         self.output = output  # Must be set after size_out; may modify size_out
 
     def __getitem__(self, key):

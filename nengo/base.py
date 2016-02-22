@@ -1,4 +1,3 @@
-import logging
 import sys
 import warnings
 
@@ -6,11 +5,10 @@ import numpy as np
 
 from nengo.config import Config
 from nengo.exceptions import ValidationError
-from nengo.params import Default, is_param, Parameter, Unconfigurable
+from nengo.params import (
+    Default, is_param, IntParam, Parameter, StringParam, Unconfigurable)
 from nengo.rc import rc
 from nengo.utils.compat import is_integer, reraise, with_metaclass
-
-logger = logging.getLogger(__name__)
 
 
 class NetworkMember(type):
@@ -41,6 +39,13 @@ class NengoObject(with_metaclass(NetworkMember)):
     for correct operation. In particular, list membership
     and object comparison require each object to have a unique ID.
     """
+
+    label = StringParam('label', default=None, optional=True)
+    seed = IntParam('seed', default=None, optional=True)
+
+    def __init__(self, label, seed):
+        self.label = label
+        self.seed = seed
 
     def _str(self, include_id):
         return "<%s%s%s>" % (
