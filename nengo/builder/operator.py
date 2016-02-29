@@ -215,6 +215,9 @@ class SlicedCopy(Operator):
     """Copy from `a` to `b` with slicing: `b[b_slice] = a[a_slice]`"""
     def __init__(self, a, b, a_slice=Ellipsis, b_slice=Ellipsis,
                  inc=False, tag=None):
+        self.a_base_slice = a_slice
+        self.b_base_slice = b_slice
+
         if isinstance(a_slice, slice):
             a = a[a_slice]
             a_slice = Ellipsis
@@ -237,7 +240,9 @@ class SlicedCopy(Operator):
 
     def __str__(self):
         return 'SlicedCopy(%s[%s] -> %s[%s], inc=%s%s)' % (
-            self.a, self.a_slice, self.b, self.b_slice, self.inc, self._tagstr)
+            self.a.base, self.a_base_slice,
+            self.b.base, self.b_base_slice,
+            self.inc, self._tagstr)
 
     def make_step(self, signals, dt, rng):
         a = signals[self.a]
