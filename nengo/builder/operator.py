@@ -137,6 +137,32 @@ class Operator(object):
                 signals.init(sig)
 
 
+class TimeUpdate(Operator):
+    """Updates the simulation time"""
+
+    def __init__(self, step, time):
+        self.step = step
+        self.time = time
+
+        self.sets = [step, time]
+        self.incs = []
+        self.reads = []
+        self.updates = []
+
+    def __str__(self):
+        return 'TimeUpdate()'
+
+    def make_step(self, signals, dt, rng):
+        step = signals[self.step]
+        time = signals[self.time]
+
+        def step_timeupdate():
+            step[...] += 1
+            time[...] = step * dt
+
+        return step_timeupdate
+
+
 class PreserveValue(Operator):
     """Marks a signal as `set` for the graph checker.
 
@@ -366,16 +392,16 @@ class DotInc(Operator):
 class SimPyFunc(Operator):
     """Set signal `output` by some Python function of x, possibly t."""
 
-    def __init__(self, output, fn, t_in, x, tag=None):
+    def __init__(self, output, fn, t, x, tag=None):
         self.output = output
         self.fn = fn
-        self.t_in = t_in
+        self.t = t
         self.x = x
         self.tag = tag
 
         self.sets = [] if output is None else [output]
         self.incs = []
-        self.reads = [] if x is None else [x]
+        self.reads = ([] if t is None else [t]) + ([] if x is None else [x])
         self.updates = []
 
     def __str__(self):
@@ -383,14 +409,14 @@ class SimPyFunc(Operator):
             self.x, self.output, self.fn.__name__, self._tagstr)
 
     def make_step(self, signals, dt, rng):
-        output = signals[self.output] if self.output is not None else None
         fn = self.fn
-        t_in = self.t_in
-        t_sig = signals['__time__']
+        output = signals[self.output] if self.output is not None else None
+        t = signals[self.t] if self.t is not None else None
+        x = signals[self.x] if self.x is not None else None
 
         def step_simpyfunc():
-            args = () if self.x is None else (np.copy(signals[self.x]),)
-            y = fn(t_sig.item(), *args) if t_in else fn(*args)
+            args = (np.copy(x),) if x is not None else ()
+            y = fn(t.item(), *args) if t is not None else fn(*args)
             if output is not None:
                 if y is None:  # required since Numpy turns None into NaN
                     raise SimulationError(

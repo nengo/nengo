@@ -28,7 +28,7 @@ def build_node(model, node):
         sig_out = (Signal(np.zeros(node.size_out), name="%s.out" % node)
                    if node.size_out > 0 else None)
         model.add_op(SimPyFunc(
-            output=sig_out, fn=node.output, t_in=True, x=sig_in))
+            output=sig_out, fn=node.output, t=model.time, x=sig_in))
     elif is_array_like(node.output):
         sig_out = Signal(node.output, name="%s.out" % node)
     else:

@@ -7,23 +7,17 @@ from nengo.exceptions import SimulatorClosed
 
 
 def test_steps(RefSimulator):
+    dt = 0.001
     m = nengo.Network(label="test_steps")
-    with RefSimulator(m) as sim:
+    with RefSimulator(m, dt=dt) as sim:
         assert sim.n_steps == 0
+        assert np.allclose(sim.time, 0 * dt)
         sim.step()
         assert sim.n_steps == 1
+        assert np.allclose(sim.time, 1 * dt)
         sim.step()
         assert sim.n_steps == 2
-
-
-def test_time_steps(RefSimulator):
-    m = nengo.Network(label="test_time_steps")
-    with RefSimulator(m) as sim:
-        assert np.allclose(sim.signals["__time__"], 0.00)
-        sim.step()
-        assert np.allclose(sim.signals["__time__"], 0.001)
-        sim.step()
-        assert np.allclose(sim.signals["__time__"], 0.002)
+        assert np.allclose(sim.time, 2 * dt)
 
 
 def test_time_absolute(Simulator):

@@ -176,8 +176,7 @@ def build_connection(model, conn):
         if conn.function is not None:
             in_signal = Signal(np.zeros(conn.size_mid), name='%s.func' % conn)
             model.add_op(SimPyFunc(
-                output=in_signal, fn=conn.function,
-                t_in=False, x=sliced_in))
+                output=in_signal, fn=conn.function, t=None, x=sliced_in))
         else:
             in_signal = sliced_in
 

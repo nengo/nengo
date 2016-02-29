@@ -4,6 +4,7 @@ import warnings
 import numpy as np
 
 from nengo.builder.signal import Signal, SignalDict
+from nengo.builder.operator import TimeUpdate
 from nengo.cache import NoDecoderCache
 from nengo.exceptions import BuildError
 
@@ -31,6 +32,10 @@ class Model(object):
         self.sig['common'][0] = Signal(0., readonly=True, name='ZERO')
         self.sig['common'][1] = Signal(1., readonly=True, name='ONE')
 
+        self.step = Signal(np.array(0, dtype=np.int64), name='step')
+        self.time = Signal(np.array(0, dtype=np.float64), name='time')
+        self.add_op(TimeUpdate(self.step, self.time))
+
     def __str__(self):
         return "Model: %s" % self.label
 
@@ -40,7 +45,7 @@ class Model(object):
     def add_op(self, op):
         self.operators.append(op)
         # Fail fast by trying make_step with a temporary sigdict
-        signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
+        signals = SignalDict()
         op.init_signals(signals)
         op.make_step(signals, self.dt, np.random)
 

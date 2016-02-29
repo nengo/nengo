@@ -109,7 +109,7 @@ class Simulator(object):
         self.model.decoder_cache.shrink()
 
         # -- map from Signal.base -> ndarray
-        self.signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
+        self.signals = SignalDict()
         for op in self.model.operators:
             op.init_signals(self.signals)
 
@@ -142,10 +142,19 @@ class Simulator(object):
     def dt(self, dummy):
         raise ReadonlyError(attr='dt', obj=self)
 
+    def _probe_step_time(self):
+        self._n_steps = self.signals[self.model.step].copy()
+        self._time = self.signals[self.model.time].copy()
+
+    @property
+    def n_steps(self):
+        """The current time step of the simulator"""
+        return self._n_steps
+
     @property
     def time(self):
         """The current time of the simulator"""
-        return self.signals['__time__'].copy()
+        return self._time
 
     def trange(self, dt=None):
         """Create a range of times matching probe data.
@@ -165,6 +174,8 @@ class Simulator(object):
 
     def _probe(self):
         """Copy all probed signals to buffers"""
+        self._probe_step_time()
+
         for probe in self.model.probes:
             period = (1 if probe.sample_every is None else
                       probe.sample_every / self.dt)
@@ -178,9 +189,6 @@ class Simulator(object):
         if self.closed:
             raise SimulatorClosed("Simulator cannot run because it is closed.")
 
-        self.n_steps += 1
-        self.signals['__time__'][...] = self.n_steps * self.dt
-
         old_err = np.seterr(invalid='raise', divide='ignore')
         try:
             for step_fn in self._steps:
@@ -188,8 +196,7 @@ class Simulator(object):
         finally:
             np.seterr(**old_err)
 
-        if len(self.model.probes) > 0:
-            self._probe()
+        self._probe()
 
     def run(self, time_in_seconds, progress_bar=True):
         """Simulate for the given length of time.
@@ -258,13 +265,9 @@ class Simulator(object):
         if seed is not None:
             self.seed = seed
 
-        self.n_steps = 0
-        self.signals['__time__'][...] = 0
-
         # reset signals
         for key in self.signals:
-            if key != '__time__':
-                self.signals.reset(key)
+            self.signals.reset(key)
 
         # rebuild steps (resets ops with their own state, like Processes)
         self.rng = np.random.RandomState(self.seed)
@@ -275,6 +278,8 @@ class Simulator(object):
         for probe in self.model.probes:
             self._probe_outputs[probe] = []
 
+        self._probe_step_time()
+
     def close(self):
         """Closes the simulator.
 
@@ -282,3 +287,4 @@ class Simulator(object):
         simulator will raise ``SimulatorClosed``.
         """
         self.closed = True
+        self.signals = None  # signals may no longer exist on some backends
