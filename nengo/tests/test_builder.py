@@ -172,9 +172,8 @@ def test_signaldict():
     assert np.allclose(signaldict[two_d], np.array([[1.], [1.]]))
     assert signaldict[two_d].shape == (2, 1)
 
-    # __getitem__ handles views
+    # __getitem__ handles views implicitly (note no .init)
     two_d_view = two_d[0, :]
-    signaldict.init(two_d_view)
     assert np.allclose(signaldict[two_d_view], np.array([1.]))
     assert signaldict[two_d_view].shape == (1,)
 

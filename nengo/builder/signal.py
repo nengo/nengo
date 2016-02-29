@@ -1,5 +1,6 @@
 """Signals represent values that will be used in the simulation.
 """
+from __future__ import division
 
 import numpy as np
 
@@ -46,8 +47,14 @@ class Signal(object):
         return self.initial_value.dtype
 
     @property
+    def elemoffset(self):
+        """Offset of data from base in elements"""
+        return self.offset // self.itemsize
+
+    @property
     def elemstrides(self):
-        return tuple(s / self.itemsize for s in self.initial_value.strides)
+        """Strides of data in elements"""
+        return tuple(s // self.itemsize for s in self.strides)
 
     @property
     def initial_value(self):
@@ -63,7 +70,7 @@ class Signal(object):
 
     @property
     def itemsize(self):
-        return self._initial_value.itemsize
+        return self.initial_value.itemsize
 
     @property
     def name(self):
@@ -79,7 +86,8 @@ class Signal(object):
 
     @property
     def offset(self):
-        return npext.array_offset(self.initial_value) / self.itemsize
+        """Offset of data from base in bytes."""
+        return npext.array_offset(self.initial_value)
 
     @property
     def readonly(self):
@@ -96,6 +104,11 @@ class Signal(object):
     @property
     def size(self):
         return self.initial_value.size
+
+    @property
+    def strides(self):
+        """Strides of data in bytes"""
+        return self.initial_value.strides
 
     def __getitem__(self, item):
         """Index or slice into array"""
@@ -139,6 +152,18 @@ class SignalDict(dict):
 
     Use ``init`` to set the ndarray initially.
     """
+    def __getitem__(self, key):
+        try:
+            return dict.__getitem__(self, key)
+        except KeyError:
+            if isinstance(key, Signal) and key.base is not key:
+                # return a view on the base signal
+                base = dict.__getitem__(self, key.base)
+                return np.ndarray(
+                    buffer=base, dtype=key.dtype, shape=key.shape,
+                    offset=key.offset, strides=key.strides)
+            else:
+                raise
 
     def __setitem__(self, key, val):
         """Ensures that ndarrays stay in the same place in memory.
