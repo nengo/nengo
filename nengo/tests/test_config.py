@@ -115,14 +115,13 @@ def test_defaults():
 
 def test_configstack():
     """Test that setting defaults with bare configs works."""
-    inhib = nengo.Config(nengo.Connection)
-    inhib[nengo.Connection].synapse = nengo.synapses.Lowpass(0.00848)
     with nengo.Network() as net:
         net.config[nengo.Connection].transform = -1
         e1 = nengo.Ensemble(5, dimensions=1)
         e2 = nengo.Ensemble(6, dimensions=1)
         excite = nengo.Connection(e1, e2)
-        with inhib:
+        with nengo.Config(nengo.Connection) as inhib:
+            inhib[nengo.Connection].synapse = nengo.synapses.Lowpass(0.00848)
             inhibit = nengo.Connection(e1, e2)
     assert excite.synapse == nengo.Connection.synapse.default
     assert excite.transform == -1

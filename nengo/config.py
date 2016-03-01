@@ -291,6 +291,7 @@ class Config(object):
 
     def __enter__(self):
         Config.context.append(self)
+        return self
 
     def __exit__(self, dummy_exc_type, dummy_exc_value, dummy_tb):
         if len(Config.context) == 0:
