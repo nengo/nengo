@@ -94,7 +94,7 @@ setup(
         "numpy>=1.6",
     ],
     extras_require={
-        'all_solvers': ["scipy", "scikit-learn"],
+        'all_solvers': ["scipy>=0.13", "scikit-learn"],
     },
     tests_require=['pytest>=2.3'],
     cmdclass={
