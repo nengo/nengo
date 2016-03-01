@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import errno
+import multiprocessing
 import os
 import timeit
 
@@ -276,7 +277,7 @@ def test_cache_works(tmpdir, RefSimulator, seed):
         assert len(os.listdir(cache_dir)) == 3  # legacy.txt, index, and *.nco
 
 
-def test_cache_not_used_without_seed(tmpdir, Simulator):
+def test_cache_not_used_without_seed(tmpdir, RefSimulator):
     cache_dir = str(tmpdir)
 
     model = nengo.Network()
@@ -284,9 +285,36 @@ def test_cache_not_used_without_seed(tmpdir, Simulator):
         nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
     assert len(os.listdir(cache_dir)) == 0
-    Simulator(model, model=nengo.builder.Model(
-        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)))
-    assert len(os.listdir(cache_dir)) == 2  # legacy.txt and index
+    with RefSimulator(model, model=nengo.builder.Model(
+            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
+        assert len(os.listdir(cache_dir)) == 2  # legacy.txt and index
+
+
+def build_many_ensembles(cache_dir, RefSimulator):
+    with nengo.Network(seed=1) as model:
+        for _ in range(100):
+            nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
+
+    with RefSimulator(model, model=nengo.builder.Model(
+            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
+        pass
+
+
+@pytest.mark.slow
+def test_cache_concurrency(tmpdir, RefSimulator):
+    cache_dir = str(tmpdir)
+
+    n_processes = 100
+    processes = [
+        multiprocessing.Process(
+            target=build_many_ensembles, args=(cache_dir, RefSimulator))
+        for _ in range(n_processes)]
+    for p in processes:
+        p.start()
+    for p in processes:
+        p.join(60)
+    for p in processes:
+        assert p.exitcode == 0
 
 
 def reject_outliers(data):
@@ -325,7 +353,8 @@ rc.set("decoder_cache", "enabled", "True")
 rc.set("decoder_cache", "readonly", "True")
 ''',
         'stmt': '''
-sim = nengo.Simulator(model)
+with nengo.Simulator(model):
+    pass
 '''
     }
 
@@ -336,7 +365,8 @@ rc.set("decoder_cache", "enabled", "True")
 rc.set("decoder_cache", "readonly", "False")
 ''',
         'stmt': '''
-sim = nengo.Simulator(model)
+with nengo.Simulator(model):
+    pass
 '''
     }
 
@@ -344,9 +374,13 @@ sim = nengo.Simulator(model)
         'rc': '''
 rc.set("decoder_cache", "enabled", "True")
 rc.set("decoder_cache", "readonly", "False")
-sim = nengo.Simulator(model)
+with nengo.Simulator(model):
+    pass
 ''',
-        'stmt': 'sim = nengo.Simulator(model)'
+        'stmt': '''
+with nengo.Simulator(model):
+    pass
+'''
     }
 
     labels = ["no cache", "cache miss", "cache miss ro", "cache hit"]
