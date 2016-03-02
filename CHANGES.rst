@@ -109,6 +109,11 @@ Release History
   ``spa.Thalamus`` are now stored in the target modules.
   (`#894 <https://github.com/nengo/nengo/issues/894>`_,
   `#906 <https://github.com/nengo/nengo/pull/906>`_)
+- The ``filt`` and ``filtfilt`` functions on ``Synapse`` now use the initial
+  value of the input signal to initialize the filter output by default. This
+  provides more accurate filtering at the beginning of the signal, for signals
+  that do not start at zero.
+  (`#945 <https://github.com/nengo/nengo/pull/945>`_)
 
 **Improvements**
 

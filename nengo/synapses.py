@@ -19,19 +19,20 @@ class Synapse(Process):
         super(Synapse, self).__init__()
         self.analog = analog
 
-    def filt(self, x, dt=None, axis=0, y0=None, copy=True, filtfilt=False):
+    def filt(self, x, dt=1., axis=0, y0=None, copy=True, filtfilt=False):
         """Filter ``x`` with this synapse.
 
         Parameters
         ----------
         x : array_like
             The signal to filter.
-        dt : float
-            The time-step of the input signal, for analog synapses.
+        dt : float, optional (default: 1)
+            The time-step of the input signal for analog synapses (default: 1).
         axis : integer, optional (default: 0)
             The axis along which to filter.
-        y0 : array_like, optional (default: np.zeros(d))
-            The starting state of the filter output.
+        y0 : array_like, optional (default: x0)
+            The starting state of the filter output. Defaults to the initial
+            value of the input signal along the axis filtered.
         copy : boolean, optional (default: True)
             Whether to copy the input data, or simply work in-place.
         filtfilt : boolean, optional (default: False)
@@ -46,6 +47,9 @@ class Synapse(Process):
 
         filtered = np.array(x, copy=copy)
         filt_view = np.rollaxis(filtered, axis=axis)  # rolled view on filtered
+
+        if y0 is None:
+            y0 = filt_view[0]
 
         shape_in = shape_out = as_shape(filt_view[0].shape, min_dim=1)
         step = self.make_step(shape_in, shape_out, dt, None, y0=y0)
@@ -138,14 +142,11 @@ class LinearFilter(Synapse):
         den = den[1:]  # drop first element (equal to 1)
 
         output = np.zeros(shape_out)
-        if y0 is not None:
-            output[:] = y0
-
         if len(num) == 1 and len(den) == 0:
             return LinearFilter.NoDen(num, den, output)
         elif len(num) == 1 and len(den) == 1:
-            return LinearFilter.Simple(num, den, output)
-        return LinearFilter.General(num, den, output)
+            return LinearFilter.Simple(num, den, output, y0=y0)
+        return LinearFilter.General(num, den, output, y0=y0)
 
     @staticmethod
     def _make_zero_step(shape_in, shape_out, dt, rng, y0=None):
@@ -188,7 +189,7 @@ class LinearFilter(Synapse):
         This step function should be much faster than the equivalent general
         step function.
         """
-        def __init__(self, num, den, output):
+        def __init__(self, num, den, output, y0=None):
             if len(num) != 1:
                 raise ValidationError("'num' must be length 1 (got %d)"
                                       % len(num), attr='num', obj=self)
@@ -199,6 +200,8 @@ class LinearFilter(Synapse):
             super(LinearFilter.Simple, self).__init__(num, den, output)
             self.b = num[0]
             self.a = den[0]
+            if y0 is not None:
+                self.output[...] = y0
 
         def __call__(self, t, signal):
             self.output *= -self.a
@@ -215,10 +218,16 @@ class LinearFilter(Synapse):
         ----------
         .. [1] http://en.wikipedia.org/wiki/Digital_filter#Difference_equation
         """
-        def __init__(self, num, den, output):
+        def __init__(self, num, den, output, y0=None):
             super(LinearFilter.General, self).__init__(num, den, output)
             self.x = collections.deque(maxlen=len(num))
             self.y = collections.deque(maxlen=len(den))
+            if y0 is not None:
+                self.output[...] = y0
+                for _ in num:
+                    self.x.appendleft(np.array(self.output))
+                for _ in den:
+                    self.y.appendleft(np.array(self.output))
 
         def __call__(self, t, signal):
             self.output[...] = 0
@@ -345,13 +354,13 @@ def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
     synapse.filt(signal, dt=dt, axis=axis, y0=x0, copy=copy)
 
 
-def filtfilt(signal, synapse, dt, axis=0, copy=True):
+def filtfilt(signal, synapse, dt, axis=0, x0=None, copy=True):
     """Zero-phase filtering of ``signal`` using the ``syanpse`` filter.
 
     Deprecated: use ``synapse.filtfilt`` instead.
     """
     warnings.warn("Use ``synapse.filtfilt`` instead", DeprecationWarning)
-    synapse.filtfilt(signal, dt=dt, axis=axis, copy=copy)
+    synapse.filtfilt(signal, dt=dt, axis=axis, y0=x0, copy=copy)
 
 
 class SynapseParam(Parameter):

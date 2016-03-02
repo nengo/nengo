@@ -112,7 +112,7 @@ def test_passthrough_filter(Simulator, plt, seed):
 
     t = sim.trange()
     x = sim.data[up]
-    y = synapse.filt(x, dt=sim.dt)
+    y = synapse.filt(x, dt=sim.dt, y0=0)
     z = sim.data[vp]
 
     plt.plot(t, x)

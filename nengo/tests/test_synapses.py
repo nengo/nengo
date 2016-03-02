@@ -34,7 +34,7 @@ def test_lowpass(Simulator, plt, seed):
     tau = 0.03
 
     t, x, yhat = run_synapse(Simulator, seed, Lowpass(tau), dt=dt)
-    y = Lowpass(tau).filt(x, dt=dt)
+    y = Lowpass(tau).filt(x, dt=dt, y0=0)
 
     assert allclose(t, y, yhat, delay=dt, plt=plt)
 
@@ -45,7 +45,7 @@ def test_alpha(Simulator, plt, seed):
     num, den = [1], [tau**2, 2*tau, 1]
 
     t, x, yhat = run_synapse(Simulator, seed, Alpha(tau), dt=dt)
-    y = LinearFilter(num, den).filt(x, dt=dt)
+    y = LinearFilter(num, den).filt(x, dt=dt, y0=0)
 
     assert allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt)
 
@@ -55,7 +55,7 @@ def test_triangle(Simulator, plt, seed):
     tau = 0.03
 
     t, x, ysim = run_synapse(Simulator, seed, Triangle(tau), dt=dt)
-    yfilt = Triangle(tau).filt(x, dt=dt)
+    yfilt = Triangle(tau).filt(x, dt=dt, y0=0)
 
     # compare with convolved filter
     n_taps = int(round(tau / dt)) + 1
@@ -75,7 +75,7 @@ def test_decoders(Simulator, plt, seed):
     t, x, yhat = run_synapse(
         Simulator, seed, Lowpass(tau), dt=dt, n_neurons=100)
 
-    y = Lowpass(tau).filt(x, dt=dt)
+    y = Lowpass(tau).filt(x, dt=dt, y0=0)
     assert allclose(t, y, yhat, delay=dt, plt=plt)
 
 
@@ -90,7 +90,7 @@ def test_linearfilter(Simulator, plt, seed):
 
     synapse = LinearFilter(num, den, analog=False)
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
-    y = synapse.filt(x, dt=dt)
+    y = synapse.filt(x, dt=dt, y0=0)
 
     assert allclose(t, y, yhat, delay=dt, plt=plt)
 
@@ -119,7 +119,7 @@ def test_filt(plt, rng):
     k = 1. / tau * np.exp(-tk / tau)
     x = np.convolve(u, k, mode='full')[:nt]
 
-    y = Lowpass(0.1).filt(u, dt=dt)
+    y = Lowpass(0.1).filt(u, dt=dt, y0=0)
 
     plt.plot(t, x)
     plt.plot(t, y, '--')
