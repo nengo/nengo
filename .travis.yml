@@ -10,7 +10,7 @@ env:
     - SETUP_CMD="test -a 'nengo -n 2 -v --durations 20'"
     - EXTRA_CMD=""
     - CONDA_DEPS="matplotlib jupyter pygments"
-    - PIP_DEPS="mistune pytest==2.7.3 pytest-xdist"
+    - PIP_DEPS="mistune pytest pytest-xdist"
 
 matrix:
   include:

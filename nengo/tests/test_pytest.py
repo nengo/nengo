@@ -1,5 +1,5 @@
 import nengo.utils.numpy as npext
-from nengo.tests.conftest import test_seed
+from nengo.conftest import test_seed
 
 
 def test_seed_fixture(seed):
