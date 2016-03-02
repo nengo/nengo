@@ -56,7 +56,7 @@ probemap = {
               'rates': None,
               'input': 'in'},
     Node: {'output': None},
-    Connection: {'output': 'out',
+    Connection: {'output': 'weighted',
                  'input': 'in'},
     LearningRule: {},  # make LR signals probeable, but no mapping required
 }

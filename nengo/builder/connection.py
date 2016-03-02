@@ -215,6 +215,9 @@ def build_connection(model, conn):
     if conn.synapse is not None:
         signal = model.build(conn.synapse, signal)
 
+    # Store the weighted-filtered output in case we want to probe it
+    model.sig[conn]['weighted'] = signal
+
     # Copy to the proper slice
     model.add_op(SlicedCopy(
         signal, model.sig[conn]['out'], b_slice=post_slice,

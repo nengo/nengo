@@ -184,6 +184,10 @@ Release History
   creation attempts, and returns the most dissimilar pointer if none can be
   found below the similarity threshold.
   (`#817 <https://github.com/nengo/nengo/pull/817>`_)
+- Probing a Connection's output now returns the output of that individual
+  Connection, rather than the input to the Connection's post Ensemble.
+  (`#973 <https://github.com/nengo/nengo/issues/973>`_,
+  `#974 <https://github.com/nengo/nengo/pull/974>`_)
 
 2.0.3 (December 7, 2015)
 ========================

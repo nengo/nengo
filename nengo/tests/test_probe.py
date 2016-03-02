@@ -147,6 +147,25 @@ def test_input_probe(Simulator):
         assert np.allclose(sim.data[input_probe][:, 0], np.sin(t) + 0.5)
 
 
+def test_conn_output(Simulator):
+    """Make sure we can get individual connection outputs."""
+    model = nengo.Network()
+    with model:
+        n1 = nengo.Node(output=np.sin)
+        n2 = nengo.Node(output=0.5)
+        n_out = nengo.Node(size_in=1)
+        c1 = nengo.Connection(n1, n_out, transform=-1, synapse=None)
+        c2 = nengo.Connection(n2, n_out, function=lambda x: x**2, synapse=None)
+        p1 = nengo.Probe(c1, 'output', synapse=None)
+        p2 = nengo.Probe(c2, 'output', synapse=None)
+
+    with Simulator(model) as sim:
+        sim.run(0.2)
+    t = sim.trange()
+    assert np.allclose(sim.data[p1][:, 0], -1. * np.sin(t))
+    assert np.allclose(sim.data[p2][:, 0], 0.5 ** 2)
+
+
 def test_slice(Simulator):
     with nengo.Network() as model:
         a = nengo.Node(output=lambda t: [np.cos(t), np.sin(t)])
