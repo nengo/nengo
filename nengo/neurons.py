@@ -298,30 +298,33 @@ class LIF(LIFRate):
         self.min_voltage = min_voltage
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
-        """Implement the LIF nonlinearity."""
-
-        # update voltage using accurate exponential integration scheme
-        dV = -np.expm1(-dt / self.tau_rc) * (J - voltage)
-        voltage += dV
-        voltage[voltage < self.min_voltage] = self.min_voltage
-
-        # update refractory period assuming no spikes for now
+        # reduce all refractory times by dt
         refractory_time -= dt
 
-        # set voltages of neurons still in their refractory period to 0
-        # and reduce voltage of neurons partway out of their ref. period
-        voltage *= (1 - refractory_time / dt).clip(0, 1)
+        # compute effective dt for each neuron, based on remaining time.
+        # note that refractory times that have completed midway into this
+        # timestep will be given a partial timestep, and moreover these will
+        # be subtracted to zero at the next timestep (or reset by a spike)
+        delta_t = (dt - refractory_time).clip(0, dt)
 
-        # determine which neurons spike (if v > 1 set spiked = 1/dt, else 0)
-        spiked[:] = (voltage > 1) / dt
+        # update voltage using discretized lowpass filter
+        # since v(t) = v(0) + (J - v(0))*(1 - exp(-t/tau)) assuming
+        # J is constant over the interval [t, t + dt)
+        voltage -= (J - voltage) * np.expm1(-delta_t / self.tau_rc)
 
-        # linearly approximate time since neuron crossed spike threshold
-        overshoot = (voltage[spiked > 0] - 1) / dV[spiked > 0]
-        spiketime = dt * (1 - overshoot)
+        # determine which neurons spiked (set them to 1/dt, else 0)
+        spiked_mask = voltage > 1
+        spiked[:] = spiked_mask / dt
 
-        # set spiking neurons' voltages to zero, and ref. time to tau_ref
-        voltage[spiked > 0] = 0
-        refractory_time[spiked > 0] = self.tau_ref + spiketime
+        # set v(0) = 1 and solve for t to compute the spike time
+        t_spike = dt + self.tau_rc * np.log1p(
+            -(voltage[spiked_mask] - 1) / (J[spiked_mask] - 1))
+
+        # set spiked voltages to zero, refractory times to tau_ref, and
+        # rectify negative voltages to a floor of min_voltage
+        voltage[voltage < self.min_voltage] = self.min_voltage
+        voltage[spiked_mask] = 0
+        refractory_time[spiked_mask] = self.tau_ref + t_spike
 
 
 class AdaptiveLIFRate(LIFRate):

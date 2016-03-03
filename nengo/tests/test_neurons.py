@@ -36,9 +36,9 @@ def test_lif_builtin(rng):
     assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 
 
-def test_lif(Simulator, plt, rng, logger):
-    """Test that the dynamic model approximately matches the rates"""
-    dt = 0.001
+@pytest.mark.parametrize('dt', (0.001, 0.002))
+def test_lif(Simulator, plt, rng, logger, dt):
+    """Test that the dynamic model approximately matches the rates."""
     n = 5000
     x = 0.5
     encoders = np.ones((n, 1))
@@ -51,7 +51,8 @@ def test_lif(Simulator, plt, rng, logger):
         ens = nengo.Ensemble(
             n, dimensions=1, neuron_type=nengo.LIF(),
             encoders=encoders, max_rates=max_rates, intercepts=intercepts)
-        nengo.Connection(ins, ens.neurons, transform=np.ones((n, 1)))
+        nengo.Connection(
+            ins, ens.neurons, transform=np.ones((n, 1)), synapse=None)
         spike_probe = nengo.Probe(ens.neurons)
         voltage_probe = nengo.Probe(ens.neurons, 'voltage')
         ref_probe = nengo.Probe(ens.neurons, 'refractory_time')
@@ -84,6 +85,11 @@ def test_lif(Simulator, plt, rng, logger):
     # if voltage and ref time are non-constant, the probe is doing something
     assert np.abs(np.diff(sim.data[voltage_probe])).sum() > 1
     assert np.abs(np.diff(sim.data[ref_probe])).sum() > 1
+
+    # compute spike counts after each timestep
+    actual_counts = (spikes > 0).cumsum(axis=0)
+    expected_counts = np.outer(sim.trange(), math_rates)
+    assert (abs(actual_counts - expected_counts) < 1).all()
 
 
 @pytest.mark.parametrize('min_voltage', [-np.inf, -1, 0])

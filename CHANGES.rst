@@ -22,6 +22,14 @@ Release History
 2.1.1 (unreleased)
 ==================
 
+**Improvements**
+
+- Improved the default ``LIF`` neuron model to spike at the same rate as the
+  ``LIFRate`` neuron model for constant inputs. The older model has been
+  moved to `nengo_extras <https://github.com/nengo/nengo_extras>`_
+  under the name ``FastLIF``.
+  (`#975 <https://github.com/nengo/nengo/pull/975>`_)
+
 **Bug fixes**
 
 - The DecoderCache is used as context manager instead of relying on the
