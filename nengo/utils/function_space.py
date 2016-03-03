@@ -9,6 +9,7 @@ class Function(nengo.dists.Distribution):
         self.function = function
         self.distributions = distributions
         self.superimpose = superimpose
+        super(Function, self).__init__()
 
     def sample(self, n, d=None, rng=np.random):
 
@@ -36,13 +37,14 @@ class Function(nengo.dists.Distribution):
         def stimulus(t, x):
             return self.project(self.function(*x))
 
-        return nengo.Node(stimulus, size_in=self.n_params, 
+        return nengo.Node(stimulus, size_in=self.n_params,
                           size_out=self.n_basis)
 
 class FunctionSpaceDistribution(nengo.dists.Distribution):
     def __init__(self, function_space, data):
         self.fs = function_space
         self.data = data
+        super(FunctionSpaceDistribution, self).__init__()
 
     def sample(self, n, d=None, rng=np.random):
         if isinstance(self.data, nengo.dists.Distribution):
@@ -63,6 +65,7 @@ class Combined(nengo.dists.Distribution):
         self.distributions = distributions
         self.dimensions = dimensions
         self.n_dimensions = sum(dimensions)
+        super(Combined, self).__init__()
 
     def sample(self, n, d=None, rng=np.random):
         assert d == self.n_dimensions
@@ -181,5 +184,5 @@ class FunctionSpace(object):
         """Generate a Node that can control function parameters."""
         def stimulus(t, x):
             return self.project(function(*x))
-        return nengo.Node(stimulus, size_in=n_params, 
+        return nengo.Node(stimulus, size_in=n_params,
                           size_out=self.n_basis)
