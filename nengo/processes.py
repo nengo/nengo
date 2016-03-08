@@ -306,7 +306,7 @@ class PresentInput(Process):
         presentation_time = float(self.presentation_time)
 
         def step_presentinput(t):
-            i = int(t / presentation_time + 1e-7)
+            i = int((t-dt) / presentation_time + 1e-7)
             return inputs[i % n]
 
         return step_presentinput

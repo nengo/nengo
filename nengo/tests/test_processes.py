@@ -297,7 +297,7 @@ def test_present_input(Simulator, rng):
         sim.run(1.0)
 
     t = sim.trange()
-    i = np.floor(t / pres_time + 1e-7) % n
+    i = np.floor((t - sim.dt) / pres_time + 1e-7) % n
     y = sim.data[up].reshape(len(t), c, ni, nj)
     for k, [ii, image] in enumerate(zip(i, y)):
         assert np.allclose(image, images[ii], rtol=1e-4, atol=1e-7), (k, ii)
