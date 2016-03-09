@@ -5,6 +5,7 @@ from __future__ import division
 import numpy as np
 
 import nengo.utils.numpy as npext
+from nengo.exceptions import SignalError
 from nengo.utils.compat import StringIO, is_integer
 
 
@@ -62,7 +63,7 @@ class Signal(object):
 
     @initial_value.setter
     def initial_value(self, val):
-        raise RuntimeError("Cannot change initial value after initialization")
+        raise SignalError("Cannot change initial value after initialization")
 
     @property
     def is_view(self):
@@ -116,7 +117,7 @@ class Signal(object):
             item = (item,)
 
         if not all(is_integer(i) or isinstance(i, slice) for i in item):
-            raise ValueError("Can only index or slice into signals")
+            raise SignalError("Can only index or slice into signals")
 
         if all(map(is_integer, item)):
             # turn one index into slice to get a view from numpy
@@ -185,7 +186,7 @@ class SignalDict(dict):
     def init(self, signal):
         """Set up a permanent mapping from signal -> ndarray."""
         if signal in self:
-            raise ValueError("Cannot add signal twice")
+            raise SignalError("Cannot add signal twice")
 
         x = signal.initial_value
         if signal.is_view:

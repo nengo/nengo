@@ -70,3 +70,7 @@ class SimulatorClosed(NengoException):
 
 class SimulationError(NengoException, RuntimeError):
     """An error encountered during simulation of the model."""
+
+
+class SignalError(NengoException, ValueError):
+    """An error dealing with Signals in the builder."""

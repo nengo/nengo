@@ -8,7 +8,7 @@ from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc, PreserveValue
 from nengo.builder.signal import Signal, SignalDict
-from nengo.exceptions import ObsoleteError
+from nengo.exceptions import ObsoleteError, SignalError
 from nengo.utils.compat import itervalues, range
 
 
@@ -116,7 +116,7 @@ def test_signal_values():
     assert np.allclose(two_d_view.initial_value, np.array([1]))
 
     # cannot change signal value after creation
-    with pytest.raises(RuntimeError):
+    with pytest.raises(SignalError):
         two_d.initial_value = np.array([[0.5], [-0.5]])
     with pytest.raises((ValueError, RuntimeError)):
         two_d.initial_value[...] = np.array([[0.5], [-0.5]])
