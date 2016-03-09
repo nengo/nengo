@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 
 import nengo.utils.numpy as npext
-from nengo.exceptions import BuildError
+from nengo.exceptions import BuildError, SimulationError
 
 
 class Operator(object):
@@ -393,11 +393,12 @@ class SimPyFunc(Operator):
             y = fn(t_sig.item(), *args) if t_in else fn(*args)
             if output is not None:
                 if y is None:  # required since Numpy turns None into NaN
-                    raise ValueError("Function %r returned None" % fn.__name__)
+                    raise SimulationError(
+                        "Function %r returned None" % fn.__name__)
                 try:
                     output[...] = y
                 except ValueError:
-                    raise ValueError("Function %r returned invalid value %r"
-                                     % (fn.__name__, y))
+                    raise SimulationError("Function %r returned invalid value "
+                                          "%r" % (fn.__name__, y))
 
         return step_simpyfunc

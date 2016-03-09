@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.exceptions import ValidationError
+from nengo.exceptions import SimulationError, ValidationError
 from nengo.utils.testing import warns
 
 
@@ -186,7 +186,7 @@ def test_none(Simulator, seed):
         nengo.Connection(u, a)
 
     with Simulator(model) as sim:
-        with pytest.raises(ValueError):
+        with pytest.raises(SimulationError):
             sim.run(0.01)
 
     # This function will pass (with a warning), because it will

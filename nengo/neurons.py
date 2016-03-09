@@ -4,7 +4,7 @@ import logging
 
 import numpy as np
 
-from nengo.exceptions import ValidationError
+from nengo.exceptions import SimulationError, ValidationError
 from nengo.params import Parameter, NumberParam, FrozenObject
 from nengo.utils.compat import range
 from nengo.utils.neurons import settled_firingrate
@@ -111,7 +111,7 @@ class Direct(NeuronType):
         return None, None
 
     def step_math(self, dt, J, output):
-        raise TypeError("Direct mode neurons shouldn't be simulated.")
+        raise SimulationError("Direct mode neurons shouldn't be simulated.")
 
 # TODO: class BasisFunctions or Population or Express;
 #       uses non-neural basis functions to emulate neuron saturation,

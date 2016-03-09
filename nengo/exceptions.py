@@ -66,3 +66,7 @@ class SpaParseError(NengoException, ValueError):
 
 class SimulatorClosed(NengoException):
     """Raised when attempting to run a closed simulator."""
+
+
+class SimulationError(NengoException, RuntimeError):
+    """An error encountered during simulation of the model."""
