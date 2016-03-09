@@ -3,7 +3,7 @@ import collections
 from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
-from nengo.exceptions import ConfigError, ReadonlyError
+from nengo.exceptions import ConfigError, NetworkContextError, ReadonlyError
 from nengo.node import Node
 from nengo.probe import Probe
 
@@ -110,21 +110,21 @@ class Network(object):
     def add(obj):
         """Add the passed object to the current Network.context."""
         if len(Network.context) == 0:
-            raise RuntimeError("'%s' must either be created "
-                               "inside a `with network:` block, or set "
-                               "add_to_container=False in the object's "
-                               "constructor." % obj)
+            raise NetworkContextError(
+                "'%s' must either be created inside a ``with network:`` "
+                "block, or set add_to_container=False in the object's "
+                "constructor." % obj)
         network = Network.context[-1]
         if not isinstance(network, Network):
-            raise RuntimeError("Current context is not a network: %s" %
-                               network)
+            raise NetworkContextError(
+                "Current context (%s) is not a network" % network)
         for cls in obj.__class__.__mro__:
             if cls in network.objects:
                 network.objects[cls].append(obj)
                 break
         else:
-            raise TypeError("Objects of type '%s' cannot be added to "
-                            "networks." % obj.__class__.__name__)
+            raise NetworkContextError("Objects of type %r cannot be added to "
+                                      "networks." % obj.__class__.__name__)
 
     def _all_objects(self, object_type):
         """Returns a list of all objects of the specified type"""
@@ -185,8 +185,9 @@ class Network(object):
 
     def __exit__(self, dummy_exc_type, dummy_exc_value, dummy_tb):
         if len(Network.context) == 0:
-            raise RuntimeError("Network.context in bad state; was empty when "
-                               "exiting from a 'with' block.")
+            raise NetworkContextError(
+                "Network.context in bad state; was empty when "
+                "exiting from a 'with' block.")
 
         config = Config.context[-1]
         if config is not self._config:
@@ -196,9 +197,9 @@ class Network(object):
 
         network = Network.context.pop()
         if network is not self:
-            raise RuntimeError("Network.context in bad state; was expecting "
-                               "current context to be '%s' but instead got "
-                               "'%s'." % (self, network))
+            raise NetworkContextError(
+                "Network.context in bad state; was expecting current context "
+                "to be '%s' but instead got '%s'." % (self, network))
 
         self._config.__exit__(dummy_exc_type, dummy_exc_value, dummy_tb)
 

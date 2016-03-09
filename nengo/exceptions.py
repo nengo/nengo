@@ -78,3 +78,7 @@ class SignalError(NengoException, ValueError):
 
 class FingerprintError(NengoException, ValueError):
     """An error in fingerprinting an object for cache identification."""
+
+
+class NetworkContextError(NengoException, RuntimeError):
+    """An error with the Network context stack."""
