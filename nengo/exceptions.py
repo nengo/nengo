@@ -86,3 +86,7 @@ class NetworkContextError(NengoException, RuntimeError):
 
 class Unconvertible(NengoException, ValueError):
     """Raised a requested network conversion cannot be done."""
+
+
+class CacheIOError(NengoException, IOError):
+    """An IO error in reading from or writing to the decoder cache."""

@@ -36,6 +36,7 @@ import numpy as np
 
 from .compat import ensure_bytes, pickle
 from .cache import byte_align
+from ..exceptions import CacheIOError
 
 
 class Subfile(object):
@@ -140,10 +141,10 @@ def read(fileobj):
         struct.unpack(HEADER_FORMAT, header))
 
     if magic != MAGIC_STRING:
-        raise IOError("Not a Nengo cache object file.")
+        raise CacheIOError("Not a Nengo cache object file.")
     if version not in SUPPORTED_PROTOCOLS:
-        raise IOError("NCO protocol version {} is not supported.".format(
-            version))
+        raise CacheIOError(
+            "NCO protocol version {} is not supported.".format(version))
 
     metadata = pickle.load(Subfile(fileobj, pickle_start, pickle_end))
     array = np.load(Subfile(fileobj, array_start, array_end))
