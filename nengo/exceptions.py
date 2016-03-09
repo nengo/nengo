@@ -60,6 +60,10 @@ class ConfigError(NengoException, ValueError):
     """A ValueError encountered in the config system."""
 
 
+class SpaModuleError(NengoException, ValueError):
+    """An error in how SPA keeps track of modules."""
+
+
 class SpaParseError(NengoException, ValueError):
     """An error encountered while parsing a SPA expression."""
 

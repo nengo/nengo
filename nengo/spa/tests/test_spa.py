@@ -2,6 +2,7 @@ import pytest
 
 import nengo
 from nengo import spa
+from nengo.exceptions import SpaModuleError
 from nengo.utils.testing import warns
 
 
@@ -41,7 +42,7 @@ def test_spa_verification(seed, plt):
             input_node = spa.Input(buf='B')
             input_node.label = "woop"
 
-    with pytest.raises(KeyError):
+    with pytest.raises(SpaModuleError):
         model = spa.SPA(seed=seed)
         # build a model that should raise an error because no buf attribute
         with model:
@@ -80,15 +81,15 @@ def test_spa_get():
     assert model.get_module_input('compare_A')[0] is model.compare.inputA
     assert model.get_module_input('compare_B')[0] is model.compare.inputB
 
-    with pytest.raises(KeyError):
+    with pytest.raises(SpaModuleError):
         model.get_module('dummy')
-    with pytest.raises(KeyError):
+    with pytest.raises(SpaModuleError):
         model.get_module_input('dummy')
-    with pytest.raises(KeyError):
+    with pytest.raises(SpaModuleError):
         model.get_module_output('dummy')
-    with pytest.raises(KeyError):
+    with pytest.raises(SpaModuleError):
         model.get_module_input('buf1_A')
-    with pytest.raises(KeyError):
+    with pytest.raises(SpaModuleError):
         model.get_module_input('compare')
 
 

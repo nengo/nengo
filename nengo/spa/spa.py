@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 
 import nengo
+from nengo.exceptions import SpaModuleError
 from nengo.spa.vocab import Vocabulary
 from nengo.spa.module import Module
 from nengo.spa.utils import enable_spa_params
@@ -99,9 +100,9 @@ class SPA(nengo.Network):
         the name that all of the SPA system will use to access that module.
         """
         if hasattr(self, key) and isinstance(getattr(self, key), Module):
-            raise ValueError("Cannot re-assign module-attribute %s to %s. "
-                             "SPA module-attributes can only be assigned "
-                             "once." % (key, value))
+            raise SpaModuleError("Cannot re-assign module-attribute %s to %s. "
+                                 "SPA module-attributes can only be assigned "
+                                 "once." % (key, value))
         super(SPA, self).__setattr__(key, value)
         if isinstance(value, Module):
             if value.label is None:
@@ -129,9 +130,8 @@ class SPA(nengo.Network):
             # Since there are no attributes to distinguish what's been added
             # and what hasn't, we have to ask the network
             if isinstance(net, Module) and (net not in module_list):
-                raise ValueError("%s was not added as an attribute of "
-                                 "the SPA network and won't be detected"
-                                 % (net))
+                raise SpaModuleError("%s must be set as an attribute of "
+                                     "a SPA network" % (net))
 
     def get_module(self, name):
         """Return the module for the given name."""
@@ -141,7 +141,7 @@ class SPA(nengo.Network):
             module, name = name.rsplit('_', 1)
             if module in self._modules:
                 return self._modules[module]
-        raise KeyError('Could not find module "%s"' % name)
+        raise SpaModuleError("Could not find module %r" % name)
 
     def get_default_vocab(self, dimensions):
         """Return a Vocabulary with the desired dimensions.
@@ -171,7 +171,7 @@ class SPA(nengo.Network):
                 m = self._modules[module]
                 if name in m.inputs:
                     return m.inputs[name]
-        raise KeyError('Could not find module input "%s"' % name)
+        raise SpaModuleError("Could not find module input %r" % name)
 
     def get_module_inputs(self):
         for name, module in iteritems(self._modules):
@@ -198,7 +198,7 @@ class SPA(nengo.Network):
                 m = self._modules[module]
                 if name in m.outputs:
                     return m.outputs[name]
-        raise KeyError('Could not find module output "%s"' % name)
+        raise SpaModuleError("Could not find module output %r" % name)
 
     def get_module_outputs(self):
         for name, module in iteritems(self._modules):
