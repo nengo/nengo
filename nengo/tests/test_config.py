@@ -2,6 +2,7 @@ import pytest
 
 import nengo
 import nengo.synapses
+from nengo.exceptions import ReadonlyError
 from nengo.params import Parameter
 
 
@@ -135,7 +136,7 @@ def test_configstack():
 def test_config_property():
     """Test that config can't be easily modified."""
     with nengo.Network() as net:
-        with pytest.raises(AttributeError):
+        with pytest.raises(ReadonlyError):
             net.config = nengo.config.Config()
         with pytest.raises(AttributeError):
             del net.config

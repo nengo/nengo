@@ -2,6 +2,7 @@ import weakref
 
 from nengo.base import NengoObject, ObjView
 from nengo.dists import DistOrArrayParam, Uniform, UniformHypersphere
+from nengo.exceptions import ReadonlyError
 from nengo.neurons import LIF, NeuronTypeParam, Direct
 from nengo.params import (
     Default, IntParam, NumberParam, StringParam)
@@ -114,7 +115,7 @@ class Ensemble(NengoObject):
 
     @neurons.setter
     def neurons(self, dummy):
-        raise AttributeError("neurons cannot be overwritten.")
+        raise ReadonlyError(attr="neurons", obj=self)
 
     @property
     def probeable(self):

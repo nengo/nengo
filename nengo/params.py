@@ -3,7 +3,7 @@ import inspect
 
 import numpy as np
 
-from nengo.exceptions import ValidationError
+from nengo.exceptions import ReadonlyError, ValidationError
 from nengo.utils.compat import (
     is_array, is_integer, is_number, is_string, itervalues)
 from nengo.utils.numpy import array_hash, compare
@@ -109,8 +109,7 @@ class Parameter(object):
                                   "parameter, use 'del'.",
                                   attr=self.name, obj=instance)
         if self.readonly and instance in self.data:
-            raise ValidationError("Parameter is read-only; cannot be changed.",
-                                  attr=self.name, obj=instance)
+            raise ReadonlyError(attr=self.name, obj=instance)
         if not self.optional and value is None:
             raise ValidationError("Parameter is not optional; cannot set to "
                                   "None", attr=self.name, obj=instance)
@@ -395,9 +394,10 @@ class FrozenObject(object):
         self._paramdict = {
             k: v for k, v in inspect.getmembers(self.__class__)
             if isinstance(v, Parameter)}
-        if not all(p.readonly for p in self._params):
-            raise ValueError(
-                "All parameters of a FrozenObject must be readonly")
+        for p in self._params:
+            if not p.readonly:
+                msg = "All parameters of a FrozenObject must be readonly"
+                raise ReadonlyError(attr=p, obj=self, msg=msg)
 
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, ', '.join(

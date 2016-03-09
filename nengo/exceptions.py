@@ -25,3 +25,12 @@ class ValidationError(NengoException, ValueError):
                      else self.obj.__class__.__name__)
         return "{}.{}: {}".format(
             klassname, self.attr, super(ValidationError, self).__str__())
+
+
+class ReadonlyError(ValidationError):
+    """A ValidationError occurring because a parameter is read-only."""
+
+    def __init__(self, attr, obj=None, msg=None):
+        if msg is None:
+            msg = "%s is read-only and cannot be changed" % attr
+        super(ReadonlyError, self).__init__(msg, attr, obj)

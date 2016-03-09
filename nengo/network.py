@@ -3,6 +3,7 @@ import collections
 from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
+from nengo.exceptions import ReadonlyError
 from nengo.node import Node
 from nengo.probe import Probe
 
@@ -172,8 +173,7 @@ class Network(object):
 
     @config.setter
     def config(self, dummy):
-        raise AttributeError("config cannot be overwritten. See help("
-                             "nengo.Config) for help on modifying configs.")
+        raise ReadonlyError(attr='config', obj=self)
 
     def __contains__(self, obj):
         return type(obj) in self.objects and obj in self.objects[type(obj)]

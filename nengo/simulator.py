@@ -15,6 +15,7 @@ import nengo.utils.numpy as npext
 from nengo.builder import Model
 from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
+from nengo.exceptions import ReadonlyError
 from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
 from nengo.utils.progress import ProgressTracker
@@ -143,9 +144,7 @@ class Simulator(object):
 
     @dt.setter
     def dt(self, dummy):
-        raise AttributeError("Cannot change simulator 'dt'. Please file "
-                             "an issue at http://github.com/nengo/nengo"
-                             "/issues and describe your use case.")
+        raise ReadonlyError(attr='dt', obj=self)
 
     @property
     def time(self):
