@@ -82,3 +82,7 @@ class FingerprintError(NengoException, ValueError):
 
 class NetworkContextError(NengoException, RuntimeError):
     """An error with the Network context stack."""
+
+
+class Unconvertible(NengoException, ValueError):
+    """Raised a requested network conversion cannot be done."""
