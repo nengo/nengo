@@ -72,6 +72,9 @@ Release History
   (`#857 <https://github.com/nengo/nengo/issues/857`_,
   `#739 <https://github.com/nengo/nengo/issues/739>`_,
   `#859 <https://github.com/nengo/nengo/pull/859>`_)
+- Most exceptions that Nengo can raise are now custom exception classes
+  that can be found in the ``nengo.exceptions`` module.
+  (`#781 <https://github.com/nengo/nengo/pull/781>`_)
 
 **Behavioural changes**
 
