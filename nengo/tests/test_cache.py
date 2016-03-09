@@ -10,6 +10,8 @@ import pytest
 
 import nengo
 from nengo.cache import DecoderCache, Fingerprint, get_fragment_size
+from nengo.exceptions import FingerprintError
+from nengo.rc import rc, RC_DEFAULTS
 from nengo.utils.compat import int_types
 
 
@@ -253,7 +255,7 @@ def test_fingerprinting(reference, equal, different):
 
 
 def test_fails_for_lambda_expression():
-    with pytest.raises((ValueError, AttributeError)):
+    with pytest.raises(FingerprintError):
         Fingerprint(lambda x: x)
 
 
@@ -364,6 +366,12 @@ sim = nengo.Simulator(model)
 
         times = [self.time_all(self.get_args(varying_param, v))
                  for v in varying]
+
+        # Restore RC to original settings
+        default = RC_DEFAULTS['decoder_cache', 'enabled']
+        rc.set("decoder_cache", "enabled", str(default))
+        default = RC_DEFAULTS['decoder_cache', 'readonly']
+        rc.set("decoder_cache", "readonly", str(default))
 
         for i, data in enumerate(zip(*times)):
             plt.plot(varying, np.median(data, axis=1), label=self.labels[i])

@@ -8,6 +8,7 @@ import struct
 
 import numpy as np
 
+from nengo.exceptions import FingerprintError
 from nengo.rc import rc
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
 from nengo.utils.compat import is_string, pickle, PY2
@@ -60,9 +61,8 @@ class Fingerprint(object):
         self.fingerprint = hashlib.sha1()
         try:
             self.fingerprint.update(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL))
-        except (pickle.PicklingError, TypeError) as err:
-            raise ValueError("Cannot create fingerprint: {msg}".format(
-                msg=str(err)))
+        except Exception as err:
+            raise FingerprintError(str(err))
 
     def __str__(self):
         return self.fingerprint.hexdigest()

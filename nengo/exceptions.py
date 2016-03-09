@@ -74,3 +74,7 @@ class SimulationError(NengoException, RuntimeError):
 
 class SignalError(NengoException, ValueError):
     """An error dealing with Signals in the builder."""
+
+
+class FingerprintError(NengoException, ValueError):
+    """An error in fingerprinting an object for cache identification."""
