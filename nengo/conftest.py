@@ -19,7 +19,7 @@ test_seed = 0  # changing this will change seeds for all tests
 
 def pytest_configure(config):
     rc.reload_rc([])
-    rc.set('decoder_cache', 'enabled', 'false')
+    rc.set('decoder_cache', 'enabled', 'False')
 
 
 @pytest.fixture(scope="session")
