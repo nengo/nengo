@@ -295,17 +295,21 @@ class DecoderCache(object):
         up to date. Once legacy files are removed, a legacy file will be
         written to avoid a costly ``os.listdir`` after calling this.
         """
-        if self._check_legacy_file():
-            return
+        lock_filename = 'legacy.lock'
+        with FileLock(os.path.join(self.cache_dir, lock_filename)):
+            if self._check_legacy_file():
+                return
 
-        for f in os.listdir(self.cache_dir):
-            path = os.path.join(self.cache_dir, f)
-            if os.path.isdir(path):
-                shutil.rmtree(path)
-            else:
-                os.remove(path)
+            for f in os.listdir(self.cache_dir):
+                if f == lock_filename:
+                    continue
+                path = os.path.join(self.cache_dir, f)
+                if os.path.isdir(path):
+                    shutil.rmtree(path)
+                else:
+                    os.remove(path)
 
-        self._write_legacy_file()
+            self._write_legacy_file()
 
     @staticmethod
     def get_default_dir():
