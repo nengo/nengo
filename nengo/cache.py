@@ -46,6 +46,14 @@ def safe_remove(path):
         logger.warning("OSError during safe_remove: %s", err)
 
 
+def safe_makedirs(path):
+    if not os.path.exists(path):
+        try:
+            os.makedirs(path)
+        except OSError as err:
+            logger.warning("OSError during safe_makedirs: %s", err)
+
+
 class Fingerprint(object):
     """Fingerprint of an object instance.
 
@@ -166,8 +174,7 @@ class DecoderCache(object):
         if cache_dir is None:
             cache_dir = self.get_default_dir()
         self.cache_dir = cache_dir
-        if not os.path.exists(self.cache_dir):
-            os.makedirs(self.cache_dir)
+        safe_makedirs(self.cache_dir)
         self._fragment_size = get_fragment_size(self.cache_dir)
         try:
             self._remove_legacy_files()
@@ -405,8 +412,7 @@ class DecoderCache(object):
         prefix = key[:2]
         suffix = key[2:]
         directory = os.path.join(self.cache_dir, prefix)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        safe_makedirs(directory)
         return os.path.join(directory, suffix + self._CACHE_EXT)
 
 
