@@ -60,7 +60,9 @@ class AssociativeMemory(Module):
             input_keys = input_vocab.keys
             input_vectors = input_vocab.vectors
         else:
-            input_vectors = input_vocab.create_subset(input_keys).vectors
+            # parse keys (allows expressions as keys)
+            input_vectors = [input_vocab.parse(key).v for key in
+                             input_keys]
 
         # If output vocabulary is not specified, use input vocabulary
         # (i.e autoassociative memory)
@@ -70,7 +72,10 @@ class AssociativeMemory(Module):
         else:
             if output_keys is None:
                 output_keys = input_keys
-            output_vectors = output_vocab.create_subset(output_keys).vectors
+
+            # parse keys (allows expressions as keys)
+            output_vectors = [output_vocab.parse(key).v for key in
+                              output_keys]
 
         if default_output_key is None:
             default_output_vector = None
