@@ -32,6 +32,9 @@ Release History
 - Added ``y0`` attribute to ``WhiteSignal``, which adjusts the phase of each
   dimension to begin with absolute value closest to ``y0``.
   (`#1064 <https://github.com/nengo/nengo/pull/1064>`_)
+- Allow the `AssociativeMemory` to accept Semantic Pointer expressions as
+  `input_keys` and `output_keys`.
+  (`#982 <https://github.com/nengo/nengo/pull/982>`_)
 
 **Bug fixes**
 
