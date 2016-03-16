@@ -284,6 +284,8 @@ import nengo
 import nengo.cache
 from nengo.rc import rc
 
+rc.set("decoder_cache", "path", {tmpdir!r})
+
 model = nengo.Network(seed=1)
 with model:
     a = nengo.Ensemble({N}, dimensions={D}, n_eval_points={M})
@@ -336,16 +338,16 @@ sim = nengo.Simulator(model)
     }
     defaults = {'D': 1, 'N': 50, 'M': 1000}
 
-    def time_code(self, code, args):
+    def time_code(self, code, **kwargs):
         return timeit.repeat(
-            stmt=code['stmt'], setup=self.setup.format(**args) + code['rc'],
+            stmt=code['stmt'], setup=self.setup.format(**kwargs) + code['rc'],
             number=1, repeat=self.n_trials)
 
-    def time_all(self, args):
-        return (self.time_code(self.without_cache, args),
-                self.time_code(self.with_cache_miss, args),
-                self.time_code(self.with_cache_miss_ro, args),
-                self.time_code(self.with_cache_hit, args))
+    def time_all(self, **kwargs):
+        return (self.time_code(self.without_cache, **kwargs),
+                self.time_code(self.with_cache_miss, **kwargs),
+                self.time_code(self.with_cache_miss_ro, **kwargs),
+                self.time_code(self.with_cache_hit, **kwargs))
 
     def get_args(self, varying_param, value):
         args = dict(self.defaults)  # make a copy
@@ -355,7 +357,7 @@ sim = nengo.Simulator(model)
     @pytest.mark.slow
     @pytest.mark.noassertions
     @pytest.mark.parametrize('varying_param', ['D', 'N', 'M'])
-    def test_cache_benchmark(self, varying_param, analytics, plt):
+    def test_cache_benchmark(self, tmpdir, varying_param, analytics, plt):
         varying = {
             'D': np.asarray(np.linspace(1, 512, 10), dtype=int),
             'N': np.asarray(np.linspace(10, 500, 8), dtype=int),
@@ -363,8 +365,10 @@ sim = nengo.Simulator(model)
         }[varying_param]
         axis_label = self.param_to_axis_label[varying_param]
 
-        times = [self.time_all(self.get_args(varying_param, v))
-                 for v in varying]
+        times = [
+            self.time_all(
+                tmpdir=str(tmpdir), **self.get_args(varying_param, v))
+            for v in varying]
 
         for i, data in enumerate(zip(*times)):
             plt.plot(varying, np.median(data, axis=1), label=self.labels[i])
