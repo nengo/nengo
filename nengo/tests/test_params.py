@@ -1,3 +1,5 @@
+from copy import copy
+
 import numpy as np
 import pytest
 
@@ -275,3 +277,25 @@ def test_functionparam():
     # Not OK: not a function
     with pytest.raises(ValidationError):
         inst.fp = 0
+
+
+def test_params():
+    class Test(object):
+        p1 = params.IntParam('p1')
+        p2 = params.IntParam('p2')
+        obsolete = params.ObsoleteParam('obsolete', 'not included in params')
+
+    assert set(params.params(Test())) == {'p1', 'p2'}
+
+
+def test_copyable_object():
+    class Test(params.CopyableObject):
+        p1 = params.IntParam('p1')
+
+    original = Test()
+    original.p1 = 2
+
+    copied = copy(original)
+
+    assert copied is not original  # ensures that parameters are separate
+    assert copied.p1 == 2

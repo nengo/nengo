@@ -112,6 +112,8 @@ class Probe(NengoObject):
     synapse = SynapseParam('synapse', default=None)
     solver = ProbeSolverParam('solver', default=ConnectionDefault)
 
+    _param_init_order = ['target']
+
     def __init__(self, target, attr=None, sample_every=Default,
                  synapse=Default, solver=Default, label=Default, seed=Default):
         super(Probe, self).__init__(label=label, seed=seed)

@@ -1,3 +1,4 @@
+from copy import copy
 import sys
 import warnings
 
@@ -6,8 +7,8 @@ import numpy as np
 from nengo.config import Config
 from nengo.exceptions import ValidationError
 from nengo.params import (
-    Default, FrozenObject, is_param, IntParam, NumberParam, Parameter,
-    StringParam, Unconfigurable)
+    CopyableObject, Default, FrozenObject, is_param, IntParam, NumberParam,
+    Parameter, StringParam, Unconfigurable)
 from nengo.rc import rc
 from nengo.utils.compat import is_integer, range, reraise, with_metaclass
 from nengo.utils.numpy import as_shape, maxint
@@ -34,7 +35,7 @@ class NetworkMember(type):
         return inst
 
 
-class NengoObject(with_metaclass(NetworkMember)):
+class NengoObject(with_metaclass(NetworkMember, CopyableObject)):
     """A base class for Nengo objects.
 
     Parameters
@@ -56,14 +57,25 @@ class NengoObject(with_metaclass(NetworkMember)):
     seed = IntParam('seed', default=None, optional=True)
 
     def __init__(self, label, seed):
+        super(NengoObject, self).__init__()
         self.label = label
         self.seed = seed
 
     def __getstate__(self):
-        raise NotImplementedError("Nengo objects do not support pickling")
+        state = super(NengoObject, self).__getstate__()
+        del state['_initialized']
+        return state
 
     def __setstate__(self, state):
-        raise NotImplementedError("Nengo objects do not support pickling")
+        super(NengoObject, self).__setstate__(state)
+        setattr(self, '_initialized', True)
+
+    def copy(self, add_to_container=True):
+        c = copy(self)
+        if add_to_container:
+            from nengo.network import Network
+            Network.add(c)
+        return c
 
     def __setattr__(self, name, val):
         if hasattr(self, '_initialized') and not hasattr(self, name):
