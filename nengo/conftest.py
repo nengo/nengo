@@ -20,8 +20,6 @@ test_seed = 0  # changing this will change seeds for all tests
 
 def pytest_configure(config):
     matplotlib.use('agg')
-    rc.reload_rc([])
-    rc.set('decoder_cache', 'enabled', 'False')
 
 
 @pytest.fixture(scope="session")
@@ -195,6 +193,9 @@ def pytest_generate_tests(metafunc):
 
 
 def pytest_runtest_setup(item):
+    rc.reload_rc([])
+    rc.set('decoder_cache', 'enabled', 'False')
+
     if not hasattr(item, 'obj'):
         return
     for mark, option, message in [

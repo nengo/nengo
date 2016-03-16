@@ -3,7 +3,6 @@ import os
 import pytest
 import _pytest.capture
 
-from nengo.rc import rc
 from nengo.utils.paths import examples_dir
 from nengo.utils.stdlib import execfile
 
@@ -53,15 +52,6 @@ for subdir, _, files in os.walk(examples_dir):
 all_examples.sort()
 slow_examples.sort()
 fast_examples.sort()
-
-
-def teardown_function(function):
-    """Executed by py.test after each test in this module
-
-    Since examples might muck with the RC settings, we reset them here.
-    """
-    rc.reload_rc([])
-    rc.set('decoder_cache', 'enabled', 'False')
 
 
 def assert_noexceptions(nb_file, tmpdir, plt):
