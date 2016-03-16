@@ -82,6 +82,7 @@ Connections
 .. toctree::
 
    examples/inhibitory_gating
+   examples/functions_and_tuning_curves
 
 Learning
 ========

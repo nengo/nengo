@@ -28,6 +28,9 @@ Release History
   number of neurons in the network, including all subnetworks.
   (`#435 <https://github.com/nengo/nengo/issues/435>`_,
   `#1186 <https://github.com/nengo/nengo/pull/1186>`_)
+- Added a new example showing how adjusting ensemble tuning curves can
+  improve function approximation.
+  (`#1129 <https://github.com/nengo/nengo/pull/1129>`_)
 
 **Changed**
 
