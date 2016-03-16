@@ -52,7 +52,6 @@ install:
 
 # Run the tests
 script:
-  - "echo 'backend : Agg' > matplotlibrc"
   - if [[ -n $SETUP_CMD ]]; then
       python -c "import numpy; numpy.show_config()"
       python setup.py -q install;

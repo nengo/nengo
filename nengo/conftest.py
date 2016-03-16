@@ -3,6 +3,7 @@ import inspect
 import os
 import re
 
+import matplotlib
 import numpy as np
 import pytest
 
@@ -18,6 +19,7 @@ test_seed = 0  # changing this will change seeds for all tests
 
 
 def pytest_configure(config):
+    matplotlib.use('agg')
     rc.reload_rc([])
     rc.set('decoder_cache', 'enabled', 'False')
 
