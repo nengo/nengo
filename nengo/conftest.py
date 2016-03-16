@@ -195,6 +195,7 @@ def pytest_generate_tests(metafunc):
 def pytest_runtest_setup(item):
     rc.reload_rc([])
     rc.set('decoder_cache', 'enabled', 'False')
+    rc.set('exceptions', 'simplified', 'False')
 
     if not hasattr(item, 'obj'):
         return
