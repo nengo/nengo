@@ -1,3 +1,5 @@
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -798,3 +800,19 @@ def test_connectionlearningruletypeparam():
         with pytest.raises(ValueError):  # transform must be correct shape
             nengo.Connection(a, b, transform=np.ones((10, 11)),
                              learning_rule_type=nengo.BCM())
+
+
+def test_function_with_no_name(Simulator):
+
+    def add(x, val):
+        return x + val
+
+    model = nengo.Network()
+
+    with model:
+        a = nengo.Ensemble(10, 1)
+        b = nengo.Ensemble(11, 1)
+        nengo.Connection(a, b, function=partial(add, val=2))
+
+    with Simulator(model) as sim:
+        assert sim

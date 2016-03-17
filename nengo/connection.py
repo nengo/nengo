@@ -374,10 +374,9 @@ class Connection(NengoObject):
         if self.label is not None:
             return self.label
 
-        return "from %s to %s%s" % (
-            self.pre, self.post,
-            " computing '%s'" % self.function.__name__
-            if self.function is not None else "")
+        desc = "" if self.function is None else " computing '%s'" % (
+            getattr(self.function, '__name__', str(self.function)))
+        return "from %s to %s%s" % (self.pre, self.post, desc)
 
     def __str__(self):
         return "<Connection %s>" % self._str
