@@ -1,12 +1,23 @@
 from copy import copy
+import warnings
 
 import numpy as np
 import pytest
 
 import nengo
-from nengo.exceptions import NetworkContextError
+from nengo.exceptions import NetworkContextError, NotAddedToNetworkWarning
 from nengo.params import params
 from nengo.utils.compat import is_array_like, pickle
+from nengo.utils.testing import warns
+
+
+@pytest.fixture(scope='module', autouse=True)
+def error_on_not_added_to_network_warning(request):
+    catcher = warnings.catch_warnings(record=True)
+    catcher.__enter__()
+    warnings.simplefilter(
+        'error', category=NotAddedToNetworkWarning)
+    request.addfinalizer(lambda: catcher.__exit__(None, None, None))
 
 
 def assert_is_copy(cp, original):
@@ -70,6 +81,13 @@ class CopyTest(object):
         cp = original.copy(add_to_container=False)
         self.assert_is_copy(cp, original)
 
+    def test_python_copy_warns_about_adding_to_network(self):
+        original = self.create_original()
+        copy(original)  # Fine because not in a network
+        with nengo.Network():
+            with warns(NotAddedToNetworkWarning):
+                copy(original)
+
 
 class PickleTest(object):
     def create_original(self):
@@ -82,6 +100,13 @@ class PickleTest(object):
         original = self.create_original()
         cp = pickle.loads(pickle.dumps(original))
         self.assert_is_unpickled(cp, original)
+
+    def test_unpickling_warning_in_network(self):
+        original = self.create_original()
+        pkl = pickle.dumps(original)
+        with nengo.Network():
+            with warns(NotAddedToNetworkWarning):
+                pickle.loads(pkl)
 
 
 class TestCopyEnsemble(CopyTest, PickleTest):

@@ -5,7 +5,7 @@ import warnings
 import numpy as np
 
 from nengo.config import Config
-from nengo.exceptions import ValidationError
+from nengo.exceptions import NotAddedToNetworkWarning, ValidationError
 from nengo.params import (
     CopyableObject, Default, FrozenObject, is_param, IntParam, NumberParam,
     Parameter, StringParam, Unconfigurable)
@@ -67,11 +67,21 @@ class NengoObject(with_metaclass(NetworkMember, CopyableObject)):
         return state
 
     def __setstate__(self, state):
+        from nengo.network import Network
         super(NengoObject, self).__setstate__(state)
         setattr(self, '_initialized', True)
+        if len(Network.context) > 0:
+            warnings.warn(
+                "{obj} was not added to the network. When copying objects, "
+                "use the copy method on the object instead of Python's copy "
+                "module. When unpickling objects, they have to be added to "
+                "networks manually.".format(obj=self),
+                NotAddedToNetworkWarning)
 
     def copy(self, add_to_container=True):
-        c = copy(self)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=NotAddedToNetworkWarning)
+            c = copy(self)
         if add_to_container:
             from nengo.network import Network
             Network.add(c)
