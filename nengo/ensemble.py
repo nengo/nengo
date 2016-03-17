@@ -1,5 +1,3 @@
-import weakref
-
 from nengo.base import NengoObject, ObjView, ProcessParam
 from nengo.dists import DistOrArrayParam, Uniform, UniformHypersphere
 from nengo.exceptions import ReadonlyError
@@ -154,7 +152,6 @@ class Ensemble(NengoObject):
         self.gain = gain
         self.neuron_type = neuron_type
         self.noise = noise
-        self._neurons = Neurons(self)
 
     def __getitem__(self, key):
         return ObjView(self, key)
@@ -165,7 +162,7 @@ class Ensemble(NengoObject):
     @property
     def neurons(self):
         """A direct interface to the neurons in the ensemble."""
-        return self._neurons
+        return Neurons(self)
 
     @neurons.setter
     def neurons(self, dummy):
@@ -193,7 +190,7 @@ class Neurons(object):
         nengo.Connection(a.neurons, b.neurons)
     """
     def __init__(self, ensemble):
-        self._ensemble = weakref.ref(ensemble)
+        self._ensemble = ensemble
 
     def __getitem__(self, key):
         return ObjView(self, key)
@@ -207,10 +204,16 @@ class Neurons(object):
     def __str__(self):
         return "<Neurons of %s>" % self.ensemble
 
+    def __eq__(self, other):
+        return self.ensemble is other.ensemble
+
+    def __hash__(self):
+        return hash(self.ensemble) + 1  # +1 to avoid collision with ensemble
+
     @property
     def ensemble(self):
         """(Ensemble) The ensemble these neurons are part of."""
-        return self._ensemble()
+        return self._ensemble
 
     @property
     def probeable(self):

@@ -1,9 +1,14 @@
+from copy import deepcopy
+import warnings
+
 from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
-from nengo.exceptions import ConfigError, NetworkContextError, ReadonlyError
+from nengo.exceptions import (
+    ConfigError, NetworkContextError, NotAddedToNetworkWarning, ReadonlyError)
 from nengo.node import Node
 from nengo.probe import Probe
+from nengo.utils.compat import iteritems
 from nengo.utils.threading import ThreadLocalStack
 
 
@@ -94,12 +99,6 @@ class Network(object):
 
         if add_to_container:
             Network.add(self)
-
-    def __getstate__(self):
-        raise NotImplementedError("Nengo Networks do not support pickling")
-
-    def __setstate__(self, state):
-        raise NotImplementedError("Nengo Networks do not support pickling")
 
     @staticmethod
     def add(obj):
@@ -204,6 +203,12 @@ class Network(object):
 
         self._config.__exit__(dummy_exc_type, dummy_exc_value, dummy_tb)
 
+    def __setstate__(self, state):
+        for k, v in iteritems(state):
+            setattr(self, k, v)
+        if len(Network.context) > 0:
+            warnings.warn(NotAddedToNetworkWarning(self))
+
     def __str__(self):
         return "<%s %s>" % (
             type(self).__name__,
@@ -215,3 +220,15 @@ class Network(object):
             type(self).__name__,
             '"%s"' % self.label if self.label is not None else "(unlabeled)",
             "at 0x%x" % id(self))
+
+    def copy(self, add_to_container=None):
+        with warnings.catch_warnings():
+            # We warn when copying since we can't change add_to_container.
+            # However, we deal with it here, so we ignore the warning.
+            warnings.simplefilter('ignore', category=NotAddedToNetworkWarning)
+            c = deepcopy(self)
+        if add_to_container is None:
+            add_to_container = len(Network.context) > 0
+        if add_to_container:
+            Network.add(c)
+        return c

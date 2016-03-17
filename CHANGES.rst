@@ -27,6 +27,9 @@ Release History
 - It is now possible to probe ``scaled_encoders`` on ensembles.
   (`#1167 <https://github.com/nengo/nengo/pull/1167>`_,
   `#1117 <https://github.com/nengo/nengo/issues/1117>`_)
+- Added ``copy`` method to Nengo objects. Nengo objects can now be pickled.
+  (`#977 <https://github.com/nengo/nengo/issues/977>`_,
+  `#984 <https://github.com/nengo/nengo/pull/984>`_)
 
 **Changed**
 

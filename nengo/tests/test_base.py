@@ -1,6 +1,3 @@
-import pickle
-import tempfile
-
 import pytest
 
 import nengo
@@ -21,7 +18,7 @@ def test_nengoobjectparam():
     # Can set it once
     a = nengo.Ensemble(10, dimensions=2, add_to_container=False)
     inst.nop = a.neurons
-    assert inst.nop is a.neurons
+    assert inst.nop == a.neurons
 
     # Can't set it twice
     with pytest.raises(ValidationError):
@@ -49,14 +46,3 @@ def test_nengoobjectparam_nonzero():
 
         inst.nin = nout
         inst.nout = nin
-
-
-def test_pickle():
-    with nengo.Network():
-        a = nengo.Ensemble(10, 3)
-
-    with tempfile.TemporaryFile() as f:
-        with pytest.raises(NotImplementedError):
-            pickle.dump(a, f)
-        with pytest.raises(NotImplementedError):
-            pickle.dump(a[:2], f)

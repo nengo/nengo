@@ -38,7 +38,7 @@ class ClassParams(object):
     def __init__(self, configures):
         assert inspect.isclass(configures)
         self._configures = configures
-        self._extraparams = {}
+        self._extra_params = {}
         self._default_params = tuple(
             attr for attr in dir(self._configures)
             if is_param(getattr(self._configures, attr)))
@@ -53,6 +53,10 @@ class ClassParams(object):
             self.get_param(key).del_default(self)
 
     def __getattr__(self, key):
+        if key.startswith("_"):
+            # If we get here, then that attribute hasn't been set
+            raise AttributeError("%r object has no attribute %r"
+                                 % (type(self).__name__, key))
         return self.get_param(key).get_default(self)
 
     def __setattr__(self, key, value):
@@ -67,6 +71,29 @@ class ClassParams(object):
             if not param.configurable:
                 raise ConfigError("Parameter '%s' is not configurable" % key)
             param.set_default(self, value)
+
+    def __getstate__(self):
+        state = {'_configures': self._configures,
+                 '_default_params': self._default_params,
+                 '_extra_params': self._extra_params}
+
+        # Store all of the things we set in the params
+        for attr in self.params:
+            param = self.get_param(attr)
+            if self in param:
+                state[attr] = param.get_default(self)
+
+        return state
+
+    def __setstate__(self, state):
+        self._configures = state['_configures']
+        self._default_params = state['_default_params']
+        self._extra_params = state['_extra_params']
+
+        # Restore all of the things we set in the params
+        for attr in self.params:
+            if attr in state:
+                self.get_param(attr).set_default(self, state[attr])
 
     def __str__(self):
         name = self._configures.__name__
@@ -96,15 +123,15 @@ class ClassParams(object):
 
     @property
     def extra_params(self):
-        return tuple(self._extraparams)
+        return tuple(self._extra_params)
 
     @property
     def params(self):
         return self.default_params + self.extra_params
 
     def get_param(self, key):
-        if key in self._extraparams:
-            return self._extraparams[key]
+        if key in self._extra_params:
+            return self._extra_params[key]
 
         return getattr(self._configures, key)
 
@@ -115,7 +142,7 @@ class ClassParams(object):
             raise ConfigError("'%s' is already a parameter in %s. "
                               "Please choose a different name."
                               % (key, self._configures.__name__))
-        self._extraparams[key] = value
+        self._extra_params[key] = value
 
     def update(self, d):
         """Sets a number of parameters at once given a dictionary."""

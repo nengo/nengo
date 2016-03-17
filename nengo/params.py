@@ -27,6 +27,14 @@ def is_param(obj):
     return isinstance(obj, Parameter)
 
 
+def iter_params(obj):
+    """Iterate over the names of all parameters of an object."""
+    obj = obj if inspect.isclass(obj) else type(obj)
+    return (name for name in dir(obj)
+            if is_param(getattr(obj, name)) and not
+            isinstance(getattr(obj, name), ObsoleteParam))
+
+
 class Parameter(object):
     """Simple descriptor for storing configuration parameters.
 
@@ -408,15 +416,19 @@ class NdarrayParam(Parameter):
         return ndarray
 
 
+FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
+
+
 class FunctionParam(Parameter):
     """A parameter where the value is a function."""
 
-    Info = collections.namedtuple('FunctionInfo', ['function', 'size'])
-
     def __set__(self, instance, function):
-        size = (self.determine_size(instance, function)
-                if callable(function) else None)
-        function_info = self.Info(function=function, size=size)
+        if isinstance(function, FunctionInfo):
+            function_info = function
+        else:
+            size = (self.determine_size(instance, function)
+                    if callable(function) else None)
+            function_info = FunctionInfo(function=function, size=size)
         super(FunctionParam, self).__set__(instance, function_info)
 
     def determine_size(self, instance, function):
@@ -457,7 +469,7 @@ class FrozenObject(object):
 
     @property
     def _params(self):
-        return itervalues(self._paramdict)
+        return list(itervalues(self._paramdict))
 
     def __eq__(self, other):
         if self is other:  # quick check for speed

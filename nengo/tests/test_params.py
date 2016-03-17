@@ -309,3 +309,12 @@ def test_functionparam():
     # Not OK: not a function
     with pytest.raises(ValidationError):
         inst.fp = 0
+
+
+def test_iter_params_does_not_list_obsolete_params():
+    class Test(object):
+        p1 = params.IntParam('p1')
+        p2 = params.IntParam('p2')
+        obsolete = params.ObsoleteParam('obsolete', 'not included in params')
+
+    assert set(params.iter_params(Test())) == {'p1', 'p2'}
