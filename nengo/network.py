@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
@@ -95,11 +97,14 @@ class Network(object):
         if add_to_container:
             Network.add(self)
 
-    def __getstate__(self):
-        raise NotImplementedError("Nengo Networks do not support pickling")
-
-    def __setstate__(self, state):
-        raise NotImplementedError("Nengo Networks do not support pickling")
+    def copy(self, add_to_container=None):
+        from nengo.network import Network
+        c = deepcopy(self)
+        if add_to_container is None:
+            add_to_container = len(Network.context) > 0
+        if add_to_container:
+            Network.add(c)
+        return c
 
     @staticmethod
     def add(obj):

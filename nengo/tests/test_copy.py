@@ -40,7 +40,7 @@ class CopyTest(object):
         original = self.create_original()
 
         with nengo.Network() as model:
-            cp = original.copy()
+            cp = original.copy(add_to_container=True)
         assert cp in model.all_objects
 
         self.assert_is_copy(cp, original)
@@ -57,7 +57,7 @@ class CopyTest(object):
     def test_copy_outside_network(self):
         original = self.create_original()
         with pytest.raises(NetworkContextError):
-            original.copy()
+            original.copy(add_to_container=True)
 
     def test_copy_outside_network_without_adding(self):
         original = self.create_original()
@@ -108,13 +108,68 @@ class TestCopyNode(CopyTest, PickleTest):
 
 class TestCopyConnection(CopyTest, PickleTest):
     def create_original(self):
-        with nengo.Network(self):
+        with nengo.Network():
             e1 = nengo.Ensemble(10, 1)
             e2 = nengo.Ensemble(10, 1)
             c = nengo.Connection(e1, e2, transform=2.)
         return c
 
-# Network
+
+class TestCopyNetwork(CopyTest, PickleTest):
+    def create_original(self):
+        with nengo.Network() as model:
+            e1 = nengo.Ensemble(10, 1)
+            e2 = nengo.Ensemble(10, 1)
+            nengo.Connection(e1, e2, transform=2.)
+            nengo.Probe(e2)
+        return model
+
+    def test_copy_in_network_default_add(self):
+        original = self.create_original()
+
+        with nengo.Network() as model:
+            cp = original.copy()
+        assert cp in model.all_objects
+
+        assert_is_copy(cp, original)
+
+    def test_copy_outside_network_default_add(self):
+        original = self.create_original()
+        cp = original.copy()
+        assert_is_copy(cp, original)
+
+    def test_network_copy_allows_independent_manipulation(self):
+        with nengo.Network() as original:
+            nengo.Ensemble(10, 1)
+        original.config[nengo.Ensemble].radius = 1.
+
+        cp = original.copy()
+        with cp:
+            e2 = nengo.Ensemble(10, 1)
+        cp.config[nengo.Ensemble].radius = 2.
+
+        assert e2 not in original.ensembles
+        assert original.config[nengo.Ensemble].radius == 1.
+
+    def test_copies_structure(self):
+        with nengo.Network() as original:
+            e1 = nengo.Ensemble(10, 1)
+            e2 = nengo.Ensemble(10, 1)
+            nengo.Connection(e1, e2)
+            nengo.Probe(e2)
+
+        cp = original.copy()
+
+        assert cp.connections[0].pre is not e1
+        assert cp.connections[0].post is not e2
+        assert cp.connections[0].pre in cp.ensembles
+        assert cp.connections[0].post in cp.ensembles
+
+        assert cp.probes[0].target is not e2
+        assert cp.probes[0].target in cp.ensembles
+
+    def test_network_copy_builds(self, RefSimulator):
+        RefSimulator(self.create_original().copy())
 
 # Process
 # Learning rule
