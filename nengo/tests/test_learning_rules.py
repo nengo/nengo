@@ -173,7 +173,7 @@ def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt):
 
     m = nengo.Network(seed=seed)
     with m:
-        u = nengo.Node(WhiteSignal(0.5, high=5), size_out=2)
+        u = nengo.Node(WhiteSignal(0.5, high=10), size_out=2)
         a = nengo.Ensemble(n, dimensions=2)
         b = nengo.Ensemble(n+1, dimensions=2)
         nengo.Connection(u, a)
