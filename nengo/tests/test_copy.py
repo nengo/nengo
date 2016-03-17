@@ -1,10 +1,12 @@
+from copy import copy
+
 import numpy as np
 import pytest
 
 import nengo
 from nengo.exceptions import NetworkContextError
 from nengo.params import params
-from nengo.utils.compat import pickle
+from nengo.utils.compat import is_array_like, pickle
 
 
 def assert_is_copy(cp, original):
@@ -14,8 +16,10 @@ def assert_is_copy(cp, original):
         if isinstance(param_inst, nengo.solvers.Solver) or isinstance(
                 param_inst, nengo.base.NengoObject):
             assert param_inst is getattr(original, param)
+        elif is_array_like(param_inst):
+            assert np.all(param_inst == getattr(original, param))
         else:
-            assert getattr(cp, param) == getattr(original, param)
+            assert param_inst == getattr(original, param)
 
 
 def assert_is_deepcopy(cp, original):
@@ -25,6 +29,8 @@ def assert_is_deepcopy(cp, original):
         if isinstance(param_inst, nengo.solvers.Solver) or isinstance(
                 param_inst, nengo.base.NengoObject):
             assert_is_copy(param_inst, getattr(original, param))
+        elif is_array_like(param_inst):
+            assert np.all(param_inst == getattr(original, param))
         else:
             assert param_inst == getattr(original, param)
 
@@ -124,6 +130,9 @@ class TestCopyNetwork(CopyTest, PickleTest):
             nengo.Probe(e2)
         return model
 
+    def assert_is_copy(self, cp, original):
+        assert_is_deepcopy(cp, original)
+
     def test_copy_in_network_default_add(self):
         original = self.create_original()
 
@@ -131,12 +140,12 @@ class TestCopyNetwork(CopyTest, PickleTest):
             cp = original.copy()
         assert cp in model.all_objects
 
-        assert_is_copy(cp, original)
+        self.assert_is_copy(cp, original)
 
     def test_copy_outside_network_default_add(self):
         original = self.create_original()
         cp = original.copy()
-        assert_is_copy(cp, original)
+        self.assert_is_copy(cp, original)
 
     def test_network_copy_allows_independent_manipulation(self):
         with nengo.Network() as original:
@@ -171,9 +180,24 @@ class TestCopyNetwork(CopyTest, PickleTest):
     def test_network_copy_builds(self, RefSimulator):
         RefSimulator(self.create_original().copy())
 
-# Process
-# Learning rule
-# Synapse
 
+@pytest.mark.parametrize('original', [
+    nengo.learning_rules.PES(),
+    nengo.learning_rules.BCM(),
+    nengo.learning_rules.Oja(),
+    nengo.learning_rules.Voja(),
+    nengo.processes.WhiteNoise(),
+    nengo.processes.FilteredNoise(),
+    nengo.processes.BrownNoise(),
+    nengo.processes.PresentInput([.1, .2], 1.),
+    nengo.synapses.LinearFilter([.1, .2], [.3, .4], True),
+    nengo.synapses.Lowpass(0.005),
+    nengo.synapses.Alpha(0.005),
+    nengo.synapses.Triangle(0.005),
+    ])
+class TestFrozenObjectCopies(object):
+    def test_copy(self, original):
+        assert_is_copy(copy(original), original)
 
-# copy, copy with add to network, pickle and unpickle
+    def test_pickle_roundtrip(self, original):
+        assert_is_deepcopy(pickle.loads(pickle.dumps(original)), original)
