@@ -1,11 +1,10 @@
-import collections
-
 from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
 from nengo.exceptions import ConfigError, NetworkContextError, ReadonlyError
 from nengo.node import Node
 from nengo.probe import Probe
+from nengo.utils.threading import ThreadLocalStack
 
 
 class Network(object):
@@ -71,7 +70,7 @@ class Network(object):
         List of nengo.BaseNetwork objects in this Network.
     """
 
-    context = collections.deque(maxlen=100)  # static stack of Network objects
+    context = ThreadLocalStack()  # static stack of Network objects
 
     def __init__(self, label=None, seed=None, add_to_container=None):
         self.label = label

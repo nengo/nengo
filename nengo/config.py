@@ -12,12 +12,12 @@ http://nbviewer.ipython.org/urls/gist.github.com/ChrisBeaumont/5758381/raw/descr
 
 """
 
-import collections
 import inspect
 
 from nengo.exceptions import ConfigError
 from nengo.params import is_param
 from nengo.utils.compat import itervalues
+from nengo.utils.threading import ThreadLocalStack
 
 
 class ClassParams(object):
@@ -225,7 +225,7 @@ class Config(object):
     1
     """
 
-    context = collections.deque(maxlen=100)  # static stack of Config objects
+    context = ThreadLocalStack()  # static stack of Config objects
 
     def __init__(self, *configures):
         self.params = {}

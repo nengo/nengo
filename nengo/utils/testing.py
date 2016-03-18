@@ -5,12 +5,14 @@ import itertools
 import logging
 import os
 import re
+import sys
+import threading
 import time
 import warnings
 
 import numpy as np
 
-from .compat import is_string
+from .compat import is_string, reraise
 from .logging import CaptureLogHandler, console_formatter
 
 
@@ -402,3 +404,56 @@ def load_functions(modules, pattern='^test_', arg_pattern='^Simulator$'):
                 tests[k] = getattr(m, k)
 
     return tests
+
+
+class ThreadedAssertion(object):
+    """Performs assertions in parallel.
+
+    Starts a number of threads, waits for each thread to execute some
+    initialization code, and then executes assertions in each thread.
+    """
+
+    class AssertionWorker(threading.Thread):
+        def __init__(self, parent, barriers, n):
+            super(ThreadedAssertion.AssertionWorker, self).__init__()
+            self.parent = parent
+            self.barriers = barriers
+            self.n = n
+            self.assertion_result = None
+            self.exc_info = (None, None, None)
+
+        def run(self):
+            self.parent.init_thread(self)
+
+            self.barriers[self.n].set()
+            for barrier in self.barriers:
+                barrier.wait()
+
+            try:
+                self.parent.assert_thread(self)
+                self.assertion_result = True
+            except:
+                self.assertion_result = False
+                self.exc_info = sys.exc_info()
+            finally:
+                self.parent.finish_thread(self)
+
+    def __init__(self, n_threads):
+        barriers = [threading.Event() for _ in range(n_threads)]
+        threads = [self.AssertionWorker(self, barriers, i)
+                   for i in range(n_threads)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+            if not t.assertion_result:
+                reraise(*t.exc_info)
+
+    def init_thread(self, worker):
+        pass
+
+    def assert_thread(self, worker):
+        raise NotImplementedError()
+
+    def finish_thread(self, worker):
+        pass

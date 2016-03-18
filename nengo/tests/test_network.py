@@ -5,6 +5,7 @@ from collections import Counter
 import pytest
 
 import nengo
+from nengo.utils.testing import ThreadedAssertion
 
 
 def test_basic_context():
@@ -89,6 +90,21 @@ def test_context_errors():
     # Okay if add_to_container=False
     nengo.Ensemble(1, dimensions=1, add_to_container=False)
     nengo.Node(output=[0], add_to_container=False)
+
+
+def test_context_is_threadsafe():
+    class CheckIndependence(ThreadedAssertion):
+        def init_thread(self, worker):
+            setattr(worker, 'model', nengo.Network())
+            worker.model.__enter__()
+
+        def assert_thread(self, worker):
+            assert list(nengo.Network.context) == [worker.model]
+
+        def finish_thread(self, worker):
+            worker.model.__exit__(*worker.exc_info)
+
+    CheckIndependence(n_threads=2)
 
 
 def test_get_objects():

@@ -4,6 +4,7 @@ import nengo
 import nengo.synapses
 from nengo.exceptions import ConfigError, ReadonlyError
 from nengo.params import Parameter
+from nengo.utils.testing import ThreadedAssertion
 
 
 def test_config_basic():
@@ -95,6 +96,21 @@ def test_network_nesting():
                 ens3 = nengo.Ensemble(10, 1)
                 assert ens3.seed == 20
                 assert ens3.radius == 5.0
+
+
+def test_context_is_threadsafe():
+    class CheckIndependence(ThreadedAssertion):
+        def init_thread(self, worker):
+            setattr(worker, 'model', nengo.Network())
+            worker.model.__enter__()
+
+        def assert_thread(self, worker):
+            assert list(nengo.Config.context) == [worker.model.config]
+
+        def finish_thread(self, worker):
+            worker.model.__exit__(*worker.exc_info)
+
+    CheckIndependence(n_threads=2)
 
 
 def test_defaults():

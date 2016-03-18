@@ -205,6 +205,8 @@ Release History
   Connection, rather than the input to the Connection's post Ensemble.
   (`#973 <https://github.com/nengo/nengo/issues/973>`_,
   `#974 <https://github.com/nengo/nengo/pull/974>`_)
+- Fixed thread-safety of using networks and config in ``with`` statements.
+  (`#989 <https://github.com/nengo/nengo/pull/989>`_)
 
 2.0.3 (December 7, 2015)
 ========================
