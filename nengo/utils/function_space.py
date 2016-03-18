@@ -180,6 +180,50 @@ class FunctionSpace(object):
         plot_func._nengo_html_ = ''
         return nengo.Node(plot_func, size_in=self.n_basis * lines, size_out=0)
 
+    def make_2Dplot_node(self, domain, n_pts=20, function=None,
+                       max_x=None, min_x=None, max_y=1, min_y=-1):
+        """Generate a Node with a custom GUI plot"""
+        pts = domain
+        indices = None
+        plot_slice = slice(None)
+        if len(pts) > n_pts: # if there are more samples in the domain than in n_pts
+            indices = np.linspace(0, len(pts) - 1, n_pts).astype(int)
+            pts = pts[indices] # downsample the domain
+
+        if max_x is None:
+            max_x = np.max(pts)
+        if min_x is None:
+            min_x = np.min(pts)
+
+        svg_x = (pts - min_x) * 100 / (max_x - min_x)
+
+        colors = ["#1c73b3", "#039f74", "#d65e00",
+                  "#cd79a7", "#f0e542", "#56b4ea"]
+
+        def plot_func(t, x):
+            basis = self.basis
+            if indices is not None: # if we did downsampling of the domain
+                basis = basis[indices] # downsample the bases as well
+            points = [] # for storing svg definitions to put in our plot
+            for i in range(basis.shape[0]):
+                # input x is the values over each of the basis functions 
+                # need to calculate the 2D map values for each basis and sum
+                data = np.dot(x, basis[:,i]) * self.scale[i]
+
+                svg_y = (-data - min_y) * 100 / (max_y - min_y)
+
+            path = []
+            for j in range(len(data)):
+                path.append('%1.0f %1.0f' % (svg_x[j], svg_y[j]))
+            paths.append('<path d="M%s" fill="none" stroke="%s"/>' %
+                            ('L'.join(path), colors[i % len(colors)]))
+
+            plot_func._nengo_html_ = '''
+            <svg width="100%%" height="100%%" viewbox="0 0 100 100">%s</svg>
+            ''' % (''.join(paths))
+        plot_func._nengo_html_ = ''
+        return nengo.Node(plot_func, size_in=self.n_basis, size_out=0)
+
     def make_stimulus_node(self, function, n_params):
         """Generate a Node that can control function parameters."""
         def stimulus(t, x):
