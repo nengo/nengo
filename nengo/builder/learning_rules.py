@@ -15,8 +15,8 @@ class SimBCM(Operator):
     """Calculate delta omega according to the BCM rule."""
     def __init__(self, pre_filtered, post_filtered, theta, delta,
                  learning_rate, tag=None):
-        self.post_filtered = post_filtered
         self.pre_filtered = pre_filtered
+        self.post_filtered = post_filtered
         self.theta = theta
         self.delta = delta
         self.learning_rate = learning_rate
@@ -27,9 +27,9 @@ class SimBCM(Operator):
         self.reads = [pre_filtered, post_filtered, theta]
         self.updates = [delta]
 
-    def __str__(self):
-        return 'SimBCM(pre=%s, post=%s -> %s%s)' % (
-            self.pre_filtered, self.post_filtered, self.delta, self._tagstr)
+    def _descstr(self):
+        return 'pre=%s, post=%s -> %s' % (
+            self.pre_filtered, self.post_filtered, self.delta)
 
     def make_step(self, signals, dt, rng):
         pre_filtered = signals[self.pre_filtered]
@@ -48,8 +48,8 @@ class SimOja(Operator):
     """Calculate delta omega according to the Oja rule."""
     def __init__(self, pre_filtered, post_filtered, weights, delta,
                  learning_rate, beta, tag=None):
-        self.post_filtered = post_filtered
         self.pre_filtered = pre_filtered
+        self.post_filtered = post_filtered
         self.weights = weights
         self.delta = delta
         self.learning_rate = learning_rate
@@ -61,9 +61,9 @@ class SimOja(Operator):
         self.reads = [pre_filtered, post_filtered, weights]
         self.updates = [delta]
 
-    def __str__(self):
-        return 'SimOja(pre=%s, post=%s -> %s%s)' % (
-            self.pre_filtered, self.post_filtered, self.delta, self._tagstr)
+    def _descstr(self):
+        return 'pre=%s, post=%s -> %s' % (
+            self.pre_filtered, self.post_filtered, self.delta)
 
     def make_step(self, signals, dt, rng):
         weights = signals[self.weights]
@@ -123,6 +123,10 @@ class SimVoja(Operator):
         self.updates = [delta]
         self.sets = []
         self.incs = []
+
+    def _descstr(self):
+        return 'pre=%s, post=%s -> %s' % (
+            self.pre_decoded, self.post_filtered, self.delta)
 
     def make_step(self, signals, dt, rng):
         pre_decoded = signals[self.pre_decoded]

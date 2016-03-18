@@ -19,9 +19,8 @@ class SimSynapse(Operator):
         self.reads = [input_sig]
         self.updates = [output_sig]
 
-    def __str__(self):
-        return "SimSynapse(%s, %s -> %s%s)" % (
-            self.synapse, self.input, self.output, self._tagstr)
+    def _descstr(self):
+        return '%s, %s -> %s' % (self.synapse, self.input, self.output)
 
     def make_step(self, signals, dt, rng):
         input_sig = signals[self.input]

@@ -69,13 +69,19 @@ class Operator(object):
     def __init__(self, tag=None):
         self.tag = tag
 
+    def __str__(self):
+        strs = (s for s in (self._descstr(), self._tagstr()) if s)
+        return "%s{%s}" % (self.__class__.__name__, ' '.join(strs))
+
     def __repr__(self):
         return "<%s%s at 0x%x>" % (
-            self.__class__.__name__, self._tagstr, id(self))
+            self.__class__.__name__, self._tagstr(), id(self))
 
-    @property
+    def _descstr(self):
+        return ''
+
     def _tagstr(self):
-        return ' "%s"' % self.tag if self.tag is not None else ''
+        return ('"%s"' % self.tag) if self.tag is not None else ''
 
     @property
     def reads(self):
@@ -144,17 +150,15 @@ class Operator(object):
 class TimeUpdate(Operator):
     """Updates the simulation time"""
 
-    def __init__(self, step, time):
+    def __init__(self, step, time, tag=None):
         self.step = step
         self.time = time
+        self.tag = tag
 
         self.sets = [step, time]
         self.incs = []
         self.reads = []
         self.updates = []
-
-    def __str__(self):
-        return 'TimeUpdate()'
 
     def make_step(self, signals, dt, rng):
         step = signals[self.step]
@@ -183,8 +187,8 @@ class PreserveValue(Operator):
         self.reads = []
         self.updates = []
 
-    def __str__(self):
-        return 'PreserveValue(%s%s)' % (self.dst, self._tagstr)
+    def _descstr(self):
+        return str(self.dst)
 
     def make_step(self, signals, dt, rng):
         def step_preservevalue():
@@ -205,8 +209,8 @@ class Reset(Operator):
         self.reads = []
         self.updates = []
 
-    def __str__(self):
-        return 'Reset(%s%s)' % (self.dst, self._tagstr)
+    def _descstr(self):
+        return str(self.dst)
 
     def make_step(self, signals, dt, rng):
         target = signals[self.dst]
@@ -230,8 +234,8 @@ class Copy(Operator):
         self.reads = [src]
         self.updates = []
 
-    def __str__(self):
-        return 'Copy(%s -> %s%s)' % (self.src, self.dst, self._tagstr)
+    def _descstr(self):
+        return '%s -> %s' % (self.src, self.dst)
 
     def make_step(self, signals, dt, rng):
         dst = signals[self.dst]
@@ -266,9 +270,9 @@ class SlicedCopy(Operator):
         self.reads = [a]
         self.updates = []
 
-    def __str__(self):
-        return 'SlicedCopy(%s[%s] -> %s[%s], inc=%s%s)' % (
-            self.a, self.a_slice, self.b, self.b_slice, self.inc, self._tagstr)
+    def _descstr(self):
+        return '%s[%s] -> %s[%s], inc=%s' % (
+            self.a, self.a_slice, self.b, self.b_slice, self.inc)
 
     def make_step(self, signals, dt, rng):
         a = signals[self.a]
@@ -299,9 +303,8 @@ class ElementwiseInc(Operator):
         self.reads = [A, X]
         self.updates = []
 
-    def __str__(self):
-        return 'ElementwiseInc(%s, %s -> %s%s)' % (
-            str(self.A), str(self.X), str(self.Y), self._tagstr)
+    def _descstr(self):
+        return '%s, %s -> %s' % (self.A, self.X, self.Y)
 
     def make_step(self, signals, dt, rng):
         A = signals[self.A]
@@ -375,9 +378,8 @@ class DotInc(Operator):
         self.reads = [A, X]
         self.updates = []
 
-    def __str__(self):
-        return 'DotInc(%s, %s -> %s%s)' % (
-            self.A, self.X, self.Y, self._tagstr)
+    def _descstr(self):
+        return '%s, %s -> %s' % (self.A, self.X, self.Y)
 
     def make_step(self, signals, dt, rng):
         X = signals[self.X]
@@ -408,9 +410,8 @@ class SimPyFunc(Operator):
         self.reads = ([] if t is None else [t]) + ([] if x is None else [x])
         self.updates = []
 
-    def __str__(self):
-        return "SimPyFunc(%s -> %s, fn='%s'%s)" % (
-            self.x, self.output, self.fn.__name__, self._tagstr)
+    def _descstr(self):
+        return '%s -> %s, fn=%r' % (self.x, self.output, self.fn.__name__)
 
     def make_step(self, signals, dt, rng):
         fn = self.fn

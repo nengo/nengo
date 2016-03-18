@@ -22,9 +22,8 @@ class SimProcess(Operator):
         self.reads = [t, input] if input is not None else [t]
         self.updates = []
 
-    def __str__(self):
-        return 'SimProcess(%s, %s -> %s%s)' % (
-            self.process, self.input, self.output, self._tagstr)
+    def _descstr(self):
+        return '%s, %s -> %s' % (self.process, self.input, self.output)
 
     def make_step(self, signals, dt, rng):
         t = signals[self.t]

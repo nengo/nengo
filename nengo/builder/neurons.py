@@ -22,9 +22,8 @@ class SimNeurons(Operator):
         self.reads = [J]
         self.updates = []
 
-    def __str__(self):
-        return "SimNeurons(%s, %s, %s, %s%s)" % (
-            self.neurons, self.J, self.output, self.states, self._tagstr)
+    def _descstr(self):
+        return '%s, %s, %s' % (self.neurons, self.J, self.output)
 
     def make_step(self, signals, dt, rng):
         J = signals[self.J]
