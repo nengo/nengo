@@ -57,7 +57,7 @@ class AssociativeMemory(Module):
                  inhibitable=False, wta_output=False,
                  wta_inhibit_scale=3.0, wta_synapse=0.005,
                  cleanup_output=False,
-                 replace_output_with_cleaned_output=False,
+                 replace_output_with_cleaned_output=True,
                  label=None, seed=None, add_to_container=None):
         super(AssociativeMemory, self).__init__(label, seed, add_to_container)
 
