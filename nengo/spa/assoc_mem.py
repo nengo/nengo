@@ -94,7 +94,7 @@ class AssociativeMemory(Module):
                 self.am.add_wta_network(wta_inhibit_scale, wta_synapse)
 
             if threshold_output:
-                self.am.add_threshold_to_outputs()
+                self.am.add_cleanup_output()
 
             self.input = self.am.input
             self.output = self.am.output
@@ -102,9 +102,9 @@ class AssociativeMemory(Module):
             if inhibitable:
                 self.inhibit = self.am.inhibit
 
-            self.utilities = self.am.utilities
+            self.utilities = self.am.elem_utilities
             if threshold_output:
-                self.thresholded_utilities = self.am.thresholded_utilities
+                self.thresholded_utilities = self.am.cleaned_output_utilities
 
         self.inputs = dict(default=(self.input, input_vocab))
         self.outputs = dict(default=(self.output, output_vocab))

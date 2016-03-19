@@ -37,7 +37,7 @@ def test_am_basic(Simulator, plt, seed, rng):
 
         in_p = nengo.Probe(in_node)
         out_p = nengo.Probe(am.output, synapse=0.03)
-        utils_p = nengo.Probe(am.utilities, synapse=0.03)
+        utils_p = nengo.Probe(am.output_utilities, synapse=0.03)
 
     with Simulator(m) as sim:
         sim.run(0.2)
@@ -82,7 +82,7 @@ def test_am_threshold(Simulator, plt, seed, rng):
 
         in_p = nengo.Probe(in_node)
         out_p = nengo.Probe(am.output, synapse=0.03)
-        utils_p = nengo.Probe(am.utilities, synapse=0.03)
+        utils_p = nengo.Probe(am.output_utilities, synapse=0.03)
 
     with Simulator(m) as sim:
         sim.run(0.3)
@@ -131,7 +131,7 @@ def test_am_wta(Simulator, plt, seed, rng):
 
         in_p = nengo.Probe(in_node)
         out_p = nengo.Probe(am.output, synapse=0.03)
-        utils_p = nengo.Probe(am.utilities, synapse=0.03)
+        utils_p = nengo.Probe(am.output_utilities, synapse=0.03)
 
     with Simulator(m) as sim:
         sim.run(0.5)
@@ -186,7 +186,7 @@ def test_am_complex(Simulator, plt, seed, rng):
     with nengo.Network('model', seed=seed) as m:
         am = AssociativeMemory(vocab2, inhibitable=True)
         am.add_default_output_vector(vocab[5, :])
-        am.add_threshold_to_outputs()
+        am.add_cleanup_output()
 
         in_node = nengo.Node(output=input_func, label='input')
         inhib_node = nengo.Node(output=inhib_func, label='inhib')
@@ -194,9 +194,9 @@ def test_am_complex(Simulator, plt, seed, rng):
         nengo.Connection(inhib_node, am.inhibit)
 
         in_p = nengo.Probe(in_node)
-        out_p = nengo.Probe(am.output, synapse=0.03)
-        utils_p = nengo.Probe(am.utilities, synapse=0.05)
-        utils_th_p = nengo.Probe(am.thresholded_utilities, synapse=0.05)
+        out_p = nengo.Probe(am.cleaned_output, synapse=0.03)
+        utils_p = nengo.Probe(am.output_utilities, synapse=0.05)
+        utils_th_p = nengo.Probe(am.cleaned_output_utilities, synapse=0.05)
 
     with Simulator(m) as sim:
         sim.run(1.0)
