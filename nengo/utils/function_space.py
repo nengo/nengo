@@ -147,6 +147,10 @@ class FunctionSpace(object):
             indices = np.linspace(0, len(pts) - 1, n_pts).astype(int)
             pts = pts[indices]
 
+        basis = self.basis
+        if indices is not None:
+            basis = basis[indices]
+
         if max_x is None:
             max_x = np.max(pts)
         if min_x is None:
@@ -158,9 +162,6 @@ class FunctionSpace(object):
                   "#cd79a7", "#f0e542", "#56b4ea"]
 
         def plot_func(t, x):
-            basis = self.basis
-            if indices is not None:
-                basis = basis[indices]
             paths = []
             for i in range(lines):
                 value = x[i*self.n_basis:(i+1)*self.n_basis]
@@ -187,22 +188,28 @@ class FunctionSpace(object):
         plot_slice = slice(None)
         if len(pts) > n_pts: 
             indices = np.linspace(0, len(pts) - 1, n_pts).astype(int)
+            old_num = len(pts)
             pts = pts[indices]
         elif n_pts > len(pts):
             n_pts = len(pts)
 
-        def plot_func(t, x):
-            basis = self.basis
-            if indices is not None: 
-                basis = basis[indices] 
+        basis = self.basis
+        if indices is not None: 
+            # TODO: do this more elegantly
+            basis = basis.reshape((old_num, old_num, self.n_basis))
+            basis = basis[indices] 
+            basis = basis[:,indices] 
+            basis = basis.reshape((-1, self.n_basis))
 
+        def plot_func(t, x):
             values = np.dot(basis, x) * self.scale
 
             # put on a scale of 0 - 255
-            values -= np.min(values)
-            values *= (255.0 / np.max(values)) if np.max(values) != 0 else 1
+            values *= 255.0
             values = values.reshape((n_pts, n_pts))
-            
+            # flip so up isn't left rightside down
+            values = np.flipud(values)
+
             # generate png heat map based off values
             import base64
             from PIL import Image
