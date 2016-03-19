@@ -180,47 +180,43 @@ class FunctionSpace(object):
         plot_func._nengo_html_ = ''
         return nengo.Node(plot_func, size_in=self.n_basis * lines, size_out=0)
 
-    def make_2Dplot_node(self, domain, n_pts=20, function=None,
-                       max_x=None, min_x=None, max_y=1, min_y=-1):
+    def make_2Dplot_node(self, domain, n_pts=10):
         """Generate a Node with a custom GUI plot"""
         pts = domain
         indices = None
         plot_slice = slice(None)
-        if len(pts) > n_pts: # if there are more samples in the domain than in n_pts
+        if len(pts) > n_pts: 
             indices = np.linspace(0, len(pts) - 1, n_pts).astype(int)
-            pts = pts[indices] # downsample the domain
-
-        if max_x is None:
-            max_x = np.max(pts)
-        if min_x is None:
-            min_x = np.min(pts)
-
-        svg_x = (pts - min_x) * 100 / (max_x - min_x)
-
-        colors = ["#1c73b3", "#039f74", "#d65e00",
-                  "#cd79a7", "#f0e542", "#56b4ea"]
+            pts = pts[indices]
+        elif n_pts > len(pts):
+            n_pts = len(pts)
 
         def plot_func(t, x):
             basis = self.basis
-            if indices is not None: # if we did downsampling of the domain
-                basis = basis[indices] # downsample the bases as well
-            points = [] # for storing svg definitions to put in our plot
-            for i in range(basis.shape[0]):
-                # input x is the values over each of the basis functions 
-                # need to calculate the 2D map values for each basis and sum
-                data = np.dot(x, basis[:,i]) * self.scale[i]
+            if indices is not None: 
+                basis = basis[indices] 
 
-                svg_y = (-data - min_y) * 100 / (max_y - min_y)
+            values = np.dot(basis, x) * self.scale
 
-            path = []
-            for j in range(len(data)):
-                path.append('%1.0f %1.0f' % (svg_x[j], svg_y[j]))
-            paths.append('<path d="M%s" fill="none" stroke="%s"/>' %
-                            ('L'.join(path), colors[i % len(colors)]))
+            # put on a scale of 0 - 255
+            values -= np.min(values)
+            values *= (255.0 / np.max(values)) if np.max(values) != 0 else 1
+            values = values.reshape((n_pts, n_pts))
+            
+            # generate png heat map based off values
+            import base64
+            from PIL import Image
+            import cStringIO
+            png = Image.fromarray(values).convert('RGB')
+            buffer = cStringIO.StringIO()
+            png.save(buffer, format="JPEG")
+            img_str = base64.b64encode(buffer.getvalue())
 
             plot_func._nengo_html_ = '''
-            <svg width="100%%" height="100%%" viewbox="0 0 100 100">%s</svg>
-            ''' % (''.join(paths))
+            <svg width="100%%" height="100%%" viewbox="0 0 100 100">
+            <image width="100%%" height="100%%" xlink:href="data:image/png;base64,%s">
+            </svg>''' % (''.join(img_str))
+
         plot_func._nengo_html_ = ''
         return nengo.Node(plot_func, size_in=self.n_basis, size_out=0)
 
