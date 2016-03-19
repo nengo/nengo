@@ -181,7 +181,7 @@ class FunctionSpace(object):
         plot_func._nengo_html_ = ''
         return nengo.Node(plot_func, size_in=self.n_basis * lines, size_out=0)
 
-    def make_2Dplot_node(self, domain, n_pts=10):
+    def make_2Dplot_node(self, domain, n_pts=20):
         """Generate a Node with a custom GUI plot"""
         pts = domain
         indices = None
@@ -197,6 +197,7 @@ class FunctionSpace(object):
         if indices is not None: 
             # TODO: do this more elegantly
             basis = basis.reshape((old_num, old_num, self.n_basis))
+            # NOTE: for some reason basis[indices, indices] results in 2D output?
             basis = basis[indices] 
             basis = basis[:,indices] 
             basis = basis.reshape((-1, self.n_basis))
