@@ -258,6 +258,50 @@ def test_function_and_transform(Simulator, plt, seed):
     assert np.allclose(x1, y1, atol=.1, rtol=.01)
 
 
+def test_dist_transform(Simulator, seed):
+    """Using a distribution to initialize transform."""
+
+    with nengo.Network(seed=seed) as net:
+        net.config[nengo.Connection].transform = nengo.dists.Gaussian(0.5, 1)
+
+        a = nengo.Node(output=[0] * 100)
+        b = nengo.Node(size_in=100)
+        c = nengo.Ensemble(100, 10)
+
+        # make a couple different types of connections to make sure that a
+        # correctly sized transform is being generated
+        conn1 = nengo.Connection(a, b)
+        conn2 = nengo.Connection(b, c)
+        conn3 = nengo.Connection(b, c.neurons)
+        conn4 = nengo.Connection(b[:2], c[2])
+
+    assert isinstance(conn1.transform, nengo.dists.Gaussian)
+
+    sim = Simulator(net)
+
+    w = sim.model.params[conn1].weights
+    assert np.allclose(np.mean(w), 0.5, atol=0.01)
+    assert np.allclose(np.std(w), 1, atol=0.01)
+    assert w.shape == (100, 100)
+
+    assert sim.model.params[conn2].weights.shape == (10, 100)
+    assert sim.model.params[conn3].weights.shape == (100, 100)
+    assert sim.model.params[conn4].weights.shape == (1, 2)
+
+    # make sure the seed works (gives us the same transform)
+    with nengo.Network(seed=seed) as net:
+        net.config[nengo.Connection].transform = nengo.dists.Gaussian(0.5, 1)
+
+        a = nengo.Node(output=[0] * 100)
+        b = nengo.Node(size_in=100)
+
+        conn5 = nengo.Connection(a, b)
+
+    sim = Simulator(net)
+
+    assert np.all(w == sim.model.params[conn5].weights)
+
+
 def test_weights(Simulator, nl, plt, seed):
     n1, n2 = 100, 50
 

@@ -9,6 +9,7 @@ from nengo.builder.operator import (
     DotInc, ElementwiseInc, PreserveValue, Reset, SlicedCopy)
 from nengo.builder.signal import Signal
 from nengo.connection import Connection
+from nengo.dists import Distribution
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
@@ -165,6 +166,11 @@ def build_connection(model, conn):
     signal_size = conn.size_out
     post_slice = conn.post_slice
 
+    # Sample transform if given a distribution
+    transform = (conn.transform.sample(conn.size_out, conn.size_mid, rng=rng)
+                 if isinstance(conn.transform, Distribution) else
+                 conn.transform)
+
     # Figure out the signal going across this connection
     in_signal = model.sig[conn]['in']
     if (isinstance(conn.pre_obj, Node) or
@@ -189,13 +195,13 @@ def build_connection(model, conn):
             post_slice = Ellipsis  # don't apply slice later
             weights = decoders.T
         else:
-            weights = multiply(conn.transform, decoders.T)
+            weights = multiply(transform, decoders.T)
     else:
         in_signal = slice_signal(model, in_signal, conn.pre_slice)
 
     # Add operator for applying weights
     if weights is None:
-        weights = np.array(conn.transform)
+        weights = np.array(transform)
 
     if isinstance(conn.post_obj, Neurons):
         gain = model.params[conn.post_obj.ensemble].gain[post_slice]

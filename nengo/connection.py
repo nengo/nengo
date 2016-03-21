@@ -4,13 +4,13 @@ import weakref
 import numpy as np
 
 from nengo.base import NengoObject, NengoObjectParam, ObjView
-from nengo.dists import DistOrArrayParam
+from nengo.dists import Distribution, DistOrArrayParam
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.node import Node
 from nengo.params import (Default, Unconfigurable, ObsoleteParam,
-                          BoolParam, FunctionParam, NdarrayParam)
+                          BoolParam, FunctionParam)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_iterable, iteritems
@@ -137,17 +137,19 @@ class ConnectionFunctionParam(FunctionParam):
         transform = conn.transform
         size_mid = conn.size_in if function is None else size
 
-        if transform.ndim < 2 and size_mid != conn.size_out:
-            raise ValidationError("function output size is incorrect; should "
-                                  "return a vector of size %d" % conn.size_out,
-                                  attr=self.name, obj=conn)
+        if isinstance(transform, np.ndarray):
+            if transform.ndim < 2 and size_mid != conn.size_out:
+                raise ValidationError(
+                    "function output size is incorrect; should return a "
+                    "vector of size %d" % conn.size_out, attr=self.name,
+                    obj=conn)
 
-        if transform.ndim == 2 and size_mid != transform.shape[1]:
-            # check input dimensionality matches transform
-            raise ValidationError(
-                "%s output size (%d) not equal to transform input size "
-                "(%d)" % (type_pre, size_mid, transform.shape[1]),
-                attr=self.name, obj=conn)
+            if transform.ndim == 2 and size_mid != transform.shape[1]:
+                # check input dimensionality matches transform
+                raise ValidationError(
+                    "%s output size (%d) not equal to transform input size "
+                    "(%d)" % (type_pre, size_mid, transform.shape[1]),
+                    attr=self.name, obj=conn)
 
         if (function is not None and isinstance(conn.pre_obj, Node) and
                 conn.pre_obj.output is None):
@@ -156,7 +158,7 @@ class ConnectionFunctionParam(FunctionParam):
                 attr=self.name, obj=conn)
 
 
-class TransformParam(NdarrayParam):
+class TransformParam(DistOrArrayParam):
     """The transform additionally validates size_out."""
 
     def __init__(self, name, default, optional=False, readonly=False):
@@ -164,36 +166,38 @@ class TransformParam(NdarrayParam):
             name, default, (), optional, readonly)
 
     def validate(self, conn, transform):
-        transform = np.asarray(transform, dtype=np.float64)
+        if not isinstance(transform, Distribution):
+            # if transform is an array, figure out what the correct shape
+            # should be
+            transform = np.asarray(transform, dtype=np.float64)
 
-        if transform.ndim == 0:
-            self.shape = ()
-        elif transform.ndim == 1:
-            self.shape = ('size_out',)
-        elif transform.ndim == 2:
-            # Actually (size_out, size_mid) but Function handles size_mid
-            self.shape = ('size_out', '*')
-        else:
-            raise ValidationError(
-                "Cannot handle transforms with dimensions > 2",
-                attr=self.name, obj=conn)
+            if transform.ndim == 0:
+                self.shape = ()
+            elif transform.ndim == 1:
+                self.shape = ('size_out',)
+            elif transform.ndim == 2:
+                # Actually (size_out, size_mid) but Function handles size_mid
+                self.shape = ('size_out', '*')
 
-        # Checks the shapes
+                # check for repeated dimensions in lists, as these don't work
+                # for two-dimensional transforms
+                def repeated_inds(x):
+                    return (not isinstance(x, slice) and
+                            np.unique(x).size != len(x))
+                if repeated_inds(conn.pre_slice):
+                    raise ValidationError(
+                        "Input object selection has repeated indices",
+                        attr=self.name, obj=conn)
+                if repeated_inds(conn.post_slice):
+                    raise ValidationError(
+                        "Output object selection has repeated indices",
+                        attr=self.name, obj=conn)
+            else:
+                raise ValidationError(
+                    "Cannot handle transforms with dimensions > 2",
+                    attr=self.name, obj=conn)
+
         super(TransformParam, self).validate(conn, transform)
-
-        if transform.ndim == 2:
-            # check for repeated dimensions in lists, as these don't work
-            # for two-dimensional transforms
-            repeated_inds = lambda x: (
-                not isinstance(x, slice) and np.unique(x).size != len(x))
-            if repeated_inds(conn.pre_slice):
-                raise ValidationError(
-                    "Input object selection has repeated indices",
-                    attr=self.name, obj=conn)
-            if repeated_inds(conn.post_slice):
-                raise ValidationError(
-                    "Output object selection has repeated indices",
-                    attr=self.name, obj=conn)
 
         return transform
 

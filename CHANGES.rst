@@ -82,6 +82,10 @@ Release History
   synapse type now has ``filt`` and ``filtfilt`` methods that filter
   using the synapse.
   (`#945 <https://github.com/nengo/nengo/pull/945>`_)
+- ``Connection`` objects can now accept a ``Distribution`` for the transform
+  argument; the transform matrix will be sampled from that distribution
+  when the model is built.
+  (`#979 <https://github.com/nengo/nengo/pull/979>`_).
 
 **Behavioural changes**
 
