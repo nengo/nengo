@@ -17,7 +17,9 @@ class OutputParam(Parameter):
         super(OutputParam, self).__init__(name, default, optional, readonly)
 
     def __set__(self, node, output):
-        super(OutputParam, self).validate(node, output)
+        new_output = super(OutputParam, self).validate(node, output)
+        if new_output is not None:
+            output = new_output
 
         size_in_set = node.size_in is not None
         node.size_in = node.size_in if size_in_set else 0

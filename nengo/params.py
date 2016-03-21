@@ -85,12 +85,15 @@ class Parameter(object):
         return self.data.get(instance, self.default)
 
     def __set__(self, instance, value):
-        self.validate(instance, value)
+        new_value = self.validate(instance, value)
+        if new_value is not None:
+            value = new_value
         self.data[instance] = value
 
     def __repr__(self):
-        return "%s(default=%s, optional=%s, readonly=%s)" % (
+        return "%s(%s, default=%s, optional=%s, readonly=%s)" % (
             self.__class__.__name__,
+            repr(self.name),
             self.default,
             self.optional,
             self.readonly)
@@ -108,7 +111,9 @@ class Parameter(object):
     def set_default(self, obj, value):
         if not self.configurable:
             raise ConfigError("Parameter '%s' is not configurable" % self)
-        self.validate(obj, value)
+        new_value = self.validate(obj, value)
+        if new_value is not None:
+            value = new_value
         self._defaults[obj] = value
 
     def equal(self, instance_a, instance_b):
@@ -173,7 +178,7 @@ class BoolParam(Parameter):
         if boolean is not None and not isinstance(boolean, bool):
             raise ValidationError("Must be a boolean; got '%s'" % boolean,
                                   attr=self.name, obj=instance)
-        super(BoolParam, self).validate(instance, boolean)
+        return super(BoolParam, self).validate(instance, boolean)
 
 
 class NumberParam(Parameter):
@@ -214,7 +219,7 @@ class NumberParam(Parameter):
                         "" if self.high_open else "or equal to ",
                         self.high,
                         num), attr=self.name, obj=instance)
-        super(NumberParam, self).validate(instance, num)
+        return super(NumberParam, self).validate(instance, num)
 
 
 class IntParam(NumberParam):
@@ -224,7 +229,7 @@ class IntParam(NumberParam):
         if num is not None and not is_integer(num):
             raise ValidationError("Must be an integer; got '%s'" % num,
                                   attr=self.name, obj=instance)
-        super(IntParam, self).validate(instance, num)
+        return super(IntParam, self).validate(instance, num)
 
 
 class StringParam(Parameter):
@@ -236,7 +241,7 @@ class StringParam(Parameter):
         if string is not None and not is_string(string):
             raise ValidationError("Must be a string; got '%s'" % string,
                                   attr=self.name, obj=instance)
-        super(StringParam, self).validate(instance, string)
+        return super(StringParam, self).validate(instance, string)
 
 
 class EnumParam(StringParam):
@@ -254,17 +259,16 @@ class EnumParam(StringParam):
         self.lower = lower
         super(EnumParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, instance, value):
-        self.validate(instance, value)
-        self.data[instance] = value.lower() if self.lower else value
-
     def validate(self, instance, string):
-        super(EnumParam, self).validate(instance, string)
+        new_string = super(EnumParam, self).validate(instance, string)
+        if new_string is not None:
+            string = new_string
         string = string.lower() if self.lower else string
         if string not in self.value_set:
             raise ValidationError("String %r must be one of %s"
                                   % (string, list(self.values)),
                                   attr=self.name, obj=instance)
+        return string
 
 
 class TupleParam(Parameter):
@@ -289,7 +293,7 @@ class TupleParam(Parameter):
                 raise ValidationError("Must be %d items (got %d)"
                                       % (self.length, len(value)),
                                       attr=self.name, obj=instance)
-        super(TupleParam, self).validate(instance, value)
+        return super(TupleParam, self).validate(instance, value)
 
 
 class DictParam(Parameter):
@@ -299,7 +303,7 @@ class DictParam(Parameter):
         if dct is not None and not isinstance(dct, dict):
             raise ValidationError("Must be a dictionary; got '%s'" % str(dct),
                                   attr=self.name, obj=instance)
-        super(DictParam, self).validate(instance, dct)
+        return super(DictParam, self).validate(instance, dct)
 
 
 class NdarrayParam(Parameter):
@@ -319,16 +323,16 @@ class NdarrayParam(Parameter):
         self.shape = shape
         super(NdarrayParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, instance, ndarray):
-        super(NdarrayParam, self).validate(instance, ndarray)
-        if ndarray is not None:
-            ndarray = self.validate(instance, ndarray)
-        self.data[instance] = ndarray
-
     def hashvalue(self, instance):
         return array_hash(self.__get__(instance, None))
 
-    def validate(self, instance, ndarray):  # noqa: C901
+    def validate(self, instance, value):
+        if value is not None:
+            value = self.validate_ndarray(instance, value)
+        super(NdarrayParam, self).validate(instance, value)
+        return value
+
+    def validate_ndarray(self, instance, ndarray):  # noqa: C901
         if isinstance(ndarray, np.ndarray):
             ndarray = ndarray.view()
         else:
@@ -413,7 +417,7 @@ class FunctionParam(Parameter):
         if function is not None and not callable(function):
             raise ValidationError("function '%s' must be callable" % function,
                                   attr=self.name, obj=instance)
-        super(FunctionParam, self).validate(instance, function)
+        return super(FunctionParam, self).validate(instance, function)
 
 
 class FrozenObject(object):
@@ -487,15 +491,22 @@ class Deferrable(Parameter):
         self.static = static
 
     def __set__(self, instance, value):
-        if isinstance(value, Deferral):
-            super(Deferrable, self).__set__(instance, value)
-        else:
-            self.static.validate(instance, value)
-            self.data[instance] = value
+        if not isinstance(value, Deferral):
+            self.static.__set__(instance, value)
+            value = self.static.__get__(instance, value)
+        super(Deferrable, self).__set__(instance, value)
 
     def validate(self, instance, value):
-        if not isinstance(value, Deferral):
-            self.static.validate(instance, value)
+        if isinstance(value, Deferral):
+            return super(Deferrable, self).validate(instance, value)
+        else:
+            return self.static.validate(instance, value)
+
+    def __repr__(self):
+        return "%s(static=%s, default=%s)" % (
+            self.__class__.__name__,
+            repr(self.static),
+            self.default)
 
 
 class Undeferred(object):

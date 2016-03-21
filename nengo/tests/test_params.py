@@ -285,7 +285,8 @@ def test_deferrable():
 
     class Test(object):
         p_def_fn = params.Deferrable(
-            params.NumberParam('p_def_fn', low=0., high=10.), default=mock)
+            params.NumberParam('p_def_fn', readonly=False, low=0., high=10.),
+            default=mock)
         p_def_num = params.Deferrable(params.NumberParam(
             'p_def_num', default=2., low=0., high=10.))
 
