@@ -34,14 +34,23 @@ def test_seeding(RefSimulator, logger):
     with RefSimulator(m) as sim:
         m3 = sim.model.params
 
+    def assert_array_equality(a1, a2, equal=True):
+        check = (np.allclose(a1, a2) == equal)
+        if not check:
+            logger.info("%s: %s", attr, a1)
+            logger.info("%s: %s", attr, a2)
+        assert check
+
     def compare_objs(obj1, obj2, attrs, equal=True):
+        assert len(obj1.deferred) == len(obj2.deferred)
+        for k in obj1.deferred:
+            assert_array_equality(
+                obj1.deferred[k], obj2.deferred[k], equal=equal)
         for attr in attrs:
-            check = (np.allclose(getattr(obj1, attr), getattr(obj2, attr)) ==
-                     equal)
-            if not check:
-                logger.info("%s: %s", attr, getattr(obj1, attr))
-                logger.info("%s: %s", attr, getattr(obj2, attr))
-            assert check
+            if attr == 'deferred':
+                continue
+            assert_array_equality(
+                getattr(obj1, attr), getattr(obj2, attr), equal=equal)
 
     ens_attrs = BuiltEnsemble._fields
     As = [mi[A] for mi in [m1, m2, m3]]
