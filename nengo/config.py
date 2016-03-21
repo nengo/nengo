@@ -225,7 +225,7 @@ class Config(object):
     1
     """
 
-    context = ThreadLocalStack()  # static stack of Config objects
+    context = ThreadLocalStack(maxsize=100)  # static stack of Config objects
 
     def __init__(self, *configures):
         self.params = {}

@@ -44,3 +44,12 @@ class TestThreadLocalStack(object):
         stack.append(1)
         stack.clear()
         assert len(stack) == 0
+
+    def test_has_size_limit(self):
+        maxsize = 5
+        stack = ThreadLocalStack(maxsize=maxsize)
+        for i in range(maxsize):
+            stack.append(i)
+
+        with pytest.raises(RuntimeError):
+            stack.append(5)

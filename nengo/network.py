@@ -70,7 +70,7 @@ class Network(object):
         List of nengo.BaseNetwork objects in this Network.
     """
 
-    context = ThreadLocalStack()  # static stack of Network objects
+    context = ThreadLocalStack(maxsize=100)  # static stack of Network objects
 
     def __init__(self, label=None, seed=None, add_to_container=None):
         self.label = label

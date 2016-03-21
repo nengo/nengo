@@ -5,8 +5,9 @@ import threading
 
 
 class ThreadLocalStack(threading.local, collections.Sequence):
-    def __init__(self):
+    def __init__(self, maxsize=None):
         super(ThreadLocalStack, self).__init__()
+        self.maxsize = maxsize
         self._context = []
 
     def __len__(self):
@@ -16,6 +17,8 @@ class ThreadLocalStack(threading.local, collections.Sequence):
         return self._context[i]
 
     def append(self, item):
+        if self.maxsize is not None and len(self) >= self.maxsize:
+            raise RuntimeError("Stack limit exceeded.")
         self._context.append(item)
 
     def pop(self):
