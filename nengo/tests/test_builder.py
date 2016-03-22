@@ -278,5 +278,3 @@ def test_obsolete_params(RefSimulator):
         pass
     with pytest.raises(ObsoleteError):
         sim.data[c].decoders
-    with pytest.raises(ObsoleteError):
-        sim.data[c].transform

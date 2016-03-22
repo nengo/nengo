@@ -18,7 +18,7 @@ from nengo.utils.compat import is_iterable, itervalues
 
 
 BuiltConnection_ = collections.namedtuple(
-    'BuiltConnection', ['eval_points', 'solver_info', 'weights'])
+    'BuiltConnection', ['eval_points', 'solver_info', 'weights', 'transform'])
 
 
 class BuiltConnection(BuiltConnection_):
@@ -26,12 +26,6 @@ class BuiltConnection(BuiltConnection_):
     @property
     def decoders(self):
         raise ObsoleteError("decoders are now part of 'weights'. "
-                            "Access BuiltConnection.weights instead.",
-                            since="v2.1.0")
-
-    @property
-    def transform(self):
-        raise ObsoleteError("transform is now part of 'weights'. "
                             "Access BuiltConnection.weights instead.",
                             since="v2.1.0")
 
@@ -248,4 +242,5 @@ def build_connection(model, conn):
 
     model.params[conn] = BuiltConnection(eval_points=eval_points,
                                          solver_info=solver_info,
+                                         transform=transform,
                                          weights=weights)
