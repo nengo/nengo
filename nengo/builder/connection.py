@@ -70,7 +70,7 @@ def build_linear_system(model, conn, rng):
     return eval_points, activities, targets
 
 
-def build_decoders(model, conn, rng):
+def build_decoders(model, conn, rng, transform):
     encoders = model.params[conn.pre_obj].encoders
     gain = model.params[conn.pre_obj].gain
     bias = model.params[conn.pre_obj].bias
@@ -83,7 +83,7 @@ def build_decoders(model, conn, rng):
     if conn.solver.weights:
         E = model.params[conn.post_obj].scaled_encoders.T[conn.post_slice]
         # include transform in solved weights
-        targets = multiply(targets, conn.transform.T)
+        targets = multiply(targets, transform.T)
 
     try:
         wrapped_solver = model.decoder_cache.wrap_solver(solve_for_decoders)
@@ -96,7 +96,9 @@ def build_decoders(model, conn, rng):
             "This is because no evaluation points fall in the firing "
             "ranges of any neurons." % (conn, conn.pre_obj))
 
-    return eval_points, decoders, solver_info
+    weights = (decoders.T if conn.solver.weights else
+               multiply(transform, decoders.T))
+    return eval_points, weights, solver_info
 
 
 def solve_for_decoders(
@@ -169,7 +171,7 @@ def build_connection(model, conn):
     # Sample transform if given a distribution
     transform = (conn.transform.sample(conn.size_out, conn.size_mid, rng=rng)
                  if isinstance(conn.transform, Distribution) else
-                 conn.transform)
+                 np.array(conn.transform))
 
     # Figure out the signal going across this connection
     in_signal = model.sig[conn]['in']
@@ -177,36 +179,29 @@ def build_connection(model, conn):
             (isinstance(conn.pre_obj, Ensemble) and
              isinstance(conn.pre_obj.neuron_type, Direct))):
         # Node or Decoded connection in directmode
+        weights = transform
         sliced_in = slice_signal(model, in_signal, conn.pre_slice)
-
         if conn.function is not None:
             in_signal = Signal(np.zeros(conn.size_mid), name='%s.func' % conn)
-            model.add_op(SimPyFunc(
-                output=in_signal, fn=conn.function, t=None, x=sliced_in))
+            model.add_op(SimPyFunc(in_signal, conn.function, None, sliced_in))
         else:
             in_signal = sliced_in
-
     elif isinstance(conn.pre_obj, Ensemble):  # Normal decoded connection
-        eval_points, decoders, solver_info = build_decoders(model, conn, rng)
-
+        eval_points, weights, solver_info = build_decoders(
+            model, conn, rng, transform)
         if conn.solver.weights:
             model.sig[conn]['out'] = model.sig[conn.post_obj.neurons]['in']
             signal_size = conn.post_obj.neurons.size_in
             post_slice = Ellipsis  # don't apply slice later
-            weights = decoders.T
-        else:
-            weights = multiply(transform, decoders.T)
     else:
+        weights = transform
         in_signal = slice_signal(model, in_signal, conn.pre_slice)
 
-    # Add operator for applying weights
-    if weights is None:
-        weights = np.array(transform)
-
     if isinstance(conn.post_obj, Neurons):
-        gain = model.params[conn.post_obj.ensemble].gain[post_slice]
-        weights = multiply(gain, weights)
+        weights = multiply(
+            model.params[conn.post_obj.ensemble].gain[post_slice], weights)
 
+    # Add operator for applying weights
     model.sig[conn]['weights'] = Signal(
         weights, name="%s.weights" % conn, readonly=True)
     signal = Signal(np.zeros(signal_size), name="%s.weighted" % conn)

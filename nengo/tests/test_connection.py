@@ -263,10 +263,10 @@ def test_dist_transform(Simulator, seed):
 
     with nengo.Network(seed=seed) as net:
         net.config[nengo.Connection].transform = nengo.dists.Gaussian(0.5, 1)
-
         a = nengo.Node(output=[0] * 100)
-        b = nengo.Node(size_in=100)
-        c = nengo.Ensemble(100, 10)
+        b = nengo.Node(size_in=101)
+        c = nengo.Ensemble(102, 10)
+        d = nengo.Ensemble(103, 11)
 
         # make a couple different types of connections to make sure that a
         # correctly sized transform is being generated
@@ -274,6 +274,8 @@ def test_dist_transform(Simulator, seed):
         conn2 = nengo.Connection(b, c)
         conn3 = nengo.Connection(b, c.neurons)
         conn4 = nengo.Connection(b[:2], c[2])
+        conn5 = nengo.Connection(
+            c, d, solver=nengo.solvers.LstsqL2(weights=True))
 
     assert isinstance(conn1.transform, nengo.dists.Gaussian)
 
@@ -282,24 +284,22 @@ def test_dist_transform(Simulator, seed):
     w = sim.model.params[conn1].weights
     assert np.allclose(np.mean(w), 0.5, atol=0.01)
     assert np.allclose(np.std(w), 1, atol=0.01)
-    assert w.shape == (100, 100)
+    assert w.shape == (101, 100)
 
-    assert sim.model.params[conn2].weights.shape == (10, 100)
-    assert sim.model.params[conn3].weights.shape == (100, 100)
+    assert sim.model.params[conn2].weights.shape == (10, 101)
+    assert sim.model.params[conn3].weights.shape == (102, 101)
     assert sim.model.params[conn4].weights.shape == (1, 2)
+    assert sim.model.params[conn5].weights.shape == (103, 102)
 
     # make sure the seed works (gives us the same transform)
     with nengo.Network(seed=seed) as net:
         net.config[nengo.Connection].transform = nengo.dists.Gaussian(0.5, 1)
-
         a = nengo.Node(output=[0] * 100)
-        b = nengo.Node(size_in=100)
-
-        conn5 = nengo.Connection(a, b)
+        b = nengo.Node(size_in=101)
+        conn = nengo.Connection(a, b)
 
     sim = Simulator(net)
-
-    assert np.all(w == sim.model.params[conn5].weights)
+    assert np.all(w == sim.model.params[conn].weights)
 
 
 def test_weights(Simulator, nl, plt, seed):
