@@ -351,7 +351,7 @@ def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
     Deprecated: use ``synapse.filt`` instead.
     """
     warnings.warn("Use ``synapse.filt`` instead", DeprecationWarning)
-    synapse.filt(signal, dt=dt, axis=axis, y0=x0, copy=copy)
+    return synapse.filt(signal, dt=dt, axis=axis, y0=x0, copy=copy)
 
 
 def filtfilt(signal, synapse, dt, axis=0, x0=None, copy=True):
@@ -360,7 +360,7 @@ def filtfilt(signal, synapse, dt, axis=0, x0=None, copy=True):
     Deprecated: use ``synapse.filtfilt`` instead.
     """
     warnings.warn("Use ``synapse.filtfilt`` instead", DeprecationWarning)
-    synapse.filtfilt(signal, dt=dt, axis=axis, y0=x0, copy=copy)
+    return synapse.filtfilt(signal, dt=dt, axis=axis, y0=x0, copy=copy)
 
 
 class SynapseParam(Parameter):
