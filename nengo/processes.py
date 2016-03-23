@@ -3,6 +3,7 @@ import numpy as np
 import nengo.utils.numpy as npext
 from nengo.base import Process
 from nengo.dists import DistributionParam, Gaussian
+from nengo.exceptions import ValidationError
 from nengo.params import BoolParam, NdarrayParam, NumberParam
 from nengo.synapses import LinearFilter, LinearFilterParam, Lowpass
 
@@ -169,6 +170,11 @@ class WhiteSignal(Process):
         self.period = period
         self.high = high
         self.rms = rms
+
+        if self.high is not None and self.high < 1. / self.period:
+            raise ValidationError(
+                "Make ``high >= 1. / period`` to produce a non-zero signal",
+                attr='high', obj=self)
 
     def __repr__(self):
         return "%s(period=%r, high=%r, rms=%r)" % (
