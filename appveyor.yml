@@ -1,0 +1,21 @@
+environment:
+  matrix:
+    - PYTHON: "C:\\Miniconda"
+    - PYTHON: "C:\\Miniconda3"
+    - PYTHON: "C:\\Miniconda35-x64"
+
+init:
+  - set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
+
+install:
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - conda install numpy matplotlib jupyter pytest flake8
+
+build: false  # Not a C# project
+
+test_script:
+  - python setup.py -q install
+  - python setup.py test -a "nengo -v --durations=20"
+  - flake8 -v nengo
