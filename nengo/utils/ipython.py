@@ -31,11 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import
 
+import io
 import os
 import platform
-import sys
 import time
-import unicodedata
 import uuid
 
 import numpy as np
@@ -176,16 +175,14 @@ def export_py(nb, dest_path=None):
     """
     exporter = PythonExporter()
     body, resources = exporter.from_notebook_node(nb)
-    if sys.version_info[0] == 2:
-        body = unicodedata.normalize('NFKD', body).encode('ascii', 'ignore')
     # We'll remove %matplotlib inline magic, but leave the rest
-    body = body.replace("get_ipython().magic(u'matplotlib inline')\n", "")
-    body = body.replace("get_ipython().magic('matplotlib inline')\n", "")
+    body = body.replace(u"get_ipython().magic(u'matplotlib inline')\n", u"")
+    body = body.replace(u"get_ipython().magic('matplotlib inline')\n", u"")
     # Also remove the IPython notebook extension
-    body = body.replace("get_ipython().magic(u'load_ext nengo.ipynb')\n", "")
-    body = body.replace("get_ipython().magic('load_ext nengo.ipynb')\n", "")
+    body = body.replace(u"get_ipython().magic(u'load_ext nengo.ipynb')\n", u"")
+    body = body.replace(u"get_ipython().magic('load_ext nengo.ipynb')\n", u"")
     if dest_path is not None:
-        with open(dest_path, 'w') as f:
+        with io.open(dest_path, 'w', encoding='utf-8') as f:
             f.write(body)
     return body
 
@@ -234,7 +231,7 @@ def export_html(nb, dest_path=None, image_dir=None, image_rel_dir=None):
         html_out = export_images(resources, image_dir, image_rel_dir, html_out)
 
     if dest_path is not None:
-        with open(dest_path, 'w') as f:
+        with io.open(dest_path, 'w', encoding='utf-8') as f:
             f.write(html_out)
     return html_out
 
