@@ -61,11 +61,6 @@ else:
         return s
 
 
-assert configparser
-assert pickle
-assert TextIO
-
-
 def is_integer(obj):
     return isinstance(obj, int_types + (np.integer,))
 
