@@ -155,17 +155,18 @@ class WhiteSignal(Process):
         Samples will repeat after this duration.
     high : float, optional
         The cut-off frequency of the low-pass filter, in Hz.
-        If not specified, no filtering will be done.
+        Must not exceed the Nyquist frequency for the simulation
+        timestep, that is `high <= 0.5/dt`.
     rms : float, optional
         The root mean square power of the filtered signal. Default: 0.5.
     seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
     period = NumberParam('period', low=0, low_open=True)
-    high = NumberParam('high', low=0, low_open=True, optional=True)
+    high = NumberParam('high', low=0, low_open=True)
     rms = NumberParam('rms', low=0, low_open=True)
 
-    def __init__(self, period, high=None, rms=0.5, seed=None):
+    def __init__(self, period, high, rms=0.5, seed=None):
         super(WhiteSignal, self).__init__(seed=seed)
         self.period = period
         self.high = high
@@ -183,6 +184,12 @@ class WhiteSignal(Process):
     def make_step(self, shape_in, shape_out, dt, rng):
         assert shape_in == (0,)
 
+        nyquist_cutoff = 0.5 / dt
+        if self.high > nyquist_cutoff:
+            raise ValidationError("High must not exceed the Nyquist frequency "
+                                  "for the given dt (%0.3f)" % nyquist_cutoff,
+                                  attr='high', obj=self)
+
         n_coefficients = int(np.ceil(self.period / dt / 2.))
         shape = (n_coefficients + 1,) + shape_out
         sigma = self.rms * np.sqrt(0.5)
@@ -190,13 +197,13 @@ class WhiteSignal(Process):
         coefficients += rng.normal(0., sigma, size=shape)
         coefficients[0] = 0.
         coefficients[-1].imag = 0.
-        if self.high is not None:
-            set_to_zero = npext.rfftfreq(2 * n_coefficients, d=dt) > self.high
-            coefficients[set_to_zero] = 0.
-            power_correction = np.sqrt(
-                1. - np.sum(set_to_zero, dtype=float) / n_coefficients)
-            if power_correction > 0.:
-                coefficients /= power_correction
+
+        set_to_zero = npext.rfftfreq(2 * n_coefficients, d=dt) > self.high
+        coefficients[set_to_zero] = 0.
+        power_correction = np.sqrt(
+            1. - np.sum(set_to_zero, dtype=float) / n_coefficients)
+        if power_correction > 0.:
+            coefficients /= power_correction
         coefficients *= np.sqrt(2 * n_coefficients)
         signal = np.fft.irfft(coefficients, axis=0)
 

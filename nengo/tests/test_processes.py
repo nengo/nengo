@@ -6,6 +6,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.dists import Distribution, Gaussian
+from nengo.exceptions import ValidationError
 from nengo.processes import BrownNoise, FilteredNoise, WhiteNoise, WhiteSignal
 from nengo.synapses import Lowpass
 
@@ -99,7 +100,7 @@ def test_gaussian_whitenoise(Simulator, rms, seed, plt):
 def test_whitesignal_rms(Simulator, rms, seed, plt):
     t = 1.
     d = 500
-    process = WhiteSignal(t, rms=rms)
+    process = WhiteSignal(t, high=500, rms=rms)
     with nengo.Network() as model:
         u = nengo.Node(process, size_out=d)
         up = nengo.Probe(u)
@@ -122,40 +123,9 @@ def test_whitesignal_rms(Simulator, rms, seed, plt):
     assert np.allclose(val_psd[1:-1], rms, rtol=0.35)
 
 
-@pytest.mark.parametrize('high', [5, 50])
-def test_whitesignal_high(Simulator, high, seed, plt):
+@pytest.mark.parametrize('high,dt', [(10, 0.01), (5, 0.001), (50, 0.001)])
+def test_whitesignal_high_dt(Simulator, high, dt, seed, plt):
     t = 1.
-    rms = 0.5
-    d = 500
-    process = WhiteSignal(t, high, rms=rms)
-    with nengo.Network() as model:
-        u = nengo.Node(process, size_out=d)
-        up = nengo.Probe(u)
-
-    with Simulator(model, seed=seed) as sim:
-        sim.run(t)
-    values = sim.data[up]
-    freq, val_psd = psd(values, dt=sim.dt)
-
-    dt = sim.dt
-    trange = sim.trange()
-    plt.subplot(2, 1, 1)
-    plt.title("First two D of white noise process, high=%d Hz" % high)
-    plt.plot(trange, values[:, :2])
-    plt.xlim(right=trange[-1])
-    plt.subplot(2, 1, 2)
-    plt.title("Power spectrum")
-    plt.plot(freq, val_psd, drawstyle='steps')
-    plt.xlim(right=high * 2.0)
-
-    assert np.allclose(np.std(values, axis=1), rms, rtol=0.15)
-    assert np.all(val_psd[npext.rfftfreq(len(trange), dt) > high] < rms * 0.5)
-
-
-def test_whitesignal_dt(Simulator, seed, plt):
-    t = 1.
-    dt = 0.01
-    high = 10
     rms = 0.5
     d = 500
     process = WhiteSignal(t, high, rms=rms)
@@ -180,6 +150,17 @@ def test_whitesignal_dt(Simulator, seed, plt):
 
     assert np.allclose(np.std(values, axis=1), rms, rtol=0.15)
     assert np.all(val_psd[npext.rfftfreq(len(trange), dt) > high] < rms * 0.5)
+
+
+@pytest.mark.parametrize('high,dt', [(501, 0.001), (500, 0.002)])
+def test_whitesignal_nyquist(Simulator, dt, high, seed):
+    # check that high cannot exceed nyquist frequency
+    process = WhiteSignal(1.0, high=high)
+    with nengo.Network() as model:
+        nengo.Node(process, size_out=1)
+
+    with pytest.raises(ValidationError):
+        Simulator(model, dt=dt, seed=seed)
 
 
 def test_whitesignal_continuity(Simulator, seed, plt):
@@ -207,7 +188,7 @@ def test_whitesignal_continuity(Simulator, seed, plt):
 
 
 def test_sampling_shape():
-    process = WhiteSignal(0.1)
+    process = WhiteSignal(0.1, high=500)
     assert process.run_steps(1).shape == (1, 1)
     assert process.run_steps(5, d=1).shape == (5, 1)
     assert process.run_steps(1, d=2). shape == (1, 2)
