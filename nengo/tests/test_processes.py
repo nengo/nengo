@@ -228,7 +228,7 @@ def test_reset(Simulator, seed):
         y = np.array(sim.data[up])
 
     assert x.shape == y.shape
-    assert (x == y).all()
+    assert np.allclose(x, y)
 
 
 def test_frozen():

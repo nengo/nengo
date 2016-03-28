@@ -208,7 +208,7 @@ def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt):
     plt.xlabel("Time (s)")
     plt.ylabel("Weights")
 
-    assert not np.all(sim.data[weights_p][0] == sim.data[weights_p][-1])
+    assert not np.allclose(sim.data[weights_p][0], sim.data[weights_p][-1])
 
 
 def learning_net(learning_rule, net, rng):
@@ -264,7 +264,7 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
     plt.ylabel("Presynaptic activity")
 
     assert np.allclose(trans_data[0], trans_data[1], atol=3e-3)
-    assert not np.all(sim.data[trans_p][0] == sim.data[trans_p][-1])
+    assert not np.allclose(sim.data[trans_p][0], sim.data[trans_p][-1])
 
 
 @pytest.mark.parametrize('learning_rule', [nengo.PES, nengo.BCM, nengo.Oja])
@@ -294,10 +294,10 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
     plt.plot(first_t_trans, first_trans_p[..., 0], c='b')
     plt.plot(sim.trange(dt=0.01), sim.data[trans_p][..., 0], c='g')
 
-    assert np.all(sim.trange() == first_t)
-    assert np.all(sim.trange(dt=0.01) == first_t_trans)
-    assert np.all(sim.data[activity_p] == first_activity_p)
-    assert np.all(sim.data[trans_p] == first_trans_p)
+    assert np.allclose(sim.trange(), first_t)
+    assert np.allclose(sim.trange(dt=0.01), first_t_trans)
+    assert np.allclose(sim.data[activity_p], first_activity_p)
+    assert np.allclose(sim.data[trans_p], first_trans_p)
 
 
 def test_learningruletypeparam():

@@ -322,8 +322,8 @@ def test_noise_gen(Simulator, nl_nodirect, seed, plt):
 
     assert np.all(sim.data[pos_p] >= sim.data[normal_p])
     assert np.all(sim.data[normal_p] >= sim.data[neg_p])
-    assert not np.all(sim.data[normal_p] == sim.data[pos_p])
-    assert not np.all(sim.data[normal_p] == sim.data[neg_p])
+    assert not np.allclose(sim.data[normal_p], sim.data[pos_p])
+    assert not np.allclose(sim.data[normal_p], sim.data[neg_p])
 
 
 def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt):

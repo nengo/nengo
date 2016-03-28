@@ -126,7 +126,7 @@ def test_lif_zero_tau_ref(Simulator):
         p = nengo.Probe(ens.neurons)
     with Simulator(m) as sim:
         sim.run(0.02)
-    assert np.all(sim.data[p][1:] == max_rate)
+    assert np.allclose(sim.data[p][1:], max_rate)
 
 
 def test_alif_rate(Simulator, plt):
@@ -341,8 +341,8 @@ def test_reset(Simulator, nl_nodirect, seed, rng):
         sim.reset()
         sim.run(0.3)
 
-    assert np.all(sim.trange() == first_t)
-    assert np.all(sim.data[square_p] == first_square_p)
+    assert np.allclose(sim.trange(), first_t)
+    assert np.allclose(sim.data[square_p], first_square_p)
 
 
 def test_neurontypeparam():

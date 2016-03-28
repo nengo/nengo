@@ -299,7 +299,7 @@ def test_dist_transform(Simulator, seed):
         conn = nengo.Connection(a, b)
 
     sim = Simulator(net)
-    assert np.all(w == sim.model.params[conn].weights)
+    assert np.allclose(w, sim.model.params[conn].weights)
 
 
 def test_weights(Simulator, nl, plt, seed):
