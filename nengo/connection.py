@@ -450,14 +450,9 @@ class LearningRule(object):
         elif self.error_type == 'scalar':
             return 1
         elif self.error_type == 'decoded':
-            if isinstance(self.connection.pre_obj, Neurons):
-                return self.connection.pre_obj.ensemble.dimensions
-            elif isinstance(self.connection.pre_obj, Ensemble):
-                return self.connection.size_out
-            else:
-                tname = self.connection.pre_obj.__class__.__name__
-                raise ValidationError("Cannot learn on type %r" % tname,
-                                      attr='size_in', obj=self)
+            return (self.connection.post_obj.ensemble.size_in
+                    if isinstance(self.connection.post_obj, Neurons) else
+                    self.connection.size_out)
         elif self.error_type == 'neuron':
             raise NotImplementedError()
         else:

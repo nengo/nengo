@@ -138,8 +138,7 @@ def test_pes_transform(Simulator, seed):
     assert np.allclose(sim.data[p_b][tend], [1, -1], atol=1e-2)
 
 
-@pytest.mark.parametrize('weights', [True, False])
-def test_pes_multidim_error(Simulator, rng, weights):
+def test_pes_multidim_error(Simulator, rng):
     """Test that PES works on error connections mapping from N to 1 dims.
 
     Note that the transform is applied before the learning rule, so the error
@@ -151,11 +150,22 @@ def test_pes_multidim_error(Simulator, rng, weights):
         ens1 = nengo.Ensemble(20, 3)
         ens2 = nengo.Ensemble(10, 1)
 
+        # Case 1: ens -> ens, weights=False
         conn = nengo.Connection(ens1, ens2,
                                 transform=np.ones((1, 3)),
-                                learning_rule_type={"pes": nengo.PES()},
-                                solver=nengo.solvers.LstsqL2(weights=weights))
-
+                                solver=nengo.solvers.LstsqL2(weights=False),
+                                learning_rule_type={"pes": nengo.PES()})
+        nengo.Connection(err, conn.learning_rule["pes"])
+        # Case 2: ens -> ens, weights=True
+        conn = nengo.Connection(ens1, ens2,
+                                transform=np.ones((1, 3)),
+                                solver=nengo.solvers.LstsqL2(weights=True),
+                                learning_rule_type={"pes": nengo.PES()})
+        nengo.Connection(err, conn.learning_rule["pes"])
+        # Case 3: neurons -> ens
+        conn = nengo.Connection(ens1.neurons, ens2,
+                                transform=np.ones((1, ens1.n_neurons)),
+                                learning_rule_type={"pes": nengo.PES()})
         nengo.Connection(err, conn.learning_rule["pes"])
 
     with Simulator(net) as sim:
