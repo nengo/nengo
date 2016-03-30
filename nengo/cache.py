@@ -80,7 +80,7 @@ class DecoderCache(object):
 
     Parameters
     ----------
-    read_only : bool
+    readonly : bool
         Indicates that already existing items in the cache will be used, but no
         new items will be written to the disk in case of a cache miss.
     cache_dir : str or None
@@ -93,8 +93,8 @@ class DecoderCache(object):
     _LEGACY = 'legacy.txt'
     _LEGACY_VERSION = 0
 
-    def __init__(self, read_only=False, cache_dir=None):
-        self.read_only = read_only
+    def __init__(self, readonly=False, cache_dir=None):
+        self.readonly = readonly
         if cache_dir is None:
             cache_dir = self.get_default_dir()
         self.cache_dir = cache_dir
@@ -252,7 +252,7 @@ class DecoderCache(object):
                 logger.debug("Cache miss [{}].".format(key))
                 decoders, solver_info = solver_fn(
                     solver, neuron_type, gain, bias, x, targets, rng=rng, E=E)
-                if not self.read_only:
+                if not self.readonly:
                     with open(path, 'wb') as f:
                         nco.write(f, solver_info, decoders)
             else:
