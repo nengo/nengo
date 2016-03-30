@@ -69,7 +69,7 @@ Release History
   (`#797 <https://github.com/nengo/nengo/pull/797>`_)
 - Add ``close`` method to ``Simulator``. ``Simulator`` can now be used
   used as a context manager.
-  (`#857 <https://github.com/nengo/nengo/issues/857`_,
+  (`#857 <https://github.com/nengo/nengo/issues/857>`_,
   `#739 <https://github.com/nengo/nengo/issues/739>`_,
   `#859 <https://github.com/nengo/nengo/pull/859>`_)
 - Most exceptions that Nengo can raise are now custom exception classes
@@ -173,7 +173,7 @@ Release History
   (`#727 <https://github.com/nengo/nengo/issues/727>`_)
 - Added a clipped exponential distribution useful for thresholding, in
   particular in the AssociativeMemory.
-  (`#582 <https://github.com/nengo/nengo/pull/779>`_)
+  (`#779 <https://github.com/nengo/nengo/pull/779>`_)
 - Added a cosine similarity distribution, which is the distribution of the
   cosine of the angle between two random vectors. It is useful for setting
   intercepts, in particular when using the ``Voja`` learning rule.
