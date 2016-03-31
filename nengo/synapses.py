@@ -52,7 +52,8 @@ class Synapse(Process):
             y0 = filt_view[0]
 
         shape_in = shape_out = as_shape(filt_view[0].shape, min_dim=1)
-        step = self.make_step(shape_in, shape_out, dt, None, y0=y0)
+        step = self.make_step(
+            shape_in, shape_out, dt, None, y0=y0, dtype=x.dtype)
 
         for i, signal_in in enumerate(filt_view):
             filt_view[i] = step(i * dt, signal_in)
@@ -72,7 +73,8 @@ class Synapse(Process):
         """
         return self.filt(x, filtfilt=True, **kwargs)
 
-    def make_step(self, shape_in, shape_out, dt, rng, y0=None):
+    def make_step(self, shape_in, shape_out, dt, rng, y0=None,
+                  dtype=np.float64):
         raise NotImplementedError("Synapses should implement make_step.")
 
 
@@ -127,7 +129,8 @@ class LinearFilter(Synapse):
         y = np.polyval(self.num, w) / np.polyval(self.den, w)
         return y
 
-    def make_step(self, shape_in, shape_out, dt, rng, y0=None, method='zoh'):
+    def make_step(self, shape_in, shape_out, dt, rng, y0=None,
+                  dtype=np.float64, method='zoh'):
         assert shape_in == shape_out
 
         num, den = self.num, self.den
@@ -140,8 +143,9 @@ class LinearFilter(Synapse):
                                   attr='den', obj=self)
         num = num[1:] if num[0] == 0 else num
         den = den[1:]  # drop first element (equal to 1)
+        num, den = num.astype(dtype), den.astype(dtype)
 
-        output = np.zeros(shape_out)
+        output = np.zeros(shape_out, dtype=dtype)
         if len(num) == 1 and len(den) == 0:
             return LinearFilter.NoDen(num, den, output)
         elif len(num) == 1 and len(den) == 1:
@@ -149,8 +153,9 @@ class LinearFilter(Synapse):
         return LinearFilter.General(num, den, output, y0=y0)
 
     @staticmethod
-    def _make_zero_step(shape_in, shape_out, dt, rng, y0=None):
-        output = np.zeros(shape_out)
+    def _make_zero_step(shape_in, shape_out, dt, rng, y0=None,
+                        dtype=np.float64):
+        output = np.zeros(shape_out, dtype=dtype)
         if y0 is not None:
             output[:] = y0
 
@@ -259,12 +264,14 @@ class Lowpass(LinearFilter):
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.tau)
 
-    def make_step(self, shape_in, shape_out, dt, rng, y0=None, **kwargs):
+    def make_step(self, shape_in, shape_out, dt, rng, y0=None,
+                  dtype=np.float64, **kwargs):
         # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
         if self.tau <= .03 * dt:
-            return self._make_zero_step(shape_in, shape_out, dt, rng, y0=y0)
+            return self._make_zero_step(
+                shape_in, shape_out, dt, rng, y0=y0, dtype=dtype)
         return super(Lowpass, self).make_step(
-            shape_in, shape_out, dt, rng, y0=y0, **kwargs)
+            shape_in, shape_out, dt, rng, y0=y0, dtype=dtype, **kwargs)
 
 
 class Alpha(LinearFilter):
@@ -295,12 +302,14 @@ class Alpha(LinearFilter):
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.tau)
 
-    def make_step(self, shape_in, shape_out, dt, rng, y0=None, **kwargs):
+    def make_step(self, shape_in, shape_out, dt, rng, y0=None,
+                  dtype=np.float64, **kwargs):
         # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
         if self.tau <= .03 * dt:
-            return self._make_zero_step(shape_in, shape_out, dt, rng, y0=y0)
+            return self._make_zero_step(
+                shape_in, shape_out, dt, rng, y0=y0, dtype=dtype)
         return super(Alpha, self).make_step(
-            shape_in, shape_out, dt, rng, y0=y0, **kwargs)
+            shape_in, shape_out, dt, rng, y0=y0, dtype=dtype, **kwargs)
 
 
 class Triangle(Synapse):
@@ -319,19 +328,20 @@ class Triangle(Synapse):
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.t)
 
-    def make_step(self, shape_in, shape_out, dt, rng, y0=None):
+    def make_step(self, shape_in, shape_out, dt, rng, y0=None,
+                  dtype=np.float64):
         assert shape_in == shape_out
 
         n_taps = int(np.round(self.t / float(dt))) + 1
-        num = np.arange(n_taps, 0, -1, dtype=float)
+        num = np.arange(n_taps, 0, -1, dtype=np.float64)
         num /= num.sum()
 
         # Minimal multiply implementation finds the difference between
         # coefficients and subtracts a scaled signal at each time step.
-        n0, ndiff = num[0], num[-1]
+        n0, ndiff = num[0].astype(dtype), num[-1].astype(dtype)
         x = collections.deque(maxlen=n_taps)
 
-        output = np.zeros(shape_out)
+        output = np.zeros(shape_out, dtype=dtype)
         if y0 is not None:
             output[:] = y0
 
