@@ -1,15 +1,3 @@
-.. image:: https://travis-ci.org/nengo/nengo.png?branch=master
-  :target: https://travis-ci.org/nengo/nengo
-  :alt: Travis-CI build status
-
-.. image:: https://coveralls.io/repos/nengo/nengo/badge.png?branch=master
-  :target: https://coveralls.io/r/nengo/nengo?branch=master
-  :alt: Test coverage
-
-.. image:: https://requires.io/github/nengo/nengo/requirements.png?branch=master
-  :target: https://requires.io/github/nengo/nengo/requirements/?branch=master
-  :alt: Requirements Status
-
 .. image:: https://img.shields.io/pypi/v/nengo.svg
   :target: https://pypi.python.org/pypi/nengo
   :alt: Latest PyPI version
@@ -17,6 +5,19 @@
 .. image:: https://img.shields.io/pypi/dm/nengo.svg
   :target: https://pypi.python.org/pypi/nengo
   :alt: Number of PyPI downloads
+
+.. image:: https://img.shields.io/travis/nengo/nengo/master.svg
+  :target: https://travis-ci.org/nengo/nengo
+  :alt: Travis-CI build status
+
+.. image:: https://ci.appveyor.com/api/projects/status/8ou34p2bgqf2qjqh/branch/master?svg=true
+  :target: https://ci.appveyor.com/project/nengo/nengo
+  :alt: AppVeyor build status
+
+.. image:: https://img.shields.io/coveralls/nengo/nengo/master.svg
+  :target: https://coveralls.io/r/nengo/nengo?branch=master
+  :alt: Test coverage
+
 
 ********************************************
 Nengo: Large-scale brain modelling in Python
