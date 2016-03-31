@@ -168,6 +168,7 @@ class DecoderCache(object):
     _INDEX = 'index'
     _LEGACY = 'legacy.txt'
     _LEGACY_VERSION = 1
+    _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 
     def __init__(self, readonly=False, cache_dir=None):
         self.readonly = readonly
@@ -284,16 +285,21 @@ class DecoderCache(object):
         legacy_file = os.path.join(self.cache_dir, self._LEGACY)
         if os.path.exists(legacy_file):
             with open(legacy_file, 'r') as lf:
-                version = int(lf.read().strip())
+                text = lf.read()
+            try:
+                lv, pp = tuple(int(x.strip()) for x in text.split('.'))
+            except ValueError:
+                # Will be raised with old legacy.txt format
+                lv = pp = -1
         else:
-            version = -1
-        return version == self._LEGACY_VERSION
+            lv = pp = -1
+        return lv == self._LEGACY_VERSION and pp == self._PICKLE_PROTOCOL
 
     def _write_legacy_file(self):
         """Writes a legacy file, indicating that legacy files do not exist."""
         legacy_file = os.path.join(self.cache_dir, self._LEGACY)
         with open(legacy_file, 'w') as lf:
-            lf.write("%d\n" % self._LEGACY_VERSION)
+            lf.write("%d.%d\n" % (self._LEGACY_VERSION, self._PICKLE_PROTOCOL))
 
     def _remove_legacy_files(self):
         """Remove files from now invalid locations in the cache.
