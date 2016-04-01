@@ -19,15 +19,15 @@ class Synapse(Process):
         super(Synapse, self).__init__()
         self.analog = analog
 
-    def filt(self, x, dt=1., axis=0, y0=None, copy=True, filtfilt=False):
+    def filt(self, x, dt=None, axis=0, y0=None, copy=True, filtfilt=False):
         """Filter ``x`` with this synapse.
 
         Parameters
         ----------
         x : array_like
             The signal to filter.
-        dt : float, optional (default: 1)
-            The time-step of the input signal for analog synapses (default: 1).
+        dt : float, optional (default: ``self.default_dt``)
+            The time-step of the input signal for analog synapses.
         axis : integer, optional (default: 0)
             The axis along which to filter.
         y0 : array_like, optional (default: x0)
@@ -41,10 +41,7 @@ class Synapse(Process):
         """
         # This function is very similar to `Process.apply`, but allows for
         # a) filtering along any axis, and b) zero-phase filtering (filtfilt).
-
-        if self.analog and dt is None:
-            raise ValueError("`dt` must be provided for analog synapses.")
-
+        dt = self.default_dt if dt is None else dt
         filtered = np.array(x, copy=copy)
         filt_view = np.rollaxis(filtered, axis=axis)  # rolled view on filtered
 
