@@ -209,11 +209,12 @@ class Process(FrozenObject):
     default_dt = NumberParam('default_dt', low=0, low_open=True)
     seed = IntParam('seed', low=0, high=maxint, optional=True)
 
-    def __init__(self, default_size_in=0, default_size_out=1, seed=None):
+    def __init__(self, default_size_in=0, default_size_out=1,
+                 default_dt=0.001, seed=None):
         super(Process, self).__init__()
         self.default_size_in = default_size_in
         self.default_size_out = default_size_out
-        self.default_dt = 0.001
+        self.default_dt = default_dt
         self.seed = seed
 
     def get_rng(self, rng):

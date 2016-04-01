@@ -15,8 +15,10 @@ from nengo.utils.numpy import as_shape
 class Synapse(Process):
     """Abstract base class for synapse objects"""
 
-    def __init__(self, analog=True):
-        super(Synapse, self).__init__()
+    def __init__(self, analog=True, **kwargs):
+        kwargs.setdefault('default_size_in', 1)
+        kwargs.setdefault('default_size_out', kwargs['default_size_in'])
+        super(Synapse, self).__init__(**kwargs)
         self.analog = analog
 
     def filt(self, x, dt=None, axis=0, y0=None, copy=True, filtfilt=False):
@@ -98,8 +100,8 @@ class LinearFilter(Synapse):
     den = NdarrayParam('den', shape='*')
     analog = BoolParam('analog')
 
-    def __init__(self, num, den, analog=True):
-        super(LinearFilter, self).__init__(analog=analog)
+    def __init__(self, num, den, analog=True, **kwargs):
+        super(LinearFilter, self).__init__(analog=analog, **kwargs)
         self.num = num
         self.den = den
 
@@ -254,8 +256,8 @@ class Lowpass(LinearFilter):
     """
     tau = NumberParam('tau', low=0)
 
-    def __init__(self, tau):
-        super(Lowpass, self).__init__([1], [tau, 1])
+    def __init__(self, tau, **kwargs):
+        super(Lowpass, self).__init__([1], [tau, 1], **kwargs)
         self.tau = tau
 
     def __repr__(self):
@@ -292,8 +294,8 @@ class Alpha(LinearFilter):
     """
     tau = NumberParam('tau', low=0)
 
-    def __init__(self, tau):
-        super(Alpha, self).__init__([1], [tau**2, 2*tau, 1])
+    def __init__(self, tau, **kwargs):
+        super(Alpha, self).__init__([1], [tau**2, 2*tau, 1], **kwargs)
         self.tau = tau
 
     def __repr__(self):
@@ -318,8 +320,8 @@ class Triangle(Synapse):
     """
     t = NumberParam('t', low=0)
 
-    def __init__(self, t):
-        super(Triangle, self).__init__(analog=True)
+    def __init__(self, t, **kwargs):
+        super(Triangle, self).__init__(analog=True, **kwargs)
         self.t = t
 
     def __repr__(self):

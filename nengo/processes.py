@@ -33,8 +33,8 @@ class WhiteNoise(Process):
     dist = DistributionParam('dist')
     scale = BoolParam('scale')
 
-    def __init__(self, dist=Gaussian(mean=0, std=1), scale=True, seed=None):
-        super(WhiteNoise, self).__init__(seed=seed)
+    def __init__(self, dist=Gaussian(mean=0, std=1), scale=True, **kwargs):
+        super(WhiteNoise, self).__init__(default_size_in=0, **kwargs)
         self.dist = dist
         self.scale = scale
 
@@ -85,8 +85,8 @@ class FilteredNoise(Process):
     scale = BoolParam('scale')
 
     def __init__(self, synapse=Lowpass(tau=0.005), synapse_kwargs={},
-                 dist=Gaussian(mean=0, std=1), scale=True, seed=None):
-        super(FilteredNoise, self).__init__(seed=seed)
+                 dist=Gaussian(mean=0, std=1), scale=True, **kwargs):
+        super(FilteredNoise, self).__init__(default_size_in=0, **kwargs)
         self.synapse = synapse
         self.synapse_kwargs = synapse_kwargs
         self.dist = dist
@@ -128,11 +128,11 @@ class BrownNoise(FilteredNoise):
     seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
-    def __init__(self, dist=Gaussian(mean=0, std=1), seed=None):
+    def __init__(self, dist=Gaussian(mean=0, std=1), **kwargs):
         super(BrownNoise, self).__init__(
             synapse=LinearFilter([1], [1, 0]),
             synapse_kwargs=dict(method='euler'),
-            dist=dist, seed=seed)
+            dist=dist, **kwargs)
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.dist)
@@ -166,8 +166,8 @@ class WhiteSignal(Process):
     high = NumberParam('high', low=0, low_open=True)
     rms = NumberParam('rms', low=0, low_open=True)
 
-    def __init__(self, period, high, rms=0.5, seed=None):
-        super(WhiteSignal, self).__init__(seed=seed)
+    def __init__(self, period, high, rms=0.5, **kwargs):
+        super(WhiteSignal, self).__init__(default_size_in=0, **kwargs)
         self.period = period
         self.high = high
         self.rms = rms
@@ -227,11 +227,11 @@ class PresentInput(Process):
     inputs = NdarrayParam('inputs', shape=('...',))
     presentation_time = NumberParam('presentation_time', low=0, low_open=True)
 
-    def __init__(self, inputs, presentation_time):
+    def __init__(self, inputs, presentation_time, **kwargs):
         self.inputs = inputs
         self.presentation_time = presentation_time
         super(PresentInput, self).__init__(
-            default_size_out=self.inputs[0].size)
+            default_size_in=0, default_size_out=self.inputs[0].size, **kwargs)
 
     def make_step(self, shape_in, shape_out, dt, rng):
         assert shape_in == (0,)
