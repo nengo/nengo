@@ -28,6 +28,13 @@ def is_param(obj):
     return isinstance(obj, Parameter)
 
 
+def params(obj):
+    """Return list with the names of all parameters of an object."""
+    return [name for name in dir(obj.__class__)
+            if is_param(getattr(obj.__class__, name)) and not
+            isinstance(getattr(obj.__class__, name), ObsoleteParam)]
+
+
 class Parameter(object):
     """Simple descriptor for storing configuration parameters.
 

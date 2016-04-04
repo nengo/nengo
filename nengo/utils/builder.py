@@ -8,7 +8,7 @@ import collections
 import numpy as np
 
 import nengo
-from nengo.exceptions import Unconvertible, ValidationError
+from nengo.exceptions import BuildError, Unconvertible, ValidationError
 
 
 def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
@@ -250,3 +250,26 @@ def find_all_io(connections):
         inputs[c.post_obj].append(c)
         outputs[c.pre_obj].append(c)
     return inputs, outputs
+
+
+def assert_no_deferred_params(model):
+    """Asserts that no parameters in a model are deferred.
+
+    A :class:`nengo.exceptions.BuildError` will be raised if a deferred
+    parameter is found.
+
+    Use this function at the beginning of the build code of a backend if it
+    does not support deferred parameters.
+
+    Parameters
+    ----------
+    model : :class:`nengo.Network`
+        Model to check for deferred parameters.
+    """
+    # Leads to circular import at top of the file.
+    from nengo.params import Deferral, params
+    for obj in model.all_objects:
+        for param in params(obj):
+            if isinstance(getattr(obj, param), Deferral):
+                raise BuildError(
+                    "Backend does not support deferred parameters.")
