@@ -93,7 +93,7 @@ def build_probe(model, probe):
     `.Simulator` appends to that list when running a simulation.
     """
 
-    probe = Undeferred(probe, args=(model, probe))
+    probe = Undeferred(probe, model.simulator, args=(model, probe))
 
     # find the right parent class in `objtypes`, using `isinstance`
     for nengotype, probeables in iteritems(probemap):

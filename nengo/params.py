@@ -1,5 +1,6 @@
 import collections
 import inspect
+import weakref
 
 import numpy as np
 
@@ -470,12 +471,21 @@ class FrozenObject(object):
 
 
 class Deferral(object):
-    def __init__(self, fn=None):
-        super(Deferral, self).__init__()
-        self.fn = fn
+    sim_specific = {}
 
-    def __call__(self, *args, **kwargs):
-        return self.fn(*args, **kwargs)
+    def __init__(self, default_fn=None):
+        super(Deferral, self).__init__()
+        self._default_fn = default_fn
+
+    def default_fn(self, *args, **kwargs):
+        return self._default_fn(*args, **kwargs)
+
+    @classmethod
+    def register(cls, sim, fn):
+        cls.sim_specific[(cls, sim)] = fn
+
+    def get_deferral_fn(self, sim):
+        return self.sim_specific.get((self.__class__, sim), self.default_fn)
 
 
 class Deferrable(Parameter):
@@ -510,12 +520,21 @@ class Deferrable(Parameter):
 
 
 class Undeferred(object):
-    def __init__(self, inst, args=None, kwargs=None, cache=None):
+    sim_cache = weakref.WeakKeyDictionary()
+
+    def __init__(self, inst, sim, args=None, kwargs=None, cache=None):
         super(Undeferred, self).__init__()
         self.inst = inst
+        self.sim = weakref.ref(sim) if sim is not None else None
+        self.sim_class = sim.__class__ if sim is not None else None
         self.args = tuple() if args is None else args
         self.kwargs = {} if kwargs is None else kwargs
         self.cache = {} if cache is None else cache
+
+        if sim is not None:
+            if sim not in Undeferred.sim_cache:
+                Undeferred.sim_cache[sim] = {}
+            Undeferred.sim_cache[sim][inst] = self
 
     def __hash__(self):
         return hash(super(Undeferred, self).__getattribute__('inst'))
@@ -525,6 +544,10 @@ class Undeferred(object):
 
     def __getattribute__(self, name):
         inst = super(Undeferred, self).__getattribute__('inst')
+        sim = super(Undeferred, self).__getattribute__('sim')
+        if sim is not None:
+            sim = sim()  # resolve weak reference
+        sim_class = super(Undeferred, self).__getattribute__('sim_class')
         args = super(Undeferred, self).__getattribute__('args')
         kwargs = super(Undeferred, self).__getattribute__('kwargs')
         cache = super(Undeferred, self).__getattribute__('cache')
@@ -533,8 +556,13 @@ class Undeferred(object):
             return cache[name]
 
         attr = getattr(inst, name)
+        if sim is not None:
+            try:
+                return Undeferred.sim_cache[sim][attr]
+            except (TypeError, KeyError):
+                pass
         if isinstance(attr, Deferral):
-            value = attr(*args, **kwargs)
+            value = attr.get_deferral_fn(sim_class)(*args, **kwargs)
             getattr(inst.__class__, name).validate(inst, value)
             cache[name] = value
             return value

@@ -194,7 +194,8 @@ def build_connection(model, conn):
     """
 
     deferred = {}
-    conn = Undeferred(conn, args=(model, conn), cache=deferred)
+    conn = Undeferred(
+        conn, model.simulator, args=(model, conn), cache=deferred)
 
     # Create random number generator
     rng = np.random.RandomState(model.seeds[conn])

@@ -29,7 +29,7 @@ def build_node(model, node):
     Sets ``model.params[node]`` to ``None``.
     """
 
-    node = Undeferred(node, args=(model, node))
+    node = Undeferred(node, model.simulator, args=(model, node))
 
     # input signal
     if not is_array_like(node.output) and node.size_in > 0:

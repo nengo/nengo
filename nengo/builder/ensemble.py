@@ -143,7 +143,7 @@ def build_ensemble(model, ens):
     """
 
     deferred = {}
-    ens = Undeferred(ens, args=(model, ens), cache=deferred)
+    ens = Undeferred(ens, model.simulator, args=(model, ens), cache=deferred)
 
     # Create random number generator
     rng = np.random.RandomState(model.seeds[ens])
