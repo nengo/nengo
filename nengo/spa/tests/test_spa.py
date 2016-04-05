@@ -96,7 +96,7 @@ def test_spa_get():
 def test_spa_vocab():
     # create a model without a vocab and check that it is empty
     model = spa.SPA()
-    assert model._default_vocabs == {}
+    assert len(model.vocabs) == 0
 
     # create a model with a vocab and check that it's filled
     va = spa.Vocabulary(16)
@@ -104,13 +104,13 @@ def test_spa_vocab():
     vb = spa.Vocabulary(32)
     vb.parse("SHOES")
     model = spa.SPA(vocabs=[va, vb])
-    assert model._default_vocabs[16].keys == ["PANTS"]
-    assert model._default_vocabs[32].keys == ["SHOES"]
+    assert model.vocabs[16].keys == ["PANTS"]
+    assert model.vocabs[32].keys == ["SHOES"]
 
     # warning on vocabs with duplicate dimensions
     vc = spa.Vocabulary(16)
     vc.parse("SOCKS")
     with warns(UserWarning):
         model = spa.SPA(vocabs=[va, vb, vc])
-    assert model._default_vocabs[16].keys == ["SOCKS"]
-    assert model._default_vocabs[32].keys == ["SHOES"]
+    assert model.vocabs[16].keys == ["SOCKS"]
+    assert model.vocabs[32].keys == ["SHOES"]

@@ -1,3 +1,4 @@
+from collections import Mapping
 import warnings
 
 import numpy as np
@@ -480,15 +481,64 @@ class Vocabulary(object):
         return subset
 
 
-class VocabularyParam(nengo.params.Parameter):
-    """Can be a Vocabulary."""
+class VocabularySet(Mapping):
+    """Maps dimensionalities to corresponding vocabularies."""
+    def __init__(self, vocabs=None, rng=None):
+        if vocabs is None:
+            vocabs = []
+        self.rng = rng
 
-    def validate(self, instance, vocab):
-        super(VocabularyParam, self).validate(instance, vocab)
+        self._vocabs = {}
+        for vo in vocabs:
+            self.add(vo)
 
-        if vocab is not None and not isinstance(vocab, Vocabulary):
-            raise ValidationError("Must be of type 'Vocabulary' (got type %r)."
-                                  % type(vocab).__name__,
-                                  attr=self.name, obj=instance)
+    def add(self, vocab):
+        if vocab.dimensions in self._vocabs:
+            warnings.warn("Duplicate vocabularies with dimension %d. "
+                          "Using the last entry in the vocab list with "
+                          "that dimensionality." % (vocab.dimensions))
+        self._vocabs[vocab.dimensions] = vocab
 
-        return vocab
+    def __delitem__(self, dimensions):
+        del self._vocabs[dimensions]
+
+    def discard(self, vocab):
+        if isinstance(vocab, int):
+            del self._vocabs[vocab]
+        elif self._vocabs.get(vocab.dimensions, None) is vocab:
+            del self._vocabs[vocab.dimensions]
+
+    def __getitem__(self, dimensions):
+        return self._vocabs[dimensions]
+
+    def get_or_create(self, dimensions):
+        if dimensions not in self._vocabs:
+            self._vocabs[dimensions] = Vocabulary(dimensions, rng=self.rng)
+        return self._vocabs[dimensions]
+
+    def __iter__(self):
+        return iter(self._vocabs)
+
+    def __len__(self):
+        return len(self._vocabs)
+
+    def __contains__(self, vocab):
+        if isinstance(vocab, int):
+            return vocab in self._vocabs
+        else:
+            return (vocab.dimensions in self._vocabs and
+                    self._vocabs[vocab.dimensions] is vocab)
+
+
+class VocabularySetParam(nengo.params.Parameter):
+    """Can be a mapping from dimensions to vocabularies."""
+
+    def validate(self, instance, vocab_set):
+        super(VocabularySetParam, self).validate(instance, vocab_set)
+
+        if vocab_set is not None and not isinstance(vocab_set, VocabularySet):
+            raise ValidationError(
+                "Must be of type 'VocabularySet' (got type %r)."
+                % type(vocab_set).__name__, attr=self.name, obj=instance)
+
+        return vocab_set
