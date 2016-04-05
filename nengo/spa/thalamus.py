@@ -62,8 +62,11 @@ class Thalamus(Module):
                  neurons_cconv=200,
                  neurons_gate=40, threshold_gate=0.3, synapse_to_gate=0.002,
                  label=None, seed=None, add_to_container=None):
+        Module.__init__(self, label, seed, add_to_container)
 
-        self.bg = bg
+        # bg gets also added to the top level network, thus we have to
+        # circumvent the check that it gets only added once.
+        self.__dict__['bg'] = bg
         self.neurons_action = neurons_action
         self.mutual_inhibit = mutual_inhibit
         self.route_inhibit = route_inhibit
@@ -82,7 +85,6 @@ class Thalamus(Module):
         self.gates = {}     # gating ensembles per action (created as needed)
         self.channels = {}  # channels to pass transformed data between modules
 
-        Module.__init__(self, label, seed, add_to_container)
         nengo.networks.Thalamus(self.bg.actions.count,
                                 n_neurons_per_ensemble=self.neurons_action,
                                 mutual_inhib=self.mutual_inhibit,

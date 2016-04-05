@@ -2,25 +2,9 @@
 
 import numpy as np
 
-import nengo
 import nengo.utils.numpy as npext
 from nengo.exceptions import ValidationError
-from nengo.spa.vocab import VocabularyParam
 from nengo.utils.compat import is_iterable
-
-
-def enable_spa_params(model):
-    """Enables the SPA specific parameters on a model.
-
-    Parameters
-    ----------
-    model : Network
-        Model to activate SPA specific parameters for.
-    """
-
-    for obj_type in [nengo.Node, nengo.Ensemble]:
-        model.config[obj_type].set_param(
-            'vocab', VocabularyParam('vocab', default=None, optional=True))
 
 
 def similarity(data, vocab, normalize=False):
