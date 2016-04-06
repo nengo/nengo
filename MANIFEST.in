@@ -1,0 +1,25 @@
+global-include *.py
+include *.rst
+include *.sh
+include *.txt
+
+# Include this file, to ensure we can recreate source distributions
+include MANIFEST.in
+
+# Directories to include
+graft benchmarks
+graft docs
+graft examples
+graft nengo-data
+
+# Subdirectories to exclude, if they exist
+prune docs/_build
+prune dist
+
+# Patterns to exclude from any directory
+global-exclude *.git*
+global-exclude *.ipynb_checkpoints*
+global-exclude *.tox*
+
+# Exclude all bytecode
+global-exclude *.pyc *.pyo *.pyd

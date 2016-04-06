@@ -1,0 +1,3 @@
+[run]
+source = nengo
+omit = */tests/test*
