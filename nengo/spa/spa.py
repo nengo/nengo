@@ -1,6 +1,6 @@
 import numpy as np
 
-from nengo.spa.vocab import VocabularySet
+from nengo.spa.vocab import VocabularyMap
 from nengo.spa.module import Module
 
 
@@ -80,7 +80,7 @@ class SPA(Module):
         else:
             rng = None
         super(SPA, self).__init__(
-            label, seed, add_to_container, VocabularySet(vocabs, rng))
+            label, seed, add_to_container, VocabularyMap(vocabs, rng))
 
     def get_default_vocab(self, dimensions):
         """Return a Vocabulary with the desired dimensions.

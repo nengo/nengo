@@ -3,7 +3,7 @@ import numpy as np
 import nengo
 from nengo.config import Config
 from nengo.exceptions import SpaModuleError
-from nengo.spa.vocab import VocabularySet, VocabularySetParam
+from nengo.spa.vocab import VocabularyMap, VocabularyMapParam
 from nengo.utils.compat import iteritems
 
 
@@ -18,7 +18,7 @@ class Module(nengo.Network):
     (object, Vocabulary) pair.  The object can be a Node or an Ensemble.
     """
 
-    vocabs = VocabularySetParam('vocabs', default=None, optional=False)
+    vocabs = VocabularyMapParam('vocabs', default=None, optional=False)
 
     def __init__(
             self, label=None, seed=None, add_to_container=None, vocabs=None):
@@ -32,7 +32,7 @@ class Module(nengo.Network):
                     rng = np.random.RandomState(seed)
                 else:
                     rng = None
-                vocabs = VocabularySet(rng=rng)
+                vocabs = VocabularyMap(rng=rng)
         self.vocabs = vocabs
         self.config[Module].vocabs = vocabs
 

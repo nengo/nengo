@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from nengo.exceptions import SpaParseError, ValidationError
-from nengo.spa import Vocabulary, VocabularySet
+from nengo.spa import Vocabulary, VocabularyMap
 from nengo.utils.testing import warns
 
 
@@ -252,7 +252,7 @@ def test_vocabulary_set(rng):
     v8 = Vocabulary(8)
     v16 = Vocabulary(16)
     v32 = Vocabulary(32)
-    vs = VocabularySet([v8, v16], rng=rng)
+    vs = VocabularyMap([v8, v16], rng=rng)
 
     # Behaviour common to set and dict
     assert len(vs) == 2

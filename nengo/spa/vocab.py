@@ -484,7 +484,7 @@ class Vocabulary(object):
         return subset
 
 
-class VocabularySet(Mapping):
+class VocabularyMap(Mapping):
     def __init__(self, vocabs=None, rng=None):
         if vocabs is None:
             vocabs = []
@@ -532,15 +532,15 @@ class VocabularySet(Mapping):
                     self._vocabs[vocab.dimensions] is vocab)
 
 
-class VocabularySetParam(nengo.params.Parameter):
+class VocabularyMapParam(nengo.params.Parameter):
     """Can be a mapping from dimensions to vocabularies."""
 
     def validate(self, instance, vocab_set):
-        super(VocabularySetParam, self).validate(instance, vocab_set)
+        super(VocabularyMapParam, self).validate(instance, vocab_set)
 
-        if vocab_set is not None and not isinstance(vocab_set, VocabularySet):
+        if vocab_set is not None and not isinstance(vocab_set, VocabularyMap):
             raise ValidationError(
-                "Must be of type 'VocabularySet' (got type %r)."
+                "Must be of type 'VocabularyMap' (got type %r)."
                 % vocab_set.__class__.__name__, attr=self.name, obj=instance)
 
         return vocab_set
