@@ -1,0 +1,46 @@
+from nengo.builder.builder import Builder
+from nengo.builder.operator import Operator
+from nengo.processes import Process
+
+
+class SimProcess(Operator):
+    """Simulate a Process object."""
+    def __init__(self, process, input, output, inc=False):
+        self.process = process
+        self.input = input
+        self.output = output
+        self.inc = inc
+
+        if inc:
+            self.sets = []
+            self.incs = [output] if output is not None else []
+        else:
+            self.sets = [output] if output is not None else []
+            self.incs = []
+        self.reads = [input] if input is not None else []
+        self.updates = []
+
+    def make_step(self, signals, dt, rng):
+        t = signals['__time__']
+        input = signals[self.input] if self.input is not None else None
+        output = signals[self.output] if self.output is not None else None
+        size_in = input.size if input is not None else 0
+        size_out = output.size if output is not None else 0
+        step_f = self.process.make_step(size_in, size_out, dt, rng)
+        inc = self.inc
+
+        def step():
+            result = (step_f(t.item(), input) if input is not None else
+                      step_f(t.item()))
+            if output is not None:
+                if inc:
+                    output[...] += result
+                else:
+                    output[...] = result
+
+        return step
+
+
+@Builder.register(Process)
+def build_process(model, process, sig_in=None, sig_out=None, inc=False):
+    model.add_op(SimProcess(process, sig_in, sig_out, inc=inc))

@@ -1,0 +1,63 @@
+language: c
+sudo: false
+notifications:
+  email:
+    - tbekolay@gmail.com
+
+env:
+  global:
+    - NUMPY="1.9"
+    - SETUP_CMD="test -a 'nengo -n 2 -v'"
+    - EXTRA_CMD=""
+    - CONDA_DEPS="matplotlib ipython-notebook pygments pytest"
+    - PIP_DEPS="mistune pytest-xdist"
+
+matrix:
+  include:
+    - env: >
+        PYTHON="2.6"
+        CONDA_DEPS="$CONDA_DEPS ordereddict pygments"
+        PIP_DEPS="$PIP_DEPS counter IPython==1.2.1"
+    - env: >
+        PYTHON="2.7"
+        SETUP_CMD="test -a '--cov-config .coveragerc --cov nengo nengo -n 2 -v'"
+        EXTRA_CMD="coveralls"
+        CONDA_DEPS="$CONDA_DEPS coverage"
+        PIP_DEPS="$PIP_DEPS pytest-cov coveralls"
+    - env: >
+        PYTHON="2.7"
+        SETUP_CMD=""
+        EXTRA_CMD="flake8 -v nengo"
+        CONDA_DEPS="flake8"
+        PIP_DEPS=""
+    - env: PYTHON="2.7" NUMPY="1.6"
+    - env: PYTHON="2.7" NUMPY="1.7"
+    - env: PYTHON="2.7" NUMPY="1.8"
+    - env: PYTHON="3.3"
+    - env: PYTHON="3.4"
+
+# Setup Miniconda
+before_install:
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - conda create -q -n test python=$PYTHON pip
+  - source activate test
+
+# Install packages with conda, then pip
+install:
+  - if [[ -n $NUMPY ]]; then export CONDA_DEPS="$CONDA_DEPS numpy=$NUMPY"; fi
+  - if [[ -n $CONDA_DEPS ]]; then conda install $CONDA_DEPS; fi
+  - if [[ -n $PIP_DEPS ]]; then eval pip install "$PIP_DEPS"; fi
+
+# Run the tests
+script:
+  - "echo 'backend : Agg' > matplotlibrc"
+  - if [[ -n $SETUP_CMD ]]; then
+      python setup.py -q install;
+      eval python setup.py "$SETUP_CMD";
+    fi
+  - if [[ -n $EXTRA_CMD ]]; then $EXTRA_CMD; fi

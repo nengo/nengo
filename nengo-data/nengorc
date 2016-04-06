@@ -1,0 +1,47 @@
+### NENGORC FORMAT
+
+# Nengo RC settings will be read from the following files.
+# Files listed first have higher precendence.
+#
+# 1. nengorc in the current directory.
+#    This is useful for settings specific to a single project.
+# 2. A operating system specific file in the user's home directory.
+#    This is useful for settings you want to apply to all Nengo projects.
+#    - Windows: %userprofile%\nengo\nengorc
+#    - Other (OS X, Linux): ~/.config/nengo/nengorc
+# 3. INSTALL/nengo-data/nengorc (where INSTALL is the installation directory
+#    of the Nengo package; this is usually something like
+#    /usr/lib/pythonX.X/site-packages or C:\PythonXX\Lib\site-packages).
+#
+# This example file lists the settings supported by core Nengo with
+# a description, the accepted data type and an example line setting the option
+# to its default value (commented out).
+#
+# The RC file is divided into sections by lines containing the section name
+# in square brackets. Blanks lines, or lines starting with # or, are ignored,
+# as are trailing comments. A setting is set by giving the name followed by
+# a : or = and the value.
+#
+# [example_section]
+# setting: value  # optional comment
+
+### CONFIGURATION BEGINS HERE
+
+# Settings for the decoder cache
+[decoder_cache]
+
+# Enable or disable the cache. (boolean)
+#enabled: True
+
+# Set the cache to read-only. In read-only mode cached decoders will be
+# loaded, but no newly calculated decoders will be written to the cache.
+# (boolean)
+#readonly: False
+
+# Set the maximum cache size. Whenever the cache exceeds this limit, cached
+# decoders will be deleted, beginning with the oldest, until the limit
+# is met again. Please specify the unit (e.g., 512 MB). (string)
+#size: 512 MB
+
+# Path where the cached decoders will be stored. (string)
+#path: ~/.cache/nengo/decoders  # Linux default

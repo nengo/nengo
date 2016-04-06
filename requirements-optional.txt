@@ -1,0 +1,2 @@
+scikit-learn
+scipy>=0.13.0
