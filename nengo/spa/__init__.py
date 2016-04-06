@@ -13,4 +13,4 @@ from .spa import SPA
 from .state import State
 from .thalamus import Thalamus
 from .utils import similarity
-from .vocab import Vocabulary, VocabularySet
+from .vocab import Vocabulary, VocabularyMap
