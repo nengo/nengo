@@ -1,4 +1,0 @@
-matplotlib>=1.4
-IPython[nbconvert]>=2.3
-pytest
-pytest-xdist
