@@ -50,7 +50,7 @@ def test_vocab_config():
     with spa.Module() as model:
         with spa.Module() as model.shared_vocabs:
             pass
-        with spa.Module(vocabs=spa.VocabularySet()) as model.non_shared_vocabs:
+        with spa.Module(vocabs=spa.VocabularyMap()) as model.non_shared_vocabs:
             pass
 
     assert model.shared_vocabs.vocabs is model.vocabs
