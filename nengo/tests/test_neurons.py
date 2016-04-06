@@ -56,9 +56,10 @@ def test_lif(Simulator, plt, rng, logger):
         voltage_probe = nengo.Probe(ens.neurons, 'voltage')
         ref_probe = nengo.Probe(ens.neurons, 'refractory_time')
 
+    sim = Simulator(m, dt=dt)
+
     t_final = 1.0
-    with Simulator(m, dt=dt) as sim:
-        sim.run(t_final)
+    sim.run(t_final)
 
     i = 3
     plt.subplot(311)
@@ -97,8 +98,8 @@ def test_lif_min_voltage(Simulator, plt, min_voltage, seed):
         p_val = nengo.Probe(ens, synapse=0.01)
         p_voltage = nengo.Probe(ens.neurons, 'voltage')
 
-    with Simulator(model) as sim:
-        sim.run(0.5)
+    sim = Simulator(model)
+    sim.run(0.5)
 
     plt.subplot(2, 1, 1)
     plt.plot(sim.trange(), sim.data[p_val])
@@ -124,9 +125,9 @@ def test_lif_zero_tau_ref(Simulator):
                              neuron_type=nengo.LIF(tau_ref=0))
         nengo.Connection(nengo.Node(output=10), ens)
         p = nengo.Probe(ens.neurons)
-    with Simulator(m) as sim:
-        sim.run(0.02)
-    assert np.allclose(sim.data[p][1:], max_rate)
+    sim = Simulator(m)
+    sim.run(0.02)
+    assert np.all(sim.data[p][1:] == max_rate)
 
 
 def test_alif_rate(Simulator, plt):
@@ -148,8 +149,8 @@ def test_alif_rate(Simulator, plt):
         ap = nengo.Probe(a.neurons)
 
     dt = 1e-3
-    with Simulator(model, dt=dt) as sim:
-        sim.run(2.)
+    sim = Simulator(model, dt=dt)
+    sim.run(2.)
 
     t = sim.trange()
     rates = sim.data[ap]
@@ -198,8 +199,8 @@ def test_alif(Simulator, plt):
         bp = nengo.Probe(b.neurons)
 
     dt = 1e-3
-    with Simulator(model, dt=dt) as sim:
-        sim.run(2.)
+    sim = Simulator(model, dt=dt)
+    sim.run(2.)
 
     t = sim.trange()
     a_rates = sim.data[ap]
@@ -230,7 +231,7 @@ def test_izhikevich(Simulator, plt, seed, rng):
     simulated in Nengo (but doesn't test any properties of them).
     """
     with nengo.Network() as m:
-        u = nengo.Node(output=WhiteSignal(0.6, high=10), size_out=1)
+        u = nengo.Node(output=WhiteSignal(0.6, 8), size_out=1)
 
         # Seed the ensembles (not network) so we get the same sort of neurons
         ens_args = {'n_neurons': 4, 'dimensions': 1, 'seed': seed}
@@ -255,8 +256,8 @@ def test_izhikevich(Simulator, plt, seed, rng):
             spikes[ens] = nengo.Probe(ens.neurons)
         up = nengo.Probe(u)
 
-    with Simulator(m, seed=seed+1) as sim:
-        sim.run(0.6)
+    sim = Simulator(m, seed=seed+1)
+    sim.run(0.6)
     t = sim.trange()
 
     def plot(ens, title, ix):
@@ -279,12 +280,9 @@ def test_izhikevich(Simulator, plt, seed, rng):
 
 def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     """Neurons should not wildly change with different dt."""
-    freq = 10 * (2 * np.pi)
-    input_signal = lambda t: [np.sin(freq*t), np.cos(freq*t)]
-
     with nengo.Network(seed=seed) as m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
-        u = nengo.Node(input_signal, size_out=2)
+        u = nengo.Node(output=WhiteSignal(0.1, 5), size_out=2)
         pre = nengo.Ensemble(60, dimensions=2)
         square = nengo.Ensemble(60, dimensions=2)
         nengo.Connection(u, pre)
@@ -299,8 +297,8 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     dts = (0.0001, 0.001)
     colors = ('b', 'g', 'r')
     for c, dt in zip(colors, dts):
-        with Simulator(m, dt=dt, seed=seed+1) as sim:
-            sim.run(0.1)
+        sim = Simulator(m, dt=dt, seed=seed+1)
+        sim.run(0.1)
         t = sim.trange(dt=0.001)
         activity_data.append(sim.data[activity_p])
         out_data.append(sim.data[out_p])
@@ -326,61 +324,35 @@ def test_reset(Simulator, nl_nodirect, seed, rng):
     m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
-        u = nengo.Node(WhiteSignal(0.3, high=10), size_out=2)
+        u = nengo.Node(output=WhiteSignal(0.15, 5), size_out=2)
         ens = nengo.Ensemble(60, dimensions=2)
         square = nengo.Ensemble(60, dimensions=2)
         nengo.Connection(u, ens)
-        nengo.Connection(ens, square, function=lambda x: x**2,
+        nengo.Connection(ens, square, function=lambda x: x ** 2,
                          solver=LstsqL2nz(weights=True))
-        square_p = nengo.Probe(square, synapse=0.01)
+        square_p = nengo.Probe(square, synapse=0.1)
 
-    with Simulator(m, seed=seed+1) as sim:
-        sim.run(0.1)
-        sim.run(0.2)
-        t1 = sim.trange()
-        square1 = np.array(sim.data[square_p])
+    sim = Simulator(m, seed=seed+1)
+    sim.run(0.1)
+    sim.run(0.2)
 
-        sim.reset()
-        sim.run(0.3)
+    first_t = sim.trange()
+    first_square_p = np.array(sim.data[square_p], copy=True)
 
-    assert np.allclose(sim.trange(), t1)
-    assert np.allclose(sim.data[square_p], square1)
+    sim.reset()
+    sim.run(0.3)
+
+    assert np.all(sim.trange() == first_t)
+    assert np.all(sim.data[square_p] == first_square_p)
 
 
 def test_neurontypeparam():
     """NeuronTypeParam must be a neuron type."""
     class Test(object):
-        ntp = NeuronTypeParam('ntp', default=None)
+        ntp = NeuronTypeParam(default=None)
 
     inst = Test()
     inst.ntp = nengo.LIF()
     assert isinstance(inst.ntp, nengo.LIF)
     with pytest.raises(ValueError):
         inst.ntp = 'a'
-
-
-def test_frozen():
-    """Test attributes inherited from FrozenObject"""
-    a = nengo.LIF()
-    b = nengo.LIF()
-    c = nengo.LIF(tau_rc=0.3)
-    d = nengo.neurons.Izhikevich()
-
-    assert hash(a) == hash(a)
-    assert hash(b) == hash(b)
-    assert hash(c) == hash(c)
-    assert hash(d) == hash(d)
-
-    assert a == b
-    assert hash(a) == hash(b)
-    assert a != c
-    assert hash(a) != hash(c)  # not guaranteed, but highly likely
-    assert b != c
-    assert hash(b) != hash(c)  # not guaranteed, but highly likely
-    assert a != d
-    assert hash(a) != hash(d)  # not guaranteed, but highly likely
-
-    with pytest.raises(ValueError):
-        a.tau_rc = 0.3
-    with pytest.raises(ValueError):
-        d.coupling = 8

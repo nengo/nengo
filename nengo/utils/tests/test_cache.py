@@ -11,8 +11,6 @@ def test_human2bytes():
     assert human2bytes('1 MB') == 1048576
     assert human2bytes('1.5 GB') == 1610612736
     assert human2bytes('14 B') == 14
-    assert human2bytes('1B') == 1
-    assert human2bytes('1   B') == 1
 
 
 def test_byte_align():

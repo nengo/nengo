@@ -1,12 +1,9 @@
 """Expressions and Effects used to define all Actions."""
 
 import re
-import warnings
-from collections import OrderedDict
 
-from nengo.exceptions import SpaParseError
 from nengo.spa.action_objects import Symbol, Source, DotProduct, Summation
-from nengo.utils.compat import iteritems
+from nengo.utils.compat import iteritems, OrderedDict
 
 
 class Expression(object):
@@ -40,11 +37,11 @@ class Expression(object):
         try:
             self.expression = eval(sanitized_exp, {}, self)
         except NameError as e:
-            raise SpaParseError("Unknown module in expression '%s': %s" %
-                                (expression, e))
+            raise NameError("Unknown module in expression '%s': %s" %
+                            (expression, e))
         except TypeError as e:
-            raise SpaParseError("Invalid operator in expression '%s': %s" %
-                                (expression, e))
+            raise TypeError("Invalid operator in expression '%s': %s" %
+                            (expression, e))
 
         # normalize the result to a summation
         if not isinstance(self.expression, Summation):
@@ -53,8 +50,8 @@ class Expression(object):
     def validate_string(self, text):
         m = re.search('~[^a-zA-Z]', text)
         if m is not None:
-            raise SpaParseError("~ is only permitted before names (e.g., DOG) "
-                                "or modules (e.g., vision): %s" % text)
+            raise ValueError("~ is only permitted before names (e.g., DOG) "
+                             "or modules (e.g., vision): %s" % text)
 
     def __getitem__(self, key):
         # this gets used by the eval in the constructor to create new
@@ -62,8 +59,7 @@ class Expression(object):
         item = self.objects.get(key, None)
         if item is None:
             if not key[0].isupper():
-                raise SpaParseError(
-                    "Semantic pointers must begin with a capital letter.")
+                raise KeyError("Semantic pointers must begin with a capital")
             item = Symbol(key)
             self.objects[key] = item
         return item
@@ -99,15 +95,13 @@ class Effect(object):
         for lvalue, rvalue in re.findall("(.*?)=([^=]*)(?:,|$)", effect):
             sink = lvalue.strip()
             if sink not in sinks:
-                raise SpaParseError(
-                    "Left-hand module '%s' from effect '%s=%s' "
-                    "is not defined." %
-                    (lvalue, lvalue, rvalue))
+                raise NameError("Left-hand module '%s' from effect '%s=%s' "
+                                "is not defined." %
+                                (lvalue, lvalue, rvalue))
             if sink in self.effect:
-                raise SpaParseError(
-                    "Left-hand module '%s' from effect '%s=%s' "
-                    "is assigned to multiple times in '%s'." %
-                    (lvalue, lvalue, rvalue, effect))
+                raise ValueError("Left-hand module '%s' from effect '%s=%s' "
+                                 "is assigned to multiple times in '%s'." %
+                                 (lvalue, lvalue, rvalue, effect))
             self.effect[sink] = Expression(sources, rvalue)
 
     def __str__(self):
@@ -154,23 +148,13 @@ class Actions(object):
     The *args and **kwargs are treated as unnamed and named Actions,
     respectively.  The list of actions are only generated once process()
     is called, since it needs access to the list of module inputs and
-    outputs from the SPA object. The **kwargs are sorted alphabetically before
-    being processed.
+    outputs from the SPA object.
     """
 
     def __init__(self, *args, **kwargs):
         self.actions = None
         self.args = args
         self.kwargs = kwargs
-
-    def add(self, *args, **kwargs):
-        if self.actions is not None:
-            warnings.warn("The actions currently being added must be processed"
-                          " either by spa.BasalGanglia or spa.Cortical"
-                          " to be added to the model.")
-
-        self.args += args
-        self.kwargs.update(kwargs)
 
     @property
     def count(self):
@@ -184,9 +168,7 @@ class Actions(object):
         sources = list(spa.get_module_outputs())
         sinks = list(spa.get_module_inputs())
 
-        sorted_kwargs = sorted(self.kwargs.items())
-
         for action in self.args:
             self.actions.append(Action(sources, sinks, action, name=None))
-        for name, action in sorted_kwargs:
+        for name, action in iteritems(self.kwargs):
             self.actions.append(Action(sources, sinks, action, name=name))

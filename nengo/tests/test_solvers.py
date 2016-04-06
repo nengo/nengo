@@ -12,12 +12,12 @@ import nengo
 from nengo.dists import UniformHypersphere
 from nengo.utils.compat import range
 from nengo.utils.numpy import rms, norm
-from nengo.utils.stdlib import Timer
-from nengo.utils.testing import allclose
+from nengo.utils.testing import allclose, Timer
 from nengo.solvers import (
     cholesky, conjgrad, block_conjgrad, conjgrad_scipy, lsmr_scipy,
-    randomized_svd, Lstsq, LstsqNoise, LstsqL2, LstsqL2nz,
-    LstsqL1, LstsqDrop, Nnls, NnlsL2, NnlsL2nz)
+    Lstsq, LstsqNoise, LstsqL2, LstsqL2nz,
+    LstsqL1, LstsqDrop,
+    Nnls, NnlsL2, NnlsL2nz)
 
 
 def get_encoders(n_neurons, dims, rng=None):
@@ -71,11 +71,6 @@ def test_conjgrad(rng):
 @pytest.mark.parametrize('Solver', [
     Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqDrop])
 def test_decoder_solver(Solver, plt, rng):
-    if isinstance(Solver, tuple):
-        Solver, args, kwargs = Solver
-    else:
-        args, kwargs = (), {}
-
     dims = 1
     n_neurons = 100
     n_points = 500
@@ -86,7 +81,7 @@ def test_decoder_solver(Solver, plt, rng):
     train = get_eval_points(n_points, dims, rng=rng)
     Atrain = rates(np.dot(train, E))
 
-    D, _ = Solver(*args, **kwargs)(Atrain, train, rng=rng)
+    D, _ = Solver()(Atrain, train, rng=rng)
 
     test = get_eval_points(n_points, dims, rng=rng, sort=True)
     Atest = rates(np.dot(test, E))
@@ -120,8 +115,7 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
         # in-situ. They are tested more robustly elsewhere.
 
 
-@pytest.mark.parametrize('Solver', [
-    (LstsqL2, (), {'solver': randomized_svd}), LstsqL1])
+@pytest.mark.parametrize('Solver', [LstsqL1])
 def test_decoder_solver_extra(Solver, plt, rng):
     pytest.importorskip('sklearn')
     test_decoder_solver(Solver, plt, rng)
@@ -264,14 +258,14 @@ def test_compare_solvers(Simulator, plt, seed):
             names.append("%s(%s)" % (
                 solver.__class__.__name__, 'w' if solver.weights else 'd'))
 
-    with Simulator(model) as sim:
-        sim.run(tfinal)
+    sim = Simulator(model)
+    sim.run(tfinal)
     t = sim.trange()
 
     # ref = sim.data[up]
-    ref = nengo.Lowpass(0.02).filtfilt(sim.data[ap], dt=sim.dt)
+    ref = nengo.synapses.filtfilt(sim.data[ap], 0.02, dt=sim.dt)
     outputs = np.array([sim.data[probe][:, 0] for probe in probes]).T
-    outputs_f = nengo.Lowpass(0.02).filtfilt(outputs, dt=sim.dt)
+    outputs_f = nengo.synapses.filtfilt(outputs, 0.02, dt=sim.dt)
 
     close = allclose(t, ref, outputs_f,
                      atol=0.07, rtol=0, buf=0.1, delay=0.007,
@@ -318,8 +312,8 @@ def test_regularization(Simulator, nl_nodirect, plt):
                         probes[i, j, k, l] = nengo.Probe(
                             a, solver=Solver(reg=reg), synapse=synapse)
 
-    with Simulator(model) as sim:
-        sim.run(tfinal)
+    sim = Simulator(model)
+    sim.run(tfinal)
     t = sim.trange()
 
     ref = sim.data[up]
@@ -346,7 +340,7 @@ def test_regularization(Simulator, nl_nodirect, plt):
 
 @pytest.mark.slow
 @pytest.mark.noassertions
-def test_eval_points_static(plt, rng):
+def test_eval_points_static(Simulator, plt, rng):
     solver = LstsqL2()
 
     n = 100
@@ -448,11 +442,10 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
             with Timer() as timer:
                 sim = Simulator(model)
             sim.run(10 * filter)
-            sim.close()
 
             t = sim.trange()
-            xt = nengo.Lowpass(filter).filtfilt(sim.data[up], dt=sim.dt)
-            yt = nengo.Lowpass(filter).filtfilt(sim.data[ap], dt=sim.dt)
+            xt = nengo.synapses.filtfilt(sim.data[up], filter, dt=sim.dt)
+            yt = nengo.synapses.filtfilt(sim.data[ap], filter, dt=sim.dt)
             t0 = 5 * filter
             t1 = 7 * filter
             tmask = (t > t0) & (t < t1)

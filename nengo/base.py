@@ -1,16 +1,10 @@
-import sys
 import warnings
 
 import numpy as np
 
 from nengo.config import Config
-from nengo.exceptions import ValidationError
-from nengo.params import (
-    Default, FrozenObject, is_param, IntParam, NumberParam, Parameter,
-    StringParam, Unconfigurable)
-from nengo.rc import rc
-from nengo.utils.compat import is_integer, range, reraise, with_metaclass
-from nengo.utils.numpy import as_shape, maxint
+from nengo.params import Default, is_param, Parameter, Unconfigurable
+from nengo.utils.compat import with_metaclass
 
 
 class NetworkMember(type):
@@ -42,13 +36,6 @@ class NengoObject(with_metaclass(NetworkMember)):
     and object comparison require each object to have a unique ID.
     """
 
-    label = StringParam('label', default=None, optional=True)
-    seed = IntParam('seed', default=None, optional=True)
-
-    def __init__(self, label, seed):
-        self.label = label
-        self.seed = seed
-
     def _str(self, include_id):
         return "<%s%s%s>" % (
             self.__class__.__name__,
@@ -72,15 +59,14 @@ class NengoObject(with_metaclass(NetworkMember)):
                 SyntaxWarning)
         if val is Default:
             val = Config.default(type(self), name)
-
-        if rc.getboolean('exceptions', 'simplified'):
-            try:
-                super(NengoObject, self).__setattr__(name, val)
-            except ValidationError:
-                exc_info = sys.exc_info()
-                reraise(exc_info[0], exc_info[1], None)
-        else:
+        try:
             super(NengoObject, self).__setattr__(name, val)
+        except Exception as e:
+            arg0 = '' if len(e.args) == 0 else e.args[0]
+            arg0 = ("Validation error when setting '%s.%s': %s"
+                    % (self.__class__.__name__, name, arg0))
+            e.args = (arg0,) + e.args[1:]
+            raise
 
     def __getstate__(self):
         raise NotImplementedError("Nengo objects do not support pickling")
@@ -103,15 +89,15 @@ class ObjView(object):
     """Container for a slice with respect to some object.
 
     This is used by the __getitem__ of Neurons, Node, and Ensemble, in order
-    to pass slices of those objects to Connection. This is a notational
-    convenience for creating transforms. See Connection for details.
+    to pass slices of those objects to Connect. This is a notational
+    convenience for creating transforms. See Connect for details.
 
     Does not currently support any other view-like operations.
     """
 
     def __init__(self, obj, key=slice(None)):
         self.obj = obj
-        if is_integer(key):
+        if isinstance(key, int):
             # single slices of the form [i] should be cast into
             # slice objects for convenience
             if key == -1:
@@ -131,8 +117,8 @@ class ObjView(object):
         except IndexError:
             self.size_out = None
         if self.size_in is None and self.size_out is None:
-            raise ValidationError("Invalid slice '%s' of %s"
-                                  % (self.slice, self.obj), attr='key')
+            raise IndexError("Invalid slice '%s' of %s"
+                             % (self.slice, self.obj))
 
     def __getstate__(self):
         raise NotImplementedError("Nengo objects do not support pickling")
@@ -145,15 +131,16 @@ class ObjView(object):
 
     @property
     def _slice_string(self):
-        if isinstance(self.slice, slice):
+        if isinstance(self.slice, list):
+            sl_str = self.slice
+        else:
             sl_start = "" if self.slice.start is None else self.slice.start
             sl_stop = "" if self.slice.stop is None else self.slice.stop
             if self.slice.step is None:
-                return "%s:%s" % (sl_start, sl_stop)
+                sl_str = "%s:%s" % (sl_start, sl_stop)
             else:
-                return "%s:%s:%s" % (sl_start, sl_stop, self.slice.step)
-        else:
-            return str(self.slice)
+                sl_str = "%s:%s:%s" % (sl_start, sl_stop, self.slice.step)
+        return str(sl_str)
 
     def __str__(self):
         return "%s[%s]" % (self.obj, self._slice_string)
@@ -163,115 +150,19 @@ class ObjView(object):
 
 
 class NengoObjectParam(Parameter):
-    def __init__(self, name, optional=False, readonly=True,
+    def __init__(self, optional=False, readonly=True,
                  nonzero_size_in=False, nonzero_size_out=False):
         default = Unconfigurable  # These can't have defaults
         self.nonzero_size_in = nonzero_size_in
         self.nonzero_size_out = nonzero_size_out
-        super(NengoObjectParam, self).__init__(
-            name, default, optional, readonly)
+        super(NengoObjectParam, self).__init__(default, optional, readonly)
 
     def validate(self, instance, nengo_obj):
         from nengo.ensemble import Neurons
-        from nengo.connection import LearningRule
-        if not isinstance(nengo_obj, (
-                NengoObject, ObjView, Neurons, LearningRule)):
-            raise ValidationError("'%s' is not a Nengo object" % nengo_obj,
-                                  attr=self.name, obj=instance)
+        if not isinstance(nengo_obj, (NengoObject, Neurons, ObjView)):
+            raise ValueError("'%s' is not a Nengo object" % nengo_obj)
         if self.nonzero_size_in and nengo_obj.size_in < 1:
-            raise ValidationError("'%s' must have size_in > 0." % nengo_obj,
-                                  attr=self.name, obj=instance)
+            raise ValueError("'%s' must have size_in > 0." % nengo_obj)
         if self.nonzero_size_out and nengo_obj.size_out < 1:
-            raise ValidationError("'%s' must have size_out > 0." % nengo_obj,
-                                  attr=self.name, obj=instance)
+            raise ValueError("'%s' must have size_out > 0." % nengo_obj)
         super(NengoObjectParam, self).validate(instance, nengo_obj)
-
-
-class Process(FrozenObject):
-    """A general system with input, output, and state.
-
-    Attributes
-    ----------
-    default_size_in : int
-        Sets the default size in for nodes using this process. Default: 0.
-    default_size_out : int
-        Sets the default size out for nodes running this process. Also,
-        if `d` isn't specified in `run` or `run_steps`, this will be used.
-        Default: 1.
-    default_dt : float
-        If `dt` isn't specified in `run`, `run_steps`, `ntrange`, or `trange`,
-        this will be used. Default: 0.001 (1 millisecond).
-    seed : int, optional
-        Random number seed. Ensures noise will be the same each run.
-    """
-    default_size_in = IntParam('default_size_in', low=0)
-    default_size_out = IntParam('default_size_out', low=0)
-    default_dt = NumberParam('default_dt', low=0, low_open=True)
-    seed = IntParam('seed', low=0, high=maxint, optional=True)
-
-    def __init__(self, default_size_in=0, default_size_out=1,
-                 default_dt=0.001, seed=None):
-        super(Process, self).__init__()
-        self.default_size_in = default_size_in
-        self.default_size_out = default_size_out
-        self.default_dt = default_dt
-        self.seed = seed
-
-    def get_rng(self, rng):
-        """Get a properly seeded independent RNG for the process step"""
-        seed = rng.randint(maxint) if self.seed is None else self.seed
-        return np.random.RandomState(seed)
-
-    def make_step(self, shape_in, shape_out, dt, rng):
-        raise NotImplementedError("Process must implement `make_step` method.")
-
-    def run(self, t, d=None, dt=None, rng=np.random, **kwargs):
-        """Run process without input for given length of time."""
-        dt = self.default_dt if dt is None else dt
-        n_steps = int(np.round(float(t) / dt))
-        return self.run_steps(n_steps, d=d, dt=dt, rng=rng, **kwargs)
-
-    def run_steps(self, n_steps, d=None, dt=None, rng=np.random, **kwargs):
-        """Run process without input for given number of steps."""
-        shape_in = as_shape(0)
-        shape_out = as_shape(self.default_size_out if d is None else d)
-        dt = self.default_dt if dt is None else dt
-        rng = self.get_rng(rng)
-        step = self.make_step(shape_in, shape_out, dt, rng, **kwargs)
-        output = np.zeros((n_steps,) + shape_out)
-        for i in range(n_steps):
-            output[i] = step(i * dt)
-        return output
-
-    def apply(self, x, d=None, dt=None, rng=np.random, copy=True, **kwargs):
-        """Run process on a given input."""
-        shape_in = as_shape(np.asarray(x[0]).shape, min_dim=1)
-        shape_out = as_shape(self.default_size_out if d is None else d)
-        dt = self.default_dt if dt is None else dt
-        rng = self.get_rng(rng)
-        step = self.make_step(shape_in, shape_out, dt, rng, **kwargs)
-        output = np.zeros((len(x),) + shape_out) if copy else x
-        for i, xi in enumerate(x):
-            output[i] = step(i * dt, xi)
-        return output
-
-    def ntrange(self, n_steps, dt=None):
-        dt = self.default_dt if dt is None else dt
-        return dt * np.arange(1, n_steps + 1)
-
-    def trange(self, t, dt=None):
-        dt = self.default_dt if dt is None else dt
-        n_steps = int(np.round(float(t) / dt))
-        return self.ntrange(n_steps, dt=dt)
-
-
-class ProcessParam(Parameter):
-    """Must be a Process."""
-
-    def validate(self, instance, process):
-        super(ProcessParam, self).validate(instance, process)
-        if process is not None and not isinstance(process, Process):
-            raise ValidationError(
-                "Must be Process (got type %r)" % process.__class__.__name__,
-                attr=self.name, obj=instance)
-        return process

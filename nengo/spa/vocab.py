@@ -3,7 +3,6 @@ import warnings
 import numpy as np
 
 import nengo
-from nengo.exceptions import ReadonlyError, SpaParseError, ValidationError
 from nengo.spa import pointer
 from nengo.utils.compat import is_iterable, is_number, is_integer, range
 
@@ -65,9 +64,10 @@ class Vocabulary(object):
     def __init__(self, dimensions, randomize=True, unitary=False,
                  max_similarity=0.1, include_pairs=False, rng=None):
 
-        if not is_integer(dimensions) or dimensions < 1:
-            raise ValidationError("dimensions must be a positive integer",
-                                  attr='dimensions', obj=self)
+        if not is_integer(dimensions):
+            raise TypeError('dimensions must be an integer')
+        if dimensions < 1:
+            raise ValueError('dimensions must be positive')
         self.dimensions = dimensions
         self.randomize = randomize
         self.unitary = unitary
@@ -81,31 +81,23 @@ class Vocabulary(object):
         self.include_pairs = include_pairs
         self._identity = None
         self.rng = rng
-        self.readonly = False
-        self.parent = None
 
     def create_pointer(self, attempts=100, unitary=False):
         """Create a new semantic pointer.
 
         This will take into account the randomize and max_similarity
-        parameters from self. If a pointer satisfying max_similarity
-        is not generated after the specified number of attempts, the
-        candidate pointer with lowest maximum cosine with all existing
-        pointers is returned.
+        parameters from self.
         """
         if self.randomize:
-            if self.vectors.shape[0] == 0:
-                p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
-            else:
-                p_sim = np.inf
-                for _ in range(attempts):
-                    pp = pointer.SemanticPointer(self.dimensions, rng=self.rng)
-                    pp_sim = max(np.dot(self.vectors, pp.v))
-                    if pp_sim < p_sim:
-                        p = pp
-                        p_sim = pp_sim
-                        if p_sim < self.max_similarity:
-                            break
+            count = 0
+            p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
+            if self.vectors.shape[0] > 0:
+                while count < 100:
+                    similarity = np.dot(self.vectors, p.v)
+                    if max(similarity) < self.max_similarity:
+                        break
+                    p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
+                    count += 1
                 else:
                     warnings.warn(
                         'Could not create a semantic pointer with '
@@ -120,10 +112,8 @@ class Vocabulary(object):
         else:
             index = len(self.pointers)
             if index >= self.dimensions:
-                raise ValidationError(
-                    "Tried to make more semantic pointers than "
-                    "dimensions with non-randomized Vocabulary",
-                    attr='dimensions', obj=self)
+                raise IndexError('Tried to make more semantic pointers than' +
+                                 ' dimensions with non-randomized Vocabulary')
             p = pointer.SemanticPointer(np.eye(self.dimensions)[index])
         return p
 
@@ -135,8 +125,7 @@ class Vocabulary(object):
         with a capital letter.
         """
         if not key[0].isupper():
-            raise SpaParseError(
-                "Semantic pointers must begin with a capital letter.")
+            raise KeyError('Semantic pointers must begin with a capital')
         value = self.pointers.get(key, None)
         if value is None:
             if is_iterable(self.unitary):
@@ -152,20 +141,13 @@ class Vocabulary(object):
 
         The pointer value can be a SemanticPointer or a vector.
         """
-        if self.readonly:
-            raise ReadonlyError(attr='Vocabulary',
-                                msg="Cannot add semantic pointer '%s' to "
-                                    "read-only vocabulary." % key)
-
         if not key[0].isupper():
-            raise SpaParseError(
-                "Semantic pointers must begin with a capital letter.")
+            raise KeyError('Semantic pointers must begin with a capital')
         if not isinstance(p, pointer.SemanticPointer):
             p = pointer.SemanticPointer(p)
 
         if key in self.pointers:
-            raise ValidationError("The semantic pointer %r already exists"
-                                  % key, attr='pointers', obj=self)
+            raise KeyError("The semantic pointer '%s' already exists" % key)
 
         self.pointers[key] = p
         self.keys.append(key)
@@ -225,14 +207,13 @@ class Vocabulary(object):
         try:
             value = eval(text, {}, self)
         except NameError:
-            raise SpaParseError(
-                "Semantic pointers must start with a capital letter.")
+            raise KeyError('Semantic pointers must start with a capital')
 
         if is_number(value):
             value = value * self.identity
         if not isinstance(value, pointer.SemanticPointer):
-            raise SpaParseError(
-                "The result of parsing '%s' is not a SemanticPointer" % text)
+            raise TypeError('The result of "%s" was not a SemanticPointer' %
+                            text)
         return value
 
     @property
@@ -325,10 +306,7 @@ class Vocabulary(object):
         Input parameter can either be a SemanticPointer or a vector.
         """
         if not self.include_pairs:
-            raise ValidationError(
-                "'include_pairs' must be True to call dot_pairs",
-                attr='include_pairs', obj=self)
-
+            raise Exception('include_pairs must be True to call dot_pairs')
         if isinstance(v, pointer.SemanticPointer):
             v = v.v
         return np.dot(self.vector_pairs, v)
@@ -350,32 +328,18 @@ class Vocabulary(object):
             terms in this list that do not exist in the Vocabularies will
             be created.
         """
-        # If the parent vocabs of self and other are the same, then no
-        # transform is needed between the two vocabularies, so return an
-        # identity matrix.
-        my_parent = self if self.parent is None else self.parent
-        other_parent = other if other.parent is None else other.parent
+        if keys is None:
+            keys = list(self.keys)
+            for k in other.keys:
+                if k not in keys:
+                    keys.append(k)
 
-        if my_parent is other_parent:
-            return np.eye(self.dimensions)
-        else:
-            if keys is None:
-                if self.readonly and other.readonly:
-                    keys = [k for k in self.keys if k in other.keys]
-                elif self.readonly:
-                    keys = list(self.keys)
-                elif other.readonly:
-                    keys = list(other.keys)
-                else:
-                    keys = list(self.keys)
-                    keys.extend([k for k in other.keys if k not in self.keys])
-
-            t = np.zeros((other.dimensions, self.dimensions), dtype=float)
-            for k in keys:
-                a = self[k].v
-                b = other[k].v
-                t += np.outer(b, a)
-            return t
+        t = np.zeros((other.dimensions, self.dimensions), dtype=float)
+        for k in keys:
+            a = self[k].v
+            b = other[k].v
+            t += np.outer(b, a)
+        return t
 
     def prob_cleanup(self, similarity, vocab_size, steps=10000):
         """Estimate the chance of successful cleanup.
@@ -415,37 +379,6 @@ class Vocabulary(object):
         pcorrect = (1 - perror1) ** vocab_size
         return pcorrect
 
-    def extend(self, keys, unitary=False):
-        """Extends the vocabulary with additional keys.
-
-        Creates and adds the semantic pointers listed in keys to the
-        vocabulary.
-
-        Parameters
-        ----------
-        keys : list of strings
-            List of semantic pointer names to be added to the vocabulary.
-
-        unitary : bool or list of strings, optional
-                If True, all generated pointers to be unitary.  If a list of
-                names, any pointer whose name is on the list will be forced to
-                be unitary when created.
-        """
-        if is_iterable(unitary):
-            if is_iterable(self.unitary):
-                self.unitary.extend(unitary)
-            else:
-                self.unitary = list(unitary)
-        elif unitary:
-            if is_iterable(self.unitary):
-                self.unitary.extend(keys)
-            else:
-                self.unitary = list(keys)
-
-        for key in keys:
-            if key not in self.keys:
-                self[key]
-
     def create_subset(self, keys):
         """Returns the subset of this vocabulary.
 
@@ -459,28 +392,21 @@ class Vocabulary(object):
             new vocabulary.
 
         """
-        # Make new Vocabulary object
-        subset = Vocabulary(self.dimensions,
+
+        # Make new vocabulary object
+        result = Vocabulary(self.dimensions,
                             self.randomize,
                             self.unitary,
                             self.max_similarity,
                             self.include_pairs,
                             self.rng)
 
-        # Copy over the new keys
+        # Make a copy of the desired keys
         for key in keys:
-            subset.add(key, self.pointers[key])
+            result.add(key, self[key])
 
-        # Assign the parent
-        if self.parent is not None:
-            subset.parent = self.parent
-        else:
-            subset.parent = self
-
-        # Make the subset read only
-        subset.readonly = True
-
-        return subset
+        # Return the result
+        return result
 
 
 class VocabularyParam(nengo.params.Parameter):
@@ -490,8 +416,8 @@ class VocabularyParam(nengo.params.Parameter):
         super(VocabularyParam, self).validate(instance, vocab)
 
         if vocab is not None and not isinstance(vocab, Vocabulary):
-            raise ValidationError("Must be of type 'Vocabulary' (got type %r)."
-                                  % vocab.__class__.__name__,
-                                  attr=self.name, obj=instance)
+            raise ValueError(
+                "Must be Vocabulary (got type {0}).".format(
+                    vocab.__class__.__name__))
 
         return vocab

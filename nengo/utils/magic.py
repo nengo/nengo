@@ -144,6 +144,9 @@ class ObjectProxy(with_metaclass(ObjectProxyMeta)):
             type(self.__wrapped__).__name__,
             id(self.__wrapped__))
 
+    def __unicode__(self):
+        return unicode(self.__wrapped__)
+
 
 class BoundFunctionWrapper(ObjectProxy):
     """A descriptor to emulate a bound function.

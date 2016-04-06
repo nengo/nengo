@@ -1,7 +1,6 @@
 import numpy as np
 
 import nengo
-from nengo.exceptions import ValidationError
 from nengo.spa.action_objects import DotProduct, Source
 from nengo.spa.module import Module
 from nengo.utils.compat import is_number
@@ -30,7 +29,7 @@ class BasalGanglia(Module):
         """Create a bias node, when needed."""
         if self._bias is None:
             with self:
-                self._bias = nengo.Node([1], label="basal ganglia bias")
+                self._bias = nengo.Node([1])
         return self._bias
 
     def on_add(self, spa):
@@ -56,7 +55,7 @@ class BasalGanglia(Module):
             for c in cond.items:
                 if isinstance(c, DotProduct):
                     if ((isinstance(c.item1, Source) and c.item1.inverted) or
-                       (isinstance(c.item2, Source) and c.item2.inverted)):
+                       (isinstance(c.item1, Source) and c.item1.inverted)):
                         raise NotImplementedError(
                             "Inversion in subexpression '%s' from action '%s' "
                             "is not supported by the Basal Ganglia." %
@@ -72,8 +71,6 @@ class BasalGanglia(Module):
                         # enforced in DotProduct constructor
                         assert isinstance(c.item2, Source)
                         self.add_dot_input(i, c.item2, c.item1, c.scale)
-                elif isinstance(c, Source):
-                    self.add_scalar_input(i, c)
                 elif is_number(c):
                     self.add_bias_input(i, c)
                 else:
@@ -114,9 +111,7 @@ class BasalGanglia(Module):
         scale : float
             a scaling factor to be applied to the result
         """
-        raise NotImplementedError("Compare between two sources will never be "
-                                  "implemented as discussed in "
-                                  "https://github.com/nengo/nengo/issues/759")
+        raise NotImplementedError('Compare connections not implemented yet')
 
     def add_dot_input(self, index, source, symbol, scale):
         """Make an input that is the dot product of a Source and a Symbol.
@@ -146,34 +141,3 @@ class BasalGanglia(Module):
         with self.spa:
             nengo.Connection(output, self.input[index:index+1],
                              transform=transform, synapse=self.input_synapse)
-
-    def add_scalar_input(self, index, source):
-        """ Add a scalar input that will vary over time.
-
-        This would be used for such a thing as the ouput of the Compare module.
-
-        Parameters
-        ----------
-        index : int
-            the index of the action
-        source : Source
-            the module output to read from
-        scale : float
-            a scaling factor to be applied to the result
-        """
-        output, _ = self.spa.get_module_output(source.name)
-        if output.size_out != 1:
-            raise NotImplementedError(
-                "Only 1-dimensional sources can be scalar inputs")
-
-        try:
-            scale = float(eval(source.transform.symbol))
-        except ValueError:
-            raise ValidationError("Transform must be scalar; got '%s'"
-                                  % source.transform.symbol,
-                                  attr='source.transform')
-
-        with self.spa:
-            nengo.Connection(output, self.input[index:index+1],
-                             transform=scale,
-                             synapse=self.input_synapse)

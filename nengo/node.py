@@ -4,23 +4,18 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.base import NengoObject, ObjView
-from nengo.exceptions import ValidationError
-from nengo.params import Default, IntParam, Parameter
+from nengo.params import Default, IntParam, Parameter, StringParam
 from nengo.processes import Process
-from nengo.utils.compat import is_array_like
 from nengo.utils.stdlib import checked_call
 
 
 class OutputParam(Parameter):
-    def __init__(self, name, default, optional=True, readonly=False):
+    def __init__(self, default, optional=True, readonly=False):
         assert optional  # None has meaning (passthrough node)
-        super(OutputParam, self).__init__(name, default, optional, readonly)
+        super(OutputParam, self).__init__(default, optional, readonly)
 
     def __set__(self, node, output):
         super(OutputParam, self).validate(node, output)
-
-        size_in_set = node.size_in is not None
-        node.size_in = node.size_in if size_in_set else 0
 
         # --- Validate and set the new size_out
         if output is None:
@@ -29,8 +24,6 @@ class OutputParam(Parameter):
                               "'Node.size_in' since 'Node.output=None'")
             node.size_out = node.size_in
         elif isinstance(output, Process):
-            if not size_in_set:
-                node.size_in = output.default_size_in
             if node.size_out is None:
                 node.size_out = output.default_size_out
         elif callable(output):
@@ -39,16 +32,12 @@ class OutputParam(Parameter):
             if node.size_out is None:
                 result = self.validate_callable(node, output)
                 node.size_out = 0 if result is None else result.size
-        elif is_array_like(output):
+        else:
             # Make into correctly shaped numpy array before validation
             output = npext.array(
                 output, min_dims=1, copy=False, dtype=np.float64)
             self.validate_ndarray(node, output)
             node.size_out = output.size
-        else:
-            raise ValidationError("Invalid node output type %r" %
-                                  node.output.__class__.__name__,
-                                  attr=self.name, obj=node)
 
         # --- Set output
         self.data[node] = output
@@ -62,29 +51,24 @@ class OutputParam(Parameter):
                    "%d argument" % (output, len(args)))
             msg += (' (time, as a float)' if len(args) == 1 else
                     's (time, as a float and data, as a NumPy array)')
-            raise ValidationError(msg, attr=self.name, obj=node)
+            raise TypeError(msg)
 
         if result is not None:
             result = np.asarray(result)
             if len(result.shape) > 1:
-                raise ValidationError("Node output must be a vector (got shape"
-                                      " %s)" % (result.shape,),
-                                      attr=self.name, obj=node)
+                raise ValueError("Node output must be a vector (got shape %s)"
+                                 % (result.shape,))
         return result
 
     def validate_ndarray(self, node, output):
         if len(output.shape) > 1:
-            raise ValidationError("Node output must be a vector (got shape "
-                                  "%s)" % (output.shape,),
-                                  attr=self.name, obj=node)
+            raise ValueError("Node output must be a vector (got shape %s)"
+                             % (output.shape,))
         if node.size_in != 0:
-            raise ValidationError("output must be callable if size_in != 0",
-                                  attr=self.name, obj=node)
+            raise TypeError("output must be callable if size_in != 0")
         if node.size_out is not None and node.size_out != output.size:
-            raise ValidationError("Size of Node output (%d) does not match "
-                                  "size_out (%d)"
-                                  % (output.size, node.size_out),
-                                  attr=self.name, obj=node)
+            raise ValueError("Size of Node output (%d) does not match size_out"
+                             "(%d)" % (output.size, node.size_out))
 
 
 class Node(NengoObject):
@@ -128,19 +112,16 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
-    output = OutputParam('output', default=None)
-    size_in = IntParam('size_in', default=None, low=0, optional=True)
-    size_out = IntParam('silze_out', default=None, low=0, optional=True)
+    output = OutputParam(default=None)
+    size_in = IntParam(default=0, low=0)
+    size_out = IntParam(default=None, low=0, optional=True)
+    label = StringParam(default=None, optional=True)
 
-    def __init__(self, output=Default, size_in=Default, size_out=Default,
-                 label=Default, seed=Default):
-        if not (seed is Default or seed is None):
-            raise NotImplementedError(
-                "Changing the seed of a node has no effect")
-        super(Node, self).__init__(label=label, seed=seed)
-
+    def __init__(self, output=Default,
+                 size_in=Default, size_out=Default, label=Default):
         self.size_in = size_in
         self.size_out = size_out
+        self.label = label
         self.output = output  # Must be set after size_out; may modify size_out
 
     def __getitem__(self, key):

@@ -8,7 +8,6 @@ import collections
 import numpy as np
 
 import nengo
-from nengo.exceptions import Unconvertible, ValidationError
 
 
 def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
@@ -28,20 +27,15 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
         If false, these scalars will be turned into scaled identity matrices.
     """
     transform = conn.transform
-    pre_slice = (conn.pre_slice if slice_pre and conn.function is None else
-                 slice(None))
+    pre_slice = conn.pre_slice if slice_pre else slice(None)
     post_slice = conn.post_slice if slice_post else slice(None)
 
-    eq_none_slice = lambda s: isinstance(s, slice) and s == slice(None)
-    if eq_none_slice(pre_slice) and eq_none_slice(post_slice):
+    if pre_slice == slice(None) and post_slice == slice(None):
         if transform.ndim == 2:
             # transform is already full, so return a copy
             return np.array(transform)
         elif transform.size == 1 and allow_scalars:
-            if transform.ndim == 1:
-                return np.array(transform[0])
-            else:
-                return np.array(transform)
+            return np.array(transform)
 
     # Create the new transform matching the pre/post dimensions
     func_size = conn.function_info.size
@@ -58,11 +52,9 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
         repeated_inds = lambda x: (
             not isinstance(x, slice) and np.unique(x).size != len(x))
         if repeated_inds(pre_slice):
-            raise NotImplementedError(
-                "Input object selection has repeated indices")
+            raise ValueError("Input object selection has repeated indices")
         if repeated_inds(post_slice):
-            raise NotImplementedError(
-                "Output object selection has repeated indices")
+            raise ValueError("Output object selection has repeated indices")
 
         rows_transform = np.array(new_transform[post_slice])
         rows_transform[:, pre_slice] = transform
@@ -72,8 +64,7 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
         #  just individual items
         return new_transform
     else:
-        raise ValidationError("Transforms with > 2 dims not supported",
-                              attr='transform', obj=conn)
+        raise ValueError("Transforms with > 2 dims not supported")
 
 
 def default_n_eval_points(n_neurons, dimensions):
@@ -152,14 +143,15 @@ def _create_replacement_connection(c_in, c_out):
     elif c_out.synapse is None:
         synapse = c_in.synapse
     else:
-        raise Unconvertible("Cannot merge two filters")
+        raise NotImplementedError('Cannot merge two filters')
         # Note: the algorithm below is in the right ballpark,
         #  but isn't exactly the same as two low-pass filters
         # filter = c_out.filter + c_in.filter
 
     function = c_in.function
     if c_out.function is not None:
-        raise Unconvertible("Cannot remove a connection with a function")
+        raise Exception('Cannot remove a Node with a '
+                        'function being computed on it')
 
     # compute the combined transform
     transform = np.dot(full_transform(c_out), full_transform(c_in))
@@ -227,8 +219,7 @@ def remove_passthrough_nodes(objs, connections,  # noqa: C901
             # replace those connections with equivalent ones
             for c_in in inputs[obj]:
                 if c_in.pre_obj is obj:
-                    raise Unconvertible(
-                        "Cannot remove a Node with a feedback connection")
+                    raise Exception('Cannot remove a Node with feedback')
 
                 for c_out in outputs[obj]:
                     c = create_connection_fn(c_in, c_out)

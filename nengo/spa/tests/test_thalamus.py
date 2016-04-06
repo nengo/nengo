@@ -2,7 +2,6 @@ import pytest
 
 import nengo
 from nengo import spa
-from nengo.exceptions import SpaParseError
 
 import numpy as np
 
@@ -41,8 +40,8 @@ def test_thalamus(Simulator, plt, seed):
         p = nengo.Probe(input, 'output', synapse=0.03)
         p2 = nengo.Probe(input2, 'output', synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.5)
+    sim = Simulator(model)
+    sim.run(0.5)
 
     t = sim.trange()
     data = vocab.dot(sim.data[p].T)
@@ -104,8 +103,8 @@ def test_routing(Simulator, seed, plt):
 
         buff3_probe = nengo.Probe(model.buff3.state.output, synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.6)
+    sim = Simulator(model)
+    sim.run(0.6)
 
     data = sim.data[buff3_probe]
 
@@ -162,10 +161,12 @@ def test_nondefault_routing(Simulator, seed, plt):
 
         compare_probe = nengo.Probe(model.cmp.output, synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.6)
+    sim = Simulator(model)
+    sim.run(0.6)
 
-    similarity = sim.data[compare_probe]
+    vocab = model.get_output_vocab('cmp')
+    data = sim.data[compare_probe]
+    similarity = np.dot(data, vocab.parse('YES').v)
 
     valueA = np.mean(similarity[150:200], axis=0)  # should be [1]
     valueB = np.mean(similarity[350:400], axis=0)  # should be [0]
@@ -178,7 +179,7 @@ def test_nondefault_routing(Simulator, seed, plt):
 
 def test_errors():
     # motor does not exist
-    with pytest.raises(SpaParseError):
+    with pytest.raises(NameError):
         with spa.SPA() as model:
             model.vision = spa.Buffer(dimensions=16)
             actions = spa.Actions('0.5 --> motor=A')

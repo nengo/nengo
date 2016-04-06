@@ -33,7 +33,7 @@ Nengo also includes code modified from other libraries.
 
 ------------
 
-The file ``nengo/builder/operator.py`` contains code with the following
+The file ``nengo/builder.py`` contains code with the following
 license:
 
 Copyright (c) 2014, James Bergstra

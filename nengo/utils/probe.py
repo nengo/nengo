@@ -4,7 +4,8 @@ from .compat import iteritems
 
 def probe_all(net, recursive=False, probe_options=None,  # noqa: C901
               **probe_args):
-    """Probes all objects in a network.
+
+    """A helper function to make probing easier.
 
     Parameters
     ----------
@@ -69,10 +70,17 @@ def probe_all(net, recursive=False, probe_options=None,  # noqa: C901
                 # probe specified objects only
                 elif obj_type in probe_options:
                     for obj in obj_list:
+                        if not (hasattr(obj, 'probeable')
+                                and len(obj.probeable) > 0):
+                            raise ValueError("'%s' is not probeable" % obj)
                         probes[obj] = {}
                         for attr in probe_options[obj_type]:
-                            probes[obj][attr] = (
-                                nengo.Probe(obj, attr, **probe_args))
+                            if attr not in obj.probeable:
+                                raise ValueError(
+                                    "'%s' is not probeable for '%s'" %
+                                    (obj, attr))
+                            probes[obj][
+                                attr] = nengo.Probe(obj, attr, **probe_args)
 
     probe_helper(net, recursive, probe_options)
     return probes

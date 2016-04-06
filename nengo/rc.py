@@ -37,15 +37,8 @@ RC_DEFAULTS = {
         'enabled': True,
         'readonly': False,
         'size': '512 MB',
-        'path': nengo.utils.paths.decoder_cache_dir,
-    },
-    'progress': {
-        'updater': 'auto',
-        'progress_bar': 'auto',
-    },
-    'exceptions': {
-        'simplified': True,
-    },
+        'path': nengo.utils.paths.decoder_cache_dir
+    }
 }
 
 # The RC files in the order in which they will be read.
@@ -79,11 +72,11 @@ class _RC(configparser.SafeConfigParser):
                 filename = fp.name
             else:
                 filename = '<???>'
-        logger.info('Reading configuration from {}'.format(filename))
+        logger.info('Reading configuration from {0}'.format(filename))
         return configparser.SafeConfigParser.readfp(self, fp, filename)
 
     def read(self, filenames):
-        logger.info('Reading configuration files {}'.format(filenames))
+        logger.info('Reading configuration files {0}'.format(filenames))
         return configparser.SafeConfigParser.read(self, filenames)
 
     def reload_rc(self, filenames=None):

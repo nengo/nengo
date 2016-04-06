@@ -1,7 +1,6 @@
 import numpy as np
 
 import nengo
-from nengo.exceptions import ValidationError
 from nengo.networks.product import Product
 from nengo.utils.compat import range
 from nengo.utils.magic import memoize
@@ -35,7 +34,7 @@ def transform_in(dims, align, invert):
         Whether to reverse the order of elements.
     """
     if align not in ('A', 'B'):
-        raise ValidationError("'align' must be either 'A' or 'B'", 'align')
+        raise ValueError("'align' must be either 'A' or 'B'")
 
     dims2 = 4 * (dims // 2 + 1)
     tr = np.zeros((dims2, dims))
@@ -89,7 +88,7 @@ def dft_half(n):
 
 
 def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
-                        input_magnitude=1.0, net=None):
+                        input_magnitude=1, net=None):
     """Compute the circular convolution of two vectors.
 
     The circular convolution `c` of vectors `a` and `b` is given by
@@ -108,7 +107,7 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
     Parameters
     ----------
     n_neurons : int
-        Number of neurons to use in each product computation
+        Number of neurons to be used, in total.
     dimensions : int
         The number of dimensions of the input and output vectors.
     invert_a, invert_b : bool

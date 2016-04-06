@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import numpy as np
 
 from . import numpy as npext
-from ..exceptions import ValidationError
 
 
 def target_function(eval_points, targets):
@@ -23,9 +22,9 @@ def target_function(eval_points, targets):
     Returns
     -------
     dict:
-       A dictionary with two keys: ``function`` and ``eval_points``.
+       A diciontary with two keys: ``function`` and ``eval_points``.
        function is the mapping between the evaluation points and the
-       targets. ``eval_points`` are the evaluation points that will
+       targets. ``eval_points`` are the evalutaion points that will
        be passed to the connection
 
     Examples
@@ -43,9 +42,9 @@ def target_function(eval_points, targets):
     targets = npext.array(targets, dtype=np.float64, min_dims=2)
 
     if len(eval_points) != len(targets):
-        raise ValidationError(
-            "Number of evaluation points (%d) is not equal to the number of "
-            "targets (%s)" % (len(eval_points), len(targets)), 'eval_points')
+        raise ValueError("Number of evaluation points %s "
+                         "is not equal to number of targets "
+                         "%s" % (len(eval_points), len(targets)))
 
     func_dict = {}
     for eval_point, target in zip(eval_points, targets):
@@ -96,8 +95,11 @@ def eval_point_decoding(conn, sim, eval_points=None):
     else:
         eval_points = np.asarray(eval_points)
 
-    weights = sim.data[conn].weights
+    decoders = sim.data[conn].decoders
+    if decoders is None:
+        raise ValueError("Connection must have decoders")
+
     activities = get_activities(sim.model, conn.pre_obj, eval_points)
-    decoded = np.dot(activities, weights.T)
+    decoded = np.dot(activities, decoders.T)
     targets = get_targets(sim.model, conn, eval_points)
     return eval_points, targets, decoded

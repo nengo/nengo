@@ -1,6 +1,5 @@
 import numpy as np
 
-from nengo.exceptions import ValidationError
 from nengo.utils.compat import is_integer, is_number, range
 
 
@@ -14,20 +13,17 @@ class SemanticPointer(object):
     def __init__(self, data, rng=None):
         if is_integer(data):
             if data < 1:
-                raise ValidationError("Number of dimensions must be a "
-                                      "positive int", attr='data', obj=self)
-
+                raise Exception("number of dimensions must be a positive int")
             self.randomize(data, rng=rng)
         else:
             try:
                 len(data)
             except:
-                raise ValidationError(
-                    "Must specify either the data or the length for a "
-                    "SemanticPointer.", attr='data', obj=self)
+                raise Exception("Must specify either the data or the length "
+                                "for a SemanticPointer.")
             self.v = np.array(data, dtype=float)
             if len(self.v.shape) != 1:
-                raise ValidationError("'data' must be a vector", 'data', self)
+                raise Exception("data must be a vector")
 
     def length(self):
         """Return the L2 norm of the vector."""
@@ -80,15 +76,14 @@ class SemanticPointer(object):
     def __mul__(self, other):
         """Multiplication of two SemanticPointers is circular convolution.
 
-        If multiplied by a scalar, we do normal multiplication.
+        If mutliplied by a scaler, we do normal multiplication.
         """
         if isinstance(other, SemanticPointer):
             return self.convolve(other)
         elif is_number(other):
             return SemanticPointer(data=self.v * other)
         else:
-            raise NotImplementedError(
-                "Can only multiply by SemanticPointers or scalars")
+            raise Exception('Can only multiply by SemanticPointers or scalars')
 
     def convolve(self, other):
         """Return the circular convolution of two SemanticPointers."""
@@ -105,8 +100,7 @@ class SemanticPointer(object):
         elif is_number(other):
             return SemanticPointer(data=self.v * other)
         else:
-            raise NotImplementedError(
-                "Can only multiply by SemanticPointers or scalars")
+            raise Exception('Can only multiply by SemanticPointers or scalars')
 
     def __imul__(self, other):
         """Multiplication of two SemanticPointers is circular convolution.
@@ -119,8 +113,7 @@ class SemanticPointer(object):
         elif is_number(other):
             self.v *= other
         else:
-            raise NotImplementedError(
-                "Can only multiply by SemanticPointers or scalars")
+            raise Exception('Can only multiply by SemanticPointers or scalars')
         return self
 
     def compare(self, other):

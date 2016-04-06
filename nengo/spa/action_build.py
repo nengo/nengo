@@ -21,16 +21,14 @@ def convolution(module, target_name, effect, n_neurons_cconv, synapse):
 
     Returns the created nengo.networks.CircularConvolution.
     """
-
     source1 = effect.source1
     source2 = effect.source2
 
-    target_module = module.spa.get_module(target_name)
     target, target_vocab = module.spa.get_module_input(target_name)
     s1_output, s1_vocab = module.spa.get_module_output(source1.name)
     s2_output, s2_vocab = module.spa.get_module_output(source2.name)
 
-    with target_module:
+    with module:
         cconv = nengo.networks.CircularConvolution(
             n_neurons_cconv, s1_vocab.dimensions,
             invert_a=False,

@@ -1,7 +1,6 @@
 import pytest
 
 from nengo import spa
-from nengo.exceptions import SpaParseError
 from nengo.spa.actions import Expression, Effect, Action, Actions
 
 
@@ -15,7 +14,7 @@ def test_expression():
     c = Expression(['a'], '1')
     assert str(c.expression) == '1'
 
-    with pytest.raises(SpaParseError):
+    with pytest.raises(NameError):
         c = Expression(['a', 'b'], 'dot(c, C)')
 
 
@@ -55,17 +54,17 @@ def test_effect():
     e = Effect(['a', 'b'], ['foo', 'bar'], '  foo = dot(a, b)  , bar = b')
     assert str(e) == 'foo=dot(a, b), bar=b'
 
-    with pytest.raises(SpaParseError):
+    with pytest.raises(NameError):
         Effect(['a', 'b'], ['q'], 'q=z')
 
-    with pytest.raises(SpaParseError):
+    with pytest.raises(ValueError):
         Effect(['a', 'b'], ['q'], 'q=a, q=b')  # lvalue appears twice
 
 
 def test_inverted():
-    with pytest.raises(SpaParseError):
+    with pytest.raises(ValueError):
         Effect(['b'], ['a'], 'a = ~2*b')
-    with pytest.raises(SpaParseError):
+    with pytest.raises(ValueError):
         Effect(['b'], ['a'], 'a = ~2*C*b')
 
 
@@ -80,26 +79,26 @@ def test_action():
     assert a.condition is None
     assert str(a.effect) == 'motor=A * vision'
 
-    with pytest.raises(SpaParseError):
+    with pytest.raises(NameError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    'motor=vis*A', 'test_action')
 
-    with pytest.raises(SpaParseError):
+    with pytest.raises(NameError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    '0.5 --> motor=vis*A', 'test_action')
 
-    with pytest.raises(SpaParseError):
+    with pytest.raises(NameError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    '0.5*dot(mem, a) --> motor=B', name=None)
 
-    with pytest.raises(SpaParseError):
+    with pytest.raises(TypeError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    '0.5*dot(memory+1, vision) --> motor=B', name='test_action')
 
-    with pytest.raises(SpaParseError):
+    with pytest.raises(NameError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    'motor2=B', name='test_action')
-    with pytest.raises(SpaParseError):
+    with pytest.raises(NameError):
         a = Action(['vision', 'memory'], ['motor', 'memory'],
                    'motor=A, motor2=B', name='test_action')
 
@@ -114,7 +113,7 @@ def test_actions():
 
     model = spa.SPA()
     with model:
-        model.state = spa.State(16)
+        model.state = spa.Buffer(16)
     a.process(model)
     assert str(a.actions[0].condition) == 'dot(state, A)'
     assert str(a.actions[0].effect) == 'state=B'
@@ -122,11 +121,3 @@ def test_actions():
     assert str(a.actions[1].effect) == 'state=A'
     assert str(a.actions[2].condition) == '1.0'
     assert str(a.actions[2].effect) == 'state=C'
-
-    a.add('dot(state, D) --> state=E')
-    a.add(added='dot(state, E) --> state=F')
-    a.process(model)
-    assert str(a.actions[2].condition) == 'dot(state, D)'
-    assert str(a.actions[2].effect) == 'state=E'
-    assert str(a.actions[3].condition) == 'dot(state, E)'
-    assert str(a.actions[3].effect) == 'state=F'

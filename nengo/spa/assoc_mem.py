@@ -1,5 +1,11 @@
-from nengo.networks.assoc_mem import AssociativeMemory as AssocMem
+import numpy as np
+
+import nengo
+from nengo.dists import Choice, Uniform
+from nengo.networks.ensemblearray import EnsembleArray
 from nengo.spa.module import Module
+from nengo.spa.vocab import Vocabulary
+from nengo.utils.compat import is_iterable
 
 
 class AssociativeMemory(Module):
@@ -56,62 +62,137 @@ class AssociativeMemory(Module):
     """
 
     def __init__(self, input_vocab, output_vocab=None,  # noqa: C901
-                 input_keys=None, output_keys=None,
-                 default_output_key=None, threshold=0.3,
-                 inhibitable=False, wta_output=False,
-                 wta_inhibit_scale=3.0, wta_synapse=0.005,
-                 threshold_output=False, label=None, seed=None,
-                 add_to_container=None):
+                 default_output_vector=None, threshold=0.3, input_scale=1.0,
+                 inhibitable=False, inhibit_scale=1.0, wta_output=False,
+                 wta_inhibit_scale=2.0, wta_synapse=0.005,
+                 output_utilities=False, output_thresholded_utilities=False,
+                 neuron_type=nengo.LIF(), n_neurons_per_ensemble=10,
+                 label=None, seed=None, add_to_container=None):
         super(AssociativeMemory, self).__init__(label, seed, add_to_container)
-
-        if input_keys is None:
-            input_keys = input_vocab.keys
-            input_vectors = input_vocab.vectors
-        else:
-            input_vectors = input_vocab.create_subset(input_keys).vectors
 
         # If output vocabulary is not specified, use input vocabulary
         # (i.e autoassociative memory)
         if output_vocab is None:
             output_vocab = input_vocab
-            output_vectors = input_vectors
-        else:
-            if output_keys is None:
-                output_keys = input_keys
-            output_vectors = output_vocab.create_subset(output_keys).vectors
 
-        if default_output_key is None:
-            default_output_vector = None
+        # Handle different vocabulary types
+        if isinstance(input_vocab, Vocabulary):
+            input_vectors = input_vocab.vectors
+        elif is_iterable(input_vocab):
+            input_vectors = np.matrix(input_vocab)
         else:
-            default_output_vector = output_vocab.parse(default_output_key).v
+            input_vectors = input_vocab
 
-        # Create nengo network
+        if isinstance(output_vocab, Vocabulary):
+            output_vectors = output_vocab.vectors
+        elif is_iterable(output_vocab):
+            output_vectors = np.matrix(output_vocab)
+        else:
+            output_vectors = output_vocab
+
+        # Fail if number of input items and number of output items don't match
+        if input_vectors.shape[0] != output_vectors.shape[0]:
+            raise ValueError(
+                'number of input vectors does not match number of output '
+                'vectors. %d != %d'
+                % (input_vectors.shape[0], output_vectors.shape[0]))
+
+        N = len(input_vectors)
+        n_eval_points = 500
+        eval_point_margin = 0.1
+        eval_points = Uniform(
+            threshold + eval_point_margin, 1 + eval_point_margin)
+
+        # Ensemble array parameters
+        ea_params = {'radius': 1.0,
+                     'neuron_type': neuron_type,
+                     'n_neurons': n_neurons_per_ensemble,
+                     'n_ensembles': N,
+                     'intercepts': Uniform(threshold, 1),
+                     'max_rates': Uniform(100, 200),
+                     'encoders': Choice([[1]]),
+                     'n_eval_points': n_eval_points,
+                     'eval_points': eval_points}
+
+        # Thresholding function
+        def threshold_func(x):
+            return x > threshold
+
         with self:
-            self.am = AssocMem(input_vectors=input_vectors,
-                               output_vectors=output_vectors,
-                               threshold=threshold,
-                               inhibitable=inhibitable,
-                               label=label, seed=seed,
-                               add_to_container=add_to_container)
+            # Input and output nodes
+            self.input = nengo.Node(size_in=input_vectors.shape[1],
+                                    label="input")
+            self.output = nengo.Node(size_in=output_vectors.shape[1],
+                                     label="output")
 
-            if default_output_vector is not None:
-                self.am.add_default_output_vector(default_output_vector)
+            # Ensemble array to do the thresholding stuff
+            self.thresholded_ens_array = EnsembleArray(
+                label="thresholded ens array", **ea_params)
 
-            if wta_output:
-                self.am.add_wta_network(wta_inhibit_scale, wta_synapse)
+            # Connect input and output nodes
+            nengo.Connection(self.input, self.thresholded_ens_array.input,
+                             synapse=None,
+                             transform=input_vectors * input_scale)
+            nengo.Connection(
+                self.thresholded_ens_array.add_output(
+                    'thresholded_output', threshold_func),
+                self.output, synapse=None, transform=output_vectors.T)
 
-            if threshold_output:
-                self.am.add_threshold_to_outputs()
-
-            self.input = self.am.input
-            self.output = self.am.output
-
+            # Configure associative memory to be inhibitable
             if inhibitable:
-                self.inhibit = self.am.inhibit
+                # Input node for inhibitory gating signal (if enabled)
+                self.inhibit = nengo.Node(size_in=1, label="inhibit")
+                nengo.Connection(
+                    self.inhibit, self.thresholded_ens_array.input,
+                    synapse=None, transform=-np.ones((N, 1)))
+                # Note: We can use decoded connection here because all the
+                # encoding vectors are [1]
 
-            self.utilities = self.am.utilities
-            if threshold_output:
-                self.thresholded_utilities = self.am.thresholded_utilities
+            # Configure associative memory to have mutually inhibited output
+            if wta_output:
+                nengo.Connection(self.thresholded_ens_array.output,
+                                 self.thresholded_ens_array.input,
+                                 synapse=wta_synapse,
+                                 transform=(np.eye(N) - 1) * inhibit_scale)
 
-        self.inputs = dict(default=(self.input, input_vocab))
-        self.outputs = dict(default=(self.output, output_vocab))
+            # Configure utilities output
+            if output_utilities:
+                self.utilities = nengo.Node(size_in=N, label="utilities")
+                nengo.Connection(self.thresholded_ens_array.output,
+                                 self.utilities, synapse=None)
+
+            # Configure utilities output
+            if output_thresholded_utilities:
+                self.thresholded_utilities = nengo.Node(
+                    size_in=N, label="thresholded_utilities")
+                nengo.Connection(self.thresholded_ens_array.thresholded_output,
+                                 self.thresholded_utilities, synapse=None)
+
+            # Configure default output vector
+            if default_output_vector is not None:
+                eval_points = Uniform(0.8, 1)
+                bias = nengo.Node(output=[1])
+                default_vector_gate = nengo.Ensemble(
+                    n_neurons_per_ensemble, dimensions=1,
+                    encoders=Choice([[1]]),
+                    intercepts=Uniform(0.5, 1),
+                    max_rates=ea_params['max_rates'],
+                    n_eval_points=n_eval_points,
+                    eval_points=eval_points,
+                    label="default vector gate")
+                nengo.Connection(bias, default_vector_gate, synapse=None)
+                nengo.Connection(self.thresholded_ens_array.thresholded_output,
+                                 default_vector_gate,
+                                 transform=-np.ones((1, N)),
+                                 synapse=0.005)
+                nengo.Connection(default_vector_gate, self.output,
+                                 transform=np.matrix(default_output_vector).T,
+                                 synapse=None)
+                if inhibitable:
+                    nengo.Connection(self.inhibit, default_vector_gate,
+                                     synapse=None, transform=[[-1]])
+
+        if isinstance(input_vocab, Vocabulary):
+            self.inputs = dict(default=(self.input, input_vocab))
+        if isinstance(output_vocab, Vocabulary):
+            self.outputs = dict(default=(self.output, output_vocab))

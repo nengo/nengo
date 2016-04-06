@@ -35,7 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 
 import nengo.utils.numpy as npext
-from nengo.exceptions import BuildError, SimulationError
 
 
 class Operator(object):
@@ -65,23 +64,6 @@ class Operator(object):
 
     Each operator should explicitly set each of these properties.
     """
-
-    def __init__(self, tag=None):
-        self.tag = tag
-
-    def __str__(self):
-        strs = (s for s in (self._descstr(), self._tagstr()) if s)
-        return "%s{%s}" % (self.__class__.__name__, ' '.join(strs))
-
-    def __repr__(self):
-        return "<%s%s at 0x%x>" % (
-            self.__class__.__name__, self._tagstr(), id(self))
-
-    def _descstr(self):
-        return ''
-
-    def _tagstr(self):
-        return ('"%s"' % self.tag) if self.tag is not None else ''
 
     @property
     def reads(self):
@@ -143,150 +125,81 @@ class Operator(object):
         that use extra buffers should create them here.
         """
         for sig in self.all_signals:
-            if sig not in signals:
-                signals.init(sig)
-
-
-class TimeUpdate(Operator):
-    """Updates the simulation time"""
-
-    def __init__(self, step, time, tag=None):
-        self.step = step
-        self.time = time
-        self.tag = tag
-
-        self.sets = [step, time]
-        self.incs = []
-        self.reads = []
-        self.updates = []
-
-    def make_step(self, signals, dt, rng):
-        step = signals[self.step]
-        time = signals[self.time]
-
-        def step_timeupdate():
-            step[...] += 1
-            time[...] = step * dt
-
-        return step_timeupdate
+            if sig.base not in signals:
+                signals.init(sig.base)
 
 
 class PreserveValue(Operator):
     """Marks a signal as `set` for the graph checker.
 
-    This operator does no computation. It simply marks a signal as `set`,
-    allowing us to apply other ops to signals that we want to preserve their
-    value across multiple time steps. It is used primarily for learning rules.
+    This is a silly operator that does no computation. It simply marks
+    a signal as `set`, allowing us to apply other ops to signals that
+    we want to preserve their value across multiple time steps. It is
+    used primarily for learning rules.
     """
-    def __init__(self, dst, tag=None):
+    def __init__(self, dst):
         self.dst = dst
-        self.tag = tag
 
         self.sets = [dst]
         self.incs = []
         self.reads = []
         self.updates = []
 
-    def _descstr(self):
-        return str(self.dst)
-
     def make_step(self, signals, dt, rng):
-        def step_preservevalue():
+        def step():
             pass
-        return step_preservevalue
+        return step
 
 
 class Reset(Operator):
     """Assign a constant value to a Signal."""
 
-    def __init__(self, dst, value=0, tag=None):
+    def __init__(self, dst, value=0):
         self.dst = dst
         self.value = float(value)
-        self.tag = tag
 
         self.sets = [dst]
         self.incs = []
         self.reads = []
         self.updates = []
 
-    def _descstr(self):
-        return str(self.dst)
+    def __str__(self):
+        return 'Reset(%s)' % str(self.dst)
 
     def make_step(self, signals, dt, rng):
         target = signals[self.dst]
         value = self.value
 
-        def step_reset():
+        def step():
             target[...] = value
-        return step_reset
+        return step
 
 
 class Copy(Operator):
     """Assign the value of one signal to another."""
 
-    def __init__(self, dst, src, tag=None):
+    def __init__(self, dst, src, as_update=False, tag=None):
         self.dst = dst
         self.src = src
+        self.as_update = as_update
         self.tag = tag
 
-        self.sets = [dst]
+        self.sets = [] if as_update else [dst]
         self.incs = []
         self.reads = [src]
-        self.updates = []
+        self.updates = [dst] if as_update else []
 
-    def _descstr(self):
-        return '%s -> %s' % (self.src, self.dst)
+    def __str__(self):
+        return 'Copy(%s -> %s, as_update=%s)' % (
+            str(self.src), str(self.dst), self.as_update)
 
     def make_step(self, signals, dt, rng):
         dst = signals[self.dst]
         src = signals[self.src]
 
-        def step_copy():
+        def step():
             dst[...] = src
-        return step_copy
-
-
-class SlicedCopy(Operator):
-    """Copy from `a` to `b` with slicing: `b[b_slice] = a[a_slice]`"""
-    def __init__(self, a, b, a_slice=Ellipsis, b_slice=Ellipsis,
-                 inc=False, tag=None):
-        if isinstance(a_slice, slice):
-            a = a[a_slice]
-            a_slice = Ellipsis
-        if isinstance(b_slice, slice):
-            b = b[b_slice]
-            b_slice = Ellipsis
-        # ^ a_slice and b_slice are now either lists of indices or `Ellipsis`
-
-        self.a = a
-        self.b = b
-        self.a_slice = a_slice
-        self.b_slice = b_slice
-        self.inc = inc
-        self.tag = tag
-
-        self.sets = [] if inc else [b]
-        self.incs = [b] if inc else []
-        self.reads = [a]
-        self.updates = []
-
-    def _descstr(self):
-        return '%s[%s] -> %s[%s], inc=%s' % (
-            self.a, self.a_slice, self.b, self.b_slice, self.inc)
-
-    def make_step(self, signals, dt, rng):
-        a = signals[self.a]
-        b = signals[self.b]
-        a_slice = self.a_slice
-        b_slice = self.b_slice
-        inc = self.inc
-
-        def step_slicedcopy():
-            if inc:
-                b[b_slice] += a[a_slice]
-            else:
-                b[b_slice] = a[a_slice]
-        return step_slicedcopy
+        return step
 
 
 class ElementwiseInc(Operator):
@@ -303,8 +216,9 @@ class ElementwiseInc(Operator):
         self.reads = [A, X]
         self.updates = []
 
-    def _descstr(self):
-        return '%s, %s -> %s' % (self.A, self.X, self.Y)
+    def __str__(self):
+        return 'ElementwiseInc(%s, %s -> %s "%s")' % (
+            str(self.A), str(self.X), str(self.Y), self.tag)
 
     def make_step(self, signals, dt, rng):
         A = signals[self.A]
@@ -318,13 +232,13 @@ class ElementwiseInc(Operator):
         assert all(len(s) == 2 for s in [Ashape, Xshape, Yshape])
         for da, dx, dy in zip(Ashape, Xshape, Yshape):
             if not (da in [1, dy] and dx in [1, dy] and max(da, dx) == dy):
-                raise BuildError("Incompatible shapes in ElementwiseInc: "
+                raise ValueError("Incompatible shapes in ElementwiseInc: "
                                  "Trying to do %s += %s * %s" %
                                  (Yshape, Ashape, Xshape))
 
-        def step_elementwiseinc():
+        def step():
             Y[...] += A * X
-        return step_elementwiseinc
+        return step
 
 
 def reshape_dot(A, X, Y, tag=None):
@@ -348,8 +262,8 @@ def reshape_dot(A, X, Y, tag=None):
         incshape = ashape[:-1] + xshape[:-2] + xshape[-1:]
 
     if (badshape or incshape != Y.shape) and incshape != ():
-        raise BuildError("shape mismatch in %s: %s x %s -> %s"
-                         % (tag, A.shape, X.shape, Y.shape))
+        raise ValueError('shape mismatch in %s: %s x %s -> %s' % (
+            tag, A.shape, X.shape, Y.shape))
 
     # Reshape to handle case when np.dot(A, X) and Y are both scalars
     return (np.dot(A, X)).size == Y.size == 1
@@ -362,24 +276,26 @@ class DotInc(Operator):
     with NengoOCL.
     """
 
-    def __init__(self, A, X, Y, tag=None):
+    def __init__(self, A, X, Y, as_update=False, tag=None):
         if X.ndim >= 2 and any(d > 1 for d in X.shape[1:]):
-            raise BuildError("X must be a column vector")
+            raise ValueError("X must be a column vector")
         if Y.ndim >= 2 and any(d > 1 for d in Y.shape[1:]):
-            raise BuildError("Y must be a column vector")
+            raise ValueError("Y must be a column vector")
 
         self.A = A
         self.X = X
         self.Y = Y
+        self.as_update = as_update
         self.tag = tag
 
         self.sets = []
-        self.incs = [Y]
+        self.incs = [] if as_update else [Y]
         self.reads = [A, X]
-        self.updates = []
+        self.updates = [Y] if as_update else []
 
-    def _descstr(self):
-        return '%s, %s -> %s' % (self.A, self.X, self.Y)
+    def __str__(self):
+        return 'DotInc(%s, %s -> %s "%s")' % (
+            self.A, self.X, self.Y, self.tag)
 
     def make_step(self, signals, dt, rng):
         X = signals[self.X]
@@ -387,49 +303,44 @@ class DotInc(Operator):
         Y = signals[self.Y]
         reshape = reshape_dot(A, X, Y, self.tag)
 
-        def step_dotinc():
+        def step():
             inc = np.dot(A, X)
             if reshape:
                 inc = np.asarray(inc).reshape(Y.shape)
             Y[...] += inc
-        return step_dotinc
+        return step
 
 
 class SimPyFunc(Operator):
     """Set signal `output` by some Python function of x, possibly t."""
 
-    def __init__(self, output, fn, t, x, tag=None):
+    def __init__(self, output, fn, t_in, x):
         self.output = output
         self.fn = fn
-        self.t = t
+        self.t_in = t_in
         self.x = x
-        self.tag = tag
 
         self.sets = [] if output is None else [output]
         self.incs = []
-        self.reads = ([] if t is None else [t]) + ([] if x is None else [x])
+        self.reads = [] if x is None else [x]
         self.updates = []
 
-    def _descstr(self):
-        return '%s -> %s, fn=%r' % (self.x, self.output, self.fn.__name__)
+    def __str__(self):
+        return "SimPyFunc(%s -> %s '%s')" % (self.x, self.output, self.fn)
 
     def make_step(self, signals, dt, rng):
-        fn = self.fn
         output = signals[self.output] if self.output is not None else None
-        t = signals[self.t] if self.t is not None else None
-        x = signals[self.x] if self.x is not None else None
+        fn = self.fn
+        t_in = self.t_in
+        t_sig = signals['__time__']
 
-        def step_simpyfunc():
-            args = (np.copy(x),) if x is not None else ()
-            y = fn(t.item(), *args) if t is not None else fn(*args)
+        def step():
+            args = () if self.x is None else (np.copy(signals[self.x]),)
+            y = fn(t_sig.item(), *args) if t_in else fn(*args)
             if output is not None:
-                if y is None:  # required since Numpy turns None into NaN
-                    raise SimulationError(
-                        "Function %r returned None" % fn.__name__)
-                try:
-                    output[...] = y
-                except ValueError:
-                    raise SimulationError("Function %r returned invalid value "
-                                          "%r" % (fn.__name__, y))
+                if y is None:
+                    raise ValueError(
+                        "Function '%s' returned invalid value" % fn.__name__)
+                output[...] = y
 
-        return step_simpyfunc
+        return step

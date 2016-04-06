@@ -31,10 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import
 
-import io
 import os
 import platform
+import sys
 import time
+import unicodedata
 import uuid
 
 import numpy as np
@@ -42,14 +43,9 @@ import numpy as np
 try:
     import IPython
     from IPython import get_ipython
+    from IPython.config import Config
     from IPython.display import HTML
-
-    if IPython.version_info[0] <= 3:
-        from IPython.config import Config
-        from IPython.nbconvert import HTMLExporter, PythonExporter
-    else:
-        from traitlets.config import Config
-        from nbconvert import HTMLExporter, PythonExporter
+    from IPython.nbconvert import HTMLExporter, PythonExporter
 
     # nbformat.current deprecated in IPython 3.0
     if IPython.version_info[0] <= 2:
@@ -60,14 +56,9 @@ try:
         def read_nb(fp):
             return current.read(fp, 'json')
     else:
-        if IPython.version_info[0] == 3:
-            from IPython import nbformat
-            from IPython.nbformat import write as write_nb
-            from IPython.nbformat import NotebookNode
-        else:
-            import nbformat
-            from nbformat import write as write_nb
-            from nbformat import NotebookNode
+        from IPython import nbformat
+        from IPython.nbformat import write as write_nb
+        from IPython.nbformat import NotebookNode
 
         def read_nb(fp):
             # Have to load as version 4 or running notebook fails
@@ -75,6 +66,31 @@ try:
 except ImportError:
     def get_ipython():
         return None
+
+
+def in_ipynb():
+    """Determines if code is executed in an IPython notebook.
+
+    Returns
+    -------
+    bool
+       ``True`` if the code is executed in an IPython notebook, otherwise
+       ``False``.
+
+    Notes
+    -----
+    It is possible to connect to a kernel started from an IPython notebook
+    from outside of the notebook. Thus, this function might return ``True``
+    even though the code is not running in an IPython notebook.
+    """
+    if get_ipython() is not None:
+        cfg = get_ipython().config
+        app_key = 'IPKernelApp'
+        if 'parent_appname' not in cfg[app_key]:
+            app_key = 'KernelApp'  # was used by old IPython versions
+        if cfg[app_key].get('parent_appname') == 'ipython-notebook':
+            return True
+    return False
 
 
 def has_ipynb_widgets():
@@ -86,14 +102,10 @@ def has_ipynb_widgets():
         ``True`` if IPython widgets are available, otherwise ``False``.
     """
     try:
-        if IPython.version_info[0] <= 3:
-            from IPython.html import widgets as ipywidgets
-            from IPython.utils import traitlets
-        else:
-            import ipywidgets
-            import traitlets
-        assert ipywidgets
-        assert traitlets
+        import IPython.html.widgets
+        import IPython.utils.traitlets
+        assert IPython.html.widgets
+        assert IPython.utils.traitlets
     except ImportError:
         return False
     else:
@@ -175,14 +187,13 @@ def export_py(nb, dest_path=None):
     """
     exporter = PythonExporter()
     body, resources = exporter.from_notebook_node(nb)
+    if sys.version_info[0] == 2:
+        body = unicodedata.normalize('NFKD', body).encode('ascii', 'ignore')
     # We'll remove %matplotlib inline magic, but leave the rest
-    body = body.replace(u"get_ipython().magic(u'matplotlib inline')\n", u"")
-    body = body.replace(u"get_ipython().magic('matplotlib inline')\n", u"")
-    # Also remove the IPython notebook extension
-    body = body.replace(u"get_ipython().magic(u'load_ext nengo.ipynb')\n", u"")
-    body = body.replace(u"get_ipython().magic('load_ext nengo.ipynb')\n", u"")
+    body = body.replace("get_ipython().magic(u'matplotlib inline')\n", "")
+    body = body.replace("get_ipython().magic('matplotlib inline')\n", "")
     if dest_path is not None:
-        with io.open(dest_path, 'w', encoding='utf-8') as f:
+        with open(dest_path, 'w') as f:
             f.write(body)
     return body
 
@@ -231,7 +242,7 @@ def export_html(nb, dest_path=None, image_dir=None, image_rel_dir=None):
         html_out = export_images(resources, image_dir, image_rel_dir, html_out)
 
     if dest_path is not None:
-        with io.open(dest_path, 'w', encoding='utf-8') as f:
+        with open(dest_path, 'w') as f:
             f.write(html_out)
     return html_out
 

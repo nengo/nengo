@@ -8,6 +8,15 @@ import numpy as np
 # Only test for Python 2 so that we have less changes for Python 4
 PY2 = sys.version_info[0] == 2
 
+# OrderedDict and Counter were introduced in Python 2.7
+try:
+    from collections import Counter, OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+    from counter import Counter
+assert Counter
+assert OrderedDict
+
 # If something's changed from Python 2 to 3, we handle that here
 if PY2:
     import cPickle as pickle
@@ -38,17 +47,6 @@ if PY2:
                                'replace')
             StringIO.write(self, data)
 
-    class ResourceWarning(DeprecationWarning):
-        """A warning about resource usage.
-
-        Note that we subclass from DeprecationWarning here solely because
-        DeprecationWarnings are filtered out by default in Python 2.7,
-        while in Python 3.2+ both DeprecationWarnings and ResourceWarnings
-        are filtered out. Subclassing from DeprecationWarning gives
-        the same (or at least very similar) behavior in Python 2 and 3
-        without having to modify filters in the warnings module.
-        """
-
 else:
     import pickle
     import configparser
@@ -57,7 +55,6 @@ else:
     string_types = (str,)
     int_types = (int,)
     range = range
-    ResourceWarning = ResourceWarning
 
     # No iterkeys; use ``for key in dict:`` instead
     iteritems = lambda d: iter(d.items())
@@ -73,15 +70,17 @@ else:
         return s
 
 
+assert configparser
+assert pickle
+assert TextIO
+
+
 def is_integer(obj):
     return isinstance(obj, int_types + (np.integer,))
 
 
 def is_iterable(obj):
-    if isinstance(obj, np.ndarray):
-        return obj.ndim > 0  # 0-d arrays give error if iterated over
-    else:
-        return isinstance(obj, collections.Iterable)
+    return isinstance(obj, collections.Iterable)
 
 
 def is_number(obj, check_complex=False):
@@ -95,8 +94,7 @@ def is_string(obj):
 
 
 def is_array(obj):
-    # np.generic allows us to return true for scalars as well as true arrays
-    return isinstance(obj, (np.ndarray, np.generic))
+    return isinstance(obj, np.ndarray)
 
 
 def is_array_like(obj):

@@ -87,11 +87,6 @@ def test_full_transform():
                                                        [0, 0, 3],
                                                        [0, 1, 0]]))
 
-        # using vector 1D
-        conn = nengo.Connection(ens1, ens1, transform=[5])
-        assert full_transform(conn).ndim != 1
-        assert np.all(full_transform(conn) == 5)
-
         # using vector and lists
         conn = nengo.Connection(ens3[[1, 0, 2]], ens3[[2, 0, 1]],
                                 transform=[1, 2, 3])

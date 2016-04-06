@@ -12,12 +12,11 @@ http://nbviewer.ipython.org/urls/gist.github.com/ChrisBeaumont/5758381/raw/descr
 
 """
 
+import collections
 import inspect
 
-from nengo.exceptions import ConfigError
 from nengo.params import is_param
 from nengo.utils.compat import itervalues
-from nengo.utils.threading import ThreadLocalStack
 
 
 class ClassParams(object):
@@ -39,7 +38,8 @@ class ClassParams(object):
         return self in self.get_param(key)
 
     def __getattr__(self, key):
-        return self.get_param(key).get_default(self)
+        param = self.get_param(key)
+        return param.defaults[self] if self in param else param.default
 
     def __setattr__(self, key, value):
         """Overridden to handle instance descriptors manually.
@@ -51,14 +51,16 @@ class ClassParams(object):
         else:
             param = self.get_param(key)
             if not param.configurable:
-                raise ConfigError("Parameter '%s' is not configurable" % key)
-            param.set_default(self, value)
+                raise ValueError("Parameter '%s' is not configurable" % key)
+
+            param.validate(self, value)
+            param.defaults[self] = value
 
     def __delattr__(self, key):
         if key.startswith("_"):
             super(ClassParams, self).__delattr__(key)
         else:
-            self.get_param(key).del_default(self)
+            del self.get_param(key).defaults[self]
 
     def __str__(self):
         name = self._configures.__name__
@@ -90,11 +92,11 @@ class ClassParams(object):
 
     def set_param(self, key, value):
         if not is_param(value):
-            raise ConfigError("'%s' is not a parameter" % key)
+            raise TypeError("'%s' is not a parameter" % key)
         elif key in dir(self._configures):
-            raise ConfigError("'%s' is already a parameter in %s. "
-                              "Please choose a different name."
-                              % (key, self._configures.__name__))
+            raise ValueError("'%s' is already a parameter in %s. "
+                             "Please choose a different name."
+                             % (key, self._configures.__name__))
         self._extraparams[key] = value
 
     def update(self, d):
@@ -133,7 +135,7 @@ class InstanceParams(object):
 
     def __getattr__(self, key):
         if key in self._clsparams.default_params:
-            raise ConfigError(
+            raise AttributeError(
                 "Cannot configure the built-in parameter '%s' on an instance "
                 "of '%s'. Please get the attribute directly from the object."
                 % (key, self._configures.__class__.__name__))
@@ -148,7 +150,7 @@ class InstanceParams(object):
             super(InstanceParams, self).__setattr__(key, value)
         elif key in dir(self._configures):
             # Disallow configuring attributes the instance already has
-            raise ConfigError(
+            raise AttributeError(
                 "Cannot configure the built-in parameter '%s' on an instance "
                 "of '%s'. Please set the attribute directly on the object."
                 % (key, self._configures.__class__.__name__))
@@ -160,7 +162,7 @@ class InstanceParams(object):
             super(InstanceParams, self).__delattr__(key)
         elif key in dir(self._configures):
             # Disallow configuring attributes the instance already has
-            raise ConfigError(
+            raise AttributeError(
                 "Cannot configure the built-in parameter '%s' on an instance "
                 "of '%s'. Please delete the attribute directly on the object."
                 % (key, self._configures.__class__.__name__))
@@ -185,14 +187,14 @@ class InstanceParams(object):
         return "\n".join(lines)
 
     def get_param(self, key):
-        raise ConfigError("Cannot get parameters on an instance; use "
-                          "'config[%s].get_param' instead."
-                          % self._configures.__class__.__name__)
+        raise ValueError("Cannot get parameters on an instance; use "
+                         "'config[%s].get_param' instead."
+                         % self._configures.__class__.__name__)
 
     def set_param(self, key, value):
-        raise ConfigError("Cannot set parameters on an instance; use "
-                          "'config[%s].set_param' instead."
-                          % self._configures.__class__.__name__)
+        raise ValueError("Cannot set parameters on an instance; use "
+                         "'config[%s].set_param' instead."
+                         % self._configures.__class__.__name__)
 
 
 class Config(object):
@@ -225,12 +227,12 @@ class Config(object):
     1
     """
 
-    context = ThreadLocalStack(maxsize=100)  # static stack of Config objects
+    context = collections.deque(maxlen=100)  # static stack of Config objects
 
     def __init__(self, *configures):
         self.params = {}
-        if len(configures) > 0:
-            self.configures(*configures)
+        for cls in configures:
+            self.configures(cls)
 
     @staticmethod
     def default(nengo_cls, param):
@@ -246,9 +248,9 @@ class Config(object):
         # Get the descriptor
         desc = getattr(nengo_cls, param)
         if not desc.configurable:
-            raise ConfigError("Unconfigurable parameters have no defaults. "
-                              "Please ensure you are not using the 'Default' "
-                              "keyword with an unconfigurable parameter.")
+            raise ValueError("Unconfigurable parameters have no defaults. "
+                             "Please ensure you are not using the 'Default' "
+                             "keyword with an unconfigurable parameter.")
 
         for config in reversed(Config.context):
 
@@ -292,19 +294,18 @@ class Config(object):
 
     def __enter__(self):
         Config.context.append(self)
-        return self
 
     def __exit__(self, dummy_exc_type, dummy_exc_value, dummy_tb):
         if len(Config.context) == 0:
-            raise ConfigError("Config.context in bad state; was empty when "
-                              "exiting from a 'with' block.")
+            raise RuntimeError("Config.context in bad state; was empty when "
+                               "exiting from a 'with' block.")
 
         config = Config.context.pop()
 
         if config is not self:
-            raise ConfigError("Config.context in bad state; was expecting "
-                              "current context to be '%s' but instead got "
-                              "'%s'." % (self, config))
+            raise RuntimeError("Config.context in bad state; was expecting "
+                               "current context to be '%s' but instead got "
+                               "'%s'." % (self, config))
 
     def __getitem__(self, key):
         # If we have the exact thing, we'll just return it
@@ -318,7 +319,7 @@ class Config(object):
                     return self.params[cls]
 
             # If no superclass ClassParams, KeyError
-            raise ConfigError(
+            raise KeyError(
                 "Type '%(name)s' is not set up for configuration. "
                 "Call 'configures(%(name)s)' first." % {'name': key.__name__})
 
@@ -331,7 +332,7 @@ class Config(object):
                 return instparams
 
         # If we don't configure the class, KeyError
-        raise ConfigError(
+        raise KeyError(
             "Type '%(name)s' is not set up for configuration. Call "
             "configures('%(name)s') first." % {'name': key.__class__.__name__})
 
@@ -342,9 +343,6 @@ class Config(object):
     def __str__(self):
         return "\n".join(str(v) for v in itervalues(self.params))
 
-    def configures(self, *classes):
+    def configures(self, cls):
         """Start configuring a particular class and its instances."""
-        if len(classes) == 0:
-            raise TypeError("configures() takes 1 or more arguments (0 given)")
-        for klass in classes:
-            self.params[klass] = ClassParams(klass)
+        self.params[cls] = ClassParams(cls)

@@ -7,69 +7,72 @@ from .stdlib import groupby
 
 
 def operator_depencency_graph(operators):  # noqa: C901
+    dg = defaultdict(set)
+
+    for op in operators:
+        add_edges(dg, itertools.product(op.reads + op.updates, [op]))
+        add_edges(dg, itertools.product([op], op.sets + op.incs))
+        # -- If a node is not connected to anything else, its ops won't be
+        #    added through add_edges. We add them explicitly here instead.
+        if op not in dg:
+            dg[op] = set()
+
     # -- all views of a base object in a particular dictionary
-    by_base_sets = defaultdict(set)
-    by_base_writes = defaultdict(set)
-    by_base_reads = defaultdict(set)
+    by_base_writes = defaultdict(list)
+    by_base_reads = defaultdict(list)
     reads = defaultdict(list)
     sets = defaultdict(list)
     incs = defaultdict(list)
     ups = defaultdict(list)
 
     for op in operators:
-        for sig in op.sets:
-            by_base_sets[sig.base].add(sig)
+        for node in op.sets + op.incs:
+            by_base_writes[node.base].append(node)
 
-        for sig in op.sets + op.incs:
-            by_base_writes[sig.base].add(sig)
+        for node in op.reads:
+            by_base_reads[node.base].append(node)
 
-        for sig in op.reads:
-            by_base_reads[sig.base].add(sig)
+        for node in op.reads:
+            reads[node].append(op)
 
-        for sig in op.reads:
-            reads[sig].append(op)
+        for node in op.sets:
+            sets[node].append(op)
 
-        for sig in op.sets:
-            sets[sig].append(op)
+        for node in op.incs:
+            incs[node].append(op)
 
-        for sig in op.incs:
-            incs[sig].append(op)
-
-        for sig in op.updates:
-            ups[sig].append(op)
+        for node in op.updates:
+            ups[node].append(op)
 
     validate_ops(sets, ups, incs)
 
     # -- Scheduling algorithm for serial evaluation:
-    #    1) All sets on a given memory block
-    #    2) All incs on a given memory block
-    #    3) All reads on a given memory block
-    #    4) All updates on a given memory block
-
-    dg = {op: set() for op in operators}  # ops are nodes of the graph
+    #    1) All sets on a given base signal
+    #    2) All incs on a given base signal
+    #    3) All reads on a given base signal
+    #    4) All updates on a given base signal
 
     # -- incs depend on sets
-    for sig, post_ops in iteritems(incs):
-        pre_ops = list(sets[sig])
-        for sig2 in by_base_sets[sig.base]:
-            if sig.may_share_memory(sig2):
-                pre_ops.extend(sets[sig2])
+    for node, post_ops in iteritems(incs):
+        pre_ops = list(sets[node])
+        for other in by_base_writes[node.base]:
+            pre_ops.extend(sets[other])
         add_edges(dg, itertools.product(set(pre_ops), post_ops))
 
     # -- reads depend on writes (sets and incs)
-    for sig, post_ops in iteritems(reads):
-        pre_ops = sets[sig] + incs[sig]
-        for sig2 in by_base_writes[sig.base]:
-            if sig.may_share_memory(sig2):
-                pre_ops.extend(sets[sig2] + incs[sig2])
+    for node, post_ops in iteritems(reads):
+        pre_ops = sets[node] + incs[node]
+        for other in by_base_writes[node.base]:
+            pre_ops.extend(sets[other] + incs[other])
         add_edges(dg, itertools.product(set(pre_ops), post_ops))
 
     # -- updates depend on reads, sets, and incs.
-    for sig, post_ops in iteritems(ups):
-        pre_ops = sets[sig] + incs[sig] + reads[sig]
-        for sig2 in by_base_reads[sig.base].union(by_base_writes[sig.base]):
-            if sig.may_share_memory(sig2):
-                pre_ops.extend(sets[sig2] + incs[sig2] + reads[sig2])
+    for node, post_ops in iteritems(ups):
+        pre_ops = sets[node] + incs[node] + reads[node]
+        for other in by_base_writes[node.base]:
+            pre_ops.extend(sets[other] + incs[other] + reads[other])
+        for other in by_base_reads[node.base]:
+            pre_ops.extend(sets[other] + incs[other] + reads[other])
         add_edges(dg, itertools.product(set(pre_ops), post_ops))
 
     return dg
@@ -77,30 +80,25 @@ def operator_depencency_graph(operators):  # noqa: C901
 
 def validate_ops(sets, ups, incs):
     # -- assert that only one op sets any particular view
-    for sig in sets:
-        sig_sets = sets[sig] + (sets.get(sig.base, []) if sig.is_view else [])
-        assert len(sig_sets) == 1, (sig, sig_sets)
+    for node in sets:
+        assert len(sets[node]) == 1, (node, sets[node])
 
     # -- assert that only one op updates any particular view
-    for sig in ups:
-        sig_ups = ups[sig] + (ups.get(sig.base, []) if sig.is_view else [])
-        assert len(sig_ups) == 1, (sig, sig_ups)
+    for node in ups:
+        assert len(ups[node]) == 1, (node, ups[node])
 
-    # --- assert that any sig that is incremented is also set/updated
-    for sig in incs:
-        sig_sets_ups = sets.get(sig, []) + ups.get(sig, []) + (
-            sets.get(sig.base, []) + ups.get(sig.base, [])
-            if sig.is_view else [])
-        assert len(sig_sets_ups) > 0, (sig)
+    # --- assert that any node that is incremented is also set/updated
+    for node in incs:
+        assert len(sets[node] + ups[node]) > 0, (node)
 
     # -- assert that no two views are both set and aliased
     for _, base_group in groupby(sets, lambda x: x.base, hashable=True):
-        for sig, sig2 in itertools.combinations(base_group, 2):
-            assert not sig.may_share_memory(sig2), (
-                "%s shares memory with %s" % (sig, sig2))
+        for node, other in itertools.combinations(base_group, 2):
+            assert not node.shares_memory_with(other), (
+                "%s shares memory with %s" % (node, other))
 
     # -- assert that no two views are both updated and aliased
     for _, base_group in groupby(ups, lambda x: x.base, hashable=True):
-        for sig, sig2 in itertools.combinations(base_group, 2):
-            assert not sig.may_share_memory(sig2), (
-                "%s shares memory with %s" % (sig, sig2))
+        for node, other in itertools.combinations(base_group, 2):
+            assert not node.shares_memory_with(other), (
+                "%s shares memory with %s" % (node, other))

@@ -8,25 +8,18 @@ remove the `E` parameter or make it manditory as they see fit.
 """
 import collections
 import logging
-import time
 
 import numpy as np
 
-import nengo.utils.numpy as npext
-from nengo.exceptions import ValidationError
 from nengo.params import Parameter
+import nengo.utils.numpy as npext
 from nengo.utils.compat import range, with_metaclass, iteritems
 from nengo.utils.magic import DocstringInheritor
 
 logger = logging.getLogger(__name__)
 
 
-def _rmses(A, X, Y):
-    """Returns the root-mean-squared error (RMSE) of the solution X."""
-    return npext.rms(Y - np.dot(A, X), axis=0)
-
-
-def cholesky(A, y, sigma, rng=None, transpose=None):
+def cholesky(A, y, sigma, transpose=None):
     """Solve the least-squares system using the Cholesky decomposition."""
     m, n = A.shape
     if transpose is None:
@@ -55,11 +48,11 @@ def cholesky(A, y, sigma, rng=None, transpose=None):
         x = np.dot(L, np.dot(L.T, b))
 
     x = np.dot(A.T, x) if transpose else x
-    info = {'rmses': _rmses(A, x, y)}
+    info = {'rmses': npext.rms(y - np.dot(A, x), axis=0)}
     return x, info
 
 
-def conjgrad_scipy(A, Y, sigma, rng=None, tol=1e-4):
+def conjgrad_scipy(A, Y, sigma, tol=1e-4):
     """Solve the least-squares system using Scipy's conjugate gradient."""
     import scipy.sparse.linalg
     Y, m, n, d, matrix_in = _format_system(A, Y)
@@ -80,11 +73,13 @@ def conjgrad_scipy(A, Y, sigma, rng=None, tol=1e-4):
         X[:, i], infos[i] = scipy.sparse.linalg.cg(
             G, B[:, i], tol=tol, callback=callback)
 
-    info = {'rmses': _rmses(A, X, Y), 'iterations': itns, 'info': infos}
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+            'iterations': itns,
+            'info': infos}
     return X if matrix_in else X.flatten(), info
 
 
-def lsmr_scipy(A, Y, sigma, rng=None, tol=1e-4):
+def lsmr_scipy(A, Y, sigma, tol=1e-4):
     """Solve the least-squares system using Scipy's LSMR."""
     import scipy.sparse.linalg
     Y, m, n, d, matrix_in = _format_system(A, Y)
@@ -96,7 +91,8 @@ def lsmr_scipy(A, Y, sigma, rng=None, tol=1e-4):
         X[:, i], _, itns[i], _, _, _, _, _ = scipy.sparse.linalg.lsmr(
             A, Y[:, i], damp=damp, atol=tol, btol=tol)
 
-    info = {'rmses': _rmses(A, X, Y), 'iterations': itns}
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+            'iterations': itns}
     return X if matrix_in else X.flatten(), info
 
 
@@ -133,7 +129,7 @@ def _conjgrad_iters(calcAx, b, x, maxiters=None, rtol=1e-6):
     return x, i+1
 
 
-def conjgrad(A, Y, sigma, rng=None, X0=None, maxiters=None, tol=1e-2):
+def conjgrad(A, Y, sigma, X0=None, maxiters=None, tol=1e-2):
     """Solve the least-squares system using conjugate gradient."""
     Y, m, n, d, matrix_in = _format_system(A, Y)
 
@@ -148,11 +144,12 @@ def conjgrad(A, Y, sigma, rng=None, X0=None, maxiters=None, tol=1e-2):
         X[:, i], iters[i] = _conjgrad_iters(
             G, B[:, i], X[:, i], maxiters=maxiters, rtol=rtol)
 
-    info = {'rmses': _rmses(A, X, Y), 'iterations': iters}
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+            'iterations': iters}
     return X if matrix_in else X.flatten(), info
 
 
-def block_conjgrad(A, Y, sigma, rng=None, X0=None, tol=1e-2):
+def block_conjgrad(A, Y, sigma, X0=None, tol=1e-2):
     """Solve a multiple-RHS least-squares system using block conjuate gradient.
     """
     Y, m, n, d, matrix_in = _format_system(A, Y)
@@ -186,51 +183,8 @@ def block_conjgrad(A, Y, sigma, rng=None, X0=None, tol=1e-2):
         P = R + np.dot(P, beta)
         Rsold = Rsnew
 
-    info = {'rmses': _rmses(A, X, Y), 'iterations': i + 1}
-    return X if matrix_in else X.flatten(), info
-
-
-def svd(A, Y, sigma, rng=None):
-    """Solve the least-squares system using a full SVD."""
-    Y, m, _, _, matrix_in = _format_system(A, Y)
-    U, s, V = np.linalg.svd(A, full_matrices=0)
-    si = s / (s**2 + m * sigma**2)
-    X = np.dot(V.T, si[:, None] * np.dot(U.T, Y))
-    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0)}
-    return X if matrix_in else X.flatten(), info
-
-
-def randomized_svd(A, Y, sigma, rng=np.random,
-                   n_components=60, n_oversamples=10, **kwargs):
-    """Solve the least-squares system using a randomized (partial) SVD.
-
-    Parameters
-    ----------
-    n_components : int (default is 50)
-        The number of SVD components to compute. A small survey of activity
-        matrices suggests that the first 50 components capture almost all
-        the variance.
-    n_oversamples: int (default is 10)
-        The number of additional samples on the range of A.
-    n_iter : int (default is 0)
-        The number of power iterations to perform (can help with noisy data).
-
-    See also
-    --------
-    ``sklearn.utils.extmath.randomized_svd`` for details about the parameters.
-    """
-    from sklearn.utils.extmath import randomized_svd as sklearn_randomized_svd
-
-    Y, m, n, _, matrix_in = _format_system(A, Y)
-    if min(m, n) <= n_components + n_oversamples:
-        # more efficient to do a full SVD
-        return svd(A, Y, sigma, rng=rng)
-
-    U, s, V = sklearn_randomized_svd(
-        A, n_components, random_state=rng, **kwargs)
-    si = s / (s**2 + m * sigma**2)
-    X = np.dot(V.T, si[:, None] * np.dot(U.T, Y))
-    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0)}
+    info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+            'iterations': i + 1}
     return X if matrix_in else X.flatten(), info
 
 
@@ -276,17 +230,15 @@ class Solver(with_metaclass(DocstringInheritor)):
         """
         raise NotImplementedError("Solvers must implement '__call__'")
 
-    def mul_encoders(self, Y, E, copy=False):
+    def mul_encoders(self, Y, E):
         if self.weights:
             if E is None:
-                raise ValidationError(
-                    "Encoders must be provided for weight solver", attr='E')
+                raise ValueError("Encoders must be provided for weight solver")
             return np.dot(Y, E)
         else:
             if E is not None:
-                raise ValidationError(
-                    "Encoders must be 'None' for decoder solver", attr='E')
-            return Y.copy() if copy else Y
+                raise ValueError("Encoders must be 'None' for decoder solver")
+            return Y
 
     def __hash__(self):
         items = list(self.__dict__.items())
@@ -300,7 +252,7 @@ class Solver(with_metaclass(DocstringInheritor)):
                     a.setflags(write=False)
                     hashes.append(hash(a))
                 else:
-                    raise ValidationError("array is too large to hash", attr=k)
+                    raise ValueError("array is too large to hash")
             elif isinstance(v, collections.Iterable):
                 hashes.append(hash(tuple(v)))
             elif isinstance(v, collections.Callable):
@@ -330,15 +282,12 @@ class Lstsq(Solver):
         self.weights = weights
 
     def __call__(self, A, Y, rng=None, E=None):
-        tstart = time.time()
         Y = self.mul_encoders(Y, E)
         X, residuals2, rank, s = np.linalg.lstsq(A, Y, rcond=self.rcond)
-        t = time.time() - tstart
-        return X, {'rmses': _rmses(A, X, Y),
+        return X, {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
                    'residuals': np.sqrt(residuals2),
                    'rank': rank,
-                   'singular_values': s,
-                   'time': t}
+                   'singular_values': s}
 
 
 class _LstsqNoiseSolver(Solver):
@@ -365,12 +314,10 @@ class LstsqNoise(_LstsqNoiseSolver):
     """Least-squares with additive Gaussian white noise."""
 
     def __call__(self, A, Y, rng=None, E=None):
-        tstart = time.time()
         rng = np.random if rng is None else rng
         sigma = self.noise * A.max()
         A = A + rng.normal(scale=sigma, size=A.shape)
-        X, info = self.solver(A, Y, 0, rng=rng, **self.kwargs)
-        info['time'] = time.time() - tstart
+        X, info = self.solver(A, Y, 0, **self.kwargs)
         return self.mul_encoders(X, E), info
 
 
@@ -378,11 +325,9 @@ class LstsqMultNoise(_LstsqNoiseSolver):
     """Least-squares with multiplicative white noise."""
 
     def __call__(self, A, Y, rng=None, E=None):
-        tstart = time.time()
         rng = np.random if rng is None else rng
         A = A + rng.normal(scale=self.noise, size=A.shape) * A
-        X, info = self.solver(A, Y, 0, rng=rng, **self.kwargs)
-        info['time'] = time.time() - tstart
+        X, info = self.solver(A, Y, 0, **self.kwargs)
         return self.mul_encoders(X, E), info
 
 
@@ -410,10 +355,8 @@ class LstsqL2(_LstsqL2Solver):
     """Least-squares with L2 regularization."""
 
     def __call__(self, A, Y, rng=None, E=None):
-        tstart = time.time()
         sigma = self.reg * A.max()
-        X, info = self.solver(A, Y, sigma, rng=rng, **self.kwargs)
-        info['time'] = time.time() - tstart
+        X, info = self.solver(A, Y, sigma, **self.kwargs)
         return self.mul_encoders(X, E), info
 
 
@@ -421,7 +364,6 @@ class LstsqL2nz(_LstsqL2Solver):
     """Least-squares with L2 regularization on non-zero components."""
 
     def __call__(self, A, Y, rng=None, E=None):
-        tstart = time.time()
         # Compute the equivalent noise standard deviation. This equals the
         # base amplitude (noise_amp times the overall max activation) times
         # the square-root of the fraction of non-zero components.
@@ -431,8 +373,7 @@ class LstsqL2nz(_LstsqL2Solver):
         # we have to make sigma != 0 for numeric reasons.
         sigma[sigma == 0] = sigma.max()
 
-        X, info = self.solver(A, Y, sigma, rng=rng, **self.kwargs)
-        info['time'] = time.time() - tstart
+        X, info = self.solver(A, Y, sigma, **self.kwargs)
         return self.mul_encoders(X, E), info
 
 
@@ -458,8 +399,7 @@ class LstsqL1(Solver):
 
     def __call__(self, A, Y, rng=None, E=None):
         import sklearn.linear_model
-        tstart = time.time()
-        Y = self.mul_encoders(Y, E, copy=True)  # copy since 'fit' may modify Y
+        Y = self.mul_encoders(Y, E)
 
         # TODO: play around with regularization constants (I just guessed).
         #   Do we need to scale regularization by number of neurons, to get
@@ -477,8 +417,7 @@ class LstsqL1(Solver):
         model.fit(A, Y)
         X = model.coef_.T
         X.shape = (A.shape[1], Y.shape[1]) if Y.ndim > 1 else (A.shape[1],)
-        t = time.time() - tstart
-        infos = {'rmses': _rmses(A, X, Y), 'time': t}
+        infos = {'rmses': npext.rms(Y - np.dot(A, X), axis=0)}
         return X, infos
 
 
@@ -507,7 +446,6 @@ class LstsqDrop(Solver):
         self.solver2 = solver2
 
     def __call__(self, A, Y, rng=None, E=None):
-        tstart = time.time()
         Y, m, n, d, matrix_in = _format_system(A, Y)
 
         # solve for coefficients using standard solver
@@ -527,9 +465,8 @@ class LstsqDrop(Solver):
                 X[nonzero, i], info1 = self.solver2(
                     A[:, nonzero], Y[:, i], rng=rng)
 
-        t = time.time() - tstart
-        info = {'rmses': _rmses(A, X, Y), 'info0': info0, 'info1': info1,
-                'time': t}
+        info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+                'info0': info0, 'info1': info1}
         return X if matrix_in else X.flatten(), info
 
 
@@ -550,7 +487,6 @@ class Nnls(Solver):
     def __call__(self, A, Y, rng=None, E=None):
         import scipy.optimize
 
-        tstart = time.time()
         Y, m, n, d, matrix_in = _format_system(A, Y)
         Y = self.mul_encoders(Y, E)
 
@@ -559,8 +495,8 @@ class Nnls(Solver):
         for i in range(d):
             X[:, i], residuals[i] = scipy.optimize.nnls(A, Y[:, i])
 
-        t = time.time() - tstart
-        info = {'rmses': _rmses(A, X, Y), 'residuals': residuals, 'time': t}
+        info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0),
+                'residuals': residuals}
         return X if matrix_in else X.flatten(), info
 
 
@@ -579,37 +515,43 @@ class NnlsL2(Nnls):
         super(NnlsL2, self).__init__(weights)
         self.reg = reg
 
-    def _solve(self, A, Y, rng, E, sigma):
-        tstart = time.time()
-        # form Gram matrix so we can add regularization
-        GA = np.dot(A.T, A)
-        GY = np.dot(A.T, Y)
-        np.fill_diagonal(GA, GA.diagonal() + A.shape[0] * sigma**2)
-        X, info = super(NnlsL2, self).__call__(GA, GY, rng=rng, E=E)
-        t = time.time() - tstart
-        # recompute the RMSE in terms of the original matrices
-        info = {'rmses': _rmses(A, X, Y), 'gram_info': info, 'time': t}
-        return X, info
-
     def __call__(self, A, Y, rng=None, E=None):
-        return self._solve(A, Y, rng, E, sigma=self.reg * A.max())
+        # form Gram matrix so we can add regularization
+        sigma = self.reg * A.max()
+        G = np.dot(A.T, A)
+        Y = np.dot(A.T, Y)
+        np.fill_diagonal(G, G.diagonal() + sigma)
+        return super(NnlsL2, self).__call__(G, Y, rng=rng, E=E)
 
 
-class NnlsL2nz(NnlsL2):
+class NnlsL2nz(Nnls):
     """Non-negative least-squares with L2 regularization on nonzero components.
 
     Similar to `lstsq_L2nz`, except the output values are non-negative.
     """
+    def __init__(self, weights=False, reg=0.1):
+        """
+        weights : boolean, optional
+            If false solve for decoders (default), otherwise solve for weights.
+        reg : float, optional
+            Amount of regularization, as a fraction of the neuron activity.
+        """
+        super(NnlsL2nz, self).__init__(weights)
+        self.reg = reg
 
     def __call__(self, A, Y, rng=None, E=None):
         sigma = (self.reg * A.max()) * np.sqrt((A > 0).mean(axis=0))
         sigma[sigma == 0] = 1
-        return self._solve(A, Y, rng, E, sigma=sigma)
+
+        # form Gram matrix so we can add regularization
+        G = np.dot(A.T, A)
+        Y = np.dot(A.T, Y)
+        np.fill_diagonal(G, G.diagonal() + sigma)
+        return super(NnlsL2nz, self).__call__(G, Y, rng=rng, E=E)
 
 
 class SolverParam(Parameter):
     def validate(self, instance, solver):
         if solver is not None and not isinstance(solver, Solver):
-            raise ValidationError("'%s' is not a solver" % solver,
-                                  attr=self.name, obj=instance)
+            raise ValueError("'%s' is not a solver" % solver)
         super(SolverParam, self).validate(instance, solver)

@@ -125,7 +125,7 @@ class Thalamus(Module):
                              sink, transform=transform,
                              synapse=self.synapse_direct)
 
-    def get_gate(self, index, target_name):
+    def get_gate(self, index):
         """Return the gate for an action
 
         The gate will be created if it does not already exist.  The gate
@@ -134,27 +134,17 @@ class Thalamus(Module):
         for inhibiting ensembles that should only be active when this
         action is active.
         """
-
-        target_module = self.spa.get_module(target_name)
-
         if index not in self.gates:
-            with target_module:
+            with self:
                 intercepts = Uniform(self.threshold_gate, 1)
                 gate = nengo.Ensemble(self.neurons_gate,
                                       dimensions=1,
                                       intercepts=intercepts,
                                       label='gate[%d]' % index,
                                       encoders=[[1]] * self.neurons_gate)
-                if not hasattr(target_module, 'bias'):
-                    target_module.bias = nengo.Node([1], label=target_name
-                                                    + " bias")
-                nengo.Connection(target_module.bias, gate, synapse=None)
-
-            with self.spa:
                 nengo.Connection(self.actions.ensembles[index], gate,
                                  synapse=self.synapse_to_gate, transform=-1)
-
-            with self:
+                nengo.Connection(self.bias, gate, synapse=None)
                 self.gates[index] = gate
         return self.gates[index]
 
@@ -180,7 +170,7 @@ class Thalamus(Module):
             Whether to perform inverse convolution on the source.
         """
         with self:
-            gate = self.get_gate(index, target_name)
+            gate = self.get_gate(index)
 
             target, target_vocab = self.spa.get_module_input(target_name)
             source, source_vocab = self.spa.get_module_output(source_name)
@@ -206,7 +196,6 @@ class Thalamus(Module):
             elif dim % subdim != 0:
                 subdim = 1
 
-        with target_module:
             channel = nengo.networks.EnsembleArray(
                 self.neurons_channel_dim * subdim,
                 dim // subdim,
@@ -249,16 +238,15 @@ class Thalamus(Module):
         effect : action_objects.Convolution
             The details of the convolution to implement
         """
-        target_module = self.spa.get_module(target_name)
         cconv = nengo.spa.action_build.convolution(self, target_name, effect,
                                                    self.neurons_cconv,
                                                    self.synapse_channel)
 
-        gate = self.get_gate(index, target_name)
+        gate = self.get_gate(index)
 
-        with target_module:
+        with self:
             # inhibit the convolution when the action is not chosen
+            inhibit = [[-self.route_inhibit]] * (self.neurons_cconv)
             for e in cconv.product.all_ensembles:
-                inhibit = -np.ones((e.n_neurons, 1)) * self.route_inhibit
                 nengo.Connection(gate, e.neurons, transform=inhibit,
                                  synapse=self.synapse_inhibit)

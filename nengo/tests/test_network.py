@@ -1,14 +1,13 @@
 import pickle
 import tempfile
-from collections import Counter
 
 import pytest
 
 import nengo
-from nengo.utils.testing import ThreadedAssertion
+from nengo.utils.compat import Counter
 
 
-def test_basic_context():
+def test_basic_context(Simulator):
     # We must give the two Networks different labels because object comparison
     # is done using identifiers that stem from the top-level Network label.
     model1 = nengo.Network(label="test1")
@@ -35,7 +34,7 @@ def test_basic_context():
         assert e4 in model2.ensembles
 
 
-def test_nested_context():
+def test_nested_context(Simulator):
     model = nengo.Network()
     with model:
         con1 = nengo.Network()
@@ -68,7 +67,7 @@ def test_nested_context():
         assert e6 not in con1.ensembles
 
 
-def test_context_errors():
+def test_context_errors(Simulator):
     def add_something():
         nengo.Ensemble(1, dimensions=1)
 
@@ -92,22 +91,7 @@ def test_context_errors():
     nengo.Node(output=[0], add_to_container=False)
 
 
-def test_context_is_threadsafe():
-    class CheckIndependence(ThreadedAssertion):
-        def init_thread(self, worker):
-            setattr(worker, 'model', nengo.Network())
-            worker.model.__enter__()
-
-        def assert_thread(self, worker):
-            assert list(nengo.Network.context) == [worker.model]
-
-        def finish_thread(self, worker):
-            worker.model.__exit__(*worker.exc_info)
-
-    CheckIndependence(n_threads=2)
-
-
-def test_get_objects():
+def test_get_objects(Simulator):
     model = nengo.Network()
     with model:
         ens1 = nengo.Ensemble(10, 1)

@@ -6,13 +6,13 @@ import logging
 import os
 import re
 import sys
-import threading
 import time
 import warnings
 
 import numpy as np
+import pytest
 
-from .compat import is_string, reraise
+from .compat import is_string
 from .logging import CaptureLogHandler, console_formatter
 
 
@@ -131,7 +131,8 @@ class Analytics(Recorder):
 
     def add_data(self, name, data, doc=""):
         if name == self.DOC_KEY:
-            raise ValueError("The name '{}' is reserved.".format(self.DOC_KEY))
+            raise ValueError("The name '{0}' is reserved.".format(
+                self.DOC_KEY))
 
         if self.record:
             self.data[name] = data
@@ -177,11 +178,47 @@ class Logger(Recorder):
             del self.handler
 
 
+class Timer(object):
+    """A context manager for timing a block of code.
+
+    Attributes
+    ----------
+    duration : float
+        The difference between the start and end time (in seconds).
+        Usually this is what you care about.
+    start : float
+        The time at which the timer started (in seconds).
+    end : float
+        The time at which the timer ended (in seconds).
+
+    Example
+    -------
+    >>> import time
+    >>> with Timer() as t:
+    ...    time.sleep(1)
+    >>> assert t.duration >= 1
+    """
+
+    TIMER = time.clock if sys.platform == "win32" else time.time
+
+    def __init__(self):
+        self.start = None
+        self.end = None
+        self.duration = None
+
+    def __enter__(self):
+        self.start = Timer.TIMER()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.end = Timer.TIMER()
+        self.duration = self.end - self.start
+
+
 class WarningCatcher(object):
     def __enter__(self):
         self.catcher = warnings.catch_warnings(record=True)
         self.record = self.catcher.__enter__()
-        warnings.simplefilter('always')
 
     def __exit__(self, type, value, traceback):
         self.catcher.__exit__(type, value, traceback)
@@ -189,13 +226,11 @@ class WarningCatcher(object):
 
 class warns(WarningCatcher):
     def __init__(self, warning_type):
-        import pytest
-        self._pytest = pytest
         self.warning_type = warning_type
 
     def __exit__(self, type, value, traceback):
         if not any(r.category is self.warning_type for r in self.record):
-            self._pytest.fail("DID NOT WARN")
+            pytest.fail("DID NOT RAISE")
 
         super(warns, self).__exit__(type, value, traceback)
 
@@ -404,56 +439,3 @@ def load_functions(modules, pattern='^test_', arg_pattern='^Simulator$'):
                 tests[k] = getattr(m, k)
 
     return tests
-
-
-class ThreadedAssertion(object):
-    """Performs assertions in parallel.
-
-    Starts a number of threads, waits for each thread to execute some
-    initialization code, and then executes assertions in each thread.
-    """
-
-    class AssertionWorker(threading.Thread):
-        def __init__(self, parent, barriers, n):
-            super(ThreadedAssertion.AssertionWorker, self).__init__()
-            self.parent = parent
-            self.barriers = barriers
-            self.n = n
-            self.assertion_result = None
-            self.exc_info = (None, None, None)
-
-        def run(self):
-            self.parent.init_thread(self)
-
-            self.barriers[self.n].set()
-            for barrier in self.barriers:
-                barrier.wait()
-
-            try:
-                self.parent.assert_thread(self)
-                self.assertion_result = True
-            except:
-                self.assertion_result = False
-                self.exc_info = sys.exc_info()
-            finally:
-                self.parent.finish_thread(self)
-
-    def __init__(self, n_threads):
-        barriers = [threading.Event() for _ in range(n_threads)]
-        threads = [self.AssertionWorker(self, barriers, i)
-                   for i in range(n_threads)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
-            if not t.assertion_result:
-                reraise(*t.exc_info)
-
-    def init_thread(self, worker):
-        pass
-
-    def assert_thread(self, worker):
-        raise NotImplementedError()
-
-    def finish_thread(self, worker):
-        pass

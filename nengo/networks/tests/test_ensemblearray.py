@@ -3,8 +3,8 @@ import pytest
 
 import nengo
 from nengo.dists import Choice
-from nengo.exceptions import ValidationError
 from nengo.utils.compat import range
+from nengo.utils.testing import WarningCatcher
 
 
 def test_multidim(Simulator, plt, seed, rng):
@@ -37,8 +37,8 @@ def test_multidim(Simulator, plt, seed, rng):
         B_p = nengo.Probe(B.output, synapse=0.03)
         C_p = nengo.Probe(C.output, synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.4)
+    sim = Simulator(model)
+    sim.run(0.4)
 
     t = sim.trange()
 
@@ -108,8 +108,8 @@ def test_multifunc(Simulator, plt, seed, rng):
         ea_p = nengo.Probe(ea.output, synapse=0.03)
         ea_funcs_p = nengo.Probe(ea_funcs, synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.4)
+    sim = Simulator(model)
+    sim.run(0.4)
 
     t = sim.trange()
 
@@ -173,8 +173,8 @@ def test_matrix_mul(Simulator, plt, seed):
         nengo.Connection(prod, D.input, transform=transformC)
         D_p = nengo.Probe(D.output, synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.3)
+    sim = Simulator(model)
+    sim.run(0.3)
 
     t = sim.trange()
     tmask = (t >= 0.2)
@@ -198,43 +198,31 @@ def test_matrix_mul(Simulator, plt, seed):
 
 def test_arguments():
     """Make sure EnsembleArray accepts the right arguments."""
-    with pytest.raises(ValidationError):
+    with pytest.raises(TypeError):
         nengo.networks.EnsembleArray(nengo.LIF(10), 1, dimensions=2)
 
 
-def test_directmode_errors():
-    with nengo.Network() as net:
-        net.config[nengo.Ensemble].neuron_type = nengo.Direct()
-
-        ea = nengo.networks.EnsembleArray(10, 2)
-        with pytest.raises(ValidationError):
-            ea.add_neuron_input()
-        with pytest.raises(ValidationError):
-            ea.add_neuron_output()
-
-
-def test_neuroninput(Simulator, seed):
+def test_neuronconnection(Simulator, nl, seed):
+    catcher = WarningCatcher()
     with nengo.Network(seed=seed) as net:
-        inp = nengo.Node([-10] * 20)
-        ea = nengo.networks.EnsembleArray(10, 2)
-        ea.add_neuron_input()
-        nengo.Connection(inp, ea.neuron_input, synapse=None)
-        p = nengo.Probe(ea.output)
+        net.config[nengo.Ensemble].neuron_type = nl()
 
-    with Simulator(net) as sim:
-        sim.run(0.01)
-    assert np.all(sim.data[p] < 1e-2) and np.all(sim.data[p] > -1e-2)
+        input = nengo.Node([-10] * 20)
+        with catcher:
+            ea = nengo.networks.EnsembleArray(10, 2, neuron_nodes=True)
 
+        nengo.Connection(input, ea.neuron_input)
 
-def test_neuronoutput(Simulator, seed):
-    with nengo.Network(seed=seed) as net:
-        ea = nengo.networks.EnsembleArray(
-            10, 2, encoders=nengo.dists.Choice([[1]]))
-        ea.add_neuron_output()
-        inp = nengo.Node([-10, -10])
-        nengo.Connection(inp, ea.input, synapse=None)
         p = nengo.Probe(ea.neuron_output)
 
-    with Simulator(net) as sim:
-        sim.run(0.01)
-    assert np.all(sim.data[p] < 1e-2)
+    s = Simulator(net)
+    s.run(0.1)
+
+    # Some nls (e.g. Sigmoid) never go all the way to 0
+    assert np.all(s.data[p][-1] < 1e-2)
+
+    if nl == nengo.Direct:
+        assert (len(catcher.record) == 1 and
+                catcher.record[0].category is UserWarning)
+    else:
+        assert len(catcher.record) == 0

@@ -59,8 +59,8 @@ def test_run(Simulator, seed, plt):
     with model:
         p = nengo.Probe(memory, 'output', synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.5)
+    sim = Simulator(model)
+    sim.run(0.5)
     t = sim.trange()
 
     similarity = np.dot(sim.data[p], vocab.vectors.T)
@@ -91,8 +91,8 @@ def test_run_decay(Simulator, plt, seed):
     with model:
         p = nengo.Probe(memory, 'output', synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.3)
+    sim = Simulator(model)
+    sim.run(0.3)
     data = np.dot(sim.data[p], vocab.vectors.T)
 
     t = sim.trange()

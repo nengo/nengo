@@ -3,7 +3,6 @@ import pytest
 
 import nengo
 from nengo import spa
-from nengo.exceptions import SpaParseError
 
 
 def test_connect(Simulator, seed):
@@ -22,8 +21,8 @@ def test_connect(Simulator, seed):
         p2 = nengo.Probe(output2, 'output', synapse=0.03)
         p3 = nengo.Probe(output3, 'output', synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.2)
+    sim = Simulator(model)
+    sim.run(0.2)
 
     match = np.dot(sim.data[p2], vocab.parse('A').v)
     assert match[199] > 0.9
@@ -43,8 +42,8 @@ def test_transform(Simulator, seed):
     with model:
         p = nengo.Probe(output, 'output', synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.2)
+    sim = Simulator(model)
+    sim.run(0.2)
 
     match = np.dot(sim.data[p], vocab.parse('A*B').v)
     assert match[199] > 0.7
@@ -62,8 +61,8 @@ def test_translate(Simulator, seed):
     with model:
         p = nengo.Probe(output, 'output', synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.2)
+    sim = Simulator(model)
+    sim.run(0.2)
 
     match = np.dot(sim.data[p], vocab.parse('A').v)
     assert match[199] > 0.8
@@ -71,7 +70,7 @@ def test_translate(Simulator, seed):
 
 def test_errors():
     # buffer2 does not exist
-    with pytest.raises(SpaParseError):
+    with pytest.raises(NameError):
         with spa.SPA() as model:
             model.buffer = spa.Buffer(dimensions=16)
             model.cortical = spa.Cortical(spa.Actions('buffer2=buffer'))
@@ -105,8 +104,8 @@ def test_direct(Simulator, seed):
         p1 = nengo.Probe(output1, 'output', synapse=0.03)
         p2 = nengo.Probe(output2, 'output', synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.2)
+    sim = Simulator(model)
+    sim.run(0.2)
 
     match1 = np.dot(sim.data[p1], vocab1.parse('A+C').v)
     match2 = np.dot(sim.data[p2], vocab2.parse('B+C').v)
@@ -140,8 +139,8 @@ def test_convolution(Simulator, plt, seed):
         pAinvB = nengo.Probe(model.outAinvB.state.output, synapse=0.03)
         pAinvBinv = nengo.Probe(model.outAinvBinv.state.output, synapse=0.03)
 
-    with Simulator(model) as sim:
-        sim.run(0.2)
+    sim = Simulator(model)
+    sim.run(0.2)
 
     t = sim.trange()
     plt.subplot(4, 1, 1)

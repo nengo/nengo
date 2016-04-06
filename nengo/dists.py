@@ -1,23 +1,18 @@
 from __future__ import absolute_import
 import numpy as np
 
-from nengo.exceptions import ValidationError
-from nengo.params import (BoolParam, IntParam, NdarrayParam, NumberParam,
-                          Parameter, Unconfigurable, FrozenObject)
+from nengo.params import NdarrayParam, Parameter, Unconfigurable
 import nengo.utils.numpy as npext
 
 
-class Distribution(FrozenObject):
+class Distribution(object):
     """A base class for probability distributions.
 
     The only thing that a probabilities distribution need to define is a
     ``sample`` function. This base class ensures that all distributions
     accept the same arguments for the sample function.
-    """
 
-    def _sample_shape(self, n, d=None):
-        """Returns output shape for sample method."""
-        return (n,) if d is None else (n, d)
+    """
 
     def sample(self, n, d=None, rng=np.random):
         """Samples the distribution.
@@ -43,31 +38,15 @@ class Distribution(FrozenObject):
 
 
 class PDF(Distribution):
-    """An arbitrary distribution from a PDF.
-
-    Parameters
-    ----------
-    x : vector_like (n,)
-        Values of the points to sample from (interpolated).
-    p : vector_like (n,)
-        Probabilities of the `x` points.
-    """
-    x = NdarrayParam('x', shape='*')
-    p = NdarrayParam('p', shape='*')
+    """An arbitrary distribution from a PDF."""
 
     def __init__(self, x, p):
-        super(PDF, self).__init__()
-
         psum = np.sum(p)
         if np.abs(psum - 1) > 1e-8:
-            raise ValidationError(
-                "PDF must sum to one (sums to %f)" % psum, attr='p', obj=self)
+            raise ValueError("PDF must sum to one (sums to %f)" % psum)
 
         self.x = x
-        self.p = p
-        if len(self.x) != len(self.p):
-            raise ValidationError(
-                "`x` and `p` must be the same length", attr='p', obj=self)
+        self.pdf = p
 
         # make cumsum = [0] + cumsum, cdf = 0.5 * (cumsum[:-1] + cumsum[1:])
         cumsum = np.cumsum(p)
@@ -76,10 +55,10 @@ class PDF(Distribution):
         self.cdf = cumsum
 
     def __repr__(self):
-        return "PDF(x=%r, p=%r)" % (self.x, self.p)
+        return "PDF(x=%r, p=%r)" % (self.x, self.pdf)
 
     def sample(self, n, d=None, rng=np.random):
-        shape = self._sample_shape(n, d)
+        shape = (n,) if d is None else (n, d)
         return np.interp(rng.uniform(size=shape), self.cdf, self.x)
 
 
@@ -102,22 +81,24 @@ class Uniform(Distribution):
         If true, sample from a uniform distribution of integers. In this case,
         low and high should be integers.
     """
-    low = NumberParam('low')
-    high = NumberParam('high')
-    integer = BoolParam('integer')
 
     def __init__(self, low, high, integer=False):
-        super(Uniform, self).__init__()
         self.low = low
         self.high = high
         self.integer = integer
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__
+                and self.low == other.low
+                and self.high == other.high
+                and self.integer == other.integer)
 
     def __repr__(self):
         return "Uniform(low=%r, high=%r%s)" % (
             self.low, self.high, ", integer=True" if self.integer else "")
 
     def sample(self, n, d=None, rng=np.random):
-        shape = self._sample_shape(n, d)
+        shape = (n,) if d is None else (n, d)
         if self.integer:
             return rng.randint(low=self.low, high=self.high, size=shape)
         else:
@@ -139,71 +120,31 @@ class Gaussian(Distribution):
 
     Raises
     ------
-    ValidationError if ``std <= 0``
+    ValueError if ``std <= 0``
 
     """
-    mean = NumberParam('mean')
-    std = NumberParam('std', low=0, low_open=True)
 
     def __init__(self, mean, std):
-        super(Gaussian, self).__init__()
+        if std <= 0:
+            raise ValueError("std must be greater than 0; passed %f" % std)
         self.mean = mean
         self.std = std
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__
+                and self.mean == other.mean
+                and self.std == other.std)
 
     def __repr__(self):
         return "Gaussian(mean=%r, std=%r)" % (self.mean, self.std)
 
     def sample(self, n, d=None, rng=np.random):
-        shape = self._sample_shape(n, d)
+        shape = (n,) if d is None else (n, d)
         return rng.normal(loc=self.mean, scale=self.std, size=shape)
 
 
-class Exponential(Distribution):
-    """An exponential distribution (optionally with high values clipped).
-
-    If `high` is left to its default value of infinity, this is a standard
-    exponential distribution. If `high` is set, then any sampled values at
-    or above `high` will be clipped so they are slightly below `high`. This is
-    useful for thresholding and by extension, the AssociativeMemory.
-
-    The probability distribution function (PDF) is given by
-               |  0                                 if x < shift
-        p(x) = | 1/scale * exp(-(x - shift)/scale)  if x >= shift and x < high
-               |  n                                 if x == high - eps
-               |  0                                 if x >= high
-    where `n` is such that the PDF integrates to one, and `eps` is an
-    infintesimally small number such that samples of `x` are strictly less than
-    `high` (in practice, `eps` depends on the floating point precision).
-
-    Parameters
-    ----------
-    scale : float
-        The scale parameter (inverse of the rate parameter lambda). Larger
-        values make the distribution narrower (sharper peak).
-    shift : float, optional
-        Amount to shift the distribution by. There will be no values smaller
-        than this shift when sampling from the distribution.
-    high : float, optional
-        All values larger than or equal to this value will be clipped to
-        slightly less than this value.
-    """
-    def __init__(self, scale, shift=0., high=np.inf):
-        self.scale = scale
-        self.shift = shift
-        self.high = high
-
-    def sample(self, n, d=None, rng=np.random):
-        shape = self._sample_shape(n, d)
-        x = rng.exponential(self.scale, shape) + self.shift
-        high = np.nextafter(self.high, np.asarray(-np.inf, dtype=x.dtype))
-        return np.clip(x, self.shift, high)
-
-
 class UniformHypersphere(Distribution):
-    """Uniform distribution on or in an n-dimensional unit hypersphere.
-
-    Sample points are uniformly distibuted across the volume (default) or
-    surface of an n-dimensional unit hypersphere.
+    """Distributions over an n-dimensional unit hypersphere.
 
     Parameters
     ----------
@@ -214,10 +155,8 @@ class UniformHypersphere(Distribution):
         Default: False
 
     """
-    surface = BoolParam('surface')
 
     def __init__(self, surface=False):
-        super(UniformHypersphere, self).__init__()
         self.surface = surface
 
     def __repr__(self):
@@ -226,7 +165,7 @@ class UniformHypersphere(Distribution):
 
     def sample(self, n, d, rng=np.random):
         if d is None or d < 1:  # check this, since other dists allow d = None
-            raise ValidationError("Dimensions must be a positive integer", 'd')
+            raise ValueError("Dimensions must be a positive integer")
 
         samples = rng.randn(n, d)
         samples /= npext.norm(samples, axis=1, keepdims=True)
@@ -258,27 +197,23 @@ class Choice(Distribution):
         Weights controlling the probability of selecting each option. Will
         automatically be normalized. Defaults to a uniform distribution.
     """
-    options = NdarrayParam('options', shape=('*', '...'))
-    weights = NdarrayParam('weights', shape=('*'), optional=True)
 
     def __init__(self, options, weights=None):
-        super(Choice, self).__init__()
-        self.options = options
+        self.options = np.array(options)
         self.weights = weights
 
-        weights = (np.ones(len(self.options)) if self.weights is None else
-                   self.weights)
+        weights = (np.asarray(weights) if weights is not None else
+                   np.ones(len(options)))
         if len(weights) != len(self.options):
-            raise ValidationError(
+            raise ValueError(
                 "Number of weights (%d) must match number of options (%d)"
-                % (len(weights), len(self.options)), attr='weights', obj=self)
+                % (len(weights), len(self.options)))
         if not all(weights >= 0):
-            raise ValidationError("All weights must be non-negative",
-                                  attr='weights', obj=self)
+            raise ValueError("All weights must be non-negative")
         total = float(weights.sum())
         if total <= 0:
-            raise ValidationError("Sum of weights must be positive (got %f)"
-                                  % total, attr='weights', obj=self)
+            raise ValueError(
+                "Sum of weights must be positive (got %f)" % total)
         self.p = weights / total
 
     def __repr__(self):
@@ -286,15 +221,10 @@ class Choice(Distribution):
             self.options,
             "" if self.weights is None else ", weights=%r" % self.weights)
 
-    @property
-    def dimensions(self):
-        return np.prod(self.options.shape[1:])
-
     def sample(self, n, d=None, rng=np.random):
-        if d is not None and self.dimensions != d:
-            raise ValidationError("Options must be of dimensionality %d "
-                                  "(got %d)" % (d, self.dimensions),
-                                  attr='options', obj=self)
+        if d is not None and np.prod(self.options.shape[1:]) != d:
+            raise ValueError("Options must be of dimensionality %d "
+                             "(got %d)" % (d, np.prod(self.options.shape[1:])))
 
         i = np.searchsorted(np.cumsum(self.p), rng.rand(n))
         return self.options[i]
@@ -315,19 +245,13 @@ class SqrtBeta(Distribution):
     --------
     SubvectorLength
     """
-    n = IntParam('n', low=0)
-    m = IntParam('m', low=0)
-
     def __init__(self, n, m=1):
         super(SqrtBeta, self).__init__()
         self.n = n
         self.m = m
 
-    def __repr__(self):
-        return "%s(n=%r, m=%r)" % (self.__class__.__name__, self.n, self.m)
-
     def sample(self, num, d=None, rng=np.random):
-        shape = self._sample_shape(num, d)
+        shape = (num,) if d is None else (num, d)
         return np.sqrt(rng.beta(self.m / 2.0, self.n / 2.0, size=shape))
 
     def pdf(self, x):
@@ -370,25 +294,6 @@ class SqrtBeta(Distribution):
             sq_x < 1., betainc(self.m / 2.0, self.n / 2.0, sq_x),
             np.ones_like(x))
 
-    def ppf(self, y):
-        """Percent point function (inverse cumulative distribution).
-
-        Requires Scipy.
-
-        Parameters
-        ----------
-        y : ndarray
-            Cumulative probabilities in [0, 1].
-
-        Returns
-        -------
-        ndarray
-            Evaluation points `x` in [0, 1] such that `P(X <= x) = y`.
-        """
-        from scipy.special import betaincinv
-        sq_x = betaincinv(self.m / 2.0, self.n / 2.0, y)
-        return np.sqrt(sq_x)
-
 
 class SubvectorLength(SqrtBeta):
     """Distribution of the length of a subvectors of a unit vector.
@@ -404,82 +309,29 @@ class SubvectorLength(SqrtBeta):
     --------
     SqrtBeta
     """
-
     def __init__(self, dimensions, subdimensions=1):
         super(SubvectorLength, self).__init__(
             dimensions - subdimensions, subdimensions)
 
-    def __repr__(self):
-        return "%s(%r, subdimensions=%r)" % (
-            self.__class__.__name__, self.n + self.m, self.m)
-
-
-class CosineSimilarity(SubvectorLength):
-    """Distribution of the cosine of the angle between two random vectors.
-
-    The "cosine similarity" is the cosine of the angle between two vectors,
-    which is equal to the dot product of the vectors, divided by the L2-norms
-    of the individual vectors. When these vectors are unit length, this is then
-    simply the distribution of their dot product.
-
-    This is also equivalent to the distribution of a single coefficient from a
-    unit vector (a single dimension of `UniformHypersphere(surface=True)`).
-
-    This can be used to calculate an intercept `c = ppf(1 - p)` such that
-    `dot(u, v) >= c` with probability `p`, for random unit vectors `u` and `v`.
-    In other words, a neuron with intercept `ppf(1 - p)` will fire with
-    probability `p` for a random unit length input.
-
-    Parameters
-    ----------
-    dimensions: int
-        Dimensionality of the complete unit vector.
-
-    See also
-    --------
-    SqrtBeta
-    """
-
-    def __init__(self, dimensions):
-        super(CosineSimilarity, self).__init__(dimensions)
-
-    def sample(self, num, d=None, rng=np.random):
-        shape = self._sample_shape(num, d)
-        sign = Choice((1, -1)).sample(np.prod(shape), rng=rng).reshape(*shape)
-        return sign * super(CosineSimilarity, self).sample(num, d, rng=rng)
-
-    def pdf(self, x):
-        return super(CosineSimilarity, self).pdf(x) / 2.0
-
-    def cdf(self, x):
-        return (super(CosineSimilarity, self).cdf(x) * np.sign(x) + 1) / 2.0
-
-    def ppf(self, y):
-        x = super(CosineSimilarity, self).ppf(abs(y*2 - 1))
-        return np.where(y > 0.5, x, -x)
-
 
 class DistributionParam(Parameter):
     """A Distribution."""
-    equatable = True
 
     def validate(self, instance, dist):
         if dist is not None and not isinstance(dist, Distribution):
-            raise ValidationError("'%s' is not a Distribution type" % dist,
-                                  attr=self.name, obj=instance)
+            raise ValueError("'%s' is not a Distribution type" % dist)
         super(DistributionParam, self).validate(instance, dist)
 
 
 class DistOrArrayParam(NdarrayParam):
     """Can be a Distribution or samples from a distribution."""
 
-    def __init__(self, name, default=Unconfigurable, sample_shape=None,
-                 optional=False, readonly=None):
+    def __init__(self, default=Unconfigurable, sample_shape=None,
+                 optional=False, readonly=False):
         super(DistOrArrayParam, self).__init__(
-            name, default, sample_shape, optional, readonly)
+            default, sample_shape, optional, readonly)
 
-    def validate(self, instance, distorarray):
-        if isinstance(distorarray, Distribution):
-            Parameter.validate(self, instance, distorarray)
-            return distorarray
-        return super(DistOrArrayParam, self).validate(instance, distorarray)
+    def validate(self, instance, dist):
+        if dist is not None and not isinstance(dist, Distribution):
+            dist = super(DistOrArrayParam, self).validate(instance, dist)
+        return dist

@@ -4,86 +4,15 @@ Functions that extend the Python Standard Library.
 
 from __future__ import absolute_import
 
+from contextlib import contextmanager
 import collections
 import inspect
 import itertools
 import os
 import shutil
 import sys
-import time
-import weakref
 
-from .compat import iteritems, itervalues
-
-
-class WeakKeyIDDictionary(collections.MutableMapping):
-    """WeakKeyDictionary that uses object ID to hash.
-
-    This ignores the ``__eq__`` and ``__hash__`` functions on objects,
-    so that objects are only considered equal if one is the other.
-    """
-
-    def __init__(self, *args, **kwargs):
-        self._keyrefs = weakref.WeakValueDictionary()
-        self._keyvalues = {}
-        if len(args) > 0 or len(kwargs) > 0:
-            self.update(*args, **kwargs)
-
-    def __getitem__(self, k):
-        assert weakref.ref(k)
-        if k in self:
-            return self._keyvalues[id(k)]
-        else:
-            raise KeyError(str(k))
-
-    def __setitem__(self, k, v):
-        assert weakref.ref(k)
-        self._keyrefs[id(k)] = k
-        self._keyvalues[id(k)] = v
-
-    def __delitem__(self, k):
-        assert weakref.ref(k)
-        if k in self:
-            del self._keyrefs[id(k)]
-            del self._keyvalues[id(k)]
-        else:
-            raise KeyError(str(k))
-
-    def keys(self):
-        return itervalues(self._keyrefs)
-
-    def iterkeys(self):
-        return itervalues(self._keyrefs)
-
-    def items(self):
-        for k in self:
-            yield k, self[k]
-
-    def iteritems(self):
-        for k in self:
-            yield k, self[k]
-
-    def __iter__(self):
-        return itervalues(self._keyrefs)
-
-    def __contains__(self, k):
-        if k is None:
-            return False
-        return k is self._keyrefs.get(id(k))
-
-    def __len__(self):
-        return len(self._keyrefs)
-
-    def get(self, k, default=None):
-        return self._keyvalues[id(k)] if k in self else default
-
-    def update(self, in_dict=None, **kwargs):
-        if in_dict is not None:
-            for key, value in iteritems(in_dict):
-                self.__setitem__(key, value)
-        if len(kwargs) > 0:
-            self.update(kwargs)
-
+from .compat import iteritems, reraise
 
 CheckedCall = collections.namedtuple('CheckedCall', ('value', 'invoked'))
 
@@ -124,6 +53,9 @@ def execfile(path, globals, locals=None):
 
     with open(path, 'rb') as fp:
         source = fp.read()
+
+    # Python 2.6 line endings issue, see http://bugs.python.org/issue12189
+    source = source.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
 
     code = compile(source, path, "exec")
     exec(code, globals, locals)
@@ -204,38 +136,34 @@ else:
         return terminal_size(w, h)
 
 
-class Timer(object):
-    """A context manager for timing a block of code.
+@contextmanager
+def nested(*managers):
+    """Combine multiple context managers into a single nested context manager.
 
-    Attributes
-    ----------
-    duration : float
-        The difference between the start and end time (in seconds).
-        Usually this is what you care about.
-    start : float
-        The time at which the timer started (in seconds).
-    end : float
-        The time at which the timer ended (in seconds).
+    Ideally we would just use the `with ctx1, ctx2` form for this, but
+    this doesn't work in Python 2.6. Similarly, though it would be nice to
+    just import contextlib.nested instead, that doesn't work in Python 3. Geez!
 
-    Example
-    -------
-    >>> import time
-    >>> with Timer() as t:
-    ...    time.sleep(1)
-    >>> assert t.duration >= 1
     """
-
-    TIMER = time.clock if sys.platform == "win32" else time.time
-
-    def __init__(self):
-        self.start = None
-        self.end = None
-        self.duration = None
-
-    def __enter__(self):
-        self.start = Timer.TIMER()
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.end = Timer.TIMER()
-        self.duration = self.end - self.start
+    exits = []
+    vars = []
+    exc = (None, None, None)
+    try:
+        for mgr in managers:
+            exit = mgr.__exit__
+            enter = mgr.__enter__
+            vars.append(enter())
+            exits.append(exit)
+        yield vars
+    except:
+        exc = sys.exc_info()
+    finally:
+        while exits:
+            exit = exits.pop()
+            try:
+                if exit(*exc):
+                    exc = (None, None, None)
+            except:
+                exc = sys.exc_info()
+        if exc != (None, None, None):
+            reraise(exc[0], exc[1], exc[2])

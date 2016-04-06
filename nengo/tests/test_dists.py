@@ -3,7 +3,6 @@ import pytest
 
 import nengo.dists as dists
 import nengo.utils.numpy as npext
-from nengo.exceptions import ValidationError
 
 
 def test_pdf(rng):
@@ -55,20 +54,6 @@ def test_gaussian(mean, std, rng):
         assert abs(np.std(samples) - std) < 0.25  # using chi2 for n=100
 
 
-@pytest.mark.parametrize("scale,shift,high", [
-    (1., 0., np.inf), (10., 0., 1.), (0.1, 0.3, 1.0)])
-def test_exponential(scale, shift, high, rng):
-    n = 100
-    dist = dists.Exponential(scale, shift=shift, high=high)
-    samples = dist.sample(n, rng=rng)
-    assert np.all(samples >= shift)
-    assert np.all(samples <= high)
-    # approximation of 95% confidence interval
-    ci = scale * 1.96 / np.sqrt(n)
-    if scale + ci < high:
-        assert abs(np.mean(samples - shift) - scale) < ci
-
-
 @pytest.mark.parametrize("dimensions", [0, 1, 2, 5])
 def test_hypersphere(dimensions, rng):
     n = 150 * dimensions
@@ -117,136 +102,28 @@ def test_choice(weights, rng):
 
 
 @pytest.mark.parametrize("n,m", [(99, 1), (50, 50)])
-def test_sqrt_beta(n, m, rng):
+def test_sqrt_beta(n, m):
+    np.random.seed(33)
+
     num_samples = 250
     num_bins = 5
 
-    vectors = rng.randn(num_samples, n + m)
+    vectors = np.random.randn(num_samples, n + m)
     vectors /= npext.norm(vectors, axis=1, keepdims=True)
     expectation, _ = np.histogram(
         npext.norm(vectors[:, :m], axis=1), bins=num_bins)
 
     dist = dists.SqrtBeta(n, m)
-    samples = dist.sample(num_samples, 1, rng=rng)
+    samples = dist.sample(num_samples, 1)
     hist, _ = np.histogram(samples, bins=num_bins)
 
     assert np.all(np.abs(np.asfarray(hist - expectation) / num_samples) < 0.16)
 
 
-@pytest.mark.parametrize("n,m", [(4, 1), (10, 5)])
-def test_sqrt_beta_analytical(n, m, rng):
-    """Tests pdf, cdf, and ppf of SqrtBeta distribution."""
-    pytest.importorskip('scipy')  # beta and betainc
-
-    dt = 0.001
-    x = np.arange(dt, 1+dt, dt)
-
-    dist = dists.SqrtBeta(n, m)
-
-    pdf = dist.pdf(x)
-    cdf = dist.cdf(x)
-    ppf = dist.ppf(cdf)
-
-    # The pdf should reflect the samples
-    num_samples = 2500
-    num_bins = 5
-
-    samples = dist.sample(num_samples, rng=rng)
-    act_hist, _ = np.histogram(samples, bins=num_bins)
-    bin_points = np.linspace(0, 1, num_bins+1)
-    bin_cdf = dist.cdf(bin_points)
-    exp_freq = bin_cdf[1:] - bin_cdf[:-1]
-    assert np.all(np.abs(np.asfarray(act_hist) / num_samples - exp_freq) < 0.1)
-
-    # The cdf should be the accumulated pdf
-    assert np.allclose(cdf, np.cumsum(pdf) * dt, atol=0.01)
-
-    # The ppf should give back x
-    assert np.allclose(x, ppf, atol=0.01)
-
-
-@pytest.mark.parametrize("d", [2, 3, 10, 50])
-def test_cosine_similarity(d, rng):
-    """Tests CosineSimilarity sampling."""
-    num_samples = 2500
-    num_bins = 5
-
-    # Check that it gives a single dimension from UniformHypersphere
-    exp_dist = dists.UniformHypersphere(surface=True)
-    act_dist = dists.CosineSimilarity(d)
-
-    exp = exp_dist.sample(num_samples, d, rng=rng)[:, 0]
-    act = act_dist.sample(num_samples, rng=rng)
-
-    exp_hist, _ = np.histogram(exp, bins=num_bins)
-    act_hist, _ = np.histogram(act, bins=num_bins)
-
-    assert np.all(np.abs(np.asfarray(exp_hist - act_hist) / num_samples) < 0.1)
-
-
-@pytest.mark.parametrize("d", [2, 3, 10])
-def test_cosine_analytical(d):
-    pytest.importorskip('scipy')  # beta, betainc, betaincinv
-
-    dt = 0.0001
-    x = np.arange(-1+dt, 1, dt)
-
-    def p(x, d):
-        # unnormalized CosineSimilarity distribution, derived by Eric H.
-        return (1 - x*x)**((d - 3) / 2.0)
-
-    dist = dists.CosineSimilarity(d)
-
-    pdf_exp = dist.pdf(x)
-    pdf_act = p(x, d)
-
-    cdf_exp = dist.cdf(x)
-    cdf_act = np.cumsum(pdf_act) / np.sum(pdf_act)
-
-    # Check that we get the expected pdf after normalization
-    assert np.allclose(
-        pdf_exp / np.sum(pdf_exp), pdf_act / np.sum(pdf_act), atol=0.01)
-
-    # Check that this accumulates to the expected cdf
-    assert np.allclose(cdf_exp, cdf_act, atol=0.01)
-
-    # Check that the inverse cdf gives back x
-    assert np.allclose(dist.ppf(cdf_exp), x, atol=0.01)
-
-
-def test_cosine_sample_shape(seed):
-    """"Tests that CosineSimilarity sample has correct shape."""
-    # sampling (n, d) should be the exact same as sampling (n*d,)
-    n = 3
-    d = 4
-    dist = dists.CosineSimilarity(2)
-    a = dist.sample(n, d, rng=np.random.RandomState(seed))
-    b = dist.sample(n*d, rng=np.random.RandomState(seed))
-    assert np.allclose(a.flatten(), b)
-
-
-@pytest.mark.parametrize("d,p", [(3, 0), (5, 0.4), (10, 0.7), (50, 1.0)])
-def test_cosine_intercept(d, p, rng):
-    """Tests CosineSimilarity inverse cdf for finding intercepts."""
-    pytest.importorskip('scipy')  # betaincinv
-
-    num_samples = 250
-
-    exp_dist = dists.UniformHypersphere(surface=True)
-    act_dist = dists.CosineSimilarity(d)
-
-    dots = exp_dist.sample(num_samples, d, rng=rng)[:, 0]
-
-    # Find the desired intercept so that dots >= c with probability p
-    c = act_dist.ppf(1 - p)
-    assert np.allclose(np.sum(dots >= c) / float(num_samples), p, atol=0.05)
-
-
 def test_distorarrayparam():
     """DistOrArrayParams can be distributions or samples."""
     class Test(object):
-        dp = dists.DistOrArrayParam('dp',
-                                    default=None, sample_shape=['*', '*'])
+        dp = dists.DistOrArrayParam(default=None, sample_shape=['*', '*'])
 
     inst = Test()
     inst.dp = dists.UniformHypersphere()
@@ -263,8 +140,7 @@ def test_distorarrayparam():
 def test_distorarrayparam_sample_shape():
     """sample_shape dictates the shape of the sample that can be set."""
     class Test(object):
-        dp = dists.DistOrArrayParam(
-            'dp', default=None, sample_shape=['d1', 10])
+        dp = dists.DistOrArrayParam(default=None, sample_shape=['d1', 10])
         d1 = 4
 
     inst = Test()
@@ -274,24 +150,6 @@ def test_distorarrayparam_sample_shape():
     # Must be shape (4, 10)
     inst.dp = np.ones((4, 10))
     assert np.all(inst.dp == np.ones((4, 10)))
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         inst.dp = np.ones((10, 4))
     assert np.all(inst.dp == np.ones((4, 10)))
-
-
-def test_frozen():
-    """Test attributes inherited from FrozenObject"""
-    a = dists.Uniform(-0.3, 0.6)
-    b = dists.Uniform(-0.3, 0.6)
-    c = dists.Uniform(-0.2, 0.6)
-
-    assert hash(a) == hash(a)
-    assert hash(b) == hash(b)
-    assert hash(c) == hash(c)
-
-    assert a == b
-    assert hash(a) == hash(b)
-    assert a != c
-    assert hash(a) != hash(c)  # not guaranteed, but highly likely
-    assert b != c
-    assert hash(b) != hash(c)  # not guaranteed, but highly likely

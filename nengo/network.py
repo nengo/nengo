@@ -1,10 +1,10 @@
+import collections
+
 from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
-from nengo.exceptions import ConfigError, NetworkContextError, ReadonlyError
 from nengo.node import Node
 from nengo.probe import Probe
-from nengo.utils.threading import ThreadLocalStack
 
 
 class Network(object):
@@ -70,7 +70,7 @@ class Network(object):
         List of nengo.BaseNetwork objects in this Network.
     """
 
-    context = ThreadLocalStack(maxsize=100)  # static stack of Network objects
+    context = collections.deque(maxlen=100)  # static stack of Network objects
 
     def __init__(self, label=None, seed=None, add_to_container=None):
         self.label = label
@@ -109,21 +109,21 @@ class Network(object):
     def add(obj):
         """Add the passed object to the current Network.context."""
         if len(Network.context) == 0:
-            raise NetworkContextError(
-                "'%s' must either be created inside a ``with network:`` "
-                "block, or set add_to_container=False in the object's "
-                "constructor." % obj)
+            raise RuntimeError("'%s' must either be created "
+                               "inside a `with network:` block, or set "
+                               "add_to_container=False in the object's "
+                               "constructor." % obj)
         network = Network.context[-1]
         if not isinstance(network, Network):
-            raise NetworkContextError(
-                "Current context (%s) is not a network" % network)
+            raise RuntimeError("Current context is not a network: %s" %
+                               network)
         for cls in obj.__class__.__mro__:
             if cls in network.objects:
                 network.objects[cls].append(obj)
                 break
         else:
-            raise NetworkContextError("Objects of type %r cannot be added to "
-                                      "networks." % obj.__class__.__name__)
+            raise TypeError("Objects of type '%s' cannot be added to "
+                            "networks." % obj.__class__.__name__)
 
     def _all_objects(self, object_type):
         """Returns a list of all objects of the specified type"""
@@ -172,7 +172,8 @@ class Network(object):
 
     @config.setter
     def config(self, dummy):
-        raise ReadonlyError(attr='config', obj=self)
+        raise AttributeError("config cannot be overwritten. See help("
+                             "nengo.Config) for help on modifying configs.")
 
     def __contains__(self, obj):
         return type(obj) in self.objects and obj in self.objects[type(obj)]
@@ -184,21 +185,20 @@ class Network(object):
 
     def __exit__(self, dummy_exc_type, dummy_exc_value, dummy_tb):
         if len(Network.context) == 0:
-            raise NetworkContextError(
-                "Network.context in bad state; was empty when "
-                "exiting from a 'with' block.")
+            raise RuntimeError("Network.context in bad state; was empty when "
+                               "exiting from a 'with' block.")
 
         config = Config.context[-1]
         if config is not self._config:
-            raise ConfigError("Config.context in bad state; was expecting "
-                              "current context to be '%s' but instead got "
-                              "'%s'." % (self._config, config))
+            raise RuntimeError("Config.context in bad state; was expecting "
+                               "current context to be '%s' but instead got "
+                               "'%s'." % (self._config, config))
 
         network = Network.context.pop()
         if network is not self:
-            raise NetworkContextError(
-                "Network.context in bad state; was expecting current context "
-                "to be '%s' but instead got '%s'." % (self, network))
+            raise RuntimeError("Network.context in bad state; was expecting "
+                               "current context to be '%s' but instead got "
+                               "'%s'." % (self, network))
 
         self._config.__exit__(dummy_exc_type, dummy_exc_value, dummy_tb)
 

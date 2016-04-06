@@ -4,17 +4,16 @@ import logging
 
 import numpy as np
 
-from nengo.exceptions import SimulationError, ValidationError
-from nengo.params import Parameter, NumberParam, FrozenObject
+from nengo.params import Parameter, NumberParam
 from nengo.utils.compat import range
 from nengo.utils.neurons import settled_firingrate
 
 logger = logging.getLogger(__name__)
 
 
-class NeuronType(FrozenObject):
+class NeuronType(object):
 
-    probeable = ()
+    probeable = []
 
     @property
     def _argreprs(self):
@@ -111,7 +110,7 @@ class Direct(NeuronType):
         return None, None
 
     def step_math(self, dt, J, output):
-        raise SimulationError("Direct mode neurons shouldn't be simulated.")
+        raise TypeError("Direct mode neurons shouldn't be simulated.")
 
 # TODO: class BasisFunctions or Population or Express;
 #       uses non-neural basis functions to emulate neuron saturation,
@@ -121,7 +120,7 @@ class Direct(NeuronType):
 class RectifiedLinear(NeuronType):
     """A rectified linear neuron model."""
 
-    probeable = ('rates',)
+    probeable = ['rates']
 
     def gain_bias(self, max_rates, intercepts):
         """Return gain and bias given maximum firing rate and x-intercept."""
@@ -137,11 +136,10 @@ class RectifiedLinear(NeuronType):
 class Sigmoid(NeuronType):
     """Neuron whose response curve is a sigmoid."""
 
-    tau_ref = NumberParam('tau_ref', low=0)
-    probeable = ('rates',)
+    tau_ref = NumberParam(low=0)
+    probeable = ['rates']
 
     def __init__(self, tau_ref=0.002):
-        super(Sigmoid, self).__init__()
         self.tau_ref = tau_ref
 
     @property
@@ -164,12 +162,11 @@ class Sigmoid(NeuronType):
 class LIFRate(NeuronType):
     """Rate version of the leaky integrate-and-fire (LIF) neuron model."""
 
-    tau_rc = NumberParam('tau_rc', low=0, low_open=True)
-    tau_ref = NumberParam('tau_ref', low=0)
-    probeable = ('rates',)
+    tau_rc = NumberParam(low=0, low_open=True)
+    tau_ref = NumberParam(low=0)
+    probeable = ['rates']
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002):
-        super(LIFRate, self).__init__()
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
 
@@ -202,10 +199,10 @@ class LIFRate(NeuronType):
             X-intercepts of neurons.
         """
         inv_tau_ref = 1. / self.tau_ref if self.tau_ref > 0 else np.inf
-        if np.any(max_rates > inv_tau_ref):
-            raise ValidationError("Max rates must be below the inverse "
-                                  "refractory period (%0.3f)" % inv_tau_ref,
-                                  attr='max_rates', obj=self)
+        if (max_rates > inv_tau_ref).any():
+            raise ValueError(
+                "Max rates must be below the inverse refractory period (%0.3f)"
+                % (inv_tau_ref))
 
         x = 1.0 / (1 - np.exp(
             (self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
@@ -226,8 +223,8 @@ class LIFRate(NeuronType):
 class LIF(LIFRate):
     """Spiking version of the leaky integrate-and-fire (LIF) neuron model."""
 
-    min_voltage = NumberParam('min_voltage', high=0)
-    probeable = ('spikes', 'voltage', 'refractory_time')
+    min_voltage = NumberParam(high=0)
+    probeable = ['spikes', 'voltage', 'refractory_time']
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002, min_voltage=0):
         super(LIF, self).__init__(tau_rc=tau_rc, tau_ref=tau_ref)
@@ -257,20 +254,97 @@ class LIF(LIFRate):
         # set spiking neurons' voltages to zero, and ref. time to tau_ref
         voltage[spiked > 0] = 0
         refractory_time[spiked > 0] = self.tau_ref + spiketime
+        
+class LIF2C(NeuronType):
+    
+    probeable = ['spikes', 'V_A', 'V_S', 'g_shunt']
+    
+    V_T = NumberParam()
+    V_R = NumberParam()
+    C_A = NumberParam()
+    C_S = NumberParam()
+    g_c = NumberParam()
+    g_l = NumberParam()
+    
+    def __init__(self, g_l=1.0, g_c=20.0, C_A=0.01, C_S=0.2, V_T=1.0, V_R=-1.0, bias=0):
+        
+        self.g_l = g_l
+        self.g_c = g_c
+        self.C_A = C_A
+        self.C_S = C_S
+        self.V_T = V_T
+        self.V_R = V_R
+        self.bias = bias
+        
+
+    def rates(self, x, gain, bias):
+        """
+        Returns an approximation of the rate, based on the input dimension x. The
+        gain and bias determine the cell's linear RF in terms of the input vector.
+        
+        Have an exact approximation, so no need for calling step math?        
+        
+        @param x: input vector
+        @param gain: RF gain
+        @param bias: RF bias
+        
+        """
+                
+        J = gain * x + bias
+        
+        g_shunt = 0 * self.g_c * np.ones_like(J)
+        
+        m = 1./(self.C_A * (self.V_T - self.V_R))
+        b = -self.g_l * (self.V_T + self.V_R) / (2 * (self.C_A * (self.V_T - self.V_R)))
+        
+        gamma = self.g_c/(self.g_c + g_shunt + self.g_l)
+
+        
+        rate = m * gamma * J + b
+        rate[rate<1] = 0
+        return rate
+        
+        
+    def step_math(self, dt, J, spiked, V_A, V_S, g_shunt):
+        """
+        Equations for 2C LIF 
+        """
+        J = J - self.bias
+        
+        g_shunt_t = g_shunt
+        g_shunt_t[g_shunt < 0] = 0
+        
+        g_shunt_t[g_shunt > 10] = 10
+        # making g_shunt inside an exp, so it stays positive always
+        dV_A = -self.g_l * V_A + self.g_c * (V_S - V_A) + self.bias
+        dV_S = -self.g_l * V_S + self.g_c * (V_A - V_S) - self.g_c * g_shunt_t * V_S + J
+        
+        # does equation for g_shunt go here or in synapse?
+        tau_g_shunt = 0.01
+        dg_shunt = (0-g_shunt) / tau_g_shunt
+        
+
+        V_A[:] += dV_A * dt / self.C_A
+        V_S[:] += dV_S * dt / self.C_S
+        g_shunt[:] += dg_shunt * dt
+        
+        V_A[V_A < self.V_R] = self.V_R
+        V_S[V_S < -2] = -2
+        V_S[V_S > 10] = 10
+        
+        spiked[:] = (V_A > self.V_T) / dt
+        V_A[spiked > 0] = self.V_R
+        #g_shunt[:] += sum(0.1 * (spiked > 0))
+        
+        
 
 
 class AdaptiveLIFRate(LIFRate):
-    """Adaptive rate version of the LIF neuron model.
+    """Adaptive rate version of the LIF neuron model."""
 
-    References
-    ----------
-    .. [1] Koch, Christof. Biophysics of Computation: Information Processing
-       in Single Neurons. Oxford University Press, 1999.
-    """
-
-    tau_n = NumberParam('tau_n', low=0, low_open=True)
-    inc_n = NumberParam('inc_n', low=0)
-    probeable = ('rates', 'adaptation')
+    tau_n = NumberParam(low=0, low_open=True)
+    inc_n = NumberParam(low=0)
+    probeable = ['rates', 'adaptation']
 
     def __init__(self, tau_n=1, inc_n=0.01, **lif_args):
         super(AdaptiveLIFRate, self).__init__(**lif_args)
@@ -294,15 +368,9 @@ class AdaptiveLIFRate(LIFRate):
 
 
 class AdaptiveLIF(AdaptiveLIFRate, LIF):
-    """Adaptive spiking version of the LIF neuron model.
+    """Adaptive spiking version of the LIF neuron model."""
 
-    References
-    ----------
-    .. [1] Koch, Christof. Biophysics of Computation: Information Processing
-       in Single Neurons. Oxford University Press, 1999.
-    """
-
-    probeable = ('spikes', 'adaptation', 'voltage', 'refractory_time')
+    probeable = ['spikes', 'adaptation', 'voltage', 'refractory_time']
 
     def step_math(self, dt, J, output, voltage, ref, adaptation):
         """Compute rates for input current (incl. bias)"""
@@ -351,15 +419,14 @@ class Izhikevich(NeuronType):
        (http://www.izhikevich.org/publications/spikes.pdf)
     """
 
-    tau_recovery = NumberParam('tau_recovery', low=0, low_open=True)
-    coupling = NumberParam('coupling', low=0)
-    reset_voltage = NumberParam('reset_voltage')
-    reset_recovery = NumberParam('reset_recovery')
-    probeable = ('spikes', 'voltage', 'recovery')
+    tau_recovery = NumberParam(low=0, low_open=True)
+    coupling = NumberParam(low=0)
+    reset_voltage = NumberParam()
+    reset_recovery = NumberParam()
+    probeable = ['spikes', 'voltage', 'recovery']
 
     def __init__(self, tau_recovery=0.02, coupling=0.2,
                  reset_voltage=-65, reset_recovery=8):
-        super(Izhikevich, self).__init__()
         self.tau_recovery = tau_recovery
         self.coupling = coupling
         self.reset_voltage = reset_voltage
@@ -411,6 +478,5 @@ class Izhikevich(NeuronType):
 class NeuronTypeParam(Parameter):
     def validate(self, instance, neurons):
         if neurons is not None and not isinstance(neurons, NeuronType):
-            raise ValidationError("'%s' is not a neuron type" % neurons,
-                                  attr=self.name, obj=instance)
+            raise ValueError("'%s' is not a neuron type" % neurons)
         super(NeuronTypeParam, self).validate(instance, neurons)

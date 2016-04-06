@@ -1,6 +1,4 @@
 """Syntactic parsing of the subexpressions of all action expressions."""
-
-from nengo.exceptions import SpaParseError
 from nengo.utils.compat import is_number
 
 
@@ -88,8 +86,7 @@ class Source(object):
 
     def __invert__(self):
         if self.transform.symbol != '1':
-            raise SpaParseError(
-                "You can only invert sources without transforms")
+            raise ValueError("You can only invert sources without transforms")
         return Source(self.name, self.transform, not self.inverted)
 
     def __mul__(self, other):
@@ -146,14 +143,14 @@ class DotProduct(object):
         if isinstance(item2, (int, float)):
             item2 = Symbol(item2)
         if not isinstance(item1, (Source, Symbol)):
-            raise SpaParseError("The first item in the dot product is not a "
-                                "semantic pointer or a spa.Module output.")
+            raise TypeError("The first item in the dot product is not a "
+                            "semantic pointer or a spa.Module output.")
         if not isinstance(item2, (Source, Symbol)):
-            raise SpaParseError("The second item in the dot product is not a "
-                                "semantic pointer or a spa.Module output.")
+            raise TypeError("The second item in the dot product is not a "
+                            "semantic pointer or a spa.Module output.")
         if not isinstance(item1, Source) and not isinstance(item2, Source):
-            raise SpaParseError("One of the two terms for the dot product "
-                                "must be a spa.Module output.")
+            raise TypeError("One of the two terms for the dot product "
+                            "must be a spa.Module output.")
         self.item1 = item1
         self.item2 = item2
         self.scale = float(scale)

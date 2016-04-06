@@ -65,7 +65,7 @@ class NotebookDirective(Directive):
             raise ValueError(
                 "Due to issues with docutils stripping spaces from links, "
                 "white space is not allowed in notebook filenames: "
-                "'{}'".format(nb_path))
+                "'{0}'".format(nb_path))
 
         # Check if raw HTML is supported
         if not self.state.document.settings.raw_enabled:

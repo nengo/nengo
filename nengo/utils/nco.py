@@ -25,12 +25,6 @@ array data an alignment of 16 bytes.
 
 The Numpy NPY format is documented here:
 https://github.com/numpy/numpy/blob/master/doc/neps/npy-format.rst
-
-As of legacy version 1 of the cache, multiple NCO files will be concatenated
-into one file. The start and end of each subfile will be stored in a cache
-index, but can also be recovered from reading the headers of the NCO files in
-order as each one gives the start of the next header (corresponding to the
-end of the array data).
 """
 
 from __future__ import absolute_import
@@ -42,13 +36,12 @@ import numpy as np
 
 from .compat import ensure_bytes, pickle
 from .cache import byte_align
-from ..exceptions import CacheIOError
 
 
 class Subfile(object):
     """A file-like object for limiting reads to a subrange of a file.
 
-    This class only supports reading and seeking. Writing is not supported.
+    This clss only supports reading and seeking. Writing is not supported.
 
     Parameters
     ----------
@@ -91,13 +84,10 @@ class Subfile(object):
         self.max_size = self.end - offset
         self.fileobj.seek(offset)
 
-    def tell(self):
-        return self.fileobj.tell() - self.start
-
 
 MAGIC_STRING = ensure_bytes('NCO')
 SUPPORTED_PROTOCOLS = [0]
-HEADER_FORMAT = '@{}sBLLLL'.format(len(MAGIC_STRING))
+HEADER_FORMAT = '@{0}sBLLLL'.format(len(MAGIC_STRING))
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 ALIGNMENT = 16
 
@@ -114,8 +104,7 @@ def write(fileobj, metadata, array):
     array : ndarray
         Numpy array with the actual data to store.
     """
-    start = fileobj.tell()
-    pickle_start = byte_align(start + HEADER_SIZE, ALIGNMENT)
+    pickle_start = byte_align(HEADER_SIZE, ALIGNMENT)
     fileobj.seek(pickle_start)
     pickle.dump(metadata, fileobj, pickle.HIGHEST_PROTOCOL)
     pickle_end = fileobj.tell()
@@ -128,9 +117,8 @@ def write(fileobj, metadata, array):
     header = struct.pack(
         HEADER_FORMAT, MAGIC_STRING, 0, pickle_start, pickle_end,
         array_start, array_end)
-    fileobj.seek(start)
+    fileobj.seek(0)
     fileobj.write(header)
-    fileobj.seek(array_end)
 
 
 def read(fileobj):
@@ -152,10 +140,10 @@ def read(fileobj):
         struct.unpack(HEADER_FORMAT, header))
 
     if magic != MAGIC_STRING:
-        raise CacheIOError("Not a Nengo cache object file.")
+        raise IOError("Not a Nengo cache object file.")
     if version not in SUPPORTED_PROTOCOLS:
-        raise CacheIOError(
-            "NCO protocol version {} is not supported.".format(version))
+        raise IOError("NCO protocol version {0} is not supported.".format(
+            version))
 
     metadata = pickle.load(Subfile(fileobj, pickle_start, pickle_end))
     array = np.load(Subfile(fileobj, array_start, array_end))

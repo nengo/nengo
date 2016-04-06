@@ -21,16 +21,16 @@ from .connection import Connection
 from .ensemble import Ensemble
 from .node import Node
 from .neurons import (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich, LIF,
-                      LIFRate, RectifiedLinear, Sigmoid)
+                      LIFRate, LIF2C, RectifiedLinear, Sigmoid)
 from .network import Network
-from .learning_rules import PES, BCM, Oja, Voja
+from .learning_rules import PES, BCM, Oja
 from .params import Default
 from .probe import Probe
 from .rc import rc, RC_DEFAULTS
 from .simulator import Simulator
 from .synapses import Alpha, LinearFilter, Lowpass
 from .utils.logging import log
-from . import dists, exceptions, networks, processes, utils
+from . import dists, networks, processes, utils, spa
 
 logger = logging.getLogger(__name__)
 try:

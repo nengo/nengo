@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.exceptions import Unconvertible
 from nengo.utils.builder import objs_and_connections, remove_passthrough_nodes
 
 
@@ -66,12 +65,12 @@ def test_passthrough_errors():
         node = nengo.Node(None, size_in=1)
         nengo.Connection(a, node, synapse=0.01)
         nengo.Connection(node, b, synapse=0.01)
-    with pytest.raises(Unconvertible):
+    with pytest.raises(NotImplementedError):
         remove_passthrough_nodes(*objs_and_connections(model))
 
     model = nengo.Network()
     with model:
         node = nengo.Node(None, size_in=1)
         nengo.Connection(node, node, synapse=0.01)
-    with pytest.raises(Unconvertible):
+    with pytest.raises(Exception):
         remove_passthrough_nodes(*objs_and_connections(model))

@@ -5,29 +5,11 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from .compat import PY2, is_integer, is_iterable
-from ..exceptions import ValidationError
-
 maxint = np.iinfo(np.int32).max
 
 
 def compare(a, b):
     return 0 if a == b else 1 if a > b else -1 if a < b else None
-
-
-def as_shape(x, min_dim=0):
-    """Return a tuple if ``x`` is iterable or ``(x,)`` if ``x`` is integer."""
-    if is_iterable(x):
-        shape = tuple(x)
-    elif is_integer(x):
-        shape = (x,)
-    else:
-        raise ValueError("%r cannot be safely converted to a shape" % x)
-
-    if len(shape) < min_dim:
-        shape = tuple([1] * (min_dim - len(shape))) + shape
-
-    return shape
 
 
 def broadcast_shape(shape, length):
@@ -48,59 +30,13 @@ def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
         shape[:y.ndim] = y.shape
         y.shape = shape
     elif y.ndim > dims:
-        raise ValidationError("Input cannot be cast to array with "
-                              "%d dimensions" % dims, attr='dims')
+        raise ValueError(
+            "Input cannot be cast to array with %d dimensions" % dims)
 
     if readonly:
         y.flags.writeable = False
 
     return y
-
-
-def array_hash(a, n=100):
-    """Simple fast array hash function.
-
-    For arrays with size larger than ``n``, pick ``n`` elements at random
-    to hash. This strategy should work well for dense matrices, but for
-    sparse ones it is more likely to give hash collisions.
-    """
-    if not isinstance(a, np.ndarray):
-        return hash(a)
-
-    if a.size < n:
-        # hash all elements
-        v = a.view()
-        v.setflags(write=False)
-        return hash(v.data if PY2 else v.data.tobytes())
-    else:
-        # pick random elements to hash
-        rng = np.random.RandomState(a.size)
-        inds = [rng.randint(0, a.shape[i], size=n) for i in range(a.ndim)]
-        v = a[inds]
-        v.setflags(write=False)
-        return hash(v.data if PY2 else v.data.tobytes())
-
-
-def array_base(x):
-    """Get base array (that is *not* a view) for ``x``.
-
-    In Numpy >= 1.7, this is simply ``x.base``. However, in Numpy <= 1.6,
-    we need to loop back through the bases, since bases can be views.
-    """
-    while x.base is not None:
-        x = x.base
-    return x
-
-
-def array_offset(x):
-    """Get offset of array data from base data in bytes."""
-    if x.base is None:
-        return 0
-
-    base = array_base(x)
-    base_start = base.__array_interface__['data'][0]
-    start = x.__array_interface__['data'][0]
-    return start - base_start
 
 
 def expm(A, n_factors=None, normalize=False):
@@ -119,7 +55,7 @@ def expm(A, n_factors=None, normalize=False):
     the matrices should be small, both in dimensions and norm.
     """
     if A.ndim != 2 or A.shape[0] != A.shape[1]:
-        raise ValidationError("'A' must be a square matrix", attr='A')
+        raise ValueError("Argument must be a square matrix")
 
     a = np.linalg.norm(A)
     if normalize:
@@ -127,7 +63,7 @@ def expm(A, n_factors=None, normalize=False):
         A = A / float(a)
 
     if n_factors is None:
-        n_factors = 20 if normalize else min(max(int(a), 20), 1000)
+        n_factors = 20 if normalize else max(20, int(a))
 
     Y = np.zeros_like(A)
     for i in range(n_factors, 0, -1):

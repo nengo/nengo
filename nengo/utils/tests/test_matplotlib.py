@@ -15,7 +15,7 @@ def test_rasterplot(use_eventplot, Simulator, seed, plt):
         nengo.Connection(u, a)
         ap = nengo.Probe(a.neurons)
 
-    with Simulator(model) as sim:
-        sim.run(1.0)
+    sim = Simulator(model)
+    sim.run(1.0)
 
     rasterplot(sim.trange(), sim.data[ap], use_eventplot=use_eventplot)

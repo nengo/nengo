@@ -39,10 +39,8 @@ def human2bytes(s):
     1073741824
     """
     symbols = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
-
-    ix = -1 if s[-2].isdigit() else -2
-    letter = s[ix:].strip().upper()
-    num = s[:ix].strip()
+    letter = s[-2:].strip().upper()
+    num = s[:-2].strip()
     assert letter in symbols
     num = float(num)
     prefix = {symbols[0]: 1}

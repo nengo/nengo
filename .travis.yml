@@ -6,17 +6,21 @@ notifications:
 
 env:
   global:
-    - NUMPY="1.10"
-    - SETUP_CMD="test -a 'nengo -n 2 -v --durations 20'"
+    - NUMPY="1.9"
+    - SETUP_CMD="test -a 'nengo -n 2 -v'"
     - EXTRA_CMD=""
-    - CONDA_DEPS="matplotlib jupyter pygments pytest"
-    - PIP_DEPS="pytest-xdist"
+    - CONDA_DEPS="matplotlib ipython-notebook pygments pytest"
+    - PIP_DEPS="mistune pytest-xdist"
 
 matrix:
   include:
     - env: >
+        PYTHON="2.6"
+        CONDA_DEPS="$CONDA_DEPS ordereddict pygments"
+        PIP_DEPS="$PIP_DEPS counter IPython==1.2.1"
+    - env: >
         PYTHON="2.7"
-        SETUP_CMD="test -a '--cov-config .coveragerc --cov nengo nengo -n 2 -v --durations 20'"
+        SETUP_CMD="test -a '--cov-config .coveragerc --cov nengo nengo -n 2 -v'"
         EXTRA_CMD="coveralls"
         CONDA_DEPS="$CONDA_DEPS coverage"
         PIP_DEPS="$PIP_DEPS pytest-cov coveralls"
@@ -29,9 +33,8 @@ matrix:
     - env: PYTHON="2.7" NUMPY="1.6"
     - env: PYTHON="2.7" NUMPY="1.7"
     - env: PYTHON="2.7" NUMPY="1.8"
-    - env: PYTHON="2.7" NUMPY="1.9"
+    - env: PYTHON="3.3"
     - env: PYTHON="3.4"
-    - env: PYTHON="3.5"
 
 # Setup Miniconda
 before_install:
@@ -52,10 +55,8 @@ install:
 
 # Run the tests
 script:
-  - mkdir -p "$HOME/.ipython/profile_default"
-  - "echo 'c.HistoryAccessor.enabled = False\n' > $HOME/.ipython/profile_default/ipython_config.py"
+  - "echo 'backend : Agg' > matplotlibrc"
   - if [[ -n $SETUP_CMD ]]; then
-      python -c "import numpy; numpy.show_config()";
       python setup.py -q install;
       eval python setup.py "$SETUP_CMD";
     fi

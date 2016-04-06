@@ -1,10 +1,9 @@
-import weakref
-
-from nengo.base import NengoObject, ObjView, ProcessParam
+from nengo.base import NengoObject, ObjView
 from nengo.dists import DistOrArrayParam, Uniform, UniformHypersphere
-from nengo.exceptions import ReadonlyError
 from nengo.neurons import LIF, NeuronTypeParam, Direct
-from nengo.params import Default, IntParam, NumberParam
+from nengo.params import (
+    Default, IntParam, NumberParam, StringParam)
+from nengo.processes import ProcessParam
 
 
 class Ensemble(NengoObject):
@@ -49,52 +48,50 @@ class Ensemble(NengoObject):
         A name for the ensemble. Used for debugging and visualization.
     """
 
-    n_neurons = IntParam('n_neurons', default=None, low=1)
-    dimensions = IntParam('dimensions', default=None, low=1)
-    radius = NumberParam('radius', default=1.0, low=1e-10)
-    neuron_type = NeuronTypeParam('neuron_type', default=LIF())
-    encoders = DistOrArrayParam('encoders',
-                                default=UniformHypersphere(surface=True),
+    n_neurons = IntParam(default=None, low=1)
+    dimensions = IntParam(default=None, low=1)
+    radius = NumberParam(default=1.0, low=1e-10)
+    neuron_type = NeuronTypeParam(default=LIF())
+    encoders = DistOrArrayParam(default=UniformHypersphere(surface=True),
                                 sample_shape=('n_neurons', 'dimensions'))
-    intercepts = DistOrArrayParam('intercepts',
-                                  default=Uniform(-1.0, 1.0),
+    intercepts = DistOrArrayParam(default=Uniform(-1.0, 1.0),
                                   optional=True,
                                   sample_shape=('n_neurons',))
-    max_rates = DistOrArrayParam('max_rates',
-                                 default=Uniform(200, 400),
+    max_rates = DistOrArrayParam(default=Uniform(200, 400),
                                  optional=True,
                                  sample_shape=('n_neurons',))
-    n_eval_points = IntParam('n_eval_points', default=None, optional=True)
-    eval_points = DistOrArrayParam('eval_points',
-                                   default=UniformHypersphere(),
+    n_eval_points = IntParam(default=None, optional=True)
+    eval_points = DistOrArrayParam(default=UniformHypersphere(),
                                    sample_shape=('*', 'dimensions'))
-    bias = DistOrArrayParam('bias',
-                            default=None,
+    bias = DistOrArrayParam(default=None,
                             optional=True,
                             sample_shape=('n_neurons',))
-    gain = DistOrArrayParam('gain',
-                            default=None,
+    gain = DistOrArrayParam(default=None,
                             optional=True,
                             sample_shape=('n_neurons',))
-    noise = ProcessParam('noise', default=None, optional=True)
+    noise = ProcessParam(default=None, optional=True)
+    seed = IntParam(default=None, optional=True)
+    label = StringParam(default=None, optional=True)
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
                  n_eval_points=Default, neuron_type=Default, gain=Default,
-                 bias=Default, noise=Default, label=Default, seed=Default):
-        super(Ensemble, self).__init__(label=label, seed=seed)
+                 bias=Default, noise=Default, seed=Default, label=Default):
+
         self.n_neurons = n_neurons
         self.dimensions = dimensions
         self.radius = radius
         self.encoders = encoders
         self.intercepts = intercepts
         self.max_rates = max_rates
+        self.label = label
         self.n_eval_points = n_eval_points
         self.eval_points = eval_points
         self.bias = bias
         self.gain = gain
         self.neuron_type = neuron_type
         self.noise = noise
+        self.seed = seed
         self._neurons = Neurons(self)
 
     def __getitem__(self, key):
@@ -109,7 +106,7 @@ class Ensemble(NengoObject):
 
     @neurons.setter
     def neurons(self, dummy):
-        raise ReadonlyError(attr="neurons", obj=self)
+        raise AttributeError("neurons cannot be overwritten.")
 
     @property
     def probeable(self):
@@ -134,7 +131,7 @@ class Neurons(object):
     Does not currently support any other view-like operations.
     """
     def __init__(self, ensemble):
-        self._ensemble = weakref.ref(ensemble)
+        self.ensemble = ensemble
 
     def __getitem__(self, key):
         return ObjView(self, key)
@@ -147,10 +144,6 @@ class Neurons(object):
 
     def __str__(self):
         return "<Neurons of %s>" % self.ensemble
-
-    @property
-    def ensemble(self):
-        return self._ensemble()
 
     @property
     def size_in(self):
@@ -170,4 +163,4 @@ class Neurons(object):
 
     @property
     def probeable(self):
-        return ('output', 'input') + self.ensemble.neuron_type.probeable
+        return ['output', 'input'] + self.ensemble.neuron_type.probeable

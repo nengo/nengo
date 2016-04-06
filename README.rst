@@ -10,11 +10,11 @@
   :target: https://requires.io/github/nengo/nengo/requirements/?branch=master
   :alt: Requirements Status
 
-.. image:: https://img.shields.io/pypi/v/nengo.svg
+.. image:: https://pypip.in/v/nengo/badge.png
   :target: https://pypi.python.org/pypi/nengo
   :alt: Latest PyPI version
 
-.. image:: https://img.shields.io/pypi/dm/nengo.svg
+.. image:: https://pypip.in/d/nengo/badge.png
   :target: https://pypi.python.org/pypi/nengo
   :alt: Number of PyPI downloads
 
@@ -36,7 +36,7 @@ Nengo depends on `NumPy <http://www.numpy.org/>`_.
 If you have difficulty installing,
 try installing NumPy first (see below).
 
-Nengo supports Python 2.7 and 3.3+.
+Nengo supports Python 2.6, 2.7, and 3.3+.
 
 Developer install
 -----------------

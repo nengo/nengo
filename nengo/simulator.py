@@ -1,10 +1,13 @@
-"""Reference simulator for nengo models."""
+"""
+Simulator.py
+
+Reference simulator for nengo models.
+"""
 
 from __future__ import print_function
 
-import logging
-import warnings
 from collections import Mapping
+import logging
 
 import numpy as np
 
@@ -12,8 +15,7 @@ import nengo.utils.numpy as npext
 from nengo.builder import Model
 from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
-from nengo.exceptions import ReadonlyError, SimulatorClosed
-from nengo.utils.compat import range, ResourceWarning
+from nengo.utils.compat import range
 from nengo.utils.graphs import toposort
 from nengo.utils.progress import ProgressTracker
 from nengo.utils.simulator import operator_depencency_graph
@@ -37,7 +39,7 @@ class ProbeDict(Mapping):
         rval = self.raw[key]
         if isinstance(rval, list):
             rval = np.asarray(rval)
-            rval.setflags(write=False)
+            rval.flags.writeable = False
         return rval
 
     def __str__(self):
@@ -55,15 +57,6 @@ class ProbeDict(Mapping):
 
 class Simulator(object):
     """Reference simulator for Nengo models."""
-
-    # 'unsupported' defines features unsupported by a simulator.
-    # The format is a list of tuples of the form `(test, reason)` with `test`
-    # being a string with wildcards (*, ?, [abc], [!abc]) matched against Nengo
-    # test paths and names, and `reason` is a string describing why the feature
-    # is not supported by the backend. For example:
-    #     unsupported = [('test_pes*', 'PES rule not implemented')]
-    # would skip all test whose names start with 'test_pes'.
-    unsupported = []
 
     def __init__(self, network, dt=0.001, seed=None, model=None):
         """Initialize the simulator with a network and (optionally) a model.
@@ -102,8 +95,6 @@ class Simulator(object):
             build artifacts in the Model before building the network,
             then you can pass in a ``nengo.builder.Model`` instance.
         """
-        self.closed = False
-
         if model is None:
             dt = float(dt)  # make sure it's a float (for division purposes)
             self.model = Model(dt=dt,
@@ -119,7 +110,7 @@ class Simulator(object):
         self.model.decoder_cache.shrink()
 
         # -- map from Signal.base -> ndarray
-        self.signals = SignalDict()
+        self.signals = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
         for op in self.model.operators:
             op.init_signals(self.signals)
 
@@ -137,20 +128,6 @@ class Simulator(object):
         seed = np.random.randint(npext.maxint) if seed is None else seed
         self.reset(seed=seed)
 
-    def __del__(self):
-        """Raise a ResourceWarning if we are deallocated while open."""
-        if not self.closed:
-            warnings.warn(
-                "Simulator with model=%s was deallocated while open. Please "
-                "close simulators manually to ensure resources are properly "
-                "freed." % self.model, ResourceWarning)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
-
     @property
     def dt(self):
         """The time step of the simulator"""
@@ -158,21 +135,14 @@ class Simulator(object):
 
     @dt.setter
     def dt(self, dummy):
-        raise ReadonlyError(attr='dt', obj=self)
-
-    def _probe_step_time(self):
-        self._n_steps = self.signals[self.model.step].copy()
-        self._time = self.signals[self.model.time].copy()
-
-    @property
-    def n_steps(self):
-        """The current time step of the simulator"""
-        return self._n_steps
+        raise AttributeError("Cannot change simulator 'dt'. Please file "
+                             "an issue at http://github.com/nengo/nengo"
+                             "/issues and describe your use case.")
 
     @property
     def time(self):
         """The current time of the simulator"""
-        return self._time
+        return self.signals['__time__'].copy()
 
     def trange(self, dt=None):
         """Create a range of times matching probe data.
@@ -192,8 +162,6 @@ class Simulator(object):
 
     def _probe(self):
         """Copy all probed signals to buffers"""
-        self._probe_step_time()
-
         for probe in self.model.probes:
             period = (1 if probe.sample_every is None else
                       probe.sample_every / self.dt)
@@ -204,8 +172,8 @@ class Simulator(object):
     def step(self):
         """Advance the simulator by `self.dt` seconds.
         """
-        if self.closed:
-            raise SimulatorClosed("Simulator cannot run because it is closed.")
+        self.n_steps += 1
+        self.signals['__time__'][...] = self.n_steps * self.dt
 
         old_err = np.seterr(invalid='raise', divide='ignore')
         try:
@@ -237,8 +205,8 @@ class Simulator(object):
             or :class:`nengo.utils.progress.ProgressUpdater` instance.
         """
         steps = int(np.round(float(time_in_seconds) / self.dt))
-        logger.info("Running %s for %f seconds, or %d steps",
-                    self.model.label, time_in_seconds, steps)
+        logger.debug("Running %s for %f seconds, or %d steps",
+                     self.model.label, time_in_seconds, steps)
         self.run_steps(steps, progress_bar=progress_bar)
 
     def run_steps(self, steps, progress_bar=True):
@@ -277,15 +245,16 @@ class Simulator(object):
             or inputs (e.g. from Processes), but not the built objects
             (e.g. ensembles, connections).
         """
-        if self.closed:
-            raise SimulatorClosed("Cannot reset closed Simulator.")
-
         if seed is not None:
             self.seed = seed
 
+        self.n_steps = 0
+        self.signals['__time__'][...] = 0
+
         # reset signals
         for key in self.signals:
-            self.signals.reset(key)
+            if key != '__time__':
+                self.signals.reset(key)
 
         # rebuild steps (resets ops with their own state, like Processes)
         self.rng = np.random.RandomState(self.seed)
@@ -295,14 +264,3 @@ class Simulator(object):
         # clear probe data
         for probe in self.model.probes:
             self._probe_outputs[probe] = []
-
-        self._probe_step_time()
-
-    def close(self):
-        """Closes the simulator.
-
-        Any call to ``run``, ``run_steps``, ``step``, and ``reset`` on a closed
-        simulator will raise ``SimulatorClosed``.
-        """
-        self.closed = True
-        self.signals = None  # signals may no longer exist on some backends

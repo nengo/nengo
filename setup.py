@@ -21,12 +21,9 @@ class PyTest(TestCommand):
         TestCommand.initialize_options(self)
         self.pytest_args = None
 
-    def _test_args(self):
-        return []
-
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        del self.test_args[:]
+        self.test_args = []
         self.test_suite = True
 
     def run_tests(self):
@@ -42,12 +39,9 @@ class Tox(TestCommand):
         TestCommand.initialize_options(self)
         self.tox_args = None
 
-    def _test_args(self):
-        return []
-
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        del self.test_args[:]
+        self.test_args = []
         self.test_suite = True
 
     def run_tests(self):
@@ -94,7 +88,7 @@ setup(
         "numpy>=1.6",
     ],
     extras_require={
-        'all_solvers': ["scipy>=0.13", "scikit-learn"],
+        'all_solvers': ["scipy", "scikit-learn"],
     },
     tests_require=['pytest>=2.3'],
     cmdclass={

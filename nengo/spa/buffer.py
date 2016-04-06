@@ -1,9 +1,6 @@
-import warnings
-
 import numpy as np
 
 import nengo
-from nengo.exceptions import ValidationError
 from nengo.spa.module import Module
 
 
@@ -30,27 +27,22 @@ class Buffer(Module):
     def __init__(self, dimensions, subdimensions=16, neurons_per_dimension=50,
                  vocab=None, direct=False, label=None, seed=None,
                  add_to_container=None):
-        warnings.warn("Buffer is deprecated in favour of spa.State",
-                      DeprecationWarning)
         super(Buffer, self).__init__(label, seed, add_to_container)
 
         if vocab is None:
             # use the default one for this dimensionality
             vocab = dimensions
         elif vocab.dimensions != dimensions:
-            raise ValidationError(
-                "Dimensionality of given vocabulary (%d) does not match "
-                "dimensionality of buffer (%d)" %
-                (vocab.dimensions, dimensions), attr='dimensions', obj=self)
+            raise ValueError('Dimensionality of given vocabulary (%d) does not'
+                             'match dimensionality of buffer (%d)' %
+                             (vocab.dimensions, dimensions))
 
         # Subdimensions should be at most the number of dimensions
         subdimensions = min(dimensions, subdimensions)
 
         if dimensions % subdimensions != 0:
-            raise ValidationError(
-                "Number of dimensions (%d) must be divisible by subdimensions "
-                "(%d)" % (dimensions, subdimensions),
-                attr='dimensions', obj=self)
+            raise ValueError('Number of dimensions(%d) must be divisible by '
+                             'subdimensions(%d)' % (dimensions, subdimensions))
 
         with self:
             self.state = nengo.networks.EnsembleArray(
