@@ -3,8 +3,6 @@ TODO:
   - add a test to test each solver many times on different populations,
     and record the error.
 """
-from __future__ import print_function
-
 import numpy as np
 import pytest
 
@@ -15,8 +13,7 @@ from nengo.utils.numpy import rms, norm
 from nengo.utils.stdlib import Timer
 from nengo.utils.testing import allclose
 from nengo.solvers import (
-    cholesky, conjgrad, block_conjgrad, conjgrad_scipy, lsmr_scipy,
-    randomized_svd, Lstsq, LstsqNoise, LstsqL2, LstsqL2nz,
+    lstsq, Lstsq, LstsqNoise, LstsqL2, LstsqL2nz,
     LstsqL1, LstsqDrop, Nnls, NnlsL2, NnlsL2nz)
 
 
@@ -51,8 +48,8 @@ def test_cholesky(rng):
     b = rng.normal(size=(m, ))
 
     x0, _, _, _ = np.linalg.lstsq(A, b)
-    x1, _ = cholesky(A, b, 0, transpose=False)
-    x2, _ = cholesky(A, b, 0, transpose=True)
+    x1, _ = lstsq.Cholesky(transpose=False)(A, b, 0)
+    x2, _ = lstsq.Cholesky(transpose=True)(A, b, 0)
     assert np.allclose(x0, x1)
     assert np.allclose(x0, x2)
 
@@ -61,9 +58,9 @@ def test_conjgrad(rng):
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
-    x0, _ = cholesky(A, b, sigma)
-    x1, _ = conjgrad(A, b, sigma, tol=1e-3)
-    x2, _ = block_conjgrad(A, b, sigma, tol=1e-3)
+    x0, _ = lstsq.Cholesky()(A, b, sigma)
+    x1, _ = lstsq.Conjgrad(tol=1e-3)(A, b, sigma)
+    x2, _ = lstsq.BlockConjgrad(tol=1e-3)(A, b, sigma)
     assert np.allclose(x0, x1, atol=1e-6, rtol=1e-3)
     assert np.allclose(x0, x2, atol=1e-6, rtol=1e-3)
 
@@ -108,11 +105,11 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
     get_rng = lambda: np.random.RandomState(seed)
 
     A, b = get_system(500, 100, 5, rng=rng)
-    x0, _ = Solver(solver=cholesky)(A, b, rng=get_rng())
+    x0, _ = Solver(solver=lstsq.Cholesky())(A, b, rng=get_rng())
 
-    subsolvers = [conjgrad, block_conjgrad]
+    subsolvers = [lstsq.Conjgrad, lstsq.BlockConjgrad]
     for subsolver in subsolvers:
-        x, info = Solver(solver=subsolver, tol=tol)(A, b, rng=get_rng())
+        x, info = Solver(solver=subsolver(tol=tol))(A, b, rng=get_rng())
         rel_rmse = rms(x - x0) / rms(x0)
         assert rel_rmse < 4 * tol
         # the above 4 * tol is just a heuristic; the main purpose of this
@@ -121,7 +118,8 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
 
 
 @pytest.mark.parametrize('Solver', [
-    (LstsqL2, (), {'solver': randomized_svd}), LstsqL1])
+    (LstsqL2, (), {'solver': lstsq.RandomizedSVD()}),
+    LstsqL1])
 def test_decoder_solver_extra(Solver, plt, rng):
     pytest.importorskip('sklearn')
     test_decoder_solver(Solver, plt, rng)
@@ -165,9 +163,9 @@ def test_scipy_solvers(rng):
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
-    x0, _ = cholesky(A, b, sigma)
-    x1, _ = conjgrad_scipy(A, b, sigma)
-    x2, _ = lsmr_scipy(A, b, sigma)
+    x0, _ = lstsq.Cholesky()(A, b, sigma)
+    x1, _ = lstsq.ConjgradScipy()(A, b, sigma)
+    x2, _ = lstsq.LSMRScipy()(A, b, sigma)
     assert np.allclose(x0, x1, atol=2e-5, rtol=1e-3)
     assert np.allclose(x0, x2, atol=2e-5, rtol=1e-3)
 
@@ -199,8 +197,9 @@ def test_nnls(Solver, plt, rng):
 def test_subsolvers_L2(rng, logger):
     pytest.importorskip('scipy', minversion='0.11')  # version for lsmr
 
-    ref_solver = cholesky
-    solvers = [conjgrad, block_conjgrad, conjgrad_scipy, lsmr_scipy]
+    ref_solver = lstsq.Cholesky()
+    solvers = [lstsq.Conjgrad(), lstsq.BlockConjgrad(),
+               lstsq.ConjgradScipy(), lstsq.LSMRScipy()]
 
     A, B = get_system(m=2000, n=1000, d=10, rng=rng)
     sigma = 0.1 * A.max()
@@ -212,7 +211,7 @@ def test_subsolvers_L2(rng, logger):
     for i, solver in enumerate(solvers):
         with Timer() as t:
             xs[i], info = solver(A, B, sigma)
-        logger.info('solver: %s', solver.__name__)
+        logger.info('solver: %r' % solver)
         logger.info('duration: %0.3f', t.duration)
         logger.info('duration relative to reference solver: %0.2f',
                     (t.duration / t0.duration))
