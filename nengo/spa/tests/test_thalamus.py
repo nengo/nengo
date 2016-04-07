@@ -153,9 +153,9 @@ def test_nondefault_routing(Simulator, seed):
         nengo.Connection(node1, model.buff1.state.input)
         nengo.Connection(node2, model.buff2.state.input)
 
-        actions = spa.Actions('dot(ctrl, A) --> cmp_A=buff1, cmp_B=buff1',
-                              'dot(ctrl, B) --> cmp_A=buff1, cmp_B=buff2',
-                              'dot(ctrl, C) --> cmp_A=buff2, cmp_B=buff2',
+        actions = spa.Actions('dot(ctrl, A) --> cmp.A=buff1, cmp.B=buff1',
+                              'dot(ctrl, B) --> cmp.A=buff1, cmp.B=buff2',
+                              'dot(ctrl, C) --> cmp.A=buff2, cmp.B=buff2',
                               )
         model.bg = spa.BasalGanglia(actions)
         model.thal = spa.Thalamus(model.bg)
