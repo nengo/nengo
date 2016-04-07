@@ -161,5 +161,5 @@ class Module(nengo.Network):
             Probe with desired data.
         """
         if vocab is None:
-            vocab = self.config[probe.target].vocab
+            vocab = self.vocabs[data[probe].shape[1]]
         return nengo.spa.similarity(data[probe], vocab)
