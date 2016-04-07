@@ -4,7 +4,7 @@ import re
 import warnings
 from collections import OrderedDict
 
-from nengo.exceptions import SpaParseError
+from nengo.exceptions import SpaModuleError, SpaParseError
 from nengo.spa.action_objects import Symbol, Source, DotProduct, Summation
 from nengo.utils.compat import iteritems
 
@@ -14,9 +14,8 @@ class Expression(object):
 
     Parameters
     ----------
-    sources : list of strings
-        The names of the module outputs that can be used as part of the
-        expression
+    module : :class:`nengo.spa.Module`
+        The SPA module used to look up names.
     expression : string
         The expression to evaluate. This either defines the utility of the
         action, or a value from an effect's assignment, given the state
@@ -25,12 +24,10 @@ class Expression(object):
         "0.5*(dot(vision, DOG) + dot(memory, CAT*MOUSE)*3 - 1)".
     """
 
-    def __init__(self, sources, expression):
+    def __init__(self, module, expression):
+        self.module = module
         self.objects = {}   # the list of known terms
 
-        # make all the module outputs as known terms
-        for name in sources:
-            self.objects[name] = Source(name)
         # handle the term 'dot(a, b)' to mean DotProduct(a, b)
         self.objects['dot'] = DotProduct
 
@@ -59,14 +56,25 @@ class Expression(object):
     def __getitem__(self, key):
         # this gets used by the eval in the constructor to create new
         # terms as needed
-        item = self.objects.get(key, None)
-        if item is None:
-            if not key[0].isupper():
-                raise SpaParseError(
-                    "Semantic pointers must begin with a capital letter.")
-            item = Symbol(key)
-            self.objects[key] = item
-        return item
+        if key == '__tracebackhide__':  # gives better tracebacks in py.test
+            return False
+        if key in self.objects:
+            return self.objects[key]
+        else:
+            try:
+                return Source(key, module=self.module.get_module(key))
+            except SpaModuleError:
+                try:
+                    self.module.get_module_output(key)
+                    return Source(key)
+                except SpaModuleError:
+                    if not key[0].isupper():
+                        raise SpaParseError(
+                            "Semantic pointers must begin with a capital "
+                            "letter.")
+                    item = Symbol(key)
+                    self.objects[key] = item
+                    return item
 
     def __str__(self):
         return str(self.expression)
@@ -77,10 +85,8 @@ class Effect(object):
 
     Parameters
     ----------
-    sources : list of string
-        The names of valid sources of information (SPA module outputs)
-    sinks : list of string
-        The names of valid places to send information (SPA module inputs)
+    module : :class:`nengo.spa.Module`
+        The SPA module used to look up names.
     effect: string
         The action to implement.  This is a set of assignment statements
         which can be parsed into a VectorList.
@@ -91,14 +97,16 @@ class Effect(object):
         "motor=0.5*(memory*A + vision*B)"
     """
 
-    def __init__(self, sources, sinks, effect):
+    def __init__(self, module, effect):
         self.effect = OrderedDict()
         # Splits by ',' and separates into lvalue=rvalue. We cannot simply use
         # split, because the rvalue may contain commas in the case of dot(*,*).
         # However, *? is lazy, and * is greedy, making this regex work.
         for lvalue, rvalue in re.findall("(.*?)=([^=]*)(?:,|$)", effect):
             sink = lvalue.strip()
-            if sink not in sinks:
+            try:
+                module.get_module_input(sink)
+            except SpaModuleError:
                 raise SpaParseError(
                     "Left-hand module '%s' from effect '%s=%s' "
                     "is not defined." %
@@ -108,7 +116,7 @@ class Effect(object):
                     "Left-hand module '%s' from effect '%s=%s' "
                     "is assigned to multiple times in '%s'." %
                     (lvalue, lvalue, rvalue, effect))
-            self.effect[sink] = Expression(sources, rvalue)
+            self.effect[sink] = Expression(module, rvalue)
 
     def __str__(self):
         return ", ".join("%s=%s" % x for x in iteritems(self.effect))
@@ -121,10 +129,8 @@ class Action(object):
 
     Parameters
     ----------
-    sources : list of string
-        The names of valid sources of information (SPA module outputs)
-    sinks : list of string
-        The names of valid places to send information (SPA module inputs)
+    module : :class:`nengo.spa.Module`
+        The SPA module used to look up names.
     action : string
         A string defining the action.  If '-->' is in the string, this
         is used as a marker to split the string into condition and effect.
@@ -133,15 +139,15 @@ class Action(object):
         The name of this action
     """
 
-    def __init__(self, sources, sinks, action, name):
+    def __init__(self, module, action, name):
         self.name = name
         if '-->' in action:
             condition, effect = action.split('-->', 1)
-            self.condition = Expression(sources, condition)
-            self.effect = Effect(sources, sinks, effect)
+            self.condition = Expression(module, condition)
+            self.effect = Effect(module, effect)
         else:
             self.condition = None
-            self.effect = Effect(sources, sinks, action)
+            self.effect = Effect(module, action)
 
     def __str__(self):
         return "<Action %s:\n  %s\n --> %s\n>" % (
@@ -177,16 +183,13 @@ class Actions(object):
         """Return the number of actions."""
         return len(self.args) + len(self.kwargs)
 
-    def process(self, spa):
+    def process(self, module):
         """Parse the actions and generate the list of Action objects."""
         self.actions = []
-
-        sources = list(spa.get_module_outputs())
-        sinks = list(spa.get_module_inputs())
 
         sorted_kwargs = sorted(self.kwargs.items())
 
         for action in self.args:
-            self.actions.append(Action(sources, sinks, action, name=None))
+            self.actions.append(Action(module, action, name=None))
         for name, action in sorted_kwargs:
-            self.actions.append(Action(sources, sinks, action, name=name))
+            self.actions.append(Action(module, action, name=name))
