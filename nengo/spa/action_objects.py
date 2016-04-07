@@ -81,10 +81,19 @@ class Source(object):
     This is used by the `.spa.Actions` parsing system.
     """
 
-    def __init__(self, name, transform=Symbol('1'), inverted=False):
+    def __init__(
+            self, name, transform=Symbol('1'), inverted=False, module=None):
         self.name = name            # the name of the module output
+        self.module = module
         self.transform = transform  # the Symbol for the transformation
         self.inverted = inverted
+
+    def __getattr__(self, name):
+        if self.module is None:
+            raise AttributeError('{0!r} has no submodules.'.format(self.name))
+        return Source(
+            '{}.{}'.format(self.name, name),
+            module=self.module.get_module(name))
 
     def __invert__(self):
         if self.transform.symbol != '1':

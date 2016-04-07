@@ -90,29 +90,39 @@ class Module(nengo.Network):
 
     def get_module(self, name):
         """Return the module for the given name."""
-        if name in self._modules:
-            return self._modules[name]
-        elif '_' in name:
-            module, name = name.rsplit('_', 1)
-            if module in self._modules:
-                return self._modules[module]
-        raise SpaModuleError("Could not find module %r" % name)
+        try:
+            components = name.split('.', 1)
+            if len(components) > 1:
+                head, tail = components
+                return self._modules[head].get_module(tail)
+            else:
+                if name in self._modules:
+                    return self._modules[name]
+                elif name in self.inputs or name in self.outputs:
+                    return self
+                else:
+                    raise KeyError
+        except KeyError:
+            raise SpaModuleError("Could not find module %r" % name)
 
     def get_module_input(self, name):
         """Return the object to connect into for the given name.
 
         The name will be either the same as a module, or of the form
-        <module_name>_<input_name>.
+        <module_name>.<input_name>.
         """
-        if name in self._modules and 'default' in self._modules[name].inputs:
-            return self._modules[name].inputs['default']
-        elif '_' in name:
-            module, name = name.rsplit('_', 1)
-            if module in self._modules:
-                m = self._modules[module]
-                if name in m.inputs:
-                    return m.inputs[name]
-        raise SpaModuleError("Could not find module input %r" % name)
+        try:
+            components = name.split('.', 1)
+            if len(components) > 1:
+                head, tail = components
+                return self._modules[head].get_module_input(tail)
+            else:
+                if name in self.inputs:
+                    return self.inputs[name]
+                else:
+                    return self._modules[name].get_module_input('default')
+        except KeyError:
+            raise SpaModuleError("Could not find module input %r" % name)
 
     def get_input_vocab(self, name):
         return self.get_module_input(name)[1]
@@ -121,17 +131,20 @@ class Module(nengo.Network):
         """Return the object to connect into for the given name.
 
         The name will be either the same as a module, or of the form
-        <module_name>_<output_name>.
+        <module_name>.<output_name>.
         """
-        if name in self._modules:
-            return self._modules[name].outputs['default']
-        elif '_' in name:
-            module, name = name.rsplit('_', 1)
-            if module in self._modules:
-                m = self._modules[module]
-                if name in m.outputs:
-                    return m.outputs[name]
-        raise SpaModuleError("Could not find module output %r" % name)
+        try:
+            components = name.split('.', 1)
+            if len(components) > 1:
+                head, tail = components
+                return self._modules[head].get_module_output(tail)
+            else:
+                if name in self.outputs:
+                    return self.outputs[name]
+                else:
+                    return self._modules[name].get_module_output('default')
+        except KeyError:
+            raise SpaModuleError("Could not find module output %r" % name)
 
     def get_output_vocab(self, name):
         return self.get_module_output(name)[1]
