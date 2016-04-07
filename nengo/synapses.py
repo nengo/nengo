@@ -498,11 +498,3 @@ class SynapseParam(Parameter):
             raise ValidationError("'%s' is not a synapse type" % synapse,
                                   attr=self.name, obj=instance)
         super(SynapseParam, self).validate(instance, synapse)
-
-
-class LinearFilterParam(SynapseParam):
-    def validate(self, instance, synapse):
-        if synapse is not None and not isinstance(synapse, LinearFilter):
-            raise ValidationError("'%s' is not a LinearFilter" % synapse,
-                                  attr=self.name, obj=instance)
-        super(SynapseParam, self).validate(instance, synapse)

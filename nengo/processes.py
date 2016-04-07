@@ -5,7 +5,7 @@ from nengo.base import Process
 from nengo.dists import DistributionParam, Gaussian
 from nengo.exceptions import ValidationError
 from nengo.params import BoolParam, DictParam, NdarrayParam, NumberParam
-from nengo.synapses import LinearFilter, LinearFilterParam, Lowpass
+from nengo.synapses import LinearFilter, Lowpass, SynapseParam
 
 
 class WhiteNoise(Process):
@@ -80,7 +80,7 @@ class FilteredNoise(Process):
         Random number seed. Ensures noise will be the same each run.
     """
 
-    synapse = LinearFilterParam('synapse')
+    synapse = SynapseParam('synapse')
     dist = DistributionParam('dist')
     scale = BoolParam('scale')
     synapse_kwargs = DictParam('synapse_kwargs')
