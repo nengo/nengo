@@ -134,7 +134,7 @@ def test_actions():
     )
     assert a.count == 3
 
-    model = spa.SPA()
+    model = spa.Module()
     with model:
         model.state = spa.State(16)
     a.process(model)

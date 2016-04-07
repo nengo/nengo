@@ -9,7 +9,7 @@ import numpy as np
 
 @pytest.mark.slow
 def test_thalamus(Simulator, plt, seed):
-    model = spa.SPA(seed=seed)
+    model = spa.Module(seed=seed)
 
     with model:
         model.vision = spa.Buffer(dimensions=16, neurons_per_dimension=80)
@@ -72,7 +72,7 @@ def test_thalamus(Simulator, plt, seed):
 
 def test_routing(Simulator, seed, plt):
     D = 3
-    model = spa.SPA(seed=seed)
+    model = spa.Module(seed=seed)
     with model:
         model.ctrl = spa.Buffer(16, label='ctrl')
 
@@ -144,7 +144,7 @@ def test_routing_recurrency_compilation(Simulator, seed, plt):
 
 def test_nondefault_routing(Simulator, seed):
     D = 3
-    model = spa.SPA(seed=seed)
+    model = spa.Module(seed=seed)
     with model:
         model.ctrl = spa.Buffer(16, label='ctrl')
 
@@ -193,14 +193,14 @@ def test_nondefault_routing(Simulator, seed):
 def test_errors():
     # motor does not exist
     with pytest.raises(SpaParseError):
-        with spa.SPA() as model:
+        with spa.Module() as model:
             model.vision = spa.Buffer(dimensions=16)
             actions = spa.Actions('0.5 --> motor=A')
             model.bg = spa.BasalGanglia(actions)
 
     # dot products not implemented
     with pytest.raises(NotImplementedError):
-        with spa.SPA() as model:
+        with spa.Module() as model:
             model.scalar = spa.Buffer(dimensions=16, subdimensions=1)
             actions = spa.Actions('0.5 --> scalar=dot(scalar, FOO)')
             model.bg = spa.BasalGanglia(actions)

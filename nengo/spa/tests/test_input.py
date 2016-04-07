@@ -4,7 +4,7 @@ from nengo import spa
 
 
 def test_fixed():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=8, subdimensions=2)
         model.input = spa.Input(buffer1='A', buffer2='B')
@@ -19,7 +19,7 @@ def test_fixed():
 
 
 def test_time_varying():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.buffer = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=16)
 
@@ -46,7 +46,7 @@ def test_time_varying():
 def test_predefined_vocabs():
     D = 64
 
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.vocab1 = spa.Vocabulary(D)
         model.vocab1.parse('A+B+C')
 
