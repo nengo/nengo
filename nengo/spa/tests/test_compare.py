@@ -3,7 +3,7 @@ from nengo import spa
 
 
 def test_basic():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.compare = spa.Compare(dimensions=16)
 
     inputA = model.get_module_input('compare.A')
@@ -21,7 +21,7 @@ def test_basic():
 
 
 def test_run(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.compare = spa.Compare(dimensions=16)
 
         def inputA(t):
