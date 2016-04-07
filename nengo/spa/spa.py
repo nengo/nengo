@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 from nengo.spa.vocab import VocabularyMap
@@ -37,7 +39,7 @@ class SPA(Module):
 
     Now, the example with a subclass::
 
-        class Example(spa.SPA):
+        class Example(spa.Module):
             def __init__(self):
                 self.a = spa.Buffer(dimensions=8)
                 self.b = spa.Buffer(dimensions=16)
@@ -58,7 +60,7 @@ class SPA(Module):
     and the Thalamus.  Together, these allow us to define complex actions
     using the Action syntax::
 
-        class SequenceExample(spa.SPA):
+        class SequenceExample(spa.Module):
             def __init__(self):
                 self.state = spa.Memory(dimensions=32)
 
@@ -75,6 +77,9 @@ class SPA(Module):
 
     def __init__(self, label=None, seed=None, add_to_container=None,
                  vocabs=[]):
+        warnings.warn(DeprecationWarning(
+            "nengo.spa.SPA is deprecated. Use nengo.spa.Module instead."))
+
         if seed is not None:
             rng = np.random.RandomState(seed)
         else:

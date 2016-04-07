@@ -2,11 +2,12 @@ import numpy as np
 
 import nengo
 from nengo import spa
+from nengo.spa.vocab import VocabularyMap
 from nengo.utils.numpy import rmse
 
 
 def test_basic():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.bind = spa.Bind(dimensions=16)
 
     inputA = model.get_module_input('bind.A')
@@ -26,7 +27,7 @@ def test_run(Simulator, seed):
     rng = np.random.RandomState(seed)
     vocab = spa.Vocabulary(16, rng=rng)
 
-    with spa.SPA(seed=seed, vocabs=[vocab]) as model:
+    with spa.Module(seed=seed, vocabs=VocabularyMap([vocab])) as model:
         model.bind = spa.Bind(dimensions=16)
 
         def inputA(t):

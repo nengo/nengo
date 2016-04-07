@@ -6,7 +6,7 @@ from nengo import spa
 
 
 def test_basal_ganglia(Simulator, seed, plt):
-    model = spa.SPA(seed=seed)
+    model = spa.Module(seed=seed)
 
     with model:
         model.vision = spa.Buffer(dimensions=16)
@@ -72,7 +72,7 @@ def test_basal_ganglia(Simulator, seed, plt):
 def test_errors():
     # dot products between two sources not implemented
     with pytest.raises(NotImplementedError):
-        with spa.SPA() as model:
+        with spa.Module() as model:
             model.vision = spa.Buffer(dimensions=16)
             model.motor = spa.Buffer(dimensions=16)
             actions = spa.Actions('dot(vision, motor) --> motor=A')
@@ -80,14 +80,14 @@ def test_errors():
 
     # inversion of sources not implemented both ways
     with pytest.raises(NotImplementedError):
-        with spa.SPA() as model:
+        with spa.Module() as model:
             model.vision = spa.Buffer(dimensions=16)
             model.motor = spa.Buffer(dimensions=16)
             actions = spa.Actions('dot(~vision, FOO) --> motor=A')
             model.bg = spa.BasalGanglia(actions)
 
     with pytest.raises(NotImplementedError):
-        with spa.SPA() as model:
+        with spa.Module() as model:
             model.vision = spa.Buffer(dimensions=16)
             model.motor = spa.Buffer(dimensions=16)
             actions = spa.Actions('dot(FOO, ~vision) --> motor=A')
@@ -95,7 +95,7 @@ def test_errors():
 
     # convolution not implemented
     with pytest.raises(NotImplementedError):
-        with spa.SPA() as model:
+        with spa.Module() as model:
             model.scalar = spa.Buffer(dimensions=1, subdimensions=1)
             actions = spa.Actions('scalar*scalar --> scalar=1')
             model.bg = spa.BasalGanglia(actions)

@@ -6,7 +6,7 @@ from nengo import spa
 
 
 def test_basic():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.buffer = spa.Buffer(dimensions=16)
 
     input = model.get_module_input('buffer')
@@ -18,13 +18,13 @@ def test_basic():
 
 
 def test_neurons():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.buffer = spa.Buffer(dimensions=16, neurons_per_dimension=2)
 
     assert len(model.buffer.state.ensembles) == 1
     assert model.buffer.state.ensembles[0].n_neurons == 16 * 2
 
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.buffer = spa.Buffer(dimensions=16, subdimensions=1,
                                   neurons_per_dimension=2)
 
@@ -34,16 +34,16 @@ def test_neurons():
 
 def test_exception():
     with pytest.raises(Exception):
-        with spa.SPA() as model:
+        with spa.Module() as model:
             vocab = spa.Vocabulary(16)
             model.buffer = spa.Buffer(dimensions=12, vocab=vocab)
 
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.buffer = spa.Buffer(dimensions=12, subdimensions=3)
 
 
 def test_run(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.buffer = spa.Buffer(dimensions=32)
 
         def input(t):
