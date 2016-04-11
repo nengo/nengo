@@ -1,6 +1,6 @@
 """Syntactic parsing of the subexpressions of all action expressions."""
 
-from nengo.exceptions import SpaParseError
+from nengo.exceptions import SpaModuleError, SpaParseError
 from nengo.utils.compat import is_number
 
 
@@ -81,19 +81,10 @@ class Source(object):
     This is used by the spa.Action parsing system.
     """
 
-    def __init__(
-            self, name, transform=Symbol('1'), inverted=False, module=None):
+    def __init__(self, name, transform=Symbol('1'), inverted=False):
         self.name = name            # the name of the module output
-        self.module = module
         self.transform = transform  # the Symbol for the transformation
         self.inverted = inverted
-
-    def __getattr__(self, name):
-        if self.module is None:
-            raise AttributeError('{0!r} has no submodules.'.format(self.name))
-        return Source(
-            '{}.{}'.format(self.name, name),
-            module=self.module.get_module(name))
 
     def __invert__(self):
         if self.transform.symbol != '1':
@@ -134,6 +125,30 @@ class Source(object):
         if self.inverted:
             trans_text += "~"
         return "%s%s" % (trans_text, self.name)
+
+
+class Namespace(Source):
+    """A particular module constituting a namespace.
+
+    Allows access to submodules and outputs. Can also be used as source due
+    to default input and outputs of a module.
+
+    This is used by the spa.Action parsing system.
+    """
+    def __init__(
+            self, name, transform=Symbol('1'), inverted=False, module=None):
+        super(Namespace, self).__init__(
+            name, transform=transform, inverted=inverted)
+        self.module = module
+
+    def __getattr__(self, name):
+        if self.module is None:
+            raise AttributeError('{0!r} has no submodules.'.format(self.name))
+        key = '{}.{}'.format(self.name, name)
+        try:
+            return Namespace(key, module=self.module.get_module(name))
+        except SpaModuleError:
+            return Source(key)
 
 
 class DotProduct(object):

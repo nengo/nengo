@@ -137,7 +137,7 @@ class Thalamus(Module):
         action is active.
         """
 
-        target_module = self.spa.get_module(target_name)
+        target_module = self.spa.get_module(target_name, strip_output=True)
 
         if index not in self.gates:
             with target_module:
@@ -187,8 +187,8 @@ class Thalamus(Module):
             target, target_vocab = self.spa.get_module_input(target_name)
             source, source_vocab = self.spa.get_module_output(source_name)
 
-            target_module = self.spa.get_module(target_name)
-            source_module = self.spa.get_module(source_name)
+            target_module = self.spa.get_module(target_name, strip_output=True)
+            source_module = self.spa.get_module(source_name, strip_output=True)
 
             # build a communication channel between the source and target
             dim = target_vocab.dimensions

@@ -13,7 +13,11 @@ class ModuleMock(object):
         self.sinks = sinks
 
     def get_module(self, name):
-        raise SpaModuleError()
+        sources = ['default'] if name in self.sources else []
+        sinks = ['default'] if name in self.sinks else []
+        if len(sources) == 0 and len(sinks) == 0:
+            raise SpaModuleError()
+        return ModuleMock(sources, sinks)
 
     def get_module_input(self, name):
         if name not in self.sinks:
