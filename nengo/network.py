@@ -113,13 +113,13 @@ class Network(object):
         if not isinstance(network, Network):
             raise NetworkContextError(
                 "Current context (%s) is not a network" % network)
-        for cls in obj.__class__.__mro__:
+        for cls in type(obj).__mro__:
             if cls in network.objects:
                 network.objects[cls].append(obj)
                 break
         else:
             raise NetworkContextError("Objects of type %r cannot be added to "
-                                      "networks." % obj.__class__.__name__)
+                                      "networks." % type(obj).__name__)
 
     @staticmethod
     def default_config():
@@ -206,12 +206,12 @@ class Network(object):
 
     def __str__(self):
         return "<%s %s>" % (
-            self.__class__.__name__,
+            type(self).__name__,
             '"%s"' % self.label if self.label is not None else
             "(unlabeled) at 0x%x" % id(self))
 
     def __repr__(self):
         return "<%s %s %s>" % (
-            self.__class__.__name__,
+            type(self).__name__,
             '"%s"' % self.label if self.label is not None else "(unlabeled)",
             "at 0x%x" % id(self))

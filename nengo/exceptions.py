@@ -22,7 +22,7 @@ class ValidationError(NengoException, ValueError):
             return "{}: {}".format(
                 self.attr, super(ValidationError, self).__str__())
         klassname = (self.obj.__name__ if inspect.isclass(self.obj)
-                     else self.obj.__class__.__name__)
+                     else type(self.obj).__name__)
         return "{}.{}: {}".format(
             klassname, self.attr, super(ValidationError, self).__str__())
 

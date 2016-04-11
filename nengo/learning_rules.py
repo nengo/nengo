@@ -65,7 +65,7 @@ class LearningRuleType(FrozenObject):
         self.learning_rate = learning_rate
 
     def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, ", ".join(self._argreprs))
+        return '%s(%s)' % (type(self).__name__, ", ".join(self._argreprs))
 
     @property
     def _argreprs(self):

@@ -488,7 +488,7 @@ class VocabularyParam(nengo.params.Parameter):
 
         if vocab is not None and not isinstance(vocab, Vocabulary):
             raise ValidationError("Must be of type 'Vocabulary' (got type %r)."
-                                  % vocab.__class__.__name__,
+                                  % type(vocab).__name__,
                                   attr=self.name, obj=instance)
 
         return vocab

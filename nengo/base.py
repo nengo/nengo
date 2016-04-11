@@ -80,7 +80,7 @@ class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
 
     def _str(self, include_id):
         return "<%s%s%s>" % (
-            self.__class__.__name__,
+            type(self).__name__,
             "" if not hasattr(self, 'label') else
             " (unlabeled)" if self.label is None else
             ' "%s"' % self.label,
@@ -375,6 +375,6 @@ class ProcessParam(Parameter):
         super(ProcessParam, self).validate(instance, process)
         if process is not None and not isinstance(process, Process):
             raise ValidationError(
-                "Must be Process (got type %r)" % process.__class__.__name__,
+                "Must be Process (got type %r)" % type(process).__name__,
                 attr=self.name, obj=instance)
         return process

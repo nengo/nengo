@@ -90,7 +90,7 @@ class Parameter(object):
 
     def __repr__(self):
         return "%s(default=%s, optional=%s, readonly=%s)" % (
-            self.__class__.__name__,
+            type(self).__name__,
             self.default,
             self.optional,
             self.readonly)
@@ -361,7 +361,7 @@ class NdarrayParam(Parameter):
             except (ValueError, TypeError):
                 raise ValidationError(
                     "Must be a float NumPy array (got type %r)"
-                    % ndarray.__class__.__name__, attr=self.name, obj=instance)
+                    % type(ndarray).__name__, attr=self.name, obj=instance)
 
         if self.readonly:
             ndarray.setflags(write=False)
@@ -449,7 +449,7 @@ class FrozenObject(object):
 
     def __init__(self):
         self._paramdict = {
-            k: v for k, v in inspect.getmembers(self.__class__)
+            k: v for k, v in inspect.getmembers(type(self))
             if isinstance(v, Parameter)}
         for p in self._params:
             if not p.readonly:
@@ -463,11 +463,11 @@ class FrozenObject(object):
     def __eq__(self, other):
         if self is other:  # quick check for speed
             return True
-        return self.__class__ == other.__class__ and all(
+        return type(self) == type(other) and all(
             p.equal(self, other) for p in self._params)
 
     def __hash__(self):
-        return hash((self.__class__, tuple(
+        return hash((type(self), tuple(
             p.hashvalue(self) for p in self._params)))
 
     def __getstate__(self):
@@ -485,5 +485,5 @@ class FrozenObject(object):
         self.__dict__.update(state)
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, ', '.join(
+        return "%s(%s)" % (type(self).__name__, ', '.join(
             "%s=%r" % (k, getattr(self, k)) for k in sorted(self._paramdict)))

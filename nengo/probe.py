@@ -12,7 +12,7 @@ class TargetParam(NengoObjectParam):
         obj = target.obj if isinstance(target, ObjView) else target
         if not hasattr(obj, 'probeable'):
             raise ValidationError("Type %r is not probeable"
-                                  % obj.__class__.__name__,
+                                  % type(obj).__name__,
                                   attr=self.name, obj=probe)
 
         # do this after; better to know that type is not Probable first

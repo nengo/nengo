@@ -271,7 +271,7 @@ def test_compare_solvers(Simulator, plt, seed):
             nengo.Connection(a, b, solver=solver)
             probes.append(nengo.Probe(b))
             names.append("%s(%s)" % (
-                solver.__class__.__name__, 'w' if solver.weights else 'd'))
+                type(solver).__name__, 'w' if solver.weights else 'd'))
 
     with Simulator(model) as sim:
         sim.run(tfinal)

@@ -98,7 +98,7 @@ def build_probe(model, probe):
             break
     else:
         raise BuildError(
-            "Type %r is not probeable" % probe.obj.__class__.__name__)
+            "Type %r is not probeable" % type(probe.obj).__name__)
 
     key = probeables[probe.attr] if probe.attr in probeables else probe.attr
     if key is None:

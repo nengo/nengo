@@ -45,7 +45,7 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
                 raise ValidationError(
                     "pre' must be of type 'Ensemble' or 'Neurons' for "
                     "learning rule '%s' (got type %r)" % (
-                        rule, conn.pre_obj.__class__.__name__),
+                        rule, type(conn.pre_obj).__name__),
                     attr=self.name, obj=conn)
 
         # --- Check post object
@@ -54,14 +54,14 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
                 raise ValidationError(
                     "'post' must be of type 'Ensemble' (got %r) "
                     "for learning rule '%s'"
-                    % (conn.pre_obj.__class__.__name__, rule),
+                    % (type(conn.pre_obj).__name__, rule),
                     attr=self.name, obj=conn)
         else:
             if not isinstance(conn.post_obj, (Ensemble, Neurons, Node)):
                 raise ValidationError(
                     "'post' must be of type 'Ensemble', 'Neurons' or 'Node' "
                     "(got %r) for learning rule '%s'"
-                    % (conn.post_obj.__class__.__name__, rule),
+                    % (type(conn.post_obj).__name__, rule),
                     attr=self.name, obj=conn)
 
         if rule.modifies == 'weights':
@@ -95,12 +95,12 @@ class ConnectionSolverParam(SolverParam):
             if solver.weights and not isinstance(conn.pre_obj, Ensemble):
                 raise ValidationError(
                     "weight solvers only work for connections from ensembles "
-                    "(got %r)" % conn.pre_obj.__class__.__name__,
+                    "(got %r)" % type(conn.pre_obj).__name__,
                     attr=self.name, obj=conn)
             if solver.weights and not isinstance(conn.post_obj, Ensemble):
                 raise ValidationError(
                     "weight solvers only work for connections to ensembles "
-                    "(got %r)" % conn.post_obj.__class__.__name__,
+                    "(got %r)" % type(conn.post_obj).__name__,
                     attr=self.name, obj=conn)
 
 
@@ -109,7 +109,7 @@ class EvalPointsParam(DistOrArrayParam):
         """Eval points are only valid when pre is an ensemble."""
         if not isinstance(conn.pre, Ensemble):
             msg = ("eval_points are only valid on connections from ensembles "
-                   "(got type '%s')" % conn.pre.__class__.__name__)
+                   "(got type '%s')" % type(conn.pre).__name__)
             raise ValidationError(msg, attr=self.name, obj=conn)
         return super(EvalPointsParam, self).validate(conn, distorarray)
 
@@ -130,10 +130,10 @@ class ConnectionFunctionParam(FunctionParam):
         if function is not None and not isinstance(conn.pre_obj, fn_ok):
             raise ValidationError(
                 "function can only be set for connections from an Ensemble or "
-                "Node (got type %r)" % conn.pre_obj.__class__.__name__,
+                "Node (got type %r)" % type(conn.pre_obj).__name__,
                 attr=self.name, obj=conn)
 
-        type_pre = conn.pre_obj.__class__.__name__
+        type_pre = type(conn.pre_obj).__name__
         transform = conn.transform
         size_mid = conn.size_in if function is None else size
 
@@ -391,7 +391,7 @@ class Connection(NengoObject):
         if self.learning_rule_type is not None and self._learning_rule is None:
             types = self.learning_rule_type
             if isinstance(types, dict):
-                self._learning_rule = types.__class__()  # dict of same type
+                self._learning_rule = type(types)()  # dict of same type
                 for k, v in iteritems(types):
                     self._learning_rule[k] = LearningRule(self, v)
             elif is_iterable(types):
@@ -400,7 +400,7 @@ class Connection(NengoObject):
                 self._learning_rule = LearningRule(self, types)
             else:
                 raise ValidationError(
-                    "Invalid type %r" % types.__class__.__name__,
+                    "Invalid type %r" % type(types).__name__,
                     attr='learning_rule_type', obj=self)
 
         return self._learning_rule

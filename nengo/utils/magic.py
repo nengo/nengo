@@ -121,7 +121,7 @@ class ObjectProxy(with_metaclass(ObjectProxyMeta)):
 
     @property
     def __class__(self):
-        return self.__wrapped__.__class__
+        return type(self.__wrapped__)
 
     def __dir__(self):
         return dir(self.__wrapped__)

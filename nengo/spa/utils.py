@@ -48,7 +48,7 @@ def similarity(data, vocab, normalize=False):
         vectors = np.array(vocab, copy=False, ndmin=2)
     else:
         raise ValidationError("%r object is not a valid vocabulary"
-                              % (vocab.__class__.__name__), attr='vocab')
+                              % (type(vocab).__name__), attr='vocab')
 
     data = np.array(data, copy=False, ndmin=2)
     dots = np.dot(data, vectors.T)

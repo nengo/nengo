@@ -39,7 +39,7 @@ class WhiteNoise(Process):
 
     def __repr__(self):
         return "%s(%r, scale=%r)" % (
-            self.__class__.__name__, self.dist, self.scale)
+            type(self).__name__, self.dist, self.scale)
 
     def make_step(self, shape_in, shape_out, dt, rng):
         assert shape_in == (0,)
@@ -94,7 +94,7 @@ class FilteredNoise(Process):
 
     def __repr__(self):
         return "%s(synapse=%r, dist=%r, scale=%r)" % (
-            self.__class__.__name__, self.synapse, self.dist, self.scale)
+            type(self).__name__, self.synapse, self.dist, self.scale)
 
     def make_step(self, shape_in, shape_out, dt, rng):
         assert shape_in == (0,)
@@ -135,7 +135,7 @@ class BrownNoise(FilteredNoise):
             dist=dist, **kwargs)
 
     def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self.dist)
+        return "%s(%r)" % (type(self).__name__, self.dist)
 
 
 class WhiteSignal(Process):
@@ -185,7 +185,7 @@ class WhiteSignal(Process):
 
     def __repr__(self):
         return "%s(period=%r, high=%r, rms=%r)" % (
-            self.__class__.__name__, self.period, self.high, self.rms)
+            type(self).__name__, self.period, self.high, self.rms)
 
     def make_step(self, shape_in, shape_out, dt, rng):
         assert shape_in == (0,)

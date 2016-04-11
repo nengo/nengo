@@ -50,7 +50,7 @@ def test_boundfunction():
         global state
         state = 'run'
         assert instance is not None
-        assert instance.__class__.__name__ == 'Test'
+        assert type(instance).__name__ == 'Test'
         return wrapped(*args, **kwargs)
 
     class Test(object):
@@ -193,7 +193,7 @@ def test_class():
     inst = f('a', 'b')
     assert inst.a == 'a' and inst.b == 'b'
     assert inst.ran
-    assert inst.__class__ == f.__wrapped__
+    assert type(inst) == f.__wrapped__
     assert type(inst) == f.__wrapped__
 
     # Make sure introspection works

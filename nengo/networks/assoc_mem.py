@@ -74,7 +74,7 @@ class AssociativeMemory(nengo.Network):
                 "Number of input vectors does not match number of output "
                 "vectors. %d != %d"
                 % (input_vectors.shape[0], output_vectors.shape[0]),
-                attr='input_vectors', obj=self.__class__)
+                attr='input_vectors', obj=type(self))
 
         # Handle possible different threshold / input_scale values for each
         # element in the associative memory

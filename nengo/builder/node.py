@@ -50,7 +50,7 @@ def build_node(model, node):
         sig_out = Signal(node.output, name="%s.out" % node)
     else:
         raise BuildError(
-            "Invalid node output type %r" % node.output.__class__.__name__)
+            "Invalid node output type %r" % type(node.output).__name__)
 
     model.sig[node]['in'] = sig_in
     model.sig[node]['out'] = sig_out

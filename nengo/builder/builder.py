@@ -201,12 +201,12 @@ class Builder(object):
             warnings.warn("Object %s has already been built." % obj)
             return None
 
-        for obj_cls in obj.__class__.__mro__:
+        for obj_cls in type(obj).__mro__:
             if obj_cls in cls.builders:
                 break
         else:
             raise BuildError(
-                "Cannot build object of type %r" % obj.__class__.__name__)
+                "Cannot build object of type %r" % type(obj).__name__)
 
         return cls.builders[obj_cls](model, obj, *args, **kwargs)
 
