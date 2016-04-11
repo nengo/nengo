@@ -5,7 +5,7 @@ import warnings
 from collections import OrderedDict
 
 from nengo.exceptions import SpaModuleError, SpaParseError
-from nengo.spa.action_objects import Symbol, Source, DotProduct, Summation
+from nengo.spa.action_objects import Namespace, Symbol, DotProduct, Summation
 from nengo.utils.compat import iteritems
 
 
@@ -62,19 +62,15 @@ class Expression(object):
             return self.objects[key]
         else:
             try:
-                return Source(key, module=self.module.get_module(key))
+                return Namespace(key, module=self.module.get_module(key))
             except SpaModuleError:
-                try:
-                    self.module.get_module_output(key)
-                    return Source(key)
-                except SpaModuleError:
-                    if not key[0].isupper():
-                        raise SpaParseError(
-                            "Semantic pointers must begin with a capital "
-                            "letter.")
-                    item = Symbol(key)
-                    self.objects[key] = item
-                    return item
+                if not key[0].isupper():
+                    raise SpaParseError(
+                        "Semantic pointers must begin with a capital "
+                        "letter.")
+                item = Symbol(key)
+                self.objects[key] = item
+                return item
 
     def __str__(self):
         return str(self.expression)

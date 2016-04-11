@@ -96,7 +96,8 @@ def test_spa_get():
         model.compare = spa.Compare(D)
 
     assert model.get_module('buf1') is model.buf1
-    assert model.get_module('buf1.default') is model.buf1
+    with pytest.raises(SpaModuleError):
+        model.get_module('buf1.default')
     assert model.get_module('buf2') is model.buf2
     assert model.get_module_input('buf1')[0] is model.buf1.input
     assert model.get_module_input('buf1.default')[0] is model.buf1.input
