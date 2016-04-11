@@ -139,11 +139,23 @@ def test_circular(Simulator, seed):
     assert np.allclose(sim.data[a_p], sim.data[b_p])
 
 
-def test_function_args_error(Simulator):
+def test_outputparam_errors(Simulator):
     with nengo.Network() as model:
+        # valid values
+        nengo.Node(output=lambda t: t+1)
+        nengo.Node(output=0)
+        nengo.Node(output=[0, 1])
+        nengo.Node(output=nengo.processes.WhiteNoise())
+        nengo.Node(size_in=1)
+
+        # type errors
+        with pytest.raises(ValidationError):
+            nengo.Node(output=object())
+
+        # function errors
+        nengo.Node(output=lambda t, x=[0]: t+1, size_in=1)
         with pytest.raises(ValidationError):
             nengo.Node(output=lambda t, x: x+1)
-        nengo.Node(output=lambda t, x=[0]: t+1, size_in=1)
         with pytest.raises(ValidationError):
             nengo.Node(output=lambda t: t+1, size_in=1)
         with pytest.raises(ValidationError):
@@ -152,12 +164,8 @@ def test_function_args_error(Simulator):
             nengo.Node(output=[0], size_in=1)
         with pytest.raises(ValidationError):
             nengo.Node(output=0, size_in=1)
-    with Simulator(model):
-        pass
 
-
-def test_output_shape_error():
-    with nengo.Network():
+        # shape errors
         with pytest.raises(ValidationError):
             nengo.Node(output=[[1, 2], [3, 4]])
         with pytest.raises(ValidationError):
@@ -166,6 +174,9 @@ def test_output_shape_error():
             nengo.Node(output=[[3, 1], [2, 9]], size_out=4)
         with pytest.raises(ValidationError):
             nengo.Node(output=[1, 2, 3, 4, 5], size_out=4)
+
+    with Simulator(model):
+        pass
 
 
 def test_none(Simulator, seed):

@@ -47,7 +47,7 @@ class OutputParam(Parameter):
             node.size_out = output.size
         else:
             raise ValidationError("Invalid node output type %r" %
-                                  node.output.__class__.__name__,
+                                  type(output).__name__,
                                   attr=self.name, obj=node)
 
         # --- Set output
