@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 import nengo
@@ -138,8 +140,20 @@ class Module(nengo.Network):
             else:
                 if name in self.inputs:
                     return self.inputs[name]
-                else:
+                elif name in self._modules:
                     return self._modules[name].get_module_input('default')
+                else:
+                    components = name.rsplit('_', 1)
+                    if len(components) > 1:
+                        head, tail = components
+                        inp = self._modules[head].get_module_input(tail)
+                        warnings.warn(DeprecationWarning(
+                            "Underscore notation for inputs and outputs is "
+                            "deprecated. Use dot notation <module>.<name> "
+                            "instead."))
+                        return inp
+                    else:
+                        raise KeyError
         except KeyError:
             raise SpaModuleError("Could not find module input %r" % name)
 
@@ -160,8 +174,20 @@ class Module(nengo.Network):
             else:
                 if name in self.outputs:
                     return self.outputs[name]
-                else:
+                elif name in self._modules:
                     return self._modules[name].get_module_output('default')
+                else:
+                    components = name.rsplit('_', 1)
+                    if len(components) > 1:
+                        head, tail = components
+                        out = self._modules[head].get_module_output(tail)
+                        warnings.warn(DeprecationWarning(
+                            "Underscore notation for inputs and outputs is "
+                            "deprecated. Use dot notation <module>.<name> "
+                            "instead."))
+                        return out
+                    else:
+                        raise KeyError
         except KeyError:
             raise SpaModuleError("Could not find module output %r" % name)
 
