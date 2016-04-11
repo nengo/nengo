@@ -22,6 +22,18 @@ Release History
 2.2.0 (unreleased)
 ==================
 
+**API changes**
+
+- It is now possible to pass a NumPy array to the ``function`` argument
+  of ``nengo.Connection``. The values in the array are taken to be the
+  targets in the decoder solving process, which means that the ``eval_points``
+  must also be set on the connection.
+  (`#1010 <https://github.com/nengo/nengo/pull/1010>`_)
+- ``nengo.utils.connection.target_function`` is now deprecated, and will
+  be removed in Nengo 3.0. Instead, pass the targets directly to the
+  connection through the ``function`` argument.
+  (`#1010 <https://github.com/nengo/nengo/pull/1010>`_)
+
 **Improvements**
 
 - Added a ``nengo.backends`` entry point to make the reference simulator

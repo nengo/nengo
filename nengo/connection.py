@@ -13,7 +13,7 @@ from nengo.params import (Default, Unconfigurable, ObsoleteParam,
                           BoolParam, FunctionParam)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
-from nengo.utils.compat import is_iterable, iteritems
+from nengo.utils.compat import is_array_like, is_iterable, iteritems
 
 logger = logging.getLogger(__name__)
 
@@ -117,25 +117,70 @@ class EvalPointsParam(DistOrArrayParam):
 class ConnectionFunctionParam(FunctionParam):
     """Connection-specific validation for functions."""
 
+    def __set__(self, conn, function):
+        if function is None:
+            function_info = self.Info(function=None, size=None)
+        elif is_array_like(function):
+            array = np.array(function, copy=False, dtype=np.float64)
+            self.validate_array(conn, array)
+            function_info = self.Info(function=array, size=array.shape[1])
+        elif callable(function):
+            function_info = self.Info(function=function,
+                                      size=self.determine_size(conn, function))
+            self.validate_callable(conn, function_info)
+        else:
+            raise ValidationError("Invalid connection function type %r "
+                                  "(must be callable or array-like)"
+                                  % type(function).__name__,
+                                  attr=self.name, obj=conn)
+
+        self.validate(conn, function_info)
+        self.data[conn] = function_info
+
     def function_args(self, conn, function):
         x = (conn.eval_points[0] if is_iterable(conn.eval_points)
              else np.zeros(conn.size_in))
         return (x,)
 
-    def validate(self, conn, function_info):
-        super(ConnectionFunctionParam, self).validate(conn, function_info)
-        fn_ok = (Node, Ensemble)
-        function, size = function_info
-
-        if function is not None and not isinstance(conn.pre_obj, fn_ok):
+    def validate_array(self, conn, ndarray):
+        if not isinstance(conn.eval_points, np.ndarray):
             raise ValidationError(
-                "function can only be set for connections from an Ensemble or "
-                "Node (got type %r)" % type(conn.pre_obj).__name__,
+                "In order to set 'function' to specific points, 'eval_points' "
+                "must be also be set to specific points.",
                 attr=self.name, obj=conn)
 
+        if ndarray.ndim != 2:
+            raise ValidationError("array must be 2D (got %dD)" % ndarray.ndim,
+                                  attr=self.name, obj=conn)
+
+        if ndarray.shape[0] != conn.eval_points.shape[0]:
+            raise ValidationError(
+                "Number of evaluation points must match number "
+                "of function points (%d != %d)"
+                % (ndarray.shape[0], conn.eval_points.shape[0]),
+                attr=self.name, obj=conn)
+
+    def validate_callable(self, conn, function_info):
+        super(ConnectionFunctionParam, self).validate(conn, function_info)
+
+    def validate(self, conn, function_info):
+        function, size = function_info
         type_pre = type(conn.pre_obj).__name__
+
+        if function is not None:
+            if not isinstance(conn.pre_obj, (Node, Ensemble)):
+                raise ValidationError(
+                    "function can only be set for connections from an Ensemble"
+                    " or Node (got type %r)" % type_pre,
+                    attr=self.name, obj=conn)
+
+            if isinstance(conn.pre_obj, Node) and conn.pre_obj.output is None:
+                raise ValidationError(
+                    "Cannot apply functions to passthrough nodes",
+                    attr=self.name, obj=conn)
+
+        size_mid = conn.size_in if size is None else size
         transform = conn.transform
-        size_mid = conn.size_in if function is None else size
 
         if isinstance(transform, np.ndarray):
             if transform.ndim < 2 and size_mid != conn.size_out:
@@ -150,12 +195,6 @@ class ConnectionFunctionParam(FunctionParam):
                     "%s output size (%d) not equal to transform input size "
                     "(%d)" % (type_pre, size_mid, transform.shape[1]),
                     attr=self.name, obj=conn)
-
-        if (function is not None and isinstance(conn.pre_obj, Node) and
-                conn.pre_obj.output is None):
-            raise ValidationError(
-                "Cannot apply functions to passthrough nodes",
-                attr=self.name, obj=conn)
 
 
 class TransformParam(DistOrArrayParam):
@@ -233,9 +272,13 @@ class Connection(NengoObject):
     synapse : Synapse, optional \
               (Default: ``nengo.synapses.Lowpass(tau=0.005)``)
         Synapse model to use for filtering (see `~nengo.synapses.Synapse`).
-    function : callable, optional (Default: None)
+    function : callable or (n_eval_points, size_mid) array_like, \
+               optional (Default: None)
         Function to compute across the connection. Note that ``pre`` must be
         an ensemble to apply a function across the connection.
+        If an array is passed, the function is implicitly defined by the
+        points in the array and the provided ``eval_points``, which have a
+        one-to-one correspondence.
     transform : (size_out, size_mid) array_like, optional \
                 (Default: ``np.array(1.0)``)
         Linear transform mapping the pre output to the post input.

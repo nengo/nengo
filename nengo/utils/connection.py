@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import warnings
+
 import numpy as np
 
 from . import numpy as npext
@@ -38,6 +40,9 @@ def target_function(eval_points, targets):
     nengo.Connection(ens1, ens2,
                      **target_function(eval_points, targets)
     """
+    warnings.warn("'targets' can be passed directly to the connection through "
+                  "the 'function' argument. That approach is faster, so this "
+                  "function is deprecated and will be removed in the future.")
 
     eval_points = npext.array(eval_points, dtype=np.float64, min_dims=2)
     targets = npext.array(targets, dtype=np.float64, min_dims=2)

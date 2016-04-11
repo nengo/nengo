@@ -861,3 +861,58 @@ def test_function_with_no_name(Simulator):
 
     with Simulator(model) as sim:
         assert sim
+
+
+def test_function_points(Simulator, seed, rng, plt):
+    x = rng.uniform(-1, 1, size=(1000, 1))
+    y = -x
+
+    with nengo.Network(seed=seed) as model:
+        u = nengo.Node(nengo.processes.WhiteSignal(1.0, high=10, rms=0.4))
+        a = nengo.Ensemble(100, 1)
+        v = nengo.Node(size_in=1)
+        nengo.Connection(u, a, synapse=None)
+        nengo.Connection(a, v, eval_points=x, function=y)
+
+        up = nengo.Probe(u, synapse=nengo.Alpha(0.01))
+        vp = nengo.Probe(v, synapse=nengo.Alpha(0.01))
+
+    with Simulator(model, seed=seed) as sim:
+        sim.run(1.0)
+
+    assert allclose(sim.trange(), -sim.data[up], sim.data[vp],
+                    buf=0.01, delay=0.005, atol=5e-2, rtol=3e-2, plt=plt)
+
+
+def test_connectionfunctionparam_array(RefSimulator):
+    points_1d = np.zeros((100, 1))
+    points_2d = np.zeros((100, 2))
+    points_v = np.zeros((100,))
+    points_50 = np.zeros((50, 1))
+
+    with nengo.Network() as model:
+        a = nengo.Ensemble(10, 1)
+        b = nengo.Ensemble(10, 1)
+
+        # eval points not set raises error
+        with pytest.raises(ValidationError):
+            nengo.Connection(a, b, function=points_1d)
+
+        # wrong ndims raises error
+        with pytest.raises(ValidationError):
+            nengo.Connection(a, b, eval_points=points_1d, function=points_v)
+
+        # wrong number of points raises error
+        with pytest.raises(ValidationError):
+            nengo.Connection(a, b, eval_points=points_50, function=points_1d)
+
+        # wrong output dims raises error
+        with pytest.raises(ValidationError):
+            nengo.Connection(a, b, eval_points=points_1d, function=points_2d)
+
+        nengo.Connection(a, b, eval_points=points_1d, function=points_1d)
+        nengo.Connection(a, b, eval_points=points_1d, function=points_2d,
+                         transform=np.ones((1, 2)))
+
+    with RefSimulator(model):
+        pass

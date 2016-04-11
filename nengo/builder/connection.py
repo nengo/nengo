@@ -71,6 +71,8 @@ def get_eval_points(model, conn, rng):
 def get_targets(model, conn, eval_points):
     if conn.function is None:
         targets = eval_points[:, conn.pre_slice]
+    elif isinstance(conn.function, np.ndarray):
+        targets = conn.function
     else:
         targets = np.zeros((len(eval_points), conn.size_mid))
         for i, ep in enumerate(eval_points[:, conn.pre_slice]):
@@ -232,11 +234,13 @@ def build_connection(model, conn):
         # Node or Decoded connection in directmode
         weights = transform
         sliced_in = slice_signal(model, in_signal, conn.pre_slice)
-        if conn.function is not None:
+        if conn.function is None:
+            in_signal = sliced_in
+        elif isinstance(conn.function, np.ndarray):
+            raise BuildError("Cannot use function points in direct connection")
+        else:
             in_signal = Signal(np.zeros(conn.size_mid), name='%s.func' % conn)
             model.add_op(SimPyFunc(in_signal, conn.function, None, sliced_in))
-        else:
-            in_signal = sliced_in
     elif isinstance(conn.pre_obj, Ensemble):  # Normal decoded connection
         eval_points, weights, solver_info = build_decoders(
             model, conn, rng, transform)

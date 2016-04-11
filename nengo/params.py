@@ -408,16 +408,15 @@ class NdarrayParam(Parameter):
         return ndarray
 
 
-FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
-
-
 class FunctionParam(Parameter):
     """A parameter where the value is a function."""
+
+    Info = collections.namedtuple('FunctionInfo', ['function', 'size'])
 
     def __set__(self, instance, function):
         size = (self.determine_size(instance, function)
                 if callable(function) else None)
-        function_info = FunctionInfo(function=function, size=size)
+        function_info = self.Info(function=function, size=size)
         super(FunctionParam, self).__set__(instance, function_info)
 
     def determine_size(self, instance, function):
