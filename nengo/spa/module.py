@@ -88,17 +88,19 @@ class Module(nengo.Network):
                 raise SpaModuleError("%s must be set as an attribute of "
                                      "a SPA network" % (net))
 
-    def get_module(self, name):
+    def get_module(self, name, strip_output=False):
         """Return the module for the given name."""
         try:
             components = name.split('.', 1)
             if len(components) > 1:
                 head, tail = components
-                return self._modules[head].get_module(tail)
+                return self._modules[head].get_module(
+                    tail, strip_output=strip_output)
             else:
                 if name in self._modules:
                     return self._modules[name]
-                elif name in self.inputs or name in self.outputs:
+                elif strip_output and (
+                        name in self.inputs or name in self.outputs):
                     return self
                 else:
                     raise KeyError
