@@ -6,6 +6,7 @@ from collections import OrderedDict
 
 from nengo.exceptions import SpaModuleError, SpaParseError
 from nengo.spa.action_objects import Namespace, Symbol, DotProduct, Summation
+import nengo.spa.spa_ast
 from nengo.utils.compat import iteritems
 
 
@@ -116,6 +117,23 @@ class Effect(object):
 
     def __str__(self):
         return ", ".join("%s=%s" % x for x in iteritems(self.effect))
+
+
+class Parser(object):
+    builtins = {'dot': DotProduct}
+
+    def parse(self, expr):
+        return eval(expr, {}, self)
+
+    def __getitem__(self, key):
+        if key == '__tracebackhide__':  # gives better tracebacks in py.test
+            return False
+        if key in self.builtins:
+            return self.builtins[key]
+        if key[0].isupper():
+            return nengo.spa.spa_ast.Symbol(key)
+        else:
+            return nengo.spa.spa_ast.Module(key)
 
 
 class Action(object):
