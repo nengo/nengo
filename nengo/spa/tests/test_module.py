@@ -3,7 +3,7 @@ import pytest
 
 import nengo
 from nengo import spa
-from nengo.exceptions import SpaModuleError
+from nengo.exceptions import SpaModuleError, SpaParseError
 from nengo.spa.utils import similarity
 from nengo.spa.vocab import VocabularyMap
 
@@ -223,3 +223,43 @@ def test_vocab_config():
 
     assert model.shared_vocabs.vocabs is model.vocabs
     assert model.non_shared_vocabs.vocabs is not model.vocabs
+
+
+def test_no_magic_vocab_transform():
+    d = 16
+    v1 = spa.Vocabulary(d)
+    v2 = spa.Vocabulary(d)
+
+    with spa.Module() as model:
+        model.a = spa.State(d, vocab=v1)
+        model.b = spa.State(d, vocab=v2)
+        with pytest.raises(SpaParseError):
+            model.cortical = spa.Cortical(spa.Actions('b = a'))
+
+
+def test_vocab_reinterpretation(Simulator, plt, rng):
+    d = 16
+    v1 = spa.Vocabulary(d, rng=rng)
+    v1.parse('A')
+    v2 = spa.Vocabulary(d, rng=rng)
+
+    with spa.Module() as model:
+        model.a = spa.State(d, vocab=v1)
+        model.b = spa.State(d, vocab=v2)
+        model.cortical = spa.Cortical(spa.Actions(
+            'b = reinterpret(a, v2)', vocabs={'v2': v2}))
+        model.stimulus = spa.Input()
+        model.stimulus.a = 'A'
+        p = nengo.Probe(model.b.state, synapse=0.03)
+
+    with Simulator(model) as sim:
+        sim.run(0.5)
+
+    t = sim.trange() > 0.2
+    v = v1.parse('A').v
+
+    plt.plot(sim.trange(), similarity(sim.data[p], v))
+    plt.xlabel("t [s]")
+    plt.ylabel("Similarity")
+
+    assert np.mean(similarity(sim.data[p][t], v)) > 0.8

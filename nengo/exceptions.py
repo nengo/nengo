@@ -72,6 +72,10 @@ class SpaParseError(NengoException, ValueError):
     """An error encountered while parsing a SPA expression."""
 
 
+class SpaTypeError(NengoException, ValueError):
+    """The evaluation of types in an SPA expression was invalid."""
+
+
 class SimulatorClosed(NengoException):
     """Raised when attempting to run a closed simulator."""
 
