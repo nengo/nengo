@@ -196,7 +196,8 @@ def test_hierarchical_actions(Simulator, seed, plt):
 
         model.cortical = spa.Cortical(
             spa.Actions('out = comm_channel.state_out'))
-        model.stimulus = spa.Input(**{'comm_channel.state_in': 'A'})
+        model.stimulus = spa.Input()
+        model.stimulus.comm_channel.state_in = 'A'
 
         p = nengo.Probe(model.out.output, synapse=0.03)
 
