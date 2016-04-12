@@ -1,6 +1,7 @@
 import numpy as np
 
 import nengo
+from nengo.exceptions import SpaParseError
 import nengo.spa.action_build
 from nengo.spa.action_objects import Symbol, Source, Convolution
 from nengo.spa.module import Module
@@ -108,7 +109,9 @@ class Cortical(Module):
             t = np.dot(t, np.eye(D)[-np.arange(D)])
 
         if target_vocab is not source_vocab:
-            t = np.dot(source_vocab.transform_to(target_vocab), t)
+            raise SpaParseError(
+                "Cannot connect {source} to {target} because vocabularies "
+                "differ.")
 
         with self.spa:
             nengo.Connection(source, target, transform=t, synapse=self.synapse)
