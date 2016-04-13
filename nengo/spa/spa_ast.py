@@ -12,6 +12,7 @@ class Type(object):
         return self.__class__ is other.__class__ and self.name == other.name
 
 
+TAction = Type('TAction')
 TScalar = Type('TScalar')
 TEffect = Type('TEffect')
 
@@ -235,3 +236,21 @@ class Sink(Node):
 
     def __str__(self):
         return self.name
+
+
+class Action(Node):
+    def __init__(self, condition, effect):
+        super(Action, self).__init__()
+        self.type = TAction
+        self.condition = condition
+        self.effect = effect
+
+    def infer_types(self, model, context_type):
+        self.condition.infer_types(model, context_type)
+        self.effect.infer_types(model, None)
+
+        if self.condition.type != TScalar:
+            raise SpaTypeError("Condition has to evaluate to a scalar.")
+
+    def __str__(self):
+        return '{} --> {}'.format(self.condition, self.effect)
