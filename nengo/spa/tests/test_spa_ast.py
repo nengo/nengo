@@ -4,8 +4,8 @@ from nengo import spa
 from nengo.exceptions import SpaTypeError
 from nengo.spa.actions import Parser
 from nengo.spa.spa_ast import (
-    ApproxInverse, DotProduct, TEffect, Effect, Negative, Module, Product,
-    TScalar, TVocabulary, Sink, Sum, Symbol)
+    Action, ApproxInverse, DotProduct, Effect, Negative, Module,
+    Product, Sink, Sum, Symbol, TAction, TEffect, TScalar, TVocabulary)
 
 
 def test_scalar():
@@ -188,3 +188,16 @@ def test_effect():
     assert ast == Effect(Sink('state'), Symbol('A'))
     assert str(ast) == 'state = A'
     assert ast.type == TEffect
+
+
+def test_action():
+    d = 16
+    with spa.Module() as model:
+        model.state = spa.State(d)
+
+    ast = Parser().parse_action('dot(state, A) --> state = B')
+    assert ast == Action(
+        DotProduct(Module('state'), Symbol('A')),
+        Effect(Sink('state'), Symbol('B')))
+    assert str(ast) == 'dot(state, A) --> state = B'
+    assert ast.type == TAction
