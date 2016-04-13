@@ -5,7 +5,9 @@ import numpy as np
 import nengo
 from nengo.config import Config
 from nengo.exceptions import SpaModuleError
+from nengo.params import IntParam
 from nengo.spa.vocab import VocabularyMap, VocabularyMapParam
+from nengo.synapses import SynapseParam
 from nengo.utils.compat import iteritems
 
 
@@ -21,6 +23,10 @@ class Module(nengo.Network):
     """
 
     vocabs = VocabularyMapParam('vocabs', default=None, optional=False)
+    dim_per_ensemble = IntParam('dim_per_ensemble', default=16, optional=False)
+    product_neurons = IntParam('product_neurons', default=100, optional=False)
+    cconv_neurons = IntParam('cconv_neurons', default=200, optional=False)
+    synapse = SynapseParam('synapse', default=0.01, optional=False)
 
     def __init__(
             self, label=None, seed=None, add_to_container=None, vocabs=None):

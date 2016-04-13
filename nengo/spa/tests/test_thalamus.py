@@ -2,7 +2,7 @@ import pytest
 
 import nengo
 from nengo import spa
-from nengo.exceptions import SpaParseError
+from nengo.exceptions import SpaModuleError
 
 import numpy as np
 
@@ -178,16 +178,9 @@ def test_nondefault_routing(Simulator, seed):
 
 def test_errors():
     # motor does not exist
-    with pytest.raises(SpaParseError):
+    with pytest.raises(SpaModuleError):
         with spa.Module() as model:
             model.vision = spa.Buffer(dimensions=16)
             actions = spa.Actions('0.5 --> motor=A')
-            model.bg = spa.BasalGanglia(actions)
-
-    # dot products not implemented
-    with pytest.raises(NotImplementedError):
-        with spa.Module() as model:
-            model.scalar = spa.Buffer(dimensions=16, subdimensions=1)
-            actions = spa.Actions('0.5 --> scalar=dot(scalar, FOO)')
             model.bg = spa.BasalGanglia(actions)
             model.thalamus = spa.Thalamus(model.bg)

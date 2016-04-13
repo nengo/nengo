@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import nengo
 from nengo import spa
@@ -25,6 +24,8 @@ def test_basal_ganglia(Simulator, seed, plt):
             '( dot(vision, MOUSE) - compare ) * 0.5 --> motor=H'
         )
         model.bg = spa.BasalGanglia(actions)
+        # Thalamus required to trigger construction of bg rules
+        model.thalamus = spa.Thalamus(model.bg)
 
         def input(t):
             if t < 0.1:
@@ -69,33 +70,10 @@ def test_basal_ganglia(Simulator, seed, plt):
     assert np.allclose(sim.data[p][:, 0], sim.data[p][:, 4])
 
 
-def test_errors():
-    # dot products between two sources not implemented
-    with pytest.raises(NotImplementedError):
-        with spa.Module() as model:
-            model.vision = spa.Buffer(dimensions=16)
-            model.motor = spa.Buffer(dimensions=16)
-            actions = spa.Actions('dot(vision, motor) --> motor=A')
-            model.bg = spa.BasalGanglia(actions)
-
-    # inversion of sources not implemented both ways
-    with pytest.raises(NotImplementedError):
-        with spa.Module() as model:
-            model.vision = spa.Buffer(dimensions=16)
-            model.motor = spa.Buffer(dimensions=16)
-            actions = spa.Actions('dot(~vision, FOO) --> motor=A')
-            model.bg = spa.BasalGanglia(actions)
-
-    with pytest.raises(NotImplementedError):
-        with spa.Module() as model:
-            model.vision = spa.Buffer(dimensions=16)
-            model.motor = spa.Buffer(dimensions=16)
-            actions = spa.Actions('dot(FOO, ~vision) --> motor=A')
-            model.bg = spa.BasalGanglia(actions)
-
-    # convolution not implemented
-    with pytest.raises(NotImplementedError):
-        with spa.Module() as model:
-            model.scalar = spa.Buffer(dimensions=1, subdimensions=1)
-            actions = spa.Actions('scalar*scalar --> scalar=1')
-            model.bg = spa.BasalGanglia(actions)
+def test_scalar_product():
+    with spa.Module() as model:
+        model.scalar = spa.Scalar()
+        actions = spa.Actions('scalar*scalar --> scalar=1')
+        model.bg = spa.BasalGanglia(actions)
+        model.thalamus = spa.Thalamus(model.bg)
+    # just testing network construction without exception here
