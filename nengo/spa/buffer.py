@@ -33,6 +33,7 @@ class Buffer(Module):
         warnings.warn("Buffer is deprecated in favour of spa.State",
                       DeprecationWarning)
         super(Buffer, self).__init__(label, seed, add_to_container)
+        self.dim_per_ensemble = subdimensions
 
         if vocab is None:
             # use the default one for this dimensionality

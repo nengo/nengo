@@ -2,7 +2,6 @@ import numpy as np
 
 import nengo
 from nengo.exceptions import ValidationError
-from nengo.spa.action_objects import DotProduct, Source
 from nengo.spa.module import Module
 from nengo.utils.compat import is_number
 
@@ -24,6 +23,7 @@ class BasalGanglia(Module):
         self._bias = None
         Module.__init__(self, label, seed, add_to_container)
         nengo.networks.BasalGanglia(dimensions=self.actions.count, net=self)
+        self.spa = None
 
     @property
     def bias(self):
@@ -43,43 +43,51 @@ class BasalGanglia(Module):
         Module.on_add(self, spa)
         self.spa = spa
 
-        self.actions.process(spa)   # parse the actions
+        # self.actions.process(spa)   # parse the actions
 
-        for i, action in enumerate(self.actions.actions):
-            cond = action.condition.expression
+        # for i, action in enumerate(self.actions.actions):
+            # action.infer_types(spa, None)
+            # action.construct(ConstructionContext(spa))
+            # cond = action.condition.expression
             # the basal ganglia hangles the condition part of the action;
             # the effect is handled by the thalamus
 
             # Note: A Source is an output from a module, and a Symbol is
             # text that can be parsed to be a SemanticPointer
 
-            for c in cond.items:
-                if isinstance(c, DotProduct):
-                    if ((isinstance(c.item1, Source) and c.item1.inverted) or
-                       (isinstance(c.item2, Source) and c.item2.inverted)):
-                        raise NotImplementedError(
-                            "Inversion in subexpression '%s' from action '%s' "
-                            "is not supported by the Basal Ganglia." %
-                            (c, action))
-                    if isinstance(c.item1, Source):
-                        if isinstance(c.item2, Source):
-                            # dot product between two different sources
-                            self.add_compare_input(i, c.item1, c.item2,
-                                                   c.scale)
-                        else:
-                            self.add_dot_input(i, c.item1, c.item2, c.scale)
-                    else:
-                        # enforced in DotProduct constructor
-                        assert isinstance(c.item2, Source)
-                        self.add_dot_input(i, c.item2, c.item1, c.scale)
-                elif isinstance(c, Source):
-                    self.add_scalar_input(i, c)
-                elif is_number(c):
-                    self.add_bias_input(i, c)
-                else:
-                    raise NotImplementedError(
-                        "Subexpression '%s' from action '%s' is not supported "
-                        "by the Basal Ganglia." % (c, action))
+            # for c in cond.items:
+                # if isinstance(c, DotProduct):
+                    # if ((isinstance(c.item1, Source) and c.item1.inverted) or
+                       # (isinstance(c.item2, Source) and c.item2.inverted)):
+                        # raise NotImplementedError(
+                            # "Inversion in subexpression '%s' from action '%s' "
+                            # "is not supported by the Basal Ganglia." %
+                            # (c, action))
+                    # if isinstance(c.item1, Source):
+                        # if isinstance(c.item2, Source):
+                            # # dot product between two different sources
+                            # self.add_compare_input(i, c.item1, c.item2,
+                                                   # c.scale)
+                        # else:
+                            # self.add_dot_input(i, c.item1, c.item2, c.scale)
+                    # else:
+                        # # enforced in DotProduct constructor
+                        # assert isinstance(c.item2, Source)
+                        # self.add_dot_input(i, c.item2, c.item1, c.scale)
+                # elif isinstance(c, Source):
+                    # self.add_scalar_input(i, c)
+                # elif is_number(c):
+                    # self.add_bias_input(i, c)
+                # else:
+                    # raise NotImplementedError(
+                        # "Subexpression '%s' from action '%s' is not supported "
+                        # "by the Basal Ganglia." % (c, action))
+
+    def connect_input(self, source, transform, index):
+        with self.spa:
+            nengo.Connection(
+                source, self.input[index], transform=transform,
+                synapse=self.input_synapse)
 
     def add_bias_input(self, index, value):
         """Make an input that is just a fixed scalar value.
