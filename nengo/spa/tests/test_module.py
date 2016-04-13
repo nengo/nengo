@@ -3,7 +3,7 @@ import pytest
 
 import nengo
 from nengo import spa
-from nengo.exceptions import SpaModuleError, SpaParseError
+from nengo.exceptions import SpaModuleError, SpaTypeError
 from nengo.spa.utils import similarity
 from nengo.spa.vocab import VocabularyMap
 
@@ -233,10 +233,12 @@ def test_no_magic_vocab_transform():
     with spa.Module() as model:
         model.a = spa.State(d, vocab=v1)
         model.b = spa.State(d, vocab=v2)
-        with pytest.raises(SpaParseError):
+        with pytest.raises(SpaTypeError):
             model.cortical = spa.Cortical(spa.Actions('b = a'))
 
 
+# FIXME
+@pytest.mark.xfail(reason='not implemented yet')
 def test_vocab_reinterpretation(Simulator, plt, rng):
     d = 16
     v1 = spa.Vocabulary(d, rng=rng)

@@ -1,138 +1,62 @@
-"""Expressions and Effects used to define all Actions."""
-
-import re
-import warnings
-from collections import OrderedDict
-
-from nengo.exceptions import SpaModuleError, SpaParseError
-from nengo.spa import action_objects as ao
-import nengo.spa.spa_ast
-from nengo.spa.spa_ast import DotProduct, Effects, Module, Sink, Symbol
-from nengo.utils.compat import iteritems
-
-
-class Expression(object):
-    """Parses an Action expression given a set of module outputs.
-
-    Parameters
-    ----------
-    module : :class:`nengo.spa.Module`
-        The SPA module used to look up names.
-    expression : str
-        The expression to evaluate. This either defines the utility of the
-        action, or a value from an effect's assignment, given the state
-        information from the module outputs. The simplest expression is
-        ``"1"`` and they can get more complex, such as
-        ``"0.5*(dot(vision, DOG) + dot(memory, CAT*MOUSE)*3 - 1)"``.
-    """
-
-    def __init__(self, module, expression):
-        self.module = module
-        self.objects = {}   # the list of known terms
-
-        # handle the term 'dot(a, b)' to mean DotProduct(a, b)
-        self.objects['dot'] = ao.DotProduct
-
-        # use Python's eval to do the parsing of expressions for us
-        self.validate_string(expression)
-        sanitized_exp = ' '.join(expression.split('\n'))
-        try:
-            self.expression = eval(sanitized_exp, {}, self)
-        except NameError as e:
-            raise SpaParseError("Unknown module in expression '%s': %s" %
-                                (expression, e))
-        except TypeError as e:
-            raise SpaParseError("Invalid operator in expression '%s': %s" %
-                                (expression, e))
-
-        # normalize the result to a summation
-        if not isinstance(self.expression, ao.Summation):
-            self.expression = ao.Summation([self.expression])
-
-    def validate_string(self, text):
-        m = re.search('~[^a-zA-Z]', text)
-        if m is not None:
-            raise SpaParseError("~ is only permitted before names (e.g., DOG) "
-                                "or modules (e.g., vision): %s" % text)
-
-    def __getitem__(self, key):
-        # this gets used by the eval in the constructor to create new
-        # terms as needed
-        if key == '__tracebackhide__':  # gives better tracebacks in py.test
-            return False
-        if key in self.objects:
-            return self.objects[key]
-        else:
-            try:
-                return ao.Namespace(key, module=self.module.get_module(key))
-            except SpaModuleError:
-                if not key[0].isupper():
-                    raise SpaParseError(
-                        "Semantic pointers must begin with a capital "
-                        "letter.")
-                item = ao.Symbol(key)
-                self.objects[key] = item
-                return item
-
-    def __str__(self):
-        return str(self.expression)
-
-
-class Effect(object):
-    """Parses an action effect given a set of module outputs.
-
-    The following, in an `.Action` string, are valid effects::
-
-        "motor=A"
-        "motor=A*B, memory=vision+DOG"
-        "motor=0.5*(memory*A + vision*B)"
-
-    Parameters
-    ----------
-    module : :class:`nengo.spa.Module`
-        The SPA module used to look up names.
-    effect: str
-        The action to implement. This is a set of assignment statements
-        which can be parsed into a `.VectorList`.
-    """
-
-    def __init__(self, module, effect):
-        self.effect = OrderedDict()
-        # Splits by ',' and separates into lvalue=rvalue. We cannot simply use
-        # split, because the rvalue may contain commas in the case of dot(*,*).
-        # However, *? is lazy, and * is greedy, making this regex work.
-        for lvalue, rvalue in re.findall("(.*?)=([^=]*)(?:,|$)", effect):
-            sink = lvalue.strip()
-            try:
-                module.get_module_input(sink)
-            except SpaModuleError:
-                raise SpaParseError(
-                    "Left-hand module '%s' from effect '%s=%s' "
-                    "is not defined." %
-                    (lvalue, lvalue, rvalue))
-            if sink in self.effect:
-                raise SpaParseError(
-                    "Left-hand module '%s' from effect '%s=%s' "
-                    "is assigned to multiple times in '%s'." %
-                    (lvalue, lvalue, rvalue, effect))
-            self.effect[sink] = Expression(module, rvalue)
-
-    def __str__(self):
-        return ", ".join("%s=%s" % x for x in iteritems(self.effect))
+"""Parsing of SPA actions."""
+from nengo.exceptions import SpaParseError
+from nengo.spa.spa_ast import (
+    Action, DotProduct, Effect, Effects, Module, Sink, Symbol)
 
 
 class Parser(object):
+    """Parser for SPA actions."""
+
     builtins = {'dot': DotProduct}
 
-    def parse_action(self, action):
+    def parse_action(self, action, index=0, name=None, strict=True):
+        """Parse an SPA action.
+
+        Parameters
+        ----------
+        action : str
+            Action to parse.
+        index : int, optional
+            Index of the action for identification by basal ganglia and
+            thalamus.
+        name : str, optional
+            Name of the action.
+        strict : bool, optional
+            If ``True`` only actual conditional actions are allowed and an
+            exception will be raised for anything else. If ``False``, allows
+            also the parsing of effects without the conditional part.
+
+        Returns
+        -------
+        :class:`spa_ast.Action` or :class:`spa_ast.Effects`
+        """
         try:
             condition, effects = action.split('-->', 1)
         except ValueError:
-            raise SpaParseError("Not an action, '-->' missing.")
-        return nengo.spa.spa_ast.Action(
-            self.parse_expr(condition), self.parse_effects(effects))
+            if strict:
+                raise SpaParseError("Not an action, '-->' missing.")
+            else:
+                return self.parse_effects(action, channeled=False)
+        else:
+            return Action(
+                self.parse_expr(condition),
+                self.parse_effects(effects, channeled=True), index)
 
-    def parse_effects(self, effects):
+    def parse_effects(self, effects, channeled=False):
+        """Pares SPA effects.
+
+        Parameters
+        ----------
+        effects : str
+            Effects to parse.
+        channeled : bool, optional
+            Whether the effects should be passed through channels when
+            constructed.
+
+        Returns
+        -------
+        :class:`spa_ast.Effects`
+        """
         parsed = []
         symbol_stack = []
         start = 0
@@ -168,17 +92,43 @@ class Parser(object):
             else:
                 raise SpaParseError("Unmatched: " + top)
 
-        return Effects(*[self.parse_effect(effect) for effect in parsed])
+        return Effects(*[self.parse_effect(effect, channeled=channeled)
+                         for effect in parsed])
 
-    def parse_effect(self, effect):
+    def parse_effect(self, effect, channeled=False):
+        """Parse single SPA effect.
+
+        Parameters
+        ----------
+        effect : str
+            Effect to parse.
+        channeled : bool, optional
+            Whether the effect should be passed through a channel when
+            constructed.
+
+        Returns
+        -------
+        :class:`spa_ast.Effect`
+        """
         try:
             sink, source = effect.split('=', 1)
         except ValueError:
             raise SpaParseError("Not an effect; assignment missing")
-        return nengo.spa.spa_ast.Effect(
-            Sink(sink.strip()), self.parse_expr(source))
+        return Effect(
+            Sink(sink.strip()), self.parse_expr(source), channeled=channeled)
 
     def parse_expr(self, expr):
+        """Parse an SPA expression.
+
+        Parameters
+        ----------
+        expr : str
+            Expression to parse.
+
+        Returns
+        -------
+        :class:`spa_ast.Source`
+        """
         return eval(expr, {}, self)
 
     def __getitem__(self, key):
@@ -190,38 +140,6 @@ class Parser(object):
             return Symbol(key)
         else:
             return Module(key)
-
-
-class Action(object):
-    """A single action.
-
-    Consists of a conditional `.Expression` (optional) and an `.Effect`.
-
-    Parameters
-    ----------
-    module : :class:`nengo.spa.Module`
-        The SPA module used to look up names.
-    action : str
-        A string defining the action.  If ``'-->'`` is in the string, this
-        is used as a marker to split the string into condition and effect.
-        Otherwise it is treated as having no condition and just effect.
-    name : str
-        The name of this action.
-    """
-
-    def __init__(self, module, action, name):
-        self.name = name
-        if '-->' in action:
-            condition, effect = action.split('-->', 1)
-            self.condition = Expression(module, condition)
-            self.effect = Effect(module, effect)
-        else:
-            self.condition = None
-            self.effect = Effect(module, action)
-
-    def __str__(self):
-        return "<Action %s:\n  %s\n --> %s\n>" % (
-            self.name, self.condition, self.effect)
 
 
 class Actions(object):
@@ -238,28 +156,37 @@ class Actions(object):
         self.actions = None
         self.args = args
         self.kwargs = kwargs
+        self.construction_context = None
 
     def add(self, *args, **kwargs):
-        if self.actions is not None:
-            warnings.warn("The actions currently being added must be processed"
-                          " either by spa.BasalGanglia or spa.Cortical"
-                          " to be added to the model.")
-
         self.args += args
         self.kwargs.update(kwargs)
+        self._process_new_actions(*args, **kwargs)
 
     @property
     def count(self):
         """Return the number of actions."""
         return len(self.args) + len(self.kwargs)
 
-    def process(self, module):
+    def process(self):
         """Parse the actions and generate the list of Action objects."""
         self.actions = []
+        self._process_new_actions(*self.args, **self.kwargs)
 
-        sorted_kwargs = sorted(self.kwargs.items())
+    def _process_new_actions(self, *args, **kwargs):
+        sorted_kwargs = sorted(kwargs.items())
 
-        for action in self.args:
-            self.actions.append(Action(module, action, name=None))
-        for name, action in sorted_kwargs:
-            self.actions.append(Action(module, action, name=name))
+        parser = Parser()
+        for i, action in enumerate(args):
+            self.actions.append(parser.parse_action(action, i, strict=False))
+        for i, (name, action) in enumerate(sorted_kwargs, start=self.count):
+            self.actions.append(parser.parse_action(
+                action, i, name=name, strict=False))
+
+        for action in self.actions:
+            action.infer_types(self.construction_context.root_module, None)
+        # Infer types for all actions before doing any construction, so that
+        # all semantic pointers are added to the respective vocabularies so
+        # that the translate transform are identical.
+        for action in self.actions:
+            action.construct(self.construction_context)
