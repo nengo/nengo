@@ -123,11 +123,19 @@ class Effect(object):
 class Parser(object):
     builtins = {'dot': DotProduct}
 
+    def parse_action(self, action):
+        try:
+            condition, effect = action.split('-->', 1)
+        except ValueError:
+            raise SpaParseError("Not an action, '-->' missing.")
+        return nengo.spa.spa_ast.Action(
+            self.parse_expr(condition), self.parse_effect(effect))
+
     def parse_effect(self, effect):
         try:
             sink, source = effect.split('=', 1)
         except ValueError:
-            raise SpaParseError("Syntax error in effect.")
+            raise SpaParseError("Not an effect; assignment missing")
         return nengo.spa.spa_ast.Effect(
             Sink(sink.strip()), self.parse_expr(source))
 
