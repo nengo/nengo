@@ -4,8 +4,9 @@ from nengo import spa
 from nengo.exceptions import SpaTypeError
 from nengo.spa.actions import Parser
 from nengo.spa.spa_ast import (
-    Action, ApproxInverse, DotProduct, Effect, Negative, Module,
-    Product, Sink, Sum, Symbol, TAction, TEffect, TScalar, TVocabulary)
+    Action, ApproxInverse, DotProduct, Effect, Effects, Negative, Module,
+    Product, Sink, Sum, Symbol, TAction, TEffect, TEffects, TScalar,
+    TVocabulary)
 
 
 def test_scalar():
@@ -145,20 +146,6 @@ def test_unary(symbol, klass):
     assert ast.type.vocab == model.state.vocabs[d]
 
 
-def test_complex_epressions():
-    d = 16
-    with spa.Module() as model:
-        model.state = spa.State(d)
-
-    ast = Parser().parse_expr('~(A - B * state)')
-    assert ast == ApproxInverse(Sum(
-        Symbol('A'), Negative(Product(Symbol('B'), Module('state')))))
-    assert str(ast) == '~(A + -(B * state))'
-
-    ast.infer_types(model, TVocabulary(model.state.vocabs[d]))
-    assert ast.type.vocab == model.state.vocabs[d]
-
-
 def test_dot_product():
     d = 16
     with spa.Module() as model:
@@ -190,6 +177,23 @@ def test_effect():
     assert ast.type == TEffect
 
 
+def test_effects():
+    # Check that multiple lvalue=rvalue parsing is working with commas
+    ast = Parser().parse_effects('x=a,y=dot(a,b),z=b')
+    assert ast == Effects(
+        Effect(Sink('x'), Module('a')),
+        Effect(Sink('y'), DotProduct(Module('a'), Module('b'))),
+        Effect(Sink('z'), Module('b')))
+    assert str(ast) == 'x = a, y = dot(a, b), z = b'
+    assert ast.type == TEffects
+
+    ast = Parser().parse_effects('  foo = dot(a, b)  , bar = b')
+    assert ast == Effects(
+        Effect(Sink('foo'), DotProduct(Module('a'), Module('b'))),
+        Effect(Sink('bar'), Module('b')))
+    assert str(ast) == 'foo = dot(a, b), bar = b'
+
+
 def test_action():
     d = 16
     with spa.Module() as model:
@@ -198,6 +202,32 @@ def test_action():
     ast = Parser().parse_action('dot(state, A) --> state = B')
     assert ast == Action(
         DotProduct(Module('state'), Symbol('A')),
-        Effect(Sink('state'), Symbol('B')))
+        Effects(Effect(Sink('state'), Symbol('B'))))
     assert str(ast) == 'dot(state, A) --> state = B'
     assert ast.type == TAction
+
+
+def test_complex_epressions():
+    d = 16
+    with spa.Module() as model:
+        model.state = spa.State(d)
+
+    ast = Parser().parse_expr('~(A - B * state)')
+    assert ast == ApproxInverse(Sum(
+        Symbol('A'), Negative(Product(Symbol('B'), Module('state')))))
+    assert str(ast) == '~(A + -(B * state))'
+
+    ast.infer_types(model, TVocabulary(model.state.vocabs[d]))
+    assert ast.type.vocab == model.state.vocabs[d]
+
+    ast = Parser().parse_expr('0.5*(2*dot(a, A)-dot(b,B))-2')
+    assert str(ast) == '((0.5 * ((2 * dot(a, A)) + -dot(b, B))) + -2)'
+
+    ast = Parser().parse_expr('dot(x, -1) + 1')
+    assert str(ast) == '(dot(x, -1) + 1)'
+
+    ast = Parser().parse_expr('2*dot(a, 1) - dot(b, -1) + dot(a, b)')
+    assert str(ast) == '(((2 * dot(a, 1)) + -dot(b, -1)) + dot(a, b))'
+
+    ast = Parser().parse_expr('a*b - 1 + 2*b')
+    assert str(ast) == '(((a * b) + -1) + (2 * b))'
