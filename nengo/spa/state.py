@@ -49,6 +49,7 @@ class State(Module):
                  feedback=0.0, feedback_synapse=0.1, vocab=None, label=None,
                  seed=None, add_to_container=None):
         super(State, self).__init__(label, seed, add_to_container)
+        self.dim_per_ensemble = subdimensions
 
         if vocab is None:
             # use the default one for this dimensionality

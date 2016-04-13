@@ -19,7 +19,7 @@ def test_am_spa_interaction(Simulator, seed, rng):
         return '0.49*A' if t < 0.5 else '0.79*A'
 
     with nengo.spa.Module(seed=seed) as m:
-        m.buf = nengo.spa.Buffer(D)
+        m.buf = nengo.spa.Buffer(D, vocab=vocab)
         m.input = nengo.spa.Input(buf=input_func)
 
         m.am = AssociativeMemory(vocab, vocab2,
