@@ -7,7 +7,7 @@ from collections import OrderedDict
 from nengo.exceptions import SpaModuleError, SpaParseError
 from nengo.spa import action_objects as ao
 import nengo.spa.spa_ast
-from nengo.spa.spa_ast import DotProduct, Module, Sink, Symbol
+from nengo.spa.spa_ast import DotProduct, Effects, Module, Sink, Symbol
 from nengo.utils.compat import iteritems
 
 
@@ -126,11 +126,49 @@ class Parser(object):
 
     def parse_action(self, action):
         try:
-            condition, effect = action.split('-->', 1)
+            condition, effects = action.split('-->', 1)
         except ValueError:
             raise SpaParseError("Not an action, '-->' missing.")
         return nengo.spa.spa_ast.Action(
-            self.parse_expr(condition), self.parse_effect(effect))
+            self.parse_expr(condition), self.parse_effects(effects))
+
+    def parse_effects(self, effects):
+        parsed = []
+        symbol_stack = []
+        start = 0
+        for i, c in enumerate(effects):
+            top = symbol_stack[-1] if len(symbol_stack) > 0 else None
+            if top == '\\':  # escaped character, ignore
+                symbol_stack.pop()
+            elif top is not None and top in '\'"':  # in a string
+                if c == '\\':  # escape
+                    symbol_stack.append(c)
+                elif c == top:  # end string
+                    symbol_stack.pop()
+            else:
+                if c in '\'"':  # start string
+                    symbol_stack.append(c)
+                elif c in '([':  # start parens/brackets
+                    symbol_stack.append(c)
+                elif c in ')]':  # end parens/brackets
+                    if (top == '(' and c != ')') or (top == '[' and c != ']'):
+                        raise SpaParseError("Parenthesis mismatch.")
+                    symbol_stack.pop()
+                elif c == ',' and len(symbol_stack) == 0:  # effect delimiter
+                    parsed.append(effects[start:i])
+                    start = i + 1
+        parsed.append(effects[start:])
+
+        if len(symbol_stack) != 0:
+            top = symbol_stack.pop()
+            if top in '([':
+                raise SpaParseError("Parenthesis mismatch.")
+            elif top in '\'"':
+                raise SpaParseError("Unclosed string.")
+            else:
+                raise SpaParseError("Unmatched: " + top)
+
+        return Effects(*[self.parse_effect(effect) for effect in parsed])
 
     def parse_effect(self, effect):
         try:
