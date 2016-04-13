@@ -9,6 +9,7 @@ from .input import Input
 from .memory import Memory
 from .module import Module
 from .pointer import SemanticPointer
+from .scalar import Scalar
 from .spa import SPA
 from .state import State
 from .thalamus import Thalamus

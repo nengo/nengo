@@ -2,9 +2,8 @@ import numpy as np
 
 import nengo
 from nengo.dists import Uniform
-from nengo.spa.action_objects import Symbol, Source, Convolution
+from nengo.spa.spa_ast import ConstructionContext
 from nengo.spa.module import Module
-from nengo.utils.compat import iteritems
 
 
 class Thalamus(Module):
@@ -33,12 +32,8 @@ class Thalamus(Module):
         Synaptic filter for direct outputs.
     neurons_channel_dim : int, optional (Default: 50)
         Number of neurons per routing channel dimension.
-    subdim_channel : int, optional (Default: 16)
-        Number of subdimensions used in routing channel.
     synapse_channel : float, optional (Default: 0.01)
         Synaptic filter for channel inputs and outputs.
-    neurons_cconv : int, optional (Default: 200)
-        Number of neurons per circular convolution dimension.
     neurons_gate : int, optional (Default: 40)
         Number of neurons per gate.
     threshold_gate : float, optional (Default: 0.3)
@@ -56,10 +51,9 @@ class Thalamus(Module):
     """
     def __init__(self, bg, neurons_action=50, threshold_action=0.2,
                  mutual_inhibit=1.0, route_inhibit=3.0,
-                 synapse_inhibit=0.008, synapse_bg=0.008, synapse_direct=0.01,
-                 neurons_channel_dim=50, subdim_channel=16,
+                 synapse_inhibit=0.008, synapse_bg=0.008,
+                 neurons_channel_dim=50,
                  synapse_channel=0.01,
-                 neurons_cconv=200,
                  neurons_gate=40, threshold_gate=0.3, synapse_to_gate=0.002,
                  label=None, seed=None, add_to_container=None):
         Module.__init__(self, label, seed, add_to_container)
@@ -71,13 +65,10 @@ class Thalamus(Module):
         self.mutual_inhibit = mutual_inhibit
         self.route_inhibit = route_inhibit
         self.synapse_inhibit = synapse_inhibit
-        self.synapse_direct = synapse_direct
         self.threshold_action = threshold_action
         self.neurons_channel_dim = neurons_channel_dim
-        self.subdim_channel = subdim_channel
         self.synapse_channel = synapse_channel
         self.neurons_gate = neurons_gate
-        self.neurons_cconv = neurons_cconv
         self.threshold_gate = threshold_gate
         self.synapse_to_gate = synapse_to_gate
         self.synapse_bg = synapse_bg
@@ -90,190 +81,132 @@ class Thalamus(Module):
                                 mutual_inhib=self.mutual_inhibit,
                                 threshold=self.threshold_action,
                                 net=self)
+        with nengo.Network(label="routing") as self.routing:
+            self.bias = nengo.Node([1], label="bias")
+        self.spa = None
 
     def on_add(self, spa):
         Module.on_add(self, spa)
         self.spa = spa
 
-        with spa:
-            # connect basal ganglia to thalamus
-            nengo.Connection(self.bg.output, self.actions.input,
-                             synapse=self.synapse_bg)
+        self.connect_bg(self.bg)
+        self.bg.actions.construction_context = ConstructionContext(
+            spa, bg=self.bg, thalamus=self)
+        self.bg.actions.process()
 
-        # implement the various effects
-        for i, action in enumerate(self.bg.actions.actions):
-            for name, effects in iteritems(action.effect.effect):
-                for effect in effects.expression.items:
-                    if isinstance(effect, (int, float)):
-                        effect = Symbol('%g' % effect)
-                    if isinstance(effect, Symbol):
-                        self.add_direct_effect(i, name, effect.symbol)
-                    elif isinstance(effect, Source):
-                        self.add_route_effect(i, name, effect.name,
-                                              effect.transform.symbol,
-                                              effect.inverted)
-                    elif isinstance(effect, Convolution):
-                        self.add_conv_effect(i, name, effect)
-                    else:
-                        raise NotImplementedError(
-                            "Subexpression '%s' from action '%s' is not "
-                            "supported by the Thalamus." % (effect, action))
+    def construct_gate(self, index):
+        """Construct a gate ensemble.
 
-    def add_direct_effect(self, index, target_name, value):
-        """Cause an action to drive a particular module input to value.
+        The gate neurons have no activity when the action is selected, but are
+        active when the action is not selected. This makes the gate useful for
+        inhibiting ensembles that should only be active when this action is
+        active.
 
         Parameters
         ----------
         index : int
-            The action number that causes this effect.
-        target_name : str
-            The name of the module input to connect to.
-        value : str
-            A semantic pointer to be sent into the module when this action
-            is active.
+            Index to identify the gate.
+
+        Returns
+        -------
+        :class:`nengo.Ensemble`
+            The constructed gate.
         """
-        sink, vocab = self.spa.get_module_input(target_name)
-        transform = np.array([vocab.parse(value).v]).T
+        with self.routing:
+            intercepts = Uniform(self.threshold_gate, 1)
+            self.gates[index] = gate = nengo.Ensemble(
+                self.neurons_gate, dimensions=1, intercepts=intercepts,
+                label='gate[%d]' % index, encoders=[[1]] * self.neurons_gate)
+            nengo.Connection(self.bias, gate, synapse=None)
 
         with self.spa:
-            nengo.Connection(self.actions.ensembles[index],
-                             sink, transform=transform,
-                             synapse=self.synapse_direct)
+            nengo.Connection(
+                self.actions.ensembles[index], self.gates[index],
+                synapse=self.synapse_to_gate, transform=-1)
 
-    def get_gate(self, index, target_name):
-        """Return the gate for an action.
-
-        The gate will be created if it does not already exist. The gate
-        neurons have no activity when the action is selected, but are
-        active when the action is not selected. This makes the gate useful
-        for inhibiting ensembles that should only be active when this
-        action is active.
-        """
-
-        target_module = self.spa.get_module(target_name, strip_output=True)
-
-        if index not in self.gates:
-            with target_module:
-                intercepts = Uniform(self.threshold_gate, 1)
-                gate = nengo.Ensemble(self.neurons_gate,
-                                      dimensions=1,
-                                      intercepts=intercepts,
-                                      label='gate[%d]' % index,
-                                      encoders=[[1]] * self.neurons_gate)
-                if not hasattr(target_module, 'bias'):
-                    target_module.bias = nengo.Node([1], label=target_name
-                                                    + " bias")
-                nengo.Connection(target_module.bias, gate, synapse=None)
-
-            with self.spa:
-                nengo.Connection(self.actions.ensembles[index], gate,
-                                 synapse=self.synapse_to_gate, transform=-1)
-
-            with self:
-                self.gates[index] = gate
         return self.gates[index]
 
-    def add_route_effect(self,
-                         index, target_name, source_name, transform, inverted):
-        """Set an action to send source to target with the given transform.
+    def construct_channel(self, target_module, target_input):
+        """Construct a channel.
+
+        Channels are an additional neural population in-between a source
+        population and a target population. This allows inhibiting the channel
+        without affecting the source and thus is useful in routing information.
 
         Parameters
         ----------
-        index : int
-            The action number that will cause this effect.
-        target_name : str
-            The name of the module input to affect.
-        source_name : str
-            The name of the module output to read from. If this output uses
-            a different Vocabulary than the target, a linear transform
-            will be applied to convert from one to the other.
-        transform : str
-            A semantic point to convolve with the source value before
-            sending it into the target. This transform takes
-            place in the source Vocabulary.
-        inverted : bool
-            Whether to perform inverse convolution on the source.
+        target_module : :class:`spa.Module`
+            The module that the channel will project to.
+        target_vocab : :class:`spa.Vocabulary`
+            The vocabulary used by the target population..
+
+        Returns
+        -------
+        :class:`nengo.networks.EnsembleArray`
+            The constructed channel.
         """
-        with self:
-            gate = self.get_gate(index, target_name)
+        if target_input[1] is not None:
+            dim = target_input[1].dimensions
+        else:
+            dim = 1
+        subdim = target_module.dim_per_ensemble
+        if dim < subdim:
+            subdim = dim
+        elif dim % subdim != 0:
+            subdim = 1
 
-            target, target_vocab = self.spa.get_module_input(target_name)
-            source, source_vocab = self.spa.get_module_output(source_name)
-
-            target_module = self.spa.get_module(target_name, strip_output=True)
-            source_module = self.spa.get_module(source_name, strip_output=True)
-
-            # build a communication channel between the source and target
-            dim = target_vocab.dimensions
-
-            # Determine size of subdimension. If target module is spa.Buffer,
-            # use target module's subdimension. Otherwise use default
-            # (self.subdim_channel).
-            # TODO: Use the ensemble properties of target module instead?
-            #       - How to get these properties?
-            subdim = self.subdim_channel
-            if isinstance(target_module, nengo.spa.Buffer):
-                subdim = target_module.state.dimensions_per_ensemble
-            elif isinstance(source_module, nengo.spa.Buffer):
-                subdim = source_module.state.dimensions_per_ensemble
-            elif dim < subdim:
-                subdim = dim
-            elif dim % subdim != 0:
-                subdim = 1
-
-        with target_module:
+        with self.routing:
             channel = nengo.networks.EnsembleArray(
                 self.neurons_channel_dim * subdim,
-                dim // subdim,
-                ens_dimensions=subdim,
-                radius=np.sqrt(float(subdim) / dim),
-                label='channel_%d_%s' % (index, target_name))
-
+                dim // subdim, ens_dimensions=subdim,
+                radius=np.sqrt(float(subdim) / dim), label='channel')
         with self.spa:
-            # inhibit the channel when the action is not chosen
-            inhibit = ([[-self.route_inhibit]] *
-                       (self.neurons_channel_dim * subdim))
-            for e in channel.ensembles:
-                nengo.Connection(gate, e.neurons, transform=inhibit,
-                                 synapse=self.synapse_inhibit)
+            nengo.Connection(
+                channel.output, target_input[0], synapse=self.synapse_channel)
+        return channel
 
-            # compute the requested transform
-            t = source_vocab.parse(transform).get_convolution_matrix()
-            if inverted:
-                D = source_vocab.dimensions
-                t = np.dot(t, np.eye(D)[-np.arange(D)])
-            # handle conversion between different Vocabularies
-            if target_vocab is not source_vocab:
-                t = np.dot(source_vocab.transform_to(target_vocab), t)
+    def connect_bg(self, bg):
+        """Connect a basal ganglia network to this thalamus."""
+        with self.spa:
+            nengo.Connection(bg.output, self.input, synapse=self.synapse_bg)
 
-            # connect source to target
-            nengo.Connection(source, channel.input, transform=t,
-                             synapse=self.synapse_channel)
-            nengo.Connection(channel.output, target,
-                             synapse=self.synapse_channel)
-
-    def add_conv_effect(self, index, target_name, effect):
-        """Set an action to combine two sources and send to target.
+    def connect_gate(self, index, channel):
+        """Connect a gate to a channel for information routing.
 
         Parameters
         ----------
         index : int
-            The action number that will cause this effect.
-        target_name : str
-            The name of the module input to affect.
-        effect : Convolution
-            The details of the convolution to implement.
+            Index of the gate to connect.
+        channel : :class:`nengo.networks.EnsembleArray`
+            Channel to inhibit with the gate.
         """
-        target_module = self.spa.get_module(target_name)
-        cconv = nengo.spa.action_build.convolution(self, target_name, effect,
-                                                   self.neurons_cconv,
-                                                   self.synapse_channel)
+        with self.spa:
+            for e in channel.ensembles:
+                inhibit = ([[-self.route_inhibit]] * (e.n_neurons))
+                nengo.Connection(
+                    self.gates[index], e.neurons, transform=inhibit,
+                    synapse=self.synapse_inhibit)
 
-        gate = self.get_gate(index, target_name)
+    def connect_fixed(self, index, target, transform):
+        """Create connection to route fixed value.
 
-        with target_module:
-            # inhibit the convolution when the action is not chosen
-            for e in cconv.product.all_ensembles:
-                inhibit = -np.ones((e.n_neurons, 1)) * self.route_inhibit
-                nengo.Connection(gate, e.neurons, transform=inhibit,
-                                 synapse=self.synapse_inhibit)
+        Parameters
+        ----------
+        index : int
+            Index of the action to connect.
+        target : :class:`nengo.base.NengoObject`
+            Target of the connection.
+        transform : array-like
+            Transform to apply to apply to the connection.
+        """
+        self.connect(self.actions.ensembles[index], target, transform)
+
+    def connect(self, source, target, transform):
+        """Create connection.
+
+        The connection will use the thalamus' `synapse_channel`.
+        """
+        with self.spa:
+            nengo.Connection(
+                source, target, transform=transform,
+                synapse=self.synapse_channel)

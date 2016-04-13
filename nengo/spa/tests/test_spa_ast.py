@@ -202,7 +202,7 @@ def test_action():
     ast = Parser().parse_action('dot(state, A) --> state = B')
     assert ast == Action(
         DotProduct(Module('state'), Symbol('A')),
-        Effects(Effect(Sink('state'), Symbol('B'))))
+        Effects(Effect(Sink('state'), Symbol('B'), channeled=True)))
     assert str(ast) == 'dot(state, A) --> state = B'
     assert ast.type == TAction
 
@@ -231,3 +231,13 @@ def test_complex_epressions():
 
     ast = Parser().parse_expr('a*b - 1 + 2*b')
     assert str(ast) == '(((a * b) + -1) + (2 * b))'
+
+
+def test_zero_vector():
+    d = 16
+    with spa.Module() as model:
+        model.state = spa.State(d)
+
+    ast = Parser().parse_effect('state = 0')
+    ast.infer_types(model, None)
+    assert ast.source.type.vocab == model.state.vocabs[d]
