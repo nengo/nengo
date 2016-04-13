@@ -5,8 +5,9 @@ import warnings
 from collections import OrderedDict
 
 from nengo.exceptions import SpaModuleError, SpaParseError
-from nengo.spa.action_objects import Namespace, Symbol, DotProduct, Summation
+from nengo.spa import action_objects as ao
 import nengo.spa.spa_ast
+from nengo.spa.spa_ast import DotProduct, Module, Sink, Symbol
 from nengo.utils.compat import iteritems
 
 
@@ -30,7 +31,7 @@ class Expression(object):
         self.objects = {}   # the list of known terms
 
         # handle the term 'dot(a, b)' to mean DotProduct(a, b)
-        self.objects['dot'] = DotProduct
+        self.objects['dot'] = ao.DotProduct
 
         # use Python's eval to do the parsing of expressions for us
         self.validate_string(expression)
@@ -45,8 +46,8 @@ class Expression(object):
                                 (expression, e))
 
         # normalize the result to a summation
-        if not isinstance(self.expression, Summation):
-            self.expression = Summation([self.expression])
+        if not isinstance(self.expression, ao.Summation):
+            self.expression = ao.Summation([self.expression])
 
     def validate_string(self, text):
         m = re.search('~[^a-zA-Z]', text)
@@ -63,13 +64,13 @@ class Expression(object):
             return self.objects[key]
         else:
             try:
-                return Namespace(key, module=self.module.get_module(key))
+                return ao.Namespace(key, module=self.module.get_module(key))
             except SpaModuleError:
                 if not key[0].isupper():
                     raise SpaParseError(
                         "Semantic pointers must begin with a capital "
                         "letter.")
-                item = Symbol(key)
+                item = ao.Symbol(key)
                 self.objects[key] = item
                 return item
 
@@ -123,7 +124,15 @@ class Effect(object):
 class Parser(object):
     builtins = {'dot': DotProduct}
 
-    def parse(self, expr):
+    def parse_effect(self, effect):
+        try:
+            sink, source = effect.split('=', 1)
+        except ValueError:
+            raise SpaParseError("Syntax error in effect.")
+        return nengo.spa.spa_ast.Effect(
+            Sink(sink.strip()), self.parse_expr(source))
+
+    def parse_expr(self, expr):
         return eval(expr, {}, self)
 
     def __getitem__(self, key):
@@ -132,9 +141,9 @@ class Parser(object):
         if key in self.builtins:
             return self.builtins[key]
         if key[0].isupper():
-            return nengo.spa.spa_ast.Symbol(key)
+            return Symbol(key)
         else:
-            return nengo.spa.spa_ast.Module(key)
+            return Module(key)
 
 
 class Action(object):
