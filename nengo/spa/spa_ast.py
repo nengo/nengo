@@ -15,6 +15,7 @@ class Type(object):
 TAction = Type('TAction')
 TScalar = Type('TScalar')
 TEffect = Type('TEffect')
+TEffects = Type('TEffects')
 
 
 class TVocabulary(Type):
@@ -218,6 +219,20 @@ class Effect(Node):
         return '{} = {}'.format(self.sink, self.source)
 
 
+class Effects(Node):
+    def __init__(self, *effects):
+        super(Effects, self).__init__()
+        self.type = TEffects
+        self.effects = effects
+
+    def infer_types(self, model, context_type):
+        for e in self.effects:
+            e.infer_types(model, context_type)
+
+    def __str__(self):
+        return ', '.join(str(e) for e in self.effects)
+
+
 class Sink(Node):
     def __init__(self, name):
         super(Sink, self).__init__()
@@ -239,18 +254,18 @@ class Sink(Node):
 
 
 class Action(Node):
-    def __init__(self, condition, effect):
+    def __init__(self, condition, effects):
         super(Action, self).__init__()
         self.type = TAction
         self.condition = condition
-        self.effect = effect
+        self.effects = effects
 
     def infer_types(self, model, context_type):
         self.condition.infer_types(model, context_type)
-        self.effect.infer_types(model, None)
+        self.effects.infer_types(model, None)
 
         if self.condition.type != TScalar:
             raise SpaTypeError("Condition has to evaluate to a scalar.")
 
     def __str__(self):
-        return '{} --> {}'.format(self.condition, self.effect)
+        return '{} --> {}'.format(self.condition, self.effects)
