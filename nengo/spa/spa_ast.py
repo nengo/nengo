@@ -1,4 +1,4 @@
-from nengo.exceptions import SpaParseError, SpaTypeError
+from nengo.exceptions import SpaModuleError, SpaParseError, SpaTypeError
 
 
 class Type(object):
@@ -13,6 +13,7 @@ class Type(object):
 
 
 TScalar = Type('TScalar')
+TEffect = Type('TEffect')
 
 
 class TVocabulary(Type):
@@ -197,3 +198,40 @@ class DotProduct(Source):
 
     def __str__(self):
         return 'dot({}, {})'.format(self.lhs, self.rhs)
+
+
+class Effect(Node):
+    def __init__(self, sink, source):
+        super(Effect, self).__init__()
+        self.type = TEffect
+        self.sink = sink
+        self.source = source
+
+    def infer_types(self, model, context_type):
+        if context_type is None:
+            raise ValueError("Effect only allows a context_type of None.")
+        self.sink.infer_types(model, None)
+        self.source.infer_types(model, self.sink.type)
+
+    def __str__(self):
+        return '{} = {}'.format(self.sink, self.source)
+
+
+class Sink(Node):
+    def __init__(self, name):
+        super(Sink, self).__init__()
+        self.name = name
+
+    def infer_types(self, model, context_type):
+        try:
+            vocab = model.get_module_input(self.name)[1]
+        except SpaModuleError:
+            vocab = model.get_module_input(self.name + '.default')[1]
+
+        if vocab is None:
+            self.type = TScalar
+        else:
+            self.type = TVocabulary(vocab)
+
+    def __str__(self):
+        return self.name
