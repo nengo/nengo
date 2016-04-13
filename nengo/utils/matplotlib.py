@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import warnings
+from distutils.version import LooseVersion
 
 import numpy as np
 import matplotlib
@@ -8,6 +9,35 @@ import matplotlib.pyplot as plt
 
 from nengo.utils.compat import range
 from nengo.utils.ensemble import tuning_curves
+
+has_prop_cycle = LooseVersion(matplotlib.__version__) >= '1.5.0'
+
+if has_prop_cycle:
+    from cycler import cycler  # Dependency of MPL form 1.5.0 onward
+
+
+def get_color_cycle():
+    if has_prop_cycle:
+        cycle = matplotlib.rcParams['axes.prop_cycle']
+        # Apparently the 'color' key may not exist, so have to fail gracefully
+        try:
+            return [prop['color'] for prop in cycle]
+        except KeyError:
+            pass  # Fall back on deprecated axes.color_cycle
+    return matplotlib.rcParams['axes.color_cycle']
+
+
+def set_color_cycle(colors, ax=None):
+    if has_prop_cycle:
+        if ax is None:
+            plt.rc('axes', prop_cycle=cycler('color', colors))
+        else:
+            ax.set_prop_cycle('color', colors)
+    else:
+        if ax is None:
+            plt.rc('axes', color_cycle=colors)
+        else:
+            ax.set_color_cycle(colors)
 
 
 def axis_size(ax=None):
@@ -111,7 +141,7 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa: C
 
     colors = kwargs.pop('colors', None)
     if colors is None:
-        color_cycle = plt.rcParams['axes.color_cycle']
+        color_cycle = get_color_cycle()
         colors = [color_cycle[i % len(color_cycle)] for i in range(n_neurons)]
 
     # --- plotting
@@ -174,5 +204,5 @@ def plot_tuning_curves(ensemble, sim, connection=None, ax=None):
         if connection.dimensions > 1:
             warnings.warn("Ignoring dimensions > 1 in plot_tuning_curves")
         cm = plt.cm.ScalarMappable(cmap=plt.cm.coolwarm)
-        ax.set_color_cycle(cm.to_rgba(sim.data[connection].decoders[0]))
+        set_color_cycle(cm.to_rgba(sim.data[connection].decoders[0]), ax=ax)
     ax.plot(evals, t_curves)
