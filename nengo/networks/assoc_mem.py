@@ -154,7 +154,7 @@ class AssociativeMemory(nengo.Network):
             of the linear mapping function.
         """
         return lambda x, x_shift=x_shift, x_scale=x_scale: \
-            (x_scale * (x - x_scale))
+            (x_scale * (x - x_shift))
 
     def threshold_shifted_linear_funcs(self, x_shift=0.0, x_scale=1.0):
         """Returns a list of threshold-shifted linear mapping function.
@@ -168,9 +168,10 @@ class AssociativeMemory(nengo.Network):
         Parameters
         ----------
         x_shift: float, optional
-            Amount to shift the linear map on the 'x'-axis.
+            Amount to shift the linear map on the 'x'-axis, pre-shifted by the
+            threshold values for each ensemble.
             E.g. If the value of x_shift = 0.3, then the output of the linear
-                 mapping function would be 0 at x == 0.3.
+                 mapping function would be 0 at x == (0.3 - threshold).
         x_scale: float, optional
             Scaling factor to be applied to the 'x' input. Affects the slope
             of the linear mapping function.
