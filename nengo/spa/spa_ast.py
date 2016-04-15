@@ -32,8 +32,15 @@ class TVocabulary(Type):
                 self.vocab is other.vocab)
 
 
+def ensure_node(obj):
+    if not isinstance(obj, Node):
+        obj = Scalar(obj)
+    return obj
+
+
 class Node(object):
-    def __init__(self):
+    def __init__(self, fixed):
+        self.fixed = fixed
         self.type = None
 
     def __eq__(self, other):
@@ -73,9 +80,22 @@ class Source(Node):
         raise NotImplementedError()
 
 
+class Scalar(Source):
+    def __init__(self, value):
+        super(Scalar, self).__init__(fixed=True)
+        self.value = value
+        self.type = TScalar
+
+    def infer_types(self, model, context_type):
+        pass
+
+    def __str__(self):
+        return str(self.value)
+
+
 class Symbol(Source):
     def __init__(self, key):
-        super(Symbol, self).__init__()
+        super(Symbol, self).__init__(fixed=True)
         self.validate(key)
         self.key = key
 
@@ -95,7 +115,7 @@ class Symbol(Source):
 
 class Module(Source):
     def __init__(self, name):
-        super(Module, self).__init__()
+        super(Module, self).__init__(fixed=False)
         self.name = name
 
     def infer_types(self, root_module, context_type):
@@ -114,29 +134,36 @@ class Module(Source):
 
 class BinaryOperation(Source):
     def __init__(self, lhs, rhs, operator):
-        super(BinaryOperation, self).__init__()
+        lhs = ensure_node(lhs)
+        rhs = ensure_node(rhs)
+
+        super(BinaryOperation, self).__init__(fixed=lhs.fixed and rhs.fixed)
         self.lhs = lhs
         self.rhs = rhs
         self.operator = operator
 
     def infer_types(self, model, context_type):
-        if hasattr(self.lhs, 'infer_types'):
-            self.lhs.infer_types(model, context_type)
-            lhs_type = self.lhs.type
-        else:
-            lhs_type = TScalar
-        if hasattr(self.rhs, 'infer_types'):
-            self.rhs.infer_types(model, context_type)
-            rhs_type = self.rhs.type
-        else:
-            rhs_type = TScalar
+        if context_type is None:
+            try:
+                self.lhs.infer_types(model, context_type)
+                if isinstance(self.lhs.type, TVocabulary):
+                    context_type = self.lhs.type
+                else:
+                    raise SpaTypeError()
+            except SpaTypeError:
+                self.rhs.infer_types(model, context_type)
+                if isinstance(self.rhs.type, TVocabulary):
+                    context_type = self.rhs.type
 
-        if lhs_type == rhs_type:
-            self.type = lhs_type
-        elif lhs_type == TScalar:
-            self.type = rhs_type
-        elif rhs_type == TScalar:
-            self.type = lhs_type
+        self.lhs.infer_types(model, context_type)
+        self.rhs.infer_types(model, context_type)
+
+        if self.lhs.type == self.rhs.type:
+            self.type = self.lhs.type
+        elif self.lhs.type == TScalar:
+            self.type = self.rhs.type
+        elif self.rhs.type == TScalar:
+            self.type = self.lhs.type
         else:
             raise SpaTypeError("Incompatible types in multiply.")
 
@@ -156,7 +183,9 @@ class Sum(BinaryOperation):
 
 class UnaryOperation(Source):
     def __init__(self, source, symbol):
-        super(UnaryOperation, self).__init__()
+        source = ensure_node(source)
+        fixed = source.fixed
+        super(UnaryOperation, self).__init__(fixed=fixed)
         self.source = source
         self.symbol = symbol
 
@@ -186,7 +215,9 @@ class Negative(UnaryOperation):
 
 class DotProduct(Source):
     def __init__(self, lhs, rhs):
-        super(DotProduct, self).__init__()
+        lhs = ensure_node(lhs)
+        rhs = ensure_node(rhs)
+        super(DotProduct, self).__init__(fixed=rhs.fixed and lhs.fixed)
         self.type = TScalar
         self.lhs = lhs
         self.rhs = rhs
@@ -204,7 +235,7 @@ class DotProduct(Source):
 
 class Effect(Node):
     def __init__(self, sink, source):
-        super(Effect, self).__init__()
+        super(Effect, self).__init__(fixed=False)
         self.type = TEffect
         self.sink = sink
         self.source = source
@@ -221,7 +252,7 @@ class Effect(Node):
 
 class Effects(Node):
     def __init__(self, *effects):
-        super(Effects, self).__init__()
+        super(Effects, self).__init__(fixed=False)
         self.type = TEffects
         self.effects = effects
 
@@ -235,7 +266,7 @@ class Effects(Node):
 
 class Sink(Node):
     def __init__(self, name):
-        super(Sink, self).__init__()
+        super(Sink, self).__init__(fixed=False)
         self.name = name
 
     def infer_types(self, model, context_type):
@@ -255,7 +286,7 @@ class Sink(Node):
 
 class Action(Node):
     def __init__(self, condition, effects):
-        super(Action, self).__init__()
+        super(Action, self).__init__(fixed=False)
         self.type = TAction
         self.condition = condition
         self.effects = effects
