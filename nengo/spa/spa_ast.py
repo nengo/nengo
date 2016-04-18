@@ -1,3 +1,70 @@
+"""Abstract syntax trees for SPA actions.
+
+SPA actions are parsed into an abstract syntax tree (AST) representing the
+structure of the action expressions. In the first step, this syntax tree is
+independent of the actual model; it only represents the syntactic information.
+
+For the construction of the AST the Python eval function is used (by modifiying
+the name lookup in the globals dictionary). Because of this all Python code
+not involving identifiers will be statically evaluated before insertion into
+the syntax tree (e.g., '2 * 3 + 1' will be inserted as ``Scalar(7)``).
+
+Each node in the syntax tree will evaluate to a specific type. The most
+important types are ``TScalar`` for expressions evaluating to a scalar and
+:class:`TVocabulary` for expressions evaluating to a semantic pointer. This
+latter type describes the vocabulary the semantic pointer belongs to and
+different vocabularies give different types. This ensures that only semantic
+pointers of a matching vocabulary are assigned.
+
+To determine the type of each node an actual model has to be provided. This is
+because names of semantic pointers are not associated with a vocabulary and it
+needs to be inferred from some actual SPA module for which we have to be able
+to resolve the names of those modules. There are a few basic rules for this
+type inference:
+
+1. If something with unknown vocabulary is assigned to a module, that module's
+   vocabulary provides the type.
+2. If a binary operation has an operand with unknown vocabulary it is
+   determined from the other operand.
+
+Once all the types have been determined, the AST can be used to construct
+Nengo objects to perform the operations represented with the AST. In this
+process each node in the syntax tree can create :class:`Artifact`s. These
+give generated Nengo objects to be connected to the appropriate places
+including the transform that should be used for that. This is necessary
+because at the time most objects are constructed we only know this constructed
+object and the transform, but not what it is supposed to connect to. So the
+final connection will be done by some other node in the syntax tree.
+
+To avoid confusion with the normal Nengo build process, we use the term
+'construct' here.
+
+
+In the following we provide the grammar of SPA actions for reference:
+
+``
+Scalar: <any Python expression evaluating to a single number != 0>
+Symbol: <valid Python identifier starting with a capital letter>
+Zero: '0'
+Module: <valid Python identifier> | <valid Python identifier> '.' Module
+Source: S'(' Source ')' | Scalar | Symbol | Zero | Module | BinaryOperation |
+        UnaryOperation | DotProduct
+BinaryOperation: Product | Sum | Difference
+Product: Source '*' Source
+Sum: Source '+' Source
+Difference: Source '-' Source
+UnaryOperation: ApproxInverse | Negative
+ApproxInverse: '~' Source
+Negative: '-' Source
+DotProduct: 'dot(' Source ',' Source ')'
+Sink: <valid Python identifier> | <valid Python identifier> '.' Sink
+Effect: Sink '=' Source
+Effects: Effect | Effect ',' Effects
+Action: Source '-->' Effects
+
+Note that `Difference` ``a - b`` will be represented as `a + (-b)` in the AST.
+"""
+
 import warnings
 
 import numpy as np
