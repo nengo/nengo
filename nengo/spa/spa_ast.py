@@ -130,6 +130,9 @@ class Type(object):
     def __repr__(self):
         return '{}({!r})'.format(self.__class__.__name__, self.name)
 
+    def __str__(self):
+        return self.name
+
     def __eq__(self, other):
         return self.__class__ is other.__class__ and self.name == other.name
 
@@ -155,6 +158,9 @@ class TVocabulary(Type):
     def __repr__(self):
         return '{}({!r}, {!r})'.format(
             self.__class__.__name__, self.name, self.vocab)
+
+    def __str__(self):
+        return '{}<{}>'.format(self.name, self.vocab)
 
     def __eq__(self, other):
         return (super(TVocabulary, self).__eq__(other) and
@@ -515,7 +521,9 @@ class BinaryOperation(BinaryNode):
         elif self.rhs.type == TScalar:
             self.type = self.lhs.type
         else:
-            raise SpaTypeError("Incompatible types in operation.")
+            raise SpaTypeError(
+                "Incompatible types {} and {} in operation '{}'.".format(
+                    self.lhs.type, self.rhs.type, self))
 
     def construct(self, context):
         raise NotImplementedError()
@@ -620,7 +628,8 @@ class ApproxInverse(UnaryOperation):
         super(ApproxInverse, self).infer_types(root_module, context_type)
         if not isinstance(self.type, TVocabulary):
             raise SpaTypeError(
-                "Can apply approximate inverse only to semantic pointers.")
+                "Cannot apply approximate inverse to '{}' which is not of "
+                "type TVocabulary, but {}.".format(self.source, self.type))
 
     def construct(self, context):
         if self.fixed:
@@ -657,9 +666,18 @@ class DotProduct(BinaryNode):
             context_type = infer_vocab(root_module, self.lhs, self.rhs)
         self.lhs.infer_types(root_module, context_type)
         self.rhs.infer_types(root_module, context_type)
+        if not isinstance(self.lhs.type, TVocabulary):
+            raise SpaTypeError(
+                "First argument of dot product '{}' is not of type "
+                "TVocabulary, but {}.".format(self, self.lhs.type))
+        if not isinstance(self.rhs.type, TVocabulary):
+            raise SpaTypeError(
+                "Second argument of dot product '{}' is not of type "
+                "TVocabulary, but {}.".format(self, self.rhs.type))
         if self.lhs.type.vocab is not self.rhs.type.vocab:
             raise SpaTypeError(
-                "Dot product of pointers from different vocabularies.")
+                "Incompatible types {} and {} in dot product '{}'.".format(
+                    self.lhs.type, self.rhs.type, self))
 
     def construct(self, context):
         if self.fixed:
@@ -711,8 +729,8 @@ class Effect(Node):
         source = ensure_node(source)
         super(Effect, self).__init__(fixed=source.fixed)
         self.type = TEffect
-        self.sink = sink
-        self.source = source
+        self.sink = ensure_node(sink)
+        self.source = ensure_node(source)
         self.channeled = channeled
         self.channel = None
 
@@ -722,7 +740,8 @@ class Effect(Node):
         self.sink.infer_types(root_module, None)
         self.source.infer_types(root_module, self.sink.type)
         if self.sink.type != self.source.type:
-            raise SpaTypeError('Type mismatch.')
+            raise SpaTypeError("Cannot assign {} to {} in '{}'".format(
+                self.source.type, self.sink.type, self))
 
     def construct(self, context):
         assert context.sink is None
@@ -831,7 +850,9 @@ class Action(Node):
         if isinstance(self.condition, Node):
             self.condition.infer_types(root_module, context_type)
             if self.condition.type != TScalar:
-                raise SpaTypeError("Condition has to evaluate to a scalar.")
+                raise SpaTypeError(
+                    "Condition '{}' does not evaluate to a scalar.".format(
+                        self.condition))
 
         self.effects.infer_types(root_module, None)
 
