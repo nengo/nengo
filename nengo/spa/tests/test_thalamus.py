@@ -18,9 +18,10 @@ def test_thalamus(Simulator, plt, seed):
         model.motor2 = spa.Buffer(dimensions=32, neurons_per_dimension=80)
 
         actions = spa.Actions(
-            'dot(vision, A) --> motor=A, motor2=vision*vision2',
-            'dot(vision, B) --> motor=vision, motor2=vision*A*~B',
-            'dot(vision, ~A) --> motor=~vision, motor2=~vision*vision2'
+            'dot(vision, A) --> motor=A, motor2=translate(vision*vision2)',
+            'dot(vision, B) --> motor=vision, motor2=translate(vision*A*~B)',
+            'dot(vision, ~A) --> motor=~vision, '
+            'motor2=translate(~vision*vision2)'
         )
         model.bg = spa.BasalGanglia(actions)
         model.thalamus = spa.Thalamus(model.bg)

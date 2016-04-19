@@ -50,14 +50,13 @@ def test_transform(Simulator, seed):
     assert match[199] > 0.7
 
 
-# FIXME
-@pytest.mark.xfail(reason='needs explicit translate')
 def test_translate(Simulator, seed):
     with spa.Module(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=32)
         model.input = spa.Input(buffer1='A')
-        model.cortical = spa.Cortical(spa.Actions('buffer2=buffer1'))
+        model.cortical = spa.Cortical(spa.Actions(
+            'buffer2=translate(buffer1)'))
 
     output, vocab = model.get_module_output('buffer2')
 

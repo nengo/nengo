@@ -1,13 +1,28 @@
 """Parsing of SPA actions."""
 from nengo.exceptions import SpaParseError
 from nengo.spa.spa_ast import (
-    Action, DotProduct, Effect, Effects, Module, Sink, Symbol)
+    Action, DotProduct, Effect, Effects, Module, Reinterpret, Sink, Symbol,
+    Translate)
 
 
 class Parser(object):
-    """Parser for SPA actions."""
+    """Parser for SPA actions.
 
-    builtins = {'dot': DotProduct}
+    Parameters
+    ----------
+    vocabs : dict
+        Vocabularies to make accessible in the parsed action rules.
+    """
+
+    builtins = {
+        'dot': DotProduct,
+        'reinterpret': Reinterpret,
+        'translate': Translate}
+
+    def __init__(self, vocabs=None):
+        if vocabs is None:
+            vocabs = {}
+        self.vocabs = vocabs
 
     def parse_action(self, action, index=0, name=None, strict=True):
         """Parse an SPA action.
@@ -134,6 +149,8 @@ class Parser(object):
     def __getitem__(self, key):
         if key == '__tracebackhide__':  # gives better tracebacks in py.test
             return False
+        if key in self.vocabs:
+            return self.vocabs[key]
         if key in self.builtins:
             return self.builtins[key]
         if key[0].isupper():
@@ -145,23 +162,36 @@ class Parser(object):
 class Actions(object):
     """A collection of Action objects.
 
-    The ``*args`` and ``**kwargs`` are treated as unnamed and named actions,
-    respectively. The list of actions are only generated once
-    `~.Actions.process` is called, since it needs access to the list of
-    module inputs and outputs from the SPA object. The ``**kwargs`` are sorted
-    alphabetically before being processed.
+    The *args and **kwargs are treated as unnamed and named Actions,
+    respectively.  The list of actions are only generated once process()
+    is called, since it needs access to the list of module inputs and
+    outputs from the SPA object. The **kwargs are sorted alphabetically before
+    being processed.
+
+    The keyword argument `vocabs` is special in that it provides a dictionary
+    mapping names to vocabularies. The vocabularies can then be used with those
+    names in the action rules.
     """
 
     def __init__(self, *args, **kwargs):
         self.actions = None
         self.args = args
         self.kwargs = kwargs
+        if 'vocabs' in kwargs:
+            self.vocabs = self.kwargs.pop('vocabs')
+        else:
+            self.vocabs = None
         self.construction_context = None
 
     def add(self, *args, **kwargs):
+        if 'vocabs' in kwargs:
+            vocabs = self.kwargs.pop('vocabs')
+            self.vocabs.update(vocabs)
+        else:
+            vocabs = None
         self.args += args
         self.kwargs.update(kwargs)
-        self._process_new_actions(*args, **kwargs)
+        self._process_new_actions(vocabs, *args, **kwargs)
 
     @property
     def count(self):
@@ -171,12 +201,12 @@ class Actions(object):
     def process(self):
         """Parse the actions and generate the list of Action objects."""
         self.actions = []
-        self._process_new_actions(*self.args, **self.kwargs)
+        self._process_new_actions(self.vocabs, *self.args, **self.kwargs)
 
-    def _process_new_actions(self, *args, **kwargs):
+    def _process_new_actions(self, vocabs=None, *args, **kwargs):
         sorted_kwargs = sorted(kwargs.items())
 
-        parser = Parser()
+        parser = Parser(vocabs=vocabs)
         for i, action in enumerate(args):
             self.actions.append(parser.parse_action(action, i, strict=False))
         for i, (name, action) in enumerate(sorted_kwargs, start=self.count):

@@ -57,6 +57,9 @@ UnaryOperation: ApproxInverse | Negative
 ApproxInverse: '~' Source
 Negative: '-' Source
 DotProduct: 'dot(' Source ',' Source ')'
+Reinterpret: 'reinterpret(' Source (',' VocabArg)? ')'
+Translate: 'translate(' Source (',' VocabArg)? ')'
+VocabArg: 'vocab='? (Module | <valid Python identifier>)
 Sink: <valid Python identifier> | <valid Python identifier> '.' Sink
 Effect: Sink '=' Source
 Effects: Effect | Effect ',' Effects
@@ -707,6 +710,85 @@ class DotProduct(BinaryNode):
 
     def __str__(self):
         return 'dot({}, {})'.format(self.lhs, self.rhs)
+
+
+class Reinterpret(Node):
+    def __init__(self, source, vocab=None):
+        source = ensure_node(source)
+        super(Reinterpret, self).__init__(fixed=source.fixed)
+        self.source = source
+        self.vocab = vocab
+
+    def infer_types(self, root_module, context_type):
+        if self.vocab is None:
+            self.type = context_type
+        elif isinstance(self.vocab, Module):
+            self.vocab.infer_types(root_module, None)
+            self.type = self.vocab.type
+        else:
+            self.type = TVocabulary(self.vocab)
+        if not isinstance(self.type, TVocabulary):
+            raise SpaTypeError(
+                "Cannot infer vocabulary for '{}'.".format(self))
+
+        self.source.infer_types(root_module, None)
+        if not isinstance(self.source.type, TVocabulary):
+            raise SpaTypeError(
+                "Cannot reinterpret '{}' because it is not of type "
+                "TVocabulary, but {}.".format(self.source, self.source.type))
+        if self.source.type.vocab.dimensions != self.type.vocab.dimensions:
+            raise SpaTypeError(
+                "Cannot reinterpret '{}' with {}-dimensional vocabulary as "
+                "{}-dimensional vocabulary.".format(
+                    self.source, self.source.type.vocab.dimensions,
+                    self.type.vocab.dimensions))
+
+    def construct(self, context):
+        return self.source.construct(context)
+
+    def evaluate(self):
+        return self.source.evaluate()
+
+    def __str__(self):
+        return 'reinterpret({})'.format(self.source)
+
+
+class Translate(Node):
+    def __init__(self, source, vocab=None):
+        source = ensure_node(source)
+        super(Translate, self).__init__(fixed=source.fixed)
+        self.source = source
+        self.vocab = vocab
+
+    def infer_types(self, root_module, context_type):
+        if self.vocab is None:
+            self.type = context_type
+        elif isinstance(self.vocab, Module):
+            self.vocab.infer_types(root_module, None)
+            self.type = self.vocab.type
+        else:
+            self.type = TVocabulary(self.vocab)
+        if not isinstance(self.type, TVocabulary):
+            raise SpaTypeError(
+                "Cannot infer vocabulary for '{}'.".format(self))
+
+        self.source.infer_types(root_module, None)
+        if not isinstance(self.source.type, TVocabulary):
+            raise SpaTypeError(
+                "Cannot translate '{}' because it is not of type "
+                "TVocabulary, but {}.".format(self.source, self.source.type))
+
+    def construct(self, context):
+        tr = self.source.type.vocab.transform_to(self.type.vocab)
+        artifacts = self.source.construct(context)
+        return [a.add_transform(tr) for a in artifacts]
+
+    def evaluate(self):
+        tr = self.source.type.vocab.transform_to(self.type.vocab)
+        return SemanticPointer(np.dot(tr, self.source.evaluate().v))
+
+    def __str__(self):
+        return 'translate({})'.format(self.source)
 
 
 class Effect(Node):
