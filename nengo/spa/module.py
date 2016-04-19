@@ -130,7 +130,7 @@ class Module(nengo.Network):
                 else:
                     raise KeyError
         except KeyError:
-            raise SpaModuleError("Could not find module %r" % name)
+            raise SpaModuleError("Could not find module %r." % name)
 
     def get_module_input(self, name):
         """Return the object to connect into for the given name.
@@ -161,7 +161,7 @@ class Module(nengo.Network):
                     else:
                         raise KeyError
         except KeyError:
-            raise SpaModuleError("Could not find module input %r" % name)
+            raise SpaModuleError("Could not find module input %r." % name)
 
     def get_input_vocab(self, name):
         return self.get_module_input(name)[1]
@@ -195,7 +195,7 @@ class Module(nengo.Network):
                     else:
                         raise KeyError
         except KeyError:
-            raise SpaModuleError("Could not find module output %r" % name)
+            raise SpaModuleError("Could not find module output %r." % name)
 
     def get_output_vocab(self, name):
         return self.get_module_output(name)[1]
