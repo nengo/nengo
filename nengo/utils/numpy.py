@@ -137,6 +137,29 @@ def expm(A, n_factors=None, normalize=False):
     return np.linalg.matrix_power(Y, a) if normalize else Y
 
 
+def _expand_dims(a, axis):
+    """Like numpy._expand_dims, but with support for multiple axes.
+
+    Parameters
+    ----------
+    a : array_like
+        Array to expand dimensions of.
+    axis : int or sequence, optional
+        Indices where to insert axes. Each index is in relation to all an array
+        where all prior axes have been inserted. For example given an array
+        with shape `(n,)` ``axis=(0, 1)`` would expand the array to shape
+        `(1, 1, n)`.
+    """
+    a = np.asarray(a)
+    shape = list(a.shape)
+    axes = axis if is_iterable(axis) else (axis,)
+    n = len(shape) + len(axes)
+    axes = sorted([i + n if i < 0 else i for i in axes])
+    for i in axes:
+        shape.insert(i, 1)
+    return a.reshape(shape)
+
+
 def norm(x, axis=None, keepdims=False):
     """Euclidean norm
 
@@ -150,8 +173,10 @@ def norm(x, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
+    if axis is None:
+        axis = tuple(range(x.ndim))
     y = np.sqrt(np.sum(x**2, axis=axis))
-    return np.expand_dims(y, axis=axis) if keepdims else y
+    return _expand_dims(y, axis=axis) if keepdims else y
 
 
 def meshgrid_nd(*args):
@@ -174,8 +199,10 @@ def rms(x, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
+    if axis is None:
+        axis = tuple(range(x.ndim))
     y = np.sqrt(np.mean(x**2, axis=axis))
-    return np.expand_dims(y, axis=axis) if keepdims else y
+    return _expand_dims(y, axis=axis) if keepdims else y
 
 
 def rmse(x, y, axis=None, keepdims=False):

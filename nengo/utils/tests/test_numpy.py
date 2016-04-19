@@ -2,7 +2,7 @@ from __future__ import absolute_import, division
 
 import numpy as np
 
-from nengo.utils.numpy import norm, meshgrid_nd, rms
+from nengo.utils.numpy import _expand_dims, norm, meshgrid_nd, rms
 
 
 def test_meshgrid_nd():
@@ -21,6 +21,14 @@ def test_meshgrid_nd():
                   [[23, 42], [23, 42], [23, 42]]])]
     actual = meshgrid_nd(a, b, c)
     assert np.allclose(expected, actual)
+
+
+def test_expand_dims():
+    a = np.array([0, 1])
+    assert _expand_dims(a, 0).shape == (1, 2)
+    assert _expand_dims(a, 1).shape == (2, 1)
+    assert _expand_dims(a, -1).shape == (2, 1)
+    assert _expand_dims(a, (0, 0, 1, -1)).shape == (1, 1, 1, 2, 1)
 
 
 def test_norm():
