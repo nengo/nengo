@@ -85,6 +85,10 @@ class Vocabulary(object):
         self.readonly = False
         self.parent = None
 
+    def __str__(self):
+        return '{}-dimensional vocab at 0x{:x}'.format(
+            self.dimensions, id(self))
+
     def create_pointer(self, attempts=100, unitary=False):
         """Create a new semantic pointer.
 
