@@ -237,28 +237,33 @@ def test_no_magic_vocab_transform():
             model.cortical = spa.Cortical(spa.Actions('b = a'))
 
 
-# FIXME
-@pytest.mark.xfail(reason='not implemented yet')
-def test_vocab_reinterpretation(Simulator, plt, rng):
-    d = 16
-    v1 = spa.Vocabulary(d, rng=rng)
+@pytest.mark.parametrize('d1,d2,method,lookup', [
+    (16, 16, 'reinterpret(a, v2)', 'v1'),
+    (16, 16, 'reinterpret(a)', 'v1'),
+    (16, 16, 'reinterpret(a, b)', 'v1'),
+    (16, 32, 'translate(a, v2)', 'v2'),
+    (16, 32, 'translate(a)', 'v2'),
+    (16, 32, 'translate(a, b)', 'v2')])
+def test_casting_vocabs(d1, d2, method, lookup, Simulator, plt, rng):
+    v1 = spa.Vocabulary(d1, rng=rng)
     v1.parse('A')
-    v2 = spa.Vocabulary(d, rng=rng)
+    v2 = spa.Vocabulary(d2, rng=rng)
+    v2.parse('A')
 
     with spa.Module() as model:
-        model.a = spa.State(d, vocab=v1)
-        model.b = spa.State(d, vocab=v2)
+        model.a = spa.State(d1, vocab=v1)
+        model.b = spa.State(d2, vocab=v2)
         model.cortical = spa.Cortical(spa.Actions(
-            'b = reinterpret(a, v2)', vocabs={'v2': v2}))
+            'b = {}'.format(method), vocabs={'v2': v2}))
         model.stimulus = spa.Input()
         model.stimulus.a = 'A'
-        p = nengo.Probe(model.b.state, synapse=0.03)
+        p = nengo.Probe(model.b.output, synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.5)
 
     t = sim.trange() > 0.2
-    v = v1.parse('A').v
+    v = locals()[lookup].parse('A').v
 
     plt.plot(sim.trange(), similarity(sim.data[p], v))
     plt.xlabel("t [s]")
