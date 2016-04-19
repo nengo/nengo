@@ -9,7 +9,6 @@ how Nengo builds and simulates brain models.
    :maxdepth: 2
 
    dev_introduction
-   dev_api
    nef_minimal
    workflow
    releasing

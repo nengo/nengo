@@ -2,6 +2,8 @@
 Introduction for developers
 ***************************
 
+.. default-role:: obj
+
 Contributing
 ============
 
@@ -145,8 +147,67 @@ then ``pip install flake8`` and run
 
 in the ``nengo`` repository you cloned.
 
+Class member order
+------------------
+
+In general, we stick to the following order for members of Python classes.
+
+1. Class-level member variables (e.g., ``nengo.Ensemble.probeable``).
+2. Parameters (i.e., classes derived from `nengo.params.Parameter`)
+   with the parameters in ``__init__`` going first in that order,
+   then parameters that don't appear in ``__init__`` in alphabetical order.
+   All these parameters should appear in the Parameters section of the docstring
+   in the same order.
+3. ``__init__``
+4. Other special (``__x__``) methods in alphabetical order,
+   except when a grouping is more natural
+   (e.g., ``__getstate__`` and ``__setstate__``).
+5. ``@property`` properties in alphabetical order.
+6. ``@staticmethod`` methods in alphabetical order.
+7. ``@classmethod`` methods in alphabetical order.
+8. Methods in alphabetical order.
+
+"Hidden" versions of the above (i.e., anything starting with an underscore)
+should either be placed right after they're first used,
+or at the end of the class.
+Also consider converting long hidden methods
+to functions placed in the ``nengo.utils`` module.
+
+.. note:: These are guidelines that should be used in general,
+          not strict rules.
+          If there is a good reason to group differently,
+          then feel free to do so, but please explain
+          your reasoning in code comments or commit notes.
+
+Docstrings
+----------
+
 We use ``numpydoc`` and
-`NumPy guidelines
-<https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_
-for docstrings, as they are a bit nicer to read in plain text,
-and produce decent output with Sphinx.
+`NumPy's guidelines for docstrings
+<https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_,
+as they are readable in plain text and when rendered with Sphinx.
+
+We use the default role of ``obj`` in documentation,
+so any strings placed in backticks in docstrings
+will be cross-referenced properly if they
+unambiguously refer to something in the Nengo documentation.
+See `Cross-referencing syntax
+<http://www.sphinx-doc.org/en/stable/markup/inline.html#cross-referencing-syntax>`_
+and the `Python domain
+<http://www.sphinx-doc.org/en/stable/domains.html>`_
+for more information.
+
+A few additional conventions that we have settled on:
+
+1. Default values for parameters should be specified next to the type.
+   For example::
+
+     radius : float, optional (Default: 1.0)
+         The representational radius of the ensemble.
+
+2. Types should not be cross-referenced in the parameter list,
+   but can be cross-referenced in the description of that parameter.
+   For example::
+
+     solver : Solver
+         A `.Solver` used in the build process.

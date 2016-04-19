@@ -15,12 +15,38 @@ For a summary of these principles, see the following example:
 
 The following examples give a more detailed presentation:
 
-.. toctree::
-   :maxdepth: 2
+Principle 1: Representation
+===========================
 
-   representation
-   transformation
-   dynamics
+.. toctree::
+
+   examples/single_neuron
+   examples/two_neurons
+   examples/many_neurons
+   examples/2d_representation
+   examples/combining
+   examples/addition
+
+Principle 2: Transformation
+===========================
+
+.. toctree::
+
+   examples/communication_channel
+   examples/squaring
+   examples/multiplication
+
+Principle 3: Dynamics
+=====================
+
+.. toctree::
+
+   examples/integrator
+   examples/controlled_integrator
+   examples/controlled_integrator2
+   examples/oscillator
+   examples/controlled_oscillator
+   examples/lorenz_attractor
 
 Putting these three principles together allows us to scale
 these examples up to larger networks that do more complex functions.
@@ -59,6 +85,7 @@ Learning
    examples/learn_square
    examples/learn_product
    examples/learn_unsupervised
+   examples/learn_associations
 
 Networks
 ========
@@ -75,13 +102,14 @@ Semantic Pointer Architecture
 
 .. toctree::
 
+   examples/associative_memory
    examples/convolution
    examples/question
    examples/question_control
    examples/question_memory
+   examples/spa_parser
    examples/spa_sequence
    examples/spa_sequence_routed
-   examples/spa_parser
 
 Extending Nengo
 ===============
