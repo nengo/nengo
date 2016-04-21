@@ -104,7 +104,7 @@ def test_decoder_solver(Solver, plt, rng):
     plt.plot(test, test - est)
     plt.title("relative RMSE: %0.2e" % rel_rmse)
 
-    atol = 3.5e-2 if isinstance(solver, LstsqNoise) else 1.5e-2
+    atol = 3.5e-2 if isinstance(solver, (LstsqNoise, LstsqDrop)) else 1.5e-2
     assert np.allclose(test, est, atol=atol, rtol=1e-3)
     assert rel_rmse < 0.02
 
