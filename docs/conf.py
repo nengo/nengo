@@ -17,6 +17,7 @@ except ImportError:
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
@@ -28,6 +29,11 @@ extensions = [
 autoclass_content = 'both'  # class and __init__ docstrings are concatenated
 autodoc_default_flags = ['members']
 autodoc_member_order = 'bysource'  # default is alphabetical
+
+# -- sphinx.ext.intersphinx
+intersphinx_mapping = {
+    'numpy': ('http://docs.scipy.org/doc/numpy', None)
+}
 
 # -- sphinx.ext.todo
 todo_include_todos = True
