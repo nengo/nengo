@@ -43,6 +43,9 @@ Release History
   (`#1053 <https://github.com/nengo/nengo/pull/1053>`_,
   `#1041 <https://github.com/nengo/nengo/issues/1041>`_,
   `#1048 <https://github.com/nengo/nengo/issues/1048>`_)
+- The ``Nnls`` solver now works for weights.
+  (`#1027 <https://github.com/nengo/nengo/pull/1027>`_,
+  `#1019 <https://github.com/nengo/nengo/issues/1019>`_)
 
 2.1.0 (April 27, 2016)
 ======================

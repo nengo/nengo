@@ -350,7 +350,7 @@ class LstsqDrop(Solver):
 
     def __call__(self, A, Y, rng=None, E=None):
         tstart = time.time()
-        Y, m, n, d, matrix_in = format_system(A, Y)
+        Y, m, n, _, matrix_in = format_system(A, Y)
 
         # solve for coefficients using standard solver
         X, info0 = self.solver1(A, Y, rng=rng)
@@ -372,7 +372,7 @@ class LstsqDrop(Solver):
         t = time.time() - tstart
         info = {'rmses': rmses(A, X, Y), 'info0': info0, 'info1': info1,
                 'time': t}
-        return X if matrix_in else X.flatten(), info
+        return X if matrix_in or X.shape[1] > 1 else X.ravel(), info
 
 
 class Nnls(Solver):
@@ -404,8 +404,9 @@ class Nnls(Solver):
         import scipy.optimize
 
         tstart = time.time()
-        Y, m, n, d, matrix_in = format_system(A, Y)
+        Y, m, n, _, matrix_in = format_system(A, Y)
         Y = self.mul_encoders(Y, E)
+        d = Y.shape[1]
 
         X = np.zeros((n, d))
         residuals = np.zeros(d)
@@ -414,7 +415,7 @@ class Nnls(Solver):
 
         t = time.time() - tstart
         info = {'rmses': rmses(A, X, Y), 'residuals': residuals, 'time': t}
-        return X if matrix_in else X.flatten(), info
+        return X if matrix_in or X.shape[1] > 1 else X.ravel(), info
 
 
 class NnlsL2(Nnls):

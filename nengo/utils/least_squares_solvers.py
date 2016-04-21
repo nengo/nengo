@@ -9,10 +9,11 @@ from nengo.params import (
 
 
 def format_system(A, Y):
+    assert Y.ndim > 0
     m, n = A.shape
     matrix_in = Y.ndim > 1
     d = Y.shape[1] if matrix_in else 1
-    Y = Y.reshape((Y.shape[0], d))
+    Y = Y if matrix_in else Y[:, None]
     return Y, m, n, d, matrix_in
 
 
