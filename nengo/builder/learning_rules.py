@@ -1,8 +1,7 @@
 import numpy as np
 
-from nengo.builder.builder import Builder
-from nengo.builder.operator import DotInc, ElementwiseInc, Operator, Reset
-from nengo.builder.signal import Signal
+from nengo.builder import Builder, Operator, Signal
+from nengo.builder.operator import DotInc, ElementwiseInc, Reset
 from nengo.connection import LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError

@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 import nengo.utils.numpy as npext
-from nengo.builder.builder import Builder
+from nengo.builder import Builder
 from nengo.network import Network
 
 logger = logging.getLogger(__name__)

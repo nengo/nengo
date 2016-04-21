@@ -4,9 +4,8 @@ import warnings
 import numpy as np
 
 import nengo.utils.numpy as npext
-from nengo.builder.builder import Builder
+from nengo.builder import Builder, Signal
 from nengo.builder.operator import Copy, DotInc, Reset
-from nengo.builder.signal import Signal
 from nengo.dists import Distribution
 from nengo.ensemble import Ensemble
 from nengo.neurons import Direct

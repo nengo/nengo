@@ -1,7 +1,6 @@
 import numpy as np
 
-from nengo.builder.builder import Builder
-from nengo.builder.signal import Signal
+from nengo.builder import Builder, Signal
 from nengo.builder.operator import Reset, SimPyFunc
 from nengo.exceptions import BuildError
 from nengo.node import Node

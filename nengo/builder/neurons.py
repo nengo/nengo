@@ -1,8 +1,6 @@
 import numpy as np
 
-from nengo.builder.builder import Builder
-from nengo.builder.signal import Signal
-from nengo.builder.operator import Operator
+from nengo.builder import Builder, Operator, Signal
 from nengo.neurons import (AdaptiveLIF, AdaptiveLIFRate, Izhikevich, LIF,
                            LIFRate, RectifiedLinear, Sigmoid)
 

@@ -2,12 +2,11 @@ import collections
 
 import numpy as np
 
-from nengo.builder.builder import Builder
+from nengo.builder import Builder, Signal
 from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import (
     DotInc, ElementwiseInc, PreserveValue, Reset, SlicedCopy)
-from nengo.builder.signal import Signal
 from nengo.connection import Connection
 from nengo.dists import Distribution
 from nengo.ensemble import Ensemble, Neurons
