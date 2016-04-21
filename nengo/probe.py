@@ -89,7 +89,7 @@ class Probe(NengoObject):
     target = TargetParam('target', nonzero_size_out=True)
     attr = AttributeParam('attr', default=None)
     sample_every = NumberParam(
-        'sample_ever', default=None, optional=True, low=1e-10)
+        'sample_every', default=None, optional=True, low=1e-10)
     synapse = SynapseParam('synapse', default=None)
     solver = ProbeSolverParam('solver', default=ConnectionDefault)
 

@@ -132,7 +132,7 @@ class Node(NengoObject):
 
     output = OutputParam('output', default=None)
     size_in = IntParam('size_in', default=None, low=0, optional=True)
-    size_out = IntParam('silze_out', default=None, low=0, optional=True)
+    size_out = IntParam('size_out', default=None, low=0, optional=True)
 
     def __init__(self, output=Default, size_in=Default, size_out=Default,
                  label=Default, seed=Default):
