@@ -108,7 +108,7 @@ class SimVoja(Operator):
     """
 
     def __init__(self, pre_decoded, post_filtered, scaled_encoders, delta,
-                 scale, learning_signal, learning_rate):
+                 scale, learning_signal, learning_rate, tag=None):
         self.pre_decoded = pre_decoded
         self.post_filtered = post_filtered
         self.scaled_encoders = scaled_encoders
@@ -116,12 +116,13 @@ class SimVoja(Operator):
         self.scale = scale
         self.learning_signal = learning_signal
         self.learning_rate = learning_rate
+        self.tag = tag
 
+        self.sets = []
+        self.incs = []
         self.reads = [
             pre_decoded, post_filtered, scaled_encoders, learning_signal]
         self.updates = [delta]
-        self.sets = []
-        self.incs = []
 
     def _descstr(self):
         return 'pre=%s, post=%s -> %s' % (
