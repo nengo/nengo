@@ -12,7 +12,7 @@ class Function(nengo.dists.Distribution):
         super(Function, self).__init__()
 
     def sample(self, n, d=None, rng=np.random):
-
+        # TODO: an error occurs if there are fewer samples than dimensions
         n_samples = n * self.superimpose
 
         kwargs = {}
@@ -133,10 +133,13 @@ class FunctionSpace(object):
         else:
             return np.dot(pts, self.basis)
 
+    # NOTE: might be useful to be able to have parameter to downsample 
+    # right here rather than only being able to get reconstruction using n_samples
     def reconstruct(self, x):
         """Decode the function from the subspace back to points"""
         return np.dot(x, self.basis.T) * self.scale
 
+    # TODO: is function param supposed to be used here? 
     def make_plot_node(self, domain, lines=1, n_pts=20, function=None,
                        max_x=None, min_x=None, max_y=1, min_y=-1):
         """Generate a Node with a custom GUI plot"""
@@ -146,6 +149,8 @@ class FunctionSpace(object):
         if len(pts) > n_pts:
             indices = np.linspace(0, len(pts) - 1, n_pts).astype(int)
             pts = pts[indices]
+        elif n_pts > len(pts):
+            n_pts = len(pts)
 
         basis = self.basis
         if indices is not None:
