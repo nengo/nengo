@@ -161,6 +161,23 @@ class Operator(object):
             if sig not in signals:
                 signals.init(sig)
 
+    def make_step(self, signals, dt, rng):
+        """Returns a callable that performs the desired computation.
+
+        This method must be implemented by subclasses. To fully understand what
+        an operator does, look at its implementation of ``make_step``.
+
+        Parameters
+        ----------
+        signals : SignalDict
+            A mapping from signals to their associated live ndarrays.
+        dt : float
+            Length of each simulation timestep, in seconds.
+        rng : `numpy.random.RandomState`
+            Random number generator for stochastic operators.
+        """
+        raise NotImplementedError("subclasses must implement this method.")
+
 
 class TimeUpdate(Operator):
     """Updates the simulation step and time.
