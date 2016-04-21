@@ -15,13 +15,42 @@ from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.utils.compat import is_iterable, itervalues
 
-
-BuiltConnection_ = collections.namedtuple(
-    'BuiltConnection', ['eval_points', 'solver_info', 'weights', 'transform'])
+built_attrs = ['eval_points', 'solver_info', 'weights', 'transform']
 
 
-class BuiltConnection(BuiltConnection_):
-    """Subclassing the namedtuple to provide better error messages."""
+class BuiltConnection(collections.namedtuple('BuiltConnection', built_attrs)):
+    """Collects the parameters generated in `.build_connection`.
+
+    These are stored here because in the majority of cases the equivalent
+    attribute in the original connection is a `.Distribution`. The attributes
+    of a BuiltConnection are the full NumPy arrays used in the simulation.
+
+    See the `.Connection` documentation for more details on each parameter.
+
+    .. note:: The ``decoders`` attribute is obsolete as of Nengo 2.1.0.
+              Use the ``weights`` attribute instead.
+
+    Parameters
+    ----------
+    eval_points : ndarray
+        Evaluation points.
+    solver_info : dict
+        Information dictionary returned by the `.Solver`.
+    weights : ndarray
+        Connection weights. May be synaptic connection weights defined in
+        the connection's transform, or a combination of the decoders
+        automatically solved for and the specified transform.
+    transform : ndarray
+        The transform matrix.
+    """
+
+    __slots__ = ()
+
+    def __new__(cls, eval_points, solver_info, weights, transform):
+        # Overridden to suppress the default __new__ docstring
+        return tuple.__new__(
+            cls, (eval_points, solver_info, weights, transform))
+
     @property
     def decoders(self):
         raise ObsoleteError("decoders are now part of 'weights'. "

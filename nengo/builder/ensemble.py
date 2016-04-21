@@ -11,9 +11,50 @@ from nengo.ensemble import Ensemble
 from nengo.neurons import Direct
 from nengo.utils.builder import default_n_eval_points
 
-BuiltEnsemble = collections.namedtuple(
-    'BuiltEnsemble', ['eval_points', 'encoders', 'intercepts', 'max_rates',
-                      'scaled_encoders', 'gain', 'bias'])
+built_attrs = ['eval_points',
+               'encoders',
+               'intercepts',
+               'max_rates',
+               'scaled_encoders',
+               'gain',
+               'bias']
+
+
+class BuiltEnsemble(collections.namedtuple('BuiltEnsemble', built_attrs)):
+    """Collects the parameters generated in `.build_ensemble`.
+
+    These are stored here because in the majority of cases the equivalent
+    attribute in the original ensemble is a `.Distribution`. The attributes
+    of a BuiltEnsemble are the full NumPy arrays used in the simulation.
+
+    See the `.Ensemble` documentation for more details on each parameter.
+
+    Parameters
+    ----------
+    eval_points : ndarray
+        Evaluation points.
+    encoders : ndarray
+        Normalized encoders.
+    intercepts : ndarray
+        X-intercept of each neuron.
+    max_rates : ndarray
+        Maximum firing rates for each neuron.
+    scaled_encoders : ndarray
+        Normalized encoders scaled by the gain and radius.
+        This quantity is used in the actual simulation, unlike ``encoders``.
+    gain : ndarray
+        Gain of each neuron.
+    bias : ndarray
+        Bias current injected into each neuron.
+    """
+
+    __slots__ = ()
+
+    def __new__(cls, eval_points, encoders, intercepts, max_rates,
+                scaled_encoders, gain, bias):
+        # Overridden to suppress the default __new__ docstring
+        return tuple.__new__(cls, (eval_points, encoders, intercepts,
+                                   max_rates, scaled_encoders, gain, bias))
 
 
 def sample(dist, n, d=None, rng=None):
