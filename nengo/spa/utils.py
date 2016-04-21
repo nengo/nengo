@@ -20,7 +20,7 @@ def enable_spa_params(model):
 
     for obj_type in [nengo.Node, nengo.Ensemble]:
         model.config[obj_type].set_param(
-            'vocab', VocabularyParam(None, optional=True))
+            'vocab', VocabularyParam('vocab', optional=True))
 
 
 def similarity(data, vocab, normalize=False):

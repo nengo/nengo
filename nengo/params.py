@@ -45,13 +45,19 @@ class Parameter(object):
 
     def __init__(self, name,
                  default=Unconfigurable, optional=False, readonly=None):
+        # freeze Unconfigurables by default
+        readonly = default is Unconfigurable if readonly is None else readonly
+
+        if not is_string(name):
+            raise ValueError("'name' must be a string (got %r)" % name)
+        if not isinstance(optional, bool):
+            raise ValueError("'optional' must be boolean (got %r)" % optional)
+        if not isinstance(readonly, bool):
+            raise ValueError("'readonly' must be boolean (got %r)" % readonly)
+
         self.name = name
         self.default = default
         self.optional = optional
-
-        if readonly is None:
-            # freeze Unconfigurables by default
-            readonly = default is Unconfigurable
         self.readonly = readonly
 
         # default values set by config system
