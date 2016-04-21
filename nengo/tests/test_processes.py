@@ -5,6 +5,7 @@ import pytest
 
 import nengo
 import nengo.utils.numpy as npext
+from nengo.base import Process
 from nengo.dists import Distribution, Gaussian
 from nengo.exceptions import ValidationError
 from nengo.processes import BrownNoise, FilteredNoise, WhiteNoise, WhiteSignal
@@ -20,6 +21,41 @@ class DistributionMock(Distribution):
     def sample(self, n, d, rng=np.random):
         self.sample_calls.append((n, d, rng))
         return np.ones((n, d)) * self.retval
+
+
+class TimeProcess(Process):
+    def make_step(self, shape_in, shape_out, dt, rng):
+        size_in = np.prod(shape_in)
+        size_out = np.prod(shape_out)
+        if size_in == 0:
+            return lambda t: [t] * size_out
+        else:
+            return lambda t, x: [t * np.sum(x)] * size_out
+
+
+def test_time(Simulator):
+    trun = 1.
+    c = 2.
+    process = TimeProcess()
+
+    with nengo.Network() as model:
+        u = nengo.Node(process)
+        up = nengo.Probe(u)
+
+        q = nengo.Node(c)
+        v = nengo.Node(process, size_in=1, size_out=1)
+        nengo.Connection(q, v, synapse=None)
+        vp = nengo.Probe(v)
+
+    with Simulator(model) as sim:
+        sim.run(trun)
+
+    nt = len(sim.trange())
+    assert process.trange(trun).shape == sim.trange().shape
+    assert np.allclose(process.trange(trun), sim.trange())
+    assert np.allclose(process.ntrange(nt), sim.trange())
+    assert np.allclose(process.run(trun), sim.data[up])
+    assert np.allclose(process.apply([c] * nt), sim.data[vp])
 
 
 def test_whitenoise(rng):

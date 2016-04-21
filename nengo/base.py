@@ -240,7 +240,7 @@ class Process(FrozenObject):
         step = self.make_step(shape_in, shape_out, dt, rng, **kwargs)
         output = np.zeros((n_steps,) + shape_out)
         for i in range(n_steps):
-            output[i] = step(i * dt)
+            output[i] = step((i+1) * dt)
         return output
 
     def apply(self, x, d=None, dt=None, rng=np.random, copy=True, **kwargs):
@@ -252,7 +252,7 @@ class Process(FrozenObject):
         step = self.make_step(shape_in, shape_out, dt, rng, **kwargs)
         output = np.zeros((len(x),) + shape_out) if copy else x
         for i, xi in enumerate(x):
-            output[i] = step(i * dt, xi)
+            output[i] = step((i+1) * dt, xi)
         return output
 
     def ntrange(self, n_steps, dt=None):
