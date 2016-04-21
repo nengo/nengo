@@ -1,8 +1,15 @@
 """Parsing of SPA actions."""
+
+import warnings
+
+from nengo.config import Config
 from nengo.exceptions import SpaParseError
+from nengo.spa.basalganglia import BasalGanglia
+from nengo.spa.cortical import Cortical
+from nengo.spa.thalamus import Thalamus
 from nengo.spa.spa_ast import (
-    Action, DotProduct, Effect, Effects, Module, Reinterpret, Sink, Symbol,
-    Translate)
+    Action, ConstructionContext, DotProduct, Effect, Effects, Module,
+    Reinterpret, Sink, Symbol, Translate)
 
 
 class Parser(object):
@@ -159,7 +166,7 @@ class Parser(object):
             return Module(key)
 
 
-class Actions(object):
+class Actions(Config):
     """A collection of Action objects.
 
     The *args and **kwargs are treated as unnamed and named Actions,
@@ -174,7 +181,11 @@ class Actions(object):
     """
 
     def __init__(self, *args, **kwargs):
-        self.actions = None
+        super(Actions, self).__init__(Cortical, BasalGanglia, Thalamus)
+
+        self.actions = []
+        self.effects = []
+
         self.args = args
         self.kwargs = kwargs
         if 'vocabs' in kwargs:
@@ -182,6 +193,17 @@ class Actions(object):
         else:
             self.vocabs = None
         self.construction_context = None
+
+        self.parse(self.vocabs, *self.args, **self.kwargs)
+
+    def parse(self, vocabs, *args, **kwargs):
+        sorted_kwargs = sorted(kwargs.items())
+
+        parser = Parser(vocabs=vocabs)
+        for action in args:
+            self._parse_and_add(parser, action)
+        for name, action in sorted_kwargs:
+            self._parse_and_add(parser, action)
 
     def add(self, *args, **kwargs):
         if 'vocabs' in kwargs:
@@ -191,32 +213,56 @@ class Actions(object):
             vocabs = None
         self.args += args
         self.kwargs.update(kwargs)
-        self._process_new_actions(vocabs, *args, **kwargs)
+        self.parse(vocabs, *args, **kwargs)
 
     @property
     def count(self):
         """Return the number of actions."""
+        warnings.warn(DeprecationWarning(
+            "Use len(Actions.actions) or len(Actions.effects)."))
         return len(self.args) + len(self.kwargs)
 
     def process(self):
         """Parse the actions and generate the list of Action objects."""
-        self.actions = []
-        self._process_new_actions(self.vocabs, *self.args, **self.kwargs)
+        self.process_new_actions(self.vocabs, *self.args, **self.kwargs)
 
-    def _process_new_actions(self, vocabs=None, *args, **kwargs):
-        sorted_kwargs = sorted(kwargs.items())
-
-        parser = Parser(vocabs=vocabs)
-        for i, action in enumerate(args):
-            self.actions.append(parser.parse_action(action, i, strict=False))
-        for i, (name, action) in enumerate(sorted_kwargs, start=self.count):
-            self.actions.append(parser.parse_action(
-                action, i, name=name, strict=False))
-
-        for action in self.actions:
+    def process_new_actions(self, vocabs=None, *args, **kwargs):
+        for action in self.effects + self.actions:
             action.infer_types(self.construction_context.root_module, None)
         # Infer types for all actions before doing any construction, so that
         # all semantic pointers are added to the respective vocabularies so
         # that the translate transform are identical.
-        for action in self.actions:
+        for action in self.effects + self.actions:
+            action.construct(self.construction_context)
+
+    def _parse_and_add(self, parser, action):
+        ast = parser.parse_action(action, len(self.actions), strict=False)
+        if isinstance(ast, Effects):
+            self.effects.append(ast)
+        else:
+            self.actions.append(ast)
+
+    def build(self, root_module, cortical=None, bg=None, thalamus=None):
+        needs_cortical = len(self.effects) > 0
+        needs_bg = len(self.actions) > 0
+
+        with root_module, self:
+            if needs_cortical and cortical is None:
+                cortical = Cortical()
+                root_module.cortical = cortical
+            if needs_bg and bg is None:
+                bg = BasalGanglia(action_count=len(self.actions))
+                root_module.bg = bg
+            if needs_bg and thalamus is None:
+                thalamus = Thalamus(bg)
+                root_module.thalamus = thalamus
+
+        self.construction_context = ConstructionContext(
+            root_module, cortical=cortical, bg=bg, thalamus=thalamus)
+        for action in self.effects + self.actions:
+            action.infer_types(root_module, None)
+        # Infer types for all actions before doing any construction, so that
+        # all semantic pointers are added to the respective vocabularies so
+        # that the translate transform are identical.
+        for action in self.effects + self.actions:
             action.construct(self.construction_context)

@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 import nengo
-from nengo.config import Config
+from nengo.config import Config, SupportDefaultsMixin
 from nengo.exceptions import SpaModuleError
 from nengo.params import IntParam
 from nengo.spa.vocab import VocabularyMap, VocabularyMapParam
@@ -11,7 +11,7 @@ from nengo.synapses import SynapseParam
 from nengo.utils.compat import iteritems
 
 
-class Module(nengo.Network):
+class Module(nengo.Network, SupportDefaultsMixin):
     """Base class for SPA Modules.
 
     Modules are networks that also have a list of inputs and outputs,
@@ -68,19 +68,24 @@ class Module(nengo.Network):
             raise SpaModuleError("Cannot re-assign module-attribute %s to %s. "
                                  "SPA module-attributes can only be assigned "
                                  "once." % (key, value))
-        super(Module, self).__setattr__(key, value)
-        if isinstance(value, Module):
-            if value.label is None:
-                value.label = key
-            self._modules[key] = value
-            for k, (obj, v) in iteritems(value.inputs):
-                if isinstance(v, int):
-                    value.inputs[k] = (obj, self.vocabs.get_or_create(v))
-            for k, (obj, v) in iteritems(value.outputs):
-                if isinstance(v, int):
-                    value.outputs[k] = (obj, self.vocabs.get_or_create(v))
 
-            value.on_add(self)
+        super(Module, self).__setattr__(key, value)
+
+        if isinstance(value, Module):
+            self.__set_module(key, value)
+
+    def __set_module(self, key, module):
+        if module.label is None:
+            module.label = key
+        self._modules[key] = module
+        for k, (obj, v) in iteritems(module.inputs):
+            if isinstance(v, int):
+                module.inputs[k] = (obj, self.vocabs.get_or_create(v))
+        for k, (obj, v) in iteritems(module.outputs):
+            if isinstance(v, int):
+                module.outputs[k] = (obj, self.vocabs.get_or_create(v))
+
+        module.on_add(self)
 
     def __exit__(self, ex_type, ex_value, traceback):
         super(Module, self).__exit__(ex_type, ex_value, traceback)
