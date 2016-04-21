@@ -1,6 +1,8 @@
 import nengo
+from nengo.params import Default
 from nengo.spa.spa_ast import ConstructionContext
 from nengo.spa.module import Module
+from nengo.synapses import Lowpass, SynapseParam
 
 
 class Cortical(Module):
@@ -21,8 +23,11 @@ class Cortical(Module):
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
+
+    synapse = SynapseParam('synapse', default=Lowpass(0.01))
+
     def __init__(
-            self, actions, synapse=0.01, label=None, seed=None,
+            self, actions=None, synapse=Default, label=None, seed=None,
             add_to_container=None):
         super(Cortical, self).__init__(label, seed, add_to_container)
         self.actions = actions
@@ -34,9 +39,10 @@ class Cortical(Module):
         self.spa = spa
 
         # parse the provided class and match it up with the spa model
-        self.actions.construction_context = ConstructionContext(
-            spa, cortical=self)
-        self.actions.process()
+        if self.actions is not None:
+            self.actions.construction_context = ConstructionContext(
+                spa, cortical=self)
+            self.actions.process()
 
     def connect(self, source, target, transform):
         """Create connection.
