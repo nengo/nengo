@@ -1,3 +1,4 @@
+import sys
 import warnings
 
 import numpy as np
@@ -5,10 +6,11 @@ import numpy as np
 import nengo
 from nengo.config import Config
 from nengo.exceptions import SpaModuleError
-from nengo.params import IntParam
+from nengo.params import Default, IntParam, ValidationError
+from nengo.rc import rc
 from nengo.spa.vocab import VocabularyMap, VocabularyMapParam
 from nengo.synapses import SynapseParam
-from nengo.utils.compat import iteritems
+from nengo.utils.compat import iteritems, reraise
 
 
 class Module(nengo.Network):
@@ -68,19 +70,34 @@ class Module(nengo.Network):
             raise SpaModuleError("Cannot re-assign module-attribute %s to %s. "
                                  "SPA module-attributes can only be assigned "
                                  "once." % (key, value))
-        super(Module, self).__setattr__(key, value)
-        if isinstance(value, Module):
-            if value.label is None:
-                value.label = key
-            self._modules[key] = value
-            for k, (obj, v) in iteritems(value.inputs):
-                if isinstance(v, int):
-                    value.inputs[k] = (obj, self.vocabs.get_or_create(v))
-            for k, (obj, v) in iteritems(value.outputs):
-                if isinstance(v, int):
-                    value.outputs[k] = (obj, self.vocabs.get_or_create(v))
 
-            value.on_add(self)
+        if value is Default:
+            value = Config.default(type(self), key)
+
+        if rc.getboolean('exceptions', 'simplified'):
+            try:
+                super(Module, self).__setattr__(key, value)
+            except ValidationError:
+                exc_info = sys.exc_info()
+                reraise(exc_info[0], exc_info[1], None)
+        else:
+            super(Module, self).__setattr__(key, value)
+
+        if isinstance(value, Module):
+            self.__set_module(key, value)
+
+    def __set_module(self, key, module):
+        if module.label is None:
+            module.label = key
+        self._modules[key] = module
+        for k, (obj, v) in iteritems(module.inputs):
+            if isinstance(v, int):
+                module.inputs[k] = (obj, self.vocabs.get_or_create(v))
+        for k, (obj, v) in iteritems(module.outputs):
+            if isinstance(v, int):
+                module.outputs[k] = (obj, self.vocabs.get_or_create(v))
+
+        module.on_add(self)
 
     def __exit__(self, ex_type, ex_value, traceback):
         super(Module, self).__exit__(ex_type, ex_value, traceback)

@@ -2,8 +2,10 @@ import numpy as np
 
 import nengo
 from nengo.dists import Uniform
+from nengo.params import Default, IntParam, NumberParam
 from nengo.spa.spa_ast import ConstructionContext
 from nengo.spa.module import Module
+from nengo.synapses import Lowpass, SynapseParam
 
 
 class Thalamus(Module):
@@ -34,12 +36,25 @@ class Thalamus(Module):
     synapse_to-gate : float
         Synaptic filter for controlling a gate
     """
-    def __init__(self, bg, neurons_action=50, threshold_action=0.2,
-                 mutual_inhibit=1, route_inhibit=3,
-                 synapse_inhibit=0.008, synapse_bg=0.008,
-                 neurons_channel_dim=50,
-                 synapse_channel=0.01,
-                 neurons_gate=40, threshold_gate=0.3, synapse_to_gate=0.002,
+
+    neurons_action = IntParam('neurons_action', default=50)
+    threshold_action = NumberParam('threshold_action', default=0.2)
+    mutual_inhibit = NumberParam('mutual_inhibit', default=1.)
+    route_inhibit = NumberParam('route_inhibit', default=3.)
+    synapse_inhibit = SynapseParam('synapse_inhibit', default=Lowpass(0.008))
+    synapse_bg = SynapseParam('synapse_bg', default=Lowpass(0.008))
+    neurons_channel_dim = IntParam('neurons_channel_dim', default=50)
+    synapse_channel = SynapseParam('synapse_channel', default=Lowpass(0.01))
+    neurons_gate = IntParam('neurons_gate', default=40)
+    threshold_gate = NumberParam('threshold_gate', default=0.3)
+    synapse_to_gate = SynapseParam('synapse_to_gate', default=Lowpass(0.002))
+
+    def __init__(self, bg, neurons_action=Default, threshold_action=Default,
+                 mutual_inhibit=Default, route_inhibit=Default,
+                 synapse_inhibit=Default, synapse_bg=Default,
+                 neurons_channel_dim=Default, synapse_channel=Default,
+                 neurons_gate=Default, threshold_gate=Default,
+                 synapse_to_gate=Default,
                  label=None, seed=None, add_to_container=None):
         Module.__init__(self, label, seed, add_to_container)
 
@@ -61,7 +76,7 @@ class Thalamus(Module):
         self.gates = {}     # gating ensembles per action (created as needed)
         self.channels = {}  # channels to pass transformed data between modules
 
-        nengo.networks.Thalamus(self.bg.actions.count,
+        nengo.networks.Thalamus(self.bg.action_count,
                                 n_neurons_per_ensemble=self.neurons_action,
                                 mutual_inhib=self.mutual_inhibit,
                                 threshold=self.threshold_action,
@@ -75,9 +90,11 @@ class Thalamus(Module):
         self.spa = spa
 
         self.connect_bg(self.bg)
-        self.bg.actions.construction_context = ConstructionContext(
-            spa, bg=self.bg, thalamus=self)
-        self.bg.actions.process()
+
+        if self.bg.actions is not None:
+            self.bg.actions.construction_context = ConstructionContext(
+                spa, bg=self.bg, thalamus=self)
+            self.bg.actions.process()
 
     def construct_gate(self, index):
         """Construct a gate ensemble.
