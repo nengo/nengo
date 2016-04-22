@@ -2,6 +2,7 @@ import numpy as np
 
 import nengo
 from nengo.dists import Uniform
+from nengo.exceptions import ObsoleteError
 from nengo.params import Default, IntParam, NumberParam
 from nengo.spa.spa_ast import ConstructionContext
 from nengo.spa.module import Module
@@ -96,17 +97,18 @@ class Thalamus(Module):
                                 mutual_inhib=self.mutual_inhibit,
                                 threshold=self.threshold_action,
                                 net=self)
-        self.spa = None
-
-    def on_add(self, spa):
-        Module.on_add(self, spa)
-        self.spa = spa
-
         self.connect_bg(self.bg)
 
+        added = add_to_container is True or len(self.context) > 0
         if self.bg.actions is not None:
+            if not added:
+                raise ObsoleteError(
+                    "Instantiating Thalamus with a BasalGanglia with actions "
+                    "without adding Thalamus immediately to a network is not "
+                    "supported anymore.")
+
             self.bg.actions.construction_context = ConstructionContext(
-                spa, bg=self.bg, thalamus=self)
+                self.parent_module, bg=self.bg, thalamus=self)
             self.bg.actions.process()
 
     def construct_gate(self, index, net=None, label=None):
@@ -132,7 +134,7 @@ class Thalamus(Module):
             The constructed gate.
         """
         if net is None:
-            net = self.spa
+            net = self.parent_module
         if label is None:
             label = 'gate[%d]' % index
         with net:
@@ -144,10 +146,9 @@ class Thalamus(Module):
                 net.bias = nengo.Node([1], label="bias")
             nengo.Connection(net.bias, gate, synapse=None)
 
-        with self.spa:
-            nengo.Connection(
-                self.actions.ensembles[index], self.gates[index],
-                synapse=self.synapse_to_gate, transform=-1)
+        nengo.Connection(
+            self.actions.ensembles[index], self.gates[index],
+            synapse=self.synapse_to_gate, transform=-1)
 
         return self.gates[index]
 
@@ -186,7 +187,7 @@ class Thalamus(Module):
             subdim = 1
 
         if net is None:
-            net = self.spa
+            net = self.parent_module
         if label is None:
             if target_module.label is not None:
                 label = 'channel to ' + target_module.label
@@ -197,15 +198,13 @@ class Thalamus(Module):
                 self.neurons_channel_dim * subdim,
                 dim // subdim, ens_dimensions=subdim,
                 radius=np.sqrt(float(subdim) / dim), label=label)
-        with self.spa:
-            nengo.Connection(
-                channel.output, target_input[0], synapse=self.synapse_channel)
+        nengo.Connection(
+            channel.output, target_input[0], synapse=self.synapse_channel)
         return channel
 
     def connect_bg(self, bg):
         """Connect a basal ganglia network to this thalamus."""
-        with self.spa:
-            nengo.Connection(bg.output, self.input, synapse=self.synapse_bg)
+        nengo.Connection(bg.output, self.input, synapse=self.synapse_bg)
 
     def connect_gate(self, index, channel):
         """Connect a gate to a channel for information routing.
@@ -217,12 +216,11 @@ class Thalamus(Module):
         channel : :class:`nengo.networks.EnsembleArray`
             Channel to inhibit with the gate.
         """
-        with self.spa:
-            for e in channel.ensembles:
-                inhibit = ([[-self.route_inhibit]] * (e.n_neurons))
-                nengo.Connection(
-                    self.gates[index], e.neurons, transform=inhibit,
-                    synapse=self.synapse_inhibit)
+        for e in channel.ensembles:
+            inhibit = ([[-self.route_inhibit]] * (e.n_neurons))
+            nengo.Connection(
+                self.gates[index], e.neurons, transform=inhibit,
+                synapse=self.synapse_inhibit)
 
     def connect_fixed(self, index, target, transform):
         """Create connection to route fixed value.
@@ -243,7 +241,5 @@ class Thalamus(Module):
 
         The connection will use the thalamus' `synapse_channel`.
         """
-        with self.spa:
-            nengo.Connection(
-                source, target, transform=transform,
-                synapse=self.synapse_channel)
+        nengo.Connection(
+            source, target, transform=transform, synapse=self.synapse_channel)

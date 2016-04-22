@@ -227,13 +227,14 @@ class Actions(Config):
         self.process_new_actions(self.vocabs, *self.args, **self.kwargs)
 
     def process_new_actions(self, vocabs=None, *args, **kwargs):
-        for action in self.effects + self.actions:
-            action.infer_types(self.construction_context.root_module, None)
-        # Infer types for all actions before doing any construction, so that
-        # all semantic pointers are added to the respective vocabularies so
-        # that the translate transform are identical.
-        for action in self.effects + self.actions:
-            action.construct(self.construction_context)
+        with self.construction_context.root_module:
+            for action in self.effects + self.actions:
+                action.infer_types(self.construction_context.root_module, None)
+            # Infer types for all actions before doing any construction, so
+            # that all semantic pointers are added to the respective
+            # vocabularies so that the translate transform are identical.
+            for action in self.effects + self.actions:
+                action.construct(self.construction_context)
 
     def _parse_and_add(self, parser, action, name=None):
         ast = parser.parse_action(
@@ -260,10 +261,11 @@ class Actions(Config):
 
         self.construction_context = ConstructionContext(
             root_module, cortical=cortical, bg=bg, thalamus=thalamus)
-        for action in self.effects + self.actions:
-            action.infer_types(root_module, None)
-        # Infer types for all actions before doing any construction, so that
-        # all semantic pointers are added to the respective vocabularies so
-        # that the translate transform are identical.
-        for action in self.effects + self.actions:
-            action.construct(self.construction_context)
+        with root_module:
+            for action in self.effects + self.actions:
+                action.infer_types(root_module, None)
+            # Infer types for all actions before doing any construction, so
+            # that # all semantic pointers are added to the respective
+            # vocabularies so that the translate transform are identical.
+            for action in self.effects + self.actions:
+                action.construct(self.construction_context)
