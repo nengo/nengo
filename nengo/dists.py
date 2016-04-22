@@ -528,6 +528,17 @@ class DistributionParam(Parameter):
 
     equatable = True
 
+    def __init__(self, name, default=Unconfigurable,
+                 optional=False, readonly=None, cast_number=False):
+        super().__init__(name, default=default, optional=optional,
+                         readonly=readonly)
+        self.cast_number = cast_number
+
+    def __set__(self, instance, value):
+        if self.cast_number and npext.is_number(value):
+            value = Choice([value])
+        super().__set__(instance, value)
+
     def coerce(self, instance, dist):
         self.check_type(instance, dist, Distribution)
         return super().coerce(instance, dist)
