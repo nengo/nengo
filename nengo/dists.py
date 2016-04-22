@@ -189,6 +189,11 @@ class Exponential(Distribution):
         All values larger than or equal to this value will be clipped to
         slightly less than this value.
     """
+
+    scale = NumberParam('scale', low=0, low_open=True)
+    shift = NumberParam('shift')
+    high = NumberParam('high')
+
     def __init__(self, scale, shift=0., high=np.inf):
         self.scale = scale
         self.shift = shift
