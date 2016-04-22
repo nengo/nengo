@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 
 import nengo
-from nengo.config import Config
+from nengo.config import Config, SupportDefaultsMixin
 from nengo.exceptions import SpaModuleError
 from nengo.params import Default, IntParam, ValidationError
 from nengo.rc import rc
@@ -13,7 +13,7 @@ from nengo.synapses import SynapseParam
 from nengo.utils.compat import iteritems, reraise
 
 
-class Module(nengo.Network):
+class Module(nengo.Network, SupportDefaultsMixin):
     """Base class for SPA Modules.
 
     Modules are Networks that also have a list of inputs and outputs,
@@ -71,17 +71,7 @@ class Module(nengo.Network):
                                  "SPA module-attributes can only be assigned "
                                  "once." % (key, value))
 
-        if value is Default:
-            value = Config.default(type(self), key)
-
-        if rc.getboolean('exceptions', 'simplified'):
-            try:
-                super(Module, self).__setattr__(key, value)
-            except ValidationError:
-                exc_info = sys.exc_info()
-                reraise(exc_info[0], exc_info[1], None)
-        else:
-            super(Module, self).__setattr__(key, value)
+        super(Module, self).__setattr__(key, value)
 
         if isinstance(value, Module):
             self.__set_module(key, value)
