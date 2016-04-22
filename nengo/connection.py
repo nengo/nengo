@@ -286,6 +286,8 @@ class Connection(NengoObject):
         The seed used for random number generation.
     """
 
+    probeable = ('output', 'input', 'weights')
+
     pre = PrePostParam('pre', nonzero_size_out=True)
     post = PrePostParam('post', nonzero_size_in=True)
     synapse = SynapseParam('synapse', default=Lowpass(0.005))
@@ -332,10 +334,6 @@ class Connection(NengoObject):
     @function.setter
     def function(self, function):
         self.function_info = function
-
-    @property
-    def probeable(self):
-        return ['output', 'input', 'weights']
 
     @property
     def pre_obj(self):

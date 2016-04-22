@@ -49,6 +49,8 @@ class Ensemble(NengoObject):
         A name for the ensemble. Used for debugging and visualization.
     """
 
+    probeable = ('decoded_output', 'input')
+
     n_neurons = IntParam('n_neurons', default=None, low=1)
     dimensions = IntParam('dimensions', default=None, low=1)
     radius = NumberParam('radius', default=1.0, low=1e-10)
@@ -110,10 +112,6 @@ class Ensemble(NengoObject):
     @neurons.setter
     def neurons(self, dummy):
         raise ReadonlyError(attr="neurons", obj=self)
-
-    @property
-    def probeable(self):
-        return ["decoded_output", "input"]
 
     @property
     def size_in(self):

@@ -39,7 +39,7 @@ class LearningRuleType(FrozenObject):
 
     error_type = 'none'
     modifies = None
-    probeable = []
+    probeable = ()
 
     def __init__(self, learning_rate=1e-6):
         super(LearningRuleType, self).__init__()
@@ -82,7 +82,7 @@ class PES(LearningRuleType):
 
     error_type = 'decoded'
     modifies = 'decoders'
-    probeable = ['error', 'correction', 'activities', 'delta']
+    probeable = ('error', 'correction', 'activities', 'delta')
 
     def __init__(self, learning_rate=1e-4, pre_tau=0.005):
         if learning_rate >= 1.0:
@@ -136,7 +136,7 @@ class BCM(LearningRuleType):
 
     error_type = 'none'
     modifies = 'weights'
-    probeable = ['theta', 'pre_filtered', 'post_filtered', 'delta']
+    probeable = ('theta', 'pre_filtered', 'post_filtered', 'delta')
 
     def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
                  learning_rate=1e-9):
@@ -194,7 +194,7 @@ class Oja(LearningRuleType):
 
     error_type = 'none'
     modifies = 'weights'
-    probeable = ['pre_filtered', 'post_filtered', 'delta']
+    probeable = ('pre_filtered', 'post_filtered', 'delta')
 
     def __init__(self, pre_tau=0.005, post_tau=None, beta=1.0,
                  learning_rate=1e-6):
@@ -246,7 +246,7 @@ class Voja(LearningRuleType):
 
     error_type = 'scalar'
     modifies = 'encoders'
-    probeable = ['post_filtered', 'scaled_encoders', 'delta']
+    probeable = ('post_filtered', 'scaled_encoders', 'delta')
 
     def __init__(self, post_tau=0.005, learning_rate=1e-2):
         self.post_tau = post_tau

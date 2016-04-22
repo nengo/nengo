@@ -128,6 +128,8 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
+    probeable = ('output',)
+
     output = OutputParam('output', default=None)
     size_in = IntParam('size_in', default=None, low=0, optional=True)
     size_out = IntParam('silze_out', default=None, low=0, optional=True)
@@ -148,7 +150,3 @@ class Node(NengoObject):
 
     def __len__(self):
         return self.size_out
-
-    @property
-    def probeable(self):
-        return ['output']
