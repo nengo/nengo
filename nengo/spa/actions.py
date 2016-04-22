@@ -64,7 +64,7 @@ class Parser(object):
                 self.parse_expr(condition),
                 self.parse_effects(effects, channeled=True), index)
 
-    def parse_effects(self, effects, channeled=False):
+    def parse_effects(self, effects, channeled=False):  # noqa: C901
         """Pares SPA effects.
 
         Parameters
