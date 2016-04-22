@@ -4,7 +4,7 @@ import nengo.utils.numpy as npext
 from nengo.base import Process
 from nengo.dists import DistributionParam, Gaussian
 from nengo.exceptions import ValidationError
-from nengo.params import BoolParam, NdarrayParam, NumberParam
+from nengo.params import BoolParam, DictParam, NdarrayParam, NumberParam
 from nengo.synapses import LinearFilter, LinearFilterParam, Lowpass
 
 
@@ -83,6 +83,7 @@ class FilteredNoise(Process):
     synapse = LinearFilterParam('synapse')
     dist = DistributionParam('dist')
     scale = BoolParam('scale')
+    synapse_kwargs = DictParam('synapse_kwargs')
 
     def __init__(self,
                  synapse=Lowpass(tau=0.005), dist=Gaussian(mean=0, std=1),
