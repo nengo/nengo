@@ -62,7 +62,7 @@ class Parser(object):
         else:
             return Action(
                 self.parse_expr(condition),
-                self.parse_effects(effects, channeled=True), index)
+                self.parse_effects(effects, channeled=True), index, name=name)
 
     def parse_effects(self, effects, channeled=False):  # noqa: C901
         """Pares SPA effects.
@@ -203,7 +203,7 @@ class Actions(Config):
         for action in args:
             self._parse_and_add(parser, action)
         for name, action in sorted_kwargs:
-            self._parse_and_add(parser, action)
+            self._parse_and_add(parser, action, name=name)
 
     def add(self, *args, **kwargs):
         if 'vocabs' in kwargs:
@@ -235,8 +235,9 @@ class Actions(Config):
         for action in self.effects + self.actions:
             action.construct(self.construction_context)
 
-    def _parse_and_add(self, parser, action):
-        ast = parser.parse_action(action, len(self.actions), strict=False)
+    def _parse_and_add(self, parser, action, name=None):
+        ast = parser.parse_action(
+            action, len(self.actions), strict=False, name=name)
         if isinstance(ast, Effects):
             self.effects.append(ast)
         else:
