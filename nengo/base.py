@@ -1,15 +1,13 @@
-import sys
 import warnings
 
 import numpy as np
 
-from nengo.config import Config
+from nengo.config import SupportDefaultsMixin
 from nengo.exceptions import ValidationError
 from nengo.params import (
-    Default, FrozenObject, is_param, IntParam, NumberParam, Parameter,
-    StringParam, Unconfigurable)
-from nengo.rc import rc
-from nengo.utils.compat import is_integer, range, reraise, with_metaclass
+    FrozenObject, is_param, IntParam, NumberParam, Parameter, StringParam,
+    Unconfigurable)
+from nengo.utils.compat import is_integer, range, with_metaclass
 from nengo.utils.numpy import as_shape, maxint
 
 
@@ -34,7 +32,7 @@ class NetworkMember(type):
         return inst
 
 
-class NengoObject(with_metaclass(NetworkMember)):
+class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
     """A base class for Nengo objects.
 
     This defines some functions that the Network requires
@@ -70,17 +68,7 @@ class NengoObject(with_metaclass(NetworkMember)):
                 "Creating new attribute '%s' on '%s'. "
                 "Did you mean to change an existing attribute?" % (name, self),
                 SyntaxWarning)
-        if val is Default:
-            val = Config.default(type(self), name)
-
-        if rc.getboolean('exceptions', 'simplified'):
-            try:
-                super(NengoObject, self).__setattr__(name, val)
-            except ValidationError:
-                exc_info = sys.exc_info()
-                reraise(exc_info[0], exc_info[1], None)
-        else:
-            super(NengoObject, self).__setattr__(name, val)
+        super(NengoObject, self).__setattr__(name, val)
 
     def __getstate__(self):
         raise NotImplementedError("Nengo objects do not support pickling")
