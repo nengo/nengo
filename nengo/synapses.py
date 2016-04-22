@@ -15,10 +15,14 @@ from nengo.utils.numpy import as_shape
 class Synapse(Process):
     """Abstract base class for synapse objects"""
 
-    def __init__(self, **kwargs):
-        kwargs.setdefault('default_size_in', 1)
-        kwargs.setdefault('default_size_out', kwargs['default_size_in'])
-        super(Synapse, self).__init__(**kwargs)
+    def __init__(self, default_size_in=1, default_size_out=None,
+                 default_dt=0.001, seed=None):
+        if default_size_out is None:
+            default_size_out = default_size_in
+        super(Synapse, self).__init__(default_size_in=default_size_in,
+                                      default_size_out=default_size_out,
+                                      default_dt=default_dt,
+                                      seed=seed)
 
     def filt(self, x, dt=None, axis=0, y0=None, copy=True, filtfilt=False):
         """Filter ``x`` with this synapse.
