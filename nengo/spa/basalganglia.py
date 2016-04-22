@@ -29,20 +29,8 @@ class BasalGanglia(Module):
         self._bias = None
         Module.__init__(self, label, seed, add_to_container)
         nengo.networks.BasalGanglia(dimensions=action_count, net=self)
-        self.spa = None
-
-    def on_add(self, spa):
-        """Form the connections into the BG to compute the utilty values.
-
-        Each action's condition variable contains the set of computations
-        needed for that action's utility value, which is the input to the
-        basal ganglia.
-        """
-        Module.on_add(self, spa)
-        self.spa = spa
 
     def connect_input(self, source, transform, index):
-        with self.spa:
-            nengo.Connection(
-                source, self.input[index], transform=transform,
-                synapse=self.input_synapse)
+        nengo.Connection(
+            source, self.input[index], transform=transform,
+            synapse=self.input_synapse)

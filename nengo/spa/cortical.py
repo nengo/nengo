@@ -1,4 +1,5 @@
 import nengo
+from nengo.exceptions import ObsoleteError
 from nengo.params import Default
 from nengo.spa.spa_ast import ConstructionContext
 from nengo.spa.module import Module
@@ -24,16 +25,16 @@ class Cortical(Module):
         super(Cortical, self).__init__(label, seed, add_to_container)
         self.actions = actions
         self.synapse = synapse
-        self.spa = None
+        added = add_to_container is True or len(self.context) > 0
+        if actions is not None:
+            if not added:
+                raise ObsoleteError(
+                    "Instantiating Cortical with actions without adding it "
+                    "immediately to a network is not supported anymore.")
 
-    def on_add(self, spa):
-        Module.on_add(self, spa)
-        self.spa = spa
-
-        # parse the provided class and match it up with the spa model
-        if self.actions is not None:
+            # parse the provided class and match it up with the spa model
             self.actions.construction_context = ConstructionContext(
-                spa, cortical=self)
+                self.parent_module, cortical=self)
             self.actions.process()
 
     def connect(self, source, target, transform):
@@ -41,6 +42,5 @@ class Cortical(Module):
 
         The connection will use the cortical synapse.
         """
-        with self.spa:
-            nengo.Connection(
-                source, target, transform=transform, synapse=self.synapse)
+        nengo.Connection(
+            source, target, transform=transform, synapse=self.synapse)
