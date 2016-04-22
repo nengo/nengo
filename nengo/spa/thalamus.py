@@ -81,8 +81,6 @@ class Thalamus(Module):
                                 mutual_inhib=self.mutual_inhibit,
                                 threshold=self.threshold_action,
                                 net=self)
-        with nengo.Network(label="routing") as self.routing:
-            self.bias = nengo.Node([1], label="bias")
         self.spa = None
 
     def on_add(self, spa):
@@ -96,7 +94,7 @@ class Thalamus(Module):
                 spa, bg=self.bg, thalamus=self)
             self.bg.actions.process()
 
-    def construct_gate(self, index):
+    def construct_gate(self, index, net=None, label=None):
         """Construct a gate ensemble.
 
         The gate neurons have no activity when the action is selected, but are
@@ -108,18 +106,28 @@ class Thalamus(Module):
         ----------
         index : int
             Index to identify the gate.
+        net : :class:`nengo.Network`, optional
+            Network to which to add the channel. Defaults to ``self.spa``.
+        label : str, optional
+            Label for the gate.
 
         Returns
         -------
         :class:`nengo.Ensemble`
             The constructed gate.
         """
-        with self.routing:
+        if net is None:
+            net = self.spa
+        if label is None:
+            label = 'gate[%d]' % index
+        with net:
             intercepts = Uniform(self.threshold_gate, 1)
             self.gates[index] = gate = nengo.Ensemble(
                 self.neurons_gate, dimensions=1, intercepts=intercepts,
-                label='gate[%d]' % index, encoders=[[1]] * self.neurons_gate)
-            nengo.Connection(self.bias, gate, synapse=None)
+                label=label, encoders=[[1]] * self.neurons_gate)
+            if not hasattr(net, 'bias'):
+                net.bias = nengo.Node([1], label="bias")
+            nengo.Connection(net.bias, gate, synapse=None)
 
         with self.spa:
             nengo.Connection(
@@ -128,7 +136,8 @@ class Thalamus(Module):
 
         return self.gates[index]
 
-    def construct_channel(self, target_module, target_input):
+    def construct_channel(
+            self, target_module, target_input, net=None, label=None):
         """Construct a channel.
 
         Channels are an additional neural population in-between a source
@@ -141,6 +150,10 @@ class Thalamus(Module):
             The module that the channel will project to.
         target_vocab : :class:`spa.Vocabulary`
             The vocabulary used by the target population..
+        net : :class:`nengo.Network`, optional
+            Network to which to add the channel. Defaults to ``self.spa``.
+        label : str, optional
+            Label for the channel.
 
         Returns
         -------
@@ -157,11 +170,18 @@ class Thalamus(Module):
         elif dim % subdim != 0:
             subdim = 1
 
-        with self.routing:
+        if net is None:
+            net = self.spa
+        if label is None:
+            if target_module.label is not None:
+                label = 'channel to ' + target_module.label
+            else:
+                label = 'channel'
+        with net:
             channel = nengo.networks.EnsembleArray(
                 self.neurons_channel_dim * subdim,
                 dim // subdim, ens_dimensions=subdim,
-                radius=np.sqrt(float(subdim) / dim), label='channel')
+                radius=np.sqrt(float(subdim) / dim), label=label)
         with self.spa:
             nengo.Connection(
                 channel.output, target_input[0], synapse=self.synapse_channel)
