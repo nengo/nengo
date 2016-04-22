@@ -96,22 +96,32 @@ class ConstructionContext(object):
         Module to manage the thalamus part of action selection.
     sink : :class:`Sink`
         Node in the AST where some result will be send to.
+    active_net : class:`nengo.Network`
+        Network to add constructed components to.
     """
-    __slots__ = ['root_module', 'cortical', 'bg', 'thalamus', 'sink']
+    __slots__ = [
+        'root_module', 'cortical', 'bg', 'thalamus', 'sink', 'active_net']
 
     def __init__(
             self, root_module, cortical=None, bg=None, thalamus=None,
-            sink=None):
+            sink=None, active_net=None):
         self.root_module = root_module
         self.cortical = cortical
         self.bg = bg
         self.thalamus = thalamus
         self.sink = sink
+        if active_net is None:
+            active_net = root_module
+        self.active_net = active_net
 
-    def subcontext_with_sink(self, sink):
+    def subcontext(self, sink=None, active_net=None):
+        if sink is None:
+            sink = self.sink
+        if active_net is None:
+            active_net = self.active_net
         return self.__class__(
             root_module=self.root_module, cortical=self.cortical, bg=self.bg,
-            thalamus=self.thalamus, sink=sink)
+            thalamus=self.thalamus, sink=sink, active_net=active_net)
 
     @property
     def sink_module(self):
@@ -219,13 +229,13 @@ def infer_vocab(root_module, *nodes):
 
 def construct_bias(value, context):
     """Constructs a bias node (if not existent) and a transform to `value`."""
-    with context.root_module:
-        if not hasattr(context.root_module, 'bias'):
-            context.root_module.bias = nengo.Node([1], label="bias")
+    with context.active_net:
+        if not hasattr(context.active_net, 'bias'):
+            context.active_net.bias = nengo.Node([1], label="bias")
     if isinstance(value, SemanticPointer):
         value = value.v
     transform = np.array([value]).T
-    return [Artifact(context.root_module.bias, transform=transform)]
+    return [Artifact(context.active_net.bias, transform=transform)]
 
 
 def value_to_transform(value):
@@ -483,7 +493,7 @@ class BinaryNode(Source):
         raise NotImplementedError()
 
     def _connect_binary_operation(self, context, net):
-        with context.root_module:
+        with context.active_net:
             for artifact in self.lhs.construct(context):
                 nengo.Connection(
                     artifact.nengo_source, net.A, transform=artifact.transform,
@@ -560,16 +570,16 @@ class Product(BinaryOperation):
                 tr = value_to_transform(tr)
             return [x.add_transform(tr) for x in artifacts]
 
-        with context.root_module:
+        with context.active_net:
             if is_binding:
                 net = nengo.networks.CircularConvolution(
                     context.root_module.cconv_neurons,
                     self.type.vocab.dimensions,
-                    net=nengo.Network(label='cconv'))
+                    net=nengo.Network(label=str(self)))
             elif self.lhs.type == TScalar and self.rhs.type == TScalar:
                 net = nengo.networks.Product(
                     context.root_module.product_neurons, 1,
-                    net=nengo.Network(label='product'))
+                    net=nengo.Network(label=str(self)))
             else:
                 raise NotImplementedError(
                     "Dynamic scaling of semantic pointer not implemented.")
@@ -826,14 +836,15 @@ class Effect(Node):
 
     def construct(self, context):
         assert context.sink is None
-        context = context.subcontext_with_sink(self.sink)
+        context = context.subcontext(sink=self.sink)
 
         if self.channeled and self.fixed:
             return []  # Will be implemented in transform from thalamus
 
         if self.channeled:
             self.channel = context.thalamus.construct_channel(
-                context.sink_module, context.sink_input)
+                context.sink_module, context.sink_input,
+                net=context.active_net, label='channel: ' + str(self))
             target = self.channel.input
             connect_fn = context.thalamus.connect
         else:
@@ -942,6 +953,12 @@ class Action(Node):
             raise SpaModuleError(
                 "Conditional actions require basal ganglia and thalamus.")
 
+        if not self.effects.fixed:
+            with context.active_net:
+                label = str(self) if self.name is None else self.name
+                context = context.subcontext(
+                    active_net=nengo.Network(label=label))
+
         # construct bg utility
         condition_artifacts = self.condition.construct(context)
 
@@ -950,7 +967,9 @@ class Action(Node):
 
         # construct thalamus gate
         if not self.effects.fixed:
-            context.thalamus.construct_gate(self.index)
+            context.thalamus.construct_gate(
+                self.index, net=context.active_net,
+                label='gate[{}]: {}'.format(self.index, self.condition))
 
         for artifact in condition_artifacts:
             context.bg.connect_input(
