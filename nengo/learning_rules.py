@@ -35,23 +35,23 @@ class LearningRuleType(FrozenObject):
         on full weight matrices).
     """
 
-    learning_rate = NumberParam('learning_rate', low=0, low_open=True)
-
     error_type = 'none'
     modifies = None
     probeable = ()
+
+    learning_rate = NumberParam('learning_rate', low=0, low_open=True)
 
     def __init__(self, learning_rate=1e-6):
         super(LearningRuleType, self).__init__()
         self.learning_rate = learning_rate
 
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, ", ".join(self._argreprs))
+
     @property
     def _argreprs(self):
         return (["learning_rate=%g" % self.learning_rate]
                 if self.learning_rate != 1e-6 else [])
-
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, ", ".join(self._argreprs))
 
 
 class PES(LearningRuleType):
@@ -78,11 +78,11 @@ class PES(LearningRuleType):
         The modulatory connection created to project the error signal.
     """
 
-    pre_tau = NumberParam('pre_tau', low=0, low_open=True)
-
     error_type = 'decoded'
     modifies = 'decoders'
     probeable = ('error', 'correction', 'activities', 'delta')
+
+    pre_tau = NumberParam('pre_tau', low=0, low_open=True)
 
     def __init__(self, learning_rate=1e-4, pre_tau=0.005):
         if learning_rate >= 1.0:
@@ -130,13 +130,13 @@ class BCM(LearningRuleType):
         Filter constant on activities of neurons in post population.
     """
 
-    pre_tau = NumberParam('pre_tau', low=0, low_open=True)
-    post_tau = NumberParam('post_tau', low=0, low_open=True)
-    theta_tau = NumberParam('theta_tau', low=0, low_open=True)
-
     error_type = 'none'
     modifies = 'weights'
     probeable = ('theta', 'pre_filtered', 'post_filtered', 'delta')
+
+    pre_tau = NumberParam('pre_tau', low=0, low_open=True)
+    post_tau = NumberParam('post_tau', low=0, low_open=True)
+    theta_tau = NumberParam('theta_tau', low=0, low_open=True)
 
     def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
                  learning_rate=1e-9):
@@ -188,13 +188,13 @@ class Oja(LearningRuleType):
         Filter constant on activities of neurons in post population.
     """
 
-    pre_tau = NumberParam('pre_tau', low=0, low_open=True)
-    post_tau = NumberParam('post_tau', low=0, low_open=True)
-    beta = NumberParam('beta', low=0)
-
     error_type = 'none'
     modifies = 'weights'
     probeable = ('pre_filtered', 'post_filtered', 'delta')
+
+    pre_tau = NumberParam('pre_tau', low=0, low_open=True)
+    post_tau = NumberParam('post_tau', low=0, low_open=True)
+    beta = NumberParam('beta', low=0)
 
     def __init__(self, pre_tau=0.005, post_tau=None, beta=1.0,
                  learning_rate=1e-6):
@@ -242,11 +242,11 @@ class Voja(LearningRuleType):
         Filter constant on activities of neurons in post population.
     """
 
-    post_tau = NumberParam('post_tau', low=0, low_open=True, optional=True)
-
     error_type = 'scalar'
     modifies = 'encoders'
     probeable = ('post_filtered', 'scaled_encoders', 'delta')
+
+    post_tau = NumberParam('post_tau', low=0, low_open=True, optional=True)
 
     def __init__(self, post_tau=0.005, learning_rate=1e-2):
         self.post_tau = post_tau

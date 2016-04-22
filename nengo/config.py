@@ -38,6 +38,12 @@ class ClassParams(object):
     def __contains__(self, key):
         return self in self.get_param(key)
 
+    def __delattr__(self, key):
+        if key.startswith("_"):
+            super(ClassParams, self).__delattr__(key)
+        else:
+            self.get_param(key).del_default(self)
+
     def __getattr__(self, key):
         return self.get_param(key).get_default(self)
 
@@ -53,12 +59,6 @@ class ClassParams(object):
             if not param.configurable:
                 raise ConfigError("Parameter '%s' is not configurable" % key)
             param.set_default(self, value)
-
-    def __delattr__(self, key):
-        if key.startswith("_"):
-            super(ClassParams, self).__delattr__(key)
-        else:
-            self.get_param(key).del_default(self)
 
     def __str__(self):
         name = self._configures.__name__
@@ -82,6 +82,18 @@ class ClassParams(object):
         return "<%s[%s]{%s}>" % (self.__class__.__name__,
                                  self._configures.__name__, ", ".join(params))
 
+    @property
+    def default_params(self):
+        return self._default_params
+
+    @property
+    def extra_params(self):
+        return tuple(self._extraparams)
+
+    @property
+    def params(self):
+        return self.default_params + self.extra_params
+
     def get_param(self, key):
         if key in self._extraparams:
             return self._extraparams[key]
@@ -102,18 +114,6 @@ class ClassParams(object):
         for key in d:
             setattr(self, key, d[key])
 
-    @property
-    def default_params(self):
-        return self._default_params
-
-    @property
-    def extra_params(self):
-        return tuple(self._extraparams)
-
-    @property
-    def params(self):
-        return self.default_params + self.extra_params
-
 
 class InstanceParams(object):
     """A class to store extra parameters on Nengo objects.
@@ -130,6 +130,18 @@ class InstanceParams(object):
 
     def __contains__(self, key):
         return self in self._clsparams.get_param(key)
+
+    def __delattr__(self, key):
+        if key.startswith("_"):
+            super(InstanceParams, self).__delattr__(key)
+        elif key in dir(self._configures):
+            # Disallow configuring attributes the instance already has
+            raise ConfigError(
+                "Cannot configure the built-in parameter '%s' on an instance "
+                "of '%s'. Please delete the attribute directly on the object."
+                % (key, self._configures.__class__.__name__))
+        else:
+            self._clsparams.get_param(key).__delete__(self)
 
     def __getattr__(self, key):
         if key in self._clsparams.default_params:
@@ -154,18 +166,6 @@ class InstanceParams(object):
                 % (key, self._configures.__class__.__name__))
         else:
             self._clsparams.get_param(key).__set__(self, value)
-
-    def __delattr__(self, key):
-        if key.startswith("_"):
-            super(InstanceParams, self).__delattr__(key)
-        elif key in dir(self._configures):
-            # Disallow configuring attributes the instance already has
-            raise ConfigError(
-                "Cannot configure the built-in parameter '%s' on an instance "
-                "of '%s'. Please delete the attribute directly on the object."
-                % (key, self._configures.__class__.__name__))
-        else:
-            self._clsparams.get_param(key).__delete__(self)
 
     def __repr__(self):
         params = []
@@ -232,64 +232,6 @@ class Config(object):
         if len(configures) > 0:
             self.configures(*configures)
 
-    @staticmethod
-    def default(nengo_cls, param):
-        """Look up the current default value for a parameter.
-
-        The default is found by going through the config stack, from most
-        specific to least specific. The network that an object is in
-        is the most specific; the top-level network is the least specific.
-        If no default is found there, then the parameter's default value
-        is returned.
-        """
-
-        # Get the descriptor
-        desc = getattr(nengo_cls, param)
-        if not desc.configurable:
-            raise ConfigError("Unconfigurable parameters have no defaults. "
-                              "Please ensure you are not using the 'Default' "
-                              "keyword with an unconfigurable parameter.")
-
-        for config in reversed(Config.context):
-
-            # If a default has been set for this config, return it
-            if nengo_cls in config.params and config[nengo_cls] in desc:
-                return getattr(config[nengo_cls], param)
-
-        # Otherwise, return the param default
-        return desc.default
-
-    @staticmethod
-    def all_defaults(nengo_cls=None):
-        """Look up all of the default values in the current context.
-
-        Parameters
-        ----------
-        nengo_cls : class, optional
-            If specified, only the defaults for a particular class will
-            be returned. If not specified, the defaults for all configured
-            classes will be returned.
-
-        Returns
-        -------
-        str
-        """
-        lines = []
-        if nengo_cls is None:
-            all_configured = set()
-            for config in Config.context:
-                all_configured.update(key for key in config.params
-                                      if inspect.isclass(key))
-            lines.extend([Config.all_defaults(key) for key in all_configured])
-        else:
-            lines.append("Current defaults for %s:" % nengo_cls.__name__)
-            for attr in dir(nengo_cls):
-                desc = getattr(nengo_cls, attr)
-                if is_param(desc) and desc.configurable:
-                    val = Config.default(nengo_cls, attr)
-                    lines.append("  %s: %s" % (attr, val))
-        return "\n".join(lines)
-
     def __enter__(self):
         Config.context.append(self)
         return self
@@ -341,6 +283,64 @@ class Config(object):
 
     def __str__(self):
         return "\n".join(str(v) for v in itervalues(self.params))
+
+    @staticmethod
+    def all_defaults(nengo_cls=None):
+        """Look up all of the default values in the current context.
+
+        Parameters
+        ----------
+        nengo_cls : class, optional
+            If specified, only the defaults for a particular class will
+            be returned. If not specified, the defaults for all configured
+            classes will be returned.
+
+        Returns
+        -------
+        str
+        """
+        lines = []
+        if nengo_cls is None:
+            all_configured = set()
+            for config in Config.context:
+                all_configured.update(key for key in config.params
+                                      if inspect.isclass(key))
+            lines.extend([Config.all_defaults(key) for key in all_configured])
+        else:
+            lines.append("Current defaults for %s:" % nengo_cls.__name__)
+            for attr in dir(nengo_cls):
+                desc = getattr(nengo_cls, attr)
+                if is_param(desc) and desc.configurable:
+                    val = Config.default(nengo_cls, attr)
+                    lines.append("  %s: %s" % (attr, val))
+        return "\n".join(lines)
+
+    @staticmethod
+    def default(nengo_cls, param):
+        """Look up the current default value for a parameter.
+
+        The default is found by going through the config stack, from most
+        specific to least specific. The network that an object is in
+        is the most specific; the top-level network is the least specific.
+        If no default is found there, then the parameter's default value
+        is returned.
+        """
+
+        # Get the descriptor
+        desc = getattr(nengo_cls, param)
+        if not desc.configurable:
+            raise ConfigError("Unconfigurable parameters have no defaults. "
+                              "Please ensure you are not using the 'Default' "
+                              "keyword with an unconfigurable parameter.")
+
+        for config in reversed(Config.context):
+
+            # If a default has been set for this config, return it
+            if nengo_cls in config.params and config[nengo_cls] in desc:
+                return getattr(config[nengo_cls], param)
+
+        # Otherwise, return the param default
+        return desc.default
 
     def configures(self, *classes):
         """Start configuring a particular class and its instances."""

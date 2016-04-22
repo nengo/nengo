@@ -40,17 +40,17 @@ class ProbeDict(Mapping):
             rval.setflags(write=False)
         return rval
 
-    def __str__(self):
-        return str(self.raw)
-
-    def __repr__(self):
-        return repr(self.raw)
-
     def __iter__(self):
         return iter(self.raw)
 
     def __len__(self):
         return len(self.raw)
+
+    def __repr__(self):
+        return repr(self.raw)
+
+    def __str__(self):
+        return str(self.raw)
 
 
 class Simulator(object):
@@ -160,10 +160,6 @@ class Simulator(object):
     def dt(self, dummy):
         raise ReadonlyError(attr='dt', obj=self)
 
-    def _probe_step_time(self):
-        self._n_steps = self.signals[self.model.step].copy()
-        self._time = self.signals[self.model.time].copy()
-
     @property
     def n_steps(self):
         """The current time step of the simulator"""
@@ -174,21 +170,14 @@ class Simulator(object):
         """The current time of the simulator"""
         return self._time
 
-    def trange(self, dt=None):
-        """Create a range of times matching probe data.
+    def close(self):
+        """Closes the simulator.
 
-        Note that the range does not start at 0 as one might expect, but at
-        the first timestep (i.e., dt).
-
-        Parameters
-        ----------
-        dt : float (optional)
-            The sampling period of the probe to create a range for. If empty,
-            will use the default probe sampling period.
+        Any call to ``run``, ``run_steps``, ``step``, and ``reset`` on a closed
+        simulator will raise ``SimulatorClosed``.
         """
-        dt = self.dt if dt is None else dt
-        n_steps = int(self.n_steps * (self.dt / dt))
-        return dt * np.arange(1, n_steps + 1)
+        self.closed = True
+        self.signals = None  # signals may no longer exist on some backends
 
     def _probe(self):
         """Copy all probed signals to buffers"""
@@ -201,20 +190,41 @@ class Simulator(object):
                 tmp = self.signals[self.model.sig[probe]['in']].copy()
                 self._probe_outputs[probe].append(tmp)
 
-    def step(self):
-        """Advance the simulator by `self.dt` seconds.
+    def _probe_step_time(self):
+        self._n_steps = self.signals[self.model.step].copy()
+        self._time = self.signals[self.model.time].copy()
+
+    def reset(self, seed=None):
+        """Reset the simulator state.
+
+        Parameters
+        ----------
+        seed : int, optional
+            A seed for all stochastic operators used in the simulator.
+            This will change the random sequences generated for noise
+            or inputs (e.g. from Processes), but not the built objects
+            (e.g. ensembles, connections).
         """
         if self.closed:
-            raise SimulatorClosed("Simulator cannot run because it is closed.")
+            raise SimulatorClosed("Cannot reset closed Simulator.")
 
-        old_err = np.seterr(invalid='raise', divide='ignore')
-        try:
-            for step_fn in self._steps:
-                step_fn()
-        finally:
-            np.seterr(**old_err)
+        if seed is not None:
+            self.seed = seed
 
-        self._probe()
+        # reset signals
+        for key in self.signals:
+            self.signals.reset(key)
+
+        # rebuild steps (resets ops with their own state, like Processes)
+        self.rng = np.random.RandomState(self.seed)
+        self._steps = [op.make_step(self.signals, self.dt, self.rng)
+                       for op in self._step_order]
+
+        # clear probe data
+        for probe in self.model.probes:
+            self._probe_outputs[probe] = []
+
+        self._probe_step_time()
 
     def run(self, time_in_seconds, progress_bar=True):
         """Simulate for the given length of time.
@@ -266,43 +276,33 @@ class Simulator(object):
                 self.step()
                 progress.step()
 
-    def reset(self, seed=None):
-        """Reset the simulator state.
+    def step(self):
+        """Advance the simulator by `self.dt` seconds.
+        """
+        if self.closed:
+            raise SimulatorClosed("Simulator cannot run because it is closed.")
+
+        old_err = np.seterr(invalid='raise', divide='ignore')
+        try:
+            for step_fn in self._steps:
+                step_fn()
+        finally:
+            np.seterr(**old_err)
+
+        self._probe()
+
+    def trange(self, dt=None):
+        """Create a range of times matching probe data.
+
+        Note that the range does not start at 0 as one might expect, but at
+        the first timestep (i.e., dt).
 
         Parameters
         ----------
-        seed : int, optional
-            A seed for all stochastic operators used in the simulator.
-            This will change the random sequences generated for noise
-            or inputs (e.g. from Processes), but not the built objects
-            (e.g. ensembles, connections).
+        dt : float (optional)
+            The sampling period of the probe to create a range for. If empty,
+            will use the default probe sampling period.
         """
-        if self.closed:
-            raise SimulatorClosed("Cannot reset closed Simulator.")
-
-        if seed is not None:
-            self.seed = seed
-
-        # reset signals
-        for key in self.signals:
-            self.signals.reset(key)
-
-        # rebuild steps (resets ops with their own state, like Processes)
-        self.rng = np.random.RandomState(self.seed)
-        self._steps = [op.make_step(self.signals, self.dt, self.rng)
-                       for op in self._step_order]
-
-        # clear probe data
-        for probe in self.model.probes:
-            self._probe_outputs[probe] = []
-
-        self._probe_step_time()
-
-    def close(self):
-        """Closes the simulator.
-
-        Any call to ``run``, ``run_steps``, ``step``, and ``reset`` on a closed
-        simulator will raise ``SimulatorClosed``.
-        """
-        self.closed = True
-        self.signals = None  # signals may no longer exist on some backends
+        dt = self.dt if dt is None else dt
+        n_steps = int(self.n_steps * (self.dt / dt))
+        return dt * np.arange(1, n_steps + 1)

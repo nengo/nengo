@@ -16,33 +16,12 @@ class NeuronType(FrozenObject):
 
     probeable = ()
 
-    @property
-    def _argreprs(self):
-        return []
-
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, ", ".join(self._argreprs))
 
-    def rates(self, x, gain, bias):
-        """Compute firing rates (in Hz) for given vector input, ``x``.
-
-        This default implementation takes the naive approach of running the
-        step function for a second. This should suffice for most rate-based
-        neuron types; for spiking neurons it will likely fail.
-
-        Parameters
-        ----------
-        x : ndarray
-            vector-space input
-        gain : ndarray
-            gains associated with each neuron
-        bias : ndarray
-            bias current associated with each neuron
-        """
-        J = gain * x + bias
-        out = np.zeros_like(J)
-        self.step_math(dt=1., J=J, output=out)
-        return out
+    @property
+    def _argreprs(self):
+        return []
 
     def gain_bias(self, max_rates, intercepts):
         """Compute the gain and bias needed to satisfy max_rates, intercepts.
@@ -96,6 +75,27 @@ class NeuronType(FrozenObject):
 
         return gain, bias
 
+    def rates(self, x, gain, bias):
+        """Compute firing rates (in Hz) for given vector input, ``x``.
+
+        This default implementation takes the naive approach of running the
+        step function for a second. This should suffice for most rate-based
+        neuron types; for spiking neurons it will likely fail.
+
+        Parameters
+        ----------
+        x : ndarray
+            vector-space input
+        gain : ndarray
+            gains associated with each neuron
+        bias : ndarray
+            bias current associated with each neuron
+        """
+        J = gain * x + bias
+        out = np.zeros_like(J)
+        self.step_math(dt=1., J=J, output=out)
+        return out
+
     def step_math(self, dt, J, output):
         raise NotImplementedError("Neurons must provide step_math")
 
@@ -104,11 +104,11 @@ class Direct(NeuronType):
     """Direct mode. Functions are computed explicitly, instead of in neurons.
     """
 
-    def rates(self, x, gain, bias):
-        return x
-
     def gain_bias(self, max_rates, intercepts):
         return None, None
+
+    def rates(self, x, gain, bias):
+        return x
 
     def step_math(self, dt, J, output):
         raise SimulationError("Direct mode neurons shouldn't be simulated.")
@@ -137,8 +137,9 @@ class RectifiedLinear(NeuronType):
 class Sigmoid(NeuronType):
     """Neuron whose response curve is a sigmoid."""
 
-    tau_ref = NumberParam('tau_ref', low=0)
     probeable = ('rates',)
+
+    tau_ref = NumberParam('tau_ref', low=0)
 
     def __init__(self, tau_ref=0.002):
         super(Sigmoid, self).__init__()
@@ -164,9 +165,10 @@ class Sigmoid(NeuronType):
 class LIFRate(NeuronType):
     """Rate version of the leaky integrate-and-fire (LIF) neuron model."""
 
+    probeable = ('rates',)
+
     tau_rc = NumberParam('tau_rc', low=0, low_open=True)
     tau_ref = NumberParam('tau_ref', low=0)
-    probeable = ('rates',)
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002):
         super(LIFRate, self).__init__()
@@ -181,13 +183,6 @@ class LIFRate(NeuronType):
         if self.tau_ref != 0.002:
             args.append("tau_ref=%s" % self.tau_ref)
         return args
-
-    def rates(self, x, gain, bias):
-        J = gain * x + bias
-        out = np.zeros_like(J)
-        # Use LIFRate's step_math explicitly to ensure rate approximation
-        LIFRate.step_math(self, dt=1, J=J, output=out)
-        return out
 
     def gain_bias(self, max_rates, intercepts):
         """Compute the alpha and bias needed to satisfy max_rates, intercepts.
@@ -213,6 +208,13 @@ class LIFRate(NeuronType):
         bias = 1 - gain * intercepts
         return gain, bias
 
+    def rates(self, x, gain, bias):
+        J = gain * x + bias
+        out = np.zeros_like(J)
+        # Use LIFRate's step_math explicitly to ensure rate approximation
+        LIFRate.step_math(self, dt=1, J=J, output=out)
+        return out
+
     def step_math(self, dt, J, output):
         """Compute rates in Hz for input current (incl. bias)"""
         j = J - 1
@@ -226,8 +228,9 @@ class LIFRate(NeuronType):
 class LIF(LIFRate):
     """Spiking version of the leaky integrate-and-fire (LIF) neuron model."""
 
-    min_voltage = NumberParam('min_voltage', high=0)
     probeable = ('spikes', 'voltage', 'refractory_time')
+
+    min_voltage = NumberParam('min_voltage', high=0)
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002, min_voltage=0):
         super(LIF, self).__init__(tau_rc=tau_rc, tau_ref=tau_ref)
@@ -268,9 +271,10 @@ class AdaptiveLIFRate(LIFRate):
        in Single Neurons. Oxford University Press, 1999.
     """
 
+    probeable = ('rates', 'adaptation')
+
     tau_n = NumberParam('tau_n', low=0, low_open=True)
     inc_n = NumberParam('inc_n', low=0)
-    probeable = ('rates', 'adaptation')
 
     def __init__(self, tau_n=1, inc_n=0.01, **lif_args):
         super(AdaptiveLIFRate, self).__init__(**lif_args)
@@ -351,11 +355,12 @@ class Izhikevich(NeuronType):
        (http://www.izhikevich.org/publications/spikes.pdf)
     """
 
+    probeable = ('spikes', 'voltage', 'recovery')
+
     tau_recovery = NumberParam('tau_recovery', low=0, low_open=True)
     coupling = NumberParam('coupling', low=0)
     reset_voltage = NumberParam('reset_voltage')
     reset_recovery = NumberParam('reset_recovery')
-    probeable = ('spikes', 'voltage', 'recovery')
 
     def __init__(self, tau_recovery=0.02, coupling=0.2,
                  reset_voltage=-65, reset_recovery=8):

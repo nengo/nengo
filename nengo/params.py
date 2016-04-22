@@ -41,6 +41,7 @@ class Parameter(object):
         If true, the parameter can only be set once.
         By default, parameters can be set multiple times.
     """
+
     equatable = False
 
     def __init__(self, name,
@@ -98,6 +99,9 @@ class Parameter(object):
     def configurable(self):
         return self.default is not Unconfigurable
 
+    def del_default(self, obj):
+        del self._defaults[obj]
+
     def get_default(self, obj):
         return self._defaults.get(obj, self.default)
 
@@ -106,20 +110,6 @@ class Parameter(object):
             raise ConfigError("Parameter '%s' is not configurable" % self)
         self.validate(obj, value)
         self._defaults[obj] = value
-
-    def del_default(self, obj):
-        del self._defaults[obj]
-
-    def validate(self, instance, value):
-        if isinstance(value, DefaultType):
-            raise ValidationError("Default is not a valid value. To reset a "
-                                  "parameter, use 'del'.",
-                                  attr=self.name, obj=instance)
-        if self.readonly and instance in self.data:
-            raise ReadonlyError(attr=self.name, obj=instance)
-        if not self.optional and value is None:
-            raise ValidationError("Parameter is not optional; cannot set to "
-                                  "None", attr=self.name, obj=instance)
 
     def equal(self, instance_a, instance_b):
         a = self.__get__(instance_a, None)
@@ -137,6 +127,17 @@ class Parameter(object):
             return value
         else:
             return id(value)
+
+    def validate(self, instance, value):
+        if isinstance(value, DefaultType):
+            raise ValidationError("Default is not a valid value. To reset a "
+                                  "parameter, use 'del'.",
+                                  attr=self.name, obj=instance)
+        if self.readonly and instance in self.data:
+            raise ReadonlyError(attr=self.name, obj=instance)
+        if not self.optional and value is None:
+            raise ValidationError("Parameter is not optional; cannot set to "
+                                  "None", attr=self.name, obj=instance)
 
 
 class ObsoleteParam(Parameter):
@@ -304,6 +305,9 @@ class NdarrayParam(Parameter):
             ndarray = self.validate(instance, ndarray)
         self.data[instance] = ndarray
 
+    def hashvalue(self, instance):
+        return array_hash(self.__get__(instance, None))
+
     def validate(self, instance, ndarray):  # noqa: C901
         if isinstance(ndarray, np.ndarray):
             ndarray = ndarray.view()
@@ -359,9 +363,6 @@ class NdarrayParam(Parameter):
                                       attr=self.name, obj=instance)
         return ndarray
 
-    def hashvalue(self, instance):
-        return array_hash(self.__get__(instance, None))
-
 
 FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
 
@@ -373,9 +374,6 @@ class FunctionParam(Parameter):
         function_info = FunctionInfo(function=function, size=size)
         super(FunctionParam, self).__set__(instance, function_info)
 
-    def function_args(self, instance, function):
-        return (np.zeros(1),)
-
     def determine_size(self, instance, function):
         args = self.function_args(instance, function)
         value, invoked = checked_call(function, *args)
@@ -384,6 +382,9 @@ class FunctionParam(Parameter):
                                   "np.array argument" % function,
                                   attr=self.name, obj=instance)
         return np.asarray(value).size
+
+    def function_args(self, instance, function):
+        return (np.zeros(1),)
 
     def validate(self, instance, function_info):
         function = function_info.function
@@ -402,10 +403,6 @@ class FrozenObject(object):
             if not p.readonly:
                 msg = "All parameters of a FrozenObject must be readonly"
                 raise ReadonlyError(attr=p, obj=self, msg=msg)
-
-    def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, ', '.join(
-            "%s=%r" % (k, getattr(self, k)) for k in sorted(self._paramdict)))
 
     @property
     def _params(self):
@@ -434,3 +431,7 @@ class FrozenObject(object):
         for k in self._paramdict:
             setattr(self, k, state.pop(k))
         self.__dict__.update(state)
+
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, ', '.join(
+            "%s=%r" % (k, getattr(self, k)) for k in sorted(self._paramdict)))

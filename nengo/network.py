@@ -101,11 +101,6 @@ class Network(object):
         raise NotImplementedError("Nengo Networks do not support pickling")
 
     @staticmethod
-    def default_config():
-        """Constructs a Config object for setting Nengo object defaults."""
-        return Config(Connection, Ensemble, Node, Probe)
-
-    @staticmethod
     def add(obj):
         """Add the passed object to the current Network.context."""
         if len(Network.context) == 0:
@@ -124,6 +119,11 @@ class Network(object):
         else:
             raise NetworkContextError("Objects of type %r cannot be added to "
                                       "networks." % obj.__class__.__name__)
+
+    @staticmethod
+    def default_config():
+        """Constructs a Config object for setting Nengo object defaults."""
+        return Config(Connection, Ensemble, Node, Probe)
 
     def _all_objects(self, object_type):
         """Returns a list of all objects of the specified type"""

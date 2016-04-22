@@ -81,15 +81,15 @@ class Model(object):
     def __str__(self):
         return "Model: %s" % self.label
 
-    def build(self, obj, *args, **kwargs):
-        return Builder.build(self, obj, *args, **kwargs)
-
     def add_op(self, op):
         self.operators.append(op)
         # Fail fast by trying make_step with a temporary sigdict
         signals = SignalDict()
         op.init_signals(signals)
         op.make_step(signals, self.dt, np.random)
+
+    def build(self, obj, *args, **kwargs):
+        return Builder.build(self, obj, *args, **kwargs)
 
     def has_built(self, obj):
         """Returns true if obj has built parameters.
@@ -102,16 +102,6 @@ class Model(object):
 
 class Builder(object):
     builders = {}
-
-    @classmethod
-    def register(cls, nengo_class):
-        def register_builder(build_fn):
-            if nengo_class in cls.builders:
-                warnings.warn("Type '%s' already has a builder. Overwriting."
-                              % nengo_class)
-            cls.builders[nengo_class] = build_fn
-            return build_fn
-        return register_builder
 
     @classmethod
     def build(cls, model, obj, *args, **kwargs):
@@ -128,3 +118,13 @@ class Builder(object):
                 "Cannot build object of type %r" % obj.__class__.__name__)
 
         return cls.builders[obj_cls](model, obj, *args, **kwargs)
+
+    @classmethod
+    def register(cls, nengo_class):
+        def register_builder(build_fn):
+            if nengo_class in cls.builders:
+                warnings.warn("Type '%s' already has a builder. Overwriting."
+                              % nengo_class)
+            cls.builders[nengo_class] = build_fn
+            return build_fn
+        return register_builder

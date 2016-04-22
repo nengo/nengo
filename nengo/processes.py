@@ -84,8 +84,9 @@ class FilteredNoise(Process):
     dist = DistributionParam('dist')
     scale = BoolParam('scale')
 
-    def __init__(self, synapse=Lowpass(tau=0.005), synapse_kwargs={},
-                 dist=Gaussian(mean=0, std=1), scale=True, **kwargs):
+    def __init__(self,
+                 synapse=Lowpass(tau=0.005), dist=Gaussian(mean=0, std=1),
+                 scale=True, synapse_kwargs={}, **kwargs):
         super(FilteredNoise, self).__init__(default_size_in=0, **kwargs)
         self.synapse = synapse
         self.synapse_kwargs = synapse_kwargs
@@ -128,6 +129,7 @@ class BrownNoise(FilteredNoise):
     seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
+
     def __init__(self, dist=Gaussian(mean=0, std=1), **kwargs):
         super(BrownNoise, self).__init__(
             synapse=LinearFilter([1], [1, 0]),
@@ -224,6 +226,7 @@ class PresentInput(Process):
     presentation_time : float
         Show each input for `presentation_time` seconds.
     """
+
     inputs = NdarrayParam('inputs', shape=('...',))
     presentation_time = NumberParam('presentation_time', low=0, low_open=True)
 

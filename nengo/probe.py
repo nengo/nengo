@@ -102,15 +102,20 @@ class Probe(NengoObject):
         self.synapse = synapse
         self.solver = solver
 
+    def __repr__(self):
+        return "<Probe%s at 0x%x of '%s' of %s>" % (
+            "" if self.label is None else ' "%s"' % self.label,
+            id(self), self.attr, self.target)
+
+    def __str__(self):
+        return "<Probe%s of '%s' of %s>" % (
+            "" if self.label is None else ' "%s"' % self.label,
+            self.attr, self.target)
+
     @property
     def obj(self):
         return (self.target.obj if isinstance(self.target, ObjView) else
                 self.target)
-
-    @property
-    def slice(self):
-        return (self.target.slice if isinstance(self.target, ObjView) else
-                None)
 
     @property
     def size_in(self):
@@ -120,12 +125,7 @@ class Probe(NengoObject):
     def size_out(self):
         return 0
 
-    def __str__(self):
-        return "<Probe%s of '%s' of %s>" % (
-            "" if self.label is None else ' "%s"' % self.label,
-            self.attr, self.target)
-
-    def __repr__(self):
-        return "<Probe%s at 0x%x of '%s' of %s>" % (
-            "" if self.label is None else ' "%s"' % self.label,
-            id(self), self.attr, self.target)
+    @property
+    def slice(self):
+        return (self.target.slice if isinstance(self.target, ObjView) else
+                None)

@@ -54,7 +54,6 @@ class Ensemble(NengoObject):
     n_neurons = IntParam('n_neurons', default=None, low=1)
     dimensions = IntParam('dimensions', default=None, low=1)
     radius = NumberParam('radius', default=1.0, low=1e-10)
-    neuron_type = NeuronTypeParam('neuron_type', default=LIF())
     encoders = DistOrArrayParam('encoders',
                                 default=UniformHypersphere(surface=True),
                                 sample_shape=('n_neurons', 'dimensions'))
@@ -66,15 +65,16 @@ class Ensemble(NengoObject):
                                  default=Uniform(200, 400),
                                  optional=True,
                                  sample_shape=('n_neurons',))
-    n_eval_points = IntParam('n_eval_points', default=None, optional=True)
     eval_points = DistOrArrayParam('eval_points',
                                    default=UniformHypersphere(),
                                    sample_shape=('*', 'dimensions'))
-    bias = DistOrArrayParam('bias',
+    n_eval_points = IntParam('n_eval_points', default=None, optional=True)
+    neuron_type = NeuronTypeParam('neuron_type', default=LIF())
+    gain = DistOrArrayParam('gain',
                             default=None,
                             optional=True,
                             sample_shape=('n_neurons',))
-    gain = DistOrArrayParam('gain',
+    bias = DistOrArrayParam('bias',
                             default=None,
                             optional=True,
                             sample_shape=('n_neurons',))
@@ -151,6 +151,10 @@ class Neurons(object):
         return self._ensemble()
 
     @property
+    def probeable(self):
+        return ('output', 'input') + self.ensemble.neuron_type.probeable
+
+    @property
     def size_in(self):
         if isinstance(self.ensemble.neuron_type, Direct):
             # This will prevent users from connecting/probing Direct neurons
@@ -165,7 +169,3 @@ class Neurons(object):
             # (since there aren't actually any neurons being simulated).
             return 0
         return self.ensemble.n_neurons
-
-    @property
-    def probeable(self):
-        return ('output', 'input') + self.ensemble.neuron_type.probeable

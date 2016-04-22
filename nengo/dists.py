@@ -52,6 +52,7 @@ class PDF(Distribution):
     p : vector_like (n,)
         Probabilities of the `x` points.
     """
+
     x = NdarrayParam('x', shape='*')
     p = NdarrayParam('p', shape='*')
 
@@ -102,6 +103,7 @@ class Uniform(Distribution):
         If true, sample from a uniform distribution of integers. In this case,
         low and high should be integers.
     """
+
     low = NumberParam('low')
     high = NumberParam('high')
     integer = BoolParam('integer')
@@ -330,25 +332,6 @@ class SqrtBeta(Distribution):
         shape = self._sample_shape(num, d)
         return np.sqrt(rng.beta(self.m / 2.0, self.n / 2.0, size=shape))
 
-    def pdf(self, x):
-        """Probability distribution function.
-
-        Requires Scipy.
-
-        Parameters
-        ----------
-        x : ndarray
-            Evaluation points in [0, 1].
-
-        Returns
-        -------
-        ndarray
-            Probability density at `x`.
-        """
-        from scipy.special import beta
-        return (2 / beta(self.m / 2.0, self.n / 2.0) * x ** (self.m - 1) *
-                (1 - x * x) ** (self.n / 2.0 - 1))
-
     def cdf(self, x):
         """Cumulative distribution function.
 
@@ -369,6 +352,25 @@ class SqrtBeta(Distribution):
         return np.where(
             sq_x < 1., betainc(self.m / 2.0, self.n / 2.0, sq_x),
             np.ones_like(x))
+
+    def pdf(self, x):
+        """Probability distribution function.
+
+        Requires Scipy.
+
+        Parameters
+        ----------
+        x : ndarray
+            Evaluation points in [0, 1].
+
+        Returns
+        -------
+        ndarray
+            Probability density at `x`.
+        """
+        from scipy.special import beta
+        return (2 / beta(self.m / 2.0, self.n / 2.0) * x ** (self.m - 1) *
+                (1 - x * x) ** (self.n / 2.0 - 1))
 
     def ppf(self, y):
         """Percent point function (inverse cumulative distribution).
@@ -448,11 +450,11 @@ class CosineSimilarity(SubvectorLength):
         sign = Choice((1, -1)).sample(np.prod(shape), rng=rng).reshape(*shape)
         return sign * super(CosineSimilarity, self).sample(num, d, rng=rng)
 
-    def pdf(self, x):
-        return super(CosineSimilarity, self).pdf(x) / 2.0
-
     def cdf(self, x):
         return (super(CosineSimilarity, self).cdf(x) * np.sign(x) + 1) / 2.0
+
+    def pdf(self, x):
+        return super(CosineSimilarity, self).pdf(x) / 2.0
 
     def ppf(self, y):
         x = super(CosineSimilarity, self).ppf(abs(y*2 - 1))
@@ -461,6 +463,7 @@ class CosineSimilarity(SubvectorLength):
 
 class DistributionParam(Parameter):
     """A Distribution."""
+
     equatable = True
 
     def validate(self, instance, dist):

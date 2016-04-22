@@ -290,13 +290,13 @@ class Connection(NengoObject):
 
     pre = PrePostParam('pre', nonzero_size_out=True)
     post = PrePostParam('post', nonzero_size_in=True)
-    synapse = SynapseParam('synapse', default=Lowpass(0.005))
+    synapse = SynapseParam('synapse', default=Lowpass(tau=0.005))
+    function_info = ConnectionFunctionParam(
+        'function', default=None, optional=True)
     transform = TransformParam('transform', default=np.array(1.0))
     solver = ConnectionSolverParam('solver', default=LstsqL2())
     learning_rule_type = ConnectionLearningRuleTypeParam(
         'learning_rule_type', default=None, optional=True)
-    function_info = ConnectionFunctionParam(
-        'function', default=None, optional=True)
     eval_points = EvalPointsParam('eval_points',
                                   default=None,
                                   optional=True,
@@ -309,8 +309,8 @@ class Connection(NengoObject):
         since="v2.1.0",
         url="https://github.com/nengo/nengo/issues/632#issuecomment-71663849")
 
-    def __init__(self, pre, post, synapse=Default, transform=Default,
-                 solver=Default, learning_rule_type=Default, function=Default,
+    def __init__(self, pre, post, synapse=Default, function=Default,
+                 transform=Default, solver=Default, learning_rule_type=Default,
                  eval_points=Default, scale_eval_points=Default,
                  label=Default, seed=Default, modulatory=Unconfigurable):
         super(Connection, self).__init__(label=label, seed=seed)
@@ -327,49 +327,11 @@ class Connection(NengoObject):
         self.learning_rule_type = learning_rule_type  # set after transform
         self.modulatory = modulatory
 
-    @property
-    def function(self):
-        return self.function_info.function
+    def __str__(self):
+        return "<Connection %s>" % self._str
 
-    @function.setter
-    def function(self, function):
-        self.function_info = function
-
-    @property
-    def pre_obj(self):
-        return self.pre.obj if isinstance(self.pre, ObjView) else self.pre
-
-    @property
-    def pre_slice(self):
-        return self.pre.slice if isinstance(self.pre, ObjView) else slice(None)
-
-    @property
-    def post_obj(self):
-        return self.post.obj if isinstance(self.post, ObjView) else self.post
-
-    @property
-    def post_slice(self):
-        return (self.post.slice if isinstance(self.post, ObjView)
-                else slice(None))
-
-    @property
-    def size_in(self):
-        """Output size of sliced `pre`; input size of the function."""
-        return self.pre.size_out
-
-    @property
-    def size_mid(self):
-        """Output size of the function; input size of the transform.
-
-        If the function is None, then `size_in == size_mid`.
-        """
-        size = self.function_info.size
-        return self.size_in if size is None else size
-
-    @property
-    def size_out(self):
-        """Output size of the transform; input size to the sliced post."""
-        return self.post.size_in
+    def __repr__(self):
+        return "<Connection at 0x%x %s>" % (id(self), self._str)
 
     @property
     def _str(self):
@@ -380,11 +342,29 @@ class Connection(NengoObject):
             getattr(self.function, '__name__', str(self.function)))
         return "from %s to %s%s" % (self.pre, self.post, desc)
 
-    def __str__(self):
-        return "<Connection %s>" % self._str
+    @property
+    def function(self):
+        return self.function_info.function
 
-    def __repr__(self):
-        return "<Connection at 0x%x %s>" % (id(self), self._str)
+    @function.setter
+    def function(self, function):
+        self.function_info = function
+
+    @property
+    def is_decoded(self):
+        return not (self.solver.weights or (
+            isinstance(self.pre_obj, Neurons) and
+            isinstance(self.post_obj, Neurons)))
+
+    @property
+    def _label(self):
+        if self.label is not None:
+            return self.label
+
+        return "from %s to %s%s" % (
+            self.pre, self.post,
+            " computing '%s'" % self.function.__name__
+            if self.function is not None else "")
 
     @property
     def learning_rule(self):
@@ -406,10 +386,40 @@ class Connection(NengoObject):
         return self._learning_rule
 
     @property
-    def is_decoded(self):
-        return not (self.solver.weights or (
-            isinstance(self.pre_obj, Neurons) and
-            isinstance(self.post_obj, Neurons)))
+    def post_obj(self):
+        return self.post.obj if isinstance(self.post, ObjView) else self.post
+
+    @property
+    def post_slice(self):
+        return (self.post.slice if isinstance(self.post, ObjView)
+                else slice(None))
+
+    @property
+    def pre_obj(self):
+        return self.pre.obj if isinstance(self.pre, ObjView) else self.pre
+
+    @property
+    def pre_slice(self):
+        return self.pre.slice if isinstance(self.pre, ObjView) else slice(None)
+
+    @property
+    def size_in(self):
+        """Output size of sliced `pre`; input size of the function."""
+        return self.pre.size_out
+
+    @property
+    def size_mid(self):
+        """Output size of the function; input size of the transform.
+
+        If the function is None, then `size_in == size_mid`.
+        """
+        size = self.function_info.size
+        return self.size_in if size is None else size
+
+    @property
+    def size_out(self):
+        """Output size of the transform; input size to the sliced post."""
+        return self.post.size_in
 
 
 class LearningRule(object):

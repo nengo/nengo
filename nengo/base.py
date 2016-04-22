@@ -49,20 +49,11 @@ class NengoObject(with_metaclass(NetworkMember)):
         self.label = label
         self.seed = seed
 
-    def _str(self, include_id):
-        return "<%s%s%s>" % (
-            self.__class__.__name__,
-            "" if not hasattr(self, 'label') else
-            " (unlabeled)" if self.label is None else
-            ' "%s"' % self.label,
-            " at 0x%x" % id(self) if include_id else "")
+    def __getstate__(self):
+        raise NotImplementedError("Nengo objects do not support pickling")
 
-    def __str__(self):
-        return self._str(
-            include_id=not hasattr(self, 'label') or self.label is None)
-
-    def __repr__(self):
-        return self._str(include_id=True)
+    def __setstate__(self, state):
+        raise NotImplementedError("Nengo objects do not support pickling")
 
     def __setattr__(self, name, val):
         if hasattr(self, '_initialized') and not hasattr(self, name):
@@ -82,11 +73,20 @@ class NengoObject(with_metaclass(NetworkMember)):
         else:
             super(NengoObject, self).__setattr__(name, val)
 
-    def __getstate__(self):
-        raise NotImplementedError("Nengo objects do not support pickling")
+    def __str__(self):
+        return self._str(
+            include_id=not hasattr(self, 'label') or self.label is None)
 
-    def __setstate__(self, state):
-        raise NotImplementedError("Nengo objects do not support pickling")
+    def __repr__(self):
+        return self._str(include_id=True)
+
+    def _str(self, include_id):
+        return "<%s%s%s>" % (
+            self.__class__.__name__,
+            "" if not hasattr(self, 'label') else
+            " (unlabeled)" if self.label is None else
+            ' "%s"' % self.label,
+            " at 0x%x" % id(self) if include_id else "")
 
     @classmethod
     def param_list(cls):
@@ -143,6 +143,12 @@ class ObjView(object):
     def __len__(self):
         return self.size_out
 
+    def __str__(self):
+        return "%s[%s]" % (self.obj, self._slice_string)
+
+    def __repr__(self):
+        return "%r[%s]" % (self.obj, self._slice_string)
+
     @property
     def _slice_string(self):
         if isinstance(self.slice, slice):
@@ -154,12 +160,6 @@ class ObjView(object):
                 return "%s:%s:%s" % (sl_start, sl_stop, self.slice.step)
         else:
             return str(self.slice)
-
-    def __str__(self):
-        return "%s[%s]" % (self.obj, self._slice_string)
-
-    def __repr__(self):
-        return "%r[%s]" % (self.obj, self._slice_string)
 
 
 class NengoObjectParam(Parameter):
@@ -204,6 +204,7 @@ class Process(FrozenObject):
     seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
+
     default_size_in = IntParam('default_size_in', low=0)
     default_size_out = IntParam('default_size_out', low=0)
     default_dt = NumberParam('default_dt', low=0, low_open=True)
@@ -216,6 +217,18 @@ class Process(FrozenObject):
         self.default_size_out = default_size_out
         self.default_dt = default_dt
         self.seed = seed
+
+    def apply(self, x, d=None, dt=None, rng=np.random, copy=True, **kwargs):
+        """Run process on a given input."""
+        shape_in = as_shape(np.asarray(x[0]).shape, min_dim=1)
+        shape_out = as_shape(self.default_size_out if d is None else d)
+        dt = self.default_dt if dt is None else dt
+        rng = self.get_rng(rng)
+        step = self.make_step(shape_in, shape_out, dt, rng, **kwargs)
+        output = np.zeros((len(x),) + shape_out) if copy else x
+        for i, xi in enumerate(x):
+            output[i] = step((i+1) * dt, xi)
+        return output
 
     def get_rng(self, rng):
         """Get a properly seeded independent RNG for the process step"""
@@ -241,18 +254,6 @@ class Process(FrozenObject):
         output = np.zeros((n_steps,) + shape_out)
         for i in range(n_steps):
             output[i] = step((i+1) * dt)
-        return output
-
-    def apply(self, x, d=None, dt=None, rng=np.random, copy=True, **kwargs):
-        """Run process on a given input."""
-        shape_in = as_shape(np.asarray(x[0]).shape, min_dim=1)
-        shape_out = as_shape(self.default_size_out if d is None else d)
-        dt = self.default_dt if dt is None else dt
-        rng = self.get_rng(rng)
-        step = self.make_step(shape_in, shape_out, dt, rng, **kwargs)
-        output = np.zeros((len(x),) + shape_out) if copy else x
-        for i, xi in enumerate(x):
-            output[i] = step((i+1) * dt, xi)
         return output
 
     def ntrange(self, n_steps, dt=None):

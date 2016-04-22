@@ -276,18 +276,6 @@ class Solver(with_metaclass(DocstringInheritor)):
         """
         raise NotImplementedError("Solvers must implement '__call__'")
 
-    def mul_encoders(self, Y, E, copy=False):
-        if self.weights:
-            if E is None:
-                raise ValidationError(
-                    "Encoders must be provided for weight solver", attr='E')
-            return np.dot(Y, E)
-        else:
-            if E is not None:
-                raise ValidationError(
-                    "Encoders must be 'None' for decoder solver", attr='E')
-            return Y.copy() if copy else Y
-
     def __hash__(self):
         items = list(self.__dict__.items())
         items.sort(key=lambda item: item[0])
@@ -314,6 +302,18 @@ class Solver(with_metaclass(DocstringInheritor)):
         return "%s(%s)" % (
             self.__class__.__name__,
             ', '.join("%s=%s" % (k, v) for k, v in iteritems(self.__dict__)))
+
+    def mul_encoders(self, Y, E, copy=False):
+        if self.weights:
+            if E is None:
+                raise ValidationError(
+                    "Encoders must be provided for weight solver", attr='E')
+            return np.dot(Y, E)
+        else:
+            if E is not None:
+                raise ValidationError(
+                    "Encoders must be 'None' for decoder solver", attr='E')
+            return Y.copy() if copy else Y
 
 
 class Lstsq(Solver):
