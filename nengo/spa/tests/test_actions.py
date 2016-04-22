@@ -67,3 +67,30 @@ def test_new_action_syntax(Simulator, seed, plt, rng):
     assert valueC[0] > 0.8
     assert valueC[1] < 0.2
     assert valueC[2] < 0.2
+
+
+def test_dot_product(Simulator, seed, plt):
+    d = 16
+
+    with spa.Module(seed=seed) as model:
+        model.state_a = spa.State(d)
+        model.state_b = spa.State(d)
+        model.result = spa.Scalar()
+
+        model.stimulus = spa.Input()
+        model.stimulus.state_a = 'A'
+        model.stimulus.state_b = lambda t: 'A' if t <= 0.3 else 'B'
+
+        actions = spa.Actions('result = dot(state_a, state_b)')
+        actions.build(model)
+
+        p = nengo.Probe(model.result.output, synapse=0.03)
+
+    with Simulator(model) as sim:
+        sim.run(0.6)
+
+    plt.plot(sim.trange(), sim.data[p])
+
+    t = sim.trange()
+    assert np.mean(sim.data[p][(t > 0.1) & (t <= 0.3)]) > 0.8
+    assert np.mean(sim.data[p][t > 0.4]) < 0.1
