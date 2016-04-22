@@ -4,23 +4,38 @@ from nengo.spa.module import Module
 
 
 class Bind(Module):
-    """A module for binding together both inputs
+    """A module for binding together two inputs.
+
+    Binding is done with circular convolution. For more details on how
+    this is computed, see the underlying `~.network.CircularConvolution`
+    network.
 
     Parameters
     ----------
     dimensions : int
-        Number of dimensions for the two vectors to be compared
-    vocab : Vocabulary, optional
-        The vocabulary to use to interpret the vectors
-    n_neurons : int
-        Number of neurons to use in each product computation
-    invert_a, invert_b : bool
+        Number of dimensions for the two vectors to be compared.
+    vocab : Vocabulary, optional (Default: None)
+        The vocabulary to use to interpret the vectors. If None,
+        the default vocabulary for the given dimensionality is used.
+    n_neurons : int, optional (Default: 200)
+        Number of neurons to use in each product computation.
+    invert_a, invert_b : bool, optional (Default: False, False)
         Whether to reverse the order of elements in either
-        the first input (`invert_a`) or the second input (`invert_b`).
+        the first input (``invert_a``) or the second input (``invert_b``).
         Flipping the second input will make the network perform circular
         correlation instead of circular convolution.
-    input_magnitude : float
-        The expected magnitude (vector norm) of the two input values.
+    input_magnitude : float, optional (Default: 1.0)
+        The expected magnitude of the vectors to be convolved.
+        This value is used to determine the radius of the ensembles
+        computing the element-wise product.
+
+    label : str, optional (Default: None)
+        A name for the ensemble. Used for debugging and visualization.
+    seed : int, optional (Default: None)
+        The seed used for random number generation.
+    add_to_container : bool, optional (Default: None)
+        Determines if this Network will be added to the current container.
+        If None, will be true if currently within a Network.
     """
     def __init__(self, dimensions, vocab=None, n_neurons=200, invert_a=False,
                  invert_b=False, input_magnitude=1.0, label=None, seed=None,

@@ -134,6 +134,34 @@ def slice_signal(model, signal, sl):
 
 @Builder.register(Connection)  # noqa: C901
 def build_connection(model, conn):
+    """Builds a `.Connection` object into a model.
+
+    A brief summary of what happens in the connection build process,
+    in order:
+
+    1. Solve for decoders.
+    2. Combine transform matrix with decoders to get weights.
+    3. Add operators for computing the function
+       or multiplying neural activity by weights.
+    4. Call build function for the synapse.
+    5. Call build function for the learning rule.
+    6. Add operator for applying learning rule delta to weights.
+
+    Some of these steps may be altered or omitted depending on the parameters
+    of the connection, in particular the pre and post types.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    conn : Connection
+        The connection to build.
+
+    Notes
+    -----
+    Sets ``model.params[conn]`` to a `.BuiltConnection` instance.
+    """
+
     # Create random number generator
     rng = np.random.RandomState(model.seeds[conn])
 

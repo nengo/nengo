@@ -64,6 +64,34 @@ probemap = {
 
 @Builder.register(Probe)
 def build_probe(model, probe):
+    """Builds a `.Probe` object into a model.
+
+    Under the hood, there are two types of probes:
+    connection probes and signal probes.
+
+    Connection probes are those that are built by creating a new `.Connection`
+    object from the probe's target to the probe, and calling that connection's
+    build function. Creating and building a connection ensure that the result
+    of probing the target's attribute is the same as would result from that
+    target being connected to another object.
+
+    Signal probes are those that are built by finding the correct `.Signal`
+    in the model and calling the build function corresponding to the probe's
+    synapse.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    probe : Probe
+        The connection to build.
+
+    Notes
+    -----
+    Sets ``model.params[probe]`` to a list.
+    `.Simulator` appends to that list when running a simulation.
+    """
+
     # find the right parent class in `objtypes`, using `isinstance`
     for nengotype, probeables in iteritems(probemap):
         if isinstance(probe.obj, nengotype):

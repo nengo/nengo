@@ -18,21 +18,40 @@ class ConnectionParam(NengoObjectParam):
 class LearningRuleType(FrozenObject):
     """Base class for all learning rule objects.
 
-    To use a learning rule, pass it as a ``learning_rule`` keyword argument to
-    the Connection on which you want to do learning.
+    To use a learning rule, pass it as a ``learning_rule_type`` keyword
+    argument to the `~nengo.Connection` on which you want to do learning.
+
+    Each learning rule exposes two important pieces of metadata that the
+    builder uses to determine what information should be stored.
+
+    The ``error_type`` is the type of the incoming error signal. Options are:
+
+    * ``'none'``: no error signal
+    * ``'scalar'``: scalar error signal
+    * ``'decoded'``: vector error signal in decoded space
+    * ``'neuron'``: vector error signal in neuron space
+
+    The ``modifies`` attribute denotes the signal targeted by the rule.
+    Options are:
+
+    * ``'encoders'``
+    * ``'decoders'``
+    * ``'weights'``
+
+    Parameters
+    ----------
+    learning_rate : float, optional (Default: 1e-6)
+        A scalar indicating the rate at which ``modifies`` will be adjusted.
 
     Attributes
     ----------
     error_type : str
-        The type (which determines the dimensionality) of the incoming error
-        signal. Options are 'none': no error signal; 'scalar': scalar error
-        signal; 'decoded': vector error signal in decoded space;
-        'neuron': vector error signal in neuron space.
+        The type of the incoming error signal. This also determines
+        the dimensionality of the error signal.
+    learning_rate : float
+        A scalar indicating the rate at which ``modifies`` will be adjusted.
     modifies : str
-        The signal targeted by the learning rule. Options are 'encoders',
-        'decoders' (will also be adapted to modify a full weight matrix by
-        multiplying by the post population encoders), or 'weights' (only works
-        on full weight matrices).
+        The signal targeted by the learning rule.
     """
 
     error_type = 'none'
@@ -55,27 +74,24 @@ class LearningRuleType(FrozenObject):
 
 
 class PES(LearningRuleType):
-    """Prescribed Error Sensitivity Learning Rule
+    """Prescribed Error Sensitivity learning rule.
 
-    Modifies a connection's decoders to minimize an error signal.
+    Modifies a connection's decoders to minimize an error signal provided
+    through a connection to the connection's learning rule.
 
     Parameters
     ----------
-    pre_tau : float, optional
+    learning_rate : float, optional (Default: 1e-4)
+        A scalar indicating the rate at which weights will be adjusted.
+    pre_tau : float, optional (Default: 0.005)
         Filter constant on activities of neurons in pre population.
-        Defaults to 0.005.
-    learning_rate : float, optional
-        A scalar indicating the rate at which decoders will be adjusted.
-        Defaults to 1e-5.
 
     Attributes
     ----------
+    learning_rate : float
+        A scalar indicating the rate at which weights will be adjusted.
     pre_tau : float
         Filter constant on activities of neurons in pre population.
-    learning_rate : float
-        The given learning rate.
-    error_connection : Connection
-        The modulatory connection created to project the error signal.
     """
 
     error_type = 'decoded'
@@ -102,32 +118,34 @@ class PES(LearningRuleType):
 
 
 class BCM(LearningRuleType):
-    """Bienenstock-Cooper-Munroe learning rule
+    """Bienenstock-Cooper-Munroe learning rule.
 
-    Modifies connection weights.
+    Modifies connection weights as a function of the presynaptic activity
+    and the difference between the postsynaptic activity and the average
+    postsynaptic activity.
 
     Parameters
     ----------
-    learning_rate : float, optional
-        A scalar indicating the rate at which decoders will be adjusted.
-        Defaults to 1e-5.
-    theta_tau : float, optional
+    theta_tau : float, optional (Default: 1.0)
         A scalar indicating the time constant for theta integration.
-    pre_tau : float, optional
+    pre_tau : float, optional (Default: 0.005)
         Filter constant on activities of neurons in pre population.
-    post_tau : float, optional
+    post_tau : float, optional (Default: None)
         Filter constant on activities of neurons in post population.
+        If None, post_tau will be the same as pre_tau.
+    learning_rate : float, optional (Default: 1e-9)
+        A scalar indicating the rate at which weights will be adjusted.
 
     Attributes
     ----------
     learning_rate : float
-        The given learning rate.
-    theta_tau : float
-        A scalar indicating the time constant for theta integration.
-    pre_tau : float
-        Filter constant on activities of neurons in pre population.
+        A scalar indicating the rate at which weights will be adjusted.
     post_tau : float
         Filter constant on activities of neurons in post population.
+    pre_tau : float
+        Filter constant on activities of neurons in pre population.
+    theta_tau : float
+        A scalar indicating the time constant for theta integration.
     """
 
     error_type = 'none'
@@ -160,32 +178,35 @@ class BCM(LearningRuleType):
 
 
 class Oja(LearningRuleType):
-    """Oja's learning rule
+    """Oja learning rule.
 
-    Modifies connection weights.
+    Modifies connection weights according to the Hebbian Oja rule, which
+    augments typicaly Hebbian coactivity with a "forgetting" term that is
+    proportional to the weight of the connection and the square of the
+    postsynaptic activity.
 
     Parameters
     ----------
-    learning_rate : float, optional
-        A scalar indicating the rate at which decoders will be adjusted.
-        Defaults to 1e-5.
-    beta : float, optional
-        A scalar governing the amount of forgetting. Larger => more forgetting.
-    pre_tau : float, optional
+    pre_tau : float, optional (Default: 0.005)
         Filter constant on activities of neurons in pre population.
-    post_tau : float, optional
+    post_tau : float, optional (Default: None)
         Filter constant on activities of neurons in post population.
+        If None, post_tau will be the same as pre_tau.
+    beta : float, optional (Default: 1.0)
+        A scalar weight on the forgetting term.
+    learning_rate : float, optional (Default: 1e-6)
+        A scalar indicating the rate at which weights will be adjusted.
 
     Attributes
     ----------
-    learning_rate : float
-        The given learning rate.
     beta : float
-        A scalar governing the amount of forgetting. Larger => more forgetting.
-    pre_tau : float
-        Filter constant on activities of neurons in pre population.
+        A scalar weight on the forgetting term.
+    learning_rate : float
+        A scalar indicating the rate at which weights will be adjusted.
     post_tau : float
         Filter constant on activities of neurons in post population.
+    pre_tau : float
+        Filter constant on activities of neurons in pre population.
     """
 
     error_type = 'none'
@@ -218,26 +239,25 @@ class Oja(LearningRuleType):
 
 
 class Voja(LearningRuleType):
-    """Vector Oja's learning rule.
+    """Vector Oja learning rule.
 
     Modifies an ensemble's encoders to be selective to its inputs.
 
     A connection to the learning rule will provide a scalar weight for the
-    learning rate (minus 1). For instance, 0 is normal learning, -1 is no
+    learning rate, minus 1. For instance, 0 is normal learning, -1 is no
     learning, and less than -1 causes anti-learning or "forgetting".
 
     Parameters
     ----------
-    learning_rate : float, optional
-        A scalar indicating the rate at which encoders will be adjusted.
-        Defaults to 1e-2.
-    post_tau : float, optional
+    post_tau : float, optional (Default: 0.005)
         Filter constant on activities of neurons in post population.
+    learning_rate : float, optional (Default: 1e-2)
+        A scalar indicating the rate at which encoders will be adjusted.
 
     Attributes
     ----------
     learning_rate : float
-        The given learning rate.
+        A scalar indicating the rate at which encoders will be adjusted.
     post_tau : float
         Filter constant on activities of neurons in post population.
     """

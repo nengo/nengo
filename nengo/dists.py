@@ -219,8 +219,8 @@ class UniformHypersphere(Distribution):
         over the surface of the hyperphere (True),
         or within the hypersphere (False).
         Default: False
-
     """
+
     surface = BoolParam('surface')
 
     def __init__(self, surface=False):
@@ -265,6 +265,7 @@ class Choice(Distribution):
         Weights controlling the probability of selecting each option. Will
         automatically be normalized. Defaults to a uniform distribution.
     """
+
     options = NdarrayParam('options', shape=('*', '...'))
     weights = NdarrayParam('weights', shape=('*'), optional=True)
 
@@ -322,6 +323,7 @@ class SqrtBeta(Distribution):
     --------
     SubvectorLength
     """
+
     n = IntParam('n', low=0)
     m = IntParam('m', low=0)
 

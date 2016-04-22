@@ -13,24 +13,23 @@ from nengo.utils.compat import iteritems
 class SPA(nengo.Network):
     """Base class for SPA models.
 
-    This expands the standard Network system to support structured connections
-    that use Semantic Pointers and associated vocabularies in their
-    definitions.
+    This expands the standard `.Network` system to support structured
+    connections that use Semantic Pointers and associated vocabularies
+    in their definitions.
 
-    To build a SPA model, you can either just use ``with`` or
-    create a subclass of this SPA class.
+    To build a SPA model, you can either use ``with`` or create a subclass
+    of this SPA class.
 
     If you use the ``with`` statement, any attribute added to the SPA network
     will be accessible for SPA connections.
 
-    If you chose to create a subclass, any spa.Module object
-    that is assigned to a
-    member variable will automatically be accessible by the SPA connection
-    system.
+    If you chose to create a subclass, any `~.spa.module.Module` object that
+    is assigned to a member variable will automatically be accessible by the
+    SPA connection system.
 
     As an example, the following code will build three modules
-    (two Buffers and a Memory) that can be referred to as a, b, and c,
-    respectively.
+    (two buffers and a memory) that can be referred to as ``a``, ``b``,
+    and ``c``, respectively.
 
     First, the example with a ``with`` statement::
 
@@ -45,12 +44,13 @@ class SPA(nengo.Network):
 
         class Example(spa.SPA):
             def __init__(self):
-                self.a = spa.Buffer(dimensions=8)
-                self.b = spa.Buffer(dimensions=16)
-                self.c = spa.Memory(dimensions=8)
+                with self:
+                    self.a = spa.Buffer(dimensions=8)
+                    self.b = spa.Buffer(dimensions=16)
+                    self.c = spa.Memory(dimensions=8)
 
-    These names can be used by special Modules that are aware of these
-    names.  As an example, the Cortical module allows you to form connections
+    These names can be used by special modules that are aware of these
+    names. As an example, the `.Cortical` module allows you to form connections
     between these modules in ways that are aware of semantic pointers::
 
         with example:
@@ -60,9 +60,9 @@ class SPA(nengo.Network):
             example.cortical = spa.Cortical(spa.Actions(
                     'b=a*CAT', 'c=b*~CAT'))
 
-    For complex cognitive control, the key modules are the BasalGangla
-    and the Thalamus.  Together, these allow us to define complex actions
-    using the Action syntax::
+    For complex cognitive control, the key modules are the `.spa.BasalGanglia`
+    and the `.spa.Thalamus`. Together, these allow us to define complex actions
+    using the `.spa.Action` syntax::
 
         class SequenceExample(spa.SPA):
             def __init__(self):
@@ -72,16 +72,16 @@ class SPA(nengo.Network):
                                       'dot(state, B) --> state=C',
                                       'dot(state, C) --> state=D',
                                       'dot(state, D) --> state=E',
-                                      'dot(state, E) --> state=A',
-                                      )
+                                      'dot(state, E) --> state=A')
 
                 self.bg = spa.BasalGanglia(actions=actions)
                 self.thal = spa.Thalamus(self.bg)
     """
 
     def __init__(self, label=None, seed=None, add_to_container=None,
-                 vocabs=[]):
+                 vocabs=None):
         super(SPA, self).__init__(label, seed, add_to_container)
+        vocabs = [] if vocabs is None else vocabs
         enable_spa_params(self)
         self._modules = {}
         self._default_vocabs = {}
@@ -161,7 +161,7 @@ class SPA(nengo.Network):
         """Return the object to connect into for the given name.
 
         The name will be either the same as a module, or of the form
-        <module_name>_<input_name>.
+        ``<module_name>_<input_name>``.
         """
         if name in self._modules and 'default' in self._modules[name].inputs:
             return self._modules[name].inputs['default']
@@ -188,7 +188,7 @@ class SPA(nengo.Network):
         """Return the object to connect into for the given name.
 
         The name will be either the same as a module, or of the form
-        <module_name>_<output_name>.
+        ``<module_name>_<output_name>``.
         """
         if name in self._modules:
             return self._modules[name].outputs['default']
@@ -212,8 +212,10 @@ class SPA(nengo.Network):
         return self.get_module_output(name)[1]
 
     def similarity(self, data, probe, vocab=None):
-        """Return the similarity between the probed data and corresponding
-        vocabulary.
+        """Return the similarity between the probed data and ``vocab``.
+
+        If no vocabulary is provided, the vocabulary associated with
+        ``probe.target`` will be used.
 
         Parameters
         ----------
@@ -221,6 +223,9 @@ class SPA(nengo.Network):
             Collection of simulation data returned by sim.run() function call.
         probe: Probe
             Probe with desired data.
+        vocab : Vocabulary, optional (Default: None)
+            The vocabulary to compare with. If None, uses the vocabulary
+            associated with ``probe.target``.
         """
         if vocab is None:
             vocab = self.config[probe.target].vocab

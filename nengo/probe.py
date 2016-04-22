@@ -49,16 +49,17 @@ class ProbeSolverParam(SolverParam):
 
 
 class Probe(NengoObject):
-    """A probe is an object that receives data from the simulation.
+    """A probe is an object that collects data from the simulation.
 
     This is to be used in any situation where you wish to gather simulation
     data (spike data, represented values, neuron voltages, etc.) for analysis.
 
-    Probes cannot directly affect the simulation.
+    Probes do not directly affect the simulation.
 
     All Nengo objects can be probed (except Probes themselves).
     Each object has different attributes that can be probed.
-    To see what is probeable for each object, print its `probeable` attribute.
+    To see what is probeable for each object, print its
+    ``probeable`` attribute.
 
     >>> with nengo.Network():
     ...     ens = nengo.Ensemble(10, 1)
@@ -67,23 +68,41 @@ class Probe(NengoObject):
 
     Parameters
     ----------
-    target : Ensemble, Node, Connection
-        The Nengo object to connect to the probe.
-    attr : str, optional
-        The quantity to probe. Refer to the target's ``probeable`` list for
-        details. Defaults to the first element in the list.
-    sample_every : float, optional
-        Sampling period in seconds.
-    synapse : float, optional
-        Post-synaptic time constant (PSTC) to use for filtering. Default is
-        no filtering.
-    solver : Solver, optional
-        Instance of a Solver class to compute decoders for probes that require
-        them (see `nengo.solvers`). Defaults to the same solver as Connection.
-    seed : int
-        The seed used for random number generation in the Connection.
-    label : str, optional
+    target : Ensemble, Neurons, Node, or Connection
+        The object to probe.
+
+    attr : str, optional (Default: None)
+        The signal to probe. Refer to the target's ``probeable`` list for
+        details. If None, the first element in the ``probeable`` list
+        will be used.
+    sample_every : float, optional (Default: None)
+        Sampling period in seconds. If None, the ``dt`` of the simluation
+        will be used.
+    synapse : Synapse, optional (Default: None)
+        A synaptic model to filter the probed signal.
+    solver : Solver, optional (Default: ``ConnectionDefault``)
+        `~nengo.solvers.Solver` to compute decoders
+        for probes that require them.
+    label : str, optional (Default: None)
         A name for the probe. Used for debugging and visualization.
+    seed : int, optional (Default: None)
+        The seed used for random number generation.
+
+    Attributes
+    ----------
+    attr : str or None
+        The signal that will be probed. If None, the first element of the
+        target's ``probeable`` list will be used.
+    sample_every : float or None
+        Sampling period in seconds. If None, the ``dt`` of the simluation
+        will be used.
+    solver : Solver or None
+        `~nengo.solvers.Solver` to compute decoders. Only used for probes
+        of an ensemble's decoded output.
+    synapse : Synapse or None
+        A synaptic model to filter the probed signal.
+    target : Ensemble, Neurons, Node, or Connection
+        The object to probe.
     """
 
     target = TargetParam('target', nonzero_size_out=True)
@@ -114,18 +133,22 @@ class Probe(NengoObject):
 
     @property
     def obj(self):
+        """(Nengo object) The underlying Nengo object target."""
         return (self.target.obj if isinstance(self.target, ObjView) else
                 self.target)
 
     @property
     def size_in(self):
+        """(int) Dimensionality of the probed signal."""
         return self.target.size_out
 
     @property
     def size_out(self):
+        """(int) Cannot connect from probes, so always 0."""
         return 0
 
     @property
     def slice(self):
+        """(slice) The slice associated with the Nengo object target."""
         return (self.target.slice if isinstance(self.target, ObjView) else
                 None)

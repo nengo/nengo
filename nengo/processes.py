@@ -68,14 +68,14 @@ class FilteredNoise(Process):
     ----------
     synapse : Synapse, optional
         The synapse to use to filter the noise. Default: Lowpass(tau=0.005)
-    synapse_kwargs : dict, optional
-        Arguments to pass to `synapse.make_step`.
     dist : Distribution, optional
         The distribution used to generate the white noise.
         Default: Gaussian(mean=0, std=1)
     scale : bool, optional
         Whether to scale the white noise for integration, making the output
         signal invariant to `dt`. Defaults to True.
+    synapse_kwargs : dict, optional
+        Arguments to pass to `synapse.make_step`.
     seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
@@ -165,6 +165,7 @@ class WhiteSignal(Process):
     seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
+
     period = NumberParam('period', low=0, low_open=True)
     high = NumberParam('high', low=0, low_open=True)
     rms = NumberParam('rms', low=0, low_open=True)

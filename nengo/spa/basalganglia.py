@@ -8,14 +8,23 @@ from nengo.utils.compat import is_number
 
 
 class BasalGanglia(Module):
-    """A Basal Ganglia, performing action selection on a set of given actions.
+    """A basal ganglia, performing action selection on a set of given actions.
+
+    See `.networks.BasalGanglia` for more details.
 
     Parameters
     ----------
-    actions : spa.Actions
-        The actions to choose between
-    input_synapse : float
-        The synaptic filter on all input connections
+    actions : Actions
+        The actions to choose between.
+    input_synapse : float, optional (Default: 0.002)
+        The synaptic filter on all input connections.
+    label : str, optional (Default: None)
+        A name for the ensemble. Used for debugging and visualization.
+    seed : int, optional (Default: None)
+        The seed used for random number generation.
+    add_to_container : bool, optional (Default: None)
+        Determines if this Network will be added to the current container.
+        If None, will be true if currently within a Network.
     """
     def __init__(self, actions, input_synapse=0.002,
                  label=None, seed=None, add_to_container=None):
@@ -88,7 +97,7 @@ class BasalGanglia(Module):
         ----------
         index : int
             the index of the action
-        value : float, int
+        value : float or int
             the fixed utility value to add
         """
         with self.spa:
@@ -98,21 +107,21 @@ class BasalGanglia(Module):
     def add_compare_input(self, index, source1, source2, scale):
         """Make an input that is the dot product of two different sources.
 
-        This would be used for an input action such as "dot(vision, memory)"
-        Each source might be transformed before being compared.  If the
+        This would be used for an input action such as ``dot(vision, memory)``.
+        Each source might be transformed before being compared. If the
         two sources have different vocabularies, we use the vocabulary of
         the first one for comparison.
 
         Parameters
         ----------
         index : int
-            the index of the action
+            The index of the action.
         source1 : Source
-            the first module output to read from
+            The first module output to read from.
         source2 : Source
-            the second module output to read from
+            The second module output to read from.
         scale : float
-            a scaling factor to be applied to the result
+            A scaling factor to be applied to the result.
         """
         raise NotImplementedError("Compare between two sources will never be "
                                   "implemented as discussed in "
@@ -121,19 +130,19 @@ class BasalGanglia(Module):
     def add_dot_input(self, index, source, symbol, scale):
         """Make an input that is the dot product of a Source and a Symbol.
 
-        This would be used for an input action such as "dot(vision, A)"
+        This would be used for an input action such as ``dot(vision, A)``.
         The source may have a transformation applied first.
 
         Parameters
         ----------
         index : int
-            the index of the action
+            The index of the action.
         source : Source
-            the module output to read from
+            The module output to read from.
         symbol : Source
-            the semantic pointer to compute the dot product with
+            The semantic pointer to compute the dot product with.
         scale : float
-            a scaling factor to be applied to the result
+            A scaling factor to be applied to the result.
         """
         output, vocab = self.spa.get_module_output(source.name)
         # the first transformation, to handle dot(vision*A, B)
@@ -148,18 +157,16 @@ class BasalGanglia(Module):
                              transform=transform, synapse=self.input_synapse)
 
     def add_scalar_input(self, index, source):
-        """ Add a scalar input that will vary over time.
+        """Add a scalar input that will vary over time.
 
-        This would be used for such a thing as the ouput of the Compare module.
+        This is used for the ouput of the `.Compare` module.
 
         Parameters
         ----------
         index : int
-            the index of the action
+            The index of the action.
         source : Source
-            the module output to read from
-        scale : float
-            a scaling factor to be applied to the result
+            The module output to read from.
         """
         output, _ = self.spa.get_module_output(source.name)
         if output.size_out != 1:

@@ -11,18 +11,32 @@ logger = logging.getLogger(__name__)
 
 @Builder.register(Network)  # noqa: C901
 def build_network(model, network):
-    """Takes a Network object and returns a Model.
+    """Builds a `.Network` object into a model.
 
-    This determines the signals and operators necessary to simulate that model.
+    The network builder does this by mapping each high-level object to its
+    associated signals and operators one-by-one, in the following order:
 
-    Builder does this by mapping each high-level object to its associated
-    signals and operators one-by-one, in the following order:
+    1. Ensembles, nodes, neurons
+    2. Subnetworks (recursively)
+    3. Connections, learning rules
+    4. Probes
 
-    1) Ensembles, Nodes, Neurons
-    2) Subnetworks (recursively)
-    3) Connections
-    4) Learning Rules
-    5) Probes
+    Before calling any of the individual objects' build functions, random
+    number seeds are assigned to objects that did not have a seed explicitly
+    set by the user. Whether the seed was assigned manually or automatically
+    is tracked, and the decoder cache is only used when the seed is assigned
+    manually.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    network : Network
+        The network to build.
+
+    Notes
+    -----
+    Sets ``model.params[network]`` to ``None``.
     """
     def get_seed(obj, rng):
         # Generate a seed no matter what, so that setting a seed or not on

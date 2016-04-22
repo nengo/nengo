@@ -13,7 +13,44 @@ from nengo.utils.numpy import as_shape
 
 
 class Synapse(Process):
-    """Abstract base class for synapse objects"""
+    """Abstract base class for synapse models.
+
+    Conceptually, a synapse model emulates a biological synapse, taking in
+    input in the form of released neurotransmitter and opening ion channels
+    to allow more or less current to flow into the neuron.
+
+    In Nengo, the implementation of a synapse is as a specific case of a
+    `.Process` in which the input and output shapes are the same.
+    The input is the current across the synapse, and the output is the current
+    that will be induced in the postsynaptic neuron.
+
+    Synapses also contain the `.Synapse.filt` and `.Synapse.filtfilt` methods,
+    which make it easy to use Nengo's synapse models outside of Nengo
+    simulations.
+
+    Parameters
+    ----------
+    default_size_in : int, optional (Default: 1)
+        The size_in used if not specified.
+    default_size_out : int (Default: None)
+        The size_out used if not specified.
+        If None, will be the same as default_size_in.
+    default_dt : float (Default: 0.001 (1 millisecond))
+        The simulation timestep used if not specified.
+    seed : int, optional (Default: None)
+        Random number seed. Ensures random factors will be the same each run.
+
+    Attributes
+    ----------
+    default_dt : float (Default: 0.001 (1 millisecond))
+        The simulation timestep used if not specified.
+    default_size_in : int (Default: 0)
+        The size_in used if not specified.
+    default_size_out : int (Default: 1)
+        The size_out used if not specified.
+    seed : int, optional (Default: None)
+        Random number seed. Ensures random factors will be the same each run.
+    """
 
     def __init__(self, default_size_in=1, default_size_out=None,
                  default_dt=0.001, seed=None):
@@ -25,24 +62,25 @@ class Synapse(Process):
                                       seed=seed)
 
     def filt(self, x, dt=None, axis=0, y0=None, copy=True, filtfilt=False):
-        """Filter ``x`` with this synapse.
+        """Filter ``x`` with this synapse model.
 
         Parameters
         ----------
         x : array_like
             The signal to filter.
-        dt : float, optional (default: ``self.default_dt``)
-            The time-step of the input signal for analog synapses.
-        axis : integer, optional (default: 0)
+        dt : float, optional (Default: None)
+            The timestep of the input signal.
+            If None, ``default_dt`` will be used.
+        axis : int, optional (Default: 0)
             The axis along which to filter.
-        y0 : array_like, optional (default: x0)
-            The starting state of the filter output. Defaults to the initial
-            value of the input signal along the axis filtered.
-        copy : boolean, optional (default: True)
+        y0 : array_like, optional (Default: None)
+            The starting state of the filter output. If None, the initial
+            value of the input signal along the axis filtered will be used.
+        copy : bool, optional (Default: True)
             Whether to copy the input data, or simply work in-place.
-        filtfilt : boolean, optional (default: False)
-            If true, runs the process forwards then backwards on the signal,
-            for zero-phase filtering (like MATLAB's ``filtfilt``).
+        filtfilt : bool, optional (Default: False)
+            If True, runs the process forward then backward on the signal,
+            for zero-phase filtering (like Matlab's ``filtfilt``).
         """
         # This function is very similar to `Process.apply`, but allows for
         # a) filtering along any axis, and b) zero-phase filtering (filtfilt).
@@ -71,12 +109,35 @@ class Synapse(Process):
     def filtfilt(self, x, **kwargs):
         """Zero-phase filtering of ``x`` using this filter.
 
-        Equivalent to ``filt(x, filtfilt=True, **kwargs)``.
+        Equivalent to `filt(x, filtfilt=True, **kwargs) <.Synapse.filt>`.
         """
         return self.filt(x, filtfilt=True, **kwargs)
 
     def make_step(self, shape_in, shape_out, dt, rng, y0=None,
                   dtype=np.float64):
+        """Create function that advances the synapse forward one time step.
+
+        At a minimum, Synapse subclasses must implement this method.
+        That implementation should return a callable that will perform
+        the synaptic filtering operation.
+
+        Parameters
+        ----------
+        shape_in : tuple
+            Shape of the input signal to be filtered.
+        shape_out : tuple
+            Shape of the output filtered signal.
+        dt : float
+            The timestep of the simulation.
+        rng : `numpy.random.RandomState`
+            Random number generator.
+        y0 : array_like, optional (Default: None)
+            The starting state of the filter output. If None, each dimension
+            of the state will start at zero.
+        dtype : `numpy.dtype` (Default: np.float64)
+            Type of data used by the synapse model. This is important for
+            ensuring that certain synapses avoid or force integer division.
+        """
         raise NotImplementedError("Synapses should implement make_step.")
 
 
@@ -86,13 +147,27 @@ class LinearFilter(Synapse):
     This class can be used to implement any linear filter, given the
     filter's transfer function. [1]_
 
-
     Parameters
     ----------
     num : array_like
-        Numerator coefficients of continuous-time transfer function.
+        Numerator coefficients of transfer function.
     den : array_like
-        Denominator coefficients of continuous-time transfer function.
+        Denominator coefficients of transfer function.
+    analog : boolean, optional (Default: True)
+        Whether the synapse coefficients are analog (i.e. continuous-time),
+        or discrete. Analog coefficients will be converted to discrete for
+        simulation using the simulator ``dt``.
+
+    Attributes
+    ----------
+    analog : boolean
+        Whether the synapse coefficients are analog (i.e. continuous-time),
+        or discrete. Analog coefficients will be converted to discrete for
+        simulation using the simulator ``dt``.
+    den : ndarray
+        Denominator coefficients of transfer function.
+    num : ndarray
+        Numerator coefficients of transfer function.
 
     References
     ----------
@@ -114,18 +189,20 @@ class LinearFilter(Synapse):
             self.__class__.__name__, self.num, self.den, self.analog)
 
     def evaluate(self, frequencies):
-        """Evaluate transfer function at given frequencies.
+        """Evaluate the transfer function at the given frequencies.
 
-        Example
-        -------
+        Examples
+        --------
+
         Using the ``evaluate`` function to make a Bode plot::
-        >>> synapse = nengo.synapses.LinearFilter([1], [0.02, 1])
-        >>> f = numpy.logspace(-1, 3, 100)
-        >>> y = synapse.evaluate(f)
-        >>> plt.subplot(211); plt.semilogx(f, 20*np.log10(np.abs(y)))
-        >>> plt.xlabel('frequency [Hz]'); plt.ylabel('magnitude [dB]')
-        >>> plt.subplot(212); plt.semilogx(f, np.angle(y))
-        >>> plt.xlabel('frequency [Hz]'); plt.ylabel('phase [radians]')
+
+            synapse = nengo.synapses.LinearFilter([1], [0.02, 1])
+            f = numpy.logspace(-1, 3, 100)
+            y = synapse.evaluate(f)
+            plt.subplot(211); plt.semilogx(f, 20*np.log10(np.abs(y)))
+            plt.xlabel('frequency [Hz]'); plt.ylabel('magnitude [dB]')
+            plt.subplot(212); plt.semilogx(f, np.angle(y))
+            plt.xlabel('frequency [Hz]'); plt.ylabel('phase [radians]')
         """
         frequencies = 2.j*np.pi*frequencies
         w = frequencies if self.analog else np.exp(frequencies)
@@ -134,6 +211,7 @@ class LinearFilter(Synapse):
 
     def make_step(self, shape_in, shape_out, dt, rng, y0=None,
                   dtype=np.float64, method='zoh'):
+        """Returns a `.Step` instance that implements the linear filter."""
         assert shape_in == shape_out
 
         num, den = self.num, self.den
@@ -257,6 +335,11 @@ class Lowpass(LinearFilter):
     ----------
     tau : float
         The time constant of the filter in seconds.
+
+    Attributes
+    ----------
+    tau : float
+        The time constant of the filter in seconds.
     """
     tau = NumberParam('tau', low=0)
 
@@ -269,6 +352,7 @@ class Lowpass(LinearFilter):
 
     def make_step(self, shape_in, shape_out, dt, rng, y0=None,
                   dtype=np.float64, **kwargs):
+        """Returns an optimized `.LinearFilter.Step` subclass."""
         # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
         if self.tau <= .03 * dt:
             return self._make_zero_step(
@@ -280,7 +364,7 @@ class Lowpass(LinearFilter):
 class Alpha(LinearFilter):
     """Alpha-function filter synapse.
 
-    The impulse-response function is given by
+    The impulse-response function is given by::
 
         alpha(t) = (t / tau) * exp(-t / tau)
 
@@ -291,11 +375,17 @@ class Alpha(LinearFilter):
     tau : float
         The time constant of the filter in seconds.
 
+    Attributes
+    ----------
+    tau : float
+        The time constant of the filter in seconds.
+
     References
     ----------
     .. [1] Mainen, Z.F. and Sejnowski, T.J. (1995). Reliability of spike timing
        in neocortical neurons. Science (New York, NY), 268(5216):1503-6.
     """
+
     tau = NumberParam('tau', low=0)
 
     def __init__(self, tau, **kwargs):
@@ -307,6 +397,7 @@ class Alpha(LinearFilter):
 
     def make_step(self, shape_in, shape_out, dt, rng, y0=None,
                   dtype=np.float64, **kwargs):
+        """Returns an optimized `.LinearFilter.Step` subclass."""
         # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
         if self.tau <= .03 * dt:
             return self._make_zero_step(
@@ -316,12 +407,23 @@ class Alpha(LinearFilter):
 
 
 class Triangle(Synapse):
-    """Triangular FIR synapse.
+    """Triangular finite impulse response (FIR) synapse.
 
     This synapse has a triangular and finite impulse response. The length of
-    the triangle is `t` seconds, thus the digital filter will have `t / dt + 1`
-    taps.
+    the triangle is ``t`` seconds; thus the digital filter will have
+    ``t / dt + 1`` taps.
+
+    Parameters
+    ----------
+    t : float
+        Length of the triangle, in seconds.
+
+    Attributes
+    ----------
+    t : float
+        Length of the triangle, in seconds.
     """
+
     t = NumberParam('t', low=0)
 
     def __init__(self, t, **kwargs):
@@ -333,6 +435,7 @@ class Triangle(Synapse):
 
     def make_step(self, shape_in, shape_out, dt, rng, y0=None,
                   dtype=np.float64):
+        """Returns a custom step function."""
         assert shape_in == shape_out
 
         n_taps = int(np.round(self.t / float(dt))) + 1
@@ -361,16 +464,18 @@ class Triangle(Synapse):
 def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
     """Filter ``signal`` with ``synapse``.
 
-    Deprecated: use ``synapse.filt`` instead.
+    .. note:: Deprecated in Nengo 2.1.0.
+              Use `.Synapse.filt` method instead.
     """
     warnings.warn("Use ``synapse.filt`` instead", DeprecationWarning)
     return synapse.filt(signal, dt=dt, axis=axis, y0=x0, copy=copy)
 
 
 def filtfilt(signal, synapse, dt, axis=0, x0=None, copy=True):
-    """Zero-phase filtering of ``signal`` using the ``syanpse`` filter.
+    """Zero-phase filtering of ``signal`` using the ``synapse`` filter.
 
-    Deprecated: use ``synapse.filtfilt`` instead.
+    .. note:: Deprecated in Nengo 2.1.0.
+              Use `.Synapse.filtfilt` method instead.
     """
     warnings.warn("Use ``synapse.filtfilt`` instead", DeprecationWarning)
     return synapse.filtfilt(signal, dt=dt, axis=axis, y0=x0, copy=copy)

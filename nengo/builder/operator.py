@@ -39,31 +39,41 @@ from nengo.exceptions import BuildError, SimulationError
 
 
 class Operator(object):
-    """Base class for operator instances understood by nengo.Simulator.
+    """Base class for operator instances understood by Nengo.
 
-    The lifetime of a Signal during one simulator timestep:
+    During one simulator timestep, a `.Signal` can experience
 
-    0. at most one set operator (optional)
-    1. any number of increments
-    2. any number of reads
-    3. at most one update
+    1. at most one set operator (optional)
+    2. any number of increments
+    3. any number of reads
+    4. at most one update
 
-    A signal that is only read can be considered a "constant".
+    in this specific order.
 
-    A signal that is both set *and* updated can be a problem:
-    since reads must come after the set, and the set will destroy
-    whatever were the contents of the update, it can be the case
-    that the update is completely hidden and rendered irrelevant.
-    There are however at least two reasons to use both a set and an update:
+    A ``set`` defines the state of the signal at time :math:`t`, the start
+    of the simulation timestep. That state can then be modified by
+    ``increment`` operations. A signal's state will only be ``read`` after
+    all increments are complete. The state is then finalized by an ``update``,
+    which denotes the state that the signal should be at time :math:`t + dt`.
 
-    - to use a signal as scratch space (updating means destroying it)
-    - to use sets and updates on partly overlapping views of the same
-      memory.
+    Each operator must keep track of the signals that it manipulates,
+    and which of these four types of manipulations is done to each signal
+    so that the simulator can order all of the operators properly.
 
-    N.B.: It is done on purpose that there are no default values for
-    reads, sets, incs, and updates.
+    .. note:: There are intentionally no default values for the
+              `~.Operator.reads`, `~.Operator.sets`, `~.Operator.incs`,
+              and `~.Operator.updates` properties to ensure that subclasses
+              explicitly set these values.
 
-    Each operator should explicitly set each of these properties.
+    Parameters
+    ----------
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
     """
 
     def __init__(self, tag=None):
@@ -89,10 +99,9 @@ class Operator(object):
 
     @property
     def incs(self):
-        """Signals incremented by this operator
+        """Signals incremented by this operator.
 
-        Increments will be applied after this signal has been
-        set (if it is set), and before reads.
+        Increments will be applied after sets (if it is set), and before reads.
         """
         return self._incs
 
@@ -102,7 +111,10 @@ class Operator(object):
 
     @property
     def reads(self):
-        """Signals that are read and not modified"""
+        """Signals that are read and not modified by this operator.
+
+        Reads occur after increments, and before updates.
+        """
         return self._reads
 
     @reads.setter
@@ -111,10 +123,10 @@ class Operator(object):
 
     @property
     def sets(self):
-        """Signals assigned by this operator
+        """Signals set by this operator.
 
-        A signal that is set here cannot be set or updated
-        by any other operator.
+        Sets occur first, before increments. A signal that is set here cannot
+        be set or updated by any other operator.
         """
         return self._sets
 
@@ -124,10 +136,9 @@ class Operator(object):
 
     @property
     def updates(self):
-        """Signals assigned their value for time t + 1
+        """Signals updated by this operator.
 
-        This operator will be scheduled so that updates appear after
-        all sets, increments and reads of this signal.
+        Updates are the last operation to occur to a signal.
         """
         return self._updates
 
@@ -136,11 +147,15 @@ class Operator(object):
         self._updates = val
 
     def init_signals(self, signals):
-        """Initialize simulator.signals
+        """Initialize the signals associated with this operator.
 
-        Install any buffers into the signals view that
-        this operator will need. Classes for neurons
-        that use extra buffers should create them here.
+        The signals will be initialized into ``signals``.
+        Operator subclasses that use extra buffers should create them here.
+
+        Parameters
+        ----------
+        signals : SignalDict
+            A mapping from signals to their associated live ndarrays.
         """
         for sig in self.all_signals:
             if sig not in signals:
@@ -148,7 +163,39 @@ class Operator(object):
 
 
 class TimeUpdate(Operator):
-    """Updates the simulation time"""
+    """Updates the simulation step and time.
+
+    Implements ``step[...] += 1`` and ``time[...] = step * dt``.
+
+    A separate operator is used (rather than a combination of `.Copy` and
+    `.DotInc`) so that other backends can manage these important parts of the
+    simulation state separately from other signals.
+
+    Parameters
+    ----------
+    step : Signal
+        The signal associated with the integer step counter.
+    time : Signal
+        The signal associated with the time (a float, in seconds).
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    step : Signal
+        The signal associated with the integer step counter.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+    time : Signal
+        The signal associated with the time (a float, in seconds).
+
+    Notes
+    -----
+    1. sets ``[step, time]``
+    2. incs ``[]``
+    3. reads ``[]``
+    4. updates ``[]``
+    """
 
     def __init__(self, step, time, tag=None):
         self.step = step
@@ -172,11 +219,32 @@ class TimeUpdate(Operator):
 
 
 class PreserveValue(Operator):
-    """Marks a signal as `set` for the graph checker.
+    """Marks a signal as ``set`` for the graph checker.
 
-    This operator does no computation. It simply marks a signal as `set`,
+    This operator does no computation. It simply marks a signal as ``set``,
     allowing us to apply other ops to signals that we want to preserve their
     value across multiple time steps. It is used primarily for learning rules.
+
+    Parameters
+    ----------
+    dst : Signal
+        The signal whose value we want to preserve.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    dst : Signal
+        The signal whose value we want to preserve.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[dst]``
+    2. incs ``[]``
+    3. reads ``[]``
+    4. updates ``[]``
     """
     def __init__(self, dst, tag=None):
         self.dst = dst
@@ -197,7 +265,35 @@ class PreserveValue(Operator):
 
 
 class Reset(Operator):
-    """Assign a constant value to a Signal."""
+    """Assign a constant value to a Signal.
+
+    Implements ``dst[...] = value``.
+
+    Parameters
+    ----------
+    dst : Signal
+        The Signal to reset.
+    value : float, optional (Default: 0)
+        The constant value to which ``dst`` is set.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    dst : Signal
+        The Signal to reset.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+    value : float
+        The constant value to which ``dst`` is set.
+
+    Notes
+    -----
+    1. sets ``[dst]``
+    2. incs ``[]``
+    3. reads ``[]``
+    4. updates ``[]``
+    """
 
     def __init__(self, dst, value=0, tag=None):
         self.dst = dst
@@ -222,7 +318,35 @@ class Reset(Operator):
 
 
 class Copy(Operator):
-    """Assign the value of one signal to another."""
+    """Assign the value of one signal to another.
+
+    Implements ``dst[...] = src``.
+
+    Parameters
+    ----------
+    src : Signal
+        The signal that will be copied (read).
+    dst : Signal
+        The signal that will be assigned to (set).
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    dst : Signal
+        The signal that will be assigned to (set).
+    src : Signal
+        The signal that will be copied (read).
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[dst]``
+    2. incs ``[]``
+    3. reads ``[src]``
+    4. updates ``[]``
+    """
 
     def __init__(self, src, dst, tag=None):
         self.src = src
@@ -332,7 +456,39 @@ class SlicedCopy(Operator):
 
 
 class ElementwiseInc(Operator):
-    """Increment signal Y by A * X (with broadcasting)"""
+    """Increment signal ``Y`` by ``A * X`` (with broadcasting).
+
+    Implements ``Y[...] += A * X``.
+
+    Parameters
+    ----------
+    A : Signal
+        The first signal to be multiplied.
+    X : Signal
+        The second signal to be multiplied.
+    Y : Signal
+        The signal to be incremented.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    A : Signal
+        The first signal to be multiplied.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+    X : Signal
+        The second signal to be multiplied.
+    Y : Signal
+        The signal to be incremented.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[Y]``
+    3. reads ``[A, X]``
+    4. updates ``[]``
+    """
 
     def __init__(self, A, X, Y, tag=None):
         self.A = A
@@ -398,10 +554,41 @@ def reshape_dot(A, X, Y, tag=None):
 
 
 class DotInc(Operator):
-    """Increment signal Y by dot(A, X)
+    """Increment signal ``Y`` by ``dot(A, X)``.
 
-    Currently, this only supports matrix-vector multiplies for compatibility
-    with NengoOCL.
+    Implements ``Y[...] += np.dot(A, X)``.
+
+    .. note:: Currently, this only supports matrix-vector multiplies
+              for compatibility with Nengo OCL.
+
+    Parameters
+    ----------
+    A : Signal
+        The first signal to be multiplied (a matrix).
+    X : Signal
+        The second signal to be multiplied (a vector).
+    Y : Signal
+        The signal to be incremented.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    A : Signal
+        The first signal to be multiplied.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+    X : Signal
+        The second signal to be multiplied.
+    Y : Signal
+        The signal to be incremented.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[Y]``
+    3. reads ``[A, X]``
+    4. updates ``[]``
     """
 
     def __init__(self, A, X, Y, tag=None):
@@ -438,7 +625,51 @@ class DotInc(Operator):
 
 
 class SimPyFunc(Operator):
-    """Set signal `output` by some Python function of x, possibly t."""
+    """Apply a Python function to a signal, with optional arguments.
+
+    Implements ``output[...] = fn(*args)`` where ``args`` can
+    include the current simulation time ``t`` and an input signal ``x``.
+
+    Note that ``output`` may also be None, in which case the function is
+    called but no output is captured.
+
+    Parameters
+    ----------
+    output : Signal or None
+        The signal to be set. If None, the function is still called.
+    fn : callable
+        The function to call.
+    t : Signal or None
+        The signal associated with the time (a float, in seconds).
+        If None, the time will not be passed to ``fn``.
+    x : Signal or None
+        An input signal to pass to ``fn``.
+        If None, an input signal will not be passed to ``fn``.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    fn : callable
+        The function to call.
+    output : Signal or None
+        The signal to be set. If None, the function is still called.
+    t : Signal or None
+        The signal associated with the time (a float, in seconds).
+        If None, the time will not be passed to ``fn``.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+    x : Signal or None
+        An input signal to pass to ``fn``.
+        If None, an input signal will not be passed to ``fn``.
+
+    Notes
+    -----
+    1. sets ``[] if output is None else [output]``
+    2. incs ``[]``
+    3. reads ``([] if t is None else [t]) + ([] if x is None else [x])``
+    4. updates ``[]``
+    """
 
     def __init__(self, output, fn, t, x, tag=None):
         self.output = output

@@ -7,8 +7,8 @@ from nengo.utils.compat import is_integer, is_number, range
 class SemanticPointer(object):
     """A Semantic Pointer, based on Holographic Reduced Representations.
 
-    Operators are overloaded so that + and - are addition, * is circular
-    convolution, and ~ is the inversion operator.
+    Operators are overloaded so that ``+`` and ``-`` are addition,
+    ``*`` is circular convolution, and ``~`` is the inversion operator.
     """
 
     def __init__(self, data, rng=None):
@@ -145,7 +145,7 @@ class SemanticPointer(object):
     def distance(self, other):
         """Return a distance measure between the vectors.
 
-        This is 1-cos(angle), so that it is 0 when they are identical, and
+        This is ``1-cos(angle)``, so that it is 0 when they are identical, and
         the distance gets larger as the vectors are farther apart.
         """
         return 1 - self.compare(other)
@@ -154,9 +154,9 @@ class SemanticPointer(object):
         """Return a reorganized vector that acts as an inverse for convolution.
 
         This reorganization turns circular convolution into circular
-        correlation, meaning that A*B*~B is approximately A.
+        correlation, meaning that ``A*B*~B`` is approximately ``A``.
 
-        For the vector [1,2,3,4,5], the inverse is [1,5,4,3,2].
+        For the vector ``[1, 2, 3, 4, 5]``, the inverse is ``[1, 5, 4, 3, 2]``.
         """
         return SemanticPointer(data=self.v[-np.arange(len(self))])
 
@@ -175,7 +175,7 @@ class SemanticPointer(object):
     def get_convolution_matrix(self):
         """Return the matrix that does a circular convolution by this vector.
 
-        This should be such that A*B == dot(A.get_convolution_matrix, B.v)
+        This should be such that ``A*B == dot(A.get_convolution_matrix, B.v)``.
         """
         D = len(self.v)
         T = []

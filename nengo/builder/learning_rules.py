@@ -11,7 +11,57 @@ from nengo.synapses import Lowpass
 
 
 class SimBCM(Operator):
-    """Calculate delta omega according to the BCM rule."""
+    """Calculate connection weight change according to the BCM rule.
+
+    Implements the Bienenstock-Cooper-Munroe learning rule of the form
+
+    .. math:: \Delta \omega_{ij} = \kappa a_j (a_j - \\theta_j) a_i
+
+    where
+
+    * :math:`\kappa` is a scalar learning rate,
+    * :math:`a_j` is the activity of a postsynaptic neuron,
+    * :math:`\\theta_j` is an estimate of the average :math:`a_j`, and
+    * :math:`a_i` is the activity of a presynaptic neuron.
+
+    Parameters
+    ----------
+    pre_filtered : Signal
+        The presynaptic activity, :math:`a_i`.
+    post_filtered : Signal
+        The postsynaptic activity, :math:`a_j`.
+    theta : Signal
+        The modification threshold, :math:`\\theta_j`.
+    delta : Signal
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    learning_rate : float
+        The scalar learning rate, :math:`\kappa`.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    delta : Signal
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    learning_rate : float
+        The scalar learning rate, :math:`\kappa`.
+    post_filtered : Signal
+        The postsynaptic activity, :math:`a_j`.
+    pre_filtered : Signal
+        The presynaptic activity, :math:`a_i`.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+    theta : Signal
+        The modification threshold, :math:`\\theta_j`.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[]``
+    3. reads ``[pre_filtered, post_filtered, theta]``
+    4. updates ``[delta]``
+    """
+
     def __init__(self, pre_filtered, post_filtered, theta, delta,
                  learning_rate, tag=None):
         self.pre_filtered = pre_filtered
@@ -44,7 +94,62 @@ class SimBCM(Operator):
 
 
 class SimOja(Operator):
-    """Calculate delta omega according to the Oja rule."""
+    """Calculate connection weight change according to the Oja rule.
+
+    Implements the Oja learning rule of the form
+
+    .. math:: \Delta \omega_{ij} = \kappa (a_i a_j - \\beta a_j^2 \omega_{ij})
+
+    where
+
+    * :math:`\kappa` is a scalar learning rate,
+    * :math:`a_i` is the activity of a presynaptic neuron,
+    * :math:`a_j` is the activity of a postsynaptic neuron,
+    * :math:`\\beta` is a scalar forgetting rate, and
+    * :math:`\omega_{ij}` is the connection weight between the two neurons.
+
+    Parameters
+    ----------
+    pre_filtered : Signal
+        The presynaptic activity, :math:`a_i`.
+    post_filtered : Signal
+        The postsynaptic activity, :math:`a_j`.
+    weights : Signal
+        The connection weight matrix, :math:`\omega_{ij}`.
+    delta : Signal
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    learning_rate : float
+        The scalar learning rate, :math:`\kappa`.
+    beta : float
+        The scalar forgetting rate, :math:`\\beta`.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    beta : float
+        The scalar forgetting rate, :math:`\\beta`.
+    delta : Signal
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    learning_rate : float
+        The scalar learning rate, :math:`\kappa`.
+    post_filtered : Signal
+        The postsynaptic activity, :math:`a_j`.
+    pre_filtered : Signal
+        The presynaptic activity, :math:`a_i`.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+    weights : Signal
+        The connection weight matrix, :math:`\omega_{ij}`.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[]``
+    3. reads ``[pre_filtered, post_filtered, weights]``
+    4. updates ``[delta]``
+    """
+
     def __init__(self, pre_filtered, post_filtered, weights, delta,
                  learning_rate, beta, tag=None):
         self.pre_filtered = pre_filtered
@@ -86,25 +191,54 @@ class SimOja(Operator):
 class SimVoja(Operator):
     """Simulates a simplified version of Oja's rule in the vector space.
 
-    See `examples/learning/learn_associations.ipynb` for details.
+    See :doc:`examples/learn_associations` for details.
 
     Parameters
     ----------
     pre_decoded : Signal
-        Decoded activity from pre-synaptic ensemble, `np.dot(d, a)`.
+        Decoded activity from presynaptic ensemble, :math:`a_i`.
     post_filtered : Signal
-        Filtered post-synaptic activity signal.
+        Filtered postsynaptic activity signal.
     scaled_encoders : Signal
-        2d array of encoders, multiplied by `scale`.
+        2d array of encoders, multiplied by ``scale``.
     delta : Signal
-        The change to the encoders. Updated by the rule.
-    scale : np.ndarray
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    scale : ndarray
         The length of each encoder.
     learning_signal : Signal
-        Scalar signal to be multiplied by the learning_rate. Expected to range
-        between 0 and 1 to turn learning off or on, respectively.
+        Scalar signal to be multiplied by ``learning_rate``. Expected to be
+        either 0 or 1 to turn learning off or on, respectively.
     learning_rate : float
-        Scalar applied to the delta.
+        The scalar learning rate.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    delta : Signal
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    learning_rate : float
+        The scalar learning rate.
+    learning_signal : Signal
+        Scalar signal to be multiplied by ``learning_rate``. Expected to be
+        either 0 or 1 to turn learning off or on, respectively.
+    post_filtered : Signal
+        Filtered postsynaptic activity signal.
+    pre_decoded : Signal
+        Decoded activity from presynaptic ensemble, :math:`a_i`.
+    scale : ndarray
+        The length of each encoder.
+    scaled_encoders : Signal
+        2d array of encoders, multiplied by ``scale``.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[]``
+    3. reads ``[pre_decoded, post_filtered, scaled_encoders, learning_signal]``
+    4. updates ``[delta]``
     """
 
     def __init__(self, pre_decoded, post_filtered, scaled_encoders, delta,
@@ -156,6 +290,36 @@ def get_post_ens(conn):
 
 @Builder.register(LearningRule)
 def build_learning_rule(model, rule):
+    """Builds a `.LearningRule` object into a model.
+
+    A brief summary of what happens in the learning rule build process,
+    in order:
+
+    1. Create a delta signal for the weight change.
+    2. Add an operator to increment the weights by delta.
+    3. Call build function for the learning rule type.
+
+    The learning rule system is designed to work with multiple learning rules
+    on the same connection. If only one learning rule was to be applied to the
+    connection, then we could directly modify the weights, rather than
+    calculating the delta here and applying it in `.build_connection`.
+    However, with multiple learning rules, we must isolate each delta signal
+    in case calculating the delta depends on the weights themselves,
+    making the calculation depend on the order of the learning rule
+    evaluations.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    rule : LearningRule
+        The learning rule to build.
+
+    Notes
+    -----
+    Sets ``model.params[rule]`` to ``None``.
+    """
+
     conn = rule.connection
 
     # --- Set up delta signal
@@ -193,6 +357,26 @@ def build_learning_rule(model, rule):
 
 @Builder.register(BCM)
 def build_bcm(model, bcm, rule):
+    """Builds a `.BCM` object into a model.
+
+    Calls synapse build functions to filter the pre and post activities,
+    and adds a `.SimBCM` operator to the model to calculate the delta.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    bcm : BCM
+        Learning rule type to build.
+    rule : LearningRule
+        The learning rule object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.BCM` instance.
+    """
+
     conn = rule.connection
     pre_activities = model.sig[get_pre_ens(conn).neurons]['out']
     pre_filtered = model.build(Lowpass(bcm.pre_tau), pre_activities)
@@ -214,6 +398,26 @@ def build_bcm(model, bcm, rule):
 
 @Builder.register(Oja)
 def build_oja(model, oja, rule):
+    """Builds a `.BCM` object into a model.
+
+    Calls synapse build functions to filter the pre and post activities,
+    and adds a `.SimOja` operator to the model to calculate the delta.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    oja : Oja
+        Learning rule type to build.
+    rule : LearningRule
+        The learning rule object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.Oja` instance.
+    """
+
     conn = rule.connection
     pre_activities = model.sig[get_pre_ens(conn).neurons]['out']
     post_activities = model.sig[get_post_ens(conn).neurons]['out']
@@ -234,6 +438,26 @@ def build_oja(model, oja, rule):
 
 @Builder.register(Voja)
 def build_voja(model, voja, rule):
+    """Builds a `.Voja` object into a model.
+
+    Calls synapse build functions to filter the post activities,
+    and adds a `.SimVoja` operator to the model to calculate the delta.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    voja : Voja
+        Learning rule type to build.
+    rule : LearningRule
+        The learning rule object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.Voja` instance.
+    """
+
     conn = rule.connection
 
     # Filtered post activity
@@ -273,6 +497,31 @@ def build_voja(model, voja, rule):
 
 @Builder.register(PES)
 def build_pes(model, pes, rule):
+    """Builds a `.PES` object into a model.
+
+    Calls synapse build functions to filter the pre activities,
+    and adds several operators to implement the PES learning rule.
+    Unlike other learning rules, there is no corresponding `.Operator`
+    subclass for the PES rule. Instead, the rule is implemented with
+    generic operators like `.ElementwiseInc` and `.DotInc`.
+    Generic operators are used because they are more likely to be
+    implemented on other backends like Nengo OCL.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    pes : PES
+        Learning rule type to build.
+    rule : LearningRule
+        The learning rule object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.PES` instance.
+    """
+
     conn = rule.connection
 
     # Create input error signal

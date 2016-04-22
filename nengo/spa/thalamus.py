@@ -8,41 +8,54 @@ from nengo.utils.compat import iteritems
 
 
 class Thalamus(Module):
-    """A thalamus, implementing the effects for an associated BasalGanglia
+    """A thalamus, implementing the effects for an associated basal ganglia.
+
+    See `.spa.BasalGanglia` for information on the basal ganglia, and
+    `.networks.Thalamus` for details on the underlying network.
 
     Parameters
     ----------
     bg : spa.BasalGanglia
-        The associated basal ganglia that defines the action to implement
-    neurons_action : int
-        Number of neurons per action to represent selection
-    inhibit : float
-        Strength of inhibition between actions
-    synapse_inhibit : float
-        Synaptic filter to apply for inhibition between actions
-    synapse_bg : float
-        Synaptic filter for connection between basal ganglia and thalamus
-    synapse_direct : float
-        Synaptic filter for direct outputs
-    threshold_action : float
-        Minimum value for action representation
-    neurons_channel_dim : int
-        Number of neurons per routing channel dimension
-    subdim_channel : int
-        Number of subdimensions used in routing channel
-    synapse_channel : float
-        Synaptic filter for channel inputs and outputs
-    neurons_cconv : int
-        Number of neurons per circular convolution dimension
-    neurons_gate : int
-        Number of neurons per gate
-    threshold_gate : float
-        Minimum value for gating neurons
-    synapse_to-gate : float
-        Synaptic filter for controlling a gate
+        The associated basal ganglia that defines the action to implement.
+    neurons_action : int, optional (Default: 50)
+        Number of neurons per action to represent the selection.
+    threshold_action : float, optional (Default: 0.2)
+        Minimum value for action representation.
+    mutual_inhibit : float, optional (Default: 1.0)
+        Strength of inhibition between actions.
+    route_inhibit : float, optional (Default: 3.0)
+        Strength of inhibition for unchosen actions.
+    synapse_inhibit : float, optional (Default: 0.008)
+        Synaptic filter to apply for inhibition between actions.
+    synapse_bg : float, optional (Default: 0.008)
+        Synaptic filter for connection between basal ganglia and thalamus.
+    synapse_direct : float, optional (Default: 0.01)
+        Synaptic filter for direct outputs.
+    neurons_channel_dim : int, optional (Default: 50)
+        Number of neurons per routing channel dimension.
+    subdim_channel : int, optional (Default: 16)
+        Number of subdimensions used in routing channel.
+    synapse_channel : float, optional (Default: 0.01)
+        Synaptic filter for channel inputs and outputs.
+    neurons_cconv : int, optional (Default: 200)
+        Number of neurons per circular convolution dimension.
+    neurons_gate : int, optional (Default: 40)
+        Number of neurons per gate.
+    threshold_gate : float, optional (Default: 0.3)
+        Minimum value for gating neurons.
+    synapse_to-gate : float, optional (Default: 0.002)
+        Synaptic filter for controlling a gate.
+
+    label : str, optional (Default: None)
+        A name for the ensemble. Used for debugging and visualization.
+    seed : int, optional (Default: None)
+        The seed used for random number generation.
+    add_to_container : bool, optional (Default: None)
+        Determines if this Network will be added to the current container.
+        If None, will be true if currently within a Network.
     """
     def __init__(self, bg, neurons_action=50, threshold_action=0.2,
-                 mutual_inhibit=1, route_inhibit=3,
+                 mutual_inhibit=1.0, route_inhibit=3.0,
                  synapse_inhibit=0.008, synapse_bg=0.008, synapse_direct=0.01,
                  neurons_channel_dim=50, subdim_channel=16,
                  synapse_channel=0.01,
@@ -110,12 +123,12 @@ class Thalamus(Module):
         Parameters
         ----------
         index : int
-            The action number that causes this effect
-        target_name : string
-            The name of the module input to connect to
-        value : string
+            The action number that causes this effect.
+        target_name : str
+            The name of the module input to connect to.
+        value : str
             A semantic pointer to be sent into the module when this action
-            is active
+            is active.
         """
         sink, vocab = self.spa.get_module_input(target_name)
         transform = np.array([vocab.parse(value).v]).T
@@ -126,11 +139,11 @@ class Thalamus(Module):
                              synapse=self.synapse_direct)
 
     def get_gate(self, index, target_name):
-        """Return the gate for an action
+        """Return the gate for an action.
 
-        The gate will be created if it does not already exist.  The gate
+        The gate will be created if it does not already exist. The gate
         neurons have no activity when the action is selected, but are
-        active when the action is not selected.  This makes the gate useful
+        active when the action is not selected. This makes the gate useful
         for inhibiting ensembles that should only be active when this
         action is active.
         """
@@ -160,21 +173,21 @@ class Thalamus(Module):
 
     def add_route_effect(self,
                          index, target_name, source_name, transform, inverted):
-        """Set an action to send source to target with the given transform
+        """Set an action to send source to target with the given transform.
 
         Parameters
         ----------
         index : int
-            The action number that will cause this effect
-        target_name : string
-            The name of the module input to affect
-        source_name : string
-            The name of the module output to read from.  If this output uses
+            The action number that will cause this effect.
+        target_name : str
+            The name of the module input to affect.
+        source_name : str
+            The name of the module output to read from. If this output uses
             a different Vocabulary than the target, a linear transform
             will be applied to convert from one to the other.
-        transform : string
+        transform : str
             A semantic point to convolve with the source value before
-            sending it into the target.  This transform takes
+            sending it into the target. This transform takes
             place in the source Vocabulary.
         inverted : bool
             Whether to perform inverse convolution on the source.
@@ -243,11 +256,11 @@ class Thalamus(Module):
         Parameters
         ----------
         index : int
-            The action number that will cause this effect
-        target_name : string
-            The name of the module input to affect
-        effect : action_objects.Convolution
-            The details of the convolution to implement
+            The action number that will cause this effect.
+        target_name : str
+            The name of the module input to affect.
+        effect : Convolution
+            The details of the convolution to implement.
         """
         target_module = self.spa.get_module(target_name)
         cconv = nengo.spa.action_build.convolution(self, target_name, effect,

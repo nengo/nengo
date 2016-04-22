@@ -205,6 +205,10 @@ class TransformParam(DistOrArrayParam):
 class Connection(NengoObject):
     """Connects two objects together.
 
+    The connection between the two object is unidirectional,
+    transmitting information from the first argument, ``pre``,
+    to the second argument, ``post``.
+
     Almost any Nengo object can act as the pre or post side of a connection.
     Additionally, you can use Python slice syntax to access only some of the
     dimensions of the pre or post object.
@@ -214,10 +218,10 @@ class Connection(NengoObject):
 
         nengo.Connection(node, ensemble)
 
-    But, we could create either of these two connections.
+    But, we could create either of these two connections::
 
         nengo.Connection(node[0], ensemble)
-        nengo.Connection(ndoe[1], ensemble)
+        nengo.Connection(node[1], ensemble)
 
     Parameters
     ----------
@@ -226,64 +230,79 @@ class Connection(NengoObject):
     post : Ensemble or Neurons or Node or Probe
         The destination object for the connection.
 
-    label : string
-        A descriptive label for the connection.
-    dimensions : int
-        The number of output dimensions of the pre object, including
-        `function`, but not including `transform`.
-    eval_points : (n_eval_points, pre_size) array_like or int
-        Points at which to evaluate `function` when computing decoders,
-        spanning the interval (-pre.radius, pre.radius) in each dimension.
-    synapse : float, optional
-        Post-synaptic time constant (PSTC) to use for filtering.
-    transform : (post_size, pre_size) array_like, optional
+    synapse : Synapse, optional \
+              (Default: ``nengo.synapses.Lowpass(tau=0.005)``)
+        Synapse model to use for filtering (see `~nengo.synapses.Synapse`).
+    function : callable, optional (Default: None)
+        Function to compute across the connection. Note that ``pre`` must be
+        an ensemble to apply a function across the connection.
+    transform : (post.size_in, pre.size_out) array_like, optional \
+                (Default: ``np.array(1.0)``)
         Linear transform mapping the pre output to the post input.
         This transform is in terms of the sliced size; if either pre
-        or post is a slice, the transform must be of shape
-        (len(pre_slice), len(post_slice)).
-    solver : Solver
-        Instance of a Solver class to compute decoders or weights
-        (see `nengo.solvers`). If `solver.weights` is True, a full
+        or post is a slice, the transform must be shaped according to
+        the sliced dimensionality. Additionally, the function is applied
+        before the transform, so if a function is computed across the
+        connection, the transform must be of shape
+        ``(len(function(np.zeros(post.size_in))), pre.size_out)``.
+    solver : Solver, optional (Default: ``nengo.solvers.LstsqL2()``)
+        Solver instance to compute decoders or weights
+        (see `~nengo.solvers.Solver`). If ``solver.weights`` is True, a full
         connection weight matrix is computed instead of decoders.
-    function : callable, optional
-        Function to compute using the pre population (pre must be Ensemble).
-    eval_points : (n_eval_points, pre_size) array_like or int, optional
-        Points at which to evaluate `function` when computing decoders,
+    learning_rule_type : LearningRuleType or iterable of LearningRuleType, \
+                         optional (Default: None)
+        Modifies the decoders or connection weights during simulation.
+    eval_points : (n_eval_points, pre.size_out) array_like or int, optional \
+                  (Default: None)
+        Points at which to evaluate ``function`` when computing decoders,
         spanning the interval (-pre.radius, pre.radius) in each dimension.
-    scale_eval_points : bool
-        Indicates whether the eval_points should be scaled by the radius of
-        the pre Ensemble. Defaults to True.
-    learning_rule_type : instance or list or dict of LearningRuleType, optional
-        Methods of modifying the connection weights during simulation.
+        If None, will use the eval_points associated with ``pre``.
+    scale_eval_points : bool, optional (Default: True)
+        Indicates whether the evaluation points should be scaled
+        by the radius of the pre Ensemble.
+    label : str, optional (Default: None)
+        A descriptive label for the connection.
+    seed : int, optional (Default: None)
+        The seed used for random number generation.
 
     Attributes
     ----------
-    dimensions : int
-        The number of output dimensions of the pre object, including
-        `function`, but before applying the `transform`.
+    is_decoded : bool
+        True if and only if the connection is decoded. This will not occur
+        when ``solver.weights`` is True or both pre and post are
+        `~nengo.ensemble.Neurons`.
     function : callable
         The given function.
     function_size : int
-        The output dimensionality of the given function. Defaults to 0.
-    is_decoded: bool
-        True if and only if the connection is decoded. This will not occur
-        when `solver.weights` is True or both `pre` and `post` are `Neurons`.
+        The output dimensionality of the given function. If no function is
+        specified, function_size will be 0.
     label : str
         A human-readable connection label for debugging and visualization.
-        Incorporates the labels of the pre and post objects.
-    learning_rule : LearningRule or collection of LearningRule
-        The LearningRule objects corresponding to `learning_rule_type`, and in
-        the same format. Use these to probe the learning rules.
+        If not overridden, incorporates the labels of the pre and post objects.
     learning_rule_type : instance or list or dict of LearningRuleType, optional
         The learning rule types.
-    post : Ensemble or Neurons or Node or Probe
+    post : Ensemble or Neurons or Node or Probe or ObjView
+        The given post object.
+    post_obj : Ensemble or Neurons or Node or Probe
+        The underlying post object, even if ``post`` is an ``ObjView``.
+    post_slice : slice or list or None
+        The slice associated with ``post`` if it is an ObjView, or None.
+    pre : Ensemble or Neurons or Node or ObjView
         The given pre object.
-    pre : Ensemble or Neurons or Node
-        The given pre object.
-    transform : (post_size, pre_size) array_like
-        Linear transform mapping the pre output to the post input.
+    pre_obj : Ensemble or Neurons or Node
+        The underlying pre object, even if ``post`` is an ``ObjView``.
+    pre_slice : slice or list or None
+        The slice associated with ``pre`` if it is an ObjView, or None.
     seed : int
         The seed used for random number generation.
+    solver : Solver
+        The Solver instance that will be used to compute decoders or weights
+        (see ``nengo.solvers``).
+    synapse : Synapse
+        The Synapse model used for filtering across the connection
+        (see ``nengo.synapses``).
+    transform : (size_mid, size_out) array_like
+        Linear transform mapping the pre function output to the post input.
     """
 
     probeable = ('output', 'input', 'weights')
@@ -368,6 +387,7 @@ class Connection(NengoObject):
 
     @property
     def learning_rule(self):
+        """(LearningRule or iterable) Connectable learning rule object(s)."""
         if self.learning_rule_type is not None and self._learning_rule is None:
             types = self.learning_rule_type
             if isinstance(types, dict):
@@ -404,25 +424,41 @@ class Connection(NengoObject):
 
     @property
     def size_in(self):
-        """Output size of sliced `pre`; input size of the function."""
+        """(int) The number of output dimensions of the pre object.
+
+        Also the input size of the function, if one is specified.
+        """
         return self.pre.size_out
 
     @property
     def size_mid(self):
-        """Output size of the function; input size of the transform.
+        """(int) The number of output dimensions of the function, if specified.
 
-        If the function is None, then `size_in == size_mid`.
+        If the function is not specified, then ``size_in == size_mid``.
         """
         size = self.function_info.size
         return self.size_in if size is None else size
 
     @property
     def size_out(self):
-        """Output size of the transform; input size to the sliced post."""
+        """(int) The number of input dimensions of the post object.
+
+        Also the number of output dimensions of the transform.
+        """
         return self.post.size_in
 
 
 class LearningRule(object):
+    """An interface for making connections to a learning rule.
+
+    Connections to a learning rule are to allow elements of the network to
+    affect the learning rule. For example, learning rules that use error
+    information can obtain that information through a connection.
+
+    Learning rule objects should only ever be accessed through the
+    ``learning_rule`` attribute of a connection.
+    """
+
     def __init__(self, connection, learning_rule_type):
         self._connection = weakref.ref(connection)
         self.learning_rule_type = learning_rule_type
@@ -437,22 +473,27 @@ class LearningRule(object):
 
     @property
     def connection(self):
+        """(Connection) The connection modified by the learning rule."""
         return self._connection()
 
     @property
     def error_type(self):
+        """(str) The type of information expected by the learning rule."""
         return self.learning_rule_type.error_type
 
     @property
     def modifies(self):
+        """(str) The variable modified by the learning rule."""
         return self.learning_rule_type.modifies
 
     @property
     def probeable(self):
+        """(tuple) Signals that can be probed in the learning rule."""
         return self.learning_rule_type.probeable
 
     @property
-    def size_in(self):  # size of error signal
+    def size_in(self):
+        """(int) Dimensionality of the signal expected by the learning rule."""
         if self.error_type == 'none':
             return 0
         elif self.error_type == 'scalar':
@@ -470,5 +511,6 @@ class LearningRule(object):
 
     @property
     def size_out(self):
+        """(int) Cannot connect from learning rules, so always 0."""
         return 0  # since a learning rule can't connect to anything
         # TODO: allow probing individual learning rules

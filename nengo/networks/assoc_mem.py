@@ -21,25 +21,28 @@ class AssociativeMemory(nengo.Network):
     ----------
     input_vectors: array_like
         The list of vectors to be compared against.
-    output_vectors: array_like, optional
-        The list of vectors to be produced for each match. If
-        not given, the associative memory will act like an auto-associative
-        memory (cleanup memory).
-
-    n_neurons: int
+    output_vectors: array_like, optional (Default: None)
+        The list of vectors to be produced for each match. If None, the
+        associative memory will be autoassociative (cleanup memory).
+    n_neurons: int, optional (Default: 50)
         The number of neurons for each of the ensemble (where each ensemble
-        represents each item in the input_vectors list)
-
-    threshold: array_like, optional
+        represents each item in the input_vectors list).
+    threshold: float, optional (Default: 0.3)
         The association activation threshold.
-    input_scales: array_list, optional
+    input_scales: float or array_like, optional (Default: 1.0)
         Scaling factor to apply on each of the input vectors. Note that it
         is possible to scale each vector independently.
-
-    inhibitable: boolean, optional
+    inhibitable: bool, optional (Default: False)
         Flag to indicate if the entire associative memory module is
         inhibitable (entire thing can be shut off). The input gain into
         the inhibitory connection is 1.5.
+    label : str, optional (Default: None)
+        A name for the ensemble. Used for debugging and visualization.
+    seed : int, optional (Default: None)
+        The seed used for random number generation.
+    add_to_container : bool, optional (Default: None)
+        Determines if the network will be added to the current container.
+        If None, will be true if currently within a Network.
     """
 
     exp_scale = 0.15  # Scaling factor for exponential distribution
@@ -139,6 +142,7 @@ class AssociativeMemory(nengo.Network):
 
     @property
     def am_ens_config(self):
+        """(Config) Defaults for associative memory ensemble creation."""
         cfg = nengo.Config(nengo.Ensemble, nengo.Connection)
         cfg[nengo.Ensemble].update({
             'radius': 1,
@@ -152,6 +156,7 @@ class AssociativeMemory(nengo.Network):
 
     @property
     def default_ens_config(self):
+        """(Config) Defaults for other ensemble creation."""
         cfg = nengo.Config(nengo.Ensemble)
         cfg[nengo.Ensemble].update({
             'radius': 1,
@@ -164,6 +169,7 @@ class AssociativeMemory(nengo.Network):
 
     @property
     def thresh_ens_config(self):
+        """(Config) Defaults for threshold ensemble creation."""
         cfg = nengo.Config(nengo.Ensemble)
         cfg[nengo.Ensemble].update({
             'radius': 1,
@@ -184,13 +190,12 @@ class AssociativeMemory(nengo.Network):
 
         Parameters
         ----------
-        name: string
+        name: str
             Name to use for the input node. This name will be used as the name
             of the attribute for the associative memory network.
-
         input_vectors: array_like
             The list of vectors to be compared against.
-        input_scales: array_list, optional
+        input_scales: float or array_like, optional (Default: 1.0)
             Scaling factor to apply on each of the input vectors. Note that it
             is possible to scale each vector independently.
         """
@@ -230,10 +235,9 @@ class AssociativeMemory(nengo.Network):
 
         Parameters
         ----------
-        name: string
+        name: str
             Name to use for the output node. This name will be used as
             the name of the attribute for the associative memory network.
-
         output_vectors: array_like
             The list of vectors to be produced for each match.
         """
@@ -268,16 +272,15 @@ class AssociativeMemory(nengo.Network):
 
         Parameters
         ----------
-        output_vector: array_like, optional
+        output_vector: array_like
             The vector to be produced if the input value matches none of
             the vectors in the input vector list.
-        output_name: string
+        output_name: str, optional (Default: 'output')
             The name of the input to which the default output vector
             should be applied.
-
-        n_neurons: int
+        n_neurons: int, optional (Default: 50)
             Number of neurons to use for the default output vector ensemble.
-        min_activation_value: float
+        min_activation_value: float, optional (Default: 0.5)
             Minimum activation value (i.e. threshold) to use to disable
             the default output vector.
         """
@@ -313,10 +316,10 @@ class AssociativeMemory(nengo.Network):
 
         Parameters
         ----------
-        inhibit_scale: float
+        inhibit_scale: float, optional (Default: 1.5)
             Mutual inhibition scaling factor.
-        inhibit_synapse: float
-            Mutual inhibition synapse time 9constant.
+        inhibit_synapse: float, optional (Default: 0.005)
+            Mutual inhibition synapse time constant.
         """
         if not self.is_wta:
             nengo.Connection(self.elem_output, self.elem_input,
@@ -331,6 +334,15 @@ class AssociativeMemory(nengo.Network):
 
     @with_self
     def add_threshold_to_outputs(self, n_neurons=50, inhibit_scale=10):
+        """Adds a thresholded output to the associative memory.
+
+        Parameters
+        ----------
+        n_neurons: int, optional (Default: 50)
+            Number of neurons to use for the default output vector ensemble.
+        inhibit_scale: float, optional (Default: 10)
+            Mutual inhibition scaling factor.
+        """
         if self.thresh_ens is not None:
             warnings.warn("AssociativeMemory network is already configured "
                           "with thresholded outputs. Additional "

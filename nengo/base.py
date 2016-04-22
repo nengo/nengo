@@ -37,9 +37,19 @@ class NetworkMember(type):
 class NengoObject(with_metaclass(NetworkMember)):
     """A base class for Nengo objects.
 
-    This defines some functions that the Network requires
-    for correct operation. In particular, list membership
-    and object comparison require each object to have a unique ID.
+    Parameters
+    ----------
+    label : string
+        A descriptive label for the object.
+    seed : int
+        The seed used for random number generation.
+
+    Attributes
+    ----------
+    label : string
+        A descriptive label for the object.
+    seed : int
+        The seed used for random number generation.
     """
 
     label = StringParam('label', default=None, optional=True)
@@ -192,17 +202,16 @@ class Process(FrozenObject):
 
     Attributes
     ----------
-    default_size_in : int
-        Sets the default size in for nodes using this process. Default: 0.
-    default_size_out : int
+    default_size_in : int (Default: 0)
+        Sets the default size in for nodes using this process.
+    default_size_out : int (Default: 1)
         Sets the default size out for nodes running this process. Also,
-        if `d` isn't specified in `run` or `run_steps`, this will be used.
-        Default: 1.
-    default_dt : float
-        If `dt` isn't specified in `run`, `run_steps`, `ntrange`, or `trange`,
-        this will be used. Default: 0.001 (1 millisecond).
-    seed : int, optional
-        Random number seed. Ensures noise will be the same each run.
+        if ``d`` is not specified in `.run` or `.run_steps`, this will be used.
+    default_dt : float (Default: 0.001 (1 millisecond))
+        If ``dt`` is not specified in `.run`, `.run_steps`, `.ntrange`,
+        or `.trange`, this will be used.
+    seed : int, optional (Default: None)
+        Random number seed. Ensures random factors will be the same each run.
     """
 
     default_size_in = IntParam('default_size_in', low=0)
@@ -236,6 +245,7 @@ class Process(FrozenObject):
         return np.random.RandomState(seed)
 
     def make_step(self, shape_in, shape_out, dt, rng):
+        """Create function that advances the process forward one time step."""
         raise NotImplementedError("Process must implement `make_step` method.")
 
     def run(self, t, d=None, dt=None, rng=np.random, **kwargs):
@@ -257,10 +267,12 @@ class Process(FrozenObject):
         return output
 
     def ntrange(self, n_steps, dt=None):
+        """Create time points corresponding to a given number of steps."""
         dt = self.default_dt if dt is None else dt
         return dt * np.arange(1, n_steps + 1)
 
     def trange(self, t, dt=None):
+        """Create time points corresponding to a given length of time."""
         dt = self.default_dt if dt is None else dt
         n_steps = int(np.round(float(t) / dt))
         return self.ntrange(n_steps, dt=dt)

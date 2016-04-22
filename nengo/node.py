@@ -88,7 +88,7 @@ class OutputParam(Parameter):
 
 
 class Node(NengoObject):
-    """Provides arbitrary data to Nengo objects.
+    """Provide non-neural inputs to Nengo objects and process outputs.
 
     Nodes can accept input, and perform arbitrary computations
     for the purpose of controlling a Nengo simulation.
@@ -99,31 +99,34 @@ class Node(NengoObject):
 
     Nodes can also be used to test models by providing specific input signals
     to parts of the model, and can simplify the input/output interface of a
-    Network when used as a relay to/from its internal Ensembles
-    (see networks.EnsembleArray for an example).
+    `~nengo.Network` when used as a relay to/from its internal
+    ensembles (see `~nengo.networks.EnsembleArray` for an example).
 
     Parameters
     ----------
-    output : callable or array_like
-        Function that transforms the Node inputs into outputs, or
-        a constant output value.
-    size_in : int, optional
+    output : callable, array_like, or None
+        Function that transforms the Node inputs into outputs,
+        a constant output value, or None to transmit signals unchanged.
+    size_in : int, optional (Default: 0)
         The number of dimensions of the input data parameter.
-    size_out : int, optional
-        The size of the output signal.
-        Optional; if not specified, it will be determined based on
-        the values of ``output`` and ``size_in``.
-    label : str, optional
+    size_out : int, optional (Default: None)
+        The size of the output signal. If None, it will be determined
+        based on the values of ``output`` and ``size_in``.
+    label : str, optional (Default: None)
         A name for the node. Used for debugging and visualization.
+    seed : int, optional (Default: None)
+        The seed used for random number generation.
+        Note: no aspects of the node are random, so currently setting
+        this seed has no effect.
 
     Attributes
     ----------
     label : str
         The name of the node.
-    output : callable or array_like
+    output : callable, array_like, or None
         The given output.
     size_in : int
-        The number of dimensions of the input data parameter.
+        The number of dimensions for incoming connection.
     size_out : int
         The number of output dimensions.
     """

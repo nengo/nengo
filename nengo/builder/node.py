@@ -10,6 +10,24 @@ from nengo.utils.compat import is_array_like
 
 @Builder.register(Node)
 def build_node(model, node):
+    """Builds a `.Node` object into a model.
+
+    The node build function is relatively simple. It involves creating input
+    and output signals, and connecting them with an `.Operator` that depends
+    on the type of ``node.output``.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    node : Node
+        The node to build.
+
+    Notes
+    -----
+    Sets ``model.params[node]`` to ``None``.
+    """
+
     # input signal
     if not is_array_like(node.output) and node.size_in > 0:
         sig_in = Signal(np.zeros(node.size_in), name="%s.in" % node)

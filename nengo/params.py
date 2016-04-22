@@ -165,6 +165,8 @@ class ObsoleteParam(Parameter):
 
 
 class BoolParam(Parameter):
+    """A parameter where the value is a boolean."""
+
     equatable = True
 
     def validate(self, instance, boolean):
@@ -175,6 +177,8 @@ class BoolParam(Parameter):
 
 
 class NumberParam(Parameter):
+    """A parameter where the value is a number."""
+
     equatable = True
 
     def __init__(self, name, default=Unconfigurable,
@@ -214,6 +218,8 @@ class NumberParam(Parameter):
 
 
 class IntParam(NumberParam):
+    """A parameter where the value is an integer."""
+
     def validate(self, instance, num):
         if num is not None and not is_integer(num):
             raise ValidationError("Must be an integer; got '%s'" % num,
@@ -222,6 +228,8 @@ class IntParam(NumberParam):
 
 
 class StringParam(Parameter):
+    """A parameter where the value is a string."""
+
     equatable = True
 
     def validate(self, instance, string):
@@ -232,6 +240,8 @@ class StringParam(Parameter):
 
 
 class EnumParam(StringParam):
+    """A parameter where the value must be one of a finite set of strings."""
+
     def __init__(self, name, default=Unconfigurable, values=(), lower=True,
                  optional=False, readonly=None):
         assert all(is_string(s) for s in values)
@@ -258,6 +268,8 @@ class EnumParam(StringParam):
 
 
 class TupleParam(Parameter):
+    """A parameter where the value is a tuple."""
+
     def __init__(self, name, default=Unconfigurable, length=None,
                  optional=False, readonly=None):
         self.length = length
@@ -281,6 +293,8 @@ class TupleParam(Parameter):
 
 
 class DictParam(Parameter):
+    """A parameter where the value is a dictionary."""
+
     def validate(self, instance, dct):
         if dct is not None and not isinstance(dct, dict):
             raise ValidationError("Must be a dictionary; got '%s'" % str(dct),
@@ -289,7 +303,13 @@ class DictParam(Parameter):
 
 
 class NdarrayParam(Parameter):
-    """Can be a NumPy ndarray, or something that can be coerced into one."""
+    """A parameter where the value is a NumPy ndarray.
+
+    If the passed value is an ndarray, a view onto that array is stored.
+    If the passed value is not an ndarray, it will be cast to an ndarray
+    of float64s and stored.
+    """
+
     equatable = True
 
     def __init__(self, name, default=Unconfigurable, shape=None,
@@ -368,6 +388,8 @@ FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
 
 
 class FunctionParam(Parameter):
+    """A parameter where the value is a function."""
+
     def __set__(self, instance, function):
         size = (self.determine_size(instance, function)
                 if callable(function) else None)
@@ -395,6 +417,12 @@ class FunctionParam(Parameter):
 
 
 class FrozenObject(object):
+    """An object with parameters that cannot change value after instantiation.
+
+    Since such objects are read-only ("frozen"), they can be safely used in
+    multiple locations, compared, etc.
+    """
+
     def __init__(self):
         self._paramdict = {
             k: v for k, v in inspect.getmembers(self.__class__)
