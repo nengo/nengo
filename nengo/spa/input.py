@@ -1,5 +1,5 @@
 import nengo
-from nengo.spa.module import Module
+from nengo.exceptions import ObsoleteError
 from nengo.utils.compat import iteritems
 
 
@@ -24,7 +24,7 @@ class _HierachicalInputProxy(object):
         setattr(self.parent, self.name + '.' + name, value)
 
 
-class Input(Module):
+class Input(nengo.Network):
     """A SPA module for providing external inputs to other modules.
 
     The parameters passed to this module indicate the module input name
@@ -59,23 +59,33 @@ class Input(Module):
         If None, will be true if currently within a Network.
     """
 
-    def __init__(self, label=None, seed=None, add_to_container=None, **kwargs):
+    def __init__(
+            self, module=None, label=None, seed=None, add_to_container=None,
+            **kwargs):
         super(Input, self).__init__(label, seed, add_to_container)
-        self.spa = None
         self.kwargs = kwargs
         self.input_nodes = {}
+
+        if module is None:
+            from nengo.spa.module import get_current_module
+            module = get_current_module()
+        self.module = module
+
         self._initialized = True
 
-    def on_add(self, spa):
-        """Create the connections and nodes."""
-        self.spa = spa
-        Module.on_add(self, spa)
+        added = add_to_container is True or len(self.context) > 0
+        if len(kwargs) > 0:
+            if not added:
+                raise ObsoleteError(
+                    "Passing input as keyword arguments to an Input instance "
+                    "without adding it immediately to a network is not "
+                    "supported anymore.")
 
-        for name, value in iteritems(self.kwargs):
-            self.__connect(name, value)
+            for name, value in iteritems(self.kwargs):
+                self.__connect(name, value)
 
     def __connect(self, name, expr):
-        target, vocab = self.spa.get_module_input(name)
+        target, vocab = self.module.get_module_input(name)
         if callable(expr):
             val = make_parse_func(expr, vocab)
         else:
@@ -85,7 +95,7 @@ class Input(Module):
             node = nengo.Node(val, label='input_%s' % name)
         self.input_nodes[name] = node
 
-        with self.spa:
+        with self.module:
             nengo.Connection(node, target, synapse=None)
 
     def __setattr__(self, name, value):

@@ -5,10 +5,19 @@ import numpy as np
 import nengo
 from nengo.config import Config, SupportDefaultsMixin
 from nengo.exceptions import SpaModuleError
+from nengo.network import Network
 from nengo.params import IntParam
+from nengo.spa.input import Input
 from nengo.spa.vocab import VocabularyMap, VocabularyMapParam
 from nengo.synapses import SynapseParam
 from nengo.utils.compat import iteritems
+
+
+def get_current_module():
+    for net in reversed(Network.context):
+        if isinstance(net, Module):
+            return net
+    return None
 
 
 class Module(nengo.Network, SupportDefaultsMixin):
@@ -44,19 +53,27 @@ class Module(nengo.Network, SupportDefaultsMixin):
         self.vocabs = vocabs
         self.config[Module].vocabs = vocabs
 
+        self.__dict__['_parent_module'] = get_current_module()
+
         self._modules = {}
 
         self.inputs = {}
         self.outputs = {}
 
-    def on_add(self, spa):
-        """Called when this is assigned to a variable in the SPA network.
+        self._stimuli = None
 
-        Overload this when you want processing to be delayed until after
-        the module is attached to the SPA network. This is usually for
-        modules that connect to other things in the SPA model (such as
-        the basal ganglia or thalamus).
-        """
+    @property
+    def stimuli(self):
+        if self._stimuli is None:
+            self._stimuli = Input(self)
+        return self._stimuli
+
+    @property
+    def parent_module(self):
+        warnings.warn(DeprecationWarning(
+            "Access to parent_module attribute indicates the usage of "
+            "deprecated SPA syntax."))
+        return self._parent_module
 
     def __setattr__(self, key, value):
         """A setattr that handles Modules being added specially.
@@ -84,22 +101,6 @@ class Module(nengo.Network, SupportDefaultsMixin):
         for k, (obj, v) in iteritems(module.outputs):
             if isinstance(v, int):
                 module.outputs[k] = (obj, self.vocabs.get_or_create(v))
-
-        module.on_add(self)
-
-    def __exit__(self, ex_type, ex_value, traceback):
-        super(Module, self).__exit__(ex_type, ex_value, traceback)
-        if ex_type is not None:
-            # re-raise the exception that triggered this __exit__
-            return False
-
-        module_list = frozenset(self._modules.values())
-        for net in self.networks:
-            # Since there are no attributes to distinguish what's been added
-            # and what hasn't, we have to ask the network
-            if isinstance(net, Module) and (net not in module_list):
-                raise SpaModuleError("%s must be set as an attribute of "
-                                     "a SPA network" % (net))
 
     def get_module(self, name, strip_output=False):
         """Return the module for the given name.
