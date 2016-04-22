@@ -955,10 +955,7 @@ class Action(Node):
 
         if not self.effects.fixed:
             with context.active_net:
-                if self.name is not None:
-                    label = self.name + ": " + str(self)
-                else:
-                    label = str(self)
+                label = str(self) if self.name is None else self.name
                 context = context.subcontext(
                     active_net=nengo.Network(label=label))
 
