@@ -1,7 +1,9 @@
 import numpy as np
+import pytest
 
 import nengo
 from nengo import spa
+from nengo.exceptions import SpaTypeError
 
 
 def test_new_action_syntax(Simulator, seed, plt, rng):
@@ -94,3 +96,66 @@ def test_dot_product(Simulator, seed, plt):
     t = sim.trange()
     assert np.mean(sim.data[p][(t > 0.1) & (t <= 0.3)]) > 0.8
     assert np.mean(sim.data[p][t > 0.4]) < 0.1
+
+
+class TestExceptions():
+    @pytest.fixture
+    def model(self):
+        with spa.Module() as model:
+            model.state_a = spa.State(16)
+            model.state_b = spa.State(32)
+            model.state_c = spa.State(32)
+            model.scalar = spa.Scalar()
+        return model
+
+    def test_invalid_types_in_binary_operation(self, model):
+        with model:
+            actions = spa.Actions('state_c = state_a + state_b')
+            with pytest.raises(SpaTypeError):
+                actions.build(model)
+
+    def test_approx_inverse_of_scalar(self, model):
+        with model:
+            actions = spa.Actions('state_c = ~scalar')
+            with pytest.raises(SpaTypeError):
+                actions.build(model)
+
+    def test_dot_product_incompatiple_vocabs(self, model):
+        with model:
+            actions = spa.Actions('scalar = dot(state_a, state_b)')
+            with pytest.raises(SpaTypeError):
+                actions.build(model)
+
+    def test_dot_product_first_argument_invalid(self, model):
+        with model:
+            actions = spa.Actions('scalar = dot(scalar, state_b)')
+            with pytest.raises(SpaTypeError):
+                actions.build(model)
+
+    def test_dot_product_second_argument_invalid(self, model):
+        with model:
+            actions = spa.Actions('scalar = dot(state_a, scalar)')
+            with pytest.raises(SpaTypeError):
+                actions.build(model)
+
+    @pytest.mark.parametrize('method', ['reinterpret', 'translate'])
+    def test_cast_type_inference_not_possible(self, model, method):
+        with model:
+            actions = spa.Actions('scalar = dot({}(state_a), A)'.format(
+                method))
+            with pytest.raises(SpaTypeError):
+                actions.build(model)
+
+    @pytest.mark.parametrize('method', ['reinterpret', 'translate'])
+    def test_cast_scalar(self, model, method):
+        with model:
+            actions = spa.Actions('state_a = {}(scalar)'.format(
+                method))
+            with pytest.raises(SpaTypeError):
+                actions.build(model)
+
+    def test_reinterpret_non_matching_dimensions(self, model):
+        with model:
+            actions = spa.Actions('state_a = reinterpret(state_b)')
+            with pytest.raises(SpaTypeError):
+                actions.build(model)
