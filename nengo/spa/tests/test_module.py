@@ -49,29 +49,6 @@ def test_spa_verification(seed, plt):
         with model:
             model.buf = spa.State(d, feedback=1)
 
-    with pytest.raises(ValueError):
-        model = spa.Module(seed=seed)
-        # build a model that should raise an error because no variable
-        with model:
-            model.buf = spa.Buffer(d)
-            spa.Input(buf='B')
-
-    with pytest.raises(ValueError):
-        model = spa.Module(seed=seed)
-        # build a model that should raise an error because no input attribute
-        with model:
-            model.buf = spa.Buffer(d)
-            input_node = spa.Input(buf='B')
-            input_node.label = "woop"
-
-    with pytest.raises(SpaModuleError):
-        model = spa.Module(seed=seed)
-        # build a model that should raise an error because no buf attribute
-        with model:
-            buf = spa.Buffer(d)
-            model.input_node = spa.Input(buf='B')
-            buf.label = "woop"
-
 
 def test_spa_module_exception():
     class MyException(Exception):
