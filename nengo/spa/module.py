@@ -1,4 +1,3 @@
-import sys
 import warnings
 
 import numpy as np
@@ -6,11 +5,10 @@ import numpy as np
 import nengo
 from nengo.config import Config, SupportDefaultsMixin
 from nengo.exceptions import SpaModuleError
-from nengo.params import Default, IntParam, ValidationError
-from nengo.rc import rc
+from nengo.params import IntParam
 from nengo.spa.vocab import VocabularyMap, VocabularyMapParam
 from nengo.synapses import SynapseParam
-from nengo.utils.compat import iteritems, reraise
+from nengo.utils.compat import iteritems
 
 
 class Module(nengo.Network, SupportDefaultsMixin):
