@@ -33,7 +33,7 @@ class TimeProcess(Process):
             return lambda t, x: [t * np.sum(x)] * size_out
 
 
-def test_time(Simulator):
+def test_time(RefSimulator):
     trun = 1.
     c = 2.
     process = TimeProcess()
@@ -47,7 +47,7 @@ def test_time(Simulator):
         nengo.Connection(q, v, synapse=None)
         vp = nengo.Probe(v)
 
-    with Simulator(model) as sim:
+    with RefSimulator(model) as sim:
         sim.run(trun)
 
     nt = len(sim.trange())
