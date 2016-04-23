@@ -73,6 +73,7 @@ import warnings
 import numpy as np
 
 import nengo
+from nengo.spa.bind import Bind
 from nengo.spa.pointer import SemanticPointer
 from nengo.exceptions import SpaModuleError, SpaParseError, SpaTypeError
 
@@ -572,10 +573,9 @@ class Product(BinaryOperation):
 
         with context.active_net:
             if is_binding:
-                net = nengo.networks.CircularConvolution(
-                    context.root_module.cconv_neurons,
-                    self.type.vocab.dimensions,
-                    net=nengo.Network(label=str(self)))
+                net = Bind(
+                    self.type.vocab.dimensions, self.type.vocab,
+                    context.root_module.cconv_neurons, label=str(self))
             elif self.lhs.type == TScalar and self.rhs.type == TScalar:
                 net = nengo.networks.Product(
                     context.root_module.product_neurons, 1,

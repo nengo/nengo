@@ -1,5 +1,5 @@
 import nengo
-from nengo.spa import Module
+from nengo.spa.module import Module
 
 
 class Scalar(Module):
