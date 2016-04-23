@@ -167,16 +167,16 @@ def test_convolution(Simulator, plt, seed):
 
     # Ideal answer: A*B = [0,0,0,1,0]
     assert np.allclose(np.mean(sim.data[pAB][-10:], axis=0),
-                       np.array([0, 0, 0, 1, 0]), atol=0.15)
+                       np.array([0, 0, 0, 1, 0]), atol=0.16)
 
     # Ideal answer: A*~B = [0,0,0,0,1]
     assert np.allclose(np.mean(sim.data[pABinv][-10:], axis=0),
-                       np.array([0, 0, 0, 0, 1]), atol=0.15)
+                       np.array([0, 0, 0, 0, 1]), atol=0.16)
 
     # Ideal answer: ~A*B = [0,1,0,0,0]
     assert np.allclose(np.mean(sim.data[pAinvB][-10:], axis=0),
-                       np.array([0, 1, 0, 0, 0]), atol=0.15)
+                       np.array([0, 1, 0, 0, 0]), atol=0.16)
 
     # Ideal answer: ~A*~B = [0,0,1,0,0]
     assert np.allclose(np.mean(sim.data[pAinvBinv][-10:], axis=0),
-                       np.array([0, 0, 1, 0, 0]), atol=0.15)
+                       np.array([0, 0, 1, 0, 0]), atol=0.16)
