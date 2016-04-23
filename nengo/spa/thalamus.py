@@ -1,11 +1,11 @@
-import numpy as np
-
 import nengo
 from nengo.dists import Uniform
 from nengo.exceptions import ObsoleteError
 from nengo.params import Default, IntParam, NumberParam
 from nengo.spa.spa_ast import ConstructionContext
 from nengo.spa.module import Module
+from nengo.spa.scalar import Scalar
+from nengo.spa.state import State
 from nengo.synapses import Lowpass, SynapseParam
 
 
@@ -161,16 +161,6 @@ class Thalamus(Module):
         :class:`nengo.networks.EnsembleArray`
             The constructed channel.
         """
-        if target_input[1] is not None:
-            dim = target_input[1].dimensions
-        else:
-            dim = 1
-        subdim = target_module.dim_per_ensemble
-        if dim < subdim:
-            subdim = dim
-        elif dim % subdim != 0:
-            subdim = 1
-
         if net is None:
             net = self.parent_module
         if label is None:
@@ -179,10 +169,11 @@ class Thalamus(Module):
             else:
                 label = 'channel'
         with net:
-            channel = nengo.networks.EnsembleArray(
-                self.neurons_channel_dim * subdim,
-                dim // subdim, ens_dimensions=subdim,
-                radius=np.sqrt(float(subdim) / dim), label=label)
+            if target_input[1] is None:
+                channel = Scalar(label=label)
+            else:
+                vocab = target_input[1]
+                channel = State(vocab.dimensions, vocab=vocab, label=label)
         nengo.Connection(
             channel.output, target_input[0], synapse=self.synapse_channel)
         return channel
@@ -201,11 +192,17 @@ class Thalamus(Module):
         channel : :class:`nengo.networks.EnsembleArray`
             Channel to inhibit with the gate.
         """
-        for e in channel.ensembles:
-            inhibit = ([[-self.route_inhibit]] * (e.n_neurons))
-            nengo.Connection(
-                self.gates[index], e.neurons, transform=inhibit,
-                synapse=self.synapse_inhibit)
+        if isinstance(channel, Scalar):
+            target = channel.scalar.neurons
+        elif isinstance(channel, State):
+            target = channel.state_ensembles.add_neuron_input()
+        else:
+            raise NotImplementedError()
+
+        inhibit = ([[-self.route_inhibit]] * (target.size_in))
+        nengo.Connection(
+            self.gates[index], target, transform=inhibit,
+            synapse=self.synapse_inhibit)
 
     def connect_fixed(self, index, target, transform):
         """Create connection to route fixed value.
