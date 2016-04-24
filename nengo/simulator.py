@@ -8,6 +8,7 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder import Model
+from nengo.builder.optimizer import optimize as opmerge_optimize
 from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.exceptions import ReadonlyError, SimulatorClosed
@@ -98,6 +99,11 @@ class Simulator(object):
         If ``False``, the progress bar will be disabled.
         For more control over the progress bar, pass in a `.ProgressBar`
         or `.ProgressUpdater` instance.
+    optimize : bool, optional (Default: True)
+        If ``True``, the builder will run an additional optimization step
+        that can speed up simulations signficantly at the cost of slower
+        builds. If running models for very small amounts of time,
+        pass ``False`` to disable the optimizer.
 
     Attributes
     ----------
@@ -129,7 +135,8 @@ class Simulator(object):
     unsupported = []
 
     def __init__(
-            self, network, dt=0.001, seed=None, model=None, progress_bar=True):
+            self, network,
+            dt=0.001, seed=None, model=None, progress_bar=True, optimize=True):
         self.closed = False
         self.progress_bar = progress_bar
 
@@ -144,15 +151,19 @@ class Simulator(object):
             # Build the network into the model
             self.model.build(network, progress_bar=self.progress_bar)
 
+        # Order the steps (they are made in `Simulator.reset`)
+        self.dg = operator_depencency_graph(self.model.operators)
+
+        if optimize:
+            opmerge_optimize(self.model, self.dg)
+
+        self._step_order = [op for op in toposort(self.dg)
+                            if hasattr(op, 'make_step')]
+
         # -- map from Signal.base -> ndarray
         self.signals = SignalDict()
         for op in self.model.operators:
             op.init_signals(self.signals)
-
-        # Order the steps (they are made in `Simulator.reset`)
-        self.dg = operator_depencency_graph(self.model.operators)
-        self._step_order = [op for op in toposort(self.dg)
-                            if hasattr(op, 'make_step')]
 
         # Add built states to the probe dictionary
         self._probe_outputs = self.model.params

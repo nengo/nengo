@@ -14,6 +14,7 @@ PY2 = sys.version_info[0] == 2
 if PY2:
     import cPickle as pickle
     import ConfigParser as configparser
+    from itertools import izip_longest as zip_longest
     from StringIO import StringIO
     string_types = (str, unicode)
     int_types = (int, long)
@@ -77,6 +78,7 @@ else:
     import pickle
     import configparser
     from io import StringIO
+    from itertools import zip_longest
     from os import replace
     TextIO = StringIO
     string_types = (str,)
@@ -100,6 +102,7 @@ else:
 assert pickle
 assert configparser
 assert replace
+assert zip_longest
 
 
 def is_integer(obj):

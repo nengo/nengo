@@ -54,6 +54,8 @@ Operators
 
 .. autoclass:: nengo.builder.operator.DotInc
 
+.. autoclass:: nengo.builder.operator.BsrDotInc
+
 .. autoclass:: nengo.builder.operator.TimeUpdate
 
 .. autoclass:: nengo.builder.operator.SimPyFunc
@@ -125,3 +127,8 @@ Decoder cache
 .. autoclass:: nengo.cache.CacheIndex
 
 .. autoclass:: nengo.cache.WriteableCacheIndex
+
+Optimizer
+---------
+
+.. autofunction:: nengo.builder.optimizer.optimize

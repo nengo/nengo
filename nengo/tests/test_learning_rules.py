@@ -222,7 +222,8 @@ def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt):
     assert not np.allclose(sim.data[weights_p][0], sim.data[weights_p][-1])
 
 
-def learning_net(learning_rule, net, rng):
+def learning_net(learning_rule=nengo.PES, net=None, rng=np.random):
+    net = nengo.Network() if net is None else net
     with net:
         if learning_rule is nengo.PES:
             learning_rule_type = learning_rule(learning_rate=1e-5)
@@ -242,17 +243,16 @@ def learning_net(learning_rule, net, rng):
             nengo.Connection(u, err)
             nengo.Connection(err, conn.learning_rule)
 
-        activity_p = nengo.Probe(pre.neurons, synapse=0.01)
-        weights_p = nengo.Probe(
+        net.activity_p = nengo.Probe(pre.neurons, synapse=0.01)
+        net.weights_p = nengo.Probe(
             conn, 'weights', synapse=None, sample_every=.01)
-    return net, activity_p, weights_p
+    return net
 
 
 @pytest.mark.parametrize('learning_rule', [nengo.PES, nengo.BCM, nengo.Oja])
 def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
     """Learning rules should work the same regardless of dt."""
-    m, activity_p, trans_p = learning_net(
-        learning_rule, nengo.Network(seed=seed), rng)
+    m = learning_net(learning_rule, nengo.Network(seed=seed), rng)
 
     trans_data = []
     # Using dts greater near tau_ref (0.002 by default) causes learning to
@@ -262,11 +262,11 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
     for c, dt in zip(colors, dts):
         with Simulator(m, dt=dt) as sim:
             sim.run(0.1)
-        trans_data.append(sim.data[trans_p])
+        trans_data.append(sim.data[m.weights_p])
         plt.subplot(2, 1, 1)
-        plt.plot(sim.trange(dt=0.01), sim.data[trans_p][..., 0], c=c)
+        plt.plot(sim.trange(dt=0.01), sim.data[m.weights_p][..., 0], c=c)
         plt.subplot(2, 1, 2)
-        plt.plot(sim.trange(), sim.data[activity_p], c=c)
+        plt.plot(sim.trange(), sim.data[m.activity_p], c=c)
 
     plt.subplot(2, 1, 1)
     plt.xlim(right=sim.trange()[-1])
@@ -276,14 +276,13 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
     plt.ylabel("Presynaptic activity")
 
     assert np.allclose(trans_data[0], trans_data[1], atol=3e-3)
-    assert not np.allclose(sim.data[trans_p][0], sim.data[trans_p][-1])
+    assert not np.allclose(sim.data[m.weights_p][0], sim.data[m.weights_p][-1])
 
 
 @pytest.mark.parametrize('learning_rule', [nengo.PES, nengo.BCM, nengo.Oja])
 def test_reset(Simulator, learning_rule, plt, seed, rng):
     """Make sure resetting learning rules resets all state."""
-    m, activity_p, trans_p = learning_net(
-        learning_rule, nengo.Network(seed=seed), rng)
+    m = learning_net(learning_rule, nengo.Network(seed=seed), rng)
 
     with Simulator(m) as sim:
         sim.run(0.1)
@@ -291,8 +290,8 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
 
         first_t = sim.trange()
         first_t_trans = sim.trange(dt=0.01)
-        first_activity_p = np.array(sim.data[activity_p], copy=True)
-        first_trans_p = np.array(sim.data[trans_p], copy=True)
+        first_activity_p = np.array(sim.data[m.activity_p], copy=True)
+        first_weights_p = np.array(sim.data[m.weights_p], copy=True)
 
         sim.reset()
         sim.run(0.3)
@@ -300,16 +299,16 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
     plt.subplot(2, 1, 1)
     plt.ylabel("Neural activity")
     plt.plot(first_t, first_activity_p, c='b')
-    plt.plot(sim.trange(), sim.data[activity_p], c='g')
+    plt.plot(sim.trange(), sim.data[m.activity_p], c='g')
     plt.subplot(2, 1, 2)
     plt.ylabel("Connection weight")
-    plt.plot(first_t_trans, first_trans_p[..., 0], c='b')
-    plt.plot(sim.trange(dt=0.01), sim.data[trans_p][..., 0], c='g')
+    plt.plot(first_t_trans, first_weights_p[..., 0], c='b')
+    plt.plot(sim.trange(dt=0.01), sim.data[m.weights_p][..., 0], c='g')
 
     assert np.allclose(sim.trange(), first_t)
     assert np.allclose(sim.trange(dt=0.01), first_t_trans)
-    assert np.allclose(sim.data[activity_p], first_activity_p)
-    assert np.allclose(sim.data[trans_p], first_trans_p)
+    assert np.allclose(sim.data[m.activity_p], first_activity_p)
+    assert np.allclose(sim.data[m.weights_p], first_weights_p)
 
 
 def test_learningruletypeparam():

@@ -7,15 +7,14 @@ from nengo.exceptions import SpaParseError
 import numpy as np
 
 
-@pytest.mark.slow
-def test_thalamus(Simulator, plt, seed):
+def thalamus_net(d=2, n=20, seed=None):
     model = spa.SPA(seed=seed)
 
     with model:
-        model.vision = spa.Buffer(dimensions=16, neurons_per_dimension=80)
-        model.vision2 = spa.Buffer(dimensions=16, neurons_per_dimension=80)
-        model.motor = spa.Buffer(dimensions=16, neurons_per_dimension=80)
-        model.motor2 = spa.Buffer(dimensions=32, neurons_per_dimension=80)
+        model.vision = spa.Buffer(dimensions=d, neurons_per_dimension=n)
+        model.vision2 = spa.Buffer(dimensions=d, neurons_per_dimension=n)
+        model.motor = spa.Buffer(dimensions=d, neurons_per_dimension=n)
+        model.motor2 = spa.Buffer(dimensions=d * 2, neurons_per_dimension=n)
 
         actions = spa.Actions(
             'dot(vision, A) --> motor=A, motor2=vision*vision2',
@@ -36,8 +35,17 @@ def test_thalamus(Simulator, plt, seed):
                 return '0'
         model.input = spa.Input(vision=input_f, vision2='B*~A')
 
+    return model
+
+
+@pytest.mark.slow
+def test_thalamus(Simulator, plt, seed):
+    model = thalamus_net(d=16, n=80, seed=seed)
+
+    with model:
         input, vocab = model.get_module_input('motor')
         input2, vocab2 = model.get_module_input('motor2')
+
         p = nengo.Probe(input, 'output', synapse=0.03)
         p2 = nengo.Probe(input2, 'output', synapse=0.03)
 

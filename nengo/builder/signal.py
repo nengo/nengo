@@ -284,6 +284,7 @@ class SignalDict(dict):
             view = np.ndarray(
                 shape=x.shape, strides=x.strides, offset=signal.offset,
                 dtype=x.dtype, buffer=self[signal.base].data)
+            assert np.array_equal(view, x)
             view.setflags(write=not signal.readonly)
             dict.__setitem__(self, signal, view)
         else:

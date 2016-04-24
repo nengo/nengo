@@ -24,6 +24,9 @@ Release History
 
 **Added**
 
+- Added an optimizer that reduces simulation time for common types of models.
+  The optimizer can be turned off by passing ``optimize=False`` to ``Simulator``.
+  (`#1035 <https://github.com/nengo/nengo/pull/1035>`_)
 - Added the option to not normalize encoders by setting
   ``Ensemble.normalize_encoders`` to ``False``.
   (`#1191 <https://github.com/nengo/nengo/issues/1191>`_,

@@ -48,6 +48,59 @@ def graph(edges=None):
     return g
 
 
+class BidirectionalDAG(object):
+    """Directed acyclic graph supporting bidirectional traversal.
+
+    Parameters
+    ----------
+    forward : dict
+        Forward edges for each vertex in the form
+        {1: {2, 3}, 2: {3}, 3: set()}.
+
+    Attributes
+    ----------
+    forward : dict
+        Maps vertices to edges in forward direction.
+    backward : dict
+        Maps vertices to edges in backward direction.
+    """
+
+    def __init__(self, forward):
+        self.forward = forward
+        self.backward = reverse_edges(forward)
+
+    def merge(self, vertices, merged_vertex):
+        """Merges vertices in the graph.
+
+        Parameters
+        ----------
+        vertices : set
+            Vertices that are being merged.
+        merged_vertex
+            The vertex that replaces *vertices*.
+        """
+
+        forward_edges = set()
+        for v in vertices:
+            forward_edges.update(self.forward[v])
+            del self.forward[v]
+        self.forward[merged_vertex] = forward_edges
+
+        backward_edges = set()
+        for v in vertices:
+            backward_edges.update(self.backward[v])
+            del self.backward[v]
+        self.backward[merged_vertex] = backward_edges
+
+        for e in forward_edges:
+            self.backward[e].difference_update(vertices)
+            self.backward[e].add(merged_vertex)
+
+        for e in backward_edges:
+            self.forward[e].difference_update(vertices)
+            self.forward[e].add(merged_vertex)
+
+
 def toposort(edges):
     """Topological sort algorithm by Kahn[1]
 
@@ -65,7 +118,7 @@ def toposort(edges):
     Example
     -------
 
-    >>> toposort({1: {2, 3}, 2: (3,)})
+    >>> toposort({1: {2, 3}, 2: {3}, 3: set()})
     [1, 2, 3]
 
     Notes
@@ -79,7 +132,8 @@ def toposort(edges):
     """
     incoming_edges = reverse_edges(edges)
     incoming_edges = {k: set(val) for k, val in iteritems(incoming_edges)}
-    vertices = {v for v in edges if v not in incoming_edges}
+    vertices = {v for v in edges
+                if v not in incoming_edges or not incoming_edges[v]}
     ordered = []
 
     while vertices:
@@ -143,18 +197,19 @@ def reverse_edges(edges):
     Parameters
     ----------
     edges : dict
-        Dict of the form {a: {b, c}} where b and c depend on a
+        Dict of the form {a: {b, c}, b: set(), c: set()} where b and c depend
+        on a.
 
     Returns
     -------
-    Dict of the form {b: (a,), c: (a,)} where b and c depend on a
+    Dict of the form {a: set(), b: {a}, c: {a}} where b and c depend on a.
 
     Example
     -------
 
-    >>> d = {'a': (1, 2), 'b': (2, 3), 'c':()}
+    >>> d = {0: {1, 2}, 1: {2, 3}, 2: set(), 3: set()}
     >>> reverse_edges(d)
-    {1: ('a',), 2: ('a', 'b'), 3: ('b',)}
+    {0: set(), 1: {0}, 2: {0, 1}, 3: {1}}
 
     :note: dict order are not deterministic. As we iterate on the
         input dict, it make the output of this function depend on the
@@ -162,10 +217,10 @@ def reverse_edges(edges):
         as undeterministic.
 
     """
-    result = {}
+    result = {k: set() for k in edges}
     for key in edges:
         for val in edges[key]:
-            result[val] = result.get(val, tuple()) + (key, )
+            result[val].add(key)
     return result
 
 

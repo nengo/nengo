@@ -518,7 +518,7 @@ class DotInc(Operator):
     4. updates ``[]``
     """
 
-    def __init__(self, A, X, Y, tag=None):
+    def __init__(self, A, X, Y, reshape=None, tag=None):
         super(DotInc, self).__init__(tag=tag)
 
         if X.ndim >= 2 and any(d > 1 for d in X.shape[1:]):
@@ -529,6 +529,10 @@ class DotInc(Operator):
         self.A = A
         self.X = X
         self.Y = Y
+        self.reshape = reshape
+        if self.reshape is None:
+            self.reshape = reshape_dot(
+                A.initial_value, X.initial_value, Y.initial_value, self.tag)
 
         self.sets = []
         self.incs = [Y]
@@ -542,11 +546,86 @@ class DotInc(Operator):
         X = signals[self.X]
         A = signals[self.A]
         Y = signals[self.Y]
-        reshape = reshape_dot(A, X, Y, self.tag)
 
         def step_dotinc():
             inc = np.dot(A, X)
-            if reshape:
+            if self.reshape:
+                inc = np.asarray(inc).reshape(Y.shape)
+            Y[...] += inc
+        return step_dotinc
+
+
+class BsrDotInc(DotInc):
+    """Increment signal Y by dot(A, X) using block sparse row format.
+
+    Implements ``Y[...] += np.dot(A, X)``, where ``A`` is an instance
+    of `scipy.sparse.bsr_matrix`.
+
+    .. note:: Requires SciPy.
+
+    .. note:: Currently, this only supports matrix-vector multiplies
+              for compatibility with Nengo OCL.
+
+    Parameters
+    ----------
+    A : (k, r, c) Signal
+        The signal providing the k data blocks with r rows and c columns.
+    X : (k * c) Signal
+        The signal providing the k column vectors to multiply with.
+    Y : (k * r) Signal
+        The signal providing the k column vectors to update.
+    indices : ndarray
+        Column indices, see `scipy.sparse.bsr_matrix` for details.
+    indptr : ndarray
+        Column index pointers, see `scipy.sparse.bsr_matrix` for details.
+    reshape : bool
+        Whether to reshape the result.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    A : (k, r, c) Signal
+        The signal providing the k data blocks with r rows and c columns.
+    indices : ndarray
+        Column indices, see `scipy.sparse.bsr_matrix` for details.
+    indptr : ndarray
+        Column index pointers, see `scipy.sparse.bsr_matrix` for details.
+    reshape : bool
+        Whether to reshape the result.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+    X : (k * c) Signal
+        The signal providing the k column vectors to multiply with.
+    Y : (k * r) Signal
+        The signal providing the k column vectors to update.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[Y]``
+    3. reads ``[A, X]``
+    4. updates ``[]``
+    """
+
+    def __init__(self, A, X, Y, indices, indptr, reshape=None, tag=None):
+        from scipy.sparse import bsr_matrix
+        self.bsr_matrix = bsr_matrix
+
+        super(BsrDotInc, self).__init__(A, X, Y, reshape=reshape, tag=tag)
+
+        self.indices = indices
+        self.indptr = indptr
+
+    def make_step(self, signals, dt, rng):
+        X = signals[self.X]
+        A = signals[self.A]
+        Y = signals[self.Y]
+
+        def step_dotinc():
+            mat_A = self.bsr_matrix((A, self.indices, self.indptr))
+            inc = mat_A.dot(X)
+            if self.reshape:
                 inc = np.asarray(inc).reshape(Y.shape)
             Y[...] += inc
         return step_dotinc
