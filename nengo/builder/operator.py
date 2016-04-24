@@ -224,9 +224,9 @@ class Reset(Operator):
 class Copy(Operator):
     """Assign the value of one signal to another."""
 
-    def __init__(self, dst, src, tag=None):
-        self.dst = dst
+    def __init__(self, src, dst, tag=None):
         self.src = src
+        self.dst = dst
         self.tag = tag
 
         self.sets = [dst]
@@ -238,8 +238,8 @@ class Copy(Operator):
         return '%s -> %s' % (self.src, self.dst)
 
     def make_step(self, signals, dt, rng):
-        dst = signals[self.dst]
         src = signals[self.src]
+        dst = signals[self.dst]
 
         def step_copy():
             dst[...] = src
@@ -247,45 +247,87 @@ class Copy(Operator):
 
 
 class SlicedCopy(Operator):
-    """Copy from `a` to `b` with slicing: `b[b_slice] = a[a_slice]`"""
-    def __init__(self, a, b, a_slice=Ellipsis, b_slice=Ellipsis,
-                 inc=False, tag=None):
-        if isinstance(a_slice, slice):
-            a = a[a_slice]
-            a_slice = Ellipsis
-        if isinstance(b_slice, slice):
-            b = b[b_slice]
-            b_slice = Ellipsis
-        # ^ a_slice and b_slice are now either lists of indices or `Ellipsis`
+    """Assign the value of a slice of one signal to another slice.
 
-        self.a = a
-        self.b = b
-        self.a_slice = a_slice
-        self.b_slice = b_slice
+    Implements ``dst[dst_slice] = src[src_slice]``.
+
+    This operator can also implement ``dst[dst_slice] += src[src_slice]``
+    using the parameter ``inc``.
+
+    Parameters
+    ----------
+    dst : Signal
+        The signal that will be assigned to (set).
+    src : Signal
+        The signal that will be copied (read).
+    dst_slice : slice or Ellipsis, optional (Default: Ellipsis)
+        Slice associated with ``dst``.
+    src_slice : slice or Ellipsis, optional (Default: Ellipsis)
+        Slice associated with ``src``
+    inc : bool, optional (Default: False)
+        Whether this should be an increment rather than a copy.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    dst : Signal
+        The signal that will be assigned to (set).
+    dst_slice : list or Ellipsis
+        Indices associated with ``dst``.
+    src : Signal
+        The signal that will be copied (read).
+    src_slice : list or Ellipsis
+        Indices associated with ``src``
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[] if inc else [dst]``
+    2. incs ``[dst] if inc else []``
+    3. reads ``[src]``
+    4. updates ``[]``
+    """
+
+    def __init__(self, src, dst, src_slice=Ellipsis, dst_slice=Ellipsis,
+                 inc=False, tag=None):
+        if isinstance(src_slice, slice):
+            src = src[src_slice]
+            src_slice = Ellipsis
+        if isinstance(dst_slice, slice):
+            dst = dst[dst_slice]
+            dst_slice = Ellipsis
+        # ^ src_slice and dst_slice are now either lists of indices or Ellipsis
+
+        self.src = src
+        self.dst = dst
+        self.src_slice = src_slice
+        self.dst_slice = dst_slice
         self.inc = inc
         self.tag = tag
 
-        self.sets = [] if inc else [b]
-        self.incs = [b] if inc else []
-        self.reads = [a]
+        self.sets = [] if inc else [dst]
+        self.incs = [dst] if inc else []
+        self.reads = [src]
         self.updates = []
 
     def _descstr(self):
         return '%s[%s] -> %s[%s], inc=%s' % (
-            self.a, self.a_slice, self.b, self.b_slice, self.inc)
+            self.src, self.src_slice, self.dst, self.dst_slice, self.inc)
 
     def make_step(self, signals, dt, rng):
-        a = signals[self.a]
-        b = signals[self.b]
-        a_slice = self.a_slice
-        b_slice = self.b_slice
+        src = signals[self.src]
+        dst = signals[self.dst]
+        src_slice = self.src_slice
+        dst_slice = self.dst_slice
         inc = self.inc
 
         def step_slicedcopy():
             if inc:
-                b[b_slice] += a[a_slice]
+                dst[dst_slice] += src[src_slice]
             else:
-                b[b_slice] = a[a_slice]
+                dst[dst_slice] = src[src_slice]
         return step_slicedcopy
 
 
