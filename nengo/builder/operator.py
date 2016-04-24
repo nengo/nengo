@@ -178,6 +178,32 @@ class Operator(object):
         """
         raise NotImplementedError("subclasses must implement this method.")
 
+    def can_merge(self, other):
+        """Checks if this signal can be merged with another signal.
+
+        Will return ``False`` by default. Override this method if an operator
+        supports merging.
+
+        This function is expected to be transitive and symmetric.
+        """
+        return False
+
+    def merge(self, others):
+        """Merge this operator with `others`.
+
+        May lead to undefined behaviour if ``can_merge`` returns ``False`` for
+        any of the elements in ``others``.
+
+        Returns
+        -------
+        Operator
+            The merged operator.
+        dict
+            Dictionary mapping old signals to new signals to update the
+            signals of other operators.
+        """
+        raise NotImplementedError("Merge not supported by operator.")
+
 
 class TimeUpdate(Operator):
     """Updates the simulation step and time.
