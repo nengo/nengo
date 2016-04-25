@@ -68,6 +68,23 @@ class SimNeurons(Operator):
             self.neurons.step_math(dt, J, output, *states)
         return step_simneurons
 
+    def can_merge(self, other):
+        return (self.__class__ is other.__class__ and
+                self.neurons == other.neurons)
+
+    def _gather(self, others, key):
+        return [getattr(self, key)] + [getattr(o, key) for o in others]
+
+    def merge(self, others):
+        replacements = {}
+        J = Signal.merge_signals(self._gather(others, 'J'), replacements)
+        output = Signal.merge_signals(
+            self._gather(others, 'output'), replacements)
+        states = []
+        for signals in zip(*self._gather(others, 'states')):
+            states.append(Signal.merge_signals(signals, replacements))
+        return (SimNeurons(self.neurons, J, output, states), replacements)
+
 
 @Builder.register(NeuronType)
 def build_neurons(model, neurontype, neurons):

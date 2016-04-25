@@ -198,6 +198,47 @@ class Signal(object):
         """Return a view on this signal with row vector shape."""
         return self.reshape((1, self.size))
 
+    @staticmethod
+    def merge_signals(signals, replacements, axis=0):
+        """Merges multiple signal into one signal with sequential memory
+        allocation.
+
+        Note that if any of the signals are linked to another signal (by being
+        a view or being the base of a view), the merged signal will not reflect
+        those links anymore.
+
+        Parameters
+        ----------
+        signals : sequence
+            Signals to merge.
+        axis : int, optional
+            Axis along which to concatenate the signals.
+        replacements : dict
+            Dictionary to update with a mapping from the old signals to new
+            signals that are a view into the merged signal and can be used to
+            replace the old signals.
+
+        Returns
+        -------
+        merged_signal : Signal
+            The merged signal.
+        """
+        initial_value = np.concatenate(
+            [s.initial_value for s in signals], axis=axis)
+        readonly = all(s.readonly for s in signals)
+        name = 'merged<' + str(", ".join(s.name for s in signals)) + '>'
+        merged_signal = Signal(initial_value, name=name, readonly=readonly)
+
+        start = 0
+        for s in signals:
+            size = s.shape[axis]
+            indexing = [slice(None)] * initial_value.ndim
+            indexing[axis] = slice(start, start + size)
+            replacements[s] = merged_signal[tuple(indexing)]
+            start += size
+
+        return merged_signal
+
 
 class SignalDict(dict):
     """Map from Signal -> ndarray
