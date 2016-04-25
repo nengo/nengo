@@ -55,6 +55,21 @@ Learning rule types
 
 .. autoclass:: nengo.Voja
 
+Processes
+=========
+
+.. autoclass:: nengo.Process
+
+.. autoclass:: nengo.processes.PresentInput
+
+.. autoclass:: nengo.processes.FilteredNoise
+
+.. autoclass:: nengo.processes.BrownNoise
+
+.. autoclass:: nengo.processes.WhiteNoise
+
+.. autoclass:: nengo.processes.WhiteSignal
+
 Synapse models
 ==============
 

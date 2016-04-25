@@ -61,6 +61,13 @@ Nodes
 
    examples/delay_node
 
+Processes
+=========
+
+.. toctree::
+
+   examples/processes
+
 Ensembles
 =========
 

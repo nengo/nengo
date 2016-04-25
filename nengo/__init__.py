@@ -16,6 +16,7 @@ from .version import version as __version__
 import logging
 
 # Nengo namespace (API)
+from .base import Process
 from .config import Config
 from .connection import Connection
 from .ensemble import Ensemble
@@ -28,7 +29,7 @@ from .params import Default
 from .probe import Probe
 from .rc import rc, RC_DEFAULTS
 from .simulator import Simulator
-from .synapses import Alpha, LinearFilter, Lowpass
+from .synapses import Alpha, LinearFilter, Lowpass, Triangle
 from .utils.logging import log
 from . import dists, exceptions, networks, processes, spa, utils
 

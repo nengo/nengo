@@ -24,16 +24,20 @@ Release History
 
 **API changes**
 
+- A new class for representing stateful functions called ``Process``
+  has been added. ``Node`` objects are now process-aware, meaning that
+  a process can be used as a node's ``output``. Unlike non-process
+  callables, processes are properly reset when a simulator is reset.
+  See the ``processes.ipynb`` example notebook, or the API documentation
+  for more details.
+  (`#590 <https://github.com/nengo/nengo/pull/590>`_,
+  `#652 <https://github.com/nengo/nengo/pull/652>`_,
+  `#945 <https://github.com/nengo/nengo/pull/945>`_,
+  `#955 <https://github.com/nengo/nengo/pull/955>`_)
 - Spiking ``LIF`` neuron models now accept an additional argument,
   ``min_voltage``. Voltages are clipped such that they do not drop below
   this value (previously, this was fixed at 0).
   (`#666 <https://github.com/nengo/nengo/pull/666>`_)
-- ``Process`` objects can now be passed directly as node outputs,
-  making them easier to use. The ``Process`` interface is also improved
-  and is currently the same as the ``Synapse`` interface. However,
-  further improvements are pending, and the current implementation
-  SHOULD NOT BE RELEASED!
-  (`#652 <https://github.com/nengo/nengo/pull/652>`_)
 - The ``PES`` learning rule no longer accepts a connection as an argument.
   Instead, error information is transmitted by making a connection to the
   learning rule object (e.g.,
@@ -121,6 +125,9 @@ Release History
 
 **Improvements**
 
+- Added ``Ensemble.noise`` attribute, which injects noise directly into
+  neurons according to a stochastic ``Process``.
+  (`#590 <https://github.com/nengo/nengo/pull/590>`_)
 - Added a ``randomized_svd`` subsolver for the L2 solvers. This can be much
   quicker for large numbers of neurons or evaluation points.
   (`#803 <https://github.com/nengo/nengo/pull/803>`_)

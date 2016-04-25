@@ -70,6 +70,8 @@ Operators
 
 .. autoclass:: nengo.builder.learning_rules.SimVoja
 
+.. autoclass:: nengo.builder.processes.SimProcess
+
 Build functions
 ---------------
 
@@ -110,3 +112,7 @@ Build functions
 .. autofunction:: nengo.builder.learning_rules.build_voja
 
 .. autofunction:: nengo.builder.learning_rules.build_pes
+
+.. autofunction:: nengo.builder.processes.build_process
+
+.. autofunction:: nengo.builder.processes.build_synapse
