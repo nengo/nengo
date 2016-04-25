@@ -13,15 +13,14 @@ class WhiteNoise(Process):
 
     Parameters
     ----------
-    dist : Distribution, optional
-        The distribution to draw samples from.
-        Default: Gaussian(mean=0, std=1)
-    scale : bool, optional
+    dist : Distribution, optional (Default: ``Gaussian(mean=0, std=1)``)
+        The distribution from which to draw samples.
+    scale : bool, optional (Default: True)
         Whether to scale the white noise for integration. Integrating white
-        noise requires using a time constant of `sqrt(dt)` instead of `dt`
+        noise requires using a time constant of ``sqrt(dt)`` instead of ``dt``
         on the noise term [1]_, to ensure the magnitude of the integrated
-        noise does not change with `dt`. Defaults to True.
-    seed : int, optional
+        noise does not change with ``dt``.
+    seed : int, optional (Default: None)
         Random number seed. Ensures noise will be the same each run.
 
     References
@@ -66,17 +65,16 @@ class FilteredNoise(Process):
 
     Parameters
     ----------
-    synapse : Synapse, optional
-        The synapse to use to filter the noise. Default: Lowpass(tau=0.005)
-    dist : Distribution, optional
+    synapse : Synapse, optional (Default: ``Lowpass(tau=0.005)``)
+        The synapse to use to filter the noise.
+    dist : Distribution, optional (Default: ``Gaussian(mean=0, std=1)``)
         The distribution used to generate the white noise.
-        Default: Gaussian(mean=0, std=1)
-    scale : bool, optional
+    scale : bool, optional (Default: True)
         Whether to scale the white noise for integration, making the output
-        signal invariant to `dt`. Defaults to True.
-    synapse_kwargs : dict, optional
-        Arguments to pass to `synapse.make_step`.
-    seed : int, optional
+        signal invariant to ``dt``.
+    synapse_kwargs : dict, optional (Default: None)
+        Arguments to pass to ``synapse.make_step``.
+    seed : int, optional (Default: None)
         Random number seed. Ensures noise will be the same each run.
     """
 
@@ -87,10 +85,10 @@ class FilteredNoise(Process):
 
     def __init__(self,
                  synapse=Lowpass(tau=0.005), dist=Gaussian(mean=0, std=1),
-                 scale=True, synapse_kwargs={}, **kwargs):
+                 scale=True, synapse_kwargs=None, **kwargs):
         super(FilteredNoise, self).__init__(default_size_in=0, **kwargs)
         self.synapse = synapse
-        self.synapse_kwargs = synapse_kwargs
+        self.synapse_kwargs = {} if synapse_kwargs is None else synapse_kwargs
         self.dist = dist
         self.scale = scale
 
@@ -124,10 +122,9 @@ class BrownNoise(FilteredNoise):
 
     Parameters
     ----------
-    dist : Distribution
+    dist : Distribution, optional (Default: ``Gaussian(mean=0, std=1)``)
         The distribution used to generate the white noise.
-        Default: Gaussian(mean=0, std=1)
-    seed : int, optional
+    seed : int, optional (Default: None)
         Random number seed. Ensures noise will be the same each run.
     """
 
@@ -156,13 +153,13 @@ class WhiteSignal(Process):
     period : float
         A white noise signal with this period will be generated.
         Samples will repeat after this duration.
-    high : float, optional
+    high : float
         The cut-off frequency of the low-pass filter, in Hz.
         Must not exceed the Nyquist frequency for the simulation
-        timestep, that is `high <= 0.5/dt`.
-    rms : float, optional
-        The root mean square power of the filtered signal. Default: 0.5.
-    seed : int, optional
+        timestep, which is ``0.5 / dt``.
+    rms : float, optional (Default: 0.5)
+        The root mean square power of the filtered signal
+    seed : int, optional (Default: None)
         Random number seed. Ensures noise will be the same each run.
     """
 
@@ -226,7 +223,7 @@ class PresentInput(Process):
     inputs : array_like
         Inputs to present, where each row is an input. Rows will be flattened.
     presentation_time : float
-        Show each input for `presentation_time` seconds.
+        Show each input for this amount of time (in seconds).
     """
 
     inputs = NdarrayParam('inputs', shape=('...',))

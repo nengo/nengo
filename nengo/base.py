@@ -200,17 +200,35 @@ class NengoObjectParam(Parameter):
 class Process(FrozenObject):
     """A general system with input, output, and state.
 
-    Attributes
+    For more details on how to use processes and make
+    custom process subclasses, see :doc:`examples/processes`.
+
+    Parameters
     ----------
     default_size_in : int (Default: 0)
         Sets the default size in for nodes using this process.
     default_size_out : int (Default: 1)
         Sets the default size out for nodes running this process. Also,
-        if ``d`` is not specified in `.run` or `.run_steps`, this will be used.
+        if ``d`` is not specified in `~.Process.run` or `~.Process.run_steps`,
+        this will be used.
     default_dt : float (Default: 0.001 (1 millisecond))
-        If ``dt`` is not specified in `.run`, `.run_steps`, `.ntrange`,
-        or `.trange`, this will be used.
+        If ``dt`` is not specified in `~.Process.run`, `~.Process.run_steps`,
+        `~.Process.ntrange`, or `~.Process.trange`, this will be used.
     seed : int, optional (Default: None)
+        Random number seed. Ensures random factors will be the same each run.
+
+    Attributes
+    ----------
+    default_dt : float
+        If ``dt`` is not specified in `~.Process.run`, `~.Process.run_steps`,
+        `~.Process.ntrange`, or `~.Process.trange`, this will be used.
+    default_size_in : int
+        The default size in for nodes using this process.
+    default_size_out : int
+        The default size out for nodes running this process. Also, if ``d`` is
+        not specified in `~.Process.run` or `~.Process.run_steps`,
+        this will be used.
+    seed : int or None
         Random number seed. Ensures random factors will be the same each run.
     """
 
@@ -228,7 +246,25 @@ class Process(FrozenObject):
         self.seed = seed
 
     def apply(self, x, d=None, dt=None, rng=np.random, copy=True, **kwargs):
-        """Run process on a given input."""
+        """Run process on a given input.
+
+        Keyword arguments that do not appear in the parameter list below
+        will be passed to the ``make_step`` function of this process.
+
+        Parameters
+        ----------
+        x : ndarray
+            The input signal given to the process.
+        d : int, optional (Default: None)
+            Output dimensionality. If None, ``default_size_out`` will be used.
+        dt : float, optional (Default: None)
+            Simulation timestep. If None, ``default_dt`` will be used.
+        rng : `numpy.random.RandomState` (Default: ``numpy.random``)
+            Random number generator used for stochstic processes.
+        copy : bool, optional (Default: True)
+            If True, a new output array will be created for output.
+            If False, the input signal ``x`` will be overwritten.
+        """
         shape_in = as_shape(np.asarray(x[0]).shape, min_dim=1)
         shape_out = as_shape(self.default_size_out if d is None else d)
         dt = self.default_dt if dt is None else dt
@@ -240,22 +276,72 @@ class Process(FrozenObject):
         return output
 
     def get_rng(self, rng):
-        """Get a properly seeded independent RNG for the process step"""
+        """Get a properly seeded independent RNG for the process step.
+
+        Parameters
+        ----------
+        rng : `numpy.random.RandomState`
+            The parent random number generator to use if the seed is not set.
+        """
         seed = rng.randint(maxint) if self.seed is None else self.seed
         return np.random.RandomState(seed)
 
     def make_step(self, shape_in, shape_out, dt, rng):
-        """Create function that advances the process forward one time step."""
+        """Create function that advances the process forward one time step.
+
+        This must be implemented by all custom processes.
+
+        Parameters
+        ----------
+        shape_in : tuple
+            The shape of the input signal.
+        shape_out : tuple
+            The shape of the output signal.
+        dt : float
+            The simulation timestep.
+        rng : `numpy.random.RandomState`
+            A random number generator.
+        """
         raise NotImplementedError("Process must implement `make_step` method.")
 
     def run(self, t, d=None, dt=None, rng=np.random, **kwargs):
-        """Run process without input for given length of time."""
+        """Run process without input for given length of time.
+
+        Keyword arguments that do not appear in the parameter list below
+        will be passed to the ``make_step`` function of this process.
+
+        Parameters
+        ----------
+        t : float
+            The length of time to run.
+        d : int, optional (Default: None)
+            Output dimensionality. If None, ``default_size_out`` will be used.
+        dt : float, optional (Default: None)
+            Simulation timestep. If None, ``default_dt`` will be used.
+        rng : `numpy.random.RandomState` (Default: ``numpy.random``)
+            Random number generator used for stochstic processes.
+        """
         dt = self.default_dt if dt is None else dt
         n_steps = int(np.round(float(t) / dt))
         return self.run_steps(n_steps, d=d, dt=dt, rng=rng, **kwargs)
 
     def run_steps(self, n_steps, d=None, dt=None, rng=np.random, **kwargs):
-        """Run process without input for given number of steps."""
+        """Run process without input for given number of steps.
+
+        Keyword arguments that do not appear in the parameter list below
+        will be passed to the ``make_step`` function of this process.
+
+        Parameters
+        ----------
+        n_steps : int
+            The number of steps to run.
+        d : int, optional (Default: None)
+            Output dimensionality. If None, ``default_size_out`` will be used.
+        dt : float, optional (Default: None)
+            Simulation timestep. If None, ``default_dt`` will be used.
+        rng : `numpy.random.RandomState` (Default: ``numpy.random``)
+            Random number generator used for stochstic processes.
+        """
         shape_in = as_shape(0)
         shape_out = as_shape(self.default_size_out if d is None else d)
         dt = self.default_dt if dt is None else dt
@@ -267,12 +353,28 @@ class Process(FrozenObject):
         return output
 
     def ntrange(self, n_steps, dt=None):
-        """Create time points corresponding to a given number of steps."""
+        """Create time points corresponding to a given number of steps.
+
+        Parameters
+        ----------
+        n_steps : int
+            The given number of steps.
+        dt : float, optional (Default: None)
+            Simulation timestep. If None, ``default_dt`` will be used.
+        """
         dt = self.default_dt if dt is None else dt
         return dt * np.arange(1, n_steps + 1)
 
     def trange(self, t, dt=None):
-        """Create time points corresponding to a given length of time."""
+        """Create time points corresponding to a given length of time.
+
+        Parameters
+        ----------
+        t : float
+            The given length of time.
+        dt : float, optional (Default: None)
+            Simulation timestep. If None, ``default_dt`` will be used.
+        """
         dt = self.default_dt if dt is None else dt
         n_steps = int(np.round(float(t) / dt))
         return self.ntrange(n_steps, dt=dt)
