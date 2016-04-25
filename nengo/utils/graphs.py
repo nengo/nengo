@@ -98,6 +98,35 @@ def toposort(edges):
     return ordered
 
 
+def transitive_closure(edges, topo_sorted=None):
+    """Constructs the transitive_closure of a DAG.
+
+    The complexity is O(nodes + vertices).
+
+    Parameters
+    ----------
+    edges : dict
+        Dict of the form {a: {b, c}} where b and c depend on a. Must not
+        contain cycles.
+    topo_sorted : sequence, optional
+        The topological sorting of the vertices. If not passed in the algorithm
+        will do a topological sort.
+
+    Returns
+    -------
+    The transitive closure data structure as `edges`.
+    """
+    if topo_sorted is None:
+        topo_sorted = toposort(edges)
+
+    reachables = {}
+    for vertex in reversed(topo_sorted):
+        reachables[vertex] = set(edges[vertex])
+        for edge in edges[vertex]:
+            reachables[vertex].update(reachables[edge])
+    return reachables
+
+
 def reverse_edges(edges):
     """Reverses direction of dependence dict.
 

@@ -12,6 +12,12 @@ def test_toposort():
     assert graphs.toposort(edges) == ['a', 'b', 'c']
 
 
+def test_transitive_closure():
+    edges = graphs.graph({'a': {}, 'b': {'c', 'd'}, 'd': {'e', }})
+    assert graphs.transitive_closure(edges) == {
+        'a': set(), 'b': {'c', 'd', 'e'}, 'c': set(), 'd': {'e'}, 'e': set()}
+
+
 def test_add_edges():
     edges = graphs.graph({'a': {'b', 'c'}})
     graphs.add_edges(edges, [('a', 'd'), ('b', 'c')])
