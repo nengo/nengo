@@ -371,6 +371,19 @@ class Reset(Operator):
             target[...] = value
         return step_reset
 
+    def can_merge(self, other):
+        return (
+            self.__class__ is other.__class__ and
+            self.dst.ndim == other.dst.ndim and
+            self.dst.shape[1:] == other.dst.shape[1:] and
+            self.value == other.value)
+
+    def merge(self, others):
+        replacements = {}
+        dst = Signal.merge_signals(
+            [self.dst] + [o.dst for o in others], replacements)
+        return Reset(dst, self.value), replacements
+
 
 class Copy(Operator):
     """Assign the value of one signal to another.
