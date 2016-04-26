@@ -424,6 +424,17 @@ class Copy(Operator):
             dst[...] = src
         return step_copy
 
+    def can_merge(self, other):
+        return self.__class__ is other.__class__
+
+    def merge(self, others):
+        replacements = {}
+        dst = Signal.merge_signals(
+            [self.dst] + [o.dst for o in others], replacements)
+        src = Signal.merge_signals(
+            [self.src] + [o.src for o in others], replacements)
+        return Copy(src, dst), replacements
+
 
 class SlicedCopy(Operator):
     """Assign the value of a slice of one signal to another slice.
