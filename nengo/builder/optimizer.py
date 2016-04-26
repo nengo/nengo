@@ -90,10 +90,13 @@ class OpMergeOptimizer(object):
             del by_type[tp]
 
         # Process remaining operations
-        for subset in by_type.values():
-            opr, sigr = self._perform_merges_for_subset(subset, tc)
-            op_replacements.update(opr)
-            sig_replacements.update(sigr)
+        for tp, subset in by_type.items():
+            if tp.supports_merge():
+                opr, sigr = self._perform_merges_for_subset(subset, tc)
+                op_replacements.update(opr)
+                sig_replacements.update(sigr)
+            else:
+                op_replacements.update({op: op for op in subset})
 
         sig_replacements.update(self._get_sig_view_replacements(
             op_replacements.values(), sig_replacements))

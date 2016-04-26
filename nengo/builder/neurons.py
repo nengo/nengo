@@ -68,6 +68,10 @@ class SimNeurons(Operator):
             self.neurons.step_math(dt, J, output, *states)
         return step_simneurons
 
+    @classmethod
+    def supports_merge(cls):
+        return True
+
     def can_merge(self, other):
         return (self.__class__ is other.__class__ and
                 self.neurons == other.neurons)
