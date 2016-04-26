@@ -168,17 +168,26 @@ THE POSSIBILITY OF SUCH DAMAGE.
 Contributor Assignment Agreement
 ********************************
 
-Harmony (HA-CAA-I-ANY) Version 1.0
+Based on Harmony (HA-CAA-I-ANY) Version 1.0, with minor changes.
 
 Nengo Individual Contributor Assignment Agreement
 =================================================
 
-Thank you for your interest in contributing to Nengo ("We" or "Us").
-This contributor agreement ("Agreement") documents the rights granted
-by contributors to Us. To make this document effective, please sign it
-and send it to Us by electronic submission, following the instructions
-at
-<https://github.com/nengo/nengo/blob/master/CONTRIBUTORS.rst>.
+Thank you for your interest in contributing to Nengo, a product of
+Applied Brain Research ("We" or "Us").
+
+This contributor agreement (the "Agreement") documents the rights
+granted by contributors to Us.
+
+By adding your name to the CONTRIBUTORS.rst file at
+<https://github.com/nengo/nengo/blob/master/CONTRIBUTORS.rst>
+you are agreeing to be bound by the Agreement in full.
+
+You agree to inform Us in the relevant pull request(s) if You do not own
+the Copyright to the entire Submission. We will initiate an IP review
+with You to determine the eligibility of the Submission before merging
+the pull request.
+
 This is a legally binding document, so please read it carefully before
 agreeing to it. The Agreement may cover more than one software project
 managed by Us.
@@ -189,10 +198,7 @@ managed by Us.
 "You" means the individual who Submits a Contribution to Us.
 
 "Contribution" means any work of authorship that is Submitted by You
-to Us in which You own or assert ownership of the Copyright. If You do
-not own the Copyright in the entire work of authorship, please follow
-the instructions in
-<https://github.com/nengo/nengo/blob/master/CONTRIBUTORS.rst>.
+to Us in which You own or assert ownership of the Copyright.
 
 "Copyright" means all rights protecting works of authorship owned or
 controlled by You, including copyright, moral and neighboring rights,
@@ -205,11 +211,12 @@ project, the Material means the work of authorship to which the
 Contribution was Submitted. After You Submit the Contribution, it may
 be included in the Material.
 
-"Submit" means any form of electronic, verbal, or written
-communication sent to Us or our representatives, including but not
-limited to electronic mailing lists, source code control systems, and
-issue tracking systems that are managed by, or on behalf of, Us for
-the purpose of discussing and improving the Material, but excluding
+"Submit," "Submission" means any form of electronic, verbal, or written
+communication (including any and all Contributions and works of
+authorship) sent to Us or our representatives, including but not limited
+to electronic mailing lists, source code control systems, and issue
+tracking systems that are managed by, or on behalf of, Us for the
+purpose of discussing and improving the Material, but excluding
 communication that is conspicuously marked or otherwise designated in
 writing by You as "Not a Contribution."
 
@@ -322,10 +329,8 @@ You confirm that:
     document. If You are less than eighteen years old, please have
     Your parents or guardian sign the Agreement.
 
-(d) You have followed the instructions in
-    <https://github.com/nengo/nengo/blob/master/CONTRIBUTORS.rst>,
-    if You do not own the Copyright in the entire work of authorship
-    Submitted.
+(d) You have informed us in the relevant pull request(s) if You do not
+    own the Copyright to the entire Submission.
 
 4. Disclaimer
 -------------
@@ -352,13 +357,13 @@ CLAIM IS BASED.
 ----------------
 
 **6.1** This Agreement will be governed by and construed in accordance
-with the laws of Applied Brain Research Inc. excluding its conflicts
-of law provisions. Under certain circumstances, the governing law in
-this section might be superseded by the United Nations Convention on
-Contracts for the International Sale of Goods ("UN Convention") and
-the parties intend to avoid the application of the UN Convention to
-this Agreement and, thus, exclude the application of the UN Convention
-in its entirety to this Agreement.
+with the laws of Ontario, Canada excluding its conflicts of law
+provisions. Under certain circumstances, the governing law in this
+section might be superseded by the United Nations Convention on
+Contracts for the International Sale of Goods ("UN Convention") and the
+parties intend to avoid the application of the UN Convention to this
+Agreement and, thus, exclude the application of the UN Convention in its
+entirety to this Agreement.
 
 **6.2** This Agreement sets out the entire agreement between You and
 Us for Your Contributions to Us and overrides all other agreements or
