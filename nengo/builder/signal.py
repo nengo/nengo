@@ -199,18 +199,50 @@ class Signal(object):
         return self.reshape((1, self.size))
 
     @staticmethod
+    def compatible(signals, axis=0):
+        for s in signals:
+            if s.ndim != signals[0].ndim:
+                return False
+            if (s.shape[:axis] != signals[0].shape[:axis] or
+                    s.shape[axis+1:] != signals[0].shape[axis+1:]):
+                return False
+            if s.dtype is not signals[0].dtype:
+                return False
+            if s.is_view:
+                if s.base is not signals[0].base:
+                    return False
+                if s.strides != signals[0].strides:
+                    return False
+        return True
+
+    @staticmethod
+    def check_signals_mergeable(signals, axis=0):
+        if any(s.is_view for s in signals):
+            raise ValueError("Cannot merge views.")
+
+        for s in signals:
+            if s.ndim != signals[0].ndim:
+                raise ValueError(
+                    "Signals must have the same number of dimensions.")
+            if (s.shape[:axis] != signals[0].shape[:axis] or
+                    s.shape[axis+1:] != signals[0].shape[axis+1:]):
+                raise ValueError(
+                    "Signals must have same shape except on concatenation "
+                    "axis.")
+
+    @staticmethod
     def merge_signals(signals, replacements, axis=0):
         """Merges multiple signal into one signal with sequential memory
         allocation.
 
         Note that if any of the signals are linked to another signal (by being
-        a view or being the base of a view), the merged signal will not reflect
+        the base of a view), the merged signal will not reflect
         those links anymore.
 
         Parameters
         ----------
         signals : sequence
-            Signals to merge.
+            Signals to merge. Must not contain views.
         axis : int, optional
             Axis along which to concatenate the signals.
         replacements : dict
@@ -223,6 +255,8 @@ class Signal(object):
         merged_signal : Signal
             The merged signal.
         """
+        Signal.check_signals_mergeable(signals, axis=axis)
+
         initial_value = np.concatenate(
             [s.initial_value for s in signals], axis=axis)
         readonly = all(s.readonly for s in signals)
@@ -238,6 +272,55 @@ class Signal(object):
             start += size
 
         return merged_signal
+
+    @staticmethod
+    def check_views_mergeable(signals, axis=0):
+        if any(not s.is_view for s in signals):
+            raise ValueError("Cannot merge non-views.")
+
+        start = signals[0].offset
+        for s in signals:
+            if s.base is not signals[0].base:
+                raise ValueError("Signals must share the same base.")
+            if s.dtype is not signals[0].dtype:
+                raise ValueError("Signals must have same dtype.")
+            if s.ndim != signals[0].ndim:
+                raise ValueError(
+                    "Signals must have the same number of dimensions.")
+            if s.strides != signals[0].strides:
+                raise ValueError("Signals must have equal strides.")
+            if (s.shape[:axis] != signals[0].shape[:axis] or
+                    s.shape[axis+1:] != signals[0].shape[axis+1:]):
+                raise ValueError(
+                    "Signals must have same shape except on concatenation "
+                    "axis.")
+            if s.offset != start:
+                raise ValueError("Views are not sequential.")
+            start = s.offset + s.size * s.itemsize
+
+    @staticmethod
+    def merge_views(signals, axis=0):
+        Signal.check_views_mergeable(signals, axis=axis)
+
+        shape = (
+            signals[0].shape[:axis] + (sum(s.shape[axis] for s in signals),) +
+            signals[0].shape[axis+1:])
+        initial_value = np.ndarray(
+            buffer=signals[0].base.initial_value, dtype=signals[0].dtype,
+            shape=shape, offset=signals[0].offset, strides=signals[0].strides)
+        return Signal(
+            initial_value, name=signals[0].base.name, base=signals[0].base,
+            readonly=all(s.readonly for s in signals))
+
+    @staticmethod
+    def merge_signals_or_views(signals, replacements, axis=0):
+        are_views = [s.is_view for s in signals]
+        if all(are_views):
+            return Signal.merge_views(signals, axis=axis)
+        elif not any(are_views):
+            return Signal.merge_signals(signals, replacements, axis=axis)
+        else:
+            raise ValueError("Cannot merged mixed views and non-views.")
 
 
 class SignalDict(dict):

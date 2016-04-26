@@ -275,9 +275,9 @@ class TimeUpdate(Operator):
 
     def merge(self, others):
         replacements = {}
-        step = Signal.merge_signals(
+        step = Signal.merge_signals_or_views(
             [self.step] + [o.step for o in others], replacements)
-        time = Signal.merge_signals(
+        time = Signal.merge_signals_or_views(
             [self.time] + [o.time for o in others], replacements)
         return TimeUpdate(step, time), replacements
 
@@ -387,13 +387,12 @@ class Reset(Operator):
     def can_merge(self, other):
         return (
             self.__class__ is other.__class__ and
-            self.dst.ndim == other.dst.ndim and
-            self.dst.shape[1:] == other.dst.shape[1:] and
+            Signal.compatible([self.dst, other.dst]) and
             self.value == other.value)
 
     def merge(self, others):
         replacements = {}
-        dst = Signal.merge_signals(
+        dst = Signal.merge_signals_or_views(
             [self.dst] + [o.dst for o in others], replacements)
         return Reset(dst, self.value), replacements
 
@@ -455,13 +454,16 @@ class Copy(Operator):
         return True
 
     def can_merge(self, other):
-        return self.__class__ is other.__class__
+        return (
+            self.__class__ is other.__class__ and
+            Signal.compatible([self.dst, other.dst]) and
+            Signal.compatible([self.src, other.src]))
 
     def merge(self, others):
         replacements = {}
-        dst = Signal.merge_signals(
+        dst = Signal.merge_signals_or_views(
             [self.dst] + [o.dst for o in others], replacements)
-        src = Signal.merge_signals(
+        src = Signal.merge_signals_or_views(
             [self.src] + [o.src for o in others], replacements)
         return Copy(src, dst), replacements
 

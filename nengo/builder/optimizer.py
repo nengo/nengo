@@ -38,27 +38,39 @@ class OpMergeOptimizer(object):
         self.model = model
         self.dg = dg
 
-        self._op2idx = {op: i for i, op in enumerate(dg)}
-        self._sig2op = defaultdict(list)
-        for op in dg:
-            for s in op.all_signals:
-                self._sig2op[s].append(op)
-        self._sig_replaced = np.zeros(len(dg), dtype=bool)
+        self._sig2op = None
+        self._merged = None
 
     def optimize(self):
         """Perform the optimization."""
         logger.info("Running %s ...", self.__class__.__name__)
-        self._log_counts()
-        before = len(self.dg)
+        before, after = None, None
+        i = 0
+        while i == 0 or after < before:
+            i += 1
+            self._log_counts()
+            before = len(self.dg)
+            self._perform_single_pass()
+            after = len(self.dg)
+            logger.info(
+                "Pass %i: Reduced %i to %i operators.", i, before, after)
+
+        self._reinitialize_model_ops(self.dg)
+
+    def _perform_single_pass(self):
+        self._init_pass_helper_vars()
         op_replacements, sig_replacements = self._perform_merges()
         ops = list(op_replacements.values())
         self._replace_op_signals(ops, sig_replacements)
         self._update_dg(op_replacements)
-        self._reinitialize_model_ops(ops)
         self._update_model_sigs(sig_replacements)
-        after = len(self.dg)
-        logger.info("%i operations reduced to %i operations.", before, after)
-        self._log_counts()
+
+    def _init_pass_helper_vars(self):
+        self._sig2op = defaultdict(list)
+        for op in self.dg:
+            for s in op.all_signals:
+                self._sig2op[s].append(op)
+        self._merged = set()
 
     def _ops_by_type(self, ops):
         by_type = defaultdict(list)
@@ -103,39 +115,84 @@ class OpMergeOptimizer(object):
 
         return op_replacements, sig_replacements
 
+    def _get_view_indices(self, op):
+        view_indices = []
+        for idx, s in enumerate(op.all_signals):
+            if s.is_view:
+                view_indices.append(idx)
+        return view_indices
+
+    def _mergeable(self, op1, op2, op1_view_indices, tc):
+        independent = (
+            (op1 not in tc[op2] and op2 not in tc[op1]) and
+            op2 not in self._merged)
+
+        op1_sigs = op1.all_signals
+        op2_sigs = op2.all_signals
+
+        views_match = op1_view_indices == self._get_view_indices(op2)
+        for idx in op1_view_indices:
+            s1 = op1_sigs[idx]
+            s2 = op2_sigs[idx]
+            views_match &= s1.dtype is s2.dtype
+            views_match &= s1.base == s2.base
+            views_match &= s1.strides == s2.strides
+
+        return independent and views_match and op1.can_merge(op2)
+
+    def _is_memory_access_sequential(self, ops):
+        for signals in zip(*[op.all_signals for op in ops]):
+            if all(not s.is_view for s in signals):
+                continue
+            elif not all(s.is_view for s in signals):
+                return False
+
+            end = signals[0].offset + signals[0].size * signals[0].itemsize
+            for s in signals[1:]:
+                if end != s.offset:
+                    return False
+                end = s.offset + s.size * s.itemsize
+        return True
+
     def _perform_merges_for_subset(self, subset_step_order, tc):
-        op_replacements = {}
+        op_replacements = {op: op for op in subset_step_order}
         sig_replacements = {}
-        merged = np.zeros_like(subset_step_order, dtype=bool)
+        view_indices = []
 
         for i, op1 in enumerate(subset_step_order):
-            if merged[i]:
+            if op1 in self._merged:
                 continue
 
-            op1_has_view = any(s.is_view for s in op1.all_signals)
+            view_indices = self._get_view_indices(op1)
 
-            merge = []
-            if not self._sig_replaced[self._op2idx[op1]] and not op1_has_view:
-                for j, op2 in enumerate(subset_step_order[i+1:], start=i+1):
-                    op2_has_view = any(s.is_view for s in op2.all_signals)
-                    independent = (
-                        (op1 not in tc[op2] and op2 not in tc[op1]) and
-                        not self._sig_replaced[self._op2idx[op2]] and
-                        not op2_has_view)
-                    if independent and not merged[j] and op1.can_merge(op2):
-                        merge.append(op2)
-                        merged[j] = True
+            # Find operators that can be merged.
+            merge = [op1]
+            for op2 in subset_step_order[i+1:]:
+                if not op2 in self._merged and self._mergeable(
+                        op1, op2, view_indices, tc):
+                    merge.append(op2)
 
-            if len(merge) > 0:
-                merged_op, merged_sig = op1.merge(merge)
-                for op in [op1] + merge:
+            # Sort to have sequential memory access in views (if possible)
+            if len(view_indices) > 0:
+                merge = sorted(
+                    merge,
+                    lambda o1, o2: o1.all_signals[view_indices[0]].offset -
+                    o2.all_signals[view_indices[0]].offset)
+
+            do_merge = len(merge) > 1 and self._is_memory_access_sequential(
+                [op for op in merge])
+
+            if do_merge:
+                merged_op, merged_sig = merge[0].merge(merge[1:])
+                self._merged.update(merge)
+                for op in merge:
                     op_replacements[op] = merged_op
+                    # Mark all operators referencing the same signals as merged
+                    # (even though they are not) to prevent them from getting
+                    # merged before their signals have been updated.
                     for s in op.all_signals:
-                        for s_op in self._sig2op[s]:
-                            self._sig_replaced[self._op2idx[s_op]] = True
+                        self._merged.update(self._sig2op[s])
                 sig_replacements.update(merged_sig)
-            else:
-                op_replacements[op1] = op1
 
         return op_replacements, sig_replacements
 
