@@ -17,14 +17,11 @@ class Cortical(Module):
         The synaptic filter to use for the connections
     """
 
-    synapse = SynapseParam('synapse', default=Lowpass(0.01))
-
     def __init__(
-            self, actions=None, synapse=Default, label=None, seed=None,
+            self, actions=None, label=None, seed=None,
             add_to_container=None):
         super(Cortical, self).__init__(label, seed, add_to_container)
         self.actions = actions
-        self.synapse = synapse
         added = add_to_container is True or len(self.context) > 0
         if actions is not None:
             if not added:
@@ -38,9 +35,4 @@ class Cortical(Module):
             self.actions.process()
 
     def connect(self, source, target, transform):
-        """Create connection.
-
-        The connection will use the cortical synapse.
-        """
-        nengo.Connection(
-            source, target, transform=transform, synapse=self.synapse)
+        nengo.Connection(source, target, transform=transform)
