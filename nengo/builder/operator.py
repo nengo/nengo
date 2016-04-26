@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 
+from nengo.builder.signal import Signal
 import nengo.utils.numpy as npext
 from nengo.exceptions import BuildError, SimulationError
 
@@ -259,6 +260,17 @@ class TimeUpdate(Operator):
             time[...] = step * dt
 
         return step_timeupdate
+
+    def can_merge(self, other):
+        return (self.__class__ is other.__class__)
+
+    def merge(self, others):
+        replacements = {}
+        step = Signal.merge_signals(
+            [self.step] + [o.step for o in others], replacements)
+        time = Signal.merge_signals(
+            [self.time] + [o.time for o in others], replacements)
+        return TimeUpdate(step, time), replacements
 
 
 class PreserveValue(Operator):
