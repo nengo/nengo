@@ -2,6 +2,7 @@ global-include *.py
 include *.rst
 include *.sh
 include *.txt
+include *.yml
 
 # Include this file, to ensure we can recreate source distributions
 include MANIFEST.in

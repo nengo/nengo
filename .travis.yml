@@ -7,7 +7,7 @@ notifications:
 env:
   global:
     - NUMPY="1.10"
-    - SETUP_CMD="test -a 'nengo -n 2 -v --durations 20'"
+    - SETUP_CMD="test --addopts 'nengo -n 2 -v --durations 20'"
     - EXTRA_CMD=""
     - CONDA_DEPS="matplotlib jupyter pygments pytest"
     - PIP_DEPS="pytest-xdist"
@@ -16,7 +16,7 @@ matrix:
   include:
     - env: >
         PYTHON="2.7"
-        SETUP_CMD="test -a '--cov-config .coveragerc --cov nengo nengo -n 2 -v --durations 20'"
+        SETUP_CMD="test --addopts '--cov-config .coveragerc --cov nengo nengo -n 2 -v --durations 20'"
         EXTRA_CMD="coveralls"
         CONDA_DEPS="$CONDA_DEPS coverage"
         PIP_DEPS="$PIP_DEPS pytest-cov coveralls"

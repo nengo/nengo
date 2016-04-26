@@ -17,5 +17,5 @@ build: false  # Not a C# project
 
 test_script:
   - python setup.py -q install
-  - python setup.py test -a "nengo -v --durations=20"
+  - python setup.py test --addopts "nengo -v --durations=20"
   - flake8 -v nengo
