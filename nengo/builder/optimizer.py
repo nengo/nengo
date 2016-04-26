@@ -5,6 +5,7 @@ import logging
 
 import numpy as np
 
+from nengo.builder.neurons import SimNeurons
 from nengo.builder.signal import Signal
 from nengo.utils.compat import zip_longest
 from nengo.utils.graphs import toposort, transitive_closure
@@ -37,6 +38,13 @@ class OpMergeOptimizer(object):
         self.model = model
         self.dg = dg
 
+        self._op2idx = {op: i for i, op in enumerate(dg)}
+        self._sig2op = defaultdict(list)
+        for op in dg:
+            for s in op.all_signals:
+                self._sig2op[s].append(op)
+        self._sig_replaced = np.zeros(len(dg), dtype=bool)
+
     def optimize(self):
         """Perform the optimization."""
         logger.info("Running %s ...", self.__class__.__name__)
@@ -65,32 +73,52 @@ class OpMergeOptimizer(object):
 
     def _perform_merges(self):
         step_order = toposort(self.dg)
+        tc = transitive_closure(self.dg, step_order)
 
-        op2idx = {op: i for i, op in enumerate(step_order)}
-        sig2op = {}
+        by_type = defaultdict(list)
         for op in step_order:
-            for s in op.all_signals:
-                sig2op[s] = op
+            by_type[type(op)].append(op)
 
         op_replacements = {}
         sig_replacements = {}
-        merged = np.zeros_like(step_order, dtype=bool)
-        sig_replaced = np.zeros_like(step_order, dtype=bool)
-        tc = transitive_closure(self.dg, step_order)
 
-        for i, op1 in enumerate(step_order):
+        # Do merges on most expensive operations first
+        for tp in [SimNeurons]:
+            opr, sigr = self._perform_merges_for_subset(by_type[tp], tc)
+            op_replacements.update(opr)
+            sig_replacements.update(sigr)
+            del by_type[tp]
+
+        # Process remaining operations
+        for subset in by_type.values():
+            opr, sigr = self._perform_merges_for_subset(subset, tc)
+            op_replacements.update(opr)
+            sig_replacements.update(sigr)
+
+        sig_replacements.update(self._get_sig_view_replacements(
+            op_replacements.values(), sig_replacements))
+
+        return op_replacements, sig_replacements
+
+    def _perform_merges_for_subset(self, subset_step_order, tc):
+        op_replacements = {}
+        sig_replacements = {}
+        merged = np.zeros_like(subset_step_order, dtype=bool)
+
+        for i, op1 in enumerate(subset_step_order):
             if merged[i]:
                 continue
 
             op1_has_view = any(s.is_view for s in op1.all_signals)
 
             merge = []
-            if not sig_replaced[i] and not op1_has_view:
-                for j, op2 in enumerate(step_order[i+1:], start=i+1):
+            if not self._sig_replaced[self._op2idx[op1]] and not op1_has_view:
+                for j, op2 in enumerate(subset_step_order[i+1:], start=i+1):
                     op2_has_view = any(s.is_view for s in op2.all_signals)
                     independent = (
                         (op1 not in tc[op2] and op2 not in tc[op1]) and
-                        not sig_replaced[j] and not op2_has_view)
+                        not self._sig_replaced[self._op2idx[op2]] and
+                        not op2_has_view)
                     if independent and not merged[j] and op1.can_merge(op2):
                         merge.append(op2)
                         merged[j] = True
@@ -100,13 +128,11 @@ class OpMergeOptimizer(object):
                 for op in [op1] + merge:
                     op_replacements[op] = merged_op
                     for s in op.all_signals:
-                        sig_replaced[op2idx[sig2op[s]]] = True
+                        for s_op in self._sig2op[s]:
+                            self._sig_replaced[self._op2idx[s_op]] = True
                 sig_replacements.update(merged_sig)
             else:
                 op_replacements[op1] = op1
-
-        sig_replacements.update(self._get_sig_view_replacements(
-            op_replacements.values(), sig_replacements))
 
         return op_replacements, sig_replacements
 
