@@ -10,11 +10,6 @@ There are three stages to this process,
 which will result in at least
 two ``git`` commits and one ``git`` tag.
 
-Note that these steps should be consulted
-for both release candidates, and full releases.
-However, some steps (notably those that interact
-with PyPI) should be omitted for release candidates.
-
 Stage 1: Preparation
 ====================
 
@@ -26,12 +21,11 @@ we do a few things to prepare:
    chronicled in the changelog (``CHANGES.rst``).
 3. Run `check-manifest <https://pypi.python.org/pypi/check-manifest>`_
    to ensure that all files are included in the release.
-4. Run all unit test to ensure they pass on all supported versions.
+4. Run all unit test to ensure they pass on Python 2 and 3.
    This includes tests that are normally skipped
    due to slow runtimes. This requires that optional
    dependencies are installed. Currently, running all tests is done with
-   ``NENGO_TEST_PLOT=1 pytest --pyargs nengo --benchmarks --optional``
-   (in environments for each supported Python).
+   ``py.test --pyargs nengo --plots --analytics --logs --slow``.
 5. Review all of the plots generated from running the unit tests
    for abnormalities or unclear figures.
 6. Build the documentation and review all of the rendered
@@ -39,6 +33,10 @@ we do a few things to prepare:
 7. Commit all changes from above before moving on to stage 2.
 
 .. todo::
+
+   Step 4 does not test on all platforms (Windows, Mac OS X, Linux
+   with 32-bit and 64-bit versions of Python 2.7, 3.3, 3.4, and 3.5).
+   Doing so is difficult without
 
    Step 4 is a bit vague at the moment; we should have a separate
    document for all the platforms supported,
@@ -66,10 +64,10 @@ you can do a fresh clone of Nengo into a separate directory.
 
 1. Change the version information in ``nengo/version.py``.
    See that file for details.
-2. *If this is a release*, set the release date in the changelog
-   (``CHANGES.rst``).
+2. Set the release date in the changelog (``CHANGES.rst``).
 3. ``git add`` the changes above and make a release commit with:
-   ``git commit -m "Release version $(python -c 'import nengo; print(nengo.__version__)')"``
+   ``git commit -m "Release version
+   $(python -c 'import nengo; print(nengo.__version__)')"``
 4. Review ``git log`` to ensure that the version number is correct; if not,
    then something went wrong with the previous steps.
    Correct these mistakes and amend the release commit accordingly.
@@ -79,11 +77,9 @@ you can do a fresh clone of Nengo into a separate directory.
    if you wish to provide a message with information about the release,
    feel free, but it is not necessary.
 6. ``git push origin master`` and ``git push origin [tagname]``.
-7. *If this is a release*, create a package and upload it to PyPI
+7. Create a release package and upload it to PyPI
    with ``python setup.py sdist upload``.
-8. *If this is a release*, build the documentation with
-   ``python setup.py build_sphinx``. Zip it up and upload it through
-   `this form <https://pypi.python.org/pypi?%3Aaction=pkg_edit&name=nengo>`_
+8. Build and upload the documentation with ``python setup.py upload_sphinx``.
 
 Stage 3: Post-release cleanup
 =============================
@@ -94,11 +90,10 @@ put Nengo back in a development state.
 
 1. Change the version information in ``nengo/version.py``.
    See that file for details.
-2. *If this is a release*, make a new changelog entry in ``CHANGES.rst``
+2. Make a new changelog section in ``CHANGES.rst``
    in order to collect changes for the next release.
 3. ``git add`` the changes above and make a commit describing
-   the current state of the repository; either
-   ``git commit -m "Continuing development of vX.Y.Z"`` or
+   the current state of the repository and commit with
    ``git commit -m "Starting development of vX.Y.Z"``.
 4. ``git push origin master``
 
