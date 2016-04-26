@@ -1,5 +1,3 @@
-import gc
-
 import numpy as np
 import pytest
 
@@ -105,13 +103,11 @@ def test_close_steps(RefSimulator):
         sim.step()
 
 
-def test_warn_on_opensim_gc(Simulator):
+def test_warn_on_opensim_del(Simulator):
     with nengo.Network() as net:
         nengo.Ensemble(10, 1)
 
     sim = Simulator(net)
-    assert sim
-
     with warns(ResourceWarning):
-        sim = None
-        gc.collect()
+        sim.__del__()
+    sim.close()
