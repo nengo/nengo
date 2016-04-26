@@ -128,7 +128,7 @@ def test_routing(Simulator, seed, plt):
     assert valueC[2] < 0.2
 
 
-def test_nondefault_routing(Simulator, seed, plt):
+def test_nondefault_routing(Simulator, seed):
     D = 3
     model = spa.SPA(seed=seed)
     with model:

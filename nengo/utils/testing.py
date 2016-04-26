@@ -104,7 +104,14 @@ class Plotter(Recorder):
             if len(self.plt.gcf().get_axes()) > 0:
                 # tight_layout errors if no axes are present
                 self.plt.tight_layout()
-            self.plt.savefig(os.path.join(self.dirname, self.filename))
+
+            savefig_kw = {'bbox_inches': 'tight'}
+            if hasattr(self.plt, 'bbox_extra_artists'):
+                savefig_kw['bbox_extra_artists'] = self.plt.bbox_extra_artists
+                del self.plt.bbox_extra_artists
+
+            self.plt.savefig(os.path.join(self.dirname, self.filename),
+                             **savefig_kw)
             self.plt.close('all')
 
 
@@ -280,7 +287,8 @@ def allclose(t, targets, signals,  # noqa:C901
 
         ax.set_ylabel('signal')
         if labels[0] is not None:
-            ax.legend(loc='upper left', bbox_to_anchor=(1., 1.))
+            lgd = ax.legend(loc='upper left', bbox_to_anchor=(1., 1.))
+            plt.bbox_extra_artists = (lgd,)
 
         ax = plt.subplot(2, 1, 2)
         if targets.shape[1] == 1:

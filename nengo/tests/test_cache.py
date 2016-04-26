@@ -426,6 +426,7 @@ with nengo.Simulator(model):
 
         for i, data in enumerate(zip(*times)):
             plt.plot(varying, np.median(data, axis=1), label=self.labels[i])
+            plt.xlim(right=varying[-1])
             analytics.add_data(varying_param, varying, axis_label)
             analytics.add_data(self.keys[i], data)
 

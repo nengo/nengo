@@ -310,7 +310,7 @@ def test_delay(Simulator, plt):
     plt.plot(sim.trange(), -sim.data[bp])
 
 
-def test_args(Simulator, plt):
+def test_args(Simulator):
     class Fn(object):
         def __init__(self):
             self.last_x = None

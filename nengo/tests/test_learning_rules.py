@@ -359,7 +359,7 @@ def test_learningrule_attr(seed):
             check_rule(c3.learning_rule[key], c3, r3[key])
 
 
-def test_voja_encoders(Simulator, nl_nodirect, rng, seed, plt):
+def test_voja_encoders(Simulator, nl_nodirect, rng, seed):
     """Tests that voja changes active encoders to the input."""
     n = 200
     learned_vector = np.asarray([0.3, -0.4, 0.6])
@@ -413,7 +413,7 @@ def test_voja_encoders(Simulator, nl_nodirect, rng, seed, plt):
         learned_vector, atol=0.01)
 
 
-def test_voja_modulate(Simulator, nl_nodirect, seed, plt):
+def test_voja_modulate(Simulator, nl_nodirect, seed):
     """Tests that voja's rule can be modulated on/off."""
     n = 200
     learned_vector = np.asarray([0.5])

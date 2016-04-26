@@ -36,7 +36,8 @@ def test_sine_waves(Simulator, plt, seed):
         plt.subplot(dim+1, 1, i+1)
         plt.plot(t + delay, AB[:, i])
         plt.plot(t, sim.data[p][:, i])
-    plt.xlim(right=t[-1])
+        plt.xlim(right=t[-1])
+        plt.yticks((-2, 0, 2))
 
     assert rmse(AB[:len(offset), :], sim.data[p][offset, :]) < 0.2
 
@@ -72,7 +73,8 @@ def test_direct_mode_with_single_neuron(Simulator, plt, seed):
         plt.subplot(dim+1, 1, i+1)
         plt.plot(t + delay, AB[:, i])
         plt.plot(t, sim.data[p][:, i])
-    plt.xlim(right=t[-1])
+        plt.xlim(right=t[-1])
+        plt.yticks((-2, 0, 2))
 
     assert rmse(AB[:len(offset), :], sim.data[p][offset, :]) < 0.2
 

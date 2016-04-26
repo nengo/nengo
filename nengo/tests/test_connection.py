@@ -161,6 +161,7 @@ def test_neurons_to_ensemble(Simulator, nl_nodirect, plt, seed):
     plt.plot(t, sim.data[c_p], c='k')
     plt.legend(['Negative weights', 'Neurons -> Ensemble dimensions'],
                loc='best', fontsize="small")
+    plt.xlim(right=t[-1])
 
     assert np.all(sim.data[b_p][-10:] < 0)
 
@@ -184,7 +185,7 @@ def test_neurons_to_node(Simulator, nl_nodirect, plt, seed):
     t = sim.trange()
 
     plt.subplot(2, 1, 1)
-    plt.title("Activity filtered with $\tau$ = 0.005")
+    plt.title("Activity filtered with $\\tau$ = 0.005")
     plt.ylabel("Neural activity")
     plt.plot(t, sim.data[a_spikes])
     plt.xlim(right=t[-1])

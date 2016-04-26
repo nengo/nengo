@@ -6,7 +6,7 @@ from nengo.exceptions import SpaModuleError
 from nengo.utils.testing import warns
 
 
-def test_spa_verification(seed, plt):
+def test_spa_verification(seed):
     d = 16
 
     model = spa.SPA(seed=seed)
