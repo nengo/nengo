@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import numpy as np
 import pytest
 
@@ -12,7 +10,7 @@ from nengo.exceptions import ObsoleteError, SignalError
 from nengo.utils.compat import itervalues, range
 
 
-def test_seeding(RefSimulator):
+def test_seeding(RefSimulator, logger):
     """Test that setting the model seed fixes everything"""
 
     #  TODO: this really just checks random parameters in ensembles.
@@ -41,8 +39,8 @@ def test_seeding(RefSimulator):
             check = (np.allclose(getattr(obj1, attr), getattr(obj2, attr)) ==
                      equal)
             if not check:
-                print(attr, getattr(obj1, attr))
-                print(attr, getattr(obj2, attr))
+                logger.info("%s: %s", attr, getattr(obj1, attr))
+                logger.info("%s: %s", attr, getattr(obj2, attr))
             assert check
 
     ens_attrs = BuiltEnsemble._fields

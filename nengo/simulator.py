@@ -1,7 +1,5 @@
 """Reference simulator for nengo models."""
 
-from __future__ import print_function
-
 import logging
 import warnings
 from collections import Mapping

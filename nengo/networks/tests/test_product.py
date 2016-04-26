@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import numpy as np
 import pytest
 
@@ -130,11 +128,11 @@ def test_product_benchmark(Simulator, analytics, rng):
 
 
 @pytest.mark.compare
-def test_compare_product_benchmark(analytics_data):
+def test_compare_product_benchmark(analytics_data, logger):
     stats = pytest.importorskip('scipy.stats')
     data1, data2 = (d['error'] for d in analytics_data)
     improvement = np.mean(data1) - np.mean(data2)
     p = np.ceil(1000. * 2. * stats.mannwhitneyu(data1, data2)[1]) / 1000.
-    print("Multiplication improvement by {:f} ({:.0f}%, p < {:.3f})".format(
-        improvement, (1. - np.mean(data2) / np.mean(data1)) * 100., p))
+    logger.info("Multiplication improvement by %f (%.0f%%, p < %.3f)",
+                improvement, (1. - np.mean(data2) / np.mean(data1)) * 100., p)
     assert improvement >= 0. or p >= 0.05
