@@ -1,11 +1,15 @@
 """Operator graph optimizers."""
 
+from collections import defaultdict
+import logging
 
 import numpy as np
 
 from nengo.builder.signal import Signal
 from nengo.utils.compat import zip_longest
 from nengo.utils.graphs import toposort, transitive_closure
+
+logger = logging.getLogger(__name__)
 
 
 class OpMergeOptimizer(object):
@@ -35,12 +39,29 @@ class OpMergeOptimizer(object):
 
     def optimize(self):
         """Perform the optimization."""
+        logger.info("Running %s ...", self.__class__.__name__)
+        self._log_counts()
+        before = len(self.dg)
         op_replacements, sig_replacements = self._perform_merges()
         ops = list(op_replacements.values())
         self._replace_op_signals(ops, sig_replacements)
         self._update_dg(op_replacements)
         self._reinitialize_model_ops(ops)
         self._update_model_sigs(sig_replacements)
+        after = len(self.dg)
+        logger.info("%i operations reduced to %i operations.", before, after)
+        self._log_counts()
+
+    def _ops_by_type(self, ops):
+        by_type = defaultdict(list)
+        for op in ops:
+            by_type[type(op)].append(op)
+        return by_type
+
+    def _log_counts(self):
+        if logger.isEnabledFor(logging.DEBUG):
+            for tp, ops in self._ops_by_type(self.dg).items():
+                logger.debug("%s: %i", tp, len(ops))
 
     def _perform_merges(self):
         step_order = toposort(self.dg)
