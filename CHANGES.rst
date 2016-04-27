@@ -19,8 +19,8 @@ Release History
    - Bugfixes
    - Documentation
 
-2.1.0 (unreleased)
-==================
+2.1.0 (April 27, 2016)
+======================
 
 **API changes**
 
@@ -223,6 +223,14 @@ Release History
   (`#989 <https://github.com/nengo/nengo/pull/989>`_)
 - The decoder cache will only be used when a seed is specified.
   (`#946 <https://github.com/nengo/nengo/pull/946>`_)
+
+2.0.4 (April 27, 2016)
+======================
+
+**Bug fixes**
+
+- Cache now fails gracefully if the ``legacy.txt`` file cannot be read.
+  This can occur if a later version of Nengo is used.
 
 2.0.3 (December 7, 2015)
 ========================
