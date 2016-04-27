@@ -6,6 +6,7 @@ import logging
 import numpy as np
 
 from nengo.builder.neurons import SimNeurons
+from nengo.builder.operator import Copy, Reset
 from nengo.builder.signal import Signal
 from nengo.utils.compat import zip_longest
 from nengo.utils.graphs import toposort, transitive_closure
@@ -95,7 +96,7 @@ class OpMergeOptimizer(object):
         sig_replacements = {}
 
         # Do merges on most expensive operations first
-        for tp in [SimNeurons]:
+        for tp in [SimNeurons, Reset, Copy]:
             opr, sigr = self._perform_merges_for_subset(by_type[tp], tc)
             op_replacements.update(opr)
             sig_replacements.update(sigr)
@@ -154,12 +155,27 @@ class OpMergeOptimizer(object):
                 end = s.offset + s.size * s.itemsize
         return True
 
-    def _perform_merges_for_subset(self, subset_step_order, tc):
-        op_replacements = {op: op for op in subset_step_order}
+    def _perform_merges_for_subset(self, subset, tc):
+        op_replacements = {op: op for op in subset}
         sig_replacements = {}
         view_indices = []
 
-        for i, op1 in enumerate(subset_step_order):
+        def view_offset(op):
+            for s in op.all_signals:
+                if s.is_view:
+                    return s.offset
+            return 0
+
+        def view_size(op):
+            for s in op.all_signals:
+                if s.is_view:
+                    return s.size * s.itemsize
+            return 0
+
+        subset = sorted(
+            subset, lambda o1, o2: view_offset(o1) - view_offset(o2))
+
+        for i, op1 in enumerate(subset):
             if op1 in self._merged:
                 continue
 
@@ -167,22 +183,18 @@ class OpMergeOptimizer(object):
 
             # Find operators that can be merged.
             merge = [op1]
-            for op2 in subset_step_order[i+1:]:
-                if not op2 in self._merged and self._mergeable(
-                        op1, op2, view_indices, tc):
+            for op2 in subset[i+1:]:
+                can_merge = (
+                    op2 not in self._merged and
+                    self._mergeable(merge[-1], op2, view_indices, tc) and
+                    self._is_memory_access_sequential([merge[-1], op2]))
+                if can_merge:
                     merge.append(op2)
+                elif (view_offset(merge[-1]) + view_size(merge[-1]) <
+                      view_offset(op2)):
+                    break
 
-            # Sort to have sequential memory access in views (if possible)
-            if len(view_indices) > 0:
-                merge = sorted(
-                    merge,
-                    lambda o1, o2: o1.all_signals[view_indices[0]].offset -
-                    o2.all_signals[view_indices[0]].offset)
-
-            do_merge = len(merge) > 1 and self._is_memory_access_sequential(
-                [op for op in merge])
-
-            if do_merge:
+            if len(merge) > 1:
                 merged_op, merged_sig = merge[0].merge(merge[1:])
                 self._merged.update(merge)
                 for op in merge:
