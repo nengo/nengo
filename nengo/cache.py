@@ -179,7 +179,10 @@ class DecoderCache(object):
         legacy_file = os.path.join(self.cache_dir, self._LEGACY)
         if os.path.exists(legacy_file):
             with open(legacy_file, 'r') as lf:
-                version = int(lf.read().strip())
+                try:
+                    version = int(lf.read().strip())
+                except ValueError:
+                    version = -1
         else:
             version = -1
         return version == self._LEGACY_VERSION
