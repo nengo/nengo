@@ -19,8 +19,13 @@ Release History
    - Bugfixes
    - Documentation
 
-2.0.4 (unreleased)
-==================
+2.0.4 (April 27, 2016)
+======================
+
+**Bug fixes**
+
+- Cache now fails gracefully if the ``legacy.txt`` file cannot be read.
+  This can occur if a later version of Nengo is used.
 
 2.0.3 (December 7, 2015)
 ========================
