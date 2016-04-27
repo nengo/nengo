@@ -664,6 +664,30 @@ class ElementwiseInc(Operator):
             Y[...] += A * X
         return step_elementwiseinc
 
+    @classmethod
+    def supports_merge(cls):
+        return True
+
+    def can_merge(self, other):
+        return (
+            self.__class__ is other.__class__ and
+            Signal.compatible([self.A, other.A], axis=self.A.ndim - 1) and
+            Signal.compatible([self.X, other.X], axis=self.X.ndim - 1) and
+            Signal.compatible([self.Y, other.Y], axis=self.Y.ndim - 1))
+
+    def merge(self, others):
+        replacements = {}
+        A = Signal.merge_signals_or_views(
+            [self.A] + [o.A for o in others], replacements,
+            axis=self.A.ndim - 1)
+        X = Signal.merge_signals_or_views(
+            [self.X] + [o.X for o in others], replacements,
+            axis=self.X.ndim - 1)
+        Y = Signal.merge_signals_or_views(
+            [self.Y] + [o.Y for o in others], replacements,
+            axis=self.Y.ndim - 1)
+        return ElementwiseInc(A, X, Y), replacements
+
 
 def reshape_dot(A, X, Y, tag=None):
     """Checks if the dot product needs to be reshaped.

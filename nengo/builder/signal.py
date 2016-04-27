@@ -203,6 +203,8 @@ class Signal(object):
         for s in signals:
             if s.ndim != signals[0].ndim:
                 return False
+            if s.ndim <= 0 and s.initial_value != signals[0].initial_value:
+                return False
             if (s.shape[:axis] != signals[0].shape[:axis] or
                     s.shape[axis+1:] != signals[0].shape[axis+1:]):
                 return False
@@ -224,6 +226,9 @@ class Signal(object):
             if s.ndim != signals[0].ndim:
                 raise ValueError(
                     "Signals must have the same number of dimensions.")
+            if s.ndim <= 0 and s.initial_value != signals[0].initial_value:
+                raise ValueError(
+                    "0-d signals must have the same initial value.")
             if (s.shape[:axis] != signals[0].shape[:axis] or
                     s.shape[axis+1:] != signals[0].shape[axis+1:]):
                 raise ValueError(
@@ -257,19 +262,25 @@ class Signal(object):
         """
         Signal.check_signals_mergeable(signals, axis=axis)
 
-        initial_value = np.concatenate(
-            [s.initial_value for s in signals], axis=axis)
+        if signals[0].ndim > 0:
+            initial_value = np.concatenate(
+                [s.initial_value for s in signals], axis=axis)
+        else:
+            initial_value = signals[0].initial_value
         readonly = all(s.readonly for s in signals)
         name = 'merged<' + str(", ".join(s.name for s in signals)) + '>'
         merged_signal = Signal(initial_value, name=name, readonly=readonly)
 
-        start = 0
-        for s in signals:
-            size = s.shape[axis]
-            indexing = [slice(None)] * initial_value.ndim
-            indexing[axis] = slice(start, start + size)
-            replacements[s] = merged_signal[tuple(indexing)]
-            start += size
+        if signals[0].ndim > 0:
+            start = 0
+            for s in signals:
+                size = s.shape[axis]
+                indexing = [slice(None)] * initial_value.ndim
+                indexing[axis] = slice(start, start + size)
+                replacements[s] = merged_signal[tuple(indexing)]
+                start += size
+        else:
+            replacements.update({s: merged_signal for s in signals})
 
         return merged_signal
 
