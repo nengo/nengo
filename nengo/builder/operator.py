@@ -553,6 +553,47 @@ class SlicedCopy(Operator):
                 dst[dst_slice] = src[src_slice]
         return step_slicedcopy
 
+    @classmethod
+    def supports_merge(cls):
+        return True
+
+    def can_merge(self, other):
+        return (
+            self.__class__ is other.__class__ and
+            Signal.compatible([self.src, other.src]) and
+            Signal.compatible([self.dst, other.dst]) and
+            self.src_slice is Ellipsis and self.dst_slice is Ellipsis and
+            other.src_slice is Ellipsis and other.dst_slice is Ellipsis and
+            self.inc == other.inc)
+
+    def _merged_slice(self, signals, slices):
+        if all(s is Ellipsis for s in slices):
+            return Ellipsis
+        elif any(s is Ellipsis for s in slices):
+            raise ValueError("Mixed Ellipsis with list of indices.")
+
+        offset = 0
+        merged_slice = []
+        for sig, sl in zip(signals, slices):
+            merged_slice.extend([i + offset for i in sl])
+            offset += sig.size
+        return merged_slice
+
+    def merge(self, others):
+        src_sigs = [self.src] + [o.src for o in others]
+        dst_sigs = [self.dst] + [o.dst for o in others]
+
+        replacements = {}
+        src = Signal.merge_signals_or_views(src_sigs, replacements)
+        dst = Signal.merge_signals_or_views(dst_sigs, replacements)
+        src_slice = self._merged_slice(
+            src_sigs, [self.src_slice] + [o.src_slice for o in others])
+        dst_slice = self._merged_slice(
+            dst_sigs, [self.dst_slice] + [o.dst_slice for o in others])
+        return SlicedCopy(
+            src, dst, src_slice=src_slice, dst_slice=dst_slice,
+            inc=self.inc), replacements
+
 
 class ElementwiseInc(Operator):
     """Increment signal ``Y`` by ``A * X`` (with broadcasting).
