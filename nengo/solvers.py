@@ -6,7 +6,6 @@ depending on whether the post-population encoders `E` are provided (see below).
 Solvers that are only intended to solve for either decoders or weights can
 remove the `E` parameter or make it manditory as they see fit.
 """
-import collections
 import logging
 import time
 
@@ -14,8 +13,8 @@ import numpy as np
 
 import nengo.utils.least_squares_solvers as lstsq
 from nengo.exceptions import ValidationError
-from nengo.params import BoolParam, NumberParam, Parameter
-from nengo.utils.compat import range, with_metaclass, iteritems
+from nengo.params import BoolParam, FrozenObject, NumberParam, Parameter
+from nengo.utils.compat import range, with_metaclass
 from nengo.utils.least_squares_solvers import (
     format_system, rmses, LeastSquaresSolverParam)
 from nengo.utils.magic import DocstringInheritor
@@ -23,7 +22,7 @@ from nengo.utils.magic import DocstringInheritor
 logger = logging.getLogger(__name__)
 
 
-class Solver(with_metaclass(DocstringInheritor)):
+class Solver(with_metaclass(DocstringInheritor, FrozenObject)):
     """Decoder or weight solver."""
 
     def __call__(self, A, Y, rng=None, E=None):
@@ -55,33 +54,6 @@ class Solver(with_metaclass(DocstringInheritor)):
             Other keys are unique to particular solvers.
         """
         raise NotImplementedError("Solvers must implement '__call__'")
-
-    def __hash__(self):
-        items = list(self.__dict__.items())
-        items.sort(key=lambda item: item[0])
-
-        hashes = []
-        for k, v in items:
-            if isinstance(v, np.ndarray):
-                if v.size < 1e5:
-                    a = v[:]
-                    a.setflags(write=False)
-                    hashes.append(hash(a))
-                else:
-                    raise ValidationError("array is too large to hash", attr=k)
-            elif isinstance(v, collections.Iterable):
-                hashes.append(hash(tuple(v)))
-            elif isinstance(v, collections.Callable):
-                hashes.append(hash(v.__code__))
-            else:
-                hashes.append(hash(v))
-
-        return hash(tuple(hashes))
-
-    def __str__(self):
-        return "%s(%s)" % (
-            self.__class__.__name__,
-            ', '.join("%s=%s" % (k, v) for k, v in iteritems(self.__dict__)))
 
     def mul_encoders(self, Y, E, copy=False):
         """Helper function that projects signal ``Y`` onto encoders ``E``.
@@ -133,9 +105,13 @@ class Lstsq(Solver):
         If False, solve for decoders. If True, solve for weights.
     """
 
+    weights = BoolParam('weights')
+    rcond = NumberParam('noise', low=0)
+
     def __init__(self, weights=False, rcond=0.01):
-        self.rcond = rcond
+        super(Lstsq, self).__init__()
         self.weights = weights
+        self.rcond = rcond
 
     def __call__(self, A, Y, rng=None, E=None):
         tstart = time.time()
@@ -176,6 +152,7 @@ class _LstsqNoiseSolver(Solver):
         weights : bool
             If False, solve for decoders. If True, solve for weights.
         """
+        super(_LstsqNoiseSolver, self).__init__()
         self.weights = weights
         self.noise = noise
         self.solver = solver
@@ -233,6 +210,7 @@ class _LstsqL2Solver(Solver):
         weights : bool
             If False, solve for decoders. If True, solve for weights.
         """
+        super(_LstsqL2Solver, self).__init__()
         self.weights = weights
         self.reg = reg
         self.solver = solver
@@ -302,6 +280,7 @@ class LstsqL1(Solver):
         """
         import sklearn.linear_model  # noqa F401, import to check existence
         assert sklearn.linear_model
+        super(LstsqL1, self).__init__()
         self.weights = weights
         self.l1 = l1
         self.l2 = l2
@@ -369,6 +348,7 @@ class LstsqDrop(Solver):
         weights : bool
             If False, solve for decoders. If True, solve for weights.
         """
+        super(LstsqDrop, self).__init__()
         self.weights = weights
         self.drop = drop
         self.solver1 = solver1
@@ -426,6 +406,7 @@ class Nnls(Solver):
         """
         import scipy.optimize  # import here too to throw error early
         assert scipy.optimize
+        super(Nnls, self).__init__()
         self.weights = weights
 
     def __call__(self, A, Y, rng=None, E=None):

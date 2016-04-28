@@ -8,13 +8,26 @@ import pytest
 
 import nengo
 from nengo.dists import UniformHypersphere
-from nengo.utils.compat import range
+from nengo.utils.compat import iteritems, range
 from nengo.utils.numpy import rms, norm
 from nengo.utils.stdlib import Timer
 from nengo.utils.testing import allclose
 from nengo.solvers import (
     lstsq, Lstsq, LstsqNoise, LstsqL2, LstsqL2nz,
     LstsqL1, LstsqDrop, Nnls, NnlsL2, NnlsL2nz)
+
+
+class Factory(object):
+    def __init__(self, klass, *args, **kwargs):
+        self.klass = klass
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self):
+        args = [v() if isinstance(v, Factory) else v for v in self.args]
+        kwargs = {k: v() if isinstance(v, Factory) else v
+                  for k, v in iteritems(self.kwargs)}
+        return self.klass(*args, **kwargs)
 
 
 def get_encoders(n_neurons, dims, rng=None):
@@ -68,10 +81,7 @@ def test_conjgrad(rng):
 @pytest.mark.parametrize('Solver', [
     Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqDrop])
 def test_decoder_solver(Solver, plt, rng):
-    if isinstance(Solver, tuple):
-        Solver, args, kwargs = Solver
-    else:
-        args, kwargs = (), {}
+    solver = Solver()
 
     dims = 1
     n_neurons = 100
@@ -83,7 +93,7 @@ def test_decoder_solver(Solver, plt, rng):
     train = get_eval_points(n_points, dims, rng=rng)
     Atrain = rates(np.dot(train, E))
 
-    D, _ = Solver(*args, **kwargs)(Atrain, train, rng=rng)
+    D, _ = solver(Atrain, train, rng=rng)
 
     test = get_eval_points(n_points, dims, rng=rng, sort=True)
     Atest = rates(np.dot(test, E))
@@ -94,7 +104,7 @@ def test_decoder_solver(Solver, plt, rng):
     plt.plot(test, test - est)
     plt.title("relative RMSE: %0.2e" % rel_rmse)
 
-    atol = 3.5e-2 if Solver is LstsqNoise else 1.5e-2
+    atol = 3.5e-2 if isinstance(solver, LstsqNoise) else 1.5e-2
     assert np.allclose(test, est, atol=atol, rtol=1e-3)
     assert rel_rmse < 0.02
 
@@ -118,7 +128,7 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
 
 
 @pytest.mark.parametrize('Solver', [
-    (LstsqL2, (), {'solver': lstsq.RandomizedSVD()}),
+    Factory(LstsqL2, solver=Factory(lstsq.RandomizedSVD)),
     LstsqL1])
 def test_decoder_solver_extra(Solver, plt, rng):
     pytest.importorskip('sklearn')
