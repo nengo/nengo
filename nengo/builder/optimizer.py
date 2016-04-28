@@ -6,7 +6,7 @@ import logging
 import numpy as np
 
 from nengo.builder.neurons import SimNeurons
-from nengo.builder.operator import Copy, Reset
+from nengo.builder.operator import DotInc, ElementwiseInc, SlicedCopy
 from nengo.builder.signal import Signal
 from nengo.utils.compat import zip_longest
 from nengo.utils.graphs import toposort, transitive_closure
@@ -45,22 +45,36 @@ class OpMergeOptimizer(object):
     def optimize(self):
         """Perform the optimization."""
         logger.info("Running %s ...", self.__class__.__name__)
+
+        # We try first to only merge operators with views as this have a fixed
+        # order for the memory alignment whereas operators without views could
+        # be merged in a random order. Merging the views of operators will
+        # propagate requirements in the memory ordering via the other
+        # associated signals of the operator to other operators.
+        #
+        # Once no more operators with views can be merged, we try to merge
+        # operators without views and then try again merging views (because
+        # each operator merge might generate new views).
+
         before, after = None, None
         i = 0
-        while i == 0 or after < before:
+        only_merge_ops_with_view = True
+        while only_merge_ops_with_view or after < before:
             i += 1
             self._log_counts()
+            only_merge_ops_with_view = before is None or before != after
             before = len(self.dg)
-            self._perform_single_pass()
+            self._perform_single_pass(only_merge_ops_with_view)
             after = len(self.dg)
             logger.info(
                 "Pass %i: Reduced %i to %i operators.", i, before, after)
 
         self._reinitialize_model_ops(self.dg)
 
-    def _perform_single_pass(self):
+    def _perform_single_pass(self, only_merge_ops_with_view):
         self._init_pass_helper_vars()
-        op_replacements, sig_replacements = self._perform_merges()
+        op_replacements, sig_replacements = self._perform_merges(
+            only_merge_ops_with_view)
         ops = list(op_replacements.values())
         self._replace_op_signals(ops, sig_replacements)
         self._update_dg(op_replacements)
@@ -84,7 +98,7 @@ class OpMergeOptimizer(object):
             for tp, ops in self._ops_by_type(self.dg).items():
                 logger.debug("%s: %i", tp, len(ops))
 
-    def _perform_merges(self):
+    def _perform_merges(self, only_merge_ops_with_view):
         step_order = toposort(self.dg)
         tc = transitive_closure(self.dg, step_order)
 
@@ -95,17 +109,22 @@ class OpMergeOptimizer(object):
         op_replacements = {}
         sig_replacements = {}
 
-        # Do merges on most expensive operations first
-        for tp in [SimNeurons, Reset, Copy]:
-            opr, sigr = self._perform_merges_for_subset(by_type[tp], tc)
+        # Heuristic order to reduce runtime and number of passes
+        for tp in [ElementwiseInc, SlicedCopy, DotInc, SimNeurons]:
+            opr, sigr = self._perform_merges_for_subset(
+                by_type[tp], tc, only_merge_ops_with_view)
             op_replacements.update(opr)
             sig_replacements.update(sigr)
             del by_type[tp]
+            if not only_merge_ops_with_view and len(opr) > 0:
+                break
 
         # Process remaining operations
         for tp, subset in by_type.items():
-            if tp.supports_merge():
-                opr, sigr = self._perform_merges_for_subset(subset, tc)
+            if tp.supports_merge() and (
+                    only_merge_ops_with_view or len(opr) <= 0):
+                opr, sigr = self._perform_merges_for_subset(
+                    subset, tc, only_merge_ops_with_view)
                 op_replacements.update(opr)
                 sig_replacements.update(sigr)
             else:
@@ -155,7 +174,8 @@ class OpMergeOptimizer(object):
                 end = s.offset + s.size * s.itemsize
         return True
 
-    def _perform_merges_for_subset(self, subset, tc):
+    def _perform_merges_for_subset(
+            self, subset, tc, only_merge_ops_with_view=True):
         op_replacements = {op: op for op in subset}
         sig_replacements = {}
         view_indices = []
@@ -176,10 +196,10 @@ class OpMergeOptimizer(object):
             subset, lambda o1, o2: view_offset(o1) - view_offset(o2))
 
         for i, op1 in enumerate(subset):
-            if op1 in self._merged:
-                continue
-
             view_indices = self._get_view_indices(op1)
+            if op1 in self._merged or (
+                    only_merge_ops_with_view and len(view_indices) <= 0):
+                continue
 
             # Find operators that can be merged.
             merge = [op1]
