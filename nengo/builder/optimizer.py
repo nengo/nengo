@@ -174,26 +174,32 @@ class OpMergeOptimizer(object):
                 end = s.offset + s.size * s.itemsize
         return True
 
+    @staticmethod
+    def _view_offset(op):
+        for s in op.all_signals:
+            if s.is_view:
+                return s.offset
+        return 0
+
+    @staticmethod
+    def _view_size(op):
+        for s in op.all_signals:
+            if s.is_view:
+                return s.size * s.itemsize
+        return 0
+
+    def _check_sequential(self, op1, op2):
+        return (
+            self._view_offset(op1) + self._view_size(op1) <
+            self._view_offset(op2))
+
     def _perform_merges_for_subset(
             self, subset, tc, only_merge_ops_with_view=True):
         op_replacements = {op: op for op in subset}
         sig_replacements = {}
         view_indices = []
 
-        def view_offset(op):
-            for s in op.all_signals:
-                if s.is_view:
-                    return s.offset
-            return 0
-
-        def view_size(op):
-            for s in op.all_signals:
-                if s.is_view:
-                    return s.size * s.itemsize
-            return 0
-
-        subset = sorted(
-            subset, lambda o1, o2: view_offset(o1) - view_offset(o2))
+        subset = sorted(subset, key=self._view_offset)
 
         for i, op1 in enumerate(subset):
             view_indices = self._get_view_indices(op1)
@@ -210,23 +216,25 @@ class OpMergeOptimizer(object):
                     self._is_memory_access_sequential([merge[-1], op2]))
                 if can_merge:
                     merge.append(op2)
-                elif (view_offset(merge[-1]) + view_size(merge[-1]) <
-                      view_offset(op2)):
+                elif self._check_sequential(merge[-1], op2):
                     break
 
             if len(merge) > 1:
-                merged_op, merged_sig = merge[0].merge(merge[1:])
-                self._merged.update(merge)
-                for op in merge:
-                    op_replacements[op] = merged_op
-                    # Mark all operators referencing the same signals as merged
-                    # (even though they are not) to prevent them from getting
-                    # merged before their signals have been updated.
-                    for s in op.all_signals:
-                        self._merged.update(self._sig2op[s])
-                sig_replacements.update(merged_sig)
+                self._merge(merge, op_replacements, sig_replacements)
 
         return op_replacements, sig_replacements
+
+    def _merge(self, merge, op_replacements, sig_replacements):
+        merged_op, merged_sig = merge[0].merge(merge[1:])
+        self._merged.update(merge)
+        for op in merge:
+            op_replacements[op] = merged_op
+            # Mark all operators referencing the same signals as merged
+            # (even though they are not) to prevent them from getting
+            # merged before their signals have been updated.
+            for s in op.all_signals:
+                self._merged.update(self._sig2op[s])
+        sig_replacements.update(merged_sig)
 
     def _update_dg(self, op_replacements):
         dg = {}
