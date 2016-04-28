@@ -1,6 +1,5 @@
 import math
 import threading
-import pytest
 import numpy as np
 
 import nengo
@@ -24,10 +23,10 @@ class SimThread(threading.Thread):
         self.sim.run(self.sim_time)
 
 
-def test_send_recv_chain(Simulator):
+def test_send_recv_chain(Simulator, plt, seed, rng):
     # Model that sends data
     udp_send = sockets.UDPSocket(dest_port=54321, send_dim=1)
-    m_send = nengo.Network(label='Send')
+    m_send = nengo.Network(label='Send', seed=seed)
     with m_send:
         input = nengo.Node(output=lambda t: math.sin(10 * t))
         socket_node = nengo.Node(size_in=1, output=udp_send.run)
@@ -40,7 +39,7 @@ def test_send_recv_chain(Simulator):
     # and sends that data out again
     udp_both = sockets.UDPSocket(dest_port=54322, local_port=54321,
                                  send_dim=1, recv_dim=1, timeout=1)
-    m_both = nengo.Network(label='Both')
+    m_both = nengo.Network(label='Both', seed=seed)
     with m_both:
         socket_node = nengo.Node(size_in=1, output=udp_both.run)
 
@@ -50,7 +49,7 @@ def test_send_recv_chain(Simulator):
 
     # Model that receives data from previous model
     udp_recv = sockets.UDPSocket(local_port=54322, recv_dim=1, timeout=1)
-    m_recv = nengo.Network(label='Recv')
+    m_recv = nengo.Network(label='Recv', seed=seed)
     with m_recv:
         socket_node = nengo.Node(output=udp_recv.run)
         p_r = nengo.Probe(socket_node, synapse=None)
@@ -75,25 +74,28 @@ def test_send_recv_chain(Simulator):
     udp_both.close()
     udp_recv.close()
 
-    with Plotter(Simulator) as plt:
-        plt.plot(sim_send.trange(), sim_send.data[p_s])
-        plt.plot(sim_both.trange(), sim_both.data[p_b])
-        plt.plot(sim_recv.trange(), sim_recv.data[p_r])
+    # Do plots
+    plt.subplot(3, 1, 1)
+    plt.plot(sim_send.trange(), sim_send.data[p_s])
+    plt.title('1: Send node. Sends to 2.')
+    plt.subplot(3, 1, 2)
+    plt.plot(sim_both.trange(), sim_both.data[p_b])
+    plt.title('2: Send and recv node. Recvs from 1, sends to 3.')
+    plt.subplot(3, 1, 3)
+    plt.plot(sim_recv.trange(), sim_recv.data[p_r])
+    plt.title('3: Recv node. Recvs from 2.')
 
-        plt.savefig('test_socket.test_send_recv_chain.pdf')
-        plt.close()
-
-    # Note: The socket communication delays information by 1 timestep
-    assert np.allclose(sim_send.data[p_s][:-1], sim_both.data[p_b][1:],
+    # Note: The socket communication delays information by 1 timestep in m_both
+    assert np.allclose(sim_send.data[p_s], sim_both.data[p_b],
                        atol=0.0001, rtol=0.0001)
     assert np.allclose(sim_both.data[p_b][:-1], sim_recv.data[p_r][1:],
                        atol=0.0001, rtol=0.0001)
 
 
-def test_time_sync(Simulator):
+def test_time_sync(Simulator, plt, seed, rng):
     udp1 = sockets.UDPSocket(dest_port=54322, local_port=54321,
                              send_dim=1, recv_dim=2, timeout=1)
-    m1 = nengo.Network(label='One')
+    m1 = nengo.Network(label='One', seed=seed)
     with m1:
         input = nengo.Node(output=lambda t: math.sin(10 * t))
         socket_node = nengo.Node(size_in=1, output=udp1.run)
@@ -106,7 +108,7 @@ def test_time_sync(Simulator):
     # Model that receives data from previous model
     udp2 = sockets.UDPSocket(dest_port=54321, local_port=54322,
                              send_dim=2, recv_dim=1, timeout=1)
-    m2 = nengo.Network(label='Two')
+    m2 = nengo.Network(label='Two', seed=seed)
     with m2:
         input = nengo.Node(output=lambda t: [math.cos(10 * t), t])
         socket_node = nengo.Node(size_in=2, output=udp2.run)
@@ -128,24 +130,23 @@ def test_time_sync(Simulator):
     udp1.close()
     udp2.close()
 
-    with Plotter(Simulator) as plt:
-        plt.subplot(2, 1, 1)
-        plt.plot(sim1.trange(), sim1.data[p_i1])
-        plt.plot(sim2.trange(), sim2.data[p_s2])
+    # Do plots
+    plt.subplot(4, 1, 1)
+    plt.plot(sim1.trange(), sim1.data[p_i1])
+    plt.title('Input to Node 1. Sent to Node 2.')
+    plt.subplot(4, 1, 2)
+    plt.plot(sim2.trange(), sim2.data[p_s2])
+    plt.title('Output from Node 2. Recvs from Node 1.')
 
-        plt.subplot(2, 1, 2)
-        plt.plot(sim2.trange(), sim2.data[p_i2])
-        plt.plot(sim1.trange(), sim1.data[p_s1])
+    plt.subplot(4, 1, 3)
+    plt.title('Input to Node 2. Sent to Node 1.')
+    plt.plot(sim2.trange(), sim2.data[p_i2])
+    plt.subplot(4, 1, 4)
+    plt.title('Output from Node 1. Recvs from Node 2.')
+    plt.plot(sim1.trange(), sim1.data[p_s1])
 
-        plt.savefig('test_socket.test_time_sync.pdf')
-        plt.close()
-
-    # Note: The socket communication delays information by 1 timestep
-    assert np.allclose(sim1.data[p_i1][:-1], sim2.data[p_s2][1:],
+    # Test results
+    assert np.allclose(sim1.data[p_i1], sim2.data[p_s2],
                        atol=0.0001, rtol=0.0001)
-    assert np.allclose(sim2.data[p_i2][:-1], sim1.data[p_s1][1:],
+    assert np.allclose(sim2.data[p_i2], sim1.data[p_s1],
                        atol=0.0001, rtol=0.0001)
-
-if __name__ == '__main__':
-    nengo.log(debug=True)
-    pytest.main([__file__, '-v'])
