@@ -2,12 +2,12 @@ from __future__ import absolute_import
 
 import struct
 import socket
-import Queue
 import time
 import threading
 import errno
 import warnings
 
+from nengo.utils.compat import queue
 
 class SocketCheckAliveThread(threading.Thread):
     def __init__(self, socket_class):
@@ -61,7 +61,7 @@ class UDPSocket:
 
         self.max_recv_len = (recv_dim + 1) * 4
         self.value = [0.0] * recv_dim
-        self.buffer = Queue.PriorityQueue()
+        self.buffer = queue.PriorityQueue()
 
     def __del__(self):
         self.close()

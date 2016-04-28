@@ -15,6 +15,7 @@ if PY2:
     import cPickle as pickle
     import ConfigParser as configparser
     from itertools import izip_longest as zip_longest
+    import Queue as queue
     from StringIO import StringIO
     string_types = (str, unicode)
     int_types = (int, long)
@@ -77,6 +78,7 @@ if PY2:
 else:
     import pickle
     import configparser
+    import queue
     from io import StringIO
     from itertools import zip_longest
     from os import replace
