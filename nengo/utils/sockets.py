@@ -9,6 +9,7 @@ import warnings
 
 from nengo.utils.compat import queue
 
+
 class SocketCheckAliveThread(threading.Thread):
     def __init__(self, socket_class):
         threading.Thread.__init__(self)
