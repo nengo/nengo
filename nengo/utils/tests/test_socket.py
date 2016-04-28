@@ -3,7 +3,6 @@ import threading
 import numpy as np
 
 import nengo
-from nengo.utils.testing import Plotter
 from nengo.utils import sockets
 
 
