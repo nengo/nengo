@@ -216,7 +216,7 @@ class UDPSocket:
     def __call__(self, t, x=None):
         return self.run(t, x)
 
-    def run(self, t, x=None):
+    def run(self, t, x=None):  # noqa: C901
         # If t == 0, return array of zeros. Terminate any open sockets to
         # reset system
         if (t == 0):
