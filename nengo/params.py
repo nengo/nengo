@@ -292,6 +292,30 @@ class TupleParam(Parameter):
         super(TupleParam, self).validate(instance, value)
 
 
+class ShapeParam(TupleParam):
+    """A parameter where the value is a tuple of integers."""
+
+    equatable = True
+
+    def __init__(self, name, default=Unconfigurable, length=None, low=0,
+                 optional=False, readonly=None):
+        super(ShapeParam, self).__init__(name, default=default, length=length,
+                                         optional=optional, readonly=readonly)
+        self.low = low
+
+    def validate(self, instance, value):
+        super(ShapeParam, self).validate(instance, value)
+        for i, v in enumerate(value):
+            if not is_integer(v):
+                raise ValidationError("Element %d must be an int (got type %r)"
+                                      % (i, type(v).__name__),
+                                      attr=self.name, obj=instance)
+            if self.low is not None and v < self.low:
+                raise ValidationError(
+                    "Element %d must be >= %d (got %d)" % (i, self.low, v),
+                    attr=self.name, obj=instance)
+
+
 class DictParam(Parameter):
     """A parameter where the value is a dictionary."""
 

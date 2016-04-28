@@ -28,6 +28,8 @@ Release History
   discoverable for other Python packages. In the future all backends should
   declare an entry point accordingly.
   (`#1127 <https://github.com/nengo/nengo/pull/1127>`_)
+- Added ``ShapeParam`` to store array shapes.
+  (`#1045 <https://github.com/nengo/nengo/pull/1045>`_)
 
 **Bug fixes**
 
