@@ -200,6 +200,9 @@ class Signal(object):
 
     @staticmethod
     def compatible(signals, axis=0):
+        if len(set(signals)) != len(signals):
+            # Signal appears twice in list.
+            return False
         for s in signals:
             if s.ndim != signals[0].ndim:
                 return False
