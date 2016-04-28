@@ -44,7 +44,7 @@ def test_send_recv_chain(Simulator):
     with m_both:
         socket_node = nengo.Node(size_in=1, output=udp_both.run)
 
-        nengo.Connection(socket_node, socket_node, synapse=None)
+        nengo.Connection(socket_node, socket_node, synapse=0)
         p_b = nengo.Probe(socket_node, synapse=None)
     sim_both = Simulator(m_both)
 
