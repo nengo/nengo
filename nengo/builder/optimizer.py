@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 import logging
+import time
 
 import numpy as np
 
@@ -64,10 +65,13 @@ class OpMergeOptimizer(object):
             self._log_counts()
             only_merge_ops_with_view = before is None or before != after
             before = len(self.dg)
+            t_start = time.time()
             self._perform_single_pass(only_merge_ops_with_view)
+            t_end = time.time()
             after = len(self.dg)
             logger.info(
-                "Pass %i: Reduced %i to %i operators.", i, before, after)
+                "Pass %i: Reduced %i to %i operators in %fs.",
+                i, before, after, t_end - t_start)
 
         self._reinitialize_model_ops(self.dg)
 
