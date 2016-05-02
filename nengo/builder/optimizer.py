@@ -192,6 +192,13 @@ class OpMergeOptimizer(object):
                 return s.size * s.itemsize
         return 0
 
+    @staticmethod
+    def _view_base(op):
+        for s in op.all_signals:
+            if s.is_view:
+                return s.base
+        return None
+
     def _check_sequential(self, op1, op2):
         return (
             self._view_offset(op1) + self._view_size(op1) <
@@ -201,15 +208,31 @@ class OpMergeOptimizer(object):
             self, subset, tc, only_merge_ops_with_view=True):
         op_replacements = {op: op for op in subset}
         sig_replacements = {}
-        view_indices = []
+        by_view = defaultdict(list)
 
+        for op in subset:
+            by_view[self._view_base(op)].append(op)
+
+        if only_merge_ops_with_view and None in by_view:
+            del by_view[None]
+
+        for view_subset in by_view.values():
+            if len(view_subset) > 1:
+                self._perform_merges_for_view_subset(
+                    view_subset, tc, op_replacements, sig_replacements)
+
+        return op_replacements, sig_replacements
+
+    def _perform_merges_for_view_subset(
+            self, subset, tc, op_replacements, sig_replacements):
+        view_indices = []
         subset = sorted(subset, key=self._view_offset)
 
         for i, op1 in enumerate(subset):
-            view_indices = self._get_view_indices(op1)
-            if op1 in self._merged or (
-                    only_merge_ops_with_view and len(view_indices) <= 0):
+            if op1 in self._merged:
                 continue
+
+            view_indices = self._get_view_indices(op1)
 
             # Find operators that can be merged.
             merge = [op1]
