@@ -285,6 +285,9 @@ def pytest_collection_modifyitems(session, config, items):
             continue
         if (getattr(item.obj, 'compare', None) is None) != compare:
             items.remove(item)
+        elif (TestConfig.Simulator is not nengo.Simulator and
+                'Simulator' not in item.fixturenames):
+            items.remove(item)
 
 
 def pytest_terminal_summary(terminalreporter):
