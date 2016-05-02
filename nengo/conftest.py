@@ -32,6 +32,19 @@ class TestConfig(object):
     Simulator = nengo.Simulator
     RefSimulator = nengo.Simulator
     neuron_types = [Direct, LIF, LIFRate, RectifiedLinear, Sigmoid]
+    compare_requested = False
+
+    @classmethod
+    def is_sim_overridden(cls):
+        return cls.Simulator is not nengo.Simulator
+
+    @classmethod
+    def is_refsim_overridden(cls):
+        return cls.RefSimulator is not nengo.Simulator
+
+    @classmethod
+    def is_skipping_frontend_tests(cls):
+        return cls.is_sim_overridden() or cls.is_refsim_overridden()
 
 
 def pytest_configure(config):
@@ -46,6 +59,8 @@ def pytest_configure(config):
     if config.getoption('neurons'):
         ntypes = config.getoption('neurons')[0].split(',')
         TestConfig.neuron_types = [load_class(n) for n in ntypes]
+
+    TestConfig.compare_requested = config.getvalue('compare') is not None
 
 
 def load_class(fully_qualified_name):
@@ -248,46 +263,46 @@ def pytest_runtest_setup(item):  # noqa: C901
     rc.set('exceptions', 'simplified', 'False')
 
     if not hasattr(item, 'obj'):
-        return
+        return  # Occurs for doctests, possibly other weird tests
 
-    for mark, option, message in [
-            ('example', 'noexamples', "examples not requested"),
-            ('slow', 'slow', "slow tests not requested")]:
-        if getattr(item.obj, mark, None) and not item.config.getvalue(option):
-            pytest.skip(message)
+    conf = item.config
+    test_uses_compare = getattr(item.obj, 'compare', None) is not None
+    test_uses_sim = 'Simulator' in item.fixturenames
+    test_uses_refsim = 'RefSimulator' in item.fixturenames
+    tests_frontend = not (test_uses_sim or test_uses_refsim)
 
-    if getattr(item.obj, 'noassertions', None):
-        skipreasons = []
-        for fixture_name, option, message in [
-                ('analytics', 'analytics', "analytics not requested"),
-                ('plt', 'plots', "plots not requested"),
-                ('logger', 'logs', "logs not requested")]:
-            if fixture_name in item.fixturenames:
-                if item.config.getvalue(option):
-                    break
-                else:
-                    skipreasons.append(message)
-        else:
-            pytest.skip(" and ".join(skipreasons))
+    if getattr(item.obj, 'example', None) and not conf.getvalue('noexamples'):
+        pytest.skip("examples not requested")
+    elif getattr(item.obj, 'slow', None) and not conf.getvalue('slow'):
+        pytest.skip("slow tests not requested")
+    elif not TestConfig.compare_requested and test_uses_compare:
+        pytest.skip("compare tests not requested")
+    elif TestConfig.is_skipping_frontend_tests() and tests_frontend:
+        pytest.skip("frontend tests not run for alternate backends")
+    elif (TestConfig.is_skipping_frontend_tests()
+          and test_uses_refsim
+          and not TestConfig.is_refsim_overridden()):
+        pytest.skip("RefSimulator not overridden")
+    elif (TestConfig.is_skipping_frontend_tests()
+          and test_uses_sim
+          and not TestConfig.is_sim_overridden()):
+        pytest.skip("Simulator not overridden")
+    elif getattr(item.obj, 'noassertions', None):
+        options = []
+        for fixture, option in [('analytics', 'analytics'),
+                                ('plt', 'plots'),
+                                ('logger', 'logs')]:
+            if fixture in item.fixturenames and not conf.getvalue(option):
+                options.append(option)
+        if len(options) > 0:
+            pytest.skip("%s not requested" % " and ".join(options))
 
-    if 'Simulator' in item.fixturenames:
+    if not tests_frontend:
         for test, reason in TestConfig.Simulator.unsupported:
             # We add a '*' before test to eliminate the surprise of needing
             # a '*' before the name of a test function.
             if fnmatch(item.nodeid, '*' + test):
                 pytest.xfail(reason)
-
-
-def pytest_collection_modifyitems(session, config, items):
-    compare = config.getvalue('compare') is None
-    for item in list(items):
-        if not hasattr(item, 'obj'):
-            continue
-        if (getattr(item.obj, 'compare', None) is None) != compare:
-            items.remove(item)
-        elif (TestConfig.Simulator is not nengo.Simulator and
-                'Simulator' not in item.fixturenames):
-            items.remove(item)
 
 
 def pytest_terminal_summary(terminalreporter):
