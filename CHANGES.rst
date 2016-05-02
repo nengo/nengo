@@ -22,7 +22,16 @@ Release History
 2.1.1 (unreleased)
 ==================
 
+**Bug fixes**
 
+- The DecoderCache is used as context manager instead of relying on the
+  ``__del__`` method for cleanup. This should solve problems with the
+  cache's file lock not being removed. It might be necessary to
+  manually remove the ``index.lock`` file in the cache directory after
+  upgrading from an older Nengo version.
+  (`#1053 <https://github.com/nengo/nengo/pull/1053>`_,
+  `#1041 <https://github.com/nengo/nengo/issues/1041>`_,
+  `#1048 <https://github.com/nengo/nengo/issues/1048>`_)
 
 2.1.0 (April 27, 2016)
 ======================

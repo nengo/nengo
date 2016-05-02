@@ -119,19 +119,24 @@ class Simulator(object):
     def __init__(self, network, dt=0.001, seed=None, model=None):
         self.closed = False
 
-        if model is None:
-            dt = float(dt)  # make sure it's a float (for division purposes)
-            self.model = Model(dt=dt,
-                               label="%s, dt=%f" % (network, dt),
-                               decoder_cache=get_default_decoder_cache())
+        if model is None or model.decoder_cache is None:
+            cache = get_default_decoder_cache()
         else:
-            self.model = model
+            cache = model.decoder_cache
 
-        if network is not None:
-            # Build the network into the model
-            self.model.build(network)
+        with cache:
+            if model is None:
+                self.model = Model(dt=float(dt),
+                                   label="%s, dt=%f" % (network, dt),
+                                   decoder_cache=cache)
+            else:
+                self.model = model
 
-        self.model.decoder_cache.shrink()
+            if network is not None:
+                # Build the network into the model
+                self.model.build(network)
+
+            cache.shrink()
 
         # -- map from Signal.base -> ndarray
         self.signals = SignalDict()

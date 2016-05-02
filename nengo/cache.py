@@ -85,8 +85,7 @@ class CacheIndex(object):
     def __init__(self, filename):
         self.filename = filename
         self._lock = FileLock(self.filename + '.lock')
-        with self._lock:
-            self._index = self._load_index()
+        self._index = None
         self._updates = {}
         self._deletes = set()
         self._removed_files = set()
@@ -106,7 +105,12 @@ class CacheIndex(object):
     def remove_file_entry(self, filename):
         self._removed_files.add(filename)
 
-    def __del__(self):
+    def __enter__(self):
+        with self._lock:
+            self._index = self._load_index()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
         self.sync()
 
     def _load_index(self):
@@ -177,14 +181,7 @@ class DecoderCache(object):
         self.cache_dir = cache_dir
         safe_makedirs(self.cache_dir)
         self._fragment_size = get_fragment_size(self.cache_dir)
-        try:
-            self._remove_legacy_files()
-            self._index = CacheIndex(os.path.join(self.cache_dir, self._INDEX))
-        except TimeoutError:
-            warnings.warn(
-                "Decoder cache could not acquire lock and was deactivated.")
-            self._index = {}
-            self.readonly = True
+        self._index = None
         self._fd = None
 
     def _get_fd(self):
@@ -197,8 +194,21 @@ class DecoderCache(object):
             self._fd.close()
             self._fd = None
 
-    def __del__(self):
+    def __enter__(self):
+        try:
+            self._remove_legacy_files()
+            self._index = CacheIndex(os.path.join(self.cache_dir, self._INDEX))
+            self._index.__enter__()
+        except TimeoutError:
+            warnings.warn(
+                "Decoder cache could not acquire lock and was deactivated.")
+            self.readonly = True
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
         self._close_fd()
+        if self._index is not None:
+            return self._index.__exit__(exc_type, exc_value, traceback)
 
     def get_files(self):
         """Returns all of the files in the cache.
@@ -424,6 +434,12 @@ class DecoderCache(object):
 
 class NoDecoderCache(object):
     """Provides the same interface as :class:`DecoderCache` without caching."""
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
 
     def wrap_solver(self, solver_fn):
         return solver_fn
