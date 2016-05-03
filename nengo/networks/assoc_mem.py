@@ -44,6 +44,10 @@ class AssociativeMemory(nengo.Network):
     exp_scale = 0.15  # Scaling factor for exponential distribution
     n_eval_points = 5000
 
+    # Prefix and suffix tags to be used when creating the corresponding output
+    # nodes. E.g. Adding a 'utitilies' node to the 'output' output will use
+    # the 'utility_output_suffix' in the name, creating a node called
+    # 'output_utilities'
     cleanup_output_prefix = 'cleaned'
     default_ens_suffix = 'default_ens'
     utility_output_suffix = 'utilities'
