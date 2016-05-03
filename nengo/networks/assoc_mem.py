@@ -109,10 +109,10 @@ class AssociativeMemory(nengo.Network):
         # -- Create the core network
         with self, self.am_ens_config:
             self.bias_node = nengo.Node(output=1)
-            self.elem_input = nengo.Node(
-                size_in=self.n_items, label="element input")
-            self.elem_utilities = nengo.Node(
-                size_in=self.n_items, label="element utilities")
+            self.ens_input = nengo.Node(
+                size_in=self.n_items, label="ensembles input")
+            self.ens_utilities = nengo.Node(
+                size_in=self.n_items, label="ensembles utilities")
 
             self.am_ensembles = []
             label_prefix = "" if label is None else label + "_"
@@ -123,13 +123,13 @@ class AssociativeMemory(nengo.Network):
 
                 # Connect input and output nodes
                 nengo.Connection(self.bias_node, e, transform=-threshold[i])
-                nengo.Connection(self.elem_input[i], e, synapse=None)
-                nengo.Connection(e, self.elem_utilities[i], synapse=None)
+                nengo.Connection(self.ens_input[i], e, synapse=None)
+                nengo.Connection(e, self.ens_utilities[i], synapse=None)
 
             if inhibitable:
                 # Input node for inhibitory gating signal (if enabled)
                 self.inhibit = nengo.Node(size_in=1, label="inhibit")
-                nengo.Connection(self.inhibit, self.elem_input,
+                nengo.Connection(self.inhibit, self.ens_input,
                                  transform=-np.ones((self.n_items, 1))
                                  * self._inhib_scale, synapse=None)
                 # Note: We can use a decoded connection here because all the
@@ -316,7 +316,7 @@ class AssociativeMemory(nengo.Network):
         # --- Finally, make the input node and connect it
         in_node = nengo.Node(size_in=d_vectors, label=name)
         setattr(self, name, in_node)
-        nengo.Connection(in_node, self.elem_input,
+        nengo.Connection(in_node, self.ens_input,
                          synapse=None,
                          transform=input_vectors * input_scales.T)
 
@@ -479,7 +479,7 @@ class AssociativeMemory(nengo.Network):
             Mutual inhibition synapse time constant.
         """
         if not self.is_wta:
-            nengo.Connection(self.elem_utilities, self.elem_input,
+            nengo.Connection(self.ens_utilities, self.ens_input,
                              synapse=inhibit_synapse,
                              transform=((np.eye(self.n_items) - 1) *
                                         inhibit_scale))
