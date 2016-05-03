@@ -90,27 +90,23 @@ class Parameter:
         self.optional = optional
         self.readonly = readonly
 
-        # default values set by config system
-        self._defaults = WeakKeyIDDictionary()
-
         # param values set on objects
         self.data = WeakKeyIDDictionary()
 
     def __getstate__(self):
         state = {}
         state.update(self.__dict__)
-        state['_defaults'] = dict(state['_defaults'].items())
         state['data'] = dict(state['data'].items())
         return state
 
     def __setstate__(self, state):
         for k, v in state.items():
-            if k in ['_defaults', 'data']:
+            if k in ('data',):
                 v = WeakKeyIDDictionary(v)
             setattr(self, k, v)
 
     def __contains__(self, key):
-        return key in self.data or key in self._defaults
+        return key in self.data
 
     def __delete__(self, instance):
         del self.data[instance]
@@ -140,18 +136,6 @@ class Parameter:
     @property
     def configurable(self):
         return self.default is not Unconfigurable
-
-    def del_default(self, obj):
-        del self._defaults[obj]
-
-    def get_default(self, obj):
-        return self._defaults.get(obj, self.default)
-
-    def set_default(self, obj, value):
-        if not self.configurable:
-            raise ConfigError("Parameter '%s' is not configurable" % self)
-        self._defaults[obj] = (self.coerce(obj, value) if self.coerce_defaults
-                               else value)
 
     def check_type(self, instance, value, type_):
         if value is not None and not isinstance(value, type_):

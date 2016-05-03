@@ -84,7 +84,7 @@ class Network:
     def __init__(self, label=None, seed=None, add_to_container=None):
         self.label = label
         self.seed = seed
-        self._config = self.default_config()
+        self._config = Config()
 
         self.objects = {
             Ensemble: [], Node: [], Connection: [], Network: [], Probe: [],
@@ -122,11 +122,6 @@ class Network:
         else:
             raise NetworkContextError("Objects of type %r cannot be added to "
                                       "networks." % type(obj).__name__)
-
-    @staticmethod
-    def default_config():
-        """Constructs a `~.Config` object for setting defaults."""
-        return Config(Connection, Ensemble, Node, Probe)
 
     def _all_objects(self, object_type):
         """Returns a list of all objects of the specified type."""

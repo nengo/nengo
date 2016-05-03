@@ -40,10 +40,10 @@ def test_config_basic():
     del model.config[a].something
     assert model.config[a].something is None
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(ConfigError):
         model.config[a].something_else
         model.config[a2b].something
-    with pytest.raises(AttributeError):
+    with pytest.raises(ConfigError):
         model.config[a].something_else = 1
         model.config[a2b].something = 1
 
@@ -140,7 +140,7 @@ def test_configstack():
         e1 = nengo.Ensemble(5, dimensions=1)
         e2 = nengo.Ensemble(6, dimensions=1)
         excite = nengo.Connection(e1, e2)
-        with nengo.Config(nengo.Connection) as inhib:
+        with nengo.Config() as inhib:
             inhib[nengo.Connection].synapse = nengo.synapses.Lowpass(0.00848)
             inhibit = nengo.Connection(e1, e2)
     assert excite.synapse == nengo.Connection.synapse.default
@@ -153,7 +153,7 @@ def test_config_property():
     """Test that config can't be easily modified."""
     with nengo.Network() as net:
         with pytest.raises(ReadonlyError):
-            net.config = nengo.config.Config()
+            net.config = nengo.Config()
         with pytest.raises(AttributeError):
             del net.config
         assert nengo.config.Config.context[-1] is net.config
@@ -165,7 +165,7 @@ def test_external_class():
         thing = Parameter('thing', default='hey')
 
     inst = A()
-    config = nengo.Config(A)
+    config = nengo.Config()
     config[A].set_param('amount', Parameter('amount', default=1))
 
     # Extra param
@@ -184,7 +184,7 @@ def test_instance_fallthrough():
 
     inst1 = A()
     inst2 = A()
-    config = nengo.Config(A)
+    config = nengo.Config()
     config[A].set_param('amount', Parameter('amount', default=1))
     assert config[A].amount == 1
     assert config[inst1].amount == 1
@@ -210,6 +210,6 @@ def test_contains():
     class A:
         pass
 
-    cfg = nengo.Config(A)
+    cfg = nengo.Config()
     with pytest.raises(TypeError):
         A in cfg
