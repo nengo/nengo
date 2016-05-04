@@ -262,7 +262,24 @@ def test_ndarrayparam_sample_shape():
 
 
 def test_functionparam():
-    """FunctionParam must be a function, and accept one scalar argument."""
+    """FunctionParam must be a function."""
+    class Test(object):
+        fp = params.FunctionParam('fp', default=None)
+
+    inst = Test()
+    assert inst.fp is None
+    inst.fp = np.sin
+    assert inst.fp is np.sin
+    add = lambda x, y: x + y
+    inst.fp = add
+    assert inst.fp is add
+    # Not OK: not a function
+    with pytest.raises(ValidationError):
+        inst.fp = 0
+
+
+def test_arrayfunctionparam():
+    """ArrayFunctionParam must be a function, and accept one scalar argument."""
     class Test(object):
         fp = params.ArrayFunctionParam('fp', default=None)
 

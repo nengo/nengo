@@ -399,8 +399,16 @@ class NdarrayParam(Parameter):
 FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
 
 
-class ArrayFunctionParam(Parameter):
-    """A parameter where the value is a function."""
+class FunctionParam(Parameter):
+    def validate(self, instance, value):
+        if value is not None and not callable(value):
+            raise ValidationError("function '%s' must be callable" % value,
+                                  attr=self.name, obj=instance)
+        return super(FunctionParam, self).validate(instance, value)
+
+
+class ArrayFunctionParam(FunctionParam):
+    """A parameter where the value is a function returning an array."""
 
     def __set__(self, instance, function):
         if isinstance(function, FunctionInfo):
@@ -425,9 +433,6 @@ class ArrayFunctionParam(Parameter):
 
     def validate(self, instance, function_info):
         function = function_info.function
-        if function is not None and not callable(function):
-            raise ValidationError("function '%s' must be callable" % function,
-                                  attr=self.name, obj=instance)
         return super(ArrayFunctionParam, self).validate(instance, function)
 
 

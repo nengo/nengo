@@ -1,9 +1,8 @@
-import numpy as np
-
 import nengo
 from nengo.exceptions import ValidationError
+from nengo.networks.unitvectorarray import HeuristicRadius, UnitVectorArray
+from nengo.params import Default, FunctionParam
 from nengo.spa.module import Module
-from nengo.networks.ensemblearray import EnsembleArray
 
 
 class State(Module):
@@ -27,14 +26,12 @@ class State(Module):
         or 0.0 for no memory. Values in between will create a decaying memory.
     feedback_synapse : float, optional (Default: 0.1)
         The synapse on the feedback connection.
+    radius_method : function
+        Function that provides the radius for the underlying ensembles. It
+        takes `(dimensions, subdimensions)` as arguments.
     vocab : Vocabulary, optional (Default: None)
         The vocabulary to use to interpret the vector. If None,
         the default vocabulary for the given dimensionality is used.
-    tau : float or None, optional (Default: None)
-        Effective time constant of the integrator. If None, it should
-        have an infinite time constant.
-    direct : bool, optional (Default: False)
-        Whether or not to use direct mode for the neurons.
 
     label : str, optional (Default: None)
         A name for the ensemble. Used for debugging and visualization.
@@ -45,11 +42,17 @@ class State(Module):
         If None, will be true if currently within a Network.
     """
 
+    radius_method = FunctionParam(
+        'radius_method', default=HeuristicRadius, readonly=True)
+
     def __init__(self, dimensions, subdimensions=16, neurons_per_dimension=50,
-                 feedback=0.0, feedback_synapse=0.1, vocab=None, label=None,
-                 seed=None, add_to_container=None):
+                 feedback=0.0, feedback_synapse=0.1, represent_identity=True,
+                 radius_method=Default, vocab=None, label=None, seed=None,
+                 add_to_container=None):
         super(State, self).__init__(label, seed, add_to_container)
         self.dim_per_ensemble = subdimensions
+
+        self.radius_method = radius_method
 
         if vocab is None:
             # use the default one for this dimensionality
@@ -69,12 +72,10 @@ class State(Module):
                 % (dimensions, subdimensions), attr='dimensions', obj=self)
 
         with self:
-            self.state_ensembles = EnsembleArray(
-                neurons_per_dimension * subdimensions,
-                dimensions // subdimensions,
-                ens_dimensions=subdimensions,
-                radius=np.sqrt(float(subdimensions) / dimensions),
-                label='state')
+            self.state_ensembles = UnitVectorArray(
+                neurons_per_dimension, dimensions, subdimensions,
+                represent_identity=represent_identity,
+                radius=self.radius_method, label="state")
             self.input = self.state_ensembles.input
             self.output = self.state_ensembles.output
 
