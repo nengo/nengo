@@ -399,7 +399,7 @@ class NdarrayParam(Parameter):
 FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
 
 
-class FunctionParam(Parameter):
+class ArrayFunctionParam(Parameter):
     """A parameter where the value is a function."""
 
     def __set__(self, instance, function):
@@ -409,7 +409,7 @@ class FunctionParam(Parameter):
             size = (self.determine_size(instance, function)
                     if callable(function) else None)
             function_info = FunctionInfo(function=function, size=size)
-        super(FunctionParam, self).__set__(instance, function_info)
+        super(ArrayFunctionParam, self).__set__(instance, function_info)
 
     def determine_size(self, instance, function):
         args = self.function_args(instance, function)
@@ -428,7 +428,7 @@ class FunctionParam(Parameter):
         if function is not None and not callable(function):
             raise ValidationError("function '%s' must be callable" % function,
                                   attr=self.name, obj=instance)
-        return super(FunctionParam, self).validate(instance, function)
+        return super(ArrayFunctionParam, self).validate(instance, function)
 
 
 class CopyableObject(object):

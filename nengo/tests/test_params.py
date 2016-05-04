@@ -264,7 +264,7 @@ def test_ndarrayparam_sample_shape():
 def test_functionparam():
     """FunctionParam must be a function, and accept one scalar argument."""
     class Test(object):
-        fp = params.FunctionParam('fp', default=None)
+        fp = params.ArrayFunctionParam('fp', default=None)
 
     inst = Test()
     assert inst.fp is None

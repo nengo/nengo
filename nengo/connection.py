@@ -10,7 +10,7 @@ from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.node import Node
 from nengo.params import (Default, Deferrable, Unconfigurable, ObsoleteParam,
-                          BoolParam, FunctionParam)
+                          BoolParam, ArrayFunctionParam)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_iterable, iteritems
@@ -118,7 +118,7 @@ class EvalPointsParam(DistOrArrayParam):
         return super(EvalPointsParam, self).validate(conn, distorarray)
 
 
-class ConnectionFunctionParam(FunctionParam):
+class ConnectionFunctionParam(ArrayFunctionParam):
     """Connection-specific validation for functions."""
 
     def function_args(self, conn, function):
