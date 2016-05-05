@@ -3,10 +3,21 @@ import pytest
 
 import nengo
 from nengo import spa
+from nengo.networks.unitvectorarray import HeuristicRadius
+from nengo.utils.optimization import RadiusForUnitVector
 
 
-def test_basic():
-    with spa.Module() as model:
+@pytest.fixture(params=[HeuristicRadius, RadiusForUnitVector])
+def Module(request, seed):
+    def create_module():
+        module = spa.Module(seed=seed)
+        module.config[spa.State].radius_method = request.param
+        return module
+    return create_module
+
+
+def test_basic(Module):
+    with Module() as model:
         model.state = spa.State(dimensions=16)
 
     input = model.get_module_input('state')
@@ -17,14 +28,14 @@ def test_basic():
     assert input[1].dimensions == 16
 
 
-def test_neurons():
-    with spa.Module() as model:
+def test_neurons(Module):
+    with Module() as model:
         model.state = spa.State(dimensions=16, neurons_per_dimension=2)
 
     assert len(model.state.state_ensembles.ensembles) == 1
     assert model.state.state_ensembles.ensembles[0].n_neurons == 16 * 2
 
-    with spa.Module() as model:
+    with Module() as model:
         model.state = spa.State(dimensions=16, subdimensions=1,
                                 neurons_per_dimension=2)
 
@@ -32,18 +43,18 @@ def test_neurons():
     assert model.state.state_ensembles.ensembles[0].n_neurons == 2
 
 
-def test_dimension_exception():
+def test_dimension_exception(Module):
     with pytest.raises(Exception):
-        with spa.Module() as model:
+        with Module() as model:
             vocab = spa.Vocabulary(16)
             model.state = spa.State(dimensions=12, vocab=vocab)
 
-    with spa.Module() as model:
+    with Module() as model:
         model.state = spa.State(dimensions=12, subdimensions=3)
 
 
-def test_no_feedback_run(Simulator, seed):
-    with spa.Module(seed=seed) as model:
+def test_no_feedback_run(Module, Simulator):
+    with Module() as model:
         model.state = spa.State(dimensions=32, feedback=0.0)
 
         def state_input(t):
@@ -72,8 +83,8 @@ def test_no_feedback_run(Simulator, seed):
     assert data[499, 1] < 0.2
 
 
-def test_memory_run(Simulator, seed, plt):
-    with spa.Module(seed=seed) as model:
+def test_memory_run(Module, Simulator, plt):
+    with Module() as model:
         model.memory = spa.State(dimensions=32, feedback=1.0,
                                  feedback_synapse=0.01)
 
@@ -105,8 +116,8 @@ def test_memory_run(Simulator, seed, plt):
     assert np.mean(similarity[t > 0.49]) > 0.7
 
 
-def test_memory_run_decay(Simulator, plt, seed):
-    with spa.Module(seed=seed) as model:
+def test_memory_run_decay(Module, Simulator, plt):
+    with Module() as model:
         model.memory = spa.State(dimensions=32, feedback=(1.0 - 0.01/0.05),
                                  feedback_synapse=0.01)
 

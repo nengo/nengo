@@ -40,7 +40,8 @@ class Module(nengo.Network, SupportDefaultsMixin):
     def __init__(
             self, label=None, seed=None, add_to_container=None, vocabs=None):
         super(Module, self).__init__(label, seed, add_to_container)
-        self.config.configures(Module)
+        from nengo.spa.state import State
+        self.config.configures(Module, State)
 
         if vocabs is None:
             vocabs = Config.default(Module, 'vocabs')
