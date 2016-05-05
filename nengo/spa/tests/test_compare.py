@@ -3,11 +3,11 @@ from nengo import spa
 
 
 def test_basic():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.compare = spa.Compare(dimensions=16)
 
-    inputA = model.get_module_input('compare_A')
-    inputB = model.get_module_input('compare_B')
+    inputA = model.get_module_input('compare.A')
+    inputB = model.get_module_input('compare.B')
     output = model.get_module_output('compare')
     # all nodes should be acquired correctly
     assert inputA[0] is model.compare.inputA
@@ -21,7 +21,7 @@ def test_basic():
 
 
 def test_run(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.compare = spa.Compare(dimensions=16)
 
         def inputA(t):
@@ -30,7 +30,7 @@ def test_run(Simulator, seed):
             else:
                 return 'B'
 
-        model.input = spa.Input(compare_A=inputA, compare_B='A')
+        model.input = spa.Input(**{'compare.A': inputA, 'compare.B': 'A'})
 
     compare, vocab = model.get_module_output('compare')
 

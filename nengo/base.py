@@ -1,16 +1,14 @@
 from copy import copy
-import sys
 import warnings
 
 import numpy as np
 
-from nengo.config import Config
+from nengo.config import SupportDefaultsMixin
 from nengo.exceptions import NotAddedToNetworkWarning, ValidationError
 from nengo.params import (
-    CopyableObject, Default, FrozenObject, is_param, IntParam, NumberParam,
+    CopyableObject, FrozenObject, is_param, IntParam, NumberParam,
     Parameter, StringParam, Unconfigurable)
-from nengo.rc import rc
-from nengo.utils.compat import is_integer, range, reraise, with_metaclass
+from nengo.utils.compat import is_integer, range, with_metaclass
 from nengo.utils.numpy import as_shape, maxint
 
 
@@ -35,7 +33,8 @@ class NetworkMember(type):
         return inst
 
 
-class NengoObject(with_metaclass(NetworkMember, CopyableObject)):
+class NengoObject(with_metaclass(
+        NetworkMember, CopyableObject, SupportDefaultsMixin)):
     """A base class for Nengo objects.
 
     Parameters
@@ -93,17 +92,7 @@ class NengoObject(with_metaclass(NetworkMember, CopyableObject)):
                 "Creating new attribute '%s' on '%s'. "
                 "Did you mean to change an existing attribute?" % (name, self),
                 SyntaxWarning)
-        if val is Default:
-            val = Config.default(type(self), name)
-
-        if rc.getboolean('exceptions', 'simplified'):
-            try:
-                super(NengoObject, self).__setattr__(name, val)
-            except ValidationError:
-                exc_info = sys.exc_info()
-                reraise(exc_info[0], exc_info[1], None)
-        else:
-            super(NengoObject, self).__setattr__(name, val)
+        super(NengoObject, self).__setattr__(name, val)
 
     def __str__(self):
         return self._str(

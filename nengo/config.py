@@ -13,10 +13,12 @@ http://nbviewer.ipython.org/urls/gist.github.com/ChrisBeaumont/5758381/raw/descr
 """
 
 import inspect
+import sys
 
-from nengo.exceptions import ConfigError
-from nengo.params import is_param
-from nengo.utils.compat import itervalues
+from nengo.exceptions import ConfigError, ValidationError
+from nengo.params import Default, is_param
+from nengo.rc import rc
+from nengo.utils.compat import itervalues, reraise
 from nengo.utils.threading import ThreadLocalStack
 
 
@@ -352,3 +354,27 @@ class Config(object):
             raise TypeError("configures() takes 1 or more arguments (0 given)")
         for klass in classes:
             self.params[klass] = ClassParams(klass)
+
+
+class SupportDefaultsMixin(object):
+    """Mixin to support assigning ``Default`` to parameters.
+
+    Implements ``__setattr__`` to do so. If the inheriting class overrides this
+    method, it has to call the mixins `__setattr__`.
+
+    This mixin will also simplify the exception if the parameter value is
+    invalid given the `simplified` rc option is set
+    """
+
+    def __setattr__(self, name, val):
+        if val is Default:
+            val = Config.default(type(self), name)
+
+        if rc.getboolean('exceptions', 'simplified'):
+            try:
+                super(SupportDefaultsMixin, self).__setattr__(name, val)
+            except ValidationError:
+                exc_info = sys.exc_info()
+                reraise(exc_info[0], exc_info[1], None)
+        else:
+            super(SupportDefaultsMixin, self).__setattr__(name, val)

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from nengo.exceptions import SpaParseError, ValidationError
-from nengo.spa import Vocabulary
+from nengo.spa import Vocabulary, VocabularyMap
 from nengo.utils.testing import warns
 
 
@@ -246,3 +246,47 @@ def test_extend(rng):
     v.extend(['G', 'H'], unitary=True)
     assert v.keys == ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
     assert v.unitary == ['E', 'G', 'H']
+
+
+def test_vocabulary_set(rng):
+    v8 = Vocabulary(8)
+    v16 = Vocabulary(16)
+    v32 = Vocabulary(32)
+    vs = VocabularyMap([v8, v16], rng=rng)
+
+    # Behaviour common to set and dict
+    assert len(vs) == 2
+    assert 8 in vs
+    assert 16 in vs
+    assert 32 not in vs
+
+    assert v8 in vs
+    assert v16 in vs
+    assert v32 not in vs
+    assert Vocabulary(8) not in vs
+
+    # dict behaviour
+    assert vs[8] is v8
+    assert vs[16] is v16
+
+    del vs[8]
+    assert 8 not in vs
+
+    # set behaviour
+    vs.add(v32)
+    assert vs[32] is v32
+    with pytest.warns(UserWarning):
+        vs.add(v32)
+
+    vs.discard(32)
+    assert 32 not in vs
+    vs.discard(v16)
+    assert 16 not in vs
+
+    # creating new vocabs if non existent
+    vs.add(v8)
+    assert vs.get_or_create(8) is v8
+    new = vs.get_or_create(16)
+    assert vs[16] is new
+    assert new.dimensions == 16
+    assert new.rng is rng

@@ -6,7 +6,7 @@ from nengo import spa
 
 
 def test_basic():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.state = spa.State(dimensions=16)
 
     input = model.get_module_input('state')
@@ -18,13 +18,13 @@ def test_basic():
 
 
 def test_neurons():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.state = spa.State(dimensions=16, neurons_per_dimension=2)
 
     assert len(model.state.state_ensembles.ensembles) == 1
     assert model.state.state_ensembles.ensembles[0].n_neurons == 16 * 2
 
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.state = spa.State(dimensions=16, subdimensions=1,
                                 neurons_per_dimension=2)
 
@@ -34,16 +34,16 @@ def test_neurons():
 
 def test_dimension_exception():
     with pytest.raises(Exception):
-        with spa.SPA() as model:
+        with spa.Module() as model:
             vocab = spa.Vocabulary(16)
             model.state = spa.State(dimensions=12, vocab=vocab)
 
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.state = spa.State(dimensions=12, subdimensions=3)
 
 
 def test_no_feedback_run(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.state = spa.State(dimensions=32, feedback=0.0)
 
         def state_input(t):
@@ -73,7 +73,7 @@ def test_no_feedback_run(Simulator, seed):
 
 
 def test_memory_run(Simulator, seed, plt):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.memory = spa.State(dimensions=32, feedback=1.0,
                                  feedback_synapse=0.01)
 
@@ -106,7 +106,7 @@ def test_memory_run(Simulator, seed, plt):
 
 
 def test_memory_run_decay(Simulator, plt, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.memory = spa.State(dimensions=32, feedback=(1.0 - 0.01/0.05),
                                  feedback_synapse=0.01)
 
