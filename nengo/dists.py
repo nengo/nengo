@@ -195,6 +195,7 @@ class Exponential(Distribution):
     high = NumberParam('high')
 
     def __init__(self, scale, shift=0., high=np.inf):
+        super(Exponential, self).__init__()
         self.scale = scale
         self.shift = shift
         self.high = high

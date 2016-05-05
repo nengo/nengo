@@ -2,7 +2,8 @@ from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.config import Config
 from nengo.connection import Connection, LearningRule
 from nengo.exceptions import ObsoleteError, ValidationError
-from nengo.params import Default, ConnectionDefault, NumberParam, StringParam
+from nengo.params import (
+    Default, ConnectionDefault, Deferrable, NumberParam, StringParam)
 from nengo.solvers import SolverParam
 from nengo.synapses import SynapseParam
 
@@ -17,12 +18,12 @@ class TargetParam(NengoObjectParam):
 
         # do this after; better to know that type is not Probable first
         if not isinstance(obj, LearningRule):
-            super(TargetParam, self).validate(probe, target)
+            return super(TargetParam, self).validate(probe, target)
 
 
 class AttributeParam(StringParam):
     def validate(self, probe, attr):
-        super(AttributeParam, self).validate(probe, attr)
+        value = super(AttributeParam, self).validate(probe, attr)
         if attr in ('decoders', 'transform'):
             raise ObsoleteError("'decoders' and 'transform' are now combined "
                                 "into 'weights'. Probe 'weights' instead.",
@@ -31,6 +32,7 @@ class AttributeParam(StringParam):
             raise ValidationError("Attribute %r is not probeable on %s."
                                   % (attr, probe.obj),
                                   attr=self.name, obj=probe)
+        return value
 
 
 class ProbeSolverParam(SolverParam):
@@ -41,11 +43,12 @@ class ProbeSolverParam(SolverParam):
         super(ProbeSolverParam, self).__set__(instance, value)
 
     def validate(self, conn, solver):
-        super(ProbeSolverParam, self).validate(conn, solver)
+        value = super(ProbeSolverParam, self).validate(conn, solver)
         if solver is not None and solver.weights:
             raise ValidationError("weight solvers only work for ensemble to "
                                   "ensemble connections, not probes",
                                   attr=self.name, obj=conn)
+        return value
 
 
 class Probe(NengoObject):
@@ -106,11 +109,11 @@ class Probe(NengoObject):
     """
 
     target = TargetParam('target', nonzero_size_out=True)
-    attr = AttributeParam('attr', default=None)
-    sample_every = NumberParam(
-        'sample_every', default=None, optional=True, low=1e-10)
-    synapse = SynapseParam('synapse', default=None)
-    solver = ProbeSolverParam('solver', default=ConnectionDefault)
+    attr = Deferrable(AttributeParam('attr', default=None))
+    sample_every = Deferrable(NumberParam(
+        'sample_every', default=None, optional=True, low=1e-10))
+    synapse = Deferrable(SynapseParam('synapse', default=None))
+    solver = Deferrable(ProbeSolverParam('solver', default=ConnectionDefault))
 
     _param_init_order = ['target']
 

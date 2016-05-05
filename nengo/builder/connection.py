@@ -13,9 +13,11 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
 from nengo.node import Node
+from nengo.params import Undeferred
 from nengo.utils.compat import is_iterable, itervalues
 
-built_attrs = ['eval_points', 'solver_info', 'weights', 'transform']
+built_attrs = [
+    'eval_points', 'solver_info', 'weights', 'transform', 'deferred']
 
 
 class BuiltConnection(collections.namedtuple('BuiltConnection', built_attrs)):
@@ -46,10 +48,10 @@ class BuiltConnection(collections.namedtuple('BuiltConnection', built_attrs)):
 
     __slots__ = ()
 
-    def __new__(cls, eval_points, solver_info, weights, transform):
+    def __new__(cls, eval_points, solver_info, weights, transform, deferred):
         # Overridden to suppress the default __new__ docstring
         return tuple.__new__(
-            cls, (eval_points, solver_info, weights, transform))
+            cls, (eval_points, solver_info, weights, transform, deferred))
 
     @property
     def decoders(self):
@@ -191,6 +193,10 @@ def build_connection(model, conn):
     Sets ``model.params[conn]`` to a `.BuiltConnection` instance.
     """
 
+    deferred = {}
+    conn = Undeferred(
+        conn, model.simulator, args=(model, conn), cache=deferred)
+
     # Create random number generator
     rng = np.random.RandomState(model.seeds[conn])
 
@@ -300,4 +306,4 @@ def build_connection(model, conn):
     model.params[conn] = BuiltConnection(eval_points=eval_points,
                                          solver_info=solver_info,
                                          transform=transform,
-                                         weights=weights)
+                                         weights=weights, deferred=deferred)

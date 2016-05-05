@@ -1,5 +1,6 @@
 import collections
 import warnings
+import weakref
 
 import numpy as np
 
@@ -63,7 +64,10 @@ class Model(object):
         or for the network builder to determine if it is the top-level network.
     """
 
-    def __init__(self, dt=0.001, label=None, decoder_cache=NoDecoderCache()):
+    def __init__(
+            self, simulator, dt=0.001, label=None,
+            decoder_cache=NoDecoderCache()):
+        self._simulator = weakref.ref(simulator)
         self.dt = dt
         self.label = label
         self.decoder_cache = decoder_cache
@@ -86,6 +90,10 @@ class Model(object):
         self.step = Signal(np.array(0, dtype=np.int64), name='step')
         self.time = Signal(np.array(0, dtype=np.float64), name='time')
         self.add_op(TimeUpdate(self.step, self.time))
+
+    @property
+    def simulator(self):
+        return self._simulator()
 
     def __str__(self):
         return "Model: %s" % self.label
