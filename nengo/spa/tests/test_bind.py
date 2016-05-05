@@ -1,9 +1,12 @@
 import numpy as np
+import pytest
 
 import nengo
 from nengo import spa
+from nengo.networks.circularconvolution import HeuristicRadius
 from nengo.spa.vocab import VocabularyMap
 from nengo.utils.numpy import rmse
+from nengo.utils.optimization import RadiusForUnitVector
 
 
 def test_basic():
@@ -23,11 +26,14 @@ def test_basic():
     assert output[1].dimensions == 16
 
 
-def test_run(Simulator, seed):
+@pytest.mark.parametrize(
+    'radius_method', [HeuristicRadius, RadiusForUnitVector])
+def test_run(radius_method, Simulator, seed):
     rng = np.random.RandomState(seed)
     vocab = spa.Vocabulary(16, rng=rng)
 
     with spa.Module(seed=seed, vocabs=VocabularyMap([vocab])) as model:
+        model.config[spa.Bind].radius_method = radius_method
         model.bind = spa.Bind(dimensions=16)
 
         def inputA(t):

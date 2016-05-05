@@ -7,6 +7,11 @@ from nengo.utils.compat import range
 from nengo.utils.magic import memoize
 
 
+def HeuristicRadius(dimensions, subdimensions):
+    assert subdimensions == 1
+    return 2. / np.sqrt(dimensions)
+
+
 def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
     """A reference Numpy implementation of circular convolution"""
     A = np.fft.fft(a, axis=axis)
@@ -86,8 +91,9 @@ def dft_half(n):
     return np.exp((-2.j * np.pi / n) * (w[:, None] * x[None, :]))
 
 
-def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
-                        input_magnitude=1.0, net=None):
+def CircularConvolution(
+        n_neurons, dimensions, invert_a=False, invert_b=False,
+        input_magnitude=1.0, radius_method=HeuristicRadius, net=None):
     """Compute the circular convolution of two vectors.
 
     The circular convolution :math:`c` of vectors :math:`a` and :math:`b`
@@ -195,7 +201,7 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
         net.B = nengo.Node(size_in=dimensions, label="B")
         net.product = Product(
             n_neurons, tr_out.shape[1],
-            input_magnitude=input_magnitude * 2. / np.sqrt(dimensions))
+            input_magnitude=input_magnitude * radius_method(dimensions, 1))
         net.output = nengo.Node(size_in=dimensions, label="output")
 
         nengo.Connection(net.A, net.product.A, transform=tr_a, synapse=None)
