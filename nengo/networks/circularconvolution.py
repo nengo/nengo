@@ -49,6 +49,7 @@ def transform_in(dims, align, invert):
             tr[i] = row.real if i % 4 == 0 or i % 4 == 3 else row.imag
 
     remove_imag_rows(tr)
+    tr /= np.sqrt(dims)
     return tr.reshape((-1, dims))
 
 
@@ -66,9 +67,6 @@ def transform_out(dims):
 
     tr = tr.reshape(4*dims2, dims)
     remove_imag_rows(tr)
-    # IDFT has a 1/D scaling factor
-    tr /= dims
-
     return tr.T
 
 
@@ -195,8 +193,9 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
     with net:
         net.A = nengo.Node(size_in=dimensions, label="A")
         net.B = nengo.Node(size_in=dimensions, label="B")
-        net.product = Product(n_neurons, tr_out.shape[1],
-                              input_magnitude=input_magnitude * 2)
+        net.product = Product(
+            n_neurons, tr_out.shape[1],
+            input_magnitude=input_magnitude * 2. / np.sqrt(dimensions))
         net.output = nengo.Node(size_in=dimensions, label="output")
 
         nengo.Connection(net.A, net.product.A, transform=tr_a, synapse=None)
