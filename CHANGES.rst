@@ -22,6 +22,11 @@ Release History
 2.1.1 (unreleased)
 ==================
 
+**API changes**
+
+- Added `copy` method to Nengo object and allow pickling of Nengo objects.
+  (`#977 <https://github.com/nengo/nengo/issues/977>`_,
+  `#984 <https://github.com/nengo/nengo/pull/984>`_)
 
 
 2.1.0 (April 27, 2016)
