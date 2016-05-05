@@ -11,6 +11,7 @@ from nengo.spa.input import Input
 from nengo.spa.vocab import VocabularyMap, VocabularyMapParam
 from nengo.synapses import SynapseParam
 from nengo.utils.compat import iteritems
+from nengo.utils.optimization import RadiusForUnitVector
 
 
 def get_current_module():
@@ -62,6 +63,14 @@ class Module(nengo.Network, SupportDefaultsMixin):
         self.outputs = {}
 
         self._stimuli = None
+
+    def use_spaopt(self):
+        from nengo.spa.bind import Bind
+        from nengo.spa.compare import Compare
+        from nengo.spa.state import State
+        self.config[Bind].radius_method = RadiusForUnitVector
+        self.config[Compare].radius_method = RadiusForUnitVector
+        self.config[State].radius_method = RadiusForUnitVector
 
     @property
     def stimuli(self):
