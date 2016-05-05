@@ -1,7 +1,7 @@
 import nengo
 from nengo.exceptions import ValidationError
 from nengo.networks.circularconvolution import HeuristicRadius
-from nengo.params import Default, FunctionParam
+from nengo.params import Default, FunctionParam, IntParam
 from nengo.spa.module import Module
 
 
@@ -42,12 +42,15 @@ class Bind(Module):
 
     radius_method = FunctionParam(
         'radius_method', default=HeuristicRadius, readonly=True)
+    n_neurons = IntParam('cconv_neurons', default=200, optional=False)
 
-    def __init__(self, dimensions, vocab=None, n_neurons=200, invert_a=False,
-                 invert_b=False, input_magnitude=1.0, radius_method=Default,
-                 label=None, seed=None, add_to_container=None):
+    def __init__(
+            self, dimensions, vocab=None, n_neurons=Default, invert_a=False,
+            invert_b=False, input_magnitude=1.0, radius_method=Default,
+            label=None, seed=None, add_to_container=None):
         super(Bind, self).__init__(label, seed, add_to_container)
 
+        self.n_neurons = n_neurons
         self.radius_method = radius_method
 
         if vocab is None:
@@ -61,7 +64,7 @@ class Bind(Module):
 
         with self:
             self.cc = nengo.networks.CircularConvolution(
-                n_neurons, dimensions, invert_a, invert_b,
+                self.n_neurons, dimensions, invert_a, invert_b,
                 input_magnitude=input_magnitude,
                 radius_method=self.radius_method)
             self.A = self.cc.A

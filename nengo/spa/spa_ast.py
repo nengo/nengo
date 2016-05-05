@@ -575,7 +575,7 @@ class Product(BinaryOperation):
             if is_binding:
                 net = Bind(
                     self.type.vocab.dimensions, self.type.vocab,
-                    context.root_module.cconv_neurons, label=str(self))
+                    label=str(self))
             elif self.lhs.type == TScalar and self.rhs.type == TScalar:
                 net = nengo.networks.Product(
                     context.root_module.product_neurons, 1,

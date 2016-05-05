@@ -34,7 +34,6 @@ class Module(nengo.Network, SupportDefaultsMixin):
     vocabs = VocabularyMapParam('vocabs', default=None, optional=False)
     dim_per_ensemble = IntParam('dim_per_ensemble', default=16, optional=False)
     product_neurons = IntParam('product_neurons', default=100, optional=False)
-    cconv_neurons = IntParam('cconv_neurons', default=200, optional=False)
     synapse = SynapseParam('synapse', default=0.01, optional=False)
 
     def __init__(
