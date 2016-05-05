@@ -1,5 +1,9 @@
+import pytest
+
 import nengo
 from nengo import spa
+from nengo.spa.compare import HeuristicRadius
+from nengo.utils.optimization import RadiusForUnitVector
 
 
 def test_basic():
@@ -20,8 +24,11 @@ def test_basic():
     assert output[1] is None
 
 
-def test_run(Simulator, seed):
+@pytest.mark.parametrize(
+    'radius_method', [HeuristicRadius, RadiusForUnitVector])
+def test_run(radius_method, Simulator, seed):
     with spa.Module(seed=seed) as model:
+        model.config[spa.Compare].radius_method = radius_method
         model.compare = spa.Compare(dimensions=16)
 
         def inputA(t):

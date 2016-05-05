@@ -41,8 +41,9 @@ class Module(nengo.Network, SupportDefaultsMixin):
             self, label=None, seed=None, add_to_container=None, vocabs=None):
         super(Module, self).__init__(label, seed, add_to_container)
         from nengo.spa.bind import Bind
+        from nengo.spa.compare import Compare
         from nengo.spa.state import State
-        self.config.configures(Module, Bind, State)
+        self.config.configures(Module, Bind, Compare, State)
 
         if vocabs is None:
             vocabs = Config.default(Module, 'vocabs')

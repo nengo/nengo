@@ -1,7 +1,9 @@
 import numpy as np
 
 import nengo
+from nengo.params import Default, FunctionParam
 from nengo.spa.module import Module
+from nengo.spa.state import HeuristicRadius
 
 
 class Compare(Module):
@@ -29,10 +31,17 @@ class Compare(Module):
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
+
+    radius_method = FunctionParam(
+        'radius_method', default=HeuristicRadius, readonly=True)
+
     def __init__(self, dimensions, vocab=None, neurons_per_multiply=200,
-                 input_magnitude=1.0, label=None, seed=None,
-                 add_to_container=None):
+                 input_magnitude=1.0, radius_method=Default, label=None,
+                 seed=None, add_to_container=None):
         super(Compare, self).__init__(label, seed, add_to_container)
+
+        self.radius_method = radius_method
+
         if vocab is None:
             # use the default vocab for this number of dimensions
             vocab = dimensions
@@ -40,7 +49,8 @@ class Compare(Module):
         with self:
             self.product = nengo.networks.Product(
                 neurons_per_multiply, dimensions,
-                input_magnitude=input_magnitude)
+                input_magnitude=input_magnitude * self.radius_method(
+                    dimensions, 1))
 
             self.inputA = nengo.Node(size_in=dimensions, label='inputA')
             self.inputB = nengo.Node(size_in=dimensions, label='inputB')
