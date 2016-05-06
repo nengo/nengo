@@ -1,7 +1,7 @@
 import nengo
 from nengo.exceptions import ValidationError
 from nengo.networks.unitvectorarray import HeuristicRadius, UnitVectorArray
-from nengo.params import Default, FunctionParam
+from nengo.params import Default, FunctionParam, IntParam
 from nengo.spa.module import Module
 
 
@@ -44,11 +44,13 @@ class State(Module):
 
     radius_method = FunctionParam(
         'radius_method', default=HeuristicRadius, readonly=True)
+    dim_per_ensemble = IntParam('dim_per_ensemble', default=16, readonly=True)
 
-    def __init__(self, dimensions, subdimensions=16, neurons_per_dimension=50,
-                 feedback=0.0, feedback_synapse=0.1, represent_identity=True,
-                 radius_method=Default, vocab=None, label=None, seed=None,
-                 add_to_container=None):
+    def __init__(
+            self, dimensions, subdimensions=Default, neurons_per_dimension=50,
+            feedback=0.0, feedback_synapse=0.1, represent_identity=True,
+            radius_method=Default, vocab=None, label=None, seed=None,
+            add_to_container=None):
         super(State, self).__init__(label, seed, add_to_container)
         self.dim_per_ensemble = subdimensions
 
@@ -64,7 +66,7 @@ class State(Module):
                 (vocab.dimensions, dimensions), attr='dimensions', obj=self)
 
         # Subdimensions should be at most the number of dimensions
-        subdimensions = min(dimensions, subdimensions)
+        subdimensions = min(dimensions, self.dim_per_ensemble)
 
         if dimensions % subdimensions != 0:
             raise ValidationError(

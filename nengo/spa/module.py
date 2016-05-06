@@ -71,6 +71,7 @@ class Module(nengo.Network, SupportDefaultsMixin):
         self.config[Bind].radius_method = RadiusForUnitVector
         self.config[Compare].radius_method = RadiusForUnitVector
         self.config[State].radius_method = RadiusForUnitVector
+        self.config[State].dim_per_ensemble = 1
 
     @property
     def stimuli(self):
