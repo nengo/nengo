@@ -22,10 +22,11 @@ matrix:
         PIP_DEPS="$PIP_DEPS pytest-cov coveralls"
     - env: >
         PYTHON="2.7"
+        NUMPY=""
         SETUP_CMD=""
-        EXTRA_CMD="flake8 -v nengo"
+        EXTRA_CMD="flake8 -v nengo && pylint nengo"
         CONDA_DEPS="flake8"
-        PIP_DEPS=""
+        PIP_DEPS="pylint"
     - env: PYTHON="2.7" NUMPY="1.6"
     - env: PYTHON="2.7" NUMPY="1.7"
     - env: PYTHON="2.7" NUMPY="1.8"
@@ -59,4 +60,4 @@ script:
       python setup.py -q install;
       eval python setup.py "$SETUP_CMD";
     fi
-  - if [[ -n $EXTRA_CMD ]]; then $EXTRA_CMD; fi
+  - if [[ -n $EXTRA_CMD ]]; then eval "$EXTRA_CMD"; fi

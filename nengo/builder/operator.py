@@ -215,9 +215,9 @@ class TimeUpdate(Operator):
     """
 
     def __init__(self, step, time, tag=None):
+        super(TimeUpdate, self).__init__(tag=tag)
         self.step = step
         self.time = time
-        self.tag = tag
 
         self.sets = [step, time]
         self.incs = []
@@ -264,8 +264,8 @@ class PreserveValue(Operator):
     4. updates ``[]``
     """
     def __init__(self, dst, tag=None):
+        super(PreserveValue, self).__init__(tag=tag)
         self.dst = dst
-        self.tag = tag
 
         self.sets = [dst]
         self.incs = []
@@ -313,9 +313,9 @@ class Reset(Operator):
     """
 
     def __init__(self, dst, value=0, tag=None):
+        super(Reset, self).__init__(tag=tag)
         self.dst = dst
         self.value = float(value)
-        self.tag = tag
 
         self.sets = [dst]
         self.incs = []
@@ -366,9 +366,9 @@ class Copy(Operator):
     """
 
     def __init__(self, src, dst, tag=None):
+        super(Copy, self).__init__(tag=tag)
         self.src = src
         self.dst = dst
-        self.tag = tag
 
         self.sets = [dst]
         self.incs = []
@@ -433,6 +433,8 @@ class SlicedCopy(Operator):
 
     def __init__(self, src, dst, src_slice=Ellipsis, dst_slice=Ellipsis,
                  inc=False, tag=None):
+        super(SlicedCopy, self).__init__(tag=tag)
+
         if isinstance(src_slice, slice):
             src = src[src_slice]
             src_slice = Ellipsis
@@ -446,7 +448,6 @@ class SlicedCopy(Operator):
         self.src_slice = src_slice
         self.dst_slice = dst_slice
         self.inc = inc
-        self.tag = tag
 
         self.sets = [] if inc else [dst]
         self.incs = [dst] if inc else []
@@ -508,10 +509,10 @@ class ElementwiseInc(Operator):
     """
 
     def __init__(self, A, X, Y, tag=None):
+        super(ElementwiseInc, self).__init__(tag=tag)
         self.A = A
         self.X = X
         self.Y = Y
-        self.tag = tag
 
         self.sets = []
         self.incs = [Y]
@@ -609,6 +610,8 @@ class DotInc(Operator):
     """
 
     def __init__(self, A, X, Y, tag=None):
+        super(DotInc, self).__init__(tag=tag)
+
         if X.ndim >= 2 and any(d > 1 for d in X.shape[1:]):
             raise BuildError("X must be a column vector")
         if Y.ndim >= 2 and any(d > 1 for d in Y.shape[1:]):
@@ -617,7 +620,6 @@ class DotInc(Operator):
         self.A = A
         self.X = X
         self.Y = Y
-        self.tag = tag
 
         self.sets = []
         self.incs = [Y]
@@ -689,11 +691,11 @@ class SimPyFunc(Operator):
     """
 
     def __init__(self, output, fn, t, x, tag=None):
+        super(SimPyFunc, self).__init__(tag=tag)
         self.output = output
         self.fn = fn
         self.t = t
         self.x = x
-        self.tag = tag
 
         self.sets = [] if output is None else [output]
         self.incs = []

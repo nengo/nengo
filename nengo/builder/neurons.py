@@ -45,11 +45,11 @@ class SimNeurons(Operator):
     """
 
     def __init__(self, neurons, J, output, states=None, tag=None):
+        super(SimNeurons, self).__init__(tag=tag)
         self.neurons = neurons
         self.J = J
         self.output = output
         self.states = [] if states is None else states
-        self.tag = tag
 
         self.sets = [output] + self.states
         self.incs = []
