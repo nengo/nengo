@@ -14,8 +14,8 @@
   :target: https://ci.appveyor.com/project/nengo/nengo
   :alt: AppVeyor build status
 
-.. image:: https://img.shields.io/coveralls/nengo/nengo/master.svg
-  :target: https://coveralls.io/r/nengo/nengo?branch=master
+.. image:: https://img.shields.io/codecov/c/github/nengo/nengo/master.svg
+  :target: https://codecov.io/gh/nengo/nengo/branch/master
   :alt: Test coverage
 
 

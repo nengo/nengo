@@ -17,9 +17,9 @@ matrix:
     - env: >
         PYTHON="2.7"
         SETUP_CMD="test --addopts '--cov-config .coveragerc --cov nengo nengo -n 2 -v --durations 20'"
-        EXTRA_CMD="coveralls"
+        EXTRA_CMD="bash <(curl -s https://codecov.io/bash)"
         CONDA_DEPS="$CONDA_DEPS coverage"
-        PIP_DEPS="$PIP_DEPS pytest-cov coveralls"
+        PIP_DEPS="$PIP_DEPS pytest-cov"
     - env: >
         PYTHON="2.7"
         NUMPY=""
