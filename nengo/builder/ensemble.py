@@ -9,6 +9,7 @@ from nengo.builder.operator import Copy, DotInc, Reset
 from nengo.dists import Distribution
 from nengo.ensemble import Ensemble
 from nengo.neurons import Direct
+from nengo.params import Undeferred
 from nengo.utils.builder import default_n_eval_points
 
 built_attrs = ['eval_points',
@@ -17,7 +18,8 @@ built_attrs = ['eval_points',
                'max_rates',
                'scaled_encoders',
                'gain',
-               'bias']
+               'bias',
+               'deferred']
 
 
 class BuiltEnsemble(collections.namedtuple('BuiltEnsemble', built_attrs)):
@@ -51,10 +53,11 @@ class BuiltEnsemble(collections.namedtuple('BuiltEnsemble', built_attrs)):
     __slots__ = ()
 
     def __new__(cls, eval_points, encoders, intercepts, max_rates,
-                scaled_encoders, gain, bias):
+                scaled_encoders, gain, bias, deferred):
         # Overridden to suppress the default __new__ docstring
         return tuple.__new__(cls, (eval_points, encoders, intercepts,
-                                   max_rates, scaled_encoders, gain, bias))
+                                   max_rates, scaled_encoders, gain, bias,
+                                   deferred))
 
 
 def sample(dist, n, d=None, rng=None):
@@ -139,6 +142,9 @@ def build_ensemble(model, ens):
     Sets ``model.params[ens]`` to a `.BuiltEnsemble` instance.
     """
 
+    deferred = {}
+    ens = Undeferred(ens, model.simulator, args=(model, ens), cache=deferred)
+
     # Create random number generator
     rng = np.random.RandomState(model.seeds[ens])
 
@@ -205,4 +211,5 @@ def build_ensemble(model, ens):
                                       max_rates=max_rates,
                                       scaled_encoders=scaled_encoders,
                                       gain=gain,
-                                      bias=bias)
+                                      bias=bias,
+                                      deferred=deferred)

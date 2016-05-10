@@ -121,8 +121,7 @@ class Simulator(object):
 
         if model is None:
             dt = float(dt)  # make sure it's a float (for division purposes)
-            self.model = Model(dt=dt,
-                               label="%s, dt=%f" % (network, dt),
+            self.model = Model(self, dt=dt, label="%s, dt=%f" % (network, dt),
                                decoder_cache=get_default_decoder_cache())
         else:
             self.model = model

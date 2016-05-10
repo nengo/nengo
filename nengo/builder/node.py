@@ -4,6 +4,7 @@ from nengo.builder import Builder, Signal
 from nengo.builder.operator import Reset, SimPyFunc
 from nengo.exceptions import BuildError
 from nengo.node import Node
+from nengo.params import Undeferred
 from nengo.processes import Process
 from nengo.utils.compat import is_array_like
 
@@ -27,6 +28,8 @@ def build_node(model, node):
     -----
     Sets ``model.params[node]`` to ``None``.
     """
+
+    node = Undeferred(node, model.simulator, args=(model, node))
 
     # input signal
     if not is_array_like(node.output) and node.size_in > 0:

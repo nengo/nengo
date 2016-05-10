@@ -9,7 +9,7 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.node import Node
-from nengo.params import (Default, Unconfigurable, ObsoleteParam,
+from nengo.params import (Default, Deferrable, Unconfigurable, ObsoleteParam,
                           BoolParam, FunctionParam)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
@@ -20,12 +20,12 @@ logger = logging.getLogger(__name__)
 
 class PrePostParam(NengoObjectParam):
     def validate(self, conn, nengo_obj):
-        super(PrePostParam, self).validate(conn, nengo_obj)
         if isinstance(nengo_obj, Connection):
             raise ValidationError(
                 "Cannot connect to or from connections. "
                 "Did you mean to connect to the connection's learning rule?",
                 attr=self.name, obj=conn)
+        return super(PrePostParam, self).validate(conn, nengo_obj)
 
 
 class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
@@ -90,7 +90,10 @@ class ConnectionSolverParam(SolverParam):
     """Connection-specific validation for decoder solvers."""
 
     def validate(self, conn, solver):
-        super(ConnectionSolverParam, self).validate(conn, solver)
+        new_solver = super(ConnectionSolverParam, self).validate(conn, solver)
+        if new_solver is not None:
+            solver = new_solver
+
         if solver is not None:
             if solver.weights and not isinstance(conn.pre_obj, Ensemble):
                 raise ValidationError(
@@ -102,12 +105,13 @@ class ConnectionSolverParam(SolverParam):
                     "weight solvers only work for connections to ensembles "
                     "(got %r)" % conn.post_obj.__class__.__name__,
                     attr=self.name, obj=conn)
+        return solver
 
 
 class EvalPointsParam(DistOrArrayParam):
     def validate(self, conn, distorarray):
         """Eval points are only valid when pre is an ensemble."""
-        if not isinstance(conn.pre, Ensemble):
+        if distorarray is not None and not isinstance(conn.pre, Ensemble):
             msg = ("eval_points are only valid on connections from ensembles "
                    "(got type '%s')" % conn.pre.__class__.__name__)
             raise ValidationError(msg, attr=self.name, obj=conn)
@@ -123,7 +127,8 @@ class ConnectionFunctionParam(FunctionParam):
         return (x,)
 
     def validate(self, conn, function_info):
-        super(ConnectionFunctionParam, self).validate(conn, function_info)
+        value = super(
+            ConnectionFunctionParam, self).validate(conn, function_info)
         fn_ok = (Node, Ensemble)
         function, size = function_info
 
@@ -156,6 +161,7 @@ class ConnectionFunctionParam(FunctionParam):
             raise ValidationError(
                 "Cannot apply functions to passthrough nodes",
                 attr=self.name, obj=conn)
+        return value
 
 
 class TransformParam(DistOrArrayParam):
@@ -309,18 +315,18 @@ class Connection(NengoObject):
 
     pre = PrePostParam('pre', nonzero_size_out=True)
     post = PrePostParam('post', nonzero_size_in=True)
-    synapse = SynapseParam('synapse', default=Lowpass(tau=0.005))
-    function_info = ConnectionFunctionParam(
-        'function', default=None, optional=True)
-    transform = TransformParam('transform', default=np.array(1.0))
-    solver = ConnectionSolverParam('solver', default=LstsqL2())
-    learning_rule_type = ConnectionLearningRuleTypeParam(
-        'learning_rule_type', default=None, optional=True)
-    eval_points = EvalPointsParam('eval_points',
-                                  default=None,
-                                  optional=True,
-                                  sample_shape=('*', 'size_in'))
-    scale_eval_points = BoolParam('scale_eval_points', default=True)
+    synapse = Deferrable(SynapseParam('synapse', default=Lowpass(0.005)))
+    function_info = Deferrable(ConnectionFunctionParam(
+        'function', default=None, optional=True))
+    transform = Deferrable(TransformParam('transform', default=np.array(1.0)))
+    solver = Deferrable(ConnectionSolverParam('solver', default=LstsqL2()))
+    learning_rule_type = Deferrable(ConnectionLearningRuleTypeParam(
+        'learning_rule_type', default=None, optional=True))
+    eval_points = Deferrable(EvalPointsParam(
+        'eval_points', default=None, optional=True,
+        sample_shape=('*', 'size_in')))
+    scale_eval_points = Deferrable(
+        BoolParam('scale_eval_points', default=True))
     modulatory = ObsoleteParam(
         'modulatory',
         "Modulatory connections have been removed. "
