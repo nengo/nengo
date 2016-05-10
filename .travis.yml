@@ -6,58 +6,67 @@ notifications:
 
 env:
   global:
-    - NUMPY="1.10"
-    - SETUP_CMD="test --addopts 'nengo -n 2 -v --durations 20'"
-    - EXTRA_CMD=""
-    - CONDA_DEPS="matplotlib jupyter pygments pytest"
-    - PIP_DEPS="pytest-xdist"
+    - NUMPY="1.11"
+    - COVERAGE="false"
+    - STATIC="false"
+    - CONDA_DEPS="matplotlib jupyter"
+    - PIP_DEPS="pytest pytest-xdist"
 
 matrix:
   include:
-    - env: >
-        PYTHON="2.7"
-        SETUP_CMD="test --addopts '--cov-config .coveragerc --cov nengo nengo -n 2 -v --durations 20'"
-        EXTRA_CMD="bash <(curl -s https://codecov.io/bash)"
-        CONDA_DEPS="$CONDA_DEPS coverage"
-        PIP_DEPS="$PIP_DEPS pytest-cov"
-    - env: >
-        PYTHON="2.7"
-        NUMPY=""
-        SETUP_CMD=""
-        EXTRA_CMD="flake8 -v nengo && pylint nengo"
-        CONDA_DEPS="flake8"
-        PIP_DEPS="pylint"
+    - env: PYTHON="2.7" COVERAGE="true"
+    - env: PYTHON="2.7" STATIC="true"
     - env: PYTHON="2.7" NUMPY="1.6"
     - env: PYTHON="2.7" NUMPY="1.7"
     - env: PYTHON="2.7" NUMPY="1.8"
     - env: PYTHON="2.7" NUMPY="1.9"
+    - env: PYTHON="2.7" NUMPY="1.10"
     - env: PYTHON="3.4"
-    - env: PYTHON="3.5"
+    - env: PYTHON="3.5" COVERAGE="true"
 
 # Setup Miniconda
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -b -p $HOME/miniconda
+  - bash miniconda.sh -b -p "$HOME/miniconda"
   - export PATH="$HOME/miniconda/bin:$PATH"
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -n test python=$PYTHON pip
+  - conda create -q -n test python="$PYTHON" pip
   - source activate test
 
 # Install packages with conda, then pip
 install:
-  - if [[ -n $NUMPY ]]; then export CONDA_DEPS="$CONDA_DEPS numpy=$NUMPY"; fi
-  - if [[ -n $CONDA_DEPS ]]; then conda install $CONDA_DEPS; fi
-  - if [[ -n $PIP_DEPS ]]; then eval pip install "$PIP_DEPS"; fi
+  - if [[ "$COVERAGE" == "true" ]]; then
+      export PIP_DEPS="$PIP_DEPS pytest-cov";
+    elif [[ "$STATIC" == "true" ]]; then
+      export CONDA_DEPS="";
+      export PIP_DEPS="flake8 pylint";
+    fi
+  - if [[ -n "$NUMPY" && "$STATIC" == "false" ]]; then
+      export CONDA_DEPS="$CONDA_DEPS numpy=$NUMPY";
+    fi
+  - if [[ -n "$CONDA_DEPS" ]]; then eval conda install "$CONDA_DEPS"; fi
+  - if [[ -n "$PIP_DEPS" ]]; then eval pip install "$PIP_DEPS"; fi
 
 # Run the tests
 script:
   - mkdir -p "$HOME/.ipython/profile_default"
   - "echo 'c.HistoryAccessor.enabled = False\n' > $HOME/.ipython/profile_default/ipython_config.py"
-  - if [[ -n $SETUP_CMD ]]; then
+  - export TEST_EXTRA=""
+  - if [[ "$STATIC" == "false" ]]; then
+      if [[ "$COVERAGE" == "true" ]]; then
+        export TEST_EXTRA="--cov-config .coveragerc --cov nengo";
+      fi;
       python -c "import numpy; numpy.show_config()";
-      python setup.py -q install;
-      eval python setup.py "$SETUP_CMD";
+      python setup.py -q develop;
+      eval py.test nengo -n 2 -v --duration 20 "$TEST_EXTRA";
+    else
+      flake8 -v nengo;
+      pylint nengo;
     fi
-  - if [[ -n $EXTRA_CMD ]]; then eval "$EXTRA_CMD"; fi
+
+after_success:
+  - if [[ "$COVERAGE" == "true" ]]; then
+      eval "bash <(curl -s https://codecov.io/bash)";
+    fi
