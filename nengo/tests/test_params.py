@@ -347,7 +347,7 @@ def test_undeferred():
     assert hash(inst) == hash(undeferred)
     assert inst == undeferred
 
-    undeferred_mocksim = params.Undeferred(inst, mock_sim)
+    undeferred_mocksim = params.Undeferred(inst, mock_sim())
     assert undeferred_mocksim.p == 1
 
     inst.p = params.Deferral(lambda: 'str')
