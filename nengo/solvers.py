@@ -14,7 +14,7 @@ import numpy as np
 
 import nengo.utils.least_squares_solvers as lstsq
 from nengo.exceptions import ValidationError
-from nengo.params import BoolParam, NumberParam, Parameter
+from nengo.params import BoolParam, CopyableObject, NumberParam, Parameter
 from nengo.utils.compat import range, with_metaclass, iteritems
 from nengo.utils.least_squares_solvers import (
     format_system, rmses, LeastSquaresSolverParam)
@@ -23,7 +23,7 @@ from nengo.utils.magic import DocstringInheritor
 logger = logging.getLogger(__name__)
 
 
-class Solver(with_metaclass(DocstringInheritor)):
+class Solver(with_metaclass(DocstringInheritor, CopyableObject)):
     """Decoder or weight solver."""
 
     def __call__(self, A, Y, rng=None, E=None):

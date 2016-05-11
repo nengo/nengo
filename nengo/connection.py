@@ -334,6 +334,10 @@ class Connection(NengoObject):
         since="v2.1.0",
         url="https://github.com/nengo/nengo/issues/632#issuecomment-71663849")
 
+    _param_init_order = [
+        'pre', 'post', 'synapse', 'transform', 'eval_points', 'function_info',
+        'solver', 'learning_rule_type']
+
     def __init__(self, pre, post, synapse=Default, function=Default,
                  transform=Default, solver=Default, learning_rule_type=Default,
                  eval_points=Default, scale_eval_points=Default,

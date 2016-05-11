@@ -65,6 +65,10 @@ class Cholesky(LeastSquaresSolver):
         info = {'rmses': rmses(A, x, y)}
         return x, info
 
+    def __eq__(self, other):
+        return (self.__class__ is other.__class__ and
+                self.transpose == other.transpose)
+
 
 class ConjgradScipy(LeastSquaresSolver):
     """Solve a least-squares system using Scipy's conjugate gradient."""

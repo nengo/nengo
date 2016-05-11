@@ -403,9 +403,12 @@ class FunctionParam(Parameter):
     """A parameter where the value is a function."""
 
     def __set__(self, instance, function):
-        size = (self.determine_size(instance, function)
-                if callable(function) else None)
-        function_info = FunctionInfo(function=function, size=size)
+        if isinstance(function, FunctionInfo):
+            function_info = function
+        else:
+            size = (self.determine_size(instance, function)
+                    if callable(function) else None)
+            function_info = FunctionInfo(function=function, size=size)
         super(FunctionParam, self).__set__(instance, function_info)
 
     def determine_size(self, instance, function):
@@ -426,6 +429,47 @@ class FunctionParam(Parameter):
             raise ValidationError("function '%s' must be callable" % function,
                                   attr=self.name, obj=instance)
         return super(FunctionParam, self).validate(instance, function)
+
+
+class CopyableObject(object):
+    """Mixin to allow to create copies of instances of classes with parameters.
+
+    You can add a list of strings as class attribute _param_init_order to
+    declare the order in which parameters have to be initialized. Missing
+    parameters will be initialized last in an undefined order.
+    """
+
+    def __getstate__(self):
+        sp = super(CopyableObject, self)
+        if hasattr(sp, '__getstate__'):
+            state = sp.__getstate__()
+        else:
+            state = dict(self.__dict__)
+
+        for attr in params(self):
+            param = getattr(self.__class__, attr)
+            if self in param:
+                state[attr] = getattr(self, attr)
+
+        return state
+
+    def __setstate__(self, state):
+        if hasattr(self.__class__, '_param_init_order'):
+            for attr in getattr(self.__class__, '_param_init_order'):
+                setattr(self, attr, state[attr])
+                del state[attr]
+
+        for attr in params(self):
+            if attr in state:
+                setattr(self, attr, state[attr])
+                del state[attr]
+
+        sp = super(CopyableObject, self)
+        if hasattr(sp, '__setstate__'):
+            sp.__setstate__(state)
+        else:
+            for k, v in state.items():
+                setattr(self, k, v)
 
 
 class FrozenObject(object):

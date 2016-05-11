@@ -151,6 +151,15 @@ class Ensemble(NengoObject):
         self.noise = noise
         self._neurons = Neurons(self)
 
+    def __getstate__(self):
+        state = super(Ensemble, self).__getstate__()
+        del state['_neurons']
+        return state
+
+    def __setstate__(self, state):
+        state['_neurons'] = Neurons(self)
+        super(Ensemble, self).__setstate__(state)
+
     def __getitem__(self, key):
         return ObjView(self, key)
 
