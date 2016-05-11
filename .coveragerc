@@ -1,3 +1,6 @@
 [run]
 source = nengo
+[report]
 omit = */tests/test*
+exclude_lines =
+    raise NotImplementedError
