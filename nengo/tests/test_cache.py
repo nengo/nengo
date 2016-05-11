@@ -271,7 +271,8 @@ def test_cache_works(tmpdir, RefSimulator, seed):
 
     assert len(os.listdir(cache_dir)) == 0
     with RefSimulator(model, model=nengo.builder.Model(
-            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
+            RefSimulator, dt=0.001,
+            decoder_cache=DecoderCache(cache_dir=cache_dir))):
         assert len(os.listdir(cache_dir)) == 3  # legacy.txt, index, and *.nco
 
 
@@ -284,7 +285,8 @@ def test_cache_not_used_without_seed(tmpdir, RefSimulator):
 
     assert len(os.listdir(cache_dir)) == 0
     with RefSimulator(model, model=nengo.builder.Model(
-            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
+            RefSimulator, dt=0.001,
+            decoder_cache=DecoderCache(cache_dir=cache_dir))):
         assert len(os.listdir(cache_dir)) == 2  # legacy.txt and index
 
 

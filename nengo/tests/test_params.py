@@ -1,3 +1,5 @@
+from copy import copy
+
 import numpy as np
 import pytest
 
@@ -275,3 +277,119 @@ def test_functionparam():
     # Not OK: not a function
     with pytest.raises(ValidationError):
         inst.fp = 0
+
+
+def test_deferrable():
+    """The value Deferrable of  is either set to a fixed value or
+    determined at some later time via a function call."""
+
+    mock = params.Deferral(lambda x: 2. * x)
+
+    class Test(object):
+        p_def_fn = params.Deferrable(
+            params.NumberParam('p_def_fn', readonly=False, low=0., high=10.),
+            default=mock)
+        p_def_num = params.Deferrable(params.NumberParam(
+            'p_def_num', default=2., low=0., high=10.))
+
+    inst = Test()
+
+    # defaults
+    assert inst.p_def_fn is mock
+    assert inst.p_def_num == 2.
+
+    # assign numbers
+    inst.p_def_fn = 3.
+    inst.p_def_num = 4.
+    assert inst.p_def_fn == 3.
+    assert inst.p_def_num == 4.
+
+    # assign deferral
+    inst.p_def_fn = mock
+    inst.p_def_num = mock
+    assert inst.p_def_fn is mock
+    assert inst.p_def_num is mock
+
+    # assign invalid values
+    with pytest.raises(ValueError):
+        inst.p_def_fn = -1.
+    with pytest.raises(ValueError):
+        inst.p_def_num = 11.
+    with pytest.raises(ValueError):
+        inst.p_def_fn = lambda x: 2. * x
+
+
+def test_undeferred():
+    class DeferralFn(params.Deferral):
+        def __init__(self):
+            super(DeferralFn, self).__init__()
+            self.n_calls = 0
+
+        def default_fn(self, *args, **kwargs):
+            self.n_calls += 1
+            return 42.
+
+    mock_sim = type('MockSim', (), {})
+    DeferralFn.register(mock_sim, lambda: 1)
+
+    deferral = DeferralFn()
+
+    class Test(object):
+        p = params.Deferrable(params.NumberParam('p'), default=deferral)
+
+    inst = Test()
+
+    undeferred = params.Undeferred(inst, None)
+    assert undeferred.p == 42.
+    assert undeferred.p == 42.  # check twice to check caching
+    assert deferral.n_calls == 1
+
+    assert hash(inst) == hash(undeferred)
+    assert inst == undeferred
+
+    undeferred_mocksim = params.Undeferred(inst, mock_sim())
+    assert undeferred_mocksim.p == 1
+
+    inst.p = params.Deferral(lambda: 'str')
+    with pytest.raises(ValueError):
+        params.Undeferred(inst, None).p
+
+
+def test_deferral_classes_have_independent_sim_specific_dicts():
+    class DeferralA(params.Deferral):
+        pass
+
+    class DeferralB(params.Deferral):
+        pass
+
+    mock_sim = type('MockSim', (), {})
+    fn_a = lambda: 'a'
+    fn_b = lambda: 'b'
+
+    DeferralA.register(mock_sim, fn_a)
+    DeferralB.register(mock_sim, fn_b)
+
+    assert DeferralA().get_deferral_fn(mock_sim) == fn_a
+    assert DeferralB().get_deferral_fn(mock_sim) == fn_b
+
+
+def test_params():
+    class Test(object):
+        p1 = params.IntParam('p1')
+        p2 = params.IntParam('p2')
+        obsolete = params.ObsoleteParam('obsolete', 'not included in params')
+
+    assert set(params.params(Test())) == {'p1', 'p2'}
+
+
+def test_copyable_object():
+    class Test(params.CopyableObject):
+        p1 = params.IntParam('p1')
+
+    original = Test()
+    original.p1 = 2
+
+    copied = copy(original)
+
+    assert copied is not original  # ensures that parameters are separate
+    assert copied.p1 == 2

@@ -7,8 +7,9 @@ import nengo.utils.numpy as npext
 from nengo.builder import Builder, Signal
 from nengo.builder.operator import Copy, DotInc, Reset
 from nengo.dists import Distribution
-from nengo.ensemble import Ensemble
+from nengo.ensemble import Ensemble, Neurons
 from nengo.neurons import Direct
+from nengo.params import Undeferred
 from nengo.utils.builder import default_n_eval_points
 
 built_attrs = ['eval_points',
@@ -17,7 +18,8 @@ built_attrs = ['eval_points',
                'max_rates',
                'scaled_encoders',
                'gain',
-               'bias']
+               'bias',
+               'deferred']
 
 
 class BuiltEnsemble(collections.namedtuple('BuiltEnsemble', built_attrs)):
@@ -51,10 +53,11 @@ class BuiltEnsemble(collections.namedtuple('BuiltEnsemble', built_attrs)):
     __slots__ = ()
 
     def __new__(cls, eval_points, encoders, intercepts, max_rates,
-                scaled_encoders, gain, bias):
+                scaled_encoders, gain, bias, deferred):
         # Overridden to suppress the default __new__ docstring
         return tuple.__new__(cls, (eval_points, encoders, intercepts,
-                                   max_rates, scaled_encoders, gain, bias))
+                                   max_rates, scaled_encoders, gain, bias,
+                                   deferred))
 
 
 def sample(dist, n, d=None, rng=None):
@@ -139,6 +142,13 @@ def build_ensemble(model, ens):
     Sets ``model.params[ens]`` to a `.BuiltEnsemble` instance.
     """
 
+    deferred = {}
+    ens = Undeferred(ens, model.simulator, args=(model, ens), cache=deferred)
+    # We have to recreate the Neurons object to have it reference the
+    # undeferred ens object.
+    neurons = Neurons(ens)
+    model.sig[ens.neurons] = model.sig[neurons]
+
     # Create random number generator
     rng = np.random.RandomState(model.seeds[ens])
 
@@ -162,19 +172,19 @@ def build_ensemble(model, ens):
     gain, bias, max_rates, intercepts = get_gain_bias(ens, rng)
 
     if isinstance(ens.neuron_type, Direct):
-        model.sig[ens.neurons]['in'] = Signal(
+        model.sig[neurons]['in'] = Signal(
             np.zeros(ens.dimensions), name='%s.neuron_in' % ens)
-        model.sig[ens.neurons]['out'] = model.sig[ens.neurons]['in']
-        model.add_op(Reset(model.sig[ens.neurons]['in']))
+        model.sig[neurons]['out'] = model.sig[neurons]['in']
+        model.add_op(Reset(model.sig[neurons]['in']))
     else:
-        model.sig[ens.neurons]['in'] = Signal(
+        model.sig[neurons]['in'] = Signal(
             np.zeros(ens.n_neurons), name="%s.neuron_in" % ens)
-        model.sig[ens.neurons]['out'] = Signal(
+        model.sig[neurons]['out'] = Signal(
             np.zeros(ens.n_neurons), name="%s.neuron_out" % ens)
         bias_sig = Signal(bias, name="%s.bias" % ens, readonly=True)
-        model.add_op(Copy(src=bias_sig, dst=model.sig[ens.neurons]['in']))
+        model.add_op(Copy(src=bias_sig, dst=model.sig[neurons]['in']))
         # This adds the neuron's operator and sets other signals
-        model.build(ens.neuron_type, ens.neurons)
+        model.build(ens.neuron_type, neurons)
 
     # Scale the encoders
     if isinstance(ens.neuron_type, Direct):
@@ -187,17 +197,17 @@ def build_ensemble(model, ens):
 
     # Inject noise if specified
     if ens.noise is not None:
-        model.build(ens.noise, sig_out=model.sig[ens.neurons]['in'], inc=True)
+        model.build(ens.noise, sig_out=model.sig[neurons]['in'], inc=True)
 
     # Create output signal, using built Neurons
     model.add_op(DotInc(
         model.sig[ens]['encoders'],
         model.sig[ens]['in'],
-        model.sig[ens.neurons]['in'],
+        model.sig[neurons]['in'],
         tag="%s encoding" % ens))
 
     # Output is neural output
-    model.sig[ens]['out'] = model.sig[ens.neurons]['out']
+    model.sig[ens]['out'] = model.sig[neurons]['out']
 
     model.params[ens] = BuiltEnsemble(eval_points=eval_points,
                                       encoders=encoders,
@@ -205,4 +215,5 @@ def build_ensemble(model, ens):
                                       max_rates=max_rates,
                                       scaled_encoders=scaled_encoders,
                                       gain=gain,
-                                      bias=bias)
+                                      bias=bias,
+                                      deferred=deferred)

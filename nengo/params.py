@@ -1,5 +1,6 @@
 import collections
 import inspect
+import weakref
 
 import numpy as np
 
@@ -25,6 +26,13 @@ Unconfigurable = DefaultType("Unconfigurable")
 
 def is_param(obj):
     return isinstance(obj, Parameter)
+
+
+def params(obj):
+    """Return list with the names of all parameters of an object."""
+    return [name for name in dir(obj.__class__)
+            if is_param(getattr(obj.__class__, name)) and not
+            isinstance(getattr(obj.__class__, name), ObsoleteParam)]
 
 
 class Parameter(object):
@@ -85,12 +93,15 @@ class Parameter(object):
         return self.data.get(instance, self.default)
 
     def __set__(self, instance, value):
-        self.validate(instance, value)
+        new_value = self.validate(instance, value)
+        if new_value is not None:
+            value = new_value
         self.data[instance] = value
 
     def __repr__(self):
-        return "%s(default=%s, optional=%s, readonly=%s)" % (
+        return "%s(%s, default=%s, optional=%s, readonly=%s)" % (
             self.__class__.__name__,
+            repr(self.name),
             self.default,
             self.optional,
             self.readonly)
@@ -108,7 +119,9 @@ class Parameter(object):
     def set_default(self, obj, value):
         if not self.configurable:
             raise ConfigError("Parameter '%s' is not configurable" % self)
-        self.validate(obj, value)
+        new_value = self.validate(obj, value)
+        if new_value is not None:
+            value = new_value
         self._defaults[obj] = value
 
     def equal(self, instance_a, instance_b):
@@ -173,7 +186,7 @@ class BoolParam(Parameter):
         if boolean is not None and not isinstance(boolean, bool):
             raise ValidationError("Must be a boolean; got '%s'" % boolean,
                                   attr=self.name, obj=instance)
-        super(BoolParam, self).validate(instance, boolean)
+        return super(BoolParam, self).validate(instance, boolean)
 
 
 class NumberParam(Parameter):
@@ -214,7 +227,7 @@ class NumberParam(Parameter):
                         "" if self.high_open else "or equal to ",
                         self.high,
                         num), attr=self.name, obj=instance)
-        super(NumberParam, self).validate(instance, num)
+        return super(NumberParam, self).validate(instance, num)
 
 
 class IntParam(NumberParam):
@@ -224,7 +237,7 @@ class IntParam(NumberParam):
         if num is not None and not is_integer(num):
             raise ValidationError("Must be an integer; got '%s'" % num,
                                   attr=self.name, obj=instance)
-        super(IntParam, self).validate(instance, num)
+        return super(IntParam, self).validate(instance, num)
 
 
 class StringParam(Parameter):
@@ -236,7 +249,7 @@ class StringParam(Parameter):
         if string is not None and not is_string(string):
             raise ValidationError("Must be a string; got '%s'" % string,
                                   attr=self.name, obj=instance)
-        super(StringParam, self).validate(instance, string)
+        return super(StringParam, self).validate(instance, string)
 
 
 class EnumParam(StringParam):
@@ -254,17 +267,16 @@ class EnumParam(StringParam):
         self.lower = lower
         super(EnumParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, instance, value):
-        self.validate(instance, value)
-        self.data[instance] = value.lower() if self.lower else value
-
     def validate(self, instance, string):
-        super(EnumParam, self).validate(instance, string)
+        new_string = super(EnumParam, self).validate(instance, string)
+        if new_string is not None:
+            string = new_string
         string = string.lower() if self.lower else string
         if string not in self.value_set:
             raise ValidationError("String %r must be one of %s"
                                   % (string, list(self.values)),
                                   attr=self.name, obj=instance)
+        return string
 
 
 class TupleParam(Parameter):
@@ -289,7 +301,7 @@ class TupleParam(Parameter):
                 raise ValidationError("Must be %d items (got %d)"
                                       % (self.length, len(value)),
                                       attr=self.name, obj=instance)
-        super(TupleParam, self).validate(instance, value)
+        return super(TupleParam, self).validate(instance, value)
 
 
 class DictParam(Parameter):
@@ -299,7 +311,7 @@ class DictParam(Parameter):
         if dct is not None and not isinstance(dct, dict):
             raise ValidationError("Must be a dictionary; got '%s'" % str(dct),
                                   attr=self.name, obj=instance)
-        super(DictParam, self).validate(instance, dct)
+        return super(DictParam, self).validate(instance, dct)
 
 
 class NdarrayParam(Parameter):
@@ -319,16 +331,16 @@ class NdarrayParam(Parameter):
         self.shape = shape
         super(NdarrayParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, instance, ndarray):
-        super(NdarrayParam, self).validate(instance, ndarray)
-        if ndarray is not None:
-            ndarray = self.validate(instance, ndarray)
-        self.data[instance] = ndarray
-
     def hashvalue(self, instance):
         return array_hash(self.__get__(instance, None))
 
-    def validate(self, instance, ndarray):  # noqa: C901
+    def validate(self, instance, value):
+        if value is not None:
+            value = self.validate_ndarray(instance, value)
+        super(NdarrayParam, self).validate(instance, value)
+        return value
+
+    def validate_ndarray(self, instance, ndarray):  # noqa: C901
         if isinstance(ndarray, np.ndarray):
             ndarray = ndarray.view()
         else:
@@ -391,9 +403,12 @@ class FunctionParam(Parameter):
     """A parameter where the value is a function."""
 
     def __set__(self, instance, function):
-        size = (self.determine_size(instance, function)
-                if callable(function) else None)
-        function_info = FunctionInfo(function=function, size=size)
+        if isinstance(function, FunctionInfo):
+            function_info = function
+        else:
+            size = (self.determine_size(instance, function)
+                    if callable(function) else None)
+            function_info = FunctionInfo(function=function, size=size)
         super(FunctionParam, self).__set__(instance, function_info)
 
     def determine_size(self, instance, function):
@@ -413,7 +428,48 @@ class FunctionParam(Parameter):
         if function is not None and not callable(function):
             raise ValidationError("function '%s' must be callable" % function,
                                   attr=self.name, obj=instance)
-        super(FunctionParam, self).validate(instance, function)
+        return super(FunctionParam, self).validate(instance, function)
+
+
+class CopyableObject(object):
+    """Mixin to allow to create copies of instances of classes with parameters.
+
+    You can add a list of strings as class attribute _param_init_order to
+    declare the order in which parameters have to be initialized. Missing
+    parameters will be initialized last in an undefined order.
+    """
+
+    def __getstate__(self):
+        sp = super(CopyableObject, self)
+        if hasattr(sp, '__getstate__'):
+            state = sp.__getstate__()
+        else:
+            state = dict(self.__dict__)
+
+        for attr in params(self):
+            param = getattr(self.__class__, attr)
+            if self in param:
+                state[attr] = getattr(self, attr)
+
+        return state
+
+    def __setstate__(self, state):
+        if hasattr(self.__class__, '_param_init_order'):
+            for attr in getattr(self.__class__, '_param_init_order'):
+                setattr(self, attr, state[attr])
+                del state[attr]
+
+        for attr in params(self):
+            if attr in state:
+                setattr(self, attr, state[attr])
+                del state[attr]
+
+        sp = super(CopyableObject, self)
+        if hasattr(sp, '__setstate__'):
+            sp.__setstate__(state)
+        else:
+            for k, v in state.items():
+                setattr(self, k, v)
 
 
 class FrozenObject(object):
@@ -463,3 +519,103 @@ class FrozenObject(object):
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, ', '.join(
             "%s=%r" % (k, getattr(self, k)) for k in sorted(self._paramdict)))
+
+
+class Deferral(object):
+    sim_specific = {}
+
+    def __init__(self, default_fn=None):
+        super(Deferral, self).__init__()
+        self._default_fn = default_fn
+
+    def default_fn(self, *args, **kwargs):
+        return self._default_fn(*args, **kwargs)
+
+    @classmethod
+    def register(cls, sim, fn):
+        cls.sim_specific[(cls, sim)] = fn
+
+    def get_deferral_fn(self, sim):
+        return self.sim_specific.get((self.__class__, sim), self.default_fn)
+
+
+class Deferrable(Parameter):
+    def __init__(
+            self, static, default=None):
+        name = static.name
+        if default is None:
+            default = static.default
+        optional = static.optional
+        readonly = static.readonly
+        super(Deferrable, self).__init__(
+            name, default=default, optional=optional, readonly=readonly)
+        self.static = static
+
+    def __set__(self, instance, value):
+        if not isinstance(value, Deferral):
+            self.static.__set__(instance, value)
+            value = self.static.__get__(instance, value)
+        super(Deferrable, self).__set__(instance, value)
+
+    def validate(self, instance, value):
+        if isinstance(value, Deferral):
+            return super(Deferrable, self).validate(instance, value)
+        else:
+            return self.static.validate(instance, value)
+
+    def __repr__(self):
+        return "%s(static=%s, default=%s)" % (
+            self.__class__.__name__,
+            repr(self.static),
+            self.default)
+
+
+class Undeferred(object):
+    sim_cache = weakref.WeakKeyDictionary()
+
+    def __init__(self, inst, sim, args=None, kwargs=None, cache=None):
+        super(Undeferred, self).__init__()
+        self.inst = inst
+        self.sim = weakref.ref(sim) if sim is not None else None
+        self.sim_class = sim.__class__ if sim is not None else None
+        self.args = tuple() if args is None else args
+        self.kwargs = {} if kwargs is None else kwargs
+        self.cache = {} if cache is None else cache
+
+        if sim is not None:
+            if sim not in Undeferred.sim_cache:
+                Undeferred.sim_cache[sim] = {}
+            Undeferred.sim_cache[sim][inst] = self
+
+    def __hash__(self):
+        return hash(super(Undeferred, self).__getattribute__('inst'))
+
+    def __eq__(self, other):
+        return super(Undeferred, self).__getattribute__('inst') == other
+
+    def __getattribute__(self, name):
+        inst = super(Undeferred, self).__getattribute__('inst')
+        sim = super(Undeferred, self).__getattribute__('sim')
+        if sim is not None:
+            sim = sim()  # resolve weak reference
+        sim_class = super(Undeferred, self).__getattribute__('sim_class')
+        args = super(Undeferred, self).__getattribute__('args')
+        kwargs = super(Undeferred, self).__getattribute__('kwargs')
+        cache = super(Undeferred, self).__getattribute__('cache')
+
+        if name in cache:
+            return cache[name]
+
+        attr = getattr(inst, name)
+        if sim is not None:
+            try:
+                return Undeferred.sim_cache[sim][attr]
+            except (TypeError, KeyError):
+                pass
+        if isinstance(attr, Deferral):
+            value = attr.get_deferral_fn(sim_class)(*args, **kwargs)
+            getattr(inst.__class__, name).validate(inst, value)
+            cache[name] = value
+            return value
+        else:
+            return attr

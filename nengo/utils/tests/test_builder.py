@@ -1,7 +1,10 @@
 import numpy as np
+import pytest
 
 import nengo
-from nengo.utils.builder import full_transform
+from nengo.exceptions import BuildError
+from nengo.params import Deferral
+from nengo.utils.builder import assert_no_deferred_params, full_transform
 
 
 def test_full_transform():
@@ -104,3 +107,15 @@ def test_full_transform():
         conn = nengo.Connection(ens3, ens2[[0, 1, 0]])
         assert np.all(full_transform(conn) == np.array([[1, 0, 1],
                                                        [0, 1, 0]]))
+
+
+def test_assert_no_deferred_params():
+    with nengo.Network() as model:
+        ens = nengo.Ensemble(10, 1)
+
+    assert_no_deferred_params(model)
+
+    ens.radius = Deferral(lambda model, ens: 0.5)
+
+    with pytest.raises(BuildError):
+        assert_no_deferred_params(model)
