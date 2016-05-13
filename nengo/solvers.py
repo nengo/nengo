@@ -25,6 +25,12 @@ logger = logging.getLogger(__name__)
 class Solver(with_metaclass(DocstringInheritor, FrozenObject)):
     """Decoder or weight solver."""
 
+    weights = BoolParam('weights')
+
+    def __init__(self, weights=False):
+        super(Solver, self).__init__()
+        self.weights = weights
+
     def __call__(self, A, Y, rng=None, E=None):
         """Call the solver.
 
@@ -67,16 +73,14 @@ class Solver(with_metaclass(DocstringInheritor, FrozenObject)):
         copy : bool, optional (Default: False)
             Whether a copy of ``Y`` should be returned if ``E`` is None.
         """
-        if self.weights:
-            if E is None:
-                raise ValidationError(
-                    "Encoders must be provided for weight solver", attr='E')
-            return np.dot(Y, E)
-        else:
-            if E is not None:
-                raise ValidationError(
-                    "Encoders must be 'None' for decoder solver", attr='E')
-            return Y.copy() if copy else Y
+        if self.weights and E is None:
+            raise ValidationError(
+                "Encoders must be provided for weight solver", attr='E')
+        if not self.weights and E is not None:
+            raise ValidationError(
+                "Encoders must be 'None' for decoder solver", attr='E')
+
+        return np.dot(Y, E) if E is not None else Y.copy() if copy else Y
 
 
 class SolverParam(Parameter):
@@ -105,12 +109,10 @@ class Lstsq(Solver):
         If False, solve for decoders. If True, solve for weights.
     """
 
-    weights = BoolParam('weights')
     rcond = NumberParam('noise', low=0)
 
     def __init__(self, weights=False, rcond=0.01):
-        super(Lstsq, self).__init__()
-        self.weights = weights
+        super(Lstsq, self).__init__(weights=weights)
         self.rcond = rcond
 
     def __call__(self, A, Y, rng=None, E=None):
@@ -128,7 +130,6 @@ class Lstsq(Solver):
 class _LstsqNoiseSolver(Solver):
     """Base class for least-squares solvers with noise."""
 
-    weights = BoolParam('weights')
     noise = NumberParam('noise', low=0)
     solver = LeastSquaresSolverParam('solver')
 
@@ -152,8 +153,7 @@ class _LstsqNoiseSolver(Solver):
         weights : bool
             If False, solve for decoders. If True, solve for weights.
         """
-        super(_LstsqNoiseSolver, self).__init__()
-        self.weights = weights
+        super(_LstsqNoiseSolver, self).__init__(weights=weights)
         self.noise = noise
         self.solver = solver
 
@@ -186,7 +186,6 @@ class LstsqMultNoise(_LstsqNoiseSolver):
 class _LstsqL2Solver(Solver):
     """Base class for L2-regularized least-squares solvers."""
 
-    weights = BoolParam('weights')
     reg = NumberParam('reg', low=0)
     solver = LeastSquaresSolverParam('solver')
 
@@ -210,8 +209,7 @@ class _LstsqL2Solver(Solver):
         weights : bool
             If False, solve for decoders. If True, solve for weights.
         """
-        super(_LstsqL2Solver, self).__init__()
-        self.weights = weights
+        super(_LstsqL2Solver, self).__init__(weights=weights)
         self.reg = reg
         self.solver = solver
 
@@ -252,7 +250,6 @@ class LstsqL1(Solver):
     This method is well suited for creating sparse decoders or weight matrices.
     """
 
-    weights = BoolParam('weights')
     l1 = NumberParam('l1', low=0)
     l2 = NumberParam('l2', low=0)
 
@@ -280,8 +277,7 @@ class LstsqL1(Solver):
         """
         import sklearn.linear_model  # noqa F401, import to check existence
         assert sklearn.linear_model
-        super(LstsqL1, self).__init__()
-        self.weights = weights
+        super(LstsqL1, self).__init__(weights=weights)
         self.l1 = l1
         self.l2 = l2
 
@@ -318,7 +314,6 @@ class LstsqDrop(Solver):
     L2 regularization, drops those nearest to zero, and retrains remaining.
     """
 
-    weights = BoolParam('weights')
     drop = NumberParam('drop', low=0, high=1)
     solver1 = SolverParam('solver1')
     solver2 = SolverParam('solver2')
@@ -348,8 +343,7 @@ class LstsqDrop(Solver):
         weights : bool
             If False, solve for decoders. If True, solve for weights.
         """
-        super(LstsqDrop, self).__init__()
-        self.weights = weights
+        super(LstsqDrop, self).__init__(weights=weights)
         self.drop = drop
         self.solver1 = solver1
         self.solver2 = solver2
@@ -387,8 +381,6 @@ class Nnls(Solver):
     Similar to `.Lstsq`, except the output values are non-negative.
     """
 
-    weights = BoolParam('weights')
-
     def __init__(self, weights=False):
         """
         .. note:: Requires
@@ -406,8 +398,7 @@ class Nnls(Solver):
         """
         import scipy.optimize  # import here too to throw error early
         assert scipy.optimize
-        super(Nnls, self).__init__()
-        self.weights = weights
+        super(Nnls, self).__init__(weights=weights)
 
     def __call__(self, A, Y, rng=None, E=None):
         import scipy.optimize
