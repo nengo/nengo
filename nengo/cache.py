@@ -16,7 +16,7 @@ from nengo.exceptions import FingerprintError, TimeoutError
 from nengo.rc import rc
 from nengo.utils import nco
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
-from nengo.utils.compat import is_string, pickle, PY2
+from nengo.utils.compat import int_types, is_string, pickle, PY2
 from nengo.utils.lock import FileLock
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,20 @@ class Fingerprint(object):
 
     __slots__ = ['fingerprint']
 
+    NON_REFERENCE_TYPES = (
+        bool, float, complex, bytes, unicode, str) + int_types
+
+
     def __init__(self, obj):
+        if not getattr(obj, 'supports_fingerprint', lambda: False)():
+            if (isinstance(obj, np.ndarray) and obj.dtype.isbuiltin == 1 and
+                    not obj.dtype.hasobject):
+                pass
+            elif obj.__class__ in self.NON_REFERENCE_TYPES:
+                pass
+            else:
+                raise FingerprintError("Does not support fingerprint.")
+
         self.fingerprint = hashlib.sha1()
         try:
             self.fingerprint.update(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL))
@@ -359,8 +372,14 @@ class DecoderCache(object):
             if E is None and 'E' in args:
                 E = defaults[args.index('E')]
 
-            key = self._get_cache_key(
-                solver_fn, solver, neuron_type, gain, bias, x, targets, rng, E)
+            try:
+                key = self._get_cache_key(
+                    solver, neuron_type, gain, bias, x, targets, rng, E)
+            except FingerprintError:
+                logger.debug("Failed to generate cache key.")
+                return solver_fn(
+                    solver, neuron_type, gain, bias, x, targets, rng=rng, E=E)
+
             try:
                 path, start, end = self._index[key]
                 if self._fd is not None:
@@ -383,16 +402,14 @@ class DecoderCache(object):
             return decoders, solver_info
         return cached_solver
 
-    def _get_cache_key(self, solver_fn, solver, neuron_type, gain, bias,
-                       x, targets, rng, E):
+    def _get_cache_key(
+            self, solver, neuron_type, gain, bias, x, targets, rng, E):
         h = hashlib.sha1()
 
         if PY2:
-            h.update(str(Fingerprint(solver_fn)))
             h.update(str(Fingerprint(solver)))
             h.update(str(Fingerprint(neuron_type)))
         else:
-            h.update(str(Fingerprint(solver_fn)).encode('utf-8'))
             h.update(str(Fingerprint(solver)).encode('utf-8'))
             h.update(str(Fingerprint(neuron_type)).encode('utf-8'))
 

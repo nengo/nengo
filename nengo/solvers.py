@@ -106,6 +106,14 @@ class Solver(with_metaclass(DocstringInheritor)):
                     "Encoders must be 'None' for decoder solver", attr='E')
             return Y.copy() if copy else Y
 
+    def supports_fingerprint(self):
+        return False
+
+
+class CacheableSolver(Solver):
+    def supports_fingerprint(self):
+        return True
+
 
 class SolverParam(Parameter):
     def validate(self, instance, solver):
@@ -115,7 +123,7 @@ class SolverParam(Parameter):
         super(SolverParam, self).validate(instance, solver)
 
 
-class Lstsq(Solver):
+class Lstsq(CacheableSolver):
     """Unregularized least-squares solver.
 
     Parameters
@@ -180,6 +188,9 @@ class _LstsqNoiseSolver(Solver):
         self.noise = noise
         self.solver = solver
 
+    def supports_fingerprint(self):
+        return self.solver.supports_fingerprint()
+
 
 class LstsqNoise(_LstsqNoiseSolver):
     """Least-squares solver with additive Gaussian white noise."""
@@ -237,6 +248,9 @@ class _LstsqL2Solver(Solver):
         self.reg = reg
         self.solver = solver
 
+    def supports_fingerprint(self):
+        return self.solver.supports_fingerprint()
+
 
 class LstsqL2(_LstsqL2Solver):
     """Least-squares solver with L2 regularization."""
@@ -268,7 +282,7 @@ class LstsqL2nz(_LstsqL2Solver):
         return self.mul_encoders(X, E), info
 
 
-class LstsqL1(Solver):
+class LstsqL1(CacheableSolver):
     """Least-squares solver with L1 and L2 regularization (elastic net).
 
     This method is well suited for creating sparse decoders or weight matrices.
@@ -400,8 +414,12 @@ class LstsqDrop(Solver):
                 'time': t}
         return X if matrix_in else X.flatten(), info
 
+    def supports_fingerprint(self):
+        return (self.solver1.supports_fingerprint() and
+                self.solver2.supports_fingerprint())
 
-class Nnls(Solver):
+
+class Nnls(CacheableSolver):
     """Non-negative least-squares solver without regularization.
 
     Similar to `.Lstsq`, except the output values are non-negative.
