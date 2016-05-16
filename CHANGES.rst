@@ -29,6 +29,9 @@ Release History
   moved to `nengo_extras <https://github.com/nengo/nengo_extras>`_
   under the name ``FastLIF``.
   (`#975 <https://github.com/nengo/nengo/pull/975>`_)
+- Added ``y0`` attribute to ``WhiteSignal``, which adjusts the phase of each
+  dimension to begin with absolute value closest to ``y0``.
+  (`#1064 <https://github.com/nengo/nengo/pull/1064>`_)
 
 **Bug fixes**
 

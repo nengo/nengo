@@ -159,6 +159,9 @@ class WhiteSignal(Process):
         timestep, which is ``0.5 / dt``.
     rms : float, optional (Default: 0.5)
         The root mean square power of the filtered signal
+    y0 : float, optional (Default: None)
+        Align the phase of each output dimension to begin at the value
+        that is closest (in absolute value) to y0.
     seed : int, optional (Default: None)
         Random number seed. Ensures noise will be the same each run.
     """
@@ -166,12 +169,14 @@ class WhiteSignal(Process):
     period = NumberParam('period', low=0, low_open=True)
     high = NumberParam('high', low=0, low_open=True)
     rms = NumberParam('rms', low=0, low_open=True)
+    y0 = NumberParam('y0', optional=True)
 
-    def __init__(self, period, high, rms=0.5, **kwargs):
+    def __init__(self, period, high, rms=0.5, y0=None, **kwargs):
         super(WhiteSignal, self).__init__(default_size_in=0, **kwargs)
         self.period = period
         self.high = high
         self.rms = rms
+        self.y0 = y0
 
         if self.high is not None and self.high < 1. / self.period:
             raise ValidationError(
@@ -207,6 +212,13 @@ class WhiteSignal(Process):
             coefficients /= power_correction
         coefficients *= np.sqrt(2 * n_coefficients)
         signal = np.fft.irfft(coefficients, axis=0)
+
+        if self.y0 is not None:
+            # Starts each dimension off where it is closest to y0
+            def shift(x):
+                offset = np.argmin(abs(self.y0 - x))
+                return np.roll(x, -offset+1)  # +1 since t starts at dt
+            signal = np.apply_along_axis(shift, 0, signal)
 
         def step_whitesignal(t):
             i = int(round(t / dt))
