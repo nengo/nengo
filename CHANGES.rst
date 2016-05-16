@@ -67,6 +67,9 @@ Release History
   `#1107 <https://github.com/nengo/nengo/pull/1107>`_)
 - The synapse methods ``filt`` and ``filtfilt`` now support lists as input.
   (`#1123 <https://github.com/nengo/nengo/pull/1123>`_)
+- Added a registry system so that only stable objects are cached.
+  (`#1054 <https://github.com/nengo/nengo/issues/1054>`_,
+  `#1068 <https://github.com/nengo/nengo/pull/1068>`_)
 
 2.1.2 (June 27, 2016)
 =====================

@@ -13,10 +13,19 @@ import warnings
 import numpy as np
 
 from nengo.exceptions import FingerprintError, TimeoutError
+from nengo.neurons import (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich,
+                           LIF, LIFRate, RectifiedLinear, Sigmoid)
 from nengo.rc import rc
+from nengo.solvers import (Solver, Lstsq, LstsqL1, Nnls, NnlsL2,
+                           NnlsL2nz, LstsqNoise, LstsqMultNoise, LstsqL2,
+                           LstsqL2nz, LstsqDrop)
 from nengo.utils import nco
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
-from nengo.utils.compat import is_string, pickle, replace, PY2
+from nengo.utils.compat import (
+    int_types, is_string, pickle, replace, PY2, string_types)
+from nengo.utils.least_squares_solvers import (
+    LeastSquaresSolver, Cholesky, ConjgradScipy, LSMRScipy, Conjgrad,
+    BlockConjgrad, SVD, RandomizedSVD)
 from nengo.utils.lock import FileLock
 
 logger = logging.getLogger(__name__)
@@ -54,6 +63,17 @@ def safe_makedirs(path):
             logger.warning("OSError during safe_makedirs: %s", err)
 
 
+def check_dtype(ndarray):
+    return ndarray.dtype.isbuiltin == 1 and not ndarray.dtype.hasobject
+
+
+def check_subsolvers(solver):
+    attrs = [getattr(solver, x) for x in dir(solver)]
+    subsolvers = [x for x in attrs if isinstance(x, (Solver,
+                                                     LeastSquaresSolver))]
+    return all([type(x) in Fingerprint.WHITELIST for x in subsolvers])
+
+
 class Fingerprint(object):
     """Fingerprint of an object instance.
 
@@ -66,11 +86,50 @@ class Fingerprint(object):
     ----------
     obj : object
         Object to fingerprint.
+
+    Attributes
+    ----------
+    fingerprint : hash
+        A unique fingerprint for the object instance.
+
+    Notes
+    -----
+    Not all objects can be fingerprinted. In particular, custom classes are
+    tricky to fingerprint as their implementation can change without changing
+    its fingerprint, as the type and attributes may be the same.
+
+    In order to ensure that only safe object are fingerprinted, this class
+    maintains class attribute ``WHITELIST`` that contains all types that can
+    be safely fingerprinted.
+
+    If you want your custom class to be fingerprinted, call the
+    `.whitelist` class method and pass in your class.
     """
 
-    __slots__ = ['fingerprint']
+    __slots__ = ('fingerprint',)
+
+    SOLVERS = (Lstsq, LstsqL1, Nnls, NnlsL2, NnlsL2nz, LstsqNoise,
+               LstsqMultNoise, LstsqL2, LstsqL2nz, LstsqDrop)
+    LSTSQ_METHODS = (Cholesky, ConjgradScipy, LSMRScipy, Conjgrad,
+                     BlockConjgrad, SVD, RandomizedSVD)
+    NEURON_TYPES = (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich, LIF,
+                    LIFRate, RectifiedLinear, Sigmoid)
+
+    WHITELIST = set(
+        (bool, float, complex, bytes, np.ndarray) + int_types + string_types +
+        SOLVERS + LSTSQ_METHODS + NEURON_TYPES)
+    CHECKS = dict([(np.ndarray, check_dtype)] +
+                  [(x, check_subsolvers) for x in SOLVERS])
 
     def __init__(self, obj):
+        typ = type(obj)
+        not_in_whitelist = typ not in self.WHITELIST
+        failed_check = typ in self.CHECKS and not self.CHECKS[typ](obj)
+
+        if not_in_whitelist or failed_check:
+            raise FingerprintError("Object of type %r cannot be fingerprinted."
+                                   % type(obj).__name__)
+
         self.fingerprint = hashlib.sha1()
         try:
             self.fingerprint.update(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL))
@@ -79,6 +138,12 @@ class Fingerprint(object):
 
     def __str__(self):
         return self.fingerprint.hexdigest()
+
+    @classmethod
+    def whitelist(cls, typ, fn=None):
+        cls.WHITELIST.add(typ)
+        if fn is not None:
+            cls.CHECKS[typ] = fn
 
 
 class CacheIndex(object):
@@ -373,6 +438,7 @@ class DecoderCache(object):
         func
             Wrapped decoder solver.
         """
+
         def cached_solver(solver, neuron_type, gain, bias, x, targets,
                           rng=None, E=None):
             try:
@@ -385,8 +451,14 @@ class DecoderCache(object):
             if E is None and 'E' in args:
                 E = defaults[args.index('E')]
 
-            key = self._get_cache_key(
-                solver_fn, solver, neuron_type, gain, bias, x, targets, rng, E)
+            try:
+                key = self._get_cache_key(
+                    solver, neuron_type, gain, bias, x, targets, rng, E)
+            except FingerprintError as e:
+                logger.debug("Failed to generate cache key: %s", e)
+                return solver_fn(
+                    solver, neuron_type, gain, bias, x, targets, rng=rng, E=E)
+
             try:
                 path, start, end = self._index[key]
                 if self._fd is not None:
@@ -410,18 +482,17 @@ class DecoderCache(object):
             else:
                 logger.debug("Cache hit [%s]: Loaded stored decoders.", key)
             return decoders, solver_info
+
         return cached_solver
 
-    def _get_cache_key(self, solver_fn, solver, neuron_type, gain, bias,
-                       x, targets, rng, E):
+    def _get_cache_key(
+            self, solver, neuron_type, gain, bias, x, targets, rng, E):
         h = hashlib.sha1()
 
         if PY2:
-            h.update(str(Fingerprint(solver_fn)))
             h.update(str(Fingerprint(solver)))
             h.update(str(Fingerprint(neuron_type)))
         else:
-            h.update(str(Fingerprint(solver_fn)).encode('utf-8'))
             h.update(str(Fingerprint(solver)).encode('utf-8'))
             h.update(str(Fingerprint(neuron_type)).encode('utf-8'))
 
