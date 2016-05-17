@@ -1,16 +1,20 @@
 import numpy as np
+import pytest
 
 import nengo
 from nengo import spa
+from nengo.networks.circularconvolution import HeuristicRadius
+from nengo.spa.vocab import VocabularyMap
 from nengo.utils.numpy import rmse
+from nengo.utils.optimization import RadiusForUnitVector
 
 
 def test_basic():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.bind = spa.Bind(dimensions=16)
 
-    inputA = model.get_module_input('bind_A')
-    inputB = model.get_module_input('bind_B')
+    inputA = model.get_module_input('bind.A')
+    inputB = model.get_module_input('bind.B')
     output = model.get_module_output('bind')
     # all nodes should be acquired correctly
     assert inputA[0] is model.bind.A
@@ -22,11 +26,14 @@ def test_basic():
     assert output[1].dimensions == 16
 
 
-def test_run(Simulator, seed):
+@pytest.mark.parametrize(
+    'radius_method', [HeuristicRadius, RadiusForUnitVector])
+def test_run(radius_method, Simulator, seed):
     rng = np.random.RandomState(seed)
     vocab = spa.Vocabulary(16, rng=rng)
 
-    with spa.SPA(seed=seed, vocabs=[vocab]) as model:
+    with spa.Module(seed=seed, vocabs=VocabularyMap([vocab])) as model:
+        model.config[spa.Bind].radius_method = radius_method
         model.bind = spa.Bind(dimensions=16)
 
         def inputA(t):
@@ -35,7 +42,7 @@ def test_run(Simulator, seed):
             else:
                 return 'B'
 
-        model.input = spa.Input(bind_A=inputA, bind_B='A')
+        model.input = spa.Input(**{'bind.A': inputA, 'bind.B': 'A'})
 
     bind, vocab = model.get_module_output('bind')
 

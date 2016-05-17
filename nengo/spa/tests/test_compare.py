@@ -1,13 +1,17 @@
+import pytest
+
 import nengo
 from nengo import spa
+from nengo.spa.compare import HeuristicRadius
+from nengo.utils.optimization import RadiusForUnitVector
 
 
 def test_basic():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.compare = spa.Compare(dimensions=16)
 
-    inputA = model.get_module_input('compare_A')
-    inputB = model.get_module_input('compare_B')
+    inputA = model.get_module_input('compare.A')
+    inputB = model.get_module_input('compare.B')
     output = model.get_module_output('compare')
     # all nodes should be acquired correctly
     assert inputA[0] is model.compare.inputA
@@ -20,8 +24,11 @@ def test_basic():
     assert output[1] is None
 
 
-def test_run(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+@pytest.mark.parametrize(
+    'radius_method', [HeuristicRadius, RadiusForUnitVector])
+def test_run(radius_method, Simulator, seed):
+    with spa.Module(seed=seed) as model:
+        model.config[spa.Compare].radius_method = radius_method
         model.compare = spa.Compare(dimensions=16)
 
         def inputA(t):
@@ -30,7 +37,7 @@ def test_run(Simulator, seed):
             else:
                 return 'B'
 
-        model.input = spa.Input(compare_A=inputA, compare_B='A')
+        model.input = spa.Input(**{'compare.A': inputA, 'compare.B': 'A'})
 
     compare, vocab = model.get_module_output('compare')
 

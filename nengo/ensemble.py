@@ -4,7 +4,7 @@ from nengo.base import NengoObject, ObjView, ProcessParam
 from nengo.dists import DistOrArrayParam, Uniform, UniformHypersphere
 from nengo.exceptions import ReadonlyError
 from nengo.neurons import LIF, NeuronTypeParam, Direct
-from nengo.params import Default, IntParam, NumberParam
+from nengo.params import Default, Deferrable, IntParam, NumberParam
 
 
 class Ensemble(NengoObject):
@@ -108,34 +108,29 @@ class Ensemble(NengoObject):
 
     probeable = ('decoded_output', 'input')
 
-    n_neurons = IntParam('n_neurons', default=None, low=1)
-    dimensions = IntParam('dimensions', default=None, low=1)
-    radius = NumberParam('radius', default=1.0, low=1e-10)
-    encoders = DistOrArrayParam('encoders',
-                                default=UniformHypersphere(surface=True),
-                                sample_shape=('n_neurons', 'dimensions'))
-    intercepts = DistOrArrayParam('intercepts',
-                                  default=Uniform(-1.0, 1.0),
-                                  optional=True,
-                                  sample_shape=('n_neurons',))
-    max_rates = DistOrArrayParam('max_rates',
-                                 default=Uniform(200, 400),
-                                 optional=True,
-                                 sample_shape=('n_neurons',))
-    eval_points = DistOrArrayParam('eval_points',
-                                   default=UniformHypersphere(),
-                                   sample_shape=('*', 'dimensions'))
-    n_eval_points = IntParam('n_eval_points', default=None, optional=True)
-    neuron_type = NeuronTypeParam('neuron_type', default=LIF())
-    gain = DistOrArrayParam('gain',
-                            default=None,
-                            optional=True,
-                            sample_shape=('n_neurons',))
-    bias = DistOrArrayParam('bias',
-                            default=None,
-                            optional=True,
-                            sample_shape=('n_neurons',))
-    noise = ProcessParam('noise', default=None, optional=True)
+    n_neurons = Deferrable(IntParam('n_neurons', default=None, low=1))
+    dimensions = Deferrable(IntParam('dimensions', default=None, low=1))
+    radius = Deferrable(NumberParam('radius', default=1.0, low=1e-10))
+    encoders = Deferrable(DistOrArrayParam(
+        'encoders', default=UniformHypersphere(surface=True),
+        sample_shape=('n_neurons', 'dimensions')))
+    intercepts = Deferrable(DistOrArrayParam(
+        'intercepts', default=Uniform(-1.0, 1.0), optional=True,
+        sample_shape=('n_neurons',)))
+    max_rates = Deferrable(DistOrArrayParam(
+        'max_rates', default=Uniform(200, 400), optional=True,
+        sample_shape=('n_neurons',)))
+    eval_points = Deferrable(DistOrArrayParam(
+        'eval_points', default=UniformHypersphere(),
+        sample_shape=('*', 'dimensions')))
+    n_eval_points = Deferrable(IntParam(
+        'n_eval_points', default=None, optional=True))
+    neuron_type = Deferrable(NeuronTypeParam('neuron_type', default=LIF()))
+    gain = Deferrable(DistOrArrayParam(
+        'gain', default=None, optional=True, sample_shape=('n_neurons',)))
+    bias = Deferrable(DistOrArrayParam(
+        'bias', default=None, optional=True, sample_shape=('n_neurons',)))
+    noise = Deferrable(ProcessParam('noise', default=None, optional=True))
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
@@ -155,6 +150,15 @@ class Ensemble(NengoObject):
         self.neuron_type = neuron_type
         self.noise = noise
         self._neurons = Neurons(self)
+
+    def __getstate__(self):
+        state = super(Ensemble, self).__getstate__()
+        del state['_neurons']
+        return state
+
+    def __setstate__(self, state):
+        state['_neurons'] = Neurons(self)
+        super(Ensemble, self).__setstate__(state)
 
     def __getitem__(self, key):
         return ObjView(self, key)

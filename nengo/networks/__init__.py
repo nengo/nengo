@@ -5,4 +5,5 @@ from .ensemblearray import EnsembleArray
 from .integrator import Integrator
 from .oscillator import Oscillator
 from .product import Product
+from .unitvectorarray import UnitVectorArray
 from .workingmemory import InputGatedMemory

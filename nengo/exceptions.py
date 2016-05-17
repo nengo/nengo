@@ -9,6 +9,10 @@ class NengoException(Exception):
     """
 
 
+class NengoWarning(Warning):
+    """Base class for Nengo warnings."""
+
+
 class ValidationError(NengoException, ValueError):
     """A ValueError encountered during validation of a parameter."""
 
@@ -60,12 +64,20 @@ class ConfigError(NengoException, ValueError):
     """A ValueError encountered in the config system."""
 
 
-class SpaModuleError(NengoException, ValueError):
+class SpaException(NengoException):
+    """A exception within the SPA subsystem."""
+
+
+class SpaModuleError(SpaException, ValueError):
     """An error in how SPA keeps track of modules."""
 
 
-class SpaParseError(NengoException, ValueError):
+class SpaParseError(SpaException, ValueError):
     """An error encountered while parsing a SPA expression."""
+
+
+class SpaTypeError(SpaException, ValueError):
+    """The evaluation of types in an SPA expression was invalid."""
 
 
 class SimulatorClosed(NengoException):
@@ -98,3 +110,7 @@ class CacheIOError(NengoException, IOError):
 
 class TimeoutError(NengoException):
     """A timeout occurred while waiting for a resource."""
+
+
+class NotAddedToNetworkWarning(NengoWarning):
+    """A NengoObject has not been added to a network."""

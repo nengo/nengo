@@ -5,7 +5,7 @@ import numpy as np
 import nengo.utils.numpy as npext
 from nengo.base import NengoObject, ObjView
 from nengo.exceptions import ValidationError
-from nengo.params import Default, IntParam, Parameter
+from nengo.params import Default, Deferrable, IntParam, Parameter
 from nengo.processes import Process
 from nengo.utils.compat import is_array_like
 from nengo.utils.stdlib import checked_call
@@ -17,7 +17,9 @@ class OutputParam(Parameter):
         super(OutputParam, self).__init__(name, default, optional, readonly)
 
     def __set__(self, node, output):
-        super(OutputParam, self).validate(node, output)
+        new_output = super(OutputParam, self).validate(node, output)
+        if new_output is not None:
+            output = new_output
 
         size_in_set = node.size_in is not None
         node.size_in = node.size_in if size_in_set else 0
@@ -133,9 +135,11 @@ class Node(NengoObject):
 
     probeable = ('output',)
 
-    output = OutputParam('output', default=None)
-    size_in = IntParam('size_in', default=None, low=0, optional=True)
-    size_out = IntParam('size_out', default=None, low=0, optional=True)
+    output = Deferrable(OutputParam('output', default=None))
+    size_in = Deferrable(
+        IntParam('size_in', default=None, low=0, optional=True))
+    size_out = Deferrable(
+        IntParam('size_out', default=None, low=0, optional=True))
 
     def __init__(self, output=Default, size_in=Default, size_out=Default,
                  label=Default, seed=Default):

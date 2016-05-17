@@ -1,7 +1,11 @@
+from copy import deepcopy
+import warnings
+
 from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
-from nengo.exceptions import ConfigError, NetworkContextError, ReadonlyError
+from nengo.exceptions import (
+    ConfigError, NetworkContextError, NotAddedToNetworkWarning, ReadonlyError)
 from nengo.node import Node
 from nengo.probe import Probe
 from nengo.utils.threading import ThreadLocalStack
@@ -95,11 +99,27 @@ class Network(object):
         if add_to_container:
             Network.add(self)
 
-    def __getstate__(self):
-        raise NotImplementedError("Nengo Networks do not support pickling")
-
     def __setstate__(self, state):
-        raise NotImplementedError("Nengo Networks do not support pickling")
+        for k, v in state.items():
+            setattr(self, k, v)
+        if len(Network.context) > 0:
+            warnings.warn(
+                "{obj} was not added to the network. When copying objects, "
+                "use the copy method on the object instead of Python's copy "
+                "module. When unpickling objects, they have to be added to "
+                "networks manually.".format(obj=self),
+                NotAddedToNetworkWarning)
+
+    def copy(self, add_to_container=None):
+        from nengo.network import Network
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=NotAddedToNetworkWarning)
+            c = deepcopy(self)
+        if add_to_container is None:
+            add_to_container = len(Network.context) > 0
+        if add_to_container:
+            Network.add(c)
+        return c
 
     @staticmethod
     def add(obj):
