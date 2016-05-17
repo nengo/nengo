@@ -16,10 +16,8 @@ from nengo.utils.compat import int_types
 class SolverMock(object):
     n_calls = {}
 
-    def __init__(self, name='solver_mock'):
+    def __init__(self):
         self.n_calls[self] = 0
-        self.__module__ = __name__
-        self.__name__ = name
 
     def __call__(self, solver, neuron_type, gain, bias, x, targets,
                  rng=np.random, E=None):
@@ -30,11 +28,11 @@ class SolverMock(object):
             return np.random.rand(x.shape[1], E.shape[1]), {'info': 'v'}
 
 
-def get_solver_test_args():
+def get_solver_test_args(**kwargs):
     M = 100
     N = 10
     D = 2
-    return {
+    defaults = {
         'solver': nengo.solvers.LstsqL2nz(),
         'neuron_type': nengo.LIF(),
         'gain': np.ones(N),
@@ -43,6 +41,8 @@ def get_solver_test_args():
         'targets': np.ones((M, N)),
         'rng': np.random.RandomState(42),
     }
+    defaults.update(kwargs)
+    return defaults
 
 
 def get_weight_solver_test_args():
@@ -84,8 +84,9 @@ def test_decoder_cache(tmpdir):
     assert np.any(decoders1 != decoders3)
 
     # Test that the cache does not load results of another solver.
-    another_solver = SolverMock('another_solver')
-    cache.wrap_solver(another_solver)(**get_solver_test_args())
+    another_solver = SolverMock()
+    cache.wrap_solver(another_solver)(**get_solver_test_args(
+        solver=nengo.solvers.LstsqNoise()))
     assert SolverMock.n_calls[another_solver] == 1
 
 
@@ -136,9 +137,10 @@ def test_decoder_cache_size_includes_overhead(tmpdir):
 
 
 def test_decoder_cache_shrinking(tmpdir):
+    nengo.log('debug')
     cache_dir = str(tmpdir)
     solver_mock = SolverMock()
-    another_solver = SolverMock('another_solver')
+    another_solver = SolverMock()
 
     cache = DecoderCache(cache_dir=cache_dir)
     cache.wrap_solver(solver_mock)(**get_solver_test_args())
@@ -151,7 +153,8 @@ def test_decoder_cache_shrinking(tmpdir):
         os.utime(path, (timestamp, timestamp))
 
     cache = DecoderCache(cache_dir=cache_dir)
-    cache.wrap_solver(another_solver)(**get_solver_test_args())
+    cache.wrap_solver(another_solver)(**get_solver_test_args(
+        solver=nengo.solvers.LstsqNoise()))
 
     cache_size = cache.get_size_in_bytes()
     assert cache_size > 0
@@ -160,7 +163,8 @@ def test_decoder_cache_shrinking(tmpdir):
 
     # check that older cached result was removed
     assert SolverMock.n_calls[solver_mock] == 1
-    cache.wrap_solver(another_solver)(**get_solver_test_args())
+    cache.wrap_solver(another_solver)(**get_solver_test_args(
+        solver=nengo.solvers.LstsqNoise()))
     cache.wrap_solver(solver_mock)(**get_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 2
     assert SolverMock.n_calls[another_solver] == 1
@@ -170,7 +174,6 @@ def test_decoder_cache_shrink_threadsafe(monkeypatch, tmpdir):
     """Tests that shrink handles files deleted by other processes."""
     cache_dir = str(tmpdir)
     solver_mock = SolverMock()
-    another_solver = SolverMock('another_solver')
 
     cache = DecoderCache(cache_dir=cache_dir)
     cache.wrap_solver(solver_mock)(**get_solver_test_args())
@@ -184,7 +187,8 @@ def test_decoder_cache_shrink_threadsafe(monkeypatch, tmpdir):
         timestamp -= 60 * 60 * 24 * 2  # 2 days
         os.utime(path, (timestamp, timestamp))
 
-    cache.wrap_solver(another_solver)(**get_solver_test_args())
+    cache.wrap_solver(solver_mock)(**get_solver_test_args(
+        solver=nengo.solvers.LstsqNoise()))
 
     cache_size = cache.get_size_in_bytes()
     assert cache_size > 0
@@ -223,17 +227,19 @@ class DummyA(object):
     def __init__(self, attr=0):
         self.attr = attr
 
+    def supports_fingerprint(self):
+        return True
+
 
 class DummyB(object):
     def __init__(self, attr=0):
         self.attr = attr
 
+    def supports_fingerprint(self):
+        return True
 
-def dummy_fn_a(arg):
-    pass
 
-
-def dummy_fn_b(arg):
+def dummy_fn(arg):
     pass
 
 
@@ -245,16 +251,27 @@ def dummy_fn_b(arg):
     (b'a', b'a', b'b'),              # bytes
     (u'a', u'a', u'b'),              # unicode string
     (np.eye(2), np.eye(2), np.array([[0, 1], [1, 0]])),      # array
-    ({'a': 1, 'b': 2}, {'a': 1, 'b': 2}, {'a': 2, 'b': 1}),  # dict
-    ((1, 2), (1, 2), (2, 1)),        # tuple
-    ([1, 2], [1, 2], [2, 1]),        # list
     (DummyA(), DummyA(), DummyB()),  # object instance
     (DummyA(1), DummyA(1), DummyA(2)),     # object instance
-    (dummy_fn_a, dummy_fn_a, dummy_fn_b),  # function
 ) + tuple((typ(1), typ(1), typ(2)) for typ in int_types))
 def test_fingerprinting(reference, equal, different):
     assert str(Fingerprint(reference)) == str(Fingerprint(equal))
     assert str(Fingerprint(reference)) != str(Fingerprint(different))
+
+
+@pytest.mark.parametrize('obj', (
+    np.array([object()]),   # array
+    np.array([(1.,)], dtype=[('field1', 'f8')]),  # array
+    {'a': 1, 'b': 2},       # dict
+    (1, 2),                 # tuple
+    [1, 2],                 # list
+    object(),               # object instance
+    dummy_fn,               # function
+))
+def test_unsupported_fingerprinting(obj):
+    with pytest.raises(FingerprintError):
+        Fingerprint(obj)
+
 
 
 def test_fails_for_lambda_expression():

@@ -26,8 +26,16 @@ class LeastSquaresSolver(object):
     def __call__(self, A, y, sigma, rng=None):
         raise NotImplementedError("LeastSquaresSolver must implement call")
 
+    def supports_fingerprint(self):
+        return False
 
-class Cholesky(LeastSquaresSolver):
+
+class CacheableLeastSquaresSolver(LeastSquaresSolver):
+    def supports_fingerprint(self):
+        return True
+
+
+class Cholesky(CacheableLeastSquaresSolver):
     """Solve a least-squares system using the Cholesky decomposition."""
 
     def __init__(self, transpose=None):
@@ -66,7 +74,7 @@ class Cholesky(LeastSquaresSolver):
         return x, info
 
 
-class ConjgradScipy(LeastSquaresSolver):
+class ConjgradScipy(CacheableLeastSquaresSolver):
     """Solve a least-squares system using Scipy's conjugate gradient."""
 
     def __init__(self, tol=1e-4):
@@ -97,7 +105,7 @@ class ConjgradScipy(LeastSquaresSolver):
         return X if matrix_in else X.flatten(), info
 
 
-class LSMRScipy(LeastSquaresSolver):
+class LSMRScipy(CacheableLeastSquaresSolver):
     """Solve a least-squares system using Scipy's LSMR."""
 
     def __init__(self, tol=1e-4):
@@ -118,7 +126,7 @@ class LSMRScipy(LeastSquaresSolver):
         return X if matrix_in else X.flatten(), info
 
 
-class Conjgrad(LeastSquaresSolver):
+class Conjgrad(CacheableLeastSquaresSolver):
     """Solve a least-squares system using conjugate gradient."""
 
     def __init__(self, tol=1e-2, maxiters=None, X0=None):
@@ -178,7 +186,7 @@ class Conjgrad(LeastSquaresSolver):
         return x, i+1
 
 
-class BlockConjgrad(LeastSquaresSolver):
+class BlockConjgrad(CacheableLeastSquaresSolver):
     """Solve a multiple-RHS least-squares system using block conj. gradient."""
 
     def __init__(self, tol=1e-2, X0=None):
@@ -222,7 +230,7 @@ class BlockConjgrad(LeastSquaresSolver):
         return X if matrix_in else X.flatten(), info
 
 
-class SVD(LeastSquaresSolver):
+class SVD(CacheableLeastSquaresSolver):
     """Solve a least-squares system using full SVD."""
 
     def __call__(self, A, Y, sigma, rng=None):
@@ -234,7 +242,7 @@ class SVD(LeastSquaresSolver):
         return X if matrix_in else X.flatten(), info
 
 
-class RandomizedSVD(LeastSquaresSolver):
+class RandomizedSVD(CacheableLeastSquaresSolver):
     """Solve a least-squares system using a randomized (partial) SVD.
 
     Parameters

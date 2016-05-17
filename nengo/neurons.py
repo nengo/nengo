@@ -129,8 +129,16 @@ class NeuronType(FrozenObject):
         """
         raise NotImplementedError("Neurons must provide step_math")
 
+    def supports_fingerprint(self):
+        return False
 
-class Direct(NeuronType):
+
+class CacheableNeuronType(NeuronType):
+    def supports_fingerprint(self):
+        return True
+
+
+class Direct(CacheableNeuronType):
     """Signifies that an ensemble should simulate in direct mode.
 
     In direct mode, the ensemble represents and transforms signals perfectly,
@@ -160,7 +168,7 @@ class Direct(NeuronType):
 #       but still simulate very fast
 
 
-class RectifiedLinear(NeuronType):
+class RectifiedLinear(CacheableNeuronType):
     """A rectified linear neuron model.
 
     Each neuron is modeled as a rectified line. That is, the neuron's activity
@@ -181,7 +189,7 @@ class RectifiedLinear(NeuronType):
         output[...] = np.maximum(0., J)
 
 
-class Sigmoid(NeuronType):
+class Sigmoid(CacheableNeuronType):
     """A neuron model whose response curve is a sigmoid."""
 
     probeable = ('rates',)
@@ -209,7 +217,7 @@ class Sigmoid(NeuronType):
         output[...] = (1. / self.tau_ref) / (1.0 + np.exp(-J))
 
 
-class LIFRate(NeuronType):
+class LIFRate(CacheableNeuronType):
     """Non-spiking version of the leaky integrate-and-fire (LIF) neuron model.
 
     Parameters
@@ -421,7 +429,7 @@ class AdaptiveLIF(AdaptiveLIFRate, LIF):
         n += (dt / self.tau_n) * (self.inc_n * output - n)
 
 
-class Izhikevich(NeuronType):
+class Izhikevich(CacheableNeuronType):
     """Izhikevich neuron model.
 
     This implementation is based on the original paper [1]_;
