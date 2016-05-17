@@ -16,7 +16,7 @@ from nengo.exceptions import FingerprintError, TimeoutError
 from nengo.rc import rc
 from nengo.utils import nco
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
-from nengo.utils.compat import int_types, is_string, pickle, PY2
+from nengo.utils.compat import int_types, is_string, pickle, PY2, string_types
 from nengo.utils.lock import FileLock
 
 logger = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ class Fingerprint(object):
     __slots__ = ['fingerprint']
 
     NON_REFERENCE_TYPES = (
-        bool, float, complex, bytes, unicode, str) + int_types
+        bool, float, complex, bytes) + int_types + string_types
 
 
     def __init__(self, obj):
