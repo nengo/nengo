@@ -59,12 +59,10 @@ script:
       if [[ "$COVERAGE" == "false" ]]; then
         py.test nengo -n 2 -v --duration 20;
       else
-        coverage run --rcfile .coveragerc --source nengo -m py.test nengo -v --duration 20;
-        coverage report;
-      fi;
+        coverage run --rcfile .coveragerc --source nengo -m py.test nengo -v --duration 20 && coverage report;
+      fi
     else
-      flake8 -v nengo;
-      pylint nengo;
+      flake8 -v nengo && pylint nengo;
     fi
 
 after_success:
