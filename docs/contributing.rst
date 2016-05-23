@@ -1,18 +1,8 @@
-***************************
-Introduction for developers
-***************************
+*********************
+Contributing to Nengo
+*********************
 
 .. default-role:: obj
-
-Contributing
-============
-
-Please read the ``LICENSE.rst`` file to understand
-what becoming a contributor entails.
-Once you have read and understood the license agreement,
-add yourself to the ``CONTRIBUTORS.rst`` file.
-Note that all pull requests
-must be commited by someone other than the original requestor.
 
 Developer installation
 ======================
@@ -136,7 +126,7 @@ Code style
 ==========
 
 We adhere to
-`PEP8 <http://www.python.org/dev/peps/pep-0008/#introduction>`_,
+`PEP8 <http://www.python.org/dev/peps/pep-0008/>`_,
 and use ``flake8`` to automatically check for adherence on all commits.
 If you want to run this yourself,
 then ``pip install flake8`` and run
@@ -211,3 +201,63 @@ A few additional conventions that we have settled on:
 
      solver : Solver
          A `.Solver` used in the build process.
+
+Git workflow
+============
+
+Development happens on `Github <https://github.com/nengo/nengo>`_.
+Feel free to fork any of our repositories and send a pull request!
+However, note that we ask contributors to sign
+:ref:`an assignment agreement <caa>`.
+
+Rules
+-----
+
+We use a pretty strict ``git`` workflow
+to ensure that the history of the ``master`` branch
+is clean and readable.
+
+1. Every commit in the ``master`` branch should pass testing,
+   including static checks like ``flake8`` and ``pylint``.
+2. Commit messages must follow guidelines (see below).
+3. Developers should never edit code on the ``master`` branch.
+   When changing code, create a new topic branch for your contribution.
+   When your branch is ready to be reviewed,
+   push it to Github and create a pull request.
+4. Pull requests must be reviewed by at least two people before merging.
+   There may be a fair bit of back and forth before
+   the pull request is accepted.
+5. Pull requests cannot be merged by the creator of the pull request.
+6. Only `maintainers <https://github.com/orgs/nengo/teams/nengo-maintainers>`_,
+   can merge pull requests to ensure that the history remains clean.
+
+Commit messages
+---------------
+
+We use several advanced ``git`` features that
+rely on well-formed commit messages.
+Commit messages should fit the following template.
+
+.. code-block:: none
+
+   Capitalized, short (50 chars or less) summary
+
+   More detailed body text, if necessary.  Wrap it to around 72 characters.
+   The blank line separating the summary from the body is critical.
+
+   Paragraphs must be separated by a blank line.
+
+   - Bullet points are okay, too.
+   - Typically a hyphen or asterisk is used for the bullet, followed by
+     single space, with blank lines before and after the list.
+   - Use a hanging indent if the bullet point is longer than a
+     single line (like in this point).
+
+Getting help
+============
+
+If you have any questions about developing Nengo
+or how you can best climb the learning curve
+that Nengo and ``git`` present, please
+`file an issue <https://github.com/nengo/nengo/issues/new>`_
+and we'll do our best to help you!

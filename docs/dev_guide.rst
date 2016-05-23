@@ -8,8 +8,7 @@ how Nengo builds and simulates brain models.
 .. toctree::
    :maxdepth: 2
 
-   dev_introduction
+   contributing
    nef_minimal
-   workflow
    releasing
    license
