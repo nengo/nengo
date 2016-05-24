@@ -236,15 +236,14 @@ class Connection(NengoObject):
     function : callable, optional (Default: None)
         Function to compute across the connection. Note that ``pre`` must be
         an ensemble to apply a function across the connection.
-    transform : (post.size_in, pre.size_out) array_like, optional \
+    transform : (size_out, size_mid) array_like, optional \
                 (Default: ``np.array(1.0)``)
         Linear transform mapping the pre output to the post input.
         This transform is in terms of the sliced size; if either pre
         or post is a slice, the transform must be shaped according to
         the sliced dimensionality. Additionally, the function is applied
         before the transform, so if a function is computed across the
-        connection, the transform must be of shape
-        ``(len(function(np.zeros(post.size_in))), pre.size_out)``.
+        connection, the transform must be of shape ``(size_out, size_mid)``.
     solver : Solver, optional (Default: ``nengo.solvers.LstsqL2()``)
         Solver instance to compute decoders or weights
         (see `~nengo.solvers.Solver`). If ``solver.weights`` is True, a full
@@ -252,7 +251,7 @@ class Connection(NengoObject):
     learning_rule_type : LearningRuleType or iterable of LearningRuleType, \
                          optional (Default: None)
         Modifies the decoders or connection weights during simulation.
-    eval_points : (n_eval_points, pre.size_out) array_like or int, optional \
+    eval_points : (n_eval_points, size_in) array_like or int, optional \
                   (Default: None)
         Points at which to evaluate ``function`` when computing decoders,
         spanning the interval (-pre.radius, pre.radius) in each dimension.
@@ -295,13 +294,20 @@ class Connection(NengoObject):
         The slice associated with ``pre`` if it is an ObjView, or None.
     seed : int
         The seed used for random number generation.
+    size_in : int
+        Input size of the computed function, equal to ``pre.size_out``.
+    size_mid : int
+        Output size of the function ``len(function(np.zeros(size_in)))``,
+        equal to ``size_in`` if ``function is None``.
+    size_out : int
+        Output size of the transform, equal to ``post.size_in``.
     solver : Solver
         The Solver instance that will be used to compute decoders or weights
         (see ``nengo.solvers``).
     synapse : Synapse
         The Synapse model used for filtering across the connection
         (see ``nengo.synapses``).
-    transform : (size_mid, size_out) array_like
+    transform : (size_out, size_mid) array_like
         Linear transform mapping the pre function output to the post input.
     """
 
