@@ -25,7 +25,7 @@ class SocketCheckAliveThread(threading.Thread):
         self.socket_class._close_send_socket()
 
 
-class UDPSocket:
+class UDPSocket(object):
     def __init__(self, send_dim=1, recv_dim=1, dt_remote=0,
                  local_port=-1, dest_addr='127.0.0.1', dest_port=-1,
                  timeout=30, max_idle_time=1):
@@ -73,14 +73,14 @@ class UDPSocket:
         self.last_packet_t = 0.0
 
         # Empty the buffer
-        while (not self.buffer.empty()):
+        while not self.buffer.empty():
             self.buffer.get()
 
     def _open_socket(self):
         # Close socket, terminate alive check thread
         self.close()
 
-        if (self.is_sender):
+        if self.is_sender:
             try:
                 self.send_socket = socket.socket(socket.AF_INET,
                                                  socket.SOCK_DGRAM)
@@ -88,7 +88,7 @@ class UDPSocket:
             except socket.error as error:
                 raise RuntimeError("UDPSocket: Error str: " + str(error))
 
-        if (self.is_receiver):
+        if self.is_receiver:
             self._open_recv_socket()
 
         self.last_active = time.time()
@@ -112,7 +112,7 @@ class UDPSocket:
 
     def _retry_connection(self):
         self._close_recv_socket()
-        while (self.recv_socket is None):
+        while self.recv_socket is None:
             time.sleep(self.retry_backoff_time)
             try:
                 self._open_recv_socket()
@@ -152,7 +152,7 @@ class UDPSocket:
 
     def config_send_only(self, dest_addr, dest_port):
         self._config_wipe()
-        if (dest_port > 0):
+        if dest_port > 0:
             self.is_sender = True
             self.dest_addr = dest_addr
             self.dest_port = dest_port
@@ -162,7 +162,7 @@ class UDPSocket:
 
     def config_recv_only(self, local_port, timeout=5, ignore_timestamp=False):
         self._config_wipe()
-        if (local_port > 0):
+        if local_port > 0:
             self.is_receiver = True
             self.local_port = local_port
             self.timeout = timeout
@@ -174,7 +174,7 @@ class UDPSocket:
     def config_send_recv(self, local_port, dest_addr, dest_port, timeout=5,
                          ignore_timestamp=False):
         self._config_wipe()
-        if (local_port > 0 and dest_port > 0):
+        if local_port > 0 and dest_port > 0:
             self.is_sender = True
             self.is_receiver = True
             self.dest_addr = dest_addr
@@ -187,17 +187,19 @@ class UDPSocket:
                              "Both destination and local ports should be > 0")
 
     def set_byte_order(self, byte_order):
-        if (byte_order.lower() == "little"):
+        if byte_order.lower() == "little":
             self.byte_order = '<'
-        elif (byte_order.lower() == "big"):
+        elif byte_order.lower() == "big":
             self.byte_order = '>'
         else:
             self.byte_order = byte_order
 
     def pack_packet(self, t, x):
-        # pack_packet takes a timestamp and data (x) and makes a socket packet
-        # Default packet data type: float
-        # Default packet structure: [t, x[0], x[1], x[2], ... , x[d]]
+        """Takes a timestamp and data (x) and makes a socket packet
+
+        Default packet data type: float
+        Default packet structure: [t, x[0], x[1], x[2], ... , x[d]]"""
+
         send_data = [float(t + self.dt_remote / 2.0)] + \
                     [x[i] for i in range(self.send_dim)]
         packet = struct.pack(self.byte_order + 'f' * (self.send_dim + 1),
@@ -205,9 +207,11 @@ class UDPSocket:
         return packet
 
     def unpack_packet(self, packet):
-        # unpack_packet takes a packet and extracts a timestamp and data (x)
-        # Default packet data type: float
-        # Default packet structure: [t, x[0], x[1], x[2], ... , x[d]]
+        """Takes a packet and extracts a timestamp and data (x)
+
+        Default packet data type: float
+        Default packet structure: [t, x[0], x[1], x[2], ... , x[d]]"""
+
         data_len = len(packet) / 4
         data = list(struct.unpack(self.byte_order + 'f' * data_len, packet))
         t_data = data[0]
@@ -217,10 +221,14 @@ class UDPSocket:
     def __call__(self, t, x=None):
         return self.run(t, x)
 
+    # TODO: name this something better
+    def _t_check(t_lim, t):
+        return (t_lim >= t and t_lim < t + self.dt) or self.ignore_timestamp:
+
     def run(self, t, x=None):  # noqa: C901
         # If t == 0, return array of zeros. Terminate any open sockets to
         # reset system
-        if (t == 0):
+        if t == 0:
             self._initialize()
             self.close()
             return self.value
@@ -235,7 +243,7 @@ class UDPSocket:
         self.last_t = t * 1.0
         self.last_active = time.time()
 
-        if (self.is_sender):
+        if self.is_sender:
             # Calculate if it is time to send the next packet.
             # Time to send next packet if time between last packet and current
             # t + half of dt is >= remote dt
@@ -246,15 +254,14 @@ class UDPSocket:
                                                 (addr, port))
                 self.last_packet_t = t * 1.0   # Copy t (which is an np.scalar)
 
-        if (self.is_receiver):
+        if self.is_receiver:
             found_item = False
-            if (not self.buffer.empty()):
+            if not self.buffer.empty():
                 # There are items (packets with future timestamps) in the
                 # buffer. Therefore, check the buffer for appropriate
                 # information
                 t_peek = self.buffer.queue[0][0]
-                if (t_peek >= t and t_peek < t + self.dt) or \
-                   self.ignore_timestamp:
+                if _t_check(t_peek, t):
                     # Timestamp of first item in buffer is > t && < t+dt,
                     # meaning that this is the information for the current
                     # timestep, so it should be used.
@@ -267,12 +274,11 @@ class UDPSocket:
                     # for current timestep has been lost.
                     found_item = True
 
-            while (not found_item):
+            while not found_item:
                 try:
                     packet, addr = self.recv_socket.recvfrom(self.max_recv_len)
                     t_data, value = self.unpack_packet(packet)
-                    if (t_data >= t and t_data < t + self.dt) or \
-                       self.ignore_timestamp:
+                    if _t_check(t_data, t):
                         self.value = value
                         found_item = True
                     elif (t_data >= t + self.dt):
