@@ -1,4 +1,3 @@
-import math
 import threading
 import numpy as np
 
@@ -27,7 +26,7 @@ def test_send_recv_chain(Simulator, plt, seed, rng):
     udp_send = sockets.UDPSocket(dest_port=54321, send_dim=1)
     m_send = nengo.Network(label='Send', seed=seed)
     with m_send:
-        input = nengo.Node(output=lambda t: math.sin(10 * t))
+        input = nengo.Node(output=lambda t: np.sin(10 * t))
         socket_node = nengo.Node(size_in=1, output=udp_send.run)
 
         nengo.Connection(input, socket_node, synapse=None)
@@ -96,7 +95,7 @@ def test_time_sync(Simulator, plt, seed, rng):
                              send_dim=1, recv_dim=2, timeout=1)
     m1 = nengo.Network(label='One', seed=seed)
     with m1:
-        input = nengo.Node(output=lambda t: math.sin(10 * t))
+        input = nengo.Node(output=lambda t: np.sin(10 * t))
         socket_node = nengo.Node(size_in=1, output=udp1.run)
 
         nengo.Connection(input, socket_node, synapse=None)
