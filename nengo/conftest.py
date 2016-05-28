@@ -56,7 +56,7 @@ def load_class(fully_qualified_name):
 
 @pytest.fixture(scope="session")
 def Simulator(request):
-    """the Simulator class being tested.
+    """The Simulator class being tested.
 
     Please use this, and not ``nengo.Simulator`` directly. If the test is
     reference simulator specific, then use ``RefSimulator`` below.
@@ -66,7 +66,7 @@ def Simulator(request):
 
 @pytest.fixture(scope="session")
 def RefSimulator(request):
-    """the reference simulator.
+    """The reference simulator.
 
     Please use this if the test is reference simulator specific.
     Other simulators may choose to implement the same API as the
@@ -76,6 +76,13 @@ def RefSimulator(request):
 
 
 def recorder_dirname(request, name):
+    """Returns the directory to put test artifacts in.
+
+    Test artifacts produced by Nengo include plots and analytics.
+
+    Note that the return value might be None, which indicates that the
+    artifacts should not be saved.
+    """
     record = request.config.getvalue(name)
     if is_string(record):
         return record
@@ -85,6 +92,7 @@ def recorder_dirname(request, name):
     simulator, nl = TestConfig.RefSimulator, None
     if 'Simulator' in request.funcargnames:
         simulator = request.getfuncargvalue('Simulator')
+    # 'nl' stands for the non-linearity used in the neuron equation
     if 'nl' in request.funcargnames:
         nl = request.getfuncargvalue('nl')
     elif 'nl_nodirect' in request.funcargnames:
@@ -97,6 +105,13 @@ def recorder_dirname(request, name):
 
 
 def parametrize_function_name(request, function_name):
+    """Creates a unique name for a test function.
+
+    The unique name accounts for values passed through
+    ``pytest.mark.parametrize``.
+
+    This function is used when naming plots saved through the ``plt`` fixture.
+    """
     suffixes = []
     if 'parametrize' in request.keywords:
         argnames = request.keywords['parametrize'].args[::2]
@@ -111,7 +126,7 @@ def parametrize_function_name(request, function_name):
 
 @pytest.fixture
 def plt(request):
-    """a pyplot-compatible plotting interface.
+    """A pyplot-compatible plotting interface.
 
     Please use this if your test creates plots.
 
@@ -132,7 +147,7 @@ def plt(request):
 
 @pytest.fixture
 def analytics(request):
-    """an object to store data for analytics.
+    """An object to store data for analytics.
 
     Please use this if you're concerned that accuracy or speed may regress.
 
@@ -162,7 +177,7 @@ def analytics_data(request):
 
 @pytest.fixture
 def logger(request):
-    """a logging.Logger object.
+    """A logging.Logger object.
 
     Please use this if your test emits log messages.
 
@@ -178,6 +193,10 @@ def logger(request):
 
 
 def function_seed(function, mod=0):
+    """Generates a unique seed for the given test function.
+
+    The seed should be the same across all machines/platforms.
+    """
     c = function.__code__
 
     # get function file path relative to Nengo directory root
@@ -196,7 +215,7 @@ def function_seed(function, mod=0):
 
 @pytest.fixture
 def rng(request):
-    """a seeded random number generator.
+    """A seeded random number generator.
 
     This should be used in lieu of np.random because we control its seed.
     """
@@ -207,7 +226,7 @@ def rng(request):
 
 @pytest.fixture
 def seed(request):
-    """a seed for seeding Networks.
+    """A seed for seeding Networks.
 
     This should be used in lieu of an integer seed so that we can ensure that
     tests are not dependent on specific seeds.
