@@ -43,7 +43,9 @@ Release History
   (`#1053 <https://github.com/nengo/nengo/pull/1053>`_,
   `#1041 <https://github.com/nengo/nengo/issues/1041>`_,
   `#1048 <https://github.com/nengo/nengo/issues/1048>`_)
-- The ``Nnls`` solver now works for weights.
+- The ``Nnls`` solver now works for weights. The ``NnlsL2`` solver is
+  improved since we clip values to be non-negative before forming
+  the Gram system.
   (`#1027 <https://github.com/nengo/nengo/pull/1027>`_,
   `#1019 <https://github.com/nengo/nengo/issues/1019>`_)
 
