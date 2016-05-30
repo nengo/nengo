@@ -379,6 +379,10 @@ class Nnls(Solver):
     """Non-negative least-squares solver without regularization.
 
     Similar to `.Lstsq`, except the output values are non-negative.
+
+    If solving for non-negative **weights**, it is important that the
+    intercepts of the post-population are also non-negative, since neurons with
+    negative intercepts will never be silent, affecting output accuracy.
     """
 
     def __init__(self, weights=False):
@@ -405,7 +409,7 @@ class Nnls(Solver):
 
         tstart = time.time()
         Y, m, n, _, matrix_in = format_system(A, Y)
-        Y = self.mul_encoders(Y, E)
+        Y = self.mul_encoders(Y, E, copy=True)
         d = Y.shape[1]
 
         X = np.zeros((n, d))
@@ -422,6 +426,10 @@ class NnlsL2(Nnls):
     """Non-negative least-squares solver with L2 regularization.
 
     Similar to `.LstsqL2`, except the output values are non-negative.
+
+    If solving for non-negative **weights**, it is important that the
+    intercepts of the post-population are also non-negative, since neurons with
+    negative intercepts will never be silent, affecting output accuracy.
     """
 
     reg = NumberParam('reg', low=0)
@@ -468,6 +476,10 @@ class NnlsL2nz(NnlsL2):
     """Non-negative least-squares with L2 regularization on nonzero components.
 
     Similar to `.LstsqL2nz`, except the output values are non-negative.
+
+    If solving for non-negative **weights**, it is important that the
+    intercepts of the post-population are also non-negative, since neurons with
+    negative intercepts will never be silent, affecting output accuracy.
     """
 
     def __call__(self, A, Y, rng=None, E=None):
