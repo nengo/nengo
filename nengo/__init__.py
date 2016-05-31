@@ -31,7 +31,7 @@ from .rc import rc, RC_DEFAULTS
 from .simulator import Simulator
 from .synapses import Alpha, LinearFilter, Lowpass, Triangle
 from .utils.logging import log
-from . import dists, exceptions, networks, processes, spa, utils
+from . import dists, exceptions, networks, presets, processes, spa, utils
 
 logger = logging.getLogger(__name__)
 try:

@@ -30,6 +30,9 @@ Release History
   (`#1127 <https://github.com/nengo/nengo/pull/1127>`_)
 - Added ``ShapeParam`` to store array shapes.
   (`#1045 <https://github.com/nengo/nengo/pull/1045>`_)
+- Added ``ThresholdingPreset`` to configure ensembles for thresholding.
+  (`#1058 <https://github.com/nengo/nengo/issues/1058>`_,
+  `#1077 <https://github.com/nengo/nengo/pull/1077>`_)
 
 **Bug fixes**
 
