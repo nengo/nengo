@@ -41,7 +41,7 @@ install:
       export PIP_DEPS="pytest coverage";
     elif [[ "$STATIC" == "true" ]]; then
       export CONDA_DEPS="";
-      export PIP_DEPS="flake8 pylint";
+      export PIP_DEPS="flake8 pylint pydocstyle";
     fi
   - if [[ -n "$NUMPY" && "$STATIC" == "false" ]]; then
       export CONDA_DEPS="$CONDA_DEPS numpy=$NUMPY";
@@ -62,7 +62,7 @@ script:
         coverage run --rcfile .coveragerc --source nengo -m py.test nengo -v --duration 20 && coverage report;
       fi
     else
-      flake8 -v nengo && pylint nengo;
+      flake8 -v nengo && pylint nengo && pydocstyle nengo;
     fi
 
 after_success:
