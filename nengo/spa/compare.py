@@ -33,14 +33,16 @@ class Compare(Module):
                  input_magnitude=1.0, label=None, seed=None,
                  add_to_container=None):
         super(Compare, self).__init__(label, seed, add_to_container)
+        self.input_magnitude = input_magnitude
         if vocab is None:
             # use the default vocab for this number of dimensions
             vocab = dimensions
 
         with self:
+            mag = input_magnitude * 3.5 * np.sqrt(1.0/dimensions)
             self.product = nengo.networks.Product(
                 neurons_per_multiply, dimensions,
-                input_magnitude=input_magnitude)
+                input_magnitude=mag)
 
             self.inputA = nengo.Node(size_in=dimensions, label='inputA')
             self.inputB = nengo.Node(size_in=dimensions, label='inputB')
