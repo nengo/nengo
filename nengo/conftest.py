@@ -228,6 +228,16 @@ def function_seed(function, mod=0):
     return int_s
 
 
+def get_item_name(item):
+    """Get a unique backend-independent name for an item (test function)."""
+    item_abspath, item_name = str(item.fspath), item.location[2]
+    nengo_path = os.path.abspath(os.path.dirname(nengo.__file__))
+    item_relpath = os.path.relpath(item_abspath, start=nengo_path)
+    item_relpath = os.path.join('nengo', item_relpath)
+    item_relpath = item_relpath.replace(os.sep, '/')
+    return '%s:%s' % (item_relpath, item_name)
+
+
 @pytest.fixture
 def rng(request):
     """A seeded random number generator.
@@ -298,10 +308,12 @@ def pytest_runtest_setup(item):  # noqa: C901
             pytest.skip("%s not requested" % " and ".join(options))
 
     if not tests_frontend:
+        item_name = get_item_name(item)
+
         for test, reason in TestConfig.Simulator.unsupported:
             # We add a '*' before test to eliminate the surprise of needing
             # a '*' before the name of a test function.
-            if fnmatch(item.nodeid, '*' + test):
+            if fnmatch(item_name, '*' + test):
                 pytest.xfail(reason)
 
 
