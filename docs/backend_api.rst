@@ -50,8 +50,6 @@ Operators
 
 .. autoclass:: nengo.builder.operator.Copy
 
-.. autoclass:: nengo.builder.operator.SlicedCopy
-
 .. autoclass:: nengo.builder.operator.ElementwiseInc
 
 .. autoclass:: nengo.builder.operator.DotInc

@@ -5,8 +5,7 @@ import numpy as np
 from nengo.builder import Builder, Signal
 from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
-from nengo.builder.operator import (
-    DotInc, ElementwiseInc, Reset, SlicedCopy)
+from nengo.builder.operator import Copy, DotInc, ElementwiseInc, Reset
 from nengo.connection import Connection
 from nengo.dists import get_samples
 from nengo.ensemble import Ensemble, Neurons
@@ -160,7 +159,7 @@ def slice_signal(model, signal, sl):
     else:
         size = np.arange(signal.size)[sl].size
         sliced_signal = Signal(np.zeros(size), name="%s.sliced" % signal.name)
-        model.add_op(SlicedCopy(signal, sliced_signal, src_slice=sl))
+        model.add_op(Copy(signal, sliced_signal, src_slice=sl))
         return sliced_signal
 
 
@@ -247,7 +246,7 @@ def build_connection(model, conn):
         if conn.solver.weights:
             model.sig[conn]['out'] = model.sig[conn.post_obj.neurons]['in']
             signal_size = conn.post_obj.neurons.size_in
-            post_slice = Ellipsis  # don't apply slice later
+            post_slice = None  # don't apply slice later
     else:
         weights = transform
         in_signal = slice_signal(model, in_signal, conn.pre_slice)
@@ -275,7 +274,7 @@ def build_connection(model, conn):
     model.sig[conn]['weighted'] = signal
 
     # Copy to the proper slice
-    model.add_op(SlicedCopy(
+    model.add_op(Copy(
         signal, model.sig[conn]['out'], dst_slice=post_slice,
         inc=True, tag="%s.gain" % conn))
 
