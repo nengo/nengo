@@ -57,6 +57,10 @@ Release History
 - Allow recurrence of the form ``a=b, b=a`` in basal ganglia SPA actions.
   (`#1098 <https://github.com/nengo/nengo/issues/1098>`_,
   `#1099 <https://github.com/nengo/nengo/pull/1099>`_)
+- Support a greater range of Jupyter notebook and ipywidgets versions with the
+  the ``ipynb`` extensions.
+  (`#1088 <https://github.com/nengo/nengo/pull/1088>`_,
+  `#1085 <https://github.com/nengo/nengo/issues/1085>`_)
 
 2.1.0 (April 27, 2016)
 ======================
