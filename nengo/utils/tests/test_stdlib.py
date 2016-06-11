@@ -1,3 +1,6 @@
+import sys
+import weakref
+
 import numpy as np
 import pytest
 
@@ -207,3 +210,16 @@ def test_weakkeydict_bad_delitem():
         d[13]
     with pytest.raises(TypeError):
         d[13] = 13
+
+
+def test_weakkeydict_frees_values():
+    d = WeakKeyIDDictionary()
+    k = C()
+    v = C()
+    d[k] = v
+    weak_v = weakref.ref(v)
+    del v
+    assert sys.getrefcount(weak_v()) > 1  # function argument might make it > 1
+    del k
+    v = weak_v()
+    assert v is None,  "Value in WeakKeyIDDictionary not garbage collected."

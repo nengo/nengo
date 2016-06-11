@@ -51,6 +51,9 @@ Release History
   the Gram system.
   (`#1027 <https://github.com/nengo/nengo/pull/1027>`_,
   `#1019 <https://github.com/nengo/nengo/issues/1019>`_)
+- Eliminate memory leak in the parameter system.
+  (`#1089 <https://github.com/nengo/nengo/issues/1089>`_,
+  `#1090 <https://github.com/nengo/nengo/pull/1090>`_)
 
 2.1.0 (April 27, 2016)
 ======================
