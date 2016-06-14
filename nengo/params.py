@@ -93,6 +93,8 @@ class Parameter(object):
         return self.data.get(instance, self.default)
 
     def __set__(self, instance, value):
+        if isinstance(value, Undeferred):
+            value = super(Undeferred, value).__getattribute__('inst')
         new_value = self.validate(instance, value)
         if new_value is not None:
             value = new_value
