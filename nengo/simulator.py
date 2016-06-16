@@ -118,7 +118,9 @@ class Simulator(object):
     # would skip all test whose names start with 'test_pes'.
     unsupported = []
 
-    def __init__(self, network, dt=0.001, seed=None, model=None):
+    def __init__(
+            self, network, dt=0.001, seed=None, model=None,
+            shrink_cache=True):
         self.closed = False
 
         if model is None:
@@ -132,7 +134,8 @@ class Simulator(object):
             # Build the network into the model
             self.model.build(network)
 
-        self.model.decoder_cache.shrink()
+        if shrink_cache:
+            self.model.decoder_cache.shrink()
 
         # -- map from Signal.base -> ndarray
         self.signals = SignalDict()

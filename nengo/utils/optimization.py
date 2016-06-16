@@ -5,12 +5,17 @@ from __future__ import absolute_import
 import numpy as np
 import scipy.optimize
 from scipy.special import beta, betainc
+import weakref
 
 import nengo
+from nengo.cache import Fingerprint
 from nengo.dists import SubvectorLength
 from nengo.params import Deferral
 
 # TODO documentation in this file
+
+distortion_cache = weakref.WeakKeyDictionary()
+
 
 class RadiusForUnitVector(Deferral):
     """
@@ -28,7 +33,16 @@ class RadiusForUnitVector(Deferral):
         self.magnitude = magnitude
 
     def default_fn(self, model, ens):
-        distortion = get_distortion(model.simulator.__class__, ens)
+        cache = distortion_cache.get(model.simulator, {})
+        distortion_cache[model.simulator] = cache
+        key_ens = ens.copy(add_to_container=False)
+        key_ens.label = None
+        key = str(Fingerprint(key_ens))
+
+        if key not in cache:
+            cache[key] = get_distortion(model.simulator.__class__, ens)
+        distortion = cache[key]
+
         return self.magnitude * find_optimal_radius(
             distortion, self.sp_dimensions, self.sp_subdimensions)
 
