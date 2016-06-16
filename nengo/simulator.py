@@ -86,6 +86,8 @@ class Simulator(object):
         want to build the network manually, or you want to inject build
         artifacts in the model before building the network, then you can
         pass in a `.Model` instance.
+    shrink_cache : bool, optional (Default: True)
+        Whether to shrink the decoder cache after finishing the build.
 
     Attributes
     ----------

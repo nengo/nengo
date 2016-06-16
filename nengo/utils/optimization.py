@@ -53,7 +53,8 @@ def get_distortion(Simulator, ens, conn_kwargs=None, seed=None):
             ens_copy,
             nengo.Ensemble(1, ens.dimensions, neuron_type=nengo.Direct()),
             **conn_kwargs)
-    sim = Simulator(m)
+
+    sim = Simulator(m, shrink_cache=False)
     return np.mean(np.square(sim.model.params[conn].solver_info['rmses']))
 
 
