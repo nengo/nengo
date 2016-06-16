@@ -54,6 +54,9 @@ Release History
 - Eliminate memory leak in the parameter system.
   (`#1089 <https://github.com/nengo/nengo/issues/1089>`_,
   `#1090 <https://github.com/nengo/nengo/pull/1090>`_)
+- Allow recurrence of the form ``a=b, b=a`` in basal ganglia SPA actions.
+  (`#1098 <https://github.com/nengo/nengo/issues/1098>`_,
+  `#1099 <https://github.com/nengo/nengo/pull/1099>`_)
 
 2.1.0 (April 27, 2016)
 ======================

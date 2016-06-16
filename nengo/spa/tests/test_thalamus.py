@@ -128,6 +128,20 @@ def test_routing(Simulator, seed, plt):
     assert valueC[2] < 0.2
 
 
+def test_routing_recurrency_compilation(Simulator, seed, plt):
+    D = 2
+    model = spa.SPA(seed=seed)
+    with model:
+        model.buff1 = spa.Buffer(D, label='buff1')
+        model.buff2 = spa.Buffer(D, label='buff2')
+        actions = spa.Actions('0.5 --> buff2=buff1, buff1=buff2')
+        model.bg = spa.BasalGanglia(actions)
+        model.thal = spa.Thalamus(model.bg)
+
+    with Simulator(model) as sim:
+        assert sim
+
+
 def test_nondefault_routing(Simulator, seed):
     D = 3
     model = spa.SPA(seed=seed)

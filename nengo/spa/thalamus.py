@@ -227,6 +227,7 @@ class Thalamus(Module):
                 radius=np.sqrt(float(subdim) / dim),
                 label='channel_%d_%s' % (index, target_name))
 
+        with self.spa:
             # inhibit the channel when the action is not chosen
             inhibit = ([[-self.route_inhibit]] *
                        (self.neurons_channel_dim * subdim))
@@ -234,7 +235,6 @@ class Thalamus(Module):
                 nengo.Connection(gate, e.neurons, transform=inhibit,
                                  synapse=self.synapse_inhibit)
 
-        with self.spa:
             # compute the requested transform
             t = source_vocab.parse(transform).get_convolution_matrix()
             if inverted:
