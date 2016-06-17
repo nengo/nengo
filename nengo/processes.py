@@ -1,10 +1,12 @@
 import numpy as np
+import warnings
 
 import nengo.utils.numpy as npext
 from nengo.base import Process
 from nengo.dists import DistributionParam, Gaussian
 from nengo.exceptions import ValidationError
-from nengo.params import BoolParam, DictParam, NdarrayParam, NumberParam
+from nengo.params import (
+    BoolParam, DictParam, EnumParam, NdarrayParam, NumberParam)
 from nengo.synapses import LinearFilter, Lowpass, SynapseParam
 
 
@@ -260,3 +262,153 @@ class PresentInput(Process):
             return inputs[i % n]
 
         return step_presentinput
+
+
+class Piecewise(Process):
+    """A piecewise function with different options for interpolation.
+
+    Given an input dictionary of ``{0: 0, 0.5: -1, 0.75: 0.5, 1: 0}``,
+    this process  will emit the numerical values (0, -1, 0.5, 0)
+    starting at the corresponding time points (0, 0.5, 0.75, 1).
+
+    The keys in the input dictionary must be times (float or int).
+    The values in the dictionary can be floats, lists of floats,
+    or numpy arrays. All lists or numpy arrays must be of the same length,
+    as the output shape of the process will be determined by the shape
+    of the values.
+
+    Interpolation on the data points using `scipy.interpolate` is also
+    supported. The default interpolation is 'zero', which creates a
+    piecewise function whose values change at the specified time points.
+    So the above example would be shortcut for::
+
+        def function(t):
+            if t < 0.5:
+                return 0
+            elif t < 0.75
+                return -1
+            elif t < 1:
+                return 0.5
+            else:
+                return 0
+
+    For times before the first specified time, an array of zeros (of
+    the correct length) will be emitted.
+    This means that the above can be simplified to::
+
+        Piecewise({0.5: -1, 0.75: 0.5, 1: 0})
+
+    Parameters
+    ----------
+    data : dict
+        A dictionary mapping times to the values that should be emitted
+        at those times. Times must be numbers (ints or floats), while values
+        can be numbers, lists of numbers, or numpy arrays of numbers.
+    interpolation : str, optional (Default: 'zero')
+        One of 'linear', 'nearest', 'slinear', 'quadratic', 'cubic', or 'zero'.
+        Specifies how to interpolate between times with specified value.
+        'zero' creates a plain piecewise function whose values begin at
+        corresponding time points, while all other options interpolate
+        as described in `scipy.interpolate`.
+
+    Attributes
+    ----------
+    interpolation : str
+        One of 'linear', 'nearest', 'slinear', 'quadratic', 'cubic', or 'zero'.
+        Specifies how to interpolate between times with specified value.
+        'zero' creates a plain piecewise function whose values change at
+        corresponding time points, while all other options interpolate
+        as described in `scipy.interpolate`.
+    tp : ndarray
+        Specified time points.
+    yp : ndarray
+        Values corresponding to the time points, ``tp``.
+
+    Examples
+    --------
+
+    >>> from nengo.processes import Piecewise
+    >>> process = Piecewise({0.5: 1, 0.75: -1, 1: 0})
+    >>> with nengo.Network() as model:
+    ...     u = nengo.Node(process, size_out=process.default_size_out)
+    ...     up = nengo.Probe(u)
+    >>> with nengo.Simulator(model) as sim:
+    ...     sim.run(1.5)
+    >>> f = sim.data[up]
+    >>> t = sim.trange()
+    >>> f[t == 0.2]
+    array([[ 0.]])
+    >>> f[t == 0.58]
+    array([[ 1.]])
+    """
+
+    tp = NdarrayParam('tp', shape=('*',), optional=False)
+    yp = NdarrayParam('yp', shape=('...',), optional=False)
+    interpolation = EnumParam('interpolation', values=(
+        'zero', 'linear', 'nearest', 'slinear', 'quadratic', 'cubic'))
+
+    def __init__(self, data, interpolation='zero', **kwargs):
+        tp, yp = zip(*data.items())
+
+        def scalar_len(x):
+            try:
+                return len(x)
+            except TypeError:
+                # treat objects without len (floats/ints) as length 0
+                return 0
+
+        if any(scalar_len(y) != scalar_len(yp[0]) for y in yp):
+            raise ValidationError("All values must have same length",
+                                  attr="yp", obj=self)
+
+        self.tp = tp
+        self.yp = yp
+
+        needs_scipy = ('linear', 'nearest', 'slinear', 'quadratic', 'cubic')
+        if interpolation in needs_scipy:
+            try:
+                import scipy.interpolate
+                self.sp_interpolate = scipy.interpolate
+            except ImportError:
+                warnings.warn("%r interpolation cannot be applied because "
+                              "scipy is not installed. Using 'zero' "
+                              "interpolation instead." % (interpolation,))
+                self.sp_interpolate = None
+                interpolation = 'zero'
+        self.interpolation = interpolation
+
+        super(Piecewise, self).__init__(
+            default_size_in=0, default_size_out=self.yp[0].size, **kwargs)
+
+    def make_step(self, shape_in, shape_out, dt, rng):
+        assert shape_in == (0,)
+        assert shape_out == np.atleast_1d(self.yp[0]).shape
+
+        if self.interpolation == 'zero':
+            i = np.argsort(self.tp)
+            tp = self.tp[i]
+            yp = self.yp[i]
+
+            def step_piecewise(t):
+                ti = (np.searchsorted(tp, t + 0.5*dt) - 1).clip(-1, len(yp)-1)
+                if ti == -1:
+                    return 0.0
+                else:
+                    return yp[ti].ravel()
+        else:
+            assert self.sp_interpolate is not None
+
+            if self.interpolation == "cubic" and 0 not in self.tp:
+                warnings.warn("'cubic' interpolation may fail if data not "
+                              "specified for t=0.0")
+
+            f = self.sp_interpolate.interp1d(self.tp, self.yp,
+                                             axis=0,
+                                             kind=self.interpolation,
+                                             bounds_error=False,
+                                             fill_value=0.)
+
+            def step_piecewise(t):
+                return f(t).ravel()
+
+        return step_piecewise

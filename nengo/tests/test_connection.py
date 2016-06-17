@@ -9,7 +9,7 @@ from nengo.connection import ConnectionSolverParam
 from nengo.dists import UniformHypersphere
 from nengo.exceptions import BuildError, ObsoleteError, ValidationError
 from nengo.solvers import LstsqL2
-from nengo.utils.functions import piecewise
+from nengo.processes import Piecewise
 from nengo.utils.testing import allclose
 
 
@@ -37,7 +37,7 @@ def test_node_to_neurons(Simulator, nl_nodirect, plt, seed):
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         a = nengo.Ensemble(N, dimensions=1)
         inn = nengo.Node(output=np.sin)
-        inh = nengo.Node(piecewise({0: 0, 0.5: 1}))
+        inh = nengo.Node(Piecewise({0: 0, 0.5: 1}))
         nengo.Connection(inn, a)
         nengo.Connection(inh, a.neurons, transform=[[-5]] * N)
 
@@ -69,7 +69,7 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect, plt, seed):
         a = nengo.Ensemble(N, dimensions=1)
         b = nengo.Ensemble(N, dimensions=1)
         inn = nengo.Node(output=np.sin)
-        inh = nengo.Node(piecewise({0: 0, 0.5: 1}))
+        inh = nengo.Node(Piecewise({0: 0, 0.5: 1}))
         nengo.Connection(inn, a)
         nengo.Connection(inh, b)
         nengo.Connection(b, a.neurons, transform=[[-10]] * N)

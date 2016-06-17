@@ -146,6 +146,7 @@ Processes
    nengo.processes.BrownNoise
    nengo.processes.WhiteNoise
    nengo.processes.WhiteSignal
+   nengo.processes.Piecewise
 
 .. autoclass:: nengo.Process
 
@@ -158,6 +159,8 @@ Processes
 .. autoclass:: nengo.processes.WhiteNoise
 
 .. autoclass:: nengo.processes.WhiteSignal
+
+.. autoclass:: nengo.processes.Piecewise
 
 Synapse models
 ==============

@@ -1,16 +1,16 @@
 import numpy as np
 
 import nengo
-from nengo.utils.functions import piecewise
+from nengo.processes import Piecewise
 
 
 def test_inputgatedmemory(Simulator, plt, seed):
     to_memorize = 0.5
     start_memorizing = 0.4
     with nengo.Network(seed=seed) as net:
-        test_input = nengo.Node(piecewise(
+        test_input = nengo.Node(Piecewise(
             {0.0: 0, 0.1: to_memorize, start_memorizing + 0.1: 0}))
-        gate_input = nengo.Node(piecewise({0.0: 0, start_memorizing: 1}))
+        gate_input = nengo.Node(Piecewise({0.0: 0, start_memorizing: 1}))
         reset_input = nengo.Node(0)
 
         mem = nengo.networks.InputGatedMemory(100, 1, difference_gain=5.0)

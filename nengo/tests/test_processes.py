@@ -2,14 +2,17 @@ from __future__ import absolute_import
 
 import numpy as np
 import pytest
+import sys
 
 import nengo
 import nengo.utils.numpy as npext
 from nengo.base import Process
 from nengo.dists import Distribution, Gaussian
 from nengo.exceptions import ValidationError
-from nengo.processes import BrownNoise, FilteredNoise, WhiteNoise, WhiteSignal
+from nengo.processes import (BrownNoise, FilteredNoise, Piecewise,
+                             PresentInput, WhiteNoise, WhiteSignal)
 from nengo.synapses import Lowpass
+from nengo.utils.testing import warns
 
 
 class DistributionMock(Distribution):
@@ -323,7 +326,7 @@ def test_present_input(Simulator, rng):
 
     model = nengo.Network()
     with model:
-        u = nengo.Node(nengo.processes.PresentInput(images, pres_time))
+        u = nengo.Node(PresentInput(images, pres_time))
         up = nengo.Probe(u)
 
     with Simulator(model) as sim:
@@ -334,3 +337,124 @@ def test_present_input(Simulator, rng):
     y = sim.data[up].reshape(len(t), c, ni, nj)
     for k, [ii, image] in enumerate(zip(i, y)):
         assert np.allclose(image, images[ii], rtol=1e-4, atol=1e-7), (k, ii)
+
+
+class TestPiecewise(object):
+
+    def run_sim(self, data, interpolation, Simulator):
+        process = Piecewise(data, interpolation=interpolation)
+
+        with nengo.Network() as model:
+            u = nengo.Node(process, size_out=process.default_size_out)
+            up = nengo.Probe(u)
+
+        with Simulator(model) as sim:
+            sim.run(0.15)
+
+        return sim.trange(), sim.data[up]
+
+    def test_basic(self, Simulator):
+        t, f = self.run_sim({0.05: 1, 0.1: 0}, 'zero', Simulator)
+        assert np.allclose(f[t == 0.001], [0.])
+        assert np.allclose(f[t == 0.025], [0.])
+        assert np.allclose(f[t == 0.049], [0.])
+        assert np.allclose(f[t == 0.05], [1.])
+        assert np.allclose(f[t == 0.075], [1.])
+        assert np.allclose(f[t == 0.1], [0.])
+        assert np.allclose(f[t == 0.15], [0.])
+
+    def test_lists(self, Simulator):
+        t, f = self.run_sim({0.05: [1, 0], 0.1: [0, 1]}, 'zero', Simulator)
+        assert np.allclose(f[t == 0.001], [0., 0.])
+        assert np.allclose(f[t == 0.025], [0., 0.])
+        assert np.allclose(f[t == 0.049], [0., 0.])
+        assert np.allclose(f[t == 0.05], [1., 0.])
+        assert np.allclose(f[t == 0.075], [1., 0.])
+        assert np.allclose(f[t == 0.1], [0., 1.])
+        assert np.allclose(f[t == 0.15], [0., 1.])
+
+    def test_default_zero(self):
+        process = Piecewise({0.05: 1, 0.1: 0})
+        f = process.make_step(shape_in=(process.default_size_in,),
+                              shape_out=(process.default_size_out,),
+                              dt=process.default_dt,
+                              rng=None)
+        assert np.allclose(f(-10), [0.])
+        assert np.allclose(f(0), [0.])
+
+    def test_invalid_key(self):
+        data = {0.05: 1, 0.1: 0, 'a': 0.2}
+        with pytest.raises(ValidationError):
+            Piecewise(data)
+
+    def test_invalid_length(self):
+        data = {0.05: [1, 0], 0.1: [1, 0, 0]}
+        with pytest.raises(ValidationError):
+            Piecewise(data)
+
+        data = {0.05: [1], 0.1: 0}
+        with pytest.raises(ValidationError):
+            Piecewise(data)
+
+    def test_invalid_interpolation_type(self):
+        data = {0.05: 1, 0.1: 0}
+        with pytest.raises(ValidationError):
+            Piecewise(data, interpolation='not-interpolation')
+
+    def test_fallback_to_zero(self, Simulator, monkeypatch):
+        # Emulate not having scipy in case we have scipy
+        monkeypatch.setitem(sys.modules, "scipy.interpolate", None)
+
+        with warns(UserWarning):
+            process = Piecewise({0.05: 1, 0.1: 0}, interpolation='linear')
+        assert process.interpolation == 'zero'
+
+    def test_interpolation_1d(self, plt, Simulator):
+        pytest.importorskip('scipy')
+
+        # Note: cubic requires an explicit start of 0
+        data = {0: -0.5, 0.05: 1, 0.075: -1, 0.1: -0.5}
+
+        def test_and_plot(interp):
+            t, f = self.run_sim(data, interp, Simulator)
+            assert np.allclose(f[t == 0.05], [1.])
+            assert np.allclose(f[t == 0.075], [-1.])
+            assert np.allclose(f[t == 0.1], [-0.5])
+            plt.plot(t, f, label=interp)
+
+        test_and_plot('zero')
+        test_and_plot('linear')
+        test_and_plot('nearest')
+        test_and_plot('slinear')
+        test_and_plot('quadratic')
+        test_and_plot('cubic')
+        plt.legend(loc="lower left")
+
+    def test_interpolation_2d(self, plt, Simulator):
+        pytest.importorskip('scipy')
+
+        # Note: cubic requires an explicit start of 0
+        data = {
+            0: [-0.5, -0.5],
+            0.05: [1.0, 0.5],
+            0.075: [-1, -0.5],
+            0.1: [-0.5, -0.25]
+        }
+
+        def test_and_plot(interp):
+            t, f = self.run_sim(data, interp, Simulator)
+            assert np.allclose(f[t == 0.05], [1., 0.5])
+            assert np.allclose(f[t == 0.075], [-1., -0.5])
+            assert np.allclose(f[t == 0.1], [-0.5, -0.25])
+            plt.subplot(2, 1, 1)
+            plt.plot(t, f.T[0], label=interp)
+            plt.subplot(2, 1, 2)
+            plt.plot(t, f.T[1], label=interp)
+
+        test_and_plot('zero')
+        test_and_plot('linear')
+        test_and_plot('nearest')
+        test_and_plot('slinear')
+        test_and_plot('quadratic')
+        test_and_plot('cubic')
+        plt.legend(loc="lower left")

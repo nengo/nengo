@@ -27,6 +27,10 @@ Release History
 - Added a ``NoSolver`` solver that can be used to manually pass in
   a predefined set of decoders or weights to a connection.
   (`#1352 <https://github.com/nengo/nengo/pull/1352>`_)
+- Added a ``Piecewise`` process, which replaces the now deprecated
+  ``piecewise`` function.
+  (`#1036 <https://github.com/nengo/nengo/issues/1036>`_,
+  `#1100 <https://github.com/nengo/nengo/pull/1100>`_)
 
 **Changed**
 
@@ -40,6 +44,12 @@ Release History
   (`#1340 <https://github.com/nengo/nengo/pull/1340>`_)
 - Fixed an issue in which ``ShapeParam`` would always store ``None``.
   (`#1342 <https://github.com/nengo/nengo/pull/1342>`_)
+
+**Deprecated**
+
+- The ``piecewise`` function in ``nengo.utils.functions`` has been deprecated.
+  Please use the ``Piecewise`` process instead.
+  (`#1100 <https://github.com/nengo/nengo/pull/1100>`_)
 
 2.5.0 (July 24, 2017)
 =====================
