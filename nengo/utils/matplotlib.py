@@ -99,34 +99,34 @@ def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
 
 
 def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa: C901
-    """Generate a raster plot of the provided spike data
+    """Generate a raster plot of the provided spike data.
 
     Parameters
     ----------
     time : array
         Time data from the simulation
-    spikes: array
+    spikes : array
         The spike data with columns for each neuron and 1s indicating spikes
-    ax: matplotlib.axes.Axes
-        The figure axes to plot into.
-    use_eventplot: boolean
+    ax : matplotlib.axes.Axes, optional (Default: None)
+        The figure axes to plot into. If None, we will use current axes.
+    use_eventplot : boolean, optional (Default: False)
         Whether to use the new Matplotlib `eventplot` routine. It is slower
         and makes larger image files, so we do not use it by default.
 
     Returns
     -------
-    ax: matplotlib.axes.Axes
+    ax : matplotlib.axes.Axes
         The axes that were plotted into
 
     Examples
     --------
     >>> import nengo
-    >>> model = nengo.Model("Raster")
-    >>> A = nengo.Ensemble(nengo.LIF(20), dimensions=1)
-    >>> A_spikes = nengo.Probe(A, "spikes")
-    >>> sim = nengo.Simulator(model)
-    >>> sim.run(1)
-    >>> rasterplot(sim.trange(), sim.data[A_spikes])
+    >>> with nengo.Network() as net:
+    ...     a = nengo.Ensemble(20, 1)
+    ...     p = nengo.Probe(a.neurons)
+    >>> with nengo.Simulator(net) as sim:
+    ...     sim.run(1)
+    >>> rasterplot(sim.trange(), sim.data[p])
     """
     n_times, n_neurons = spikes.shape
 
@@ -161,7 +161,7 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa: C
         kwargs.setdefault('marker', '|')
         # Default markersize determined by matching eventplot
         ax_height = axis_size(ax)[1]
-        markersize = max(ax_height * 0.965 / n_neurons, 1)
+        markersize = max(ax_height * 0.8 / n_neurons, 1)
         # For 1 - 3 neurons, we need an extra fudge factor to match eventplot
         markersize -= max(4 - n_neurons, 0) ** 2 * ax_height * 0.005
         kwargs.setdefault('markersize', markersize)

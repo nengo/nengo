@@ -33,6 +33,8 @@ Release History
 - Added ``ThresholdingPreset`` to configure ensembles for thresholding.
   (`#1058 <https://github.com/nengo/nengo/issues/1058>`_,
   `#1077 <https://github.com/nengo/nengo/pull/1077>`_)
+- Tweaked ``rasterplot`` so that spikes from different neurons don't overlap.
+  (`#1121 <https://github.com/nengo/nengo/pull/1121>`_)
 
 **Bug fixes**
 
