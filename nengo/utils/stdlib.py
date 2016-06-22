@@ -31,6 +31,27 @@ class WeakKeyIDDictionary(collections.MutableMapping):
         if len(args) > 0 or len(kwargs) > 0:
             self.update(*args, **kwargs)
 
+    def __contains__(self, k):
+        if k is None:
+            return False
+        return k is self._keyrefs.get(id(k))
+
+    def __iter__(self):
+        return itervalues(self._keyrefs)
+
+    def __len__(self):
+        return len(self._keyrefs)
+
+    def __delitem__(self, k):
+        assert weakref.ref(k)
+        if k in self:
+            del self._keyrefs[id(k)]
+            del self._keyvalues[id(k)]
+            del self._ref2id[id(self._id2ref[id(k)])]
+            del self._id2ref[id(k)]
+        else:
+            raise KeyError(str(k))
+
     def __getitem__(self, k):
         assert weakref.ref(k)
         if k in self:
@@ -54,15 +75,8 @@ class WeakKeyIDDictionary(collections.MutableMapping):
         del self._id2ref[id_]
         del self._ref2id[id(ref)]
 
-    def __delitem__(self, k):
-        assert weakref.ref(k)
-        if k in self:
-            del self._keyrefs[id(k)]
-            del self._keyvalues[id(k)]
-            del self._ref2id[id(self._id2ref[id(k)])]
-            del self._id2ref[id(k)]
-        else:
-            raise KeyError(str(k))
+    def get(self, k, default=None):
+        return self._keyvalues[id(k)] if k in self else default
 
     def keys(self):
         return itervalues(self._keyrefs)
@@ -77,20 +91,6 @@ class WeakKeyIDDictionary(collections.MutableMapping):
     def iteritems(self):
         for k in self:
             yield k, self[k]
-
-    def __iter__(self):
-        return itervalues(self._keyrefs)
-
-    def __contains__(self, k):
-        if k is None:
-            return False
-        return k is self._keyrefs.get(id(k))
-
-    def __len__(self):
-        return len(self._keyrefs)
-
-    def get(self, k, default=None):
-        return self._keyvalues[id(k)] if k in self else default
 
     def update(self, in_dict=None, **kwargs):
         if in_dict is not None:
