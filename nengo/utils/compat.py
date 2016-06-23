@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 
 import collections
+import os
+import subprocess
 import sys
 
 import numpy as np
@@ -30,6 +32,28 @@ if PY2:
         assert isinstance(s, bytes)
         return s
 
+    if sys.platform.startswith('win'):
+
+        def replace(src, dst):
+            # The Windows implementation of replace calls out to the shell
+            # to do 'move /Y src dst' due to an odd bug in 32-bit versions
+            # of Python 2.7. See https://github.com/nengo/nengo/pull/1107
+            # for the bizarre details.
+            with open(os.devnull, 'w') as devnull:
+                subprocess.check_call(["move", "/Y", src, dst],
+                                      shell=True,
+                                      stdout=devnull,
+                                      stderr=devnull)
+
+    else:
+
+        def replace(src, dst):
+            try:
+                os.rename(src, dst)
+            except OSError:
+                os.remove(dst)
+                os.rename(src, dst)
+
     class TextIO(StringIO):
         def write(self, data):
             if not isinstance(data, unicode):
@@ -53,6 +77,7 @@ else:
     import pickle
     import configparser
     from io import StringIO
+    from os import replace
     TextIO = StringIO
     string_types = (str,)
     int_types = (int,)

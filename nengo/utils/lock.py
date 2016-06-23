@@ -33,7 +33,7 @@ class FileLock(object):
     def release(self):
         if self._fd is not None:
             os.close(self._fd)
-            os.unlink(self.filename)
+            os.remove(self.filename)
             self._fd = None
 
     @property

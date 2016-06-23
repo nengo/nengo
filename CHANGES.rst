@@ -38,6 +38,10 @@ Release History
 
 **Bug fixes**
 
+- Fixed some situations where the cache index becomes corrupt by
+  writing the updated cache index atomically (in most cases).
+  (`#1097 <https://github.com/nengo/nengo/issues/1097>`_,
+  `#1107 <https://github.com/nengo/nengo/pull/1107>`_)
 - The synapse methods ``filt`` and ``filtfilt`` now support lists as input.
   (`#1123 <https://github.com/nengo/nengo/pull/1123>`_)
 

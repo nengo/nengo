@@ -16,7 +16,7 @@ from nengo.exceptions import FingerprintError, TimeoutError
 from nengo.rc import rc
 from nengo.utils import nco
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
-from nengo.utils.compat import is_string, pickle, PY2
+from nengo.utils.compat import is_string, pickle, replace, PY2
 from nengo.utils.lock import FileLock
 
 logger = logging.getLogger(__name__)
@@ -133,11 +133,12 @@ class CacheIndex(object):
                 for key in self._deletes:
                     del self._index[key]
 
-                with open(self.filename, 'wb') as f:
+                with open(self.filename + '.part', 'wb') as f:
                     pickle.dump(
                         {k: v for k, v in self._index.items()
                          if v[0] not in self._removed_files},
                         f, pickle.HIGHEST_PROTOCOL)
+                replace(self.filename + '.part', self.filename)
         except TimeoutError:
             warnings.warn(
                 "Decoder cache index could not acquire lock. "
