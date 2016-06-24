@@ -197,8 +197,16 @@ class DecoderCache(object):
     def __enter__(self):
         try:
             self._remove_legacy_files()
-            self._index = CacheIndex(os.path.join(self.cache_dir, self._INDEX))
-            self._index.__enter__()
+            index_path = os.path.join(self.cache_dir, self._INDEX)
+            self._index = CacheIndex(index_path)
+            try:
+                self._index.__enter__()
+            except (EOFError, IOError, OSError):
+                # Index corrupted, clear cache because we can't recover
+                # information necessary to access cache data.
+                self.invalidate()
+                os.remove(index_path)
+                self._index.__enter__()
         except TimeoutError:
             warnings.warn(
                 "Decoder cache could not acquire lock and was deactivated.")

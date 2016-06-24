@@ -107,6 +107,23 @@ def test_corrupted_decoder_cache(tmpdir):
         assert SolverMock.n_calls[solver_mock] == 2
 
 
+def test_corrupted_decoder_cache_index(tmpdir):
+    cache_dir = str(tmpdir)
+
+    with DecoderCache(cache_dir=cache_dir):
+        pass  # Initialize cache with required files
+    assert len(os.listdir(cache_dir)) == 2  # index, legacy.txt
+
+    # Write corrupted index
+    with open(os.path.join(cache_dir, DecoderCache._INDEX), 'w') as f:
+        f.write('(d')  # empty dict, but missing '.' at the end
+
+    # Try to load index
+    with DecoderCache(cache_dir=cache_dir):
+        pass
+    assert len(os.listdir(cache_dir)) == 2  # index, legacy.txt
+
+
 def test_decoder_cache_invalidation(tmpdir):
     cache_dir = str(tmpdir)
     solver_mock = SolverMock()

@@ -32,8 +32,8 @@ Release History
 - Added ``y0`` attribute to ``WhiteSignal``, which adjusts the phase of each
   dimension to begin with absolute value closest to ``y0``.
   (`#1064 <https://github.com/nengo/nengo/pull/1064>`_)
-- Allow the `AssociativeMemory` to accept Semantic Pointer expressions as
-  `input_keys` and `output_keys`.
+- Allow the ``AssociativeMemory`` to accept Semantic Pointer expressions as
+  ``input_keys`` and ``output_keys``.
   (`#982 <https://github.com/nengo/nengo/pull/982>`_)
 
 **Bug fixes**
@@ -46,6 +46,10 @@ Release History
   (`#1053 <https://github.com/nengo/nengo/pull/1053>`_,
   `#1041 <https://github.com/nengo/nengo/issues/1041>`_,
   `#1048 <https://github.com/nengo/nengo/issues/1048>`_)
+- If the cache index is corrupted, we now fail gracefully by invalidating
+  the cache and continuing rather than raising an exception.
+  (`#1110 <https://github.com/nengo/nengo/pull/1110>`_,
+  `#1097 <https://github.com/nengo/nengo/issues/1097>`_)
 - The ``Nnls`` solver now works for weights. The ``NnlsL2`` solver is
   improved since we clip values to be non-negative before forming
   the Gram system.
