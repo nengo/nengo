@@ -19,8 +19,8 @@ Release History
    - Bugfixes
    - Documentation
 
-2.1.1 (unreleased)
-==================
+2.1.1 (June 24, 2016)
+=====================
 
 **Improvements**
 
