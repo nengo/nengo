@@ -36,15 +36,7 @@ we do a few things to prepare:
 
    Step 4 does not test on all platforms (Windows, Mac OS X, Linux
    with 32-bit and 64-bit versions of Python 2.7, 3.3, 3.4, and 3.5).
-   Doing so is difficult without
-
-   Step 4 is a bit vague at the moment; we should have a separate
-   document for all the platforms supported,
-   and how to test on Windows with Vagrant, etc.
-   However, it is also the hope that release candidates
-   will be tested by many different environments
-   reducing the burden on the developers to
-   have all possible environments available.
+   Doing so is difficult without dedicated hardware.
 
 Note that any possibly controversial fixes done as a result of
 Stage 1 should be done through the normal process of making

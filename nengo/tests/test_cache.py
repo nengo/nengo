@@ -511,7 +511,7 @@ rc.set("decoder_cache", "size", "0KB")
 cache = nengo.cache.DecoderCache()
     '''
 
-    stmt = 'cache.shrink()'
+    stmt = 'with cache: cache.shrink()'
 
     @pytest.mark.slow
     @pytest.mark.noassertions
