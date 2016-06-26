@@ -200,6 +200,16 @@ class Signal(object):
 
     @staticmethod
     def compatible(signals, axis=0):
+        """Checks that all signals have a compatible shape along a given axis
+        to allow for concatenation.
+
+        For views this includes also a check that the signals have a common
+        base and agree on the strides.
+
+        In comparison to the `check_*_mergeable` functions, this function does
+        not throw exceptions (either behavior might be desired dependent on the
+        context) and allows for either signals or signal views.
+        """
         if len(set(signals)) != len(signals):
             # Signal appears twice in list.
             return False
@@ -222,6 +232,11 @@ class Signal(object):
 
     @staticmethod
     def check_signals_mergeable(signals, axis=0):
+        """Checks that all signals can be merged along a given axis and raises
+        a `ValueError` if this is not possible.
+
+        For views a ValueError is always raised.
+        """
         if any(s.is_view for s in signals):
             raise ValueError("Cannot merge views.")
 
@@ -289,6 +304,13 @@ class Signal(object):
 
     @staticmethod
     def check_views_mergeable(signals, axis=0):
+        """Checks that all signal views can be merged along a given axis and
+        raises a `ValueError` if this is not possible.
+
+        The signals need to be ordered by their offset into the base signal.
+
+        For non-views a ValueError is always raised.
+        """
         if any(not s.is_view for s in signals):
             raise ValueError("Cannot merge non-views.")
 
@@ -314,6 +336,21 @@ class Signal(object):
 
     @staticmethod
     def merge_views(signals, axis=0):
+        """Merges multiple signal views into one signal view with sequential
+        memory access.
+
+        Parameters
+        ----------
+        signals : sequence
+            Signals to merge. Must not contain views.
+        axis : int, optional
+            Axis along which to concatenate the signals.
+
+        Returns
+        -------
+        merged_signal : Signal
+            The merged signal.
+        """
         Signal.check_views_mergeable(signals, axis=axis)
 
         shape = (
@@ -328,6 +365,29 @@ class Signal(object):
 
     @staticmethod
     def merge_signals_or_views(signals, replacements, axis=0):
+        """Merges multiple signal (or signal views) into one signal with
+        sequential memory allocation.
+
+        Note that if any of the signals are linked to another signal (by being
+        the base of a view), the merged signal will not reflect those links
+        anymore.
+
+        Parameters
+        ----------
+        signals : sequence
+            Signals to merge. Must not contain views.
+        axis : int, optional
+            Axis along which to concatenate the signals.
+        replacements : dict
+            Dictionary to update with a mapping from the old signals to new
+            signals that are a view into the merged signal and can be used to
+            replace the old signals.
+
+        Returns
+        -------
+        merged_signal : Signal
+            The merged signal.
+        """
         are_views = [s.is_view for s in signals]
         if all(are_views):
             return Signal.merge_views(signals, axis=axis)
