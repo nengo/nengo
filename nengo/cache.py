@@ -206,7 +206,9 @@ class DecoderCache(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self._close_fd()
         if self._index is not None:
-            return self._index.__exit__(exc_type, exc_value, traceback)
+            rval = self._index.__exit__(exc_type, exc_value, traceback)
+            self._index = None
+            return rval
 
     @staticmethod
     def get_default_dir():
@@ -312,7 +314,7 @@ class DecoderCache(object):
         for path in self.get_files():
             safe_remove(path)
 
-    def shrink(self, limit=None):
+    def shrink(self, limit=None):  # noqa: C901
         """Reduces the size of the cache to meet a limit.
 
         Parameters
@@ -321,6 +323,11 @@ class DecoderCache(object):
             Maximum size of the cache in bytes.
         """
         if self.readonly:
+            logger.info("Tried to shrink a readonly cache.")
+            return
+
+        if self._index is None:
+            warnings.warn("Cannot shrink outside of a `with cache` block.")
             return
 
         if limit is None:
@@ -352,7 +359,7 @@ class DecoderCache(object):
 
         self._index.sync()
 
-    def wrap_solver(self, solver_fn):
+    def wrap_solver(self, solver_fn):  # noqa: C901
         """Takes a decoder solver and wraps it to use caching.
 
         Parameters
@@ -388,9 +395,12 @@ class DecoderCache(object):
                     solver_info, decoders = nco.read(f)
             except:
                 logger.debug("Cache miss [%s].", key)
+                if self._index is None:
+                    warnings.warn("Cannot use cached solver outside of "
+                                  "`with cache` block.")
                 decoders, solver_info = solver_fn(
                     solver, neuron_type, gain, bias, x, targets, rng=rng, E=E)
-                if not self.readonly:
+                if not self.readonly and self._index is not None:
                     fd = self._get_fd()
                     start = fd.tell()
                     nco.write(fd, solver_info, decoders)

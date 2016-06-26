@@ -12,6 +12,7 @@ from nengo.cache import DecoderCache, Fingerprint, get_fragment_size
 from nengo.exceptions import FingerprintError
 from nengo.solvers import LstsqL2
 from nengo.utils.compat import int_types
+from nengo.utils.testing import warns
 
 
 class SolverMock(object):
@@ -546,3 +547,17 @@ cache = nengo.cache.DecoderCache()
 
         plt.scatter(np.ones_like(d1), d1, c='b')
         plt.scatter(2 * np.ones_like(d2), d2, c='g')
+
+
+def test_warns_out_of_context(tmpdir):
+    cache_dir = str(tmpdir)
+    cache = DecoderCache(cache_dir=cache_dir)
+
+    with warns(UserWarning):
+        cache.shrink()
+
+    solver_mock = SolverMock()
+    solver = cache.wrap_solver(solver_mock)
+    with warns(UserWarning):
+        solver(**get_solver_test_args())
+    assert SolverMock.n_calls[solver_mock] == 1
