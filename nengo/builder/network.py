@@ -1,3 +1,4 @@
+import contextlib
 import logging
 
 import numpy as np
@@ -7,6 +8,7 @@ from nengo.builder import Builder
 from nengo.network import Network
 
 logger = logging.getLogger(__name__)
+nullcontext = contextlib.contextmanager(lambda: (yield))
 
 
 @Builder.register(Network)  # noqa: C901
@@ -63,29 +65,37 @@ def build_network(model, network):
                                  getattr(obj, 'seed', None) is not None)
             model.seeds[obj] = get_seed(obj, rng)
 
-    logger.debug("Network step 1: Building ensembles and nodes")
-    for obj in network.ensembles + network.nodes:
-        model.build(obj)
+    # If this is the toplevel network, enter the decoder cache
+    context = (model.decoder_cache if model.toplevel is network
+               else nullcontext())
+    with context:
 
-    logger.debug("Network step 2: Building subnetworks")
-    for subnetwork in network.networks:
-        model.build(subnetwork)
+        logger.debug("Network step 1: Building ensembles and nodes")
+        for obj in network.ensembles + network.nodes:
+            model.build(obj)
 
-    logger.debug("Network step 3: Building connections")
-    for conn in network.connections:
-        # NB: we do these in the order in which they're defined, and build the
-        # learning rule in the connection builder. Because learning rules are
-        # attached to connections, the connection that contains the learning
-        # rule (and the learning rule) are always built *before* a connection
-        # that attaches to that learning rule. Therefore, we don't have to
-        # worry about connection ordering here.
-        # TODO: Except perhaps if the connection being learned
-        # is in a subnetwork?
-        model.build(conn)
+        logger.debug("Network step 2: Building subnetworks")
+        for subnetwork in network.networks:
+            model.build(subnetwork)
 
-    logger.debug("Network step 4: Building probes")
-    for probe in network.probes:
-        model.build(probe)
+        logger.debug("Network step 3: Building connections")
+        for conn in network.connections:
+            # NB: we do these in the order in which they're defined, and build
+            # the learning rule in the connection builder. Because learning
+            # rules are attached to connections, the connection that contains
+            # the learning rule (and the learning rule) are always built
+            # *before* a connection that attaches to that learning rule.
+            # Therefore, we don't have to worry about connection ordering here.
+            # TODO: Except perhaps if the connection being learned
+            # is in a subnetwork?
+            model.build(conn)
+
+        logger.debug("Network step 4: Building probes")
+        for probe in network.probes:
+            model.build(probe)
+
+        if context is model.decoder_cache:
+            model.decoder_cache.shrink()
 
     # Unset config
     model.config = old_config
