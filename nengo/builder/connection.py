@@ -8,7 +8,7 @@ from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import (
     DotInc, ElementwiseInc, PreserveValue, Reset, SlicedCopy)
 from nengo.connection import Connection
-from nengo.dists import Distribution
+from nengo.dists import get_samples
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
@@ -222,9 +222,8 @@ def build_connection(model, conn):
     post_slice = conn.post_slice
 
     # Sample transform if given a distribution
-    transform = (conn.transform.sample(conn.size_out, conn.size_mid, rng=rng)
-                 if isinstance(conn.transform, Distribution) else
-                 np.array(conn.transform))
+    transform = get_samples(
+        conn.transform, conn.size_out, d=conn.size_mid, rng=rng)
 
     # Figure out the signal going across this connection
     in_signal = model.sig[conn]['in']

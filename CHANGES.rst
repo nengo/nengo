@@ -34,6 +34,10 @@ Release History
   in the terminal and Jupyter notebook.
   (`#937 <https://github.com/nengo/nengo/issues/937>`_,
   `#1151 <https://github.com/nengo/nengo/pull/1151>`_)
+- Added ``nengo.dists.get_samples`` function for convenience
+  when working with distributions or samples.
+  (`#1181 <https://github.com/nengo/nengo/pull/1181>`_,
+  `docs <http://pythonhosted.org/nengo/frontend_api.html#nengo.dists.get_samples>`_)
 
 **Changed**
 

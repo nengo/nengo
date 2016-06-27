@@ -498,3 +498,40 @@ class DistOrArrayParam(NdarrayParam):
             Parameter.validate(self, instance, distorarray)
             return distorarray
         return super(DistOrArrayParam, self).validate(instance, distorarray)
+
+
+def get_samples(dist_or_samples, n, d=None, rng=np.random):
+    """Convenience function to sample a distribution or return samples.
+
+    Use this function in situations where you accept an argument that could
+    be a distribution, or could be an ``array_like`` of samples.
+
+    Examples
+    --------
+    >>> def mean(values, n=100):
+    ...     samples = get_samples(values, n=n)
+    ...     return np.mean(samples)
+    >>> mean([1, 2, 3, 4])
+    2.5
+    >>> mean(nengo.dists.Gaussian(0, 1))
+    0.057277898442269548
+
+    Parameters
+    ----------
+    dist_or_samples : `.Distribution` or (n, d) array_like
+        Source of the samples to be returned.
+    n : int
+        Number samples to take.
+    d : int or None, optional (Default: None)
+        The number of dimensions to return.
+    rng : RandomState, optional (Default: np.random)
+        Random number generator.
+
+    Returns
+    -------
+    samples : (n, d) array_like
+
+    """
+    if isinstance(dist_or_samples, Distribution):
+        return dist_or_samples.sample(n, d=d, rng=rng)
+    return np.array(dist_or_samples)
