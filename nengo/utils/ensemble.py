@@ -178,11 +178,12 @@ def tune_ens_parameters(ens, function=None, solver=None, rng=None, n=1000):
     n : int, optional
         The number of random combinations to test. Default: 1000
     """
-    from nengo.dists import Distribution
+
     from nengo.neurons import Direct
     from nengo.solvers import LstsqL2
     from nengo.builder.connection import solve_for_decoders
     from nengo.builder.ensemble import gen_eval_points
+    from nengo.utils.builder import sample
 
     if solver is None:
         solver = LstsqL2()
@@ -190,10 +191,6 @@ def tune_ens_parameters(ens, function=None, solver=None, rng=None, n=1000):
         rng = np.random
     if isinstance(ens.neuron_type, Direct):
         raise ValueError("Parameters do not apply to Direct mode ensembles")
-
-    sample = lambda dist, n, d=None: (
-        dist.sample(n, d=d, rng=rng) if isinstance(dist, Distribution)
-        else np.asarray(dist))
 
     # use the same evaluation points for all trials
     eval_points = gen_eval_points(ens, ens.eval_points, rng=rng)
