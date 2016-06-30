@@ -835,8 +835,8 @@ class DotInc(Operator):
             [self.A.initial_value] + [o.A.initial_value for o in others])
         indptr = np.arange(len(others) + 2, dtype=int)
         indices = np.arange(len(others) + 1, dtype=int)
-        name = 'bsr_merged<' + ', '.join(
-            [self.A.name] + [o.A.name for o in others]) + '>'
+        name = 'bsr_merged<{first}, ..., {last}>'.format(
+            first=self.A.name, last=others[-1].A.name)
         readonly = all([self.A.readonly] + [o.A.readonly for o in others])
         A = Signal(data, name=name, readonly=readonly)
         for i, s in enumerate([self.A] + [o.A for o in others]):

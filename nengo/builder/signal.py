@@ -286,7 +286,7 @@ class Signal(object):
         else:
             initial_value = signals[0].initial_value
         readonly = all(s.readonly for s in signals)
-        name = 'merged<' + str(", ".join(s.name for s in signals)) + '>'
+        name = 'merged<' + signals[0].name + ', ..., ' + signals[-1].name + '>'
         merged_signal = Signal(initial_value, name=name, readonly=readonly)
 
         if signals[0].ndim > 0:
