@@ -119,11 +119,19 @@ def transitive_closure(edges, topo_sorted=None):
     if topo_sorted is None:
         topo_sorted = toposort(edges)
 
+    sets = {}
     reachables = {}
     for vertex in reversed(topo_sorted):
         reachables[vertex] = set(edges[vertex])
         for edge in edges[vertex]:
             reachables[vertex].update(reachables[edge])
+        reachables[vertex] = frozenset(reachables[vertex])
+
+        # We try to reuse existing sets as this can significantly reduce
+        # memory in some cases (which is important in the OpMergeOptimizer).
+        if reachables[vertex] in sets:
+            reachables[vertex] = sets[reachables[vertex]]
+        sets[reachables[vertex]] = reachables[vertex]
     return reachables
 
 
