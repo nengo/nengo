@@ -372,9 +372,12 @@ class OpMergeOptimizer(object):
         """
         view_indices = []
         # Sort to have sequential memory.
-        subset = sorted(subset, key=self._view_offset)
+        offsets = np.array([self._view_offset(op) for op in subset])
+        sort_indices = np.argsort(offsets)
+        offsets = offsets[sort_indices]
+        sorted_subset = [subset[i] for i in sort_indices]
 
-        for i, op1 in enumerate(subset):
+        for i, op1 in enumerate(sorted_subset):
             if op1 in self._merged:
                 # Cannot merge merged operator again until dependency graph
                 # has been updated (happens outside of this function).
@@ -384,7 +387,13 @@ class OpMergeOptimizer(object):
 
             # Find operators that can be merged.
             merge = [op1]
-            for op2 in subset[i+1:]:
+            # For a merge to be possible the view of the next operator has to
+            # start where the view of op1 ends. Because we have sorted the
+            # operators by the start of their views we can do a binary search
+            # and potentially skip a number of operators at the beginning.
+            start = np.searchsorted(
+                offsets, offsets[i] + self._view_size(op1), side='left')
+            for op2 in sorted_subset[start:]:
                 can_merge = (
                     op2 not in self._merged and
                     self._mergeable(merge[-1], op2, view_indices, tc) and
