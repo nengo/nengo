@@ -16,7 +16,7 @@ import inspect
 import sys
 
 from nengo.exceptions import ConfigError, ValidationError
-from nengo.params import Default, is_param
+from nengo.params import Default, is_param, RcDefault
 from nengo.rc import rc
 from nengo.utils.compat import itervalues, reraise
 from nengo.utils.threading import ThreadLocalStack
@@ -411,3 +411,27 @@ class SupportDefaultsMixin(object):
                 reraise(exc_info[0], exc_info[1], None)
         else:
             super(SupportDefaultsMixin, self).__setattr__(name, val)
+
+
+class SupportRcDefaultsMixin(SupportDefaultsMixin):
+    """Mixin to support assigning ``RcDefault`` to parameters which allows
+    setting the default value in the Nengo RC file.
+
+    Implements ``__setattr__`` to do so. If the inheriting class overrides this
+    method, it has to call the mixins `__setattr__`.
+
+    This mixin will also simplify the exception if the parameter value is
+    invalid given the `simplified` rc option is set
+    """
+    def __setattr__(self, name, val):
+        if val is RcDefault:
+            if rc.has_option(type(self).__name__, name):
+                type_ = type(getattr(type(self), name).default)
+                if type_ is bool:
+                    val = rc.getboolean(type(self).__name__, name)
+                else:
+                    val = type_(rc.get(type(self).__name__, name))
+            else:
+                val = Default
+
+        super(SupportRcDefaultsMixin, self).__setattr__(name, val)

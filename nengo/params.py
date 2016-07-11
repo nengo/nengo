@@ -19,6 +19,7 @@ class DefaultType:
         return self.name
 
 Default = DefaultType("Default")
+RcDefault = DefaultType("RcDefault")
 ConnectionDefault = DefaultType("ConnectionDefault")
 Unconfigurable = DefaultType("Unconfigurable")
 

@@ -9,13 +9,15 @@ import numpy as np
 from nengo.builder.neurons import SimNeurons
 from nengo.builder.operator import DotInc, ElementwiseInc, SlicedCopy
 from nengo.builder.signal import Signal
+from nengo.config import SupportRcDefaultsMixin
+from nengo.params import BoolParam, IntParam, RcDefault
 from nengo.utils.compat import zip_longest
 from nengo.utils.graphs import toposort, transitive_closure
 
 logger = logging.getLogger(__name__)
 
 
-class OpMergeOptimizer(object):
+class OpMergeOptimizer(SupportRcDefaultsMixin):
     """Optimizes the operator graph by merging operators.
 
     This reduces the number of iterators to iterate over in slow Python code
@@ -45,7 +47,13 @@ class OpMergeOptimizer(object):
         operator dependency graph of the model.
     """
 
+    enabled = BoolParam('enabled', default=True, optional=False)
+    max_passes = IntParam('max_passes', default=None, optional=True)
+
     def __init__(self, model, dg):
+        self.enabled = RcDefault
+        self.max_passes = RcDefault
+
         self.model = model
         self.dg = dg
 
@@ -57,6 +65,9 @@ class OpMergeOptimizer(object):
 
     def optimize(self):
         """Perform the optimization."""
+        if not self.enabled:
+            return
+
         logger.info("Running %s ...", self.__class__.__name__)
 
         # We try first to merge operators with views only as these have a fixed
@@ -73,6 +84,9 @@ class OpMergeOptimizer(object):
         i = 0
         only_merge_ops_with_view = True
         while only_merge_ops_with_view or after < before:
+            if self.max_passes is not None and i >= self.max_passes:
+                break
+
             i += 1
             self._log_counts()
 
