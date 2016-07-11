@@ -494,7 +494,7 @@ class FrozenObject(object):
     def __init__(self):
         self._paramdict = {
             k: v for k, v in inspect.getmembers(type(self))
-            if isinstance(v, Parameter)}
+            if isinstance(v, Parameter) and not isinstance(v, ObsoleteParam)}
         for p in self._params:
             if not p.readonly:
                 msg = "All parameters of a FrozenObject must be readonly"

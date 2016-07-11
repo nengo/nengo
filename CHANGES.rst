@@ -22,6 +22,17 @@ Release History
 2.7.1 (unreleased)
 ==================
 
+**Changed**
+
+- The order of parameters in learning rules has changed such that
+  ``learning_rate`` always comes first.
+  (`#1095 <https://github.com/nengo/nengo/pull/1095>`__)
+- Learning rules take ``pre_synapse``, ``post_synapse``, and ``theta_synapse``
+  instead of ``pre_tau``, ``post_tau``, and ``theta_tau`` respectively.
+  This allows arbitrary ``Synapse`` objects to be used as filters on
+  learning signals.
+  (`#1095 <https://github.com/nengo/nengo/pull/1095>`__)
+
 **Deprecated**
 
 - The ``nengo.ipynb`` IPython extension and the ``IPython2ProgressBar``
@@ -30,6 +41,10 @@ Release History
   Jupyter notebooks from IPython version 5.0 onwards.
   (`#1087 <https://github.com/nengo/nengo/issues/1087>`_,
   `#1375 <https://github.com/nengo/nengo/pull/1375>`_)
+- The ``pre_tau``, ``post_tau``, and ``theta_tau`` parameters
+  for learning rules are deprecated. Instead, use ``pre_synapse``,
+  ``post_synapse``, and ``theta_synapse`` respectively.
+  (`#1095 <https://github.com/nengo/nengo/pull/1095>`__)
 
 2.7.0 (March 7, 2018)
 =====================
