@@ -9,6 +9,7 @@ from nengo.dists import UniformHypersphere
 from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja, Voja
 from nengo.processes import WhiteSignal
+from nengo.synapses import Alpha, Lowpass
 
 
 def _test_pes(Simulator, nl, plt, seed,
@@ -142,14 +143,14 @@ def test_pes_transform(Simulator, seed):
     assert np.allclose(sim.data[p_b][tend], [1, -1], atol=1e-2)
 
 
-def test_pes_multidim_error(Simulator, rng):
+def test_pes_multidim_error(Simulator, seed):
     """Test that PES works on error connections mapping from N to 1 dims.
 
     Note that the transform is applied before the learning rule, so the error
     signal should be 1-dimensional.
     """
 
-    with nengo.Network() as net:
+    with nengo.Network(seed=seed) as net:
         err = nengo.Node(output=[0])
         ens1 = nengo.Ensemble(20, 3)
         ens2 = nengo.Ensemble(10, 1)
@@ -174,6 +175,28 @@ def test_pes_multidim_error(Simulator, rng):
 
     with Simulator(net) as sim:
         sim.run(0.01)
+
+
+@pytest.mark.parametrize('pre_synapse', [
+    0, Lowpass(tau=0.05), Alpha(tau=0.005)])
+def test_pes_synapse(Simulator, seed, pre_synapse):
+    rule = PES(pre_synapse=pre_synapse)
+
+    with nengo.Network(seed=seed) as model:
+        stim = nengo.Node(output=WhiteSignal(0.5, high=10))
+        x = nengo.Ensemble(100, 1)
+
+        nengo.Connection(stim, x, synapse=None)
+        conn = nengo.Connection(x, x, learning_rule_type=rule)
+
+        p_neurons = nengo.Probe(x.neurons, synapse=pre_synapse)
+        p_pes = nengo.Probe(conn.learning_rule, 'activities')
+
+    with Simulator(model) as sim:
+        sim.run(0.5)
+
+    assert np.allclose(sim.data[p_neurons][1:, :],
+                       sim.data[p_pes][:-1, :])
 
 
 @pytest.mark.parametrize("weights", [False, True])
@@ -462,7 +485,7 @@ def test_voja_modulate(Simulator, nl_nodirect, seed):
         x = nengo.Ensemble(n, dimensions=len(learned_vector))
 
         conn = nengo.Connection(
-            u, x, synapse=None, learning_rule_type=Voja(None))
+            u, x, synapse=None, learning_rule_type=Voja(post_synapse=None))
         nengo.Connection(control, conn.learning_rule, synapse=None)
 
         p_enc = nengo.Probe(conn.learning_rule, 'scaled_encoders')
@@ -481,9 +504,9 @@ def test_voja_modulate(Simulator, nl_nodirect, seed):
 
 def test_frozen():
     """Test attributes inherited from FrozenObject"""
-    a = PES(2e-3, 4e-3)
-    b = PES(2e-3, 4e-3)
-    c = PES(2e-3, 5e-3)
+    a = PES(learning_rate=2e-3, pre_synapse=4e-3)
+    b = PES(learning_rate=2e-3, pre_synapse=4e-3)
+    c = PES(learning_rate=2e-3, pre_synapse=5e-3)
 
     assert hash(a) == hash(a)
     assert hash(b) == hash(b)

@@ -37,6 +37,11 @@ Release History
   from the network seed if a network seed is specified.
   (`#980 <https://github.com/nengo/nengo/issues/980>`__,
   `#1386 <https://github.com/nengo/nengo/pull/1386>`__)
+- Learning rules take ``pre_synapse``, ``post_synapse``, and ``theta_synapse``
+  instead of ``pre_tau``, ``post_tau``, and ``theta_tau`` respectively.
+  This allows arbitrary ``Synapse`` objects to be used as filters on the
+  learning signals. The ``learning_rate`` parameter also always comes first.
+  (`#1095 <https://github.com/nengo/nengo/pull/1095>`_)
 
 **Fixed**
 

@@ -7,7 +7,6 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
 from nengo.learning_rules import BCM, Oja, PES, Voja
 from nengo.node import Node
-from nengo.synapses import Lowpass
 
 
 class SimBCM(Operator):
@@ -331,6 +330,13 @@ def get_post_ens(conn):
             else conn.post_obj.ensemble)
 
 
+def build_or_passthrough(model, obj, signal):
+    """Builds the obj on signal, or returns the signal if obj is None."""
+    if obj is not None:
+        signal = model.build(obj, signal)
+    return signal
+
+
 @Builder.register(LearningRule)
 def build_learning_rule(model, rule):
     """Builds a `.LearningRule` object into a model.
@@ -412,10 +418,11 @@ def build_bcm(model, bcm, rule):
 
     conn = rule.connection
     pre_activities = model.sig[get_pre_ens(conn).neurons]['out']
-    pre_filtered = model.build(Lowpass(bcm.pre_tau), pre_activities)
     post_activities = model.sig[get_post_ens(conn).neurons]['out']
-    post_filtered = model.build(Lowpass(bcm.post_tau), post_activities)
-    theta = model.build(Lowpass(bcm.theta_tau), post_filtered)
+    pre_filtered = build_or_passthrough(model, bcm.pre_synapse, pre_activities)
+    post_filtered = build_or_passthrough(model, bcm.post_synapse,
+                                         post_activities)
+    theta = build_or_passthrough(model, bcm.theta_synapse, post_activities)
 
     model.add_op(SimBCM(pre_filtered,
                         post_filtered,
@@ -454,8 +461,9 @@ def build_oja(model, oja, rule):
     conn = rule.connection
     pre_activities = model.sig[get_pre_ens(conn).neurons]['out']
     post_activities = model.sig[get_post_ens(conn).neurons]['out']
-    pre_filtered = model.build(Lowpass(oja.pre_tau), pre_activities)
-    post_filtered = model.build(Lowpass(oja.post_tau), post_activities)
+    pre_filtered = build_or_passthrough(model, oja.pre_synapse, pre_activities)
+    post_filtered = build_or_passthrough(model, oja.post_synapse,
+                                         post_activities)
 
     model.add_op(SimOja(pre_filtered,
                         post_filtered,
@@ -495,11 +503,8 @@ def build_voja(model, voja, rule):
 
     # Filtered post activity
     post = conn.post_obj
-    if voja.post_tau is not None:
-        post_filtered = model.build(
-            Lowpass(voja.post_tau), model.sig[post]['out'])
-    else:
-        post_filtered = model.sig[post]['out']
+    post_filtered = build_or_passthrough(model, voja.post_synapse,
+                                         model.sig[post]['out'])
 
     # Learning signal, defaults to 1 in case no connection is made
     # and multiplied by the learning_rate * dt
@@ -562,7 +567,9 @@ def build_pes(model, pes, rule):
     model.add_op(Reset(error))
     model.sig[rule]['in'] = error  # error connection will attach here
 
-    acts = model.build(Lowpass(pes.pre_tau), model.sig[conn.pre_obj]['out'])
+    # Filter pre-synaptic activities with pre_synapse
+    acts = build_or_passthrough(model, pes.pre_synapse,
+                                model.sig[conn.pre_obj]['out'])
 
     # Compute the correction, i.e. the scaled negative error
     correction = Signal(np.zeros(error.shape), name="PES:correction")
