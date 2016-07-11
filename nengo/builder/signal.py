@@ -223,8 +223,8 @@ class Signal(object):
                 return False
             if s.dtype is not signals[0].dtype:
                 return False
-            if s.is_view:
-                if s.base is not signals[0].base:
+            if s.is_view or signals[0].is_view:
+                if s._base is not signals[0]._base:
                     return False
                 if s.strides != signals[0].strides:
                     return False
@@ -252,6 +252,9 @@ class Signal(object):
                 raise ValueError(
                     "Signals must have same shape except on concatenation "
                     "axis.")
+            if s.dtype is not signals[0].dtype:
+                raise ValueError(
+                    "Signal mus have the same dtype.")
 
     @staticmethod
     def merge_signals(signals, replacements, axis=0):
