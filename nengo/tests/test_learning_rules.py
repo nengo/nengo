@@ -464,7 +464,7 @@ def test_voja_modulate(Simulator, nl_nodirect, seed):
         x = nengo.Ensemble(n, dimensions=len(learned_vector))
 
         conn = nengo.Connection(
-            u, x, synapse=None, learning_rule_type=Voja(None))
+            u, x, synapse=None, learning_rule_type=Voja(post_synapse=None))
         nengo.Connection(control, conn.learning_rule, synapse=None)
 
         p_enc = nengo.Probe(conn.learning_rule, 'scaled_encoders')
@@ -483,9 +483,9 @@ def test_voja_modulate(Simulator, nl_nodirect, seed):
 
 def test_frozen():
     """Test attributes inherited from FrozenObject"""
-    a = PES(2e-3, 4e-3)
-    b = PES(2e-3, 4e-3)
-    c = PES(2e-3, 5e-3)
+    a = PES(learning_rate=2e-3, pre_synapse=4e-3)
+    b = PES(learning_rate=2e-3, pre_synapse=4e-3)
+    c = PES(learning_rate=2e-3, pre_synapse=5e-3)
 
     assert hash(a) == hash(a)
     assert hash(b) == hash(b)

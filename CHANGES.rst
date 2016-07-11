@@ -33,6 +33,11 @@ Release History
 - Default values can no longer be set for
   ``Ensemble.n_neurons`` or ``Ensemble.dimensions``.
   (`#1372 <https://github.com/nengo/nengo/pull/1372>`__)
+- Learning rules take ``pre_synapse``, ``post_synapse``, and ``theta_synapse``
+  instead of ``pre_tau``, ``post_tau``, and ``theta_tau`` respectively.
+  This allows arbitrary ``Synapse`` objects to be used as filters on the
+  learning signals. The ``learning_rate`` parameter also always comes first.
+  (`#1095 <https://github.com/nengo/nengo/pull/1095>`_)
 
 **Fixed**
 
