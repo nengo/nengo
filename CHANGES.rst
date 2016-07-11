@@ -22,6 +22,13 @@ Release History
 2.2.1 (unreleased)
 ==================
 
+**Added**
+
+- Added an optimizer to the reference builder that reduces simulation times for
+  model with a large number of small ensembles.
+  (`#1035 <https://github.com/nengo/nengo/pull/1035>`_)
+
+
 **Deprecated**
 
 - Access to ``nengo.Simulator.model`` is deprecated. To access static data
