@@ -119,7 +119,8 @@ def test_filt(plt, rng):
     k = 1. / tau * np.exp(-tk / tau)
     x = np.convolve(u, k, mode='full')[:nt]
 
-    y = Lowpass(0.1).filt(u, dt=dt, y0=0)
+    # support lists as input
+    y = Lowpass(0.1).filt(list(u), dt=dt, y0=0)
 
     plt.plot(t, x)
     plt.plot(t, y, '--')

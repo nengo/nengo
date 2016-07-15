@@ -93,7 +93,7 @@ class Synapse(Process):
 
         shape_in = shape_out = as_shape(filt_view[0].shape, min_dim=1)
         step = self.make_step(
-            shape_in, shape_out, dt, None, y0=y0, dtype=x.dtype)
+            shape_in, shape_out, dt, None, y0=y0, dtype=filtered.dtype)
 
         for i, signal_in in enumerate(filt_view):
             filt_view[i] = step(i * dt, signal_in)
