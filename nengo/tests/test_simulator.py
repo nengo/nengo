@@ -1,4 +1,5 @@
 import numpy as np
+import pkg_resources
 import pytest
 
 import nengo
@@ -111,3 +112,9 @@ def test_warn_on_opensim_del(Simulator):
     with warns(ResourceWarning):
         sim.__del__()
     sim.close()
+
+
+def test_entry_point(Simulator):
+    sims = [ep.load() for ep in
+            pkg_resources.iter_entry_points(group='nengo.backends')]
+    assert Simulator in sims

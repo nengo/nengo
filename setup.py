@@ -53,6 +53,11 @@ setup(
         'all_solvers': ["scipy>=0.13", "scikit-learn"],
     },
     tests_require=['pytest>=2.3'],
+    entry_points={
+        'nengo.backends': [
+            'reference = nengo:Simulator'
+        ],
+    },
     classifiers=[  # https://pypi.python.org/pypi?%3Aaction=list_classifiers
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
@@ -62,5 +67,5 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
-    ]
+    ],
 )

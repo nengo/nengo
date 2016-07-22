@@ -22,6 +22,13 @@ Release History
 2.2.0 (unreleased)
 ==================
 
+**Improvements**
+
+- Added a ``nengo.backends`` entry point to make the reference simulator
+  discoverable for other Python packages. In the future all backends should
+  declare an entry point accordingly.
+  (`#1127 <https://github.com/nengo/nengo/pull/1127>`_)
+
 **Bug fixes**
 
 - The synapse methods ``filt`` and ``filtfilt`` now support lists as input.
