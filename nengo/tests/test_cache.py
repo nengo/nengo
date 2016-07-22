@@ -273,7 +273,6 @@ def test_unsupported_fingerprinting(obj):
         Fingerprint(obj)
 
 
-
 def test_fails_for_lambda_expression():
     with pytest.raises(FingerprintError):
         Fingerprint(lambda x: x)
