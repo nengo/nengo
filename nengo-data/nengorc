@@ -6,7 +6,6 @@
 # 1. nengorc in the current directory.
 #    This is useful for settings specific to a single project.
 # 2. A operating system specific file in the user's home directory.
-#    This is useful for settings you want to apply to all Nengo projects.
 #    - Windows: %userprofile%\nengo\nengorc
 #    - Other (OS X, Linux): ~/.config/nengo/nengorc
 # 3. INSTALL/nengo-data/nengorc (where INSTALL is the installation directory
@@ -23,51 +22,55 @@
 # a : or = and the value.
 #
 # [example_section]
-# setting: value  # optional comment
+# setting = value  # optional comment
 
 ### CONFIGURATION BEGINS HERE
 
-# Settings for the decoder cache
+
+# --- Settings for the decoder cache
 [decoder_cache]
 
-# Enable or disable the cache. (boolean)
-#enabled: True
+# Enable or disable the cache. (bool)
+#enabled = True
 
-# Set the cache to read-only. In read-only mode cached decoders will be
+# Path where the cached decoders will be stored. (str)
+#path = ~/.cache/nengo/decoders  # Linux/Mac OS X default
+
+# Set the cache to readonly. In readonly mode cached decoders will be
 # loaded, but no newly calculated decoders will be written to the cache.
-# (boolean)
-#readonly: False
+# (bool)
+#readonly = False
 
 # Set the maximum cache size. Whenever the cache exceeds this limit, cached
 # decoders will be deleted, beginning with the oldest, until the limit
-# is met again. Please specify the unit (e.g., 512 MB). (string)
-#size: 512 MB
-
-# Path where the cached decoders will be stored. (string)
-#path: ~/.cache/nengo/decoders  # Linux default
+# is met again. Please specify the unit (e.g., 512 MB). (str)
+#size = 512 MB
 
 
-# Settings for the progress bar
-[progress]
-
-# Progress bar to use. Can be 'none' (disable the progress bar), 'auto'
-# (automatically show the progress bar for long running simulations), or the
-# name of some class implementing the nengo.utils.progress.ProgressBar
-# interface (e.g., 'nengo.utils.progress.ProgressBar').
-#progress_bar: auto
-
-# Progress updating scheme. Can be 'auto' (automatically determine the updating
-# scheme) or the name of some class implementing the
-# nengo.utils.progress.ProgressUpdater interface (e.g.,
-# 'nengo.utils.progress.UpdateEveryT').
-#updater: auto
-
-
-# Settings for error messages due to exceptions
+# --- Settings for error messages due to exceptions
 [exceptions]
 
 # Use simplified exceptions. In most cases, simplified exceptions will be
 # easier to read and more useful for model development. However,
 # developers of Nengo internals or tools extending Nengo
 # may benefit from full exception tracebacks.
-#simplified: True
+#simplified = True
+
+
+# --- Settings for the progress bar used when running the simulator
+[progress]
+
+# Set the progress bar to use. The default of 'auto' or will display
+# a progress bar when the estimated simulation run time exceeds one second.
+# Setting this to 'none' will disable to progress bar. Any other string
+# will be interpreted as a module and class name
+# (e.g., 'nengo.utils.progress.ProgressBar'), which Nengo will attempt
+# to load. (str)
+#progress_bar = auto
+
+# Set the progress updating scheme. The default of 'auto' will use a
+# heuristic to select the appropriate updater.
+# Any other string will be interpreted as a module and class name
+# (e.g., 'nengo.utils.progress.UpdateEveryT'), which Nengo will attempt
+# to load. (str)
+#updater = auto

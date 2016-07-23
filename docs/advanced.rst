@@ -6,3 +6,5 @@ Advanced topics
    :maxdepth: 2
 
    connections
+   nengorc
+   improving_performance

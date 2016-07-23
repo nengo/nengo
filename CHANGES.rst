@@ -33,6 +33,11 @@ Release History
   (`#1129 <https://github.com/nengo/nengo/pull/1129>`_)
 - Added a minimum magnitude option to ``UniformHypersphere``.
   (`#799 <https://github.com/nengo/nengo/pull/799>`_)
+- Added documentation on RC settings.
+  (`#1130 <https://github.com/nengo/nengo/pull/1130>`_)
+- Added documentation on improving performance.
+  (`#1119 <https://github.com/nengo/nengo/issues/1119>`_,
+  `#1130 <https://github.com/nengo/nengo/pull/1130>`_)
 
 **Changed**
 

@@ -1,26 +1,62 @@
-r"""This modules provides access to the Nengo RC settings.
+r"""Certain features of Nengo can be configured globally through RC settings.
 
-Nengo RC settings will be read from the following files with precedence
-to those listed first:
-1. ``nengorc`` in the current directory.
+RC settings can be manipulated either through the ``nengo.rc`` object,
+or through RC configuration files.
+
+The ``nengo.rc`` object
+=======================
+
+The ``nengo.rc`` object gives programmatic access to
+globally configured features of Nengo.
+
+.. autodata:: nengo.rc
+
+Configuration files
+===================
+
+``nengo.rc`` is initialized with configuration settings read
+from the following files with precedence to those listed first:
+
+1. ``nengorc`` in the current directory. This is intended to allow for project
+   specific settings without hard coding them in the model script.
+
 2. An operating system specific file in the user's home directory.
-   Windows: ``%userprofile%\.nengo\nengorc``
-   Other (OS X, Linux): ``~/.config/nengo/nengorc``
-3. ``INSTALL/nengo-data/nengorc``  (where INSTALL is the installation directory
-    of the Nengo package)
+
+   * Windows: ``%userprofile%\.nengo\nengorc``
+
+   * Other (OS X, Linux): ``~/.config/nengo/nengorc``
+
+3. ``INSTALL/nengo-data/nengorc`` (where ``INSTALL`` is the
+   installation directory of the Nengo package).
 
 The RC file is divided into sections by lines containing the section name
 in brackets, i.e. ``[section]``. A setting is set by giving the name followed
 by a ``:`` or ``=`` and the value. All lines starting with ``#`` or ``;`` are
 comments.
 
-Example
--------
+For example, to set the size of the decoder cache to 512 MB,
+add the following to a configuration file:
 
-This example demonstrates how to set settings in an RC file:
+.. code-block:: ini
 
-    [decoder_cache]
-    size: 536870912  # setting the decoder cache size to 512MiB.
+   [decoder_cache]
+   size = 512 MB
+
+Configuration options
+=====================
+
+All of the configuration options are listed in the example
+configuration file, which is included with Nengo
+and copied below.
+
+Commented lines show the default values for each setting.
+
+.. _nengorc:
+
+.. include:: ../nengo-data/nengorc
+   :literal:
+   :start-line: 29
+
 """
 
 import logging
@@ -55,7 +91,27 @@ RC_FILES = [nengo.utils.paths.nengorc['system'],
 
 
 class _RC(configparser.SafeConfigParser):
-    """Allows reading from and writing to Nengo RC settings."""
+    """Allows reading from and writing to Nengo RC settings.
+
+    This object is a :class:`configparser.ConfigParser`, which means that
+    values can be accessed and manipulated with ``get`` and ``set``::
+
+        oldsize = nengo.rc.get("decoder_cache", "size")
+        nengo.rc.set("decoder_cache", "size", "2 GB")
+
+    ``get`` and ``set`` return and expect strings. There are also special
+    getter methods for booleans, ints, and floats::
+
+        simple = nengo.rc.getboolean("exceptions", "simplified")
+
+    In addition to the normal :class:`configparser.ConfigParser` methods,
+    this object also has a ``reload_rc`` method to reset ``nengo.rc``
+    to default settings::
+
+        nengo.rc.reload_rc()  # Reads defaults from configuration files
+        nengo.rc.reload_rc(filenames=[])  # Ignores configuration files
+
+    """
 
     def __init__(self):
         # configparser uses old-style classes without 'super' support
@@ -102,5 +158,4 @@ class _RC(configparser.SafeConfigParser):
         self.read(filenames)
 
 
-# The current Nengo RC settings.
 rc = _RC()
