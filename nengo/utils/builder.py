@@ -177,8 +177,8 @@ def _create_replacement_connection(c_in, c_out):
     return c
 
 
-def remove_passthrough_nodes(objs, connections,  # noqa: C901
-        create_connection_fn=_create_replacement_connection):
+def remove_passthrough_nodes(  # noqa: C901
+        objs, connections, create_connection_fn=None):
     """Returns a version of the model without passthrough Nodes
 
     For some backends (such as SpiNNaker), it is useful to remove Nodes that
@@ -206,6 +206,8 @@ def remove_passthrough_nodes(objs, connections,  # noqa: C901
     will be replaced with equivalent Connections that don't interact with those
     Nodes.
     """
+    if create_connection_fn is None:
+        create_connection_fn = _create_replacement_connection
 
     inputs, outputs = find_all_io(connections)
     result_conn = list(connections)
