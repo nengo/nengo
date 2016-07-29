@@ -67,6 +67,22 @@ class Signal(object):
 
         self._readonly = bool(readonly)
 
+    def __getstate__(self):
+        state = dict(self.__dict__)
+        v = self._initial_value
+        state['_initial_value'] = (
+            v.shape, v.base, npext.array_offset(v), v.strides)
+        return state
+
+    def __setstate__(self, state):
+        for k, v in state.items():
+            setattr(self, k, v)
+
+        shape, base, offset, strides = self._initial_value
+        self._initial_value = np.ndarray(
+            shape, buffer=base, offset=offset, strides=strides)
+        self._initial_value.setflags(write=False)
+
     def __getitem__(self, item):
         """Index or slice into array"""
         if item is Ellipsis or (
