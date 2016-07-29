@@ -512,6 +512,14 @@ class LearningRule(object):
         self._connection = weakref.ref(connection)
         self.learning_rule_type = learning_rule_type
 
+        if learning_rule_type.size_in is not None:
+            self.size_in = learning_rule_type.size_in
+        else:
+            # infer size_in from post
+            self.size_in = (self.connection.post_obj.ensemble.size_in
+                            if isinstance(self.connection.post_obj, Neurons)
+                            else self.connection.size_out)
+
     def __repr__(self):
         return "<LearningRule at 0x%x modifying %r with type %r>" % (
             id(self), self.connection, self.learning_rule_type)
@@ -526,11 +534,6 @@ class LearningRule(object):
         return self._connection()
 
     @property
-    def error_type(self):
-        """(str) The type of information expected by the learning rule."""
-        return self.learning_rule_type.error_type
-
-    @property
     def modifies(self):
         """(str) The variable modified by the learning rule."""
         return self.learning_rule_type.modifies
@@ -539,24 +542,6 @@ class LearningRule(object):
     def probeable(self):
         """(tuple) Signals that can be probed in the learning rule."""
         return self.learning_rule_type.probeable
-
-    @property
-    def size_in(self):
-        """(int) Dimensionality of the signal expected by the learning rule."""
-        if self.error_type == 'none':
-            return 0
-        elif self.error_type == 'scalar':
-            return 1
-        elif self.error_type == 'decoded':
-            return (self.connection.post_obj.ensemble.size_in
-                    if isinstance(self.connection.post_obj, Neurons) else
-                    self.connection.size_out)
-        elif self.error_type == 'neuron':
-            raise NotImplementedError()
-        else:
-            raise ValidationError(
-                "Unrecognized error type %r" % self.error_type,
-                attr='error_type', obj=self)
 
     @property
     def size_out(self):
