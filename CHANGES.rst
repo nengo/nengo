@@ -40,6 +40,9 @@ Release History
 
 **Fixed**
 
+- Fixed an issue in which signals could not be pickled,
+  making it impossible to pickle ``Model`` instances.
+  (`#1135 <https://github.com/nengo/nengo/pull/1135>`_)
 - Better error message for invalid return values in ``nengo.Node`` functions.
   (`#1317 <https://github.com/nengo/nengo/pull/1317>`_)
 - Fixed an issue in which accepting and passing ``(*args, **kwargs)``
