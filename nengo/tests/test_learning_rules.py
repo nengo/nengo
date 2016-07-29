@@ -2,6 +2,9 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.builder import Builder
+from nengo.builder.operator import Reset, Copy
+from nengo.builder.signal import Signal
 from nengo.dists import UniformHypersphere
 from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja, Voja
@@ -481,3 +484,42 @@ def test_pes_direct_errors():
         conn = nengo.Connection(pre, post)
         with pytest.raises(ValidationError):
             conn.learning_rule_type = nengo.PES()
+
+
+def test_custom_type(Simulator):
+    """Test with custom learning rule type.
+
+    A custom learning type may have ``size_in`` not equal to 0, 1, or None.
+    """
+
+    class TestRule(nengo.learning_rules.LearningRuleType):
+        modifies = 'decoders'
+
+        def __init__(self):
+            super(TestRule, self).__init__(1.0, size_in=3)
+
+    @Builder.register(TestRule)
+    def build_test_rule(model, test_rule, rule):
+        error = Signal(np.zeros(rule.connection.size_in))
+        model.add_op(Reset(error))
+        model.sig[rule]['in'] = error[:rule.size_in]
+
+        model.add_op(Copy(error, model.sig[rule]['delta']))
+
+    with nengo.Network() as net:
+        a = nengo.Ensemble(10, 1)
+        b = nengo.Ensemble(10, 1)
+        conn = nengo.Connection(a.neurons, b, transform=np.zeros((1, 10)),
+                                learning_rule_type=TestRule())
+
+        err = nengo.Node([1, 2, 3])
+        nengo.Connection(err, conn.learning_rule, synapse=None)
+
+        p = nengo.Probe(conn, 'weights')
+
+    with Simulator(net) as sim:
+        sim.run(sim.dt * 5)
+
+    assert np.allclose(sim.data[p][:, 0, :3],
+                       np.outer(np.arange(1, 6), np.arange(1, 4)))
+    assert np.allclose(sim.data[p][:, :, 3:], 0)

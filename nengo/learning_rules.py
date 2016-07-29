@@ -1,16 +1,8 @@
 import warnings
 
-from nengo.base import NengoObjectParam
 from nengo.exceptions import ValidationError
-from nengo.params import FrozenObject, NumberParam, Parameter
+from nengo.params import IntParam, FrozenObject, NumberParam, Parameter
 from nengo.utils.compat import is_iterable, itervalues
-
-
-class ConnectionParam(NengoObjectParam):
-    def coerce(self, instance, conn):
-        from nengo.connection import Connection
-        self.check_type(instance, conn, Connection)
-        return super(ConnectionParam, self).coerce(instance, conn)
 
 
 class LearningRuleType(FrozenObject):
@@ -22,12 +14,9 @@ class LearningRuleType(FrozenObject):
     Each learning rule exposes two important pieces of metadata that the
     builder uses to determine what information should be stored.
 
-    The ``error_type`` is the type of the incoming error signal. Options are:
-
-    * ``'none'``: no error signal
-    * ``'scalar'``: scalar error signal
-    * ``'decoded'``: vector error signal in decoded space
-    * ``'neuron'``: vector error signal in neuron space
+    The ``size_in`` is the dimensionality of the incoming error signal. Setting
+    ``size_in`` to ``None`` will use the dimensionality of the post-synaptic
+    ensemble.
 
     The ``modifies`` attribute denotes the signal targeted by the rule.
     Options are:
@@ -40,27 +29,31 @@ class LearningRuleType(FrozenObject):
     ----------
     learning_rate : float, optional (Default: 1e-6)
         A scalar indicating the rate at which ``modifies`` will be adjusted.
+    size_in : int, optional (Default: 0)
+        Dimensionality of the error signal (setting to ``None`` will use the
+        dimensionality of the post-synaptic ensemble).
 
     Attributes
     ----------
-    error_type : str
-        The type of the incoming error signal. This also determines
-        the dimensionality of the error signal.
     learning_rate : float
         A scalar indicating the rate at which ``modifies`` will be adjusted.
+    size_in : int
+        Dimensionality of the error signal (setting to ``None`` will use the
+        dimensionality of the post-synaptic ensemble).
     modifies : str
         The signal targeted by the learning rule.
     """
 
-    error_type = 'none'
     modifies = None
     probeable = ()
 
     learning_rate = NumberParam('learning_rate', low=0, low_open=True)
+    size_in = IntParam('size_in', low=0, optional=True)
 
-    def __init__(self, learning_rate=1e-6):
+    def __init__(self, learning_rate=1e-6, size_in=0):
         super(LearningRuleType, self).__init__()
         self.learning_rate = learning_rate
+        self.size_in = size_in
 
     def __repr__(self):
         return '%s(%s)' % (type(self).__name__, ", ".join(self._argreprs))
@@ -92,7 +85,6 @@ class PES(LearningRuleType):
         Filter constant on activities of neurons in pre population.
     """
 
-    error_type = 'decoded'
     modifies = 'decoders'
     probeable = ('error', 'correction', 'activities', 'delta')
 
@@ -103,7 +95,7 @@ class PES(LearningRuleType):
             warnings.warn("This learning rate is very high, and can result "
                           "in floating point errors from too much current.")
         self.pre_tau = pre_tau
-        super(PES, self).__init__(learning_rate)
+        super(PES, self).__init__(learning_rate, size_in=None)
 
     @property
     def _argreprs(self):
@@ -156,7 +148,6 @@ class BCM(LearningRuleType):
         A scalar indicating the time constant for theta integration.
     """
 
-    error_type = 'none'
     modifies = 'weights'
     probeable = ('theta', 'pre_filtered', 'post_filtered', 'delta')
 
@@ -169,7 +160,7 @@ class BCM(LearningRuleType):
         self.theta_tau = theta_tau
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
-        super(BCM, self).__init__(learning_rate)
+        super(BCM, self).__init__(learning_rate, size_in=0)
 
     @property
     def _argreprs(self):
@@ -227,7 +218,6 @@ class Oja(LearningRuleType):
         Filter constant on activities of neurons in pre population.
     """
 
-    error_type = 'none'
     modifies = 'weights'
     probeable = ('pre_filtered', 'post_filtered', 'delta')
 
@@ -240,7 +230,7 @@ class Oja(LearningRuleType):
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
         self.beta = beta
-        super(Oja, self).__init__(learning_rate)
+        super(Oja, self).__init__(learning_rate, size_in=0)
 
     @property
     def _argreprs(self):
@@ -280,7 +270,6 @@ class Voja(LearningRuleType):
         Filter constant on activities of neurons in post population.
     """
 
-    error_type = 'scalar'
     modifies = 'encoders'
     probeable = ('post_filtered', 'scaled_encoders', 'delta')
 
@@ -288,7 +277,7 @@ class Voja(LearningRuleType):
 
     def __init__(self, post_tau=0.005, learning_rate=1e-2):
         self.post_tau = post_tau
-        super(Voja, self).__init__(learning_rate)
+        super(Voja, self).__init__(learning_rate, size_in=1)
 
     @property
     def _argreprs(self):
@@ -308,10 +297,6 @@ class LearningRuleTypeParam(Parameter):
             raise ValidationError(
                 "'%s' must be a learning rule type or a dict or "
                 "list of such types." % rule, attr=self.name, obj=instance)
-        if rule.error_type not in ('none', 'scalar', 'decoded', 'neuron'):
-            raise ValidationError(
-                "Unrecognized error type %r" % rule.error_type,
-                attr=self.name, obj=instance)
         if rule.modifies not in ('encoders', 'decoders', 'weights'):
             raise ValidationError("Unrecognized target %r" % rule.modifies,
                                   attr=self.name, obj=instance)

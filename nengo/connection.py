@@ -562,11 +562,6 @@ class LearningRule(object):
         return self._connection
 
     @property
-    def error_type(self):
-        """(str) The type of information expected by the learning rule."""
-        return self.learning_rule_type.error_type
-
-    @property
     def modifies(self):
         """(str) The variable modified by the learning rule."""
         return self.learning_rule_type.modifies
@@ -578,21 +573,12 @@ class LearningRule(object):
 
     @property
     def size_in(self):
-        """(int) Dimensionality of the signal expected by the learning rule."""
-        if self.error_type == 'none':
-            return 0
-        elif self.error_type == 'scalar':
-            return 1
-        elif self.error_type == 'decoded':
+        if self.learning_rule_type.size_in is None:
             return (self.connection.post_obj.ensemble.size_in
-                    if isinstance(self.connection.post_obj, Neurons) else
-                    self.connection.size_out)
-        elif self.error_type == 'neuron':
-            raise NotImplementedError()
+                    if isinstance(self.connection.post_obj, Neurons)
+                    else self.connection.size_out)
         else:
-            raise ValidationError(
-                "Unrecognized error type %r" % self.error_type,
-                attr='error_type', obj=self)
+            return self.learning_rule_type.size_in
 
     @property
     def size_out(self):

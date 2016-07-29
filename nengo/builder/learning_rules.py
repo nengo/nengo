@@ -373,23 +373,14 @@ def build_learning_rule(model, rule):
         post = get_post_ens(conn)
         target = model.sig[post]['encoders']
         tag = "encoders += delta"
-        delta = Signal(
-            np.zeros((post.n_neurons, post.dimensions)), name='Delta')
     elif rule.modifies in ('decoders', 'weights'):
-        pre = get_pre_ens(conn)
         target = model.sig[conn]['weights']
         tag = "weights += delta"
-        if not conn.is_decoded:
-            post = get_post_ens(conn)
-            delta = Signal(
-                np.zeros((post.n_neurons, pre.n_neurons)), name='Delta')
-        else:
-            delta = Signal(
-                np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
     else:
         raise BuildError("Unknown target %r" % rule.modifies)
 
-    assert delta.shape == target.shape
+    delta = Signal(np.zeros(target.shape), name='Delta')
+
     model.add_op(
         ElementwiseInc(model.sig['common'][1], delta, target, tag=tag))
     model.sig[rule]['delta'] = delta

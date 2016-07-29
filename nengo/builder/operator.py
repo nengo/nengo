@@ -374,7 +374,7 @@ class Copy(Operator):
 
     def _descstr(self):
         def sigstring(sig, sl):
-            return '%s%s' % (sig, ('[%s]' % sl) if sl is not None else '')
+            return '%s%s' % (sig, ('[%s]' % (sl,)) if sl is not None else '')
         return '%s -> %s, inc=%s' % (sigstring(self.src, self.src_slice),
                                      sigstring(self.dst, self.dst_slice),
                                      self.inc)
