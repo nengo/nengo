@@ -185,13 +185,21 @@ class Logger(Recorder):
 
 
 class WarningCatcher(object):
+    lock = threading.Lock()
+
     def __enter__(self):
-        self.catcher = warnings.catch_warnings(record=True)
-        self.record = self.catcher.__enter__()
-        warnings.simplefilter('always')
+        self.lock.acquire()
+        try:
+            self.catcher = warnings.catch_warnings(record=True)
+            self.record = self.catcher.__enter__()
+            warnings.simplefilter('always')
+        except:
+            self.lock.release()
+            raise
 
     def __exit__(self, type, value, traceback):
         self.catcher.__exit__(type, value, traceback)
+        self.lock.release()
 
 
 class warns(WarningCatcher):
