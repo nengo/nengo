@@ -1,5 +1,4 @@
 import logging
-import weakref
 
 import numpy as np
 
@@ -7,7 +6,8 @@ from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.dists import Distribution, DistOrArrayParam
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import ValidationError
-from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
+from nengo.learning_rules import (LearningRule, LearningRuleType,
+                                  LearningRuleTypeParam)
 from nengo.node import Node
 from nengo.params import (Default, Unconfigurable, ObsoleteParam,
                           BoolParam, FunctionParam)
@@ -495,56 +495,3 @@ class Connection(NengoObject):
         Also the number of output dimensions of the transform.
         """
         return self.post.size_in
-
-
-class LearningRule(object):
-    """An interface for making connections to a learning rule.
-
-    Connections to a learning rule are to allow elements of the network to
-    affect the learning rule. For example, learning rules that use error
-    information can obtain that information through a connection.
-
-    Learning rule objects should only ever be accessed through the
-    ``learning_rule`` attribute of a connection.
-    """
-
-    def __init__(self, connection, learning_rule_type):
-        self._connection = weakref.ref(connection)
-        self.learning_rule_type = learning_rule_type
-
-        if learning_rule_type.size_in is not None:
-            self.size_in = learning_rule_type.size_in
-        else:
-            # infer size_in from post
-            self.size_in = (self.connection.post_obj.ensemble.size_in
-                            if isinstance(self.connection.post_obj, Neurons)
-                            else self.connection.size_out)
-
-    def __repr__(self):
-        return "<LearningRule at 0x%x modifying %r with type %r>" % (
-            id(self), self.connection, self.learning_rule_type)
-
-    def __str__(self):
-        return "<LearningRule modifying %s with type %s>" % (
-            self.connection, self.learning_rule_type)
-
-    @property
-    def connection(self):
-        """(Connection) The connection modified by the learning rule."""
-        return self._connection()
-
-    @property
-    def modifies(self):
-        """(str) The variable modified by the learning rule."""
-        return self.learning_rule_type.modifies
-
-    @property
-    def probeable(self):
-        """(tuple) Signals that can be probed in the learning rule."""
-        return self.learning_rule_type.probeable
-
-    @property
-    def size_out(self):
-        """(int) Cannot connect from learning rules, so always 0."""
-        return 0  # since a learning rule can't connect to anything
-        # TODO: allow probing individual learning rules
