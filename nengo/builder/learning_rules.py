@@ -2,7 +2,7 @@ import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
 from nengo.builder.operator import DotInc, ElementwiseInc, Reset
-from nengo.connection import LearningRule
+from nengo.learning_rules import LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
 from nengo.learning_rules import BCM, Oja, PES, Voja
