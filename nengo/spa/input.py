@@ -1,5 +1,5 @@
 import nengo
-from nengo.spa.module import Module
+from nengo.exceptions import ObsoleteError
 from nengo.utils.compat import iteritems
 
 
@@ -12,7 +12,19 @@ def make_parse_func(func, vocab):
     return parse_func
 
 
-class Input(Module):
+class _HierachicalInputProxy(object):
+    def __init__(self, parent, name):
+        self.__dict__['parent'] = parent
+        self.__dict__['name'] = name
+
+    def __getattr__(self, name):
+        return _HierachicalInputProxy(self.parent, self.name + '.' + name)
+
+    def __setattr__(self, name, value):
+        setattr(self.parent, self.name + '.' + name, value)
+
+
+class Input(nengo.Network):
     """A SPA module for providing external inputs to other modules.
 
     The parameters passed to this module indicate the module input name
@@ -47,25 +59,52 @@ class Input(Module):
         If None, will be true if currently within a Network.
     """
 
-    def __init__(self, label=None, seed=None, add_to_container=None, **kwargs):
+    def __init__(
+            self, module=None, label=None, seed=None, add_to_container=None,
+            **kwargs):
         super(Input, self).__init__(label, seed, add_to_container)
         self.kwargs = kwargs
         self.input_nodes = {}
 
-    def on_add(self, spa):
-        """Create the connections and nodes."""
-        Module.on_add(self, spa)
+        if module is None:
+            from nengo.spa.module import get_current_module
+            module = get_current_module()
+        self.module = module
 
-        for name, value in iteritems(self.kwargs):
-            target, vocab = spa.get_module_input(name)
-            if callable(value):
-                val = make_parse_func(value, vocab)
-            else:
-                val = vocab.parse(value).v
+        self._initialized = True
 
-            with self:
-                node = nengo.Node(val, label='input_%s' % name)
-            self.input_nodes[name] = node
+        added = add_to_container is True or len(self.context) > 0
+        if len(kwargs) > 0:
+            if not added:
+                raise ObsoleteError(
+                    "Passing input as keyword arguments to an Input instance "
+                    "without adding it immediately to a network is not "
+                    "supported anymore.")
 
-            with spa:
-                nengo.Connection(node, target, synapse=None)
+            for name, value in iteritems(self.kwargs):
+                self.__connect(name, value)
+
+    def __connect(self, name, expr):
+        target, vocab = self.module.get_module_input(name)
+        if callable(expr):
+            val = make_parse_func(expr, vocab)
+        else:
+            val = vocab.parse(expr).v
+
+        with self:
+            node = nengo.Node(val, label='input_%s' % name)
+        self.input_nodes[name] = node
+
+        with self.module:
+            nengo.Connection(node, target, synapse=None)
+
+    def __setattr__(self, name, value):
+        if not getattr(self, '_initialized') or name in self.__dict__:
+            super(Input, self).__setattr__(name, value)
+        else:
+            self.__connect(name, value)
+
+    def __getattr__(self, name):
+        if name == '_initialized':
+            return self.__dict__.get('_initialized', False)
+        return _HierachicalInputProxy(self, name)

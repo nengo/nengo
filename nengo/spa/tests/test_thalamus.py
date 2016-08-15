@@ -2,14 +2,14 @@ import pytest
 
 import nengo
 from nengo import spa
-from nengo.exceptions import SpaParseError
+from nengo.exceptions import SpaModuleError
 
 import numpy as np
 
 
 @pytest.mark.slow
 def test_thalamus(Simulator, plt, seed):
-    model = spa.SPA(seed=seed)
+    model = spa.Module(seed=seed)
 
     with model:
         model.vision = spa.Buffer(dimensions=16, neurons_per_dimension=80)
@@ -18,9 +18,10 @@ def test_thalamus(Simulator, plt, seed):
         model.motor2 = spa.Buffer(dimensions=32, neurons_per_dimension=80)
 
         actions = spa.Actions(
-            'dot(vision, A) --> motor=A, motor2=vision*vision2',
-            'dot(vision, B) --> motor=vision, motor2=vision*A*~B',
-            'dot(vision, ~A) --> motor=~vision, motor2=~vision*vision2'
+            'dot(vision, A) --> motor=A, motor2=translate(vision*vision2)',
+            'dot(vision, B) --> motor=vision, motor2=translate(vision*A*~B)',
+            'dot(vision, ~A) --> motor=~vision, '
+            'motor2=translate(~vision*vision2)'
         )
         model.bg = spa.BasalGanglia(actions)
         model.thalamus = spa.Thalamus(model.bg)
@@ -72,7 +73,7 @@ def test_thalamus(Simulator, plt, seed):
 
 def test_routing(Simulator, seed, plt):
     D = 3
-    model = spa.SPA(seed=seed)
+    model = spa.Module(seed=seed)
     with model:
         model.ctrl = spa.Buffer(16, label='ctrl')
 
@@ -144,7 +145,7 @@ def test_routing_recurrency_compilation(Simulator, seed, plt):
 
 def test_nondefault_routing(Simulator, seed):
     D = 3
-    model = spa.SPA(seed=seed)
+    model = spa.Module(seed=seed)
     with model:
         model.ctrl = spa.Buffer(16, label='ctrl')
 
@@ -167,9 +168,9 @@ def test_nondefault_routing(Simulator, seed):
         nengo.Connection(node1, model.buff1.state.input)
         nengo.Connection(node2, model.buff2.state.input)
 
-        actions = spa.Actions('dot(ctrl, A) --> cmp_A=buff1, cmp_B=buff1',
-                              'dot(ctrl, B) --> cmp_A=buff1, cmp_B=buff2',
-                              'dot(ctrl, C) --> cmp_A=buff2, cmp_B=buff2',
+        actions = spa.Actions('dot(ctrl, A) --> cmp.A=buff1, cmp.B=buff1',
+                              'dot(ctrl, B) --> cmp.A=buff1, cmp.B=buff2',
+                              'dot(ctrl, C) --> cmp.A=buff2, cmp.B=buff2',
                               )
         model.bg = spa.BasalGanglia(actions)
         model.thal = spa.Thalamus(model.bg)
@@ -192,16 +193,9 @@ def test_nondefault_routing(Simulator, seed):
 
 def test_errors():
     # motor does not exist
-    with pytest.raises(SpaParseError):
-        with spa.SPA() as model:
+    with pytest.raises(SpaModuleError):
+        with spa.Module() as model:
             model.vision = spa.Buffer(dimensions=16)
             actions = spa.Actions('0.5 --> motor=A')
-            model.bg = spa.BasalGanglia(actions)
-
-    # dot products not implemented
-    with pytest.raises(NotImplementedError):
-        with spa.SPA() as model:
-            model.scalar = spa.Buffer(dimensions=16, subdimensions=1)
-            actions = spa.Actions('0.5 --> scalar=dot(scalar, FOO)')
             model.bg = spa.BasalGanglia(actions)
             model.thalamus = spa.Thalamus(model.bg)

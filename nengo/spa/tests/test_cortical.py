@@ -3,11 +3,11 @@ import pytest
 
 import nengo
 from nengo import spa
-from nengo.exceptions import SpaParseError
+from nengo.exceptions import SpaModuleError
 
 
 def test_connect(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=16)
         model.buffer3 = spa.Buffer(dimensions=16)
@@ -32,7 +32,7 @@ def test_connect(Simulator, seed):
 
 
 def test_transform(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=16)
         model.cortical = spa.Cortical(spa.Actions('buffer2=buffer1*B'))
@@ -51,11 +51,12 @@ def test_transform(Simulator, seed):
 
 
 def test_translate(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=32)
         model.input = spa.Input(buffer1='A')
-        model.cortical = spa.Cortical(spa.Actions('buffer2=buffer1'))
+        model.cortical = spa.Cortical(spa.Actions(
+            'buffer2=translate(buffer1)'))
 
     output, vocab = model.get_module_output('buffer2')
 
@@ -71,28 +72,21 @@ def test_translate(Simulator, seed):
 
 def test_errors():
     # buffer2 does not exist
-    with pytest.raises(SpaParseError):
-        with spa.SPA() as model:
+    with pytest.raises(SpaModuleError):
+        with spa.Module() as model:
             model.buffer = spa.Buffer(dimensions=16)
             model.cortical = spa.Cortical(spa.Actions('buffer2=buffer'))
 
     # conditional expressions not implemented
-    with pytest.raises(NotImplementedError):
-        with spa.SPA() as model:
+    with pytest.raises(SpaModuleError):
+        with spa.Module() as model:
             model.buffer = spa.Buffer(dimensions=16)
             model.cortical = spa.Cortical(spa.Actions(
                 'dot(buffer,A) --> buffer=buffer'))
 
-    # dot products not implemented
-    with pytest.raises(NotImplementedError):
-        with spa.SPA() as model:
-            model.scalar = spa.Buffer(dimensions=1, subdimensions=1)
-            model.cortical = spa.Cortical(spa.Actions(
-                'scalar=dot(scalar, FOO)'))
-
 
 def test_direct(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=32)
         model.cortical = spa.Cortical(spa.Actions('buffer1=A', 'buffer2=B',
@@ -118,7 +112,7 @@ def test_direct(Simulator, seed):
 
 def test_convolution(Simulator, plt, seed):
     D = 5
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.inA = spa.Buffer(dimensions=D)
         model.inB = spa.Buffer(dimensions=D)
         model.outAB = spa.Buffer(dimensions=D)
@@ -173,16 +167,16 @@ def test_convolution(Simulator, plt, seed):
 
     # Ideal answer: A*B = [0,0,0,1,0]
     assert np.allclose(np.mean(sim.data[pAB][-10:], axis=0),
-                       np.array([0, 0, 0, 1, 0]), atol=0.15)
+                       np.array([0, 0, 0, 1, 0]), atol=0.16)
 
     # Ideal answer: A*~B = [0,0,0,0,1]
     assert np.allclose(np.mean(sim.data[pABinv][-10:], axis=0),
-                       np.array([0, 0, 0, 0, 1]), atol=0.15)
+                       np.array([0, 0, 0, 0, 1]), atol=0.16)
 
     # Ideal answer: ~A*B = [0,1,0,0,0]
     assert np.allclose(np.mean(sim.data[pAinvB][-10:], axis=0),
-                       np.array([0, 1, 0, 0, 0]), atol=0.15)
+                       np.array([0, 1, 0, 0, 0]), atol=0.16)
 
     # Ideal answer: ~A*~B = [0,0,1,0,0]
     assert np.allclose(np.mean(sim.data[pAinvBinv][-10:], axis=0),
-                       np.array([0, 0, 1, 0, 0]), atol=0.15)
+                       np.array([0, 0, 1, 0, 0]), atol=0.16)

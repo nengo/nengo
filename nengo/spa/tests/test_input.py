@@ -1,10 +1,12 @@
 import numpy as np
+import pytest
 
+import nengo
 from nengo import spa
 
 
 def test_fixed():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=8, subdimensions=2)
         model.input = spa.Input(buffer1='A', buffer2='B')
@@ -18,8 +20,27 @@ def test_fixed():
                        vocab2.parse('B').v)
 
 
+def test_deprecated_underscore_notation(Simulator, plt):
+    d = 16
+    with pytest.warns(DeprecationWarning):
+        with spa.Module() as model:
+            model.cmp = spa.Compare(dimensions=d)
+            model.input = spa.Input(cmp_A='A', cmp_B='A')
+            p = nengo.Probe(model.cmp.output, synapse=0.03)
+
+        with Simulator(model) as sim:
+            sim.run(0.5)
+
+    plt.plot(sim.trange(), sim.data[p])
+    plt.xlabel("t [s]")
+    plt.ylabel("Similarity")
+
+    t = sim.trange() > 0.2
+    assert np.mean(sim.data[p][t]) > 0.8
+
+
 def test_time_varying():
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.buffer = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=16)
 
@@ -46,7 +67,7 @@ def test_time_varying():
 def test_predefined_vocabs():
     D = 64
 
-    with spa.SPA() as model:
+    with spa.Module() as model:
         model.vocab1 = spa.Vocabulary(D)
         model.vocab1.parse('A+B+C')
 
