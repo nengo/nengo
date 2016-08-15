@@ -62,8 +62,11 @@ class Thalamus(Module):
                  neurons_cconv=200,
                  neurons_gate=40, threshold_gate=0.3, synapse_to_gate=0.002,
                  label=None, seed=None, add_to_container=None):
+        Module.__init__(self, label, seed, add_to_container)
 
-        self.bg = bg
+        # bg gets also added to the top level network, thus we have to
+        # circumvent the check that it gets only added once.
+        self.__dict__['bg'] = bg
         self.neurons_action = neurons_action
         self.mutual_inhibit = mutual_inhibit
         self.route_inhibit = route_inhibit
@@ -82,7 +85,6 @@ class Thalamus(Module):
         self.gates = {}     # gating ensembles per action (created as needed)
         self.channels = {}  # channels to pass transformed data between modules
 
-        Module.__init__(self, label, seed, add_to_container)
         nengo.networks.Thalamus(self.bg.actions.count,
                                 n_neurons_per_ensemble=self.neurons_action,
                                 mutual_inhib=self.mutual_inhibit,
@@ -148,7 +150,7 @@ class Thalamus(Module):
         action is active.
         """
 
-        target_module = self.spa.get_module(target_name)
+        target_module = self.spa.get_module(target_name, strip_output=True)
 
         if index not in self.gates:
             with target_module:
@@ -198,8 +200,8 @@ class Thalamus(Module):
             target, target_vocab = self.spa.get_module_input(target_name)
             source, source_vocab = self.spa.get_module_output(source_name)
 
-            target_module = self.spa.get_module(target_name)
-            source_module = self.spa.get_module(source_name)
+            target_module = self.spa.get_module(target_name, strip_output=True)
+            source_module = self.spa.get_module(source_name, strip_output=True)
 
             # build a communication channel between the source and target
             dim = target_vocab.dimensions

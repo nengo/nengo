@@ -7,7 +7,7 @@ from nengo.exceptions import SpaParseError
 
 
 def test_connect(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=16)
         model.buffer3 = spa.Buffer(dimensions=16)
@@ -32,7 +32,7 @@ def test_connect(Simulator, seed):
 
 
 def test_transform(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=16)
         model.cortical = spa.Cortical(spa.Actions('buffer2=buffer1*B'))
@@ -51,7 +51,7 @@ def test_transform(Simulator, seed):
 
 
 def test_translate(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=32)
         model.input = spa.Input(buffer1='A')
@@ -72,27 +72,27 @@ def test_translate(Simulator, seed):
 def test_errors():
     # buffer2 does not exist
     with pytest.raises(SpaParseError):
-        with spa.SPA() as model:
+        with spa.Module() as model:
             model.buffer = spa.Buffer(dimensions=16)
             model.cortical = spa.Cortical(spa.Actions('buffer2=buffer'))
 
     # conditional expressions not implemented
     with pytest.raises(NotImplementedError):
-        with spa.SPA() as model:
+        with spa.Module() as model:
             model.buffer = spa.Buffer(dimensions=16)
             model.cortical = spa.Cortical(spa.Actions(
                 'dot(buffer,A) --> buffer=buffer'))
 
     # dot products not implemented
     with pytest.raises(NotImplementedError):
-        with spa.SPA() as model:
+        with spa.Module() as model:
             model.scalar = spa.Buffer(dimensions=1, subdimensions=1)
             model.cortical = spa.Cortical(spa.Actions(
                 'scalar=dot(scalar, FOO)'))
 
 
 def test_direct(Simulator, seed):
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.buffer1 = spa.Buffer(dimensions=16)
         model.buffer2 = spa.Buffer(dimensions=32)
         model.cortical = spa.Cortical(spa.Actions('buffer1=A', 'buffer2=B',
@@ -118,7 +118,7 @@ def test_direct(Simulator, seed):
 
 def test_convolution(Simulator, plt, seed):
     D = 5
-    with spa.SPA(seed=seed) as model:
+    with spa.Module(seed=seed) as model:
         model.inA = spa.Buffer(dimensions=D)
         model.inB = spa.Buffer(dimensions=D)
         model.outAB = spa.Buffer(dimensions=D)

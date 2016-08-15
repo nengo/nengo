@@ -1,106 +1,132 @@
 import pytest
 
 from nengo import spa
-from nengo.exceptions import SpaParseError
+from nengo.exceptions import SpaModuleError, SpaParseError
 from nengo.spa.actions import Expression, Effect, Action, Actions
 
 
+class ModuleMock(object):
+    def __init__(self, sources, sinks=None):
+        self.sources = sources
+        if sinks is None:
+            sinks = []
+        self.sinks = sinks
+
+    def get_module(self, name):
+        sources = ['default'] if name in self.sources else []
+        sinks = ['default'] if name in self.sinks else []
+        if len(sources) == 0 and len(sinks) == 0:
+            raise SpaModuleError()
+        return ModuleMock(sources, sinks)
+
+    def get_module_input(self, name):
+        if name not in self.sinks:
+            raise SpaModuleError('No sink with name ' + name)
+
+    def get_module_output(self, name):
+        if name not in self.sources:
+            raise SpaModuleError('No source with name ' + name)
+
+
 def test_expression():
-    c = Expression(['a', 'b'], 'dot(a, A)')
+    c = Expression(ModuleMock(['a', 'b']), 'dot(a, A)')
     assert str(c.expression) == 'dot(a, A)'
 
-    c = Expression(['a', 'b'], '0.5*(2*dot(a, A)-dot(b,B))-2')
+    c = Expression(ModuleMock(['a', 'b']), '0.5*(2*dot(a, A)-dot(b,B))-2')
     assert str(c.expression) == 'dot(a, A) + -0.5 * dot(b, B) + -2'
 
-    c = Expression(['a'], '1')
+    c = Expression(ModuleMock(['a']), '1')
     assert str(c.expression) == '1'
 
     with pytest.raises(SpaParseError):
-        c = Expression(['a', 'b'], 'dot(c, C)')
+        c = Expression(ModuleMock(['a', 'b']), 'dot(c, C)')
 
 
 def test_scalars():
-    c = Expression([], '1')
+    c = Expression(ModuleMock([]), '1')
     assert str(c.expression) == '1'
 
-    c = Expression([], '1 - 1')
+    c = Expression(ModuleMock([]), '1 - 1')
     assert str(c.expression) == '0'
 
-    c = Expression(['x'], 'dot(1, x)')
+    c = Expression(ModuleMock(['x']), 'dot(1, x)')
     assert str(c.expression) == 'dot(1, x)'
 
-    c = Expression(['x'], 'dot(x, -1) + 1')
+    c = Expression(ModuleMock(['x']), 'dot(x, -1) + 1')
     assert str(c.expression) == 'dot(x, -1) + 1'
 
-    c = Expression(['a', 'b'], '2*dot(a, 1) - dot(b, -1) + dot(a, b)')
+    c = Expression(
+        ModuleMock(['a', 'b']), '2*dot(a, 1) - dot(b, -1) + dot(a, b)')
     assert str(c.expression) == '2 * dot(a, 1) + -dot(b, -1) + dot(a, b)'
 
-    c = Expression(['a', 'b'], 'a*b - 1 + 2*b')
+    c = Expression(ModuleMock(['a', 'b']), 'a*b - 1 + 2*b')
     assert str(c.expression) == '((a) * (b)) * 1 + -1 + 2 * b'
 
 
 def test_effect():
-    e = Effect(['a', 'b'], ['m'], 'm=A')
+    e = Effect(ModuleMock(['a', 'b'], ['m']), 'm=A')
     assert str(e) == 'm=A'
-    e = Effect(['a', 'b'], ['m', 'n'], 'm=A, n=B')
+    e = Effect(ModuleMock(['a', 'b'], ['m', 'n']), 'm=A, n=B')
     assert str(e) == 'm=A, n=B'
-    e = Effect(['a', 'b'], ['m', 'n'], 'm=a, n=b*2*A')
+    e = Effect(ModuleMock(['a', 'b'], ['m', 'n']), 'm=a, n=b*2*A')
     assert str(e) == 'm=a, n=(2 * A) * b'
-    e = Effect(['a', 'b'], ['m'], 'm=0')
+    e = Effect(ModuleMock(['a', 'b'], ['m']), 'm=0')
     assert str(e) == 'm=0'
 
     # Check that multiple lvalue=rvalue parsing is working with commas
-    e = Effect(['a', 'b'], ['x', 'y', 'z'], 'x=a,y=dot(a,b),z=b')
+    e = Effect(ModuleMock(['a', 'b'], ['x', 'y', 'z']), 'x=a,y=dot(a,b),z=b')
     assert str(e) == 'x=a, y=dot(a, b), z=b'
-    e = Effect(['a', 'b'], ['foo', 'bar'], '  foo = dot(a, b)  , bar = b')
+    e = Effect(
+        ModuleMock(['a', 'b'], ['foo', 'bar']), '  foo = dot(a, b)  , bar = b')
     assert str(e) == 'foo=dot(a, b), bar=b'
 
     with pytest.raises(SpaParseError):
-        Effect(['a', 'b'], ['q'], 'q=z')
+        Effect(ModuleMock(['a', 'b'], ['q']), 'q=z')
 
     with pytest.raises(SpaParseError):
-        Effect(['a', 'b'], ['q'], 'q=a, q=b')  # lvalue appears twice
+        Effect(
+            ModuleMock(['a', 'b'], ['q']), 'q=a, q=b')  # lvalue appears twice
 
 
 def test_inverted():
     with pytest.raises(SpaParseError):
-        Effect(['b'], ['a'], 'a = ~2*b')
+        Effect(ModuleMock(['b'], ['a']), 'a = ~2*b')
     with pytest.raises(SpaParseError):
-        Effect(['b'], ['a'], 'a = ~2*C*b')
+        Effect(ModuleMock(['b'], ['a']), 'a = ~2*C*b')
 
 
 def test_action():
-    a = Action(['vision', 'memory'], ['motor', 'memory'],
+    a = Action(ModuleMock(['vision', 'memory'], ['motor', 'memory']),
                'dot(vision, DOG) --> motor=vision', 'test_rule')
     assert str(a.condition) == 'dot(vision, DOG)'
     assert str(a.effect) == 'motor=vision'
 
-    a = Action(['vision', 'memory'], ['motor', 'memory'],
+    a = Action(ModuleMock(['vision', 'memory'], ['motor', 'memory']),
                'motor=vision*A', 'test_rule')
     assert a.condition is None
     assert str(a.effect) == 'motor=A * vision'
 
     with pytest.raises(SpaParseError):
-        a = Action(['vision', 'memory'], ['motor', 'memory'],
+        a = Action(ModuleMock(['vision', 'memory'], ['motor', 'memory']),
                    'motor=vis*A', 'test_action')
 
     with pytest.raises(SpaParseError):
-        a = Action(['vision', 'memory'], ['motor', 'memory'],
+        a = Action(ModuleMock(['vision', 'memory'], ['motor', 'memory']),
                    '0.5 --> motor=vis*A', 'test_action')
 
     with pytest.raises(SpaParseError):
-        a = Action(['vision', 'memory'], ['motor', 'memory'],
+        a = Action(ModuleMock(['vision', 'memory'], ['motor', 'memory']),
                    '0.5*dot(mem, a) --> motor=B', name=None)
 
     with pytest.raises(SpaParseError):
-        a = Action(['vision', 'memory'], ['motor', 'memory'],
+        a = Action(ModuleMock(['vision', 'memory'], ['motor', 'memory']),
                    '0.5*dot(memory+1, vision) --> motor=B', name='test_action')
 
     with pytest.raises(SpaParseError):
-        a = Action(['vision', 'memory'], ['motor', 'memory'],
+        a = Action(ModuleMock(['vision', 'memory'], ['motor', 'memory']),
                    'motor2=B', name='test_action')
     with pytest.raises(SpaParseError):
-        a = Action(['vision', 'memory'], ['motor', 'memory'],
+        a = Action(ModuleMock(['vision', 'memory'], ['motor', 'memory']),
                    'motor=A, motor2=B', name='test_action')
 
 
@@ -112,7 +138,7 @@ def test_actions():
     )
     assert a.count == 3
 
-    model = spa.SPA()
+    model = spa.Module()
     with model:
         model.state = spa.State(16)
     a.process(model)
