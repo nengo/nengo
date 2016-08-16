@@ -18,7 +18,9 @@ class Weights(object):
     wt = 1
     wm = 1
     wg = 1
-    wp = 0.9
+    wp_gpi = 0.9
+    wp_snr = 0.9
+    wp_gpe = 0.9
     we = 0.3
     e = 0.2
     ep = -0.25
@@ -62,8 +64,9 @@ def config_with_default_synapse(config, synapse):
     return config, override
 
 
-def BasalGanglia(dimensions, n_neurons_per_ensemble=100, output_weight=-3.,
-                 input_bias=0., ampa_config=None, gaba_config=None, net=None):
+def BasalGanglia(dimensions, n_neurons_per_ensemble=100,  # noqa: C901
+                 output_weight=-3., input_bias=0., ampa_config=None,
+                 gaba_config=None, weights={}, split_GPi_SNr=False, net=None):
     """Winner take all network, typically used for action selection.
 
     The basal ganglia network outputs approximately 0 at the dimension with
@@ -177,22 +180,32 @@ def BasalGanglia(dimensions, n_neurons_per_ensemble=100, output_weight=-3.,
     ea_params = {'n_neurons': n_neurons_per_ensemble,
                  'n_ensembles': dimensions}
 
+    w = Weights()
+    for k, v in weights.items():
+        assert hasattr(w, k)
+        setattr(w, k, v)
+    weights = w
+
     with config, net:
         net.strD1 = EnsembleArray(label="Striatal D1 neurons",
-                                  intercepts=Uniform(Weights.e, 1),
+                                  intercepts=Uniform(weights.e, 1),
                                   **ea_params)
         net.strD2 = EnsembleArray(label="Striatal D2 neurons",
-                                  intercepts=Uniform(Weights.e, 1),
+                                  intercepts=Uniform(weights.e, 1),
                                   **ea_params)
         net.stn = EnsembleArray(label="Subthalamic nucleus",
-                                intercepts=Uniform(Weights.ep, 1),
+                                intercepts=Uniform(weights.ep, 1),
                                 **ea_params)
         net.gpi = EnsembleArray(label="Globus pallidus internus",
-                                intercepts=Uniform(Weights.eg, 1),
+                                intercepts=Uniform(weights.eg, 1),
                                 **ea_params)
         net.gpe = EnsembleArray(label="Globus pallidus externus",
-                                intercepts=Uniform(Weights.ee, 1),
+                                intercepts=Uniform(weights.ee, 1),
                                 **ea_params)
+        if split_GPi_SNr:
+            net.snr = EnsembleArray(label="SNr",
+                                    intercepts=Uniform(weights.eg, 1),
+                                    **ea_params)
 
         net.input = nengo.Node(label="input", size_in=dimensions)
         net.output = nengo.Node(label="output", size_in=dimensions)
@@ -205,38 +218,57 @@ def BasalGanglia(dimensions, n_neurons_per_ensemble=100, output_weight=-3.,
 
         # spread the input to StrD1, StrD2, and STN
         nengo.Connection(net.input, net.strD1.input, synapse=None,
-                         transform=Weights.ws * (1 + Weights.lg))
+                         transform=weights.ws * (1 + weights.lg))
         nengo.Connection(net.input, net.strD2.input, synapse=None,
-                         transform=Weights.ws * (1 - Weights.le))
+                         transform=weights.ws * (1 - weights.le))
         nengo.Connection(net.input, net.stn.input, synapse=None,
-                         transform=Weights.wt)
+                         transform=weights.wt)
 
         # connect the striatum to the GPi and GPe (inhibitory)
         strD1_output = net.strD1.add_output('func_str', Weights.str_func)
         strD2_output = net.strD2.add_output('func_str', Weights.str_func)
         with gaba_config:
             nengo.Connection(strD1_output, net.gpi.input,
-                             transform=-Weights.wm)
+                             transform=-weights.wm)
+            if split_GPi_SNr:
+                nengo.Connection(strD1_output, net.snr.input,
+                                 transform=-weights.wm)
+
             nengo.Connection(strD2_output, net.gpe.input,
-                             transform=-Weights.wm)
+                             transform=-weights.wm)
 
         # connect the STN to GPi and GPe (broad and excitatory)
-        tr = Weights.wp * np.ones((dimensions, dimensions))
         stn_output = net.stn.add_output('func_stn', Weights.stn_func)
         with ampa_config:
+            tr = weights.wp_gpi * np.ones((dimensions, dimensions))
             nengo.Connection(stn_output, net.gpi.input, transform=tr)
+            if split_GPi_SNr:
+                tr = weights.wp_snr * np.ones((dimensions, dimensions))
+                nengo.Connection(stn_output, net.snr.input, transform=tr)
+
+            tr = weights.wp_gpe * np.ones((dimensions, dimensions))
             nengo.Connection(stn_output, net.gpe.input, transform=tr)
 
         # connect the GPe to GPi and STN (inhibitory)
         gpe_output = net.gpe.add_output('func_gpe', Weights.gpe_func)
         with gaba_config:
-            nengo.Connection(gpe_output, net.gpi.input, transform=-Weights.we)
-            nengo.Connection(gpe_output, net.stn.input, transform=-Weights.wg)
+            nengo.Connection(gpe_output, net.gpi.input, transform=-weights.we)
+            if split_GPi_SNr:
+                nengo.Connection(gpe_output, net.snr.input,
+                                 transform=-weights.we)
+            nengo.Connection(gpe_output, net.stn.input, transform=-weights.wg)
 
         # connect GPi to output (inhibitory)
         gpi_output = net.gpi.add_output('func_gpi', Weights.gpi_func)
-        nengo.Connection(gpi_output, net.output, synapse=None,
-                         transform=output_weight)
+        if split_GPi_SNr:
+            snr_output = net.snr.add_output('func_snr', Weights.gpi_func)
+            nengo.Connection(gpi_output, net.output, synapse=None,
+                             transform=output_weight * 0.5)
+            nengo.Connection(snr_output, net.output, synapse=None,
+                             transform=output_weight * 0.5)
+        else:
+            nengo.Connection(gpi_output, net.output, synapse=None,
+                             transform=output_weight)
 
     # Return ampa_config and gaba_config to previous states, if changed
     if override_ampa:
