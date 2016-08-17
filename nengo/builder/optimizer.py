@@ -3,10 +3,12 @@
 from collections import defaultdict
 import logging
 import time
+import warnings
 
 import numpy as np
 
 from nengo.builder.neurons import SimNeurons
+from nengo.builder import operator
 from nengo.builder.operator import DotInc, ElementwiseInc, SlicedCopy
 from nengo.builder.signal import Signal
 from nengo.config import SupportRcDefaultsMixin
@@ -47,6 +49,8 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         operator dependency graph of the model.
     """
 
+    op_mergers = {}
+
     enabled = BoolParam('enabled', default=True, optional=False)
     max_passes = IntParam('max_passes', default=None, optional=True)
 
@@ -62,6 +66,32 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         # Internal set of Operators merged during the current optimization
         # pass.
         self._merged = None
+
+    @classmethod
+    def supports_merge(cls, op_type):
+        return op_type in cls.op_mergers
+
+    @classmethod
+    def can_merge_ops(cls, op1, op2):
+        return (
+            type(op1) == type(op2) and
+            type(op1) in cls.op_mergers and
+            cls.op_mergers[type(op1)].can_merge(op1, op2))
+
+    @classmethod
+    def merge_ops(cls, ops):
+        return cls.op_mergers[type(ops[0])].merge(ops)
+
+    @classmethod
+    def register_merger(cls, op_type):
+        def register(merger):
+            if op_type in cls.op_mergers:
+                warnings.warn(
+                    "Merger for operator of type {} overwritten.".format(
+                        op_type))
+            cls.op_mergers[op_type] = merger()
+            return merger
+        return register
 
     def optimize(self):
         """Perform the optimization."""
@@ -193,7 +223,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
 
         # Process remaining operations
         for tp, subset in by_type.items():
-            if tp.supports_merge() and (
+            if self.supports_merge(tp) and (
                     only_merge_ops_with_view or len(opr) <= 0):
                 opr, sigr = self._perform_merges_for_subset(
                     subset, tc, only_merge_ops_with_view)
@@ -246,7 +276,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
             views_match &= s1.base == s2.base
             views_match &= s1.strides == s2.strides
 
-        return independent and views_match and op1.can_merge(op2)
+        return independent and views_match and self.can_merge_ops(op1, op2)
 
     def _is_memory_access_sequential(self, ops):
         """Checks that the corresponding signals of the operators `ops` are all
@@ -438,7 +468,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         further merges on the same operators before all required operators and
         signals have been replaced.
         """
-        merged_op, merged_sig = merge[0].merge(merge[1:])
+        merged_op, merged_sig = self.merge_ops(merge)
         self._merged.update(merge)
         for op in merge:
             op_replacements[op] = merged_op
@@ -543,3 +573,201 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         for k in self.model.sig:
             for name, v in self.model.sig[k].items():
                 self.model.sig[k][name] = sig_replacements.get(v, v)
+
+
+class AbstractMerger(object):
+    def can_merge(self, op1, op2):
+        """Checks if `op1` can be merged with `op2`.
+
+        This function is expected to be transitive and symmetric.
+        """
+        raise NotImplementedError()
+
+    def merge(self, ops):
+        """Merges the operators `ops`.
+
+        May lead to undefined behaviour if ``can_merge`` returns ``False`` for
+        any of the elements in ``ops``.
+
+        Returns
+        -------
+        Operator
+            The merged operator.
+        dict
+            Dictionary mapping old signals to new signals to update the
+            signals of other operators.
+        """
+        raise NotImplementedError()
+
+
+@OpMergeOptimizer.register_merger(operator.TimeUpdate)
+class TimeUpdateMerger(AbstractMerger):
+    def can_merge(self, op1, op2):
+        return True
+
+    def merge(self, ops):
+        replacements = {}
+        step = Signal.merge_signals_or_views(
+            [o.step for o in ops], replacements)
+        time = Signal.merge_signals_or_views(
+            [o.time for o in ops], replacements)
+        return operator.TimeUpdate(step, time), replacements
+
+
+@OpMergeOptimizer.register_merger(operator.Reset)
+class ResetMerger(AbstractMerger):
+    def can_merge(self, op1, op2):
+        return Signal.compatible([op1.dst, op2.dst]) and op1.value == op2.value
+
+    def merge(self, ops):
+        replacements = {}
+        dst = Signal.merge_signals_or_views([o.dst for o in ops], replacements)
+        return operator.Reset(dst, ops[0].value), replacements
+
+
+@OpMergeOptimizer.register_merger(operator.Copy)
+class CopyMerger(AbstractMerger):
+    def can_merge(self, op1, op2):
+        return (
+            Signal.compatible([op1.dst, op2.dst]) and
+            Signal.compatible([op1.src, op2.src]))
+
+    def merge(self, ops):
+        replacements = {}
+        dst = Signal.merge_signals_or_views([o.dst for o in ops], replacements)
+        src = Signal.merge_signals_or_views([o.src for o in ops], replacements)
+        return operator.Copy(src, dst), replacements
+
+
+@OpMergeOptimizer.register_merger(operator.SlicedCopy)
+class SlicedCopyMerger(AbstractMerger):
+    def can_merge(self, op1, op2):
+        return (
+            Signal.compatible([op1.src, op2.src]) and
+            Signal.compatible([op1.dst, op2.dst]) and
+            op1.src_slice is Ellipsis and op1.dst_slice is Ellipsis and
+            op2.src_slice is Ellipsis and op2.dst_slice is Ellipsis and
+            op1.inc == op2.inc)
+
+    def _merged_slice(self, signals, slices):
+        if all(s is Ellipsis for s in slices):
+            return Ellipsis
+        elif any(s is Ellipsis for s in slices):
+            raise ValueError("Mixed Ellipsis with list of indices.")
+
+        offset = 0
+        merged_slice = []
+        for sig, sl in zip(signals, slices):
+            merged_slice.extend([i + offset for i in sl])
+            offset += sig.size
+        return merged_slice
+
+    def merge(self, ops):
+        src_sigs = [o.src for o in ops]
+        dst_sigs = [o.dst for o in ops]
+
+        replacements = {}
+        src = Signal.merge_signals_or_views(src_sigs, replacements)
+        dst = Signal.merge_signals_or_views(dst_sigs, replacements)
+        src_slice = self._merged_slice(src_sigs, [o.src_slice for o in ops])
+        dst_slice = self._merged_slice(dst_sigs, [o.dst_slice for o in ops])
+        return operator.SlicedCopy(
+            src, dst, src_slice=src_slice, dst_slice=dst_slice,
+            inc=ops[0].inc), replacements
+
+
+@OpMergeOptimizer.register_merger(operator.ElementwiseInc)
+class ElementwiseIncMerger(AbstractMerger):
+    def can_merge(self, op1, op2):
+        return (
+            Signal.compatible([op1.A, op2.A], axis=op1.A.ndim - 1) and
+            Signal.compatible([op1.X, op2.X], axis=op1.X.ndim - 1) and
+            Signal.compatible([op1.Y, op2.Y], axis=op1.Y.ndim - 1))
+
+    def merge(self, ops):
+        replacements = {}
+        A = Signal.merge_signals_or_views(
+            [o.A for o in ops], replacements, axis=ops[0].A.ndim - 1)
+        X = Signal.merge_signals_or_views(
+            [o.X for o in ops], replacements, axis=ops[0].X.ndim - 1)
+        Y = Signal.merge_signals_or_views(
+            [o.Y for o in ops], replacements, axis=ops[0].Y.ndim - 1)
+        return operator.ElementwiseInc(A, X, Y), replacements
+
+
+@OpMergeOptimizer.register_merger(operator.DotInc)
+class DotIncMerger(AbstractMerger):
+    def can_merge(self, op1, op2):
+        if op1.X is op2.X:
+            # simple merge might be possible
+            return (Signal.compatible([op1.Y, op2.Y]) and
+                    Signal.compatible([op1.A, op2.A]))
+
+        # check if BSR merge is possible
+        try:
+            # Not using Signal.compatible for A, because A must not be a view.
+            Signal.check_signals_mergeable([op1.A, op2.A])
+            from scipy.sparse import bsr_matrix
+            assert bsr_matrix
+        except (ValueError, ImportError):
+            return False
+        return (Signal.compatible([op1.X, op2.X]) and
+                Signal.compatible([op1.Y, op2.Y]) and
+                op1.A.shape == op2.A.shape)
+
+    def merge(self, ops):
+        replacements = {}
+
+        # Simple merge if all X are the same.
+        if all(o.X is ops[0].X for o in ops):
+            A = Signal.merge_signals_or_views([o.A for o in ops], replacements)
+            Y = Signal.merge_signals_or_views([o.Y for o in ops], replacements)
+            return operator.DotInc(A, ops[0].X, Y), replacements
+
+        # BSR merge if X differ
+        X = Signal.merge_signals_or_views([o.X for o in ops], replacements)
+        Y = Signal.merge_signals_or_views([o.Y for o in ops], replacements)
+
+        # Construct sparse A representation
+        data = np.stack([o.A.initial_value for o in ops])
+        indptr = np.arange(len(ops) + 1, dtype=int)
+        indices = np.arange(len(ops), dtype=int)
+        name = 'bsr_merged<{first}, ..., {last}>'.format(
+            first=ops[0].A.name, last=ops[-1].A.name)
+        readonly = all([o.A.readonly for o in ops])
+        A = Signal(data, name=name, readonly=readonly)
+        for i, s in enumerate([o.A for o in ops]):
+            replacements[s] = Signal(
+                data[i], name="%s[%i]" % (s.name, i), base=A)
+            assert np.all(s.initial_value == replacements[s].initial_value)
+            assert s.shape == replacements[s].shape
+
+        reshape = operator.reshape_dot(
+            ops[0].A.initial_value, ops[0].X.initial_value,
+            ops[0].Y.initial_value, tag=ops[0].tag)
+        return (
+            operator.BsrDotInc(
+                A, X, Y, indices=indices, indptr=indptr, reshape=reshape),
+            replacements)
+
+
+@OpMergeOptimizer.register_merger(SimNeurons)
+class SimNeuronsMerger(AbstractMerger):
+    def can_merge(self, op1, op2):
+        return (
+            op1.neurons == op2.neurons and
+            all(Signal.compatible(s) for s in zip(
+                op1.all_signals, op2.all_signals)))
+
+    def _gather(self, ops, key):
+        return [getattr(o, key) for o in ops]
+
+    def merge(self, ops):
+        replacements = {}
+        J = Signal.merge_signals_or_views(self._gather(ops, 'J'), replacements)
+        output = Signal.merge_signals_or_views(
+            self._gather(ops, 'output'), replacements)
+        states = []
+        for signals in zip(*self._gather(ops, 'states')):
+            states.append(Signal.merge_signals_or_views(signals, replacements))
+        return SimNeurons(ops[0].neurons, J, output, states), replacements
