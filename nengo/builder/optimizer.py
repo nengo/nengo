@@ -607,21 +607,19 @@ class TimeUpdateMerger(AbstractMerger):
 
     def merge(self, ops):
         replacements = {}
-        step = Signal.merge_signals_or_views(
-            [o.step for o in ops], replacements)
-        time = Signal.merge_signals_or_views(
-            [o.time for o in ops], replacements)
+        step = merge_signals_or_views([o.step for o in ops], replacements)
+        time = merge_signals_or_views([o.time for o in ops], replacements)
         return operator.TimeUpdate(step, time), replacements
 
 
 @OpMergeOptimizer.register_merger(operator.Reset)
 class ResetMerger(AbstractMerger):
     def can_merge(self, op1, op2):
-        return Signal.compatible([op1.dst, op2.dst]) and op1.value == op2.value
+        return compatible([op1.dst, op2.dst]) and op1.value == op2.value
 
     def merge(self, ops):
         replacements = {}
-        dst = Signal.merge_signals_or_views([o.dst for o in ops], replacements)
+        dst = merge_signals_or_views([o.dst for o in ops], replacements)
         return operator.Reset(dst, ops[0].value), replacements
 
 
@@ -629,13 +627,12 @@ class ResetMerger(AbstractMerger):
 class CopyMerger(AbstractMerger):
     def can_merge(self, op1, op2):
         return (
-            Signal.compatible([op1.dst, op2.dst]) and
-            Signal.compatible([op1.src, op2.src]))
+            compatible([op1.dst, op2.dst]) and compatible([op1.src, op2.src]))
 
     def merge(self, ops):
         replacements = {}
-        dst = Signal.merge_signals_or_views([o.dst for o in ops], replacements)
-        src = Signal.merge_signals_or_views([o.src for o in ops], replacements)
+        dst = merge_signals_or_views([o.dst for o in ops], replacements)
+        src = merge_signals_or_views([o.src for o in ops], replacements)
         return operator.Copy(src, dst), replacements
 
 
@@ -643,8 +640,8 @@ class CopyMerger(AbstractMerger):
 class SlicedCopyMerger(AbstractMerger):
     def can_merge(self, op1, op2):
         return (
-            Signal.compatible([op1.src, op2.src]) and
-            Signal.compatible([op1.dst, op2.dst]) and
+            compatible([op1.src, op2.src]) and
+            compatible([op1.dst, op2.dst]) and
             op1.src_slice is Ellipsis and op1.dst_slice is Ellipsis and
             op2.src_slice is Ellipsis and op2.dst_slice is Ellipsis and
             op1.inc == op2.inc)
@@ -667,8 +664,8 @@ class SlicedCopyMerger(AbstractMerger):
         dst_sigs = [o.dst for o in ops]
 
         replacements = {}
-        src = Signal.merge_signals_or_views(src_sigs, replacements)
-        dst = Signal.merge_signals_or_views(dst_sigs, replacements)
+        src = merge_signals_or_views(src_sigs, replacements)
+        dst = merge_signals_or_views(dst_sigs, replacements)
         src_slice = self._merged_slice(src_sigs, [o.src_slice for o in ops])
         dst_slice = self._merged_slice(dst_sigs, [o.dst_slice for o in ops])
         return operator.SlicedCopy(
@@ -680,17 +677,17 @@ class SlicedCopyMerger(AbstractMerger):
 class ElementwiseIncMerger(AbstractMerger):
     def can_merge(self, op1, op2):
         return (
-            Signal.compatible([op1.A, op2.A], axis=op1.A.ndim - 1) and
-            Signal.compatible([op1.X, op2.X], axis=op1.X.ndim - 1) and
-            Signal.compatible([op1.Y, op2.Y], axis=op1.Y.ndim - 1))
+            compatible([op1.A, op2.A], axis=op1.A.ndim - 1) and
+            compatible([op1.X, op2.X], axis=op1.X.ndim - 1) and
+            compatible([op1.Y, op2.Y], axis=op1.Y.ndim - 1))
 
     def merge(self, ops):
         replacements = {}
-        A = Signal.merge_signals_or_views(
+        A = merge_signals_or_views(
             [o.A for o in ops], replacements, axis=ops[0].A.ndim - 1)
-        X = Signal.merge_signals_or_views(
+        X = merge_signals_or_views(
             [o.X for o in ops], replacements, axis=ops[0].X.ndim - 1)
-        Y = Signal.merge_signals_or_views(
+        Y = merge_signals_or_views(
             [o.Y for o in ops], replacements, axis=ops[0].Y.ndim - 1)
         return operator.ElementwiseInc(A, X, Y), replacements
 
@@ -700,19 +697,18 @@ class DotIncMerger(AbstractMerger):
     def can_merge(self, op1, op2):
         if op1.X is op2.X:
             # simple merge might be possible
-            return (Signal.compatible([op1.Y, op2.Y]) and
-                    Signal.compatible([op1.A, op2.A]))
+            return compatible([op1.Y, op2.Y]) and compatible([op1.A, op2.A])
 
         # check if BSR merge is possible
         try:
-            # Not using Signal.compatible for A, because A must not be a view.
-            Signal.check_signals_mergeable([op1.A, op2.A])
+            # Not using compatible() for A, because A must not be a view.
+            check_signals_mergeable([op1.A, op2.A])
             from scipy.sparse import bsr_matrix
             assert bsr_matrix
         except (ValueError, ImportError):
             return False
-        return (Signal.compatible([op1.X, op2.X]) and
-                Signal.compatible([op1.Y, op2.Y]) and
+        return (compatible([op1.X, op2.X]) and
+                compatible([op1.Y, op2.Y]) and
                 op1.A.shape == op2.A.shape)
 
     def merge(self, ops):
@@ -720,13 +716,13 @@ class DotIncMerger(AbstractMerger):
 
         # Simple merge if all X are the same.
         if all(o.X is ops[0].X for o in ops):
-            A = Signal.merge_signals_or_views([o.A for o in ops], replacements)
-            Y = Signal.merge_signals_or_views([o.Y for o in ops], replacements)
+            A = merge_signals_or_views([o.A for o in ops], replacements)
+            Y = merge_signals_or_views([o.Y for o in ops], replacements)
             return operator.DotInc(A, ops[0].X, Y), replacements
 
         # BSR merge if X differ
-        X = Signal.merge_signals_or_views([o.X for o in ops], replacements)
-        Y = Signal.merge_signals_or_views([o.Y for o in ops], replacements)
+        X = merge_signals_or_views([o.X for o in ops], replacements)
+        Y = merge_signals_or_views([o.Y for o in ops], replacements)
 
         # Construct sparse A representation
         data = np.stack([o.A.initial_value for o in ops])
@@ -756,18 +752,218 @@ class SimNeuronsMerger(AbstractMerger):
     def can_merge(self, op1, op2):
         return (
             op1.neurons == op2.neurons and
-            all(Signal.compatible(s) for s in zip(
-                op1.all_signals, op2.all_signals)))
+            all(compatible(s) for s in zip(op1.all_signals, op2.all_signals)))
 
     def _gather(self, ops, key):
         return [getattr(o, key) for o in ops]
 
     def merge(self, ops):
         replacements = {}
-        J = Signal.merge_signals_or_views(self._gather(ops, 'J'), replacements)
-        output = Signal.merge_signals_or_views(
+        J = merge_signals_or_views(self._gather(ops, 'J'), replacements)
+        output = merge_signals_or_views(
             self._gather(ops, 'output'), replacements)
         states = []
         for signals in zip(*self._gather(ops, 'states')):
-            states.append(Signal.merge_signals_or_views(signals, replacements))
+            states.append(merge_signals_or_views(signals, replacements))
         return SimNeurons(ops[0].neurons, J, output, states), replacements
+
+
+def compatible(signals, axis=0):
+    """Checks that all signals have a compatible shape along a given axis
+    to allow for concatenation.
+
+    For views this includes also a check that the signals have a common
+    base and agree on the strides.
+
+    In comparison to the `check_*_mergeable` functions, this function does
+    not throw exceptions (either behavior might be desired dependent on the
+    context) and allows for either signals or signal views.
+    """
+    if len(set(signals)) != len(signals):
+        # Signal appears twice in list.
+        return False
+    for s in signals:
+        if s.ndim != signals[0].ndim:
+            return False
+        if s.ndim <= 0 and s.initial_value != signals[0].initial_value:
+            return False
+        if (s.shape[:axis] != signals[0].shape[:axis] or
+                s.shape[axis+1:] != signals[0].shape[axis+1:]):
+            return False
+        if s.dtype is not signals[0].dtype:
+            return False
+        if s.is_view or signals[0].is_view:
+            if s._base is not signals[0]._base:
+                return False
+            if s.strides != signals[0].strides:
+                return False
+    return True
+
+
+def check_signals_mergeable(signals, axis=0):
+    """Checks that all signals can be merged along a given axis and raises
+    a `ValueError` if this is not possible.
+
+    For views a ValueError is always raised.
+    """
+    if any(s.is_view for s in signals):
+        raise ValueError("Cannot merge views.")
+
+    for s in signals:
+        if s.ndim != signals[0].ndim:
+            raise ValueError(
+                "Signals must have the same number of dimensions.")
+        if s.ndim <= 0 and s.initial_value != signals[0].initial_value:
+            raise ValueError(
+                "0-d signals must have the same initial value.")
+        if (s.shape[:axis] != signals[0].shape[:axis] or
+                s.shape[axis+1:] != signals[0].shape[axis+1:]):
+            raise ValueError(
+                "Signals must have same shape except on concatenation "
+                "axis.")
+        if s.dtype is not signals[0].dtype:
+            raise ValueError(
+                "Signal mus have the same dtype.")
+
+
+def merge_signals(signals, replacements, axis=0):
+    """Merges multiple signal into one signal with sequential memory
+    allocation.
+
+    Note that if any of the signals are linked to another signal (by being
+    the base of a view), the merged signal will not reflect
+    those links anymore.
+
+    Parameters
+    ----------
+    signals : sequence
+        Signals to merge. Must not contain views.
+    axis : int, optional
+        Axis along which to concatenate the signals.
+    replacements : dict
+        Dictionary to update with a mapping from the old signals to new
+        signals that are a view into the merged signal and can be used to
+        replace the old signals.
+
+    Returns
+    -------
+    merged_signal : Signal
+        The merged signal.
+    """
+    check_signals_mergeable(signals, axis=axis)
+
+    if signals[0].ndim > 0:
+        initial_value = np.concatenate(
+            [s.initial_value for s in signals], axis=axis)
+    else:
+        initial_value = signals[0].initial_value
+    readonly = all(s.readonly for s in signals)
+    name = 'merged<' + signals[0].name + ', ..., ' + signals[-1].name + '>'
+    merged_signal = Signal(initial_value, name=name, readonly=readonly)
+
+    if signals[0].ndim > 0:
+        start = 0
+        for s in signals:
+            size = s.shape[axis]
+            indexing = [slice(None)] * initial_value.ndim
+            indexing[axis] = slice(start, start + size)
+            replacements[s] = merged_signal[tuple(indexing)]
+            start += size
+    else:
+        replacements.update({s: merged_signal for s in signals})
+
+    return merged_signal
+
+
+def check_views_mergeable(signals, axis=0):
+    """Checks that all signal views can be merged along a given axis and
+    raises a `ValueError` if this is not possible.
+
+    The signals need to be ordered by their offset into the base signal.
+
+    For non-views a ValueError is always raised.
+    """
+    if any(not s.is_view for s in signals):
+        raise ValueError("Cannot merge non-views.")
+
+    start = signals[0].offset
+    for s in signals:
+        if s.base is not signals[0].base:
+            raise ValueError("Signals must share the same base.")
+        if s.dtype is not signals[0].dtype:
+            raise ValueError("Signals must have same dtype.")
+        if s.ndim != signals[0].ndim:
+            raise ValueError(
+                "Signals must have the same number of dimensions.")
+        if s.strides != signals[0].strides:
+            raise ValueError("Signals must have equal strides.")
+        if (s.shape[:axis] != signals[0].shape[:axis] or
+                s.shape[axis+1:] != signals[0].shape[axis+1:]):
+            raise ValueError(
+                "Signals must have same shape except on concatenation "
+                "axis.")
+        if s.offset != start:
+            raise ValueError("Views are not sequential.")
+        start = s.offset + s.size * s.itemsize
+
+
+def merge_views(signals, axis=0):
+    """Merges multiple signal views into one signal view with sequential
+    memory access.
+
+    Parameters
+    ----------
+    signals : sequence
+        Signals to merge. Must not contain views.
+    axis : int, optional
+        Axis along which to concatenate the signals.
+
+    Returns
+    -------
+    merged_signal : Signal
+        The merged signal.
+    """
+    check_views_mergeable(signals, axis=axis)
+
+    shape = (
+        signals[0].shape[:axis] + (sum(s.shape[axis] for s in signals),) +
+        signals[0].shape[axis+1:])
+    initial_value = np.ndarray(
+        buffer=signals[0].base.initial_value, dtype=signals[0].dtype,
+        shape=shape, offset=signals[0].offset, strides=signals[0].strides)
+    return Signal(
+        initial_value, name=signals[0].base.name, base=signals[0].base,
+        readonly=all(s.readonly for s in signals))
+
+
+def merge_signals_or_views(signals, replacements, axis=0):
+    """Merges multiple signal (or signal views) into one signal with
+    sequential memory allocation.
+
+    Note that if any of the signals are linked to another signal (by being
+    the base of a view), the merged signal will not reflect those links
+    anymore.
+
+    Parameters
+    ----------
+    signals : sequence
+        Signals to merge. Must not contain views.
+    axis : int, optional
+        Axis along which to concatenate the signals.
+    replacements : dict
+        Dictionary to update with a mapping from the old signals to new
+        signals that are a view into the merged signal and can be used to
+        replace the old signals.
+
+    Returns
+    -------
+    merged_signal : Signal
+        The merged signal.
+    """
+    are_views = [s.is_view for s in signals]
+    if all(are_views):
+        return merge_views(signals, axis=axis)
+    elif not any(are_views):
+        return merge_signals(signals, replacements, axis=axis)
+    else:
+        raise ValueError("Cannot merged mixed views and non-views.")
