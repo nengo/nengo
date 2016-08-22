@@ -503,12 +503,14 @@ def test_generic_rule(Simulator, nl_nodirect, seed, modifies):
                                            params.gain, activities) -
                         target * reg)
 
-        probes = [
-            nengo.Probe(conn, attr="weights"),
-            nengo.Probe(error),
-            nengo.Probe(a.neurons, synapse=0.005)]
-        if modifies == "weights":
-            probes += [nengo.Probe(b, attr='params')]
+        with nengo.Config(nengo.Probe) as conf:
+            conf[nengo.Probe].keep_history = False
+            probes = [
+                nengo.Probe(conn, attr="weights"),
+                nengo.Probe(error),
+                nengo.Probe(a.neurons, synapse=0.005)]
+            if modifies == "weights":
+                probes += [nengo.Probe(b, attr='params')]
 
         conn.learning_rule_type = GenericRule(
             regularized_pes, probes, learning_rate=1e-3, modifies=modifies)
@@ -555,14 +557,16 @@ def test_generic_encoders(Simulator, nl_nodirect, rng, seed):
             return (scale * np.outer(activities, input) -
                     activities[:, None] * enc)
 
-        nengo.Connection(
-            u, x, synapse=None,
-            learning_rule_type=GenericRule(
-                generic_voja, [nengo.Probe(x, 'encoders'),
-                               nengo.Probe(u),
-                               nengo.Probe(x.neurons, synapse=0.005),
-                               nengo.Probe(x, 'params')],
-                learning_rate=1e-1 * dt, modifies="encoders"))
+        with nengo.Config(nengo.Probe) as conf:
+            conf[nengo.Probe].keep_history = False
+            nengo.Connection(
+                u, x, synapse=None,
+                learning_rule_type=GenericRule(
+                    generic_voja,
+                    [nengo.Probe(x, 'encoders'), nengo.Probe(u),
+                     nengo.Probe(x.neurons, synapse=0.005),
+                     nengo.Probe(x, 'params')],
+                    learning_rate=1e-1 * dt, modifies="encoders"))
 
     with Simulator(m, dt=dt) as sim:
         sim.run(1.0)
