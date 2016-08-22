@@ -5,7 +5,7 @@ from nengo.base import ObjView
 from nengo.ensemble import Neurons
 from nengo.exceptions import ValidationError
 from nengo.params import (FrozenObject, NumberParam, Parameter, IntParam,
-                          BoolParam)
+                          TupleParam)
 from nengo.utils.compat import is_iterable, itervalues
 
 
@@ -343,18 +343,18 @@ class GenericRule(LearningRuleType):
         to the learning rule function
     """
 
-    probeable = ('target', 'data', 'delta')
+    probeable = ('delta',)
 
-    pass_model_params = BoolParam('pass_model_params')
+    data_sources = TupleParam("data_sources")
 
-    def __init__(self, function, learning_rate=1.0, size_in=0,
-                 modifies="decoders", pass_model_params=False):
+    def __init__(self, function, data_sources=None, learning_rate=1.0,
+                 modifies="decoders"):
         self.modifies = modifies
         self.function = function
-        self.pass_model_params = pass_model_params
+        self.data_sources = data_sources
 
         super(GenericRule, self).__init__(learning_rate=learning_rate,
-                                          size_in=size_in)
+                                          size_in=0)
 
 
 class LearningRuleTypeParam(Parameter):

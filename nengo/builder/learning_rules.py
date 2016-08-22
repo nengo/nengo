@@ -1,7 +1,8 @@
 import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
-from nengo.builder.operator import DotInc, ElementwiseInc, Reset
+from nengo.builder.operator import DotInc, ElementwiseInc, Reset, PreserveValue
+from nengo.builder.probe import build_probe
 from nengo.learning_rules import LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
@@ -283,21 +284,18 @@ class SimVoja(Operator):
 class SimGenericRule(Operator):
     """Compute change in target using the given function.
 
-    .. math:: \Delta \omega_{ij} = \kappa f(target, data)_{ij}
+    .. math:: \Delta \omega_{ij} = \kappa f(data_signals)_{ij}
 
     Parameters
     ----------
-    target : Signal
-        The signal modified by the learning rule.
-    data : Signal
-        Input data for the learning rule (e.g., error information).
     delta : Signal
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    function : callable
+        Function used to compute the delta
+    data_signals: list of Signal or namedtuple
+        Signals or built parameters that provide input to update function.
     learning_rate : float
         The scalar learning rate.
-    params : dict, optional (Default: None)
-        The ``model.params`` attribute from the build process, will be passed
-        to the update function if not ``None``.
     tag : str, optional (Default: None)
         A label associated with the operator, for debugging purposes.
 
@@ -305,38 +303,31 @@ class SimGenericRule(Operator):
     -----
     1. sets ``[]``
     2. incs ``[]``
-    3. reads ``[data, target]``
+    3. reads ``data_signals``
     4. updates ``[delta]``
     """
 
-    def __init__(self, target, data, delta, function, learning_rate,
-                 params=None, tag=None):
+    def __init__(self, delta, function, data_signals, learning_rate,
+                 tag=None):
         super(SimGenericRule, self).__init__(tag=tag)
 
         self.sets = []
         self.incs = []
-        self.reads = [data, target]
+        self.reads = [s for s in data_signals if isinstance(s, Signal)]
         self.updates = [delta]
 
-        self.target = target
         self.delta = delta
-        self.data = data
         self.function = function
+        self.data_signals = data_signals
         self.learning_rate = learning_rate
-        self.params = params
 
     def make_step(self, signals, dt, rng):
         delta = signals[self.delta]
-        target = signals[self.target]
-        data = signals[self.data]
+        data = [signals[d] if isinstance(d, Signal) else d
+                for d in self.data_signals]
 
-        if self.params is None:
-            def step():
-                delta[...] = self.learning_rate * self.function(target, data)
-        else:
-            def step():
-                delta[...] = self.learning_rate * self.function(target, data,
-                                                                self.params)
+        def step():
+            delta[...] = self.learning_rate * self.function(*data)
 
         return step
 
@@ -396,6 +387,10 @@ def build_learning_rule(model, rule):
         delta = Signal(
             np.zeros((post.n_neurons, post.dimensions)), name='Delta')
     elif rule.modifies in ('decoders', 'weights'):
+        if model.sig[conn]['weights'].ndim < 2:
+            raise BuildError(
+                "'transform' must be a 2-dimensional array for learning")
+
         pre = get_pre_ens(conn)
         target = model.sig[conn]['weights']
         tag = "weights += delta"
@@ -408,6 +403,12 @@ def build_learning_rule(model, rule):
                 np.zeros((conn.size_out, pre.n_neurons)), name='Delta')
     else:
         raise BuildError("Unknown target %r" % rule.modifies)
+
+    # add PreserveValue op
+    if not any(isinstance(op, PreserveValue) and op.dst is target
+               for op in model.operators):
+        target.readonly = False
+        model.add_op(PreserveValue(target))
 
     assert delta.shape == target.shape
     model.add_op(
@@ -637,8 +638,7 @@ def build_pes(model, pes, rule):
 def build_generic_rule(model, gr, rule):
     """Builds a `.GenericRule` object into a model.
 
-    Finds the appropriate target signal based on the ``modifies`` rule
-    attribute, creates the input signal for the learning rule, and adds a
+    Finds the appropriate data signals from the list of Probes, and adds a
     `.SimGenericRule` operator to the model to implement the learning rule.
 
     Parameters
@@ -656,21 +656,9 @@ def build_generic_rule(model, gr, rule):
     more than once with the same `.GenericRule` instance.
     """
 
-    # get signal for target of learning rule
-    if rule.modifies == 'encoders':
-        post = get_post_ens(rule.connection)
-        target = model.sig[post]['encoders']
-    elif rule.modifies in ('decoders', 'weights'):
-        target = model.sig[rule.connection]['weights']
-
-    # set up data signal
-    data = Signal(np.zeros(rule.size_in), name="GenericRule:data")
-    model.add_op(Reset(data))
-    model.sig[rule]['in'] = data  # data connection will attach here
+    data_signals = ([build_probe(model, p)
+                     for p in gr.data_sources]
+                    if gr.data_sources is not None else [])
 
     model.add_op(SimGenericRule(
-        target, data, model.sig[rule]['delta'], gr.function, gr.learning_rate,
-        model.params if gr.pass_model_params else None))
-
-    model.sig[rule]['target'] = target
-    model.sig[rule]['data'] = data
+        model.sig[rule]['delta'], gr.function, data_signals, gr.learning_rate))

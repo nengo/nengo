@@ -6,7 +6,7 @@ from nengo.builder import Builder, Signal
 from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import (
-    DotInc, ElementwiseInc, PreserveValue, Reset, SlicedCopy)
+    DotInc, ElementwiseInc, Reset, SlicedCopy)
 from nengo.connection import Connection
 from nengo.dists import Distribution
 from nengo.ensemble import Ensemble, Neurons
@@ -279,27 +279,12 @@ def build_connection(model, conn):
         signal, model.sig[conn]['out'], dst_slice=post_slice,
         inc=True, tag="%s.gain" % conn))
 
-    # Build learning rules
+    # Build learning rule connection object
     if conn.learning_rule is not None:
         rule = conn.learning_rule
         rule = [rule] if not is_iterable(rule) else rule
-        targets = []
         for r in itervalues(rule) if isinstance(rule, dict) else rule:
             model.build(r)
-            targets.append(r.modifies)
-
-        if 'encoders' in targets:
-            encoder_sig = model.sig[conn.post_obj]['encoders']
-            if not any(isinstance(op, PreserveValue) and op.dst is encoder_sig
-                       for op in model.operators):
-                encoder_sig.readonly = False
-                model.add_op(PreserveValue(encoder_sig))
-        if 'decoders' in targets or 'weights' in targets:
-            if weights.ndim < 2:
-                raise BuildError(
-                    "'transform' must be a 2-dimensional array for learning")
-            model.sig[conn]['weights'].readonly = False
-            model.add_op(PreserveValue(model.sig[conn]['weights']))
 
     model.params[conn] = BuiltConnection(eval_points=eval_points,
                                          solver_info=solver_info,

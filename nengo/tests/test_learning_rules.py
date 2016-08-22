@@ -12,7 +12,6 @@ def _test_pes(Simulator, nl, plt, seed,
               pre_neurons=False, post_neurons=False, weight_solver=False,
               vin=np.array([0.5, -0.5]), vout=None, n=200,
               function=None, transform=np.array(1.), rate=1e-3):
-
     vout = np.array(vin) if vout is None else vout
 
     model = nengo.Network(seed=seed)
@@ -83,7 +82,7 @@ def test_pes_weight_solver(Simulator, plt, seed):
 
 def test_pes_ens_slice(Simulator, plt, seed):
     vin = [0.5, -0.5]
-    vout = [vin[0]**2 + vin[1]**2]
+    vout = [vin[0] ** 2 + vin[1] ** 2]
     function = lambda x: [x[0] - x[1]]
     _test_pes(Simulator, nengo.LIF, plt, seed, vin=vin, vout=vout,
               function=function)
@@ -186,7 +185,7 @@ def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt):
     with m:
         u = nengo.Node(WhiteSignal(0.5, high=10), size_out=2)
         a = nengo.Ensemble(n, dimensions=2)
-        b = nengo.Ensemble(n+1, dimensions=2)
+        b = nengo.Ensemble(n + 1, dimensions=2)
         nengo.Connection(u, a)
 
         if solver:
@@ -205,7 +204,7 @@ def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt):
         ap = nengo.Probe(a, synapse=0.03)
         up = nengo.Probe(b, synapse=0.03)
 
-    with Simulator(m, seed=seed+1) as sim:
+    with Simulator(m, seed=seed + 1) as sim:
         sim.run(0.5)
     t = sim.trange()
 
@@ -313,6 +312,7 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
 
 def test_learningruletypeparam():
     """LearningRuleTypeParam must be one or many learning rules."""
+
     class Test(object):
         lrp = LearningRuleTypeParam('lrp', default=None)
 
@@ -333,6 +333,7 @@ def test_learningruletypeparam():
 
 def test_learningrule_attr(seed):
     """Test learning_rule attribute on Connection"""
+
     def check_rule(rule, conn, rule_type):
         assert rule.connection is conn and rule.learning_rule_type is rule_type
 
@@ -369,7 +370,7 @@ def test_voja_encoders(Simulator, nl_nodirect, rng, seed):
 
     # Set the first half to always fire with random encoders, and the
     # remainder to never fire due to their encoder's dot product with the input
-    intercepts = np.asarray([-1]*n_change + [0.99]*(n - n_change))
+    intercepts = np.asarray([-1] * n_change + [0.99] * (n - n_change))
     rand_encoders = UniformHypersphere(surface=True).sample(
         n_change, len(learned_vector), rng=rng)
     encoders = np.append(
@@ -480,35 +481,37 @@ def test_generic_rule(Simulator, nl_nodirect, seed, modifies):
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=input_vector)
+        error = nengo.Node(size_in=2)
         a = nengo.Ensemble(n, dimensions=2)
         b = nengo.Ensemble(n, dimensions=2)
 
         nengo.Connection(u, a)
-
-        if modifies == "decoders":
-            def regularized_pes(target, data):
-                return -dt / n * np.outer(data[:2], data[2:]) - target * reg
-        else:
-            def regularized_pes(target, data, params):
-                encoders = params[b].encoders
-                gains = params[b].gain
-                return (-dt / n *
-                        np.outer(np.dot(encoders, data[:2]) * gains,
-                                 data[2:]) - target * reg)
-
-        rule = GenericRule(regularized_pes, learning_rate=1e-3,
-                           size_in=2 + n, modifies=modifies,
-                           pass_model_params=modifies == "weights")
-
+        nengo.Connection(b, error)
+        nengo.Connection(u, error)
         conn = nengo.Connection(
             a if modifies == "decoders" else a.neurons,
             b if modifies == "decoders" else b.neurons,
             transform=1 if modifies == "decoders" else
-            nengo.dists.Gaussian(0, 0.001),
-            learning_rule_type=rule)
-        nengo.Connection(b, conn.learning_rule[:2])
-        nengo.Connection(u, conn.learning_rule[:2])
-        nengo.Connection(a.neurons, conn.learning_rule[2:], synapse=0.005)
+            nengo.dists.Gaussian(0, 0.001))
+
+        if modifies == "decoders":
+            def regularized_pes(target, error, activities):
+                return -dt / n * np.outer(error, activities) - target * reg
+        else:
+            def regularized_pes(target, error, activities, params):
+                return (-dt / n * np.outer(np.dot(params.encoders, error) *
+                                           params.gain, activities) -
+                        target * reg)
+
+        probes = [
+            nengo.Probe(conn, attr="weights"),
+            nengo.Probe(error),
+            nengo.Probe(a.neurons, synapse=0.005)]
+        if modifies == "weights":
+            probes += [nengo.Probe(b, attr='params')]
+
+        conn.learning_rule_type = GenericRule(
+            regularized_pes, probes, learning_rate=1e-3, modifies=modifies)
 
         b_p = nengo.Probe(b, synapse=0.1)
         weights_p = nengo.Probe(conn, attr="weights")
@@ -547,18 +550,19 @@ def test_generic_encoders(Simulator, nl_nodirect, rng, seed):
                            intercepts=intercepts, encoders=encoders,
                            radius=2.0)  # to test encoder scaling
 
-        def generic_voja(enc, data, params):
-            scale = (params[x].gain / x.radius)[:, None]
-            return (scale * np.outer(data[:n], data[n:]) -
-                    data[:n, None] * enc)
+        def generic_voja(enc, input, activities, params):
+            scale = (params.gain / x.radius)[:, None]
+            return (scale * np.outer(activities, input) -
+                    activities[:, None] * enc)
 
-        conn = nengo.Connection(
+        nengo.Connection(
             u, x, synapse=None,
             learning_rule_type=GenericRule(
-                generic_voja, learning_rate=1e-1 * dt, modifies="encoders",
-                size_in=len(learned_vector) + n, pass_model_params=True))
-        nengo.Connection(u, conn.learning_rule[n:], synapse=None)
-        nengo.Connection(x.neurons, conn.learning_rule[:n], synapse=0.005)
+                generic_voja, [nengo.Probe(x, 'encoders'),
+                               nengo.Probe(u),
+                               nengo.Probe(x.neurons, synapse=0.005),
+                               nengo.Probe(x, 'params')],
+                learning_rate=1e-1 * dt, modifies="encoders"))
 
     with Simulator(m, dt=dt) as sim:
         sim.run(1.0)
