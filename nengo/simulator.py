@@ -201,7 +201,10 @@ class Simulator(object):
                       probe.sample_every / self.dt)
             if self.n_steps % period < 1:
                 tmp = self.signals[self.model.sig[probe]['in']].copy()
-                self._probe_outputs[probe].append(tmp)
+                if probe.keep_history:
+                    self._probe_outputs[probe].append(tmp)
+                else:
+                    self._probe_outputs[probe] = tmp
 
     def _probe_step_time(self):
         self._n_steps = self.signals[self.model.step].copy()
