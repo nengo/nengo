@@ -115,5 +115,5 @@ def build_probe(model, probe):
 
     # Simulator will fill this list with probe data during simulation
     model.params[probe] = []
-    
+
     return model.sig[probe]['in']
