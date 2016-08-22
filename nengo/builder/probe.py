@@ -100,6 +100,11 @@ def build_probe(model, probe):
         raise BuildError(
             "Type %r is not probeable" % type(probe.obj).__name__)
 
+    if probe.attr == 'params':
+        # don't add this probe to the model probe lists
+        model.params[probe] = model.params[probe.obj]
+        return
+
     key = probeables[probe.attr] if probe.attr in probeables else probe.attr
     if key is None:
         conn_probe(model, probe)

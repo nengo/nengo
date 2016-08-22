@@ -354,7 +354,7 @@ class Connection(NengoObject):
         Linear transform mapping the pre function output to the post input.
     """
 
-    probeable = ('output', 'input', 'weights')
+    probeable = ('output', 'input', 'weights', 'params')
 
     pre = PrePostParam('pre', nonzero_size_out=True)
     post = PrePostParam('post', nonzero_size_in=True)
