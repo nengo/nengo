@@ -497,7 +497,7 @@ def test_generic_rule(Simulator, nl_nodirect, seed, modifies):
                                  pre.get_input('neurons.out')) - target * reg)
 
         rule = GenericRule(regularized_pes, learning_rate=1e-3,
-                           size_in=2, modifies=modifies,
+                           size_in=None, modifies=modifies,
                            filters={'pre.neurons.out': 0.005})
 
         conn = nengo.Connection(
