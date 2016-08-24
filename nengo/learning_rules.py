@@ -338,20 +338,14 @@ class GenericRule(LearningRuleType):
         The dimensionality of the data vector input to the function
     modifies : 'weights' or 'decoders' or 'encoders'
         The signal targeted by the learning rule
-    pass_model_params : bool
-        Selects whether or not the compiled model parameters will be passed
-        to the learning rule function
     """
 
     probeable = ('target', 'data', 'delta')
 
-    pass_model_params = BoolParam('pass_model_params')
-
     def __init__(self, function, learning_rate=1.0, size_in=0,
-                 modifies="decoders", pass_model_params=False):
+                 modifies="decoders"):
         self.modifies = modifies
         self.function = function
-        self.pass_model_params = pass_model_params
 
         super(GenericRule, self).__init__(learning_rate=learning_rate,
                                           size_in=size_in)

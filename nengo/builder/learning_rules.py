@@ -280,6 +280,42 @@ class SimVoja(Operator):
         return step_simvoja
 
 
+class GenericRulePartakerSignals(object):
+    def __init__(self, model, obj):
+        self.obj = obj
+        self._obj_signals = model.sig[obj]
+        if hasattr(obj, 'neurons'):
+            self._neuron_signals = model.sig[obj.neurons]
+        else:
+            self._neuron_signals = {}
+        self.built_params = model.params.get(obj, None)
+
+    def signals(self):
+        return [v for v in
+                self._obj_signals.values() + self._neuron_signals.values()
+                if v is not None]
+
+    def bind(self, signal_arrays):
+        bound_signals = {
+            k: signal_arrays[v] for k, v in self._obj_signals.items()
+            if v is not None}
+        bound_signals.update({
+            'neurons.' + k: signal_arrays[v]
+            for k, v in self._neuron_signals.items() if v is not None})
+        return GenericRuleBoundSignals(
+            self.obj, self.built_params, bound_signals)
+
+
+class GenericRuleBoundSignals(object):
+    def __init__(self, obj, built_params, bound_signals):
+        self.obj = obj
+        self.built_params = built_params
+        self._bound_signals = bound_signals
+
+    def get_input(self, name):
+        return self._bound_signals[name]
+
+
 class SimGenericRule(Operator):
     """Compute change in target using the given function.
 
@@ -295,9 +331,6 @@ class SimGenericRule(Operator):
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
         The scalar learning rate.
-    params : dict, optional (Default: None)
-        The ``model.params`` attribute from the build process, will be passed
-        to the update function if not ``None``.
     tag : str, optional (Default: None)
         A label associated with the operator, for debugging purposes.
 
@@ -309,40 +342,40 @@ class SimGenericRule(Operator):
     4. updates ``[delta]``
     """
 
-    def __init__(self, target, data, delta, function, learning_rate,
-                 params=None, tag=None):
+    def __init__(
+            self, pre, post, target, data, delta, function, learning_rate,
+            tag=None):
         super(SimGenericRule, self).__init__(tag=tag)
 
         self.sets = []
         self.incs = []
-        self.reads = [data, target]
+        self.reads = [target, data] + pre.signals() + post.signals()
         self.updates = [delta]
 
+        self.pre = pre
+        self.post = post
         self.target = target
-        self.delta = delta
         self.data = data
+        self.delta = delta
         self.function = function
         self.learning_rate = learning_rate
-        self.params = params
 
     def make_step(self, signals, dt, rng):
-        delta = signals[self.delta]
+        pre = self.pre.bind(signals)
+        post = self.post.bind(signals)
         target = signals[self.target]
         data = signals[self.data]
+        delta = signals[self.delta]
 
-        if self.params is None:
-            def step():
-                delta[...] = self.learning_rate * self.function(target, data)
-        else:
-            def step():
-                delta[...] = self.learning_rate * self.function(target, data,
-                                                                self.params)
+        def step():
+            delta[...] = self.learning_rate * self.function(
+                pre, post, dt, target, data)
 
         return step
 
 
 def get_pre_ens(conn):
-    return (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
+    return (conn.pre_obj if isinstance(conn.pre_obj, (Ensemble, Node))
             else conn.pre_obj.ensemble)
 
 
@@ -669,8 +702,9 @@ def build_generic_rule(model, gr, rule):
     model.sig[rule]['in'] = data  # data connection will attach here
 
     model.add_op(SimGenericRule(
-        target, data, model.sig[rule]['delta'], gr.function, gr.learning_rate,
-        model.params if gr.pass_model_params else None))
+        GenericRulePartakerSignals(model, get_pre_ens(rule.connection)),
+        GenericRulePartakerSignals(model, get_post_ens(rule.connection)),
+        target, data, model.sig[rule]['delta'], gr.function, gr.learning_rate))
 
     model.sig[rule]['target'] = target
     model.sig[rule]['data'] = data
