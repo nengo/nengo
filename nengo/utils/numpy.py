@@ -249,6 +249,10 @@ class array_like(object):
             callargs = inspect.getcallargs(_wrapped, *args, **kwargs)
             for arg in self.arguments:
                 callargs[arg] = np.array(callargs[arg], **self.array_kwargs)
-            return wrapped(**callargs)
+
+            args = tuple(callargs[arg] for arg in argspec.args)
+            varargs = callargs.get(argspec.varargs, ())
+            keywords = callargs.get(argspec.keywords, {})
+            return wrapped(*(args + varargs), **kwargs)
 
         return FunctionWrapper(wrapped, wrapper)
