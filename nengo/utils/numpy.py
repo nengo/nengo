@@ -81,24 +81,12 @@ def array_hash(a, n=100):
         return hash(v.data if PY2 else v.data.tobytes())
 
 
-def array_base(x):
-    """Get base array (that is *not* a view) for ``x``.
-
-    In Numpy >= 1.7, this is simply ``x.base``. However, in Numpy <= 1.6,
-    we need to loop back through the bases, since bases can be views.
-    """
-    while x.base is not None:
-        x = x.base
-    return x
-
-
 def array_offset(x):
     """Get offset of array data from base data in bytes."""
     if x.base is None:
         return 0
 
-    base = array_base(x)
-    base_start = base.__array_interface__['data'][0]
+    base_start = x.base.__array_interface__['data'][0]
     start = x.__array_interface__['data'][0]
     return start - base_start
 
@@ -150,8 +138,7 @@ def norm(x, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
-    y = np.sqrt(np.sum(x**2, axis=axis))
-    return np.expand_dims(y, axis=axis) if keepdims else y
+    return np.sqrt(np.sum(x**2, axis=axis, keepdims=keepdims))
 
 
 def meshgrid_nd(*args):
@@ -174,8 +161,7 @@ def rms(x, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
-    y = np.sqrt(np.mean(x**2, axis=axis))
-    return np.expand_dims(y, axis=axis) if keepdims else y
+    return np.sqrt(np.mean(x**2, axis=axis, keepdims=keepdims))
 
 
 def rmse(x, y, axis=None, keepdims=False):
