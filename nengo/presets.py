@@ -3,7 +3,7 @@
 import nengo
 
 
-def ThresholdingEnsembles(threshold):
+def ThresholdingEnsembles(threshold, intercept_width=0.15, radius=1.):
     """Configuration preset for a thresholding ensemble.
 
     This preset adjust ensemble parameters for thresholding. The ensemble's
@@ -13,18 +13,25 @@ def ThresholdingEnsembles(threshold):
 
     This preset:
 
-    - Sets intercepts to be between ``threshold`` and 1 with an exponential
-      distribution (shape parameter of 0.15). This clusters intercepts near
-      the threshold for better approximation.
+    - Sets intercepts to be between ``threshold`` and ``radius`` with an
+      exponential distribution (shape parameter of ``intercept_width``).
+      This clusters intercepts near the threshold for better approximation.
     - Sets encoders to 1.
     - Sets dimensions to 1.
     - Sets evaluation points to be uniformly distributed between
-      ``threshold`` and 1.
+      ``threshold`` and ``radius``.
+    - Sets the radius.
 
     Parameters
     ----------
     threshold : float
         Point at which ensembles should start firing.
+    intercept_width : float, optional (Default: 0.15)
+        Controls how widely distributed the intercepts are. Smaller values
+        give more clustering at the threshold, larger values give a more
+        uniform distribution.
+    radius : float, optional (Default: 1.)
+        Ensemble radius.
 
     Returns
     -------
@@ -33,8 +40,10 @@ def ThresholdingEnsembles(threshold):
     """
     config = nengo.Config(nengo.Ensemble)
     config[nengo.Ensemble].dimensions = 1
+    config[nengo.Ensemble].radius = radius
     config[nengo.Ensemble].intercepts = nengo.dists.Exponential(
-        0.15, threshold, 1.)
+        intercept_width, threshold, radius)
     config[nengo.Ensemble].encoders = nengo.dists.Choice([[1]])
-    config[nengo.Ensemble].eval_points = nengo.dists.Uniform(threshold, 1.)
+    config[nengo.Ensemble].eval_points = nengo.dists.Uniform(
+        threshold / radius, 1)
     return config
