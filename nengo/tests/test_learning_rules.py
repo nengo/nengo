@@ -497,7 +497,8 @@ def test_generic_rule(Simulator, nl_nodirect, seed, modifies):
                                  pre.get_input('neurons.out')) - target * reg)
 
         rule = GenericRule(regularized_pes, learning_rate=1e-3,
-                           size_in=2, modifies=modifies)
+                           size_in=2, modifies=modifies,
+                           filters={'pre.neurons.out': 0.005})
 
         conn = nengo.Connection(
             a if modifies == "decoders" else a.neurons,
@@ -507,8 +508,6 @@ def test_generic_rule(Simulator, nl_nodirect, seed, modifies):
             learning_rule_type=rule)
         nengo.Connection(b, conn.learning_rule)
         nengo.Connection(u, conn.learning_rule)
-        # nengo.Connection(a.neurons, conn.learning_rule[2:], synapse=0.005)
-        # FIXME filter
 
         b_p = nengo.Probe(b, synapse=0.1)
         weights_p = nengo.Probe(conn, attr="weights")
@@ -556,10 +555,7 @@ def test_generic_encoders(Simulator, nl_nodirect, rng, seed):
             u, x, synapse=None,
             learning_rule_type=GenericRule(
                 generic_voja, learning_rate=1e-1, modifies="encoders",
-                size_in=0))
-        # nengo.Connection(u, conn.learning_rule[n:], synapse=None)
-        # nengo.Connection(x.neurons, conn.learning_rule[:n], synapse=0.005)
-        # FIXME synapse
+                size_in=0, filters={'post.neurons.out': 0.005}))
 
     with Simulator(m) as sim:
         sim.run(1.0)

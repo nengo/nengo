@@ -8,6 +8,7 @@ from nengo.exceptions import BuildError
 from nengo.learning_rules import BCM, Oja, PES, Voja, GenericRule
 from nengo.node import Node
 from nengo.synapses import Lowpass
+from nengo.utils.compat import is_number
 
 
 class SimBCM(Operator):
@@ -282,10 +283,11 @@ class SimVoja(Operator):
 
 class GenericRulePartakerSignals(object):
     def __init__(self, model, obj):
+        self.model = model
         self.obj = obj
-        self._obj_signals = model.sig[obj]
+        self._obj_signals = dict(model.sig[obj])
         if hasattr(obj, 'neurons'):
-            self._neuron_signals = model.sig[obj.neurons]
+            self._neuron_signals = dict(model.sig[obj.neurons])
         else:
             self._neuron_signals = {}
         self.built_params = model.params.get(obj, None)
@@ -304,6 +306,17 @@ class GenericRulePartakerSignals(object):
             for k, v in self._neuron_signals.items() if v is not None})
         return GenericRuleBoundSignals(
             self.obj, self.built_params, bound_signals)
+
+    def apply_filter(self, input_name, synapse):
+        if is_number(synapse):
+            synapse = Lowpass(synapse)
+        if input_name.startswith('neurons.'):
+            name = input_name[len('neurons.'):]
+            self._neuron_signals[name] = self.model.build(
+                synapse, self._neuron_signals[name])
+        else:
+            self._obj_signals[input_name] = self.model.build(
+                synapse, self._obj_signals[input_name])
 
 
 class GenericRuleBoundSignals(object):
@@ -701,9 +714,22 @@ def build_generic_rule(model, gr, rule):
     model.add_op(Reset(data))
     model.sig[rule]['in'] = data  # data connection will attach here
 
+
+    pre_sigs = GenericRulePartakerSignals(model, get_pre_ens(rule.connection))
+    post_sigs = GenericRulePartakerSignals(
+        model, get_post_ens(rule.connection))
+    for k, v in rule.learning_rule_type.filters.items():
+        if k.startswith('pre.'):
+            pre_sigs.apply_filter(k[len('pre.'):], v)
+        elif k.startswith('post.'):
+            post_sigs.apply_filter(k[len('post.'):], v)
+        else:
+            raise BuildError(
+                'Invalid filter target "{}". Needs to start with "pre." or '
+                '"post.".'.format(k))
+
     model.add_op(SimGenericRule(
-        GenericRulePartakerSignals(model, get_pre_ens(rule.connection)),
-        GenericRulePartakerSignals(model, get_post_ens(rule.connection)),
+        pre_sigs, post_sigs,
         target, data, model.sig[rule]['delta'], gr.function, gr.learning_rate))
 
     model.sig[rule]['target'] = target

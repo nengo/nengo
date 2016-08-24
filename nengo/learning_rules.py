@@ -343,9 +343,10 @@ class GenericRule(LearningRuleType):
     probeable = ('target', 'data', 'delta')
 
     def __init__(self, function, learning_rate=1.0, size_in=0,
-                 modifies="decoders"):
+                 modifies="decoders", filters={}):
         self.modifies = modifies
         self.function = function
+        self.filters = filters
 
         super(GenericRule, self).__init__(learning_rate=learning_rate,
                                           size_in=size_in)
