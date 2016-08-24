@@ -34,6 +34,11 @@ Release History
   connection through the ``function`` argument.
   (`#1010 <https://github.com/nengo/nengo/pull/1010>`_)
 
+**Behavioural changes**
+
+- Dropped support for NumPy 1.6. Oldest supported NumPy version is now 1.7.
+  (`#1147 <https://github.com/nengo/nengo/pull/1147>`_)
+
 **Improvements**
 
 - Added a ``nengo.backends`` entry point to make the reference simulator

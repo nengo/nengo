@@ -44,10 +44,10 @@ setup(
     # Without this, `setup.py install` fails to install NumPy.
     # See https://github.com/nengo/nengo/issues/508 for details.
     setup_requires=["pytest-runner"] if testing else [] + [
-        "numpy>=1.6",
+        "numpy>=1.7",
     ],
     install_requires=[
-        "numpy>=1.6",
+        "numpy>=1.7",
     ],
     extras_require={
         'all_solvers': ["scipy>=0.13", "scikit-learn"],
