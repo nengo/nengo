@@ -8,21 +8,6 @@ from nengo.exceptions import ValidationError
 from nengo.utils.compat import is_iterable
 
 
-def enable_spa_params(model):
-    """Enables the SPA specific parameters on a model.
-
-    Parameters
-    ----------
-    model : Network
-        Model to activate SPA specific parameters for.
-    """
-    from nengo.spa.vocab import VocabularyParam
-
-    for obj_type in [nengo.Node, nengo.Ensemble]:
-        model.config[obj_type].set_param(
-            'vocab', VocabularyParam('vocab', None, optional=True))
-
-
 def similarity(data, vocab, normalize=False):
     """Return the similarity between some data and the vocabulary.
 
