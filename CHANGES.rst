@@ -54,6 +54,11 @@ Release History
 - Tweaked ``rasterplot`` so that spikes from different neurons don't overlap.
   (`#1121 <https://github.com/nengo/nengo/pull/1121>`_)
 
+**Documentation**
+
+- Added a page explaining the config system and preset configs.
+  (`#1150 <https://github.com/nengo/nengo/pull/1150>`_)
+
 **Bug fixes**
 
 - Fixed some situations where the cache index becomes corrupt by

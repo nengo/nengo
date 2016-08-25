@@ -6,6 +6,7 @@ User Guide
    :maxdepth: 2
 
    frontend_api
+   config
    networks
    spa
    backend_api

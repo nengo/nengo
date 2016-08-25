@@ -23,10 +23,16 @@ from nengo.utils.threading import ThreadLocalStack
 
 
 class ClassParams(object):
-    """A class to store extra parameters and defaults on Nengo classes.
+    """A class to store extra parameters and defaults on configured classes.
 
-    This is used by the ``Config`` object to add new ``Parameter``s
-    to existing Nengo objects. It should not be instantiated manually.
+    This is used by `.Config` to associate defaults and new `.Parameter`
+    instances with existing objects. It should not be instantiated outside of
+    `.Config.configures`.
+
+    Parameters
+    ----------
+    configures : class
+        The class with which to associate new defaults and parameters.
     """
 
     def __init__(self, configures):
@@ -118,11 +124,11 @@ class ClassParams(object):
 
 
 class InstanceParams(object):
-    """A class to store extra parameters on Nengo objects.
+    """A class to store parameter value on configured objects.
 
-    This restricts the amount of configurability for instances.
-    All you can do is get and set parameter values; getting and setting
-    the parameters themselves can only be done on the class.
+    In contrast to `.ClassParams`, the only thing that can be done with
+    ``InstanceParams`` is get and set parameter values. Use the corresponding
+    `.ClassParams` to set defaults and create new parameters.
     """
 
     def __init__(self, configures, clsparams):
@@ -198,33 +204,64 @@ class InstanceParams(object):
 
 
 class Config(object):
-    """Configures network-level behavior and backend specific parameters.
+    """Configures network-level defaults and additional parameters.
 
-    Every ``Network`` contains an associated ``Config`` object which can
-    be manipulated to change overall network behavior, and to store
-    backend specific parameters. Subnetworks inherit the ``Config`` of
-    their parent, but can be manipulated independently.
-    The top-level network inherits ``nengo.toplevel_config``.
+    Every `.Network` contains an associated ``Config`` object which can
+    be manipulated to change network-specific defaults, and to store
+    additional parameters (for example, those specific to a backend).
+
+    A ``Config`` object can configure objects of any class, but it has to be
+    told the classes to configure first. This is either done on instantiation
+    of the ``Config`` object or by calling the `.configures`  method.
+    This sets up a mapping between configured class and a `.ClassParams`
+    object that sets the default values for that class. Attempting to
+    configure an instance of a configure class will create a mapping from
+    that instance to an `.InstanceParams` object to configure additional
+    parameters for that instance.
+
+    Parameters
+    ----------
+    *configures
+        The classes that this ``Config`` instance will configure.
 
     Attributes
     ----------
     params : dict
-        Maps configured classes and instances to their ``ClassParams``
-        or ``InstanceParams`` object.
+        Maps configured classes and instances to their `.ClassParams`
+        or `.InstanceParams` object.
 
-    Example
-    -------
-    >>> class A(object): pass
-    >>> inst = A()
-    >>> config = Config(A)
-    >>> config[A].set_param('amount', Parameter(default=1))
-    >>> print(config[inst].amount)
-    1
-    >>> config[inst].amount = 3
-    >>> print(config[inst].amount)
-    3
-    >>> print(config[A].amount)
-    1
+    Examples
+    --------
+
+    To configure defaults on a network::
+
+        net = nengo.Network()
+        net.config[nengo.Ensemble].radius = 1.5
+        with net:
+            ens = nengo.Ensemble(10, 1)
+        ens.radius == 1.5  # True
+
+    To add a new parameter to a Nengo object::
+
+        net.config[nengo.Ensemble].set_param(
+            'location', nengo.params.Parameter('location'))
+        net.config[ens].location = 'cortex'
+
+    To group together a set of prameters::
+
+        gaba = nengo.Config(nengo.Connection)
+        gaba[nengo.Connection].synapse = nengo.Lowpass(0.008)
+        with net, gaba:
+            conn = nengo.Connection(ens, ens)
+        conn.synapse == nengo.Lowpass(0.008)  # True
+
+    To configure a new type of object::
+
+        class SynapseInfo(object):
+            label = nengo.params.StringParam('label')
+        gaba.configures(SynapseInfo)
+        gaba[SynapseInfo].label = "GABA"  # Set default label
+
     """
 
     context = ThreadLocalStack(maxsize=100)  # static stack of Config objects

@@ -20,12 +20,7 @@ The following examples will help you to build your own networks:
    examples/network_design
    examples/network_design_advanced
 
-You may also find the following documentation on the ``config`` system
-useful:
-
-.. toctree::
-
-   examples/config
+You may also find the :doc:`config system documentation <config>` useful.
 
 .. autoclass:: nengo.networks.EnsembleArray
 
