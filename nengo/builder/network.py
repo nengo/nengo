@@ -6,13 +6,14 @@ import numpy as np
 import nengo.utils.numpy as npext
 from nengo.builder import Builder
 from nengo.network import Network
+from nengo.utils.progress import ProgressTracker
 
 logger = logging.getLogger(__name__)
 nullcontext = contextlib.contextmanager(lambda: (yield))
 
 
 @Builder.register(Network)  # noqa: C901
-def build_network(model, network):
+def build_network(model, network, progress_bar=False):
     """Builds a `.Network` object into a model.
 
     The network builder does this by mapping each high-level object to its
@@ -35,6 +36,17 @@ def build_network(model, network):
         The model to build into.
     network : Network
         The network to build.
+    progress_bar : bool or `.ProgressBar` or `.ProgressUpdater`, optional \
+                   (Default: False)
+        Progress bar for displaying build progress.
+
+        If True, the default progress bar will be used.
+        If False, the progress bar will be disabled.
+        For more control over the progress bar, pass in a `.ProgressBar`
+        or `.ProgressUpdater` instance.
+
+        Note that this will only affect top-level networks. Subnetworks
+        cannot have progress bars displayed.
 
     Notes
     -----
@@ -51,6 +63,11 @@ def build_network(model, network):
         model.toplevel = network
         model.seeds[network] = get_seed(network, np.random)
         model.seeded[network] = getattr(network, 'seed', None) is not None
+    else:
+        progress_bar = False
+
+    max_steps = max(1, len(network.all_objects))
+    progress = ProgressTracker(max_steps, progress_bar, task="Building")
 
     # Set config
     old_config = model.config
@@ -68,7 +85,8 @@ def build_network(model, network):
     # If this is the toplevel network, enter the decoder cache
     context = (model.decoder_cache if model.toplevel is network
                else nullcontext())
-    with context:
+    with context, progress:
+        model.build_callback = lambda obj: progress.step()
 
         logger.debug("Network step 1: Building ensembles and nodes")
         for obj in network.ensembles + network.nodes:
@@ -96,6 +114,8 @@ def build_network(model, network):
 
         if context is model.decoder_cache:
             model.decoder_cache.shrink()
+
+        model.build_callback = None
 
     # Unset config
     model.config = old_config

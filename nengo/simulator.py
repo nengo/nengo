@@ -90,6 +90,14 @@ class Simulator(object):
         want to build the network manually, or you want to inject build
         artifacts in the model before building the network, then you can
         pass in a `.Model` instance.
+    progress_bar : bool or `.ProgressBar` or `.ProgressUpdater`, optional \
+                   (Default: True)
+        Progress bar for displaying build and simulation progress.
+
+        If ``True``, the default progress bar will be used.
+        If ``False``, the progress bar will be disabled.
+        For more control over the progress bar, pass in a `.ProgressBar`
+        or `.ProgressUpdater` instance.
 
     Attributes
     ----------
@@ -117,8 +125,10 @@ class Simulator(object):
     # would skip all test whose names start with 'test_pes'.
     unsupported = []
 
-    def __init__(self, network, dt=0.001, seed=None, model=None):
+    def __init__(
+            self, network, dt=0.001, seed=None, model=None, progress_bar=True):
         self.closed = False
+        self.progress_bar = progress_bar
 
         if model is None:
             self._model = Model(dt=float(dt),
@@ -129,7 +139,7 @@ class Simulator(object):
 
         if network is not None:
             # Build the network into the model
-            self._model.build(network)
+            self._model.build(network, progress_bar=self.progress_bar)
 
         # -- map from Signal.base -> ndarray
         self.signals = SignalDict()
@@ -253,7 +263,7 @@ class Simulator(object):
 
         self._probe_step_time()
 
-    def run(self, time_in_seconds, progress_bar=True):
+    def run(self, time_in_seconds, progress_bar=None):
         """Simulate for the given length of time.
 
         Parameters
@@ -274,7 +284,7 @@ class Simulator(object):
                     self._model.label, time_in_seconds, steps)
         self.run_steps(steps, progress_bar=progress_bar)
 
-    def run_steps(self, steps, progress_bar=True):
+    def run_steps(self, steps, progress_bar=None):
         """Simulate for the given number of ``dt`` steps.
 
         Parameters
@@ -290,7 +300,9 @@ class Simulator(object):
             For more control over the progress bar, pass in a `.ProgressBar`
             or `.ProgressUpdater` instance.
         """
-        with ProgressTracker(steps, progress_bar) as progress:
+        if progress_bar is None:
+            progress_bar = self.progress_bar
+        with ProgressTracker(steps, progress_bar, "Simulating") as progress:
             for i in range(steps):
                 self.step()
                 progress.step()

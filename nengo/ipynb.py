@@ -10,6 +10,11 @@ Note
 This IPython extension cannot be unloaded.
 """
 
+try:
+    from html import escape
+except ImportError:
+    from cgi import escape as cgi_escape
+    escape = lambda s, quote=True: cgi_escape(s, quote=quote)
 import warnings
 
 import IPython
@@ -89,7 +94,7 @@ class IPythonProgressWidget(DOMWidget):
           var progress = 100 * this.model.get('progress');
           var text = this.model.get('text');
           this.$el.find('div.pb-bar').width(progress.toString() + '%');
-          this.$el.find('div.pb-text').text(text);
+          this.$el.find('div.pb-text').html(text);
         },
       });
     '''
@@ -150,8 +155,9 @@ class IPython2ProgressBar(ProgressBar):
 
     supports_fast_ipynb_updates = True
 
-    def __init__(self, task="Simulation"):
+    def __init__(self, task):
         super(IPython2ProgressBar, self).__init__(task)
+        self._escaped_task = escape(task)
         self._widget = IPythonProgressWidget()
         self._initialized = False
 
@@ -163,9 +169,10 @@ class IPython2ProgressBar(ProgressBar):
         self._widget.progress = progress.progress
         if progress.finished:
             self._widget.text = "{} finished in {}.".format(
-                self.task,
+                self._escaped_task,
                 timestamp2timedelta(progress.elapsed_seconds()))
         else:
-            self._widget.text = "{progress:.0f}%, ETA: {eta}".format(
-                progress=100 * progress.progress,
-                eta=timestamp2timedelta(progress.eta()))
+            self._widget.text = (
+                "{task}&hellip; {progress:.0f}%, ETA: {eta}".format(
+                    task=self._escaped_task, progress=100 * progress.progress,
+                    eta=timestamp2timedelta(progress.eta())))

@@ -30,6 +30,10 @@ Release History
 - Added ``copy`` method to Nengo objects. Nengo objects can now be pickled.
   (`#977 <https://github.com/nengo/nengo/issues/977>`_,
   `#984 <https://github.com/nengo/nengo/pull/984>`_)
+- A progress bar now tracks the build process
+  in the terminal and Jupyter notebook.
+  (`#937 <https://github.com/nengo/nengo/issues/937>`_,
+  `#1151 <https://github.com/nengo/nengo/pull/1151>`_)
 
 **Changed**
 

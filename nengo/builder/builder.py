@@ -87,6 +87,8 @@ class Model(object):
         self.time = Signal(np.array(0, dtype=np.float64), name='time')
         self.add_op(TimeUpdate(self.step, self.time))
 
+        self.build_callback = None
+
     def __str__(self):
         return "Model: %s" % self.label
 
@@ -116,7 +118,10 @@ class Model(object):
         obj : object
             The object to build into this model.
         """
-        return Builder.build(self, obj, *args, **kwargs)
+        built = Builder.build(self, obj, *args, **kwargs)
+        if self.build_callback is not None:
+            self.build_callback(obj)
+        return built
 
     def has_built(self, obj):
         """Returns true if the object has already been built in this model.
