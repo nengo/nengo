@@ -265,6 +265,8 @@ def dummy_fn(arg):
     (1.0, 1.0, 2.0),                 # float
     (1.0 + 2.0j, 1 + 2j, 2.0 + 1j),  # complex
     (b'a', b'a', b'b'),              # bytes
+    ((0, 1), (0, 1), (0, 2)),        # tuple
+    ([0, 1], [0, 1], [0, 2]),        # list
     (u'a', u'a', u'b'),              # unicode string
     (np.eye(2), np.eye(2), np.array([[0, 1], [1, 0]])),      # array
     (DummyA(), DummyA(), DummyB()),  # object instance
@@ -280,8 +282,6 @@ def test_fingerprinting(reference, equal, different):
     np.array([object()]),   # array
     np.array([(1.,)], dtype=[('field1', 'f8')]),  # array
     {'a': 1, 'b': 2},       # dict
-    (1, 2),                 # tuple
-    [1, 2],                 # list
     object(),               # object instance
     dummy_fn,               # function
 ))

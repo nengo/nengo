@@ -16,7 +16,7 @@ from nengo.exceptions import FingerprintError, TimeoutError
 from nengo.neurons import (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich,
                            LIF, LIFRate, RectifiedLinear, Sigmoid)
 from nengo.rc import rc
-from nengo.solvers import (Solver, Lstsq, LstsqL1, Nnls, NnlsL2,
+from nengo.solvers import (Lstsq, LstsqL1, Nnls, NnlsL2,
                            NnlsL2nz, LstsqNoise, LstsqMultNoise, LstsqL2,
                            LstsqL2nz, LstsqDrop)
 from nengo.utils import nco
@@ -24,7 +24,7 @@ from nengo.utils.cache import byte_align, bytes2human, human2bytes
 from nengo.utils.compat import (
     int_types, is_string, pickle, replace, PY2, string_types)
 from nengo.utils.least_squares_solvers import (
-    LeastSquaresSolver, Cholesky, ConjgradScipy, LSMRScipy, Conjgrad,
+    Cholesky, ConjgradScipy, LSMRScipy, Conjgrad,
     BlockConjgrad, SVD, RandomizedSVD)
 from nengo.utils.lock import FileLock
 
@@ -67,11 +67,13 @@ def check_dtype(ndarray):
     return ndarray.dtype.isbuiltin == 1 and not ndarray.dtype.hasobject
 
 
-def check_subsolvers(solver):
-    attrs = [getattr(solver, x) for x in dir(solver)]
-    subsolvers = [x for x in attrs if isinstance(x, (Solver,
-                                                     LeastSquaresSolver))]
-    return all([type(x) in Fingerprint.WHITELIST for x in subsolvers])
+def check_seq(tpl):
+    return all(Fingerprint.supports(x) for x in tpl)
+
+
+def check_attrs(obj):
+    attrs = [getattr(obj, x) for x in dir(obj) if not x.startswith('_')]
+    return all(Fingerprint.supports(x) for x in attrs if not callable(x))
 
 
 class Fingerprint(object):
@@ -108,25 +110,53 @@ class Fingerprint(object):
 
     __slots__ = ('fingerprint',)
 
-    SOLVERS = (Lstsq, LstsqL1, Nnls, NnlsL2, NnlsL2nz, LstsqNoise,
-               LstsqMultNoise, LstsqL2, LstsqL2nz, LstsqDrop)
-    LSTSQ_METHODS = (Cholesky, ConjgradScipy, LSMRScipy, Conjgrad,
-                     BlockConjgrad, SVD, RandomizedSVD)
-    NEURON_TYPES = (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich, LIF,
-                    LIFRate, RectifiedLinear, Sigmoid)
+    SOLVERS = (
+        Lstsq,
+        LstsqDrop,
+        LstsqL1,
+        LstsqL2,
+        LstsqL2nz,
+        LstsqNoise,
+        LstsqMultNoise,
+        Nnls,
+        NnlsL2,
+        NnlsL2nz,
+    )
+    LSTSQ_METHODS = (
+        BlockConjgrad,
+        Cholesky,
+        Conjgrad,
+        ConjgradScipy,
+        LSMRScipy,
+        RandomizedSVD,
+        SVD,
+    )
+    NEURON_TYPES = (
+        AdaptiveLIF,
+        AdaptiveLIFRate,
+        Direct,
+        Izhikevich,
+        LIF,
+        LIFRate,
+        RectifiedLinear,
+        Sigmoid
+    )
 
     WHITELIST = set(
-        (bool, float, complex, bytes, np.ndarray) + int_types + string_types +
-        SOLVERS + LSTSQ_METHODS + NEURON_TYPES)
-    CHECKS = dict([(np.ndarray, check_dtype)] +
-                  [(x, check_subsolvers) for x in SOLVERS])
+        (bool, float, complex, bytes, list, tuple, np.ndarray) +
+        int_types + string_types +
+        SOLVERS + LSTSQ_METHODS + NEURON_TYPES
+    )
+    CHECKS = dict([
+        (np.ndarray, check_dtype),
+        (tuple, check_seq),
+        (list, check_seq)
+    ] + [
+        (x, check_attrs) for x in SOLVERS + LSTSQ_METHODS + NEURON_TYPES
+    ])
 
     def __init__(self, obj):
-        typ = type(obj)
-        not_in_whitelist = typ not in self.WHITELIST
-        failed_check = typ in self.CHECKS and not self.CHECKS[typ](obj)
-
-        if not_in_whitelist or failed_check:
+        if not self.supports(obj):
             raise FingerprintError("Object of type %r cannot be fingerprinted."
                                    % type(obj).__name__)
 
@@ -138,6 +168,13 @@ class Fingerprint(object):
 
     def __str__(self):
         return self.fingerprint.hexdigest()
+
+    @classmethod
+    def supports(cls, obj):
+        typ = type(obj)
+        in_whitelist = typ in cls.WHITELIST
+        succeeded_check = typ not in cls.CHECKS or cls.CHECKS[typ](obj)
+        return in_whitelist and succeeded_check
 
     @classmethod
     def whitelist(cls, typ, fn=None):
