@@ -1,9 +1,6 @@
-**Description:**
-<!--- What does this PR do? -->
-
 **Motivation and context:**
 <!--- Why is this change required? What problem does it solve? -->
-<!--- If it fixes an open issue, please link to the issue here. -->
+<!--- If it addresses an open issue, please link to the issue here. -->
 
 **Interactions with other PRs:**
 <!--- If this change depends on or conflicts with another PR please list it here. -->
@@ -13,9 +10,6 @@
 **How has this been tested?**
 <!--- Please describe in detail how you tested your changes. -->
 <!--- Reviewers will test your PR in at least this way. -->
-
-**Where should a reviewer start?**
-<!--- Indicate the best part to start looking to understand the changes. -->
 
 **How long should this take to review?**
 <!--- Please estimate if this PR is a quick, average, or lengthy PR. -->
@@ -27,6 +21,11 @@
 - Average (neither quick nor lengthy)
 - Lengthy (more than 150 lines changed or changes are complicated)
 
+**Where should a reviewer start?**
+<!--- If the PR warrants it, indicate where a reviewer should start reviewing. -->
+<!--- All lengthy PRs and complicated average PRs warrant this section. -->
+<!--- If the PR is quick or straightforward, remove this section. -->
+
 **Types of changes:**
 <!--- What types of changes does your code introduce? -->
 <!--- Leave all lines that apply below: -->
@@ -34,6 +33,7 @@
 - Bug fix (non-breaking change which fixes an issue)
 - New feature (non-breaking change which adds functionality)
 - Breaking change (fix or feature that causes existing functionality to change)
+- Non-code change (touches things like tests, documentation, build scripts)
 
 **Checklist:**
 <!--- Go over all the following points. Put an `x` in all the boxes that apply. -->
