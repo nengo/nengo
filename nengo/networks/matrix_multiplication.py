@@ -4,12 +4,16 @@ import nengo
 
 
 def MatrixMult(n_neurons, shape_a, shape_b, net=None):
-    if net is None:
-        net = nengo.Network(label="Matrix multiplication")
-
+    if len(shape_a) != 2:
+        raise ValueError("Shape {} is not two dimensional.".format(shape_a))
+    if len(shape_b) != 2:
+        raise ValueError("Shape {} is not two dimensional.".format(shape_a))
     if shape_a[1] != shape_b[0]:
         raise ValueError("Matrix dimensions %s and  %s are incompatible"
                          % (shape_a, shape_b))
+
+    if net is None:
+        net = nengo.Network(label="Matrix multiplication")
 
     size_a = shape_a[0] * shape_a[1]
     size_b = shape_b[0] * shape_b[1]
