@@ -19,14 +19,14 @@ def MatrixMult(n_neurons, shape_a, shape_b, net=None):
     size_b = np.prod(shape_b)
 
     with net:
-        net.input_a = nengo.Node(size_a)
-        net.input_b = nengo.Node(size_b)
+        net.input_a = nengo.Node(size_in=size_a)
+        net.input_b = nengo.Node(size_in=size_b)
 
         # The C matrix is composed of populations that each contain
         # one element of A and one element of B.
         # These elements will be multiplied together in the next step.
         size_c = size_a * shape_b[1]
-        net.C = nengo.networks.Product(n_neurons, c_size)
+        net.C = nengo.networks.Product(n_neurons, size_c)
 
         # Determine the transformation matrices to get the correct pairwise
         # products computed.  This looks a bit like black magic but if
@@ -55,13 +55,14 @@ def MatrixMult(n_neurons, shape_a, shape_b, net=None):
             net.input_b, net.C.B, transform=transform_b, synapse=None)
 
         # Now do the appropriate summing
-        net.output = nengo.Node(size_in=shape_a[0] * shape_b[1])
+        size_output = shape_a[0] * shape_b[1]
+        net.output = nengo.Node(size_in=size_output)
 
         # The mapping for this transformation is much easier, since we want to
         # combine D2 pairs of elements (we sum D2 products together)
-        transform_c = np.zeros((net.D.dimensions, c_size))
+        transform_c = np.zeros((size_output, size_c))
 
-        for i in range(c_size):
+        for i in range(size_c):
             transform_c[i // shape_b[0]][i] = 1
 
         nengo.Connection(
