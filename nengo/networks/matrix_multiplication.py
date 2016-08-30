@@ -15,8 +15,8 @@ def MatrixMult(n_neurons, shape_a, shape_b, net=None):
     if net is None:
         net = nengo.Network(label="Matrix multiplication")
 
-    size_a = shape_a[0] * shape_a[1]
-    size_b = shape_b[0] * shape_b[1]
+    size_a = np.prod(shape_a)
+    size_b = np.prod(shape_b)
 
     with net:
         # Make 2 EnsembleArrays to store the input
