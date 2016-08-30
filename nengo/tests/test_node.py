@@ -357,3 +357,14 @@ def test_seed_error():
     with nengo.Network():
         with pytest.raises(NotImplementedError):
             nengo.Node(seed=1)
+
+
+def test_node_with_offset_array_view(Simulator):
+    v = np.array([[1., 2.], [3., 4.]])
+    with nengo.Network() as model:
+        node = nengo.Node(v[1])
+        probe = nengo.Probe(node)
+        assert probe  # suppress never used warning
+
+    with Simulator(model):
+        pass

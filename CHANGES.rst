@@ -102,6 +102,9 @@ Release History
 - Added a registry system so that only stable objects are cached.
   (`#1054 <https://github.com/nengo/nengo/issues/1054>`_,
   `#1068 <https://github.com/nengo/nengo/pull/1068>`_)
+- Nodes now support array views as input.
+  (`#1156 <https://github.com/nengo/nengo/issues/1156>`_,
+  `#1157 <https://github.com/nengo/nengo/pull/1157>`_)
 
 2.1.2 (June 27, 2016)
 =====================

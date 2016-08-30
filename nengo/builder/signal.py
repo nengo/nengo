@@ -39,7 +39,8 @@ class Signal(object):
     # up in a model.
     assert_named_signals = False
 
-    def __init__(self, initial_value, name=None, base=None, readonly=False):
+    def __init__(self, initial_value,
+                 name=None, base=None, readonly=False, offset=0):
         self._initial_value = np.asarray(initial_value).view()
         self._initial_value.setflags(write=False)
 
@@ -48,6 +49,7 @@ class Signal(object):
             # make sure initial_value uses the same data as base.initial_value
             assert initial_value.base is base.initial_value.base
         self._base = base
+        self._offset = offset
 
         if self.assert_named_signals:
             assert name
@@ -67,9 +69,11 @@ class Signal(object):
             # turn one index into slice to get a view from numpy
             item = item[:-1] + (slice(item[-1], item[-1]+1),)
 
-        return Signal(self._initial_value[item],
-                      name="%s[%s]" % (self.name, item),
-                      base=self.base)
+        view = self._initial_value[item]
+        offset = (npext.array_offset(view)
+                  - npext.array_offset(self._initial_value))
+        return Signal(view, name="%s[%s]" % (self.name, item),
+                      base=self.base, offset=offset)
 
     def __repr__(self):
         return "Signal(%s, shape=%s)" % (self._name, self.shape)
@@ -138,7 +142,7 @@ class Signal(object):
     @property
     def offset(self):
         """(int) Offset of data from base in bytes."""
-        return npext.array_offset(self.initial_value)
+        return self._offset
 
     @property
     def readonly(self):
@@ -249,9 +253,9 @@ class SignalDict(dict):
                 self.init(signal.base)
 
             # get a view onto the base data
-            offset = npext.array_offset(x)
-            view = np.ndarray(shape=x.shape, strides=x.strides, offset=offset,
-                              dtype=x.dtype, buffer=self[signal.base].data)
+            view = np.ndarray(
+                shape=x.shape, strides=x.strides, offset=signal.offset,
+                dtype=x.dtype, buffer=self[signal.base].data)
             view.setflags(write=not signal.readonly)
             dict.__setitem__(self, signal, view)
         else:
