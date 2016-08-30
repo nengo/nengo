@@ -235,6 +235,7 @@ class DecoderCache(object):
         """Checks if the legacy file is up to date."""
         legacy_file = os.path.join(self.cache_dir, self._LEGACY)
         if os.path.exists(legacy_file):
+            os.utime(legacy_file, None)
             with open(legacy_file, 'r') as lf:
                 text = lf.read()
             try:
