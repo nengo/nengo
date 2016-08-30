@@ -19,12 +19,8 @@ def MatrixMult(n_neurons, shape_a, shape_b, net=None):
     size_b = np.prod(shape_b)
 
     with net:
-        # Make 2 EnsembleArrays to store the input
-        net.A = nengo.networks.EnsembleArray(n_neurons, size_a, **ens_kwargs)
-        net.B = nengo.networks.EnsembleArray(n_neurons, size_b, **ens_kwargs)
-
-        net.input_a = net.A.input
-        net.input_b = net.B.input
+        net.input_a = nengo.Node(size_a)
+        net.input_b = nengo.Node(size_b)
 
         # The C matix is composed of populations that each contain
         # one element of A and one element of B.
