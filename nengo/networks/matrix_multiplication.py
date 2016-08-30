@@ -22,18 +22,11 @@ def MatrixMult(n_neurons, shape_a, shape_b, net=None):
         net.input_a = nengo.Node(size_a)
         net.input_b = nengo.Node(size_b)
 
-        # The C matix is composed of populations that each contain
+        # The C matrix is composed of populations that each contain
         # one element of A and one element of B.
         # These elements will be multiplied together in the next step.
-        net.C = nengo.networks.EnsembleArray(n_neurons, size_a * shape_b[1],
-                                              ens_dimensions=2, **ens_kwargs)
-
-        # The appropriate encoders make the multiplication more accurate
-        # set radius to sqrt(radius^2 + radius^2)
-        for ens in net.C.ensembles:
-            ens.encoders = np.tile([[1, 1], [-1, 1], [1, -1], [-1, -1]],
-                                   (ens.n_neurons // 4, 1))
-            ens.radius = np.sqrt(2) * ens.radius
+        size_c = size_a * shape_b[1]
+        net.C = nengo.networks.Product(n_neurons, c_size)
 
         # Determine the transformation matrices to get the correct pairwise
         # products computed.  This looks a bit like black magic but if
@@ -46,40 +39,32 @@ def MatrixMult(n_neurons, shape_a, shape_b, net=None):
         # The index in C is j+k*D2+i*D2*D3, multiplied by 2 since there are
         # two values per ensemble.  We add 1 to the B index so it goes into
         # the second value in the ensemble.
-        transform_a = np.zeros((net.C.dimensions, size_a))
-        transform_b = np.zeros((net.C.dimensions, size_b))
+        transform_a = np.zeros((size_c, size_a))
+        transform_b = np.zeros((size_c, size_b))
 
         for i in range(shape_a[0]):
             for j in range(shape_a[1]):
                 for k in range(shape_b[1]):
-                    tmp = (j + k * shape_a[1] + i * size_b)
-                    transform_a[tmp * 2][j + i * shape_a[1]] = 1
-                    transform_b[tmp * 2 + 1][k + j * shape_b[1]] = 1
+                    c_index = (j + k * shape_a[1] + i * size_b)
+                    transform_a[c_index][j + i * shape_a[1]] = 1
+                    transform_b[c_index][k + j * shape_b[1]] = 1
 
-        nengo.Connection(net.A.output, net.C.input, transform=transform_a)
-        nengo.Connection(net.B.output, net.C.input, transform=transform_b)
+        nengo.Connection(
+            net.input_a, net.C.A, transform=transform_a, synapse=None)
+        nengo.Connection(
+            net.input_b, net.C.B, transform=transform_b, synapse=None)
 
-        # Now compute the products and do the appropriate summing
-        net.D = nengo.networks.EnsembleArray(n_neurons,
-                                              shape_a[0] * shape_b[1],
-                                              **ens_kwargs)
-
-        for ens in net.D.ensembles:
-            ens.radius = shape_b[0] * ens.radius
-
-        def product(x):
-            return x[0] * x[1]
+        # Now do the appropriate summing
+        net.output = nengo.Node(size_in=shape_a[0] * shape_b[1])
 
         # The mapping for this transformation is much easier, since we want to
         # combine D2 pairs of elements (we sum D2 products together)
-        transform_c = np.zeros((net.D.n_ensembles, net.C.n_ensembles))
+        transform_c = np.zeros((net.D.dimensions, c_size))
 
-        for i in range(size_a * shape_b[1]):
+        for i in range(c_size):
             transform_c[i // shape_b[0]][i] = 1
 
-        prod = net.C.add_output('product', product)
-        nengo.Connection(prod, net.D.input, transform=transform_c)
-
-        net.output = net.D.output
+        nengo.Connection(
+            net.C.output, net.output, transform=transform_c, synapse=None)
 
     return net
