@@ -5,27 +5,27 @@ import nengo
 
 class MatrixMult(nengo.Network):
 
-    def __init__(self, n_neurons, shapeA, shapeB,
+    def __init__(self, n_neurons, shape_a, shape_b,
                  label=None, **ens_kwargs):
 
-        if shapeA[1] != shapeB[0]:
+        if shape_a[1] != shape_b[0]:
             raise ValueError("Matrix dimensions %s and  %s are incompatible"
-                             % (shapeA, shapeB))
+                             % (shape_a, shape_b))
 
-        sizeA = shapeA[0] * shapeA[1]
-        sizeB = shapeB[0] * shapeB[1]
+        size_a = shape_a[0] * shape_a[1]
+        size_b = shape_b[0] * shape_b[1]
 
         # Make 2 EnsembleArrays to store the input
-        self.A = nengo.networks.EnsembleArray(n_neurons, sizeA, **ens_kwargs)
-        self.B = nengo.networks.EnsembleArray(n_neurons, sizeB, **ens_kwargs)
+        self.A = nengo.networks.EnsembleArray(n_neurons, size_a, **ens_kwargs)
+        self.B = nengo.networks.EnsembleArray(n_neurons, size_b, **ens_kwargs)
 
-        self.inputA = self.A.input
-        self.inputB = self.B.input
+        self.input_a = self.A.input
+        self.input_b = self.B.input
 
         # The C matix is composed of populations that each contain
         # one element of A and one element of B.
         # These elements will be multiplied together in the next step.
-        self.C = nengo.networks.EnsembleArray(n_neurons, sizeA * shapeB[1],
+        self.C = nengo.networks.EnsembleArray(n_neurons, size_a * shape_b[1],
                                               ens_dimensions=2, **ens_kwargs)
 
         # The appropriate encoders make the multiplication more accurate
@@ -46,38 +46,38 @@ class MatrixMult(nengo.Network):
         # The index in C is j+k*D2+i*D2*D3, multiplied by 2 since there are
         # two values per ensemble.  We add 1 to the B index so it goes into
         # the second value in the ensemble.
-        transformA = np.zeros((self.C.dimensions, sizeA))
-        transformB = np.zeros((self.C.dimensions, sizeB))
+        transform_a = np.zeros((self.C.dimensions, size_a))
+        transform_b = np.zeros((self.C.dimensions, size_b))
 
-        for i in range(shapeA[0]):
-            for j in range(shapeA[1]):
-                for k in range(shapeB[1]):
-                    tmp = (j + k * shapeA[1] + i * sizeB)
-                    transformA[tmp * 2][j + i * shapeA[1]] = 1
-                    transformB[tmp * 2 + 1][k + j * shapeB[1]] = 1
+        for i in range(shape_a[0]):
+            for j in range(shape_a[1]):
+                for k in range(shape_b[1]):
+                    tmp = (j + k * shape_a[1] + i * size_b)
+                    transform_a[tmp * 2][j + i * shape_a[1]] = 1
+                    transform_b[tmp * 2 + 1][k + j * shape_b[1]] = 1
 
-        nengo.Connection(self.A.output, self.C.input, transform=transformA)
-        nengo.Connection(self.B.output, self.C.input, transform=transformB)
+        nengo.Connection(self.A.output, self.C.input, transform=transform_a)
+        nengo.Connection(self.B.output, self.C.input, transform=transform_b)
 
         # Now compute the products and do the appropriate summing
         self.D = nengo.networks.EnsembleArray(n_neurons,
-                                              shapeA[0] * shapeB[1],
+                                              shape_a[0] * shape_b[1],
                                               **ens_kwargs)
 
         for ens in self.D.ensembles:
-            ens.radius = shapeB[0] * ens.radius
+            ens.radius = shape_b[0] * ens.radius
 
         def product(x):
             return x[0] * x[1]
 
         # The mapping for this transformation is much easier, since we want to
         # combine D2 pairs of elements (we sum D2 products together)
-        transformC = np.zeros((self.D.n_ensembles, self.C.n_ensembles))
+        transform_c = np.zeros((self.D.n_ensembles, self.C.n_ensembles))
 
-        for i in range(sizeA * shapeB[1]):
-            transformC[i // shapeB[0]][i] = 1
+        for i in range(size_a * shape_b[1]):
+            transform_c[i // shape_b[0]][i] = 1
 
         prod = self.C.add_output('product', product)
-        nengo.Connection(prod, self.D.input, transform=transformC)
+        nengo.Connection(prod, self.D.input, transform=transform_c)
 
         self.output = self.D.output

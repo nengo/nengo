@@ -24,8 +24,8 @@ def test_matrix_mult(Simulator, nl):
         with mult_net:
             D_p = nengo.Probe(mult_net.output, synapse=0.01)
 
-        nengo.Connection(nodeA, mult_net.inputA)
-        nengo.Connection(nodeB, mult_net.inputB)
+        nengo.Connection(nodeA, mult_net.input_a)
+        nengo.Connection(nodeB, mult_net.input_b)
 
     dt = 0.001
     sim = Simulator(model, dt=dt)
