@@ -692,7 +692,9 @@ def test_set_function(Simulator):
 
 def test_set_eval_points(Simulator):
     with nengo.Network() as model:
-        a = nengo.Ensemble(10, 2)
+        a = nengo.Ensemble(10, 2,
+                           encoders=nengo.dists.Choice([[1, 1]]),
+                           intercepts=nengo.dists.Uniform(-1, -0.1))
         b = nengo.Ensemble(10, 2)
         # ConnEvalPoints parameter checks that pre is an ensemble
         nengo.Connection(a, b, eval_points=[[0, 0], [0.5, 1]])
