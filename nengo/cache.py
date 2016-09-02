@@ -12,7 +12,7 @@ import warnings
 
 import numpy as np
 
-from nengo.exceptions import FingerprintError, TimeoutError
+from nengo.exceptions import CacheIOError, FingerprintError, TimeoutError
 from nengo.neurons import (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich,
                            LIF, LIFRate, RectifiedLinear, Sigmoid)
 from nengo.rc import rc
@@ -22,7 +22,7 @@ from nengo.solvers import (Lstsq, LstsqL1, Nnls, NnlsL2,
 from nengo.utils import nco
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
 from nengo.utils.compat import (
-    int_types, is_string, pickle, replace, PY2, string_types)
+    int_types, is_string, iteritems, pickle, replace, PY2, string_types)
 from nengo.utils.least_squares_solvers import (
     Cholesky, ConjgradScipy, LSMRScipy, Conjgrad,
     BlockConjgrad, SVD, RandomizedSVD)
@@ -152,7 +152,7 @@ class Fingerprint(object):
         (tuple, check_seq),
         (list, check_seq)
     ] + [
-        (x, check_attrs) for x in SOLVERS + LSTSQ_METHODS + NEURON_TYPES
+        (_x, check_attrs) for _x in SOLVERS + LSTSQ_METHODS + NEURON_TYPES
     ])
 
     def __init__(self, obj):
@@ -171,6 +171,11 @@ class Fingerprint(object):
 
     @classmethod
     def supports(cls, obj):
+        """Determines whether ``obj`` can be fingerprinted.
+
+        Uses the `.whitelist`  method and runs the check function associated
+        with the type of ``obj``.
+        """
         typ = type(obj)
         in_whitelist = typ in cls.WHITELIST
         succeeded_check = typ not in cls.CHECKS or cls.CHECKS[typ](obj)
@@ -178,16 +183,153 @@ class Fingerprint(object):
 
     @classmethod
     def whitelist(cls, typ, fn=None):
+        """Whitelist the type given in ``typ``.
+
+        Will run the check function ``fn`` on objects if provided.
+        """
         cls.WHITELIST.add(typ)
         if fn is not None:
             cls.CHECKS[typ] = fn
 
 
 class CacheIndex(object):
-    def __init__(self, filename):
-        self.filename = filename
-        self._lock = FileLock(self.filename + '.lock')
+    """Cache index mapping keys to (filename, start, end) tuples.
+
+    Once instantiated the cache index has to be used in a ``with`` block to
+    allow access. The index will not be loaded before the ``with`` block is
+    entered.
+
+    This class only provides read access to the cache index. For write
+    access use `.WriteableCacheIndex`.
+
+    Examples
+    --------
+    >>> cache_dir = "./my_cache"
+    >>> to_cache = ("gotta cache 'em all", 151)
+    >>> with CacheIndex(cache_dir) as index:
+    ...     filename, start, end = index[hash(to_cache)]
+
+    Parameters
+    ----------
+    cache_dir : str
+        Path where the cache is stored.
+
+    Attributes
+    ----------
+    cache_dir : str
+        Path where the cache is stored.
+    index_path : str
+        Path to the cache index file.
+    legacy_path : str
+        Path to a potentially existing legacy file. This file was previously
+        used to track version information, but is now obsolete. It will still
+        be used to retrieve version information in case of an old cache index
+        that does not store version information itself.
+    version : tuple
+        Version code of the loaded cache index. The first element gives the
+        format of the cache and the second element gives the pickle protocol
+        used to store the index. Note that a cache index will always be written
+        in the newest version with the highest pickle protocol.
+    VERSION (class attribute) : int
+        Highest supported version, and version used to store the cache index.
+
+    Notes
+    -----
+    Under the hood, the cache index is stored as a pickle file. The pickle file
+    contains two objects which are read sequentially: the ``version`` tuple,
+    and the ``index`` dictionary mapping keys to (filename, start, end) tuples.
+    Previously, these two objects were stored separately, with the ``version``
+    tuple stored in a ``legacy.txt`` file. These two objects were consolidated
+    in the pickle file in Nengo 2.3.0.
+    """
+    _INDEX = 'index'
+    _LEGACY = 'legacy.txt'
+    VERSION = 2
+
+    def __init__(self, cache_dir):
+        self.cache_dir = cache_dir
+        self.version = None
         self._index = None
+
+    @property
+    def index_path(self):
+        return os.path.join(self.cache_dir, self._INDEX)
+
+    @property
+    def legacy_path(self):
+        return os.path.join(self.cache_dir, self._LEGACY)
+
+    def __contains__(self, key):
+        return key in self._index
+
+    def __getitem__(self, key):
+        return self._index[key]
+
+    def __setitem__(self, key):
+        raise TypeError("Index is readonly.")
+
+    def __delitem__(self, key):
+        raise TypeError("Index is readonly.")
+
+    def __enter__(self):
+        self._load_index_file()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+    def _load_index_file(self):
+        with open(self.index_path, 'rb') as f:
+            self.version = pickle.load(f)
+            if isinstance(self.version, tuple):
+                if (self.version[0] > self.VERSION or
+                        self.version[1] > pickle.HIGHEST_PROTOCOL):
+                    raise CacheIOError(
+                        "Unsupported cache index file format.")
+                self._index = pickle.load(f)
+            else:
+                self._index = self.version
+                self.version = self._get_legacy_version()
+        assert isinstance(self.version, tuple)
+        assert isinstance(self._index, dict)
+
+    def _get_legacy_version(self):
+        try:
+            with open(self.legacy_path, 'r') as lf:
+                text = lf.read()
+            return tuple(int(x.strip()) for x in text.split('.'))
+        except:
+            return (-1, -1)
+
+
+class WriteableCacheIndex(CacheIndex):
+    """Writable cache index mapping keys to files.
+
+    This class allows write access to the cache index.
+
+    The updated cache file will be written when the ``with`` block is exited.
+    The initial read and the write on exit of the ``with`` block are locked
+    against concurrent access with a file lock. The lock will be released
+    within the ``with`` block.
+
+    Examples
+    --------
+    >>> cache_dir = "./my_cache"
+    >>> to_cache = ("gotta cache 'em all", 151)
+    >>> key = hash(to_cache)
+    >>> with WriteableCacheIndex(cache_dir) as index:
+    ...     index[key] = ("file1", 0, 1)  # set an item
+    ...     del index[key]  # remove an item by key
+    ...     index.remove_file_entry("file1")  # remove an item by filename
+
+    Parameters
+    ----------
+    cache_dir : str
+        Path where the cache is stored.
+    """
+    def __init__(self, cache_dir):
+        super(WriteableCacheIndex, self).__init__(cache_dir)
+        self._lock = FileLock(self.index_path + '.lock')
         self._updates = {}
         self._deletes = set()
         self._removed_files = set()
@@ -196,51 +338,86 @@ class CacheIndex(object):
         if key in self._updates:
             return self._updates[key]
         else:
-            return self._index[key]
+            return super(WriteableCacheIndex, self).__getitem__(key)
 
     def __setitem__(self, key, value):
+        if not isinstance(value, tuple) or len(value) != 3:
+            raise ValueError(
+                "Cache entries must include filename, start, and end.")
         self._updates[key] = value
 
     def __delitem__(self, key):
         self._deletes.add(key)
 
-    def remove_file_entry(self, filename):
-        self._removed_files.add(filename)
-
     def __enter__(self):
         with self._lock:
-            self._index = self._load_index()
+            try:
+                self._load_index_file()
+            except:
+                # If we can't load the index file, the cache is corrupted,
+                # so we invalidate it (delete all files in the cache)
+                self._reinit()
+                self._write_index()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.sync()
 
-    def _load_index(self):
-        assert self._lock.acquired
-        try:
-            with open(self.filename, 'rb') as f:
-                return pickle.load(f)
-        except IOError as err:
-            if err.errno == errno.ENOENT:
-                return {}
+    def _reinit(self):
+        for f in os.listdir(self.cache_dir):
+            path = os.path.join(self.cache_dir, f)
+            if path == self._lock.filename:
+                continue
+            if os.path.isdir(path):
+                shutil.rmtree(path)
             else:
-                raise
+                os.remove(path)
+        self._index = {}
+
+    def remove_file_entry(self, filename):
+        """Remove entries mapping to ``filename``."""
+        if os.path.realpath(filename).startswith(self.cache_dir):
+            filename = os.path.relpath(filename, self.cache_dir)
+        self._removed_files.add(filename)
+
+    def _write_index(self):
+        assert self._lock.acquired
+        with open(self.index_path + '.part', 'wb') as f:
+            # Use protocol 2 for version information to ensure that
+            # all Python versions supported by Nengo will be able to
+            # read it in the future.
+            pickle.dump(
+                (self.VERSION, pickle.HIGHEST_PROTOCOL),
+                f, 2)
+            # Use highest available protocol for index data for maximum
+            # performance.
+            pickle.dump(self._index, f, pickle.HIGHEST_PROTOCOL)
+        replace(self.index_path + '.part', self.index_path)
+        if os.path.exists(self.legacy_path):
+            os.remove(self.legacy_path)
 
     def sync(self):
+        """Write changes to the cache index back to disk.
+
+        The call to this function will be locked by a file lock.
+        """
         try:
             with self._lock:
-                self._index = self._load_index()
-                self._index.update(self._updates)
+                try:
+                    self._load_index_file()
+                except IOError as err:
+                    if err.errno == errno.ENOENT:
+                        self._index = {}
+                    else:
+                        raise
 
+                self._index.update(self._updates)
                 for key in self._deletes:
                     del self._index[key]
+                self._index = {k: v for k, v in iteritems(self._index)
+                               if v[0] not in self._removed_files}
 
-                with open(self.filename + '.part', 'wb') as f:
-                    pickle.dump(
-                        {k: v for k, v in self._index.items()
-                         if v[0] not in self._removed_files},
-                        f, pickle.HIGHEST_PROTOCOL)
-                replace(self.filename + '.part', self.filename)
+                self._write_index()
         except TimeoutError:
             warnings.warn(
                 "Decoder cache index could not acquire lock. "
@@ -248,6 +425,7 @@ class CacheIndex(object):
 
         self._updates.clear()
         self._deletes.clear()
+        self._removed_files.clear()
 
 
 class DecoderCache(object):
@@ -268,49 +446,49 @@ class DecoderCache(object):
     cache_dir : str or None
         Path to the directory in which the cache will be stored. It will be
         created if it does not exists. Will use the value returned by
-        :func:`get_default_dir`, if `None`.
+        `.get_default_dir`, if ``None``.
     """
 
     _CACHE_EXT = '.nco'
-    _INDEX = 'index'
-    _LEGACY = 'legacy.txt'
-    _LEGACY_VERSION = 1
-    _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 
     def __init__(self, readonly=False, cache_dir=None):
         self.readonly = readonly
         if cache_dir is None:
             cache_dir = self.get_default_dir()
         self.cache_dir = cache_dir
-        safe_makedirs(self.cache_dir)
+        if readonly:
+            self._index = CacheIndex(cache_dir)
+        else:
+            safe_makedirs(self.cache_dir)
+            self._index = WriteableCacheIndex(cache_dir)
         self._fragment_size = get_fragment_size(self.cache_dir)
-        self._index = None
         self._fd = None
+        self._in_context = False
 
     def __enter__(self):
         try:
-            self._remove_legacy_files()
-            index_path = os.path.join(self.cache_dir, self._INDEX)
-            self._index = CacheIndex(index_path)
             try:
                 self._index.__enter__()
-            except (EOFError, IOError, OSError):
-                # Index corrupted, clear cache because we can't recover
-                # information necessary to access cache data.
-                self.invalidate()
-                os.remove(index_path)
+            except TimeoutError:
+                self.readonly = True
+                self._index = CacheIndex(self.cache_dir)
                 self._index.__enter__()
-        except TimeoutError:
+                warnings.warn("Decoder cache could not acquire lock and was "
+                              "set to readonly mode.")
+        except Exception as e:
+            self.readonly = True
+            self._index = None
+            logger.debug("Could not acquire lock because: %s", e)
             warnings.warn(
                 "Decoder cache could not acquire lock and was deactivated.")
-            self.readonly = True
+        self._in_context = True
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        self._in_context = False
         self._close_fd()
         if self._index is not None:
             rval = self._index.__exit__(exc_type, exc_value, traceback)
-            self._index = None
             return rval
 
     @staticmethod
@@ -332,50 +510,6 @@ class DecoderCache(object):
         if self._fd is None:
             self._fd = open(self._key2path(str(uuid1())), 'wb')
         return self._fd
-
-    def _check_legacy_file(self):
-        """Checks if the legacy file is up to date."""
-        legacy_file = os.path.join(self.cache_dir, self._LEGACY)
-        if os.path.exists(legacy_file):
-            with open(legacy_file, 'r') as lf:
-                text = lf.read()
-            try:
-                lv, pp = tuple(int(x.strip()) for x in text.split('.'))
-            except ValueError:
-                # Will be raised with old legacy.txt format
-                lv = pp = -1
-        else:
-            lv = pp = -1
-        return lv == self._LEGACY_VERSION and pp == self._PICKLE_PROTOCOL
-
-    def _remove_legacy_files(self):
-        """Remove files from now invalid locations in the cache.
-
-        This will not remove any files if a legacy file exists and is
-        up to date. Once legacy files are removed, a legacy file will be
-        written to avoid a costly ``os.listdir`` after calling this.
-        """
-        lock_filename = 'legacy.lock'
-        with FileLock(os.path.join(self.cache_dir, lock_filename)):
-            if self._check_legacy_file():
-                return
-
-            for f in os.listdir(self.cache_dir):
-                if f == lock_filename:
-                    continue
-                path = os.path.join(self.cache_dir, f)
-                if os.path.isdir(path):
-                    shutil.rmtree(path)
-                else:
-                    os.remove(path)
-
-            self._write_legacy_file()
-
-    def _write_legacy_file(self):
-        """Writes a legacy file, indicating that legacy files do not exist."""
-        legacy_file = os.path.join(self.cache_dir, self._LEGACY)
-        with open(legacy_file, 'w') as lf:
-            lf.write("%d.%d\n" % (self._LEGACY_VERSION, self._PICKLE_PROTOCOL))
 
     def get_files(self):
         """Returns all of the files in the cache.
@@ -413,9 +547,12 @@ class DecoderCache(object):
 
     def invalidate(self):
         """Invalidates the cache (i.e. removes all cache files)."""
+        if self.readonly:
+            raise CacheIOError("Cannot invalidate a readonly cache.")
         self._close_fd()
-        for path in self.get_files():
-            safe_remove(path)
+        with self._index:
+            for path in self.get_files():
+                self.remove_file(path)
 
     def shrink(self, limit=None):  # noqa: C901
         """Reduces the size of the cache to meet a limit.
@@ -427,10 +564,6 @@ class DecoderCache(object):
         """
         if self.readonly:
             logger.info("Tried to shrink a readonly cache.")
-            return
-
-        if self._index is None:
-            warnings.warn("Cannot shrink outside of a `with cache` block.")
             return
 
         if limit is None:
@@ -452,15 +585,18 @@ class DecoderCache(object):
         # Remove the least recently accessed first
         fileinfo.sort()
 
-        for _, size, path in fileinfo:
-            if excess <= 0:
-                break
+        with self._index:
+            for _, size, path in fileinfo:
+                if excess <= 0:
+                    break
 
-            excess -= size
-            self._index.remove_file_entry(path)
-            safe_remove(path)
+                excess -= size
+                self.remove_file(path)
 
-        self._index.sync()
+    def remove_file(self, path):
+        """Removes the file at ``path`` from the cache."""
+        self._index.remove_file_entry(path)
+        safe_remove(path)
 
     def wrap_solver(self, solver_fn):  # noqa: C901
         """Takes a decoder solver and wraps it to use caching.
@@ -478,6 +614,12 @@ class DecoderCache(object):
 
         def cached_solver(solver, neuron_type, gain, bias, x, targets,
                           rng=None, E=None):
+            if not self._in_context:
+                warnings.warn("Cannot use cached solver outside of "
+                              "`with cache` block.")
+                return solver_fn(
+                    solver, neuron_type, gain, bias, x, targets, rng=rng, E=E)
+
             try:
                 args, _, _, defaults = inspect.getargspec(solver)
             except TypeError:
@@ -505,12 +647,9 @@ class DecoderCache(object):
                     solver_info, decoders = nco.read(f)
             except:
                 logger.debug("Cache miss [%s].", key)
-                if self._index is None:
-                    warnings.warn("Cannot use cached solver outside of "
-                                  "`with cache` block.")
                 decoders, solver_info = solver_fn(
                     solver, neuron_type, gain, bias, x, targets, rng=rng, E=E)
-                if not self.readonly and self._index is not None:
+                if not self.readonly:
                     fd = self._get_fd()
                     start = fd.tell()
                     nco.write(fd, solver_info, decoders)
@@ -560,7 +699,7 @@ class DecoderCache(object):
 
 
 class NoDecoderCache(object):
-    """Provides the same interface as :class:`DecoderCache` without caching."""
+    """Provides the same interface as `.DecoderCache` without caching."""
 
     def __enter__(self):
         return self

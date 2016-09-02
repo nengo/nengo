@@ -8,7 +8,8 @@ from numpy.testing import assert_equal
 import pytest
 
 import nengo
-from nengo.cache import DecoderCache, Fingerprint, get_fragment_size
+from nengo.cache import (CacheIndex, DecoderCache, Fingerprint,
+                         get_fragment_size, WriteableCacheIndex)
 from nengo.exceptions import FingerprintError
 from nengo.solvers import LstsqL2
 from nengo.utils.compat import int_types
@@ -114,16 +115,16 @@ def test_corrupted_decoder_cache_index(tmpdir):
 
     with DecoderCache(cache_dir=cache_dir):
         pass  # Initialize cache with required files
-    assert len(os.listdir(cache_dir)) == 2  # index, legacy.txt
+    assert len(os.listdir(cache_dir)) == 1  # index
 
     # Write corrupted index
-    with open(os.path.join(cache_dir, DecoderCache._INDEX), 'w') as f:
+    with open(os.path.join(cache_dir, CacheIndex._INDEX), 'w') as f:
         f.write('(d')  # empty dict, but missing '.' at the end
 
     # Try to load index
     with DecoderCache(cache_dir=cache_dir):
         pass
-    assert len(os.listdir(cache_dir)) == 2  # index, legacy.txt
+    assert len(os.listdir(cache_dir)) == 1  # index
 
 
 def test_decoder_cache_invalidation(tmpdir):
@@ -307,7 +308,7 @@ def test_cache_works(tmpdir, RefSimulator, seed):
     assert len(os.listdir(cache_dir)) == 0
     with RefSimulator(model, model=nengo.builder.Model(
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
-        assert len(os.listdir(cache_dir)) == 3  # legacy.txt, index, and *.nco
+        assert len(os.listdir(cache_dir)) == 2  # index, and *.nco
 
 
 def test_cache_not_used_without_seed(tmpdir, RefSimulator):
@@ -320,7 +321,7 @@ def test_cache_not_used_without_seed(tmpdir, RefSimulator):
     assert len(os.listdir(cache_dir)) == 0
     with RefSimulator(model, model=nengo.builder.Model(
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
-        assert len(os.listdir(cache_dir)) == 2  # legacy.txt and index
+        assert len(os.listdir(cache_dir)) == 1  # index
 
 
 def build_many_ensembles(cache_dir, RefSimulator):
@@ -568,11 +569,64 @@ def test_warns_out_of_context(tmpdir):
     cache_dir = str(tmpdir)
     cache = DecoderCache(cache_dir=cache_dir)
 
-    with warns(UserWarning):
-        cache.shrink()
-
     solver_mock = SolverMock()
     solver = cache.wrap_solver(solver_mock)
     with warns(UserWarning):
         solver(**get_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 1
+
+
+def test_cacheindex_cannot_write(tmpdir):
+    index = WriteableCacheIndex(cache_dir=str(tmpdir))
+    with index:
+        index[0] = ("file0", 0, 0)
+    mtime = os.stat(index.index_path).st_mtime
+
+    index = CacheIndex(cache_dir=str(tmpdir))
+    with index:
+        with pytest.raises(TypeError):
+            index[0] = ("file", 0, 0)
+        with pytest.raises(TypeError):
+            del index[0]
+        assert index[0] == ("file0", 0, 0)
+    assert os.stat(index.index_path).st_mtime == mtime
+
+
+def test_writeablecacheindex_writes(tmpdir):
+    index = WriteableCacheIndex(cache_dir=str(tmpdir))
+    with index:
+        index[0] = ("file0", 0, 0)
+        index[1] = ("file1", 0, 0)
+        del index[1]
+
+    # Verify with readonly cacheindex
+    index = CacheIndex(cache_dir=str(tmpdir))
+    with index:
+        assert index[0] == ("file0", 0, 0)
+        assert 1 not in index
+
+
+def test_writeablecacheindex_setitem(tmpdir):
+    index = WriteableCacheIndex(cache_dir=str(tmpdir))
+
+    with pytest.raises(ValueError):
+        index[0] = "file0"
+    with pytest.raises(ValueError):
+        index[0] = ("file0", 0)
+    with pytest.raises(ValueError):
+        index[0] = ("file0", 0, 0, 0)
+
+
+def test_writeablecacheindex_removes(tmpdir):
+    index = WriteableCacheIndex(cache_dir=str(tmpdir))
+    with index:
+        index[0] = ("file0", 0, 0)
+        index[1] = ("file1", 0, 0)
+        index.remove_file_entry("file0")
+        index.remove_file_entry(os.path.join(str(tmpdir), "file1"))
+
+    # Verify with readonly cacheindex
+    index = CacheIndex(cache_dir=str(tmpdir))
+    with index:
+        assert 0 not in index, "Fails on relative paths"
+        assert 1 not in index, "Fails on absolute paths"
