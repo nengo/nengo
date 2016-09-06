@@ -6,7 +6,7 @@ import nengo
 from nengo.config import Config, SupportDefaultsMixin
 from nengo.exceptions import SpaModuleError
 from nengo.network import Network
-from nengo.params import IntParam
+from nengo.params import IntParam, BoolParam
 from nengo.spa.input import Input
 from nengo.spa.vocab import VocabularyMap, VocabularyMapParam
 from nengo.synapses import SynapseParam
@@ -36,6 +36,7 @@ class Module(nengo.Network, SupportDefaultsMixin):
     product_neurons = IntParam('product_neurons', default=100, optional=False)
     cconv_neurons = IntParam('cconv_neurons', default=200, optional=False)
     synapse = SynapseParam('synapse', default=0.01, optional=False)
+    strict = BoolParam('strict', default=False, optional=False)
 
     def __init__(
             self, label=None, seed=None, add_to_container=None, vocabs=None):

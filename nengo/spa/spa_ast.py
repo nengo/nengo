@@ -832,8 +832,15 @@ class Effect(Node):
         self.sink.infer_types(root_module, None)
         self.source.infer_types(root_module, self.sink.type)
         if self.sink.type != self.source.type:
-            raise SpaTypeError("Cannot assign {} to {} in '{}'".format(
-                self.source.type, self.sink.type, self))
+            if root_module.strict:
+                raise SpaTypeError("Cannot assign {} to {} in '{}'".format(
+                    self.source.type, self.sink.type, self))
+            else:
+                warnings.warn(DeprecationWarning(
+                    'Automatic vocab translation needed for Action {}. Use '
+                    'translate({}) instead.'.format(self.source, self.source)))
+                self.source = Translate(self.source)
+                self.source.infer_types(root_module, self.sink.type)
 
     def construct(self, context):
         assert context.sink is None
