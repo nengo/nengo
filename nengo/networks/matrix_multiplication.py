@@ -39,8 +39,9 @@ def MatrixMult(n_neurons, shape_a, shape_b, net=None):
     if len(shape_b) != 2:
         raise ValueError("Shape {} is not two dimensional.".format(shape_a))
     if shape_a[1] != shape_b[0]:
-        raise ValueError("Matrix dimensions %s and  %s are incompatible"
-                         % (shape_a, shape_b))
+        raise ValueError(
+            "Matrix dimensions {} and  {} are incompatible".format(
+                shape_a, shape_b))
 
     if net is None:
         net = nengo.Network(label="Matrix multiplication")
@@ -72,12 +73,10 @@ def MatrixMult(n_neurons, shape_a, shape_b, net=None):
         transform_a = np.zeros((size_c, size_a))
         transform_b = np.zeros((size_c, size_b))
 
-        for i in range(shape_a[0]):
-            for j in range(shape_a[1]):
-                for k in range(shape_b[1]):
-                    c_index = (j + k * shape_a[1] + i * size_b)
-                    transform_a[c_index][j + i * shape_a[1]] = 1
-                    transform_b[c_index][k + j * shape_b[1]] = 1
+        for i, j, k in np.ndindex(shape_a[0], *shape_b):
+            c_index = (j + k * shape_b[0] + i * size_b)
+            transform_a[c_index][j + i * shape_b[0]] = 1
+            transform_b[c_index][k + j * shape_b[1]] = 1
 
         nengo.Connection(
             net.input_a, net.C.A, transform=transform_a, synapse=None)
@@ -91,7 +90,6 @@ def MatrixMult(n_neurons, shape_a, shape_b, net=None):
         # The mapping for this transformation is much easier, since we want to
         # combine D2 pairs of elements (we sum D2 products together)
         transform_c = np.zeros((size_output, size_c))
-
         for i in range(size_c):
             transform_c[i // shape_b[0]][i] = 1
 
