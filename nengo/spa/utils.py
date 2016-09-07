@@ -2,7 +2,6 @@
 
 import numpy as np
 
-import nengo
 import nengo.utils.numpy as npext
 from nengo.exceptions import ValidationError
 from nengo.utils.compat import is_iterable
