@@ -35,7 +35,8 @@ class ProbeDict(Mapping):
         rval = self.raw[key]
         if isinstance(rval, list):
             rval = np.asarray(rval)
-            rval.setflags(write=False)
+            # FIXME
+            # rval.setflags(write=False)
         return rval
 
     def __iter__(self):

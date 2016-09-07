@@ -61,7 +61,8 @@ class BuiltConnection(collections.namedtuple('BuiltConnection', built_attrs)):
 def get_eval_points(model, conn, rng):
     if conn.eval_points is None:
         view = model.params[conn.pre_obj].eval_points.view()
-        view.setflags(write=False)
+        # FIXME
+        # view.setflags(write=False)
         return view
     else:
         return gen_eval_points(

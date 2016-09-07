@@ -41,7 +41,8 @@ class Signal(object):
 
     def __init__(self, initial_value, name=None, base=None, readonly=False):
         self._initial_value = np.asarray(initial_value).view()
-        self._initial_value.setflags(write=False)
+        # FIXME
+        # self._initial_value.setflags(write=False)
 
         if base is not None:
             assert isinstance(base, Signal) and not base.is_view
@@ -252,7 +253,8 @@ class SignalDict(dict):
             offset = npext.array_offset(x)
             view = np.ndarray(shape=x.shape, strides=x.strides, offset=offset,
                               dtype=x.dtype, buffer=self[signal.base].data)
-            view.setflags(write=not signal.readonly)
+            # FIXME
+            # view.setflags(write=not signal.readonly)
             dict.__setitem__(self, signal, view)
         else:
             x = x.view() if signal.readonly else x.copy()

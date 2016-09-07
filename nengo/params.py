@@ -363,8 +363,9 @@ class NdarrayParam(Parameter):
                     "Must be a float NumPy array (got type %r)"
                     % type(ndarray).__name__, attr=self.name, obj=instance)
 
-        if self.readonly:
-            ndarray.setflags(write=False)
+        # FIXME
+        # if self.readonly:
+            # ndarray.setflags(write=False)
 
         if '...' in self.shape:
             # Convert '...' to the appropriate number of '*'s

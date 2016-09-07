@@ -70,14 +70,16 @@ def array_hash(a, n=100):
     if a.size < n:
         # hash all elements
         v = a.view()
-        v.setflags(write=False)
+        # FIXME
+        # v.setflags(write=False)
         return hash(v.data if PY2 else v.data.tobytes())
     else:
         # pick random elements to hash
         rng = np.random.RandomState(a.size)
         inds = [rng.randint(0, a.shape[i], size=n) for i in range(a.ndim)]
         v = a[inds]
-        v.setflags(write=False)
+        # FIXME
+        # v.setflags(write=False)
         return hash(v.data if PY2 else v.data.tobytes())
 
 
