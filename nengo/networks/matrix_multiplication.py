@@ -4,6 +4,36 @@ import nengo
 
 
 def MatrixMult(n_neurons, shape_a, shape_b, net=None):
+    """Computes the matrix product A*B.
+
+    Both matrices need to be two dimensional.
+
+    See the `Matrix Multiplication example`_ for a description of the network
+    internals.
+
+    Parameters
+    ----------
+    n_neurons : int
+        Number of neurons used per product of two scalars.
+
+        .. note:: If an odd number of neurons is given, one less neuron will be
+                  used per product to obtain an even number. This is due to
+                  the implementation the `.Product` network.
+    shape_a : tuple
+        Shape of the A input matrix.
+    shape_b : tuple
+        Shape of the B input matrix.
+    net : Network, optional (Default: None)
+        A network in which the network components will be built.
+        This is typically used to provide a custom set of Nengo object
+        defaults through modifying ``net.config``.
+
+    Returns
+    -------
+    net : Network
+        The newly built matrix multiplication network, or the provided ``net``.
+    """
+
     if len(shape_a) != 2:
         raise ValueError("Shape {} is not two dimensional.".format(shape_a))
     if len(shape_b) != 2:
