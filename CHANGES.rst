@@ -22,6 +22,12 @@ Release History
 2.2.1 (unreleased)
 ==================
 
+**Added**
+
+- It is now possible to probe ``scaled_encoders`` on ensembles.
+  (`#1167 <https://github.com/nengo/nengo/pull/1167>`_,
+  `#1117 <https://github.com/nengo/nengo/issues/1117>`_)
+
 **Changed**
 
 - Access to probe data via ``nengo.Simulator.data`` is now cached,
@@ -37,7 +43,6 @@ Release History
   and is the canonical way to access this data across different backends.
   (`#1145 <https://github.com/nengo/nengo/issues/1145>`_,
   `#1173 <https://github.com/nengo/nengo/pull/1173>`_)
-
 
 2.2.0 (September 12, 2016)
 ==========================

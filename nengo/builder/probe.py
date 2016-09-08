@@ -50,7 +50,8 @@ def signal_probe(model, key, probe):
 
 probemap = {
     Ensemble: {'decoded_output': None,
-               'input': 'in'},
+               'input': 'in',
+               'scaled_encoders': 'encoders'},
     Neurons: {'output': None,
               'spikes': None,
               'rates': None,

@@ -385,6 +385,7 @@ def test_voja_encoders(Simulator, nl_nodirect, rng, seed):
         conn = nengo.Connection(
             u, x, synapse=None, learning_rule_type=Voja(learning_rate=1e-1))
         p_enc = nengo.Probe(conn.learning_rule, 'scaled_encoders')
+        p_enc_ens = nengo.Probe(x, 'scaled_encoders')
 
     with Simulator(m) as sim:
         sim.run(1.0)
@@ -411,6 +412,8 @@ def test_voja_encoders(Simulator, nl_nodirect, rng, seed):
     assert np.allclose(
         sim.data[p_enc][tend, :n_change] / encoder_scale[:n_change],
         learned_vector, atol=0.01)
+    # Check that encoders probed from ensemble equal encoders probed from Voja
+    assert np.allclose(sim.data[p_enc], sim.data[p_enc_ens])
 
 
 def test_voja_modulate(Simulator, nl_nodirect, seed):
