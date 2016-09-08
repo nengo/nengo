@@ -26,20 +26,23 @@ class Function(nengo.dists.Distribution):
         for i in range(n):
             total = []
             for j in range(self.superimpose):
-                args = {k:v[index] for k, v in kwargs.items()}
+                args = {k: v[index] for k, v in kwargs.items()}
                 total.append(self.function(**args))
-                index +=1
+                index += 1
             values.append(np.sum(total, axis=0))
         return np.vstack(values)
 
-    def make_stimulus_node(self, function_dist):
-        """Generate a Node that can control function parameters."""
-        def stimulus(t, x):
-            return self.project(self.function(*x))
+    # TODO: confirm this is unnecessary
+    # def make_stimulus_node(self, function_dist):
+    #     """Generate a Node that can control function parameters."""
+    #     def stimulus(t, x):
+    #         return self.project(self.function(*x))
+    #
+    #     return nengo.Node(stimulus, size_in=self.n_params,
+    #                       size_out=self.n_basis)
 
-        return nengo.Node(stimulus, size_in=self.n_params,
-                          size_out=self.n_basis)
 
+# NOTE: what is this doing exactly?
 class FunctionSpaceDistribution(nengo.dists.Distribution):
     def __init__(self, function_space, data):
         self.fs = function_space
@@ -53,6 +56,8 @@ class FunctionSpaceDistribution(nengo.dists.Distribution):
             data = self.data
         return np.dot(data, self.fs.basis)
 
+
+# NOTE: what is this doing exactly?
 class Combined(nengo.dists.Distribution):
     def __init__(self, distributions, dimensions,
                  weights=None, normalize_weights=True):
@@ -76,8 +81,6 @@ class Combined(nengo.dists.Distribution):
         return np.hstack(data)
 
 
-
-
 class FunctionSpace(object):
 
     def __init__(self, space, n_basis, n_samples=1000, seed=None):
@@ -90,7 +93,6 @@ class FunctionSpace(object):
         self._basis = None
         self._scale = None
         self._S = None
-
 
     @property
     def basis(self):
@@ -120,10 +122,10 @@ class FunctionSpace(object):
 
         proj = np.dot(data, V[:self.n_basis].T)
         self._scale = np.mean(np.linalg.norm(proj, axis=1))**2
-        #self._scale = (np.mean(S[:self.n_basis])) ** 2
-        #self._scale = (S[0] / self.n_basis) ** 2
-        #self._scale = np.linalg.norm(S[:self.n_basis])**2
-        #TODO: which of those scalings works better?
+        # self._scale = (np.mean(S[:self.n_basis])) ** 2
+        # self._scale = (S[0] / self.n_basis) ** 2
+        # self._scale = np.linalg.norm(S[:self.n_basis])**2
+        # TODO: which of those scalings works better?
         self._basis = V[:self.n_basis].T / np.sqrt(self.scale)
         self._S = S
 
@@ -133,19 +135,18 @@ class FunctionSpace(object):
         else:
             return np.dot(pts, self.basis)
 
-    # NOTE: might be useful to be able to have parameter to downsample 
-    # right here rather than only being able to get reconstruction using n_samples
+    # NOTE: might be useful to be able to have parameter to downsample
+    # right here rather than only being able to reconstruct using n_samples
     def reconstruct(self, x):
         """Decode the function from the subspace back to points"""
         return np.dot(x, self.basis.T) * self.scale
 
-    # TODO: is function param supposed to be used here? 
+    # TODO: is function param supposed to be used here?
     def make_plot_node(self, domain, lines=1, n_pts=20, function=None,
                        max_x=None, min_x=None, max_y=1, min_y=-1):
         """Generate a Node with a custom GUI plot"""
         pts = domain
         indices = None
-        plot_slice = slice(None)
         if len(pts) > n_pts:
             indices = np.linspace(0, len(pts) - 1, n_pts).astype(int)
             pts = pts[indices]
@@ -190,8 +191,7 @@ class FunctionSpace(object):
         """Generate a Node with a custom GUI plot"""
         pts = domain
         indices = None
-        plot_slice = slice(None)
-        if len(pts) > n_pts: 
+        if len(pts) > n_pts:
             indices = np.linspace(0, len(pts) - 1, n_pts).astype(int)
             old_num = len(pts)
             pts = pts[indices]
@@ -199,12 +199,13 @@ class FunctionSpace(object):
             n_pts = len(pts)
 
         basis = self.basis
-        if indices is not None: 
+        if indices is not None:
             # TODO: do this more elegantly
             basis = basis.reshape((old_num, old_num, self.n_basis))
-            # NOTE: for some reason basis[indices, indices] results in 2D output?
-            basis = basis[indices] 
-            basis = basis[:,indices] 
+            # NOTE: for some reason basis[indices, indices]
+            # results in 2D output?
+            basis = basis[indices]
+            basis = basis[:, indices]
             basis = basis.reshape((-1, self.n_basis))
 
         def plot_func(t, x):
@@ -233,9 +234,27 @@ class FunctionSpace(object):
         plot_func._nengo_html_ = ''
         return nengo.Node(plot_func, size_in=self.n_basis, size_out=0)
 
-    def make_stimulus_node(self, function, n_params):
+    def make_input(self, input_vals):
         """Generate a Node that can control function parameters."""
-        def stimulus(t, x):
+        # NOTE: these parameters were passed in,
+        # any reason not to do it this way instead?
+        function = self.space.function
+        n_params = len(self.space.distributions)
+
+        def stim_project(t, x):
             return self.project(function(*x))
-        return nengo.Node(stimulus, size_in=n_params,
-                          size_out=self.n_basis)
+
+        net = nengo.Network('function input')
+
+        # NOTE: Terry and Trevor probably won't like doing it this way
+        with net:
+            # input control parameters to function
+            net.stimulus = nengo.Node(input_vals)
+            # stimulus projects into weights over generated basis functions
+            net.project = nengo.Node(stim_project, size_in=n_params,
+                                     size_out=self.n_basis)
+            nengo.Connection(net.stimulus, net.project)
+            net.output = nengo.Node(size_in=self.n_basis, size_out=self.n_basis)
+            nengo.Connection(net.project, net.output, synapse=None)
+
+        return net
