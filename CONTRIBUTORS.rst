@@ -19,6 +19,7 @@ Please keep this list sorted alphabetically.
 
 - Aaron Voelker <arvoelke@gmail.com>
 - Andrew Mundy <andrew.mundy@ieee.org>
+- Ben Morcos <morcos.ben@gmail.com>
 - Brent Komer <brent.komer@gmail.com>
 - Bryan Tripp <bptripp@uwaterloo.ca>
 - Chris Eliasmith <celiasmith@uwaterloo.ca>
