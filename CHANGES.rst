@@ -26,6 +26,10 @@ Release History
 
 - Added documentation on config system quirks.
   (`#1224 <https://github.com/nengo/nengo/pull/1224>`_)
+- Added ``nengo.utils.network.activate_direct_mode`` function to make it
+  easier to activate direct mode in networks where some parts require neurons.
+  (`#1111 <https://github.com/nengo/nengo/issues/1111>`_,
+  `#1168 <https://github.com/nengo/nengo/pull/1168>`_)
 
 **Fixed**
 

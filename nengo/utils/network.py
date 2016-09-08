@@ -1,3 +1,4 @@
+import nengo
 from .magic import decorator
 
 
@@ -25,3 +26,38 @@ def with_self(method, network, args, kwargs):
     """
     with network:
         return method(*args, **kwargs)
+
+
+def activate_direct_mode(network):
+    """Activates direct mode for a network.
+
+    This sets the neuron type of all ensembles to a `nengo.Direct`
+    isntance unless:
+
+    - there is a connection to or from the ensemble's neurons
+    - there is a probe on an ensemble's neurons
+    - the ensemble has a connection with a learning rule attached.
+
+    Parameters
+    ----------
+    network : Network
+        Network to activate direct mode for.
+    """
+    requires_neurons = set()
+
+    for c in network.all_connections:
+        if isinstance(c.pre_obj, nengo.ensemble.Neurons):
+            requires_neurons.add(c.pre_obj.ensemble)
+        if isinstance(c.post_obj, nengo.ensemble.Neurons):
+            requires_neurons.add(c.post_obj.ensemble)
+        if c.learning_rule_type is not None:
+            requires_neurons.add(c.pre_obj)
+            requires_neurons.add(c.post_obj)
+
+    for p in network.all_probes:
+        if isinstance(p.obj, nengo.ensemble.Neurons):
+            requires_neurons.add(p.obj.ensemble)
+
+    for e in network.all_ensembles:
+        if e not in requires_neurons:
+            e.neuron_type = nengo.Direct()
