@@ -11,5 +11,5 @@ from .pointer import SemanticPointer
 from .spa import SPA
 from .state import State
 from .thalamus import Thalamus
-from .utils import similarity
+from .utils import enable_spa_params, similarity
 from .vocab import Vocabulary
