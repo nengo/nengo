@@ -101,8 +101,7 @@ def test_defaults(Simulator):
 
 def test_simulator_dt(Simulator):
     """Changing the simulator dt should change the default probe dt."""
-    model = nengo.Network()
-    with model:
+    with nengo.Network() as model:
         a = nengo.Ensemble(10, 1)
         b = nengo.Ensemble(10, 1)
         nengo.Connection(a, b)
@@ -115,10 +114,9 @@ def test_simulator_dt(Simulator):
 
 def test_multiple_probes(Simulator):
     """Make sure we can probe the same object multiple times."""
-    model = nengo.Network()
     dt = 1e-3
     f = 10
-    with model:
+    with nengo.Network() as model:
         ens = nengo.Ensemble(10, 1)
         p_001 = nengo.Probe(ens, sample_every=dt)
         p_01 = nengo.Probe(ens, sample_every=f * dt)
@@ -132,8 +130,7 @@ def test_multiple_probes(Simulator):
 
 def test_input_probe(Simulator):
     """Make sure we can probe the input to an ensemble."""
-    model = nengo.Network()
-    with model:
+    with nengo.Network() as model:
         ens = nengo.Ensemble(100, 1)
         n1 = nengo.Node(output=np.sin)
         n2 = nengo.Node(output=0.5)
@@ -141,10 +138,10 @@ def test_input_probe(Simulator):
         nengo.Connection(n2, ens, synapse=None)
         input_probe = nengo.Probe(ens, 'input')
 
-        with Simulator(model) as sim:
-            sim.run(1.)
-        t = sim.trange()
-        assert np.allclose(sim.data[input_probe][:, 0], np.sin(t) + 0.5)
+    with Simulator(model) as sim:
+        sim.run(1.)
+    t = sim.trange()
+    assert np.allclose(sim.data[input_probe][:, 0], np.sin(t) + 0.5)
 
 
 def test_conn_output(Simulator):

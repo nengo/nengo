@@ -28,7 +28,7 @@ def test_thresholding_preset(Simulator, seed, plt):
     assert np.sqrt(np.mean(se[sim.trange() > 0.5])) < 0.05
 
 
-def test_thresholding_preset_radius(Simulator, seed, plt):
+def test_thresholding_preset_radius(Simulator, seed):
     threshold = 0.3
     radius = 0.5
     with nengo.Network(seed) as model:

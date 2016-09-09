@@ -337,13 +337,6 @@ class Connection(NengoObject):
         The slice associated with ``pre`` if it is an ObjView, or None.
     seed : int
         The seed used for random number generation.
-    size_in : int
-        Input size of the computed function, equal to ``pre.size_out``.
-    size_mid : int
-        Output size of the function ``len(function(np.zeros(size_in)))``,
-        equal to ``size_in`` if ``function is None``.
-    size_out : int
-        Output size of the transform, equal to ``post.size_in``.
     solver : Solver
         The Solver instance that will be used to compute decoders or weights
         (see ``nengo.solvers``).
@@ -352,6 +345,18 @@ class Connection(NengoObject):
         (see ``nengo.synapses``).
     transform : (size_out, size_mid) array_like
         Linear transform mapping the pre function output to the post input.
+
+    Properties
+    ----------
+    size_in : int
+        The number of output dimensions of the pre object.
+        Also the input size of the function, if one is specified.
+    size_mid : int
+        The number of output dimensions of the function, if specified.
+        If the function is not specified, then ``size_in == size_mid``.
+    size_out : int
+        The number of input dimensions of the post object.
+        Also the number of output dimensions of the transform.
     """
 
     probeable = ('output', 'input', 'weights')

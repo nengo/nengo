@@ -390,13 +390,13 @@ class Config(object):
 
 
 class SupportDefaultsMixin(object):
-    """Mixin to support assigning ``Default`` to parameters.
+    """Mixin to support assigning `.Default` to parameters.
 
-    Implements ``__setattr__`` to do so. If the inheriting class overrides this
-    method, it has to call the mixins `__setattr__`.
+    Implements ``__setattr__`` to do so. If the inheriting class overrides
+    this method, it has to call the mixin's ``__setattr__``.
 
-    This mixin will also simplify the exception if the parameter value is
-    invalid given the `simplified` rc option is set
+    This mixin may simplify the exception depending on the value of the
+    ``simplified`` rc option.
     """
 
     def __setattr__(self, name, val):
