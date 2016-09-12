@@ -13,11 +13,15 @@ Release History
 
 .. Changes should be organized in one of several sections:
 
-   - API changes
-   - Improvements
-   - Behavioural changes
-   - Bugfixes
-   - Documentation
+   - Added
+   - Changed
+   - Removed
+   - Fixed
+
+2.2.1 (unreleased)
+==================
+
+
 
 2.2.0 (September 12, 2016)
 ==========================
