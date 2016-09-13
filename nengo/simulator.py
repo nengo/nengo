@@ -175,6 +175,19 @@ class Simulator(object):
         return self._n_steps
 
     @property
+    def model(self):
+        """The built `.Model` used to simulate the network.
+
+        .. note:: This attribute is deprecated as of Nengo 2.3.0.
+                  Use ``Simulator.data`` instead.
+        """
+        warnings.warn(
+            "The 'model' attribute is deprecated. If you are trying to access "
+            "build information via `model.params`, use the `Simulator.data` "
+            "attribute instead.", DeprecationWarning)
+        return self._model
+
+    @property
     def time(self):
         """(float) The current time of the simulator."""
         return self._time

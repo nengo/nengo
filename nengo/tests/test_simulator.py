@@ -118,3 +118,10 @@ def test_entry_point(Simulator):
     sims = [ep.load() for ep in
             pkg_resources.iter_entry_points(group='nengo.backends')]
     assert Simulator in sims
+
+
+def test_model_attribute_is_deprecated(RefSimulator):
+    with warns(DeprecationWarning):
+        with RefSimulator(nengo.Network()) as sim:
+            pass
+        assert sim.model
