@@ -68,7 +68,7 @@ def get_eval_points(model, conn, rng):
             conn.pre_obj, conn.eval_points, rng, conn.scale_eval_points)
 
 
-def get_targets(model, conn, eval_points):
+def get_targets(conn, eval_points):
     if conn.function is None:
         targets = eval_points[:, conn.pre_slice]
     elif isinstance(conn.function, np.ndarray):
@@ -83,14 +83,14 @@ def get_targets(model, conn, eval_points):
 
 def build_linear_system(model, conn, rng):
     eval_points = get_eval_points(model, conn, rng)
-    activities = get_activities(model, conn.pre_obj, eval_points)
+    activities = get_activities(model.params, conn.pre_obj, eval_points)
     if np.count_nonzero(activities) == 0:
         raise BuildError(
             "Building %s: 'activites' matrix is all zero for %s. "
             "This is because no evaluation points fall in the firing "
             "ranges of any neurons." % (conn, conn.pre_obj))
 
-    targets = get_targets(model, conn, eval_points)
+    targets = get_targets(conn, eval_points)
     return eval_points, activities, targets
 
 
@@ -100,7 +100,7 @@ def build_decoders(model, conn, rng, transform):
     bias = model.params[conn.pre_obj].bias
 
     eval_points = get_eval_points(model, conn, rng)
-    targets = get_targets(model, conn, eval_points)
+    targets = get_targets(conn, eval_points)
 
     x = np.dot(eval_points, encoders.T / conn.pre_obj.radius)
     E = None

@@ -282,15 +282,15 @@ def test_dist_transform(Simulator, seed):
 
     sim = Simulator(net)
 
-    w = sim.model.params[conn1].weights
+    w = sim.data[conn1].weights
     assert np.allclose(np.mean(w), 0.5, atol=0.01)
     assert np.allclose(np.std(w), 1, atol=0.01)
     assert w.shape == (101, 100)
 
-    assert sim.model.params[conn2].weights.shape == (10, 101)
-    assert sim.model.params[conn3].weights.shape == (102, 101)
-    assert sim.model.params[conn4].weights.shape == (1, 2)
-    assert sim.model.params[conn5].weights.shape == (103, 102)
+    assert sim.data[conn2].weights.shape == (10, 101)
+    assert sim.data[conn3].weights.shape == (102, 101)
+    assert sim.data[conn4].weights.shape == (1, 2)
+    assert sim.data[conn5].weights.shape == (103, 102)
 
     # make sure the seed works (gives us the same transform)
     with nengo.Network(seed=seed) as net:
@@ -300,7 +300,7 @@ def test_dist_transform(Simulator, seed):
         conn = nengo.Connection(a, b)
 
     sim = Simulator(net)
-    assert np.allclose(w, sim.model.params[conn].weights)
+    assert np.allclose(w, sim.data[conn].weights)
 
 
 def test_weights(Simulator, nl, plt, seed):

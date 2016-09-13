@@ -395,7 +395,7 @@ def test_voja_encoders(Simulator, nl_nodirect, rng, seed):
     # during the build process, because it modifies the scaled_encoders signal
     # proportional to this factor. Therefore, we should check that its
     # assumption actually holds.
-    encoder_scale = (sim.model.params[x].gain / x.radius)[:, np.newaxis]
+    encoder_scale = (sim.data[x].gain / x.radius)[:, np.newaxis]
     assert np.allclose(sim.data[x].encoders,
                        sim.data[x].scaled_encoders / encoder_scale)
 

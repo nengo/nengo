@@ -54,7 +54,7 @@ def tuning_curves(ens, sim, inputs=None):
         inputs = np.asarray(inputs).T
 
     eval_points = inputs.reshape((-1, ens.dimensions))
-    activities = get_activities(sim.model, ens, eval_points)
+    activities = get_activities(sim.data, ens, eval_points)
     return inputs, activities.reshape(inputs.shape[:-1] + (-1,))
 
 

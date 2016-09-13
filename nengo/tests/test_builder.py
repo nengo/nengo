@@ -27,12 +27,12 @@ def test_seeding(RefSimulator, logger):
 
     m.seed = 872
     with RefSimulator(m) as sim:
-        m1 = sim.model.params
+        m1 = sim.data
     with RefSimulator(m) as sim:
-        m2 = sim.model.params
+        m2 = sim.data
     m.seed = 873
     with RefSimulator(m) as sim:
-        m3 = sim.model.params
+        m3 = sim.data
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
@@ -57,7 +57,7 @@ def test_seeding(RefSimulator, logger):
     compare_objs(Cs[0], Cs[2], conn_attrs, equal=False)
 
 
-def test_hierarchical_seeding(RefSimulator):
+def test_hierarchical_seeding():
     """Changes to subnetworks shouldn't affect seeds in top-level network"""
 
     def create(make_extra, seed):
@@ -76,12 +76,17 @@ def test_hierarchical_seeding(RefSimulator):
     same2, same2objs = create(True, 9)
     diff, diffobjs = create(True, 10)
 
-    with RefSimulator(same1) as sim:
-        same1seeds = sim.model.seeds
-    with RefSimulator(same2) as sim:
-        same2seeds = sim.model.seeds
-    with RefSimulator(diff) as sim:
-        diffseeds = sim.model.seeds
+    m1 = Model()
+    m1.build(same1)
+    same1seeds = m1.seeds
+
+    m2 = Model()
+    m2.build(same2)
+    same2seeds = m2.seeds
+
+    m3 = Model()
+    m3.build(diff)
+    diffseeds = m3.seeds
 
     for diffobj, same2obj in zip(diffobjs, same2objs):
         # These seeds should all be different
@@ -256,16 +261,19 @@ def test_signal_slicing(rng):
         b[[0, 1], [3, 4]]
 
 
-def test_commonsig_readonly(RefSimulator):
+def test_commonsig_readonly():
     """Test that the common signals cannot be modified."""
     net = nengo.Network(label="test_commonsig")
-    with RefSimulator(net) as sim:
-        for sig in itervalues(sim.model.sig['common']):
-            sim.signals.init(sig)
-            with pytest.raises((ValueError, RuntimeError)):
-                sim.signals[sig] = np.array([-1])
-            with pytest.raises((ValueError, RuntimeError)):
-                sim.signals[sig][...] = np.array([-1])
+    model = Model()
+    model.build(net)
+    signals = SignalDict()
+
+    for sig in itervalues(model.sig['common']):
+        signals.init(sig)
+        with pytest.raises((ValueError, RuntimeError)):
+            signals[sig] = np.array([-1])
+        with pytest.raises((ValueError, RuntimeError)):
+            signals[sig][...] = np.array([-1])
 
 
 def test_obsolete_params(RefSimulator):
