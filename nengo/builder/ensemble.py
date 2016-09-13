@@ -9,7 +9,7 @@ from nengo.builder.operator import Copy, DotInc, Reset
 from nengo.dists import Distribution
 from nengo.ensemble import Ensemble
 from nengo.neurons import Direct
-from nengo.utils.builder import default_n_eval_points
+from nengo.utils.builder import default_n_eval_points, sample
 
 built_attrs = ['eval_points',
                'encoders',
@@ -55,12 +55,6 @@ class BuiltEnsemble(collections.namedtuple('BuiltEnsemble', built_attrs)):
         # Overridden to suppress the default __new__ docstring
         return tuple.__new__(cls, (eval_points, encoders, intercepts,
                                    max_rates, scaled_encoders, gain, bias))
-
-
-def sample(dist, n, d=None, rng=None):
-    if isinstance(dist, Distribution):
-        return dist.sample(n, d=d, rng=rng).astype(np.float64)
-    return np.array(dist, dtype=np.float64)
 
 
 def gen_eval_points(ens, eval_points, rng, scale_eval_points=True):

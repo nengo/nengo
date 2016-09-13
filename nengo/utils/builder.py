@@ -252,3 +252,9 @@ def find_all_io(connections):
         inputs[c.post_obj].append(c)
         outputs[c.pre_obj].append(c)
     return inputs, outputs
+
+
+def sample(dist, n, d=None, rng=None):
+    if isinstance(dist, nengo.dists.Distribution):
+        return dist.sample(n, d=d, rng=rng)
+    return np.array(dist)
