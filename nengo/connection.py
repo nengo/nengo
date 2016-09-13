@@ -1,5 +1,4 @@
 import logging
-import weakref
 
 import numpy as np
 
@@ -7,7 +6,8 @@ from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.dists import Distribution, DistOrArrayParam
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import ValidationError
-from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
+from nengo.learning_rules import (LearningRule, LearningRuleType,
+                                  LearningRuleTypeParam)
 from nengo.node import Node
 from nengo.params import (Default, Unconfigurable, ObsoleteParam,
                           BoolParam, FunctionParam)
@@ -74,16 +74,17 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
                     attr=self.name, obj=conn)
 
             # transform matrix must be 2D
-            pre_size = (
-                conn.pre_obj.n_neurons if isinstance(conn.pre_obj, Ensemble)
-                else conn.pre.size_out)
-            post_size = conn.post.size_in
-            if (not conn.solver.weights and
-                    conn.transform.shape != (post_size, pre_size)):
-                raise ValidationError(
-                    "Transform must be 2D array with shape post_neurons x "
-                    "pre_neurons (%d, %d)" % (pre_size, post_size),
-                    attr=self.name, obj=conn)
+            if not isinstance(conn.transform, Distribution):
+                pre_size = (conn.pre_obj.n_neurons
+                            if isinstance(conn.pre_obj, Ensemble)
+                            else conn.pre.size_out)
+                post_size = conn.post.size_in
+                if (not conn.solver.weights and
+                        conn.transform.shape != (post_size, pre_size)):
+                    raise ValidationError(
+                        "Transform must be 2D array with shape post_neurons x "
+                        "pre_neurons (%d, %d)" % (pre_size, post_size),
+                        attr=self.name, obj=conn)
 
 
 class ConnectionSolverParam(SolverParam):
@@ -359,7 +360,7 @@ class Connection(NengoObject):
         Also the number of output dimensions of the transform.
     """
 
-    probeable = ('output', 'input', 'weights')
+    probeable = ('output', 'input', 'weights', 'params')
 
     pre = PrePostParam('pre', nonzero_size_out=True)
     post = PrePostParam('post', nonzero_size_in=True)
@@ -500,71 +501,3 @@ class Connection(NengoObject):
         Also the number of output dimensions of the transform.
         """
         return self.post.size_in
-
-
-class LearningRule(object):
-    """An interface for making connections to a learning rule.
-
-    Connections to a learning rule are to allow elements of the network to
-    affect the learning rule. For example, learning rules that use error
-    information can obtain that information through a connection.
-
-    Learning rule objects should only ever be accessed through the
-    ``learning_rule`` attribute of a connection.
-    """
-
-    def __init__(self, connection, learning_rule_type):
-        self._connection = weakref.ref(connection)
-        self.learning_rule_type = learning_rule_type
-
-    def __repr__(self):
-        return "<LearningRule at 0x%x modifying %r with type %r>" % (
-            id(self), self.connection, self.learning_rule_type)
-
-    def __str__(self):
-        return "<LearningRule modifying %s with type %s>" % (
-            self.connection, self.learning_rule_type)
-
-    @property
-    def connection(self):
-        """(Connection) The connection modified by the learning rule."""
-        return self._connection()
-
-    @property
-    def error_type(self):
-        """(str) The type of information expected by the learning rule."""
-        return self.learning_rule_type.error_type
-
-    @property
-    def modifies(self):
-        """(str) The variable modified by the learning rule."""
-        return self.learning_rule_type.modifies
-
-    @property
-    def probeable(self):
-        """(tuple) Signals that can be probed in the learning rule."""
-        return self.learning_rule_type.probeable
-
-    @property
-    def size_in(self):
-        """(int) Dimensionality of the signal expected by the learning rule."""
-        if self.error_type == 'none':
-            return 0
-        elif self.error_type == 'scalar':
-            return 1
-        elif self.error_type == 'decoded':
-            return (self.connection.post_obj.ensemble.size_in
-                    if isinstance(self.connection.post_obj, Neurons) else
-                    self.connection.size_out)
-        elif self.error_type == 'neuron':
-            raise NotImplementedError()
-        else:
-            raise ValidationError(
-                "Unrecognized error type %r" % self.error_type,
-                attr='error_type', obj=self)
-
-    @property
-    def size_out(self):
-        """(int) Cannot connect from learning rules, so always 0."""
-        return 0  # since a learning rule can't connect to anything
-        # TODO: allow probing individual learning rules

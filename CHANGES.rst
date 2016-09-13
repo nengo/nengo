@@ -57,6 +57,8 @@ Release History
   `#1148 <https://github.com/nengo/nengo/pull/1148>`_)
 - Tweaked ``rasterplot`` so that spikes from different neurons don't overlap.
   (`#1121 <https://github.com/nengo/nengo/pull/1121>`_)
+- Added ``GenericRule`` to allow for easy implementation of new learning rules.
+  (`#553 <https://github.com/nengo/nengo/pull/553>`_)
 
 **Documentation**
 

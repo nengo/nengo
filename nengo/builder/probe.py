@@ -35,7 +35,7 @@ def signal_probe(model, key, probe):
 
     try:
         sig = model.sig[probe.obj][key]
-    except IndexError:
+    except KeyError:
         raise BuildError(
             "Attribute %r is not probeable on %s." % (key, probe.obj))
 
@@ -100,6 +100,11 @@ def build_probe(model, probe):
         raise BuildError(
             "Type %r is not probeable" % type(probe.obj).__name__)
 
+    if probe.attr == 'params':
+        # don't add this probe to the model probe lists
+        model.params[probe] = model.params[probe.obj]
+        return model.params[probe]
+
     key = probeables[probe.attr] if probe.attr in probeables else probe.attr
     if key is None:
         conn_probe(model, probe)
@@ -110,3 +115,5 @@ def build_probe(model, probe):
 
     # Simulator will fill this list with probe data during simulation
     model.params[probe] = []
+
+    return model.sig[probe]['in']

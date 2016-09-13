@@ -2,7 +2,8 @@ from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.config import Config
 from nengo.connection import Connection, LearningRule
 from nengo.exceptions import ObsoleteError, ValidationError
-from nengo.params import Default, ConnectionDefault, NumberParam, StringParam
+from nengo.params import (Default, ConnectionDefault, NumberParam, StringParam,
+                          BoolParam)
 from nengo.solvers import SolverParam
 from nengo.synapses import SynapseParam
 
@@ -83,6 +84,9 @@ class Probe(NengoObject):
     solver : Solver, optional (Default: ``ConnectionDefault``)
         `~nengo.solvers.Solver` to compute decoders
         for probes that require them.
+    keep_history: bool (Default: True)
+        If True then the simulation will store the probed value from every
+        timestep; if False, the simulation will only store the last timestep.
     label : str, optional (Default: None)
         A name for the probe. Used for debugging and visualization.
     seed : int, optional (Default: None)
@@ -107,19 +111,22 @@ class Probe(NengoObject):
 
     target = TargetParam('target', nonzero_size_out=True)
     attr = AttributeParam('attr', default=None)
+    keep_history = BoolParam('keep_history', default=True)
     sample_every = NumberParam(
         'sample_every', default=None, optional=True, low=1e-10)
     synapse = SynapseParam('synapse', default=None)
     solver = ProbeSolverParam('solver', default=ConnectionDefault)
 
     def __init__(self, target, attr=None, sample_every=Default,
-                 synapse=Default, solver=Default, label=Default, seed=Default):
+                 synapse=Default, solver=Default, keep_history=Default,
+                 label=Default, seed=Default):
         super(Probe, self).__init__(label=label, seed=seed)
         self.target = target
         self.attr = attr if attr is not None else self.obj.probeable[0]
         self.sample_every = sample_every
         self.synapse = synapse
         self.solver = solver
+        self.keep_history = keep_history
 
     def __repr__(self):
         return "<Probe%s at 0x%x of '%s' of %s>" % (

@@ -1,18 +1,68 @@
 import warnings
+import weakref
 
-from nengo.base import NengoObjectParam
+from nengo.base import ObjView
+from nengo.ensemble import Neurons
 from nengo.exceptions import ValidationError
-from nengo.params import FrozenObject, NumberParam, Parameter
+from nengo.params import (FrozenObject, NumberParam, Parameter, IntParam,
+                          TupleParam)
 from nengo.utils.compat import is_iterable, itervalues
 
 
-class ConnectionParam(NengoObjectParam):
-    def validate(self, instance, conn):
-        from nengo.connection import Connection
-        if not isinstance(conn, Connection):
-            raise ValidationError("'%s' is not a Connection" % conn,
-                                  attr=self.name, obj=instance)
-        super(ConnectionParam, self).validate(instance, conn)
+class LearningRule(object):
+    """An interface for making connections to a learning rule.
+
+    Connections to a learning rule are to allow elements of the network to
+    affect the learning rule. For example, learning rules that use error
+    information can obtain that information through a connection.
+
+    Learning rule objects should only ever be accessed through the
+    ``learning_rule`` attribute of a connection.
+    """
+
+    def __init__(self, connection, learning_rule_type):
+        self._connection = weakref.ref(connection)
+        self.learning_rule_type = learning_rule_type
+
+        if learning_rule_type.size_in is not None:
+            self.size_in = learning_rule_type.size_in
+        else:
+            # infer size_in from post
+            self.size_in = (self.connection.post_obj.ensemble.size_in
+                            if isinstance(self.connection.post_obj, Neurons)
+                            else self.connection.size_out)
+
+    def __getitem__(self, key):
+        return ObjView(self, key)
+
+    def __repr__(self):
+        return "<LearningRule at 0x%x modifying %r with type %r>" % (
+            id(self), self.connection, self.learning_rule_type)
+
+    def __str__(self):
+        return "<LearningRule modifying %s with type %s>" % (
+            self.connection, self.learning_rule_type)
+
+    @property
+    def connection(self):
+        """(Connection) The connection modified by the learning rule."""
+        return self._connection()
+
+    @property
+    def modifies(self):
+        """(str) The variable modified by the learning rule."""
+        return self.learning_rule_type.modifies
+
+    @property
+    def probeable(self):
+        """(tuple) Signals that can be probed in the learning rule."""
+        return self.learning_rule_type.probeable
+
+    @property
+    def size_out(self):
+        """(int) Cannot connect from learning rules, so always 0."""
+        return 0  # since a learning rule can't connect to anything
+        # TODO: allow probing individual learning rules
 
 
 class LearningRuleType(FrozenObject):
@@ -54,15 +104,16 @@ class LearningRuleType(FrozenObject):
         The signal targeted by the learning rule.
     """
 
-    error_type = 'none'
     modifies = None
     probeable = ()
 
     learning_rate = NumberParam('learning_rate', low=0, low_open=True)
+    size_in = IntParam('size_in', low=0, optional=True)
 
-    def __init__(self, learning_rate=1e-6):
+    def __init__(self, learning_rate=1e-6, size_in=None):
         super(LearningRuleType, self).__init__()
         self.learning_rate = learning_rate
+        self.size_in = size_in
 
     def __repr__(self):
         return '%s(%s)' % (type(self).__name__, ", ".join(self._argreprs))
@@ -94,7 +145,6 @@ class PES(LearningRuleType):
         Filter constant on activities of neurons in pre population.
     """
 
-    error_type = 'decoded'
     modifies = 'decoders'
     probeable = ('error', 'correction', 'activities', 'delta')
 
@@ -105,7 +155,7 @@ class PES(LearningRuleType):
             warnings.warn("This learning rate is very high, and can result "
                           "in floating point errors from too much current.")
         self.pre_tau = pre_tau
-        super(PES, self).__init__(learning_rate)
+        super(PES, self).__init__(learning_rate, size_in=None)
 
     @property
     def _argreprs(self):
@@ -148,7 +198,6 @@ class BCM(LearningRuleType):
         A scalar indicating the time constant for theta integration.
     """
 
-    error_type = 'none'
     modifies = 'weights'
     probeable = ('theta', 'pre_filtered', 'post_filtered', 'delta')
 
@@ -161,7 +210,7 @@ class BCM(LearningRuleType):
         self.theta_tau = theta_tau
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
-        super(BCM, self).__init__(learning_rate)
+        super(BCM, self).__init__(learning_rate, size_in=0)
 
     @property
     def _argreprs(self):
@@ -209,7 +258,6 @@ class Oja(LearningRuleType):
         Filter constant on activities of neurons in pre population.
     """
 
-    error_type = 'none'
     modifies = 'weights'
     probeable = ('pre_filtered', 'post_filtered', 'delta')
 
@@ -222,7 +270,7 @@ class Oja(LearningRuleType):
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
         self.beta = beta
-        super(Oja, self).__init__(learning_rate)
+        super(Oja, self).__init__(learning_rate, size_in=0)
 
     @property
     def _argreprs(self):
@@ -262,7 +310,6 @@ class Voja(LearningRuleType):
         Filter constant on activities of neurons in post population.
     """
 
-    error_type = 'scalar'
     modifies = 'encoders'
     probeable = ('post_filtered', 'scaled_encoders', 'delta')
 
@@ -270,7 +317,44 @@ class Voja(LearningRuleType):
 
     def __init__(self, post_tau=0.005, learning_rate=1e-2):
         self.post_tau = post_tau
-        super(Voja, self).__init__(learning_rate)
+        super(Voja, self).__init__(learning_rate, size_in=1)
+
+
+class GenericRule(LearningRuleType):
+    """Learning rule implemented by generic Python function.
+
+    Parameters
+    ----------
+    function : callable
+        Accepts previous values of learned array and a data vector
+        as input, outputs a delta for the learned array.
+
+        Optionally the function may also accept a `params` argument, in which
+        case `model.params` will be passed to the function as well (can be used
+        to look up things like encoder values).
+    learning_rate : float
+        A scalar used to weight the output of the function
+    size_in : int
+        The dimensionality of the data vector input to the function
+    modifies : 'weights' or 'decoders' or 'encoders'
+        The signal targeted by the learning rule
+    pass_model_params : bool
+        Selects whether or not the compiled model parameters will be passed
+        to the learning rule function
+    """
+
+    probeable = ('delta',)
+
+    data_sources = TupleParam("data_sources")
+
+    def __init__(self, function, data_sources=None, learning_rate=1.0,
+                 modifies="decoders"):
+        self.modifies = modifies
+        self.function = function
+        self.data_sources = data_sources
+
+        super(GenericRule, self).__init__(learning_rate=learning_rate,
+                                          size_in=0)
 
 
 class LearningRuleTypeParam(Parameter):
@@ -287,10 +371,6 @@ class LearningRuleTypeParam(Parameter):
             raise ValidationError(
                 "'%s' must be a learning rule type or a dict or "
                 "list of such types." % rule, attr=self.name, obj=instance)
-        if rule.error_type not in ('none', 'scalar', 'decoded', 'neuron'):
-            raise ValidationError(
-                "Unrecognized error type %r" % rule.error_type,
-                attr=self.name, obj=instance)
         if rule.modifies not in ('encoders', 'decoders', 'weights'):
             raise ValidationError("Unrecognized target %r" % rule.modifies,
                                   attr=self.name, obj=instance)
