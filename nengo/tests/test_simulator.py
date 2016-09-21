@@ -53,6 +53,19 @@ def test_probedict():
     assert np.all(probedict.get("list") == np.asarray(raw.get("list")))
 
 
+def test_probedict_with_repeated_simulator_runs(RefSimulator):
+    with nengo.Network() as model:
+        ens = nengo.Ensemble(10, 1)
+        p = nengo.Probe(ens)
+
+    dt = 0.001
+    with RefSimulator(model, dt=dt) as sim:
+        sim.run(0.01)
+        assert len(sim.data[p]) == 10
+        sim.run(0.01)
+        assert len(sim.data[p]) == 20
+
+
 def test_close_function(Simulator):
     m = nengo.Network()
     with m:

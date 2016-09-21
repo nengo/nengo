@@ -22,6 +22,13 @@ Release History
 2.2.1 (unreleased)
 ==================
 
+**Changed**
+
+- Access to probe data via ``nengo.Simulator.data`` is now cached,
+  making repeated access much faster.
+  (`#1076 <https://github.com/nengo/nengo/issues/1076>`_,
+  `#1175 <https://github.com/nengo/nengo/pull/1175>`_)
+
 **Deprecated**
 
 - Access to ``nengo.Simulator.model`` is deprecated. To access static data

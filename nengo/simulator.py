@@ -30,13 +30,17 @@ class ProbeDict(Mapping):
 
     def __init__(self, raw):
         self.raw = raw
+        self._cache = {}
 
     def __getitem__(self, key):
-        rval = self.raw[key]
-        if isinstance(rval, list):
-            rval = np.asarray(rval)
-            rval.setflags(write=False)
-        return rval
+        if (key not in self._cache or
+                len(self._cache[key]) != len(self.raw[key])):
+            rval = self.raw[key]
+            if isinstance(rval, list):
+                rval = np.asarray(rval)
+                rval.setflags(write=False)
+            self._cache[key] = rval
+        return self._cache[key]
 
     def __iter__(self):
         return iter(self.raw)
