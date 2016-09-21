@@ -725,7 +725,7 @@ class DotIncMerger(AbstractMerger):
         Y = merge_signals_or_views([o.Y for o in ops], replacements)
 
         # Construct sparse A representation
-        data = np.stack([o.A.initial_value for o in ops])
+        data = np.array([o.A.initial_value for o in ops])
         indptr = np.arange(len(ops) + 1, dtype=int)
         indices = np.arange(len(ops), dtype=int)
         name = 'bsr_merged<{first}, ..., {last}>'.format(
