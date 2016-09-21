@@ -9,7 +9,7 @@ env:
     - NUMPY="1.11"
     - COVERAGE="false"
     - STATIC="false"
-    - CONDA_DEPS="matplotlib jupyter"
+    - CONDA_DEPS="matplotlib jupyter scipy"
     - PIP_DEPS="pytest pytest-xdist"
 
 matrix:
