@@ -130,15 +130,14 @@ class Simulator(object):
 
         # Order the steps (they are made in `Simulator.reset`)
         self.dg = operator_depencency_graph(self._model.operators)
+        OpMergeOptimizer(self.model, self.dg).optimize()
         self._step_order = [op for op in toposort(self.dg)
                             if hasattr(op, 'make_step')]
 
         # -- map from Signal.base -> ndarray
         self.signals = SignalDict()
-        OpMergeOptimizer(self.model, self.dg).optimize()
         for op in self._model.operators:
             op.init_signals(self.signals)
-
 
         # Add built states to the probe dictionary
         self._probe_outputs = self._model.params
