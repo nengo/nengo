@@ -710,7 +710,7 @@ class DotProduct(BinaryNode):
         with context.active_net:
             net = nengo.networks.Product(
                 context.root_module.product_neurons, d,
-                net=nengo.Network(label='dot product'))
+                net=nengo.Network(label=str(self)))
             self._connect_binary_operation(context, net)
         return [Artifact(
             net.output, nengo.networks.product.dot_product_transform(d))]
