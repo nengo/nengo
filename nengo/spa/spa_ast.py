@@ -961,12 +961,6 @@ class Action(Node):
             raise SpaModuleError(
                 "Conditional actions require basal ganglia and thalamus.")
 
-        if not self.effects.fixed:
-            with context.active_net:
-                label = str(self) if self.name is None else self.name
-                context = context.subcontext(
-                    active_net=nengo.Network(label=label))
-
         # construct bg utility
         condition_artifacts = self.condition.construct(context)
 
@@ -975,9 +969,9 @@ class Action(Node):
 
         # construct thalamus gate
         if not self.effects.fixed:
+            gate_label = 'gate[{}]: {}'.format(self.index, self.condition)
             context.thalamus.construct_gate(
-                self.index, net=context.active_net,
-                label='gate[{}]: {}'.format(self.index, self.condition))
+                self.index, net=context.thalamus, label=gate_label)
 
         for artifact in condition_artifacts:
             context.bg.connect_input(
