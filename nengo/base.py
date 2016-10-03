@@ -63,6 +63,9 @@ class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
     def __setstate__(self, state):
         raise NotImplementedError("Nengo objects do not support pickling")
 
+    def __iter__(self):
+        raise NotImplementedError("NengoObject is not iterable")
+
     def __setattr__(self, name, val):
         if hasattr(self, '_initialized') and not hasattr(self, name):
             warnings.warn(
@@ -137,6 +140,9 @@ class ObjView(object):
 
     def __setstate__(self, state):
         raise NotImplementedError("Nengo objects do not support pickling")
+
+    def __iter__(self):
+        raise TypeError("ObjView is not iterable")
 
     def __len__(self):
         return self.size_out
