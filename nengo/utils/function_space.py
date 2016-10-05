@@ -5,6 +5,9 @@ import numpy as np
 
 
 class Function(nengo.dists.Distribution):
+    """ A distribution that generates samples from a given function
+    space using the distributions specified for each parameter. """
+
     def __init__(self, function, superimpose=1, **distributions):
         self.function = function
         self.distributions = distributions
@@ -32,18 +35,11 @@ class Function(nengo.dists.Distribution):
             values.append(np.sum(total, axis=0))
         return np.vstack(values)
 
-    # TODO: confirm this is unnecessary
-    # def make_stimulus_node(self, function_dist):
-    #     """Generate a Node that can control function parameters."""
-    #     def stimulus(t, x):
-    #         return self.project(self.function(*x))
-    #
-    #     return nengo.Node(stimulus, size_in=self.n_params,
-    #                       size_out=self.n_basis)
 
-
-# NOTE: what is this doing exactly?
 class FunctionSpaceDistribution(nengo.dists.Distribution):
+    """ Projects data samples generated in the given function
+    space into samples of weights over the basis function."""
+
     def __init__(self, function_space, data):
         self.fs = function_space
         self.data = data
@@ -57,8 +53,11 @@ class FunctionSpaceDistribution(nengo.dists.Distribution):
         return np.dot(data, self.fs.basis)
 
 
-# NOTE: what is this doing exactly?
 class Combined(nengo.dists.Distribution):
+    """ A distribution that allows both FunctionSpaceDistributions
+    to be used for some dimensions and regular Nengo distributions
+    to be used for others."""
+
     def __init__(self, distributions, dimensions,
                  weights=None, normalize_weights=True):
         if weights is None:
@@ -89,7 +88,8 @@ class FunctionSpace(object):
         self.n_basis = n_basis
         self.n_samples = n_samples
 
-        # these are all computed by self.compute_basis()
+        # these are all computed by self.compute_basis(),
+        # and must be specified if space=None
         self._basis = None
         self._scale = None
         self._S = None
@@ -129,11 +129,10 @@ class FunctionSpace(object):
         self._basis = V[:self.n_basis].T / np.sqrt(self.scale)
         self._S = S
 
-    def project(self, pts):
-        if isinstance(pts, nengo.dists.Distribution):
-            return FunctionSpaceDistribution(self, pts)
-        else:
-            return np.dot(pts, self.basis)
+    def project(self, data):
+        if isinstance(data, nengo.dists.Distribution):
+            return FunctionSpaceDistribution(self, data)
+        return np.dot(data, self.basis)
 
     # NOTE: might be useful to be able to have parameter to downsample
     # right here rather than only being able to reconstruct using n_samples
@@ -144,25 +143,21 @@ class FunctionSpace(object):
     # TODO: is function param supposed to be used here?
     def make_plot_node(self, domain, lines=1, n_pts=20, function=None,
                        max_x=None, min_x=None, max_y=1, min_y=-1):
-        """Generate a Node with a custom GUI plot"""
-        pts = domain
+        """Generate a Node with a custom HTML GUI plot. The node takes in a set
+        of weights and generates a line plot of the represented function through
+        weighted summation of the basis functions"""
         indices = None
-        if len(pts) > n_pts:
-            indices = np.linspace(0, len(pts) - 1, n_pts).astype(int)
-            pts = pts[indices]
-        elif n_pts > len(pts):
-            n_pts = len(pts)
+        if len(domain) > n_pts:
+            indices = np.linspace(0, len(domain) - 1, n_pts).astype(int)
+            domain = domain[indices]
+        elif n_pts > len(domain):
+            n_pts = len(domain)
 
-        basis = self.basis
-        if indices is not None:
-            basis = basis[indices]
+        basis = self.basis[indices] if indices is not None else self.basis
+        max_x = max_x if max_x is not None else np.max(domain)
+        min_x = min_x if min_x is not None else np.min(domain)
 
-        if max_x is None:
-            max_x = np.max(pts)
-        if min_x is None:
-            min_x = np.min(pts)
-
-        svg_x = (pts - min_x) * 100 / (max_x - min_x)
+        svg_x = (domain - min_x) * 100 / (max_x - min_x)
 
         colors = ["#1c73b3", "#039f74", "#d65e00",
                   "#cd79a7", "#f0e542", "#56b4ea"]
@@ -170,14 +165,16 @@ class FunctionSpace(object):
         def plot_func(t, x):
             paths = []
             for i in range(lines):
+                # weighted summation to calculate the represented function
                 value = x[i*self.n_basis:(i+1)*self.n_basis]
                 data = np.dot(value, basis.T) * self.scale
+                # scale the function by min_y and max_y, * 100 for svg plot
+                data = (-data - min_y) * 100 / (max_y - min_y)
 
-                svg_y = (-data - min_y) * 100 / (max_y - min_y)
-
+                # turn the data into a string for svg plotting
                 path = []
                 for j in range(len(data)):
-                    path.append('%1.0f %1.0f' % (svg_x[j], svg_y[j]))
+                    path.append('%1.0f %1.0f' % (svg_x[j], data[j]))
                 paths.append('<path d="M%s" fill="none" stroke="%s"/>' %
                              ('L'.join(path), colors[i % len(colors)]))
 
@@ -189,24 +186,20 @@ class FunctionSpace(object):
 
     def make_2Dplot_node(self, domain, n_pts=20):
         """Generate a Node with a custom GUI plot"""
-        pts = domain
-        indices = None
-        if len(pts) > n_pts:
-            indices = np.linspace(0, len(pts) - 1, n_pts).astype(int)
-            old_num = len(pts)
-            pts = pts[indices]
-        elif n_pts > len(pts):
-            n_pts = len(pts)
-
         basis = self.basis
-        if indices is not None:
+        indices = None
+        if len(domain) > n_pts:
+            indices = np.linspace(0, len(domain) - 1, n_pts).astype(int)
+            old_num = len(domain)
+            domain = domain[indices]
+
             # TODO: do this more elegantly
             basis = basis.reshape((old_num, old_num, self.n_basis))
-            # NOTE: for some reason basis[indices, indices]
-            # results in 2D output?
-            basis = basis[indices]
-            basis = basis[:, indices]
+            basis = basis[indices][:, indices]
             basis = basis.reshape((-1, self.n_basis))
+
+        elif n_pts > len(domain):
+            n_pts = len(domain)
 
         def plot_func(t, x):
             values = np.dot(basis, x) * self.scale
@@ -236,8 +229,6 @@ class FunctionSpace(object):
 
     def make_input(self, input_vals):
         """Generate a Node that can control function parameters."""
-        # NOTE: these parameters were passed in,
-        # any reason not to do it this way instead?
         function = self.space.function
         n_params = len(self.space.distributions)
 
@@ -246,15 +237,15 @@ class FunctionSpace(object):
 
         net = nengo.Network('function input')
 
-        # NOTE: Terry and Trevor probably won't like doing it this way
         with net:
             # input control parameters to function
-            net.stimulus = nengo.Node(input_vals)
+            net.stimulus = nengo.Node(input_vals, size_out=n_params)
             # stimulus projects into weights over generated basis functions
             net.project = nengo.Node(stim_project, size_in=n_params,
                                      size_out=self.n_basis)
             nengo.Connection(net.stimulus, net.project)
-            net.output = nengo.Node(size_in=self.n_basis, size_out=self.n_basis)
+            net.output = nengo.Node(size_in=self.n_basis,
+                                    size_out=self.n_basis)
             nengo.Connection(net.project, net.output, synapse=None)
 
         return net
