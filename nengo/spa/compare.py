@@ -50,7 +50,7 @@ class Compare(Module):
         self.outputs = dict(default=(self.output, None))
 
         with self:
-            nengo.Connection(self.inputA, self.product.A, synapse=None)
-            nengo.Connection(self.inputB, self.product.B, synapse=None)
+            nengo.Connection(self.inputA, self.product.input_a, synapse=None)
+            nengo.Connection(self.inputB, self.product.input_b, synapse=None)
             nengo.Connection(self.product.output, self.output,
                              transform=np.ones((1, dimensions)))

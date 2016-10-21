@@ -41,4 +41,5 @@ def Integrator(recurrent_tau, n_neurons, dimensions, net=None):
         nengo.Connection(net.ensemble, net.ensemble, synapse=recurrent_tau)
         nengo.Connection(net.input, net.ensemble,
                          transform=recurrent_tau, synapse=None)
+    net.output = net.ensemble
     return net

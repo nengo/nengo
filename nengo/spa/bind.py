@@ -54,8 +54,8 @@ class Bind(Module):
             self.cc = nengo.networks.CircularConvolution(
                 n_neurons, dimensions, invert_a, invert_b,
                 input_magnitude=input_magnitude)
-            self.A = self.cc.A
-            self.B = self.cc.B
+            self.A = self.cc.input_a
+            self.B = self.cc.input_b
             self.output = self.cc.output
 
         self.inputs = dict(A=(self.A, vocab), B=(self.B, vocab))

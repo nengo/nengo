@@ -51,7 +51,8 @@ def convolution(module, target_name, effect, n_neurons_cconv, synapse):
             D = s1_vocab.dimensions
             t1 = np.dot(t1, np.eye(D)[-np.arange(D)])
 
-        nengo.Connection(s1_output, cconv.A, transform=t1, synapse=synapse)
+        nengo.Connection(
+            s1_output, cconv.input_a, transform=t1, synapse=synapse)
 
         t2 = s2_vocab.parse(source2.transform.symbol).get_convolution_matrix()
         if source2.inverted:
@@ -59,5 +60,6 @@ def convolution(module, target_name, effect, n_neurons_cconv, synapse):
             t2 = np.dot(t2, np.eye(D)[-np.arange(D)])
         if s1_vocab is not s2_vocab:
             t2 = np.dot(s2_vocab.transform_to(s1_vocab), t2)
-        nengo.Connection(s2_output, cconv.B, transform=t2, synapse=synapse)
+        nengo.Connection(
+            s2_output, cconv.input_b, transform=t2, synapse=synapse)
     return cconv

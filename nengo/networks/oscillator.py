@@ -45,4 +45,5 @@ def Oscillator(recurrent_tau, frequency, n_neurons, net=None):
         nengo.Connection(net.ensemble, net.ensemble,
                          synapse=recurrent_tau, transform=tA)
         nengo.Connection(net.input, net.ensemble, synapse=None)
+    net.output = net.ensemble
     return net

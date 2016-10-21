@@ -62,6 +62,11 @@ Release History
   has changed to 2.5 ms (from 2 ms) for better compatibility with the
   default maximum firing rates of 200-400 Hz.
   (`#1248 <https://github.com/nengo/nengo/pull/1248>`_)
+- Inputs to the ``Product`` and ``CircularConvolution`` networks have been
+  renamed from ``A`` and ``B`` to ``input_a`` and ``input_b`` for consistency.
+  The old names are still available, but should be considered deprecated.
+  (`#887 <https://github.com/nengo/nengo/issues/887>`_,
+  `#1296 <https://github.com/nengo/nengo/pull/1296>`_)
 
 **Fixed**
 

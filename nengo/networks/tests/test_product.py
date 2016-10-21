@@ -13,31 +13,31 @@ def test_sine_waves(Simulator, plt, seed):
     product = nengo.networks.Product(
         200, dim, radius, net=nengo.Network(seed=seed))
 
-    func_A = lambda t: np.sqrt(radius)*np.sin(np.arange(1, dim+1)*2*np.pi*t)
-    func_B = lambda t: np.sqrt(radius)*np.sin(np.arange(dim, 0, -1)*2*np.pi*t)
+    func_a = lambda t: np.sqrt(radius)*np.sin(np.arange(1, dim+1)*2*np.pi*t)
+    func_b = lambda t: np.sqrt(radius)*np.sin(np.arange(dim, 0, -1)*2*np.pi*t)
     with product:
-        input_A = nengo.Node(func_A)
-        input_B = nengo.Node(func_B)
-        nengo.Connection(input_A, product.A)
-        nengo.Connection(input_B, product.B)
+        input_a = nengo.Node(func_a)
+        input_b = nengo.Node(func_b)
+        nengo.Connection(input_a, product.input_a)
+        nengo.Connection(input_b, product.input_b)
         p = nengo.Probe(product.output, synapse=0.005)
 
     with Simulator(product) as sim:
         sim.run(1.0)
 
     t = sim.trange()
-    AB = np.asarray(list(map(func_A, t))) * np.asarray(list(map(func_B, t)))
+    ideal = np.asarray(list(map(func_a, t))) * np.asarray(list(map(func_b, t)))
     delay = 0.013
     offset = np.where(t >= delay)[0]
 
     for i in range(dim):
         plt.subplot(dim+1, 1, i+1)
-        plt.plot(t + delay, AB[:, i])
+        plt.plot(t + delay, ideal[:, i])
         plt.plot(t, sim.data[p][:, i])
         plt.xlim(right=t[-1])
         plt.yticks((-2, 0, 2))
 
-    assert rmse(AB[:len(offset), :], sim.data[p][offset, :]) < 0.2
+    assert rmse(ideal[:len(offset), :], sim.data[p][offset, :]) < 0.2
 
 
 def test_direct_mode_with_single_neuron(Simulator, plt, seed):
@@ -50,31 +50,31 @@ def test_direct_mode_with_single_neuron(Simulator, plt, seed):
         product = nengo.networks.Product(
             1, dim, radius, net=nengo.Network(seed=seed))
 
-    func_A = lambda t: np.sqrt(radius)*np.sin(np.arange(1, dim+1)*2*np.pi*t)
-    func_B = lambda t: np.sqrt(radius)*np.sin(np.arange(dim, 0, -1)*2*np.pi*t)
+    func_a = lambda t: np.sqrt(radius)*np.sin(np.arange(1, dim+1)*2*np.pi*t)
+    func_b = lambda t: np.sqrt(radius)*np.sin(np.arange(dim, 0, -1)*2*np.pi*t)
     with product:
-        input_A = nengo.Node(func_A)
-        input_B = nengo.Node(func_B)
-        nengo.Connection(input_A, product.A)
-        nengo.Connection(input_B, product.B)
+        input_a = nengo.Node(func_a)
+        input_b = nengo.Node(func_b)
+        nengo.Connection(input_a, product.input_a)
+        nengo.Connection(input_b, product.input_b)
         p = nengo.Probe(product.output, synapse=0.005)
 
     with Simulator(product) as sim:
         sim.run(1.0)
 
     t = sim.trange()
-    AB = np.asarray(list(map(func_A, t))) * np.asarray(list(map(func_B, t)))
+    ideal = np.asarray(list(map(func_a, t))) * np.asarray(list(map(func_b, t)))
     delay = 0.013
     offset = np.where(t >= delay)[0]
 
     for i in range(dim):
         plt.subplot(dim+1, 1, i+1)
-        plt.plot(t + delay, AB[:, i])
+        plt.plot(t + delay, ideal[:, i])
         plt.plot(t, sim.data[p][:, i])
         plt.xlim(right=t[-1])
         plt.yticks((-2, 0, 2))
 
-    assert rmse(AB[:len(offset), :], sim.data[p][offset, :]) < 0.2
+    assert rmse(ideal[:len(offset), :], sim.data[p][offset, :]) < 0.2
 
 
 @pytest.mark.benchmark
@@ -101,8 +101,8 @@ def test_product_benchmark(Simulator, analytics, rng):
                 size_out=2)
 
             product_net = nengo.networks.Product(n_neurons, 1)
-            nengo.Connection(stimulus[0], product_net.A)
-            nengo.Connection(stimulus[1], product_net.B)
+            nengo.Connection(stimulus[0], product_net.input_a)
+            nengo.Connection(stimulus[1], product_net.input_b)
             probe_test = nengo.Probe(product_net.output)
 
             ens_direct = nengo.Ensemble(
