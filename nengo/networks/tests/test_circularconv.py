@@ -40,19 +40,19 @@ def test_input_magnitude(Simulator, seed, rng, dims=16, magnitude=10):
     model = nengo.Network(label="circular conv", seed=seed)
     model.config[nengo.Ensemble].neuron_type = nengo.LIFRate()
     with model:
-        inputA = nengo.Node(a)
-        inputB = nengo.Node(b)
+        input_a = nengo.Node(a)
+        input_b = nengo.Node(b)
         cconv = nengo.networks.CircularConvolution(
             neurons_per_product, dimensions=dims,
             input_magnitude=magnitude)
-        nengo.Connection(inputA, cconv.A, synapse=None)
-        nengo.Connection(inputB, cconv.B, synapse=None)
+        nengo.Connection(input_a, cconv.input_a, synapse=None)
+        nengo.Connection(input_b, cconv.input_b, synapse=None)
         res_p = nengo.Probe(cconv.output)
         cconv_bad = nengo.networks.CircularConvolution(
             neurons_per_product, dimensions=dims,
             input_magnitude=1)  # incorrect magnitude
-        nengo.Connection(inputA, cconv_bad.A, synapse=None)
-        nengo.Connection(inputB, cconv_bad.B, synapse=None)
+        nengo.Connection(input_a, cconv_bad.input_a, synapse=None)
+        nengo.Connection(input_b, cconv_bad.input_b, synapse=None)
         res_p_bad = nengo.Probe(cconv_bad.output)
     with Simulator(model) as sim:
         sim.run(0.01)
@@ -73,12 +73,12 @@ def test_neural_accuracy(Simulator, seed, rng, dims, neurons_per_product=128):
     model = nengo.Network(label="circular conv", seed=seed)
     model.config[nengo.Ensemble].neuron_type = nengo.LIFRate()
     with model:
-        inputA = nengo.Node(a)
-        inputB = nengo.Node(b)
+        input_a = nengo.Node(a)
+        input_b = nengo.Node(b)
         cconv = nengo.networks.CircularConvolution(
             neurons_per_product, dimensions=dims)
-        nengo.Connection(inputA, cconv.A, synapse=None)
-        nengo.Connection(inputB, cconv.B, synapse=None)
+        nengo.Connection(input_a, cconv.input_a, synapse=None)
+        nengo.Connection(input_b, cconv.input_b, synapse=None)
         res_p = nengo.Probe(cconv.output)
     with Simulator(model) as sim:
         sim.run(0.01)

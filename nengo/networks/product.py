@@ -43,9 +43,9 @@ def Product(n_neurons, dimensions, input_magnitude=1., net=None):
 
     Attributes
     ----------
-    net.A : Node
+    net.input_a : Node
         The first vector to be multiplied.
-    net.B : Node
+    net.input_b : Node
         The second vector to be multiplied.
     net.output : Node
         The resulting product.
@@ -58,8 +58,8 @@ def Product(n_neurons, dimensions, input_magnitude=1., net=None):
         net = nengo.Network(label="Product")
 
     with net:
-        net.A = nengo.Node(size_in=dimensions, label="A")
-        net.B = nengo.Node(size_in=dimensions, label="B")
+        net.input_a = nengo.Node(size_in=dimensions, label="input_a")
+        net.input_b = nengo.Node(size_in=dimensions, label="input_b")
         net.output = nengo.Node(size_in=dimensions, label="output")
 
         net.sq1 = EnsembleArray(
@@ -70,10 +70,14 @@ def Product(n_neurons, dimensions, input_magnitude=1., net=None):
             radius=input_magnitude * np.sqrt(2))
 
         tr = 1. / np.sqrt(2.)
-        nengo.Connection(net.A, net.sq1.input, transform=tr, synapse=None)
-        nengo.Connection(net.B, net.sq1.input, transform=tr, synapse=None)
-        nengo.Connection(net.A, net.sq2.input, transform=tr, synapse=None)
-        nengo.Connection(net.B, net.sq2.input, transform=-tr, synapse=None)
+        nengo.Connection(
+            net.input_a, net.sq1.input, transform=tr, synapse=None)
+        nengo.Connection(
+            net.input_b, net.sq1.input, transform=tr, synapse=None)
+        nengo.Connection(
+            net.input_a, net.sq2.input, transform=tr, synapse=None)
+        nengo.Connection(
+            net.input_b, net.sq2.input, transform=-tr, synapse=None)
 
         sq1_out = net.sq1.add_output('square', np.square)
         nengo.Connection(sq1_out, net.output, transform=.5, synapse=None)

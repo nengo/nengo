@@ -134,9 +134,9 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
 
     Attributes
     ----------
-    net.A : Node
+    net.input_a : Node
         The first vector to be convolved.
-    net.B : Node
+    net.input_b : Node
         The second vector to be convolved.
     net.product : Network
         Network created with `.Product` to do the element-wise product
@@ -154,8 +154,8 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
         B = EnsembleArray(50, n_ensembles=10)
         C = EnsembleArray(50, n_ensembles=10)
         cconv = nengo.networks.CircularConvolution(50, dimensions=10)
-        nengo.Connection(A.output, cconv.A)
-        nengo.Connection(B.output, cconv.B)
+        nengo.Connection(A.output, cconv.input_a)
+        nengo.Connection(B.output, cconv.input_b)
         nengo.Connection(cconv.output, C.input)
 
     Notes
@@ -193,15 +193,17 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
     tr_out = transform_out(dimensions)
 
     with net:
-        net.A = nengo.Node(size_in=dimensions, label="A")
-        net.B = nengo.Node(size_in=dimensions, label="B")
+        net.input_a = nengo.Node(size_in=dimensions, label="input_a")
+        net.input_b = nengo.Node(size_in=dimensions, label="input_b")
         net.product = Product(n_neurons, tr_out.shape[1],
                               input_magnitude=input_magnitude * 2)
         net.output = nengo.Node(size_in=dimensions, label="output")
 
-        nengo.Connection(net.A, net.product.A, transform=tr_a, synapse=None)
-        nengo.Connection(net.B, net.product.B, transform=tr_b, synapse=None)
-        nengo.Connection(net.product.output, net.output,
-                         transform=tr_out, synapse=None)
+        nengo.Connection(
+            net.input_a, net.product.input_a, transform=tr_a, synapse=None)
+        nengo.Connection(
+            net.input_b, net.product.input_b, transform=tr_b, synapse=None)
+        nengo.Connection(
+            net.product.output, net.output, transform=tr_out, synapse=None)
 
     return net
