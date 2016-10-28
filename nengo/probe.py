@@ -28,8 +28,9 @@ class AttributeParam(StringParam):
                                 "into 'weights'. Probe 'weights' instead.",
                                 since="v2.1.0")
         if attr not in probe.obj.probeable:
-            raise ValidationError("Attribute %r is not probeable on %s."
-                                  % (attr, probe.obj),
+            raise ValidationError("Attribute %r is not probeable on %s.\n"
+                                  "Probeable attributes: %s"
+                                  % (attr, probe.obj, probe.obj.probeable),
                                   attr=self.name, obj=probe)
 
 
