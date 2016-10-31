@@ -148,28 +148,29 @@ class ObjView(object):
 
     def __init__(self, obj, key=slice(None)):
         self.obj = obj
+
+        # Node.size_in != size_out, so one of these can be invalid
+        try:
+            self.size_in = np.arange(self.obj.size_in)[key].size
+        except IndexError:
+            self.size_in = None
+        try:
+            self.size_out = np.arange(self.obj.size_out)[key].size
+        except IndexError:
+            self.size_out = None
+        if self.size_in is None and self.size_out is None:
+            raise IndexError("Invalid slice '%s' of %s" % (key, self.obj))
+
         if is_integer(key):
             # single slices of the form [i] should be cast into
             # slice objects for convenience
             if key == -1:
                 # special case because slice(-1, 0) gives the empty list
-                key = slice(key, None)
+                self.slice = slice(key, None)
             else:
-                key = slice(key, key+1)
-        self.slice = key
-
-        # Node.size_in != size_out, so one of these can be invalid
-        try:
-            self.size_in = np.arange(self.obj.size_in)[self.slice].size
-        except IndexError:
-            self.size_in = None
-        try:
-            self.size_out = np.arange(self.obj.size_out)[self.slice].size
-        except IndexError:
-            self.size_out = None
-        if self.size_in is None and self.size_out is None:
-            raise ValidationError("Invalid slice '%s' of %s"
-                                  % (self.slice, self.obj), attr='key')
+                self.slice = slice(key, key+1)
+        else:
+            self.slice = key
 
     def copy(self):
         return copy(self)

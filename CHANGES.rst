@@ -30,6 +30,10 @@ Release History
 
 **Changed**
 
+- Integer indexing of Nengo objects out of range raises an ``IndexError``
+  now to be consistent with standard Python behaviour.
+  (`#1176 <https://github.com/nengo/nengo/issues/1176>`_,
+  `#1183 <https://github.com/nengo/nengo/pull/1183>`_)
 - Documentation that applies to all Nengo projects has been moved to
   https://nengo.github.io/.
   (`#1251 <https://github.com/nengo/nengo/pull/1251>`_)

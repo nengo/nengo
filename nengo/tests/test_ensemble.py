@@ -256,13 +256,28 @@ def test_len():
     assert len(ens1) == 1
     assert len(ens5) == 5
     assert len(ens1[0]) == 1
+    assert len(ens1[-1]) == 1
     assert len(ens5[:3]) == 3
+    assert len(ens5[:100]) == 5
 
     # Neurons.__len__
     assert len(ens1.neurons) == 10
     assert len(ens5.neurons) == 100
     assert len(ens1.neurons[0]) == 1
     assert len(ens5.neurons[90:]) == 10
+    assert len(ens5.neurons[90:150]) == 10
+
+
+def test_invalid_indices():
+    with nengo.Network():
+        ens = nengo.Ensemble(10, dimensions=2)
+
+    with pytest.raises(IndexError):
+        assert ens[5]
+    with pytest.raises(IndexError):
+        assert ens[-5]
+    with pytest.raises(IndexError):
+        assert ens.neurons[20]
 
 
 def test_invalid_rates(Simulator):
