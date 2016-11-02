@@ -41,7 +41,10 @@ class Signal(object):
 
     def __init__(self, initial_value,
                  name=None, base=None, readonly=False, offset=0):
-        self._initial_value = np.asarray(initial_value).view()
+        if not np.isscalar(initial_value) and base is None:
+            self._initial_value = np.ascontiguousarray(initial_value).view()
+        else:
+            self._initial_value = np.asarray(initial_value).view()
         self._initial_value.setflags(write=False)
 
         if base is not None:

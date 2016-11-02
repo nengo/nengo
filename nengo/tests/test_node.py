@@ -364,7 +364,18 @@ def test_node_with_offset_array_view(Simulator):
     with nengo.Network() as model:
         node = nengo.Node(v[1])
         probe = nengo.Probe(node)
-        assert probe  # suppress never used warning
+        assert probe
+
+    with Simulator(model):
+        pass
+
+
+def test_node_with_unusual_strided_view(Simulator, seed):
+    v = np.array([1., 2.], dtype=complex)  # 16 byte itemsize
+    with nengo.Network(seed=seed) as model:
+        node = nengo.Node(v.real)  # 8 byte itemsize, but 16 byte strides
+        probe = nengo.Probe(node)
+        assert probe
 
     with Simulator(model):
         pass
