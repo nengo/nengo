@@ -179,6 +179,11 @@ class Network(object):
     def config(self, dummy):
         raise ReadonlyError(attr='config', obj=self)
 
+    @property
+    def n_neurons(self):
+        """(int) Number of neurons in this network, including subnetworks."""
+        return sum(ens.n_neurons for ens in self.all_ensembles)
+
     def __contains__(self, obj):
         return type(obj) in self.objects and obj in self.objects[type(obj)]
 

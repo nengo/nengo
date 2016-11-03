@@ -146,3 +146,13 @@ def test_raises_exception_on_incompatiple_type_arguments():
         nengo.Network(label=1)
     with pytest.raises(ValueError):
         nengo.Network(seed='label')
+
+
+def test_n_neurons():
+    with nengo.Network() as net:
+        nengo.Ensemble(10, 1)
+        assert net.n_neurons == 10
+        with nengo.Network() as subnet:
+            nengo.Ensemble(30, 1)
+            assert subnet.n_neurons == 30
+        assert net.n_neurons == 40

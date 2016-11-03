@@ -64,7 +64,7 @@ class EnsembleArray(nengo.Network):
         A node that provides input to all of the ensembles in the array.
     n_ensembles : int
         The number of sub-ensembles to create.
-    n_neurons : int
+    n_neurons_per_ensemble : int
         The number of neurons in each sub-ensemble.
     neuron_input : Node or None
         A node that provides input to all the neurons in the ensemble array.
@@ -97,7 +97,7 @@ class EnsembleArray(nengo.Network):
 
         label_prefix = "" if label is None else label + "_"
 
-        self.n_neurons = n_neurons
+        self.n_neurons_per_ensemble = n_neurons
         self.n_ensembles = n_ensembles
         self.dimensions_per_ensemble = ens_dimensions
 
@@ -153,12 +153,14 @@ class EnsembleArray(nengo.Network):
                 attr='ea_ensembles[0].neuron_type', obj=self)
 
         self.neuron_input = nengo.Node(
-            size_in=self.n_neurons * self.n_ensembles, label="neuron_input")
+            size_in=self.n_neurons_per_ensemble * self.n_ensembles,
+            label="neuron_input")
 
         for i, ens in enumerate(self.ea_ensembles):
-            nengo.Connection(self.neuron_input[i * self.n_neurons:
-                                               (i + 1) * self.n_neurons],
-                             ens.neurons, synapse=None)
+            nengo.Connection(
+                self.neuron_input[i * self.n_neurons_per_ensemble:
+                                  (i + 1) * self.n_neurons_per_ensemble],
+                ens.neurons, synapse=None)
         return self.neuron_input
 
     @with_self
@@ -182,13 +184,15 @@ class EnsembleArray(nengo.Network):
                 attr='ea_ensembles[0].neuron_type', obj=self)
 
         self.neuron_output = nengo.Node(
-            size_in=self.n_neurons * self.n_ensembles, label="neuron_output")
+            size_in=self.n_neurons_per_ensemble * self.n_ensembles,
+            label="neuron_output")
 
         for i, ens in enumerate(self.ea_ensembles):
-            nengo.Connection(ens.neurons,
-                             self.neuron_output[i * self.n_neurons:
-                                                (i + 1) * self.n_neurons],
-                             synapse=None)
+            nengo.Connection(
+                ens.neurons,
+                self.neuron_output[i * self.n_neurons_per_ensemble:
+                                   (i + 1) * self.n_neurons_per_ensemble],
+                synapse=None)
         return self.neuron_output
 
     @with_self

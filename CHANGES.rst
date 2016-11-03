@@ -22,7 +22,20 @@ Release History
 2.4.1 (unreleased)
 ==================
 
+**Added**
 
+- Added a ``n_neurons`` property to ``Network``, which gives the
+  number of neurons in the network, including all subnetworks.
+  (`#435 <https://github.com/nengo/nengo/issues/435>`_,
+  `#1186 <https://github.com/nengo/nengo/pull/1186>`_)
+
+**Changed**
+
+- ``EnsembleArray.n_neurons`` now gives the total number of neurons
+  in all ensembles, including those in subnetworks.
+  To get the number of neurons in each ensemble,
+  use ``EnsembleArray.n_neurons_per_ensemble``.
+  (`#1186 <https://github.com/nengo/nengo/pull/1186>`_)
 
 2.4.0 (April 18, 2017)
 ======================
