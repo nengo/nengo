@@ -8,7 +8,6 @@ from nengo.processes import WhiteSignal
 from nengo.solvers import LstsqL2nz
 from nengo.utils.ensemble import tuning_curves
 from nengo.utils.matplotlib import implot, rasterplot
-from nengo.utils.neurons import rates_kernel
 from nengo.utils.numpy import rms, rmse
 
 
@@ -211,7 +210,7 @@ def test_alif(Simulator, plt):
     t = sim.trange()
     a_rates = sim.data[ap]
     spikes = sim.data[bp]
-    b_rates = rates_kernel(t, spikes)
+    b_rates = nengo.Lowpass(0.04).filtfilt(spikes)
 
     tmask = (t > 0.1) & (t < 1.7)
     rel_rmse = rms(b_rates[tmask] - a_rates[tmask]) / rms(a_rates[tmask])

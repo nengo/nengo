@@ -435,6 +435,21 @@ Release History
   making repeated access much faster.
   (`#1076 <https://github.com/nengo/nengo/issues/1076>`_,
   `#1175 <https://github.com/nengo/nengo/pull/1175>`_)
+- The ``settled_firingrate`` function has been moved from
+  ``nengo.utils.neurons`` to ``nengo.neurons``.
+  (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
+
+**Removed**
+
+- Removed ``generate_graphviz`` utility function. It can now be found in
+  `nengo_extras <https://github.com/nengo/nengo_extras/>`__.
+  (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
+- Removed functions for estimating firing rates from spikes. They can now
+  be found in `nengo_extras <https://github.com/nengo/nengo_extras/>`__.
+  (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
+- Removed the ``probe_all`` function. It can now be found in
+  `nengo_extras <https://github.com/nengo/nengo_extras/>`__.
+  (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
 
 **Deprecated**
 
