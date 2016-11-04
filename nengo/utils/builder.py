@@ -8,7 +8,7 @@ import collections
 import numpy as np
 
 import nengo
-from nengo.exceptions import Unconvertible, ValidationError
+from nengo.exceptions import MovedError, Unconvertible, ValidationError
 
 
 def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
@@ -103,47 +103,11 @@ def default_n_eval_points(n_neurons, dimensions):
 
 def objs_and_connections(network):
     """Given a Network, returns all (ensembles + nodes, connections)."""
-    objs = list(network.ensembles + network.nodes)
-    connections = list(network.connections)
-    for subnetwork in network.networks:
-        subobjs, subconnections = objs_and_connections(subnetwork)
-        objs.extend(subobjs)
-        connections.extend(subconnections)
-    return objs, connections
+    return network.all_ensembles + network.all_nodes, network.all_connections
 
 
-def generate_graphviz(objs, connections):
-    """Create a .gv file with this set of objects and connections
-
-    Parameters
-    ----------
-    objs : list of Nodes and Ensembles
-        All the objects in the model
-    connections : list of Connections
-        All the Connections in the model
-
-    Returns the text contents of the desired .dot file
-
-    This can be useful for debugging and testing Builders that manipulate
-    the model graph before construction.
-    """
-    text = []
-    text.append('digraph G {')
-    for obj in objs:
-        text.append('  "%d" [label="%s"];' % (id(obj), obj.label))
-
-    def label(transform):
-        # determine the label for a connection based on its transform
-        transform = np.asarray(transform)
-        if len(transform.shape) == 0:
-            return ''
-        return '%dx%d' % transform.shape
-
-    for c in connections:
-        text.append('  "%d" -> "%d" [label="%s"];' % (
-            id(c.pre_obj), id(c.post_obj), label(c.transform)))
-    text.append('}')
-    return '\n'.join(text)
+def generate_graphviz(*args, **kwargs):
+    raise MovedError(location="nengo_extras.graphviz")
 
 
 def _create_replacement_connection(c_in, c_out):

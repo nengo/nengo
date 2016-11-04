@@ -60,6 +60,17 @@ class ObsoleteError(NengoException):
             if self.url is not None else "")
 
 
+class MovedError(NengoException):
+    """A feature that has been moved elsewhere."""
+
+    def __init__(self, location=None):
+        self.location = location
+        super(MovedError, self).__init__()
+
+    def __str__(self):
+        return "This feature has been moved to %s" % self.location
+
+
 class ConfigError(NengoException, ValueError):
     """A ValueError encountered in the config system."""
 

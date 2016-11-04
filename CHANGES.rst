@@ -77,6 +77,9 @@ Release History
 - Switched documentation to new
   `nengo-sphinx-theme <https://github.com/nengo/nengo-sphinx-theme>`_.
   (`#1489 <https://github.com/nengo/nengo/pull/1489>`__)
+- The ``settled_firingrate`` function has been moved from
+  ``nengo.utils.neurons`` to ``nengo.neurons``.
+  (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
 
 **Deprecated**
 
@@ -94,6 +97,15 @@ Release History
 - Networks no longer accept the ``net`` argument. To set network arguments
   like ``label``, pass them as keyword arguments instead.
   (`#1179 <https://github.com/nengo/nengo/pull/1179>`__)
+- Removed ``generate_graphviz`` utility function. It can now be found in
+  `nengo_extras <https://github.com/nengo/nengo_extras/>`__.
+  (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
+- Removed functions for estimating firing rates from spikes. They can now
+  be found in `nengo_extras <https://github.com/nengo/nengo_extras/>`__.
+  (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
+- Removed the ``probe_all`` function. It can now be found in
+  `nengo_extras <https://github.com/nengo/nengo_extras/>`__.
+  (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
 
 **Fixed**
 
