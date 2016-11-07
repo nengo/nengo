@@ -53,7 +53,7 @@ def test_module():
 def test_scalar_multiplication():
     ast = Parser().parse_expr('2 * A')
     assert ast == Product(2, Symbol('A'))
-    assert str(ast) == '(2 * A)'
+    assert str(ast) == '2 * A'
 
     vocab_type = TVocabulary(spa.Vocabulary(16))
     ast.infer_types(None, vocab_type)
@@ -61,7 +61,7 @@ def test_scalar_multiplication():
 
     ast = Parser().parse_expr('A * 2')
     assert ast == Product(Symbol('A'), 2)
-    assert str(ast) == '(A * 2)'
+    assert str(ast) == 'A * 2'
 
     vocab_type = TVocabulary(spa.Vocabulary(16))
     ast.infer_types(None, vocab_type)
@@ -73,14 +73,14 @@ def test_scalar_multiplication():
 
     ast = Parser().parse_expr('2 * state')
     assert ast == Product(2, Module('state'))
-    assert str(ast) == '(2 * state)'
+    assert str(ast) == '2 * state'
 
     ast.infer_types(model, None)
     assert ast.type.vocab == model.state.vocabs[d]
 
     ast = Parser().parse_expr('state * 2')
     assert ast == Product(Module('state'), 2)
-    assert str(ast) == '(state * 2)'
+    assert str(ast) == 'state * 2'
 
     ast.infer_types(model, None)
     assert ast.type.vocab == model.state.vocabs[d]
@@ -90,7 +90,7 @@ def test_scalar_multiplication():
 def test_binary_operations(symbol, klass):
     ast = Parser().parse_expr('A {} B'.format(symbol))
     assert ast == klass(Symbol('A'), Symbol('B'))
-    assert str(ast) == '(A {} B)'.format(symbol)
+    assert str(ast) == 'A {} B'.format(symbol)
 
     vocab_type = TVocabulary(spa.Vocabulary(16))
     ast.infer_types(None, vocab_type)
@@ -103,21 +103,21 @@ def test_binary_operations(symbol, klass):
 
     ast = Parser().parse_expr('state {} B'.format(symbol))
     assert ast == klass(Module('state'), Symbol('B'))
-    assert str(ast) == '(state {} B)'.format(symbol)
+    assert str(ast) == 'state {} B'.format(symbol)
 
     ast.infer_types(model, TVocabulary(model.state.vocabs[d]))
     assert ast.type.vocab == model.state.vocabs[d]
 
     ast = Parser().parse_expr('A {} state'.format(symbol))
     assert ast == klass(Symbol('A'), Module('state'))
-    assert str(ast) == '(A {} state)'.format(symbol)
+    assert str(ast) == 'A {} state'.format(symbol)
 
     ast.infer_types(model, TVocabulary(model.state.vocabs[d]))
     assert ast.type.vocab == model.state.vocabs[d]
 
     ast = Parser().parse_expr('state {} state2'.format(symbol))
     assert ast == klass(Module('state'), Module('state2'))
-    assert str(ast) == '(state {} state2)'.format(symbol)
+    assert str(ast) == 'state {} state2'.format(symbol)
 
     ast.infer_types(model, None)
     assert ast.type.vocab == model.state.vocabs[d]
@@ -160,7 +160,7 @@ def test_dot_product():
 
     ast = Parser().parse_expr('2 * dot(A, state) + 1')
     assert ast == Sum(Product(2, DotProduct(Symbol('A'), Module('state'))), 1)
-    assert str(ast) == '((2 * dot(A, state)) + 1)'
+    assert str(ast) == '2 * dot(A, state) + 1'
 
     ast.infer_types(model, TVocabulary(model.state.vocabs[d]))
     assert ast.type == TScalar
@@ -221,16 +221,16 @@ def test_complex_epressions():
     assert ast.type.vocab == model.state.vocabs[d]
 
     ast = Parser().parse_expr('0.5*(2*dot(a, A)-dot(b,B))-2')
-    assert str(ast) == '((0.5 * ((2 * dot(a, A)) + -dot(b, B))) + -2)'
+    assert str(ast) == '0.5 * (2 * dot(a, A) + -dot(b, B)) + -2'
 
     ast = Parser().parse_expr('dot(x, -1) + 1')
-    assert str(ast) == '(dot(x, -1) + 1)'
+    assert str(ast) == 'dot(x, -1) + 1'
 
     ast = Parser().parse_expr('2*dot(a, 1) - dot(b, -1) + dot(a, b)')
-    assert str(ast) == '(((2 * dot(a, 1)) + -dot(b, -1)) + dot(a, b))'
+    assert str(ast) == '2 * dot(a, 1) + -dot(b, -1) + dot(a, b)'
 
     ast = Parser().parse_expr('a*b - 1 + 2*b')
-    assert str(ast) == '(((a * b) + -1) + (2 * b))'
+    assert str(ast) == 'a * b + -1 + 2 * b'
 
 
 def test_zero_vector():
