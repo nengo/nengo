@@ -64,8 +64,18 @@ Sink: <valid Python identifier> | <valid Python identifier> '.' Sink
 Effect: Sink '=' Source
 Effects: Effect | Effect ',' Effects
 Action: Source '-->' Effects
+``
 
 Note that `Difference` ``a - b`` will be represented as `a + (-b)` in the AST.
+
+Operator precedence is defined as follows from highest to lowest priority:
+
+``
+0 Scalar, Symbol, Zero, Module, DotProduct, Reinterpret, Translate
+1 UnaryOperation
+2 Product
+3 Sum
+``
 """
 
 import warnings
@@ -285,8 +295,9 @@ class Node(object):
         TRANSFORM_ONLY = 1
         DYNAMIC = 2
 
-    def __init__(self, staticity):
+    def __init__(self, staticity, precedence=0):
         self.staticity = staticity
+        self.precedence = precedence
         self.type = None
 
     @property
@@ -503,11 +514,12 @@ class BinaryNode(Source):
     rhs : :class:`Node`
         Right-hand side
     """
-    def __init__(self, lhs, rhs, staticity):
+    def __init__(self, lhs, rhs, staticity, precedence=0):
         lhs = ensure_node(lhs)
         rhs = ensure_node(rhs)
 
-        super(BinaryNode, self).__init__(staticity=staticity)
+        super(BinaryNode, self).__init__(
+            staticity=staticity, precedence=precedence)
         self.lhs = lhs
         self.rhs = rhs
 
@@ -541,8 +553,9 @@ class BinaryOperation(BinaryNode):
     operator : str
         String representation of the operator.
     """
-    def __init__(self, lhs, rhs, operator, staticity):
-        super(BinaryOperation, self).__init__(lhs, rhs, staticity)
+    def __init__(self, lhs, rhs, operator, staticity, precedence=2):
+        super(BinaryOperation, self).__init__(
+            lhs, rhs, staticity, precedence=precedence)
         self.operator = operator
 
     def infer_types(self, root_module, context_type):
@@ -567,7 +580,16 @@ class BinaryOperation(BinaryNode):
         raise NotImplementedError()
 
     def __str__(self):
-        return '({} {} {})'.format(self.lhs, self.operator, self.rhs)
+        if self.lhs.precedence > self.precedence:
+            lhs_str = '({})'.format(self.lhs)
+        else:
+            lhs_str = str(self.lhs)
+        if self.rhs.precedence > self.precedence:
+            rhs_str = '({})'.format(self.rhs)
+        else:
+            rhs_str = str(self.rhs)
+
+        return '{} {} {}'.format(lhs_str, self.operator, rhs_str)
 
 
 class Product(BinaryOperation):
@@ -629,7 +651,7 @@ class Sum(BinaryOperation):
         rhs = ensure_node(rhs)
         staticity = min(
             Node.Staticity.TRANSFORM_ONLY, max(lhs.staticity, rhs.staticity))
-        super(Sum, self).__init__(lhs, rhs, '+', staticity)
+        super(Sum, self).__init__(lhs, rhs, '+', staticity, precedence=3)
 
     def construct(self, context):
         if self.fixed:
@@ -652,9 +674,10 @@ class UnaryOperation(Source):
     operator : str
         String representation of the operator.
     """
-    def __init__(self, source, operator):
+    def __init__(self, source, operator, precedence=1):
         source = ensure_node(source)
-        super(UnaryOperation, self).__init__(staticity=source.staticity)
+        super(UnaryOperation, self).__init__(
+            staticity=source.staticity, precedence=precedence)
         self.source = source
         self.operator = operator
 
@@ -666,7 +689,10 @@ class UnaryOperation(Source):
         raise NotImplementedError()
 
     def __str__(self):
-        return self.operator + str(self.source)
+        if self.source.precedence <= self.precedence:
+            return self.operator + str(self.source)
+        else:
+            return self.operator + '(' + str(self.source) + ')'
 
 
 class ApproxInverse(UnaryOperation):
