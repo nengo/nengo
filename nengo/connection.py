@@ -7,6 +7,7 @@ from nengo.dists import Distribution, DistOrArrayParam
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
+from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.params import (Default, Unconfigurable, ObsoleteParam,
                           BoolParam, FunctionInfo, FunctionParam)
@@ -37,13 +38,20 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
         super(ConnectionLearningRuleTypeParam, self).validate_rule(conn, rule)
 
         # --- Check pre object
+        pre = conn.pre_obj
         if rule.modifies in ('decoders', 'weights'):
             # pre object must be neural
-            if not isinstance(conn.pre_obj, (Ensemble, Neurons)):
+            if not isinstance(pre, (Ensemble, Neurons)):
                 raise ValidationError(
-                    "pre' must be of type 'Ensemble' or 'Neurons' for "
+                    "'pre' must be of type 'Ensemble' or 'Neurons' for "
                     "learning rule '%s' (got type %r)" % (
-                        rule, type(conn.pre_obj).__name__),
+                        rule, type(pre).__name__),
+                    attr=self.name, obj=conn)
+            if (isinstance(pre, Ensemble)
+                    and isinstance(pre.neuron_type, Direct)):
+                raise ValidationError(
+                    "'pre' cannot have neuron type 'Direct'. Connections from "
+                    "'Direct' ensembles do not have decoders or weights.",
                     attr=self.name, obj=conn)
 
         # --- Check post object
@@ -52,7 +60,7 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
                 raise ValidationError(
                     "'post' must be of type 'Ensemble' (got %r) "
                     "for learning rule '%s'"
-                    % (type(conn.pre_obj).__name__, rule),
+                    % (type(pre).__name__, rule),
                     attr=self.name, obj=conn)
         else:
             if not isinstance(conn.post_obj, (Ensemble, Neurons, Node)):
@@ -73,7 +81,7 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
 
             # transform matrix must be 2D
             pre_size = (
-                conn.pre_obj.n_neurons if isinstance(conn.pre_obj, Ensemble)
+                pre.n_neurons if isinstance(pre, Ensemble)
                 else conn.pre.size_out)
             post_size = conn.post.size_in
             if (not conn.solver.weights and

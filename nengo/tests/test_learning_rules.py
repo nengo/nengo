@@ -3,6 +3,7 @@ import pytest
 
 import nengo
 from nengo.dists import UniformHypersphere
+from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja, Voja
 from nengo.processes import WhiteSignal
 
@@ -469,3 +470,13 @@ def test_frozen():
 
     with pytest.raises((ValueError, RuntimeError)):
         a.learning_rate = 1e-1
+
+
+def test_pes_direct_errors():
+    """Test that applying a learning rule to a direct ensemble errors."""
+    with nengo.Network():
+        pre = nengo.Ensemble(10, 1, neuron_type=nengo.Direct())
+        post = nengo.Ensemble(10, 1)
+        conn = nengo.Connection(pre, post)
+        with pytest.raises(ValidationError):
+            conn.learning_rule_type = nengo.PES()
