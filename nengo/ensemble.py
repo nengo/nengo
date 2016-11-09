@@ -33,7 +33,7 @@ class Ensemble(NengoObject):
         and aligned with that neuron's encoder ``e``;
         i.e., when ``dot(x, e) = 1``.
     eval_points : Distribution or (n_eval_points, dims) array_like, optional \
-                  (Default: ``nengo.dists.UniformHypersphere(surface=True)``)
+                  (Default: ``nengo.dists.UniformHypersphere()``)
         The evaluation points used for decoder solving, spanning the interval
         (-radius, radius) in each dimension, or a distribution from which
         to choose evaluation points.
