@@ -81,3 +81,9 @@ Development
 
 Information for current or prospective developers can be found
 at `<https://pythonhosted.org/nengo/dev_guide.html>`_.
+
+Getting Help
+============
+
+Questions relating to Nengo, whether it's use or it's development, should be
+asked on the Nengo forum at `<https://forum.nengo.ai>`_.
