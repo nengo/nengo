@@ -27,7 +27,7 @@ Nengo imports several open source libraries.
 * `IPython <http://ipython.org/>`_ - Used under
   `BSD license <https://github.com/ipython/ipython/blob/master/COPYING.rst>`__
 * `pytest <http://pytest.org/latest/>`_ - Used under
-  `MIT license <https://bitbucket.org/hpk42/pytest/src/95655acb1f906fbe0a737c2676094aad77bbab1d/LICENSE?at=default>`__
+  `MIT license <http://docs.pytest.org/en/latest/license.html>`__
 
 Nengo also includes code modified from other libraries.
 
