@@ -317,7 +317,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         return 0
 
     @staticmethod
-    def _view_base(op):
+    def _first_view_base(op):
         """Returns the base of the first signal view of operator `op`.
 
         Returns ``None`` if the operator has no signal views."""
@@ -380,7 +380,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
 
         # Sort by base of views
         for op in subset:
-            by_view[self._view_base(op)].append(op)
+            by_view[self._first_view_base(op)].append(op)
 
         if only_merge_ops_with_view and None in by_view:
             del by_view[None]
