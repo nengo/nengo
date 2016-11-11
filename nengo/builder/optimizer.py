@@ -203,7 +203,8 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         # graph and signals have been updated with those merges to continue
         # merging other operator types.
 
-        # Heuristic order to reduce runtime and number of passes
+        # First loop with a heuristic order to reduce runtime and number of
+        # passes
         for tp in [ElementwiseInc, SlicedCopy, DotInc, SimNeurons]:
             opr, sigr = self._perform_merges_for_subset(
                 by_type[tp], tc, only_merge_ops_with_view)
