@@ -552,6 +552,9 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
                     readonly=s.readonly)
             return s
 
+        # This call is not actually changing the signals of the operators as
+        # get_sig_view_replacement will return the unmodified signals and
+        # store additional required replacements in view_replacements.
         cls._map_onto_op_signals(get_sig_view_replacement, ops)
         return view_replacements
 
