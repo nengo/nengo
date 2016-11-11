@@ -106,15 +106,17 @@ def transitive_closure(edges, topo_sorted=None):
     Parameters
     ----------
     edges : dict
-        Dict of the form {a: {b, c}} where b and c depend on a. Must not
-        contain cycles.
+        Dict of the form ``{a: {b, c}}`` where ``b`` and ``c`` depend on ``a``.
+        Must not contain cycles.
     topo_sorted : sequence, optional
-        The topological sorting of the vertices. If not passed in the algorithm
-        will do a topological sort.
+        The topological sorting of the vertices. If not passed in, the
+        algorithm will do a topological sort.
 
     Returns
     -------
-    The transitive closure data structure as `edges`.
+    The transitive closure using the same data structure as `edges`: a dict
+    of the form ``{a: {b, c}}`` where ``b`` and ``c`` are nodes that either
+    directly or indirectly depend on ``a``.
     """
     if topo_sorted is None:
         topo_sorted = toposort(edges)
