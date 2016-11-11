@@ -61,10 +61,9 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         self.model = model
         self.dg = dg
 
-        # Internal dict mapping Signals to Operators accessing those signals.
+        # Dict mapping from a Signal to the Operators accessing those signals.
         self._sig2op = None
-        # Internal set of Operators merged during the current optimization
-        # pass.
+        # Set of Operators merged during the current optimization pass.
         self._merged = None
 
     @classmethod
