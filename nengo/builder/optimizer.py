@@ -256,7 +256,8 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         """
         # Ensure the operators don't form a dependency cycle and that op2
         # hasn't been merged with another operator yet. (Whether op1 has been
-        # merged with another operator will be checked outside of this function
+        # merged with another operator will already be checked in
+        # _perform_merges_for_view_subset outside of this function
         # to reduce the number of checks inside the inner loop of the
         # optimizer.)
         independent = (
