@@ -297,7 +297,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         return True
 
     @staticmethod
-    def _view_offset(op):
+    def _first_view_offset(op):
         """Returns the offset of the first signal view of operator `op`.
 
         Returns 0 if the operator has no signal views."""
@@ -307,7 +307,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         return 0
 
     @staticmethod
-    def _view_size(op):
+    def _first_view_size(op):
         """Returns the size of the first signal view of operator `op`.
 
         Returns 0 if the operator has no signal views."""
@@ -348,8 +348,8 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         the views match up in their memory alignment.
         """
         return (
-            self._view_offset(op1) + self._view_size(op1) <
-            self._view_offset(op2))
+            self._first_view_offset(op1) + self._first_view_size(op1) <
+            self._first_view_offset(op2))
 
     def _perform_merges_for_subset(
             self, subset, tc, only_merge_ops_with_view=True):
@@ -417,7 +417,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         """
         view_indices = []
         # Sort to have sequential memory.
-        offsets = np.array([self._view_offset(op) for op in subset])
+        offsets = np.array([self._first_view_offset(op) for op in subset])
         sort_indices = np.argsort(offsets)
         offsets = offsets[sort_indices]
         sorted_subset = [subset[i] for i in sort_indices]
@@ -437,7 +437,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
             # operators by the start of their views we can do a binary search
             # and potentially skip a number of operators at the beginning.
             start = np.searchsorted(
-                offsets, offsets[i] + self._view_size(op1), side='left')
+                offsets, offsets[i] + self._first_view_size(op1), side='left')
             for op2 in sorted_subset[start:]:
                 can_merge = (
                     op2 not in self._merged and
