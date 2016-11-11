@@ -99,7 +99,7 @@ def toposort(edges):
 
 
 def transitive_closure(edges, topo_sorted=None):
-    """Constructs the transitive_closure of a DAG.
+    """Constructs the transitive closure of a directed acyclic graph (DAG).
 
     The complexity is O(nodes + vertices).
 
