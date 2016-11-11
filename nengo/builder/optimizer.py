@@ -425,7 +425,8 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         for i, op1 in enumerate(sorted_subset):
             if op1 in self._merged:
                 # Cannot merge merged operator again until dependency graph
-                # has been updated (happens outside of this function).
+                # has been updated (happens at the end of one optimization
+                # pass by calling _update_dg).
                 continue
 
             view_indices = self._get_view_indices(op1)
