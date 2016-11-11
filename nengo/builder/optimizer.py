@@ -31,7 +31,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
     n is the number of operators and e the number of edges in the dependency
     graph. In practice the run time will be much better because not all n^2
     pairwise combinations of operators will be evaluated. A grouping depending
-    on the operator type and view bases will be done with dictionaries. This
+    on the operator type and view bases is done with dictionaries. This
     grouping can be done in amortized linear time and reduces the actual worst
     case runtime of the optimization algorithm to O(g*m^2 + e) where g is the
     number of groups and m the number of elements in a group. Moreover,
