@@ -45,8 +45,8 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
     model : :class:`nengo.builder.builder.Model`
         Builder output to optimize.
     dg : dict
-        Dict of the form {a: {b, c}} where b and c depend on a specifying the
-        operator dependency graph of the model.
+        Dict of the form ``{a: {b, c}}`` where ``b`` and ``c`` depend on a
+        specifying the operator dependency graph of the model.
     """
 
     op_mergers = {}
