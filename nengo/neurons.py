@@ -30,6 +30,23 @@ class NeuronType(FrozenObject):
     def _argreprs(self):
         return []
 
+    def current(self, x, gain, bias):
+        """Compute current injected in each neuron given input, gain and bias.
+
+        Parameters
+        ----------
+        x : (n_neurons,) array_like
+            Vector-space input.
+        gain : (n_neurons,) array_like
+            Gains associated with each neuron.
+        bias : (n_neurons,) array_like
+            Bias current associated with each neuron.
+        """
+        x = np.array(x, dtype=float, copy=False, ndmin=1)
+        gain = np.array(gain, dtype=float, copy=False, ndmin=1)
+        bias = np.array(bias, dtype=float, copy=False, ndmin=1)
+        return gain * x + bias
+
     def gain_bias(self, max_rates, intercepts):
         """Compute the gain and bias needed to satisfy max_rates, intercepts.
 
@@ -42,18 +59,21 @@ class NeuronType(FrozenObject):
 
         Parameters
         ----------
-        max_rates : ndarray(dtype=float64)
+        max_rates : (n_neurons,) array_like
             Maximum firing rates of neurons.
-        intercepts : ndarray(dtype=float64)
+        intercepts : (n_neurons,) array_like
             X-intercepts of neurons.
 
         Returns
         -------
-        gain : ndarray(dtype=float64)
+        gain : (n_neurons,) array_like
             Gain associated with each neuron. Sometimes denoted alpha.
-        bias : ndarray(dtype=float64)
+        bias : (n_neurons,) array_like
             Bias current associated with each neuron.
         """
+        max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
+        intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
+
         J_max = 0
         J_steps = 101  # Odd number so that 0 is a sample
         max_rate = max_rates.max()
@@ -99,14 +119,19 @@ class NeuronType(FrozenObject):
 
         Parameters
         ----------
-        x : ndarray(dtype=float64)
+        x : (n_neurons,) array_like
             Vector-space input.
-        gain : ndarray(dtype=float64)
+        gain : (n_neurons,) array_like
             Gains associated with each neuron.
-        bias : ndarray(dtype=float64)
+        bias : (n_neurons,) array_like
             Bias current associated with each neuron.
+
+        Returns
+        -------
+        rates : (n_neurons,) ndarray
+            The firing rates at each given value of `x`.
         """
-        J = gain * x + bias
+        J = self.current(x, gain, bias)
         out = np.zeros_like(J)
         self.step_math(dt=1., J=J, output=out)
         return out
@@ -122,9 +147,9 @@ class NeuronType(FrozenObject):
         ----------
         dt : float
             Simulation timestep.
-        J : ndarray(dtype=float64)
+        J : (n_neurons,) array_like
             Input currents associated with each neuron.
-        output : ndarray(dtype=float64)
+        output : (n_neurons,) array_like
             Output activities associated with each neuron.
         """
         raise NotImplementedError("Neurons must provide step_math")
@@ -145,7 +170,7 @@ class Direct(NeuronType):
 
     def rates(self, x, gain, bias):
         """Always returns ``x``."""
-        return x
+        return np.array(x, dtype=float, copy=False, ndmin=1)
 
     def step_math(self, dt, J, output):
         """Raises an error if called.
@@ -172,6 +197,8 @@ class RectifiedLinear(NeuronType):
 
     def gain_bias(self, max_rates, intercepts):
         """Determine gain and bias by shifting and scaling the lines."""
+        max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
+        intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
         gain = max_rates / (1 - intercepts)
         bias = -intercepts * gain
         return gain, bias
@@ -203,6 +230,8 @@ class Sigmoid(NeuronType):
 
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
+        max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
+        intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
         lim = 1. / self.tau_ref
         inverse = -np.log(lim / max_rates - 1.)
         gain = inverse / (1. - intercepts)
@@ -248,6 +277,9 @@ class LIFRate(NeuronType):
 
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
+        max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
+        intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
+
         inv_tau_ref = 1. / self.tau_ref if self.tau_ref > 0 else np.inf
         if np.any(max_rates > inv_tau_ref):
             raise ValidationError("Max rates must be below the inverse "
@@ -262,7 +294,7 @@ class LIFRate(NeuronType):
 
     def rates(self, x, gain, bias):
         """Always use LIFRate to determine rates."""
-        J = gain * x + bias
+        J = self.current(x, gain, bias)
         out = np.zeros_like(J)
         # Use LIFRate's step_math explicitly to ensure rate approximation
         LIFRate.step_math(self, dt=1, J=J, output=out)
@@ -500,9 +532,9 @@ class Izhikevich(NeuronType):
     def rates(self, x, gain, bias):
         """Estimates steady-state firing rate given gain and bias.
 
-        Uses the `nengo.utils.neurons.settled_firingrate` helper function.
+        Uses the `.settled_firingrate` helper function.
         """
-        J = gain * x + bias
+        J = self.current(x, gain, bias)
         voltage = np.zeros_like(J)
         recovery = np.zeros_like(J)
         return settled_firingrate(self.step_math, J, [voltage, recovery],
