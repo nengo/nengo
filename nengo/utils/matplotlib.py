@@ -98,7 +98,7 @@ def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
         plt.colorbar(image, ax=ax)
 
 
-def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa: C901
+def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
     """Generate a raster plot of the provided spike data.
 
     Parameters

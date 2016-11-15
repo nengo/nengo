@@ -245,12 +245,14 @@ class DummyA(object):
     def __init__(self, attr=0):
         self.attr = attr
 
+
 nengo.cache.Fingerprint.whitelist(DummyA)
 
 
 class DummyB(object):
     def __init__(self, attr=0):
         self.attr = attr
+
 
 nengo.cache.Fingerprint.whitelist(DummyB)
 

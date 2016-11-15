@@ -1,7 +1,5 @@
 import logging
 
-import pytest
-
 import nengo
 import nengo.utils.logging
 
@@ -29,7 +27,3 @@ def test_log_to_file(tmpdir):
     assert logging.root.getEffectiveLevel() == logging.DEBUG
     assert len(logging.root.handlers) == n_handlers
     logging.root.handlers.remove(handler)
-
-if __name__ == "__main__":
-    import sys
-    pytest.main(sys.argv)

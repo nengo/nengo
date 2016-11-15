@@ -101,5 +101,6 @@ class _RC(configparser.SafeConfigParser):
         self._init_defaults()
         self.read(filenames)
 
+
 # The current Nengo RC settings.
 rc = _RC()

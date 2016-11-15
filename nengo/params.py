@@ -18,6 +18,7 @@ class DefaultType:
     def __repr__(self):
         return self.name
 
+
 Default = DefaultType("Default")
 ConnectionDefault = DefaultType("ConnectionDefault")
 Unconfigurable = DefaultType("Unconfigurable")
