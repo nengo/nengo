@@ -11,7 +11,7 @@ def test_new_action_syntax(Simulator, seed, plt, rng):
     model.config[spa.State].vocab = 3
     model.config[spa.State].subdimensions = 3
     with model:
-        model.ctrl = spa.Buffer(16, label='ctrl')
+        model.ctrl = spa.State(16, subdimensions=16, label='ctrl')
 
         def input_func(t):
             if t < 0.2:

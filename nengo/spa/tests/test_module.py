@@ -35,7 +35,7 @@ def test_spa_verification(seed, plt):
 
     # building a normal model that shouldn't raise a warning
     with model:
-        model.buf = spa.Buffer(d)
+        model.buf = spa.State(d)
         model.input_node = spa.Input(buf='B')
         # make sure errors aren't fired for non-spa modules
         prod = nengo.networks.Product(10, 2)  # noqa: F841

@@ -12,10 +12,10 @@ def test_thalamus(Simulator, plt, seed):
     model = spa.Module(seed=seed)
 
     with model:
-        model.vision = spa.Buffer(dimensions=16, neurons_per_dimension=80)
-        model.vision2 = spa.Buffer(dimensions=16, neurons_per_dimension=80)
-        model.motor = spa.Buffer(dimensions=16, neurons_per_dimension=80)
-        model.motor2 = spa.Buffer(dimensions=32, neurons_per_dimension=80)
+        model.vision = spa.State(vocab=16, neurons_per_dimension=80)
+        model.vision2 = spa.State(vocab=16, neurons_per_dimension=80)
+        model.motor = spa.State(vocab=16, neurons_per_dimension=80)
+        model.motor2 = spa.State(vocab=32, neurons_per_dimension=80)
 
         actions = spa.Actions(
             'dot(vision, A) --> motor=A, motor2=translate(vision*vision2)',
@@ -76,7 +76,7 @@ def test_routing(Simulator, seed, plt):
     model.config[spa.State].vocab = 3
     model.config[spa.State].subdimensions = 3
     with model:
-        model.ctrl = spa.Buffer(16, label='ctrl')
+        model.ctrl = spa.State(16, subdimensions=16, label='ctrl')
 
         def input_func(t):
             if t < 0.2:
@@ -131,7 +131,7 @@ def test_routing(Simulator, seed, plt):
 
 
 def test_routing_recurrency_compilation(Simulator, seed, plt):
-    model = spa.SPA(seed=seed)
+    model = spa.Module(seed=seed)
     model.config[spa.State].vocab = 2
     model.config[spa.State].subdimensions = 2
     with model:
@@ -150,7 +150,7 @@ def test_nondefault_routing(Simulator, seed):
     model.config[spa.State].vocab = 3
     model.config[spa.State].subdimensions = 3
     with model:
-        model.ctrl = spa.Buffer(16, label='ctrl')
+        model.ctrl = spa.State(16, subdimensions=16, label='ctrl')
 
         def input_func(t):
             if t < 0.2:
@@ -199,7 +199,7 @@ def test_errors():
     # motor does not exist
     with pytest.raises(SpaModuleError):
         with spa.Module() as model:
-            model.vision = spa.Buffer(dimensions=16)
+            model.vision = spa.State(vocab=16)
             actions = spa.Actions('0.5 --> motor=A')
             model.bg = spa.BasalGanglia(actions)
             model.thalamus = spa.Thalamus(model.bg)

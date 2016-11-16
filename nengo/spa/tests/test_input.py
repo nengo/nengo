@@ -7,8 +7,8 @@ from nengo import spa
 
 def test_fixed():
     with spa.Module() as model:
-        model.buffer1 = spa.Buffer(dimensions=16)
-        model.buffer2 = spa.Buffer(dimensions=8, subdimensions=2)
+        model.buffer1 = spa.State(vocab=16)
+        model.buffer2 = spa.State(vocab=8, subdimensions=8)
         model.input = spa.Input(buffer1='A', buffer2='B')
 
     input1, vocab1 = model.get_module_input('buffer1')
@@ -22,8 +22,8 @@ def test_fixed():
 
 def test_time_varying():
     with spa.Module() as model:
-        model.buffer = spa.Buffer(dimensions=16)
-        model.buffer2 = spa.Buffer(dimensions=16)
+        model.buffer = spa.State(vocab=16)
+        model.buffer2 = spa.State(vocab=16)
 
         def input(t):
             if t < 0.1:
@@ -55,8 +55,8 @@ def test_predefined_vocabs():
         model.vocab2 = spa.Vocabulary(D)
         model.vocab1.parse('A+B+C')
 
-        model.buffer1 = spa.Buffer(dimensions=D, vocab=model.vocab1)
-        model.buffer2 = spa.Buffer(dimensions=D, vocab=model.vocab2)
+        model.buffer1 = spa.State(vocab=model.vocab1)
+        model.buffer2 = spa.State(vocab=model.vocab2)
 
         def input(t):
             if t < 0.1:

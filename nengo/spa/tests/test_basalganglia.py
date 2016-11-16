@@ -8,8 +8,8 @@ def test_basal_ganglia(Simulator, seed, plt):
     model = spa.Module(seed=seed)
 
     with model:
-        model.vision = spa.Buffer(dimensions=16)
-        model.motor = spa.Buffer(dimensions=16)
+        model.vision = spa.State(vocab=16)
+        model.motor = spa.State(vocab=16)
         model.compare = spa.Compare(vocab=16)
 
         # test all acceptable condition formats

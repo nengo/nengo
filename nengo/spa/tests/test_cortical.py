@@ -8,9 +8,9 @@ from nengo.exceptions import SpaModuleError
 
 def test_connect(Simulator, seed):
     with spa.Module(seed=seed) as model:
-        model.buffer1 = spa.Buffer(dimensions=16)
-        model.buffer2 = spa.Buffer(dimensions=16)
-        model.buffer3 = spa.Buffer(dimensions=16)
+        model.buffer1 = spa.State(vocab=16)
+        model.buffer2 = spa.State(vocab=16)
+        model.buffer3 = spa.State(vocab=16)
         model.cortical = spa.Cortical(spa.Actions('buffer2=buffer1',
                                                   'buffer3=~buffer1'))
         model.input = spa.Input(buffer1='A')
@@ -33,8 +33,8 @@ def test_connect(Simulator, seed):
 
 def test_transform(Simulator, seed):
     with spa.Module(seed=seed) as model:
-        model.buffer1 = spa.Buffer(dimensions=16)
-        model.buffer2 = spa.Buffer(dimensions=16)
+        model.buffer1 = spa.State(vocab=16)
+        model.buffer2 = spa.State(vocab=16)
         model.cortical = spa.Cortical(spa.Actions('buffer2=buffer1*B'))
         model.input = spa.Input(buffer1='A')
 
@@ -52,8 +52,8 @@ def test_transform(Simulator, seed):
 
 def test_translate(Simulator, seed):
     with spa.Module(seed=seed) as model:
-        model.buffer1 = spa.Buffer(dimensions=16)
-        model.buffer2 = spa.Buffer(dimensions=32)
+        model.buffer1 = spa.State(vocab=16)
+        model.buffer2 = spa.State(vocab=32)
         model.input = spa.Input(buffer1='A')
         model.cortical = spa.Cortical(spa.Actions(
             'buffer2=translate(buffer1)'))
@@ -74,21 +74,21 @@ def test_errors():
     # buffer2 does not exist
     with pytest.raises(SpaModuleError):
         with spa.Module() as model:
-            model.buffer = spa.Buffer(dimensions=16)
+            model.buffer = spa.State(vocab=16)
             model.cortical = spa.Cortical(spa.Actions('buffer2=buffer'))
 
     # conditional expressions not implemented
     with pytest.raises(SpaModuleError):
         with spa.Module() as model:
-            model.buffer = spa.Buffer(dimensions=16)
+            model.buffer = spa.State(vocab=16)
             model.cortical = spa.Cortical(spa.Actions(
                 'dot(buffer,A) --> buffer=buffer'))
 
 
 def test_direct(Simulator, seed):
     with spa.Module(seed=seed) as model:
-        model.buffer1 = spa.Buffer(dimensions=16)
-        model.buffer2 = spa.Buffer(dimensions=32)
+        model.buffer1 = spa.State(vocab=16)
+        model.buffer2 = spa.State(vocab=32)
         model.cortical = spa.Cortical(spa.Actions('buffer1=A', 'buffer2=B',
                                                   'buffer1=C, buffer2=C'))
 
@@ -113,12 +113,14 @@ def test_direct(Simulator, seed):
 def test_convolution(Simulator, plt, seed):
     D = 5
     with spa.Module(seed=seed) as model:
-        model.inA = spa.Buffer(dimensions=D)
-        model.inB = spa.Buffer(dimensions=D)
-        model.outAB = spa.Buffer(dimensions=D)
-        model.outABinv = spa.Buffer(dimensions=D)
-        model.outAinvB = spa.Buffer(dimensions=D)
-        model.outAinvBinv = spa.Buffer(dimensions=D)
+        model.config[spa.State].vocab = D
+        model.config[spa.State].subdimensions = D
+        model.inA = spa.State()
+        model.inB = spa.State()
+        model.outAB = spa.State()
+        model.outABinv = spa.State()
+        model.outAinvB = spa.State()
+        model.outAinvBinv = spa.State()
 
         model.cortical = spa.Cortical(spa.Actions(
             'outAB = inA * inB',
@@ -126,13 +128,13 @@ def test_convolution(Simulator, plt, seed):
             'outAinvB = ~inA * inB',
             'outAinvBinv = ~inA * ~inB',
             ))
-        nengo.Connection(nengo.Node([0, 1, 0, 0, 0]), model.inA.state.input)
-        nengo.Connection(nengo.Node([0, 0, 1, 0, 0]), model.inB.state.input)
+        nengo.Connection(nengo.Node([0, 1, 0, 0, 0]), model.inA.input)
+        nengo.Connection(nengo.Node([0, 0, 1, 0, 0]), model.inB.input)
 
-        pAB = nengo.Probe(model.outAB.state.output, synapse=0.03)
-        pABinv = nengo.Probe(model.outABinv.state.output, synapse=0.03)
-        pAinvB = nengo.Probe(model.outAinvB.state.output, synapse=0.03)
-        pAinvBinv = nengo.Probe(model.outAinvBinv.state.output, synapse=0.03)
+        pAB = nengo.Probe(model.outAB.output, synapse=0.03)
+        pABinv = nengo.Probe(model.outABinv.output, synapse=0.03)
+        pAinvB = nengo.Probe(model.outAinvB.output, synapse=0.03)
+        pAinvBinv = nengo.Probe(model.outAinvBinv.output, synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.2)
