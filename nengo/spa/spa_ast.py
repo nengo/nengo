@@ -534,13 +534,11 @@ class BinaryNode(Source):
             for artifact in self.lhs.construct(context):
                 nengo.Connection(
                     artifact.nengo_source, net.input_a,
-                    transform=artifact.transform,
-                    synapse=context.root_module.synapse)
+                    transform=artifact.transform),
             for artifact in self.rhs.construct(context):
                 nengo.Connection(
                     artifact.nengo_source, net.input_b,
-                    transform=artifact.transform,
-                    synapse=context.root_module.synapse)
+                    transform=artifact.transform),
 
 
 class BinaryOperation(BinaryNode):

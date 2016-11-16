@@ -8,8 +8,7 @@ from nengo.exceptions import SpaModuleError
 from nengo.network import Network
 from nengo.params import IntParam
 from nengo.spa.input import Input
-from nengo.spa.vocab import Vocabulary, VocabularyMap, VocabularyMapParam
-from nengo.synapses import SynapseParam
+from nengo.spa.vocab import VocabularyMap, VocabularyMapParam
 from nengo.utils.compat import iteritems
 
 
@@ -46,7 +45,6 @@ class Module(nengo.Network, SupportDefaultsMixin):
 
     vocabs = VocabularyMapParam('vocabs', default=None, optional=False)
     product_neurons = IntParam('product_neurons', default=100, optional=False)
-    synapse = SynapseParam('synapse', default=0.01, optional=False)
 
     def __init__(
             self, label=None, seed=None, add_to_container=None, vocabs=None):
