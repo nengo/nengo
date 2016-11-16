@@ -792,7 +792,7 @@ class DotProduct(BinaryNode):
         return 'dot({}, {})'.format(self.lhs, self.rhs)
 
 
-class Reinterpret(Node):
+class Reinterpret(Source):
     def __init__(self, source, vocab=None):
         source = ensure_node(source)
         super(Reinterpret, self).__init__(staticity=source.staticity)
@@ -833,7 +833,7 @@ class Reinterpret(Node):
         return 'reinterpret({})'.format(self.source)
 
 
-class Translate(Node):
+class Translate(Source):
     def __init__(self, source, vocab=None):
         source = ensure_node(source)
         super(Translate, self).__init__(staticity=source.staticity)
