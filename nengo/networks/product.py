@@ -3,10 +3,11 @@ import warnings
 import numpy as np
 
 import nengo
+from nengo.exceptions import ObsoleteError
 from nengo.networks.ensemblearray import EnsembleArray
 
 
-def Product(n_neurons, dimensions, input_magnitude=1., net=None, **kwargs):
+class Product(nengo.Network):
     """Computes the element-wise product of two equally sized vectors.
 
     The network used to calculate the product is described in
@@ -43,61 +44,71 @@ def Product(n_neurons, dimensions, input_magnitude=1., net=None, **kwargs):
         The expected magnitude of the vectors to be multiplied.
         This value is used to determine the radius of the ensembles
         computing the element-wise product.
-    kwargs
-        Keyword arguments passed through to ``nengo.Network``.
-
-    Returns
-    -------
-    net : Network
-        The newly built product network, or the provided ``net``.
+    **kwargs
+        Keyword arguments passed through to ``nengo.Network``
+        like 'label' and 'seed'.
 
     Attributes
     ----------
-    net.input_a : Node
+    input_a : Node
         The first vector to be multiplied.
-    net.input_b : Node
+    input_b : Node
         The second vector to be multiplied.
-    net.output : Node
+    output : Node
         The resulting product.
-    net.sq1 : EnsembleArray
+    sq1 : EnsembleArray
         Represents the first squared term. See `Gosmann, 2015`_ for details.
-    net.sq2 : EnsembleArray
+    sq2 : EnsembleArray
         Represents the second squared term. See `Gosmann, 2015`_ for details.
     """
-    if net is None:
+    def __init__(self, n_neurons, dimensions, input_magnitude=1., **kwargs):
+        if 'net' in kwargs:
+            raise ObsoleteError("The 'net' argument is no longer supported.")
         kwargs.setdefault('label', "Product")
-        net = nengo.Network(**kwargs)
-    else:
-        warnings.warn("The 'net' argument is deprecated.", DeprecationWarning)
+        super(Product, self).__init__(**kwargs)
 
-    with net:
-        net.input_a = net.A = nengo.Node(size_in=dimensions, label="input_a")
-        net.input_b = net.B = nengo.Node(size_in=dimensions, label="input_b")
-        net.output = nengo.Node(size_in=dimensions, label="output")
+        with self:
+            self.input_a = nengo.Node(size_in=dimensions, label="input_a")
+            self.input_b = nengo.Node(size_in=dimensions, label="input_b")
+            self.output = nengo.Node(size_in=dimensions, label="output")
 
-        net.sq1 = EnsembleArray(
-            max(1, n_neurons // 2), n_ensembles=dimensions, ens_dimensions=1,
-            radius=input_magnitude * np.sqrt(2))
-        net.sq2 = EnsembleArray(
-            max(1, n_neurons // 2), n_ensembles=dimensions, ens_dimensions=1,
-            radius=input_magnitude * np.sqrt(2))
+            self.sq1 = EnsembleArray(
+                max(1, n_neurons // 2),
+                n_ensembles=dimensions,
+                ens_dimensions=1,
+                radius=input_magnitude * np.sqrt(2),
+            )
+            self.sq2 = EnsembleArray(
+                max(1, n_neurons // 2),
+                n_ensembles=dimensions,
+                ens_dimensions=1,
+                radius=input_magnitude * np.sqrt(2),
+            )
 
-        tr = 1. / np.sqrt(2.)
-        nengo.Connection(
-            net.input_a, net.sq1.input, transform=tr, synapse=None)
-        nengo.Connection(
-            net.input_b, net.sq1.input, transform=tr, synapse=None)
-        nengo.Connection(
-            net.input_a, net.sq2.input, transform=tr, synapse=None)
-        nengo.Connection(
-            net.input_b, net.sq2.input, transform=-tr, synapse=None)
+            tr = 1. / np.sqrt(2.)
+            nengo.Connection(
+                self.input_a, self.sq1.input, transform=tr, synapse=None)
+            nengo.Connection(
+                self.input_b, self.sq1.input, transform=tr, synapse=None)
+            nengo.Connection(
+                self.input_a, self.sq2.input, transform=tr, synapse=None)
+            nengo.Connection(
+                self.input_b, self.sq2.input, transform=-tr, synapse=None)
 
-        sq1_out = net.sq1.add_output('square', np.square)
-        nengo.Connection(sq1_out, net.output, transform=.5, synapse=None)
-        sq2_out = net.sq2.add_output('square', np.square)
-        nengo.Connection(sq2_out, net.output, transform=-.5, synapse=None)
+            sq1_out = self.sq1.add_output('square', np.square)
+            nengo.Connection(sq1_out, self.output, transform=.5, synapse=None)
+            sq2_out = self.sq2.add_output('square', np.square)
+            nengo.Connection(sq2_out, self.output, transform=-.5, synapse=None)
 
-    return net
+    @property
+    def A(self):
+        warnings.warn(DeprecationWarning("Use 'input_a' instead of 'A'."))
+        return self.input_a
+
+    @property
+    def B(self):
+        warnings.warn(DeprecationWarning("Use 'input_b' instead of 'B'."))
+        return self.input_b
 
 
 def dot_product_transform(dimensions, scale=1.0):

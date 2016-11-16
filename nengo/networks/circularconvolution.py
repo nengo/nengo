@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 import nengo
-from nengo.exceptions import ValidationError
+from nengo.exceptions import ObsoleteError, ValidationError
 from nengo.networks.product import Product
 from nengo.utils.compat import range
 
@@ -87,8 +87,7 @@ def dft_half(n):
     return np.exp((-2.j * np.pi / n) * (w[:, None] * x[None, :]))
 
 
-def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
-                        input_magnitude=1.0, net=None, **kwargs):
+class CircularConvolution(nengo.Network):
     r"""Compute the circular convolution of two vectors.
 
     The circular convolution :math:`c` of vectors :math:`a` and :math:`b`
@@ -121,24 +120,20 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
         The expected magnitude of the vectors to be convolved.
         This value is used to determine the radius of the ensembles
         computing the element-wise product.
-    kwargs
-        Keyword arguments passed through to ``nengo.Network``.
-
-    Returns
-    -------
-    net : Network
-        The newly built product network, or the provided ``net``.
+    **kwargs
+        Keyword arguments passed through to ``nengo.Network``
+        like 'label' and 'seed'.
 
     Attributes
     ----------
-    net.input_a : Node
+    input_a : Node
         The first vector to be convolved.
-    net.input_b : Node
+    input_b : Node
         The second vector to be convolved.
-    net.product : Network
+    product : Network
         Network created with `.Product` to do the element-wise product
         of the :math:`DFT` components.
-    net.output : Node
+    output : Node
         The resulting convolved vector.
 
     Examples
@@ -182,28 +177,42 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
     only the real part of :math:`c` since the imaginary part
     is analytically zero.
     """
-    if net is None:
-        kwargs.setdefault('label', "Circular Convolution")
-        net = nengo.Network(**kwargs)
-    else:
-        warnings.warn("The 'net' argument is deprecated.", DeprecationWarning)
+    def __init__(self,
+                 n_neurons,
+                 dimensions,
+                 invert_a=False,
+                 invert_b=False,
+                 input_magnitude=1.0,
+                 **kwargs):
+        if 'net' in kwargs:
+            raise ObsoleteError("The 'net' argument is no longer supported.")
+        kwargs.setdefault('label', "Circular convolution")
+        super(CircularConvolution, self).__init__(**kwargs)
 
-    tr_a = transform_in(dimensions, 'A', invert_a)
-    tr_b = transform_in(dimensions, 'B', invert_b)
-    tr_out = transform_out(dimensions)
+        tr_a = transform_in(dimensions, 'A', invert_a)
+        tr_b = transform_in(dimensions, 'B', invert_b)
+        tr_out = transform_out(dimensions)
 
-    with net:
-        net.input_a = net.A = nengo.Node(size_in=dimensions, label="input_a")
-        net.input_b = net.B = nengo.Node(size_in=dimensions, label="input_b")
-        net.product = Product(n_neurons, tr_out.shape[1],
-                              input_magnitude=input_magnitude * 2)
-        net.output = nengo.Node(size_in=dimensions, label="output")
+        with self:
+            self.input_a = nengo.Node(size_in=dimensions, label="input_a")
+            self.input_b = nengo.Node(size_in=dimensions, label="input_b")
+            self.product = Product(n_neurons, tr_out.shape[1],
+                                   input_magnitude=input_magnitude * 2)
+            self.output = nengo.Node(size_in=dimensions, label="output")
 
-        nengo.Connection(
-            net.input_a, net.product.input_a, transform=tr_a, synapse=None)
-        nengo.Connection(
-            net.input_b, net.product.input_b, transform=tr_b, synapse=None)
-        nengo.Connection(
-            net.product.output, net.output, transform=tr_out, synapse=None)
+            nengo.Connection(self.input_a, self.product.input_a,
+                             transform=tr_a, synapse=None)
+            nengo.Connection(self.input_b, self.product.input_b,
+                             transform=tr_b, synapse=None)
+            nengo.Connection(self.product.output, self.output,
+                             transform=tr_out, synapse=None)
 
-    return net
+    @property
+    def A(self):
+        warnings.warn(DeprecationWarning("Use 'input_a' instead of 'A'"))
+        return self.input_a
+
+    @property
+    def B(self):
+        warnings.warn(DeprecationWarning("Use 'input_b' instead of 'B'."))
+        return self.input_b

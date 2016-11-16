@@ -86,3 +86,12 @@ def test_neural_accuracy(Simulator, seed, rng, dims, neurons_per_product=128):
     error = rmse(result, sim.data[res_p][-1])
 
     assert error < 0.1
+
+
+def test_old_input_deprecation_warning():
+    with nengo.Network():
+        c = nengo.networks.CircularConvolution(n_neurons=10, dimensions=1)
+        with pytest.warns(DeprecationWarning):
+            assert c.A is c.input_a
+        with pytest.warns(DeprecationWarning):
+            assert c.B is c.input_b

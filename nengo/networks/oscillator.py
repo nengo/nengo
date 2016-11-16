@@ -1,9 +1,8 @@
-import warnings
-
 import nengo
+from nengo.exceptions import ObsoleteError
 
 
-def Oscillator(recurrent_tau, frequency, n_neurons, net=None, **kwargs):
+class Oscillator(nengo.Network):
     """A two-dimensional ensemble with interacting recurrent connections.
 
     The ensemble connects to itself in a manner similar to the integrator;
@@ -18,35 +17,32 @@ def Oscillator(recurrent_tau, frequency, n_neurons, net=None, **kwargs):
         Desired frequency, in Hz, of the cyclic oscillation.
     n_neurons : int
         Number of neurons in the recurrently connected ensemble.
-    kwargs
-        Keyword arguments passed through to ``nengo.Network``.
-
-    Returns
-    -------
-    net : Network
-        The newly built product network, or the provided ``net``.
+    **kwargs
+        Keyword arguments passed through to ``nengo.Network``
+        like 'label' and 'seed'.
 
     Attributes
     ----------
-    net.ensemble : Ensemble
+    ensemble : Ensemble
         The recurrently connected oscillatory ensemble.
-    net.input : Node
+    input : Node
         Provides the input signal.
     """
-    if net is None:
+    def __init__(self, recurrent_tau, frequency, n_neurons, **kwargs):
+        if 'net' in kwargs:
+            raise ObsoleteError("The 'net' argument is no longer supported.")
         kwargs.setdefault('label', "Oscillator")
-        net = nengo.Network(**kwargs)
-    else:
-        warnings.warn("The 'net' argument is deprecated.", DeprecationWarning)
+        super(Oscillator, self).__init__(**kwargs)
 
-    with net:
-        net.input = nengo.Node(label="In", size_in=2)
-        net.ensemble = nengo.Ensemble(
-            n_neurons, dimensions=2, label="Oscillator")
-        tA = [[1, -frequency * recurrent_tau],
-              [frequency * recurrent_tau, 1]]
-        nengo.Connection(net.ensemble, net.ensemble,
-                         synapse=recurrent_tau, transform=tA)
-        nengo.Connection(net.input, net.ensemble, synapse=None)
-    net.output = net.ensemble
-    return net
+        with self:
+            self.input = nengo.Node(label="In", size_in=2)
+            self.ensemble = nengo.Ensemble(
+                n_neurons, dimensions=2, label="Oscillator")
+
+            tA = [[1, -frequency * recurrent_tau],
+                  [frequency * recurrent_tau, 1]]
+            nengo.Connection(self.ensemble, self.ensemble,
+                             synapse=recurrent_tau, transform=tA)
+            nengo.Connection(self.input, self.ensemble, synapse=None)
+
+        self.output = self.ensemble

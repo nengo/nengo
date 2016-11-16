@@ -81,9 +81,19 @@ Release History
 **Deprecated**
 
 - Deprecated the ``nengo.spa`` module. Use the
-  `Nengo SPA <https://www.nengo.ai/nengo-spa/index.html>`
+  `Nengo SPA <https://www.nengo.ai/nengo-spa/index.html>`__
   project instead.
   (`#1465 <https://github.com/nengo/nengo/pull/1465>`_)
+- The ``A`` and ``B`` inputs to the ``Product`` and ``CircularConvolution``
+  networks are officially deprecated. Use ``input_a`` and ``input_b`` instead.
+  (`#887 <https://github.com/nengo/nengo/issues/887>`__,
+  `#1179 <https://github.com/nengo/nengo/pull/1179>`__)
+
+**Removed**
+
+- Networks no longer accept the ``net`` argument. To set network arguments
+  like ``label``, pass them as keyword arguments instead.
+  (`#1179 <https://github.com/nengo/nengo/pull/1179>`__)
 
 **Fixed**
 

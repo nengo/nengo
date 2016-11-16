@@ -4,14 +4,13 @@ import nengo
 
 
 def test_basic(Simulator, plt, seed):
-    bg = nengo.networks.BasalGanglia(
-        dimensions=5, net=nengo.Network(seed=seed))
-    with bg:
+    with nengo.Network(seed=seed) as net:
+        bg = nengo.networks.BasalGanglia(dimensions=5)
         input = nengo.Node([0.8, 0.4, 0.4, 0.4, 0.4], label="input")
         nengo.Connection(input, bg.input, synapse=None)
         p = nengo.Probe(bg.output, synapse=0.01)
 
-    with Simulator(bg) as sim:
+    with Simulator(net) as sim:
         sim.run(0.2)
 
     t = sim.trange()

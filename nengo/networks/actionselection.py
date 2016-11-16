@@ -4,6 +4,7 @@ import numpy as np
 
 import nengo
 from nengo.dists import Choice, Uniform
+from nengo.exceptions import ObsoleteError
 from nengo.networks.ensemblearray import EnsembleArray
 from nengo.solvers import NnlsL2nz
 
@@ -62,8 +63,7 @@ def config_with_default_synapse(config, synapse):
     return config, override
 
 
-def BasalGanglia(dimensions, n_neurons_per_ensemble=100, output_weight=-3.,
-                 input_bias=0., ampa_config=None, gaba_config=None, net=None):
+class BasalGanglia(nengo.Network):
     """Winner take all network, typically used for action selection.
 
     The basal ganglia network outputs approximately 0 at the dimension with
@@ -111,34 +111,28 @@ def BasalGanglia(dimensions, n_neurons_per_ensemble=100, output_weight=-3.,
         to GABA receptors (i.e., connections from StrD1 to GPi, StrD2 to GPe,
         and GPe to GPi and STN). If None, a default configuration using an
         8 ms lowpass synapse will be used.
-    net : Network, optional (Default: None)
-        A network in which the network components will be built.
-        This is typically used to provide a custom set of Nengo object
-        defaults through modifying ``net.config``.
-
-    Returns
-    -------
-    net : Network
-        The newly built basal ganglia network, or the provided ``net``.
+    **kwargs
+        Keyword arguments passed through to ``nengo.Network``
+        like 'label' and 'seed'.
 
     Attributes
     ----------
-    net.bias_input : Node or None
+    bias_input : Node or None
         If ``input_bias`` is non-zero, this node will be created to bias
         all of the dimensions of the input signal.
-    net.gpe : EnsembleArray
+    gpe : EnsembleArray
         Globus pallidus externus ensembles.
-    net.gpi : EnsembleArray
+    gpi : EnsembleArray
         Globus pallidus internus ensembles.
-    net.input : Node
+    input : Node
         Accepts the input signal.
-    net.output : Node
+    output : Node
         Provides the output signal.
-    net.stn : EnsembleArray
+    stn : EnsembleArray
         Subthalamic nucleus ensembles.
-    net.strD1 : EnsembleArray
+    strD1 : EnsembleArray
         Striatal D1 ensembles.
-    net.strD2 : EnsembleArray
+    strD2 : EnsembleArray
         Striatal D2 ensembles.
 
     References
@@ -151,104 +145,112 @@ def BasalGanglia(dimensions, n_neurons_per_ensemble=100, output_weight=-3.,
        A computational model of action selection in the basal
        ganglia. Biological Cybernetics 84, 401-423.
     """
+    def __init__(self,
+                 dimensions,
+                 n_neurons_per_ensemble=100,
+                 output_weight=-3.,
+                 input_bias=0.,
+                 ampa_config=None,
+                 gaba_config=None,
+                 **kwargs):
+        if 'net' in kwargs:
+            raise ObsoleteError("The 'net' argument is no longer supported.")
+        kwargs.setdefault('label', "Basal Ganglia")
+        super(BasalGanglia, self).__init__(**kwargs)
 
-    if net is None:
-        net = nengo.Network("Basal Ganglia")
+        ampa_config, override_ampa = config_with_default_synapse(
+            ampa_config, nengo.Lowpass(0.002))
+        gaba_config, override_gaba = config_with_default_synapse(
+            gaba_config, nengo.Lowpass(0.008))
 
-    ampa_config, override_ampa = config_with_default_synapse(
-        ampa_config, nengo.Lowpass(0.002))
-    gaba_config, override_gaba = config_with_default_synapse(
-        gaba_config, nengo.Lowpass(0.008))
+        # Affects all ensembles / connections in the BG
+        # unless they've been overridden on `self.config`
+        config = nengo.Config(nengo.Ensemble, nengo.Connection)
+        config[nengo.Ensemble].radius = 1.5
+        config[nengo.Ensemble].encoders = Choice([[1]])
+        try:
+            # Best, if we have SciPy
+            config[nengo.Connection].solver = NnlsL2nz()
+        except ImportError:
+            # Warn if we can't use the better decoder solver.
+            warnings.warn("SciPy is not installed, so BasalGanglia will "
+                          "use the default decoder solver. Installing SciPy "
+                          "may improve BasalGanglia performance.")
 
-    # Affects all ensembles / connections in the BG
-    # unless they've been overridden on `net.config`
-    config = nengo.Config(nengo.Ensemble, nengo.Connection)
-    config[nengo.Ensemble].radius = 1.5
-    config[nengo.Ensemble].encoders = Choice([[1]])
-    try:
-        # Best, if we have SciPy
-        config[nengo.Connection].solver = NnlsL2nz()
-    except ImportError:
-        # Warn if we can't use the better decoder solver.
-        warnings.warn("SciPy is not installed, so BasalGanglia will "
-                      "use the default decoder solver. Installing SciPy "
-                      "may improve BasalGanglia performance.")
+        ea_params = {'n_neurons': n_neurons_per_ensemble,
+                     'n_ensembles': dimensions}
 
-    ea_params = {'n_neurons': n_neurons_per_ensemble,
-                 'n_ensembles': dimensions}
+        with self, config:
+            self.strD1 = EnsembleArray(label="Striatal D1 neurons",
+                                       intercepts=Uniform(Weights.e, 1),
+                                       **ea_params)
+            self.strD2 = EnsembleArray(label="Striatal D2 neurons",
+                                       intercepts=Uniform(Weights.e, 1),
+                                       **ea_params)
+            self.stn = EnsembleArray(label="Subthalamic nucleus",
+                                     intercepts=Uniform(Weights.ep, 1),
+                                     **ea_params)
+            self.gpi = EnsembleArray(label="Globus pallidus internus",
+                                     intercepts=Uniform(Weights.eg, 1),
+                                     **ea_params)
+            self.gpe = EnsembleArray(label="Globus pallidus externus",
+                                     intercepts=Uniform(Weights.ee, 1),
+                                     **ea_params)
 
-    with config, net:
-        net.strD1 = EnsembleArray(label="Striatal D1 neurons",
-                                  intercepts=Uniform(Weights.e, 1),
-                                  **ea_params)
-        net.strD2 = EnsembleArray(label="Striatal D2 neurons",
-                                  intercepts=Uniform(Weights.e, 1),
-                                  **ea_params)
-        net.stn = EnsembleArray(label="Subthalamic nucleus",
-                                intercepts=Uniform(Weights.ep, 1),
-                                **ea_params)
-        net.gpi = EnsembleArray(label="Globus pallidus internus",
-                                intercepts=Uniform(Weights.eg, 1),
-                                **ea_params)
-        net.gpe = EnsembleArray(label="Globus pallidus externus",
-                                intercepts=Uniform(Weights.ee, 1),
-                                **ea_params)
+            self.input = nengo.Node(label="input", size_in=dimensions)
+            self.output = nengo.Node(label="output", size_in=dimensions)
 
-        net.input = nengo.Node(label="input", size_in=dimensions)
-        net.output = nengo.Node(label="output", size_in=dimensions)
+            # add bias input (BG performs best in the range 0.5--1.5)
+            if abs(input_bias) > 0.0:
+                self.bias_input = nengo.Node(np.ones(dimensions) * input_bias,
+                                             label="basal ganglia bias")
+                nengo.Connection(self.bias_input, self.input)
 
-        # add bias input (BG performs best in the range 0.5--1.5)
-        if abs(input_bias) > 0.0:
-            net.bias_input = nengo.Node(np.ones(dimensions) * input_bias,
-                                        label="basal ganglia bias")
-            nengo.Connection(net.bias_input, net.input)
+            # spread the input to StrD1, StrD2, and STN
+            nengo.Connection(self.input, self.strD1.input, synapse=None,
+                             transform=Weights.ws * (1 + Weights.lg))
+            nengo.Connection(self.input, self.strD2.input, synapse=None,
+                             transform=Weights.ws * (1 - Weights.le))
+            nengo.Connection(self.input, self.stn.input, synapse=None,
+                             transform=Weights.wt)
 
-        # spread the input to StrD1, StrD2, and STN
-        nengo.Connection(net.input, net.strD1.input, synapse=None,
-                         transform=Weights.ws * (1 + Weights.lg))
-        nengo.Connection(net.input, net.strD2.input, synapse=None,
-                         transform=Weights.ws * (1 - Weights.le))
-        nengo.Connection(net.input, net.stn.input, synapse=None,
-                         transform=Weights.wt)
+            # connect the striatum to the GPi and GPe (inhibitory)
+            strD1_output = self.strD1.add_output('func_str', Weights.str_func)
+            strD2_output = self.strD2.add_output('func_str', Weights.str_func)
+            with gaba_config:
+                nengo.Connection(strD1_output, self.gpi.input,
+                                 transform=-Weights.wm)
+                nengo.Connection(strD2_output, self.gpe.input,
+                                 transform=-Weights.wm)
 
-        # connect the striatum to the GPi and GPe (inhibitory)
-        strD1_output = net.strD1.add_output('func_str', Weights.str_func)
-        strD2_output = net.strD2.add_output('func_str', Weights.str_func)
-        with gaba_config:
-            nengo.Connection(strD1_output, net.gpi.input,
-                             transform=-Weights.wm)
-            nengo.Connection(strD2_output, net.gpe.input,
-                             transform=-Weights.wm)
+            # connect the STN to GPi and GPe (broad and excitatory)
+            tr = Weights.wp * np.ones((dimensions, dimensions))
+            stn_output = self.stn.add_output('func_stn', Weights.stn_func)
+            with ampa_config:
+                nengo.Connection(stn_output, self.gpi.input, transform=tr)
+                nengo.Connection(stn_output, self.gpe.input, transform=tr)
 
-        # connect the STN to GPi and GPe (broad and excitatory)
-        tr = Weights.wp * np.ones((dimensions, dimensions))
-        stn_output = net.stn.add_output('func_stn', Weights.stn_func)
-        with ampa_config:
-            nengo.Connection(stn_output, net.gpi.input, transform=tr)
-            nengo.Connection(stn_output, net.gpe.input, transform=tr)
+            # connect the GPe to GPi and STN (inhibitory)
+            gpe_output = self.gpe.add_output('func_gpe', Weights.gpe_func)
+            with gaba_config:
+                nengo.Connection(
+                    gpe_output, self.gpi.input, transform=-Weights.we)
+                nengo.Connection(
+                    gpe_output, self.stn.input, transform=-Weights.wg)
 
-        # connect the GPe to GPi and STN (inhibitory)
-        gpe_output = net.gpe.add_output('func_gpe', Weights.gpe_func)
-        with gaba_config:
-            nengo.Connection(gpe_output, net.gpi.input, transform=-Weights.we)
-            nengo.Connection(gpe_output, net.stn.input, transform=-Weights.wg)
+            # connect GPi to output (inhibitory)
+            gpi_output = self.gpi.add_output('func_gpi', Weights.gpi_func)
+            nengo.Connection(
+                gpi_output, self.output, synapse=None, transform=output_weight)
 
-        # connect GPi to output (inhibitory)
-        gpi_output = net.gpi.add_output('func_gpi', Weights.gpi_func)
-        nengo.Connection(gpi_output, net.output, synapse=None,
-                         transform=output_weight)
-
-    # Return ampa_config and gaba_config to previous states, if changed
-    if override_ampa:
-        del ampa_config[nengo.Connection].synapse
-    if override_gaba:
-        del gaba_config[nengo.Connection].synapse
-
-    return net
+        # Return ampa_config and gaba_config to previous states, if changed
+        if override_ampa:
+            del ampa_config[nengo.Connection].synapse
+        if override_gaba:
+            del gaba_config[nengo.Connection].synapse
 
 
-def Thalamus(dimensions, n_neurons_per_ensemble=50,
-             mutual_inhib=1., threshold=0., net=None):
+class Thalamus(nengo.Network):
     """Inhibits non-selected actions.
 
     The thalamus is intended to work in tandem with a basal ganglia network.
@@ -271,42 +273,42 @@ def Thalamus(dimensions, n_neurons_per_ensemble=50,
         Strength of the mutual inhibition between actions.
     threshold : float, optional (Default: 0.)
         The threshold below which values will not be represented.
-    net : Network, optional (Default: None)
-        A network in which the network components will be built.
-        This is typically used to provide a custom set of Nengo object
-        defaults through modifying ``net.config``.
-
-    Returns
-    -------
-    net : Network
-        The newly built thalamus network, or the provided ``net``.
+    **kwargs
+        Keyword arguments passed through to ``nengo.Network``
+        like 'label' and 'seed'.
 
     Attributes
     ----------
-    net.actions : EnsembleArray
+    actions : EnsembleArray
         Each ensemble represents one dimension (action).
-    net.bias : Node
+    bias : Node
         The constant bias injected in each ``actions`` ensemble.
-    net.input : Node
+    input : Node
         Input to the ``actions`` ensembles.
-    net.output : Node
+    output : Node
         Output from the ``actions`` ensembles.
     """
+    def __init__(self,
+                 dimensions,
+                 n_neurons_per_ensemble=50,
+                 mutual_inhib=1.,
+                 threshold=0.,
+                 **kwargs):
+        if 'net' in kwargs:
+            raise ObsoleteError("The 'net' argument is no longer supported.")
+        kwargs.setdefault('label', "Thalamus")
+        super(Thalamus, self).__init__(**kwargs)
 
-    if net is None:
-        net = nengo.Network("Thalamus")
+        with self:
+            self.actions = EnsembleArray(n_neurons_per_ensemble, dimensions,
+                                         intercepts=Uniform(threshold, 1),
+                                         encoders=Choice([[1.0]]),
+                                         label="actions")
+            nengo.Connection(self.actions.output, self.actions.input,
+                             transform=(np.eye(dimensions) - 1) * mutual_inhib)
+            self.bias = nengo.Node([1], label="thalamus bias")
+            nengo.Connection(self.bias, self.actions.input,
+                             transform=np.ones((dimensions, 1)))
 
-    with net:
-        net.actions = EnsembleArray(n_neurons_per_ensemble, dimensions,
-                                    intercepts=Uniform(threshold, 1),
-                                    encoders=Choice([[1.0]]),
-                                    label="actions")
-        nengo.Connection(net.actions.output, net.actions.input,
-                         transform=(np.eye(dimensions) - 1) * mutual_inhib)
-        net.bias = nengo.Node([1], label="thalamus bias")
-        nengo.Connection(net.bias, net.actions.input,
-                         transform=np.ones((dimensions, 1)))
-
-    net.input = net.actions.input
-    net.output = net.actions.output
-    return net
+        self.input = self.actions.input
+        self.output = self.actions.output
