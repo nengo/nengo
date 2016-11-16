@@ -116,3 +116,16 @@ Build functions
 .. autofunction:: nengo.builder.processes.build_process
 
 .. autofunction:: nengo.builder.processes.build_synapse
+
+Decoder cache
+-------------
+
+.. autoclass:: nengo.cache.NoDecoderCache
+
+.. autoclass:: nengo.cache.DecoderCache
+
+.. autoclass:: nengo.cache.Fingerprint
+
+.. autoclass:: nengo.cache.CacheIndex
+
+.. autoclass:: nengo.cache.WriteableCacheIndex
