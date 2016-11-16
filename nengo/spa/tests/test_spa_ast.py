@@ -241,3 +241,21 @@ def test_zero_vector():
     ast = Parser().parse_effect('state = 0')
     ast.infer_types(model, None)
     assert ast.source.type.vocab == model.state.vocabs[d]
+
+
+def test_vocab_transform_in_multiplication():
+    d = 16
+    with spa.Module() as model:
+        model.state = spa.State(d)
+
+    ast = Parser().parse_expr('2 * translate(state)')
+    assert str(ast) == '2 * translate(state)'
+
+    ast = Parser().parse_expr('translate(state) * 2')
+    assert str(ast) == 'translate(state) * 2'
+
+    ast = Parser().parse_expr('2 * reinterpret(state)')
+    assert str(ast) == '2 * reinterpret(state)'
+
+    ast = Parser().parse_expr('reinterpret(state) * 2')
+    assert str(ast) == 'reinterpret(state) * 2'
