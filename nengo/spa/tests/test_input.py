@@ -20,25 +20,6 @@ def test_fixed():
                        vocab2.parse('B').v)
 
 
-def test_deprecated_underscore_notation(Simulator, plt):
-    d = 16
-    with pytest.warns(DeprecationWarning):
-        with spa.Module() as model:
-            model.cmp = spa.Compare(dimensions=d)
-            model.input = spa.Input(cmp_A='A', cmp_B='A')
-            p = nengo.Probe(model.cmp.output, synapse=0.03)
-
-        with Simulator(model) as sim:
-            sim.run(0.5)
-
-    plt.plot(sim.trange(), sim.data[p])
-    plt.xlabel("t [s]")
-    plt.ylabel("Similarity")
-
-    t = sim.trange() > 0.2
-    assert np.mean(sim.data[p][t]) > 0.8
-
-
 def test_time_varying():
     with spa.Module() as model:
         model.buffer = spa.Buffer(dimensions=16)

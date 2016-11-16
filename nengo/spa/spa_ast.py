@@ -533,11 +533,13 @@ class BinaryNode(Source):
         with context.root_module:
             for artifact in self.lhs.construct(context):
                 nengo.Connection(
-                    artifact.nengo_source, net.A, transform=artifact.transform,
+                    artifact.nengo_source, net.input_a,
+                    transform=artifact.transform,
                     synapse=context.root_module.synapse)
             for artifact in self.rhs.construct(context):
                 nengo.Connection(
-                    artifact.nengo_source, net.B, transform=artifact.transform,
+                    artifact.nengo_source, net.input_b,
+                    transform=artifact.transform,
                     synapse=context.root_module.synapse)
 
 
@@ -632,8 +634,8 @@ class Product(BinaryOperation):
         with context.active_net:
             if is_binding:
                 net = Bind(
-                    self.type.vocab.dimensions, self.type.vocab,
-                    context.root_module.cconv_neurons, label=str(self))
+                    self.type.vocab, context.root_module.cconv_neurons,
+                    label=str(self))
             elif self.lhs.type == TScalar and self.rhs.type == TScalar:
                 net = nengo.networks.Product(
                     context.root_module.product_neurons, 1,

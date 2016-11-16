@@ -80,8 +80,10 @@ def test_spa_get():
     assert model.get_module_input('buf1.default')[0] is model.buf1.input
     assert model.get_module_output('buf1')[0] is model.buf1.output
     assert model.get_module_output('buf1.default')[0] is model.buf1.output
-    assert model.get_module_input('compare.A')[0] is model.compare.inputA
-    assert model.get_module_input('compare.B')[0] is model.compare.inputB
+    assert model.get_module_input(
+        'compare.input_a')[0] is model.compare.input_a
+    assert model.get_module_input(
+        'compare.input_b')[0] is model.compare.input_b
 
     with pytest.raises(SpaModuleError):
         model.get_module('dummy')
@@ -208,8 +210,8 @@ def test_no_magic_vocab_transform():
     v2 = spa.Vocabulary(d)
 
     with spa.Module() as model:
-        model.a = spa.State(d, vocab=v1)
-        model.b = spa.State(d, vocab=v2)
+        model.a = spa.State(vocab=v1)
+        model.b = spa.State(vocab=v2)
         with pytest.raises(SpaTypeError):
             model.cortical = spa.Cortical(spa.Actions('b = a'))
 
@@ -228,8 +230,8 @@ def test_casting_vocabs(d1, d2, method, lookup, Simulator, plt, rng):
     v2.parse('A')
 
     with spa.Module() as model:
-        model.a = spa.State(d1, vocab=v1)
-        model.b = spa.State(d2, vocab=v2)
+        model.a = spa.State(vocab=v1)
+        model.b = spa.State(vocab=v2)
         model.cortical = spa.Cortical(spa.Actions(
             'b = {}'.format(method), vocabs={'v2': v2}))
         model.stimulus = spa.Input()

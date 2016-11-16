@@ -188,7 +188,7 @@ class Thalamus(Module):
                 channel = Scalar(label=label)
             else:
                 vocab = target_input[1]
-                channel = State(vocab.dimensions, vocab=vocab, label=label)
+                channel = State(vocab=vocab, label=label)
         nengo.Connection(
             channel.output, target_input[0], synapse=self.synapse_channel)
         return channel

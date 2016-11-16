@@ -7,8 +7,9 @@ from nengo.exceptions import SpaTypeError
 
 
 def test_new_action_syntax(Simulator, seed, plt, rng):
-    D = 3
     model = spa.Module(seed=seed)
+    model.config[spa.State].vocab = 3
+    model.config[spa.State].subdimensions = 3
     with model:
         model.ctrl = spa.Buffer(16, label='ctrl')
 
@@ -21,10 +22,10 @@ def test_new_action_syntax(Simulator, seed, plt, rng):
                 return 'C'
         model.input = spa.Input(ctrl=input_func)
 
-        model.state = spa.State(D, label='state')
-        model.buff1 = spa.State(D, label='buff1')
-        model.buff2 = spa.State(D, label='buff2')
-        model.buff3 = spa.State(D, label='buff3')
+        model.state = spa.State(label='state')
+        model.buff1 = spa.State(label='buff1')
+        model.buff2 = spa.State(label='buff2')
+        model.buff3 = spa.State(label='buff3')
 
         node1 = nengo.Node([0, 1, 0])
         node2 = nengo.Node([0, 0, 1])

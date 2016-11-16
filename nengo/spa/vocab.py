@@ -546,3 +546,26 @@ class VocabularyMapParam(nengo.params.Parameter):
                 % type(vocab_set).__name__, attr=self.name, obj=instance)
 
         return vocab_set
+
+
+class VocabularyOrDimParam(nengo.params.Parameter):
+    """Can be a vocabulary or integer denoting a dimensionality."""
+
+    def validate(self, instance, value):
+        super(VocabularyOrDimParam, self).validate(instance, value)
+
+        if value is not None:
+            if is_integer(value):
+                if value < 1:
+                    raise ValidationError(
+                        "Vocabulary dimensionality must be at least 1.",
+                        attr=self.name, obj=instance)
+            elif not isinstance(value, Vocabulary):
+                raise ValidationError(
+                    "Must eb of type 'Vocabulary' or an integer (got type %r)."
+                    % type(value).__name__, attr=self.name, obj=instance)
+
+    def __set__(self, instance, value):
+        if is_integer(value):
+            value = instance.vocabs.get_or_create(value)
+        super(VocabularyOrDimParam, self).__set__(instance, value)

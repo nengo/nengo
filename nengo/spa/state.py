@@ -2,8 +2,10 @@ import numpy as np
 
 import nengo
 from nengo.exceptions import ValidationError
-from nengo.spa.module import Module
 from nengo.networks.ensemblearray import EnsembleArray
+from nengo.params import Default, IntParam, NumberParam
+from nengo.spa.module import Module
+from nengo.spa.vocab import VocabularyOrDimParam
 
 
 class State(Module):
@@ -14,8 +16,9 @@ class State(Module):
 
     Parameters
     ----------
-    dimensions : int
-        Number of dimensions for the vector.
+    vocab : Vocabulary or int
+        The vocabulary to use to interpret the vector. If an integer is given,
+        the default vocabulary of that dimensionality will be used.
     subdimensions : int, optional (Default: 16)
         Size of the individual ensembles making up the vector.
         Must divide ``dimensions`` evenly.
@@ -27,62 +30,52 @@ class State(Module):
         or 0.0 for no memory. Values in between will create a decaying memory.
     feedback_synapse : float, optional (Default: 0.1)
         The synapse on the feedback connection.
-    vocab : Vocabulary, optional (Default: None)
-        The vocabulary to use to interpret the vector. If None,
-        the default vocabulary for the given dimensionality is used.
-    tau : float or None, optional (Default: None)
-        Effective time constant of the integrator. If None, it should
-        have an infinite time constant.
-    direct : bool, optional (Default: False)
-        Whether or not to use direct mode for the neurons.
-
-    label : str, optional (Default: None)
-        A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
-        The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
-        Determines if this Network will be added to the current container.
-        If None, will be true if currently within a Network.
+    kwargs
+        Keyword arguments passed through to ``spa.Module``.
     """
 
-    def __init__(self, dimensions, subdimensions=16, neurons_per_dimension=50,
-                 feedback=0.0, feedback_synapse=0.1, vocab=None, label=None,
-                 seed=None, add_to_container=None):
-        super(State, self).__init__(label, seed, add_to_container)
-        self.dim_per_ensemble = subdimensions
+    vocab = VocabularyOrDimParam('vocab', default=None, readonly=True)
+    subdimensions = IntParam('subdimensions', default=16, low=1, readonly=True)
+    neurons_per_dimension = IntParam(
+        'neurons_per_dimension', default=50, low=1, readonly=True)
+    feedback = NumberParam('feedback', default=.0, readonly=True)
+    feedback_synapse = NumberParam(
+        'feedback_synapse', default=.1, readonly=True)
 
-        if vocab is None:
-            # use the default one for this dimensionality
-            vocab = dimensions
-        elif vocab.dimensions != dimensions:
+    def __init__(self, vocab=Default, subdimensions=Default,
+                 neurons_per_dimension=Default, feedback=Default,
+                 feedback_synapse=Default, **kwargs):
+        super(State, self).__init__(**kwargs)
+
+        self.vocab = vocab
+        self.subdimensions = subdimensions
+        self.neurons_per_dimension = neurons_per_dimension
+        self.feedback = feedback
+        self.feedback_synapse = feedback_synapse
+
+        dimensions = self.vocab.dimensions
+
+        if dimensions % self.subdimensions != 0:
             raise ValidationError(
-                "Dimensionality of given vocabulary (%d) does not "
-                "match dimensionality of buffer (%d)" %
-                (vocab.dimensions, dimensions), attr='dimensions', obj=self)
-
-        # Subdimensions should be at most the number of dimensions
-        subdimensions = min(dimensions, subdimensions)
-
-        if dimensions % subdimensions != 0:
-            raise ValidationError(
-                "Dimensions (%d) must be divisible by subdimensions (%d)"
-                % (dimensions, subdimensions), attr='dimensions', obj=self)
+                "Dimensions (%d) must be divisible by subdimensions (%d)" % (
+                    dimensions, self.subdimensions),
+                attr='dimensions', obj=self)
 
         with self:
             self.state_ensembles = EnsembleArray(
-                neurons_per_dimension * subdimensions,
-                dimensions // subdimensions,
-                ens_dimensions=subdimensions,
-                radius=np.sqrt(float(subdimensions) / dimensions),
+                self.neurons_per_dimension * self.subdimensions,
+                dimensions // self.subdimensions,
+                ens_dimensions=self.subdimensions,
+                radius=np.sqrt(float(self.subdimensions) / dimensions),
+                #  TODO radius
                 label='state')
-            self.input = self.state_ensembles.input
-            self.output = self.state_ensembles.output
 
-        self.inputs = dict(default=(self.input, vocab))
-        self.outputs = dict(default=(self.output, vocab))
+            if self.feedback is not None and self.feedback != 0.0:
+                nengo.Connection(
+                    self.state_ensembles.output, self.state_ensembles.input,
+                    transform=self.feedback, synapse=self.feedback_synapse)
 
-        with self:
-            if feedback is not None and feedback != 0.0:
-                nengo.Connection(self.output, self.input,
-                                 transform=feedback,
-                                 synapse=feedback_synapse)
+        self.input = self.state_ensembles.input
+        self.output = self.state_ensembles.output
+        self.inputs = dict(default=(self.input, self.vocab))
+        self.outputs = dict(default=(self.output, self.vocab))

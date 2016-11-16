@@ -10,7 +10,7 @@ def test_basal_ganglia(Simulator, seed, plt):
     with model:
         model.vision = spa.Buffer(dimensions=16)
         model.motor = spa.Buffer(dimensions=16)
-        model.compare = spa.Compare(dimensions=16)
+        model.compare = spa.Compare(vocab=16)
 
         # test all acceptable condition formats
         actions = spa.Actions(
@@ -40,8 +40,9 @@ def test_basal_ganglia(Simulator, seed, plt):
                 return 'MOUSE'
             else:
                 return '0'
-        model.input = spa.Input(
-            **{'vision': input, 'compare.A': 'SHOOP', 'compare.B': 'SHOOP'})
+        model.input = spa.Input(**{
+            'vision': input, 'compare.input_a': 'SHOOP',
+            'compare.input_b': 'SHOOP'})
         p = nengo.Probe(model.bg.input, 'output', synapse=0.03)
 
     with Simulator(model) as sim:

@@ -8,7 +8,7 @@ from nengo.exceptions import SpaModuleError
 from nengo.network import Network
 from nengo.params import IntParam
 from nengo.spa.input import Input
-from nengo.spa.vocab import VocabularyMap, VocabularyMapParam
+from nengo.spa.vocab import Vocabulary, VocabularyMap, VocabularyMapParam
 from nengo.synapses import SynapseParam
 from nengo.utils.compat import iteritems
 
@@ -18,6 +18,19 @@ def get_current_module():
         if isinstance(net, Module):
             return net
     return None
+
+
+class AutoConfig(object):
+    def __init__(self, cfg):
+        self._cfg = cfg
+
+    def __getattr__(self, name):
+        return getattr(self._cfg, name)
+
+    def __getitem__(self, key):
+        if key not in self._cfg.params:
+            self._cfg.configures(key)
+        return self._cfg[key]
 
 
 class Module(nengo.Network, SupportDefaultsMixin):
@@ -61,6 +74,10 @@ class Module(nengo.Network, SupportDefaultsMixin):
         self.outputs = {}
 
         self._stimuli = None
+
+    @property
+    def config(self):
+        return AutoConfig(self._config)
 
     @property
     def stimuli(self):

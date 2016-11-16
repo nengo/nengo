@@ -8,14 +8,14 @@ from nengo.utils.numpy import rmse
 
 def test_basic():
     with spa.Module() as model:
-        model.bind = spa.Bind(dimensions=16)
+        model.bind = spa.Bind(vocab=16)
 
-    inputA = model.get_module_input('bind.A')
-    inputB = model.get_module_input('bind.B')
+    inputA = model.get_module_input('bind.input_a')
+    inputB = model.get_module_input('bind.input_b')
     output = model.get_module_output('bind')
     # all nodes should be acquired correctly
-    assert inputA[0] is model.bind.A
-    assert inputB[0] is model.bind.B
+    assert inputA[0] is model.bind.input_a
+    assert inputB[0] is model.bind.input_b
     assert output[0] is model.bind.output
     # all inputs and outputs should share the same vocab
     assert inputA[1] is inputB[1]
@@ -28,7 +28,7 @@ def test_run(Simulator, seed):
     vocab = spa.Vocabulary(16, rng=rng)
 
     with spa.Module(seed=seed, vocabs=VocabularyMap([vocab])) as model:
-        model.bind = spa.Bind(dimensions=16)
+        model.bind = spa.Bind(vocab=16)
 
         def inputA(t):
             if 0 <= t < 0.1:
@@ -36,7 +36,8 @@ def test_run(Simulator, seed):
             else:
                 return 'B'
 
-        model.input = spa.Input(**{'bind.A': inputA, 'bind.B': 'A'})
+        model.input = spa.Input(
+            **{'bind.input_a': inputA, 'bind.input_b': 'A'})
 
     bind, vocab = model.get_module_output('bind')
 

@@ -4,14 +4,14 @@ from nengo import spa
 
 def test_basic():
     with spa.Module() as model:
-        model.compare = spa.Compare(dimensions=16)
+        model.compare = spa.Compare(vocab=16)
 
-    inputA = model.get_module_input('compare.A')
-    inputB = model.get_module_input('compare.B')
+    inputA = model.get_module_input('compare.input_a')
+    inputB = model.get_module_input('compare.input_b')
     output = model.get_module_output('compare')
     # all nodes should be acquired correctly
-    assert inputA[0] is model.compare.inputA
-    assert inputB[0] is model.compare.inputB
+    assert inputA[0] is model.compare.input_a
+    assert inputB[0] is model.compare.input_b
     assert output[0] is model.compare.output
     # all inputs should share the same vocab
     assert inputA[1] is inputB[1]
@@ -22,7 +22,7 @@ def test_basic():
 
 def test_run(Simulator, seed):
     with spa.Module(seed=seed) as model:
-        model.compare = spa.Compare(dimensions=16)
+        model.compare = spa.Compare(vocab=16)
 
         def inputA(t):
             if 0 <= t < 0.1:
@@ -30,7 +30,8 @@ def test_run(Simulator, seed):
             else:
                 return 'B'
 
-        model.input = spa.Input(**{'compare.A': inputA, 'compare.B': 'A'})
+        model.input = spa.Input(
+            **{'compare.input_a': inputA, 'compare.input_b': 'A'})
 
     compare, vocab = model.get_module_output('compare')
 
