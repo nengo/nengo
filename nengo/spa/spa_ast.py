@@ -553,10 +553,13 @@ class BinaryOperation(BinaryNode):
     operator : str
         String representation of the operator.
     """
-    def __init__(self, lhs, rhs, operator, staticity, precedence=2):
+    def __init__(
+            self, lhs, rhs, operator, staticity, precedence=2,
+            allow_scalar=False):
         super(BinaryOperation, self).__init__(
             lhs, rhs, staticity, precedence=precedence)
         self.operator = operator
+        self.allow_scalar = allow_scalar
 
     def infer_types(self, root_module, context_type):
         if context_type is None:
@@ -567,9 +570,9 @@ class BinaryOperation(BinaryNode):
 
         if self.lhs.type == self.rhs.type:
             self.type = self.lhs.type
-        elif self.lhs.type == TScalar:
+        elif self.allow_scalar and self.lhs.type == TScalar:
             self.type = self.rhs.type
-        elif self.rhs.type == TScalar:
+        elif self.allow_scalar and self.rhs.type == TScalar:
             self.type = self.lhs.type
         else:
             raise SpaTypeError(
@@ -602,7 +605,8 @@ class Product(BinaryOperation):
         else:
             staticity = max(lhs.staticity, rhs.staticity)
 
-        super(Product, self).__init__(lhs, rhs, '*', staticity)
+        super(Product, self).__init__(
+            lhs, rhs, '*', staticity, allow_scalar=True)
 
     def construct(self, context):
         if self.fixed:
@@ -745,8 +749,7 @@ class DotProduct(BinaryNode):
         self.type = TScalar
 
     def infer_types(self, root_module, context_type):
-        if context_type is None:
-            context_type = infer_vocab(root_module, self.lhs, self.rhs)
+        context_type = infer_vocab(root_module, self.lhs, self.rhs)
         self.lhs.infer_types(root_module, context_type)
         self.rhs.infer_types(root_module, context_type)
         if not isinstance(self.lhs.type, TVocabulary):
