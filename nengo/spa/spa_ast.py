@@ -84,7 +84,9 @@ import numpy as np
 
 import nengo
 from nengo.spa.bind import Bind
+from nengo.spa.compare import Compare
 from nengo.spa.pointer import SemanticPointer
+from nengo.spa.product import Product as ProductModule
 from nengo.exceptions import SpaModuleError, SpaParseError, SpaTypeError
 
 
@@ -630,9 +632,7 @@ class Product(BinaryOperation):
             if is_binding:
                 net = Bind(self.type.vocab, label=str(self))
             elif self.lhs.type == TScalar and self.rhs.type == TScalar:
-                net = nengo.networks.Product(
-                    context.root_module.product_neurons, 1,
-                    net=nengo.Network(label=str(self)))
+                net = ProductModule()
             else:
                 raise NotImplementedError(
                     "Dynamic scaling of semantic pointer not implemented.")
@@ -773,15 +773,11 @@ class DotProduct(BinaryNode):
             return [x.add_transform(tr)
                     for x in self.lhs.construct(context)]
 
-        d = self.lhs.type.vocab.dimensions
-        assert self.rhs.type.vocab.dimensions == d
+        assert self.lhs.type.vocab is self.rhs.type.vocab
         with context.active_net:
-            net = nengo.networks.Product(
-                context.root_module.product_neurons, d,
-                net=nengo.Network(label=str(self)))
+            net = Compare(self.lhs.type.vocab, label=str(self))
             self._connect_binary_operation(context, net)
-        return [Artifact(
-            net.output, nengo.networks.product.dot_product_transform(d))]
+        return [Artifact(net.output)]
 
     def evaluate(self):
         return np.dot(self.lhs.evaluate(), self.rhs.evaluate())

@@ -6,6 +6,7 @@ from .compare import Compare
 from .input import Input
 from .module import Module
 from .pointer import SemanticPointer
+from .product import Product
 from .scalar import Scalar
 from .state import State
 from .thalamus import Thalamus

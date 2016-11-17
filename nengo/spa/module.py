@@ -1,4 +1,3 @@
-import warnings
 
 import numpy as np
 
@@ -6,7 +5,6 @@ import nengo
 from nengo.config import Config, SupportDefaultsMixin
 from nengo.exceptions import SpaModuleError
 from nengo.network import Network
-from nengo.params import IntParam
 from nengo.spa.input import Input
 from nengo.spa.vocab import VocabularyMap, VocabularyMapParam
 from nengo.utils.compat import iteritems
@@ -19,7 +17,7 @@ def get_current_module():
     return None
 
 
-class AutoConfig(object):
+class _AutoConfig(object):
     def __init__(self, cfg):
         self._cfg = cfg
 
@@ -44,7 +42,6 @@ class Module(nengo.Network, SupportDefaultsMixin):
     """
 
     vocabs = VocabularyMapParam('vocabs', default=None, optional=False)
-    product_neurons = IntParam('product_neurons', default=100, optional=False)
 
     def __init__(
             self, label=None, seed=None, add_to_container=None, vocabs=None):
@@ -73,20 +70,13 @@ class Module(nengo.Network, SupportDefaultsMixin):
 
     @property
     def config(self):
-        return AutoConfig(self._config)
+        return _AutoConfig(self._config)
 
     @property
     def stimuli(self):
         if self._stimuli is None:
             self._stimuli = Input(self)
         return self._stimuli
-
-    @property
-    def parent_module(self):
-        warnings.warn(DeprecationWarning(
-            "Access to parent_module attribute indicates the usage of "
-            "deprecated SPA syntax."))
-        return self._parent_module
 
     def __setattr__(self, key, value):
         """A setattr that handles Modules being added specially.
@@ -168,17 +158,7 @@ class Module(nengo.Network, SupportDefaultsMixin):
                 elif name in self._modules:
                     return self._modules[name].get_module_input('default')
                 else:
-                    components = name.rsplit('_', 1)
-                    if len(components) > 1:
-                        head, tail = components
-                        inp = self._modules[head].get_module_input(tail)
-                        warnings.warn(DeprecationWarning(
-                            "Underscore notation for inputs and outputs is "
-                            "deprecated. Use dot notation <module>.<name> "
-                            "instead."))
-                        return inp
-                    else:
-                        raise KeyError
+                    raise KeyError
         except KeyError:
             raise SpaModuleError("Could not find module input %r." % name)
 
@@ -202,17 +182,7 @@ class Module(nengo.Network, SupportDefaultsMixin):
                 elif name in self._modules:
                     return self._modules[name].get_module_output('default')
                 else:
-                    components = name.rsplit('_', 1)
-                    if len(components) > 1:
-                        head, tail = components
-                        out = self._modules[head].get_module_output(tail)
-                        warnings.warn(DeprecationWarning(
-                            "Underscore notation for inputs and outputs is "
-                            "deprecated. Use dot notation <module>.<name> "
-                            "instead."))
-                        return out
-                    else:
-                        raise KeyError
+                    raise KeyError
         except KeyError:
             raise SpaModuleError("Could not find module output %r." % name)
 
