@@ -252,6 +252,9 @@ class Actions(Config):
                 root_module.bg = bg
             if needs_bg and thalamus is None:
                 thalamus = Thalamus(bg)
+                for i, a in enumerate(self.actions):
+                    thalamus.actions.ensembles[i].label = (
+                        'action[{}]: {}'.format(i, a.effects))
                 root_module.thalamus = thalamus
 
         self.construction_context = ConstructionContext(
