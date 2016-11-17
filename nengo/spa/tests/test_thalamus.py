@@ -35,7 +35,9 @@ def test_thalamus(Simulator, plt, seed):
                 return '~A'
             else:
                 return '0'
-        model.input = spa.Input(vision=input_f, vision2='B*~A')
+        model.input = spa.Input()
+        model.input.vision = input_f
+        model.input.vision2 = 'B*~A'
 
         input, vocab = model.get_module_input('motor')
         input2, vocab2 = model.get_module_input('motor2')
@@ -85,7 +87,8 @@ def test_routing(Simulator, seed, plt):
                 return 'B'
             else:
                 return 'C'
-        model.input = spa.Input(ctrl=input_func)
+        model.input = spa.Input()
+        model.input.ctrl = input_func
 
         model.buff1 = spa.State(label='buff1')
         model.buff2 = spa.State(label='buff2')
@@ -159,7 +162,8 @@ def test_nondefault_routing(Simulator, seed):
                 return 'B'
             else:
                 return 'C'
-        model.input = spa.Input(ctrl=input_func)
+        model.input = spa.Input()
+        model.input.ctrl = input_func
 
         model.buff1 = spa.State(label='buff1')
         model.buff2 = spa.State(label='buff2')

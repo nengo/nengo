@@ -36,8 +36,9 @@ def test_run(Simulator, seed):
             else:
                 return 'B'
 
-        model.input = spa.Input(
-            **{'bind.input_a': inputA, 'bind.input_b': 'A'})
+        model.input = spa.Input()
+        model.input.bind.input_a = inputA
+        model.input.bind.input_b = 'A'
 
     bind, vocab = model.get_module_output('bind')
 

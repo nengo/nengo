@@ -13,7 +13,8 @@ def test_connect(Simulator, seed):
         model.buffer3 = spa.State(vocab=16)
         model.cortical = spa.Cortical(spa.Actions('buffer2=buffer1',
                                                   'buffer3=~buffer1'))
-        model.input = spa.Input(buffer1='A')
+        model.input = spa.Input()
+        model.input.buffer1 = 'A'
 
     output2, vocab = model.get_module_output('buffer2')
     output3, vocab = model.get_module_output('buffer3')
@@ -36,7 +37,8 @@ def test_transform(Simulator, seed):
         model.buffer1 = spa.State(vocab=16)
         model.buffer2 = spa.State(vocab=16)
         model.cortical = spa.Cortical(spa.Actions('buffer2=buffer1*B'))
-        model.input = spa.Input(buffer1='A')
+        model.input = spa.Input()
+        model.input.buffer1 = 'A'
 
     output, vocab = model.get_module_output('buffer2')
 
@@ -54,7 +56,8 @@ def test_translate(Simulator, seed):
     with spa.Module(seed=seed) as model:
         model.buffer1 = spa.State(vocab=16)
         model.buffer2 = spa.State(vocab=32)
-        model.input = spa.Input(buffer1='A')
+        model.input = spa.Input()
+        model.input.buffer1 = 'A'
         model.cortical = spa.Cortical(spa.Actions(
             'buffer2=translate(buffer1)'))
 

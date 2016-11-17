@@ -2,9 +2,9 @@ import nengo
 from nengo.dists import Uniform
 from nengo.exceptions import ObsoleteError
 from nengo.params import Default, IntParam, NumberParam
-from nengo.spa.spa_ast import ConstructionContext
 from nengo.spa.module import Module
 from nengo.spa.scalar import Scalar
+from nengo.spa.spa_ast import ConstructionContext
 from nengo.spa.state import State
 from nengo.synapses import Lowpass, SynapseParam
 

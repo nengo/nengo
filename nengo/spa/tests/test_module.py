@@ -36,7 +36,8 @@ def test_spa_verification(seed, plt):
     # building a normal model that shouldn't raise a warning
     with model:
         model.buf = spa.State(d)
-        model.input_node = spa.Input(buf='B')
+        model.input_node = spa.Input()
+        model.input_node.buf = 'B'
         # make sure errors aren't fired for non-spa modules
         prod = nengo.networks.Product(10, 2)  # noqa: F841
         model.int_val = 1
@@ -128,7 +129,8 @@ def test_hierarchical(Simulator, seed, plt):
         model.out = spa.State(d)
 
         model.cortical = spa.Cortical(spa.Actions('out = comm_channel'))
-        model.stimulus = spa.Input(comm_channel='A')
+        model.stimulus = spa.Input()
+        model.stimulus.comm_channel = 'A'
 
         p = nengo.Probe(model.out.output, synapse=0.03)
 

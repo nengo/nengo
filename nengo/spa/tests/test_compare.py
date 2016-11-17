@@ -30,8 +30,9 @@ def test_run(Simulator, seed):
             else:
                 return 'B'
 
-        model.input = spa.Input(
-            **{'compare.input_a': inputA, 'compare.input_b': 'A'})
+        model.input = spa.Input()
+        model.input.compare.input_a = inputA
+        model.input.compare.input_b = 'A'
 
     compare, vocab = model.get_module_output('compare')
 

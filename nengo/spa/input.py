@@ -1,6 +1,4 @@
 import nengo
-from nengo.exceptions import ObsoleteError
-from nengo.utils.compat import iteritems
 
 
 def make_parse_func(func, vocab):
@@ -50,20 +48,14 @@ class Input(nengo.Network):
 
     Parameters
     ----------
-    label : str, optional (Default: None)
-        A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
-        The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
-        Determines if this Network will be added to the current container.
-        If None, will be true if currently within a Network.
+    module : spa.Module, optional (Default: the current module)
+        Module that this network provides input for.
+    kwargs
+        Keyword arguments passed through to ``nengo.Network``.
     """
 
-    def __init__(
-            self, module=None, label=None, seed=None, add_to_container=None,
-            **kwargs):
-        super(Input, self).__init__(label, seed, add_to_container)
-        self.kwargs = kwargs
+    def __init__(self, module=None, **kwargs):
+        super(Input, self).__init__(**kwargs)
         self.input_nodes = {}
 
         if module is None:
@@ -72,17 +64,6 @@ class Input(nengo.Network):
         self.module = module
 
         self._initialized = True
-
-        added = add_to_container is True or len(self.context) > 0
-        if len(kwargs) > 0:
-            if not added:
-                raise ObsoleteError(
-                    "Passing input as keyword arguments to an Input instance "
-                    "without adding it immediately to a network is not "
-                    "supported anymore.")
-
-            for name, value in iteritems(self.kwargs):
-                self.__connect(name, value)
 
     def __connect(self, name, expr):
         target, vocab = self.module.get_module_input(name)

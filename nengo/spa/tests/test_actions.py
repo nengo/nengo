@@ -20,7 +20,8 @@ def test_new_action_syntax(Simulator, seed, plt, rng):
                 return 'B'
             else:
                 return 'C'
-        model.input = spa.Input(ctrl=input_func)
+        model.input = spa.Input()
+        model.input.ctrl = input_func
 
         model.state = spa.State(label='state')
         model.buff1 = spa.State(label='buff1')

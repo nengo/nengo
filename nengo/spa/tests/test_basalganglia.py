@@ -40,9 +40,10 @@ def test_basal_ganglia(Simulator, seed, plt):
                 return 'MOUSE'
             else:
                 return '0'
-        model.input = spa.Input(**{
-            'vision': input, 'compare.input_a': 'SHOOP',
-            'compare.input_b': 'SHOOP'})
+        model.input = spa.Input()
+        model.input.vision = input
+        model.input.compare.input_a = 'SHOOP'
+        model.input.compare.input_b = 'SHOOP'
         p = nengo.Probe(model.bg.input, 'output', synapse=0.03)
 
     with Simulator(model) as sim:

@@ -20,7 +20,8 @@ def test_am_spa_interaction(Simulator, seed, rng):
 
     with nengo.spa.Module(seed=seed) as m:
         m.buf = nengo.spa.State(vocab=vocab)
-        m.input = nengo.spa.Input(buf=input_func)
+        m.input = nengo.spa.Input()
+        m.input.buf = input_func
 
         m.am = AssociativeMemory(vocab, vocab2,
                                  input_keys=['A', 'B', 'C'],
@@ -58,7 +59,8 @@ def test_am_spa_keys_as_expressions(Simulator, plt, seed, rng):
                                      input_keys=in_keys,
                                      output_keys=out_keys)
 
-        model.inp = Input(am=lambda t: 'A' if t < 0.1 else 'A*B')
+        model.inp = Input()
+        model.inp.am = lambda t: 'A' if t < 0.1 else 'A*B'
 
         in_p = nengo.Probe(model.am.input)
         out_p = nengo.Probe(model.am.output, synapse=0.03)

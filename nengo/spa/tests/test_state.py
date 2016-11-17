@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import nengo
 from nengo import spa
@@ -43,7 +42,8 @@ def test_no_feedback_run(Simulator, seed):
                 return 'B'
             else:
                 return '0'
-        model.state_input = spa.Input(state=state_input)
+        model.state_input = spa.Input()
+        model.state_input.state = state_input
 
     state, vocab = model.get_module_output('state')
 
@@ -73,7 +73,8 @@ def test_memory_run(Simulator, seed, plt):
             else:
                 return '0'
 
-        model.state_input = spa.Input(memory=state_input)
+        model.state_input = spa.Input()
+        model.state_input.memory = state_input
 
     memory, vocab = model.get_module_output('memory')
 
@@ -106,7 +107,8 @@ def test_memory_run_decay(Simulator, plt, seed):
             else:
                 return '0'
 
-        model.state_input = spa.Input(memory=state_input)
+        model.state_input = spa.Input()
+        model.state_input.memory = state_input
 
     memory, vocab = model.get_module_output('memory')
 
