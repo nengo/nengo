@@ -493,8 +493,13 @@ class VocabularyMap(Mapping):
         self.rng = rng
 
         self._vocabs = {}
-        for vo in vocabs:
-            self.add(vo)
+        try:
+            for vo in vocabs:
+                self.add(vo)
+        except (AttributeError, TypeError):
+            raise ValueError(
+                "The `vocabs` argument requires a list of Vocabulary "
+                "instances or `None`.")
 
     def add(self, vocab):
         if vocab.dimensions in self._vocabs:
@@ -541,11 +546,20 @@ class VocabularyMapParam(nengo.params.Parameter):
         super(VocabularyMapParam, self).validate(instance, vocab_set)
 
         if vocab_set is not None and not isinstance(vocab_set, VocabularyMap):
-            raise ValidationError(
-                "Must be of type 'VocabularyMap' (got type %r)."
-                % type(vocab_set).__name__, attr=self.name, obj=instance)
+            try:
+                VocabularyMap(vocab_set)
+            except ValueError:
+                raise ValidationError(
+                    "Must be of type 'VocabularyMap' or compatible "
+                    "(got type %r)."
+                    % type(vocab_set).__name__, attr=self.name, obj=instance)
 
         return vocab_set
+
+    def __set__(self, instance, value):
+        if not isinstance(value, VocabularyMap):
+            value = VocabularyMap(value)
+        super(VocabularyMapParam, self).__set__(instance, value)
 
 
 class VocabularyOrDimParam(nengo.params.Parameter):
