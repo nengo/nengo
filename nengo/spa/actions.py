@@ -5,7 +5,6 @@ import warnings
 from nengo.config import Config
 from nengo.exceptions import SpaParseError
 from nengo.spa.basalganglia import BasalGanglia
-from nengo.spa.cortical import Cortical
 from nengo.spa.thalamus import Thalamus
 from nengo.spa.spa_ast import (
     Action, ConstructionContext, DotProduct, Effect, Effects, Module,
@@ -181,7 +180,7 @@ class Actions(Config):
     """
 
     def __init__(self, *args, **kwargs):
-        super(Actions, self).__init__(Cortical, BasalGanglia, Thalamus)
+        super(Actions, self).__init__(BasalGanglia, Thalamus)
 
         self.actions = []
         self.effects = []
@@ -244,14 +243,10 @@ class Actions(Config):
         else:
             self.actions.append(ast)
 
-    def build(self, root_module, cortical=None, bg=None, thalamus=None):
-        needs_cortical = len(self.effects) > 0
+    def build(self, root_module, bg=None, thalamus=None):
         needs_bg = len(self.actions) > 0
 
         with root_module, self:
-            if needs_cortical and cortical is None:
-                cortical = Cortical()
-                root_module.cortical = cortical
             if needs_bg and bg is None:
                 bg = BasalGanglia(action_count=len(self.actions))
                 root_module.bg = bg
@@ -260,7 +255,7 @@ class Actions(Config):
                 root_module.thalamus = thalamus
 
         self.construction_context = ConstructionContext(
-            root_module, cortical=cortical, bg=bg, thalamus=thalamus)
+            root_module, bg=bg, thalamus=thalamus)
         with root_module:
             for action in self.effects + self.actions:
                 action.infer_types(root_module, None)

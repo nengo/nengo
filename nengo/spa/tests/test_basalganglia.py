@@ -13,7 +13,7 @@ def test_basal_ganglia(Simulator, seed, plt):
         model.compare = spa.Compare(vocab=16)
 
         # test all acceptable condition formats
-        actions = spa.Actions(
+        spa.Actions(
             '0.5 --> motor=A',
             'dot(vision, CAT) --> motor=B',
             'dot(vision*CAT, DOG) --> motor=C',
@@ -22,10 +22,7 @@ def test_basal_ganglia(Simulator, seed, plt):
             'dot(vision, PARROT) + compare --> motor=F',
             '0.5*dot(vision, MOUSE) + 0.5*compare --> motor=G',
             '( dot(vision, MOUSE) - compare ) * 0.5 --> motor=H'
-        )
-        model.bg = spa.BasalGanglia(actions)
-        # Thalamus required to trigger construction of bg rules
-        model.thalamus = spa.Thalamus(model.bg)
+        ).build(model)
 
         def input(t):
             if t < 0.1:
@@ -75,7 +72,5 @@ def test_basal_ganglia(Simulator, seed, plt):
 def test_scalar_product():
     with spa.Module() as model:
         model.scalar = spa.Scalar()
-        actions = spa.Actions('scalar*scalar --> scalar=1')
-        model.bg = spa.BasalGanglia(actions)
-        model.thalamus = spa.Thalamus(model.bg)
+        spa.Actions('scalar*scalar --> scalar=1').build(model)
     # just testing network construction without exception here

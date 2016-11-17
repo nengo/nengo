@@ -11,8 +11,8 @@ def test_connect(Simulator, seed):
         model.buffer1 = spa.State(vocab=16)
         model.buffer2 = spa.State(vocab=16)
         model.buffer3 = spa.State(vocab=16)
-        model.cortical = spa.Cortical(spa.Actions('buffer2=buffer1',
-                                                  'buffer3=~buffer1'))
+        spa.Actions('buffer2=buffer1', 'buffer3=~buffer1').build(model)
+
         model.input = spa.Input()
         model.input.buffer1 = 'A'
 
@@ -36,7 +36,7 @@ def test_transform(Simulator, seed):
     with spa.Module(seed=seed) as model:
         model.buffer1 = spa.State(vocab=16)
         model.buffer2 = spa.State(vocab=16)
-        model.cortical = spa.Cortical(spa.Actions('buffer2=buffer1*B'))
+        spa.Actions('buffer2=buffer1*B').build(model)
         model.input = spa.Input()
         model.input.buffer1 = 'A'
 
@@ -58,8 +58,7 @@ def test_translate(Simulator, seed):
         model.buffer2 = spa.State(vocab=32)
         model.input = spa.Input()
         model.input.buffer1 = 'A'
-        model.cortical = spa.Cortical(spa.Actions(
-            'buffer2=translate(buffer1)'))
+        spa.Actions('buffer2=translate(buffer1)').build(model)
 
     output, vocab = model.get_module_output('buffer2')
 
@@ -78,22 +77,15 @@ def test_errors():
     with pytest.raises(SpaModuleError):
         with spa.Module() as model:
             model.buffer = spa.State(vocab=16)
-            model.cortical = spa.Cortical(spa.Actions('buffer2=buffer'))
-
-    # conditional expressions not implemented
-    with pytest.raises(SpaModuleError):
-        with spa.Module() as model:
-            model.buffer = spa.State(vocab=16)
-            model.cortical = spa.Cortical(spa.Actions(
-                'dot(buffer,A) --> buffer=buffer'))
+            spa.Actions('buffer2=buffer').build(model)
 
 
 def test_direct(Simulator, seed):
     with spa.Module(seed=seed) as model:
         model.buffer1 = spa.State(vocab=16)
         model.buffer2 = spa.State(vocab=32)
-        model.cortical = spa.Cortical(spa.Actions('buffer1=A', 'buffer2=B',
-                                                  'buffer1=C, buffer2=C'))
+        spa.Actions(
+            'buffer1=A', 'buffer2=B', 'buffer1=C, buffer2=C').build(model)
 
     output1, vocab1 = model.get_module_output('buffer1')
     output2, vocab2 = model.get_module_output('buffer2')
@@ -125,12 +117,12 @@ def test_convolution(Simulator, plt, seed):
         model.outAinvB = spa.State()
         model.outAinvBinv = spa.State()
 
-        model.cortical = spa.Cortical(spa.Actions(
+        spa.Actions(
             'outAB = inA * inB',
             'outABinv = inA * ~inB',
             'outAinvB = ~inA * inB',
             'outAinvBinv = ~inA * ~inB',
-            ))
+            ).build(model)
         nengo.Connection(nengo.Node([0, 1, 0, 0, 0]), model.inA.input)
         nengo.Connection(nengo.Node([0, 0, 1, 0, 0]), model.inB.input)
 

@@ -99,8 +99,6 @@ class ConstructionContext(object):
     ----------
     root_module : :class:`spa.Module`
         The root module the encapsulated all of the constructed structures.
-    cortical : :class:`spa.Cortical`
-        Module to manage cortical rules.
     bg : :class:`spa.BasalGanglia`
         Module to manage the basal ganglia part of action selection.
     thalamus : :class:`spa.Thalamus`
@@ -111,13 +109,12 @@ class ConstructionContext(object):
         Network to add constructed components to.
     """
     __slots__ = [
-        'root_module', 'cortical', 'bg', 'thalamus', 'sink', 'active_net']
+        'root_module', 'bg', 'thalamus', 'sink', 'active_net']
 
     def __init__(
-            self, root_module, cortical=None, bg=None, thalamus=None,
+            self, root_module, bg=None, thalamus=None,
             sink=None, active_net=None):
         self.root_module = root_module
-        self.cortical = cortical
         self.bg = bg
         self.thalamus = thalamus
         self.sink = sink
@@ -131,7 +128,7 @@ class ConstructionContext(object):
         if active_net is None:
             active_net = self.active_net
         return self.__class__(
-            root_module=self.root_module, cortical=self.cortical, bg=self.bg,
+            root_module=self.root_module, bg=self.bg,
             thalamus=self.thalamus, sink=sink, active_net=active_net)
 
     @property
@@ -921,7 +918,7 @@ class Effect(Node):
             connect_fn = context.thalamus.connect
         else:
             target = context.sink_input[0]
-            connect_fn = context.cortical.connect
+            connect_fn = nengo.Connection
 
         artifacts = self.source.construct(context)
         for artifact in artifacts:

@@ -17,14 +17,12 @@ def test_thalamus(Simulator, plt, seed):
         model.motor = spa.State(vocab=16, neurons_per_dimension=80)
         model.motor2 = spa.State(vocab=32, neurons_per_dimension=80)
 
-        actions = spa.Actions(
+        spa.Actions(
             'dot(vision, A) --> motor=A, motor2=translate(vision*vision2)',
             'dot(vision, B) --> motor=vision, motor2=translate(vision*A*~B)',
             'dot(vision, ~A) --> motor=~vision, '
             'motor2=translate(~vision*vision2)'
-        )
-        model.bg = spa.BasalGanglia(actions)
-        model.thalamus = spa.Thalamus(model.bg)
+        ).build(model)
 
         def input_f(t):
             if t < 0.1:
@@ -100,12 +98,11 @@ def test_routing(Simulator, seed, plt):
         nengo.Connection(node1, model.buff1.input)
         nengo.Connection(node2, model.buff2.input)
 
-        actions = spa.Actions('dot(ctrl, A) --> buff3=buff1',
-                              'dot(ctrl, B) --> buff3=buff2',
-                              'dot(ctrl, C) --> buff3=buff1*buff2',
-                              )
-        model.bg = spa.BasalGanglia(actions)
-        model.thal = spa.Thalamus(model.bg)
+        spa.Actions(
+            'dot(ctrl, A) --> buff3=buff1',
+            'dot(ctrl, B) --> buff3=buff2',
+            'dot(ctrl, C) --> buff3=buff1*buff2',
+        ).build(model)
 
         buff3_probe = nengo.Probe(model.buff3.output, synapse=0.03)
 
@@ -140,9 +137,7 @@ def test_routing_recurrency_compilation(Simulator, seed, plt):
     with model:
         model.buff1 = spa.State(label='buff1')
         model.buff2 = spa.State(label='buff2')
-        actions = spa.Actions('0.5 --> buff2=buff1, buff1=buff2')
-        model.bg = spa.BasalGanglia(actions)
-        model.thal = spa.Thalamus(model.bg)
+        spa.Actions('0.5 --> buff2=buff1, buff1=buff2').build(model)
 
     with Simulator(model) as sim:
         assert sim
@@ -175,13 +170,11 @@ def test_nondefault_routing(Simulator, seed):
         nengo.Connection(node1, model.buff1.input)
         nengo.Connection(node2, model.buff2.input)
 
-        actions = spa.Actions(
+        spa.Actions(
             'dot(ctrl, A) --> cmp.input_a=buff1, cmp.input_b=buff1',
             'dot(ctrl, B) --> cmp.input_a=buff1, cmp.input_b=buff2',
             'dot(ctrl, C) --> cmp.input_a=buff2, cmp.input_b=buff2',
-        )
-        model.bg = spa.BasalGanglia(actions)
-        model.thal = spa.Thalamus(model.bg)
+        ).build(model)
 
         compare_probe = nengo.Probe(model.cmp.output, synapse=0.03)
 
@@ -204,6 +197,4 @@ def test_errors():
     with pytest.raises(SpaModuleError):
         with spa.Module() as model:
             model.vision = spa.State(vocab=16)
-            actions = spa.Actions('0.5 --> motor=A')
-            model.bg = spa.BasalGanglia(actions)
-            model.thalamus = spa.Thalamus(model.bg)
+            spa.Actions('0.5 --> motor=A').build(model)

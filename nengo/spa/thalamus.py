@@ -18,7 +18,7 @@ class Thalamus(Module):
     Parameters
     ----------
     bg : spa.BasalGanglia
-        The associated basal ganglia that defines the action to implement.
+        The associated basal ganglia that defines the actions to implement.
     neurons_action : int, optional (Default: 50)
         Number of neurons per action to represent the selection.
     threshold_action : float, optional (Default: 0.2)
@@ -44,13 +44,8 @@ class Thalamus(Module):
     synapse_to-gate : float, optional (Default: 0.002)
         Synaptic filter for controlling a gate.
 
-    label : str, optional (Default: None)
-        A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
-        The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
-        Determines if this Network will be added to the current container.
-        If None, will be true if currently within a Network.
+    kwargs
+        Passed through to ``spa.Module``.
     """
 
     neurons_action = IntParam('neurons_action', default=50)
@@ -70,9 +65,8 @@ class Thalamus(Module):
                  synapse_inhibit=Default, synapse_bg=Default,
                  neurons_channel_dim=Default, synapse_channel=Default,
                  neurons_gate=Default, threshold_gate=Default,
-                 synapse_to_gate=Default,
-                 label=None, seed=None, add_to_container=None):
-        Module.__init__(self, label, seed, add_to_container)
+                 synapse_to_gate=Default, **kwargs):
+        super(Thalamus, self).__init__(**kwargs)
 
         # bg gets also added to the top level network, thus we have to
         # circumvent the check that it gets only added once.
@@ -98,18 +92,6 @@ class Thalamus(Module):
                                 threshold=self.threshold_action,
                                 net=self)
         self.connect_bg(self.bg)
-
-        added = add_to_container is True or len(self.context) > 0
-        if self.bg.actions is not None:
-            if not added:
-                raise ObsoleteError(
-                    "Instantiating Thalamus with a BasalGanglia with actions "
-                    "without adding Thalamus immediately to a network is not "
-                    "supported anymore.")
-
-            self.bg.actions.construction_context = ConstructionContext(
-                self.parent_module, bg=self.bg, thalamus=self)
-            self.bg.actions.process()
 
     def construct_gate(self, index, net=None, label=None):
         """Construct a gate ensemble.

@@ -32,8 +32,7 @@ def test_am_spa_interaction(Simulator, seed, rng):
                                  wta_output=True,
                                  threshold_output=True)
 
-        cortical_actions = nengo.spa.Actions('am = buf')
-        m.c_act = nengo.spa.Cortical(cortical_actions)
+        nengo.spa.Actions('am = buf').build(m)
 
     # Check to see if model builds properly. No functionality test needed
     with Simulator(m):
