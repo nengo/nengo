@@ -21,6 +21,34 @@ Nengo Objects
 
 .. autoclass:: nengo.Probe
 
+Distributions
+=============
+
+.. autoclass:: nengo.dists.Distribution
+   :exclude-members: sample
+
+   .. automethod:: nengo.dists.Distribution.sample(n, d=None, rng=np.random)
+
+.. autofunction:: nengo.dists.get_samples(dist_or_samples, n, d=None, rng=np.random)
+
+.. autoclass:: nengo.dists.Uniform
+
+.. autoclass:: nengo.dists.Gaussian
+
+.. autoclass:: nengo.dists.Exponential
+
+.. autoclass:: nengo.dists.UniformHypersphere
+
+.. autoclass:: nengo.dists.Choice
+
+.. autoclass:: nengo.dists.PDF
+
+.. autoclass:: nengo.dists.SqrtBeta
+
+.. autoclass:: nengo.dists.SubvectorLength
+
+.. autoclass:: nengo.dists.CosineSimilarity
+
 Neuron types
 ============
 
