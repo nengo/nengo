@@ -16,8 +16,22 @@ class OutputParam(Parameter):
         assert optional  # None has meaning (passthrough node)
         super(OutputParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, node, output):
-        super(OutputParam, self).validate(node, output)
+    def check_ndarray(self, node, output):
+        if len(output.shape) > 1:
+            raise ValidationError("Node output must be a vector (got shape "
+                                  "%s)" % (output.shape,),
+                                  attr=self.name, obj=node)
+        if node.size_in != 0:
+            raise ValidationError("output must be callable if size_in != 0",
+                                  attr=self.name, obj=node)
+        if node.size_out is not None and node.size_out != output.size:
+            raise ValidationError("Size of Node output (%d) does not match "
+                                  "size_out (%d)"
+                                  % (output.size, node.size_out),
+                                  attr=self.name, obj=node)
+
+    def coerce(self, node, output):
+        output = super(OutputParam, self).coerce(node, output)
 
         size_in_set = node.size_in is not None
         node.size_in = node.size_in if size_in_set else 0
@@ -37,13 +51,13 @@ class OutputParam(Parameter):
             # We trust user's size_out if set, because calling output
             # may have unintended consequences (e.g., network communication)
             if node.size_out is None:
-                result = self.validate_callable(node, output)
+                result = self.coerce_callable(node, output)
                 node.size_out = 0 if result is None else result.size
         elif is_array_like(output):
             # Make into correctly shaped numpy array before validation
             output = npext.array(
                 output, min_dims=1, copy=False, dtype=np.float64)
-            self.validate_ndarray(node, output)
+            self.check_ndarray(node, output)
             if not np.all(np.isfinite(output)):
                 raise ValidationError("Output value must be finite.",
                                       attr=self.name, obj=node)
@@ -53,10 +67,9 @@ class OutputParam(Parameter):
                                   type(output).__name__,
                                   attr=self.name, obj=node)
 
-        # --- Set output
-        self.data[node] = output
+        return output
 
-    def validate_callable(self, node, output):
+    def coerce_callable(self, node, output):
         t, x = 0.0, np.zeros(node.size_in)
         args = (t, x) if node.size_in > 0 else (t,)
         result, invoked = checked_call(output, *args)
@@ -74,20 +87,6 @@ class OutputParam(Parameter):
                                       " %s)" % (result.shape,),
                                       attr=self.name, obj=node)
         return result
-
-    def validate_ndarray(self, node, output):
-        if len(output.shape) > 1:
-            raise ValidationError("Node output must be a vector (got shape "
-                                  "%s)" % (output.shape,),
-                                  attr=self.name, obj=node)
-        if node.size_in != 0:
-            raise ValidationError("output must be callable if size_in != 0",
-                                  attr=self.name, obj=node)
-        if node.size_out is not None and node.size_out != output.size:
-            raise ValidationError("Size of Node output (%d) does not match "
-                                  "size_out (%d)"
-                                  % (output.size, node.size_out),
-                                  attr=self.name, obj=node)
 
 
 class Node(NengoObject):

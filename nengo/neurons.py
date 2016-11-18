@@ -533,8 +533,6 @@ class Izhikevich(NeuronType):
 
 
 class NeuronTypeParam(Parameter):
-    def validate(self, instance, neurons):
-        if neurons is not None and not isinstance(neurons, NeuronType):
-            raise ValidationError("'%s' is not a neuron type" % neurons,
-                                  attr=self.name, obj=instance)
-        super(NeuronTypeParam, self).validate(instance, neurons)
+    def coerce(self, instance, neurons):
+        self.check_type(instance, neurons, NeuronType)
+        return super(NeuronTypeParam, self).coerce(instance, neurons)

@@ -206,7 +206,7 @@ class NengoObjectParam(Parameter):
         super(NengoObjectParam, self).__init__(
             name, default, optional, readonly)
 
-    def validate(self, instance, nengo_obj):
+    def coerce(self, instance, nengo_obj):
         nengo_objects = (
             NengoObject,
             ObjView,
@@ -222,7 +222,7 @@ class NengoObjectParam(Parameter):
         if self.nonzero_size_out and nengo_obj.size_out < 1:
             raise ValidationError("'%s' must have size_out > 0." % nengo_obj,
                                   attr=self.name, obj=instance)
-        super(NengoObjectParam, self).validate(instance, nengo_obj)
+        return super(NengoObjectParam, self).coerce(instance, nengo_obj)
 
 
 class Process(FrozenObject):
@@ -411,10 +411,6 @@ class Process(FrozenObject):
 class ProcessParam(Parameter):
     """Must be a Process."""
 
-    def validate(self, instance, process):
-        super(ProcessParam, self).validate(instance, process)
-        if process is not None and not isinstance(process, Process):
-            raise ValidationError(
-                "Must be Process (got type %r)" % type(process).__name__,
-                attr=self.name, obj=instance)
-        return process
+    def coerce(self, instance, process):
+        self.check_type(instance, process, Process)
+        return super(ProcessParam, self).coerce(instance, process)

@@ -2,13 +2,14 @@ from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.config import Config
 from nengo.connection import Connection, LearningRule
 from nengo.exceptions import ObsoleteError, ValidationError
-from nengo.params import Default, ConnectionDefault, NumberParam, StringParam
+from nengo.params import (
+    Default, ConnectionDefault, NumberParam, Parameter, StringParam)
 from nengo.solvers import SolverParam
 from nengo.synapses import SynapseParam
 
 
 class TargetParam(NengoObjectParam):
-    def validate(self, probe, target):
+    def coerce(self, probe, target):
         obj = target.obj if isinstance(target, ObjView) else target
         if not hasattr(obj, 'probeable'):
             raise ValidationError("Type %r is not probeable"
@@ -16,13 +17,16 @@ class TargetParam(NengoObjectParam):
                                   attr=self.name, obj=probe)
 
         # do this after; better to know that type is not Probable first
-        if not isinstance(obj, LearningRule):
-            super(TargetParam, self).validate(probe, target)
+        if isinstance(obj, LearningRule):
+            # TODO: this special case should be able to be removed with #1310
+            return Parameter.coerce(self, probe, target)
+        else:
+            return super(TargetParam, self).coerce(probe, target)
 
 
 class AttributeParam(StringParam):
-    def validate(self, probe, attr):
-        super(AttributeParam, self).validate(probe, attr)
+    def coerce(self, probe, attr):
+        value = super(AttributeParam, self).coerce(probe, attr)
         if attr in ('decoders', 'transform'):
             raise ObsoleteError("'decoders' and 'transform' are now combined "
                                 "into 'weights'. Probe 'weights' instead.",
@@ -32,21 +36,19 @@ class AttributeParam(StringParam):
                                   "Probeable attributes: %s"
                                   % (attr, probe.obj, probe.obj.probeable),
                                   attr=self.name, obj=probe)
+        return value
 
 
 class ProbeSolverParam(SolverParam):
-    def __set__(self, instance, value):
-        if value is ConnectionDefault:
-            value = Config.default(Connection, 'solver')
-
-        super(ProbeSolverParam, self).__set__(instance, value)
-
-    def validate(self, conn, solver):
-        super(ProbeSolverParam, self).validate(conn, solver)
+    def coerce(self, conn, solver):
+        if solver is ConnectionDefault:
+            solver = Config.default(Connection, 'solver')
+        solver = super(ProbeSolverParam, self).coerce(conn, solver)
         if solver is not None and solver.weights:
             raise ValidationError("weight solvers only work for ensemble to "
                                   "ensemble connections, not probes",
                                   attr=self.name, obj=conn)
+        return solver
 
 
 class Probe(NengoObject):

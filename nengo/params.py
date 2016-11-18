@@ -5,8 +5,8 @@ import numpy as np
 
 from nengo.exceptions import (
     ConfigError, ObsoleteError, ReadonlyError, ValidationError)
-from nengo.utils.compat import (
-    is_array, is_integer, is_number, is_string, itervalues)
+from nengo.utils.compat import (int_types, is_array, is_integer, is_number,
+                                is_string, itervalues, string_types)
 from nengo.utils.numpy import array_hash, compare
 from nengo.utils.stdlib import WeakKeyIDDictionary, checked_call
 
@@ -109,8 +109,7 @@ class Parameter(object):
         return self.data.get(instance, self.default)
 
     def __set__(self, instance, value):
-        self.validate(instance, value)
-        self.data[instance] = value
+        self.data[instance] = self.coerce(instance, value)
 
     def __repr__(self):
         return "%s(%r, default=%s, optional=%s, readonly=%s)" % (
@@ -133,8 +132,29 @@ class Parameter(object):
     def set_default(self, obj, value):
         if not self.configurable:
             raise ConfigError("Parameter '%s' is not configurable" % self)
-        self.validate(obj, value)
-        self._defaults[obj] = value
+        self._defaults[obj] = self.coerce(obj, value)
+
+    def check_type(self, instance, value, type_):
+        if value is not None and not isinstance(value, type_):
+            if isinstance(type_, tuple):
+                type_str = " or ".join((t.__name__ for t in type_))
+            else:
+                type_str = type_.__name__
+            raise ValidationError("Must be of type %r (got type %r)."
+                                  % (type_str, type(value).__name__),
+                                  attr=self.name, obj=instance)
+
+    def coerce(self, instance, value):
+        if isinstance(value, DefaultType):
+            raise ValidationError("Default is not a valid value. To reset a "
+                                  "parameter, use 'del'.",
+                                  attr=self.name, obj=instance)
+        if self.readonly and instance in self.data:
+            raise ReadonlyError(attr=self.name, obj=instance)
+        if not self.optional and value is None:
+            raise ValidationError("Parameter is not optional; cannot set to "
+                                  "None", attr=self.name, obj=instance)
+        return value
 
     def equal(self, instance_a, instance_b):
         a = self.__get__(instance_a, None)
@@ -153,17 +173,6 @@ class Parameter(object):
         else:
             return id(value)
 
-    def validate(self, instance, value):
-        if isinstance(value, DefaultType):
-            raise ValidationError("Default is not a valid value. To reset a "
-                                  "parameter, use 'del'.",
-                                  attr=self.name, obj=instance)
-        if self.readonly and instance in self.data:
-            raise ReadonlyError(attr=self.name, obj=instance)
-        if not self.optional and value is None:
-            raise ValidationError("Parameter is not optional; cannot set to "
-                                  "None", attr=self.name, obj=instance)
-
 
 class ObsoleteParam(Parameter):
     """A parameter that is no longer supported."""
@@ -180,10 +189,11 @@ class ObsoleteParam(Parameter):
             return self
         self.raise_error()
 
-    def validate(self, instance, value):
+    def coerce(self, instance, value):
         if value is not Unconfigurable:
             # don't allow setting to anything other than unconfigurable default
             self.raise_error()
+        return value
 
     def raise_error(self):
         raise ObsoleteError(self.short_msg, since=self.since, url=self.url)
@@ -194,11 +204,9 @@ class BoolParam(Parameter):
 
     equatable = True
 
-    def validate(self, instance, boolean):
-        if boolean is not None and not isinstance(boolean, bool):
-            raise ValidationError("Must be a boolean; got '%s'" % boolean,
-                                  attr=self.name, obj=instance)
-        super(BoolParam, self).validate(instance, boolean)
+    def coerce(self, instance, value):
+        self.check_type(instance, value, bool)
+        return super(BoolParam, self).coerce(instance, value)
 
 
 class NumberParam(Parameter):
@@ -215,13 +223,11 @@ class NumberParam(Parameter):
         self.high_open = high_open
         super(NumberParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, instance, value):
-        if is_array(value) and value.shape == ():
-            value = value.item()  # convert scalar array to Python object
-        super(NumberParam, self).__set__(instance, value)
-
-    def validate(self, instance, num):
+    def coerce(self, instance, num):
         if num is not None:
+            if is_array(num) and num.shape == ():
+                num = num.item()  # convert scalar array to Python object
+
             if not is_number(num):
                 raise ValidationError("Must be a number; got '%s'" % num,
                                       attr=self.name, obj=instance)
@@ -239,17 +245,15 @@ class NumberParam(Parameter):
                         "" if self.high_open else "or equal to ",
                         self.high,
                         num), attr=self.name, obj=instance)
-        super(NumberParam, self).validate(instance, num)
+        return super(NumberParam, self).coerce(instance, num)
 
 
 class IntParam(NumberParam):
     """A parameter where the value is an integer."""
 
-    def validate(self, instance, num):
-        if num is not None and not is_integer(num):
-            raise ValidationError("Must be an integer; got '%s'" % num,
-                                  attr=self.name, obj=instance)
-        super(IntParam, self).validate(instance, num)
+    def coerce(self, instance, num):
+        self.check_type(instance, num, int_types + (np.integer,))
+        return super(IntParam, self).coerce(instance, num)
 
 
 class StringParam(Parameter):
@@ -257,11 +261,9 @@ class StringParam(Parameter):
 
     equatable = True
 
-    def validate(self, instance, string):
-        if string is not None and not is_string(string):
-            raise ValidationError("Must be a string; got '%s'" % string,
-                                  attr=self.name, obj=instance)
-        super(StringParam, self).validate(instance, string)
+    def coerce(self, instance, string):
+        self.check_type(instance, string, string_types)
+        return super(StringParam, self).coerce(instance, string)
 
 
 class EnumParam(StringParam):
@@ -279,17 +281,14 @@ class EnumParam(StringParam):
         self.lower = lower
         super(EnumParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, instance, value):
-        self.validate(instance, value)
-        self.data[instance] = value.lower() if self.lower else value
-
-    def validate(self, instance, string):
-        super(EnumParam, self).validate(instance, string)
+    def coerce(self, instance, string):
+        string = super(EnumParam, self).coerce(instance, string)
         string = string.lower() if self.lower else string
         if string not in self.value_set:
             raise ValidationError("String %r must be one of %s"
                                   % (string, list(self.values)),
                                   attr=self.name, obj=instance)
+        return string
 
 
 class TupleParam(Parameter):
@@ -300,21 +299,19 @@ class TupleParam(Parameter):
         self.length = length
         super(TupleParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, instance, value):
+    def coerce(self, instance, value):
+        value = super(TupleParam, self).coerce(instance, value)
         try:
             value = tuple(value)
         except TypeError:
             raise ValidationError("Value must be castable to a tuple",
                                   attr=self.name, obj=instance)
-        super(TupleParam, self).__set__(instance, value)
-
-    def validate(self, instance, value):
         if value is not None:
             if self.length is not None and len(value) != self.length:
                 raise ValidationError("Must be %d items (got %d)"
                                       % (self.length, len(value)),
                                       attr=self.name, obj=instance)
-        super(TupleParam, self).validate(instance, value)
+        return value
 
 
 class ShapeParam(TupleParam):
@@ -328,8 +325,8 @@ class ShapeParam(TupleParam):
                                          optional=optional, readonly=readonly)
         self.low = low
 
-    def validate(self, instance, value):
-        super(ShapeParam, self).validate(instance, value)
+    def coerce(self, instance, value):
+        value = super(ShapeParam, self).coerce(instance, value)
         for i, v in enumerate(value):
             if not is_integer(v):
                 raise ValidationError("Element %d must be an int (got type %r)"
@@ -344,11 +341,9 @@ class ShapeParam(TupleParam):
 class DictParam(Parameter):
     """A parameter where the value is a dictionary."""
 
-    def validate(self, instance, dct):
-        if dct is not None and not isinstance(dct, dict):
-            raise ValidationError("Must be a dictionary; got '%s'" % str(dct),
-                                  attr=self.name, obj=instance)
-        super(DictParam, self).validate(instance, dct)
+    def coerce(self, instance, value):
+        self.check_type(instance, value, dict)
+        return super(DictParam, self).coerce(instance, value)
 
 
 class NdarrayParam(Parameter):
@@ -368,16 +363,15 @@ class NdarrayParam(Parameter):
         self.shape = shape
         super(NdarrayParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, instance, ndarray):
-        super(NdarrayParam, self).validate(instance, ndarray)
-        if ndarray is not None:
-            ndarray = self.validate(instance, ndarray)
-        self.data[instance] = ndarray
-
     def hashvalue(self, instance):
         return array_hash(self.__get__(instance, None))
 
-    def validate(self, instance, ndarray):  # noqa: C901
+    def coerce(self, instance, value):
+        if value is not None:
+            value = self.coerce_ndarray(instance, value)
+        return super(NdarrayParam, self).coerce(instance, value)
+
+    def coerce_ndarray(self, instance, ndarray):  # noqa: C901
         if isinstance(ndarray, np.ndarray):
             ndarray = ndarray.view()
         else:
@@ -439,15 +433,6 @@ FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
 class FunctionParam(Parameter):
     """A parameter where the value is a function."""
 
-    def __set__(self, instance, function):
-        if isinstance(function, FunctionInfo):
-            function_info = function
-        else:
-            size = (self.determine_size(instance, function)
-                    if callable(function) else None)
-            function_info = FunctionInfo(function=function, size=size)
-        super(FunctionParam, self).__set__(instance, function_info)
-
     def determine_size(self, instance, function):
         args = self.function_args(instance, function)
         value, invoked = checked_call(function, *args)
@@ -460,12 +445,21 @@ class FunctionParam(Parameter):
     def function_args(self, instance, function):
         return (np.zeros(1),)
 
-    def validate(self, instance, function_info):
-        function = function_info.function
+    def coerce(self, instance, function):
+        function = super(FunctionParam, self).coerce(instance, function)
+        if isinstance(function, FunctionInfo):
+            function_info = function
+            function = function_info.function
+        else:
+            size = (self.determine_size(instance, function)
+                    if callable(function) else None)
+            function_info = FunctionInfo(function=function, size=size)
+
         if function is not None and not callable(function):
             raise ValidationError("function '%s' must be callable" % function,
                                   attr=self.name, obj=instance)
-        super(FunctionParam, self).validate(instance, function)
+
+        return function_info
 
 
 class FrozenObject(object):

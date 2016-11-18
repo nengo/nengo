@@ -10,33 +10,31 @@ from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.params import (Default, Unconfigurable, ObsoleteParam,
-                          BoolParam, FunctionInfo, FunctionParam)
+                          BoolParam, FunctionInfo, Parameter)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_array_like, is_iterable, iteritems
 from nengo.utils.connection import function_name
+from nengo.utils.stdlib import checked_call
 
 logger = logging.getLogger(__name__)
 
 
 class PrePostParam(NengoObjectParam):
-    def validate(self, conn, nengo_obj):
-        super(PrePostParam, self).validate(conn, nengo_obj)
+    def coerce(self, conn, nengo_obj):
         if isinstance(nengo_obj, Connection):
             raise ValidationError(
                 "Cannot connect to or from connections. "
                 "Did you mean to connect to the connection's learning rule?",
                 attr=self.name, obj=conn)
+        return super(PrePostParam, self).coerce(conn, nengo_obj)
 
 
 class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
     """Connection-specific validation for learning rules."""
 
-    def __set__(self, conn, rule):
-        super(ConnectionLearningRuleTypeParam, self).__set__(conn, rule)
-
-    def validate_rule(self, conn, rule):
-        super(ConnectionLearningRuleTypeParam, self).validate_rule(conn, rule)
+    def check_rule(self, conn, rule):
+        super(ConnectionLearningRuleTypeParam, self).check_rule(conn, rule)
 
         # --- Check pre object
         pre = conn.pre_obj
@@ -96,8 +94,8 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
 class ConnectionSolverParam(SolverParam):
     """Connection-specific validation for decoder solvers."""
 
-    def validate(self, conn, solver):
-        super(ConnectionSolverParam, self).validate(conn, solver)
+    def coerce(self, conn, solver):
+        solver = super(ConnectionSolverParam, self).coerce(conn, solver)
         if solver is not None:
             if solver.weights and not isinstance(conn.pre_obj, Ensemble):
                 raise ValidationError(
@@ -109,49 +107,23 @@ class ConnectionSolverParam(SolverParam):
                     "weight solvers only work for connections to ensembles "
                     "(got %r)" % type(conn.post_obj).__name__,
                     attr=self.name, obj=conn)
+        return solver
 
 
 class EvalPointsParam(DistOrArrayParam):
-    def validate(self, conn, distorarray):
+    def coerce(self, conn, distorarray):
         """Eval points are only valid when pre is an ensemble."""
-        if not isinstance(conn.pre, Ensemble):
+        if distorarray is not None and not isinstance(conn.pre, Ensemble):
             msg = ("eval_points are only valid on connections from ensembles "
                    "(got type '%s')" % type(conn.pre).__name__)
             raise ValidationError(msg, attr=self.name, obj=conn)
-        return super(EvalPointsParam, self).validate(conn, distorarray)
+        return super(EvalPointsParam, self).coerce(conn, distorarray)
 
 
-class ConnectionFunctionParam(FunctionParam):
+class ConnectionFunctionParam(Parameter):
     """Connection-specific validation for functions."""
 
-    def __set__(self, conn, function):
-        if function is None:
-            function_info = FunctionInfo(function=None, size=None)
-        elif isinstance(function, FunctionInfo):
-            function_info = function
-        elif is_array_like(function):
-            array = np.array(function, copy=False, dtype=np.float64)
-            self.validate_array(conn, array)
-            function_info = FunctionInfo(function=array, size=array.shape[1])
-        elif callable(function):
-            function_info = FunctionInfo(
-                function=function, size=self.determine_size(conn, function))
-            self.validate_callable(conn, function_info)
-        else:
-            raise ValidationError("Invalid connection function type %r "
-                                  "(must be callable or array-like)"
-                                  % type(function).__name__,
-                                  attr=self.name, obj=conn)
-
-        self.validate(conn, function_info)
-        self.data[conn] = function_info
-
-    def function_args(self, conn, function):
-        x = (conn.eval_points[0] if is_iterable(conn.eval_points)
-             else np.zeros(conn.size_in))
-        return (x,)
-
-    def validate_array(self, conn, ndarray):
+    def check_array(self, conn, ndarray):
         if not isinstance(conn.eval_points, np.ndarray):
             raise ValidationError(
                 "In order to set 'function' to specific points, 'eval_points' "
@@ -169,10 +141,7 @@ class ConnectionFunctionParam(FunctionParam):
                 % (ndarray.shape[0], conn.eval_points.shape[0]),
                 attr=self.name, obj=conn)
 
-    def validate_callable(self, conn, function_info):
-        super(ConnectionFunctionParam, self).validate(conn, function_info)
-
-    def validate(self, conn, function_info):
+    def check_function_can_be_applied(self, conn, function_info):
         function, size = function_info
         type_pre = type(conn.pre_obj).__name__
 
@@ -205,6 +174,46 @@ class ConnectionFunctionParam(FunctionParam):
                     "(%d)" % (type_pre, size_mid, transform.shape[1]),
                     attr=self.name, obj=conn)
 
+    def coerce(self, conn, function):
+        function = super(ConnectionFunctionParam, self).coerce(conn, function)
+
+        if function is None:
+            function_info = FunctionInfo(function=None, size=None)
+        elif isinstance(function, FunctionInfo):
+            function_info = function
+        elif is_array_like(function):
+            array = np.array(function, copy=False, dtype=np.float64)
+            self.check_array(conn, array)
+            function_info = FunctionInfo(function=array, size=array.shape[1])
+        elif callable(function):
+            function_info = FunctionInfo(
+                function=function, size=self.determine_size(conn, function))
+            # TODO: necessary?
+            super(ConnectionFunctionParam, self).coerce(conn, function_info)
+        else:
+            raise ValidationError("Invalid connection function type %r "
+                                  "(must be callable or array-like)"
+                                  % type(function).__name__,
+                                  attr=self.name, obj=conn)
+
+        self.check_function_can_be_applied(conn, function_info)
+
+        return function_info
+
+    def determine_size(self, instance, function):
+        args = self.function_args(instance, function)
+        value, invoked = checked_call(function, *args)
+        if not invoked:
+            raise ValidationError("function '%s' must accept a single "
+                                  "np.array argument" % function,
+                                  attr=self.name, obj=instance)
+        return np.asarray(value).size
+
+    def function_args(self, conn, function):
+        x = (conn.eval_points[0] if is_iterable(conn.eval_points)
+             else np.zeros(conn.size_in))
+        return (x,)
+
 
 class TransformParam(DistOrArrayParam):
     """The transform additionally validates size_out."""
@@ -213,7 +222,7 @@ class TransformParam(DistOrArrayParam):
         super(TransformParam, self).__init__(
             name, default, (), optional, readonly)
 
-    def validate(self, conn, transform):
+    def coerce(self, conn, transform):
         if not isinstance(transform, Distribution):
             # if transform is an array, figure out what the correct shape
             # should be
@@ -245,9 +254,7 @@ class TransformParam(DistOrArrayParam):
                     "Cannot handle transforms with dimensions > 2",
                     attr=self.name, obj=conn)
 
-        super(TransformParam, self).validate(conn, transform)
-
-        return transform
+        return super(TransformParam, self).coerce(conn, transform)
 
 
 class Connection(NengoObject):

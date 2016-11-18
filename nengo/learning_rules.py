@@ -7,12 +7,10 @@ from nengo.utils.compat import is_iterable, itervalues
 
 
 class ConnectionParam(NengoObjectParam):
-    def validate(self, instance, conn):
+    def coerce(self, instance, conn):
         from nengo.connection import Connection
-        if not isinstance(conn, Connection):
-            raise ValidationError("'%s' is not a Connection" % conn,
-                                  attr=self.name, obj=instance)
-        super(ConnectionParam, self).validate(instance, conn)
+        self.check_type(instance, conn, Connection)
+        return super(ConnectionParam, self).coerce(instance, conn)
 
 
 class LearningRuleType(FrozenObject):
@@ -305,15 +303,7 @@ class Voja(LearningRuleType):
 
 
 class LearningRuleTypeParam(Parameter):
-    def validate(self, instance, rule):
-        if is_iterable(rule):
-            for r in (itervalues(rule) if isinstance(rule, dict) else rule):
-                self.validate_rule(instance, r)
-        elif rule is not None:
-            self.validate_rule(instance, rule)
-        super(LearningRuleTypeParam, self).validate(instance, rule)
-
-    def validate_rule(self, instance, rule):
+    def check_rule(self, instance, rule):
         if not isinstance(rule, LearningRuleType):
             raise ValidationError(
                 "'%s' must be a learning rule type or a dict or "
@@ -325,3 +315,11 @@ class LearningRuleTypeParam(Parameter):
         if rule.modifies not in ('encoders', 'decoders', 'weights'):
             raise ValidationError("Unrecognized target %r" % rule.modifies,
                                   attr=self.name, obj=instance)
+
+    def coerce(self, instance, rule):
+        if is_iterable(rule):
+            for r in (itervalues(rule) if isinstance(rule, dict) else rule):
+                self.check_rule(instance, r)
+        elif rule is not None:
+            self.check_rule(instance, rule)
+        return super(LearningRuleTypeParam, self).coerce(instance, rule)

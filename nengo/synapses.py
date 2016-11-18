@@ -488,13 +488,7 @@ class SynapseParam(Parameter):
                  default=Unconfigurable, optional=True, readonly=None):
         super(SynapseParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, instance, synapse):
-        if is_number(synapse):
-            synapse = Lowpass(synapse)
-        super(SynapseParam, self).__set__(instance, synapse)
-
-    def validate(self, instance, synapse):
-        if synapse is not None and not isinstance(synapse, Synapse):
-            raise ValidationError("'%s' is not a synapse type" % synapse,
-                                  attr=self.name, obj=instance)
-        super(SynapseParam, self).validate(instance, synapse)
+    def coerce(self, instance, synapse):
+        synapse = Lowpass(synapse) if is_number(synapse) else synapse
+        self.check_type(instance, synapse, Synapse)
+        return super(SynapseParam, self).coerce(instance, synapse)

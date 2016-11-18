@@ -543,11 +543,9 @@ class DistributionParam(Parameter):
 
     equatable = True
 
-    def validate(self, instance, dist):
-        if dist is not None and not isinstance(dist, Distribution):
-            raise ValidationError("'%s' is not a Distribution type" % dist,
-                                  attr=self.name, obj=instance)
-        super(DistributionParam, self).validate(instance, dist)
+    def coerce(self, instance, dist):
+        self.check_type(instance, dist, Distribution)
+        return super(DistributionParam, self).coerce(instance, dist)
 
 
 class DistOrArrayParam(NdarrayParam):
@@ -558,11 +556,10 @@ class DistOrArrayParam(NdarrayParam):
         super(DistOrArrayParam, self).__init__(
             name, default, sample_shape, optional, readonly)
 
-    def validate(self, instance, distorarray):
+    def coerce(self, instance, distorarray):
         if isinstance(distorarray, Distribution):
-            Parameter.validate(self, instance, distorarray)
-            return distorarray
-        return super(DistOrArrayParam, self).validate(instance, distorarray)
+            return Parameter.coerce(self, instance, distorarray)
+        return super(DistOrArrayParam, self).coerce(instance, distorarray)
 
 
 def get_samples(dist_or_samples, n, d=None, rng=np.random):

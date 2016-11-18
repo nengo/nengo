@@ -318,10 +318,6 @@ class RandomizedSVD(LeastSquaresSolver):
 
 
 class LeastSquaresSolverParam(Parameter):
-    def validate(self, instance, solver):
-        if solver is not None and not isinstance(solver, LeastSquaresSolver):
-            raise ValidationError(
-                "'%s' is not a least-squares subsolver "
-                "(see ``nengo.solvers.lstsq`` for options)" % solver,
-                attr=self.name, obj=instance)
-        super(LeastSquaresSolverParam, self).validate(instance, solver)
+    def coerce(self, instance, solver):
+        self.check_type(instance, solver, LeastSquaresSolver)
+        return super(LeastSquaresSolverParam, self).coerce(instance, solver)

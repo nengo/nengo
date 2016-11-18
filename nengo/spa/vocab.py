@@ -2,8 +2,8 @@ import warnings
 
 import numpy as np
 
-import nengo
 from nengo.exceptions import ReadonlyError, SpaParseError, ValidationError
+from nengo.params import Parameter
 from nengo.spa import pointer
 from nengo.utils.compat import is_iterable, is_number, is_integer, range
 
@@ -480,15 +480,9 @@ class Vocabulary(object):
         return subset
 
 
-class VocabularyParam(nengo.params.Parameter):
+class VocabularyParam(Parameter):
     """Can be a Vocabulary."""
 
-    def validate(self, instance, vocab):
-        super(VocabularyParam, self).validate(instance, vocab)
-
-        if vocab is not None and not isinstance(vocab, Vocabulary):
-            raise ValidationError("Must be of type 'Vocabulary' (got type %r)."
-                                  % type(vocab).__name__,
-                                  attr=self.name, obj=instance)
-
-        return vocab
+    def coerce(self, instance, vocab):
+        self.check_type(instance, vocab, Vocabulary)
+        return super(VocabularyParam, self).coerce(instance, vocab)
