@@ -41,6 +41,8 @@ class Parameter(object):
 
     Parameters
     ----------
+    name : str
+        Name of the parameter.
     default : object
         The value returned if the parameter hasn't been explicitly set.
     optional : bool, optional
