@@ -170,6 +170,41 @@ class Parameter(object):
         return value
 
 
+class TypeCheckedParameter(Parameter):
+    """Parameter that only accepts instances of a specific type.
+
+    Parameters
+    ----------
+    name : str
+        Name of the parameter.
+    type_ : type
+        Accepted type.
+    default : object
+        The value returned if the parameter hasn't been explicitly set.
+    optional : bool, optional
+        Whether this parameter accepts the value None. By default,
+        parameters are not optional (i.e., cannot be set to ``None``).
+    readonly : bool, optional
+        If true, the parameter can only be set once.
+        By default, parameters can be set multiple times.
+    """
+
+    def __init__(self, name, type_,
+                 default=Unconfigurable, optional=False, readonly=None):
+        super(TypeCheckedParameter, self).__init__(
+            name, default=default, optional=optional, readonly=readonly)
+        self.type_ = type_
+
+    def validate(self, instance, value):
+        value = super(TypeCheckedParameter, self).validate(instance, value)
+        if value is not None and not isinstance(value, self.type_):
+            raise ValidationError(
+                "Must be of type %r (got type %r)."
+                % (self.type_.__name__, type(value).__name__),
+                attr=self.name, obj=instance)
+        return value
+
+
 class ObsoleteParam(Parameter):
     """A parameter that is no longer supported."""
 
@@ -194,16 +229,13 @@ class ObsoleteParam(Parameter):
         raise ObsoleteError(self.short_msg, since=self.since, url=self.url)
 
 
-class BoolParam(Parameter):
+class BoolParam(TypeCheckedParameter):
     """A parameter where the value is a boolean."""
 
     equatable = True
 
-    def validate(self, instance, boolean):
-        if boolean is not None and not isinstance(boolean, bool):
-            raise ValidationError("Must be a boolean; got '%s'" % boolean,
-                                  attr=self.name, obj=instance)
-        return super(BoolParam, self).validate(instance, boolean)
+    def __init__(self, name, **kwargs):
+        super(BoolParam, self).__init__(name, bool, **kwargs)
 
 
 class NumberParam(Parameter):
@@ -345,14 +377,11 @@ class ShapeParam(TupleParam):
                     attr=self.name, obj=instance)
 
 
-class DictParam(Parameter):
+class DictParam(TypeCheckedParameter):
     """A parameter where the value is a dictionary."""
 
-    def validate(self, instance, dct):
-        if dct is not None and not isinstance(dct, dict):
-            raise ValidationError("Must be a dictionary; got '%s'" % str(dct),
-                                  attr=self.name, obj=instance)
-        return super(DictParam, self).validate(instance, dct)
+    def __init__(self, name, **kwargs):
+        super(DictParam, self).__init__(name, dict, **kwargs)
 
 
 class NdarrayParam(Parameter):

@@ -480,15 +480,8 @@ class Vocabulary(object):
         return subset
 
 
-class VocabularyParam(nengo.params.Parameter):
+class VocabularyParam(nengo.params.TypeCheckedParameter):
     """Can be a Vocabulary."""
 
-    def validate(self, instance, vocab):
-        super(VocabularyParam, self).validate(instance, vocab)
-
-        if vocab is not None and not isinstance(vocab, Vocabulary):
-            raise ValidationError("Must be of type 'Vocabulary' (got type %r)."
-                                  % type(vocab).__name__,
-                                  attr=self.name, obj=instance)
-
-        return vocab
+    def __init__(self, name, **kwargs):
+        super(VocabularyParam, self).__init__(name, Vocabulary, **kwargs)
