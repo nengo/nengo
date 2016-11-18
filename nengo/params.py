@@ -111,8 +111,9 @@ class Parameter(object):
         self.data[instance] = value
 
     def __repr__(self):
-        return "%s(default=%s, optional=%s, readonly=%s)" % (
+        return "%s(%r, default=%s, optional=%s, readonly=%s)" % (
             type(self).__name__,
+            self.name,
             self.default,
             self.optional,
             self.readonly)
