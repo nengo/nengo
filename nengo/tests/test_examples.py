@@ -53,8 +53,8 @@ slow_examples.sort()
 fast_examples.sort()
 
 
-def assert_noexceptions(nb_file, tmpdir, plt):
-    plt.saveas = None  # plt used to ensure figures are closed, but don't save
+def assert_noexceptions(nb_file, tmpdir):
+    plt = pytest.importorskip('matplotlib.pyplot')
     pytest.importorskip("IPython", minversion="1.0")
     pytest.importorskip("jinja2")
     from nengo.utils.ipython import export_py, load_notebook
@@ -64,21 +64,22 @@ def assert_noexceptions(nb_file, tmpdir, plt):
         tmpdir.join(os.path.splitext(os.path.basename(nb_path))[0]))
     export_py(nb, pyfile)
     execfile(pyfile, {})
+    plt.close('all')
 
 
 @pytest.mark.example
 @pytest.mark.parametrize('nb_file', fast_examples)
-def test_fast_noexceptions(nb_file, tmpdir, plt):
+def test_fast_noexceptions(nb_file, tmpdir):
     """Ensure that no cells raise an exception."""
-    assert_noexceptions(nb_file, tmpdir, plt)
+    assert_noexceptions(nb_file, tmpdir)
 
 
 @pytest.mark.slow
 @pytest.mark.example
 @pytest.mark.parametrize('nb_file', slow_examples)
-def test_slow_noexceptions(nb_file, tmpdir, plt):
+def test_slow_noexceptions(nb_file, tmpdir):
     """Ensure that no cells raise an exception."""
-    assert_noexceptions(nb_file, tmpdir, plt)
+    assert_noexceptions(nb_file, tmpdir)
 
 
 @pytest.mark.example
