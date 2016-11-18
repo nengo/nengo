@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo import spa
 from nengo.exceptions import Unconvertible
 from nengo.utils.builder import objs_and_connections, remove_passthrough_nodes
 
@@ -44,7 +45,7 @@ def test_remove_passthrough_bg(logger):
         def printout(t, x):
             logger.info("%s, %s", t, x)
         output = nengo.Node(printout, size_in=D, label='output')
-        bg = nengo.networks.BasalGanglia(D, 20)
+        bg = spa.BasalGanglia(D, 20)
         nengo.Connection(input, bg.input, synapse=0.01)
         nengo.Connection(bg.output, output, synapse=0.01)
 

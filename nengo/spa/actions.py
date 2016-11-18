@@ -251,10 +251,11 @@ class Actions(Config):
                 bg = BasalGanglia(action_count=len(self.actions))
                 root_module.bg = bg
             if needs_bg and thalamus is None:
-                thalamus = Thalamus(bg)
+                thalamus = Thalamus(action_count=len(self.actions))
                 for i, a in enumerate(self.actions):
                     thalamus.actions.ensembles[i].label = (
                         'action[{}]: {}'.format(i, a.effects))
+                thalamus.connect_bg(bg)
                 root_module.thalamus = thalamus
 
         self.construction_context = ConstructionContext(

@@ -576,7 +576,7 @@ class VocabularyOrDimParam(nengo.params.Parameter):
                         attr=self.name, obj=instance)
             elif not isinstance(value, Vocabulary):
                 raise ValidationError(
-                    "Must eb of type 'Vocabulary' or an integer (got type %r)."
+                    "Must be of type 'Vocabulary' or an integer (got type %r)."
                     % type(value).__name__, attr=self.name, obj=instance)
 
     def __set__(self, instance, value):

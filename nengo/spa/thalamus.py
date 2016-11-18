@@ -1,24 +1,29 @@
+import numpy as np
+
 import nengo
 from nengo.dists import Uniform
-from nengo.exceptions import ObsoleteError
 from nengo.params import Default, IntParam, NumberParam
 from nengo.spa.module import Module
 from nengo.spa.scalar import Scalar
-from nengo.spa.spa_ast import ConstructionContext
 from nengo.spa.state import State
 from nengo.synapses import Lowpass, SynapseParam
 
 
 class Thalamus(Module):
-    """A thalamus, implementing the effects for an associated basal ganglia.
+    """Inhibits non-selected actions.
 
-    See `.spa.BasalGanglia` for information on the basal ganglia, and
-    `.networks.Thalamus` for details on the underlying network.
+    The thalamus is intended to work in tandem with a basal ganglia network.
+    It converts basal ganglia output into a signal with (approximately) 1 for
+    the selected action and 0 elsewhere.
+
+    In order to suppress low responses and strengthen high responses,
+    a constant bias is added to each dimension (i.e., action), and dimensions
+    mutually inhibit each other. Additionally, the ensemble representing
+    each dimension is created with positive encoders and can be assigned
+    positive x-intercepts to threshold low responses.
 
     Parameters
     ----------
-    bg : spa.BasalGanglia
-        The associated basal ganglia that defines the actions to implement.
     neurons_action : int, optional (Default: 50)
         Number of neurons per action to represent the selection.
     threshold_action : float, optional (Default: 0.2)
@@ -46,6 +51,17 @@ class Thalamus(Module):
 
     kwargs
         Passed through to ``spa.Module``.
+
+    Attributes
+    ----------
+    actions : EnsembleArray
+        Each ensemble represents one dimension (action).
+    bias : Node
+        The constant bias injected in each ``actions`` ensemble.
+    input : Node
+        Input to the ``actions`` ensembles.
+    output : Node
+        Output from the ``actions`` ensembles.
     """
 
     neurons_action = IntParam('neurons_action', default=50)
@@ -60,17 +76,17 @@ class Thalamus(Module):
     threshold_gate = NumberParam('threshold_gate', default=0.3)
     synapse_to_gate = SynapseParam('synapse_to_gate', default=Lowpass(0.002))
 
-    def __init__(self, bg, neurons_action=Default, threshold_action=Default,
-                 mutual_inhibit=Default, route_inhibit=Default,
-                 synapse_inhibit=Default, synapse_bg=Default,
-                 neurons_channel_dim=Default, synapse_channel=Default,
-                 neurons_gate=Default, threshold_gate=Default,
-                 synapse_to_gate=Default, **kwargs):
+    def __init__(self, action_count, neurons_action=Default,
+                 threshold_action=Default, mutual_inhibit=Default,
+                 route_inhibit=Default, synapse_inhibit=Default,
+                 synapse_bg=Default, neurons_channel_dim=Default,
+                 synapse_channel=Default, neurons_gate=Default,
+                 threshold_gate=Default, synapse_to_gate=Default, **kwargs):
+        if 'label' not in kwargs:
+            kwargs['label'] = "Thalamus"
         super(Thalamus, self).__init__(**kwargs)
 
-        # bg gets also added to the top level network, thus we have to
-        # circumvent the check that it gets only added once.
-        self.__dict__['bg'] = bg
+        self.action_count = action_count
         self.neurons_action = neurons_action
         self.mutual_inhibit = mutual_inhibit
         self.route_inhibit = route_inhibit
@@ -86,12 +102,21 @@ class Thalamus(Module):
         self.gates = {}     # gating ensembles per action (created as needed)
         self.channels = {}  # channels to pass transformed data between modules
 
-        nengo.networks.Thalamus(self.bg.action_count,
-                                n_neurons_per_ensemble=self.neurons_action,
-                                mutual_inhib=self.mutual_inhibit,
-                                threshold=self.threshold_action,
-                                net=self)
-        self.connect_bg(self.bg)
+        with self:
+            self.actions = nengo.networks.EnsembleArray(
+                self.neurons_action, self.action_count,
+                intercepts=nengo.dists.Uniform(self.threshold_action, 1),
+                encoders=nengo.dists.Choice([[1.0]]), label="actions")
+            nengo.Connection(
+                self.actions.output, self.actions.input,
+                transform=(
+                    np.eye(self.action_count) - 1) * self.mutual_inhibit)
+            self.bias = nengo.Node([1], label="thalamus bias")
+            nengo.Connection(self.bias, self.actions.input,
+                             transform=np.ones((self.action_count, 1)))
+
+        self.input = self.actions.input
+        self.output = self.actions.output
 
     def construct_gate(self, index, net=None, label=None):
         """Construct a gate ensemble.

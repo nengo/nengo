@@ -16,7 +16,7 @@ import inspect
 import sys
 
 from nengo.exceptions import ConfigError, ValidationError
-from nengo.params import Default, is_param
+from nengo.params import Default, is_param, Parameter
 from nengo.rc import rc
 from nengo.utils.compat import itervalues, reraise
 from nengo.utils.threading import ThreadLocalStack
@@ -438,3 +438,15 @@ class SupportDefaultsMixin(object):
                 reraise(exc_info[0], exc_info[1], None)
         else:
             super(SupportDefaultsMixin, self).__setattr__(name, val)
+
+
+class ConfigParam(Parameter):
+    """A parameter where the value is a `.Config` object."""
+
+    def validate(self, instance, value):
+        super(ConfigParam, self).validate(instance, value)
+
+        if value is not None and not isinstance(value, Config):
+            raise ValidationError(
+                "Must be of type 'Config' (got type %r)."
+                % type(value).__name__, attr=self.name, obj=instance)
