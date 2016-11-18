@@ -107,7 +107,9 @@ class Parameter(object):
         return self.data.get(instance, self.default)
 
     def __set__(self, instance, value):
-        self.validate(instance, value)
+        new_value = self.validate(instance, value)
+        if new_value is not None:
+            value = new_value
         self.data[instance] = value
 
     def __repr__(self):
@@ -131,7 +133,9 @@ class Parameter(object):
     def set_default(self, obj, value):
         if not self.configurable:
             raise ConfigError("Parameter '%s' is not configurable" % self)
-        self.validate(obj, value)
+        new_value = self.validate(obj, value)
+        if new_value is not None:
+            value = new_value
         self._defaults[obj] = value
 
     def equal(self, instance_a, instance_b):
@@ -161,6 +165,7 @@ class Parameter(object):
         if not self.optional and value is None:
             raise ValidationError("Parameter is not optional; cannot set to "
                                   "None", attr=self.name, obj=instance)
+        return value
 
 
 class ObsoleteParam(Parameter):
@@ -196,7 +201,7 @@ class BoolParam(Parameter):
         if boolean is not None and not isinstance(boolean, bool):
             raise ValidationError("Must be a boolean; got '%s'" % boolean,
                                   attr=self.name, obj=instance)
-        super(BoolParam, self).validate(instance, boolean)
+        return super(BoolParam, self).validate(instance, boolean)
 
 
 class NumberParam(Parameter):
@@ -237,7 +242,7 @@ class NumberParam(Parameter):
                         "" if self.high_open else "or equal to ",
                         self.high,
                         num), attr=self.name, obj=instance)
-        super(NumberParam, self).validate(instance, num)
+        return super(NumberParam, self).validate(instance, num)
 
 
 class IntParam(NumberParam):
@@ -247,7 +252,7 @@ class IntParam(NumberParam):
         if num is not None and not is_integer(num):
             raise ValidationError("Must be an integer; got '%s'" % num,
                                   attr=self.name, obj=instance)
-        super(IntParam, self).validate(instance, num)
+        return super(IntParam, self).validate(instance, num)
 
 
 class StringParam(Parameter):
@@ -259,7 +264,7 @@ class StringParam(Parameter):
         if string is not None and not is_string(string):
             raise ValidationError("Must be a string; got '%s'" % string,
                                   attr=self.name, obj=instance)
-        super(StringParam, self).validate(instance, string)
+        return super(StringParam, self).validate(instance, string)
 
 
 class EnumParam(StringParam):
@@ -277,17 +282,16 @@ class EnumParam(StringParam):
         self.lower = lower
         super(EnumParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, instance, value):
-        self.validate(instance, value)
-        self.data[instance] = value.lower() if self.lower else value
-
     def validate(self, instance, string):
-        super(EnumParam, self).validate(instance, string)
+        new_string = super(EnumParam, self).validate(instance, string)
+        if new_string is not None:
+            string = new_string
         string = string.lower() if self.lower else string
         if string not in self.value_set:
             raise ValidationError("String %r must be one of %s"
                                   % (string, list(self.values)),
                                   attr=self.name, obj=instance)
+        return string
 
 
 class TupleParam(Parameter):
@@ -312,7 +316,7 @@ class TupleParam(Parameter):
                 raise ValidationError("Must be %d items (got %d)"
                                       % (self.length, len(value)),
                                       attr=self.name, obj=instance)
-        super(TupleParam, self).validate(instance, value)
+        return super(TupleParam, self).validate(instance, value)
 
 
 class ShapeParam(TupleParam):
@@ -346,7 +350,7 @@ class DictParam(Parameter):
         if dct is not None and not isinstance(dct, dict):
             raise ValidationError("Must be a dictionary; got '%s'" % str(dct),
                                   attr=self.name, obj=instance)
-        super(DictParam, self).validate(instance, dct)
+        return super(DictParam, self).validate(instance, dct)
 
 
 class NdarrayParam(Parameter):
@@ -366,16 +370,16 @@ class NdarrayParam(Parameter):
         self.shape = shape
         super(NdarrayParam, self).__init__(name, default, optional, readonly)
 
-    def __set__(self, instance, ndarray):
-        super(NdarrayParam, self).validate(instance, ndarray)
-        if ndarray is not None:
-            ndarray = self.validate(instance, ndarray)
-        self.data[instance] = ndarray
-
     def hashvalue(self, instance):
         return array_hash(self.__get__(instance, None))
 
-    def validate(self, instance, ndarray):  # noqa: C901
+    def validate(self, instance, value):
+        if value is not None:
+            value = self.validate_ndarray(instance, value)
+        super(NdarrayParam, self).validate(instance, value)
+        return value
+
+    def validate_ndarray(self, instance, ndarray):  # noqa: C901
         if isinstance(ndarray, np.ndarray):
             ndarray = ndarray.view()
         else:
@@ -437,15 +441,6 @@ FunctionInfo = collections.namedtuple('FunctionInfo', ['function', 'size'])
 class FunctionParam(Parameter):
     """A parameter where the value is a function."""
 
-    def __set__(self, instance, function):
-        if isinstance(function, FunctionInfo):
-            function_info = function
-        else:
-            size = (self.determine_size(instance, function)
-                    if callable(function) else None)
-            function_info = FunctionInfo(function=function, size=size)
-        super(FunctionParam, self).__set__(instance, function_info)
-
     def determine_size(self, instance, function):
         args = self.function_args(instance, function)
         value, invoked = checked_call(function, *args)
@@ -458,12 +453,21 @@ class FunctionParam(Parameter):
     def function_args(self, instance, function):
         return (np.zeros(1),)
 
-    def validate(self, instance, function_info):
-        function = function_info.function
+    def validate(self, instance, function):
+        function = super(FunctionParam, self).validate(instance, function)
+        if isinstance(function, FunctionInfo):
+            function_info = function
+            function = function_info.function
+        else:
+            size = (self.determine_size(instance, function)
+                    if callable(function) else None)
+            function_info = FunctionInfo(function=function, size=size)
+
         if function is not None and not callable(function):
             raise ValidationError("function '%s' must be callable" % function,
                                   attr=self.name, obj=instance)
-        super(FunctionParam, self).validate(instance, function)
+
+        return function_info
 
 
 class FrozenObject(object):
