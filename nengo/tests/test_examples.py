@@ -39,9 +39,8 @@ all_examples, slow_examples, fast_examples = [], [], []
 for subdir, _, files in os.walk(examples_dir):
     if (os.path.sep + '.') in subdir:
         continue
-
-    examples = [os.path.join(subdir, os.path.splitext(f)[0]) for f in files
-                if f.endswith('.ipynb')]
+    files = [f for f in files if f.endswith('.ipynb')]
+    examples = [os.path.join(subdir, os.path.splitext(f)[0]) for f in files]
     all_examples.extend(examples)
     slow_examples.extend([e for e, f in zip(examples, files)
                           if os.path.splitext(f)[0] in too_slow])
