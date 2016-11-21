@@ -3,7 +3,8 @@
 import warnings
 
 from nengo.config import Config
-from nengo.exceptions import SpaParseError
+from nengo.exceptions import NetworkContextError, SpaParseError
+from nengo.network import Network
 from nengo.spa.basalganglia import BasalGanglia
 from nengo.spa.thalamus import Thalamus
 from nengo.spa.spa_ast import (
@@ -243,8 +244,14 @@ class Actions(Config):
         else:
             self.actions.append(ast)
 
-    def build(self, root_module, bg=None, thalamus=None):
+    def build(self, bg=None, thalamus=None):
         needs_bg = len(self.actions) > 0
+
+        if len(Network.context) <= 0:
+            raise NetworkContextError(
+                "Actions.build can only be called inside a ``with module:`` "
+                "block.")
+        root_module = Network.context[-1]
 
         with root_module, self:
             if needs_bg and bg is None:

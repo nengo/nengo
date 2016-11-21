@@ -22,7 +22,7 @@ def test_basal_ganglia(Simulator, seed, plt):
             'dot(vision, PARROT) + compare --> motor=F',
             '0.5*dot(vision, MOUSE) + 0.5*compare --> motor=G',
             '( dot(vision, MOUSE) - compare ) * 0.5 --> motor=H'
-        ).build(model)
+        ).build()
 
         def input(t):
             if t < 0.1:
@@ -72,5 +72,5 @@ def test_basal_ganglia(Simulator, seed, plt):
 def test_scalar_product():
     with spa.Module() as model:
         model.scalar = spa.Scalar()
-        spa.Actions('scalar*scalar --> scalar=1').build(model)
+        spa.Actions('scalar*scalar --> scalar=1').build()
     # just testing network construction without exception here

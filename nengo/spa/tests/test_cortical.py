@@ -11,7 +11,7 @@ def test_connect(Simulator, seed):
         model.buffer1 = spa.State(vocab=16)
         model.buffer2 = spa.State(vocab=16)
         model.buffer3 = spa.State(vocab=16)
-        spa.Actions('buffer2=buffer1', 'buffer3=~buffer1').build(model)
+        spa.Actions('buffer2=buffer1', 'buffer3=~buffer1').build()
 
         model.input = spa.Input()
         model.input.buffer1 = 'A'
@@ -36,7 +36,7 @@ def test_transform(Simulator, seed):
     with spa.Module(seed=seed) as model:
         model.buffer1 = spa.State(vocab=16)
         model.buffer2 = spa.State(vocab=16)
-        spa.Actions('buffer2=buffer1*B').build(model)
+        spa.Actions('buffer2=buffer1*B').build()
         model.input = spa.Input()
         model.input.buffer1 = 'A'
 
@@ -58,7 +58,7 @@ def test_translate(Simulator, seed):
         model.buffer2 = spa.State(vocab=32)
         model.input = spa.Input()
         model.input.buffer1 = 'A'
-        spa.Actions('buffer2=translate(buffer1)').build(model)
+        spa.Actions('buffer2=translate(buffer1)').build()
 
     output, vocab = model.get_module_output('buffer2')
 
@@ -77,7 +77,7 @@ def test_errors():
     with pytest.raises(SpaModuleError):
         with spa.Module() as model:
             model.buffer = spa.State(vocab=16)
-            spa.Actions('buffer2=buffer').build(model)
+            spa.Actions('buffer2=buffer').build()
 
 
 def test_direct(Simulator, seed):
@@ -85,7 +85,7 @@ def test_direct(Simulator, seed):
         model.buffer1 = spa.State(vocab=16)
         model.buffer2 = spa.State(vocab=32)
         spa.Actions(
-            'buffer1=A', 'buffer2=B', 'buffer1=C, buffer2=C').build(model)
+            'buffer1=A', 'buffer2=B', 'buffer1=C, buffer2=C').build()
 
     output1, vocab1 = model.get_module_output('buffer1')
     output2, vocab2 = model.get_module_output('buffer2')
@@ -122,7 +122,7 @@ def test_convolution(Simulator, plt, seed):
             'outABinv = inA * ~inB',
             'outAinvB = ~inA * inB',
             'outAinvBinv = ~inA * ~inB',
-            ).build(model)
+            ).build()
         nengo.Connection(nengo.Node([0, 1, 0, 0, 0]), model.inA.input)
         nengo.Connection(nengo.Node([0, 0, 1, 0, 0]), model.inB.input)
 

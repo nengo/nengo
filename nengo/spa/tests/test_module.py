@@ -18,7 +18,7 @@ class SpaCommunicationChannel(spa.Module):
             self.state_in = spa.State(dimensions)
             self.state_out = spa.State(dimensions)
 
-            spa.Actions('state_out = state_in').build(self)
+            spa.Actions('state_out = state_in').build()
 
         self.inputs = dict(
             default=self.state_in.inputs['default'],
@@ -128,7 +128,7 @@ def test_hierarchical(Simulator, seed, plt):
         model.comm_channel = SpaCommunicationChannel(d)
         model.out = spa.State(d)
 
-        spa.Actions('out = comm_channel').build(model)
+        spa.Actions('out = comm_channel').build()
         model.stimulus = spa.Input()
         model.stimulus.comm_channel = 'A'
 
@@ -175,7 +175,7 @@ def test_hierarchical_actions(Simulator, seed, plt):
         model.comm_channel = SpaCommunicationChannel(d)
         model.out = spa.State(d)
 
-        spa.Actions('out = comm_channel.state_out').build(model)
+        spa.Actions('out = comm_channel.state_out').build()
         model.stimulus = spa.Input()
         model.stimulus.comm_channel.state_in = 'A'
 
@@ -214,7 +214,7 @@ def test_no_magic_vocab_transform():
         model.a = spa.State(vocab=v1)
         model.b = spa.State(vocab=v2)
         with pytest.raises(SpaTypeError):
-            spa.Actions('b = a').build(model)
+            spa.Actions('b = a').build()
 
 
 @pytest.mark.parametrize('d1,d2,method,lookup', [
@@ -233,7 +233,7 @@ def test_casting_vocabs(d1, d2, method, lookup, Simulator, plt, rng):
     with spa.Module() as model:
         model.a = spa.State(vocab=v1)
         model.b = spa.State(vocab=v2)
-        spa.Actions('b = {}'.format(method), vocabs={'v2': v2}).build(model)
+        spa.Actions('b = {}'.format(method), vocabs={'v2': v2}).build()
         model.stimulus = spa.Input()
         model.stimulus.a = 'A'
         p = nengo.Probe(model.b.output, synapse=0.03)

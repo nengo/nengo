@@ -32,7 +32,7 @@ def test_am_spa_interaction(Simulator, seed, rng):
                                  wta_output=True,
                                  threshold_output=True)
 
-        nengo.spa.Actions('am = buf').build(m)
+        nengo.spa.Actions('am = buf').build()
 
     # Check to see if model builds properly. No functionality test needed
     with Simulator(m):
