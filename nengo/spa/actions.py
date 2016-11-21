@@ -1,8 +1,5 @@
 """Parsing of SPA actions."""
 
-import warnings
-
-from nengo.config import Config
 from nengo.exceptions import NetworkContextError, SpaParseError
 from nengo.network import Network
 from nengo.spa.basalganglia import BasalGanglia
@@ -10,6 +7,7 @@ from nengo.spa.thalamus import Thalamus
 from nengo.spa.spa_ast import (
     Action, ConstructionContext, DotProduct, Effect, Effects, Module,
     Reinterpret, Sink, Symbol, Translate)
+from nengo.utils.compat import is_integer
 
 
 class Parser(object):
@@ -166,14 +164,11 @@ class Parser(object):
             return Module(key)
 
 
-class Actions(Config):
+class Actions(object):
     """A collection of Action objects.
 
     The *args and **kwargs are treated as unnamed and named Actions,
-    respectively.  The list of actions are only generated once process()
-    is called, since it needs access to the list of module inputs and
-    outputs from the SPA object. The **kwargs are sorted alphabetically before
-    being processed.
+    respectively.
 
     The keyword argument `vocabs` is special in that it provides a dictionary
     mapping names to vocabularies. The vocabularies can then be used with those
@@ -181,22 +176,18 @@ class Actions(Config):
     """
 
     def __init__(self, *args, **kwargs):
-        super(Actions, self).__init__(BasalGanglia, Thalamus)
+        super(Actions, self).__init__()
 
         self.actions = []
-        self.effects = []
+        self.named_actions = {}
 
-        self.args = args
-        self.kwargs = kwargs
-        if 'vocabs' in kwargs:
-            self.vocabs = self.kwargs.pop('vocabs')
-        else:
-            self.vocabs = None
         self.construction_context = None
 
-        self.parse(self.vocabs, *self.args, **self.kwargs)
+        self.parse(*args, **kwargs)
 
-    def parse(self, vocabs, *args, **kwargs):
+    def parse(self, *args, **kwargs):
+        vocabs = kwargs.pop('vocabs', None)
+
         sorted_kwargs = sorted(kwargs.items())
 
         parser = Parser(vocabs=vocabs)
@@ -205,44 +196,21 @@ class Actions(Config):
         for name, action in sorted_kwargs:
             self._parse_and_add(parser, action, name=name)
 
-    def add(self, *args, **kwargs):
-        if 'vocabs' in kwargs:
-            vocabs = self.kwargs.pop('vocabs')
-            self.vocabs.update(vocabs)
+    def __len__(self):
+        return len(self.actions)
+
+    def __getitem__(self, key):
+        if is_integer(key):
+            return self.actions[key]
         else:
-            vocabs = None
-        self.args += args
-        self.kwargs.update(kwargs)
-        self.parse(vocabs, *args, **kwargs)
-
-    @property
-    def count(self):
-        """Return the number of actions."""
-        warnings.warn(DeprecationWarning(
-            "Use len(Actions.actions) or len(Actions.effects)."))
-        return len(self.args) + len(self.kwargs)
-
-    def process(self):
-        """Parse the actions and generate the list of Action objects."""
-        self.process_new_actions(self.vocabs, *self.args, **self.kwargs)
-
-    def process_new_actions(self, vocabs=None, *args, **kwargs):
-        with self.construction_context.root_module:
-            for action in self.effects + self.actions:
-                action.infer_types(self.construction_context.root_module, None)
-            # Infer types for all actions before doing any construction, so
-            # that all semantic pointers are added to the respective
-            # vocabularies so that the translate transform are identical.
-            for action in self.effects + self.actions:
-                action.construct(self.construction_context)
+            return self.named_actions[key]
 
     def _parse_and_add(self, parser, action, name=None):
         ast = parser.parse_action(
             action, len(self.actions), strict=False, name=name)
-        if isinstance(ast, Effects):
-            self.effects.append(ast)
-        else:
-            self.actions.append(ast)
+        self.actions.append(ast)
+        if name is not None:
+            self.named_actions[name] = ast
 
     def build(self, bg=None, thalamus=None):
         needs_bg = len(self.actions) > 0
@@ -253,7 +221,7 @@ class Actions(Config):
                 "block.")
         root_module = Network.context[-1]
 
-        with root_module, self:
+        with root_module:
             if needs_bg and bg is None:
                 bg = BasalGanglia(action_count=len(self.actions))
                 root_module.bg = bg
@@ -268,10 +236,10 @@ class Actions(Config):
         self.construction_context = ConstructionContext(
             root_module, bg=bg, thalamus=thalamus)
         with root_module:
-            for action in self.effects + self.actions:
+            for action in self.actions:
                 action.infer_types(root_module, None)
             # Infer types for all actions before doing any construction, so
             # that # all semantic pointers are added to the respective
             # vocabularies so that the translate transform are identical.
-            for action in self.effects + self.actions:
+            for action in self.actions:
                 action.construct(self.construction_context)

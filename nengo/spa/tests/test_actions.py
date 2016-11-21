@@ -161,3 +161,13 @@ class TestExceptions():
             actions = spa.Actions('state_a = reinterpret(state_b)')
             with pytest.raises(SpaTypeError):
                 actions.build()
+
+
+def test_access_actions():
+    actions = spa.Actions('a = b', 'b = c', named='c = d')
+
+    assert len(actions) == 3
+    assert str(actions[0]) == 'a = b'
+    assert str(actions[1]) == 'b = c'
+    assert str(actions[2]) == 'c = d'
+    assert str(actions['named']) == 'c = d'
