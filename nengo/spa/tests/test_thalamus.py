@@ -198,3 +198,30 @@ def test_errors():
         with spa.Module() as model:
             model.vision = spa.State(vocab=16)
             spa.Actions('0.5 --> motor=A').build()
+
+
+def test_constructed_objects_are_accessible():
+    with spa.Module() as model:
+        model.config[spa.State].vocab = 16
+        model.state1 = spa.State()
+        model.state2 = spa.State()
+        model.state3 = spa.State()
+
+        actions = spa.Actions(
+            'dot(state1, A) --> state2 = state3',
+            '0.5 --> state2 = B')
+        bg, thalamus, _ = actions.build()
+
+        print(thalamus.fixed_connections)
+        print(thalamus.gate_out_connections)
+        assert isinstance(thalamus.gates[0], nengo.Ensemble)
+        assert isinstance(thalamus.gate_in_connections[0], nengo.Connection)
+        assert isinstance(thalamus.gate_out_connections[0], nengo.Connection)
+        assert isinstance(thalamus.channels[0], spa.State)
+        assert isinstance(
+            thalamus.channel_out_connections[0], nengo.Connection)
+
+        assert isinstance(thalamus.fixed_connections[1], nengo.Connection)
+
+        assert thalamus.bg_connection.pre is bg.output
+        assert thalamus.bg_connection.post is thalamus.input

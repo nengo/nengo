@@ -243,3 +243,5 @@ class Actions(object):
             # vocabularies so that the translate transform are identical.
             for action in self.actions:
                 action.construct(self.construction_context)
+
+        return bg, thalamus, self.construction_context.constructed

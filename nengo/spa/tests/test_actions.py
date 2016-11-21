@@ -171,3 +171,29 @@ def test_access_actions():
     assert str(actions[1]) == 'b = c'
     assert str(actions[2]) == 'c = d'
     assert str(actions['named']) == 'c = d'
+
+
+def test_provides_access_to_constructed_objects_of_effect():
+    with spa.Module() as model:
+        model.config[spa.State].vocab = 16
+        model.a = spa.State()
+        model.b = spa.State()
+        model.c = spa.State()
+
+        actions = spa.Actions('c = a * b')
+        bg, thalamus, constructed = actions.build()
+
+        assert len(constructed[actions[0].effects[0]]) == 1
+        assert isinstance(
+            constructed[actions[0].effects[0]][0], nengo.Connection)
+        assert len(constructed[actions[0].effects[0].source]) == 3
+        n_connections = 0
+        n_bind = 0
+        for obj in constructed[actions[0].effects[0].source]:
+            if isinstance(obj, nengo.Connection):
+                n_connections += 1
+            elif isinstance(obj, spa.Bind):
+                n_bind += 1
+            else:
+                raise AssertionError("Unexpected object constructed for Bind.")
+        assert n_connections == 2 and n_bind == 1

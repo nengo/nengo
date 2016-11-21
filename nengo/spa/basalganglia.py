@@ -165,6 +165,7 @@ class BasalGanglia(Module):
         self.ampa_config = ampa_config
         self.gaba_config = gaba_config
 
+        self.input_connections = {}
         # Affects all ensembles / connections in the BG
         # unless overwritten with general_config
         config = nengo.Config(nengo.Ensemble, nengo.Connection)
@@ -254,6 +255,6 @@ class BasalGanglia(Module):
                              transform=self.output_weight)
 
     def connect_input(self, source, transform, index):
-        nengo.Connection(
+        self.input_connections[index] = nengo.Connection(
             source, self.input[index], transform=transform,
             synapse=self.input_synapse)

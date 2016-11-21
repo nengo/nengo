@@ -74,3 +74,15 @@ def test_scalar_product():
         model.scalar = spa.Scalar()
         spa.Actions('scalar*scalar --> scalar=1').build()
     # just testing network construction without exception here
+
+
+def test_constructed_input_connections_are_accessible():
+    with spa.Module() as model:
+        model.config[spa.State].vocab = 16
+        model.state1 = spa.State()
+        model.state2 = spa.State()
+
+        actions = spa.Actions('dot(state1, A) --> state2 = A')
+        bg, thalamus, _ = actions.build()
+
+        assert isinstance(bg.input_connections[0], nengo.Connection)

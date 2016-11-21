@@ -100,7 +100,13 @@ class Thalamus(Module):
         self.synapse_bg = synapse_bg
 
         self.gates = {}     # gating ensembles per action (created as needed)
-        self.channels = {}  # channels to pass transformed data between modules
+        self.channels = []  # channels to pass transformed data between modules
+
+        self.gate_in_connections = {}
+        self.gate_out_connections = {}
+        self.channel_out_connections = []
+        self.fixed_connections = {}
+        self.bg_connection = None
 
         with self:
             self.actions = nengo.networks.EnsembleArray(
@@ -118,7 +124,7 @@ class Thalamus(Module):
         self.input = self.actions.input
         self.output = self.actions.output
 
-    def construct_gate(self, index, net=None, label=None):
+    def construct_gate(self, index, net, label=None):
         """Construct a gate ensemble.
 
         The gate neurons have no activity when the action is selected, but are
@@ -140,8 +146,6 @@ class Thalamus(Module):
         :class:`nengo.Ensemble`
             The constructed gate.
         """
-        if net is None:
-            net = self.parent_module
         if label is None:
             label = 'gate[%d]' % index
         with net:
@@ -153,14 +157,14 @@ class Thalamus(Module):
                 net.bias = nengo.Node([1], label="bias")
             nengo.Connection(net.bias, gate, synapse=None)
 
-        nengo.Connection(
+        self.gate_in_connections[index] = nengo.Connection(
             self.actions.ensembles[index], self.gates[index],
             synapse=self.synapse_to_gate, transform=-1)
 
         return self.gates[index]
 
     def construct_channel(
-            self, target_module, target_input, net=None, label=None):
+            self, target_module, target_input, net, label=None):
         """Construct a channel.
 
         Channels are an additional neural population in-between a source
@@ -183,8 +187,6 @@ class Thalamus(Module):
         :class:`nengo.networks.EnsembleArray`
             The constructed channel.
         """
-        if net is None:
-            net = self.parent_module
         if label is None:
             if target_module.label is not None:
                 label = 'channel to ' + target_module.label
@@ -196,13 +198,16 @@ class Thalamus(Module):
             else:
                 vocab = target_input[1]
                 channel = State(vocab=vocab, label=label)
-        nengo.Connection(
-            channel.output, target_input[0], synapse=self.synapse_channel)
+
+        self.channels.append(channel)
+        self.channel_out_connections.append(nengo.Connection(
+            channel.output, target_input[0], synapse=self.synapse_channel))
         return channel
 
     def connect_bg(self, bg):
         """Connect a basal ganglia network to this thalamus."""
-        nengo.Connection(bg.output, self.input, synapse=self.synapse_bg)
+        self.bg_connection = nengo.Connection(
+            bg.output, self.input, synapse=self.synapse_bg)
 
     def connect_gate(self, index, channel):
         """Connect a gate to a channel for information routing.
@@ -222,7 +227,7 @@ class Thalamus(Module):
             raise NotImplementedError()
 
         inhibit = ([[-self.route_inhibit]] * (target.size_in))
-        nengo.Connection(
+        self.gate_out_connections[index] = nengo.Connection(
             self.gates[index], target, transform=inhibit,
             synapse=self.synapse_inhibit)
 
@@ -238,12 +243,13 @@ class Thalamus(Module):
         transform : array-like
             Transform to apply to apply to the connection.
         """
-        self.connect(self.actions.ensembles[index], target, transform)
+        self.fixed_connections[index] = self.connect(
+            self.actions.ensembles[index], target, transform)
 
     def connect(self, source, target, transform):
         """Create connection.
 
         The connection will use the thalamus' `synapse_channel`.
         """
-        nengo.Connection(
+        return nengo.Connection(
             source, target, transform=transform, synapse=self.synapse_channel)
