@@ -79,6 +79,7 @@ Operator precedence is defined as follows from highest to lowest priority:
 """
 
 import warnings
+from collections import defaultdict
 
 import numpy as np
 
@@ -111,18 +112,23 @@ class ConstructionContext(object):
         Network to add constructed components to.
     """
     __slots__ = [
-        'root_module', 'bg', 'thalamus', 'sink', 'active_net']
+        'root_module', 'bg', 'thalamus', 'bias', 'sink', 'active_net',
+        'constructed']
 
     def __init__(
             self, root_module, bg=None, thalamus=None,
-            sink=None, active_net=None):
+            sink=None, active_net=None, constructed=None):
         self.root_module = root_module
         self.bg = bg
         self.thalamus = thalamus
+        self.bias = None
         self.sink = sink
         if active_net is None:
             active_net = root_module
         self.active_net = active_net
+        if constructed is None:
+            constructed = defaultdict(list)
+        self.constructed = constructed
 
     def subcontext(self, sink=None, active_net=None):
         if sink is None:
@@ -131,7 +137,8 @@ class ConstructionContext(object):
             active_net = self.active_net
         return self.__class__(
             root_module=self.root_module, bg=self.bg,
-            thalamus=self.thalamus, sink=sink, active_net=active_net)
+            thalamus=self.thalamus, sink=sink, active_net=active_net,
+            constructed=self.constructed)
 
     @property
     def sink_module(self):
@@ -140,6 +147,9 @@ class ConstructionContext(object):
     @property
     def sink_input(self):
         return self.root_module.get_module_input(self.sink.name)
+
+    def add_constructed(self, ast_node, *objects):
+        self.constructed[ast_node].extend(objects)
 
 
 class Type(object):
@@ -155,6 +165,9 @@ class Type(object):
 
     def __str__(self):
         return self.name
+
+    def __hash__(self):
+        return hash(self.__class__) ^ hash(self.name)
 
     def __eq__(self, other):
         return self.__class__ is other.__class__ and self.name == other.name
@@ -184,6 +197,9 @@ class TVocabulary(Type):
 
     def __str__(self):
         return '{}<{}>'.format(self.name, self.vocab)
+
+    def __hash__(self):
+        return super(TVocabulary, self).__hash__() ^ hash(self.vocab)
 
     def __eq__(self, other):
         return (super(TVocabulary, self).__eq__(other) and
@@ -237,15 +253,16 @@ def infer_vocab(root_module, *nodes):
     return None
 
 
-def construct_bias(value, context):
+def construct_bias(ast_node, value, context):
     """Constructs a bias node (if not existent) and a transform to `value`."""
     with context.active_net:
-        if not hasattr(context.active_net, 'bias'):
-            context.active_net.bias = nengo.Node([1], label="bias")
+        if context.bias is None:
+            context.bias = nengo.Node([1], label="bias")
+            context.add_constructed(ast_node, context.bias)
     if isinstance(value, SemanticPointer):
         value = value.v
     transform = np.array([value]).T
-    return [Artifact(context.active_net.bias, transform=transform)]
+    return [Artifact(context.bias, transform=transform)]
 
 
 def value_to_transform(value):
@@ -306,6 +323,12 @@ class Node(object):
         A static node value does not change over time.
         """
         return self.staticity <= self.Staticity.FIXED
+
+    def __hash__(self):
+        h = hash(self.__class__)
+        for v in self.__dict__.values():
+            h ^= hash(v)
+        return h
 
     def __eq__(self, other):
         return (self.__class__ is other.__class__ and
@@ -402,7 +425,7 @@ class Scalar(Source):
         pass
 
     def construct(self, context):
-        return construct_bias(self.value, context)
+        return construct_bias(self, self.value, context)
 
     def evaluate(self):
         return self.value
@@ -437,7 +460,7 @@ class Symbol(Source):
 
     def construct(self, context):
         value = self.type.vocab[self.key].v
-        return construct_bias(value, context)
+        return construct_bias(self, value, context)
 
     def evaluate(self):
         return self.type.vocab[self.key]
@@ -531,13 +554,15 @@ class BinaryNode(Source):
     def _connect_binary_operation(self, context, net):
         with context.root_module:
             for artifact in self.lhs.construct(context):
-                nengo.Connection(
-                    artifact.nengo_source, net.input_a,
-                    transform=artifact.transform),
+                context.add_constructed(
+                    self, nengo.Connection(
+                        artifact.nengo_source, net.input_a,
+                        transform=artifact.transform))
             for artifact in self.rhs.construct(context):
-                nengo.Connection(
-                    artifact.nengo_source, net.input_b,
-                    transform=artifact.transform),
+                context.add_constructed(
+                    self, nengo.Connection(
+                        artifact.nengo_source, net.input_b,
+                        transform=artifact.transform))
 
 
 class BinaryOperation(BinaryNode):
@@ -609,7 +634,7 @@ class Product(BinaryOperation):
 
     def construct(self, context):
         if self.fixed:
-            return construct_bias(self.evaluate(), context)
+            return construct_bias(self, self.evaluate(), context)
 
         if self.lhs.fixed:
             tr = self.lhs.evaluate()
@@ -636,6 +661,7 @@ class Product(BinaryOperation):
             else:
                 raise NotImplementedError(
                     "Dynamic scaling of semantic pointer not implemented.")
+        context.add_constructed(self, net)
 
         self._connect_binary_operation(context, net)
         return [Artifact(net.output)]
@@ -654,7 +680,7 @@ class Sum(BinaryOperation):
 
     def construct(self, context):
         if self.fixed:
-            return construct_bias(self.evaluate(), context)
+            return construct_bias(self, self.evaluate(), context)
 
         return (self.lhs.construct(context) +
                 self.rhs.construct(context))
@@ -707,7 +733,7 @@ class ApproxInverse(UnaryOperation):
 
     def construct(self, context):
         if self.fixed:
-            return construct_bias(self.evaluate(), context)
+            return construct_bias(self, self.evaluate(), context)
 
         d = self.type.vocab.dimensions
         tr = np.eye(d)[-np.arange(d)]
@@ -723,7 +749,7 @@ class Negative(UnaryOperation):
 
     def construct(self, context):
         if self.fixed:
-            return construct_bias(self.evaluate(), context)
+            return construct_bias(self, self.evaluate(), context)
         return [x.add_transform(-1) for x in self.source.construct(context)]
 
     def evaluate(self):
@@ -762,7 +788,7 @@ class DotProduct(BinaryNode):
 
     def construct(self, context):
         if self.fixed:
-            return construct_bias(self.evaluate(), context)
+            return construct_bias(self, self.evaluate(), context)
 
         if self.lhs.fixed:
             tr = value_to_transform(self.lhs.evaluate()).T
@@ -777,6 +803,7 @@ class DotProduct(BinaryNode):
         with context.active_net:
             net = Compare(self.lhs.type.vocab, label=str(self))
             self._connect_binary_operation(context, net)
+        context.add_constructed(self, net)
         return [Artifact(net.output)]
 
     def evaluate(self):
@@ -918,8 +945,8 @@ class Effect(Node):
 
         artifacts = self.source.construct(context)
         for artifact in artifacts:
-            connect_fn(
-                artifact.nengo_source, target, transform=artifact.transform)
+            context.add_constructed(self, connect_fn(
+                artifact.nengo_source, target, transform=artifact.transform))
         return []
 
     def evaluate(self):
