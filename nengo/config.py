@@ -450,3 +450,8 @@ class ConfigParam(Parameter):
             raise ValidationError(
                 "Must be of type 'Config' (got type %r)."
                 % type(value).__name__, attr=self.name, obj=instance)
+
+    def __set__(self, instance, value):
+        if value is None:
+            value = Config()
+        super(ConfigParam, self).__set__(instance, value)
