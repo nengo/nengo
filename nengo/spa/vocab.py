@@ -60,7 +60,7 @@ class Vocabulary(object):
         as in ``keys``.
     """
 
-    def __init__(self, dimensions, strict=True, randomize=True, unitary=False,
+    def __init__(self, dimensions, strict=True, unitary=False,
                  max_similarity=0.1, include_pairs=False, rng=None):
 
         if not is_integer(dimensions) or dimensions < 1:
@@ -68,7 +68,6 @@ class Vocabulary(object):
                                   attr='dimensions', obj=self)
         self.dimensions = dimensions
         self.strict = strict
-        self.randomize = randomize
         self.unitary = unitary
         self.max_similarity = max_similarity
         self.pointers = {}
@@ -90,42 +89,33 @@ class Vocabulary(object):
     def create_pointer(self, attempts=100, transform=None):
         """Create a new semantic pointer.
 
-        This will take into account the randomize and max_similarity
-        parameters from self. If a pointer satisfying max_similarity
+        This will take into account the max_similarity
+        parameter from self. If a pointer satisfying max_similarity
         is not generated after the specified number of attempts, the
         candidate pointer with lowest maximum cosine with all existing
         pointers is returned.
         """
-        if self.randomize:
-            if len(self) == 0:
-                best_p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
-            else:
-                best_p = None
-                best_sim = np.inf
-                for _ in range(attempts):
-                    p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
-                    if transform is not None:
-                        p = eval('p.' + transform, {'p': p}, self)
-                    p_sim = np.max(np.dot(self.vectors, p.v))
-                    if p_sim < best_sim:
-                        best_p = p
-                        best_sim = p_sim
-                        if p_sim < self.max_similarity:
-                            break
-                else:
-                    warnings.warn(
-                        'Could not create a semantic pointer with '
-                        'max_similarity=%1.2f (D=%d, M=%d)'
-                        % (self.max_similarity, self.dimensions,
-                           len(self.pointers)))
+        if len(self) == 0:
+            best_p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
         else:
-            index = len(self.pointers)
-            if index >= self.dimensions:
-                raise ValidationError(
-                    "Tried to make more semantic pointers than "
-                    "dimensions with non-randomized Vocabulary",
-                    attr='dimensions', obj=self)
-            best_p = pointer.SemanticPointer(np.eye(self.dimensions)[index])
+            best_p = None
+            best_sim = np.inf
+            for _ in range(attempts):
+                p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
+                if transform is not None:
+                    p = eval('p.' + transform, {'p': p}, self)
+                p_sim = np.max(np.dot(self.vectors, p.v))
+                if p_sim < best_sim:
+                    best_p = p
+                    best_sim = p_sim
+                    if p_sim < self.max_similarity:
+                        break
+            else:
+                warnings.warn(
+                    'Could not create a semantic pointer with '
+                    'max_similarity=%1.2f (D=%d, M=%d)'
+                    % (self.max_similarity, self.dimensions,
+                       len(self.pointers)))
         return best_p
 
     def __contains__(self, key):
@@ -437,7 +427,6 @@ class Vocabulary(object):
         # Make new Vocabulary object
         subset = Vocabulary(self.dimensions,
                             self.strict,
-                            self.randomize,
                             self.unitary,
                             self.max_similarity,
                             self.include_pairs,
