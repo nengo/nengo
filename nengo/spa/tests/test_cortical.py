@@ -52,13 +52,14 @@ def test_transform(Simulator, seed):
     assert match[199] > 0.7
 
 
+# FIXME test different populate arguments
 def test_translate(Simulator, seed):
     with spa.Module(seed=seed) as model:
         model.buffer1 = spa.State(vocab=16)
         model.buffer2 = spa.State(vocab=32)
         model.input = spa.Input()
         model.input.buffer1 = 'A'
-        spa.Actions('buffer2=translate(buffer1)').build()
+        spa.Actions('buffer2=translate(buffer1, populate=True)').build()
 
     output, vocab = model.get_module_output('buffer2')
 

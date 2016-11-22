@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 
 import nengo
-from nengo.exceptions import ReadonlyError, SpaParseError, ValidationError
+from nengo.exceptions import SpaParseError, ValidationError
 from nengo.spa import pointer
 from nengo.utils.compat import is_number, is_integer, range
 
@@ -79,7 +79,6 @@ class Vocabulary(object):
         self.include_pairs = include_pairs
         self._identity = None
         self.rng = rng
-        self.readonly = False
         self.parent = None
 
     def __str__(self):
@@ -135,11 +134,6 @@ class Vocabulary(object):
 
         The pointer value can be a `.SemanticPointer` or a vector.
         """
-        if self.readonly:
-            raise ReadonlyError(attr='Vocabulary',
-                                msg="Cannot add semantic pointer '%s' to "
-                                    "read-only vocabulary." % key)
-
         if not key[0].isupper():
             raise SpaParseError(
                 "Semantic pointers must begin with a capital letter.")
@@ -330,7 +324,8 @@ class Vocabulary(object):
             v = v.v
         return np.dot(self.vector_pairs, v)
 
-    def transform_to(self, other, keys=None):
+    # FIXME rename to translate
+    def transform_to(self, other, populate=None, keys=None):
         """Create a linear transform from one Vocabulary to another.
 
         This is simply the sum of the outer products of the corresponding
@@ -357,18 +352,17 @@ class Vocabulary(object):
             return np.eye(self.dimensions)
         else:
             if keys is None:
-                if self.readonly and other.readonly:
-                    keys = [k for k in self.keys if k in other.keys]
-                elif self.readonly:
-                    keys = list(self.keys)
-                elif other.readonly:
-                    keys = list(other.keys)
-                else:
-                    keys = list(self.keys)
-                    keys.extend([k for k in other.keys if k not in self.keys])
+                keys = self.keys
 
             t = np.zeros((other.dimensions, self.dimensions), dtype=float)
             for k in keys:
+                if k not in other:
+                    if populate is None:
+                        continue  # TODO warn
+                    elif populate:
+                        other.populate(k)
+                    else:
+                        continue
                 a = self[k].v
                 b = other[k].v
                 t += np.outer(b, a)
@@ -441,9 +435,6 @@ class Vocabulary(object):
             subset.parent = self.parent
         else:
             subset.parent = self
-
-        # Make the subset read only
-        subset.readonly = True
 
         return subset
 

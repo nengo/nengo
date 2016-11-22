@@ -855,11 +855,12 @@ class Reinterpret(Source):
 
 
 class Translate(Source):
-    def __init__(self, source, vocab=None):
+    def __init__(self, source, vocab=None, populate=None):
         source = ensure_node(source)
         super(Translate, self).__init__(staticity=source.staticity)
         self.source = source
         self.vocab = vocab
+        self.populate = populate
 
     def infer_types(self, root_module, context_type):
         if self.vocab is None:
@@ -880,12 +881,14 @@ class Translate(Source):
                 "TVocabulary, but {}.".format(self.source, self.source.type))
 
     def construct(self, context):
-        tr = self.source.type.vocab.transform_to(self.type.vocab)
+        tr = self.source.type.vocab.transform_to(
+            self.type.vocab, populate=self.populate)
         artifacts = self.source.construct(context)
         return [a.add_transform(tr) for a in artifacts]
 
     def evaluate(self):
-        tr = self.source.type.vocab.transform_to(self.type.vocab)
+        tr = self.source.type.vocab.transform_to(
+            self.type.vocab, populate=self.populate)
         return SemanticPointer(np.dot(tr, self.source.evaluate().v))
 
     def __str__(self):
