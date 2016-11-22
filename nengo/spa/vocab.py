@@ -23,10 +23,6 @@ class Vocabulary(object):
         Number of dimensions for each semantic pointer.
     strict : bool, optional (Default: True)
         TODO
-    unitary : bool or list, optional (Default: False)
-        If True, all generated pointers will be unitary. If a list of
-        strings, any pointer whose name is in the list will be forced to be
-        unitary when created.
     max_similarity : float, optional (Default: 0.1)
         When randomly generating pointers, ensure that the cosine of the
         angle between the new pointer and all existing pointers is less
@@ -60,15 +56,14 @@ class Vocabulary(object):
         as in ``keys``.
     """
 
-    def __init__(self, dimensions, strict=True, unitary=False,
-                 max_similarity=0.1, include_pairs=False, rng=None):
+    def __init__(self, dimensions, strict=True, max_similarity=0.1,
+                 include_pairs=False, rng=None):
 
         if not is_integer(dimensions) or dimensions < 1:
             raise ValidationError("dimensions must be a positive integer",
                                   attr='dimensions', obj=self)
         self.dimensions = dimensions
         self.strict = strict
-        self.unitary = unitary
         self.max_similarity = max_similarity
         self.pointers = {}
         self.keys = []
@@ -421,7 +416,6 @@ class Vocabulary(object):
         # Make new Vocabulary object
         subset = Vocabulary(self.dimensions,
                             self.strict,
-                            self.unitary,
                             self.max_similarity,
                             self.include_pairs,
                             self.rng)
