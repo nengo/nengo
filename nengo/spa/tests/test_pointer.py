@@ -71,8 +71,7 @@ def test_randomize(rng):
 
 
 def test_make_unitary(rng):
-    a = SemanticPointer(100, rng=rng)
-    a.make_unitary()
+    a = SemanticPointer(100, rng=rng).unitary()
     assert np.allclose(1, a.length())
     assert np.allclose(1, (a * a).length())
     assert np.allclose(1, (a * a * a).length())

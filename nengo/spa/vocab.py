@@ -6,7 +6,7 @@ import numpy as np
 import nengo
 from nengo.exceptions import ReadonlyError, SpaParseError, ValidationError
 from nengo.spa import pointer
-from nengo.utils.compat import is_iterable, is_number, is_integer, range
+from nengo.utils.compat import is_number, is_integer, range
 
 
 class Vocabulary(object):
@@ -21,10 +21,8 @@ class Vocabulary(object):
     -----------
     dimensions : int
         Number of dimensions for each semantic pointer.
-    randomize : bool, optional (Default: True)
-        Whether to randomly generate pointers. If False, the semantic
-        pointers will be ``[1, 0, 0, ...], [0, 1, 0, ...], [0, 0, 1, ...]``
-        and so on.
+    strict : bool, optional (Default: True)
+        TODO
     unitary : bool or list, optional (Default: False)
         If True, all generated pointers will be unitary. If a list of
         strings, any pointer whose name is in the list will be forced to be
@@ -62,13 +60,14 @@ class Vocabulary(object):
         as in ``keys``.
     """
 
-    def __init__(self, dimensions, randomize=True, unitary=False,
+    def __init__(self, dimensions, strict=True, randomize=True, unitary=False,
                  max_similarity=0.1, include_pairs=False, rng=None):
 
         if not is_integer(dimensions) or dimensions < 1:
             raise ValidationError("dimensions must be a positive integer",
                                   attr='dimensions', obj=self)
         self.dimensions = dimensions
+        self.strict = strict
         self.randomize = randomize
         self.unitary = unitary
         self.max_similarity = max_similarity
@@ -88,7 +87,7 @@ class Vocabulary(object):
         return '{}-dimensional vocab at 0x{:x}'.format(
             self.dimensions, id(self))
 
-    def create_pointer(self, attempts=100, unitary=False):
+    def create_pointer(self, attempts=100, transform=None):
         """Create a new semantic pointer.
 
         This will take into account the randomize and max_similarity
@@ -98,29 +97,27 @@ class Vocabulary(object):
         pointers is returned.
         """
         if self.randomize:
-            if self.vectors.shape[0] == 0:
-                p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
+            if len(self) == 0:
+                best_p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
             else:
-                p_sim = np.inf
+                best_p = None
+                best_sim = np.inf
                 for _ in range(attempts):
-                    pp = pointer.SemanticPointer(self.dimensions, rng=self.rng)
-                    pp_sim = max(np.dot(self.vectors, pp.v))
-                    if pp_sim < p_sim:
-                        p = pp
-                        p_sim = pp_sim
+                    p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
+                    if transform is not None:
+                        p = eval('p.' + transform, {'p': p}, self)
+                    p_sim = np.max(np.dot(self.vectors, p.v))
+                    if p_sim < best_sim:
+                        best_p = p
+                        best_sim = p_sim
                         if p_sim < self.max_similarity:
                             break
                 else:
                     warnings.warn(
                         'Could not create a semantic pointer with '
                         'max_similarity=%1.2f (D=%d, M=%d)'
-                        % (self.max_similarity,
-                           self.dimensions,
+                        % (self.max_similarity, self.dimensions,
                            len(self.pointers)))
-
-            # Check and make vector unitary if needed
-            if unitary:
-                p.make_unitary()
         else:
             index = len(self.pointers)
             if index >= self.dimensions:
@@ -128,28 +125,20 @@ class Vocabulary(object):
                     "Tried to make more semantic pointers than "
                     "dimensions with non-randomized Vocabulary",
                     attr='dimensions', obj=self)
-            p = pointer.SemanticPointer(np.eye(self.dimensions)[index])
-        return p
+            best_p = pointer.SemanticPointer(np.eye(self.dimensions)[index])
+        return best_p
+
+    def __contains__(self, key):
+        return key in self.keys
+
+    def __len__(self):
+        return len(self.vectors)
 
     def __getitem__(self, key):
-        """Return the semantic pointer with the requested name.
-
-        If one does not exist, automatically create one. The key must be
-        a valid semantic pointer name, which is any Python identifier starting
-        with a capital letter.
-        """
-        if not key[0].isupper():
-            raise SpaParseError(
-                "Semantic pointers must begin with a capital letter.")
-        value = self.pointers.get(key, None)
-        if value is None:
-            if is_iterable(self.unitary):
-                unitary = key in self.unitary
-            else:
-                unitary = self.unitary
-            value = self.create_pointer(unitary=unitary)
-            self.add(key, value)
-        return value
+        """Return the semantic pointer with the requested name."""
+        if not self.strict and key not in self:
+            self.add(key, self.create_pointer())
+        return self.pointers[key]
 
     def add(self, key, p):
         """Add a new semantic pointer to the vocabulary.
@@ -181,6 +170,21 @@ class Vocabulary(object):
                 self.key_pairs.append('%s*%s' % (k, key))
                 v = (self.pointers[k] * p).v
                 self.vector_pairs = np.vstack([self.vector_pairs, v])
+
+    def populate(self, pointers):
+        for p_expr in pointers.split(','):
+            assign_split = p_expr.split('=', 1)
+            modifier_split = p_expr.split('.', 1)
+            if len(assign_split) > 1:
+                name, value_expr = assign_split
+                value = eval(value_expr, {}, self)
+            elif len(modifier_split) > 1:
+                name = modifier_split[0]
+                value = self.create_pointer(transform=modifier_split[1])
+            else:
+                name = p_expr
+                value = self.create_pointer()
+            self.add(name.strip(), value)
 
     @property
     def include_pairs(self):
@@ -214,8 +218,7 @@ class Vocabulary(object):
 
         This uses the Python ``eval()`` function, so any Python operators that
         have been defined for SemanticPointers are valid (``+``, ``-``, ``*``,
-        ``~``, ``()``). Any terms do not exist in the vocabulary will be
-        automatically generated. Valid semantic pointer terms must start
+        ``~``, ``()``). Valid semantic pointer terms must start
         with a capital letter.
 
         If the expression returns a scalar (int or float), a scaled version
@@ -419,36 +422,6 @@ class Vocabulary(object):
         pcorrect = (1 - perror1) ** vocab_size
         return pcorrect
 
-    def extend(self, keys, unitary=False):
-        """Extends the vocabulary with additional keys.
-
-        Creates and adds the semantic pointers listed in keys to the
-        vocabulary.
-
-        Parameters
-        ----------
-        keys : list
-            List of semantic pointer names to be added to the vocabulary.
-        unitary : bool or list, optional (Default: False)
-            If True, all generated pointers will be unitary. If a list of
-            strings, any pointer whose name is on the list will be forced to
-            be unitary when created.
-        """
-        if is_iterable(unitary):
-            if is_iterable(self.unitary):
-                self.unitary.extend(unitary)
-            else:
-                self.unitary = list(unitary)
-        elif unitary:
-            if is_iterable(self.unitary):
-                self.unitary.extend(keys)
-            else:
-                self.unitary = list(keys)
-
-        for key in keys:
-            if key not in self.keys:
-                self[key]
-
     def create_subset(self, keys):
         """Returns the subset of this vocabulary.
 
@@ -463,6 +436,7 @@ class Vocabulary(object):
         """
         # Make new Vocabulary object
         subset = Vocabulary(self.dimensions,
+                            self.strict,
                             self.randomize,
                             self.unitary,
                             self.max_similarity,
@@ -522,7 +496,8 @@ class VocabularyMap(Mapping):
 
     def get_or_create(self, dimensions):
         if dimensions not in self._vocabs:
-            self._vocabs[dimensions] = Vocabulary(dimensions, rng=self.rng)
+            self._vocabs[dimensions] = Vocabulary(
+                dimensions, strict=False, rng=self.rng)
         return self._vocabs[dimensions]
 
     def __iter__(self):

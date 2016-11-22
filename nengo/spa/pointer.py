@@ -39,6 +39,11 @@ class SemanticPointer(object):
         if nrm > 0:
             self.v /= nrm
 
+    def normalized(self):
+        nrm = np.linalg.norm(self.v)
+        if nrm > 0:
+            return SemanticPointer(self.v / nrm)
+
     def __str__(self):
         return str(self.v)
 
@@ -51,14 +56,14 @@ class SemanticPointer(object):
         self.v = rng.randn(N)
         self.normalize()
 
-    def make_unitary(self):
+    def unitary(self):
         """Make the vector unitary."""
         fft_val = np.fft.fft(self.v)
         fft_imag = fft_val.imag
         fft_real = fft_val.real
         fft_norms = np.sqrt(fft_imag ** 2 + fft_real ** 2)
         fft_unit = fft_val / fft_norms
-        self.v = np.array((np.fft.ifft(fft_unit)).real)
+        return SemanticPointer(np.array((np.fft.ifft(fft_unit)).real))
 
     def __add__(self, other):
         return SemanticPointer(data=self.v + other.v)
