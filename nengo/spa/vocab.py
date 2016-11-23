@@ -6,6 +6,7 @@ import numpy as np
 import nengo
 from nengo.exceptions import SpaParseError, ValidationError
 from nengo.spa import pointer
+from nengo.spa.pointer import Identity
 from nengo.utils.compat import is_number, is_integer, range
 
 
@@ -52,7 +53,6 @@ class Vocabulary(object):
         self.keys = []
         self.key_pairs = None
         self.vectors = np.zeros((0, dimensions), dtype=float)
-        self._identity = None
         self.rng = rng
         self.parent = None
 
@@ -161,20 +161,11 @@ class Vocabulary(object):
                 "Semantic pointers must start with a capital letter.")
 
         if is_number(value):
-            value = value * self.identity
+            value = value * Identity(self.dimensions)
         if not isinstance(value, pointer.SemanticPointer):
             raise SpaParseError(
                 "The result of parsing '%s' is not a SemanticPointer" % text)
         return value
-
-    @property
-    def identity(self):
-        """Return the identity vector."""
-        if self._identity is None:
-            v = np.zeros(self.dimensions)
-            v[0] = 1
-            self._identity = pointer.SemanticPointer(v)
-        return self._identity
 
     def text(self, v, minimum_count=1, maximum_count=None,  # noqa: C901
              threshold=0.1, join=';', terms=None, normalize=False):

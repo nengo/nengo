@@ -35,7 +35,7 @@ def test_populate(rng):
     assert np.allclose(v['E'].v, v.parse('A + 2 * B').v)
     assert np.linalg.norm(v['E'].v) > 2.
 
-    v.populate('F = (A + 2 * B).normalized()')  # FIXME SPs are always normalized
+    v.populate('F = (A + 2 * B).normalized()')
     assert np.allclose(v['F'].v, v.parse('A + 2 * B').normalized().v)
     np.testing.assert_almost_equal(np.linalg.norm(v['F'].v), 1.)
 
@@ -74,11 +74,6 @@ def test_invalid_dimensions():
         Vocabulary(0)
     with pytest.raises(ValidationError):
         Vocabulary(-1)
-
-
-def test_identity(rng):
-    v = Vocabulary(64, rng=rng)
-    assert np.allclose(v.identity.v, np.eye(64)[0])
 
 
 def test_text(rng):
