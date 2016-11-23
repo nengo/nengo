@@ -137,13 +137,6 @@ def test_entry_point(Simulator):
     assert Simulator in sims
 
 
-def test_model_attribute_is_deprecated(RefSimulator):
-    with warns(DeprecationWarning):
-        with RefSimulator(nengo.Network()) as sim:
-            pass
-        assert sim.model
-
-
 def test_signal_init_values(RefSimulator):
     """Tests that initial values are not overwritten."""
     zero = Signal([0])

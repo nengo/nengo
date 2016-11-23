@@ -76,9 +76,9 @@ def gen_eval_points(ens, eval_points, rng, scale_eval_points=True):
     return eval_points
 
 
-def get_activities(params, ens, eval_points):
-    x = np.dot(eval_points, params[ens].encoders.T / ens.radius)
-    return ens.neuron_type.rates(x, params[ens].gain, params[ens].bias)
+def get_activities(built_ens, ens, eval_points):
+    x = np.dot(eval_points, built_ens.encoders.T / ens.radius)
+    return ens.neuron_type.rates(x, built_ens.gain, built_ens.bias)
 
 
 def get_gain_bias(ens, rng=np.random):

@@ -46,15 +46,6 @@ Release History
   (`#1076 <https://github.com/nengo/nengo/issues/1076>`_,
   `#1175 <https://github.com/nengo/nengo/pull/1175>`_)
 
-**Deprecated**
-
-- Access to ``nengo.Simulator.model`` is deprecated. To access static data
-  generated during the build use ``nengo.Simulator.data``. It provides access
-  to everything that ``nengo.Simulator.model.params`` used to provide access to
-  and is the canonical way to access this data across different backends.
-  (`#1145 <https://github.com/nengo/nengo/issues/1145>`_,
-  `#1173 <https://github.com/nengo/nengo/pull/1173>`_)
-
 2.2.0 (September 12, 2016)
 ==========================
 

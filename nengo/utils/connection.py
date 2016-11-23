@@ -101,8 +101,9 @@ def eval_point_decoding(conn, sim, eval_points=None):
     else:
         eval_points = np.asarray(eval_points)
 
+    ens = conn.pre_obj
     weights = sim.data[conn].weights
-    activities = get_activities(sim.data, conn.pre_obj, eval_points)
+    activities = get_activities(sim.data[ens], ens, eval_points)
     decoded = np.dot(activities, weights.T)
     targets = get_targets(conn, eval_points)
     return eval_points, targets, decoded

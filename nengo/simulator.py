@@ -111,6 +111,9 @@ class Simulator(object):
     dg : dict
         A dependency graph mapping from each `.Operator` to the operators
         that depend on that operator.
+    model : Model
+        The `.Model` containing the signals and operators necessary to
+        simulate the network.
     signals : SignalDict
         The `.SignalDict` mapping from `.Signal` instances to NumPy arrays.
 
@@ -131,28 +134,28 @@ class Simulator(object):
         self.progress_bar = progress_bar
 
         if model is None:
-            self._model = Model(dt=float(dt),
-                                label="%s, dt=%f" % (network, dt),
-                                decoder_cache=get_default_decoder_cache())
+            self.model = Model(dt=float(dt),
+                               label="%s, dt=%f" % (network, dt),
+                               decoder_cache=get_default_decoder_cache())
         else:
-            self._model = model
+            self.model = model
 
         if network is not None:
             # Build the network into the model
-            self._model.build(network, progress_bar=self.progress_bar)
+            self.model.build(network, progress_bar=self.progress_bar)
 
         # -- map from Signal.base -> ndarray
         self.signals = SignalDict()
-        for op in self._model.operators:
+        for op in self.model.operators:
             op.init_signals(self.signals)
 
         # Order the steps (they are made in `Simulator.reset`)
-        self.dg = operator_depencency_graph(self._model.operators)
+        self.dg = operator_depencency_graph(self.model.operators)
         self._step_order = [op for op in toposort(self.dg)
                             if hasattr(op, 'make_step')]
 
         # Add built states to the probe dictionary
-        self._probe_outputs = self._model.params
+        self._probe_outputs = self.model.params
 
         # Provide a nicer interface to probe outputs
         self.data = ProbeDict(self._probe_outputs)
@@ -166,7 +169,7 @@ class Simulator(object):
             warnings.warn(
                 "Simulator with model=%s was deallocated while open. Please "
                 "close simulators manually to ensure resources are properly "
-                "freed." % self._model, ResourceWarning)
+                "freed." % self.model, ResourceWarning)
 
     def __enter__(self):
         return self
@@ -177,7 +180,7 @@ class Simulator(object):
     @property
     def dt(self):
         """(float) The time step of the simulator."""
-        return self._model.dt
+        return self.model.dt
 
     @dt.setter
     def dt(self, dummy):
@@ -187,19 +190,6 @@ class Simulator(object):
     def n_steps(self):
         """(int) The current time step of the simulator."""
         return self._n_steps
-
-    @property
-    def model(self):
-        """The built `.Model` used to simulate the network.
-
-        .. note:: This attribute is deprecated as of Nengo 2.3.0.
-                  Use ``Simulator.data`` instead.
-        """
-        warnings.warn(
-            "The 'model' attribute is deprecated. If you are trying to access "
-            "build information via `model.params`, use the `Simulator.data` "
-            "attribute instead.", DeprecationWarning)
-        return self._model
 
     @property
     def time(self):
@@ -220,16 +210,16 @@ class Simulator(object):
         """Copy all probed signals to buffers."""
         self._probe_step_time()
 
-        for probe in self._model.probes:
+        for probe in self.model.probes:
             period = (1 if probe.sample_every is None else
                       probe.sample_every / self.dt)
             if self.n_steps % period < 1:
-                tmp = self.signals[self._model.sig[probe]['in']].copy()
+                tmp = self.signals[self.model.sig[probe]['in']].copy()
                 self._probe_outputs[probe].append(tmp)
 
     def _probe_step_time(self):
-        self._n_steps = self.signals[self._model.step].copy()
-        self._time = self.signals[self._model.time].copy()
+        self._n_steps = self.signals[self.model.step].copy()
+        self._time = self.signals[self.model.time].copy()
 
     def reset(self, seed=None):
         """Reset the simulator state.
@@ -258,7 +248,7 @@ class Simulator(object):
                        for op in self._step_order]
 
         # clear probe data
-        for probe in self._model.probes:
+        for probe in self.model.probes:
             self._probe_outputs[probe] = []
 
         self._probe_step_time()
@@ -281,7 +271,7 @@ class Simulator(object):
         """
         steps = int(np.round(float(time_in_seconds) / self.dt))
         logger.info("Running %s for %f seconds, or %d steps",
-                    self._model.label, time_in_seconds, steps)
+                    self.model.label, time_in_seconds, steps)
         self.run_steps(steps, progress_bar=progress_bar)
 
     def run_steps(self, steps, progress_bar=None):

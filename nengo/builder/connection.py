@@ -83,7 +83,8 @@ def get_targets(conn, eval_points):
 
 def build_linear_system(model, conn, rng):
     eval_points = get_eval_points(model, conn, rng)
-    activities = get_activities(model.params, conn.pre_obj, eval_points)
+    ens = conn.pre_obj
+    activities = get_activities(model.params[ens], ens, eval_points)
     if np.count_nonzero(activities) == 0:
         raise BuildError(
             "Building %s: 'activites' matrix is all zero for %s. "
