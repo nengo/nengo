@@ -28,36 +28,19 @@ class Vocabulary(object):
         angle between the new pointer and all existing pointers is less
         than this amount. If the system is unable to find such a pointer
         after 100 tries, a warning message is printed.
-    include_pairs : bool, optional (Default: False)
-        Whether to keep track of all pairs of pointers as well. This
-        is helpful for determining if a vector is similar to ``A*B`` (in
-        addition to being similar to ``A`` or ``B``), but exponentially
-        increases the processing time.
     rng : `numpy.random.RandomState`, optional (Default: None)
         The random number generator to use to create new vectors.
 
     Attributes
     ----------
-    include_pairs : bool
-        Whether to keep track of all pairs of pointers as well. This
-        is helpful for determining if a vector is similar to ``A*B`` (in
-        addition to being similar to ``A`` or ``B``), but exponentially
-        increases the processing time.
-    key_pairs : list
-        The names of all pairs of semantic pointers
-        (e.g., ``['A*B', 'A*C', 'B*C']``).
     keys : list of strings
         The names of all known semantic pointers (e.g., ``['A', 'B', 'C']``).
-    vector_pairs : ndarray
-        The values for each pair of semantic pointers, convolved together,
-        in the same order as in ``key_pairs``.
     vectors : ndarray
         All of the semantic pointer values in a matrix, in the same order
         as in ``keys``.
     """
 
-    def __init__(self, dimensions, strict=True, max_similarity=0.1,
-                 include_pairs=False, rng=None):
+    def __init__(self, dimensions, strict=True, max_similarity=0.1, rng=None):
 
         if not is_integer(dimensions) or dimensions < 1:
             raise ValidationError("dimensions must be a positive integer",
@@ -69,9 +52,6 @@ class Vocabulary(object):
         self.keys = []
         self.key_pairs = None
         self.vectors = np.zeros((0, dimensions), dtype=float)
-        self.vector_pairs = None
-        self._include_pairs = None
-        self.include_pairs = include_pairs
         self._identity = None
         self.rng = rng
         self.parent = None
@@ -143,13 +123,6 @@ class Vocabulary(object):
         self.keys.append(key)
         self.vectors = np.vstack([self.vectors, p.v])
 
-        # Generate vector pairs
-        if self.include_pairs and len(self.keys) > 1:
-            for k in self.keys[:-1]:
-                self.key_pairs.append('%s*%s' % (k, key))
-                v = (self.pointers[k] * p).v
-                self.vector_pairs = np.vstack([self.vector_pairs, v])
-
     def populate(self, pointers):
         for p_expr in pointers.split(','):
             assign_split = p_expr.split('=', 1)
@@ -164,33 +137,6 @@ class Vocabulary(object):
                 name = p_expr
                 value = self.create_pointer()
             self.add(name.strip(), value)
-
-    @property
-    def include_pairs(self):
-        return self._include_pairs
-
-    @include_pairs.setter
-    def include_pairs(self, value):
-        """Adjusts whether key pairs are kept track of by the vocabulary.
-
-        If this is turned on, we need to compute all the pairs of terms
-        already existing.
-        """
-        if value == self._include_pairs:
-            return
-        self._include_pairs = value
-        if self._include_pairs:
-            self.key_pairs = []
-            self.vector_pairs = np.zeros((0, self.dimensions), dtype=float)
-            for i in range(1, len(self.keys)):
-                for k in self.keys[:i]:
-                    key = self.keys[i]
-                    self.key_pairs.append('%s*%s' % (k, key))
-                    v = (self.pointers[k] * self.pointers[key]).v
-                    self.vector_pairs = np.vstack((self.vector_pairs, v))
-        else:
-            self.key_pairs = None
-            self.vector_pairs = None
 
     def parse(self, text):
         """Evaluate a text string and return the corresponding SemanticPointer.
@@ -272,10 +218,10 @@ class Vocabulary(object):
 
         m = np.dot(self.vectors, v)
         matches = [(mm, self.keys[i]) for i, mm in enumerate(m)]
-        if self.include_pairs:
-            m2 = np.dot(self.vector_pairs, v)
-            matches2 = [(mm2, self.key_pairs[i]) for i, mm2 in enumerate(m2)]
-            matches.extend(matches2)
+        # if self.include_pairs:
+            # m2 = np.dot(self.vector_pairs, v)
+            # matches2 = [(mm2, self.key_pairs[i]) for i, mm2 in enumerate(m2)]
+            # matches.extend(matches2)
         if terms is not None:
             # TODO: handle the terms parameter more efficiently, so we don't
             # compute a whole bunch of dot products and then throw them out
@@ -305,21 +251,9 @@ class Vocabulary(object):
             v = v.v
         return np.dot(self.vectors, v)
 
-    def dot_pairs(self, v):
-        """Returns the dot product with all pairs of terms in the Vocabulary.
-
-        Input parameter can either be a `.SemanticPointer` or a vector.
-        """
-        if not self.include_pairs:
-            raise ValidationError(
-                "'include_pairs' must be True to call dot_pairs",
-                attr='include_pairs', obj=self)
-
-        if isinstance(v, pointer.SemanticPointer):
-            v = v.v
-        return np.dot(self.vector_pairs, v)
-
     # FIXME rename to translate
+    # actually transform_to might be better because a transform matrix is
+    # returned and not a translated vocab
     def transform_to(self, other, populate=None, keys=None):
         """Create a linear transform from one Vocabulary to another.
 
@@ -414,10 +348,7 @@ class Vocabulary(object):
             new vocabulary.
         """
         # Make new Vocabulary object
-        subset = Vocabulary(self.dimensions,
-                            self.strict,
-                            self.max_similarity,
-                            self.include_pairs,
+        subset = Vocabulary(self.dimensions, self.strict, self.max_similarity,
                             self.rng)
 
         # Copy over the new keys

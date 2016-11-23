@@ -16,23 +16,6 @@ def test_add(rng):
     assert np.allclose(v.vectors, [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
 
-def test_include_pairs(rng):
-    v = Vocabulary(10, rng=rng)
-    v.populate('A, B, C')
-    assert v.key_pairs is None
-    v.include_pairs = True
-    assert v.key_pairs == ['A*B', 'A*C', 'B*C']
-    v.include_pairs = False
-    assert v.key_pairs is None
-    v.include_pairs = True
-    v.populate('D')
-    assert v.key_pairs == ['A*B', 'A*C', 'B*C', 'A*D', 'B*D', 'C*D']
-
-    v = Vocabulary(12, include_pairs=True, rng=rng)
-    v.populate('A, B, C')
-    assert v.key_pairs == ['A*B', 'A*C', 'B*C']
-
-
 def test_populate(rng):
     v = Vocabulary(64, rng=rng)
 
@@ -234,11 +217,6 @@ def test_subset(rng):
     # Test creating a subset from a subset (it should create off the parent)
     v3 = v2.create_subset(['C', 'E'])
     assert v3.parent is v2.parent and v2.parent is v1
-
-    v3.include_pairs = True
-    assert v3.key_pairs == ['C*E']
-    assert not v1.include_pairs
-    assert not v2.include_pairs
 
     # Test transform_to between subsets (should be identity transform)
     t = v1.transform_to(v2)
