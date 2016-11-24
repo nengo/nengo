@@ -41,6 +41,7 @@ class Bind(Module):
                  invert_b=False, input_magnitude=1.0, label=None, seed=None,
                  add_to_container=None):
         super(Bind, self).__init__(label, seed, add_to_container)
+        self.input_magnitude = input_magnitude
         if vocab is None:
             # use the default vocab for this number of dimensions
             vocab = dimensions

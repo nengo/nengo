@@ -195,8 +195,9 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
     with net:
         net.A = nengo.Node(size_in=dimensions, label="A")
         net.B = nengo.Node(size_in=dimensions, label="B")
+        net.input_magnitude = input_magnitude * 2 / np.sqrt(dimensions)
         net.product = Product(n_neurons, tr_out.shape[1],
-                              input_magnitude=input_magnitude * 2)
+                input_magnitude=net.input_magnitude)
         net.output = nengo.Node(size_in=dimensions, label="output")
 
         nengo.Connection(net.A, net.product.A, transform=tr_a, synapse=None)

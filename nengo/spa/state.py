@@ -47,9 +47,11 @@ class State(Module):
 
     def __init__(self, dimensions, subdimensions=16, neurons_per_dimension=50,
                  feedback=0.0, feedback_synapse=0.1, vocab=None, label=None,
-                 seed=None, add_to_container=None):
+                 represent_identity=False, seed=None, add_to_container=None):
         super(State, self).__init__(label, seed, add_to_container)
         self.dim_per_ensemble = subdimensions
+
+        self.represent_identity = represent_identity
 
         if vocab is None:
             # use the default one for this dimensionality
@@ -73,8 +75,10 @@ class State(Module):
                 neurons_per_dimension * subdimensions,
                 dimensions // subdimensions,
                 ens_dimensions=subdimensions,
-                radius=np.sqrt(float(subdimensions) / dimensions),
+                radius=3.5 * np.sqrt(float(subdimensions) / dimensions),
                 label='state')
+            if represent_identity:
+                self.state_ensembles.ea_ensembles[0].radius = 1
             self.input = self.state_ensembles.input
             self.output = self.state_ensembles.output
 
