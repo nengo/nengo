@@ -72,6 +72,7 @@ class Module(nengo.Network, SupportDefaultsMixin):
     def config(self):
         return _AutoConfig(self._config)
 
+    # FIXME remove?
     @property
     def stimuli(self):
         if self._stimuli is None:

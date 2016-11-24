@@ -1,13 +1,17 @@
 from collections import Mapping
+import re
 import warnings
 
 import numpy as np
 
 import nengo
-from nengo.exceptions import SpaParseError, ValidationError
+from nengo.exceptions import NengoWarning, SpaParseError, ValidationError
 from nengo.spa import pointer
 from nengo.spa.pointer import Identity
 from nengo.utils.compat import is_number, is_integer, range
+
+
+valid_sp_regex = re.compile('[A-Z][_a-zA-Z0-9]*')
 
 
 class Vocabulary(object):
@@ -51,7 +55,6 @@ class Vocabulary(object):
         self.max_similarity = max_similarity
         self.pointers = {}
         self.keys = []
-        self.key_pairs = None
         self.vectors = np.zeros((0, dimensions), dtype=float)
         self.rng = rng
         self.parent = None
@@ -109,9 +112,10 @@ class Vocabulary(object):
 
         The pointer value can be a `.SemanticPointer` or a vector.
         """
-        if not key[0].isupper():
+        if not valid_sp_regex.match(key):
             raise SpaParseError(
-                "Semantic pointers must begin with a capital letter.")
+                "Invalid Semantic Pointer name. Valid names are valid "
+                "Python 2 identifiers beginning with a capital letter.")
         if not isinstance(p, pointer.SemanticPointer):
             p = pointer.SemanticPointer(p)
 
@@ -129,7 +133,7 @@ class Vocabulary(object):
             modifier_split = p_expr.split('.', 1)
             if len(assign_split) > 1:
                 name, value_expr = assign_split
-                value = eval(value_expr, {}, self)
+                value = eval(value_expr.strip(), {}, self)
             elif len(modifier_split) > 1:
                 name = modifier_split[0]
                 value = self.create_pointer(transform=modifier_split[1])
@@ -161,77 +165,14 @@ class Vocabulary(object):
                 "Semantic pointers must start with a capital letter.")
 
         if is_number(value):
-            value = value * Identity(self.dimensions)
-        if not isinstance(value, pointer.SemanticPointer):
+            value *= Identity(self.dimensions)
+        elif not isinstance(value, pointer.SemanticPointer):
             raise SpaParseError(
-                "The result of parsing '%s' is not a SemanticPointer" % text)
+                "The result of parsing '%s' is not a SemanticPointer." % text)
         return value
 
-    def text(self, v, minimum_count=1, maximum_count=None,  # noqa: C901
-             threshold=0.1, join=';', terms=None, normalize=False):
-        """Return a human-readable text version of the provided vector.
-
-        This is meant to give a quick text version of a vector for display
-        purposes. To do this, compute the dot product between the vector
-        and all the terms in the vocabulary. The top few vectors are
-        chosen for inclusion in the text. It will try to only return
-        terms with a match above the threshold, but will always return
-        at least minimum_count and at most maximum_count terms. Terms
-        are sorted from most to least similar.
-
-        Parameters
-        ----------
-        v : SemanticPointer or ndarray
-            The vector to convert into text.
-        minimum_count : int, optional (Default: 1)
-            Always return at least this many terms in the text.
-        maximum_count : int, optional (Default: None)
-            Never return more than this many terms in the text.
-            If None, all terms will be returned.
-        threshold : float, optional (Default: 0.1)
-            How small a similarity for a term to be ignored.
-        join : str, optional (Default: ';')
-            The text separator to use between terms.
-        terms : list, optional (Default: None)
-            Only consider terms in this list of strings.
-        normalize : bool, optional (Default: False)
-            Whether to normalize the vector before computing similarity.
-        """
-        if isinstance(v, pointer.SemanticPointer):
-            v = v.v
-        else:
-            v = np.array(v, dtype='float')
-
-        if normalize:
-            nrm = np.linalg.norm(v)
-            if nrm > 0:
-                v /= nrm
-
-        m = np.dot(self.vectors, v)
-        matches = [(mm, self.keys[i]) for i, mm in enumerate(m)]
-        # if self.include_pairs:
-            # m2 = np.dot(self.vector_pairs, v)
-            # matches2 = [(mm2, self.key_pairs[i]) for i, mm2 in enumerate(m2)]
-            # matches.extend(matches2)
-        if terms is not None:
-            # TODO: handle the terms parameter more efficiently, so we don't
-            # compute a whole bunch of dot products and then throw them out
-            matches = [mm for mm in matches if mm[1] in terms]
-        matches.sort()
-        matches.reverse()
-
-        r = []
-        for m in matches:
-            if minimum_count is not None and len(r) < minimum_count:
-                r.append(m)
-            elif maximum_count is not None and len(r) == maximum_count:
-                break
-            elif threshold is None or m[0] > threshold:
-                r.append(m)
-            else:
-                break
-
-        return join.join(['%0.2f%s' % (sim, key) for (sim, key) in r])
+    def parse_n(self, *texts):
+        return [self.parse(t) for t in texts]
 
     def dot(self, v):
         """Returns the dot product with all terms in the Vocabulary.
@@ -242,9 +183,6 @@ class Vocabulary(object):
             v = v.v
         return np.dot(self.vectors, v)
 
-    # FIXME rename to translate
-    # actually transform_to might be better because a transform matrix is
-    # returned and not a translated vocab
     def transform_to(self, other, populate=None, keys=None):
         """Create a linear transform from one Vocabulary to another.
 
@@ -278,7 +216,13 @@ class Vocabulary(object):
             for k in keys:
                 if k not in other:
                     if populate is None:
-                        continue  # TODO warn
+                        warnings.warn(NengoWarning(
+                            "The transform_to source vocabulary has keys not "
+                            "existent in the target vocabulary. These will "
+                            "be ignored. Use the `populate=False` keyword "
+                            "argument to silence this warning or "
+                            "`populate=True` to automatically add missing "
+                            "keys to the target vocabulary."))
                     elif populate:
                         other.populate(k)
                     else:
@@ -287,44 +231,6 @@ class Vocabulary(object):
                 b = other[k].v
                 t += np.outer(b, a)
             return t
-
-    def prob_cleanup(self, similarity, vocab_size, steps=10000):
-        """Estimate the chance of successful cleanup.
-
-        This returns the chance that, out of vocab_size randomly chosen
-        vectors, at least one of them will be closer to a particular
-        vector than the value given by compare. To use this, compare
-        your noisy vector with the ideal vector, pass that value in as
-        the similarity parameter, and set ``vocab_size`` to be the number of
-        competing vectors.
-
-        The steps parameter sets the accuracy of the approximate integral
-        needed to compute this.
-
-        The basic principle used here is that the probability of two random
-        vectors in a D-dimensional space being a given angle apart is
-        proportional to ``sin(angle)**(D-2)``.  So we integrate this value
-        to get a probability of one vector being farther away than the
-        desired angle, and then raise that to vocab_size to get the
-        probability that all of them are farther away.
-        """
-
-        # TODO: test for numerical stability.  We are taking a number
-        # slightly below 1 and raising it to a large exponent, so there's
-        # lots of room for rounding errors.
-
-        angle = np.arccos(similarity)
-
-        x = np.linspace(0, np.pi, steps)
-        y = np.sin(x) ** (self.dimensions-2)
-
-        total = np.sum(y)
-        too_close = np.sum(y[:int(angle * steps / np.pi)])
-
-        perror1 = too_close / total
-
-        pcorrect = (1 - perror1) ** vocab_size
-        return pcorrect
 
     def create_subset(self, keys):
         """Returns the subset of this vocabulary.
