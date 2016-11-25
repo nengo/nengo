@@ -184,16 +184,6 @@ def test_subset(rng):
     assert v2['A'] == v1['A']
     assert v2['C'] == v1['C']
     assert v2['E'] == v1['E']
-    assert v2.parent is v1
-
-    # Test creating a subset from a subset (it should create off the parent)
-    v3 = v2.create_subset(['C', 'E'])
-    assert v3.parent is v2.parent and v2.parent is v1
-
-    # Test transform_to between subsets (should be identity transform)
-    t = v1.transform_to(v2)
-
-    assert v2.parse('A').compare(np.dot(t, v1.parse('A').v)) >= 0.99999999
 
 
 def test_vocabulary_set(rng):

@@ -57,7 +57,6 @@ class Vocabulary(object):
         self.keys = []
         self._vectors = np.zeros((0, dimensions), dtype=float)
         self.rng = rng
-        self.parent = None
 
     @property
     def vectors(self):
@@ -206,37 +205,28 @@ class Vocabulary(object):
             terms in this list that do not exist in the Vocabularies will
             be created.
         """
-        # If the parent vocabs of self and other are the same, then no
-        # transform is needed between the two vocabularies, so return an
-        # identity matrix.
-        my_parent = self if self.parent is None else self.parent
-        other_parent = other if other.parent is None else other.parent
+        if keys is None:
+            keys = self.keys
 
-        if my_parent is other_parent:
-            return np.eye(self.dimensions)
-        else:
-            if keys is None:
-                keys = self.keys
-
-            t = np.zeros((other.dimensions, self.dimensions), dtype=float)
-            for k in keys:
-                if k not in other:
-                    if populate is None:
-                        warnings.warn(NengoWarning(
-                            "The transform_to source vocabulary has keys not "
-                            "existent in the target vocabulary. These will "
-                            "be ignored. Use the `populate=False` keyword "
-                            "argument to silence this warning or "
-                            "`populate=True` to automatically add missing "
-                            "keys to the target vocabulary."))
-                    elif populate:
-                        other.populate(k)
-                    else:
-                        continue
-                a = self[k].v
-                b = other[k].v
-                t += np.outer(b, a)
-            return t
+        t = np.zeros((other.dimensions, self.dimensions), dtype=float)
+        for k in keys:
+            if k not in other:
+                if populate is None:
+                    warnings.warn(NengoWarning(
+                        "The transform_to source vocabulary has keys not "
+                        "existent in the target vocabulary. These will "
+                        "be ignored. Use the `populate=False` keyword "
+                        "argument to silence this warning or "
+                        "`populate=True` to automatically add missing "
+                        "keys to the target vocabulary."))
+                elif populate:
+                    other.populate(k)
+                else:
+                    continue
+            a = self[k].v
+            b = other[k].v
+            t += np.outer(b, a)
+        return t
 
     def create_subset(self, keys):
         """Returns the subset of this vocabulary.
@@ -257,12 +247,6 @@ class Vocabulary(object):
         # Copy over the new keys
         for key in keys:
             subset.add(key, self.pointers[key])
-
-        # Assign the parent
-        if self.parent is not None:
-            subset.parent = self.parent
-        else:
-            subset.parent = self
 
         return subset
 
