@@ -11,9 +11,9 @@ from nengo.spa.vocab import Vocabulary
 def test_similarity(rng):
     v = Vocabulary(64, max_similarity=0.1)
     v.populate('''
-        A,
-        B,
-        C = .7 * A + .3 * B,
+        A;
+        B;
+        C = .7 * A + .3 * B;
         D = C.normalized()
     ''')
 
@@ -41,7 +41,7 @@ def test_similarity(rng):
 
 def test_pairs():
     v = Vocabulary(64)
-    v.populate('A, B, C')
+    v.populate('A; B; C')
     actual = pairs(v)
     expected = {'A*B', 'A*C', 'B*C'}
     assert actual == expected
@@ -49,7 +49,7 @@ def test_pairs():
 
 def test_text(rng):
     v = Vocabulary(64, rng=rng)
-    v.populate('A, B, C, D, E, F')
+    v.populate('A; B; C; D; E; F')
     x = v.parse('A+B+C')
     y = v.parse('-D-E-F')
     ptr = r'-?[01]\.[0-9]{2}[A-F]'

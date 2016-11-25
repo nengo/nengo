@@ -23,7 +23,7 @@ def test_basic():
 def test_run(Simulator, seed):
     with spa.Module(seed=seed) as model:
         model.compare = spa.Compare(vocab=16)
-        model.compare.vocab.populate('A, B')
+        model.compare.vocab.populate('A; B')
 
         def inputA(t):
             if 0 <= t < 0.1:

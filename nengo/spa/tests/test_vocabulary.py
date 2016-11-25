@@ -23,7 +23,7 @@ def test_populate(rng):
     v.populate('A')
     assert 'A' in v
 
-    v.populate('B, C')
+    v.populate('B; C')
     assert 'B' in v
     assert 'C' in v
 
@@ -40,7 +40,7 @@ def test_populate(rng):
     assert np.allclose(v['F'].v, v.parse('A + 2 * B').normalized().v)
     np.testing.assert_almost_equal(np.linalg.norm(v['F'].v), 1.)
 
-    v.populate('G = A, H')
+    v.populate('G = A; H')
     assert np.allclose(v['G'].v, v['A'].v)
     assert 'H' in v
 
@@ -65,7 +65,7 @@ def test_populate(rng):
 
 def test_parse(rng):
     v = Vocabulary(64, rng=rng)
-    v.populate('A, B, C')
+    v.populate('A; B; C')
     A = v.parse('A')
     B = v.parse('B')
     C = v.parse('C')
@@ -88,7 +88,7 @@ def test_parse(rng):
 
 def test_parse_n(rng):
     v = Vocabulary(64, rng=rng)
-    v.populate('A, B, C')
+    v.populate('A; B; C')
     A = v.parse('A')
     B = v.parse('B')
 
@@ -119,8 +119,8 @@ def test_capital(rng):
 def test_transform(recwarn, rng):
     v1 = Vocabulary(32, strict=False, rng=rng)
     v2 = Vocabulary(64, strict=False, rng=rng)
-    v1.populate('A, B, C')
-    v2.populate('A, B, C')
+    v1.populate('A; B; C')
+    v2.populate('A; B; C')
     A = v1['A']
     B = v1['B']
     C = v1['C']
@@ -161,12 +161,12 @@ def test_create_pointer_warning(rng):
 
     # five pointers shouldn't fit
     with warns(UserWarning):
-        v.populate('A, B, C, D, E')
+        v.populate('A; B; C; D; E')
 
 
 def test_readonly(rng):
     v1 = Vocabulary(32, rng=rng)
-    v1.populate('A,B,C')
+    v1.populate('A;B;C')
 
     v1.readonly = True
 
@@ -176,7 +176,7 @@ def test_readonly(rng):
 
 def test_subset(rng):
     v1 = Vocabulary(32, rng=rng)
-    v1.populate('A, B, C, D, E, F, G')
+    v1.populate('A; B; C; D; E; F; G')
 
     # Test creating a vocabulary subset
     v2 = v1.create_subset(['A', 'C', 'E'])

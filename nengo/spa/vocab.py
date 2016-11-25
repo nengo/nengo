@@ -139,7 +139,7 @@ class Vocabulary(Mapping):
         self._vectors = np.vstack([self._vectors, p.v])
 
     def populate(self, pointers):
-        for p_expr in pointers.split(','):
+        for p_expr in pointers.split(';'):
             assign_split = p_expr.split('=', 1)
             modifier_split = p_expr.split('.', 1)
             if len(assign_split) > 1:

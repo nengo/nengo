@@ -52,10 +52,10 @@ def test_predefined_vocabs():
 
     with spa.Module() as model:
         model.vocab1 = spa.Vocabulary(D)
-        model.vocab1.populate('A, B, C')
+        model.vocab1.populate('A; B; C')
 
         model.vocab2 = spa.Vocabulary(D)
-        model.vocab2.populate('A, B, C')
+        model.vocab2.populate('A; B; C')
 
         model.buffer1 = spa.State(vocab=model.vocab1)
         model.buffer2 = spa.State(vocab=model.vocab2)

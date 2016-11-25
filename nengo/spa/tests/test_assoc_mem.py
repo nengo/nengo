@@ -9,11 +9,11 @@ def test_am_spa_interaction(Simulator, seed, rng):
     """Make sure associative memory interacts with other SPA modules."""
     D = 16
     vocab = Vocabulary(D, rng=rng)
-    vocab.populate('A,B,C,D')
+    vocab.populate('A;B;C;D')
 
     D2 = int(D / 2)
     vocab2 = Vocabulary(D2, rng=rng)
-    vocab2.populate('A,B,C,D')
+    vocab2.populate('A;B;C;D')
 
     def input_func(t):
         return '0.49*A' if t < 0.5 else '0.79*A'
@@ -46,8 +46,8 @@ def test_am_spa_keys_as_expressions(Simulator, plt, seed, rng):
     vocab_in = Vocabulary(D, rng=rng)
     vocab_out = Vocabulary(D, rng=rng)
 
-    vocab_in.populate('A,B')
-    vocab_out.populate('C,D')
+    vocab_in.populate('A;B')
+    vocab_out.populate('C;D')
 
     in_keys = ['A', 'A*B']
     out_keys = ['C*D', 'C+D']

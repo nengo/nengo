@@ -84,9 +84,9 @@ def test_errors():
 def test_direct(Simulator, seed):
     with spa.Module(seed=seed) as model:
         model.buffer1 = spa.State(vocab=16)
-        model.buffer1.vocab.populate('A, B, C')
+        model.buffer1.vocab.populate('A; B; C')
         model.buffer2 = spa.State(vocab=32)
-        model.buffer2.vocab.populate('A, B, C')
+        model.buffer2.vocab.populate('A; B; C')
         spa.Actions(
             'buffer1=A', 'buffer2=B', 'buffer1=C, buffer2=C').build()
 
