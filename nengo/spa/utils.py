@@ -60,7 +60,7 @@ def similarity(data, vocab, normalize=False):
 
 
 def pairs(vocab):
-    return set(x + '*' + y for x, y in combinations(vocab.keys, 2))
+    return set(x + '*' + y for x, y in combinations(vocab.keys(), 2))
 
 
 def text(v, vocab, minimum_count=1, maximum_count=None,
@@ -99,7 +99,7 @@ def text(v, vocab, minimum_count=1, maximum_count=None,
         v = v.normalized()
 
     if terms is None:
-        terms = vocab.keys
+        terms = vocab.keys()
         vectors = vocab.vectors
     else:
         vectors = vocab.parse_n(*terms)

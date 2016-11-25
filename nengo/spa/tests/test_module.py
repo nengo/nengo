@@ -109,16 +109,16 @@ def test_spa_vocab():
     vb = spa.Vocabulary(32)
     vb.populate("SHOES")
     model = spa.Module(vocabs=VocabularyMap([va, vb]))
-    assert model.vocabs[16].keys == ["PANTS"]
-    assert model.vocabs[32].keys == ["SHOES"]
+    assert list(model.vocabs[16].keys()) == ["PANTS"]
+    assert list(model.vocabs[32].keys()) == ["SHOES"]
 
     # warning on vocabs with duplicate dimensions
     vc = spa.Vocabulary(16)
     vc.populate("SOCKS")
     with pytest.warns(UserWarning):
         model = spa.Module(vocabs=VocabularyMap([va, vb, vc]))
-    assert model.vocabs[16].keys == ["SOCKS"]
-    assert model.vocabs[32].keys == ["SHOES"]
+    assert list(model.vocabs[16].keys()) == ["SOCKS"]
+    assert list(model.vocabs[32].keys()) == ["SHOES"]
 
 
 def test_hierarchical(Simulator, seed, plt):

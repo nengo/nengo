@@ -180,7 +180,7 @@ def test_subset(rng):
 
     # Test creating a vocabulary subset
     v2 = v1.create_subset(['A', 'C', 'E'])
-    assert v2.keys == ['A', 'C', 'E']
+    assert list(v2.keys()) == ['A', 'C', 'E']
     assert v2['A'] == v1['A']
     assert v2['C'] == v1['C']
     assert v2['E'] == v1['E']
