@@ -9,10 +9,10 @@ class AssociativeMemory(Module):
 
     Parameters
     ----------
-    input_vocab: list or Vocabulary
-        The vocabulary (or list of vectors) to match.
-    output_vocab: list or Vocabulary, optional (Default: None)
-        The vocabulary (or list of vectors) to be produced for each match. If
+    input_vocab: Vocabulary
+        The vocabulary to match.
+    output_vocab: Vocabulary, optional (Default: None)
+        The vocabulary to be produced for each match. If
         None, the associative memory will act like an autoassociative memory
         (cleanup memory).
     input_keys : list, optional (Default: None)
