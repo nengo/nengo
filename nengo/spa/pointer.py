@@ -26,6 +26,7 @@ class SemanticPointer(object):
             self.v = np.array(data, dtype=float)
             if len(self.v.shape) != 1:
                 raise ValidationError("'data' must be a vector", 'data', self)
+        self.v.setflags(write=False)
 
     def normalized(self):
         nrm = np.linalg.norm(self.v)

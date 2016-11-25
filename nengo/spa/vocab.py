@@ -55,9 +55,15 @@ class Vocabulary(object):
         self.max_similarity = max_similarity
         self.pointers = {}
         self.keys = []
-        self.vectors = np.zeros((0, dimensions), dtype=float)
+        self._vectors = np.zeros((0, dimensions), dtype=float)
         self.rng = rng
         self.parent = None
+
+    @property
+    def vectors(self):
+        v = self._vectors.view()
+        v.setflags(write=False)
+        return v
 
     def __str__(self):
         return '{}-dimensional vocab at 0x{:x}'.format(
@@ -81,7 +87,7 @@ class Vocabulary(object):
                 p = pointer.SemanticPointer(self.dimensions, rng=self.rng)
                 if transform is not None:
                     p = eval('p.' + transform, {'p': p}, self)
-                p_sim = np.max(np.dot(self.vectors, p.v))
+                p_sim = np.max(np.dot(self._vectors, p.v))
                 if p_sim < best_sim:
                     best_p = p
                     best_sim = p_sim
@@ -99,7 +105,7 @@ class Vocabulary(object):
         return key in self.keys
 
     def __len__(self):
-        return len(self.vectors)
+        return len(self._vectors)
 
     def __getitem__(self, key):
         """Return the semantic pointer with the requested name."""
@@ -125,7 +131,7 @@ class Vocabulary(object):
 
         self.pointers[key] = p
         self.keys.append(key)
-        self.vectors = np.vstack([self.vectors, p.v])
+        self._vectors = np.vstack([self._vectors, p.v])
 
     def populate(self, pointers):
         for p_expr in pointers.split(','):
@@ -181,7 +187,7 @@ class Vocabulary(object):
         """
         if isinstance(v, pointer.SemanticPointer):
             v = v.v
-        return np.dot(self.vectors, v)
+        return np.dot(self._vectors, v)
 
     def transform_to(self, other, populate=None, keys=None):
         """Create a linear transform from one Vocabulary to another.
