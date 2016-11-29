@@ -165,8 +165,10 @@ def build_ensemble(model, ens):
             np.zeros(ens.n_neurons), name="%s.neuron_in" % ens)
         model.sig[ens.neurons]['out'] = Signal(
             np.zeros(ens.n_neurons), name="%s.neuron_out" % ens)
-        bias_sig = Signal(bias, name="%s.bias" % ens, readonly=True)
-        model.add_op(Copy(src=bias_sig, dst=model.sig[ens.neurons]['in']))
+        model.sig[ens.neurons]['bias'] = Signal(
+            bias, name="%s.bias" % ens, readonly=True)
+        model.add_op(Copy(src=model.sig[ens.neurons]['bias'],
+                          dst=model.sig[ens.neurons]['in']))
         # This adds the neuron's operator and sets other signals
         model.build(ens.neuron_type, ens.neurons)
 
