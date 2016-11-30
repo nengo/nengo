@@ -79,7 +79,7 @@ class LearningRuleType(FrozenObject):
         if self.learning_rate != 1e-6:
             args.append("learning_rate=%g" % self.learning_rate)
         if self.apply_every is not None:
-            args.append("apply_every=%f" % self.apply_every)
+            args.append("apply_every=%g" % self.apply_every)
         return args
 
 
@@ -127,9 +127,9 @@ class PES(LearningRuleType):
         if self.learning_rate != 1e-4:
             args.append("learning_rate=%g" % self.learning_rate)
         if self.pre_tau != 0.005:
-            args.append("pre_tau=%f" % self.pre_tau)
+            args.append("pre_tau=%g" % self.pre_tau)
         if self.apply_every is not None:
-            args.append("apply_every=%f" % self.apply_every)
+            args.append("apply_every=%g" % self.apply_every)
         return args
 
 
@@ -195,7 +195,7 @@ class BCM(LearningRuleType):
         if self.learning_rate != 1e-9:
             args.append("learning_rate=%g" % self.learning_rate)
         if self.apply_every is not None:
-            args.append("apply_every=%f" % self.apply_every)
+            args.append("apply_every=%g" % self.apply_every)
         return args
 
 
@@ -262,7 +262,7 @@ class Oja(LearningRuleType):
         if self.learning_rate != 1e-6:
             args.append("learning_rate=%g" % self.learning_rate)
         if self.apply_every is not None:
-            args.append("apply_every=%f" % self.apply_every)
+            args.append("apply_every=%g" % self.apply_every)
         return args
 
 
@@ -308,11 +308,11 @@ class Voja(LearningRuleType):
     def _argreprs(self):
         args = []
         if self.post_tau != 0.005:
-            args.append("post_tau=%f" % self.post_tau)
+            args.append("post_tau=%g" % self.post_tau)
         if self.learning_rate != 1e-2:
             args.append("learning_rate=%g" % self.learning_rate)
         if self.apply_every is not None:
-            args.append("apply_every=%f" % self.apply_every)
+            args.append("apply_every=%g" % self.apply_every)
         return args
 
     @property
