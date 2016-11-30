@@ -5,11 +5,12 @@ notifications:
     - tbekolay@gmail.com
 
 cache:
- directories:
-  - $HOME/miniconda
+  directories:
+    - $HOME/miniconda
 
 env:
   global:
+    - MINICONDA_DIR="$HOME/miniconda"
     - NUMPY="1.11"
     - COVERAGE="false"
     - STATIC="false"
