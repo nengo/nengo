@@ -14,7 +14,8 @@ else # if it does not exist, we need to install miniconda
 
     conda config --set always_yes yes --set changeps1 no
     conda update -q conda
-    conda info -a
     conda create -q -n test python="$PYTHON" pip
     source activate test
 fi
+
+conda info -a

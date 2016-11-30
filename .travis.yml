@@ -5,9 +5,9 @@ notifications:
     - tbekolay@gmail.com
 
 cache:
-  pip: true
   directories:
     - $HOME/miniconda
+    - $HOME/virtualenv
 
 env:
   global:
@@ -17,6 +17,7 @@ env:
     - STATIC="false"
     - CONDA_DEPS="matplotlib jupyter"
     - PIP_DEPS="pytest pytest-xdist"
+    - PIP_DIR="$HOME/virtualenv"
 
 matrix:
   include:
@@ -28,6 +29,9 @@ matrix:
     - env: PYTHON="2.7" NUMPY="1.10" CACHE_NAME="JOB6"
     - env: PYTHON="3.4" CACHE_NAME="JOB7"
     - env: PYTHON="3.5" COVERAGE="true" CACHE_NAME="JOB8"
+
+git:
+  depth: 3
 
 # Setup Miniconda
 before_install:
