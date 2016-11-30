@@ -35,6 +35,8 @@ before_install:
 
 # Install packages with conda, then pip
 install:
+  - export PATH="$PATH:$HOME/miniconda/bin"
+  - hash r
   - if [[ "$COVERAGE" == "true" ]]; then
       export PIP_DEPS="pytest coverage";
     elif [[ "$STATIC" == "true" ]]; then
