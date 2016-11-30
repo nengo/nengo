@@ -52,7 +52,7 @@ install:
       export CONDA_DEPS="$CONDA_DEPS numpy=$NUMPY";
     fi
   - if [[ -n "$CONDA_DEPS" ]]; then eval conda install "$CONDA_DEPS"; fi
-  - if [[ -n "$PIP_DEPS" ]]; then eval pip install "$PIP_DEPS"; fi
+  - if [[ -n "$PIP_DEPS" ]]; then eval pip install "$PIP_DEPS" --user; fi
 
 # Run the tests
 script:
