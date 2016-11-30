@@ -32,7 +32,6 @@ matrix:
 before_install:
   - chmod a+x travis/install-conda.sh
   - travis/install-conda.sh
-  - source activate test
 
 # Install packages with conda, then pip
 install:

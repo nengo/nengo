@@ -16,4 +16,5 @@ else # if it does not exist, we need to install miniconda
     conda update -q conda
     conda info -a
     conda create -q -n test python="$PYTHON" pip
+    source activate test
 fi
