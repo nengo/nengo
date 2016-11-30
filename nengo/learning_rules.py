@@ -42,9 +42,13 @@ class LearningRuleType(FrozenObject):
     ----------
     learning_rate : float, optional (Default: 1e-6)
         A scalar indicating the rate at which ``modifies`` will be adjusted.
+    apply_every : float, optional (Default: None)
+        A scalar indicating how often ``modifies`` is adjusted in seconds.
 
     Attributes
     ----------
+    apply_every : float or None
+        A scalar indicating how often ``modifies`` is adjusted in seconds.
     error_type : str
         The type of the incoming error signal. This also determines
         the dimensionality of the error signal.
@@ -59,18 +63,24 @@ class LearningRuleType(FrozenObject):
     probeable = ()
 
     learning_rate = NumberParam('learning_rate', low=0, low_open=True)
+    apply_every = NumberParam('apply_every', low=0, optional=True)
 
-    def __init__(self, learning_rate=1e-6):
+    def __init__(self, learning_rate=1e-6, apply_every=None):
         super(LearningRuleType, self).__init__()
         self.learning_rate = learning_rate
+        self.apply_every = apply_every
 
     def __repr__(self):
         return '%s(%s)' % (type(self).__name__, ", ".join(self._argreprs))
 
     @property
     def _argreprs(self):
-        return (["learning_rate=%g" % self.learning_rate]
-                if self.learning_rate != 1e-6 else [])
+        args = []
+        if self.learning_rate != 1e-6:
+            args.append("learning_rate=%g" % self.learning_rate)
+        if self.apply_every is not None:
+            args.append("apply_every=%f" % self.apply_every)
+        return args
 
 
 class PES(LearningRuleType):
@@ -85,9 +95,13 @@ class PES(LearningRuleType):
         A scalar indicating the rate at which weights will be adjusted.
     pre_tau : float, optional (Default: 0.005)
         Filter constant on activities of neurons in pre population.
+    apply_every : float, optional (Default: None)
+        A scalar indicating how often weights are adjusted in seconds.
 
     Attributes
     ----------
+    apply_every : float or None
+        A scalar indicating how often weights are adjusted in seconds.
     learning_rate : float
         A scalar indicating the rate at which weights will be adjusted.
     pre_tau : float
@@ -100,12 +114,12 @@ class PES(LearningRuleType):
 
     pre_tau = NumberParam('pre_tau', low=0, low_open=True)
 
-    def __init__(self, learning_rate=1e-4, pre_tau=0.005):
+    def __init__(self, learning_rate=1e-4, pre_tau=0.005, apply_every=None):
         if learning_rate >= 1.0:
             warnings.warn("This learning rate is very high, and can result "
                           "in floating point errors from too much current.")
         self.pre_tau = pre_tau
-        super(PES, self).__init__(learning_rate)
+        super(PES, self).__init__(learning_rate, apply_every)
 
     @property
     def _argreprs(self):
@@ -113,7 +127,9 @@ class PES(LearningRuleType):
         if self.learning_rate != 1e-4:
             args.append("learning_rate=%g" % self.learning_rate)
         if self.pre_tau != 0.005:
-            args.append("pre_tau=%g" % self.pre_tau)
+            args.append("pre_tau=%f" % self.pre_tau)
+        if self.apply_every is not None:
+            args.append("apply_every=%f" % self.apply_every)
         return args
 
 
@@ -135,9 +151,13 @@ class BCM(LearningRuleType):
         If None, post_tau will be the same as pre_tau.
     learning_rate : float, optional (Default: 1e-9)
         A scalar indicating the rate at which weights will be adjusted.
+    apply_every : float, optional (Default: None)
+        A scalar indicating how often weights are adjusted in seconds.
 
     Attributes
     ----------
+    apply_every : float or None
+        A scalar indicating how often weights are adjusted in seconds.
     learning_rate : float
         A scalar indicating the rate at which weights will be adjusted.
     post_tau : float
@@ -157,11 +177,11 @@ class BCM(LearningRuleType):
     theta_tau = NumberParam('theta_tau', low=0, low_open=True)
 
     def __init__(self, pre_tau=0.005, post_tau=None, theta_tau=1.0,
-                 learning_rate=1e-9):
+                 learning_rate=1e-9, apply_every=None):
         self.theta_tau = theta_tau
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
-        super(BCM, self).__init__(learning_rate)
+        super(BCM, self).__init__(learning_rate, apply_every)
 
     @property
     def _argreprs(self):
@@ -174,6 +194,8 @@ class BCM(LearningRuleType):
             args.append("theta_tau=%g" % self.theta_tau)
         if self.learning_rate != 1e-9:
             args.append("learning_rate=%g" % self.learning_rate)
+        if self.apply_every is not None:
+            args.append("apply_every=%f" % self.apply_every)
         return args
 
 
@@ -196,9 +218,13 @@ class Oja(LearningRuleType):
         A scalar weight on the forgetting term.
     learning_rate : float, optional (Default: 1e-6)
         A scalar indicating the rate at which weights will be adjusted.
+    apply_every : float, optional (Default: None)
+        A scalar indicating how often weights are adjusted in seconds.
 
     Attributes
     ----------
+    apply_every : float or None
+        A scalar indicating how often weights are adjusted in seconds.
     beta : float
         A scalar weight on the forgetting term.
     learning_rate : float
@@ -218,11 +244,11 @@ class Oja(LearningRuleType):
     beta = NumberParam('beta', low=0)
 
     def __init__(self, pre_tau=0.005, post_tau=None, beta=1.0,
-                 learning_rate=1e-6):
+                 learning_rate=1e-6, apply_every=None):
         self.pre_tau = pre_tau
         self.post_tau = post_tau if post_tau is not None else pre_tau
         self.beta = beta
-        super(Oja, self).__init__(learning_rate)
+        super(Oja, self).__init__(learning_rate, apply_every)
 
     @property
     def _argreprs(self):
@@ -235,6 +261,8 @@ class Oja(LearningRuleType):
             args.append("beta=%g" % self.beta)
         if self.learning_rate != 1e-6:
             args.append("learning_rate=%g" % self.learning_rate)
+        if self.apply_every is not None:
+            args.append("apply_every=%f" % self.apply_every)
         return args
 
 
@@ -253,9 +281,13 @@ class Voja(LearningRuleType):
         Filter constant on activities of neurons in post population.
     learning_rate : float, optional (Default: 1e-2)
         A scalar indicating the rate at which encoders will be adjusted.
+    apply_every : float, optional (Default: None)
+        A scalar indicating how often encoders are adjusted in seconds.
 
     Attributes
     ----------
+    apply_every : float or None
+        A scalar indicating how often encoders is adjusted in seconds.
     learning_rate : float
         A scalar indicating the rate at which encoders will be adjusted.
     post_tau : float
@@ -268,9 +300,20 @@ class Voja(LearningRuleType):
 
     post_tau = NumberParam('post_tau', low=0, low_open=True, optional=True)
 
-    def __init__(self, post_tau=0.005, learning_rate=1e-2):
+    def __init__(self, post_tau=0.005, learning_rate=1e-2, apply_every=None):
         self.post_tau = post_tau
-        super(Voja, self).__init__(learning_rate)
+        super(Voja, self).__init__(learning_rate, apply_every)
+
+    @property
+    def _argreprs(self):
+        args = []
+        if self.post_tau != 0.005:
+            args.append("post_tau=%f" % self.post_tau)
+        if self.learning_rate != 1e-2:
+            args.append("learning_rate=%g" % self.learning_rate)
+        if self.apply_every is not None:
+            args.append("apply_every=%f" % self.apply_every)
+        return args
 
     @property
     def _argreprs(self):

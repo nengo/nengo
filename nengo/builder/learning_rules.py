@@ -36,11 +36,17 @@ class SimBCM(Operator):
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
         The scalar learning rate, :math:`\kappa`.
+    apply_every : float or None
+        A scalar indicating how often to apply learning rule.
+    n_steps : Signal
+        The integer timestep which the simulator is executing.
     tag : str, optional (Default: None)
         A label associated with the operator, for debugging purposes.
 
     Attributes
     ----------
+    apply_every : float or None
+       A scalar indicating how often to apply learning rule.
     delta : Signal
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
@@ -49,6 +55,8 @@ class SimBCM(Operator):
         The postsynaptic activity, :math:`a_j`.
     pre_filtered : Signal
         The presynaptic activity, :math:`a_i`.
+    n_steps : Signal
+        The integer timestep which the simulator is executing.
     tag : str or None
         A label associated with the operator, for debugging purposes.
     theta : Signal
@@ -58,22 +66,24 @@ class SimBCM(Operator):
     -----
     1. sets ``[]``
     2. incs ``[]``
-    3. reads ``[pre_filtered, post_filtered, theta]``
+    3. reads ``[pre_filtered, post_filtered, theta, n_steps]``
     4. updates ``[delta]``
     """
 
     def __init__(self, pre_filtered, post_filtered, theta, delta,
-                 learning_rate, tag=None):
+                 learning_rate, apply_every, n_steps, tag=None):
         super(SimBCM, self).__init__(tag=tag)
         self.pre_filtered = pre_filtered
         self.post_filtered = post_filtered
         self.theta = theta
         self.delta = delta
         self.learning_rate = learning_rate
+        self.n_steps = n_steps
+        self.apply_every = apply_every
 
         self.sets = []
         self.incs = []
-        self.reads = [pre_filtered, post_filtered, theta]
+        self.reads = [pre_filtered, post_filtered, theta, n_steps]
         self.updates = [delta]
 
     def _descstr(self):
@@ -86,10 +96,22 @@ class SimBCM(Operator):
         theta = signals[self.theta]
         delta = signals[self.delta]
         alpha = self.learning_rate * dt
+        period = (1 if self.apply_every is None else apply_every / self.dt)
 
         def step_simbcm():
             delta[...] = np.outer(
-                alpha * post_filtered * (post_filtered - theta), pre_filtered)
+                alpha * post_filtered * (post_filtered - theta),
+                pre_filtered)
+
+        def step_simbcm_sometimes():
+            if n_steps % period < 1:
+                delta[...] = np.outer(
+                    alpha * post_filtered * (post_filtered - theta),
+                    pre_filtered)
+
+        if period > 1:
+            n_steps = signals[self.n_steps]
+            return step_simbcm_sometimes
         return step_simbcm
 
 
@@ -383,11 +405,14 @@ def build_bcm(model, bcm, rule):
     post_activities = model.sig[get_post_ens(conn).neurons]['out']
     post_filtered = model.build(Lowpass(bcm.post_tau), post_activities)
     theta = model.build(Lowpass(bcm.theta_tau), post_filtered)
+    n_steps = model.step
 
     model.add_op(SimBCM(pre_filtered,
                         post_filtered,
                         theta,
                         model.sig[rule]['delta'],
+                        apply_every=bcm.apply_every,
+                        n_steps=n_steps,
                         learning_rate=bcm.learning_rate))
 
     # expose these for probes
@@ -398,7 +423,7 @@ def build_bcm(model, bcm, rule):
 
 @Builder.register(Oja)
 def build_oja(model, oja, rule):
-    """Builds a `.BCM` object into a model.
+    """Builds a `.Oja` object into a model.
 
     Calls synapse build functions to filter the pre and post activities,
     and adds a `.SimOja` operator to the model to calculate the delta.
