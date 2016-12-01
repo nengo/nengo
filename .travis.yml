@@ -34,15 +34,15 @@ git:
 # Setup Miniconda
 before_install:
   - if [ -d "$MINICONDA_DIR" ] && [ -e "$MINICONDA_DIR/miniconda/bin/conda" ]; then
-      echo "Miniconda already installed in $MINICONDA_DIR"
+      echo "Miniconda already installed in $MINICONDA_DIR";
     else
-      rm -rf "$MINICONDA_DIR"
-      wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-      bash miniconda.sh -b -p "$MINICONDA_DIR"
-      export PATH="$MINICONDA_DIR/bin:$PATH"
-      conda config --set always_yes yes --set changeps1 no
-      conda update -q conda
-      conda create -q -n test python="$PYTHON" pip
+      rm -rf "$MINICONDA_DIR";
+      wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+      bash miniconda.sh -b -p "$MINICONDA_DIR";
+      export PATH="$MINICONDA_DIR/bin:$PATH";
+      conda config --set always_yes yes --set changeps1 no;
+      conda update -q conda;
+      conda create -q -n test python="$PYTHON" pip;
     fi
   - source activate test
   - conda info -a
