@@ -14,7 +14,7 @@ you should do a developer installation.
 
    git clone https://github.com/nengo/nengo.git
    cd nengo
-   python setup.py develop --user
+   pip install -e . --user
 
 If you are in a virtual environment, you can omit the ``--user`` flag.
 

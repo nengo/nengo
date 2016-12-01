@@ -44,8 +44,8 @@ please read the more detailed
 <https://pythonhosted.org/nengo/getting_started.html#installation>`_ first.
 
 If you'd like to install Nengo from source,
-please read the `development installation instructions
-<https://pythonhosted.org/nengo/dev_introduction.html>`_.
+please read the `developer installation instructions
+<https://pythonhosted.org/nengo/contributing.html#developer-installation>`_.
 
 Nengo is tested to work on Python 2.7 and 3.4+.
 
