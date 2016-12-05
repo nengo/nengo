@@ -111,7 +111,7 @@ class NeuronType(FrozenObject):
         self.step_math(dt=1., J=J, output=out)
         return out
 
-    def step_math(self, dt, J, output):
+    def step_math(self, dt, J, output, rng=None):
         """Implements the differential equation for this neuron type.
 
         At a minimum, NeuronType subclasses must implement this method.
@@ -126,6 +126,14 @@ class NeuronType(FrozenObject):
             Input currents associated with each neuron.
         output : ndarray(dtype=float64)
             Output activities associated with each neuron.
+        rng : `numpy.random.RandomState`
+            Random number generator for stochastic neuron types.
+
+        Notes
+        -----
+
+        The ``rng`` parameter on ``step_math`` is optional. A random number
+        generator will be provided only if it appears in the method signature.
         """
         raise NotImplementedError("Neurons must provide step_math")
 
@@ -525,6 +533,59 @@ class Izhikevich(NeuronType):
         dU = (self.tau_recovery * (self.coupling * voltage - recovery)) * 1000
         recovery[:] += dU * dt
         recovery[spiked > 0] = recovery[spiked > 0] + self.reset_recovery
+
+
+class RegularSpiking(NeuronType):
+    """Regularly spikes based on the rates of the base neuron type."""
+
+    def __init__(self, base_type):
+        super(RegularSpiking, self).__init__()
+        assert "rates" in base_type.probeable
+        self.base_type = base_type
+
+    @property
+    def probeable(self):
+        base_probeable = list(self.base_type.probeable)
+        base_probeable.remove("rates")
+        return tuple(["spikes"] + base_probeable)
+
+    def gain_bias(self, max_rates, intercepts):
+        return self.base_type.gain_bias(max_rates, intercepts)
+
+    def rates(self, x, gain, bias):
+        return self.base_type.rates(x, gain, bias)
+
+    def step_math(self, dt, J, output, state, *base_states):
+        threshold = 1.0 / dt
+        # Sets output to the desired rates
+        self.base_type.step_math(dt, J, output, *base_states)
+        state += output
+        output[...] = 0
+        output[state > threshold] = threshold
+        state -= output
+
+
+class PoissonSpiking(RegularSpiking):
+    """Spikes with Poisson probability based on the base rates."""
+
+    @staticmethod
+    def next_spike_times(rng, rate):
+        return -np.log(1.0 - rng.rand(rate.shape[0])) / rate
+
+    def step_math(self, dt, J, output, rng, *base_states):
+        spike_val = 1.0 / dt
+
+        # Sets output to the desired rates
+        self.base_type.step_math(dt, J, output, *base_states)
+        rates = np.array(output)
+
+        output[...] = 0
+        next_spikes = np.zeros_like(output)
+        spiked = np.ones_like(output, dtype=bool)
+        while np.sum(spiked) > 0:
+            next_spikes[spiked] += self.next_spike_times(rng, rates[spiked])
+            spiked &= next_spikes < dt
+            output[spiked] += spike_val
 
 
 class NeuronTypeParam(Parameter):

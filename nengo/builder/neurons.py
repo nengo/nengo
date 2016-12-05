@@ -1,8 +1,17 @@
+import inspect
+
 import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
 from nengo.neurons import (
-    AdaptiveLIF, AdaptiveLIFRate, Izhikevich, LIF, NeuronType)
+    AdaptiveLIF,
+    AdaptiveLIFRate,
+    Izhikevich,
+    LIF,
+    NeuronType,
+    PoissonSpiking,
+    RegularSpiking,
+)
 
 
 class SimNeurons(Operator):
@@ -64,9 +73,15 @@ class SimNeurons(Operator):
         output = signals[self.output]
         states = [signals[state] for state in self.states]
 
-        def step_simneurons():
-            self.neurons.step_math(dt, J, output, *states)
-        return step_simneurons
+        argspec = inspect.getargspec(self.neurons.step_math)
+        if "rng" in argspec.args:
+            def step_simneurons_withrng():
+                self.neurons.step_math(dt, J, output, rng, *states)
+            return step_simneurons_withrng
+        else:
+            def step_simneurons():
+                self.neurons.step_math(dt, J, output, *states)
+            return step_simneurons
 
 
 @Builder.register(NeuronType)
@@ -233,3 +248,61 @@ def build_izhikevich(model, izhikevich, neurons):
                             output=model.sig[neurons]['out'],
                             states=[model.sig[neurons]['voltage'],
                                     model.sig[neurons]['recovery']]))
+
+
+@Builder.register(RegularSpiking)
+def build_regular_spiking(model, reg, neurons):
+    """Builds a `.RegularSpiking` object into a model.
+
+    This builder delegates most of the process to the base neuron type builder,
+    then sets up an additional signal. We then modify the `.SimNeurons`
+    operator made in the base builder.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    reg : RegularSpiking
+        Neuron type to build.
+    neuron : Neurons
+        The neuron population object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.LIF` instance.
+    """
+    model.build(reg.base_type, neurons)
+    op = model.operators[-1]
+    op.neurons = reg
+
+    model.sig[neurons]['state'] = Signal(
+        np.zeros(neurons.size_in), name="%s.state" % neurons)
+    op.states.insert(0, model.sig[neurons]['state'])
+    op.sets.insert(0, model.sig[neurons]['state'])
+
+
+@Builder.register(PoissonSpiking)
+def build_poisson_spiking(model, poisson, neurons):
+    """Builds a `.PoissonSpiking` object into a model.
+
+    This builder delegates most of the process to the base neuron type builder,
+    then modifies the `.SimNeurons` operator made in the base builder.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    poisson : PoissonSpiking
+        Neuron type to build.
+    neuron : Neurons
+        The neuron population object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.LIF` instance.
+    """
+    model.build(poisson.base_type, neurons)
+    op = model.operators[-1]
+    op.neurons = poisson
