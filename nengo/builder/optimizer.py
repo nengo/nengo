@@ -719,10 +719,17 @@ class SimNeuronsMerger(Merger):
         J, J_sigr = SigMerger.merge([op.J for op in ops])
         state = {}
         state_sigr = {}
-        for key in ops[0].state:
-            st, st_sigr = SigMerger.merge([op.sets[op.state[key]] for op in ops])
+        for key in ops[0].state_sigs:
+            st, st_sigr = SigMerger.merge([op.sets[op.state_sigs[key]] for op in ops])
             state[key] = st
             state_sigr.update(st_sigr)
+        state.update(ops[0].state_extra)
+        if any(len(op.state_extra) > 0 for op in ops[1:]):
+            warnings.warn(
+                "Extra state has been modified when merging two or more SimNeurons "
+                "ops associated with %r neuron types. If this causes issues, turn off "
+                "the optimizer." % (type(ops[0].neurons).__name__)
+            )
         return (
             SimNeurons(ops[0].neurons, J, state=state),
             Merger.merge_dicts(J_sigr, state_sigr),

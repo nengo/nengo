@@ -301,6 +301,15 @@ class NeuronType(FrozenObject):
         raise NotImplementedError("Neurons must provide step")
 
 
+class NeuronTypeParam(Parameter):
+
+    equatable = True
+
+    def coerce(self, instance, neurons):
+        self.check_type(instance, neurons, NeuronType)
+        return super().coerce(instance, neurons)
+
+
 class Direct(NeuronType):
     """Signifies that an ensemble should simulate in direct mode.
 
@@ -410,7 +419,7 @@ class SpikingRectifiedLinear(RectifiedLinear):
 
         voltage += np.maximum(J, 0) * dt
         n_spikes = np.floor(voltage)
-        spikes[:] = self.amplitude * n_spikes / dt
+        spikes[:] = (self.amplitude / dt) * n_spikes
         voltage -= n_spikes
 
 
@@ -931,7 +940,154 @@ class Izhikevich(NeuronType):
         recovery[spikes > 0] = recovery[spikes > 0] + self.reset_recovery
 
 
-class NeuronTypeParam(Parameter):
-    def coerce(self, instance, neurons):
-        self.check_type(instance, neurons, NeuronType)
-        return super().coerce(instance, neurons)
+class RatesToSpikesNeuronType(NeuronType):
+    """Base class for neuron types that turn rate types into spiking ones."""
+
+    base_type = NeuronTypeParam("base_type")
+    amplitude = NumberParam("amplitude", low=0, low_open=True)
+
+    def __init__(self, base_type, amplitude=1.0, initial_state=None):
+        self.base_type = base_type
+        if "rates" not in base_type.state or "spikes" in base_type.state:
+            raise ValidationError(
+                "Must be a rate neuron type", attr="base_type", obj=self
+            )
+        self.amplitude = amplitude
+        self.negative = base_type.negative
+
+        if "state" not in self.__dict__:
+            # Allow subclasses to initialize self.state
+            self.state = {"spikes": Choice([0])}
+        self.state.update(base_type.state)
+        del self.state["rates"]
+
+        super().__init__(initial_state)
+
+    def gain_bias(self, max_rates, intercepts):
+        return self.base_type.gain_bias(max_rates, intercepts)
+
+    def max_rates_intercepts(self, gain, bias):
+        return self.base_type.max_rates_intercepts(gain, bias)
+
+    def rates(self, x, gain, bias):
+        return self.base_type.rates(x, gain, bias)
+
+
+class RegularSpiking(RatesToSpikesNeuronType):
+    """Turn a rate neuron type into a spiking one with regular inter-spike intervals.
+
+    Spikes at regular intervals based on the rates of the base neuron type. [1]_
+
+    Parameters
+    ----------
+    base_type : NeuronType
+        A rate-based neuron type to convert to a regularly spiking neuron.
+    amplitude : float
+        Scaling factor on the neuron output. Corresponds to the relative
+        amplitude of the output spikes of the neuron.
+    initial_state : {str: Distribution or array_like}
+        Mapping from state variables names to their desired initial value.
+        These values will override the defaults set in the class's state attribute.
+
+    References
+    ----------
+    .. [1] Voelker, A. R., Rasmussen, D., & Eliasmith, C. (2020). A Spike in
+       Performance: Training Hybrid-Spiking Neural Networks with Quantized Activation
+       Functions. arXiv preprint arXiv:2002.03553. (https://arxiv.org/abs/2002.03553)
+    """
+
+    def __init__(self, base_type, amplitude=1.0, initial_state=None):
+        if "voltage" in base_type.state:
+            raise ValidationError(
+                "Cannot already have a 'voltage' state variable",
+                attr="base_type",
+                obj=self,
+            )
+        self.state = {"spikes": Choice([0]), "voltage": Uniform(low=0, high=1)}
+        super().__init__(base_type, amplitude=amplitude, initial_state=initial_state)
+
+    def step(self, dt, J, spikes, voltage, **base_state):
+        # Sets output to the desired rates
+        self.base_type.step(dt, J, rates=spikes, **base_state)
+
+        voltage += dt * spikes
+        n_spikes = np.floor(voltage)
+        spikes[...] = (self.amplitude / dt) * n_spikes
+        voltage -= n_spikes
+
+
+class StochasticSpiking(RatesToSpikesNeuronType):
+    """Turn a rate neuron type into a spiking one using stochastic rounding.
+
+    The expected number of spikes per timestep ``e = dt * r`` is determined by the
+    base type firing rate ``r`` and the timestep ``dt``. Given the fractional part ``f``
+    and integer part ``q`` of ``e``, the number of generated spikes is ``q`` with
+    probability ``1 - f`` and ``q + 1`` with probability ``f``. For ``e`` much less than
+    one, this is very similar to Poisson statistics.
+
+    Parameters
+    ----------
+    base_type : NeuronType
+        A rate-based neuron type to convert to a Poisson spiking neuron.
+    amplitude : float
+        Scaling factor on the neuron output. Corresponds to the relative
+        amplitude of the output spikes of the neuron.
+    initial_state : {str: Distribution or array_like}
+        Mapping from state variables names to their desired initial value.
+        These values will override the defaults set in the class's state attribute.
+    """
+
+    def make_state(self, n_neurons, rng=np.random, dtype=None):
+        state = super().make_state(n_neurons, rng=rng, dtype=dtype)
+        state["rng"] = rng
+        return state
+
+    def step(self, dt, J, spikes, rng, **base_state):
+        self.base_type.step(dt, J, rates=spikes, **base_state)
+
+        if self.negative:
+            frac, n_spikes = np.modf(dt * np.abs(spikes))
+        else:
+            frac, n_spikes = np.modf(dt * spikes)
+
+        n_spikes += rng.random_sample(size=frac.shape) < frac
+
+        if self.negative:
+            spikes[...] = (self.amplitude / dt) * n_spikes * np.sign(spikes)
+        else:
+            spikes[...] = (self.amplitude / dt) * n_spikes
+
+
+class PoissonSpiking(RatesToSpikesNeuronType):
+    """Turn a rate neuron type into a spiking one with Poisson spiking statistics.
+
+    Spikes with Poisson probability based on the rates of the base neuron type.
+
+    Parameters
+    ----------
+    base_type : NeuronType
+        A rate-based neuron type to convert to a Poisson spiking neuron.
+    amplitude : float
+        Scaling factor on the neuron output. Corresponds to the relative
+        amplitude of the output spikes of the neuron.
+    initial_state : {str: Distribution or array_like}
+        Mapping from state variables names to their desired initial value.
+        These values will override the defaults set in the class's state attribute.
+    """
+
+    def make_state(self, n_neurons, rng=np.random, dtype=None):
+        state = super().make_state(n_neurons, rng=rng, dtype=dtype)
+        state["rng"] = rng
+        return state
+
+    def step(self, dt, J, spikes, rng, **base_state):
+        self.base_type.step(dt, J, rates=spikes, **base_state)
+
+        if self.negative:
+            spikes[...] = (
+                (self.amplitude / dt)
+                * rng.poisson(np.abs(spikes) * dt, spikes.size)
+                * np.sign(spikes)
+            )
+        else:
+            spikes[...] = (self.amplitude / dt) * rng.poisson(spikes * dt, spikes.size)

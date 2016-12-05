@@ -48,9 +48,12 @@ from .neurons import (
     Izhikevich,
     LIF,
     LIFRate,
+    PoissonSpiking,
     RectifiedLinear,
+    RegularSpiking,
     Sigmoid,
     SpikingRectifiedLinear,
+    StochasticSpiking,
     Tanh,
 )
 from .network import Network

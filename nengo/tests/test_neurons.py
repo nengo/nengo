@@ -1,4 +1,6 @@
+from collections import defaultdict
 import logging
+import time
 
 import numpy as np
 import pytest
@@ -14,9 +16,12 @@ from nengo.neurons import (
     LIFRate,
     NeuronType,
     NeuronTypeParam,
+    PoissonSpiking,
     RectifiedLinear,
+    RegularSpiking,
     Sigmoid,
     SpikingRectifiedLinear,
+    StochasticSpiking,
     Tanh,
 )
 from nengo.processes import WhiteSignal
@@ -24,6 +29,20 @@ from nengo.solvers import LstsqL2nz
 from nengo.utils.ensemble import tuning_curves
 from nengo.utils.matplotlib import implot, rasterplot
 from nengo.utils.numpy import rms
+
+
+# --- define a composite neuron type, used in `nl` (see `pytest_nengo.py`)
+class SpikingTanh(RegularSpiking):
+    def __init__(self, tau_ref=0.0025, amplitude=1.0, initial_state=None):
+        super().__init__(
+            base_type=Tanh(tau_ref=tau_ref),
+            amplitude=amplitude,
+            initial_state=initial_state,
+        )
+
+    @property
+    def tau_ref(self):
+        return self.base_type.tau_ref
 
 
 def test_lif_builtin(rng, allclose):
@@ -350,6 +369,58 @@ def test_sigmoid_invalid(Simulator):
                 pass
 
 
+@pytest.mark.slow
+@pytest.mark.parametrize("base_type", [LIFRate(), RectifiedLinear(), Tanh()])
+def test_spiking_types(base_type, seed, plt, allclose):
+    spiking_types = {
+        RegularSpiking: dict(atol=0.05, rmse_target=0.011),
+        PoissonSpiking: dict(atol=0.13, rmse_target=0.024),
+        StochasticSpiking: dict(atol=0.10, rmse_target=0.019),
+    }
+
+    n_neurons = 1000
+
+    with nengo.Network(seed=seed) as net:
+        u = nengo.Node(lambda t: np.sin(2 * np.pi * t))
+        a = nengo.Ensemble(n_neurons, 1)
+        nengo.Connection(u, a)
+        u_p = nengo.Probe(u, synapse=0.005)
+        a_p = nengo.Probe(a, synapse=0.005)
+
+    neuron_types = {
+        spiking_type: spiking_type(base_type) for spiking_type in spiking_types
+    }
+    neuron_types[None] = base_type
+
+    delay = 5
+    results = defaultdict(dict)
+    for neuron_type in neuron_types.values():
+        a.neuron_type = neuron_type
+
+        with nengo.Simulator(net, seed=seed + 1) as sim:
+            timer = time.time()
+            sim.run(1.0)
+            timer = time.time() - timer
+
+        results[neuron_type]["u"] = sim.data[u_p]
+        results[neuron_type]["x"] = sim.data[a_p]
+        plt.plot(sim.trange(), sim.data[a_p], label="%s: t=%.3f" % (neuron_type, timer))
+
+    plt.plot(sim.trange()[delay:], sim.data[u_p][:-delay], "k--")
+    plt.legend(loc=3)
+
+    for spiking_type, tols in spiking_types.items():
+        neuron_type = neuron_types[spiking_type]
+        res = results[neuron_type]
+        x = res["x"][delay:]
+        u = res["u"][:-delay]
+        assert allclose(x, u, atol=tols["atol"]), spiking_type
+
+        # check that spike noise is the target amount above the base spiking model noise
+        rmse = rms(x - u)
+        assert allclose(rmse, tols["rmse_target"], atol=0.003, rtol=0.25), spiking_type
+
+
 def test_dt_dependence(Simulator, nl_nodirect, plt, seed, allclose):
     """Neurons should not wildly change with different dt."""
     freq = 10 * (2 * np.pi)
@@ -667,7 +738,7 @@ def test_initial_state(neuron_type, Simulator, seed, plt, allclose):
             assert allclose(initial_voltage, voltage, atol=1e-5)
 
 
-def test_bad_initial_state(Simulator):
+def test_bad_initial_state(rng, Simulator):
     with pytest.raises(ValidationError, match="State variable 'rates' not recognized"):
         nengo.LIF(initial_state={"rates": nengo.dists.Choice([0])})
 
@@ -675,11 +746,27 @@ def test_bad_initial_state(Simulator):
         nengo.LIF(initial_state={"voltage": "voltage"})
 
     class MyLIF(nengo.LIF):
-        state = {"in": nengo.dists.Choice([0])}
+        def __init__(self, bad_state=False):
+            super().__init__()
+            self.bad_state = bad_state
+            if bad_state:
+                self.state = {"in": nengo.dists.Choice([0])}
+
+        def make_state(self, *args, **kwargs):
+            if self.bad_state:
+                return super().make_state(*args, **kwargs)
+            return {"rng": rng, "dict": {}}
+
+    with nengo.Network() as net:
+        nengo.Ensemble(1, 1, neuron_type=MyLIF(bad_state=True))
+
+    with pytest.raises(BuildError, match="State name 'in' overlaps"):
+        with Simulator(net):
+            pass
 
     with nengo.Network() as net:
         nengo.Ensemble(1, 1, neuron_type=MyLIF())
 
-    with pytest.raises(BuildError, match="State name 'in' overlaps"):
+    with pytest.raises(BuildError, match="State 'dict' is of type 'dict'. Only"):
         with Simulator(net):
             pass

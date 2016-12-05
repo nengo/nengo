@@ -36,6 +36,14 @@ Release history
 - Added the ``negative`` attribute to ``NeuronType``, which indicates whether
   the neuron type can have negative outputs. (`#1609`_)
 - Added the ``Tanh`` neuron type to simulate hyperbolic tangent neurons. (`#1609`_)
+- Added the ``RatesToSpikesNeuronType``, which is a base class for neuron types
+  that convert a rate-based type to a spiking one. (`#1609`_)
+- Added the ``RegularSpiking`` neuron type, which emits regularly-spaced spikes
+  at the rate specified by its base type. (`#1609`_)
+- Added the ``StochasticSpiking`` neuron type, which emits spikes based on stochastic
+  rounding to roughly match the rate specified by its base type. (`#1609`_)
+- Added the ``PoissonSpiking`` neuron type, which emits Poisson-distributed spikes,
+  as are commonly used to match biological spiking statistics. (`#1609`_)
 
 **Changed**
 

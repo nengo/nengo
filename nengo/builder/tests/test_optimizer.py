@@ -3,12 +3,14 @@ from numpy.testing import assert_almost_equal
 import pytest
 
 import nengo
+from nengo.builder.neurons import SimNeurons
 from nengo.builder.optimizer import (
     CopyMerger,
     ElementwiseIncMerger,
     OpMerger,
     OpsToMerge,
     SigMerger,
+    SimNeuronsMerger,
 )
 from nengo.builder.operator import Copy, ElementwiseInc
 from nengo.builder.signal import Signal
@@ -191,6 +193,20 @@ def test_elementwiseincmerger_scalars():
     assert merged_inc.A is a
     assert merged_inc.X.shape == (2,)
     assert merged_inc.X.name.startswith("merged")
+
+
+def test_simneuronsmerger_warning(rng):
+    nt = nengo.PoissonSpiking(nengo.Tanh())
+    op1 = SimNeurons(
+        nt, J=Signal(shape=(1,)), state={"spikes": Signal(shape=(1,)), "rng": rng}
+    )
+
+    op2 = SimNeurons(
+        nt, J=Signal(shape=(1,)), state={"spikes": Signal(shape=(1,)), "rng": rng}
+    )
+    assert SimNeuronsMerger.is_mergeable(op1, op2)
+    with pytest.warns(UserWarning, match="Extra state has been modified"):
+        SimNeuronsMerger.merge([op1, op2])
 
 
 def test_optimizer_does_not_change_result(seed):

@@ -7,6 +7,7 @@ import nengo
 import nengo.utils.numpy as npext
 from nengo.dists import Choice, Uniform, UniformHypersphere
 from nengo.exceptions import BuildError, NengoWarning
+from nengo.neurons import RegularSpiking
 from nengo.processes import WhiteNoise, FilteredNoise
 from nengo.utils.testing import signals_allclose
 
@@ -388,7 +389,7 @@ def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt, allclose):
 
     process = FilteredNoise(synapse=nengo.Alpha(1.0), dist=Choice([0.5]))
     with nengo.Network(seed=seed) as model:
-        if "spikes" in nl_nodirect.state:
+        if "spikes" in nl_nodirect.state or RegularSpiking in nl_nodirect.__bases__:
             neuron_type = nl_nodirect(initial_state={"voltage": Choice([0])})
         else:
             neuron_type = nl_nodirect()

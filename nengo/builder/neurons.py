@@ -3,6 +3,7 @@ import numpy as np
 from nengo.builder import Builder, Operator, Signal
 from nengo.exceptions import BuildError
 from nengo.neurons import NeuronType
+from nengo.utils.numpy import is_array_like
 
 
 class SimNeurons(Operator):
@@ -53,14 +54,20 @@ class SimNeurons(Operator):
         self.reads = [J]
         self.updates = []
 
-        self.state = {}
+        self.state_sigs = {}
+        self.state_extra = {}
         if state is not None:
-            for name, sig in state.items():
-                # The signals actually stored in `self.sets` can be modified by the
-                # optimizer. To allow this possibility, we store the index of the
-                # signal in the sets list instead of storing the signal itself.
-                self.state[name] = len(self.sets)
-                self.sets.append(sig)
+            for name, obj in state.items():
+                if isinstance(obj, Signal):
+                    # The signals actually stored in `self.sets` can be modified by the
+                    # optimizer. To allow this possibility, we store the index of the
+                    # signal in the sets list instead of storing the signal itself.
+                    self.state_sigs[name] = len(self.sets)
+                    self.sets.append(obj)
+                else:
+                    # The only supported extra is a RandomState right now
+                    assert isinstance(obj, np.random.RandomState)
+                    self.state_extra[name] = obj
 
     @property
     def J(self):
@@ -72,7 +79,8 @@ class SimNeurons(Operator):
 
     def make_step(self, signals, dt, rng):
         J = signals[self.J]
-        state = {name: signals[self.sets[idx]] for name, idx in self.state.items()}
+        state = {name: signals[self.sets[idx]] for name, idx in self.state_sigs.items()}
+        state.update(self.state_extra)
 
         def step_simneurons():
             self.neurons.step(dt, J, **state)
@@ -111,10 +119,19 @@ def build_neurons(model, neurontype, neurons):
     for key, init in state_init.items():
         if key in model.sig[neurons]:
             raise BuildError("State name %r overlaps with existing signal name" % key)
-        model.sig[neurons][key] = Signal(
-            initial_value=init, name="%s.%s" % (neurons, key)
-        )
-        state[key] = model.sig[neurons][key]
+        if is_array_like(init):
+            model.sig[neurons][key] = Signal(
+                initial_value=init, name="%s.%s" % (neurons, key)
+            )
+            state[key] = model.sig[neurons][key]
+        elif isinstance(init, np.random.RandomState):
+            # Pass through RandomState instances
+            state[key] = init
+        else:
+            raise BuildError(
+                "State %r is of type %r. Only array-likes and RandomStates are "
+                "currently supported." % (key, type(init).__name__)
+            )
 
     model.sig[neurons]["out"] = (
         state["spikes"] if neurontype.spiking else state["rates"]
