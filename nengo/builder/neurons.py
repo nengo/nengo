@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import inspect
 
 import numpy as np
 
@@ -76,10 +77,19 @@ class SimNeurons(Operator):
         output = signals[self.output]
         states = {name: signals[sig] for name, sig in self.states.items()}
 
-        def step_simneurons():
-            self.neurons.step_math(dt, J, output, **states)
+        argspec = inspect.getargspec(self.neurons.step_math)
+        if "rng" in argspec.args:
 
-        return step_simneurons
+            def step_simneurons_withrng():
+                self.neurons.step_math(dt, J, output, rng, **states)
+
+            return step_simneurons_withrng
+        else:
+
+            def step_simneurons():
+                self.neurons.step_math(dt, J, output, **states)
+
+            return step_simneurons
 
 
 def get_neuron_states(model, neurontype, neurons, dtype=None):
