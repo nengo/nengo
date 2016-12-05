@@ -43,3 +43,10 @@ Nengo includes preset configurations that can be
 dropped into your model to enable specific neural circuits.
 
 .. autofunction:: nengo.presets.ThresholdingEnsembles
+
+Quirks
+======
+
+.. toctree::
+
+   examples/config_quirks

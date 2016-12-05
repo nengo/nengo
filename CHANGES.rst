@@ -22,6 +22,11 @@ Release History
 2.3.1 (unreleased)
 ==================
 
+**Added**
+
+- Added documentation on config system quirks.
+  (`#1224 <https://github.com/nengo/nengo/pull/1224>`_)
+
 **Fixed**
 
 - The matrix multiplication example will now work with matrices of any size
