@@ -29,7 +29,8 @@ class LearningRuleType(FrozenObject):
     * ``'none'``: no error signal
     * ``'scalar'``: scalar error signal
     * ``'decoded'``: vector error signal in decoded space
-    * ``'neuron'``: vector error signal in neuron space
+    * ``'pre'``: vector error signal in pre-object space
+    * ``'post'``: vector error signal in post-object space
 
     The ``modifies`` attribute denotes the signal targeted by the rule.
     Options are:
@@ -284,6 +285,33 @@ class Voja(LearningRuleType):
         return args
 
 
+class HebbError(LearningRuleType):
+    """
+        \delta W_ij = \eta a_j e_i
+    """
+    error_type = 'post'
+    modifies = 'weights'
+    probeable = ('delta')
+
+    pre_tau = NumberParam('pre_tau', low=0, low_open=True)
+
+    def __init__(self, learning_rate=1e-4, pre_tau=0.005):
+        if learning_rate >= 1.0:
+            warnings.warn("This learning rate is very high, and can result "
+                          "in floating point errors from too much current.")
+        self.pre_tau = pre_tau
+        super(HebbError, self).__init__(learning_rate)
+
+    @property
+    def _argreprs(self):
+        args = []
+        if self.learning_rate != 1e-4:
+            args.append("learning_rate=%g" % self.learning_rate)
+        if self.pre_tau != 0.005:
+            args.append("pre_tau=%f" % self.pre_tau)
+        return args
+
+
 class LearningRuleTypeParam(Parameter):
     def validate(self, instance, rule):
         if is_iterable(rule):
@@ -298,7 +326,7 @@ class LearningRuleTypeParam(Parameter):
             raise ValidationError(
                 "'%s' must be a learning rule type or a dict or "
                 "list of such types." % rule, attr=self.name, obj=instance)
-        if rule.error_type not in ('none', 'scalar', 'decoded', 'neuron'):
+        if rule.error_type not in ('none', 'scalar', 'decoded', 'pre', 'post'):
             raise ValidationError(
                 "Unrecognized error type %r" % rule.error_type,
                 attr=self.name, obj=instance)

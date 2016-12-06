@@ -579,8 +579,10 @@ class LearningRule(object):
             return (self.connection.post_obj.ensemble.size_in
                     if isinstance(self.connection.post_obj, Neurons) else
                     self.connection.size_out)
-        elif self.error_type == 'neuron':
-            raise NotImplementedError()
+        elif self.error_type == 'pre':
+            return self.connection.pre_obj.size_out
+        elif self.error_type == 'post':
+            return self.connection.post_obj.size_out
         else:
             raise ValidationError(
                 "Unrecognized error type %r" % self.error_type,
