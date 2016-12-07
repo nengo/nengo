@@ -182,7 +182,12 @@ class RectifiedLinear(NeuronType):
 
 
 class Sigmoid(NeuronType):
-    """A neuron model whose response curve is a sigmoid."""
+    """A neuron model whose response curve is a sigmoid.
+
+    Since the tuning curves are strictly positive, the ``intercepts``
+    correspond to the inflection point of each sigmoid. That is,
+    ``f(intercept) = 0.5`` where ``f`` is the pure sigmoid function.
+    """
 
     probeable = ('rates',)
 
