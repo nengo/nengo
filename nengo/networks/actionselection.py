@@ -92,7 +92,7 @@ def BasalGanglia(dimensions, n_neurons_per_ensemble=100, output_weight=-3.,
     ----------
     dimensions : int
         Number of dimensions (i.e., actions).
-    n_neuron_per_ensemble : int, optional (Default: 100)
+    n_neurons_per_ensemble : int, optional (Default: 100)
         Number of neurons in each ensemble in the network.
     output_weight : float, optional (Default: -3.)
         A scaling factor on the output of the basal ganglia
@@ -265,7 +265,7 @@ def Thalamus(dimensions, n_neurons_per_ensemble=50,
     ----------
     dimensions : int
         Number of dimensions (i.e., actions).
-    n_neuron_per_ensemble : int, optional (Default: 50)
+    n_neurons_per_ensemble : int, optional (Default: 50)
         Number of neurons in each ensemble in the network.
     mutual_inhib : float, optional (Default: 1.)
         Strength of the mutual inhibition between actions.
