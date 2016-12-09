@@ -4,7 +4,6 @@ import pytest
 import nengo
 from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
-from nengo.builder.operator import DotInc, PreserveValue
 from nengo.builder.signal import Signal, SignalDict
 from nengo.exceptions import ObsoleteError, SignalError
 from nengo.utils.compat import itervalues, range
@@ -123,30 +122,6 @@ def test_signal_values():
         two_d.initial_value = np.array([[0.5], [-0.5]])
     with pytest.raises((ValueError, RuntimeError)):
         two_d.initial_value[...] = np.array([[0.5], [-0.5]])
-
-
-def test_signal_init_values(RefSimulator):
-    """Tests that initial values are not overwritten."""
-    zero = Signal([0])
-    one = Signal([1])
-    five = Signal([5.0])
-    zeroarray = Signal([[0], [0], [0]])
-    array = Signal([1, 2, 3])
-
-    m = Model(dt=0)
-    m.operators += [PreserveValue(five), PreserveValue(array),
-                    DotInc(zero, zero, five), DotInc(zeroarray, one, array)]
-
-    with RefSimulator(None, model=m) as sim:
-        assert sim.signals[zero][0] == 0
-        assert sim.signals[one][0] == 1
-        assert sim.signals[five][0] == 5.0
-        assert np.all(np.array([1, 2, 3]) == sim.signals[array])
-        sim.step()
-        assert sim.signals[zero][0] == 0
-        assert sim.signals[one][0] == 1
-        assert sim.signals[five][0] == 5.0
-        assert np.all(np.array([1, 2, 3]) == sim.signals[array])
 
 
 def test_signaldict():
