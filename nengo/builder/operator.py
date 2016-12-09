@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 
 import nengo.utils.numpy as npext
+from nengo.utils.connection import function_name
 from nengo.exceptions import BuildError, SimulationError
 
 
@@ -703,7 +704,8 @@ class SimPyFunc(Operator):
         self.updates = []
 
     def _descstr(self):
-        return '%s -> %s, fn=%r' % (self.x, self.output, self.fn.__name__)
+        return '%s -> %s, fn=%r' % (
+            self.x, self.output, function_name(self.fn))
 
     def make_step(self, signals, dt, rng):
         fn = self.fn
@@ -717,11 +719,11 @@ class SimPyFunc(Operator):
             if output is not None:
                 if y is None:  # required since Numpy turns None into NaN
                     raise SimulationError(
-                        "Function %r returned None" % fn.__name__)
+                        "Function %r returned None" % function_name(self.fn))
                 try:
                     output[...] = y
                 except ValueError:
                     raise SimulationError("Function %r returned invalid value "
-                                          "%r" % (fn.__name__, y))
+                                          "%r" % (function_name(self.fn), y))
 
         return step_simpyfunc

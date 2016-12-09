@@ -27,6 +27,8 @@ Release History
 - The matrix multiplication example will now work with matrices of any size
   and uses the product network for clarity.
   (`#1159 <https://github.com/nengo/nengo/pull/1159>`_)
+- Fixed instances in which passing a callable class as a function could fail.
+  (`#1245 <https://github.com/nengo/nengo/pull/1245>`_)
 
 **Changed**
 

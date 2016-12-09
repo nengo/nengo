@@ -14,6 +14,7 @@ from nengo.params import (Default, Unconfigurable, ObsoleteParam,
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_array_like, is_iterable, iteritems
+from nengo.utils.connection import function_name
 
 logger = logging.getLogger(__name__)
 
@@ -424,7 +425,7 @@ class Connection(NengoObject):
             return self.label
 
         desc = "" if self.function is None else " computing '%s'" % (
-            getattr(self.function, '__name__', str(self.function)))
+            function_name(self.function))
         return "from %s to %s%s" % (self.pre, self.post, desc)
 
     @property
@@ -448,7 +449,7 @@ class Connection(NengoObject):
 
         return "from %s to %s%s" % (
             self.pre, self.post,
-            " computing '%s'" % self.function.__name__
+            " computing '%s'" % function_name(self.function)
             if self.function is not None else "")
 
     @property

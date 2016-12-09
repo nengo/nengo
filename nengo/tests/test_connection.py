@@ -918,3 +918,26 @@ def test_connectionfunctionparam_array(RefSimulator):
 
     with RefSimulator(model):
         pass
+
+
+def test_function_names():
+    def my_func(x):
+        return x
+
+    class MyFunc:
+        def __call__(self, x):
+            return x
+
+    with nengo.Network():
+        a = nengo.Ensemble(10, 1)
+        b = nengo.Node(size_in=1)
+
+        func_conn = nengo.Connection(a, b, function=my_func)
+        assert str(func_conn).endswith("computing 'my_func'>")
+
+        class_conn = nengo.Connection(a, b, function=MyFunc())
+        assert str(class_conn).endswith("computing 'MyFunc'>")
+
+        array_conn = nengo.Connection(a, b, eval_points=np.zeros((10, 1)),
+                                      function=np.zeros((10, 1)))
+        assert str(array_conn).endswith("computing 'ndarray'>")
