@@ -86,13 +86,6 @@ def validate_ops(sets, ups, incs):
         sig_ups = ups[sig] + (ups.get(sig.base, []) if sig.is_view else [])
         assert len(sig_ups) == 1, (sig, sig_ups)
 
-    # --- assert that any sig that is incremented is also set/updated
-    for sig in incs:
-        sig_sets_ups = sets.get(sig, []) + ups.get(sig, []) + (
-            sets.get(sig.base, []) + ups.get(sig.base, [])
-            if sig.is_view else [])
-        assert len(sig_sets_ups) > 0, (sig)
-
     # -- assert that no two views are both set and aliased
     for _, base_group in groupby(sets, lambda x: x.base, hashable=True):
         for sig, sig2 in itertools.combinations(base_group, 2):

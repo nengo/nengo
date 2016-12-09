@@ -236,52 +236,6 @@ class TimeUpdate(Operator):
         return step_timeupdate
 
 
-class PreserveValue(Operator):
-    """Marks a signal as ``set`` for the graph checker.
-
-    This operator does no computation. It simply marks a signal as ``set``,
-    allowing us to apply other ops to signals that we want to preserve their
-    value across multiple time steps. It is used primarily for learning rules.
-
-    Parameters
-    ----------
-    dst : Signal
-        The signal whose value we want to preserve.
-    tag : str, optional (Default: None)
-        A label associated with the operator, for debugging purposes.
-
-    Attributes
-    ----------
-    dst : Signal
-        The signal whose value we want to preserve.
-    tag : str or None
-        A label associated with the operator, for debugging purposes.
-
-    Notes
-    -----
-    1. sets ``[dst]``
-    2. incs ``[]``
-    3. reads ``[]``
-    4. updates ``[]``
-    """
-    def __init__(self, dst, tag=None):
-        super(PreserveValue, self).__init__(tag=tag)
-        self.dst = dst
-
-        self.sets = [dst]
-        self.incs = []
-        self.reads = []
-        self.updates = []
-
-    def _descstr(self):
-        return str(self.dst)
-
-    def make_step(self, signals, dt, rng):
-        def step_preservevalue():
-            pass
-        return step_preservevalue
-
-
 class Reset(Operator):
     """Assign a constant value to a Signal.
 

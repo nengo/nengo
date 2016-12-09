@@ -58,8 +58,6 @@ Operators
 
 .. autoclass:: nengo.builder.operator.TimeUpdate
 
-.. autoclass:: nengo.builder.operator.PreserveValue
-
 .. autoclass:: nengo.builder.operator.SimPyFunc
 
 .. autoclass:: nengo.builder.neurons.SimNeurons

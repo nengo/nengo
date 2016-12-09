@@ -6,7 +6,7 @@ import nengo
 import nengo.simulator
 from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
-from nengo.builder.operator import DotInc, PreserveValue
+from nengo.builder.operator import DotInc
 from nengo.builder.signal import Signal
 from nengo.exceptions import ObsoleteError, SimulatorClosed
 from nengo.utils.compat import ResourceWarning
@@ -146,8 +146,7 @@ def test_signal_init_values(RefSimulator):
     array = Signal([1, 2, 3])
 
     m = Model(dt=0)
-    m.operators += [PreserveValue(five), PreserveValue(array),
-                    DotInc(zero, zero, five), DotInc(zeroarray, one, array)]
+    m.operators += [DotInc(zero, zero, five), DotInc(zeroarray, one, array)]
 
     with RefSimulator(None, model=m) as sim:
         assert sim.signals[zero][0] == 0
