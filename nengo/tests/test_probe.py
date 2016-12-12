@@ -241,3 +241,19 @@ def test_obsolete_probes():
             nengo.Probe(conn, "decoders")
         with pytest.raises(ObsoleteError):
             nengo.Probe(conn, "transform")
+
+
+def test_update_timing(Simulator):
+    with nengo.Network() as net:
+        inp = nengo.Node([1])
+        ens = nengo.Ensemble(10, 1, encoders=np.ones((10, 1)),
+                             gain=np.ones(10), bias=np.zeros(10))
+        nengo.Connection(inp, ens, synapse=None)
+
+        sig_p = nengo.Probe(ens.neurons, 'input', synapse=0)
+
+    with Simulator(net) as sim:
+        sim.run(0.003)
+
+    assert np.allclose(sim.data[sig_p][0], 0)
+    assert np.allclose(sim.data[sig_p][1:], 1)

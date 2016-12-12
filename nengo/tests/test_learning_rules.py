@@ -243,7 +243,8 @@ def learning_net(learning_rule, net, rng):
             nengo.Connection(err, conn.learning_rule)
 
         activity_p = nengo.Probe(pre.neurons, synapse=0.01)
-        weights_p = nengo.Probe(conn, 'weights', synapse=.01, sample_every=.01)
+        weights_p = nengo.Probe(
+            conn, 'weights', synapse=None, sample_every=.01)
     return net, activity_p, weights_p
 
 

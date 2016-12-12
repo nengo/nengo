@@ -1,7 +1,7 @@
 import numpy as np
 
 from nengo.builder import Builder, Signal
-from nengo.builder.operator import Reset
+from nengo.builder.operator import Reset, SlicedCopy
 from nengo.connection import Connection, LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
@@ -45,7 +45,10 @@ def signal_probe(model, key, probe):
     if probe.synapse is None:
         model.sig[probe]['in'] = sig
     else:
-        model.sig[probe]['in'] = model.build(probe.synapse, sig)
+        model.sig[probe]['in'] = Signal(np.zeros(sig.shape), name=str(probe))
+        model.sig[probe]['filtered'] = model.build(probe.synapse, sig)
+        model.add_op(SlicedCopy(model.sig[probe]['filtered'],
+                                model.sig[probe]['in']))
 
 
 probemap = {

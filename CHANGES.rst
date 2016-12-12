@@ -29,6 +29,10 @@ Release History
   (`#1159 <https://github.com/nengo/nengo/pull/1159>`_)
 - Fixed instances in which passing a callable class as a function could fail.
   (`#1245 <https://github.com/nengo/nengo/pull/1245>`_)
+- Fixed an issue in which probing some attributes would be one timestep
+  faster than other attributes.
+  (`#1234 <https://github.com/nengo/nengo/issues/1234>`_,
+  `#1245 <https://github.com/nengo/nengo/pull/1245>`_)
 
 **Changed**
 
