@@ -89,6 +89,10 @@ class EnsembleArray(nengo.Network):
 
         super(EnsembleArray, self).__init__(label, seed, add_to_container)
 
+        for param in ens_kwargs:
+            if is_iterable(ens_kwargs[param]):
+                ens_kwargs[param] = nengo.dists.Samples(ens_kwargs[param])
+
         self.config[nengo.Ensemble].update(ens_kwargs)
 
         label_prefix = "" if label is None else label + "_"

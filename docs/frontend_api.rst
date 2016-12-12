@@ -41,6 +41,8 @@ Distributions
 
 .. autoclass:: nengo.dists.Choice
 
+.. autoclass:: nengo.dists.Samples
+
 .. autoclass:: nengo.dists.PDF
 
 .. autoclass:: nengo.dists.SqrtBeta

@@ -116,6 +116,36 @@ def test_choice(weights, rng):
     assert np.allclose(p, p_empirical, atol=2 * sterr)
 
 
+@pytest.mark.parametrize("shape", [(12, 2), (7, 1), (7,), (1, 1)])
+def test_samples(shape, rng):
+    samples = rng.random_sample(size=shape)
+    d = dists.Samples(samples)
+    dims = None if len(shape) == 1 else shape[1]
+    assert np.allclose(d.sample(shape[0], dims), samples)
+
+
+@pytest.mark.parametrize("samples", [[1., 2., 3.], [[1, 2], [3, 4]]])
+def test_samples_list(samples):
+    d = dists.Samples(samples)
+    shape = np.array(samples).shape
+    dims = None if len(shape) == 1 else shape[1]
+    assert np.allclose(d.sample(shape[0], dims), samples)
+
+
+def test_samples_errors(rng):
+    samples = rng.random_sample(size=(12, 2))
+    with pytest.raises(ValidationError):
+        dists.Samples(samples).sample(11, 2)
+    with pytest.raises(ValidationError):
+        dists.Samples(samples).sample(12, 1)
+    with pytest.raises(ValidationError):
+        dists.Samples(samples).sample(12)
+
+    samples = rng.random_sample(size=12)
+    with pytest.raises(ValidationError):
+        dists.Samples(samples).sample(12, 2)
+
+
 @pytest.mark.parametrize("n,m", [(99, 1), (50, 50)])
 def test_sqrt_beta(n, m, rng):
     num_samples = 250

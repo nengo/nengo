@@ -28,6 +28,9 @@ Release History
   ``Ensemble.normalize_encoders`` to ``False``.
   (`#1191 <https://github.com/nengo/nengo/issues/1191>`_,
   `#1267 <https://github.com/nengo/nengo/pull/1267>`_)
+- Added the ``Samples`` distribution to allow raw NumPy arrays
+  to be passed in situations where a distribution is required.
+  (`#1233 <https://github.com/nengo/nengo/pull/1233>`_)
 
 **Changed**
 
@@ -37,6 +40,11 @@ Release History
   be passed as the label.
   (`#1277 <https://github.com/nengo/nengo/pull/1277>`_,
   `#1275 <https://github.com/nengo/nengo/issues/1275>`_)
+- It is now possible to pass NumPy arrays in the ``ens_kwargs`` argument of
+  ``EnsembleArray``. Arrays are wrapped in a ``Samples`` distribution internally.
+  (`#691 <https://github.com/nengo/nengo/issues/691>`_,
+  `#766 <https://github.com/nengo/nengo/issues/766>`_,
+  `#1233 <https://github.com/nengo/nengo/pull/1233>`_)
 
 **Fixed**
 
