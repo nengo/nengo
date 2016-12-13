@@ -45,6 +45,10 @@ Release History
 - Fixed an issue in which SPA models could not be copied.
   (`#1266 <https://github.com/nengo/nengo/issues/1266>`_,
   `#1271 <https://github.com/nengo/nengo/pull/1271>`_)
+- Fixed an issue in which Nengo would crash if other programs
+  had locks on Nengo cache files in Windows.
+  (`#1200 <https://github.com/nengo/nengo/issues/1200>`_,
+  `#1235 <https://github.com/nengo/nengo/pull/1235>`_)
 
 **Changed**
 

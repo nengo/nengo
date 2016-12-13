@@ -117,3 +117,7 @@ class NotAddedToNetworkWarning(NengoWarning):
             "use the copy method on the object instead of Python's copy "
             "module. When unpickling objects, they have to be added to "
             "networks manually.".format(obj=self.obj))
+
+
+class CacheIOWarning(NengoWarning):
+    """A non-critical issue in accessing files in the cache."""

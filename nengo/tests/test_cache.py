@@ -2,6 +2,7 @@ import errno
 import multiprocessing
 import os
 import timeit
+from subprocess import CalledProcessError
 
 import numpy as np
 from numpy.testing import assert_equal
@@ -10,7 +11,7 @@ import pytest
 import nengo
 from nengo.cache import (CacheIndex, DecoderCache, Fingerprint,
                          get_fragment_size, WriteableCacheIndex)
-from nengo.exceptions import FingerprintError
+from nengo.exceptions import CacheIOWarning, FingerprintError
 from nengo.solvers import LstsqL2
 from nengo.utils.compat import int_types
 from nengo.utils.testing import warns
@@ -630,3 +631,14 @@ def test_writeablecacheindex_removes(tmpdir):
     with index:
         assert 0 not in index, "Fails on relative paths"
         assert 1 not in index, "Fails on absolute paths"
+
+
+def test_writeablecacheindex_warning(monkeypatch, tmpdir):
+
+    def raise_error(*args, **kwargs):
+        raise CalledProcessError(-1, "move")
+
+    monkeypatch.setattr(nengo.cache, "replace", raise_error)
+    with warns(CacheIOWarning):
+        with WriteableCacheIndex(cache_dir=str(tmpdir)):
+            pass
