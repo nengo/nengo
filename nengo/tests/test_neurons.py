@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.exceptions import SimulationError
+
+from nengo.exceptions import BuildError, SimulationError
 from nengo.neurons import Direct, NeuronTypeParam
 from nengo.processes import WhiteSignal
 from nengo.solvers import LstsqL2nz
@@ -282,6 +283,57 @@ def test_izhikevich(Simulator, plt, seed, rng):
     plot(fs, "Fast spiking", 4)
     plot(lts, "Low-threshold spiking", 5)
     plot(rz, "Resonator", 6)
+
+
+def test_sigmoid_response_curves(Simulator):
+    # Max rate > rate at inflection point => intercept has to be < 1
+    with nengo.Network() as m:
+        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[300.])
+    with Simulator(m) as sim:
+        pass
+    x, y = nengo.utils.ensemble.response_curves(e, sim)
+    assert np.allclose(np.max(y), 300.)
+    assert np.all(y > 0.)
+    assert np.all(np.diff(y) > 0.)  # monotonically increasing
+
+    with nengo.Network() as m:
+        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[300.],
+                           intercepts=[1.1])
+    with pytest.raises(BuildError):
+        with Simulator(m) as sim:
+            pass
+
+    with nengo.Network() as m:
+        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[300.],
+                           intercepts=[1.0])
+    with pytest.raises(BuildError):
+        with Simulator(m) as sim:
+            pass
+
+    # Max rate < rate at inflection point => intercept has to be > 1
+    with nengo.Network() as m:
+        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[100.],
+                           intercepts=[1.1])
+    with Simulator(m) as sim:
+        pass
+    x, y = nengo.utils.ensemble.response_curves(e, sim)
+    assert np.allclose(np.max(y), 100.)
+    assert np.all(y > 0.)
+    assert np.all(np.diff(y) > 0.)  # monotonically increasing
+
+    with nengo.Network() as m:
+        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[100.],
+                           intercepts=[0.9])
+    with pytest.raises(BuildError):
+        with Simulator(m) as sim:
+            pass
+
+    with nengo.Network() as m:
+        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[100.],
+                           intercepts=[1.0])
+    with pytest.raises(BuildError):
+        with Simulator(m) as sim:
+            pass
 
 
 def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):

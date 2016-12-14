@@ -37,6 +37,11 @@ Release History
 
 **Changed**
 
+- We now raise an error when an ensemble is assigned a negative gain.
+  This can occur when solving for gains with intercepts greater than 1.
+  (`#1212 <https://github.com/nengo/nengo/issues/1212>`_,
+  `#1231 <https://github.com/nengo/nengo/issues/1231>`_,
+  `#1248 <https://github.com/nengo/nengo/pull/1248>`_)
 - We now raise an error when a ``Node`` or ``Direct`` ensemble
   produces a non-finite value.
   (`#1178 <https://github.com/nengo/nengo/issues/1178>`_,
@@ -53,6 +58,10 @@ Release History
   (`#691 <https://github.com/nengo/nengo/issues/691>`_,
   `#766 <https://github.com/nengo/nengo/issues/766>`_,
   `#1233 <https://github.com/nengo/nengo/pull/1233>`_)
+- The default refractory period (``tau_ref``) for the ``Sigmoid`` neuron type
+  has changed to 2.5 ms (from 2 ms) for better compatibility with the
+  default maximum firing rates of 200-400 Hz.
+  (`#1248 <https://github.com/nengo/nengo/pull/1248>`_)
 
 **Fixed**
 

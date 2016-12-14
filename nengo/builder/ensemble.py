@@ -8,6 +8,7 @@ from nengo.builder import Builder, Signal
 from nengo.builder.operator import Copy, DotInc, Reset
 from nengo.dists import Distribution, get_samples
 from nengo.ensemble import Ensemble
+from nengo.exceptions import BuildError
 from nengo.neurons import Direct
 from nengo.utils.builder import default_n_eval_points
 
@@ -95,6 +96,14 @@ def get_gain_bias(ens, rng=np.random):
         max_rates = get_samples(ens.max_rates, ens.n_neurons, rng=rng)
         intercepts = get_samples(ens.intercepts, ens.n_neurons, rng=rng)
         gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
+        if gain is not None and (
+                not np.all(np.isfinite(gain)) or np.any(gain <= 0.)):
+            raise BuildError(
+                "The specified intercepts for %s lead to neurons with "
+                "negative or non-finite gain. Please adjust the intercepts so "
+                "that all gains are positive. For most neuron types (e.g., "
+                "LIF neurons) this is achieved by reducing the maximum "
+                "intercept value to below 1." % ens)
 
     return gain, bias, max_rates, intercepts
 

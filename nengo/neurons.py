@@ -193,20 +193,20 @@ class Sigmoid(NeuronType):
 
     tau_ref = NumberParam('tau_ref', low=0)
 
-    def __init__(self, tau_ref=0.002):
+    def __init__(self, tau_ref=0.0025):
         super(Sigmoid, self).__init__()
         self.tau_ref = tau_ref
 
     @property
     def _argreprs(self):
-        return [] if self.tau_ref == 0.002 else ["tau_ref=%s" % self.tau_ref]
+        return [] if self.tau_ref == 0.0025 else ["tau_ref=%s" % self.tau_ref]
 
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
         lim = 1. / self.tau_ref
-        gain = (-2. / (intercepts - 1.0)) * np.log(
-            (2.0 * lim - max_rates) / (lim - max_rates))
-        bias = -np.log(lim / max_rates - 1) - gain
+        inverse = -np.log(lim / max_rates - 1.)
+        gain = inverse / (1. - intercepts)
+        bias = inverse - gain
         return gain, bias
 
     def step_math(self, dt, J, output):

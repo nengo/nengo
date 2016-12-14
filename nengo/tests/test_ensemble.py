@@ -4,6 +4,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.dists import Choice, Gaussian, UniformHypersphere
+from nengo.exceptions import BuildError
 from nengo.processes import WhiteNoise, FilteredNoise
 from nengo.utils.testing import warns, allclose
 
@@ -397,3 +398,13 @@ def test_no_norm_encoders(Simulator):
 
     assert np.allclose(sim.data[norm].encoders, 1)
     assert np.allclose(sim.data[no_norm].encoders, enc_weight)
+
+
+@pytest.mark.parametrize('intercept', [1.0, 1.1])
+def test_raises_exception_for_invalid_intercepts(Simulator, intercept):
+    with nengo.Network() as model:
+        nengo.Ensemble(1, 1, intercepts=[intercept])
+
+    with pytest.raises(BuildError):
+        with nengo.Simulator(model):
+            pass

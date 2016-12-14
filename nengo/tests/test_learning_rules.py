@@ -381,6 +381,7 @@ def test_voja_encoders(Simulator, nl_nodirect, rng, seed):
         u = nengo.Node(output=learned_vector)
         x = nengo.Ensemble(n, dimensions=len(learned_vector),
                            intercepts=intercepts, encoders=encoders,
+                           max_rates=nengo.dists.Uniform(300., 400.),
                            radius=2.0)  # to test encoder scaling
 
         conn = nengo.Connection(

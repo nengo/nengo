@@ -39,7 +39,7 @@ def test_node_to_neurons(Simulator, nl_nodirect, plt, seed):
         inn = nengo.Node(output=np.sin)
         inh = nengo.Node(piecewise({0: 0, 0.5: 1}))
         nengo.Connection(inn, a)
-        nengo.Connection(inh, a.neurons, transform=[[-2.5]] * N)
+        nengo.Connection(inh, a.neurons, transform=[[-5]] * N)
 
         inn_p = nengo.Probe(inn, 'output')
         a_p = nengo.Probe(a, 'decoded_output', synapse=0.1)
@@ -72,7 +72,7 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect, plt, seed):
         inh = nengo.Node(piecewise({0: 0, 0.5: 1}))
         nengo.Connection(inn, a)
         nengo.Connection(inh, b)
-        nengo.Connection(b, a.neurons, transform=[[-2.5]] * N)
+        nengo.Connection(b, a.neurons, transform=[[-10]] * N)
 
         inn_p = nengo.Probe(inn, 'output')
         a_p = nengo.Probe(a, 'decoded_output', synapse=0.1)
