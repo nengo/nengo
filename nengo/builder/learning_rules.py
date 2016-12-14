@@ -1,7 +1,7 @@
 import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
-from nengo.builder.operator import DotInc, ElementwiseInc, Reset
+from nengo.builder.operator import ElementwiseInc, Reset
 from nengo.connection import LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
@@ -23,6 +23,7 @@ class SimBCM(Operator):
     * :math:`a_j` is the activity of a postsynaptic neuron,
     * :math:`\\theta_j` is an estimate of the average :math:`a_j`, and
     * :math:`a_i` is the activity of a presynaptic neuron.
+    * :math:`\omega_{ij}` is the connection weight between the two neurons.
 
     Parameters
     ----------
@@ -96,7 +97,8 @@ class SimBCM(Operator):
         theta = signals[self.theta]
         delta = signals[self.delta]
         alpha = self.learning_rate * dt
-        period = (1 if self.apply_every is None else apply_every / self.dt)
+        period = (1 if self.apply_every is None else
+                  self.apply_every / self.dt)
 
         if period > 1:
             n_steps = signals[self.n_steps]
@@ -106,6 +108,9 @@ class SimBCM(Operator):
                     delta[...] = np.outer(
                         alpha * post_filtered * (post_filtered - theta),
                         pre_filtered)
+
+                    # scale to compensate
+                    delta[...] *= period
             return step_simbcm_sometimes
 
         def step_simbcm():
@@ -208,7 +213,8 @@ class SimOja(Operator):
         delta = signals[self.delta]
         alpha = self.learning_rate * dt
         beta = self.beta
-        period = (1 if self.apply_every is None else apply_every / self.dt)
+        period = (1 if self.apply_every is None else
+                  self.apply_every / self.dt)
 
         if period > 1:
             n_steps = signals[self.n_steps]
@@ -221,6 +227,9 @@ class SimOja(Operator):
 
                     # perform update
                     delta[...] += np.outer(alpha * post_filtered, pre_filtered)
+
+                    # scale to compensate
+                    delta[...] *= period
             return step_simoja_sometimes
 
         def step_simoja():
@@ -327,7 +336,8 @@ class SimVoja(Operator):
         learning_signal = signals[self.learning_signal]
         alpha = self.learning_rate * dt
         scale = self.scale[:, np.newaxis]
-        period = (1 if self.apply_every is None else apply_every / self.dt)
+        period = (1 if self.apply_every is None else
+                  self.apply_every / self.dt)
 
         if period > 1:
             n_steps = signals[self.n_steps]
@@ -337,6 +347,9 @@ class SimVoja(Operator):
                     delta[...] = alpha * learning_signal * (
                         scale * np.outer(post_filtered, pre_decoded) -
                         post_filtered[:, np.newaxis] * scaled_encoders)
+
+                    # scale to compensate
+                    delta[...] *= period
             return step_simvoja_sometimes
 
         def step_simvoja():
@@ -344,6 +357,245 @@ class SimVoja(Operator):
                 scale * np.outer(post_filtered, pre_decoded) -
                 post_filtered[:, np.newaxis] * scaled_encoders)
         return step_simvoja
+
+
+class SimPESDecoders(Operator):
+    """Calculate decoder change according to the PES rule.
+
+    Implements the PES learning rule of the form:
+
+    .. math:: \Delta d_i = -\frac{kappa}{n} E a_i
+
+    where
+
+    * :math:`\kappa` is a scalar learning rate,
+    * :math:`n` is the number of neurons
+    * :math:`E` is the error signal
+    * :math:`a_i` is the activity of a presynaptic neuron, and
+    * :math:`d_i` is the value of a decoder being learned
+
+    Parameters
+    ----------
+    pre_filtered : Signal
+        The presynaptic activity, :math:`a_i`.
+    delta : Signal
+        The decoder value change to be applied, :math:`\Delta d_i`.
+    correction : Signal
+        The scaled negative error
+    learning_rate : float
+        The scalar learning rate, :math:`\kappa`.
+    error : Signal
+        The error driving the learning, :math:`E`
+    n_neurons : int
+        The number of neurons in the ensemble, :math:`n`
+    apply_every : float or None
+        A scalar indicating how often to apply learning rule.
+    n_steps : Signal
+        The integer timestep which the simulator is executing.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    apply_every : float or None
+        A scalar indicating how often to apply learning rule.
+    correction : Signal
+        The scaled negative error
+    delta : Signal
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    error : Signal
+        The error driving the learning, :math:`E`
+    learning_rate : float
+        The scalar learning rate, :math:`\kappa`.
+    n_neurons : int
+        The number of neurons in the ensemble, :math:`n`
+    n_steps : Signal
+        The integer timestep which the simulator is executing.
+    pre_filtered : Signal
+        The presynaptic activity, :math:`a_i`.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[]``
+    3. reads ``[pre_filtered, error, n_steps]``
+    4. updates ``[delta, correction]``
+    """
+
+    def __init__(self, pre_filtered, delta, correction, learning_rate, error,
+                 n_neurons, apply_every, n_steps, tag=None):
+        super(SimPESDecoders, self).__init__(tag=tag)
+        self.pre_filtered = pre_filtered
+        self.delta = delta
+        self.correction = correction
+        self.learning_rate = learning_rate
+        self.error = error
+        self.n_neurons = n_neurons
+        self.n_steps = n_steps
+        self.apply_every = apply_every
+
+        self.sets = []
+        self.incs = []
+        self.reads = [pre_filtered, error, n_steps]
+        self.updates = [delta, correction]
+
+    def _descstr(self):
+        return 'pre=%s, err=%s -> %s' % (
+            self.pre_filtered, self.error, self.delta)
+
+    def make_step(self, signals, dt, rng):
+        pre_filtered = signals[self.pre_filtered]
+        delta = signals[self.delta]
+        correction = signals[self.correction]
+        learning_rate = self.learning_rate * dt
+        n_neurons = self.n_neurons
+        error = signals[self.error]
+        period = (1 if self.apply_every is None else
+                  self.apply_every / self.dt)
+
+        if period > 1:
+            n_steps = signals[self.n_steps]
+
+            def step_simpesdecoders_sometimes():
+                if n_steps % period < 1:
+                    correction[...] = -learning_rate / n_neurons * error
+                    delta[...] = np.outer(correction, pre_filtered)
+
+                    # scale to compensate
+                    delta[...] *= period
+            return step_simpesdecoders_sometimes
+
+        def step_simpesdecoders():
+                    correction[...] = -learning_rate / n_neurons * error
+                    delta[...] = np.outer(correction, pre_filtered)
+        return step_simpesdecoders
+
+
+class SimPESWeights(Operator):
+    """Calculate connection weight change according to the PES rule.
+
+    Implements the PES learning rule of the form:
+
+    .. math:: \Delta \omega_{ij} = -\frac{kappa}{n} \alpha_j e_j \cdot E a_i
+
+    where
+
+    * :math:`\kappa` is a scalar learning rate,
+    * :math:`n` is the number of neurons
+    * :math:`alpha_j` is the gain of a postsynaptic neuron
+    * :math:`e_j` is the encoder of a postsynaptic neuron
+    * :math:`E` is the error signal
+    * :math:`a_i` is the activity of a presynaptic neuron, and
+    * :math:`\omega_{ij}` is the connection weight between the two neurons.
+
+    Parameters
+    ----------
+    pre_filtered : Signal
+        The presynaptic activity, :math:`a_i`.
+    delta : Signal
+        The decoder value change to be applied, :math:`\Delta d_i`.
+    correction : Signal
+        The scaled negative error
+    encoders : Signal
+        The scaled encoders of a postsynaptic neuron, :math: \alpha_j e_j
+    learning_rate : float
+        The scalar learning rate, :math:`\kappa`.
+    error : Signal
+        The error driving the learning, :math:`E`
+    n_neurons : int
+        the number of neurons in the ensemble, :math:`n`
+    apply_every : float or None
+        A scalar indicating how often to apply learning rule.
+    n_steps : Signal
+        The integer timestep which the simulator is executing.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    apply_every : float or None
+        A scalar indicating how often to apply learning rule.
+    correction : Signal
+         The scaled negative error
+    delta : Signal
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    error : Signal
+        The error driving the learning, :math:`E`
+    learning_rate : float
+        The scalar learning rate, :math:`\kappa`.
+    n_neurons : int
+        the number of neurons in the ensemble, :math:`n`
+    n_steps : Signal
+        The integer timestep which the simulator is executing.
+    pre_filtered : Signal
+        The presynaptic activity, :math:`a_i`.
+    encoders : Signal
+        The scaled encoders of a postsynaptic neuron, :math: \alpha_j e_j
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[]``
+    3. reads ``[pre_filtered, encoders, error, n_steps]``
+    4. updates ``[delta, correction]``
+    """
+
+    def __init__(self, pre_filtered, delta, correction, encoders,
+                 learning_rate, error, n_neurons, apply_every, n_steps,
+                 tag=None):
+        super(SimPESWeights, self).__init__(tag=tag)
+        self.pre_filtered = pre_filtered
+        self.delta = delta
+        self.correction = correction
+        self.encoders = encoders
+        self.learning_rate = learning_rate
+        self.error = error
+        self.n_neurons = n_neurons
+        self.n_steps = n_steps
+        self.apply_every = apply_every
+
+        self.sets = []
+        self.incs = []
+        self.reads = [pre_filtered, encoders, error, n_steps]
+        self.updates = [delta, correction]
+
+    def _descstr(self):
+        return 'pre=%s, err=%s -> %s' % (
+            self.pre_filtered, self.error, self.delta)
+
+    def make_step(self, signals, dt, rng):
+        pre_filtered = signals[self.pre_filtered]
+        delta = signals[self.delta]
+        correction = signals[self.correction]
+        encoders = signals[self.encoders]
+        learning_rate = self.learning_rate * dt
+        n_neurons = self.n_neurons
+        error = signals[self.error]
+        period = (1 if self.apply_every is None else
+                  self.apply_every / self.dt)
+
+        if period > 1:
+            n_steps = signals[self.n_steps]
+
+            def step_simpesweights_sometimes():
+                if n_steps % period < 1:
+                    correction[...] = -learning_rate / n_neurons * error
+                    delta[...] = np.outer(
+                        np.dot(encoders, correction), pre_filtered)
+
+                    # scale to compensate
+                    delta[...] *= period
+            return step_simpesweights_sometimes
+
+        def step_simpesweights():
+                    correction[...] = -learning_rate / n_neurons * error
+                    delta[...] = np.outer(
+                        np.dot(encoders, correction), pre_filtered)
+        return step_simpesweights
 
 
 def get_pre_ens(conn):
@@ -565,6 +817,7 @@ def build_voja(model, voja, rule):
                 apply_every=voja.apply_every,
                 n_steps=model.step))
 
+    # expose these for probes
     model.sig[rule]['scaled_encoders'] = scaled_encoders
     model.sig[rule]['post_filtered'] = post_filtered
 
@@ -574,12 +827,7 @@ def build_pes(model, pes, rule):
     """Builds a `.PES` object into a model.
 
     Calls synapse build functions to filter the pre activities,
-    and adds several operators to implement the PES learning rule.
-    Unlike other learning rules, there is no corresponding `.Operator`
-    subclass for the PES rule. Instead, the rule is implemented with
-    generic operators like `.ElementwiseInc` and `.DotInc`.
-    Generic operators are used because they are more likely to be
-    implemented on other backends like Nengo OCL.
+    and adds a `.SimPES` operator to the model to calculate the delta.
 
     Parameters
     ----------
@@ -603,42 +851,42 @@ def build_pes(model, pes, rule):
     model.add_op(Reset(error))
     model.sig[rule]['in'] = error  # error connection will attach here
 
-    acts = model.build(Lowpass(pes.pre_tau), model.sig[conn.pre_obj]['out'])
-
-    # Compute the correction, i.e. the scaled negative error
     correction = Signal(np.zeros(error.shape), name="PES:correction")
     model.add_op(Reset(correction))
 
-    # correction = -learning_rate * (dt / n_neurons) * error
+    pre_activities = model.sig[get_pre_ens(conn).neurons]['out']
+    pre_filtered = model.build(Lowpass(pes.pre_tau), pre_activities)
+
     n_neurons = (conn.pre_obj.n_neurons if isinstance(conn.pre_obj, Ensemble)
                  else conn.pre_obj.size_in)
-    lr_sig = Signal(-pes.learning_rate * model.dt / n_neurons,
-                    name="PES:learning_rate")
-    model.add_op(DotInc(lr_sig, error, correction, tag="PES:correct"))
 
     if not conn.is_decoded:
-        post = get_post_ens(conn)
-        weights = model.sig[conn]['weights']
-        encoders = model.sig[post]['encoders']
+        model.add_op(
+            SimPESWeights(pre_filtered=pre_filtered,
+                          delta=model.sig[rule]['delta'],
+                          correction=correction,
+                          encoders=model.sig[get_post_ens(conn)]['encoders'],
+                          learning_rate=pes.learning_rate,
+                          error=error,
+                          n_neurons=n_neurons,
+                          apply_every=pes.apply_every,
+                          n_steps=model.step))
 
-        # encoded = dot(encoders, correction)
-        encoded = Signal(np.zeros(weights.shape[0]), name="PES:encoded")
-        model.add_op(Reset(encoded))
-        model.add_op(DotInc(encoders, correction, encoded, tag="PES:encode"))
-        local_error = encoded
     elif isinstance(conn.pre_obj, (Ensemble, Neurons)):
-        local_error = correction
+        model.add_op(
+            SimPESDecoders(pre_filtered=pre_filtered,
+                           delta=model.sig[rule]['delta'],
+                           correction=correction,
+                           learning_rate=pes.learning_rate,
+                           error=error,
+                           n_neurons=n_neurons,
+                           apply_every=pes.apply_every,
+                           n_steps=model.step))
     else:
         raise BuildError("'pre' object '%s' not suitable for PES learning"
                          % (conn.pre_obj))
 
-    # delta = local_error * activities
-    model.add_op(Reset(model.sig[rule]['delta']))
-    model.add_op(ElementwiseInc(
-        local_error.column(), acts.row(), model.sig[rule]['delta'],
-        tag="PES:Inc Delta"))
-
     # expose these for probes
     model.sig[rule]['error'] = error
     model.sig[rule]['correction'] = correction
-    model.sig[rule]['activities'] = acts
+    model.sig[rule]['activities'] = pre_filtered

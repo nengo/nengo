@@ -307,17 +307,6 @@ class Voja(LearningRuleType):
     @property
     def _argreprs(self):
         args = []
-        if self.post_tau != 0.005:
-            args.append("post_tau=%g" % self.post_tau)
-        if self.learning_rate != 1e-2:
-            args.append("learning_rate=%g" % self.learning_rate)
-        if self.apply_every is not None:
-            args.append("apply_every=%g" % self.apply_every)
-        return args
-
-    @property
-    def _argreprs(self):
-        args = []
         if self.post_tau is None:
             args.append("post_tau=%s" % self.post_tau)
         elif self.post_tau != 0.005:
