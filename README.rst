@@ -2,10 +2,6 @@
   :target: https://pypi.python.org/pypi/nengo
   :alt: Latest PyPI version
 
-.. image:: https://img.shields.io/pypi/dm/nengo.svg
-  :target: https://pypi.python.org/pypi/nengo
-  :alt: Number of PyPI downloads
-
 .. image:: https://img.shields.io/travis/nengo/nengo/master.svg
   :target: https://travis-ci.org/nengo/nengo
   :alt: Travis-CI build status
