@@ -9,6 +9,7 @@ User Guide
    config
    networks
    spa
+   advanced
    backend_api
    changelog
    history
