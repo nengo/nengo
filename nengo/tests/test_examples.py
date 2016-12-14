@@ -82,25 +82,50 @@ def test_slow_noexceptions(nb_file, tmpdir):
     assert_noexceptions(nb_file, tmpdir)
 
 
+def iter_cells(nb_file, cell_type="code"):
+    from nengo.utils.ipython import load_notebook
+    nb = load_notebook(os.path.join(examples_dir, "%s.ipynb" % nb_file))
+
+    if nb.nbformat <= 3:
+        cells = []
+        for ws in nb.worksheets:
+            cells.extend(ws.cells)
+    else:
+        cells = nb.cells
+
+    for cell in cells:
+        if cell.cell_type == cell_type:
+            yield cell
+
+
 @pytest.mark.example
 @pytest.mark.parametrize('nb_file', all_examples)
-def test_nooutput(nb_file):
+def test_no_signature(nb_file):
+    from nengo.utils.ipython import load_notebook
+    nb = load_notebook(os.path.join(examples_dir, "%s.ipynb" % nb_file))
+    assert 'signature' not in nb.metadata, "Notebook has signature"
+
+
+@pytest.mark.example
+@pytest.mark.parametrize('nb_file', all_examples)
+def test_no_outputs(nb_file):
     """Ensure that no cells have output."""
     pytest.importorskip("IPython", minversion="1.0")
-    pytest.importorskip("jinja2")
-    from nengo.utils.ipython import load_notebook
 
-    def check_all(cells):
-        for cell in cells:
-            if cell.cell_type == 'code':
-                assert cell.outputs == [], ("Clear outputs in %s" % nb_path)
+    for cell in iter_cells(nb_file):
+        assert cell.outputs == [], "Cell outputs not cleared"
 
-    nb_path = os.path.join(examples_dir, "%s.ipynb" % nb_file)
-    nb = load_notebook(nb_path)
 
-    assert 'signature' not in nb.metadata, "Remove signature in %s" % nb_path
-    if nb.nbformat <= 3:
-        for ws in nb.worksheets:
-            check_all(ws.cells)
+@pytest.mark.example
+@pytest.mark.parametrize('nb_file', all_examples)
+def test_loads_ipynb_ext(nb_file):
+    pytest.importorskip("IPython", minversion="1.0")
+
+    no_sim = True
+    for cell in iter_cells(nb_file):
+        if "%load_ext nengo.ipynb" in cell.source:
+            break
+        if "nengo.Simulator(" in cell.source:
+            no_sim = False
     else:
-        check_all(nb.cells)
+        assert no_sim, "nengo.ipynb extension not loaded"
