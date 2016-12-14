@@ -7,6 +7,7 @@ notifications:
 env:
   global:
     - NUMPY="1.11"
+    - SCIPY="false"
     - COVERAGE="false"
     - STATIC="false"
     - CONDA_DEPS="matplotlib jupyter"
@@ -22,6 +23,7 @@ matrix:
     - env: PYTHON="2.7" NUMPY="1.10"
     - env: PYTHON="3.4"
     - env: PYTHON="3.5" COVERAGE="true"
+    - env: PYTHON="3.5" COVERAGE="true" SCIPY="true"
 
 # Setup Miniconda
 before_install:
@@ -44,6 +46,9 @@ install:
     fi
   - if [[ -n "$NUMPY" && "$STATIC" == "false" ]]; then
       export CONDA_DEPS="$CONDA_DEPS numpy=$NUMPY";
+    fi
+  - if [[ "$SCIPY" == "true" ]]; then
+      export CONDA_DEPS="$CONDA_DEPS scipy";
     fi
   - if [[ -n "$CONDA_DEPS" ]]; then eval conda install "$CONDA_DEPS"; fi
   - if [[ -n "$PIP_DEPS" ]]; then eval pip install "$PIP_DEPS"; fi
