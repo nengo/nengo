@@ -124,6 +124,16 @@ class BCM(LearningRuleType):
     and the difference between the postsynaptic activity and the average
     postsynaptic activity.
 
+    Notes
+    -----
+    The BCM rule is dependent on pre and post neural activities,
+    not decoded values, and so is not affected by changes in the
+    size of pre and post ensembles. However, if you are decoding from
+    the post ensemble, the BCM rule will have an increased effect on
+    larger post ensembles because more connection weights are changing.
+    In these cases, it may be advantageous to scale the learning rate
+    on the BCM rule by ``1 / post.n_neurons``.
+
     Parameters
     ----------
     theta_tau : float, optional (Default: 1.0)
@@ -184,6 +194,16 @@ class Oja(LearningRuleType):
     augments typicaly Hebbian coactivity with a "forgetting" term that is
     proportional to the weight of the connection and the square of the
     postsynaptic activity.
+
+    Notes
+    -----
+    The Oja rule is dependent on pre and post neural activities,
+    not decoded values, and so is not affected by changes in the
+    size of pre and post ensembles. However, if you are decoding from
+    the post ensemble, the Oja rule will have an increased effect on
+    larger post ensembles because more connection weights are changing.
+    In these cases, it may be advantageous to scale the learning rate
+    on the Oja rule by ``1 / post.n_neurons``.
 
     Parameters
     ----------
