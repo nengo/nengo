@@ -337,6 +337,34 @@ class Vocabulary(object):
             v = v.v
         return np.dot(self.vector_pairs, v)
 
+    def set_value(self, key, p):
+        """Set the value of a semantic pointer stored in the Vocabulary.
+
+        If the pointer does not exist, it is automatically created using the
+        specified value. The value can be either a vector or a SemanticPointer
+        object. Use of this method ensures that pointer corresponding to a
+        particular key is consistent across the vocab's vectors and pointers
+        attributes.
+
+        Parameters
+        ----------
+        key : string
+            The text label of the semantic pointer whose value is being
+            set.
+        p : SemanticPointer or array
+            The vector that is the new value of the semantic pointer being
+            being modified.
+        """
+        if not isinstance(p, pointer.SemanticPointer):
+            p = pointer.SemanticPointer(p)
+
+        if key not in self.keys:
+            self.add(key, p)
+        else:
+            idx = self.keys.index(key)
+            self.vectors[idx, :] = p.v
+            self.pointers[key] = p
+
     def transform_to(self, other, keys=None):
         """Create a linear transform from one Vocabulary to another.
 
