@@ -8,6 +8,7 @@ from nengo.builder import Builder, Signal
 from nengo.builder.operator import Copy, DotInc, Reset
 from nengo.dists import Distribution, get_samples
 from nengo.ensemble import Ensemble
+from nengo.exceptions import BuildError
 from nengo.neurons import Direct
 from nengo.utils.builder import default_n_eval_points
 
@@ -94,6 +95,8 @@ def get_gain_bias(ens, rng=np.random):
     else:
         max_rates = get_samples(ens.max_rates, ens.n_neurons, rng=rng)
         intercepts = get_samples(ens.intercepts, ens.n_neurons, rng=rng)
+        if np.any(intercepts >= 1.):
+            raise BuildError("Intercepts need to be < 1.")
         gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
 
     return gain, bias, max_rates, intercepts
