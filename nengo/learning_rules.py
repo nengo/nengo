@@ -66,6 +66,10 @@ class LearningRuleType(FrozenObject):
     apply_every = NumberParam('apply_every', low=0, optional=True)
 
     def __init__(self, learning_rate=1e-6, apply_every=None):
+        if apply_every is not None and apply_every >= 0.2:
+            warnings.warn("This period for applying the learning rule "
+                          "intermittently is very high, and can result "
+                          "in poor performance.")
         super(LearningRuleType, self).__init__()
         self.learning_rate = learning_rate
         self.apply_every = apply_every

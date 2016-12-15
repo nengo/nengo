@@ -98,7 +98,7 @@ class SimBCM(Operator):
         delta = signals[self.delta]
         alpha = self.learning_rate * dt
         period = (1 if self.apply_every is None else
-                  self.apply_every / self.dt)
+                  self.apply_every / dt)
 
         if period > 1:
             n_steps = signals[self.n_steps]
@@ -111,6 +111,10 @@ class SimBCM(Operator):
 
                     # scale to compensate
                     delta[...] *= period
+
+                else:
+                    delta[...] = 0
+
             return step_simbcm_sometimes
 
         def step_simbcm():
@@ -214,7 +218,7 @@ class SimOja(Operator):
         alpha = self.learning_rate * dt
         beta = self.beta
         period = (1 if self.apply_every is None else
-                  self.apply_every / self.dt)
+                  self.apply_every / dt)
 
         if period > 1:
             n_steps = signals[self.n_steps]
@@ -230,6 +234,10 @@ class SimOja(Operator):
 
                     # scale to compensate
                     delta[...] *= period
+
+                else:
+                    delta[...] = 0
+
             return step_simoja_sometimes
 
         def step_simoja():
@@ -337,7 +345,7 @@ class SimVoja(Operator):
         alpha = self.learning_rate * dt
         scale = self.scale[:, np.newaxis]
         period = (1 if self.apply_every is None else
-                  self.apply_every / self.dt)
+                  self.apply_every / dt)
 
         if period > 1:
             n_steps = signals[self.n_steps]
@@ -350,6 +358,10 @@ class SimVoja(Operator):
 
                     # scale to compensate
                     delta[...] *= period
+
+                else:
+                    delta[...] = 0
+
             return step_simvoja_sometimes
 
         def step_simvoja():
@@ -453,7 +465,7 @@ class SimPESDecoders(Operator):
         n_neurons = self.n_neurons
         error = signals[self.error]
         period = (1 if self.apply_every is None else
-                  self.apply_every / self.dt)
+                  self.apply_every / dt)
 
         if period > 1:
             n_steps = signals[self.n_steps]
@@ -465,6 +477,10 @@ class SimPESDecoders(Operator):
 
                     # scale to compensate
                     delta[...] *= period
+
+                else:
+                    delta[...] = 0
+
             return step_simpesdecoders_sometimes
 
         def step_simpesdecoders():
@@ -576,7 +592,7 @@ class SimPESWeights(Operator):
         n_neurons = self.n_neurons
         error = signals[self.error]
         period = (1 if self.apply_every is None else
-                  self.apply_every / self.dt)
+                  self.apply_every / dt)
 
         if period > 1:
             n_steps = signals[self.n_steps]
@@ -589,6 +605,10 @@ class SimPESWeights(Operator):
 
                     # scale to compensate
                     delta[...] *= period
+
+                else:
+                    delta[...] = 0
+
             return step_simpesweights_sometimes
 
         def step_simpesweights():
