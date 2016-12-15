@@ -59,6 +59,10 @@ class Signal(object):
 
     def __getitem__(self, item):
         """Index or slice into array"""
+        if item is Ellipsis or (
+                isinstance(item, slice) and item == slice(None)):
+            return self
+
         if not isinstance(item, tuple):
             item = (item,)
 
