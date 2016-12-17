@@ -96,7 +96,10 @@ def get_gain_bias(ens, rng=np.random):
         max_rates = get_samples(ens.max_rates, ens.n_neurons, rng=rng)
         intercepts = get_samples(ens.intercepts, ens.n_neurons, rng=rng)
         if np.any(intercepts >= 1.):
-            raise BuildError("Intercepts need to be < 1.")
+            raise BuildError(
+                "Some intercepts in %r are >= 1, which results in flipped "
+                "response curves (more current elicits less activity). "
+                "Modify intercepts to be < 1." % (ens,))
         gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
 
     return gain, bias, max_rates, intercepts
