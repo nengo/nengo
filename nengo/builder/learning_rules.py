@@ -1,7 +1,7 @@
 import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
-from nengo.builder.operator import DotInc, ElementwiseInc, Reset
+from nengo.builder.operator import DotInc, ElementwiseInc, Copy, Reset
 from nengo.connection import LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
@@ -381,8 +381,7 @@ def build_learning_rule(model, rule):
 
     delta = Signal(np.zeros(target.shape), name='Delta')
 
-    model.add_op(
-        ElementwiseInc(model.sig['common'][1], delta, target, tag=tag))
+    model.add_op(Copy(delta, target, inc=True, tag=tag))
     model.sig[rule]['delta'] = delta
 
     model.params[rule] = None  # by default, no build-time info to return
