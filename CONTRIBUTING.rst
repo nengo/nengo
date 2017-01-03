@@ -35,12 +35,11 @@ Contributor agreement
 
 We require that all contributions be covered under
 our contributor assignment agreement. Please see
-`the agreement
-<http://pythonhosted.org/nengo/license.html#contributor-assignment-agreement>`_
+`the agreement <https://nengo.github.io/caa.html>`_
 for instructions on how to sign.
 
 More details
 ============
 
 For more details on how to contribute to Nengo, please see our
-`developer documentation <http://pythonhosted.org/nengo/dev_guide.html>`_.
+`developer guide <http://pythonhosted.org/nengo/dev_guide.html>`_.

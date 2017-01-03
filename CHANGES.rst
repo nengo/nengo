@@ -28,6 +28,12 @@ Release History
   and uses the product network for clarity.
   (`#1159 <https://github.com/nengo/nengo/pull/1159>`_)
 
+**Changed**
+
+- Documentation that applies to all Nengo projects has been moved to
+  https://nengo.github.io/.
+  (`#1251 <https://github.com/nengo/nengo/pull/1251>`_)
+
 2.3.0 (November 30, 2016)
 =========================
 

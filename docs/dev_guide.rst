@@ -10,5 +10,4 @@ how Nengo builds and simulates brain models.
 
    contributing
    nef_minimal
-   releasing
    license

@@ -8,10 +8,9 @@ Applied Brain Research Inc. holds the copyright to
 all Nengo code, except for code that is used under
 various licenses, as described in the ``LICENSE.rst`` file.
 
-By adding your name to this file, you are agreeing
-to the Contributor Assignment Agreement found in
-the ``LICENSE.rst`` file. If you agree, then add yourself
-to the file like so::
+By adding your name to this file, you are agreeing to the
+`Nengo Contributor Assignment Agreement <https://nengo.github.io/caa.html>`_.
+If you agree, then add yourself to the file like so::
 
   - Name <email address>
 
