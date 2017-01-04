@@ -10,8 +10,8 @@ from nengo.processes import WhiteSignal
 
 def _test_pes(Simulator, nl, plt, seed,
               pre_neurons=False, post_neurons=False, weight_solver=False,
-              vin=np.array([0.5, -0.5]), vout=None, n=200,
-              function=None, transform=np.array(1.), rate=1e-3):
+              vin=np.array([0.5, -0.5]), vout=None, n=200, function=None,
+              transform=np.array(1.), rate=1e-3, apply_every=None):
 
     vout = np.array(vin) if vout is None else vout
 
@@ -33,7 +33,9 @@ def _test_pes(Simulator, nl, plt, seed,
 
         conn = nengo.Connection(pre, post,
                                 function=function, transform=transform,
-                                learning_rule_type=PES(rate))
+                                learning_rule_type=PES(
+                                    learning_rate=rate,
+                                    apply_every=apply_every))
         if weight_solver:
             conn.solver = nengo.solvers.LstsqL2(weights=True)
 
@@ -70,39 +72,45 @@ def _test_pes(Simulator, nl, plt, seed,
     assert not np.allclose(weights[0], weights[-1], atol=1e-5)
 
 
-def test_pes_ens_ens(Simulator, nl_nodirect, plt, seed):
+@pytest.mark.parametrize('apply_every', [None, 1e-5, 0.005])
+def test_pes_ens_ens(Simulator, nl_nodirect, plt, seed, apply_every):
     function = lambda x: [x[1], x[0]]
-    _test_pes(Simulator, nl_nodirect, plt, seed, function=function)
+    _test_pes(Simulator, nl_nodirect, plt, seed, function=function,
+              apply_every=apply_every)
 
 
-def test_pes_weight_solver(Simulator, plt, seed):
+@pytest.mark.parametrize('apply_every', [None, 1e-5, 0.005])
+def test_pes_weight_solver(Simulator, plt, seed, apply_every):
     function = lambda x: [x[1], x[0]]
     _test_pes(Simulator, nengo.LIF, plt, seed, function=function,
-              weight_solver=True)
+              weight_solver=True, apply_every=apply_every)
 
 
-def test_pes_ens_slice(Simulator, plt, seed):
+@pytest.mark.parametrize('apply_every', [None, 1e-5, 0.005])
+def test_pes_ens_slice(Simulator, plt, seed, apply_every):
     vin = [0.5, -0.5]
     vout = [vin[0]**2 + vin[1]**2]
     function = lambda x: [x[0] - x[1]]
     _test_pes(Simulator, nengo.LIF, plt, seed, vin=vin, vout=vout,
-              function=function)
+              function=function, apply_every=apply_every)
 
 
-def test_pes_neuron_neuron(Simulator, plt, seed, rng):
+@pytest.mark.parametrize('apply_every', [None, 1e-5, 0.005])
+def test_pes_neuron_neuron(Simulator, plt, seed, rng, apply_every):
     n = 200
     initial_weights = rng.uniform(high=2e-4, size=(n, n))
     _test_pes(Simulator, nengo.LIF, plt, seed,
               pre_neurons=True, post_neurons=True,
-              n=n, transform=initial_weights)
+              n=n, transform=initial_weights, apply_every=apply_every)
 
 
-def test_pes_neuron_ens(Simulator, plt, seed, rng):
+@pytest.mark.parametrize('apply_every', [None, 1e-5, 0.005])
+def test_pes_neuron_ens(Simulator, plt, seed, rng, apply_every):
     n = 200
     initial_weights = rng.uniform(high=1e-4, size=(2, n))
     _test_pes(Simulator, nengo.LIF, plt, seed,
               pre_neurons=True, post_neurons=False,
-              n=n, transform=initial_weights)
+              n=n, transform=initial_weights, apply_every=apply_every)
 
 
 def test_pes_transform(Simulator, seed):
@@ -480,3 +488,12 @@ def test_pes_direct_errors():
         conn = nengo.Connection(pre, post)
         with pytest.raises(ValidationError):
             conn.learning_rule_type = nengo.PES()
+
+
+def test_infrequent_learn_warns():
+    with nengo.Network():
+        pre = nengo.Ensemble(1, 1)
+        post = nengo.Ensemble(1, 1)
+        with pytest.warns(UserWarning):
+            nengo.Connection(
+                pre, post, learning_rule_type=nengo.PES(apply_every=0.5))
