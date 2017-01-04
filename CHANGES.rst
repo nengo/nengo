@@ -22,6 +22,12 @@ Release History
 2.3.1 (unreleased)
 ==================
 
+**Added**
+
+- Learning rules can now be applied every n-th timestep. 
+  (`#387 <https://github.com/nengo/nengo/issues/387>`_,
+  `#1254 <https://github.com/nengo/nengo/pull/1254>`_)
+
 **Fixed**
 
 - The matrix multiplication example will now work with matrices of any size
