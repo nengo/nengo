@@ -184,6 +184,8 @@ def test_pes_multidim_error(Simulator, rng):
 @pytest.mark.parametrize('rule_type, solver', [
     (BCM(learning_rate=1e-8), False),
     (Oja(learning_rate=1e-5), False),
+    (BCM(learning_rate=1e-8, apply_every=0.005), False),
+    (Oja(learning_rate=1e-5, apply_every=0.005), False),
     ([Oja(learning_rate=1e-5), BCM(learning_rate=1e-8)], False),
     ([Oja(learning_rate=1e-5), BCM(learning_rate=1e-8)], True),
 ])
@@ -425,7 +427,8 @@ def test_voja_encoders(Simulator, nl_nodirect, rng, seed):
     assert np.allclose(sim.data[p_enc], sim.data[p_enc_ens])
 
 
-def test_voja_modulate(Simulator, nl_nodirect, seed):
+@pytest.mark.parametrize('apply_every', [None, 0.005])
+def test_voja_modulate(Simulator, apply_every, nl_nodirect, seed):
     """Tests that voja's rule can be modulated on/off."""
     n = 200
     learned_vector = np.asarray([0.5])
@@ -442,7 +445,8 @@ def test_voja_modulate(Simulator, nl_nodirect, seed):
         x = nengo.Ensemble(n, dimensions=len(learned_vector))
 
         conn = nengo.Connection(
-            u, x, synapse=None, learning_rule_type=Voja(None))
+            u, x, synapse=None, learning_rule_type=Voja(
+                apply_every=apply_every))
         nengo.Connection(control, conn.learning_rule, synapse=None)
 
         p_enc = nengo.Probe(conn.learning_rule, 'scaled_encoders')
@@ -491,9 +495,36 @@ def test_pes_direct_errors():
 
 
 def test_infrequent_learn_warns():
+    """Test value of `apply_every` >= 0.2 warns"""
     with nengo.Network():
         pre = nengo.Ensemble(1, 1)
         post = nengo.Ensemble(1, 1)
         with pytest.warns(UserWarning):
             nengo.Connection(
                 pre, post, learning_rule_type=nengo.PES(apply_every=0.5))
+
+
+def test_apply_every(Simulator, seed):
+    """Test `delta` is not calculated every timestep."""
+    dt = 0.001
+    period = 5
+    with nengo.Network(seed=seed) as m:
+        stim = nengo.Node(1)
+        pre = nengo.Ensemble(1, 1, encoders=[[1]])
+        post = nengo.Ensemble(1, 1)
+        err = nengo.Node(-1)
+
+        nengo.Connection(stim, pre)
+        conn = nengo.Connection(
+            pre, post, learning_rule_type=nengo.PES(apply_every=period*dt))
+        nengo.Connection(err, conn.learning_rule)
+
+        p_delta = nengo.Probe(conn.learning_rule, 'delta')
+
+    with Simulator(m, dt) as sim:
+        sim.run(period*dt)
+
+    delta = sim.data[p_delta][:, 0, 0]
+
+    # check `delta` calculation is skipped
+    assert delta[0:-1].all() == 0
