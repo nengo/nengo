@@ -285,7 +285,7 @@ class Voja(LearningRuleType):
         return args
 
 
-class HebbError(LearningRuleType):
+class DeltaRule(LearningRuleType):
     """
         \delta W_ij = \eta a_j e_i
     """
@@ -300,7 +300,7 @@ class HebbError(LearningRuleType):
             warnings.warn("This learning rate is very high, and can result "
                           "in floating point errors from too much current.")
         self.pre_tau = pre_tau
-        super(HebbError, self).__init__(learning_rate)
+        super(DeltaRule, self).__init__(learning_rate)
 
     @property
     def _argreprs(self):

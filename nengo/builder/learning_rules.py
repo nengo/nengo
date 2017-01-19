@@ -5,7 +5,7 @@ from nengo.builder.operator import DotInc, ElementwiseInc, Reset
 from nengo.connection import LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
-from nengo.learning_rules import BCM, HebbError, Oja, PES, Voja
+from nengo.learning_rules import BCM, DeltaRule, Oja, PES, Voja
 from nengo.node import Node
 from nengo.synapses import Lowpass
 
@@ -570,30 +570,30 @@ def build_pes(model, pes, rule):
     model.sig[rule]['activities'] = acts
 
 
-@Builder.register(HebbError)
-def build_hebb_error(model, hebb_error, rule):
+@Builder.register(DeltaRule)
+def build_delta_rule(model, delta_rule, rule):
     conn = rule.connection
 
     # Create input error signal
-    error = Signal(np.zeros(rule.size_in), name="HebbError:error")
+    error = Signal(np.zeros(rule.size_in), name="DeltaRule:error")
     model.add_op(Reset(error))
     model.sig[rule]['in'] = error  # error connection will attach here
 
-    pre_synapse = Lowpass(hebb_error.pre_tau)
+    pre_synapse = Lowpass(delta_rule.pre_tau)
     acts = model.build(pre_synapse, model.sig[conn.pre_obj]['out'])
 
     # Compute: correction = -learning_rate * dt * error
-    correction = Signal(np.zeros(error.shape), name="HebbError:correction")
+    correction = Signal(np.zeros(error.shape), name="DeltaRule:correction")
     model.add_op(Reset(correction))
-    lr_sig = Signal(-hebb_error.learning_rate * model.dt,
-                    name="HebbError:learning_rate")
-    model.add_op(DotInc(lr_sig, error, correction, tag="HebbError:correct"))
+    lr_sig = Signal(-delta_rule.learning_rate * model.dt,
+                    name="DeltaRule:learning_rate")
+    model.add_op(DotInc(lr_sig, error, correction, tag="DeltaRule:correct"))
 
     # delta = local_error * activities
     model.add_op(Reset(model.sig[rule]['delta']))
     model.add_op(ElementwiseInc(
         correction.column(), acts.row(), model.sig[rule]['delta'],
-        tag="HebbError:Inc Delta"))
+        tag="DeltaRule:Inc Delta"))
 
     # expose these for probes
     model.sig[rule]['error'] = error
