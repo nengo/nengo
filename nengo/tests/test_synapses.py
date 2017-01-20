@@ -167,6 +167,15 @@ def test_lti_lowpass(rng, plt):
     assert np.allclose(x, y)
 
 
+def test_linearfilter_combine(rng):
+    nt = 3000
+    tau0, tau1 = 0.01, 0.02
+    u = rng.normal(size=(nt, 10))
+    x = LinearFilter([1], [tau0*tau1, tau0+tau1, 1]).filt(u, y0=0)
+    y = Lowpass(tau0).combine(Lowpass(tau1)).filt(u, y0=0)
+    assert np.allclose(x, y)
+
+
 def test_synapseparam():
     """SynapseParam must be a Synapse, and converts numbers to LowPass."""
     class Test(object):
