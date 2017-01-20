@@ -38,6 +38,9 @@ Release History
 - Added documentation on improving performance.
   (`#1119 <https://github.com/nengo/nengo/issues/1119>`_,
   `#1130 <https://github.com/nengo/nengo/pull/1130>`_)
+- Added ``LinearFilter.combine`` method to
+  combine two ``LinearFilter`` instances.
+  (`#1312 <https://github.com/nengo/nengo/pull/1312>`_)
 
 **Changed**
 

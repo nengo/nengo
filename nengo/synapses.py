@@ -188,6 +188,23 @@ class LinearFilter(Synapse):
         return "%s(%s, %s, analog=%r)" % (
             type(self).__name__, self.num, self.den, self.analog)
 
+    def combine(self, obj):
+        """Combine in series with another LinearFilter."""
+        if not isinstance(obj, LinearFilter):
+            raise ValidationError(
+                "Can only combine with other LinearFilters", attr='obj')
+        if self.analog != obj.analog:
+            raise ValidationError(
+                "Cannot combine analog and digital filters", attr='obj')
+        num = np.polymul(self.num, obj.num)
+        den = np.polymul(self.den, obj.den)
+        return LinearFilter(num, den,
+                            analog=self.analog,
+                            default_size_in=self.default_size_in,
+                            default_size_out=self.default_size_out,
+                            default_dt=self.default_dt,
+                            seed=self.seed)
+
     def evaluate(self, frequencies):
         """Evaluate the transfer function at the given frequencies.
 
