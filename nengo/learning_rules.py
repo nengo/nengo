@@ -286,8 +286,17 @@ class Voja(LearningRuleType):
 
 
 class DeltaRule(LearningRuleType):
-    """
+    """Implementation of the Delta rule for linear neurons.
+
+    This implementation pretends the neurons are linear, and thus does not
+    require the derivative of the postsynaptic neuron activation function.
+
+    The update is given by:
+
         \delta W_ij = \eta a_j e_i
+
+    where a_j is the jth presynaptic neuron activity and e_i is the error in
+    the postsynaptic neuron space.
     """
     error_type = 'post'
     modifies = 'weights'
