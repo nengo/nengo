@@ -331,6 +331,10 @@ class LinearFilter(Synapse):
 class Lowpass(LinearFilter):
     """Standard first-order lowpass filter synapse.
 
+    The impulse-response function is given by::
+
+        f(t) = (t / tau) * exp(-t / tau)
+
     Parameters
     ----------
     tau : float
@@ -366,7 +370,7 @@ class Alpha(LinearFilter):
 
     The impulse-response function is given by::
 
-        alpha(t) = (t / tau) * exp(-t / tau)
+        alpha(t) = (t / tau**2) * exp(-t / tau)
 
     and was found by [1]_ to be a good basic model for synapses.
 
