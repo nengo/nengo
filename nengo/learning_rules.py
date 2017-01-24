@@ -1,8 +1,10 @@
 import warnings
 
+import numpy as np
+
 from nengo.base import NengoObjectParam
 from nengo.exceptions import ValidationError
-from nengo.params import FrozenObject, NumberParam, Parameter
+from nengo.params import FrozenObject, FunctionParam, NumberParam, Parameter
 from nengo.utils.compat import is_iterable, itervalues
 
 
@@ -285,30 +287,65 @@ class Voja(LearningRuleType):
         return args
 
 
-class DeltaRule(LearningRuleType):
-    """Implementation of the Delta rule for linear neurons.
+class DeltaRuleFunctionParam(FunctionParam):
+    def function_args(self, instance, function):
+        return (np.zeros(8),)
 
-    This implementation pretends the neurons are linear, and thus does not
-    require the derivative of the postsynaptic neuron activation function.
+    def validate(self, instance, function_info):
+        super(DeltaRuleFunctionParam, self).validate(instance, function_info)
+        function, size = function_info
+        if function is not None and size != 8:
+            raise ValidationError(
+                "Function '%s' input and output sizes must be equal" %
+                function, attr=self.name, obj=instance)
+
+
+class DeltaRule(LearningRuleType):
+    """Implementation of the Delta rule.
+
+    By default, this implementation pretends the neurons are linear, and thus
+    does not require the derivative of the postsynaptic neuron activation
+    function. The derivative function, or a surrogate function, for the
+    postsynaptic neurons can be provided in ``post_fn``.
 
     The update is given by:
 
-        \delta W_ij = \eta a_j e_i
+        \delta W_ij = \eta a_j e_i f(u_i)
 
-    where a_j is the jth presynaptic neuron activity and e_i is the error in
-    the postsynaptic neuron space.
+    where ``e_i`` is the input error in the postsynaptic neuron space,
+    ``a_j`` is the jth presynaptic neuron (output) activity,
+    ``u_i`` is the ith postsynaptic neuron input,
+    and ``f`` is a provided function.
+
+    Parameters
+    ----------
+    learning_rate : float
+        A scalar indicating the rate at which weights will be adjusted.
+    pre_tau : float
+        Filter constant on the presynaptic output ``a_j``.
+    post_fn : callable
+        Function ``f`` to apply to the postsynaptic inputs ``u_i``. The
+        default of ``None`` means the ``f(u_i)`` term is omitted.
+    post_tau : float
+        Filter constant on the postsynaptic input ``u_i``. This defaults to
+        ``None`` because these should typically be filtered by the connection.
     """
     error_type = 'post'
     modifies = 'weights'
-    probeable = ('delta')
+    probeable = ('delta', 'in', 'error', 'correction', 'pre', 'post')
 
     pre_tau = NumberParam('pre_tau', low=0, low_open=True)
+    post_tau = NumberParam('post_tau', low=0, low_open=True, optional=True)
+    post_fn = DeltaRuleFunctionParam('post_fn', optional=True)
 
-    def __init__(self, learning_rate=1e-4, pre_tau=0.005):
+    def __init__(self, learning_rate=1e-4, pre_tau=0.005,
+                 post_fn=None, post_tau=None):
         if learning_rate >= 1.0:
             warnings.warn("This learning rate is very high, and can result "
                           "in floating point errors from too much current.")
         self.pre_tau = pre_tau
+        self.post_tau = post_tau
+        self.post_fn = post_fn
         super(DeltaRule, self).__init__(learning_rate)
 
     @property
@@ -318,6 +355,11 @@ class DeltaRule(LearningRuleType):
             args.append("learning_rate=%g" % self.learning_rate)
         if self.pre_tau != 0.005:
             args.append("pre_tau=%f" % self.pre_tau)
+        if self.post_fn is not None:
+            args.append("post_fn=%s" % self.post_fn.function)
+        if self.post_tau is not None:
+            args.append("post_tau=%f" % self.post_tau)
+
         return args
 
 
