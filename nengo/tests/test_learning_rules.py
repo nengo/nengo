@@ -454,8 +454,9 @@ def test_voja_modulate(Simulator, nl_nodirect, seed):
     assert not np.allclose(sim.data[p_enc][0], sim.data[p_enc][i])
 
 
+@pytest.mark.slow
 def test_delta_rule(Simulator, nl_nodirect, seed, rng, plt):
-    learning_rate = 0.5 if nl_nodirect is RectifiedLinear else 1e-2
+    learning_rate = 0.5 if nl_nodirect is RectifiedLinear else 2e-2
     # ^ why do RecitifiedLinear neurons learn more slowly?
 
     tau_s = 0.005
@@ -463,7 +464,7 @@ def test_delta_rule(Simulator, nl_nodirect, seed, rng, plt):
     t_train = 10  # amount of learning time
     t_test = 3  # amount of testing time
 
-    n = 100
+    n = 50
     max_rate = 200
     dmean = 2. / (n * max_rate)  # theoretical mean for on/off decoders
     dr = 2 * 2 * dmean  # twice mean with additional 2x fudge factor
@@ -486,17 +487,18 @@ def test_delta_rule(Simulator, nl_nodirect, seed, rng, plt):
         e = nengo.Node(lambda t, x: x if t < t_train else 0, size_in=1)
         eb = nengo.Node(size_in=n)
 
-        nengo.Connection(u, e, transform=-1, synapse=nengo.synapses.Alpha(tau_s))
+        nengo.Connection(u, e, transform=-1,
+                         synapse=nengo.synapses.Alpha(tau_s))
         nengo.Connection(b.neurons, e, transform=decoders, synapse=tau_s)
         nengo.Connection(e, eb, synapse=None, transform=decoders.T)
 
-        c.transform = np.zeros((100, 100))
+        c.transform = np.zeros((n, n))
         c.learning_rule_type = DeltaRule(learning_rate=learning_rate)
         nengo.Connection(eb, c.learning_rule, synapse=None)
 
         ep = nengo.Probe(e)
         up = nengo.Probe(u, synapse=nengo.synapses.Alpha(tau_s))
-        bp = nengo.Probe(y)
+        yp = nengo.Probe(y)
 
     with Simulator(model, seed=seed+1) as sim:
         sim.run(t_train + t_test)
@@ -504,7 +506,7 @@ def test_delta_rule(Simulator, nl_nodirect, seed, rng, plt):
     t = sim.trange()
     filt = nengo.synapses.Alpha(0.005)
     x = filt.filtfilt(sim.data[up])
-    y = filt.filtfilt(sim.data[bp])
+    y = filt.filtfilt(sim.data[yp])
 
     plt.subplot(311)
     plt.plot(t, sim.data[ep])
@@ -519,7 +521,7 @@ def test_delta_rule(Simulator, nl_nodirect, seed, rng, plt):
 
     m = t > t_train
     rms_error = rms(y[m] - x[m]) / rms(x[m])
-    assert rms_error < 0.2
+    assert rms_error < 0.3
 
 
 def test_frozen():
