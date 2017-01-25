@@ -31,11 +31,9 @@ def _test_pes(Simulator, nl, plt, seed,
         pre = a.neurons if pre_neurons else a
         post = b.neurons if post_neurons else bslice
 
-        conn = nengo.Connection(pre, post,
-                                function=function, transform=transform,
-                                learning_rule_type=PES(
-                                    learning_rate=rate,
-                                    apply_every=apply_every))
+        rule = PES(learning_rate=rate, apply_every=apply_every)
+        conn = nengo.Connection(pre, post, function=function,
+                                transform=transform, learning_rule_type=rule)
         if weight_solver:
             conn.solver = nengo.solvers.LstsqL2(weights=True)
 

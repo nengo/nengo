@@ -461,7 +461,7 @@ class SimPESDecoders(Operator):
         pre_filtered = signals[self.pre_filtered]
         delta = signals[self.delta]
         correction = signals[self.correction]
-        learning_rate = self.learning_rate * dt
+        alpha = self.learning_rate * dt
         n_neurons = self.n_neurons
         error = signals[self.error]
         period = (1 if self.apply_every is None else
@@ -472,7 +472,7 @@ class SimPESDecoders(Operator):
 
             def step_simpesdecoders_sometimes():
                 if n_steps % period < 1:
-                    correction[...] = -learning_rate / n_neurons * error
+                    correction[...] = -alpha / n_neurons * error
                     delta[...] = np.outer(correction, pre_filtered)
 
                     # scale to compensate
@@ -484,7 +484,7 @@ class SimPESDecoders(Operator):
             return step_simpesdecoders_sometimes
 
         def step_simpesdecoders():
-                    correction[...] = -learning_rate / n_neurons * error
+                    correction[...] = -alpha / n_neurons * error
                     delta[...] = np.outer(correction, pre_filtered)
         return step_simpesdecoders
 
@@ -588,7 +588,7 @@ class SimPESWeights(Operator):
         delta = signals[self.delta]
         correction = signals[self.correction]
         encoders = signals[self.encoders]
-        learning_rate = self.learning_rate * dt
+        alpha = self.learning_rate * dt
         n_neurons = self.n_neurons
         error = signals[self.error]
         period = (1 if self.apply_every is None else
@@ -599,7 +599,7 @@ class SimPESWeights(Operator):
 
             def step_simpesweights_sometimes():
                 if n_steps % period < 1:
-                    correction[...] = -learning_rate / n_neurons * error
+                    correction[...] = -alpha / n_neurons * error
                     delta[...] = np.outer(
                         np.dot(encoders, correction), pre_filtered)
 
@@ -612,7 +612,7 @@ class SimPESWeights(Operator):
             return step_simpesweights_sometimes
 
         def step_simpesweights():
-                    correction[...] = -learning_rate / n_neurons * error
+                    correction[...] = -alpha / n_neurons * error
                     delta[...] = np.outer(
                         np.dot(encoders, correction), pre_filtered)
         return step_simpesweights
