@@ -220,6 +220,23 @@ class Direct(NeuronType):
 #       uses non-neural basis functions to emulate neuron saturation,
 #       but still simulate very fast
 
+class Linear(NeuronType):
+    """A linear neuron model.
+
+    Each neuron is modeled as a linear function.
+    """
+
+    probeable = ('rates',)
+
+    def gain_bias(self, max_rates, intercepts):
+        gain = max_rates / (1 - intercepts)
+        bias = -intercepts * gain
+        return gain, bias
+
+    def step_math(self, dt, J, output):
+        """Implement the linearity (do nothing)"""
+        output[...] = J
+
 
 class RectifiedLinear(NeuronType):
     """A rectified linear neuron model.
