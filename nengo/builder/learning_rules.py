@@ -540,7 +540,7 @@ def build_pes(model, pes, rule):
                  else conn.pre_obj.size_in)
     lr_sig = Signal(-pes.learning_rate * model.dt / n_neurons,
                     name="PES:learning_rate")
-    model.add_op(DotInc(lr_sig, error, correction, tag="PES:correct"))
+    model.add_op(ElementwiseInc(lr_sig, error, correction, tag="PES:correct"))
 
     if not conn.is_decoded:
         post = get_post_ens(conn)
