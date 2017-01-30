@@ -26,6 +26,7 @@ Please keep this list sorted alphabetically.
 - Daniel Rasmussen <drasmuss@uwaterloo.ca>
 - Eric Crawford <e2crawfo@uwaterloo.ca>
 - Eric Hunsberger <erichuns@gmail.com>
+- Genevieve Serafin <mgserafi@uwaterloo.ca>
 - Ivana Kajić <ivana.kajic@gmail.com>
 - James Bergstra <james.bergstra@gmail.com>
 - Jan Gosmann <jan@hyper-world.de>
