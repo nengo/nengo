@@ -7,15 +7,17 @@ notifications:
 env:
   global:
     - NUMPY="1.11"
+    - SCIPY="true"
     - COVERAGE="false"
     - STATIC="false"
-    - CONDA_DEPS="matplotlib jupyter scipy"
+    - CONDA_DEPS="matplotlib jupyter"
     - PIP_DEPS="pytest pytest-xdist"
 
 matrix:
   include:
-    - env: PYTHON="2.7" COVERAGE="true"
     - env: PYTHON="2.7" STATIC="true"
+    - env: PYTHON="2.7" COVERAGE="true"
+    - env: PYTHON="2.7" SCIPY="false"
     - env: PYTHON="2.7" NUMPY="1.7"
     - env: PYTHON="2.7" NUMPY="1.8"
     - env: PYTHON="2.7" NUMPY="1.9"
@@ -44,6 +46,9 @@ install:
     fi
   - if [[ -n "$NUMPY" && "$STATIC" == "false" ]]; then
       export CONDA_DEPS="$CONDA_DEPS numpy=$NUMPY";
+    fi
+  - if [[ "$SCIPY" == "true" && "$STATIC" == "false" ]]; then
+      export CONDA_DEPS="$CONDA_DEPS scipy";
     fi
   - if [[ -n "$CONDA_DEPS" ]]; then eval conda install "$CONDA_DEPS"; fi
   - if [[ -n "$PIP_DEPS" ]]; then eval pip install "$PIP_DEPS"; fi
