@@ -10,7 +10,88 @@ from nengo.node import Node
 from nengo.synapses import Lowpass
 
 
-class SimBCM(Operator):
+class IntermittentOperator(Operator):
+    """Base class for operators that support intermittent execution.
+
+    An intermittent operator allows for execution in less than each simulation
+    time step. To implement an intermittent operator derive from this class
+    and ensure that:
+
+    * In the constructor of the derived class you append to the operator lists
+      ``self.sets``, ``self.incs``, ``self.reads``, and ``self.updates`` or, if
+      you decide to overwrite them, include `step` in ``self.reads``.
+    * Set ``self.scaled`` to a list of signals that you want to scale by the
+      period length (``apply_every``) each time step.
+    * Instead of `make_step` implement `make_concrete_step` in the same way
+      you would implement `make_step` normally. No special case code is needed.
+
+    Parameters
+    ----------
+    apply_every : float or None
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
+    step : Signal
+        Signal providing the integer timestep of the simulator.
+    tag : str or None, optional (Default: None)
+        A label associated with the operator, for debugging purposes
+
+    Attributes
+    ----------
+    apply_every : float or None
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
+    step : Signal
+        Signal providing the integer timestep of the simulator.
+    tag : str or None, optional (Default: None)
+        A label associated with the operator, for debugging purposes
+    scaled : list of Signals
+        Signals to be scaled by the period length (``apply_every``).
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[]``
+    3. reads ``[step]``
+    4. updates ``[]``
+
+    Deriving classes are expected to extend these lists as needed.
+    """
+    def __init__(self, apply_every, step, tag=None):
+        super(IntermittentOperator, self).__init__(tag=tag)
+        self.apply_every = apply_every
+        self.step = step
+
+        self.sets = []
+        self.incs = []
+        self.reads = [step]
+        self.updates = []
+
+    def make_concrete_step(self, signals, dt, rng):
+        return lambda: None
+
+    def make_step(self, signals, dt, rng):
+        period = 1. if self.apply_every is None else self.apply_every / dt
+        scaled = [signals[s] for s in self.scaled]
+        concrete_step = self.make_concrete_step(signals, dt, rng)
+
+        if period > 1.:
+            step = signals[self.step]
+
+            def step_intermittent():
+                if step % period < 1.:
+                    concrete_step()
+                    for s in scaled:
+                        s[...] *= period
+                else:
+                    for s in scaled:
+                        s[...] = 0.
+        else:
+            step_intermittent = concrete_step
+
+        return step_intermittent
+
+
+class SimBCM(IntermittentOperator):
     """Calculate connection weight change according to the BCM rule.
 
     Implements the Bienenstock-Cooper-Munroe learning rule of the form
@@ -73,49 +154,30 @@ class SimBCM(Operator):
 
     def __init__(self, pre_filtered, post_filtered, theta, delta,
                  learning_rate, apply_every, step, tag=None):
-        super(SimBCM, self).__init__(tag=tag)
+        super(SimBCM, self).__init__(
+            apply_every=apply_every, step=step, tag=tag)
         self.pre_filtered = pre_filtered
         self.post_filtered = post_filtered
         self.theta = theta
         self.delta = delta
         self.learning_rate = learning_rate
-        self.step = step
-        self.apply_every = apply_every
 
-        self.sets = []
-        self.incs = []
-        self.reads = [pre_filtered, post_filtered, theta, step]
-        self.updates = [delta]
+        self.sets += []
+        self.incs += []
+        self.reads += [pre_filtered, post_filtered, theta]
+        self.updates += [delta]
+        self.scaled = [delta]
 
     def _descstr(self):
         return 'pre=%s, post=%s -> %s' % (
             self.pre_filtered, self.post_filtered, self.delta)
 
-    def make_step(self, signals, dt, rng):
+    def make_concrete_step(self, signals, dt, rng):
         pre_filtered = signals[self.pre_filtered]
         post_filtered = signals[self.post_filtered]
         theta = signals[self.theta]
         delta = signals[self.delta]
         alpha = self.learning_rate * dt
-        period = (1 if self.apply_every is None else
-                  self.apply_every / dt)
-
-        if period > 1:
-            step = signals[self.step]
-
-            def step_simbcm_sometimes():
-                if step % period < 1:
-                    delta[...] = np.outer(
-                        alpha * post_filtered * (post_filtered - theta),
-                        pre_filtered)
-
-                    # scale to compensate
-                    delta[...] *= period
-
-                else:
-                    delta[...] = 0
-
-            return step_simbcm_sometimes
 
         def step_simbcm():
             delta[...] = np.outer(
@@ -124,7 +186,7 @@ class SimBCM(Operator):
         return step_simbcm
 
 
-class SimOja(Operator):
+class SimOja(IntermittentOperator):
     """Calculate connection weight change according to the Oja rule.
 
     Implements the Oja learning rule of the form
@@ -191,54 +253,32 @@ class SimOja(Operator):
 
     def __init__(self, pre_filtered, post_filtered, weights, delta,
                  learning_rate, beta, apply_every, step, tag=None):
-        super(SimOja, self).__init__(tag=tag)
+        super(SimOja, self).__init__(
+            apply_every=apply_every, step=step, tag=tag)
         self.pre_filtered = pre_filtered
         self.post_filtered = post_filtered
         self.weights = weights
         self.delta = delta
         self.learning_rate = learning_rate
         self.beta = beta
-        self.step = step
-        self.apply_every = apply_every
 
-        self.sets = []
-        self.incs = []
-        self.reads = [pre_filtered, post_filtered, weights, step]
-        self.updates = [delta]
+        self.sets += []
+        self.incs += []
+        self.reads += [pre_filtered, post_filtered, weights]
+        self.updates += [delta]
+        self.scaled = [delta]
 
     def _descstr(self):
         return 'pre=%s, post=%s -> %s' % (
             self.pre_filtered, self.post_filtered, self.delta)
 
-    def make_step(self, signals, dt, rng):
+    def make_concrete_step(self, signals, dt, rng):
         weights = signals[self.weights]
         pre_filtered = signals[self.pre_filtered]
         post_filtered = signals[self.post_filtered]
         delta = signals[self.delta]
         alpha = self.learning_rate * dt
         beta = self.beta
-        period = (1 if self.apply_every is None else
-                  self.apply_every / dt)
-
-        if period > 1:
-            step = signals[self.step]
-
-            def step_simoja_sometimes():
-                if step % period < 1:
-                    # perform forgetting
-                    post_squared = alpha * post_filtered * post_filtered
-                    delta[...] = -beta * weights * post_squared[:, None]
-
-                    # perform update
-                    delta[...] += np.outer(alpha * post_filtered, pre_filtered)
-
-                    # scale to compensate
-                    delta[...] *= period
-
-                else:
-                    delta[...] = 0
-
-            return step_simoja_sometimes
 
         def step_simoja():
             # perform forgetting
@@ -250,7 +290,7 @@ class SimOja(Operator):
         return step_simoja
 
 
-class SimVoja(Operator):
+class SimVoja(IntermittentOperator):
     """Simulates a simplified version of Oja's rule in the vector space.
 
     See :doc:`examples/learn_associations` for details.
@@ -315,7 +355,8 @@ class SimVoja(Operator):
     def __init__(self, pre_decoded, post_filtered, scaled_encoders, delta,
                  scale, learning_signal, learning_rate, apply_every,
                  step, tag=None):
-        super(SimVoja, self).__init__(tag=tag)
+        super(SimVoja, self).__init__(
+            apply_every=apply_every, step=step, tag=tag)
         self.pre_decoded = pre_decoded
         self.post_filtered = post_filtered
         self.scaled_encoders = scaled_encoders
@@ -323,20 +364,19 @@ class SimVoja(Operator):
         self.scale = scale
         self.learning_signal = learning_signal
         self.learning_rate = learning_rate
-        self.step = step
-        self.apply_every = apply_every
 
-        self.sets = []
-        self.incs = []
-        self.reads = [pre_decoded, post_filtered, scaled_encoders,
-                      learning_signal, step]
-        self.updates = [delta]
+        self.sets += []
+        self.incs += []
+        self.reads += [pre_decoded, post_filtered, scaled_encoders,
+                       learning_signal]
+        self.updates += [delta]
+        self.scaled = [delta]
 
     def _descstr(self):
         return 'pre=%s, post=%s -> %s' % (
             self.pre_decoded, self.post_filtered, self.delta)
 
-    def make_step(self, signals, dt, rng):
+    def make_concrete_step(self, signals, dt, rng):
         pre_decoded = signals[self.pre_decoded]
         post_filtered = signals[self.post_filtered]
         scaled_encoders = signals[self.scaled_encoders]
@@ -344,25 +384,6 @@ class SimVoja(Operator):
         learning_signal = signals[self.learning_signal]
         alpha = self.learning_rate * dt
         scale = self.scale[:, np.newaxis]
-        period = (1 if self.apply_every is None else
-                  self.apply_every / dt)
-
-        if period > 1:
-            step = signals[self.step]
-
-            def step_simvoja_sometimes():
-                if step % period < 1:
-                    delta[...] = alpha * learning_signal * (
-                        scale * np.outer(post_filtered, pre_decoded) -
-                        post_filtered[:, np.newaxis] * scaled_encoders)
-
-                    # scale to compensate
-                    delta[...] *= period
-
-                else:
-                    delta[...] = 0
-
-            return step_simvoja_sometimes
 
         def step_simvoja():
             delta[...] = alpha * learning_signal * (
@@ -371,7 +392,7 @@ class SimVoja(Operator):
         return step_simvoja
 
 
-class SimPESDecoders(Operator):
+class SimPESDecoders(IntermittentOperator):
     """Calculate decoder change according to the PES rule.
 
     Implements the PES learning rule of the form:
@@ -438,50 +459,32 @@ class SimPESDecoders(Operator):
 
     def __init__(self, pre_filtered, delta, correction, learning_rate, error,
                  n_neurons, apply_every, step, tag=None):
-        super(SimPESDecoders, self).__init__(tag=tag)
+        super(SimPESDecoders, self).__init__(
+            apply_every=apply_every, step=step, tag=tag)
         self.pre_filtered = pre_filtered
         self.delta = delta
         self.correction = correction
         self.learning_rate = learning_rate
         self.error = error
         self.n_neurons = n_neurons
-        self.step = step
-        self.apply_every = apply_every
 
-        self.sets = []
-        self.incs = []
-        self.reads = [pre_filtered, error, step]
-        self.updates = [delta, correction]
+        self.sets += []
+        self.incs += []
+        self.reads += [pre_filtered, error]
+        self.updates += [delta, correction]
+        self.scaled = [delta]
 
     def _descstr(self):
         return 'pre=%s, err=%s -> %s' % (
             self.pre_filtered, self.error, self.delta)
 
-    def make_step(self, signals, dt, rng):
+    def make_concrete_step(self, signals, dt, rng):
         pre_filtered = signals[self.pre_filtered]
         delta = signals[self.delta]
         correction = signals[self.correction]
         alpha = self.learning_rate * dt
         n_neurons = self.n_neurons
         error = signals[self.error]
-        period = (1 if self.apply_every is None else
-                  self.apply_every / dt)
-
-        if period > 1:
-            step = signals[self.step]
-
-            def step_simpesdecoders_sometimes():
-                if step % period < 1:
-                    correction[...] = -alpha / n_neurons * error
-                    delta[...] = np.outer(correction, pre_filtered)
-
-                    # scale to compensate
-                    delta[...] *= period
-
-                else:
-                    delta[...] = 0
-
-            return step_simpesdecoders_sometimes
 
         def step_simpesdecoders():
                     correction[...] = -alpha / n_neurons * error
@@ -489,7 +492,7 @@ class SimPESDecoders(Operator):
         return step_simpesdecoders
 
 
-class SimPESWeights(Operator):
+class SimPESWeights(IntermittentOperator):
     """Calculate connection weight change according to the PES rule.
 
     Implements the PES learning rule of the form:
@@ -563,7 +566,8 @@ class SimPESWeights(Operator):
     def __init__(self, pre_filtered, delta, correction, encoders,
                  learning_rate, error, n_neurons, apply_every, step,
                  tag=None):
-        super(SimPESWeights, self).__init__(tag=tag)
+        super(SimPESWeights, self).__init__(
+            apply_every=apply_every, step=step, tag=tag)
         self.pre_filtered = pre_filtered
         self.delta = delta
         self.correction = correction
@@ -571,19 +575,18 @@ class SimPESWeights(Operator):
         self.learning_rate = learning_rate
         self.error = error
         self.n_neurons = n_neurons
-        self.step = step
-        self.apply_every = apply_every
 
-        self.sets = []
-        self.incs = []
-        self.reads = [pre_filtered, encoders, error, step]
-        self.updates = [delta, correction]
+        self.sets += []
+        self.incs += []
+        self.reads += [pre_filtered, encoders, error]
+        self.updates += [delta, correction]
+        self.scaled = [delta]
 
     def _descstr(self):
         return 'pre=%s, err=%s -> %s' % (
             self.pre_filtered, self.error, self.delta)
 
-    def make_step(self, signals, dt, rng):
+    def make_concrete_step(self, signals, dt, rng):
         pre_filtered = signals[self.pre_filtered]
         delta = signals[self.delta]
         correction = signals[self.correction]
@@ -591,25 +594,6 @@ class SimPESWeights(Operator):
         alpha = self.learning_rate * dt
         n_neurons = self.n_neurons
         error = signals[self.error]
-        period = (1 if self.apply_every is None else
-                  self.apply_every / dt)
-
-        if period > 1:
-            step = signals[self.step]
-
-            def step_simpesweights_sometimes():
-                if step % period < 1:
-                    correction[...] = -alpha / n_neurons * error
-                    delta[...] = np.outer(
-                        np.dot(encoders, correction), pre_filtered)
-
-                    # scale to compensate
-                    delta[...] *= period
-
-                else:
-                    delta[...] = 0
-
-            return step_simpesweights_sometimes
 
         def step_simpesweights():
                     correction[...] = -alpha / n_neurons * error
