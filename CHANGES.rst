@@ -22,6 +22,12 @@ Release History
 2.6.1 (unreleased)
 ==================
 
+**Added**
+
+- Added ``amplitude`` parameter to ``LIF`` and ``LIFRate``,
+  which scale the output amplitude.
+  (`#1325 <https://github.com/nengo/nengo/pull/1325>`_)
+
 **Fixed**
 
 - Better error message for invalid return values in ``nengo.Node`` functions.
