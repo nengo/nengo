@@ -21,7 +21,7 @@ class IntermittentOperator(Operator):
       ``self.sets``, ``self.incs``, ``self.reads``, and ``self.updates`` or, if
       you decide to overwrite them, include `step` in ``self.reads``.
     * Set ``self.scaled`` to a list of signals that you want to scale by the
-      period length (``apply_every``) each time step.
+      period length in simulation time steps.
     * Instead of `make_step` implement `make_concrete_step` in the same way
       you would implement `make_step` normally. No special case code is needed.
 
@@ -45,7 +45,7 @@ class IntermittentOperator(Operator):
     tag : str or None, optional (Default: None)
         A label associated with the operator, for debugging purposes
     scaled : list of Signals
-        Signals to be scaled by the period length (``apply_every``).
+        Signals to be scaled by the period length in simulation time steps.
 
     Notes
     -----
@@ -119,7 +119,8 @@ class SimBCM(IntermittentOperator):
     learning_rate : float
         The scalar learning rate, :math:`\kappa`.
     apply_every : float or None
-        A scalar indicating how often to apply learning rule.
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
     step : Signal
         The integer timestep which the simulator is executing.
     tag : str, optional (Default: None)
@@ -128,7 +129,8 @@ class SimBCM(IntermittentOperator):
     Attributes
     ----------
     apply_every : float or None
-        A scalar indicating how often to apply learning rule.
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
     delta : Signal
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
@@ -216,7 +218,8 @@ class SimOja(IntermittentOperator):
     beta : float
         The scalar forgetting rate, :math:`\\beta`.
     apply_every : float or None
-        A scalar indicating how often to apply learning rule.
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
     step : Signal
         The integer timestep which the simulator is executing.
     tag : str, optional (Default: None)
@@ -225,7 +228,8 @@ class SimOja(IntermittentOperator):
     Attributes
     ----------
     apply_every : float or None
-        A scalar indicating how often to apply learning rule.
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
     beta : float
         The scalar forgetting rate, :math:`\\beta`.
     delta : Signal
@@ -313,7 +317,8 @@ class SimVoja(IntermittentOperator):
     learning_rate : float
         The scalar learning rate.
     apply_every : float or None
-        A scalar indicating how often to apply learning rule.
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
     step : Signal
         The integer timestep which the simulator is executing.
     tag : str, optional (Default: None)
@@ -322,7 +327,8 @@ class SimVoja(IntermittentOperator):
     Attributes
     ----------
     apply_every : float or None
-        A scalar indicating how often to apply learning rule.
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
     delta : Signal
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
@@ -422,7 +428,8 @@ class SimPESDecoders(IntermittentOperator):
     n_neurons : int
         The number of neurons in the ensemble, :math:`n`
     apply_every : float or None
-        A scalar indicating how often to apply learning rule.
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
     step : Signal
         The integer timestep which the simulator is executing.
     tag : str, optional (Default: None)
@@ -431,7 +438,8 @@ class SimPESDecoders(IntermittentOperator):
     Attributes
     ----------
     apply_every : float or None
-        A scalar indicating how often to apply learning rule.
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
     correction : Signal
         The scaled negative error
     delta : Signal
@@ -526,7 +534,8 @@ class SimPESWeights(IntermittentOperator):
     n_neurons : int
         the number of neurons in the ensemble, :math:`n`
     apply_every : float or None
-        A scalar indicating how often to apply learning rule.
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
     step : Signal
         The integer timestep which the simulator is executing.
     tag : str, optional (Default: None)
@@ -535,7 +544,8 @@ class SimPESWeights(IntermittentOperator):
     Attributes
     ----------
     apply_every : float or None
-        A scalar indicating how often to apply learning rule.
+        A scalar indicating how often to apply the operator (in simulation
+        time). A value of ``None`` will apply it every time step.
     correction : Signal
          The scaled negative error
     delta : Signal
