@@ -39,7 +39,7 @@ class SimBCM(Operator):
         The scalar learning rate, :math:`\kappa`.
     apply_every : float or None
         A scalar indicating how often to apply learning rule.
-    n_steps : Signal
+    step : Signal
         The integer timestep which the simulator is executing.
     tag : str, optional (Default: None)
         A label associated with the operator, for debugging purposes.
@@ -52,7 +52,7 @@ class SimBCM(Operator):
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
         The scalar learning rate, :math:`\kappa`.
-    n_steps : Signal
+    step : Signal
         The integer timestep which the simulator is executing.
     post_filtered : Signal
         The postsynaptic activity, :math:`a_j`.
@@ -67,24 +67,24 @@ class SimBCM(Operator):
     -----
     1. sets ``[]``
     2. incs ``[]``
-    3. reads ``[pre_filtered, post_filtered, theta, n_steps]``
+    3. reads ``[pre_filtered, post_filtered, theta, step]``
     4. updates ``[delta]``
     """
 
     def __init__(self, pre_filtered, post_filtered, theta, delta,
-                 learning_rate, apply_every, n_steps, tag=None):
+                 learning_rate, apply_every, step, tag=None):
         super(SimBCM, self).__init__(tag=tag)
         self.pre_filtered = pre_filtered
         self.post_filtered = post_filtered
         self.theta = theta
         self.delta = delta
         self.learning_rate = learning_rate
-        self.n_steps = n_steps
+        self.step = step
         self.apply_every = apply_every
 
         self.sets = []
         self.incs = []
-        self.reads = [pre_filtered, post_filtered, theta, n_steps]
+        self.reads = [pre_filtered, post_filtered, theta, step]
         self.updates = [delta]
 
     def _descstr(self):
@@ -101,10 +101,10 @@ class SimBCM(Operator):
                   self.apply_every / dt)
 
         if period > 1:
-            n_steps = signals[self.n_steps]
+            step = signals[self.step]
 
             def step_simbcm_sometimes():
-                if n_steps % period < 1:
+                if step % period < 1:
                     delta[...] = np.outer(
                         alpha * post_filtered * (post_filtered - theta),
                         pre_filtered)
@@ -155,7 +155,7 @@ class SimOja(Operator):
         The scalar forgetting rate, :math:`\\beta`.
     apply_every : float or None
         A scalar indicating how often to apply learning rule.
-    n_steps : Signal
+    step : Signal
         The integer timestep which the simulator is executing.
     tag : str, optional (Default: None)
         A label associated with the operator, for debugging purposes.
@@ -170,7 +170,7 @@ class SimOja(Operator):
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
         The scalar learning rate, :math:`\kappa`.
-    n_steps : Signal
+    step : Signal
         The integer timestep which the simulator is executing.
     post_filtered : Signal
         The postsynaptic activity, :math:`a_j`.
@@ -185,12 +185,12 @@ class SimOja(Operator):
     -----
     1. sets ``[]``
     2. incs ``[]``
-    3. reads ``[pre_filtered, post_filtered, weights, n_steps]``
+    3. reads ``[pre_filtered, post_filtered, weights, step]``
     4. updates ``[delta]``
     """
 
     def __init__(self, pre_filtered, post_filtered, weights, delta,
-                 learning_rate, beta, apply_every, n_steps, tag=None):
+                 learning_rate, beta, apply_every, step, tag=None):
         super(SimOja, self).__init__(tag=tag)
         self.pre_filtered = pre_filtered
         self.post_filtered = post_filtered
@@ -198,12 +198,12 @@ class SimOja(Operator):
         self.delta = delta
         self.learning_rate = learning_rate
         self.beta = beta
-        self.n_steps = n_steps
+        self.step = step
         self.apply_every = apply_every
 
         self.sets = []
         self.incs = []
-        self.reads = [pre_filtered, post_filtered, weights, n_steps]
+        self.reads = [pre_filtered, post_filtered, weights, step]
         self.updates = [delta]
 
     def _descstr(self):
@@ -221,10 +221,10 @@ class SimOja(Operator):
                   self.apply_every / dt)
 
         if period > 1:
-            n_steps = signals[self.n_steps]
+            step = signals[self.step]
 
             def step_simoja_sometimes():
-                if n_steps % period < 1:
+                if step % period < 1:
                     # perform forgetting
                     post_squared = alpha * post_filtered * post_filtered
                     delta[...] = -beta * weights * post_squared[:, None]
@@ -274,7 +274,7 @@ class SimVoja(Operator):
         The scalar learning rate.
     apply_every : float or None
         A scalar indicating how often to apply learning rule.
-    n_steps : Signal
+    step : Signal
         The integer timestep which the simulator is executing.
     tag : str, optional (Default: None)
         A label associated with the operator, for debugging purposes.
@@ -290,7 +290,7 @@ class SimVoja(Operator):
     learning_signal : Signal
         Scalar signal to be multiplied by ``learning_rate``. Expected to be
         either 0 or 1 to turn learning off or on, respectively.
-    n_steps : Signal
+    step : Signal
         The integer timestep which the simulator is executing.
     post_filtered : Signal
         Filtered postsynaptic activity signal.
@@ -308,13 +308,13 @@ class SimVoja(Operator):
     1. sets ``[]``
     2. incs ``[]``
     3. reads ``[pre_decoded, post_filtered, scaled_encoders,
-                learning_signal, n_steps]``
+                learning_signal, step]``
     4. updates ``[delta]``
     """
 
     def __init__(self, pre_decoded, post_filtered, scaled_encoders, delta,
                  scale, learning_signal, learning_rate, apply_every,
-                 n_steps, tag=None):
+                 step, tag=None):
         super(SimVoja, self).__init__(tag=tag)
         self.pre_decoded = pre_decoded
         self.post_filtered = post_filtered
@@ -323,13 +323,13 @@ class SimVoja(Operator):
         self.scale = scale
         self.learning_signal = learning_signal
         self.learning_rate = learning_rate
-        self.n_steps = n_steps
+        self.step = step
         self.apply_every = apply_every
 
         self.sets = []
         self.incs = []
         self.reads = [pre_decoded, post_filtered, scaled_encoders,
-                      learning_signal, n_steps]
+                      learning_signal, step]
         self.updates = [delta]
 
     def _descstr(self):
@@ -348,10 +348,10 @@ class SimVoja(Operator):
                   self.apply_every / dt)
 
         if period > 1:
-            n_steps = signals[self.n_steps]
+            step = signals[self.step]
 
             def step_simvoja_sometimes():
-                if n_steps % period < 1:
+                if step % period < 1:
                     delta[...] = alpha * learning_signal * (
                         scale * np.outer(post_filtered, pre_decoded) -
                         post_filtered[:, np.newaxis] * scaled_encoders)
@@ -402,7 +402,7 @@ class SimPESDecoders(Operator):
         The number of neurons in the ensemble, :math:`n`
     apply_every : float or None
         A scalar indicating how often to apply learning rule.
-    n_steps : Signal
+    step : Signal
         The integer timestep which the simulator is executing.
     tag : str, optional (Default: None)
         A label associated with the operator, for debugging purposes.
@@ -421,7 +421,7 @@ class SimPESDecoders(Operator):
         The scalar learning rate, :math:`\kappa`.
     n_neurons : int
         The number of neurons in the ensemble, :math:`n`
-    n_steps : Signal
+    step : Signal
         The integer timestep which the simulator is executing.
     pre_filtered : Signal
         The presynaptic activity, :math:`a_i`.
@@ -432,12 +432,12 @@ class SimPESDecoders(Operator):
     -----
     1. sets ``[]``
     2. incs ``[]``
-    3. reads ``[pre_filtered, error, n_steps]``
+    3. reads ``[pre_filtered, error, step]``
     4. updates ``[delta, correction]``
     """
 
     def __init__(self, pre_filtered, delta, correction, learning_rate, error,
-                 n_neurons, apply_every, n_steps, tag=None):
+                 n_neurons, apply_every, step, tag=None):
         super(SimPESDecoders, self).__init__(tag=tag)
         self.pre_filtered = pre_filtered
         self.delta = delta
@@ -445,12 +445,12 @@ class SimPESDecoders(Operator):
         self.learning_rate = learning_rate
         self.error = error
         self.n_neurons = n_neurons
-        self.n_steps = n_steps
+        self.step = step
         self.apply_every = apply_every
 
         self.sets = []
         self.incs = []
-        self.reads = [pre_filtered, error, n_steps]
+        self.reads = [pre_filtered, error, step]
         self.updates = [delta, correction]
 
     def _descstr(self):
@@ -468,10 +468,10 @@ class SimPESDecoders(Operator):
                   self.apply_every / dt)
 
         if period > 1:
-            n_steps = signals[self.n_steps]
+            step = signals[self.step]
 
             def step_simpesdecoders_sometimes():
-                if n_steps % period < 1:
+                if step % period < 1:
                     correction[...] = -alpha / n_neurons * error
                     delta[...] = np.outer(correction, pre_filtered)
 
@@ -524,7 +524,7 @@ class SimPESWeights(Operator):
         the number of neurons in the ensemble, :math:`n`
     apply_every : float or None
         A scalar indicating how often to apply learning rule.
-    n_steps : Signal
+    step : Signal
         The integer timestep which the simulator is executing.
     tag : str, optional (Default: None)
         A label associated with the operator, for debugging purposes.
@@ -543,7 +543,7 @@ class SimPESWeights(Operator):
         The scalar learning rate, :math:`\kappa`.
     n_neurons : int
         the number of neurons in the ensemble, :math:`n`
-    n_steps : Signal
+    step : Signal
         The integer timestep which the simulator is executing.
     pre_filtered : Signal
         The presynaptic activity, :math:`a_i`.
@@ -556,12 +556,12 @@ class SimPESWeights(Operator):
     -----
     1. sets ``[]``
     2. incs ``[]``
-    3. reads ``[pre_filtered, encoders, error, n_steps]``
+    3. reads ``[pre_filtered, encoders, error, step]``
     4. updates ``[delta, correction]``
     """
 
     def __init__(self, pre_filtered, delta, correction, encoders,
-                 learning_rate, error, n_neurons, apply_every, n_steps,
+                 learning_rate, error, n_neurons, apply_every, step,
                  tag=None):
         super(SimPESWeights, self).__init__(tag=tag)
         self.pre_filtered = pre_filtered
@@ -571,12 +571,12 @@ class SimPESWeights(Operator):
         self.learning_rate = learning_rate
         self.error = error
         self.n_neurons = n_neurons
-        self.n_steps = n_steps
+        self.step = step
         self.apply_every = apply_every
 
         self.sets = []
         self.incs = []
-        self.reads = [pre_filtered, encoders, error, n_steps]
+        self.reads = [pre_filtered, encoders, error, step]
         self.updates = [delta, correction]
 
     def _descstr(self):
@@ -595,10 +595,10 @@ class SimPESWeights(Operator):
                   self.apply_every / dt)
 
         if period > 1:
-            n_steps = signals[self.n_steps]
+            step = signals[self.step]
 
             def step_simpesweights_sometimes():
-                if n_steps % period < 1:
+                if step % period < 1:
                     correction[...] = -alpha / n_neurons * error
                     delta[...] = np.outer(
                         np.dot(encoders, correction), pre_filtered)
@@ -730,7 +730,7 @@ def build_bcm(model, bcm, rule):
                         model.sig[rule]['delta'],
                         learning_rate=bcm.learning_rate,
                         apply_every=bcm.apply_every,
-                        n_steps=model.step))
+                        step=model.step))
 
     # expose these for probes
     model.sig[rule]['theta'] = theta
@@ -773,7 +773,7 @@ def build_oja(model, oja, rule):
                         learning_rate=oja.learning_rate,
                         beta=oja.beta,
                         apply_every=oja.apply_every,
-                        n_steps=model.step))
+                        step=model.step))
 
     # expose these for probes
     model.sig[rule]['pre_filtered'] = pre_filtered
@@ -835,7 +835,7 @@ def build_voja(model, voja, rule):
                 learning_signal=learning,
                 learning_rate=voja.learning_rate,
                 apply_every=voja.apply_every,
-                n_steps=model.step))
+                step=model.step))
 
     # expose these for probes
     model.sig[rule]['scaled_encoders'] = scaled_encoders
@@ -890,7 +890,7 @@ def build_pes(model, pes, rule):
                           error=error,
                           n_neurons=n_neurons,
                           apply_every=pes.apply_every,
-                          n_steps=model.step))
+                          step=model.step))
 
     elif isinstance(conn.pre_obj, (Ensemble, Neurons)):
         model.add_op(
@@ -901,7 +901,7 @@ def build_pes(model, pes, rule):
                            error=error,
                            n_neurons=n_neurons,
                            apply_every=pes.apply_every,
-                           n_steps=model.step))
+                           step=model.step))
     else:
         raise BuildError("'pre' object '%s' not suitable for PES learning"
                          % (conn.pre_obj))
