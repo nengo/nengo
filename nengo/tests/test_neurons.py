@@ -362,6 +362,51 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     assert np.allclose(out_data[0], out_data[1], atol=0.05)
 
 
+def test_amplitude(Simulator, seed, rng, plt):
+    amp = 0.1
+    neuron0 = nengo.LIF()
+    neuron = nengo.LIF(amplitude=amp)
+
+    # check static
+    x = np.linspace(-5, 30)
+    y = amp * neuron0.rates(x, 1., 0.)
+    y2 = neuron.rates(x, 1., 0.)
+    assert np.allclose(y, y2, atol=1e-5)
+
+    # check dynamic
+    n = 100
+    x = 1.0
+    encoders = np.ones((n, 1))
+    max_rates = rng.uniform(low=20, high=200, size=n)
+    intercepts = rng.uniform(low=-1, high=0.8, size=n)
+
+    with nengo.Network(seed=seed) as model:
+        ins = nengo.Node(x)
+        ens = nengo.Ensemble(
+            n, dimensions=1, neuron_type=neuron,
+            encoders=encoders, max_rates=max_rates, intercepts=intercepts)
+        nengo.Connection(ins, ens, synapse=None)
+        spike_probe = nengo.Probe(ens.neurons)
+
+    dt = 0.001
+    t_final = 0.5
+    with Simulator(model, dt=dt) as sim:
+        sim.run(t_final)
+
+    spikes = sim.data[spike_probe]
+    r = spikes.sum(axis=0) * (dt / t_final)
+
+    gain, bias = neuron0.gain_bias(max_rates, intercepts)
+    r0 = amp * neuron0.rates(x, gain, bias)
+
+    i = np.argsort(r0)
+    plt.plot(r0[i])
+    plt.plot(r[i])
+
+    error = rms(r - r0) / rms(r0)
+    assert (error < 0.02).all()
+
+
 def test_reset(Simulator, nl_nodirect, seed, rng):
     """Make sure resetting actually resets."""
     m = nengo.Network(seed=seed)

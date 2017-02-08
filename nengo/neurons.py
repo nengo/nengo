@@ -327,11 +327,13 @@ class LIFRate(NeuronType):
 
     tau_rc = NumberParam('tau_rc', low=0, low_open=True)
     tau_ref = NumberParam('tau_ref', low=0)
+    amplitude = NumberParam('amplitude', low=0)
 
-    def __init__(self, tau_rc=0.02, tau_ref=0.002):
+    def __init__(self, tau_rc=0.02, tau_ref=0.002, amplitude=1.):
         super(LIFRate, self).__init__()
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
+        self.amplitude = amplitude
 
     @property
     def _argreprs(self):
@@ -381,7 +383,7 @@ class LIFRate(NeuronType):
         """Implement the LIFRate nonlinearity."""
         j = J - 1
         output[:] = 0  # faster than output[j <= 0] = 0
-        output[j > 0] = 1. / (
+        output[j > 0] = self.amplitude / (
             self.tau_ref + self.tau_rc * np.log1p(1. / j[j > 0]))
         # the above line is designed to throw an error if any j is nan
         # (nan > 0 -> error), and not pass x < -1 to log1p
@@ -407,8 +409,9 @@ class LIF(LIFRate):
 
     min_voltage = NumberParam('min_voltage', high=0)
 
-    def __init__(self, tau_rc=0.02, tau_ref=0.002, min_voltage=0):
-        super(LIF, self).__init__(tau_rc=tau_rc, tau_ref=tau_ref)
+    def __init__(self, tau_rc=0.02, tau_ref=0.002, amplitude=1, min_voltage=0):
+        super(LIF, self).__init__(tau_rc=tau_rc, tau_ref=tau_ref,
+                                  amplitude=amplitude)
         self.min_voltage = min_voltage
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
@@ -428,7 +431,7 @@ class LIF(LIFRate):
 
         # determine which neurons spiked (set them to 1/dt, else 0)
         spiked_mask = voltage > 1
-        spiked[:] = spiked_mask / dt
+        spiked[:] = spiked_mask * (self.amplitude / dt)
 
         # set v(0) = 1 and solve for t to compute the spike time
         t_spike = dt + self.tau_rc * np.log1p(
