@@ -125,7 +125,10 @@ def is_array(obj):
 
 
 def is_array_like(obj):
-    return is_array(obj) or is_iterable(obj) or is_number(obj)
+    # While it's possible that there are some iterables other than list/tuple
+    # that can be made into arrays, it's very likely that those arrays
+    # will have dtype=object, which is likely to cause unexpected issues.
+    return is_array(obj) or is_number(obj) or isinstance(obj, (list, tuple))
 
 
 def with_metaclass(meta, *bases):
