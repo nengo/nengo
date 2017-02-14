@@ -150,7 +150,8 @@ def build_ensemble(model, ens):
             ens.encoders, ens.n_neurons, ens.dimensions, rng=rng)
     else:
         encoders = npext.array(ens.encoders, min_dims=2, dtype=np.float64)
-    encoders /= npext.norm(encoders, axis=1, keepdims=True)
+    if ens.normalize_encoders:
+        encoders /= npext.norm(encoders, axis=1, keepdims=True)
 
     # Build the neurons
     gain, bias, max_rates, intercepts = get_gain_bias(ens, rng)

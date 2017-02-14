@@ -380,3 +380,20 @@ def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt):
 
     assert np.allclose(sim.data[ap], sim.data[bp])
     assert np.allclose(sim.data[bp], sim.data[cp])
+
+
+def test_no_norm_encoders(Simulator):
+    """Confirm encoders are not normalized"""
+
+    enc_weight = 5
+    with nengo.Network() as model:
+        norm = nengo.Ensemble(1, 1, encoders=[[enc_weight]])
+        no_norm = nengo.Ensemble(1, 1,
+                                 encoders=[[enc_weight]],
+                                 normalize_encoders=False)
+
+    with Simulator(model) as sim:
+        pass
+
+    assert np.allclose(sim.data[norm].encoders, 1)
+    assert np.allclose(sim.data[no_norm].encoders, enc_weight)

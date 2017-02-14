@@ -22,7 +22,12 @@ Release History
 2.3.2 (unreleased)
 ==================
 
+**Added**
 
+- Added the option to not normalize encoders by setting
+  ``Ensemble.normalize_encoders`` to ``False``.
+  (`#1191 <https://github.com/nengo/nengo/issues/1191>`_,
+  `#1267 <https://github.com/nengo/nengo/pull/1267>`_)
 
 2.3.1 (February 18, 2017)
 =========================

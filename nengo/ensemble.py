@@ -2,7 +2,7 @@ from nengo.base import NengoObject, ObjView, ProcessParam
 from nengo.dists import DistOrArrayParam, Uniform, UniformHypersphere
 from nengo.exceptions import ReadonlyError
 from nengo.neurons import LIF, NeuronTypeParam, Direct
-from nengo.params import Default, IntParam, NumberParam
+from nengo.params import BoolParam, Default, IntParam, NumberParam
 
 
 class Ensemble(NengoObject):
@@ -55,6 +55,8 @@ class Ensemble(NengoObject):
         Random noise injected directly into each neuron in the ensemble
         as current. A sample is drawn for each individual neuron on
         every simulation step.
+    normalize_encoders : bool, optional (Default: True)
+        Indicates whether the encoders should be normalized.
     label : str, optional (Default: None)
         A name for the ensemble. Used for debugging and visualization.
     seed : int, optional (Default: None)
@@ -134,11 +136,14 @@ class Ensemble(NengoObject):
                             optional=True,
                             sample_shape=('n_neurons',))
     noise = ProcessParam('noise', default=None, optional=True)
+    normalize_encoders = BoolParam(
+        'normalize_encoders', default=True, optional=True)
 
     def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
                  intercepts=Default, max_rates=Default, eval_points=Default,
                  n_eval_points=Default, neuron_type=Default, gain=Default,
-                 bias=Default, noise=Default, label=Default, seed=Default):
+                 bias=Default, noise=Default, normalize_encoders=Default,
+                 label=Default, seed=Default):
         super(Ensemble, self).__init__(label=label, seed=seed)
         self.n_neurons = n_neurons
         self.dimensions = dimensions
@@ -152,6 +157,7 @@ class Ensemble(NengoObject):
         self.gain = gain
         self.neuron_type = neuron_type
         self.noise = noise
+        self.normalize_encoders = normalize_encoders
 
     def __getitem__(self, key):
         return ObjView(self, key)
@@ -189,6 +195,7 @@ class Neurons(object):
 
         nengo.Connection(a.neurons, b.neurons)
     """
+
     def __init__(self, ensemble):
         self._ensemble = ensemble
 
