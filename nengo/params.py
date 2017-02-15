@@ -76,6 +76,19 @@ class Parameter(object):
         # param values set on objects
         self.data = WeakKeyIDDictionary()
 
+    def __getstate__(self):
+        state = {}
+        state.update(self.__dict__)
+        state['_defaults'] = dict(state['_defaults'].items())
+        state['data'] = dict(state['data'].items())
+        return state
+
+    def __setstate__(self, state):
+        for k, v in state.items():
+            if k in ['_defaults', 'data']:
+                v = WeakKeyIDDictionary(v)
+            setattr(self, k, v)
+
     def __contains__(self, key):
         return key in self.data or key in self._defaults
 
