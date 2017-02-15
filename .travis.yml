@@ -4,8 +4,13 @@ notifications:
   email:
     - tbekolay@gmail.com
 
+cache:
+  directories:
+    - $HOME/miniconda
+
 env:
   global:
+    - MINICONDA_DIR="$HOME/miniconda"
     - NUMPY="1.11"
     - SCIPY="false"
     - COVERAGE="false"
@@ -25,19 +30,29 @@ matrix:
     - env: PYTHON="3.5" COVERAGE="true"
     - env: PYTHON="3.5" COVERAGE="true" SCIPY="true"
 
+git:
+  depth: 3
+
 # Setup Miniconda
 before_install:
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -b -p "$HOME/miniconda"
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - conda info -a
-  - conda create -q -n test python="$PYTHON" pip
+  - export PATH="$MINICONDA_DIR/bin:$PATH";
+  - if [ -d "$MINICONDA_DIR" ] && [ -e "$MINICONDA_DIR/bin/conda" ]; then
+      echo "Miniconda already installed in $MINICONDA_DIR";
+    else
+      rm -rf "$MINICONDA_DIR";
+      wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+      bash miniconda.sh -b -p "$MINICONDA_DIR";
+      conda config --set always_yes yes --set changeps1 no;
+      conda update -q conda;
+      conda create -q -n test python="$PYTHON" pip;
+    fi
   - source activate test
+  - conda info -a
 
 # Install packages with conda, then pip
 install:
+  - export PATH="$PATH:$HOME/miniconda/bin"
+  - hash -r
   - if [[ "$COVERAGE" == "true" ]]; then
       export PIP_DEPS="pytest coverage";
     elif [[ "$STATIC" == "true" ]]; then
@@ -51,7 +66,7 @@ install:
       export CONDA_DEPS="$CONDA_DEPS scipy";
     fi
   - if [[ -n "$CONDA_DEPS" ]]; then eval conda install "$CONDA_DEPS"; fi
-  - if [[ -n "$PIP_DEPS" ]]; then eval pip install "$PIP_DEPS"; fi
+  - if [[ -n "$PIP_DEPS" ]]; then eval pip install "$PIP_DEPS" --user; fi
 
 # Run the tests
 script:
