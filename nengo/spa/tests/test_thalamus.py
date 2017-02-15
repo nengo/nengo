@@ -128,7 +128,7 @@ def test_routing(Simulator, seed, plt):
     assert valueC[2] < 0.2
 
 
-def test_routing_recurrency_compilation(Simulator, seed, plt):
+def test_routing_recurrency_compilation(Simulator, seed):
     D = 2
     model = spa.SPA(seed=seed)
     with model:
