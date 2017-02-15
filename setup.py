@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 import imp
 import io
-import sys
 import os
+import sys
 
 try:
-    from setuptools import setup
+    from setuptools import find_packages, setup
 except ImportError:
-    from ez_setup import use_setuptools
-    use_setuptools()
-
-from setuptools import find_packages, setup  # noqa: F811
+    raise ImportError(
+        "'setuptools' is required but not installed. To install it, "
+        "follow the instructions at "
+        "https://pip.pypa.io/en/stable/installing/#installing-with-get-pip-py")
 
 
 def read(*filenames, **kwargs):
@@ -21,6 +21,7 @@ def read(*filenames, **kwargs):
         with io.open(filename, encoding=encoding) as f:
             buf.append(f.read())
     return sep.join(buf)
+
 
 root = os.path.dirname(os.path.realpath(__file__))
 version_module = imp.load_source(
@@ -52,7 +53,9 @@ setup(
     extras_require={
         'all_solvers': ["scipy>=0.13", "scikit-learn"],
     },
-    tests_require=['pytest>=2.3'],
+    tests_require=[
+        'pytest>=2.3',
+    ],
     entry_points={
         'nengo.backends': [
             'reference = nengo:Simulator'
