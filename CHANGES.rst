@@ -42,6 +42,9 @@ Release History
   faster than other attributes.
   (`#1234 <https://github.com/nengo/nengo/issues/1234>`_,
   `#1245 <https://github.com/nengo/nengo/pull/1245>`_)
+- Fixed an issue in which SPA models could not be copied.
+  (`#1266 <https://github.com/nengo/nengo/issues/1266>`_,
+  `#1271 <https://github.com/nengo/nengo/pull/1271>`_)
 
 **Changed**
 

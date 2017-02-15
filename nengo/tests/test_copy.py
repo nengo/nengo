@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo import spa
 from nengo.exceptions import NetworkContextError, NotAddedToNetworkWarning
 from nengo.params import IntParam, iter_params
 from nengo.utils.compat import is_array_like, pickle
@@ -314,6 +315,23 @@ class TestFrozenObjectCopies(object):
 
     def test_pickle_roundtrip(self, original):
         assert_is_deepcopy(pickle.loads(pickle.dumps(original)), original)
+
+
+def test_copy_spa(RefSimulator):
+    with spa.SPA() as original:
+        original.state = spa.State(16)
+        original.cortex = spa.Cortical(spa.Actions("state = A"))
+
+    cp = original.copy()
+
+    # Check that it still builds.
+    with RefSimulator(cp):
+        pass
+
+    # check vocab instance param is set
+    for node in cp.all_nodes:
+        if node.label in ['input', 'output']:
+            assert cp.config[node].vocab is not None
 
 
 def test_copy_instance_params():

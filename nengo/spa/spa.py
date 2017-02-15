@@ -93,12 +93,23 @@ class SPA(nengo.Network):
                               "that dimensionality." % (vo.dimensions))
             self._default_vocabs[vo.dimensions] = vo
 
+        self._initialized = True
+
+    def __setstate__(self, state):
+        if '_initialized' in state:
+            del state['_initialized']
+        super(SPA, self).__setstate__(state)
+        setattr(self, '_initialized', True)
+
     def __setattr__(self, key, value):
         """A setattr that handles Modules being added specially.
 
         This is so that we can use the variable name for the Module as
         the name that all of the SPA system will use to access that module.
         """
+        if not hasattr(self, '_initialized'):
+            return super(SPA, self).__setattr__(key, value)
+
         if hasattr(self, key) and isinstance(getattr(self, key), Module):
             raise SpaModuleError("Cannot re-assign module-attribute %s to %s. "
                                  "SPA module-attributes can only be assigned "
