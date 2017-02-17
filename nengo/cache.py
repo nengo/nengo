@@ -7,6 +7,7 @@ import logging
 import os
 import shutil
 import struct
+import subprocess
 from uuid import uuid1
 import warnings
 
@@ -392,7 +393,19 @@ class WriteableCacheIndex(CacheIndex):
             # Use highest available protocol for index data for maximum
             # performance.
             pickle.dump(self._index, f, pickle.HIGHEST_PROTOCOL)
-        replace(self.index_path + '.part', self.index_path)
+        try:
+            replace(self.index_path + '.part', self.index_path)
+        except subprocess.CalledProcessError:
+            warnings.warn(
+                "Updating the cache index failed because access was prevented "
+                "by another program. To get rid of this warning and increase "
+                "Nengo's build performance consider taking one of the "
+                "following steps:\n"
+                " * Exclude the Nengo cache directory {cache_dir} from "
+                "scanning in your anti-virus software or any other software "
+                "that may automatically access these files.\n"
+                " * Use Python 3 instead of Python 2.\n"
+                " * Deactivate the decoder cache.")
         if os.path.exists(self.legacy_path):
             os.remove(self.legacy_path)
 
