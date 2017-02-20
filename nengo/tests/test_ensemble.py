@@ -4,6 +4,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.dists import Choice, Gaussian, UniformHypersphere
+from nengo.exceptions import BuildError
 from nengo.processes import WhiteNoise, FilteredNoise
 from nengo.utils.testing import warns, allclose
 
@@ -380,3 +381,13 @@ def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt):
 
     assert np.allclose(sim.data[ap], sim.data[bp])
     assert np.allclose(sim.data[bp], sim.data[cp])
+
+
+@pytest.mark.parametrize('intercept', [1.0, 1.1])
+def test_raises_exception_for_invalid_intercepts(Simulator, intercept):
+    with nengo.Network() as model:
+        nengo.Ensemble(1, 1, intercepts=[intercept])
+
+    with pytest.raises(BuildError):
+        with nengo.Simulator(model):
+            pass
