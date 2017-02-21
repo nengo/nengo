@@ -13,7 +13,7 @@ from nengo.builder.operator import DotInc, ElementwiseInc, SlicedCopy
 from nengo.builder.signal import Signal
 from nengo.config import SupportRcDefaultsMixin
 from nengo.params import BoolParam, IntParam, RcDefault
-from nengo.utils.compat import zip_longest
+from nengo.utils.compat import iteritems, zip_longest
 from nengo.utils.graphs import toposort, transitive_closure
 
 logger = logging.getLogger(__name__)
@@ -211,7 +211,8 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
             op_replacements.update(opr)
             sig_replacements.update(sigr)
             del by_type[tp]  # no need to process tp again in the second loop
-            if not only_merge_ops_with_view and len(opr) > 0:
+            n_changes = sum(new is not old for old, new in iteritems(opr))
+            if not only_merge_ops_with_view and n_changes > 0:
                 # If we're not only merging views, the memory layout changes
                 # and non-views are turned into views. In that case we need
                 # to update the signals the operators are referring to before
@@ -224,7 +225,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         # Process remaining operations
         for tp, subset in by_type.items():
             if self.supports_merge(tp) and (
-                    only_merge_ops_with_view or len(opr) <= 0):
+                    only_merge_ops_with_view or n_changes <= 0):
                 opr, sigr = self._perform_merges_for_subset(
                     subset, tc, only_merge_ops_with_view)
                 op_replacements.update(opr)
