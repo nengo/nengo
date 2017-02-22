@@ -732,6 +732,10 @@ class DotIncMerger(AbstractMerger):
 
         # Construct sparse A representation
         data = np.array([o.A.initial_value for o in ops])
+        if data.ndim == 1:
+            data = data.reshape((data.size, 1, 1))
+        elif data.ndim == 2:
+            data = data.reshape(data.shape + (1,))
         indptr = np.arange(len(ops) + 1, dtype=int)
         indices = np.arange(len(ops), dtype=int)
         name = 'bsr_merged<{first}, ..., {last}>'.format(
