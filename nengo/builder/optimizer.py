@@ -750,7 +750,8 @@ class DotIncMerger(AbstractMerger):
             replacements[s] = Signal(
                 data[i], name="%s[%i]" % (s.name, i), base=A)
             assert np.all(s.initial_value == replacements[s].initial_value)
-            assert s.shape == replacements[s].shape
+            assert s.shape == replacements[s].shape or (
+                s.shape == () and replacements[s].shape == (1, 1))
 
         reshape = operator.reshape_dot(
             ops[0].A.initial_value, ops[0].X.initial_value,
