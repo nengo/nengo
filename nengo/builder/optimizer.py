@@ -78,8 +78,12 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
             cls.op_mergers[type(op1)].can_merge(op1, op2))
 
     @classmethod
+    def get_merger(cls, op):
+        return cls.op_mergers[type(op)]
+
+    @classmethod
     def merge_ops(cls, ops):
-        return cls.op_mergers[type(ops[0])].merge(ops)
+        return cls.get_merger(ops[0]).merge(ops)
 
     @classmethod
     def register_merger(cls, op_type):
@@ -440,7 +444,8 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
                 independent_of_merge_ops = (
                     op2 not in merge_tc and
                     len(tc[op2].intersection(merge)) <= 0 and
-                    len(merge_signals.intersection(op2.all_signals)) <= 0)
+                    self.get_merger(op2).check_for_signal_conflicts(
+                        op2, merge, merge_signals))
                 independent_of_prior_merges = (
                     op2 not in self._merged and
                     not any(op2 in tc[op] or op in tc[op2]
@@ -612,6 +617,30 @@ class AbstractMerger(object):
         """
         raise NotImplementedError()
 
+    def check_for_signal_conflicts(self, op, merge, merge_signals):
+        """Check if `op` can be appended to a merge given its signals.
+
+        By default this will check that op does not share a signal with an
+        operator in the planned merged. Deriving classes may overwrite this
+        function to allow shared signals in specific circumstances.
+
+        Parameters
+        ----------
+        op : Operator
+            Operator that is considered for addition to the merge
+        merge : list of Operator
+            The list of operators that will be merged.
+        merge_signals : set of Signal
+            A set of all signals referenced by the operators in `merge`.
+
+        Returns
+        -------
+        bool
+            Whether `op` may be added to `merge` considering the identity of
+            its signals.
+        """
+        return len(merge_signals.intersection(op.all_signals)) <= 0
+
 
 @OpMergeOptimizer.register_merger(operator.TimeUpdate)
 class TimeUpdateMerger(AbstractMerger):
@@ -732,6 +761,8 @@ class DotIncMerger(AbstractMerger):
             A = merge_signals_or_views([o.A for o in ops], replacements)
             Y = merge_signals_or_views([o.Y for o in ops], replacements)
             return operator.DotInc(A, ops[0].X, Y), replacements
+        assert all(
+            o1.X is not o2.X for i, o1 in enumerate(ops) for o2 in ops[i+1:])
 
         # BSR merge if X differ
         X = merge_signals_or_views([o.X for o in ops], replacements)
@@ -763,6 +794,17 @@ class DotIncMerger(AbstractMerger):
             operator.BsrDotInc(
                 A, X, Y, indices=indices, indptr=indptr, reshape=reshape),
             replacements)
+
+    def check_for_signal_conflicts(self, op, merge, merge_signals):
+        none_shared = (
+            super(DotIncMerger, self).check_for_signal_conflicts(
+                op, merge, merge_signals) and
+            len(set(o.X for o in merge)) == len(merge))
+        all_x_shared = (
+            not any(set((op.X, op.A, op.Y)).intersection((o.A, o.Y))
+                    for o in merge) and
+            all(op.X is o.X for o in merge))
+        return none_shared or all_x_shared
 
 
 @OpMergeOptimizer.register_merger(SimNeurons)
