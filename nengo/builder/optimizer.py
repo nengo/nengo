@@ -257,16 +257,6 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
         signals corresponding to `op1_view_indices` are views. `tc` needs to be
         the transitive closure of the dependency graph.
         """
-        # Ensure the operators don't form a dependency cycle and that op2
-        # hasn't been merged with another operator yet. (Whether op1 has been
-        # merged with another operator will already be checked in
-        # _perform_merges_for_view_subset outside of this function
-        # to reduce the number of checks inside the inner loop of the
-        # optimizer.)
-        independent = (
-            (op1 not in tc[op2] and op2 not in tc[op1]) and
-            op2 not in self._merged)
-
         op1_sigs = op1.all_signals
         op2_sigs = op2.all_signals
 
@@ -280,7 +270,7 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
             views_match &= s1.base == s2.base
             views_match &= s1.strides == s2.strides
 
-        return independent and views_match and self.can_merge_ops(op1, op2)
+        return views_match and self.can_merge_ops(op1, op2)
 
     def _is_memory_access_sequential(self, ops):
         """Checks that the corresponding signals of the operators `ops` are all
@@ -438,6 +428,8 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
 
             # Find operators that can be merged.
             merge = [op1]
+            merge_tc = set(tc[op1])
+            merge_signals = set(op1.all_signals)
             # For a merge to be possible the view of the next operator has to
             # start where the view of op1 ends. Because we have sorted the
             # operators by the start of their views we can do a binary search
@@ -445,21 +437,23 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
             start = np.searchsorted(
                 offsets, offsets[i] + self._first_view_size(op1), side='left')
             for op2 in sorted_subset[start:]:
-                can_merge = (
+                independent_of_merge_ops = (
+                    op2 not in merge_tc and
+                    len(tc[op2].intersection(merge)) <= 0 and
+                    len(merge_signals.intersection(op2.all_signals)) <= 0)
+                independent_of_prior_merges = (
                     op2 not in self._merged and
+                    not any(op2 in tc[op] or op in tc[op2]
+                            for op in self._merged))
+                can_merge = (
+                    independent_of_merge_ops and
+                    independent_of_prior_merges and
                     self._mergeable(merge[-1], op2, view_indices, tc) and
                     self._is_memory_access_sequential([merge[-1], op2]))
-                for op in merge:
-                    if any(s in op.all_signals for s in op2.all_signals):
-                        can_merge = False
-                        break
-                    if op2 in tc[op] or op in tc[op2]:
-                        can_merge = False
-                        break
-                if any(op2 in tc[op] or op in tc[op2] for op in self._merged):
-                    can_merge = False
                 if can_merge:
                     merge.append(op2)
+                    merge_tc.update(tc[op2])
+                    merge_signals.update(op2.all_signals)
                 elif self._check_sequential(merge[-1], op2):
                     # If this check is true the view of op2 does not
                     # immediately follow the view of the operators being
