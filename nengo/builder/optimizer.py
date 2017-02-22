@@ -429,6 +429,8 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
                 # has been updated (happens at the end of one optimization
                 # pass by calling _update_dg).
                 continue
+            if any(op1 in tc[op] or op in tc[op1] for op in self._merged):
+                continue
 
             view_indices = self._get_view_indices(op1)
 
@@ -449,6 +451,11 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
                     if any(s in op.all_signals for s in op2.all_signals):
                         can_merge = False
                         break
+                    if op2 in tc[op] or op in tc[op2]:
+                        can_merge = False
+                        break
+                if any(op2 in tc[op] or op in tc[op2] for op in self._merged):
+                    can_merge = False
                 if can_merge:
                     merge.append(op2)
                 elif self._check_sequential(merge[-1], op2):
