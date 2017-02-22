@@ -445,6 +445,10 @@ class OpMergeOptimizer(SupportRcDefaultsMixin):
                     op2 not in self._merged and
                     self._mergeable(merge[-1], op2, view_indices, tc) and
                     self._is_memory_access_sequential([merge[-1], op2]))
+                for op in merge:
+                    if any(s in op.all_signals for s in op2.all_signals):
+                        can_merge = False
+                        break
                 if can_merge:
                     merge.append(op2)
                 elif self._check_sequential(merge[-1], op2):
