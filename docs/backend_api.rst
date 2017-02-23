@@ -56,6 +56,8 @@ Operators
 
 .. autoclass:: nengo.builder.operator.DotInc
 
+.. autoclass:: nengo.builder.operator.BsrDotInc
+
 .. autoclass:: nengo.builder.operator.TimeUpdate
 
 .. autoclass:: nengo.builder.operator.PreserveValue
