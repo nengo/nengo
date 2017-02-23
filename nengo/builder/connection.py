@@ -277,7 +277,7 @@ def build_connection(model, conn):
     # Copy to the proper slice
     model.add_op(SlicedCopy(
         signal, model.sig[conn]['out'], dst_slice=post_slice,
-        inc=True, tag="%s.gain" % conn))
+        inc=True, tag="%s" % conn))
 
     # Build learning rules
     if conn.learning_rule is not None:

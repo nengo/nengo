@@ -91,7 +91,7 @@ class Operator(object):
         return ''
 
     def _tagstr(self):
-        return ('"%s"' % self.tag) if self.tag is not None else ''
+        return (' "%s"' % self.tag) if self.tag is not None else ''
 
     @property
     def all_signals(self):
