@@ -411,6 +411,7 @@ def dotinc_checker(op1, op2):
         warnings.warn(
             "Skipping some optimization steps because SciPy is not installed. "
             "Installing SciPy may result in faster simulations.")
+        return False
     except ValueError:
         return False
     return (_SigMerger.check([op1.X, op2.X]) and
