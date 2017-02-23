@@ -48,6 +48,10 @@ class Signal(object):
 
     def __init__(self, initial_value,
                  name=None, base=None, readonly=False, offset=0):
+        if self.assert_named_signals:
+            assert name
+        self._name = name
+
         if not np.isscalar(initial_value) and base is None:
             self._initial_value = np.ascontiguousarray(initial_value).view()
         else:
@@ -60,10 +64,6 @@ class Signal(object):
             assert initial_value.base is base.initial_value.base
         self._base = base
         self._offset = offset
-
-        if self.assert_named_signals:
-            assert name
-        self._name = name
 
         self._readonly = bool(readonly)
 
