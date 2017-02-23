@@ -609,7 +609,7 @@ class DotInc(Operator):
     4. updates ``[]``
     """
 
-    def __init__(self, A, X, Y, tag=None):
+    def __init__(self, A, X, Y, reshape=None, tag=None):
         super(DotInc, self).__init__(tag=tag)
 
         if X.ndim >= 2 and any(d > 1 for d in X.shape[1:]):
@@ -620,6 +620,10 @@ class DotInc(Operator):
         self.A = A
         self.X = X
         self.Y = Y
+        self.reshape = reshape
+        if self.reshape is None:
+            self.reshape = reshape_dot(
+                A.initial_value, X.initial_value, Y.initial_value, self.tag)
 
         self.sets = []
         self.incs = [Y]
@@ -633,25 +637,25 @@ class DotInc(Operator):
         X = signals[self.X]
         A = signals[self.A]
         Y = signals[self.Y]
-        reshape = reshape_dot(A, X, Y, self.tag)
 
         def step_dotinc():
             inc = np.dot(A, X)
-            if reshape:
+            if self.reshape:
                 inc = np.asarray(inc).reshape(Y.shape)
             Y[...] += inc
         return step_dotinc
 
 
-class BsrDotInc(Operator):
-    """Increment signal Y by dot(A, X) where is a matrix in block sparse row
-    format.
+class BsrDotInc(DotInc):
+    """Increment signal Y by dot(A, X) using block sparse row format.
 
-    Requires SciPy.
+    Implements ``Y[...] += np.dot(A, X)``, where ``A`` is an instance
+    of `scipy.sparse.bsr_matrix`.
 
-    Currently, this only supports matrix-vector multiplies for compatibility
-    with NengoOCL.
+    .. note:: Requires SciPy.
 
+    .. note:: Currently, this only supports matrix-vector multiplies
+              for compatibility with Nengo OCL.
     Parameters
     ----------
     A : (k, r, c) Signal
@@ -666,31 +670,42 @@ class BsrDotInc(Operator):
         Column index pointers, see `scipy.sparse.bsr_matrix` for details.
     reshape : bool
         Whether to reshape the result.
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    A : (k, r, c) Signal
+        The signal providing the k data blocks with r rows and c columns.
+    indices : ndarray
+        Column indices, see `scipy.sparse.bsr_matrix` for details.
+    indptr : ndarray
+        Column index pointers, see `scipy.sparse.bsr_matrix` for details.
+    reshape : bool
+        Whether to reshape the result.
+    tag : str or None
+        A label associated with the operator, for debugging purposes.
+    X : (k * c) Signal
+        The signal providing the k column vectors to multiply with.
+    Y : (k * r) Signal
+        The signal providing the k column vectors to update.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[Y]``
+    3. reads ``[A, X]``
+    4. updates ``[]``
     """
 
-    def __init__(self, A, X, Y, indices, indptr, reshape, tag=None):
-        super(BsrDotInc, self).__init__(tag=tag)
+    def __init__(self, A, X, Y, indices, indptr, reshape=None, tag=None):
+        from scipy.sparse import bsr_matrix
+        self.bsr_matrix = bsr_matrix
 
-        if X.ndim >= 2 and any(d > 1 for d in X.shape[1:]):
-            raise BuildError("X must be a column vector")
-        if Y.ndim >= 2 and any(d > 1 for d in Y.shape[1:]):
-            raise BuildError("Y must be a column vector")
+        super(BsrDotInc, self).__init__(A, X, Y, reshape=reshape, tag=tag)
 
-        self.A = A
-        self.X = X
-        self.Y = Y
         self.indices = indices
         self.indptr = indptr
-        self.reshape = reshape
-        self.tag = tag
-
-        self.sets = []
-        self.incs = [Y]
-        self.reads = [A, X]
-        self.updates = []
-
-    def _descstr(self):
-        return '%s, %s -> %s' % (self.A, self.X, self.Y)
 
     def make_step(self, signals, dt, rng):
         X = signals[self.X]
@@ -698,8 +713,7 @@ class BsrDotInc(Operator):
         Y = signals[self.Y]
 
         def step_dotinc():
-            from scipy.sparse import bsr_matrix
-            mat_A = bsr_matrix((A, self.indices, self.indptr))
+            mat_A = self.bsr_matrix((A, self.indices, self.indptr))
             inc = mat_A.dot(X)
             if self.reshape:
                 inc = np.asarray(inc).reshape(Y.shape)
