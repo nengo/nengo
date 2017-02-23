@@ -131,6 +131,12 @@ class Signal(object):
         self._name = name
 
     @property
+    def nbytes(self):
+        """(int) Number of bytes consumed by the signal."""
+        # Equivalent to self.itemsize * self.size
+        return self.initial_value.nbytes
+
+    @property
     def ndim(self):
         """(int) Number of array dimensions."""
         return self.initial_value.ndim
