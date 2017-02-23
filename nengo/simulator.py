@@ -8,7 +8,7 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder import Model
-from nengo.builder.optimizer import OpMergeOptimizer
+from nengo.builder.optimizer import optimize as opmerge_optimize
 from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.exceptions import ReadonlyError, SimulatorClosed
@@ -114,7 +114,8 @@ class Simulator(object):
     # would skip all test whose names start with 'test_pes'.
     unsupported = []
 
-    def __init__(self, network, dt=0.001, seed=None, model=None):
+    def __init__(
+            self, network, dt=0.001, seed=None, model=None, optimize=True):
         self.closed = False
 
         if model is None:
@@ -130,7 +131,10 @@ class Simulator(object):
 
         # Order the steps (they are made in `Simulator.reset`)
         self.dg = operator_depencency_graph(self._model.operators)
-        OpMergeOptimizer(self.model, self.dg).optimize()
+
+        if optimize:
+            opmerge_optimize(self._model, self.dg)
+
         self._step_order = [op for op in toposort(self.dg)
                             if hasattr(op, 'make_step')]
 
