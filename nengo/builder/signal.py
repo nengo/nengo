@@ -40,6 +40,10 @@ class Signal(object):
     assert_named_signals = False
 
     def __init__(self, initial_value, name=None, base=None, readonly=False):
+        if self.assert_named_signals:
+            assert name
+        self._name = name
+
         self._initial_value = np.asarray(initial_value).view()
         self._initial_value.setflags(write=False)
 
@@ -48,10 +52,6 @@ class Signal(object):
             # make sure initial_value uses the same data as base.initial_value
             assert initial_value.base is base.initial_value.base
         self._base = base
-
-        if self.assert_named_signals:
-            assert name
-        self._name = name
 
         self._readonly = bool(readonly)
 
