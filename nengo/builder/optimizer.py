@@ -419,122 +419,129 @@ class OpsToMerge(object):
 
 
 class OpMerger(object):
-    op_checkers = {}
-    sig_checkers = {}
-    op_mergers = {}
+    mergers = {}
 
     @classmethod
     def is_mergeable(cls, op, tomerge):
+        merger = cls.mergers[tomerge.optype]
+
         independent_of_ops_tomerge = (
             op not in tomerge.all_dependents and
             len(tomerge.dependents[op].intersection(tomerge.ops)) == 0)
-
         independent_of_prior_merges = (
             op not in tomerge.merged and
             all(op not in tomerge.dependents[o] and
                 o not in tomerge.dependents[op] for o in tomerge.merged))
-
         return (
             type(op) is tomerge.optype and
             independent_of_ops_tomerge and
             independent_of_prior_merges and
             cls.is_type_mergeable(tomerge.optype) and
             all(tomerge.check_signals(o, op) for o in tomerge.ops) and
-            cls.sig_checkers[tomerge.optype](op, tomerge) and
-            cls.op_checkers[tomerge.optype](tomerge.last_op, op))
+            merger.check_signals(op, tomerge) and
+            merger.is_mergeable(tomerge.last_op, op))
 
     @classmethod
     def is_type_mergeable(cls, optype):
-        return (optype in cls.op_checkers
-                and optype in cls.sig_checkers
-                and optype in cls.op_mergers)
+        return optype in cls.mergers
 
     @classmethod
     def merge(cls, ops):
-        return cls.op_mergers[type(ops[0])](ops)
+        return cls.mergers[type(ops[0])].merge(ops)
 
-    @staticmethod
-    def _register_func(d, optype, name):
-        def register(checker):
-            if optype in d:
-                warnings.warn("{} for operator of type {} overwritten.".format(
-                    name, optype))
-            d[optype] = checker
-            return checker
+    @classmethod
+    def register(cls, optype):
+        def register(merger):
+            if optype in cls.mergers:
+                warnings.warn(
+                    "Merger for operator type {} overwritten.".format(optype))
+            cls.mergers[optype] = merger
+            return merger
         return register
 
-    @classmethod
-    def register_op_checker(cls, optype):
-        return cls._register_func(cls.op_checkers, optype, "op_checker")
 
-    @classmethod
-    def register_sig_checker(cls, optype):
-        return cls._register_func(cls.sig_checkers, optype, "sig_checker")
+class Merger(object):
+    @staticmethod
+    def check_signals(op, tomerge):
+        return len(tomerge.all_signals.intersection(op.all_signals)) == 0
 
-    @classmethod
-    def register_merger(cls, optype):
-        return cls._register_func(cls.op_mergers, optype, "op_merger")
+    @staticmethod
+    def is_mergeable(op1, op2):
+        return False
 
+    @staticmethod
+    def merge(ops):
+        raise NotImplementedError("Cannot merge arbitrary ops.")
 
-@OpMerger.register_sig_checker(operator.TimeUpdate)
-@OpMerger.register_sig_checker(operator.Reset)
-@OpMerger.register_sig_checker(operator.Copy)
-@OpMerger.register_sig_checker(operator.SlicedCopy)
-@OpMerger.register_sig_checker(operator.ElementwiseInc)
-@OpMerger.register_sig_checker(SimNeurons)
-def default_sig_checker(op, tomerge):
-    return len(tomerge.all_signals.intersection(op.all_signals)) == 0
+    @staticmethod
+    def merge_dicts(*dicts):
+        """Merges the given dictionaries into a single dictionary.
 
-
-@OpMerger.register_op_checker(operator.TimeUpdate)
-def timeupdate_checker(op1, op2):
-    return True
-
-
-@OpMerger.register_merger(operator.TimeUpdate)
-def timeupdate_merger(ops):
-    step, step_sigr = SigMerger.merge([o.step for o in ops])
-    time, time_sigr = SigMerger.merge([o.time for o in ops])
-    return operator.TimeUpdate(step, time), merge_dicts(step_sigr, time_sigr)
+        This function assumes and enforces that no keys overlap.
+        """
+        d = {}
+        for other_d in dicts:
+            assert all(k not in d for k in other_d)
+            d.update(other_d)
+        return d
 
 
-@OpMerger.register_op_checker(operator.Reset)
-def reset_checker(op1, op2):
-    return SigMerger.check([op1.dst, op2.dst]) and op1.value == op2.value
+@OpMerger.register(operator.TimeUpdate)
+class TimeUpdateMerger(Merger):
+
+    @staticmethod
+    def is_mergeable(op1, op2):
+        return True
+
+    @staticmethod
+    def merge(ops):
+        step, step_sigr = SigMerger.merge([o.step for o in ops])
+        time, time_sigr = SigMerger.merge([o.time for o in ops])
+        return (operator.TimeUpdate(step, time),
+                Merger.merge_dicts(step_sigr, time_sigr))
 
 
-@OpMerger.register_merger(operator.Reset)
-def reset_merger(ops):
-    dst, replacements = SigMerger.merge([o.dst for o in ops])
-    return operator.Reset(dst, ops[0].value), replacements
+@OpMerger.register(operator.Reset)
+class ResetMerger(Merger):
+
+    @staticmethod
+    def is_mergeable(op1, op2):
+        return SigMerger.check([op1.dst, op2.dst]) and op1.value == op2.value
+
+    @staticmethod
+    def merge(ops):
+        dst, replacements = SigMerger.merge([o.dst for o in ops])
+        return operator.Reset(dst, ops[0].value), replacements
 
 
-@OpMerger.register_op_checker(operator.Copy)
-def copy_checker(op1, op2):
-    return (SigMerger.check([op1.dst, op2.dst])
-            and SigMerger.check([op1.src, op2.src]))
+@OpMerger.register(operator.Copy)
+class CopyMerger(Merger):
+
+    @staticmethod
+    def is_mergeable(op1, op2):
+        return (SigMerger.check([op1.dst, op2.dst])
+                and SigMerger.check([op1.src, op2.src]))
+
+    @staticmethod
+    def merge(ops):
+        dst, dst_sigr = SigMerger.merge([o.dst for o in ops])
+        src, src_sigr = SigMerger.merge([o.src for o in ops])
+        return operator.Copy(src, dst), Merger.merge_dicts(dst_sigr, src_sigr)
 
 
-@OpMerger.register_merger(operator.Copy)
-def copy_merger(ops):
-    dst, dst_sigr = SigMerger.merge([o.dst for o in ops])
-    src, src_sigr = SigMerger.merge([o.src for o in ops])
-    return operator.Copy(src, dst), merge_dicts(dst_sigr, src_sigr)
+@OpMerger.register(operator.SlicedCopy)
+class SlicedCopyMerger(Merger):
 
+    @staticmethod
+    def is_mergeable(op1, op2):
+        return (SigMerger.check([op1.src, op2.src]) and
+                SigMerger.check([op1.dst, op2.dst]) and
+                op1.src_slice is Ellipsis and op1.dst_slice is Ellipsis and
+                op2.src_slice is Ellipsis and op2.dst_slice is Ellipsis and
+                op1.inc == op2.inc)
 
-@OpMerger.register_op_checker(operator.SlicedCopy)
-def slicedcopy_checker(op1, op2):
-    return (SigMerger.check([op1.src, op2.src]) and
-            SigMerger.check([op1.dst, op2.dst]) and
-            op1.src_slice is Ellipsis and op1.dst_slice is Ellipsis and
-            op2.src_slice is Ellipsis and op2.dst_slice is Ellipsis and
-            op1.inc == op2.inc)
-
-
-@OpMerger.register_merger(operator.SlicedCopy)
-def slicedcopy_merger(ops):
-
-    def merged_slice(signals, slices):
+    @staticmethod
+    def merge_slice(signals, slices):
         if all(s is Ellipsis for s in slices):
             return Ellipsis
         elif any(s is Ellipsis for s in slices):
@@ -547,135 +554,145 @@ def slicedcopy_merger(ops):
             offset += sig.size
         return merged_slice
 
-    src_sigs = [o.src for o in ops]
-    dst_sigs = [o.dst for o in ops]
+    @staticmethod
+    def merge(ops):
+        src_sigs = [o.src for o in ops]
+        dst_sigs = [o.dst for o in ops]
 
-    src, src_sigr = SigMerger.merge(src_sigs)
-    dst, dst_sigr = SigMerger.merge(dst_sigs)
-    src_slice = merged_slice(src_sigs, [o.src_slice for o in ops])
-    dst_slice = merged_slice(dst_sigs, [o.dst_slice for o in ops])
-    return operator.SlicedCopy(
-        src, dst, src_slice=src_slice, dst_slice=dst_slice,
-        inc=ops[0].inc), merge_dicts(src_sigr, dst_sigr)
-
-
-@OpMerger.register_op_checker(operator.ElementwiseInc)
-def elementwiseinc_checker(op1, op2):
-    return (SigMerger.check([op1.A, op2.A], axis=op1.A.ndim - 1) and
-            SigMerger.check([op1.X, op2.X], axis=op1.X.ndim - 1) and
-            SigMerger.check([op1.Y, op2.Y], axis=op1.Y.ndim - 1))
+        src, src_sigr = SigMerger.merge(src_sigs)
+        dst, dst_sigr = SigMerger.merge(dst_sigs)
+        src_slice = SlicedCopyMerger.merge_slice(
+            src_sigs, [o.src_slice for o in ops])
+        dst_slice = SlicedCopyMerger.merge_slice(
+            dst_sigs, [o.dst_slice for o in ops])
+        return operator.SlicedCopy(
+            src, dst, src_slice=src_slice, dst_slice=dst_slice,
+            inc=ops[0].inc), Merger.merge_dicts(src_sigr, dst_sigr)
 
 
-@OpMerger.register_merger(operator.ElementwiseInc)
-def elementwiseinc_merger(ops):
-    A, A_sigr = SigMerger.merge([o.A for o in ops], axis=ops[0].A.ndim - 1)
-    X, X_sigr = SigMerger.merge([o.X for o in ops], axis=ops[0].X.ndim - 1)
-    Y, Y_sigr = SigMerger.merge([o.Y for o in ops], axis=ops[0].Y.ndim - 1)
-    return (operator.ElementwiseInc(A, X, Y),
-            merge_dicts(A_sigr, X_sigr, Y_sigr))
+@OpMerger.register(operator.ElementwiseInc)
+class ElementwiseIncMerger(Merger):
+
+    @staticmethod
+    def is_mergeable(op1, op2):
+        return (SigMerger.check([op1.A, op2.A], axis=op1.A.ndim - 1) and
+                SigMerger.check([op1.X, op2.X], axis=op1.X.ndim - 1) and
+                SigMerger.check([op1.Y, op2.Y], axis=op1.Y.ndim - 1))
+
+    @staticmethod
+    def merge(ops):
+        A, A_sigr = SigMerger.merge([o.A for o in ops], axis=ops[0].A.ndim - 1)
+        X, X_sigr = SigMerger.merge([o.X for o in ops], axis=ops[0].X.ndim - 1)
+        Y, Y_sigr = SigMerger.merge([o.Y for o in ops], axis=ops[0].Y.ndim - 1)
+        return (operator.ElementwiseInc(A, X, Y),
+                Merger.merge_dicts(A_sigr, X_sigr, Y_sigr))
 
 
-@OpMerger.register_op_checker(operator.DotInc)
-def dotinc_checker(op1, op2):
-    if op1.X is op2.X:
-        # simple merge might be possible
-        return (SigMerger.check([op1.Y, op2.Y])
-                and SigMerger.check([op1.A, op2.A]))
+@OpMerger.register(operator.DotInc)
+class DotIncMerger(Merger):
 
-    # check if BSR merge is possible
-    try:
-        # Not using check() for A, because A must not be a view.
-        SigMerger.check_signals([op1.A, op2.A])
-        from scipy.sparse import bsr_matrix
-        assert bsr_matrix
-    except ImportError:
-        warnings.warn(
-            "Skipping some optimization steps because SciPy is not installed. "
-            "Installing SciPy may result in faster simulations.")
-        return False
-    except ValueError:
-        return False
-    return (SigMerger.check([op1.X, op2.X]) and
-            SigMerger.check([op1.Y, op2.Y]) and
-            op1.A.shape == op2.A.shape)
+    @staticmethod
+    def check_signals(op, tomerge):
+        none_shared = (Merger.check_signals(op, tomerge) and
+                       len(set(o.X for o in tomerge.ops)) == len(tomerge.ops))
+        all_x_shared = (
+            not any(set((op.X, op.A, op.Y)).intersection((o.A, o.Y))
+                    for o in tomerge.ops) and
+            all(op.X is o.X for o in tomerge.ops))
+        return none_shared or all_x_shared
 
+    @staticmethod
+    def is_mergeable(op1, op2):
+        if op1.X is op2.X:
+            # simple merge might be possible
+            return (SigMerger.check([op1.Y, op2.Y])
+                    and SigMerger.check([op1.A, op2.A]))
 
-@OpMerger.register_sig_checker(operator.DotInc)
-def dotinc_sig_checker(op, tomerge):
-    none_shared = (default_sig_checker(op, tomerge) and
-                   len(set(o.X for o in tomerge.ops)) == len(tomerge.ops))
-    all_x_shared = (
-        not any(set((op.X, op.A, op.Y)).intersection((o.A, o.Y))
-                for o in tomerge.ops) and
-        all(op.X is o.X for o in tomerge.ops))
-    return none_shared or all_x_shared
+        # check if BSR merge is possible
+        try:
+            # Not using check() for A, because A must not be a view.
+            SigMerger.check_signals([op1.A, op2.A])
+            from scipy.sparse import bsr_matrix
+            assert bsr_matrix
+        except ImportError:
+            warnings.warn("Skipping some optimization steps because SciPy is "
+                          "not installed. Installing SciPy may result in "
+                          "faster simulations.")
+            return False
+        except ValueError:
+            return False
+        return (SigMerger.check([op1.X, op2.X]) and
+                SigMerger.check([op1.Y, op2.Y]) and
+                op1.A.shape == op2.A.shape)
 
+    @staticmethod
+    def merge(ops):
+        # Simple merge if all X are the same.
+        if all(o.X is ops[0].X for o in ops):
+            A, A_sigr = SigMerger.merge([o.A for o in ops])
+            Y, Y_sigr = SigMerger.merge([o.Y for o in ops])
+            return (operator.DotInc(A, ops[0].X, Y),
+                    Merger.merge_dicts(A_sigr, Y_sigr))
 
-@OpMerger.register_merger(operator.DotInc)
-def dotinc_merge(ops):
-    # Simple merge if all X are the same.
-    if all(o.X is ops[0].X for o in ops):
-        A, A_sigr = SigMerger.merge([o.A for o in ops])
+        assert all(o1.X is not o2.X
+                   for i, o1 in enumerate(ops) for o2 in ops[i+1:])
+
+        # BSR merge if X differ
+        X, X_sigr = SigMerger.merge([o.X for o in ops])
         Y, Y_sigr = SigMerger.merge([o.Y for o in ops])
-        return operator.DotInc(A, ops[0].X, Y), merge_dicts(A_sigr, Y_sigr)
-    assert all(o1.X is not o2.X
-               for i, o1 in enumerate(ops) for o2 in ops[i+1:])
 
-    # BSR merge if X differ
-    X, X_sigr = SigMerger.merge([o.X for o in ops])
-    Y, Y_sigr = SigMerger.merge([o.Y for o in ops])
+        # Construct sparse A representation
+        data = np.array([o.A.initial_value for o in ops])
+        if data.ndim == 1:
+            data = data.reshape((data.size, 1, 1))
+        elif data.ndim == 2:
+            data = data.reshape(data.shape + (1,))
+        indptr = np.arange(len(ops) + 1, dtype=int)
+        indices = np.arange(len(ops), dtype=int)
+        name = 'bsr_merged<{first}, ..., {last}>'.format(
+            first=ops[0].A.name, last=ops[-1].A.name)
+        readonly = all([o.A.readonly for o in ops])
+        A = Signal(data, name=name, readonly=readonly)
+        A_sigr = {}
+        for i, s in enumerate([o.A for o in ops]):
+            A_sigr[s] = Signal(data[i], name="%s[%i]" % (s.name, i), base=A)
+            assert np.all(s.initial_value == A_sigr[s].initial_value)
+            assert s.shape == A_sigr[s].shape or (
+                s.shape == () and A_sigr[s].shape == (1, 1))
 
-    # Construct sparse A representation
-    data = np.array([o.A.initial_value for o in ops])
-    if data.ndim == 1:
-        data = data.reshape((data.size, 1, 1))
-    elif data.ndim == 2:
-        data = data.reshape(data.shape + (1,))
-    indptr = np.arange(len(ops) + 1, dtype=int)
-    indices = np.arange(len(ops), dtype=int)
-    name = 'bsr_merged<{first}, ..., {last}>'.format(
-        first=ops[0].A.name, last=ops[-1].A.name)
-    readonly = all([o.A.readonly for o in ops])
-    A = Signal(data, name=name, readonly=readonly)
-    A_sigr = {}
-    for i, s in enumerate([o.A for o in ops]):
-        A_sigr[s] = Signal(data[i], name="%s[%i]" % (s.name, i), base=A)
-        assert np.all(s.initial_value == A_sigr[s].initial_value)
-        assert s.shape == A_sigr[s].shape or (
-            s.shape == () and A_sigr[s].shape == (1, 1))
-
-    reshape = operator.reshape_dot(
-        ops[0].A.initial_value, ops[0].X.initial_value,
-        ops[0].Y.initial_value, tag=ops[0].tag)
-    return (
-        operator.BsrDotInc(
-            A, X, Y, indices=indices, indptr=indptr, reshape=reshape),
-        merge_dicts(X_sigr, Y_sigr, A_sigr))
+        reshape = operator.reshape_dot(
+            ops[0].A.initial_value, ops[0].X.initial_value,
+            ops[0].Y.initial_value, tag=ops[0].tag)
+        return (
+            operator.BsrDotInc(
+                A, X, Y, indices=indices, indptr=indptr, reshape=reshape),
+            Merger.merge_dicts(X_sigr, Y_sigr, A_sigr))
 
 
-@OpMerger.register_op_checker(SimNeurons)
-def simneurons_checker(op1, op2):
-    return (op1.neurons == op2.neurons and
-            all(SigMerger.check(s) for s in
-                zip(op1.all_signals, op2.all_signals)))
+@OpMerger.register(SimNeurons)
+class SimNeuronsMerger(Merger):
 
+    @staticmethod
+    def is_mergeable(op1, op2):
+        return (op1.neurons == op2.neurons and
+                all(SigMerger.check(s) for s in
+                    zip(op1.all_signals, op2.all_signals)))
 
-@OpMerger.register_merger(SimNeurons)
-def simneurons_merger(ops):
+    @staticmethod
+    def merge(ops):
+        def gather(ops, key):
+            return [getattr(o, key) for o in ops]
 
-    def gather(ops, key):
-        return [getattr(o, key) for o in ops]
-
-    J, J_sigr = SigMerger.merge(gather(ops, 'J'))
-    output, out_sigr = SigMerger.merge(gather(ops, 'output'))
-    states = []
-    states_sigr = {}
-    for signals in zip(*gather(ops, 'states')):
-        st, st_sigr = SigMerger.merge(signals)
-        states.append(st)
-        states_sigr.update(st_sigr)
-    return (SimNeurons(ops[0].neurons, J, output, states),
-            merge_dicts(J_sigr, out_sigr, states_sigr))
+        J, J_sigr = SigMerger.merge(gather(ops, 'J'))
+        output, out_sigr = SigMerger.merge(gather(ops, 'output'))
+        states = []
+        states_sigr = {}
+        for signals in zip(*gather(ops, 'states')):
+            st, st_sigr = SigMerger.merge(signals)
+            states.append(st)
+            states_sigr.update(st_sigr)
+        return (SimNeurons(ops[0].neurons, J, output, states),
+                Merger.merge_dicts(J_sigr, out_sigr, states_sigr))
 
 
 class SigMerger(object):
@@ -891,16 +908,4 @@ def groupby(lst, keyfunc=lambda item: item):
     d = defaultdict(list)
     for item in lst:
         d[keyfunc(item)].append(item)
-    return d
-
-
-def merge_dicts(*dicts):
-    """Merges the given dictionaries into a single dictionary.
-
-    This function assumes and enforces that no keys overlap.
-    """
-    d = {}
-    for other_d in dicts:
-        assert all(k not in d for k in other_d)
-        d.update(other_d)
     return d
