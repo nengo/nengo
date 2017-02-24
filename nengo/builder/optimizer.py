@@ -242,7 +242,7 @@ class _SigMerger(object):
             initial_value, name=signals[0].base.name, base=signals[0].base,
             readonly=all(s.readonly for s in signals))
 
-        return merged_signal, {}  # TODO: why no replacements here?
+        return merged_signal, {}
 
 
 class _OpMerger(object):
@@ -252,21 +252,29 @@ class _OpMerger(object):
 
     @classmethod
     def is_mergeable(cls, op, tomerge):
-        return (
-            tomerge.optype in cls.op_checkers and
-            type(op) is tomerge.optype and
+        independent_of_ops_tomerge = (
+            op not in tomerge.all_dependents and
+            len(tomerge.dependents[op].intersection(tomerge.ops)) == 0)
+
+        independent_of_prior_merges = (
             op not in tomerge.merged and
-            op not in tomerge.all_tc and
-            len(tomerge.tc[op].intersection(tomerge.ops)) == 0 and
+            all(op not in tomerge.dependents[o] and
+                o not in tomerge.dependents[op] for o in tomerge.merged))
+
+        return (
+            type(op) is tomerge.optype and
+            independent_of_ops_tomerge and
+            independent_of_prior_merges and
+            cls.is_type_mergeable(tomerge.optype) and
             all(tomerge.check_signals(o, op) for o in tomerge.ops) and
-            all(op not in tomerge.tc[o] and o not in tomerge.tc[op]
-                for o in tomerge.merged) and
             cls.sig_checkers[tomerge.optype](op, tomerge) and
             cls.op_checkers[tomerge.optype](tomerge.last_op, op))
 
     @classmethod
     def is_type_mergeable(cls, optype):
-        return optype in cls.op_checkers and optype in cls.op_mergers
+        return (optype in cls.op_checkers
+                and optype in cls.sig_checkers
+                and optype in cls.op_mergers)
 
     @classmethod
     def merge(cls, ops):
@@ -479,17 +487,17 @@ def simneurons_checker(op1, op2):
                 zip(op1.all_signals, op2.all_signals)))
 
 
-def _gather(ops, key):
-    return [getattr(o, key) for o in ops]
-
-
 @_OpMerger.register_merger(SimNeurons)
 def simneurons_merger(ops):
-    J, J_sigr = _SigMerger.merge(_gather(ops, 'J'))
-    output, out_sigr = _SigMerger.merge(_gather(ops, 'output'))
+
+    def gather(ops, key):
+        return [getattr(o, key) for o in ops]
+
+    J, J_sigr = _SigMerger.merge(gather(ops, 'J'))
+    output, out_sigr = _SigMerger.merge(gather(ops, 'output'))
     states = []
     states_sigr = {}
-    for signals in zip(*_gather(ops, 'states')):
+    for signals in zip(*gather(ops, 'states')):
         st, st_sigr = _SigMerger.merge(signals)
         states.append(st)
         states_sigr.update(st_sigr)
@@ -535,20 +543,18 @@ class _OpInfo(Mapping):
         self.info.clear()
 
 
-_opinfo = _OpInfo()
-
-
 class _OpsToMerge(object):
     """Analyze and store extra information about a list of ops to be merged."""
 
-    def __init__(self, initial_op, merged, tc):
+    def __init__(self, initial_op, merged, dependents):
         self.merged = merged
-        self.tc = tc
+        self.dependents = dependents
         self.ops = [initial_op]
         self.optype = type(initial_op)
+        self.opinfo = _OpInfo()
 
         self.all_signals = set(initial_op.all_signals)
-        self.all_tc = set(self.tc[initial_op])
+        self.all_dependents = set(self.dependents[initial_op])
 
     @property
     def last_op(self):
@@ -557,12 +563,12 @@ class _OpsToMerge(object):
     def add(self, op):
         self.ops.append(op)
         self.all_signals.update(op.all_signals)
-        self.all_tc.update(self.tc[op])
+        self.all_dependents.update(self.dependents[op])
 
     @staticmethod
     def check_signals(op1, op2):
         for s1, s2 in zip(op1.all_signals, op2.all_signals):
-            # If one signal's op is a view, the other must be as well
+            # If one op's signal is a view, the other must be as well
             if s1.is_view is not s2.is_view:
                 return False
 
@@ -580,8 +586,8 @@ class _OpsToMerge(object):
         return True
 
     def not_sequential(self, op):
-        lastop = _opinfo[self.ops[-1]]
-        return (lastop.v_offset + lastop.v_size < _opinfo[op].v_offset)
+        lastop = self.opinfo[self.ops[-1]]
+        return (lastop.v_offset + lastop.v_size < self.opinfo[op].v_offset)
 
 
 class _OpMergePass(object):
@@ -590,14 +596,16 @@ class _OpMergePass(object):
         self.model = model
         self.op_replacements = {}
         self.sig_replacements = {}
-        self.sig2op = defaultdict(list)
+        self.sig2ops = defaultdict(list)
+        self.base2views = defaultdict(list)
         self.merged = set()
+        self.opinfo = _OpInfo()
 
         # These variables will be initialized and used on each pass
         self.only_merge_ops_with_view = None
         self.step_order = None
 
-        self.tc = None
+        self.dependents = None
 
     def __call__(self, only_merge_ops_with_view):
         """Perform a single optimization pass.
@@ -613,14 +621,16 @@ class _OpMergePass(object):
         self.op_replacements.clear()
         self.sig_replacements.clear()
         self.merged.clear()
-        self.sig2op.clear()
+        self.sig2ops.clear()
+        self.opinfo.clear()
 
         # --- Do an optimization pass
         for op in self.dg:
             for s in op.all_signals:
-                self.sig2op[s].append(op)
+                self.sig2ops[s].append(op)
+                self.base2views[s.base].append(s)
         self.step_order = toposort(self.dg)
-        self.tc = transitive_closure(self.dg, self.step_order)
+        self.dependents = transitive_closure(self.dg, self.step_order)
 
         # --- Most of the magic happens here
         self.perform_merges()
@@ -666,32 +676,7 @@ class _OpMergePass(object):
         # Some signals may therefore have been replaced.
         # Those signals might be used in some other op, so we go through
         # all other ops and do the same signal replacement if necessary.
-
-        # TODO: do we have to do all ops or can we get away with a subset?
-        for op in self.dg:
-            for sig in op.all_signals:
-                if sig.is_view and sig.base in self.sig_replacements:
-                    base_replacement = self.sig_replacements[sig.base]
-                    offset = sig.offset
-                    strides = tuple(
-                        a // b * c for a, b, c in zip_longest(
-                            sig.strides,
-                            sig.base.strides,
-                            base_replacement.strides,
-                            fillvalue=1))
-                    if base_replacement.is_view:
-                        offset += base_replacement.offset
-                        base_replacement = base_replacement.base
-                    buf = base_replacement.initial_value
-                    initial_value = np.ndarray(buffer=buf,
-                                               dtype=sig.dtype,
-                                               shape=sig.shape,
-                                               offset=offset,
-                                               strides=strides)
-                    self.sig_replacements[sig] = Signal(initial_value,
-                                                        name=sig.name,
-                                                        base=base_replacement,
-                                                        readonly=sig.readonly)
+        self.resolve_views_on_replaced_signals()
 
     def perform_merges_for_subset(self, subset):
         """Performs operator merges for a subset of operators.
@@ -701,7 +686,7 @@ class _OpMergePass(object):
         subset : list
             Subset of operators.
         """
-        by_view = groupby(subset, lambda op: _opinfo[op].v_base)
+        by_view = groupby(subset, lambda op: self.opinfo[op].v_base)
         if self.only_merge_ops_with_view and None in by_view:
             # If an op has no views, v_base will be None.
             # If we're only merging views, then we get rid of this subset.
@@ -723,7 +708,7 @@ class _OpMergePass(object):
         """
 
         # Sort to have sequential memory.
-        offsets = np.array([_opinfo[op].v_offset for op in subset])
+        offsets = np.array([self.opinfo[op].v_offset for op in subset])
         sort_indices = np.argsort(offsets)
         offsets = offsets[sort_indices]
         sorted_subset = [subset[i] for i in sort_indices]
@@ -734,19 +719,18 @@ class _OpMergePass(object):
                 # has been updated
                 continue
 
-            if any(op1 in self.tc[op] or op in self.tc[op1]
+            if any(op1 in self.dependents[op] or op in self.dependents[op1]
                    for op in self.merged):
                 continue
 
-            # Find operators to be merged.
-            tomerge = _OpsToMerge(op1, self.merged, self.tc)
+            tomerge = _OpsToMerge(op1, self.merged, self.dependents)
 
             # For a merge to be possible the view of the next operator has to
             # start where the view of op1 ends. Because we have sorted the
             # operators by the start of their views we can do a binary search
             # and potentially skip a number of operators at the beginning.
             start = np.searchsorted(
-                offsets, offsets[i] + _opinfo[op1].v_size, side='left')
+                offsets, offsets[i] + self.opinfo[op1].v_size, side='left')
 
             for op2 in sorted_subset[start:]:
 
@@ -782,8 +766,36 @@ class _OpMergePass(object):
             # (even though they are not) to prevent them from getting
             # merged before their signals have been updated.
             for s in op.all_signals:
-                self.merged.update(self.sig2op[s])
+                self.merged.update(self.sig2ops[s])
         self.sig_replacements.update(merged_sig)
+
+    def resolve_views_on_replaced_signals(self):
+        for sig in list(self.sig_replacements):
+            for view in self.base2views[sig]:
+                if view is sig:
+                    continue
+                assert view.base is sig
+                base_replacement = self.sig_replacements[sig]
+                offset = view.offset
+                strides = tuple(
+                    a // b * c for a, b, c in zip_longest(
+                        view.strides,
+                        view.base.strides,
+                        base_replacement.strides,
+                        fillvalue=1))
+                if base_replacement.is_view:
+                    offset += base_replacement.offset
+                    base_replacement = base_replacement.base
+                buf = base_replacement.initial_value
+                initial_value = np.ndarray(buffer=buf,
+                                           dtype=view.dtype,
+                                           shape=view.shape,
+                                           offset=offset,
+                                           strides=strides)
+                self.sig_replacements[view] = Signal(initial_value,
+                                                     name=view.name,
+                                                     base=base_replacement,
+                                                     readonly=view.readonly)
 
     def finalize(self):
         """Finalizes merges done during the pass."""
@@ -792,8 +804,7 @@ class _OpMergePass(object):
             assert old is not new
             if new not in self.dg:
                 self.dg[new] = set()
-            for dep in self.dg[old]:
-                self.dg[new].add(self.op_replacements.get(dep, dep))
+            self.dg[new].update(self.dg[old])
             del self.dg[old]
 
         for v in self.dg:
@@ -810,9 +821,6 @@ class _OpMergePass(object):
             v.incs = [self.sig_replacements.get(s, s) for s in v.incs]
             v.reads = [self.sig_replacements.get(s, s) for s in v.reads]
             v.updates = [self.sig_replacements.get(s, s) for s in v.updates]
-
-        # Clear the opinfo, as signals may have changed
-        _opinfo.clear()
 
         # Update model.sigs
         for key in self.model.sig:
