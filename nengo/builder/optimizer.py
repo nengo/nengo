@@ -86,7 +86,7 @@ def optimize(model, dg, max_passes=None):
         after = len(dg)
         logger.info(
             "Pass %i [%s]: Reduced %i to %i operators in %fs.",
-            i, "only views" if only_merge_ops_with_view else "all",
+            i, "views" if only_merge_ops_with_view else "non-views",
             before, after, t.duration)
 
     # Reinitialize the model's operator list
@@ -245,14 +245,17 @@ class OpMergePass(object):
             Subset of operators.
         """
         by_view = groupby(subset, lambda op: self.opinfo[op].v_base)
-        if self.only_merge_ops_with_view and None in by_view:
-            # If an op has no views, v_base will be None.
-            # If we're only merging views, then we get rid of this subset.
-            del by_view[None]
+        if self.only_merge_ops_with_view:
+            if None in by_view:
+                # If an op has no views, v_base will be None.
+                # If we're only merging views, then we get rid of this subset.
+                del by_view[None]
 
-        for view_subset in itervalues(by_view):
-            if len(view_subset) > 1:
-                self.perform_merges_for_view_subset(view_subset)
+            for view_subset in itervalues(by_view):
+                if len(view_subset) > 1:
+                    self.perform_merges_for_view_subset(view_subset)
+        elif None in by_view and len(by_view[None]) > 1:
+            self.perform_merges_for_view_subset(by_view[None])
 
     def perform_merges_for_view_subset(self, subset):
         """Perform merges for a subset of operators with the same view base.
