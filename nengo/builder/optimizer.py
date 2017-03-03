@@ -252,6 +252,9 @@ class OpMergePass(object):
                     # we can cut the loop short.
                     break
 
+                if op2 in self.merged:
+                    continue
+
                 if OpMerger.is_mergeable(op2, tomerge):
                     tomerge.add(op2)
 
