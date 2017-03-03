@@ -1,6 +1,6 @@
-==============
+**************
 Nengo examples
-==============
+**************
 
 For more information about these examples, see the
 `Nengo documentation <https://pythonhosted.org/nengo/examples.html>`_.
@@ -38,6 +38,8 @@ For more information about these examples, see the
   General matrix multiplication with an array of ensembles.
 ``nef_summary.ipynb``
   A summary of the 3 NEF principles that Nengo is based on.
+``processes.ipynb``
+  A tutorial on working with Processes.
 
 ``dynamics``: Models with dynamics
 ==================================
@@ -58,6 +60,8 @@ For more information about these examples, see the
 ``learning``: Models with learning
 ==================================
 
+``learn_associations.ipynb``
+  Learn an associative memory with the Voja rule.
 ``learn_communication_channel.ipynb``
   Learn a communication channel with the PES rule.
 ``learn_product.ipynb``
@@ -80,6 +84,8 @@ For more information about these examples, see the
 ``spa``: Models using the SPA
 =============================
 
+``associative_memory.ipynb``
+  Store and recall patterns with associative memories.
 ``convolution.ipynb``
   Bind two semantic pointers with circular convolution.
 ``question.ipynb``
@@ -95,6 +101,12 @@ For more information about these examples, see the
 ``spa_sequence_routed.ipynb``
   Cycling through a sequence of five semantic pointers, once a cue is presented.
 
+``quirks``: Unexpected Nengo behavior
+=====================================
+
+``config.ipynb``
+  Quirks of the config system that users should know.
+
 ``usage``: Nengo usage examples
 ===============================
 
@@ -102,6 +114,8 @@ For more information about these examples, see the
   Network defaults and backend-specific parameters using the ``config`` system.
 ``delay_node.ipynb``
   A simple node to delay a connection.
+``exceptions.ipynb``
+  All exceptions Nengo can raise and what they look like.
 ``network_design.ipynb``
   General principles for designing reusable networks.
 ``network_design_advanced.ipynb``
