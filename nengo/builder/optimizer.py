@@ -11,7 +11,7 @@ from nengo.builder import operator
 from nengo.builder.operator import DotInc, ElementwiseInc, SlicedCopy
 from nengo.builder.signal import Signal
 from nengo.utils.compat import iteritems, itervalues, zip_longest
-from nengo.utils.graphs import reverse_edges, toposort, transitive_closure
+from nengo.utils.graphs import reverse_edges, transitive_closure
 from nengo.utils.stdlib import Timer
 
 logger = logging.getLogger(__name__)
@@ -162,7 +162,6 @@ class OpMergePass(object):
 
         # These variables will be initialized and used on each pass
         self.only_merge_ops_with_view = None
-        self.step_order = None
 
         self.dependents = None
 
@@ -189,8 +188,7 @@ class OpMergePass(object):
             for s in op.all_signals:
                 self.sig2ops[s].append(op)
                 self.base2views[s.base].append(s)
-        self.step_order = toposort(self.dg.forward)
-        self.dependents = transitive_closure(self.dg.forward, self.step_order)
+        self.dependents = transitive_closure(self.dg.forward)
 
         # --- Most of the magic happens here
         self.perform_merges()
@@ -209,7 +207,7 @@ class OpMergePass(object):
 
         # We go through the ops grouped by type as only ops with the same
         # type can be merged.
-        by_type = groupby(self.step_order, type)
+        by_type = groupby(self.dg.forward, type)
 
         # Note that we will stop once we merge any operator, so merges are
         # performed on at most one type of operator per pass.
