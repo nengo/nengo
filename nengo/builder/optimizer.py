@@ -62,7 +62,8 @@ def optimize(model, dg, max_passes=None):
     # operators without views and then try again merging views (because
     # each operator merge might generate new views).
 
-    single_pass = OpMergePass(dg, model)
+    sig_replacements = {}
+    single_pass = OpMergePass(dg, model, sig_replacements)
 
     before, after = None, None
     i = 0
@@ -88,6 +89,10 @@ def optimize(model, dg, max_passes=None):
             "Pass %i [%s]: Reduced %i to %i operators in %fs.",
             i, "views" if only_merge_ops_with_view else "non-views",
             before, after, t.duration)
+
+    for key in model.sig:
+        for name, val in iteritems(model.sig[key]):
+            model.sig[key][name] = sig_replacements.get(val, val)
 
     # Reinitialize the model's operator list
     del model.operators[:]
@@ -149,11 +154,10 @@ class BidirectionalDAG(object):
 
 
 class OpMergePass(object):
-    def __init__(self, dg, model):
+    def __init__(self, dg, model, sig_replacements):
         self.dg = BidirectionalDAG(dg)
         self.model = model
-        self.op_replacements = {}
-        self.sig_replacements = {}
+        self.sig_replacements = sig_replacements
         self.sig2ops = defaultdict(list)
         self.base2views = defaultdict(list)
         self.merged = set()
@@ -176,11 +180,10 @@ class OpMergePass(object):
 
         # --- Initialize pass state
         self.only_merge_ops_with_view = only_merge_ops_with_view
-        self.op_replacements.clear()
-        self.sig_replacements.clear()
         self.merged.clear()
         self.merged_dependents.clear()
         self.sig2ops.clear()
+        self.base2views.clear()
         self.opinfo.clear()
 
         # --- Do an optimization pass
@@ -192,9 +195,6 @@ class OpMergePass(object):
 
         # --- Most of the magic happens here
         self.perform_merges()
-
-        # --- Clean up after that magic
-        self.finalize()
 
     def perform_merges(self):
         """Go through all operators and merge them where possible.
@@ -229,12 +229,6 @@ class OpMergePass(object):
             # the loop here.
             if not self.only_merge_ops_with_view and len(self.merged) > 0:
                 break
-
-        # At this point, we may have marked some ops for merge.
-        # Some signals may therefore have been replaced.
-        # Those signals might be used in some other op, so we go through
-        # all other ops and do the same signal replacement if necessary.
-        self.resolve_views_on_replaced_signals()
 
     def perform_merges_for_subset(self, subset):
         """Performs operator merges for a subset of operators.
@@ -328,21 +322,36 @@ class OpMergePass(object):
         self.merged.update(tomerge.ops)
         self.merged_dependents.update(tomerge.all_dependents)
         for op in tomerge.ops:
-            self.op_replacements[op] = merged_op
             # Mark all operators referencing the same signals as merged
             # (even though they are not) to prevent them from getting
             # merged before their signals have been updated.
             for s in op.all_signals:
                 self.merged.update(self.sig2ops[s])
-        self.sig_replacements.update(merged_sig)
 
-    def resolve_views_on_replaced_signals(self):
-        for sig in list(self.sig_replacements):
+        sig_replacements = self.resolve_views_on_replaced_signals(
+            merged_sig)
+        self.sig_replacements.update(sig_replacements)
+
+        ops = [op for s in sig_replacements for op in self.sig2ops[s]]
+        for v in ops:
+            # Update the op's signals
+            for key in dir(v):
+                sig = getattr(v, key)
+                if isinstance(sig, Signal):
+                    setattr(v, key, sig_replacements.get(sig, sig))
+
+            v.sets = [sig_replacements.get(s, s) for s in v.sets]
+            v.incs = [sig_replacements.get(s, s) for s in v.incs]
+            v.reads = [sig_replacements.get(s, s) for s in v.reads]
+            v.updates = [sig_replacements.get(s, s) for s in v.updates]
+
+    def resolve_views_on_replaced_signals(self, sig_replacements):
+        for sig in list(sig_replacements):
             for view in self.base2views[sig]:
                 if view is sig:
                     continue
                 assert view.base is sig
-                base_replacement = self.sig_replacements[sig]
+                base_replacement = sig_replacements[sig]
                 offset = view.offset
                 strides = tuple(
                     a // b * c for a, b, c in zip_longest(
@@ -359,33 +368,11 @@ class OpMergePass(object):
                                            shape=view.shape,
                                            offset=offset,
                                            strides=strides)
-                self.sig_replacements[view] = Signal(initial_value,
-                                                     name=view.name,
-                                                     base=base_replacement,
-                                                     readonly=view.readonly)
-
-    def finalize(self):
-        """Finalizes merges done during the pass."""
-
-        for old, new in iteritems(self.op_replacements):
-            assert old is not new
-
-        for v in self.dg.forward:
-            # Update the op's signals
-            for key in dir(v):
-                sig = getattr(v, key)
-                if isinstance(sig, Signal):
-                    setattr(v, key, self.sig_replacements.get(sig, sig))
-
-            v.sets = [self.sig_replacements.get(s, s) for s in v.sets]
-            v.incs = [self.sig_replacements.get(s, s) for s in v.incs]
-            v.reads = [self.sig_replacements.get(s, s) for s in v.reads]
-            v.updates = [self.sig_replacements.get(s, s) for s in v.updates]
-
-        # Update model.sigs
-        for key in self.model.sig:
-            for name, val in iteritems(self.model.sig[key]):
-                self.model.sig[key][name] = self.sig_replacements.get(val, val)
+                sig_replacements[view] = Signal(initial_value,
+                                                name=view.name,
+                                                base=base_replacement,
+                                                readonly=view.readonly)
+        return sig_replacements
 
 
 class OpInfo(Mapping):
