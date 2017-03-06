@@ -65,7 +65,7 @@ def toposort(edges):
     Example
     -------
 
-    >>> toposort({1: {2, 3}, 2: (3,)})
+    >>> toposort({1: {2, 3}, 2: {3}, 3: set()})
     [1, 2, 3]
 
     Notes
@@ -79,7 +79,8 @@ def toposort(edges):
     """
     incoming_edges = reverse_edges(edges)
     incoming_edges = {k: set(val) for k, val in iteritems(incoming_edges)}
-    vertices = {v for v in edges if v not in incoming_edges}
+    vertices = {v for v in edges
+                if v not in incoming_edges or not incoming_edges[v]}
     ordered = []
 
     while vertices:
@@ -143,18 +144,19 @@ def reverse_edges(edges):
     Parameters
     ----------
     edges : dict
-        Dict of the form {a: {b, c}} where b and c depend on a
+        Dict of the form {a: {b, c}, b: set(), c: set()} where b and c depend
+        on a.
 
     Returns
     -------
-    Dict of the form {b: (a,), c: (a,)} where b and c depend on a
+    Dict of the form {a: set(), b: {a}, c: {a}} where b and c depend on a.
 
     Example
     -------
 
-    >>> d = {'a': (1, 2), 'b': (2, 3), 'c':()}
+    >>> d = {0: {1, 2}, 1: {2, 3}, 2: set(), 3: set()}
     >>> reverse_edges(d)
-    {1: ('a',), 2: ('a', 'b'), 3: ('b',)}
+    {0: set(), 1: {0}, 2: {0, 1}, 3: {1}}
 
     :note: dict order are not deterministic. As we iterate on the
         input dict, it make the output of this function depend on the
@@ -162,10 +164,10 @@ def reverse_edges(edges):
         as undeterministic.
 
     """
-    result = {}
+    result = {k: set() for k in edges}
     for key in edges:
         for val in edges[key]:
-            result[val] = result.get(val, tuple()) + (key, )
+            result[val].add(key)
     return result
 
 

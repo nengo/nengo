@@ -11,7 +11,7 @@ from nengo.builder import operator
 from nengo.builder.operator import DotInc, ElementwiseInc, SlicedCopy
 from nengo.builder.signal import Signal
 from nengo.utils.compat import iteritems, itervalues, zip_longest
-from nengo.utils.graphs import toposort, transitive_closure
+from nengo.utils.graphs import reverse_edges, toposort, transitive_closure
 from nengo.utils.stdlib import Timer
 
 logger = logging.getLogger(__name__)
@@ -95,9 +95,62 @@ def optimize(model, dg, max_passes=None):
         model.add_op(op)
 
 
+class BidirectionalDAG(object):
+    """Directed acyclic graph supporting bidirectional traversal.
+
+    Parameters
+    ----------
+    forward : dict
+        Forward edges for each vertex in the form
+        {1: {2, 3}, 2: {3}, 3: set()}.
+
+    Attributes
+    ----------
+    forward : dict
+        Maps vertices to edges in forward direction.
+    backward : dict
+        Maps vertices to edges in backward direction.
+    """
+
+    def __init__(self, forward):
+        self.forward = forward
+        self.backward = reverse_edges(forward)
+
+    def merge(self, vertices, merged_vertex):
+        """Merges vertices in the graph.
+
+        Parameters
+        ----------
+        vertices : set
+            Vertices that are being merged.
+        merged_vertex
+            The vertex that replaces *vertices*.
+        """
+
+        forward_edges = set()
+        for v in vertices:
+            forward_edges.update(self.forward[v])
+            del self.forward[v]
+        self.forward[merged_vertex] = forward_edges
+
+        backward_edges = set()
+        for v in vertices:
+            backward_edges.update(self.backward[v])
+            del self.backward[v]
+        self.backward[merged_vertex] = backward_edges
+
+        for e in forward_edges:
+            self.backward[e].difference_update(vertices)
+            self.backward[e].add(merged_vertex)
+
+        for e in backward_edges:
+            self.forward[e].difference_update(vertices)
+            self.forward[e].add(merged_vertex)
+
+
 class OpMergePass(object):
     def __init__(self, dg, model):
-        self.dg = dg
+        self.dg = BidirectionalDAG(dg)
         self.model = model
         self.op_replacements = {}
         self.sig_replacements = {}
@@ -132,12 +185,12 @@ class OpMergePass(object):
         self.opinfo.clear()
 
         # --- Do an optimization pass
-        for op in self.dg:
+        for op in self.dg.forward:
             for s in op.all_signals:
                 self.sig2ops[s].append(op)
                 self.base2views[s.base].append(s)
-        self.step_order = toposort(self.dg)
-        self.dependents = transitive_closure(self.dg, self.step_order)
+        self.step_order = toposort(self.dg.forward)
+        self.dependents = transitive_closure(self.dg.forward, self.step_order)
 
         # --- Most of the magic happens here
         self.perform_merges()
@@ -270,6 +323,7 @@ class OpMergePass(object):
         been replaced.
         """
         merged_op, merged_sig = OpMerger.merge(tomerge.ops)
+        self.dg.merge(tomerge.ops, merged_op)
         self.merged.update(tomerge.ops)
         self.merged_dependents.update(tomerge.all_dependents)
         for op in tomerge.ops:
@@ -314,15 +368,8 @@ class OpMergePass(object):
 
         for old, new in iteritems(self.op_replacements):
             assert old is not new
-            if new not in self.dg:
-                self.dg[new] = set()
-            self.dg[new].update(self.dg[old])
-            del self.dg[old]
 
-        for v in self.dg:
-            # Update dg edges to reflect merges
-            self.dg[v] = {self.op_replacements.get(e, e) for e in self.dg[v]}
-
+        for v in self.dg.forward:
             # Update the op's signals
             for key in dir(v):
                 sig = getattr(v, key)
