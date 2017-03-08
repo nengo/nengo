@@ -2,12 +2,12 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 import nengo
-from nengo.spa.selection import StepFunc, ThresholdingArray, WTA
+from nengo.spa.selection import ThresholdingArray, WTA
 
 
 def test_thresholding_array(Simulator, plt, seed, rng):
     with nengo.Network(seed=seed) as m:
-        thresholding = ThresholdingArray(50, 4, 0.2, function=StepFunc())
+        thresholding = ThresholdingArray(50, 4, 0.2, function=lambda x: x > 0.)
         in_node = nengo.Node([0.8, 0.5, 0.2, -0.1], label='input')
         nengo.Connection(in_node, thresholding.input)
 
@@ -49,7 +49,7 @@ def test_wta(Simulator, plt, seed, rng):
             return np.array([0.8, 1.0, 0.0, 0.0])
 
     with nengo.Network(seed=seed) as m:
-        wta = WTA(50, 4, threshold=0.3, function=StepFunc())
+        wta = WTA(50, 4, threshold=0.3, function=lambda x: x > 0.)
 
         in_node = nengo.Node(output=input_func, label='input')
         nengo.Connection(in_node, wta.input)

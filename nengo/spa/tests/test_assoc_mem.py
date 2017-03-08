@@ -3,8 +3,10 @@ import numpy as np
 from nengo import spa
 from nengo.spa import Vocabulary
 from nengo.spa.assoc_mem import ThresholdingAssocMem, WtaAssocMem
-from nengo.spa.selection import FilteredStepFunc
 from nengo.spa.utils import similarity
+
+
+filtered_step_fn = lambda x: np.maximum(1. - np.exp(-15. * x), 0.)
 
 
 def test_am_basic(Simulator, plt, seed, rng):
@@ -16,7 +18,7 @@ def test_am_basic(Simulator, plt, seed, rng):
 
     with spa.Module('model', seed=seed) as m:
         m.am = ThresholdingAssocMem(threshold=0.3, input_vocab=vocab,
-                                    function=FilteredStepFunc())
+                                    function=filtered_step_fn)
         m.stimulus = spa.Input()
         m.stimulus.am = 'A'
 
@@ -57,7 +59,7 @@ def test_am_threshold(Simulator, plt, seed, rng):
     with spa.Module('model', seed=seed) as m:
         m.am = ThresholdingAssocMem(
             threshold=0.5, input_vocab=vocab, output_vocab=vocab2,
-            function=FilteredStepFunc())
+            function=filtered_step_fn)
         m.stimulus = spa.Input()
         m.stimulus.am = input_func
 
@@ -100,7 +102,7 @@ def test_am_wta(Simulator, plt, seed, rng):
 
     with spa.Module('model', seed=seed) as m:
         m.am = WtaAssocMem(
-            threshold=0.3, input_vocab=vocab, function=FilteredStepFunc())
+            threshold=0.3, input_vocab=vocab, function=filtered_step_fn)
         m.stimulus = spa.Input()
         m.stimulus.am = input_func
 
@@ -139,7 +141,7 @@ def test_am_default_output(Simulator, plt, seed, rng):
 
     with spa.Module('model', seed=seed) as m:
         m.am = ThresholdingAssocMem(threshold=0.5, input_vocab=vocab,
-                                    function=FilteredStepFunc())
+                                    function=filtered_step_fn)
         m.am.add_default_output('D', 0.5)
         m.stimulus = spa.Input()
         m.stimulus.am = input_func
