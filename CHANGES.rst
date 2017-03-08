@@ -29,6 +29,15 @@ Release History
   (`#1191 <https://github.com/nengo/nengo/issues/1191>`_,
   `#1267 <https://github.com/nengo/nengo/pull/1267>`_)
 
+**Changed**
+
+- We now enforce that the ``label`` of a network must be a string or ``None``,
+  and that the ``seed`` of a network must be an int or ``None``.
+  This helps avoid situations where the seed would mistakenly
+  be passed as the label.
+  (`#1277 <https://github.com/nengo/nengo/pull/1277>`_,
+  `#1275 <https://github.com/nengo/nengo/issues/1275>`_)
+
 **Fixed**
 
 - Properly handle non C-contiguous node outputs.

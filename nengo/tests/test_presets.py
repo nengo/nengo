@@ -5,7 +5,7 @@ import nengo
 
 def test_thresholding_preset(Simulator, seed, plt):
     threshold = 0.3
-    with nengo.Network(seed) as model:
+    with nengo.Network(seed=seed) as model:
         with nengo.presets.ThresholdingEnsembles(threshold):
             ens = nengo.Ensemble(50, 1)
         stimulus = nengo.Node(lambda t: t)
@@ -31,7 +31,7 @@ def test_thresholding_preset(Simulator, seed, plt):
 def test_thresholding_preset_radius(Simulator, seed):
     threshold = 0.3
     radius = 0.5
-    with nengo.Network(seed) as model:
+    with nengo.Network(seed=seed) as model:
         with nengo.presets.ThresholdingEnsembles(threshold, radius=radius):
             ens = nengo.Ensemble(50, 1)
 

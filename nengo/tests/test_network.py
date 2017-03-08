@@ -139,3 +139,10 @@ def test_get_objects():
     assert Counter([subnet, subnet2]) == Counter(model.all_networks)
     # Make sure it works a second time
     assert Counter([ens1, ens2, ens3]) == Counter(model.all_ensembles)
+
+
+def test_raises_exception_on_incompatiple_type_arguments():
+    with pytest.raises(ValueError):
+        nengo.Network(label=1)
+    with pytest.raises(ValueError):
+        nengo.Network(seed='label')

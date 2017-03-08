@@ -7,6 +7,7 @@ from nengo.ensemble import Ensemble
 from nengo.exceptions import (
     ConfigError, NetworkContextError, NotAddedToNetworkWarning, ReadonlyError)
 from nengo.node import Node
+from nengo.params import IntParam, StringParam
 from nengo.probe import Probe
 from nengo.utils.compat import iteritems
 from nengo.utils.threading import ThreadLocalStack
@@ -77,6 +78,9 @@ class Network(object):
     """
 
     context = ThreadLocalStack(maxsize=100)  # static stack of Network objects
+
+    label = StringParam('label', optional=True, readonly=False)
+    seed = IntParam('seed', optional=True, readonly=False)
 
     def __init__(self, label=None, seed=None, add_to_container=None):
         self.label = label
@@ -202,6 +206,12 @@ class Network(object):
                 "to be '%s' but instead got '%s'." % (self, network))
 
         self._config.__exit__(dummy_exc_type, dummy_exc_value, dummy_tb)
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['label'] = self.label
+        state['seed'] = self.seed
+        return state
 
     def __setstate__(self, state):
         for k, v in iteritems(state):
