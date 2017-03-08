@@ -234,13 +234,11 @@ class InstanceParams(object):
                 lines.append("  %s: %s" % (attr, getattr(self, attr)))
         return "\n".join(lines)
 
-    # pylint: disable=unused-argument
     def get_param(self, key):
         raise ConfigError("Cannot get parameters on an instance; use "
                           "'config[%s].get_param' instead."
                           % type(self._configures).__name__)
 
-    # pylint: disable=unused-argument
     def set_param(self, key, value):
         raise ConfigError("Cannot set parameters on an instance; use "
                           "'config[%s].set_param' instead."

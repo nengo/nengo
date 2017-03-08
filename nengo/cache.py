@@ -472,7 +472,6 @@ class DecoderCache(object):
 
     _CACHE_EXT = '.nco'
 
-    # pylint: disable=redefined-variable-type
     def __init__(self, readonly=False, cache_dir=None):
         self.readonly = readonly
         if cache_dir is None:
@@ -721,7 +720,6 @@ class DecoderCache(object):
         return os.path.join(directory, suffix + self._CACHE_EXT)
 
 
-# pylint: disable=no-self-use
 class NoDecoderCache(object):
     """Provides the same interface as `.DecoderCache` without caching."""
 
@@ -747,7 +745,6 @@ class NoDecoderCache(object):
         pass
 
 
-# pylint: disable=redefined-variable-type
 def get_default_decoder_cache():
     if rc.getboolean('decoder_cache', 'enabled'):
         decoder_cache = DecoderCache(

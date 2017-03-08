@@ -5,7 +5,7 @@ extension-pkg-whitelist = numpy
 [MESSAGES CONTROL]
 
 #disable = all
-disable = broad-except, missing-docstring, protected-access, redundant-keyword-arg, too-few-public-methods, too-many-ancestors, too-many-arguments, too-many-instance-attributes, too-many-locals
+disable = broad-except, missing-docstring, no-self-use, protected-access, redefined-outer-name, redefined-variable-type, redundant-keyword-arg, too-few-public-methods, too-many-ancestors, too-many-arguments, too-many-instance-attributes, too-many-branches, too-many-locals, unused-argument
 enable = W0231
 
 

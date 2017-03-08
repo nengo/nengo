@@ -454,7 +454,6 @@ class FunctionParam(Parameter):
                                   attr=self.name, obj=instance)
         return np.asarray(value).size
 
-    # pylint: disable=no-self-use,unused-argument
     def function_args(self, instance, function):
         return (np.zeros(1),)
 
