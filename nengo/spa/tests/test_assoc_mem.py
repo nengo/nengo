@@ -2,8 +2,8 @@ import nengo
 import numpy as np
 from nengo import spa
 from nengo.spa import Vocabulary
-from nengo.spa.assoc_mem import AssociativeMemory
-from nengo.spa.selection import FilteredStepFunc, WTA
+from nengo.spa.assoc_mem import ThresholdingAssocMem, WtaAssocMem
+from nengo.spa.selection import FilteredStepFunc
 from nengo.spa.utils import similarity
 
 
@@ -15,8 +15,8 @@ def test_am_basic(Simulator, plt, seed, rng):
     vocab.populate('A; B; C; D')
 
     with spa.Module('model', seed=seed) as m:
-        m.am = AssociativeMemory(vocab, threshold=0.3,
-                                 function=FilteredStepFunc())
+        m.am = ThresholdingAssocMem(threshold=0.3, input_vocab=vocab,
+                                    function=FilteredStepFunc())
         m.stimulus = spa.Input()
         m.stimulus.am = 'A'
 
@@ -55,8 +55,9 @@ def test_am_threshold(Simulator, plt, seed, rng):
         return '0.49 * A' if t < 0.1 else '0.8 * B'
 
     with spa.Module('model', seed=seed) as m:
-        m.am = AssociativeMemory(vocab, vocab2, threshold=0.5,
-                                 function=FilteredStepFunc())
+        m.am = ThresholdingAssocMem(
+            threshold=0.5, input_vocab=vocab, output_vocab=vocab2,
+            function=FilteredStepFunc())
         m.stimulus = spa.Input()
         m.stimulus.am = input_func
 
@@ -98,9 +99,8 @@ def test_am_wta(Simulator, plt, seed, rng):
             return '0.8 * A + B'
 
     with spa.Module('model', seed=seed) as m:
-        m.am = AssociativeMemory(
-            vocab, selection_net=WTA, threshold=0.3,
-            function=FilteredStepFunc())
+        m.am = WtaAssocMem(
+            threshold=0.3, input_vocab=vocab, function=FilteredStepFunc())
         m.stimulus = spa.Input()
         m.stimulus.am = input_func
 
@@ -138,8 +138,8 @@ def test_am_default_output(Simulator, plt, seed, rng):
         return '0.2 * A' if t < 0.25 else 'A'
 
     with spa.Module('model', seed=seed) as m:
-        m.am = AssociativeMemory(vocab, threshold=0.5,
-                                 function=FilteredStepFunc())
+        m.am = ThresholdingAssocMem(threshold=0.5, input_vocab=vocab,
+                                    function=FilteredStepFunc())
         m.am.add_default_output('D', 0.5)
         m.stimulus = spa.Input()
         m.stimulus.am = input_func
@@ -182,10 +182,9 @@ def test_am_spa_keys_as_expressions(Simulator, plt, seed, rng):
     out_keys = ['C*D', 'C+D']
 
     with nengo.spa.Module(seed=seed) as model:
-        model.am = AssociativeMemory(input_vocab=vocab_in,
-                                     output_vocab=vocab_out,
-                                     input_keys=in_keys,
-                                     output_keys=out_keys, threshold=0.3)
+        model.am = ThresholdingAssocMem(
+            threshold=0.3, input_vocab=vocab_in, output_vocab=vocab_out,
+            input_keys=in_keys, output_keys=out_keys)
 
         model.inp = spa.Input()
         model.inp.am = lambda t: 'A' if t < 0.1 else 'A*B'
