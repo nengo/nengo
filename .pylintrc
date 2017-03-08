@@ -11,7 +11,7 @@ enable = W0231
 
 [REPORTS]
 
-reports = no
+reports = yes
 
 
 [BASIC]
