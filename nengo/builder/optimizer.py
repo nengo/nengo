@@ -12,7 +12,7 @@ from nengo.builder.operator import DotInc, ElementwiseInc, SlicedCopy
 from nengo.builder.signal import Signal
 from nengo.utils.compat import iteritems, itervalues, zip_longest
 from nengo.utils.graphs import reverse_edges, transitive_closure
-from nengo.utils.stdlib import Timer
+from nengo.utils.stdlib import Timer, WeakKeyDefaultDict, WeakSet
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ def optimize(model, dg, max_passes=None):
     # each operator merge might generate new views).
 
     sig_replacements = {}
-    single_pass = OpMergePass(dg, model, sig_replacements)
+    single_pass = OpMergePass(dg, sig_replacements)
 
     before, after = None, None
     i = 0
@@ -154,20 +154,25 @@ class BidirectionalDAG(object):
 
 
 class OpMergePass(object):
-    def __init__(self, dg, model, sig_replacements):
+    def __init__(self, dg, sig_replacements):
         self.dg = BidirectionalDAG(dg)
-        self.model = model
         self.sig_replacements = sig_replacements
-        self.sig2ops = defaultdict(list)
-        self.base2views = defaultdict(list)
+        self.sig2ops = WeakKeyDefaultDict(WeakSet)
+        self.base2views = WeakKeyDefaultDict(WeakSet)
         self.merged = set()
         self.merged_dependents = set()
         self.opinfo = OpInfo()
+        self.might_merge = set(dg)
 
         # These variables will be initialized and used on each pass
         self.only_merge_ops_with_view = None
 
         self.dependents = None
+
+        for op in self.dg.forward:
+            for s in op.all_signals:
+                self.sig2ops[s].add(op)
+                self.base2views[s.base].add(s)
 
     def __call__(self, only_merge_ops_with_view):
         """Perform a single optimization pass.
@@ -182,15 +187,9 @@ class OpMergePass(object):
         self.only_merge_ops_with_view = only_merge_ops_with_view
         self.merged.clear()
         self.merged_dependents.clear()
-        self.sig2ops.clear()
-        self.base2views.clear()
         self.opinfo.clear()
 
         # --- Do an optimization pass
-        for op in self.dg.forward:
-            for s in op.all_signals:
-                self.sig2ops[s].append(op)
-                self.base2views[s.base].append(s)
         self.dependents = transitive_closure(self.dg.forward)
 
         # --- Most of the magic happens here
@@ -207,7 +206,7 @@ class OpMergePass(object):
 
         # We go through the ops grouped by type as only ops with the same
         # type can be merged.
-        by_type = groupby(self.dg.forward, type)
+        by_type = groupby(self.might_merge, type)
 
         # Note that we will stop once we merge any operator, so merges are
         # performed on at most one type of operator per pass.
@@ -308,6 +307,8 @@ class OpMergePass(object):
 
             if len(tomerge.ops) > 1:
                 self.merge(tomerge)
+            elif self.only_merge_ops_with_view:
+                self.might_merge.remove(op1)
 
     def merge(self, tomerge):
         """Merges the given operators.
@@ -319,6 +320,8 @@ class OpMergePass(object):
         """
         merged_op, merged_sig = OpMerger.merge(tomerge.ops)
         self.dg.merge(tomerge.ops, merged_op)
+        self.might_merge.difference_update(tomerge.ops)
+        self.might_merge.add(merged_op)
         self.merged.update(tomerge.ops)
         self.merged_dependents.update(tomerge.all_dependents)
         for op in tomerge.ops:
@@ -328,30 +331,39 @@ class OpMergePass(object):
             for s in op.all_signals:
                 self.merged.update(self.sig2ops[s])
 
-        sig_replacements = self.resolve_views_on_replaced_signals(
-            merged_sig)
-        self.sig_replacements.update(sig_replacements)
+        self.resolve_views_on_replaced_signals(merged_sig)
+        self.sig_replacements.update(merged_sig)
 
-        ops = [op for s in sig_replacements for op in self.sig2ops[s]]
+        ops = [op for s in merged_sig for op in self.sig2ops[s]]
         for v in ops:
             # Update the op's signals
             for key in dir(v):
                 sig = getattr(v, key)
                 if isinstance(sig, Signal):
-                    setattr(v, key, sig_replacements.get(sig, sig))
+                    setattr(v, key, merged_sig.get(sig, sig))
 
-            v.sets = [sig_replacements.get(s, s) for s in v.sets]
-            v.incs = [sig_replacements.get(s, s) for s in v.incs]
-            v.reads = [sig_replacements.get(s, s) for s in v.reads]
-            v.updates = [sig_replacements.get(s, s) for s in v.updates]
+            v.sets = [merged_sig.get(s, s) for s in v.sets]
+            v.incs = [merged_sig.get(s, s) for s in v.incs]
+            v.reads = [merged_sig.get(s, s) for s in v.reads]
+            v.updates = [merged_sig.get(s, s) for s in v.updates]
 
-    def resolve_views_on_replaced_signals(self, sig_replacements):
-        for sig in list(sig_replacements):
+        for s in merged_op.all_signals:
+            self.sig2ops[s].add(merged_op)
+            if s.is_view:
+                self.base2views[s.base].add(s)
+
+        for from_sig, to_sig in iteritems(merged_sig):
+            self.sig2ops[to_sig] = self.sig2ops[from_sig]
+            if to_sig.is_view:
+                self.base2views[to_sig.base].add(to_sig)
+
+    def resolve_views_on_replaced_signals(self, replaced_signals):
+        for sig in list(replaced_signals):
             for view in self.base2views[sig]:
                 if view is sig:
                     continue
                 assert view.base is sig
-                base_replacement = sig_replacements[sig]
+                base_replacement = replaced_signals[sig]
                 offset = view.offset
                 strides = tuple(
                     a // b * c for a, b, c in zip_longest(
@@ -368,11 +380,10 @@ class OpMergePass(object):
                                            shape=view.shape,
                                            offset=offset,
                                            strides=strides)
-                sig_replacements[view] = Signal(initial_value,
+                replaced_signals[view] = Signal(initial_value,
                                                 name=view.name,
                                                 base=base_replacement,
                                                 readonly=view.readonly)
-        return sig_replacements
 
 
 class OpInfo(Mapping):

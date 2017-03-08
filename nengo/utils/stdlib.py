@@ -16,6 +16,34 @@ import weakref
 from .compat import iteritems, itervalues
 
 
+class WeakKeyDefaultDict(collections.MutableMapping):
+    """WeakKeyDictionary that allows to define a default."""
+
+    def __init__(self, default_factory, items=None, **kwargs):
+        self.default_factory = default_factory
+        self._data = weakref.WeakKeyDictionary(items, **kwargs)
+
+    def __contains__(self, key):
+        return key in self._data
+
+    def __getitem__(self, key):
+        if key not in self._data:
+            self._data[key] = self.default_factory()
+        return self._data[key]
+
+    def __setitem__(self, key, value):
+        self._data[key] = value
+
+    def __delitem__(self, key):
+        del self._data[key]
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
+
 class WeakKeyIDDictionary(collections.MutableMapping):
     """WeakKeyDictionary that uses object ID to hash.
 
@@ -98,6 +126,31 @@ class WeakKeyIDDictionary(collections.MutableMapping):
                 self.__setitem__(key, value)
         if len(kwargs) > 0:
             self.update(kwargs)
+
+
+class WeakSet(collections.MutableSet):
+    """Uses weak references to store the items in the set."""
+
+    def __init__(self, items=None):
+        self._data = weakref.WeakKeyDictionary()
+        if items is not None:
+            self |= items
+
+    def __contains__(self, key):
+        return key in self._data
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
+    def add(self, key):
+        self._data[key] = None
+
+    def discard(self, key):
+        if key in self._data:
+            del self._data[key]
 
 
 CheckedCall = collections.namedtuple('CheckedCall', ('value', 'invoked'))

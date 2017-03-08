@@ -6,7 +6,8 @@ import pytest
 
 from nengo.utils.compat import range
 from nengo.utils.stdlib import (
-    checked_call, groupby, Timer, WeakKeyIDDictionary)
+    checked_call, groupby, Timer, WeakKeyDefaultDict, WeakKeyIDDictionary,
+    WeakSet)
 
 
 def test_checked_call():
@@ -116,6 +117,27 @@ class C:
         pass
 
 
+def test_weakkeydefaultdict():
+    factory = lambda: 'default'
+    d = WeakKeyDefaultDict(factory)
+    o = C()
+
+    assert len(d) == 0
+    assert d[o] == 'default'
+
+    d[o] = 'changed'
+    assert len(d) == 1
+    assert d[o] == 'changed'
+
+    del d[o]
+    assert len(d) == 0
+    assert o not in d
+
+    d[o] = 'changed'
+    del o
+    assert len(d) == 0
+
+
 def test_make_weakkeydict_from_dict():
     o = C()
     d = WeakKeyIDDictionary({o: 364})
@@ -223,3 +245,20 @@ def test_weakkeydict_frees_values():
     del k
     v = weak_v()
     assert v is None,  "Value in WeakKeyIDDictionary not garbage collected."
+
+
+def test_weakset():
+    s = WeakSet()
+    k = C()
+
+    s.add(k)
+    assert len(s) == 1
+    assert k in s
+
+    s.discard(k)
+    assert len(s) == 0
+    assert k not in s
+
+    s.add(k)
+    del k
+    assert len(s) == 0
