@@ -15,7 +15,8 @@ class Distribution(FrozenObject):
     accept the same arguments for the sample function.
     """
 
-    def _sample_shape(self, n, d=None):
+    @classmethod
+    def _sample_shape(cls, n, d=None):
         """Returns output shape for sample method."""
         return (n,) if d is None else (n, d)
 
@@ -234,7 +235,7 @@ class UniformHypersphere(Distribution):
         return "UniformHypersphere(%s)" % (
             "surface=True" if self.surface else "")
 
-    def sample(self, n, d, rng=np.random):
+    def sample(self, n, d=None, rng=np.random):
         if d is None or d < 1:  # check this, since other dists allow d = None
             raise ValidationError("Dimensions must be a positive integer", 'd')
 

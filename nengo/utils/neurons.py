@@ -3,8 +3,8 @@ import logging
 
 import numpy as np
 
-from . import numpy as npext
-from ..exceptions import ValidationError
+from nengo.utils import numpy as npext
+from nengo.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,6 @@ def rates_kernel(t, spikes, kind='gauss', tau=0.04):
         raise ValidationError("Last dimension of 'spikes' must equal 'len(t)'",
                               attr='spikes')
 
-    n, nt = spikes.shape
     dt = t[1] - t[0]
 
     tau_i = tau / dt

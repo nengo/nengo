@@ -41,7 +41,7 @@ import numpy as np
 
 try:
     import IPython
-    from IPython import get_ipython
+    from IPython import get_ipython  # pylint: disable=unused-import
     from IPython.display import HTML
 
     if IPython.version_info[0] <= 3:
@@ -53,6 +53,7 @@ try:
 
     # nbformat.current deprecated in IPython 3.0
     if IPython.version_info[0] <= 2:
+        # pylint: disable=ungrouped-imports
         from IPython.nbformat import current
         from IPython.nbformat.current import write as write_nb
         from IPython.nbformat.current import NotebookNode
@@ -174,7 +175,7 @@ def export_py(nb, dest_path=None):
     Optionally saves script to dest_path.
     """
     exporter = PythonExporter()
-    body, resources = exporter.from_notebook_node(nb)
+    body, _ = exporter.from_notebook_node(nb)
     # We'll remove %matplotlib inline magic, but leave the rest
     body = body.replace(u"get_ipython().magic(u'matplotlib inline')\n", u"")
     body = body.replace(u"get_ipython().magic('matplotlib inline')\n", u"")
@@ -391,7 +392,7 @@ class NotebookRunner(object):
         for i, cell in enumerate(self.iter_code_cells()):
             try:
                 self.run_cell(cell)
-            except:
+            except Exception:
                 if not skip_exceptions:
                     raise
             if progress_callback is not None:

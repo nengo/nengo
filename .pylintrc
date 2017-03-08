@@ -1,9 +1,40 @@
+[MASTER]
+extension-pkg-whitelist = numpy
+
+
 [MESSAGES CONTROL]
 
-disable = all
+#disable = all
+disable = broad-except, missing-docstring, protected-access, redundant-keyword-arg, too-few-public-methods, too-many-ancestors, too-many-arguments, too-many-instance-attributes, too-many-locals
 enable = W0231
 
 
 [REPORTS]
 
 reports = no
+
+
+[BASIC]
+good-names = E
+
+argument-rgx = ([A-Z]{1,2})|([a-z_][a-z0-9_]{0,30})$
+attr-rgx = [a-z_][a-z0-9_]{0,30}$
+class-attribute-rgx = ([A-Za-z_][A-Za-z0-9_]{0,30}|(__.*__))$
+const-rgx = (([a-zA-Z_][a-zA-Z0-9_]*)|(__.*__))$
+function-rgx = [a-zA-Z_][a-zA-Z0-9_]{2,30}$
+variable-rgx = ([A-Z]{1,2})|([a-z_][a-z0-9_]{0,30})|([a-z][A-Z])$
+
+
+[VARIABLES]
+redefining-builtins-modules = nengo.utils.compat
+dummy-variables-rgx = (_+[a-zA-Z0-9]*?$)|dummy|request
+
+
+[TYPECHECK]
+ignored-classes = nengo.params.DefaultType, tuple
+ignored-modules = matplotlib.cm, matplotlib.pyplot, numpy, numpy.random, numpy.linalg, scipy.special
+#ignored-modules = numpy.random, scipy.special
+
+
+[FORMAT]
+ignore-long-lines = ^\s*(# (noqa )?)?<?https?://\S+>?(\s+ # noqa)?$

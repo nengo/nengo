@@ -132,6 +132,8 @@ class Simulator(object):
             self, network, dt=0.001, seed=None, model=None, progress_bar=True):
         self.closed = False
         self.progress_bar = progress_bar
+        self._n_steps = None
+        self._time = None
 
         if model is None:
             self.model = Model(dt=float(dt),
@@ -293,7 +295,7 @@ class Simulator(object):
         if progress_bar is None:
             progress_bar = self.progress_bar
         with ProgressTracker(steps, progress_bar, "Simulating") as progress:
-            for i in range(steps):
+            for _ in range(steps):
                 self.step()
                 progress.step()
 

@@ -79,11 +79,11 @@ class _RC(configparser.SafeConfigParser):
                 filename = fp.name
             else:
                 filename = '<???>'
-        logger.info('Reading configuration from {}'.format(filename))
+        logger.info('Reading configuration from %s.', filename)
         return configparser.SafeConfigParser.readfp(self, fp, filename)
 
     def read(self, filenames):
-        logger.info('Reading configuration files {}'.format(filenames))
+        logger.info('Reading configuration files %s.', filenames)
         return configparser.SafeConfigParser.read(self, filenames)
 
     def reload_rc(self, filenames=None):

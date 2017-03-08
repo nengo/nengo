@@ -2,8 +2,8 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from . import numpy as npext
-from .compat import range
+from nengo.utils import numpy as npext
+from nengo.utils.compat import range
 
 
 def tuning_curves(ens, sim, inputs=None):
@@ -50,7 +50,7 @@ def tuning_curves(ens, sim, inputs=None):
         if ens.dimensions > 1:
             inputs = npext.meshgrid_nd(*(ens.dimensions * [inputs]))
         else:
-            inputs = [inputs]
+            inputs = (inputs,)
         inputs = np.asarray(inputs).T
 
     eval_points = inputs.reshape((-1, ens.dimensions))
@@ -185,7 +185,7 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
     indices = np.arange(N)
     rng = np.random.RandomState(seed)
 
-    for k in range(iterations):
+    for _ in range(iterations):
         target = rng.randint(0, N, N)  # pick random swap targets
         for i in range(N):
             j = target[i]

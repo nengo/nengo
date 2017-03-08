@@ -41,6 +41,7 @@ class Mock(object):
 
 class Recorder(object):
     def __init__(self, dirname, module_name, function_name):
+        self._dirname = None
         self.dirname = dirname
         self.module_name = module_name
         self.function_name = function_name
@@ -76,11 +77,16 @@ class Recorder(object):
     def __enter__(self):
         raise NotImplementedError()
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, tp, value, traceback):
         raise NotImplementedError()
 
 
 class Plotter(Recorder):
+    def __init__(self, dirname, module_name, function_name):
+        super(Plotter, self).__init__(dirname, module_name, function_name)
+        self.plt = None
+        self.filename = None
+
     def __enter__(self):
         if self.record:
             import matplotlib.pyplot as plt
@@ -89,7 +95,7 @@ class Plotter(Recorder):
             self.plt = Mock()
         return self.plt
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, tp, value, traceback):
         if self.record:
             if hasattr(self.plt, 'saveas') and self.plt.saveas is None:
                 del self.plt.saveas
@@ -155,12 +161,18 @@ class Analytics(Recorder):
             npz_data.update({self.DOC_KEY: self.doc})
         np.savez(self.get_filepath(ext='npz'), **npz_data)
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, tp, value, traceback):
         if self.record:
             self.save_data()
 
 
 class Logger(Recorder):
+    def __init__(self, dirname, module_name, function_name):
+        super(Logger, self).__init__(dirname, module_name, function_name)
+        self.handler = None
+        self.logger = None
+        self.old_level = None
+
     def __enter__(self):
         if self.record:
             self.handler = CaptureLogHandler()
@@ -175,7 +187,7 @@ class Logger(Recorder):
             self.logger = Mock()
         return self.logger
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, tp, value, traceback):
         if self.record:
             self.logger.removeHandler(self.handler)
             self.logger.setLevel(self.old_level)
@@ -193,6 +205,8 @@ class WarningCatcher(object):
 
     def __init__(self):
         self.recorded = []
+        self.old_warn_explicit = None
+        self.old_warn = None
 
     def warn_explicit(self, message, category, filename, lineno,
                       module=None, registry=None, mod_globals=None):
@@ -220,11 +234,12 @@ class WarningCatcher(object):
         warnings.warn = self.warn
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, tp, value, traceback):
         warnings.warn_explicit = self.old_warn_explicit
         warnings.warn = self.old_warn
 
 
+# pylint: disable=invalid-name
 class warns(WarningCatcher):
     def __init__(self, warning_type):
         import pytest
@@ -232,7 +247,7 @@ class warns(WarningCatcher):
         self.warning_type = warning_type
         super(warns, self).__init__()
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, tp, value, traceback):
         if not any(r.category is self.warning_type for r in self.recorded):
             self._pytest.fail("DID NOT WARN")
         super(warns, self).__exit__(type, value, traceback)
@@ -352,7 +367,7 @@ def allclose(t, targets, signals,  # noqa: C901
                            atol=atol, rtol=rtol)
 
 
-def find_modules(root_path, prefix=[], pattern='^test_.*\\.py$'):
+def find_modules(root_path, prefix=None, pattern='^test_.*\\.py$'):
     """Find matching modules (files) in all subdirectories of a given path.
 
     Parameters
@@ -371,17 +386,19 @@ def find_modules(root_path, prefix=[], pattern='^test_.*\\.py$'):
         A list of modules. Each item in the list is a list of strings
         containing the module path.
     """
+    if prefix is None:
+        prefix = []
     if is_string(prefix):
         prefix = [prefix]
     elif not isinstance(prefix, list):
         raise TypeError("Invalid prefix type '%s'" % type(prefix).__name__)
 
     modules = []
-    for path, dirs, files in os.walk(root_path):
+    for path, _, files in os.walk(root_path):
         base = prefix + os.path.relpath(path, root_path).split(os.sep)
         for filename in files:
             if re.search(pattern, filename):
-                name, ext = os.path.splitext(filename)
+                name, _ = os.path.splitext(filename)
                 modules.append(base + [name])
 
     return modules
@@ -471,7 +488,7 @@ class ThreadedAssertion(object):
             try:
                 self.parent.assert_thread(self)
                 self.assertion_result = True
-            except:
+            except:  # pylint: disable=bare-except
                 self.assertion_result = False
                 self.exc_info = sys.exc_info()
             finally:

@@ -14,6 +14,7 @@ try:
     from html import escape
 except ImportError:
     from cgi import escape as cgi_escape
+    # pylint: disable=deprecated-method
     escape = lambda s, quote=True: cgi_escape(s, quote=quote)
 import warnings
 
@@ -25,12 +26,14 @@ from nengo.utils.progress import ProgressBar, timestamp2timedelta
 
 if has_ipynb_widgets():
     if IPython.version_info[0] <= 3:
+        # pylint: disable=no-name-in-module,import-error,ungrouped-imports
         from IPython.html.widgets import DOMWidget
         import IPython.utils.traitlets as traitlets
     else:
         import ipywidgets
         from ipywidgets import DOMWidget
         import traitlets
+    # pylint: disable=ungrouped-imports
     from IPython.display import display
 else:
     raise ImportError(

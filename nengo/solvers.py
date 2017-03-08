@@ -127,6 +127,7 @@ class Lstsq(Solver):
                    'time': t}
 
 
+# pylint: disable=abstract-method
 class _LstsqNoiseSolver(Solver):
     """Base class for least-squares solvers with noise."""
 
@@ -350,7 +351,7 @@ class LstsqDrop(Solver):
 
     def __call__(self, A, Y, rng=None, E=None):
         tstart = time.time()
-        Y, m, n, _, matrix_in = format_system(A, Y)
+        Y, _, _, _, matrix_in = format_system(A, Y)
 
         # solve for coefficients using standard solver
         X, info0 = self.solver1(A, Y, rng=rng)
@@ -408,7 +409,7 @@ class Nnls(Solver):
         import scipy.optimize
 
         tstart = time.time()
-        Y, m, n, _, matrix_in = format_system(A, Y)
+        Y, _, n, _, matrix_in = format_system(A, Y)
         Y = self.mul_encoders(Y, E, copy=True)
         d = Y.shape[1]
 
@@ -456,11 +457,11 @@ class NnlsL2(Nnls):
         super(NnlsL2, self).__init__(weights=weights)
         self.reg = reg
 
-    def _solve(self, A, Y, rng, E, sigma=0.):
+    def _solve(self, A, Y, E, sigma=0.):
         import scipy.optimize
 
         tstart = time.time()
-        Y, m, n, _, matrix_in = format_system(A, Y)
+        Y, _, n, _, matrix_in = format_system(A, Y)
         Y = self.mul_encoders(Y, E, copy=True)
         d = Y.shape[1]
 
@@ -480,7 +481,7 @@ class NnlsL2(Nnls):
         return X if matrix_in or X.shape[1] > 1 else X.ravel(), info
 
     def __call__(self, A, Y, rng=None, E=None):
-        return self._solve(A, Y, rng, E, sigma=self.reg * A.max())
+        return self._solve(A, Y, E, sigma=self.reg * A.max())
 
 
 class NnlsL2nz(NnlsL2):
