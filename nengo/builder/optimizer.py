@@ -107,6 +107,7 @@ def optimize(model, dg, max_passes=None):
                 "Stopping optimizer.".format(threshold))
             break
 
+    # Update model signals
     for key in model.sig:
         for name, val in iteritems(model.sig[key]):
             model.sig[key][name] = sig_replacements.get(val, val)
@@ -174,22 +175,22 @@ class OpMergePass(object):
     def __init__(self, dg, sig_replacements):
         self.dg = BidirectionalDAG(dg)
         self.sig_replacements = sig_replacements
-        self.sig2ops = WeakKeyDefaultDict(WeakSet)
-        self.base2views = WeakKeyDefaultDict(WeakSet)
-        self.merged = set()
-        self.merged_dependents = set()
-        self.opinfo = OpInfo()
         self.might_merge = set(dg)
 
-        # These variables will be initialized and used on each pass
-        self.only_merge_ops_with_view = None
-
-        self.dependents = None
-
+        self.sig2ops = WeakKeyDefaultDict(WeakSet)
+        self.base2views = WeakKeyDefaultDict(WeakSet)
         for op in self.dg.forward:
             for s in op.all_signals:
                 self.sig2ops[s].add(op)
                 self.base2views[s.base].add(s)
+
+        # These variables will be initialized and used on each pass
+        self.dependents = None
+        self.only_merge_ops_with_view = None
+
+        self.merged = set()
+        self.merged_dependents = set()
+        self.opinfo = OpInfo()
 
     def __call__(self, only_merge_ops_with_view):
         """Perform a single optimization pass.
@@ -201,15 +202,13 @@ class OpMergePass(object):
         """
 
         # --- Initialize pass state
+        self.dependents = transitive_closure(self.dg.forward)
         self.only_merge_ops_with_view = only_merge_ops_with_view
         self.merged.clear()
         self.merged_dependents.clear()
         self.opinfo.clear()
 
         # --- Do an optimization pass
-        self.dependents = transitive_closure(self.dg.forward)
-
-        # --- Most of the magic happens here
         self.perform_merges()
 
     def perform_merges(self):
@@ -337,10 +336,14 @@ class OpMergePass(object):
         """
         merged_op, merged_sig = OpMerger.merge(tomerge.ops)
         self.dg.merge(tomerge.ops, merged_op)
+
+        # Update tracking what has been merged and might be mergeable in the
+        # future
         self.might_merge.difference_update(tomerge.ops)
         self.might_merge.add(merged_op)
         self.merged.update(tomerge.ops)
         self.merged_dependents.update(tomerge.all_dependents)
+
         for op in tomerge.ops:
             # Mark all operators referencing the same signals as merged
             # (even though they are not) to prevent them from getting
@@ -348,31 +351,11 @@ class OpMergePass(object):
             for s in op.all_signals:
                 self.merged.update(self.sig2ops[s])
 
+        # Signal related updates
         self.resolve_views_on_replaced_signals(merged_sig)
         self.sig_replacements.update(merged_sig)
-
-        ops = [op for s in merged_sig for op in self.sig2ops[s]]
-        for v in ops:
-            # Update the op's signals
-            for key in dir(v):
-                sig = getattr(v, key)
-                if isinstance(sig, Signal):
-                    setattr(v, key, merged_sig.get(sig, sig))
-
-            v.sets = [merged_sig.get(s, s) for s in v.sets]
-            v.incs = [merged_sig.get(s, s) for s in v.incs]
-            v.reads = [merged_sig.get(s, s) for s in v.reads]
-            v.updates = [merged_sig.get(s, s) for s in v.updates]
-
-        for s in merged_op.all_signals:
-            self.sig2ops[s].add(merged_op)
-            if s.is_view:
-                self.base2views[s.base].add(s)
-
-        for from_sig, to_sig in iteritems(merged_sig):
-            self.sig2ops[to_sig] = self.sig2ops[from_sig]
-            if to_sig.is_view:
-                self.base2views[to_sig.base].add(to_sig)
+        self.replace_op_signals(merged_sig)
+        self.update_signal_indexing(merged_op, merged_sig)
 
     def resolve_views_on_replaced_signals(self, replaced_signals):
         for sig in list(replaced_signals):
@@ -401,6 +384,31 @@ class OpMergePass(object):
                                                 name=view.name,
                                                 base=base_replacement,
                                                 readonly=view.readonly)
+
+    def replace_op_signals(self, replaced_signals):
+        ops = [op for s in replaced_signals for op in self.sig2ops[s]]
+        for v in ops:
+            # Update the op's signals
+            for key in dir(v):
+                sig = getattr(v, key)
+                if isinstance(sig, Signal):
+                    setattr(v, key, replaced_signals.get(sig, sig))
+
+            v.sets = [replaced_signals.get(s, s) for s in v.sets]
+            v.incs = [replaced_signals.get(s, s) for s in v.incs]
+            v.reads = [replaced_signals.get(s, s) for s in v.reads]
+            v.updates = [replaced_signals.get(s, s) for s in v.updates]
+
+    def update_signal_indexing(self, merged_op, replaced_signals):
+        for s in merged_op.all_signals:
+            self.sig2ops[s].add(merged_op)
+            if s.is_view:
+                self.base2views[s.base].add(s)
+
+        for from_sig, to_sig in iteritems(replaced_signals):
+            self.sig2ops[to_sig] = self.sig2ops[from_sig]
+            if to_sig.is_view:
+                self.base2views[to_sig.base].add(to_sig)
 
 
 class OpInfo(Mapping):
