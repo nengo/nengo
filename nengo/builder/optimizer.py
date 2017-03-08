@@ -65,6 +65,8 @@ def optimize(model, dg, max_passes=None):
     sig_replacements = {}
     single_pass = OpMergePass(dg, sig_replacements)
 
+    n_initial_ops = len(dg)
+    cum_duration = 0.
     before, after = None, None
     i = 0
     only_merge_ops_with_view = True
@@ -89,6 +91,21 @@ def optimize(model, dg, max_passes=None):
             "Pass %i [%s]: Reduced %i to %i operators in %fs.",
             i, "views" if only_merge_ops_with_view else "non-views",
             before, after, t.duration)
+
+        # Prevent optimizer from running too long if we get up diminishing
+        # returns.
+        # Note that we don't break if there was no reduction at all because
+        # in that case we want to toggle only_merge_ops_with_view which might
+        # still yield some significant reduction.
+        cum_duration += t.duration
+        mean_reduction_rate = (n_initial_ops - after) / cum_duration
+        last_reduction_rate = (before - after) / t.duration
+        threshold = 0.01
+        if .0 < last_reduction_rate < threshold * mean_reduction_rate:
+            logger.info(
+                "Operator reduction rate fell below {} mean reduction rate. "
+                "Stopping optimizer.".format(threshold))
+            break
 
     for key in model.sig:
         for name, val in iteritems(model.sig[key]):
