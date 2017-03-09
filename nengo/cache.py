@@ -666,7 +666,7 @@ class DecoderCache(object):
                 with open(path, 'rb') as f:
                     f.seek(start)
                     solver_info, decoders = nco.read(f)
-            except (KeyError, IOError, OSError):
+            except Exception:
                 logger.debug("Cache miss [%s].", key)
                 decoders, solver_info = solver_fn(
                     solver, neuron_type, gain, bias, x, targets, rng=rng, E=E)
