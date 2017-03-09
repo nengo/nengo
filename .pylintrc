@@ -39,4 +39,5 @@ ignored-modules = matplotlib.cm, matplotlib.pyplot, numpy, numpy.random, numpy.l
 
 
 [FORMAT]
+max-line-length = 79
 ignore-long-lines = ^\s*(# (noqa )?)?<?https?://\S+>?(\s+ # noqa)?$
