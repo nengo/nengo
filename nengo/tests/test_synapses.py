@@ -86,7 +86,7 @@ def test_linearfilter(Simulator, plt, seed):
     # generated with `scipy.signal.butter(4, 0.2, analog=False)`
     num = np.array(
         [0.00482434, 0.01929737, 0.02894606, 0.01929737, 0.00482434])
-    den = np.array([1., -2.36951301,  2.31398841, -1.05466541,  0.18737949])
+    den = np.array([1., -2.36951301, 2.31398841, -1.05466541, 0.18737949])
 
     synapse = LinearFilter(num, den, analog=False)
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
