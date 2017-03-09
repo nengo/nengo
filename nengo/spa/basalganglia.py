@@ -30,6 +30,7 @@ class BasalGanglia(Module):
                  label=None, seed=None, add_to_container=None):
         self.actions = actions
         self.input_synapse = input_synapse
+        self.spa = None
         self._bias = None
         Module.__init__(self, label, seed, add_to_container)
         nengo.networks.BasalGanglia(dimensions=self.actions.count, net=self)

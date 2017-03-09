@@ -35,6 +35,7 @@ class NetworkMember(type):
         inst.__init__(*args, **kwargs)
         if add_to_container:
             nengo.Network.add(inst)
+        # pylint: disable=attribute-defined-outside-init
         inst._initialized = True  # value doesn't matter, just existance
         return inst
 
@@ -93,6 +94,7 @@ class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
         for k, v in iteritems(state):
             setattr(self, k, v)
 
+        # pylint: disable=attribute-defined-outside-init
         self._initialized = True
         if len(nengo.Network.context) > 0:
             warnings.warn(NotAddedToNetworkWarning(self))

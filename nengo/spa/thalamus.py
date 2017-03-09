@@ -78,6 +78,7 @@ class Thalamus(Module):
         self.threshold_gate = threshold_gate
         self.synapse_to_gate = synapse_to_gate
         self.synapse_bg = synapse_bg
+        self.spa = None
 
         self.gates = {}     # gating ensembles per action (created as needed)
         self.channels = {}  # channels to pass transformed data between modules
