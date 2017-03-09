@@ -40,7 +40,7 @@ def test_symbol():
     assert str(~(~A)) == 'A'
 
     assert str(-A) == '-A'
-    assert str(-(-A)) == 'A'
+    assert str(-(-A)) == 'A'  # pylint: disable=nonexistent-operator
 
     assert str(A*B+(B*~A)*0.5-A) == '(((A * B) + ((B * ~A) * 0.5)) - A)'
 
@@ -65,7 +65,7 @@ def test_source():
     assert str(A * s_q) == '(Q * A) * s'
 
     assert str(-s) == '-1 * s'
-    assert str(-(-s)) == 's'
+    assert str(-(-s)) == 's'  # pylint: disable=nonexistent-operator
     assert str(-s_q) == '-Q * s'
 
     assert str(s + s_q) == 's + Q * s'
@@ -121,7 +121,7 @@ def test_dotproduct():
     assert str(B + DotProduct(x, y)) == 'dot(x, y) + B'
 
     assert str(-DotProduct(x, y)) == '-dot(x, y)'
-    assert str(-(-DotProduct(x, y))) == 'dot(x, y)'
+    assert str(-(-DotProduct(x, y))) == 'dot(x, y)'  # pylint: disable=nonexistent-operator
 
     assert str(DotProduct(x, y) - 1) == 'dot(x, y) + -1'
     assert str(1 - DotProduct(x, y)) == '-dot(x, y) + 1'
@@ -238,4 +238,4 @@ def test_vector_list():
         '' - xy
 
     assert str(-xy) == '-1 * x + -1 * y'
-    assert str(-(-xy)) == 'x + y'
+    assert str(-(-xy)) == 'x + y'  # pylint: disable=nonexistent-operator
