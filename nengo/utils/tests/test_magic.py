@@ -2,6 +2,7 @@ import inspect
 
 from nengo.utils.magic import decorator, memoize
 
+# pylint: disable=global-statement
 state = None  # Used to make sure decorators are running
 
 
