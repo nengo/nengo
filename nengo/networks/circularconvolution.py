@@ -90,7 +90,7 @@ def dft_half(n):
 
 def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
                         input_magnitude=1.0, net=None):
-    """Compute the circular convolution of two vectors.
+    r"""Compute the circular convolution of two vectors.
 
     The circular convolution :math:`c` of vectors :math:`a` and :math:`b`
     is given by
