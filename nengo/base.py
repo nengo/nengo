@@ -35,7 +35,7 @@ class NetworkMember(type):
         inst.__init__(*args, **kwargs)
         if add_to_container:
             nengo.Network.add(inst)
-        inst._initialized = True  # value doesn't matter, just existence
+        inst._initialized = True
         return inst
 
 
@@ -68,12 +68,13 @@ class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
 
     def __init__(self, label, seed):
         super(NengoObject, self).__init__()
+        self._initialized = False
         self.label = label
         self.seed = seed
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        del state['_initialized']
+        state['_initialized'] = False
 
         for attr in self.params:
             param = getattr(type(self), attr)
@@ -98,7 +99,8 @@ class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
             warnings.warn(NotAddedToNetworkWarning(self))
 
     def __setattr__(self, name, val):
-        if hasattr(self, '_initialized') and not hasattr(self, name):
+        initialized = hasattr(self, '_initialized') and self._initialized
+        if initialized and not hasattr(self, name):
             warnings.warn(
                 "Creating new attribute '%s' on '%s'. "
                 "Did you mean to change an existing attribute?" % (name, self),

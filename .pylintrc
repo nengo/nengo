@@ -10,6 +10,7 @@ disable = all,
           import-error,
           reimported,
 enable = anomalous-backslash-in-string,
+         attribute-defined-outside-init
          bad-mcs-classmethod-argument,
          bad-super-call,
          bad-whitespace,

@@ -62,7 +62,7 @@ class Operator(object):
     and which of these four types of manipulations is done to each signal
     so that the simulator can order all of the operators properly.
 
-    .. note:: There are intentionally no default values for the
+    .. note:: There are intentionally no valid default values for the
               `~.Operator.reads`, `~.Operator.sets`, `~.Operator.incs`,
               and `~.Operator.updates` properties to ensure that subclasses
               explicitly set these values.
@@ -80,6 +80,11 @@ class Operator(object):
 
     def __init__(self, tag=None):
         self.tag = tag
+
+        self._sets = None
+        self._incs = None
+        self._reads = None
+        self._updates = None
 
     def __repr__(self):
         return "<%s %s at 0x%x>" % (

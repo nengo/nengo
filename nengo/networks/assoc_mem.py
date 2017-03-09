@@ -137,6 +137,10 @@ class AssociativeMemory(nengo.Network):
                 # am_ensembles have [1] encoders
             else:
                 self.inhibit = None
+
+            self.thresh_bias = None
+            self.thresholded_utilities = None
+
         self.add_input_mapping("input", input_vectors, input_scales)
         self.add_output_mapping("output", output_vectors)
 
