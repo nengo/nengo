@@ -109,7 +109,7 @@ def test_choice(weights, rng):
 
     # check that frequency of choices matches weights
     inds = [tchoices.index(s) for s in tsample]
-    hist, bins = np.histogram(inds, bins=np.linspace(-0.5, N - 0.5, N + 1))
+    hist, _ = np.histogram(inds, bins=np.linspace(-0.5, N - 0.5, N + 1))
     p_empirical = hist / float(hist.sum())
     p = np.ones(N) / N if dist.p is None else dist.p
     sterr = 1. / np.sqrt(n)  # expected maximum standard error

@@ -33,7 +33,7 @@ def test_multirun(Simulator, rng):
 def test_dts(Simulator, seed, rng):
     """Test probes with different dts and runtimes"""
 
-    for i in range(100):
+    for _ in range(100):
         dt = rng.uniform(0.001, 0.1)  # simulator dt
         dt2 = rng.uniform(dt, 0.15)   # probe dt
         tend = rng.uniform(0.2, 0.3)  # simulator runtime

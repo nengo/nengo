@@ -134,7 +134,7 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
 
     subsolvers = [lstsq.Conjgrad, lstsq.BlockConjgrad]
     for subsolver in subsolvers:
-        x, info = Solver(solver=subsolver(tol=tol))(A, b, rng=get_rng())
+        x, _ = Solver(solver=subsolver(tol=tol))(A, b, rng=get_rng())
         rel_rmse = rms(x - x0) / rms(x0)
         assert rel_rmse < 4 * tol
         # the above 4 * tol is just a heuristic; the main purpose of this

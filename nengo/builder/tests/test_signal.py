@@ -133,7 +133,7 @@ def test_signal_slicing(rng):
     a = Signal(x.copy())
     b = Signal(y.copy())
 
-    for i in range(100):
+    for _ in range(100):
         si0, si1 = rng.randint(0, len(slices), size=2)
         s0, s1 = slices[si0], slices[si1]
         assert np.array_equiv(a[s0].initial_value, x[s0])

@@ -28,7 +28,7 @@ def test_lif_builtin(rng):
     reftime = np.zeros_like(J)
 
     spikes = np.zeros((int(t_final / dt),) + J.shape)
-    for i, spikes_i in enumerate(spikes):
+    for spikes_i in spikes:
         lif.step_math(dt, J, spikes_i, voltage, reftime)
 
     math_rates = lif.rates(x, gain, bias)

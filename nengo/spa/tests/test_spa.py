@@ -16,6 +16,7 @@ def test_spa_verification(seed):
         model.buf = spa.Buffer(d)
         model.input_node = spa.Input(buf='B')
         # make sure errors aren't fired for non-spa modules
+        # pylint: disable=unused-variable
         prod = nengo.networks.Product(10, 2)  # noqa: F841
         model.int_val = 1
 
