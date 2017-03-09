@@ -16,7 +16,7 @@ def _test_decorated(obj):
     state = 'not run'
 
     # Make sure decorated function looks like non-decorated
-    assert obj.__name__ == 'f'
+    assert obj.__name__.lower() == 'f'
     assert obj.__doc__ == "Return 1."
 
 
@@ -199,7 +199,7 @@ def test_class():
 
     # Make sure introspection works
     # Note: for classes, the decorator isn't part of the source. Weird!
-    assert inspect.getsource(F) == ('    class f(object):\n'
+    assert inspect.getsource(F) == ('    class F(object):\n'
                                     '        """Return 1."""\n'
                                     '        def __init__(self, a, b):\n'
                                     '            self.a = a\n'
