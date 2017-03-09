@@ -176,6 +176,7 @@ class BasalGanglia(Module):
                 "Only 1-dimensional sources can be scalar inputs")
 
         try:
+            # pylint: disable=eval-used
             scale = float(eval(source.transform.symbol))
         except ValueError:
             raise ValidationError("Transform must be scalar; got '%s'"

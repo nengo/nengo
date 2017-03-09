@@ -38,6 +38,7 @@ class Expression(object):
         self.validate_string(expression)
         sanitized_exp = ' '.join(expression.split('\n'))
         try:
+            # pylint: disable=eval-used
             self.expression = eval(sanitized_exp, {}, self)
         except NameError as e:
             raise SpaParseError("Unknown module in expression '%s': %s" %
