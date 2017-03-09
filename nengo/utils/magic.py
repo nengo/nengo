@@ -83,9 +83,9 @@ class ObjectProxyMeta(type):
     implementation for them in all derived classes.
     """
 
-    def __new__(cls, name, bases, dictionary):
+    def __new__(mcs, name, bases, dictionary):
         dictionary.update(vars(ObjectProxyMethods))
-        return type.__new__(cls, name, bases, dictionary)
+        return type.__new__(mcs, name, bases, dictionary)
 
 
 class ObjectProxy(with_metaclass(ObjectProxyMeta)):
@@ -305,7 +305,7 @@ class DocstringInheritor(type):
     a variation on Paul McGuire's code at
     http://groups.google.com/group/comp.lang.python/msg/26f7b4fcb4d66c95
     '''
-    def __new__(meta, name, bases, clsdict):
+    def __new__(mcs, name, bases, clsdict):
         if not('__doc__' in clsdict and clsdict['__doc__']):
             for mro_cls in (
                     mro_cls for base in bases for mro_cls in base.mro()):
@@ -322,4 +322,4 @@ class DocstringInheritor(type):
                     if doc:
                         attribute.__doc__ = doc
                         break
-        return type.__new__(meta, name, bases, clsdict)
+        return type.__new__(mcs, name, bases, clsdict)
