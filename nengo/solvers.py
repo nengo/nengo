@@ -457,7 +457,7 @@ class NnlsL2(Nnls):
         super(NnlsL2, self).__init__(weights=weights)
         self.reg = reg
 
-    def _solve(self, A, Y, E, sigma=0.):
+    def _solve(self, A, Y, rng, E, sigma=0.):
         import scipy.optimize
 
         tstart = time.time()
@@ -481,7 +481,7 @@ class NnlsL2(Nnls):
         return X if matrix_in or X.shape[1] > 1 else X.ravel(), info
 
     def __call__(self, A, Y, rng=None, E=None):
-        return self._solve(A, Y, E, sigma=self.reg * A.max())
+        return self._solve(A, Y, rng, E, sigma=self.reg * A.max())
 
 
 class NnlsL2nz(NnlsL2):
