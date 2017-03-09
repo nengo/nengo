@@ -121,7 +121,7 @@ def test_dotproduct():
     assert str(B + DotProduct(x, y)) == 'dot(x, y) + B'
 
     assert str(-DotProduct(x, y)) == '-dot(x, y)'
-    assert str(-(-DotProduct(x, y))) == 'dot(x, y)'  # pylint: disable=nonexistent-operator
+    assert str(-(-DotProduct(x, y))) == 'dot(x, y)'  # noqa, pylint: disable=nonexistent-operator
 
     assert str(DotProduct(x, y) - 1) == 'dot(x, y) + -1'
     assert str(1 - DotProduct(x, y)) == '-dot(x, y) + 1'
