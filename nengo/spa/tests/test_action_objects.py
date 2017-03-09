@@ -102,6 +102,7 @@ def test_dotproduct():
     assert str(0.5 * (0.5*DotProduct(x, y))) == '0.25 * dot(x, y)'
     assert str(DotProduct(B, y)*2) == '2 * dot(B, y)'
 
+    # pylint: disable=expression-not-assigned
     with pytest.raises(TypeError):
         A * DotProduct(x, y)
     with pytest.raises(TypeError):
