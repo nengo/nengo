@@ -4,8 +4,8 @@ import warnings
 
 import numpy as np
 
-from . import numpy as npext
-from ..exceptions import ValidationError
+from nengo.utils import numpy as npext
+from nengo.exceptions import ValidationError
 
 
 def target_function(eval_points, targets):
