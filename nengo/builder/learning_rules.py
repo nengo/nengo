@@ -65,16 +65,28 @@ class SimBCM(Operator):
     def __init__(self, pre_filtered, post_filtered, theta, delta,
                  learning_rate, tag=None):
         super(SimBCM, self).__init__(tag=tag)
-        self.pre_filtered = pre_filtered
-        self.post_filtered = post_filtered
-        self.theta = theta
-        self.delta = delta
         self.learning_rate = learning_rate
 
         self.sets = []
         self.incs = []
         self.reads = [pre_filtered, post_filtered, theta]
         self.updates = [delta]
+
+    @property
+    def delta(self):
+        return self.updates[0]
+
+    @property
+    def pre_filtered(self):
+        return self.reads[0]
+
+    @property
+    def post_filtered(self):
+        return self.reads[1]
+
+    @property
+    def theta(self):
+        return self.reads[2]
 
     def _descstr(self):
         return 'pre=%s, post=%s -> %s' % (
@@ -153,10 +165,6 @@ class SimOja(Operator):
     def __init__(self, pre_filtered, post_filtered, weights, delta,
                  learning_rate, beta, tag=None):
         super(SimOja, self).__init__(tag=tag)
-        self.pre_filtered = pre_filtered
-        self.post_filtered = post_filtered
-        self.weights = weights
-        self.delta = delta
         self.learning_rate = learning_rate
         self.beta = beta
 
@@ -164,6 +172,22 @@ class SimOja(Operator):
         self.incs = []
         self.reads = [pre_filtered, post_filtered, weights]
         self.updates = [delta]
+
+    @property
+    def delta(self):
+        return self.updates[0]
+
+    @property
+    def pre_filtered(self):
+        return self.reads[0]
+
+    @property
+    def post_filtered(self):
+        return self.reads[1]
+
+    @property
+    def weights(self):
+        return self.reads[2]
 
     def _descstr(self):
         return 'pre=%s, post=%s -> %s' % (
@@ -244,12 +268,7 @@ class SimVoja(Operator):
     def __init__(self, pre_decoded, post_filtered, scaled_encoders, delta,
                  scale, learning_signal, learning_rate, tag=None):
         super(SimVoja, self).__init__(tag=tag)
-        self.pre_decoded = pre_decoded
-        self.post_filtered = post_filtered
-        self.scaled_encoders = scaled_encoders
-        self.delta = delta
         self.scale = scale
-        self.learning_signal = learning_signal
         self.learning_rate = learning_rate
 
         self.sets = []
@@ -257,6 +276,30 @@ class SimVoja(Operator):
         self.reads = [
             pre_decoded, post_filtered, scaled_encoders, learning_signal]
         self.updates = [delta]
+
+    @property
+    def delta(self):
+        return self.updates[0]
+
+    @property
+    def learning_signal(self):
+        return self.reads[3]
+
+    @property
+    def pre_decoded(self):
+        return self.reads[0]
+
+    @property
+    def post_filtered(self):
+        return self.reads[1]
+
+    @property
+    def scaled_encoders(self):
+        return self.reads[2]
+
+    @property
+    def weights(self):
+        return self.reads[2]
 
     def _descstr(self):
         return 'pre=%s, post=%s -> %s' % (

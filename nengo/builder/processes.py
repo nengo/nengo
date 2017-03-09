@@ -49,9 +49,6 @@ class SimProcess(Operator):
     def __init__(self, process, input, output, t, mode='set', tag=None):
         super(SimProcess, self).__init__(tag=tag)
         self.process = process
-        self.input = input
-        self.output = output
-        self.t = t
         self.mode = mode
 
         self.reads = [t, input] if input is not None else [t]
@@ -66,6 +63,25 @@ class SimProcess(Operator):
             self.sets = [output] if output is not None else []
         else:
             raise ValueError("Unrecognized mode %r" % mode)
+
+    @property
+    def input(self):
+        return None if len(self.reads) == 1 else self.reads[1]
+
+    @property
+    def output(self):
+        if len(self.updates) <= len(self.incs) <= len(self.sets) <= 0:
+            return None
+        elif self.mode == 'update':
+            return self.updates[0]
+        elif self.mode == 'inc':
+            return self.incs[0]
+        elif self.mode == 'set':
+            return self.sets[0]
+
+    @property
+    def t(self):
+        return self.reads[0]
 
     def _descstr(self):
         return '%s, %s -> %s' % (self.process, self.input, self.output)

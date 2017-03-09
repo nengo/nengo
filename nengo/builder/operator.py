@@ -217,13 +217,18 @@ class TimeUpdate(Operator):
 
     def __init__(self, step, time, tag=None):
         super(TimeUpdate, self).__init__(tag=tag)
-        self.step = step
-        self.time = time
-
         self.sets = [step, time]
         self.incs = []
         self.reads = []
         self.updates = []
+
+    @property
+    def step(self):
+        return self.sets[0]
+
+    @property
+    def time(self):
+        return self.sets[1]
 
     def make_step(self, signals, dt, rng):
         step = signals[self.step]
@@ -269,13 +274,16 @@ class Reset(Operator):
 
     def __init__(self, dst, value=0, tag=None):
         super(Reset, self).__init__(tag=tag)
-        self.dst = dst
         self.value = float(value)
 
         self.sets = [dst]
         self.incs = []
         self.reads = []
         self.updates = []
+
+    @property
+    def dst(self):
+        return self.sets[0]
 
     def _descstr(self):
         return str(self.dst)
@@ -347,8 +355,6 @@ class Copy(Operator):
             dst_slice = None
         # ^ src_slice and dst_slice are now either lists of indices or None
 
-        self.src = src
-        self.dst = dst
         self.src_slice = src_slice
         self.dst_slice = dst_slice
         self.inc = inc
@@ -357,6 +363,14 @@ class Copy(Operator):
         self.incs = [dst] if inc else []
         self.reads = [src]
         self.updates = []
+
+    @property
+    def dst(self):
+        return self.incs[0] if self.inc else self.sets[0]
+
+    @property
+    def src(self):
+        return self.reads[0]
 
     def _descstr(self):
         def sigstring(sig, sl):
@@ -419,14 +433,22 @@ class ElementwiseInc(Operator):
 
     def __init__(self, A, X, Y, tag=None):
         super(ElementwiseInc, self).__init__(tag=tag)
-        self.A = A
-        self.X = X
-        self.Y = Y
-
         self.sets = []
         self.incs = [Y]
         self.reads = [A, X]
         self.updates = []
+
+    @property
+    def A(self):
+        return self.reads[0]
+
+    @property
+    def X(self):
+        return self.reads[1]
+
+    @property
+    def Y(self):
+        return self.incs[0]
 
     def _descstr(self):
         return '%s, %s -> %s' % (self.A, self.X, self.Y)
@@ -526,9 +548,6 @@ class DotInc(Operator):
         if Y.ndim >= 2 and any(d > 1 for d in Y.shape[1:]):
             raise BuildError("Y must be a column vector")
 
-        self.A = A
-        self.X = X
-        self.Y = Y
         self.reshape = reshape
         if self.reshape is None:
             self.reshape = reshape_dot(
@@ -538,6 +557,18 @@ class DotInc(Operator):
         self.incs = [Y]
         self.reads = [A, X]
         self.updates = []
+
+    @property
+    def A(self):
+        return self.reads[0]
+
+    @property
+    def X(self):
+        return self.reads[1]
+
+    @property
+    def Y(self):
+        return self.incs[0]
 
     def _descstr(self):
         return '%s, %s -> %s' % (self.A, self.X, self.Y)
@@ -680,15 +711,28 @@ class SimPyFunc(Operator):
 
     def __init__(self, output, fn, t, x, tag=None):
         super(SimPyFunc, self).__init__(tag=tag)
-        self.output = output
         self.fn = fn
-        self.t = t
-        self.x = x
+        self.t_passed = t is not None
+        self.x_passed = x is not None
 
         self.sets = [] if output is None else [output]
         self.incs = []
         self.reads = ([] if t is None else [t]) + ([] if x is None else [x])
         self.updates = []
+
+    @property
+    def output(self):
+        if len(self.sets) == 1:
+            return self.sets[0]
+        return None
+
+    @property
+    def t(self):
+        return self.reads[0] if self.t_passed else None
+
+    @property
+    def x(self):
+        return self.reads[-1] if self.x_passed else None
 
     def _descstr(self):
         return '%s -> %s, fn=%r' % (

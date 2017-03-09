@@ -47,14 +47,23 @@ class SimNeurons(Operator):
     def __init__(self, neurons, J, output, states=None, tag=None):
         super(SimNeurons, self).__init__(tag=tag)
         self.neurons = neurons
-        self.J = J
-        self.output = output
-        self.states = [] if states is None else states
 
-        self.sets = [output] + self.states
+        self.sets = [output] + ([] if states is None else states)
         self.incs = []
         self.reads = [J]
         self.updates = []
+
+    @property
+    def J(self):
+        return self.reads[0]
+
+    @property
+    def output(self):
+        return self.sets[0]
+
+    @property
+    def states(self):
+        return self.sets[1:]
 
     def _descstr(self):
         return '%s, %s, %s' % (self.neurons, self.J, self.output)

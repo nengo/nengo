@@ -336,11 +336,6 @@ class OpMergePass(object):
         ops = (op for s in replaced_signals for op in self.sig2ops[s])
         for v in ops:
             # Update the op's signals
-            for key in dir(v):
-                sig = getattr(v, key)
-                if isinstance(sig, Signal):
-                    setattr(v, key, replaced_signals.get(sig, sig))
-
             v.sets = [replaced_signals.get(s, s) for s in v.sets]
             v.incs = [replaced_signals.get(s, s) for s in v.incs]
             v.reads = [replaced_signals.get(s, s) for s in v.reads]
