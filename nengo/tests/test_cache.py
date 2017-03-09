@@ -307,8 +307,9 @@ def test_cache_works(tmpdir, RefSimulator, seed):
         nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
     assert len(os.listdir(cache_dir)) == 0
-    with RefSimulator(model, model=nengo.builder.Model(
-        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
+    sim_model = nengo.builder.Model(
+        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))
+    with RefSimulator(model, model=sim_model):
         assert len(os.listdir(cache_dir)) == 2  # index, and *.nco
 
 
@@ -320,8 +321,9 @@ def test_cache_not_used_without_seed(tmpdir, RefSimulator):
         nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
     assert len(os.listdir(cache_dir)) == 0
-    with RefSimulator(model, model=nengo.builder.Model(
-        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
+    sim_model = nengo.builder.Model(
+        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))
+    with RefSimulator(model, model=sim_model):
         assert len(os.listdir(cache_dir)) == 1  # index
 
 
@@ -330,8 +332,9 @@ def build_many_ensembles(cache_dir, RefSimulator):
         for _ in range(100):
             nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
-    with RefSimulator(model, model=nengo.builder.Model(
-        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
+    sim_model = nengo.builder.Model(
+        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))
+    with RefSimulator(model, model=sim_model):
         pass
 
 
