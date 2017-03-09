@@ -198,7 +198,7 @@ def groupby(objects, key, hashable=None, force_list=True):
 if hasattr(os, 'terminal_size'):
     terminal_size = os.terminal_size
 else:
-    terminal_size = collections.namedtuple(
+    terminal_size = collections.namedtuple(  # pylint: disable=invalid-name
         'terminal_size', ['columns', 'lines'])
 
 

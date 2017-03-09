@@ -54,6 +54,7 @@ class Bind(Module):
             self.cc = nengo.networks.CircularConvolution(
                 n_neurons, dimensions, invert_a, invert_b,
                 input_magnitude=input_magnitude)
+            # pylint: disable=invalid-name
             self.A = self.cc.A
             self.B = self.cc.B
             self.output = self.cc.output

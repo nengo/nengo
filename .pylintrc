@@ -17,11 +17,13 @@ reports = yes
 [BASIC]
 good-names = E
 
-argument-rgx = ([A-Z]{1,2})|([a-z_][a-z0-9_]{0,30})$
-attr-rgx = [a-z_][a-z0-9_]{0,30}$
+argument-rgx = ([a-z_][a-z0-9_]{0,30})|([A-Z][a-zA-Z0-9]*(_[a-z0-9_]+)?)$
+attr-rgx = ([a-z_][a-z0-9_]{0,30})|([A-Z][a-zA-Z0-9]*(_[a-z0-9_]+)?)$
 class-attribute-rgx = ([A-Za-z_][A-Za-z0-9_]{0,30}|(__.*__))$
+class-rgx = [A-Z_][a-zA-Z0-9]*$
 const-rgx = (([a-zA-Z_][a-zA-Z0-9_]*)|(__.*__))$
-function-rgx = [a-zA-Z_][a-zA-Z0-9_]{2,30}$
+function-rgx = ([a-zA-Z_][a-zA-Z0-9_]{0,30})|(test_[a-z0-9_]+)$
+method-rgx = ([a-z_][a-z0-9_]{0,30})|(test_[a-z0-9_]+)$
 variable-rgx = ([A-Z]{1,2})|([a-z_][a-z0-9_]{0,30})|([a-z][A-Z])$
 
 

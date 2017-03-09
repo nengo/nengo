@@ -279,7 +279,7 @@ def callable_decorator(callable_wrapper):
     return wrapper
 
 
-@callable_decorator
+@callable_decorator  # pylint: disable=invalid-name
 class memoize(object):
     """Memoizes a function based on the given arguments."""
 
