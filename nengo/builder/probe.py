@@ -97,6 +97,7 @@ def build_probe(model, probe):
     """
 
     # find the right parent class in `objtypes`, using `isinstance`
+    probeables = {}
     for nengotype, probeables in iteritems(probemap):
         if isinstance(probe.obj, nengotype):
             break

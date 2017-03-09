@@ -304,6 +304,7 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     out_data = []
     dts = (0.0001, 0.001)
     colors = ('b', 'g', 'r')
+    dt = None
     for c, dt in zip(colors, dts):
         with Simulator(m, dt=dt, seed=seed+1) as sim:
             sim.run(0.1)

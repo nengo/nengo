@@ -173,6 +173,7 @@ class Conjgrad(LeastSquaresSolver):
         p = r.copy()
         rsold = np.dot(r, r)
 
+        i = -1
         for i in range(maxiters):
             Ap = calcAx(p)
             alpha = rsold / np.dot(p, Ap)
@@ -228,6 +229,7 @@ class BlockConjgrad(LeastSquaresSolver):
         Rsold = np.dot(R.T, R)
         AP = np.zeros((n, d))
 
+        i = -1
         maxiters = int(n / d)
         for i in range(maxiters):
             AP = G(P)
