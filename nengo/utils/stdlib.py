@@ -115,7 +115,7 @@ def checked_call(func, *args, **kwargs):
     """
     try:
         return CheckedCall(func(*args, **kwargs), True)
-    except:
+    except Exception:
         tb = inspect.trace()
         if not len(tb) or tb[-1][0] is not inspect.currentframe():
             raise  # exception occurred inside func
@@ -210,11 +210,11 @@ else:
         w, h = fallback
         try:
             w = int(os.environ['COLUMNS'])
-        except:
+        except (KeyError, ValueError):
             pass
         try:
             h = int(os.environ['LINES'])
-        except:
+        except (KeyError, ValueError):
             pass
         return terminal_size(w, h)
 
