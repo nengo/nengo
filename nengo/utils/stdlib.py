@@ -141,7 +141,7 @@ def execfile(path, globals, locals=None):
         source = fp.read()
 
     code = compile(source, path, "exec")
-    exec(code, globals, locals)
+    exec(code, globals, locals)  # pylint: disable=exec-used
 
 
 def groupby(objects, key, hashable=None, force_list=True):

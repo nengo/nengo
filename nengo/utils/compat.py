@@ -27,6 +27,7 @@ if PY2:
     itervalues = lambda d: d.itervalues()
 
     # We have to put this in an exec call because it's a syntax error in Py3+
+    # pylint: disable=exec-used
     exec('def reraise(tp, value, tb):\n raise tp, value, tb')
 
     def ensure_bytes(s):
