@@ -97,8 +97,7 @@ def test_routing(Simulator, seed, plt):
 
         actions = spa.Actions('dot(ctrl, A) --> buff3=buff1',
                               'dot(ctrl, B) --> buff3=buff2',
-                              'dot(ctrl, C) --> buff3=buff1*buff2',
-                              )
+                              'dot(ctrl, C) --> buff3=buff1*buff2',)
         model.bg = spa.BasalGanglia(actions)
         model.thal = spa.Thalamus(model.bg)
 
@@ -169,8 +168,7 @@ def test_nondefault_routing(Simulator, seed):
 
         actions = spa.Actions('dot(ctrl, A) --> cmp_A=buff1, cmp_B=buff1',
                               'dot(ctrl, B) --> cmp_A=buff1, cmp_B=buff2',
-                              'dot(ctrl, C) --> cmp_A=buff2, cmp_B=buff2',
-                              )
+                              'dot(ctrl, C) --> cmp_A=buff2, cmp_B=buff2',)
         model.bg = spa.BasalGanglia(actions)
         model.thal = spa.Thalamus(model.bg)
 

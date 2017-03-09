@@ -405,7 +405,7 @@ def test_eval_points_static(plt, rng):
 
     rmses_norm1 = rmses - rmses.mean(0, keepdims=True)
     rmses_norm2 = (rmses - rmses.mean(0, keepdims=True)
-                   ) / rmses.std(0, keepdims=True)
+                  ) / rmses.std(0, keepdims=True)
 
     def make_plot(rmses):
         mean = rmses.mean(1)

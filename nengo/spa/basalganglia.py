@@ -65,7 +65,8 @@ class BasalGanglia(Module):
             for c in cond.items:
                 if isinstance(c, DotProduct):
                     if ((isinstance(c.item1, Source) and c.item1.inverted) or
-                       (isinstance(c.item2, Source) and c.item2.inverted)):
+                            (isinstance(c.item2, Source)
+                             and c.item2.inverted)):
                         raise NotImplementedError(
                             "Inversion in subexpression '%s' from action '%s' "
                             "is not supported by the Basal Ganglia." %

@@ -52,40 +52,40 @@ def test_full_transform():
         conn = nengo.Connection(neurons3[1:], neurons3[::2], transform=-1)
         assert np.all(conn.transform == np.array(-1))
         assert np.all(full_transform(conn) == np.array([[0, -1, 0],
-                                                       [0, 0, 0],
-                                                       [0, 0, -1]]))
+                                                        [0, 0, 0],
+                                                        [0, 0, -1]]))
 
         # Both slices with 2x2 transform -> 3x3 transform
         conn = nengo.Connection(node3[[0, 2]], neurons3[1:],
                                 transform=[[1, 2], [3, 4]])
         assert np.all(conn.transform == np.array([[1, 2], [3, 4]]))
         assert np.all(full_transform(conn) == np.array([[0, 0, 0],
-                                                       [1, 0, 2],
-                                                       [3, 0, 4]]))
+                                                        [1, 0, 2],
+                                                        [3, 0, 4]]))
 
         # Both slices with 2x3 transform -> 3x3 transform... IN REVERSE!
         conn = nengo.Connection(neurons3[::-1], neurons3[[2, 0]],
                                 transform=[[1, 2, 3], [4, 5, 6]])
         assert np.all(conn.transform == np.array([[1, 2, 3], [4, 5, 6]]))
         assert np.all(full_transform(conn) == np.array([[6, 5, 4],
-                                                       [0, 0, 0],
-                                                       [3, 2, 1]]))
+                                                        [0, 0, 0],
+                                                        [3, 2, 1]]))
 
         # Both slices using lists
         conn = nengo.Connection(neurons3[[1, 0, 2]], neurons3[[2, 1]],
                                 transform=[[1, 2, 3], [4, 5, 6]])
         assert np.all(conn.transform == np.array([[1, 2, 3], [4, 5, 6]]))
         assert np.all(full_transform(conn) == np.array([[0, 0, 0],
-                                                       [5, 4, 6],
-                                                       [2, 1, 3]]))
+                                                        [5, 4, 6],
+                                                        [2, 1, 3]]))
 
         # using vector
         conn = nengo.Connection(ens3[[1, 0, 2]], ens3[[2, 0, 1]],
                                 transform=[1, 2, 3])
         assert np.all(conn.transform == np.array([1, 2, 3]))
         assert np.all(full_transform(conn) == np.array([[2, 0, 0],
-                                                       [0, 0, 3],
-                                                       [0, 1, 0]]))
+                                                        [0, 0, 3],
+                                                        [0, 1, 0]]))
 
         # using vector 1D
         conn = nengo.Connection(ens1, ens1, transform=[5])
@@ -97,10 +97,10 @@ def test_full_transform():
                                 transform=[1, 2, 3])
         assert np.all(conn.transform == np.array([1, 2, 3]))
         assert np.all(full_transform(conn) == np.array([[2, 0, 0],
-                                                       [0, 0, 3],
-                                                       [0, 1, 0]]))
+                                                        [0, 0, 3],
+                                                        [0, 1, 0]]))
 
         # using multi-index lists
         conn = nengo.Connection(ens3, ens2[[0, 1, 0]])
         assert np.all(full_transform(conn) == np.array([[1, 0, 1],
-                                                       [0, 1, 0]]))
+                                                        [0, 1, 0]]))
