@@ -127,6 +127,7 @@ class Lstsq(Solver):
                    'time': t}
 
 
+# pylint: disable=abstract-method
 class _LstsqNoiseSolver(Solver):
     """Base class for least-squares solvers with noise."""
 
@@ -350,7 +351,7 @@ class LstsqDrop(Solver):
 
     def __call__(self, A, Y, rng=None, E=None):
         tstart = time.time()
-        Y, m, n, _, matrix_in = format_system(A, Y)
+        Y, _, _, _, matrix_in = format_system(A, Y)
 
         # solve for coefficients using standard solver
         X, info0 = self.solver1(A, Y, rng=rng)
@@ -408,7 +409,7 @@ class Nnls(Solver):
         import scipy.optimize
 
         tstart = time.time()
-        Y, m, n, _, matrix_in = format_system(A, Y)
+        Y, _, n, _, matrix_in = format_system(A, Y)
         Y = self.mul_encoders(Y, E, copy=True)
         d = Y.shape[1]
 
@@ -460,7 +461,7 @@ class NnlsL2(Nnls):
         import scipy.optimize
 
         tstart = time.time()
-        Y, m, n, _, matrix_in = format_system(A, Y)
+        Y, _, n, _, matrix_in = format_system(A, Y)
         Y = self.mul_encoders(Y, E, copy=True)
         d = Y.shape[1]
 

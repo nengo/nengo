@@ -80,6 +80,11 @@ class Operator(object):
     def __init__(self, tag=None):
         self.tag = tag
 
+        self._sets = []
+        self._incs = []
+        self._reads = []
+        self._updates = []
+
     def __repr__(self):
         return "<%s%s at 0x%x>" % (
             type(self).__name__, self._tagstr(), id(self))

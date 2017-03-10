@@ -43,8 +43,8 @@ import numpy as np
 from numpy import (product, zeros, array, dot, r_, eye,
                    atleast_1d, atleast_2d, poly, roots, asarray, allclose)
 
-from .compat import range
-from .numpy import expm
+from nengo.utils.compat import range
+from nengo.utils.numpy import expm
 
 
 class BadCoefficients(UserWarning):
@@ -265,7 +265,7 @@ def abcd_normalize(A=None, B=None, C=None, D=None):
     """
     A, B, C, D = map(_atleast_2d_or_none, (A, B, C, D))
 
-    MA, NA = _shape_or_none(A)
+    MA, _ = _shape_or_none(A)
     MB, NB = _shape_or_none(B)
     MC, NC = _shape_or_none(C)
     MD, ND = _shape_or_none(D)

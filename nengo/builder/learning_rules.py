@@ -11,17 +11,17 @@ from nengo.synapses import Lowpass
 
 
 class SimBCM(Operator):
-    """Calculate connection weight change according to the BCM rule.
+    r"""Calculate connection weight change according to the BCM rule.
 
     Implements the Bienenstock-Cooper-Munroe learning rule of the form
 
-    .. math:: \Delta \omega_{ij} = \kappa a_j (a_j - \\theta_j) a_i
+    .. math:: \Delta \omega_{ij} = \kappa a_j (a_j - \theta_j) a_i
 
     where
 
     * :math:`\kappa` is a scalar learning rate,
     * :math:`a_j` is the activity of a postsynaptic neuron,
-    * :math:`\\theta_j` is an estimate of the average :math:`a_j`, and
+    * :math:`\theta_j` is an estimate of the average :math:`a_j`, and
     * :math:`a_i` is the activity of a presynaptic neuron.
 
     Parameters
@@ -31,7 +31,7 @@ class SimBCM(Operator):
     post_filtered : Signal
         The postsynaptic activity, :math:`a_j`.
     theta : Signal
-        The modification threshold, :math:`\\theta_j`.
+        The modification threshold, :math:`\theta_j`.
     delta : Signal
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
@@ -52,7 +52,7 @@ class SimBCM(Operator):
     tag : str or None
         A label associated with the operator, for debugging purposes.
     theta : Signal
-        The modification threshold, :math:`\\theta_j`.
+        The modification threshold, :math:`\theta_j`.
 
     Notes
     -----
@@ -94,18 +94,18 @@ class SimBCM(Operator):
 
 
 class SimOja(Operator):
-    """Calculate connection weight change according to the Oja rule.
+    r"""Calculate connection weight change according to the Oja rule.
 
     Implements the Oja learning rule of the form
 
-    .. math:: \Delta \omega_{ij} = \kappa (a_i a_j - \\beta a_j^2 \omega_{ij})
+    .. math:: \Delta \omega_{ij} = \kappa (a_i a_j - \beta a_j^2 \omega_{ij})
 
     where
 
     * :math:`\kappa` is a scalar learning rate,
     * :math:`a_i` is the activity of a presynaptic neuron,
     * :math:`a_j` is the activity of a postsynaptic neuron,
-    * :math:`\\beta` is a scalar forgetting rate, and
+    * :math:`\beta` is a scalar forgetting rate, and
     * :math:`\omega_{ij}` is the connection weight between the two neurons.
 
     Parameters
@@ -121,14 +121,14 @@ class SimOja(Operator):
     learning_rate : float
         The scalar learning rate, :math:`\kappa`.
     beta : float
-        The scalar forgetting rate, :math:`\\beta`.
+        The scalar forgetting rate, :math:`\beta`.
     tag : str, optional (Default: None)
         A label associated with the operator, for debugging purposes.
 
     Attributes
     ----------
     beta : float
-        The scalar forgetting rate, :math:`\\beta`.
+        The scalar forgetting rate, :math:`\beta`.
     delta : Signal
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
@@ -189,7 +189,7 @@ class SimOja(Operator):
 
 
 class SimVoja(Operator):
-    """Simulates a simplified version of Oja's rule in the vector space.
+    r"""Simulates a simplified version of Oja's rule in the vector space.
 
     See :doc:`examples/learn_associations` for details.
 

@@ -42,6 +42,7 @@ class Compare(Module):
                 neurons_per_multiply, dimensions,
                 input_magnitude=input_magnitude)
 
+            # pylint: disable=invalid-name
             self.inputA = nengo.Node(size_in=dimensions, label='inputA')
             self.inputB = nengo.Node(size_in=dimensions, label='inputB')
             self.output = nengo.Node(size_in=1, label='output')

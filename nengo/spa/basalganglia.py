@@ -30,6 +30,7 @@ class BasalGanglia(Module):
                  label=None, seed=None, add_to_container=None):
         self.actions = actions
         self.input_synapse = input_synapse
+        self.spa = None
         self._bias = None
         Module.__init__(self, label, seed, add_to_container)
         nengo.networks.BasalGanglia(dimensions=self.actions.count, net=self)
@@ -65,7 +66,8 @@ class BasalGanglia(Module):
             for c in cond.items:
                 if isinstance(c, DotProduct):
                     if ((isinstance(c.item1, Source) and c.item1.inverted) or
-                       (isinstance(c.item2, Source) and c.item2.inverted)):
+                            (isinstance(c.item2, Source)
+                             and c.item2.inverted)):
                         raise NotImplementedError(
                             "Inversion in subexpression '%s' from action '%s' "
                             "is not supported by the Basal Ganglia." %
@@ -174,6 +176,7 @@ class BasalGanglia(Module):
                 "Only 1-dimensional sources can be scalar inputs")
 
         try:
+            # pylint: disable=eval-used
             scale = float(eval(source.transform.symbol))
         except ValueError:
             raise ValidationError("Transform must be scalar; got '%s'"

@@ -32,7 +32,7 @@ class Factory(object):
     def __str__(self):
         try:
             inst = self()
-        except:
+        except Exception:
             inst = "%s(args=%s, kwargs=%s)" % (
                 self.klass, self.args, self.kwargs)
         return str(inst)
@@ -40,7 +40,7 @@ class Factory(object):
     def __repr__(self):
         try:
             inst = self()
-        except:
+        except Exception:
             inst = "<%r instance>" % (self.klass.__name__)
         return repr(inst)
 
@@ -134,7 +134,7 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
 
     subsolvers = [lstsq.Conjgrad, lstsq.BlockConjgrad]
     for subsolver in subsolvers:
-        x, info = Solver(solver=subsolver(tol=tol))(A, b, rng=get_rng())
+        x, _ = Solver(solver=subsolver(tol=tol))(A, b, rng=get_rng())
         rel_rmse = rms(x - x0) / rms(x0)
         assert rel_rmse < 4 * tol
         # the above 4 * tol is just a heuristic; the main purpose of this
@@ -405,7 +405,7 @@ def test_eval_points_static(plt, rng):
 
     rmses_norm1 = rmses - rmses.mean(0, keepdims=True)
     rmses_norm2 = (rmses - rmses.mean(0, keepdims=True)
-                   ) / rmses.std(0, keepdims=True)
+                  ) / rmses.std(0, keepdims=True)
 
     def make_plot(rmses):
         mean = rmses.mean(1)

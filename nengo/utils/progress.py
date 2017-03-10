@@ -196,7 +196,7 @@ class TerminalProgressBar(ProgressBar):
             self.task, int(100 * progress.progress))
         try:
             width, _ = get_terminal_size()
-        except:
+        except Exception:
             width = 80
         progress_width = max(0, width - len(line))
         progress_str = (
@@ -214,7 +214,7 @@ class TerminalProgressBar(ProgressBar):
     def _get_finished_line(self, progress):
         try:
             width, _ = get_terminal_size()
-        except:
+        except Exception:
             width = 80
         line = "{} finished in {}.".format(
             self.task,
@@ -514,4 +514,4 @@ def wrap_with_progressupdater(task, progress_bar=True):
     else:
         raise ValidationError(
             "must be a boolean or instance of ProgressBar or ProgressUpdater "
-            "(got %r)" % type(progress_bar).__name__,  attr='progress_bar')
+            "(got %r)" % type(progress_bar).__name__, attr='progress_bar')

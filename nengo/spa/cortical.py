@@ -33,6 +33,7 @@ class Cortical(Module):
         self.actions = actions
         self.synapse = synapse
         self.neurons_cconv = neurons_cconv
+        self.spa = None
 
     def on_add(self, spa):
         Module.on_add(self, spa)

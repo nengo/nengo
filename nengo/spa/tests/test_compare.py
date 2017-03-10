@@ -32,7 +32,7 @@ def test_run(Simulator, seed):
 
         model.input = spa.Input(compare_A=inputA, compare_B='A')
 
-    compare, vocab = model.get_module_output('compare')
+    compare, _ = model.get_module_output('compare')
 
     with model:
         p = nengo.Probe(compare, 'output', synapse=0.03)

@@ -23,21 +23,21 @@ def test_probe_all_recursive(recursive):
     # test top level probing
     total_number_probes1 = len(
         ens1.probeable) + len(node1.probeable) + len(conn.probeable)
-    assert(len(model.probes) == total_number_probes1)
+    assert len(model.probes) == total_number_probes1
 
     # test dictionary
-    assert(len(probes[ens1]) == len(ens1.probeable))
-    assert(len(probes[node1]) == len(node1.probeable))
-    assert(len(probes[conn]) == len(conn.probeable))
+    assert len(probes[ens1]) == len(ens1.probeable)
+    assert len(probes[node1]) == len(node1.probeable)
+    assert len(probes[conn]) == len(conn.probeable)
 
     # test recursive probing
     if recursive:
         total_number_probes2 = len(ens2.probeable) + len(node2.probeable)
-        assert(len(subnet.probes) == total_number_probes2)
-        assert(len(probes[ens2]) == len(ens2.probeable))
-        assert(len(probes[node2]) == len(node2.probeable))
+        assert len(subnet.probes) == total_number_probes2
+        assert len(probes[ens2]) == len(ens2.probeable)
+        assert len(probes[node2]) == len(node2.probeable)
     else:
-        assert(len(subnet.probes) == 0)
+        assert len(subnet.probes) == 0
         assert ens2 not in probes
 
 
@@ -57,8 +57,8 @@ def test_probe_all_options():
         nengo.Ensemble: ['decoded_output']})
 
     # only probes spikes and decoded output of the ensembles
-    assert(len(model.probes) == 1)
-    assert(len(subnet.probes) == 1)
+    assert len(model.probes) == 1
+    assert len(subnet.probes) == 1
 
 
 def test_probe_all_kwargs():

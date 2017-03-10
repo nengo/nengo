@@ -115,7 +115,7 @@ def checked_call(func, *args, **kwargs):
     """
     try:
         return CheckedCall(func(*args, **kwargs), True)
-    except:
+    except Exception:
         tb = inspect.trace()
         if not len(tb) or tb[-1][0] is not inspect.currentframe():
             raise  # exception occurred inside func
@@ -141,7 +141,7 @@ def execfile(path, globals, locals=None):
         source = fp.read()
 
     code = compile(source, path, "exec")
-    exec(code, globals, locals)
+    exec(code, globals, locals)  # pylint: disable=exec-used
 
 
 def groupby(objects, key, hashable=None, force_list=True):
@@ -198,7 +198,7 @@ def groupby(objects, key, hashable=None, force_list=True):
 if hasattr(os, 'terminal_size'):
     terminal_size = os.terminal_size
 else:
-    terminal_size = collections.namedtuple(
+    terminal_size = collections.namedtuple(  # pylint: disable=invalid-name
         'terminal_size', ['columns', 'lines'])
 
 
@@ -210,11 +210,11 @@ else:
         w, h = fallback
         try:
             w = int(os.environ['COLUMNS'])
-        except:
+        except (KeyError, ValueError):
             pass
         try:
             h = int(os.environ['LINES'])
-        except:
+        except (KeyError, ValueError):
             pass
         return terminal_size(w, h)
 

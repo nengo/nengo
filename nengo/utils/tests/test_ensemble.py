@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 import numpy as np
-import mpl_toolkits.mplot3d  # noqa: F401
+import mpl_toolkits.mplot3d  # noqa: F401, pylint: disable=unused-import
 import pytest
 
 import nengo

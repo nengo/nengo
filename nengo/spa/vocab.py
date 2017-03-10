@@ -222,6 +222,7 @@ class Vocabulary(object):
         # implementation, this will automatically create new semantic
         # pointers as needed.
         try:
+            # pylint: disable=eval-used
             value = eval(text, {}, self)
         except NameError:
             raise SpaParseError(

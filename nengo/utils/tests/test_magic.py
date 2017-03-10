@@ -2,6 +2,7 @@ import inspect
 
 from nengo.utils.magic import decorator, memoize
 
+# pylint: disable=global-statement
 state = None  # Used to make sure decorators are running
 
 
@@ -15,7 +16,7 @@ def _test_decorated(obj):
     state = 'not run'
 
     # Make sure decorated function looks like non-decorated
-    assert obj.__name__ == 'f'
+    assert obj.__name__.lower() == 'f'
     assert obj.__doc__ == "Return 1."
 
 
@@ -183,22 +184,22 @@ def test_class():
         return inst
 
     @test_decorator
-    class f(object):
+    class F(object):
         """Return 1."""
         def __init__(self, a, b):
             self.a = a
             self.b = b
 
-    _test_decorated(f)
-    inst = f('a', 'b')
+    _test_decorated(F)
+    inst = F('a', 'b')
     assert inst.a == 'a' and inst.b == 'b'
     assert inst.ran
-    assert type(inst) == f.__wrapped__
-    assert type(inst) == f.__wrapped__
+    assert type(inst) == F.__wrapped__
+    assert type(inst) == F.__wrapped__
 
     # Make sure introspection works
     # Note: for classes, the decorator isn't part of the source. Weird!
-    assert inspect.getsource(f) == ('    class f(object):\n'
+    assert inspect.getsource(F) == ('    class F(object):\n'
                                     '        """Return 1."""\n'
                                     '        def __init__(self, a, b):\n'
                                     '            self.a = a\n'

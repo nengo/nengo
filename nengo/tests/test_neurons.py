@@ -28,7 +28,7 @@ def test_lif_builtin(rng):
     reftime = np.zeros_like(J)
 
     spikes = np.zeros((int(t_final / dt),) + J.shape)
-    for i, spikes_i in enumerate(spikes):
+    for spikes_i in spikes:
         lif.step_math(dt, J, spikes_i, voltage, reftime)
 
     math_rates = lif.rates(x, gain, bias)
@@ -304,6 +304,7 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     out_data = []
     dts = (0.0001, 0.001)
     colors = ('b', 'g', 'r')
+    dt = None
     for c, dt in zip(colors, dts):
         with Simulator(m, dt=dt, seed=seed+1) as sim:
             sim.run(0.1)

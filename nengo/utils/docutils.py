@@ -120,7 +120,7 @@ class NotebookDirective(Directive):
         self.state_machine.insert_input([link_rst], rst_file)
 
         # Create notebook node
-        nb_node = notebook_node(
+        nb_node = NotebookNode(
             '', evaluated_html, format='html', source=nb_path)
         nb_node.source, nb_node.line = (
             self.state_machine.get_source_and_line(self.lineno))
@@ -157,7 +157,7 @@ def formatted_link(path, text=None):
     return "`%s <%s>`__" % (text, path)
 
 
-class notebook_node(nodes.raw):
+class NotebookNode(nodes.raw):
     """An evaluated IPython notebook"""
 
 
@@ -178,6 +178,6 @@ def setup(app):
     setup.app = app
     setup.config = app.config
     setup.confdir = app.confdir
-    app.add_node(notebook_node,
+    app.add_node(NotebookNode,
                  html=(visit_notebook_node, depart_notebook_node))
     app.add_directive('notebook', NotebookDirective)

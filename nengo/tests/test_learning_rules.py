@@ -338,7 +338,7 @@ def test_learningrule_attr(seed):
         assert rule.connection is conn and rule.learning_rule_type is rule_type
 
     with nengo.Network(seed=seed):
-        a, b, e = [nengo.Ensemble(10, 2) for i in range(3)]
+        a, b, _ = [nengo.Ensemble(10, 2) for i in range(3)]
         T = np.ones((10, 10))
 
         r1 = PES()

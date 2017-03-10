@@ -307,7 +307,7 @@ class Voja(LearningRuleType):
 class LearningRuleTypeParam(Parameter):
     def validate(self, instance, rule):
         if is_iterable(rule):
-            for r in (itervalues(rule) if isinstance(rule, dict) else rule):
+            for r in itervalues(rule) if isinstance(rule, dict) else rule:
                 self.validate_rule(instance, r)
         elif rule is not None:
             self.validate_rule(instance, rule)

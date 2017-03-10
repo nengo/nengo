@@ -3,9 +3,9 @@ import warnings
 import numpy as np
 
 import nengo
-from .ensemblearray import EnsembleArray
 from nengo.dists import Choice, Exponential, Uniform
 from nengo.exceptions import ValidationError
+from nengo.networks.ensemblearray import EnsembleArray
 from nengo.utils.compat import is_iterable, range
 from nengo.utils.network import with_self
 
@@ -137,6 +137,10 @@ class AssociativeMemory(nengo.Network):
                 # am_ensembles have [1] encoders
             else:
                 self.inhibit = None
+
+            self.thresh_bias = None
+            self.thresholded_utilities = None
+
         self.add_input_mapping("input", input_vectors, input_scales)
         self.add_output_mapping("output", output_vectors)
 

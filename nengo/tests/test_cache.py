@@ -83,7 +83,7 @@ def test_decoder_cache(tmpdir):
 
         solver_args = get_solver_test_args()
         solver_args['gain'] *= 2
-        decoders3, solver_info3 = cache.wrap_solver(solver_mock)(**solver_args)
+        decoders3, _ = cache.wrap_solver(solver_mock)(**solver_args)
         assert SolverMock.n_calls[solver_mock] == 2
         assert np.any(decoders1 != decoders3)
 
@@ -307,8 +307,9 @@ def test_cache_works(tmpdir, RefSimulator, seed):
         nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
     assert len(os.listdir(cache_dir)) == 0
-    with RefSimulator(model, model=nengo.builder.Model(
-            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
+    sim_model = nengo.builder.Model(
+        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))
+    with RefSimulator(model, model=sim_model):
         assert len(os.listdir(cache_dir)) == 2  # index, and *.nco
 
 
@@ -320,8 +321,9 @@ def test_cache_not_used_without_seed(tmpdir, RefSimulator):
         nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
     assert len(os.listdir(cache_dir)) == 0
-    with RefSimulator(model, model=nengo.builder.Model(
-            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
+    sim_model = nengo.builder.Model(
+        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))
+    with RefSimulator(model, model=sim_model):
         assert len(os.listdir(cache_dir)) == 1  # index
 
 
@@ -330,8 +332,9 @@ def build_many_ensembles(cache_dir, RefSimulator):
         for _ in range(100):
             nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
-    with RefSimulator(model, model=nengo.builder.Model(
-            dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
+    sim_model = nengo.builder.Model(
+        dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))
+    with RefSimulator(model, model=sim_model):
         pass
 
 

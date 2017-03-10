@@ -267,7 +267,7 @@ class CacheIndex(object):
     def __getitem__(self, key):
         return self._index[key]
 
-    def __setitem__(self, key):
+    def __setitem__(self, key, value):
         raise TypeError("Index is readonly.")
 
     def __delitem__(self, key):
@@ -300,7 +300,7 @@ class CacheIndex(object):
             with open(self.legacy_path, 'r') as lf:
                 text = lf.read()
             return tuple(int(x.strip()) for x in text.split('.'))
-        except:
+        except Exception:
             return (-1, -1)
 
 
@@ -355,7 +355,7 @@ class WriteableCacheIndex(CacheIndex):
         with self._lock:
             try:
                 self._load_index_file()
-            except:
+            except (IOError, OSError, pickle.UnpicklingError):
                 # If we can't load the index file, the cache is corrupted,
                 # so we invalidate it (delete all files in the cache)
                 self._reinit()
@@ -666,7 +666,7 @@ class DecoderCache(object):
                 with open(path, 'rb') as f:
                     f.seek(start)
                     solver_info, decoders = nco.read(f)
-            except:
+            except Exception:
                 logger.debug("Cache miss [%s].", key)
                 decoders, solver_info = solver_fn(
                     solver, neuron_type, gain, bias, x, targets, rng=rng, E=E)
@@ -682,8 +682,9 @@ class DecoderCache(object):
 
         return cached_solver
 
+    @classmethod
     def _get_cache_key(
-            self, solver, neuron_type, gain, bias, x, targets, rng, E):
+            cls, solver, neuron_type, gain, bias, x, targets, rng, E):
         h = hashlib.sha1()
 
         if PY2:

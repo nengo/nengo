@@ -1,3 +1,6 @@
+# pylint: disable=import-error,unused-import,undefined-variable
+# pylint: disable=ungrouped-imports
+
 from __future__ import absolute_import
 
 import collections
@@ -24,6 +27,7 @@ if PY2:
     itervalues = lambda d: d.itervalues()
 
     # We have to put this in an exec call because it's a syntax error in Py3+
+    # pylint: disable=exec-used
     exec('def reraise(tp, value, tb):\n raise tp, value, tb')
 
     def ensure_bytes(s):
@@ -81,7 +85,7 @@ else:
     TextIO = StringIO
     string_types = (str,)
     int_types = (int,)
-    range = range
+    range = range  # pylint: disable=invalid-name
     ResourceWarning = ResourceWarning
 
     # No iterkeys; use ``for key in dict:`` instead
@@ -138,7 +142,7 @@ def with_metaclass(meta, *bases):
     Code snippet from Armin Ronacher:
     http://lucumr.pocoo.org/2013/5/21/porting-to-python-3-redux/
     """
-    class metaclass(meta):
+    class Metaclass(meta):
         __call__ = type.__call__
         __init__ = type.__init__
 
@@ -146,4 +150,4 @@ def with_metaclass(meta, *bases):
             if this_bases is None:
                 return type.__new__(cls, name, (), d)
             return meta(name, bases, d)
-    return metaclass('temporary_class', None, {})
+    return Metaclass('temporary_class', None, {})
