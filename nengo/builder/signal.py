@@ -30,6 +30,13 @@ class Signal(object):
     readonly : bool, optional (Default: False)
         Whether this signal and its related live data should be marked as
         readonly. Writing to these arrays will raise an exception.
+    offset : int, optional (Default: 0)
+        For a signal view this gives the offset of the view from the base
+        ``initial_value`` in bytes. This might differ from the offset
+        of the NumPy array view provided as ``initial_value`` if the base
+        is a view already (in which case the signal base offset will be 0
+        because it starts where the view starts. That NumPy view can have
+        an offset of itself).
     """
 
     # Set assert_named_signals True to raise an Exception
@@ -148,7 +155,15 @@ class Signal(object):
 
     @property
     def offset(self):
-        """(int) Offset of data from base in bytes."""
+        """(int) Offset of data from base in bytes.
+
+        For a signal view this gives the offset of the view from the base
+        ``initial_value`` in bytes. This might differ from the offset
+        of the NumPy array view provided as ``initial_value`` if the base
+        is a view already (in which case the signal base offset will be 0
+        because it starts where the view starts. That NumPy view can have
+        an offset of itself).
+        """
         return self._offset
 
     @property
