@@ -1,7 +1,7 @@
 import nengo
 import numpy as np
 from nengo.spa.module import Module
-from nengo.spa.selection import ThresholdingArray, WTA
+from nengo.spa.selection import IA, ThresholdingArray, WTA
 from nengo.spa.vocab import VocabularyOrDimParam
 from nengo.utils.network import with_self
 
@@ -73,6 +73,22 @@ class AssociativeMemory(Module):
             self.selection.output, self.default_ens,
             transform=-np.ones(
                 (1, self.selection.output.size_out)) / min_activation_value)
+
+
+class IaAssocMem(AssociativeMemory):
+    def __init__(
+            self, input_vocab, output_vocab=None, input_keys=None,
+            output_keys=None, n_neurons=50, label=None, seed=None,
+            add_to_container=None, vocabs=None, **selection_net_args):
+        super(IaAssocMem, self).__init__(
+            selection_net=IA,
+            input_vocab=input_vocab, output_vocab=output_vocab,
+            input_keys=input_keys, output_keys=output_keys,
+            n_neurons=n_neurons, label=label, seed=seed,
+            add_to_container=add_to_container, vocabs=vocabs,
+            **selection_net_args)
+        self.input_reset = self.selection.input_reset
+        self.inputs['reset'] = (self.input_reset, None)
 
 
 class ThresholdingAssocMem(AssociativeMemory):

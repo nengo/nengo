@@ -2,7 +2,50 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 import nengo
-from nengo.spa.selection import ThresholdingArray, WTA
+from nengo.spa.selection import IA, ThresholdingArray, WTA
+
+
+def test_ia(Simulator, plt, seed):
+    def input_fn(t):
+        if t < 0.2:
+            return [0.8, 0.5, 0.2, -0.1]
+        else:
+            return [0.1, -0.4, 0., 0.3]
+
+    with nengo.Network(seed=seed) as m:
+        ia = IA(50, 4)
+        in_node = nengo.Node(input_fn)
+        nengo.Connection(in_node, ia.input)
+
+        reset_node = nengo.Node(lambda t: 0.4 < t < 0.5)
+        nengo.Connection(reset_node, ia.input_reset, synapse=0.1)
+
+        in_p = nengo.Probe(in_node)
+        reset_p = nengo.Probe(reset_node)
+        accum_p = nengo.Probe(ia.accumulators.output, synapse=0.01)
+        out_p = nengo.Probe(ia.output, synapse=0.03)
+
+    with Simulator(m) as sim:
+        sim.run(0.9)
+    t = sim.trange()
+
+    plt.subplot(3, 1, 1)
+    plt.plot(t, sim.data[in_p])
+    plt.plot(t, sim.data[reset_p], c='k')
+    plt.ylabel("Input")
+    plt.subplot(3, 1, 2)
+    plt.plot(t, sim.data[accum_p])
+    plt.ylabel("Accumulators")
+    plt.subplot(3, 1, 3)
+    plt.plot(t, sim.data[out_p])
+    plt.ylabel("Output")
+    plt.xlabel("Time")
+
+    first_selection = np.logical_and(0.15 < t, t < 0.4)
+    assert np.all(sim.data[out_p][first_selection, 0] > 0.85)
+    assert_allclose(sim.data[out_p][first_selection, 1:], 0., atol=0.05)
+    assert np.all(sim.data[out_p][t > 0.85, 3] > 0.85)
+    assert_allclose(sim.data[out_p][t > 0.85, :3], 0., atol=0.05)
 
 
 def test_thresholding_array(Simulator, plt, seed):
