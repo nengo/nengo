@@ -5,7 +5,7 @@ import nengo
 from nengo.spa.selection import ThresholdingArray, WTA
 
 
-def test_thresholding_array(Simulator, plt, seed, rng):
+def test_thresholding_array(Simulator, plt, seed):
     with nengo.Network(seed=seed) as m:
         thresholding = ThresholdingArray(50, 4, 0.2, function=lambda x: x > 0.)
         in_node = nengo.Node([0.8, 0.5, 0.2, -0.1], label='input')
@@ -39,7 +39,28 @@ def test_thresholding_array(Simulator, plt, seed, rng):
     assert np.all(sim.data[thresholded_p][t > 0.15, 2:] < 0.001)
 
 
-def test_wta(Simulator, plt, seed, rng):
+def test_thresholding_array_output_shift(Simulator, plt, seed):
+    with nengo.Network(seed=seed) as m:
+        thresholding = ThresholdingArray(50, 2, 0.5)
+        in_node = nengo.Node([0.7, 0.4])
+        nengo.Connection(in_node, thresholding.input)
+        p = nengo.Probe(thresholding.output, synapse=0.03)
+
+    with Simulator(m) as sim:
+        sim.run(0.2)
+    t = sim.trange()
+
+    plt.plot(t, sim.data[p])
+    plt.axhline(y=0.7)
+    plt.ylim(0., 1.)
+    plt.xlabel("Time")
+    plt.ylabel("Output")
+
+    assert_allclose(sim.data[p][t > 0.15, 0], 0.7, atol=0.05)
+    assert_allclose(sim.data[p][:, 1], 0.)
+
+
+def test_wta(Simulator, plt, seed):
     def input_func(t):
         if t < 0.2:
             return np.array([1.0, 0.8, 0.0, 0.0])

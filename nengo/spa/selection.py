@@ -2,17 +2,11 @@
 
 import nengo
 import numpy as np
-from nengo.utils.compat import is_iterable
 
 
 def ThresholdingArray(
         n_neurons, n_ensembles, threshold, intercept_width=0.15, function=None,
         radius=1., **kwargs):
-    if not is_iterable(threshold):
-        threshold = threshold * np.ones((n_ensembles, 1))
-    else:
-        threshold = np.atleast_2d(threshold)
-
     with nengo.Network(**kwargs) as net:
         with nengo.presets.ThresholdingEnsembles(
                 0., intercept_width, radius=radius):
@@ -21,10 +15,11 @@ def ThresholdingArray(
 
         net.bias = nengo.Node(1.)
         nengo.Connection(net.bias, net.thresholding.input,
-                         transform=-threshold)
+                         transform=-threshold * np.ones((n_ensembles, 1)))
 
         net.input = net.thresholding.input
         net.thresholded = net.thresholding.output
+
         if function is None:
             net.output = net.thresholding.output
         else:
