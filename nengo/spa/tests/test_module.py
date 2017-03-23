@@ -105,20 +105,20 @@ def test_spa_vocab():
 
     # create a model with a vocab and check that it's filled
     va = spa.Vocabulary(16)
-    va.parse("PANTS")
+    va.populate("PANTS")
     vb = spa.Vocabulary(32)
-    vb.parse("SHOES")
+    vb.populate("SHOES")
     model = spa.Module(vocabs=VocabularyMap([va, vb]))
-    assert model.vocabs[16].keys == ["PANTS"]
-    assert model.vocabs[32].keys == ["SHOES"]
+    assert list(model.vocabs[16].keys()) == ["PANTS"]
+    assert list(model.vocabs[32].keys()) == ["SHOES"]
 
     # warning on vocabs with duplicate dimensions
     vc = spa.Vocabulary(16)
-    vc.parse("SOCKS")
+    vc.populate("SOCKS")
     with pytest.warns(UserWarning):
         model = spa.Module(vocabs=VocabularyMap([va, vb, vc]))
-    assert model.vocabs[16].keys == ["SOCKS"]
-    assert model.vocabs[32].keys == ["SHOES"]
+    assert list(model.vocabs[16].keys()) == ["SOCKS"]
+    assert list(model.vocabs[32].keys()) == ["SHOES"]
 
 
 def test_hierarchical(Simulator, seed, plt):
@@ -226,9 +226,9 @@ def test_no_magic_vocab_transform():
     (16, 32, 'translate(a, b)', 'v2')])
 def test_casting_vocabs(d1, d2, method, lookup, Simulator, plt, rng):
     v1 = spa.Vocabulary(d1, rng=rng)
-    v1.parse('A')
+    v1.populate('A')
     v2 = spa.Vocabulary(d2, rng=rng)
-    v2.parse('A')
+    v2.populate('A')
 
     with spa.Module() as model:
         model.a = spa.State(vocab=v1)

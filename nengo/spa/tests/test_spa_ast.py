@@ -19,7 +19,7 @@ def test_symbol():
     assert ast == Symbol('A')
     assert str(ast) == 'A'
 
-    vocab_type = TVocabulary(spa.Vocabulary(16))
+    vocab_type = TVocabulary(spa.Vocabulary(16, strict=False))
     ast.infer_types(None, vocab_type)
     assert ast.type == vocab_type
 
@@ -55,7 +55,7 @@ def test_scalar_multiplication():
     assert ast == Product(2, Symbol('A'))
     assert str(ast) == '2 * A'
 
-    vocab_type = TVocabulary(spa.Vocabulary(16))
+    vocab_type = TVocabulary(spa.Vocabulary(16, strict=False))
     ast.infer_types(None, vocab_type)
     assert ast.type == vocab_type
 
@@ -63,7 +63,7 @@ def test_scalar_multiplication():
     assert ast == Product(Symbol('A'), 2)
     assert str(ast) == 'A * 2'
 
-    vocab_type = TVocabulary(spa.Vocabulary(16))
+    vocab_type = TVocabulary(spa.Vocabulary(16, strict=False))
     ast.infer_types(None, vocab_type)
     assert ast.type == vocab_type
 
@@ -92,7 +92,7 @@ def test_binary_operations(symbol, klass):
     assert ast == klass(Symbol('A'), Symbol('B'))
     assert str(ast) == 'A {} B'.format(symbol)
 
-    vocab_type = TVocabulary(spa.Vocabulary(16))
+    vocab_type = TVocabulary(spa.Vocabulary(16, strict=False))
     ast.infer_types(None, vocab_type)
     assert ast.type == vocab_type
 
@@ -130,7 +130,7 @@ def test_unary(symbol, klass):
     assert ast == klass(Symbol('A'))
     assert str(ast) == symbol + 'A'
 
-    vocab_type = TVocabulary(spa.Vocabulary(16))
+    vocab_type = TVocabulary(spa.Vocabulary(16, strict=False))
     ast.infer_types(None, vocab_type)
     assert ast.type == vocab_type
 

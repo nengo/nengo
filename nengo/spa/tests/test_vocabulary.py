@@ -1,10 +1,11 @@
-import re
+# -*- coding: utf-8 -*-
 
 import numpy as np
 import pytest
 
-from nengo.exceptions import SpaParseError, ValidationError
+from nengo.exceptions import NengoWarning, SpaParseError, ValidationError
 from nengo.spa import Vocabulary, VocabularyMap
+from nengo.spa.pointer import Identity
 from nengo.utils.testing import warns
 
 
@@ -16,29 +17,55 @@ def test_add(rng):
     assert np.allclose(v.vectors, [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
 
-def test_include_pairs(rng):
-    v = Vocabulary(10, rng=rng)
-    v['A']
-    v['B']
-    v['C']
-    assert v.key_pairs is None
-    v.include_pairs = True
-    assert v.key_pairs == ['A*B', 'A*C', 'B*C']
-    v.include_pairs = False
-    assert v.key_pairs is None
-    v.include_pairs = True
-    v['D']
-    assert v.key_pairs == ['A*B', 'A*C', 'B*C', 'A*D', 'B*D', 'C*D']
+def test_populate(rng):
+    v = Vocabulary(64, rng=rng)
 
-    v = Vocabulary(12, include_pairs=True, rng=rng)
-    v['A']
-    v['B']
-    v['C']
-    assert v.key_pairs == ['A*B', 'A*C', 'B*C']
+    v.populate('A')
+    assert 'A' in v
+
+    v.populate('B; C')
+    assert 'B' in v
+    assert 'C' in v
+
+    v.populate('D.unitary()')
+    assert 'D' in v
+    np.testing.assert_almost_equal(np.linalg.norm(v['D'].v), 1.)
+    np.testing.assert_almost_equal(np.linalg.norm((v['D'] * v['D']).v), 1.)
+
+    v.populate('E = A + 2 * B')
+    assert np.allclose(v['E'].v, v.parse('A + 2 * B').v)
+    assert np.linalg.norm(v['E'].v) > 2.
+
+    v.populate('F = (A + 2 * B).normalized()')
+    assert np.allclose(v['F'].v, v.parse('A + 2 * B').normalized().v)
+    np.testing.assert_almost_equal(np.linalg.norm(v['F'].v), 1.)
+
+    v.populate('G = A; H')
+    assert np.allclose(v['G'].v, v['A'].v)
+    assert 'H' in v
+
+    # Assigning non-existing pointer
+    with pytest.raises(NameError):
+        v.populate('I = J')
+
+    # Redefining
+    with pytest.raises(ValidationError):
+        v.populate('H = A')
+
+    # Calling non existing function
+    with pytest.raises(AttributeError):
+        v.populate('I = H.invalid()')
+
+    # invalid names: lowercase, unicode
+    with pytest.raises(SpaParseError):
+        v.populate('x = A')
+    # with pytest.raises(SpaParseError):
+    v.populate(u'Aα = A')
 
 
 def test_parse(rng):
     v = Vocabulary(64, rng=rng)
+    v.populate('A; B; C')
     A = v.parse('A')
     B = v.parse('B')
     C = v.parse('C')
@@ -55,6 +82,21 @@ def test_parse(rng):
         v.parse('A((')
     with pytest.raises(SpaParseError):
         v.parse('"hello"')
+    with pytest.raises(SpaParseError):
+        v.parse('"hello"')
+
+
+def test_parse_n(rng):
+    v = Vocabulary(64, rng=rng)
+    v.populate('A; B; C')
+    A = v.parse('A')
+    B = v.parse('B')
+
+    parsed = v.parse_n('A', 'A*B', 'A+B', '3')
+    assert np.allclose(parsed[0].v, A.v)
+    assert np.allclose(parsed[1].v, (A * B).v)
+    assert np.allclose(parsed[2].v, (A + B).v)
+    assert np.allclose(parsed[3].v, 3 * Identity(64).v)
 
 
 def test_invalid_dimensions():
@@ -66,34 +108,6 @@ def test_invalid_dimensions():
         Vocabulary(-1)
 
 
-def test_identity(rng):
-    v = Vocabulary(64, rng=rng)
-    assert np.allclose(v.identity.v, np.eye(64)[0])
-
-
-def test_text(rng):
-    v = Vocabulary(64, rng=rng)
-    x = v.parse('A+B+C')
-    y = v.parse('-D-E-F')
-    ptr = r'-?[01]\.[0-9]{2}[A-F]'
-    assert re.match(';'.join([ptr] * 3), v.text(x))
-    assert re.match(';'.join([ptr] * 2), v.text(x, maximum_count=2))
-    assert re.match(ptr, v.text(x, maximum_count=1))
-    assert len(v.text(x, maximum_count=10).split(';')) <= 10
-    assert re.match(';'.join([ptr] * 4), v.text(x, minimum_count=4))
-    assert re.match(';'.join([ptr.replace('F', 'C')] * 3),
-                    v.text(x, minimum_count=4, terms=['A', 'B', 'C']))
-
-    assert re.match(ptr, v.text(y, threshold=0.6))
-    assert v.text(y, minimum_count=None, threshold=0.6) == ''
-
-    assert v.text(x, join=',') == v.text(x).replace(';', ',')
-    assert re.match(';'.join([ptr] * 2), v.text(x, normalize=True))
-
-    assert v.text([0]*64) == '0.00F'
-    assert v.text(v['D'].v) == '1.00D'
-
-
 def test_capital(rng):
     v = Vocabulary(16, rng=rng)
     with pytest.raises(SpaParseError):
@@ -102,12 +116,14 @@ def test_capital(rng):
         v.parse('A+B+C+a')
 
 
-def test_transform(rng):
-    v1 = Vocabulary(32, rng=rng)
-    v2 = Vocabulary(64, rng=rng)
-    A = v1.parse('A')
-    B = v1.parse('B')
-    C = v1.parse('C')
+def test_transform(recwarn, rng):
+    v1 = Vocabulary(32, strict=False, rng=rng)
+    v2 = Vocabulary(64, strict=False, rng=rng)
+    v1.populate('A; B; C')
+    v2.populate('A; B; C')
+    A = v1['A']
+    B = v1['B']
+    C = v1['C']
 
     # Test transform from v1 to v2 (full vocbulary)
     # Expected: np.dot(t, A.v) ~= v2.parse('A')
@@ -124,52 +140,20 @@ def test_transform(rng):
     assert v2.parse('A').compare(np.dot(t, A.v)) > 0.95
     assert v2.parse('B').compare(np.dot(t, C.v + B.v)) > 0.95
 
-    # Test transform_to when either vocabulary is read-only
-    v1.parse('D')
-    v2.parse('E')
+    # Test warns on missing keys
+    v1.populate('D')
+    D = v1['D']
+    with warns(NengoWarning):
+        v1.transform_to(v2)
 
-    # When both are read-only, transform_to shouldn't add any new items to
-    # either and the transform should be using keys that are the intersection
-    # of both vocabularies
-    v1.readonly = True
-    v2.readonly = True
+    # Test populating missing keys
+    t = v1.transform_to(v2, populate=True)
+    assert v2.parse('D').compare(np.dot(t, D.v)) > 0.95
 
-    t = v1.transform_to(v2)
-
-    assert v1.keys == ['A', 'B', 'C', 'D']
-    assert v2.keys == ['A', 'B', 'C', 'E']
-
-    # When one is read-only, transform_to should add any new items to the non
-    # read-only vocabulary
-    v1.readonly = False
-    v2.readonly = True
-
-    t = v1.transform_to(v2)
-
-    assert v1.keys == ['A', 'B', 'C', 'D', 'E']
-    assert v2.keys == ['A', 'B', 'C', 'E']
-
-    # When one is read-only, transform_to should add any new items to the non
-    # read-only vocabulary
-    v1.readonly = True
-    v2.readonly = False
-
-    t = v1.transform_to(v2)
-
-    assert v1.keys == ['A', 'B', 'C', 'D', 'E']
-    assert v2.keys == ['A', 'B', 'C', 'E', 'D']
-
-
-def test_prob_cleanup(rng):
-    v = Vocabulary(64, rng=rng)
-    assert 1.0 > v.prob_cleanup(0.7, 10000) > 0.9999
-    assert 0.9999 > v.prob_cleanup(0.6, 10000) > 0.999
-    assert 0.99 > v.prob_cleanup(0.5, 1000) > 0.9
-
-    v = Vocabulary(128, rng=rng)
-    assert 0.999 > v.prob_cleanup(0.4, 1000) > 0.997
-    assert 0.99 > v.prob_cleanup(0.4, 10000) > 0.97
-    assert 0.9 > v.prob_cleanup(0.4, 100000) > 0.8
+    # Test ignores missing keys in source vocab
+    v2.populate('E')
+    v1.transform_to(v2, populate=True)
+    assert 'E' not in v1
 
 
 def test_create_pointer_warning(rng):
@@ -177,16 +161,12 @@ def test_create_pointer_warning(rng):
 
     # five pointers shouldn't fit
     with warns(UserWarning):
-        v.parse('A')
-        v.parse('B')
-        v.parse('C')
-        v.parse('D')
-        v.parse('E')
+        v.populate('A; B; C; D; E')
 
 
 def test_readonly(rng):
     v1 = Vocabulary(32, rng=rng)
-    v1.parse('A+B+C')
+    v1.populate('A;B;C')
 
     v1.readonly = True
 
@@ -196,56 +176,14 @@ def test_readonly(rng):
 
 def test_subset(rng):
     v1 = Vocabulary(32, rng=rng)
-    v1.parse('A+B+C+D+E+F+G')
+    v1.populate('A; B; C; D; E; F; G')
 
     # Test creating a vocabulary subset
     v2 = v1.create_subset(['A', 'C', 'E'])
-    assert v2.keys == ['A', 'C', 'E']
+    assert list(v2.keys()) == ['A', 'C', 'E']
     assert v2['A'] == v1['A']
     assert v2['C'] == v1['C']
     assert v2['E'] == v1['E']
-    assert v2.parent is v1
-
-    # Test creating a subset from a subset (it should create off the parent)
-    v3 = v2.create_subset(['C', 'E'])
-    assert v3.parent is v2.parent and v2.parent is v1
-
-    v3.include_pairs = True
-    assert v3.key_pairs == ['C*E']
-    assert not v1.include_pairs
-    assert not v2.include_pairs
-
-    # Test transform_to between subsets (should be identity transform)
-    t = v1.transform_to(v2)
-
-    assert v2.parse('A').compare(np.dot(t, v1.parse('A').v)) >= 0.99999999
-
-
-def test_extend(rng):
-    v = Vocabulary(16, rng=rng)
-    v.parse('A+B')
-    assert v.keys == ['A', 'B']
-    assert not v.unitary
-
-    # Test extending the vocabulary
-    v.extend(['C', 'D'])
-    assert v.keys == ['A', 'B', 'C', 'D']
-
-    # Test extending the vocabulary with various unitary options
-    v.extend(['E', 'F'], unitary=['E'])
-    assert v.keys == ['A', 'B', 'C', 'D', 'E', 'F']
-    assert v.unitary == ['E']
-
-    # Check if 'E' is unitary
-    fft_val = np.fft.fft(v['E'].v)
-    fft_imag = fft_val.imag
-    fft_real = fft_val.real
-    fft_norms = np.sqrt(fft_imag ** 2 + fft_real ** 2)
-    assert np.allclose(fft_norms, np.ones(16))
-
-    v.extend(['G', 'H'], unitary=True)
-    assert v.keys == ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-    assert v.unitary == ['E', 'G', 'H']
 
 
 def test_vocabulary_set(rng):

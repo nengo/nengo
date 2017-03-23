@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-from nengo.spa.pointer import SemanticPointer
+from nengo.exceptions import ValidationError
+from nengo.spa.pointer import AbsorbingElement, Identity, SemanticPointer, Zero
 from nengo.utils.compat import range
 
 
@@ -19,18 +20,18 @@ def test_init():
     assert len(a) == 27
     assert np.allclose(a.length(), 1)
 
-    with pytest.raises(Exception):
-        a = SemanticPointer(np.zeros(2, 2))
+    with pytest.raises(ValidationError):
+        a = SemanticPointer(np.zeros((2, 2)))
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         a = SemanticPointer(-1)
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         a = SemanticPointer(0)
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         a = SemanticPointer(1.7)
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         a = SemanticPointer(None)
-    with pytest.raises(Exception):
+    with pytest.raises(TypeError):
         a = SemanticPointer(int)
 
 
@@ -41,10 +42,11 @@ def test_length():
     assert np.allclose(a.length(), 1.2)
 
 
-def test_normalize():
-    a = SemanticPointer([1, 1])
-    a.normalize()
-    assert np.allclose(a.length(), 1)
+def test_normalized():
+    a = SemanticPointer([1, 1]).normalized()
+    b = a.normalized()
+    assert a is not b
+    assert np.allclose(b.length(), 1)
 
 
 def test_str():
@@ -52,30 +54,13 @@ def test_str():
     assert str(a) == '[ 1.  1.]'
 
 
-def test_randomize(rng):
-    a = SemanticPointer(100, rng=rng)
-    std = np.std(a.v)
-    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
-
-    a = SemanticPointer(100)
-    a.randomize(rng=rng)
-    assert len(a) == 100
-    std = np.std(a.v)
-    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
-
-    a = SemanticPointer(5)
-    a.randomize(N=100, rng=rng)
-    assert len(a) == 100
-    std = np.std(a.v)
-    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
-
-
 def test_make_unitary(rng):
     a = SemanticPointer(100, rng=rng)
-    a.make_unitary()
-    assert np.allclose(1, a.length())
-    assert np.allclose(1, (a * a).length())
-    assert np.allclose(1, (a * a * a).length())
+    b = a.unitary()
+    assert a is not b
+    assert np.allclose(1, b.length())
+    assert np.allclose(1, (b * b).length())
+    assert np.allclose(1, (b * b * b).length())
 
 
 def test_add_sub():
@@ -101,7 +86,7 @@ def test_convolution(rng):
     c = a.copy()
     c *= b
 
-    ans = np.fft.ifft(np.fft.fft(a.v) * np.fft.fft(b.v)).real
+    ans = np.fft.irfft(np.fft.rfft(a.v) * np.fft.rfft(b.v))
 
     assert np.allclose((a * b).v, ans)
     assert np.allclose(a.convolve(b).v, ans)
@@ -185,3 +170,26 @@ def test_conv_matrix():
     m = b.get_convolution_matrix()
 
     assert np.allclose((a*b).v, np.dot(m, a.v))
+
+
+def test_identity(rng):
+    p = Identity(64)
+    assert len(p) == 64
+    assert np.sum(p.v) == 1.
+    a = SemanticPointer(64, rng)
+    assert np.allclose(a.v, (a * p).v)
+
+
+def test_absorbing_element(rng):
+    p = AbsorbingElement(64)
+    assert len(p) == 64
+    assert p.length() == 1.
+    a = SemanticPointer(64, rng)
+    assert np.allclose(p.v, np.abs((a * p).normalized().v))
+    assert np.allclose(p.v, np.abs((a * -p).normalized().v))
+
+
+def test_zero():
+    z = Zero(64)
+    assert len(z) == 64
+    assert np.all(z.v == 0.)
