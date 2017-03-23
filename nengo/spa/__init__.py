@@ -1,5 +1,5 @@
 from .actions import Actions
-from .assoc_mem import AssociativeMemory
+from .assoc_mem import AssociativeMemory, ThresholdingAssocMem, WtaAssocMem
 from .basalganglia import BasalGanglia
 from .bind import Bind
 from .compare import Compare

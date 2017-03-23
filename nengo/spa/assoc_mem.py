@@ -13,8 +13,8 @@ class AssociativeMemory(Module):
         'output_vocab', default=None, readonly=True)
 
     def __init__(
-            self, input_vocab, output_vocab=None, input_keys=None,
-            output_keys=None, selection_net=ThresholdingArray, n_neurons=50,
+            self, selection_net, input_vocab, output_vocab=None,
+            input_keys=None, output_keys=None, n_neurons=50,
             label=None, seed=None, add_to_container=None, vocabs=None,
             **selection_net_args):
         super(AssociativeMemory, self).__init__(
