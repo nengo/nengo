@@ -1,14 +1,31 @@
-from nengo.networks.assoc_mem import AssociativeMemory as AssocMem
+"""Associative memory implementations.
+
+See :doc:`examples/associative_memory` for an introduction and examples.
+"""
+
+import nengo
+import numpy as np
 from nengo.spa.module import Module
+from nengo.spa.selection import IA, ThresholdingArray, WTA
+from nengo.spa.vocab import VocabularyOrDimParam
+from nengo.utils.network import with_self
 
 
 class AssociativeMemory(Module):
-    """Associative memory module.
+    """General associative memory module.
 
-    See :doc:`examples/associative_memory` for an introduction and examples.
+    This provides a low-level selection network with the necessary interface
+    to include it within the SPA system.
 
     Parameters
     ----------
+    selection_net : Network
+        The network that is used to select the response. It needs to accept
+        the arguments *n_neurons* (number of neurons to use to represent each
+        possible choice) and *n_ensembles* (number of choices). The returned
+        network needs to have an *input* attribute to which the utilities for
+        each choice are connected and an *output* attribute from which a
+        connection will be created to read the selected output(s).
     input_vocab: list or Vocabulary
         The vocabulary (or list of vectors) to match.
     output_vocab: list or Vocabulary, optional (Default: None)
@@ -19,92 +36,152 @@ class AssociativeMemory(Module):
         A list of strings that correspond to the input vectors.
     output_keys : list, optional (Default: None)
         A list of strings that correspond to the output vectors.
-    default_output_key: str, optional (Default: None)
-        The semantic pointer string to be produced if the input value matches
-        none of vectors in the input vector list.
-    threshold: float, optional (Default: 0.3)
-        The association activation threshold.
-    inhibitable: bool, optional (Default: False)
-        Flag to indicate if the entire associative memory module is
-        inhibitable (i.e., the entire module can be inhibited).
-    wta_output: bool, optional (Default: False)
-        Flag to indicate if output of the associative memory should contain
-        more than one vector. If True, only one vector's output will be
-        produced; i.e. produce a winner-take-all (WTA) output.
-        If False, combinations of vectors will be produced.
-    wta_inhibit_scale: float, optional (Default: 3.0)
-        Scaling factor on the winner-take-all (WTA) inhibitory connections.
-    wta_synapse: float, optional (Default: 0.005)
-        Synapse to use for the winner-take-all (wta) inhibitory connections.
-    threshold_output: bool, optional (Default: False)
-        Adds a threholded output if True.
+    n_neurons : int
+        Number of neurons to represent each choice, passed on to the
+        *selection_net*.
     label : str, optional (Default: None)
         A name for the ensemble. Used for debugging and visualization.
     seed : int, optional (Default: None)
         The seed used for random number generation.
     add_to_container : bool, optional (Default: None)
         Determines if this Network will be added to the current container.
-        If None, will be true if currently within a Network.
+        If None, will be true if currently with
+    vocabs : VocabularyMap, optional (Default: None)
+        Maps dimensionalities to the corresponding default vocabularies.
     """
+    input_vocab = VocabularyOrDimParam(
+        'input_vocab', default=None, readonly=True)
+    output_vocab = VocabularyOrDimParam(
+        'output_vocab', default=None, readonly=True)
 
-    def __init__(self, input_vocab, output_vocab=None,  # noqa: C901
-                 input_keys=None, output_keys=None,
-                 default_output_key=None, threshold=0.3,
-                 inhibitable=False, wta_output=False,
-                 wta_inhibit_scale=3.0, wta_synapse=0.005,
-                 threshold_output=False, label=None, seed=None,
-                 add_to_container=None):
-        super(AssociativeMemory, self).__init__(label, seed, add_to_container)
+    def __init__(
+            self, selection_net, input_vocab, output_vocab=None,
+            input_keys=None, output_keys=None, n_neurons=50,
+            label=None, seed=None, add_to_container=None, vocabs=None,
+            **selection_net_args):
+        super(AssociativeMemory, self).__init__(
+            label=label, seed=seed, add_to_container=add_to_container,
+            vocabs=vocabs)
+
+        if output_vocab is None:
+            output_vocab = input_vocab
+        self.input_vocab = input_vocab
+        self.output_vocab = output_vocab
 
         if input_keys is None:
-            input_keys = input_vocab.keys
-            input_vectors = input_vocab.vectors
+            input_keys = self.input_vocab.keys()
+            input_vectors = self.input_vocab.vectors
         else:
             input_vectors = [input_vocab.parse(key).v for key in input_keys]
 
-        # If output vocabulary is not specified, use input vocabulary
-        # (i.e autoassociative memory)
-        if output_vocab is None:
-            output_vocab = input_vocab
-            output_vectors = input_vectors
-        else:
-            if output_keys is None:
-                output_keys = input_keys
+        if output_keys is None:
+            output_keys = input_keys
+        output_vectors = [output_vocab.parse(key).v for key in output_keys]
 
-            output_vectors = [output_vocab.parse(key).v for key in output_keys]
+        input_vectors = np.asarray(input_vectors)
+        output_vectors = np.asarray(output_vectors)
 
-        if default_output_key is None:
-            default_output_vector = None
-        else:
-            default_output_vector = output_vocab.parse(default_output_key).v
-
-        # Create nengo network
         with self:
-            self.am = AssocMem(input_vectors=input_vectors,
-                               output_vectors=output_vectors,
-                               threshold=threshold,
-                               inhibitable=inhibitable,
-                               label=label, seed=seed,
-                               add_to_container=add_to_container)
+            self.selection = selection_net(
+                n_neurons=n_neurons, n_ensembles=len(input_vectors),
+                label="selection", **selection_net_args)
+            self.input = nengo.Node(size_in=self.input_vocab.dimensions,
+                                    label="input")
+            self.output = nengo.Node(size_in=self.output_vocab.dimensions,
+                                     label="output")
 
-            if default_output_vector is not None:
-                self.am.add_default_output_vector(default_output_vector)
+            nengo.Connection(
+                self.input, self.selection.input, transform=input_vectors)
+            nengo.Connection(
+                self.selection.output, self.output, transform=output_vectors.T)
 
-            if wta_output:
-                self.am.add_wta_network(wta_inhibit_scale, wta_synapse)
+        self.inputs = dict(default=(self.input, self.input_vocab))
+        self.outputs = dict(default=(self.output, self.output_vocab))
 
-            if threshold_output:
-                self.am.add_threshold_to_outputs()
+    @with_self
+    def add_default_output(self, key, min_activation_value, n_neurons=50):
+        """Adds a Semantic Pointer to output when no other pointer is active.
 
-            self.input = self.am.input
-            self.output = self.am.output
+        Parameters
+        ----------
+        key : str
+            Semantic Pointer to output.
+        min_activation_value : float
+            Minimum output of another Semantic Pointer to deactivate the
+            default output.
+        n_neurons : int, optional (Default: 50)
+            Number of neurons used to represent the default Semantic Pointer.
+        """
+        assert not hasattr(self, 'default_ens'), \
+            "Can add default output only once."
 
-            if inhibitable:
-                self.inhibit = self.am.inhibit
+        with nengo.presets.ThresholdingEnsembles(0.):
+            setattr(self, 'default_ens',
+                    nengo.Ensemble(n_neurons, 1, label="default"))
+        setattr(self, 'bias', nengo.Node(1., label="bias"))
+        nengo.Connection(self.bias, self.default_ens)
+        nengo.Connection(
+            self.default_ens, self.output,
+            transform=np.atleast_2d(self.output_vocab.parse(key).v).T)
+        nengo.Connection(
+            self.selection.output, self.default_ens,
+            transform=-np.ones(
+                (1, self.selection.output.size_out)) / min_activation_value)
 
-            self.utilities = self.am.utilities
-            if threshold_output:
-                self.thresholded_utilities = self.am.thresholded_utilities
 
-        self.inputs = dict(default=(self.input, input_vocab))
-        self.outputs = dict(default=(self.output, output_vocab))
+class IaAssocMem(AssociativeMemory):
+    """Associative memory based on the `IA` network.
+
+    See `AssociativeMemory` and `IA` for more information.
+    """
+    def __init__(
+            self, input_vocab, output_vocab=None, input_keys=None,
+            output_keys=None, n_neurons=50, label=None, seed=None,
+            add_to_container=None, vocabs=None, **selection_net_args):
+        super(IaAssocMem, self).__init__(
+            selection_net=IA,
+            input_vocab=input_vocab, output_vocab=output_vocab,
+            input_keys=input_keys, output_keys=output_keys,
+            n_neurons=n_neurons, label=label, seed=seed,
+            add_to_container=add_to_container, vocabs=vocabs,
+            **selection_net_args)
+        self.input_reset = self.selection.input_reset
+        self.inputs['reset'] = (self.input_reset, None)
+
+
+class ThresholdingAssocMem(AssociativeMemory):
+    """Associative memory based on `ThresholdingArray`.
+
+    See `AssociativeMemory` and `ThresholdingArray` for more information.
+    """
+    def __init__(
+            self, threshold, input_vocab, output_vocab=None, input_keys=None,
+            output_keys=None, n_neurons=50, label=None, seed=None,
+            add_to_container=None, vocabs=None, **selection_net_args):
+        selection_net_args['threshold'] = threshold
+        super(ThresholdingAssocMem, self).__init__(
+            selection_net=ThresholdingArray,
+            input_vocab=input_vocab, output_vocab=output_vocab,
+            input_keys=input_keys, output_keys=output_keys,
+            n_neurons=n_neurons, label=label, seed=seed,
+            add_to_container=add_to_container, vocabs=vocabs,
+            **selection_net_args)
+
+
+class WtaAssocMem(AssociativeMemory):
+    """Associative memory based on the `WTA` network.
+
+    See `AssociativeMemory` and `WTA` for more information.
+    """
+    def __init__(
+            self, threshold, input_vocab, output_vocab=None, input_keys=None,
+            output_keys=None, n_neurons=50, label=None, seed=None,
+            add_to_container=None, vocabs=None, **selection_net_args):
+        selection_net_args['threshold'] = threshold
+        super(WtaAssocMem, self).__init__(
+            selection_net=WTA,
+            input_vocab=input_vocab, output_vocab=output_vocab,
+            input_keys=input_keys, output_keys=output_keys,
+            n_neurons=n_neurons, label=label, seed=seed,
+            add_to_container=add_to_container, vocabs=vocabs,
+            **selection_net_args)
