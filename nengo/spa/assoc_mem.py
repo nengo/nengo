@@ -13,21 +13,27 @@ class AssociativeMemory(Module):
         The vocabulary (or list of vectors) to match.
     output_vocab: list or Vocabulary, optional (Default: None)
         The vocabulary (or list of vectors) to be produced for each match. If
-        None, the associative memory will act like an autoassociative memory
-        (cleanup memory).
-    input_keys : list, optional (Default: None)
-        A list of strings that correspond to the input vectors.
-    output_keys : list, optional (Default: None)
-        A list of strings that correspond to the output vectors.
-    default_output_key: str, optional (Default: None)
-        The semantic pointer string to be produced if the input value matches
-        none of vectors in the input vector list.
+        not given, the associative memory will act like an auto-associative
+        memory (cleanup memory).
+
+    input_keys: list of strings, optional (Default: None)
+        List of keys (ordered) from the input vocabulary to use as the input
+        semantic pointers for the associative memory.
+    output_keys: list of strings, optional (Default: None)
+        List of keys (ordered) from the output vocabulary to use as the output
+        semantic pointers for the associative memory.
+
+    default_output_vector: numpy.array, spa.SemanticPointer, optional (Default: None)
+        The vector to be produced if the input value matches none of vectors
+        in the input vector list.
     threshold: float, optional (Default: 0.3)
         The association activation threshold.
-    inhibitable: bool, optional (Default: False)
+
+    inhibitable: boolean, optional
         Flag to indicate if the entire associative memory module is
-        inhibitable (i.e., the entire module can be inhibited).
-    wta_output: bool, optional (Default: False)
+        inhibitable (entire thing can be shut off).
+
+    wta_output: boolean, optional (Default: False)
         Flag to indicate if output of the associative memory should contain
         more than one vector. If True, only one vector's output will be
         produced; i.e. produce a winner-take-all (WTA) output.
@@ -36,15 +42,21 @@ class AssociativeMemory(Module):
         Scaling factor on the winner-take-all (WTA) inhibitory connections.
     wta_synapse: float, optional (Default: 0.005)
         Synapse to use for the winner-take-all (wta) inhibitory connections.
-    threshold_output: bool, optional (Default: False)
-        Adds a threholded output if True.
-    label : str, optional (Default: None)
-        A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
-        The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
-        Determines if this Network will be added to the current container.
-        If None, will be true if currently within a Network.
+
+    cleanup_output: boolean, optional (Default: False)
+        Create the associative memory with cleaned outputs as well as the
+        standard outputs.
+    replace_output_with_cleaned_output: boolean, optional
+        Set to true to use the cleaned outputs as the default output of the
+        associative memory module.
+
+    label : str, optional
+        A name to assign this AssociativeMemory. Used for visualization and
+        debugging. Also used as a label prefix for each of the internal
+        ensembles in the AssociativeMemory network.
+
+    Additional network parameters are passed to the Network constructor through
+    **module_kwargs
     """
 
     def __init__(self, input_vocab, output_vocab=None,  # noqa: C901
@@ -52,9 +64,10 @@ class AssociativeMemory(Module):
                  default_output_key=None, threshold=0.3,
                  inhibitable=False, wta_output=False,
                  wta_inhibit_scale=3.0, wta_synapse=0.005,
-                 threshold_output=False, label=None, seed=None,
-                 add_to_container=None):
-        super(AssociativeMemory, self).__init__(label, seed, add_to_container)
+                 cleanup_output=False,
+                 replace_output_with_cleaned_output=True,
+                 label=None, **module_kwargs):
+        super(AssociativeMemory, self).__init__(label=label, **module_kwargs)
 
         if input_keys is None:
             input_keys = input_vocab.keys
@@ -83,9 +96,7 @@ class AssociativeMemory(Module):
             self.am = AssocMem(input_vectors=input_vectors,
                                output_vectors=output_vectors,
                                threshold=threshold,
-                               inhibitable=inhibitable,
-                               label=label, seed=seed,
-                               add_to_container=add_to_container)
+                               inhibitable=inhibitable)
 
             if default_output_vector is not None:
                 self.am.add_default_output_vector(default_output_vector)
@@ -93,18 +104,22 @@ class AssociativeMemory(Module):
             if wta_output:
                 self.am.add_wta_network(wta_inhibit_scale, wta_synapse)
 
-            if threshold_output:
-                self.am.add_threshold_to_outputs()
+            if cleanup_output:
+                self.am.add_cleanup_output(
+                    replace_output=replace_output_with_cleaned_output)
 
             self.input = self.am.input
             self.output = self.am.output
 
+            if cleanup_output and not replace_output_with_cleaned_output:
+                self.cleaned_output = self.am.cleaned_output
+
             if inhibitable:
                 self.inhibit = self.am.inhibit
 
-            self.utilities = self.am.utilities
-            if threshold_output:
-                self.thresholded_utilities = self.am.thresholded_utilities
+            self.utilities = self.am.output_utilities
+            if cleanup_output:
+                self.cleaned_utilities = self.am.cleaned_output_utilities
 
         self.inputs = dict(default=(self.input, input_vocab))
         self.outputs = dict(default=(self.output, output_vocab))

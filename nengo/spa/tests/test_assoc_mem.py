@@ -30,7 +30,7 @@ def test_am_spa_interaction(Simulator, seed, rng):
                                  threshold=0.5,
                                  inhibitable=True,
                                  wta_output=True,
-                                 threshold_output=True)
+                                 cleanup_output=True)
 
         nengo.spa.Actions('am = buf').build()
 
