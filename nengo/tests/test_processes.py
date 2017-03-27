@@ -14,7 +14,7 @@ from nengo.synapses import Lowpass
 
 class DistributionMock(Distribution):
     def __init__(self, retval):
-        super(Distribution, self).__init__()
+        super(DistributionMock, self).__init__()
         self.retval = retval
         self.sample_calls = []
 
