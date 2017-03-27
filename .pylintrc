@@ -1,7 +1,10 @@
 [MESSAGES CONTROL]
 
 disable = all
-enable = bad-super-call,dangerous-default-value,super-init-not-called
+enable = anomalous-backslash-in-string,
+         bad-super-call,
+         dangerous-default-value,
+         super-init-not-called,
 
 
 [REPORTS]
