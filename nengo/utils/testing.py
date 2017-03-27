@@ -352,7 +352,7 @@ def allclose(t, targets, signals,  # noqa: C901
                            atol=atol, rtol=rtol)
 
 
-def find_modules(root_path, prefix=[], pattern='^test_.*\\.py$'):
+def find_modules(root_path, prefix=None, pattern='^test_.*\\.py$'):
     """Find matching modules (files) in all subdirectories of a given path.
 
     Parameters
@@ -371,6 +371,7 @@ def find_modules(root_path, prefix=[], pattern='^test_.*\\.py$'):
         A list of modules. Each item in the list is a list of strings
         containing the module path.
     """
+    prefix = [] if prefix is None else prefix
     if is_string(prefix):
         prefix = [prefix]
     elif not isinstance(prefix, list):

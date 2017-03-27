@@ -1,7 +1,7 @@
 [MESSAGES CONTROL]
 
 disable = all
-enable = bad-super-call,super-init-not-called
+enable = bad-super-call,dangerous-default-value,super-init-not-called
 
 
 [REPORTS]

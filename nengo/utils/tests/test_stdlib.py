@@ -164,8 +164,9 @@ def test_weakkeydict_setdefault(key=C(), value1="v1", value2="v2"):
     assert d[key] is value1
 
 
-def test_weakkeydict_update(in_d={C(): 1, C(): 2, C(): 3}):
+def test_weakkeydict_update():
     """This exercises d.update(), len(d), d.keys(), in d,  d.get(), d[]."""
+    in_d = {C(): 1, C(): 2, C(): 3}
     d = WeakKeyIDDictionary()
     d.update(in_d)
     assert len(d) == len(in_d)
