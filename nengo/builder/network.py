@@ -5,7 +5,11 @@ import numpy as np
 
 import nengo.utils.numpy as npext
 from nengo.builder import Builder
+from nengo.connection import Connection
+from nengo.ensemble import Ensemble
 from nengo.network import Network
+from nengo.node import Node
+from nengo.probe import Probe
 from nengo.utils.progress import ProgressTracker
 
 logger = logging.getLogger(__name__)
@@ -75,7 +79,9 @@ def build_network(model, network, progress_bar=False):
 
     # assign seeds to children
     rng = np.random.RandomState(model.seeds[network])
-    sorted_types = sorted(network.objects, key=lambda t: t.__name__)
+    # Put probes last so that they don't influence other seeds
+    sorted_types = (Connection, Ensemble, Network, Node, Probe)
+    assert all(tp in sorted_types for tp in network.objects)
     for obj_type in sorted_types:
         for obj in network.objects[obj_type]:
             model.seeded[obj] = (model.seeded[network] or
