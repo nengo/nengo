@@ -204,3 +204,12 @@ def test_instance_fallthrough():
     assert config[A].amount == 1
     assert config[inst1].amount == 2
     assert config[inst2].amount == 1
+
+
+def test_contains():
+    class A(object):
+        pass
+
+    cfg = nengo.Config(A)
+    with pytest.raises(TypeError):
+        A in cfg
