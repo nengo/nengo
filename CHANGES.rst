@@ -34,6 +34,11 @@ Release History
 
 **Changed**
 
+- We now raise an error when a ``Node`` or ``Direct`` ensemble
+  produces a non-finite value.
+  (`#1178 <https://github.com/nengo/nengo/issues/1178>`_,
+  `#1280 <https://github.com/nengo/nengo/issues/1280>`_,
+  `#1286 <https://github.com/nengo/nengo/pull/1286>`_)
 - We now enforce that the ``label`` of a network must be a string or ``None``,
   and that the ``seed`` of a network must be an int or ``None``.
   This helps avoid situations where the seed would mistakenly

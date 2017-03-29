@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.neurons import NeuronTypeParam
+from nengo.exceptions import SimulationError
+from nengo.neurons import Direct, NeuronTypeParam
 from nengo.processes import WhiteSignal
 from nengo.solvers import LstsqL2nz
 from nengo.utils.ensemble import tuning_curves
@@ -390,3 +391,14 @@ def test_frozen():
         a.tau_rc = 0.3
     with pytest.raises(ValueError):
         d.coupling = 8
+
+
+def test_direct_mode_nonfinite_value(Simulator):
+    with nengo.Network() as model:
+        e1 = nengo.Ensemble(10, 1, neuron_type=Direct())
+        e2 = nengo.Ensemble(10, 1)
+        nengo.Connection(e1, e2, function=lambda x: 1. / x)
+
+    with Simulator(model) as sim:
+        with pytest.raises(SimulationError):
+            sim.run(0.01)

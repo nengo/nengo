@@ -44,6 +44,9 @@ class OutputParam(Parameter):
             output = npext.array(
                 output, min_dims=1, copy=False, dtype=np.float64)
             self.validate_ndarray(node, output)
+            if not np.all(np.isfinite(output)):
+                raise ValidationError("Output value must be finite.",
+                                      attr=self.name, obj=node)
             node.size_out = output.size
         else:
             raise ValidationError("Invalid node output type %r" %

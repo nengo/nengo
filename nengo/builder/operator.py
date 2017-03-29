@@ -625,9 +625,11 @@ class SimPyFunc(Operator):
             args = (np.copy(x),) if x is not None else ()
             y = fn(t.item(), *args) if t is not None else fn(*args)
             if output is not None:
-                if y is None:  # required since Numpy turns None into NaN
+                # required since Numpy turns None into NaN
+                if y is None or not np.all(np.isfinite(y)):
                     raise SimulationError(
-                        "Function %r returned None" % function_name(self.fn))
+                        "Function %r returned non-finite value" %
+                        function_name(self.fn))
                 try:
                     output[...] = y
                 except ValueError:
