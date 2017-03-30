@@ -1,7 +1,9 @@
+import numpy as np
+from numpy.testing import assert_allclose
 import pytest
 
 import nengo
-from nengo.utils.network import activate_direct_mode
+from nengo.utils.network import activate_direct_mode, inhibit_net
 
 
 def test_withself():
@@ -65,3 +67,28 @@ def test_activate_direct_mode_learning(RefSimulator, learning_rule, weights):
 
     with RefSimulator(model) as sim:
         sim.run(0.01)
+
+
+def test_inhibit_net(RefSimulator, plt):
+    with nengo.Network() as model:
+        ea = nengo.networks.EnsembleArray(10, 10)
+        node = nengo.Node(1)
+        connections = inhibit_net(node, ea)
+
+        nengo.Connection(node, ea.input,
+                         transform=np.ones((ea.n_ensembles, 1)))
+        p = nengo.Probe(ea.output, synapse=0.01)
+
+    assert len(connections) == 10
+    for c in connections:
+        assert c.pre is node
+        assert c.post.ensemble in ea.all_ensembles
+
+    with RefSimulator(model) as sim:
+        sim.run(0.3)
+
+    plt.plot(sim.trange(), sim.data[p])
+    plt.xlabel("Time [s]")
+
+    print(np.max(np.abs(sim.data[p][sim.trange() > 0.1])))
+    assert_allclose(sim.data[p][sim.trange() > 0.1], 0., atol=1e-4)

@@ -1,3 +1,5 @@
+import numpy as np
+
 import nengo
 from .magic import decorator
 
@@ -61,3 +63,28 @@ def activate_direct_mode(network):
     for e in network.all_ensembles:
         if e not in requires_neurons:
             e.neuron_type = nengo.Direct()
+
+
+def inhibit_net(pre, post, strength=2., **kwargs):
+    """Makes an inhibitory connection to all ensembles of a network.
+
+    Parameters
+    ----------
+    pre : 1-d nengo.Node or nengo.Ensemble
+        Scalar source of the inhibition.
+    post : nengo.Network
+        Target of the inhibition.
+    strength : float
+        Strength of the inhibition.
+    kwargs : dict
+        Additional keyword arguments for the created connections.
+
+    Returns
+    -------
+    list
+        Created connections.
+    """
+
+    return [nengo.Connection(
+        pre, e.neurons, transform=-strength * np.ones((e.n_neurons, 1)),
+        **kwargs) for e in post.all_ensembles]
