@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 import numpy as np
-import mpl_toolkits.mplot3d  # noqa: F401
+import mpl_toolkits.mplot3d
 import pytest
 
 import nengo
@@ -13,6 +13,7 @@ def plot_tuning_curves(plt, eval_points, activities):
     if eval_points.ndim <= 2:
         plt.plot(eval_points, activities)
     elif eval_points.ndim == 3:
+        assert mpl_toolkits.mplot3d
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.plot_surface(eval_points.T[0], eval_points.T[1], activities.T[0])

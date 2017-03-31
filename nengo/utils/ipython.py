@@ -75,6 +75,7 @@ try:
 except ImportError:
     def get_ipython():
         return None
+assert get_ipython
 
 
 def has_ipynb_widgets():
