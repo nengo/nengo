@@ -301,7 +301,7 @@ class DeltaRuleFunctionParam(FunctionParam):
 
 
 class DeltaRule(LearningRuleType):
-    """Implementation of the Delta rule.
+    r"""Implementation of the Delta rule.
 
     By default, this implementation pretends the neurons are linear, and thus
     does not require the derivative of the postsynaptic neuron activation
