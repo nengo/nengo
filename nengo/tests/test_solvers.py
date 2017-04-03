@@ -32,7 +32,7 @@ class Factory(object):
     def __str__(self):
         try:
             inst = self()
-        except:
+        except Exception:
             inst = "%s(args=%s, kwargs=%s)" % (
                 self.klass, self.args, self.kwargs)
         return str(inst)
@@ -40,7 +40,7 @@ class Factory(object):
     def __repr__(self):
         try:
             inst = self()
-        except:
+        except Exception:
             inst = "<%r instance>" % (self.klass.__name__)
         return repr(inst)
 

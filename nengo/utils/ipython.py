@@ -396,7 +396,7 @@ class NotebookRunner(object):
         for i, cell in enumerate(self.iter_code_cells()):
             try:
                 self.run_cell(cell)
-            except:
+            except Exception:
                 if not skip_exceptions:
                     raise
             if progress_callback is not None:

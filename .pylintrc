@@ -1,8 +1,9 @@
 [MESSAGES CONTROL]
 
-disable = all
+disable = all, broad-except
 enable = anomalous-backslash-in-string,
          bad-super-call,
+         bare-except,
          dangerous-default-value,
          super-init-not-called,
          unused-import,

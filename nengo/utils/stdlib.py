@@ -171,7 +171,7 @@ def checked_call(func, *args, **kwargs):
     """
     try:
         return CheckedCall(func(*args, **kwargs), True)
-    except:
+    except Exception:
         tb = inspect.trace()
         if not len(tb) or tb[-1][0] is not inspect.currentframe():
             raise  # exception occurred inside func
@@ -260,17 +260,21 @@ else:
 
 # get_terminal_size was introduced in Python 3.3
 if hasattr(shutil, 'get_terminal_size'):
-    get_terminal_size = shutil.get_terminal_size
+    def get_terminal_size(fallback=(80, 24)):
+        try:
+            return shutil.get_terminal_size(fallback)
+        except Exception:
+            return terminal_size(fallback)
 else:
     def get_terminal_size(fallback=(80, 24)):
         w, h = fallback
         try:
             w = int(os.environ['COLUMNS'])
-        except:
+        except (KeyError, ValueError):
             pass
         try:
             h = int(os.environ['LINES'])
-        except:
+        except (KeyError, ValueError):
             pass
         return terminal_size(w, h)
 

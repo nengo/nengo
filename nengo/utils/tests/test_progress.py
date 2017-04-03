@@ -39,7 +39,7 @@ class TestProgress(object):
         try:
             with Progress(10) as p2:
                 raise Exception()
-        except:
+        except Exception:
             pass
         assert not p2.success
 

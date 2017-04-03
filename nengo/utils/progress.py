@@ -194,10 +194,7 @@ class TerminalProgressBar(ProgressBar):
             eta=timestamp2timedelta(progress.eta()))
         percent_str = " {}... {}% ".format(
             self.task, int(100 * progress.progress))
-        try:
-            width, _ = get_terminal_size()
-        except:
-            width = 80
+        width, _ = get_terminal_size()
         progress_width = max(0, width - len(line))
         progress_str = (
             int(progress_width * progress.progress) * "#").ljust(
@@ -212,10 +209,7 @@ class TerminalProgressBar(ProgressBar):
         return '\r' + line.format(progress_str)
 
     def _get_finished_line(self, progress):
-        try:
-            width, _ = get_terminal_size()
-        except:
-            width = 80
+        width, _ = get_terminal_size()
         line = "{} finished in {}.".format(
             self.task,
             timestamp2timedelta(progress.elapsed_seconds())).ljust(width)

@@ -472,7 +472,7 @@ class ThreadedAssertion(object):
             try:
                 self.parent.assert_thread(self)
                 self.assertion_result = True
-            except:
+            except Exception:
                 self.assertion_result = False
                 self.exc_info = sys.exc_info()
             finally:

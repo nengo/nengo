@@ -300,7 +300,9 @@ class CacheIndex(object):
             with open(self.legacy_path, 'r') as lf:
                 text = lf.read()
             return tuple(int(x.strip()) for x in text.split('.'))
-        except:
+        except Exception:
+            logger.exception(
+                "Decoder cache version information could not be read.")
             return (-1, -1)
 
 
@@ -355,7 +357,9 @@ class WriteableCacheIndex(CacheIndex):
         with self._lock:
             try:
                 self._load_index_file()
-            except:
+            except Exception:
+                logger.exception(
+                    "Decoder cache index corrupted. Reinitializing cache.")
                 # If we can't load the index file, the cache is corrupted,
                 # so we invalidate it (delete all files in the cache)
                 self._reinit()
@@ -675,8 +679,11 @@ class DecoderCache(object):
                 with open(path, 'rb') as f:
                     f.seek(start)
                     info, decoders = nco.read(f)
-            except:
-                logger.debug("Cache miss [%s].", key)
+            except Exception as err:
+                if isinstance(err, KeyError):
+                    logger.debug("Cache miss [%s].", key)
+                else:
+                    logger.exception("Corrupted cache entry [%s].", key)
                 decoders, info = solver_fn(conn, gain, bias, x, targets,
                                            rng=rng, E=E, **uncached_kwargs)
                 if not self.readonly:
