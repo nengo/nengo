@@ -8,6 +8,7 @@ ignore = _vendor, compat.py
 disable = all,
           broad-except,
           import-error,
+          reimported,
 enable = anomalous-backslash-in-string,
          bad-super-call,
          bare-except,
