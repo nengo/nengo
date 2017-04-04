@@ -14,7 +14,7 @@ from nengo.params import (Default, Unconfigurable, ObsoleteParam,
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_array_like, is_iterable, iteritems
-from nengo.utils.connection import function_name
+from nengo.utils.functions import function_name
 from nengo.utils.stdlib import checked_call
 
 logger = logging.getLogger(__name__)
