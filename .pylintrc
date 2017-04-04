@@ -5,12 +5,14 @@ ignore = _vendor, compat.py
 
 [MESSAGES CONTROL]
 
-disable = all, broad-except
+disable = all,
+          broad-except,
+          import-error,
 enable = anomalous-backslash-in-string,
          bad-super-call,
          bare-except,
-         function-redefined,
          dangerous-default-value,
+         function-redefined,
          line-too-long,
          super-init-not-called,
          ungrouped-imports,
