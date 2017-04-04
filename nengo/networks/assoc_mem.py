@@ -3,11 +3,11 @@ import warnings
 import numpy as np
 
 import nengo
-from .ensemblearray import EnsembleArray
 from nengo.dists import Choice, Exponential, Uniform
 from nengo.exceptions import ValidationError
 from nengo.utils.compat import is_iterable, range
 from nengo.utils.network import with_self
+from .ensemblearray import EnsembleArray
 
 
 def filtered_step(t, shift=0.5, scale=50, step_val=1):
