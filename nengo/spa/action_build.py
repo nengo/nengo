@@ -1,6 +1,7 @@
 """Helper functions for constructing nengo models that implement actions."""
-import nengo
 import numpy as np
+
+import nengo
 
 
 def convolution(module, target_name, effect, n_neurons_cconv, synapse):

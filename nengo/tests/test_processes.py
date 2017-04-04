@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 
+import sys
+
 import numpy as np
 import pytest
-import sys
 
 import nengo
 import nengo.utils.numpy as npext

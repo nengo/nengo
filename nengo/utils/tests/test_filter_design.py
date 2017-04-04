@@ -1,6 +1,5 @@
-import pytest
-
 import numpy as np
+import pytest
 
 from nengo.utils.filter_design import expm, cont2discrete
 

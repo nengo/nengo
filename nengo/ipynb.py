@@ -18,12 +18,19 @@ except ImportError:
 import warnings
 
 import IPython
+try:
+    import notebook
+    notebook_version = notebook.version_info
+except ImportError:
+    notebook_version = IPython.version_info
 
 from nengo.rc import rc
 from nengo.utils.ipython import has_ipynb_widgets
 from nengo.utils.progress import ProgressBar, timestamp2timedelta
 
 if has_ipynb_widgets():
+    # pylint: disable=ungrouped-imports
+    from IPython.display import display
     if IPython.version_info[0] <= 3:
         from IPython.html.widgets import DOMWidget
         import IPython.utils.traitlets as traitlets
@@ -31,17 +38,9 @@ if has_ipynb_widgets():
         import ipywidgets
         from ipywidgets import DOMWidget
         import traitlets
-    from IPython.display import display
 else:
     raise ImportError(
         "Required dependency could not be loaded. Please install ipywidgets.")
-
-
-try:
-    import notebook
-    notebook_version = notebook.version_info
-except ImportError:
-    notebook_version = IPython.version_info
 
 
 def load_ipython_extension(ipython):

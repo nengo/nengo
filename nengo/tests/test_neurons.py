@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 import nengo
-
 from nengo.exceptions import BuildError, SimulationError
 from nengo.neurons import Direct, NeuronTypeParam
 from nengo.processes import WhiteSignal

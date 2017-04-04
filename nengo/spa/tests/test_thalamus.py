@@ -1,10 +1,9 @@
+import numpy as np
 import pytest
 
 import nengo
 from nengo import spa
 from nengo.exceptions import SpaParseError
-
-import numpy as np
 
 
 def thalamus_net(d=2, n=20, seed=None):

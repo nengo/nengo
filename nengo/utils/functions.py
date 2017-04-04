@@ -1,9 +1,9 @@
 from __future__ import absolute_import
 
 from collections import OrderedDict
+import warnings
 
 import numpy as np
-import warnings
 
 from nengo.exceptions import ValidationError
 from nengo.utils.compat import is_number, iteritems

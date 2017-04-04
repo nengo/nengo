@@ -1,6 +1,6 @@
 [MASTER]
 
-ignore = _vendor
+ignore = _vendor, compat.py
 
 
 [MESSAGES CONTROL]
@@ -13,6 +13,7 @@ enable = anomalous-backslash-in-string,
          dangerous-default-value,
          line-too-long,
          super-init-not-called,
+         ungrouped-imports,
          unused-import,
 
 

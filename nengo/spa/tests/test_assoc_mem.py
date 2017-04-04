@@ -1,5 +1,6 @@
-import nengo
 import numpy as np
+
+import nengo
 from nengo.spa import Vocabulary, Input
 from nengo.spa.utils import similarity
 from nengo.spa.assoc_mem import AssociativeMemory
