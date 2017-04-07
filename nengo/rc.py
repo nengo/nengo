@@ -129,14 +129,18 @@ class _RC(configparser.SafeConfigParser):
             for k, v in settings.items():
                 self.set(section, k, str(v))
 
-    def readfp(self, fp, filename=None):
+    def read_file(self, fp, filename=None):
         if filename is None:
             if hasattr(fp, 'name'):
                 filename = fp.name
             else:
                 filename = '<???>'
         logger.info('Reading configuration from {}'.format(filename))
-        return configparser.SafeConfigParser.readfp(self, fp, filename)
+        try:
+            return configparser.SafeConfigParser.read_file(self, fp, filename)
+        except AttributeError:
+            # pylint: disable=deprecated-method
+            return configparser.SafeConfigParser.readfp(self, fp, filename)
 
     def read(self, filenames):
         logger.info('Reading configuration files {}'.format(filenames))

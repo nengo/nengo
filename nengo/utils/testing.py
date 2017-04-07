@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import inspect
 import itertools
 import logging
 import os
@@ -11,7 +10,7 @@ import time
 
 import numpy as np
 
-from .compat import is_string, reraise
+from .compat import getfullargspec, is_string, reraise
 from .logging import CaptureLogHandler, console_formatter
 
 
@@ -387,7 +386,7 @@ def load_functions(modules, pattern='^test_', arg_pattern='^Simulator$'):
         for k in dir(m):
             test = getattr(m, k)
             if callable(test) and re.search(pattern, k):
-                args = inspect.getargspec(test).args
+                args = getfullargspec(test).args
                 if any(re.search(arg_pattern, arg) for arg in args):
                     tests['.'.join(['test'] + module + [k])] = test
             if k.startswith('pytest'):  # automatically load py.test hooks

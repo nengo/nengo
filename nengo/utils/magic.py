@@ -61,7 +61,7 @@ class ObjectProxyMethods(object):
     """
 
     @property
-    def __module__(self):
+    def __module__(self):  # pylint: disable=function-redefined
         return self.__wrapped__.__module__
 
     @property
