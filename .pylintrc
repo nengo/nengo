@@ -4,6 +4,7 @@ disable = all, broad-except
 enable = anomalous-backslash-in-string,
          bad-super-call,
          bare-except,
+         function-redefined,
          dangerous-default-value,
          line-too-long,
          super-init-not-called,

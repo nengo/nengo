@@ -80,15 +80,15 @@ def test_staticmethod():
         return wrapped(*args, **kwargs)
 
     # --- Decorator before staticmethod
-    class Test(object):
+    class TestBeforeStaticmethod(object):
         @test_decorator
         @staticmethod
         def f(a, b):
             """Return 1."""
             return 1
 
-    _test_decorated(Test.f)
-    inst = Test()
+    _test_decorated(TestBeforeStaticmethod.f)
+    inst = TestBeforeStaticmethod()
     _test_decorated(inst.f)
 
     # Make sure introspection works
@@ -100,15 +100,15 @@ def test_staticmethod():
                                          '            return 1\n')
 
     # --- Decorator after staticmethod
-    class Test(object):
+    class TestAfterStaticmethod(object):
         @staticmethod
         @test_decorator
         def f(a, b):
             """Return 1."""
             return 1
 
-    _test_decorated(Test.f)
-    inst = Test()
+    _test_decorated(TestAfterStaticmethod.f)
+    inst = TestAfterStaticmethod()
     _test_decorated(inst.f)
 
     # Make sure introspection works
@@ -126,20 +126,21 @@ def test_classmethod():
     def test_decorator(wrapped, instance, args, kwargs):
         global state
         state = 'run'
-        assert (instance is None and args[0].__name__ == 'Test'
-                or instance.__name__ == 'Test')
+        valid_names = {'TestBeforeStaticmethod', 'TestAfterStaticmethod'}
+        assert (instance is None and args[0].__name__ in valid_names
+                or instance.__name__ in valid_names)
         return wrapped(*args, **kwargs)
 
     # --- Decorator before classmethod
-    class Test(object):
+    class TestBeforeStaticmethod(object):
         @test_decorator
         @classmethod
         def f(cls, a, b):
             """Return 1."""
             return 1
 
-    _test_decorated(Test.f)
-    inst = Test()
+    _test_decorated(TestBeforeStaticmethod.f)
+    inst = TestBeforeStaticmethod()
     _test_decorated(inst.f)
 
     # Make sure introspection works
@@ -151,15 +152,15 @@ def test_classmethod():
                                          '            return 1\n')
 
     # --- Decorator after staticmethod
-    class Test(object):
+    class TestAfterStaticmethod(object):
         @classmethod
         @test_decorator
         def f(cls, a, b):
             """Return 1."""
             return 1
 
-    _test_decorated(Test.f)
-    inst = Test()
+    _test_decorated(TestAfterStaticmethod.f)
+    inst = TestAfterStaticmethod()
     _test_decorated(inst.f)
 
     # Make sure introspection works
