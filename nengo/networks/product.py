@@ -14,6 +14,17 @@ def Product(n_neurons, dimensions, input_magnitude=1., net=None, **kwargs):
     `Multiplication example
     <http://pythonhosted.org/nengo/examples/multiplication.html>`_.
 
+    Note that this network is optimized under the assumption that both input
+    values (or both values for each input dimensions of the input vectors) are
+    uniformly and independently distributed. Visualized in a joint 2D space,
+    this would give a square of equal probabilities for pairs of input values.
+    This assumption is violated with non-uniform input value distributions
+    (for example, if the input values follow a Gaussian or cosine similarity
+    distribution). In that case, no square of equal probabilities is obtained,
+    but a probability landscape with circular equi-probability lines. To obtain
+    the optimal network accuracy, scale the *input_magnitude* by a factor of
+    ``1 / sqrt(2)``.
+
     .. _Gosmann, 2015:
        http://nbviewer.jupyter.org/github/ctn-archive/technical-reports/blob/
        master/Precise-multiplications-with-the-NEF.ipynb#An-alternative-network
