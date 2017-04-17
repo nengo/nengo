@@ -1,7 +1,9 @@
+import warnings
+
 import nengo
 
 
-def Oscillator(recurrent_tau, frequency, n_neurons, net=None):
+def Oscillator(recurrent_tau, frequency, n_neurons, net=None, **kwargs):
     """A two-dimensional ensemble with interacting recurrent connections.
 
     The ensemble connects to itself in a manner similar to the integrator;
@@ -16,11 +18,8 @@ def Oscillator(recurrent_tau, frequency, n_neurons, net=None):
         Desired frequency, in Hz, of the cyclic oscillation.
     n_neurons : int
         Number of neurons in the recurrently connected ensemble.
-
-    net : Network, optional (Default: None)
-        A network in which the network components will be built.
-        This is typically used to provide a custom set of Nengo object
-        defaults through modifying ``net.config``.
+    kwargs
+        Keyword arguments passed through to ``nengo.Network``.
 
     Returns
     -------
@@ -35,7 +34,11 @@ def Oscillator(recurrent_tau, frequency, n_neurons, net=None):
         Provides the input signal.
     """
     if net is None:
-        net = nengo.Network(label="Oscillator")
+        kwargs.setdefault('label', "Oscillator")
+        net = nengo.Network(**kwargs)
+    else:
+        warnings.warn("The 'net' argument is deprecated.", DeprecationWarning)
+
     with net:
         net.input = nengo.Node(label="In", size_in=2)
         net.ensemble = nengo.Ensemble(

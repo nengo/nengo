@@ -1,10 +1,12 @@
+import warnings
+
 import numpy as np
 
 import nengo
 from nengo.networks.ensemblearray import EnsembleArray
 
 
-def Product(n_neurons, dimensions, input_magnitude=1., net=None):
+def Product(n_neurons, dimensions, input_magnitude=1., net=None, **kwargs):
     """Computes the element-wise product of two equally sized vectors.
 
     The network used to calculate the product is described in
@@ -31,10 +33,8 @@ def Product(n_neurons, dimensions, input_magnitude=1., net=None):
         The expected magnitude of the vectors to be multiplied.
         This value is used to determine the radius of the ensembles
         computing the element-wise product.
-    net : Network, optional (Default: None)
-        A network in which the network components will be built.
-        This is typically used to provide a custom set of Nengo object
-        defaults through modifying ``net.config``.
+    kwargs
+        Keyword arguments passed through to ``nengo.Network``.
 
     Returns
     -------
@@ -55,7 +55,10 @@ def Product(n_neurons, dimensions, input_magnitude=1., net=None):
         Represents the second squared term. See `Gosmann, 2015`_ for details.
     """
     if net is None:
-        net = nengo.Network(label="Product")
+        kwargs.setdefault('label', "Product")
+        net = nengo.Network(**kwargs)
+    else:
+        warnings.warn("The 'net' argument is deprecated.", DeprecationWarning)
 
     with net:
         net.input_a = net.A = nengo.Node(size_in=dimensions, label="input_a")

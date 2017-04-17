@@ -74,6 +74,14 @@ Release History
   (`#1184 <https://github.com/nengo/nengo/issues/1184>`_,
   `#1185 <https://github.com/nengo/nengo/pull/1185>`_)
 
+**Deprecated**
+
+- The ``net`` argument to networks has been deprecated. This argument existed
+  so that network components could be added to an existing network instead of
+  constructing a new network. However, this feature is rarely used,
+  and makes the code more complicated for complex networks.
+  (`#1296 <https://github.com/nengo/nengo/pull/1296>`_)
+
 2.3.1 (February 18, 2017)
 =========================
 

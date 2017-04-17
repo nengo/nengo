@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 import nengo
@@ -89,7 +91,7 @@ def dft_half(n):
 
 
 def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
-                        input_magnitude=1.0, net=None):
+                        input_magnitude=1.0, net=None, **kwargs):
     r"""Compute the circular convolution of two vectors.
 
     The circular convolution :math:`c` of vectors :math:`a` and :math:`b`
@@ -122,10 +124,8 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
         The expected magnitude of the vectors to be convolved.
         This value is used to determine the radius of the ensembles
         computing the element-wise product.
-    net : Network, optional (Default: None)
-        A network in which the network components will be built.
-        This is typically used to provide a custom set of Nengo object
-        defaults through modifying ``net.config``.
+    kwargs
+        Keyword arguments passed through to ``nengo.Network``.
 
     Returns
     -------
@@ -186,7 +186,10 @@ def CircularConvolution(n_neurons, dimensions, invert_a=False, invert_b=False,
     is analytically zero.
     """
     if net is None:
-        net = nengo.Network("Circular Convolution")
+        kwargs.setdefault('label', "Circular Convolution")
+        net = nengo.Network(**kwargs)
+    else:
+        warnings.warn("The 'net' argument is deprecated.", DeprecationWarning)
 
     tr_a = transform_in(dimensions, 'A', invert_a)
     tr_b = transform_in(dimensions, 'B', invert_b)

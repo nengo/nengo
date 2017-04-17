@@ -1,7 +1,9 @@
+import warnings
+
 import nengo
 
 
-def Integrator(recurrent_tau, n_neurons, dimensions, net=None):
+def Integrator(recurrent_tau, n_neurons, dimensions, net=None, **kwargs):
     """An ensemble that accumulates input and maintains state.
 
     This is accomplished through scaling the input signal and recurrently
@@ -15,11 +17,8 @@ def Integrator(recurrent_tau, n_neurons, dimensions, net=None):
         Number of neurons in the recurrently connected ensemble.
     dimensions : int
         Dimensionality of the input signal and ensemble.
-
-    net : Network, optional (Default: None)
-        A network in which the network components will be built.
-        This is typically used to provide a custom set of Nengo object
-        defaults through modifying ``net.config``.
+    kwargs
+        Keyword arguments passed through to ``nengo.Network``.
 
     Returns
     -------
@@ -34,7 +33,11 @@ def Integrator(recurrent_tau, n_neurons, dimensions, net=None):
         Provides the input signal.
     """
     if net is None:
-        net = nengo.Network(label="Integrator")
+        kwargs.setdefault('label', "Integrator")
+        net = nengo.Network(**kwargs)
+    else:
+        warnings.warn("The 'net' argument is deprecated.", DeprecationWarning)
+
     with net:
         net.input = nengo.Node(size_in=dimensions)
         net.ensemble = nengo.Ensemble(n_neurons, dimensions=dimensions)

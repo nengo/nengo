@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 import nengo
@@ -6,7 +8,7 @@ from nengo.networks import EnsembleArray
 
 def InputGatedMemory(n_neurons, dimensions, feedback=1.0,
                      difference_gain=1.0, recurrent_synapse=0.1,
-                     difference_synapse=None, net=None):
+                     difference_synapse=None, net=None, **kwargs):
     """Stores a given vector in memory, with input controlled by a gate.
 
     Parameters
@@ -25,10 +27,8 @@ def InputGatedMemory(n_neurons, dimensions, feedback=1.0,
 
     difference_synapse : Synapse (Default: None)
         If None, ...
-    net : Network, optional (Default: None)
-        A network in which the network components will be built.
-        This is typically used to provide a custom set of Nengo object
-        defaults through modifying ``net.config``.
+    kwargs
+        Keyword arguments passed through to ``nengo.Network``.
 
     Returns
     -------
@@ -57,7 +57,10 @@ def InputGatedMemory(n_neurons, dimensions, feedback=1.0,
 
     """
     if net is None:
-        net = nengo.Network(label="Input Gated Memory")
+        kwargs.setdefault('label', "Input gated memory")
+        net = nengo.Network(**kwargs)
+    else:
+        warnings.warn("The 'net' argument is deprecated.", DeprecationWarning)
 
     if difference_synapse is None:
         difference_synapse = recurrent_synapse
