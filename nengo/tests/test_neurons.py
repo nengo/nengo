@@ -285,54 +285,36 @@ def test_izhikevich(Simulator, plt, seed, rng):
     plot(rz, "Resonator", 6)
 
 
-def test_sigmoid_response_curves(Simulator):
-    # Max rate > rate at inflection point => intercept has to be < 1
+@pytest.mark.parametrize("max_rate,intercept", [(300., 0.0), (100., 1.1)])
+def test_sigmoid_response_curves(Simulator, max_rate, intercept):
+    """Check the sigmoid response curve monotonically increases.
+
+    The sigmoid response curve should work fine:
+
+    - if max rate > rate at inflection point and intercept < 1
+    - if max rate < rate at inflection point and intercept > 1
+    """
     with nengo.Network() as m:
-        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[300.])
+        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(),
+                           max_rates=[max_rate], intercepts=[intercept])
+
     with Simulator(m) as sim:
         pass
     x, y = nengo.utils.ensemble.response_curves(e, sim)
-    assert np.allclose(np.max(y), 300.)
+    assert np.allclose(np.max(y), max_rate)
     assert np.all(y > 0.)
     assert np.all(np.diff(y) > 0.)  # monotonically increasing
 
-    with nengo.Network() as m:
-        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[300.],
-                           intercepts=[1.1])
-    with pytest.raises(BuildError):
-        with Simulator(m) as sim:
-            pass
 
+@pytest.mark.parametrize("max_rate,intercept", [
+    (300., 1.1), (300., 1.0), (100., 0.9), (100, 1.0)])
+def test_sigmoid_invalid(Simulator, max_rate, intercept):
+    """Check that invalid sigmoid ensembles raise an error."""
     with nengo.Network() as m:
-        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[300.],
-                           intercepts=[1.0])
+        nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(),
+                       max_rates=[max_rate], intercepts=[intercept])
     with pytest.raises(BuildError):
-        with Simulator(m) as sim:
-            pass
-
-    # Max rate < rate at inflection point => intercept has to be > 1
-    with nengo.Network() as m:
-        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[100.],
-                           intercepts=[1.1])
-    with Simulator(m) as sim:
-        pass
-    x, y = nengo.utils.ensemble.response_curves(e, sim)
-    assert np.allclose(np.max(y), 100.)
-    assert np.all(y > 0.)
-    assert np.all(np.diff(y) > 0.)  # monotonically increasing
-
-    with nengo.Network() as m:
-        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[100.],
-                           intercepts=[0.9])
-    with pytest.raises(BuildError):
-        with Simulator(m) as sim:
-            pass
-
-    with nengo.Network() as m:
-        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(), max_rates=[100.],
-                           intercepts=[1.0])
-    with pytest.raises(BuildError):
-        with Simulator(m) as sim:
+        with Simulator(m):
             pass
 
 
