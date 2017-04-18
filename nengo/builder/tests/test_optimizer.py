@@ -120,7 +120,7 @@ def test_sigmerger_merge_views():
 
 
 @pytest.mark.parametrize("net", (thalamus_net, learning_net))
-def test_optimizer_does_not_change_result(plt, seed, net):
+def test_optimizer_does_not_change_result(seed, net):
     model = net()
     model.seed = seed
 
