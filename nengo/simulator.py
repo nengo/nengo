@@ -30,6 +30,7 @@ class ProbeDict(Mapping):
     """
 
     def __init__(self, raw):
+        super(ProbeDict, self).__init__()
         self.raw = raw
         self._cache = {}
 
