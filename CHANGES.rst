@@ -19,6 +19,11 @@ Release History
    - Removed
    - Fixed
 
+2.4.1 (unreleased)
+==================
+
+
+
 2.4.0 (April 18, 2017)
 ======================
 
