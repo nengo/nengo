@@ -15,7 +15,7 @@ from nengo.exceptions import ReadonlyError, SimulatorClosed
 from nengo.utils.compat import range, ResourceWarning
 from nengo.utils.graphs import toposort
 from nengo.utils.progress import ProgressTracker
-from nengo.utils.simulator import operator_depencency_graph
+from nengo.utils.simulator import operator_dependency_graph
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +153,7 @@ class Simulator(object):
             self.model.build(network, progress_bar=self.progress_bar)
 
         # Order the steps (they are made in `Simulator.reset`)
-        self.dg = operator_depencency_graph(self.model.operators)
+        self.dg = operator_dependency_graph(self.model.operators)
 
         if optimize:
             opmerge_optimize(self.model, self.dg)

@@ -6,7 +6,7 @@ from .graphs import add_edges
 from .stdlib import groupby
 
 
-def operator_depencency_graph(operators):  # noqa: C901
+def operator_dependency_graph(operators):  # noqa: C901
     # -- all views of a base object in a particular dictionary
     by_base_sets = defaultdict(set)
     by_base_writes = defaultdict(set)
