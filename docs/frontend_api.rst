@@ -7,6 +7,17 @@ Nengo Modelling API
 Nengo Objects
 =============
 
+.. autosummary::
+   :nosignatures:
+
+   nengo.Network
+   nengo.Ensemble
+   nengo.ensemble.Neurons
+   nengo.Node
+   nengo.Connection
+   nengo.connection.LearningRule
+   nengo.Probe
+
 .. autoclass:: nengo.Network
 
 .. autoclass:: nengo.Ensemble
@@ -23,6 +34,22 @@ Nengo Objects
 
 Distributions
 =============
+
+.. autosummary::
+   :nosignatures:
+
+   nengo.dists.Distribution
+   nengo.dists.get_samples
+   nengo.dists.Uniform
+   nengo.dists.Gaussian
+   nengo.dists.Exponential
+   nengo.dists.UniformHypersphere
+   nengo.dists.Choice
+   nengo.dists.Samples
+   nengo.dists.PDF
+   nengo.dists.SqrtBeta
+   nengo.dists.SubvectorLength
+   nengo.dists.CosineSimilarity
 
 .. autoclass:: nengo.dists.Distribution
    :exclude-members: sample
@@ -54,6 +81,19 @@ Distributions
 Neuron types
 ============
 
+.. autosummary::
+   :nosignatures:
+
+   nengo.neurons.NeuronType
+   nengo.Direct
+   nengo.RectifiedLinear
+   nengo.Sigmoid
+   nengo.LIF
+   nengo.LIFRate
+   nengo.AdaptiveLIF
+   nengo.AdaptiveLIFRate
+   nengo.Izhikevich
+
 .. autoclass:: nengo.neurons.NeuronType
 
 .. autoclass:: nengo.Direct
@@ -75,6 +115,15 @@ Neuron types
 Learning rule types
 ===================
 
+.. autosummary::
+   :nosignatures:
+
+   nengo.learning_rules.LearningRuleType
+   nengo.PES
+   nengo.BCM
+   nengo.Oja
+   nengo.Voja
+
 .. autoclass:: nengo.learning_rules.LearningRuleType
 
 .. autoclass:: nengo.PES
@@ -87,6 +136,16 @@ Learning rule types
 
 Processes
 =========
+
+.. autosummary::
+   :nosignatures:
+
+   nengo.Process
+   nengo.processes.PresentInput
+   nengo.processes.FilteredNoise
+   nengo.processes.BrownNoise
+   nengo.processes.WhiteNoise
+   nengo.processes.WhiteSignal
 
 .. autoclass:: nengo.Process
 
@@ -102,6 +161,17 @@ Processes
 
 Synapse models
 ==============
+
+.. autosummary::
+   :nosignatures:
+
+   nengo.synapses.Synapse
+   nengo.synapses.filt
+   nengo.synapses.filtfilt
+   nengo.LinearFilter
+   nengo.Lowpass
+   nengo.Alpha
+   nengo.synapses.Triangle
 
 .. autoclass:: nengo.synapses.Synapse
 
@@ -119,6 +189,21 @@ Synapse models
 
 Decoder and connection weight solvers
 =====================================
+
+.. autosummary::
+   :nosignatures:
+
+   nengo.solvers.Solver
+   nengo.solvers.Lstsq
+   nengo.solvers.LstsqNoise
+   nengo.solvers.LstsqMultNoise
+   nengo.solvers.LstsqL2
+   nengo.solvers.LstsqL2nz
+   nengo.solvers.LstsqL1
+   nengo.solvers.LstsqDrop
+   nengo.solvers.Nnls
+   nengo.solvers.NnlsL2
+   nengo.solvers.NnlsL2nz
 
 .. autoclass:: nengo.solvers.Solver
    :special-members: __call__

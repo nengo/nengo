@@ -39,6 +39,10 @@ Release History
   To get the number of neurons in each ensemble,
   use ``EnsembleArray.n_neurons_per_ensemble``.
   (`#1186 <https://github.com/nengo/nengo/pull/1186>`_)
+- The `Nengo modelling API document
+  <http://pythonhosted.org/nengo/frontend_api.html>`_
+  now has summaries to help navigate the page.
+  (`#1304 <https://github.com/nengo/nengo/pull/1304>`_)
 
 2.4.0 (April 18, 2017)
 ======================

@@ -22,6 +22,19 @@ The following examples will help you to build your own networks:
 
 You may also find the :doc:`config system documentation <config>` useful.
 
+.. autosummary::
+   :nosignatures:
+
+   nengo.networks.EnsembleArray
+   nengo.networks.BasalGanglia
+   nengo.networks.Thalamus
+   nengo.networks.AssociativeMemory
+   nengo.networks.CircularConvolution
+   nengo.networks.Integrator
+   nengo.networks.Oscillator
+   nengo.networks.Product
+   nengo.networks.InputGatedMemory
+
 .. autoclass:: nengo.networks.EnsembleArray
 
 .. autofunction:: nengo.networks.BasalGanglia
