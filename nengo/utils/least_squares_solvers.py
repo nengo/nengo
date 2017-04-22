@@ -1,3 +1,11 @@
+"""These solvers are to be passed as arguments to `~.Solver` objects.
+
+For example::
+
+    nengo.Connection(ens_a, ens_b, solver=LstsqL2(solver=RandomizedSVD()))
+
+"""
+
 from __future__ import absolute_import
 
 import numpy as np
@@ -261,6 +269,8 @@ class SVD(LeastSquaresSolver):
 
 class RandomizedSVD(LeastSquaresSolver):
     """Solve a least-squares system using a randomized (partial) SVD.
+
+    Useful for solving large matrices quickly, but non-optimally.
 
     Parameters
     ----------
