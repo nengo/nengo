@@ -83,7 +83,7 @@ class Combined(nengo.dists.Distribution):
             # from a proportional number of dimensions
             samples = rng.randn(n, d)
             samples /= npext.norm(samples, axis=1, keepdims=True)
-            weights = np.zeros((n, len(distributions)))
+            weights = np.zeros((n, len(self.distributions)))
             start = 0
             for i, end in enumerate(np.cumsum(self.dimensions)):
                 weights[:,i] = npext.norm(samples[:,start:end], axis=1, keepdims=False)
