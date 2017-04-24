@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import nengo
 import numpy as np
+import nengo.utils.numpy as npext
 
 
 class Function(nengo.dists.Distribution):
@@ -58,13 +59,14 @@ class Combined(nengo.dists.Distribution):
     to be used for some dimensions and regular Nengo distributions
     to be used for others."""
 
-    def __init__(self, distributions, dimensions,
+    def __init__(self, distributions, dimensions, weighting=None,
                  weights=None, normalize_weights=True):
         if weights is None:
             weights = np.ones(len(distributions))
         if normalize_weights:
             weights = weights / np.linalg.norm(weights)
 
+        self.weighting = weighting
         self.weights = weights
         self.distributions = distributions
         self.dimensions = dimensions
@@ -74,7 +76,30 @@ class Combined(nengo.dists.Distribution):
     def sample(self, n, d=None, rng=np.random):
         assert d == self.n_dimensions
 
-        data = [dist.sample(n, d=self.dimensions[i], rng=rng) * self.weights[i]
+        if self.weighting == 'dimensions':
+            # sample in d-dimensional space, but project down to
+            # len(dist)-dimensional space for the weights to bias
+            # the projection so that each distribution is projected
+            # from a proportional number of dimensions
+            samples = rng.randn(n, d)
+            samples /= npext.norm(samples, axis=1, keepdims=True)
+            weights = np.zeros((n, len(distributions)))
+            start = 0
+            for i, end in enumerate(np.cumsum(self.dimensions)):
+                weights[:,i] = npext.norm(samples[:,start:end], axis=1, keepdims=False)
+                start = end
+        elif self.weighting == 'distributions':
+            samples = rng.randn(n, len(self.distributions))
+            samples /= npext.norm(samples, axis=1, keepdims=True)
+            weights = samples
+        else:
+            # use the original weighting method if nothing is specified
+            data = [dist.sample(n, d=self.dimensions[i], rng=rng) * self.weights[i]
+                    for i, dist in enumerate(self.distributions)]
+
+            return np.hstack(data)
+
+        data = [dist.sample(n, d=self.dimensions[i], rng=rng) * weights[:,i].reshape((n,1))
                 for i, dist in enumerate(self.distributions)]
 
         return np.hstack(data)
