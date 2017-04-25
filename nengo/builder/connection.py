@@ -12,6 +12,7 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
 from nengo.node import Node
+from nengo.solvers import Solver
 from nengo.utils.compat import is_iterable, itervalues
 
 built_attrs = ['eval_points', 'solver_info', 'weights', 'transform']
@@ -163,6 +164,11 @@ def slice_signal(model, signal, sl):
         return sliced_signal
 
 
+@Builder.register(Solver)
+def build_solver(model, solver, conn, rng, transform):
+    return build_decoders(model, conn, rng, transform)
+
+
 @Builder.register(Connection)  # noqa: C901
 def build_connection(model, conn):
     """Builds a `.Connection` object into a model.
@@ -241,8 +247,8 @@ def build_connection(model, conn):
             in_signal = Signal(np.zeros(conn.size_mid), name='%s.func' % conn)
             model.add_op(SimPyFunc(in_signal, conn.function, None, sliced_in))
     elif isinstance(conn.pre_obj, Ensemble):  # Normal decoded connection
-        eval_points, weights, solver_info = build_decoders(
-            model, conn, rng, transform)
+        eval_points, weights, solver_info = model.build(
+            conn.solver, conn, rng, transform)
         if conn.solver.weights:
             model.sig[conn]['out'] = model.sig[conn.post_obj.neurons]['in']
             signal_size = conn.post_obj.neurons.size_in
