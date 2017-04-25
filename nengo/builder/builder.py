@@ -63,10 +63,11 @@ class Model(object):
         or for the network builder to determine if it is the top-level network.
     """
 
-    def __init__(self, dt=0.001, label=None, decoder_cache=NoDecoderCache()):
+    def __init__(self, dt=0.001, label=None, decoder_cache=None, builder=None):
         self.dt = dt
         self.label = label
-        self.decoder_cache = decoder_cache
+        self.decoder_cache = (NoDecoderCache() if decoder_cache is None
+                              else decoder_cache)
 
         # Will be filled in by the network builder
         self.toplevel = None
@@ -87,6 +88,7 @@ class Model(object):
         self.time = Signal(np.array(0, dtype=np.float64), name='time')
         self.add_op(TimeUpdate(self.step, self.time))
 
+        self.builder = Builder() if builder is None else builder
         self.build_callback = None
 
     def __str__(self):
@@ -118,7 +120,7 @@ class Model(object):
         obj : object
             The object to build into this model.
         """
-        built = Builder.build(self, obj, *args, **kwargs)
+        built = self.builder.build(self, obj, *args, **kwargs)
         if self.build_callback is not None:
             self.build_callback(obj)
         return built
