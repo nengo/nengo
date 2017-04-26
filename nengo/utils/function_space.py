@@ -146,6 +146,10 @@ class FunctionSpace(object):
         """Generate a Node with a custom HTML GUI plot. The node takes in a set
         of weights and generates a line plot of the represented function through
         weighted summation of the basis functions"""
+
+        if domain.squeeze().ndim != 1:
+            raise Exception('Domain must be 1-dimensional')
+
         indices = None
         if len(domain) > n_pts:
             indices = np.linspace(0, len(domain) - 1, n_pts).astype(int)
@@ -182,7 +186,10 @@ class FunctionSpace(object):
             <svg width="100%%" height="100%%" viewbox="0 0 100 100">%s</svg>
             ''' % (''.join(paths))
         plot_func._nengo_html_ = ''
-        return nengo.Node(plot_func, size_in=self.n_basis * lines, size_out=0)
+        return nengo.Node(plot_func,
+                          size_in=self.n_basis * lines,
+                          size_out=0,
+                          label='Function plot node')
 
     def make_2Dplot_node(self, domain, n_pts=20):
         """Generate a Node with a custom GUI plot"""
