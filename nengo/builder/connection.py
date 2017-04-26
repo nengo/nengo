@@ -110,34 +110,25 @@ def build_decoders(model, conn, rng, transform):
         # include transform in solved weights
         targets = multiply(targets, transform.T)
 
-    try:
-        wrapped_solver = (model.decoder_cache.wrap_solver(solve_for_decoders)
-                          if model.seeded[conn] else solve_for_decoders)
-        decoders, solver_info = wrapped_solver(
-            conn.solver, conn.pre_obj.neuron_type, gain, bias, x, targets,
-            rng=rng, E=E)
-    except BuildError:
-        raise BuildError(
-            "Building %s: 'activities' matrix is all zero for %s. "
-            "This is because no evaluation points fall in the firing "
-            "ranges of any neurons." % (conn, conn.pre_obj))
+    wrapped_solver = (model.decoder_cache.wrap_solver(solve_for_decoders)
+                      if model.seeded[conn] else solve_for_decoders)
+    decoders, solver_info = wrapped_solver(
+        conn, gain, bias, x, targets, rng=rng, E=E)
 
     weights = (decoders.T if conn.solver.weights else
                multiply(transform, decoders.T))
     return eval_points, weights, solver_info
 
 
-def solve_for_decoders(
-        solver, neuron_type, gain, bias, x, targets, rng, E=None):
-    activities = neuron_type.rates(x, gain, bias)
+def solve_for_decoders(conn, gain, bias, x, targets, rng, E=None):
+    activities = conn.pre_obj.neuron_type.rates(x, gain, bias)
     if np.count_nonzero(activities) == 0:
-        raise BuildError()
+        raise BuildError(
+            "Building %s: 'activities' matrix is all zero for %s. "
+            "This is because no evaluation points fall in the firing "
+            "ranges of any neurons." % (conn, conn.pre_obj))
 
-    if solver.weights:
-        decoders, solver_info = solver(activities, targets, rng=rng, E=E)
-    else:
-        decoders, solver_info = solver(activities, targets, rng=rng)
-
+    decoders, solver_info = conn.solver(activities, targets, rng=rng, E=E)
     return decoders, solver_info
 
 

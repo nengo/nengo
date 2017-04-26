@@ -23,8 +23,7 @@ class SolverMock(object):
     def __init__(self):
         self.n_calls[self] = 0
 
-    def __call__(self, solver, neuron_type, gain, bias, x, targets,
-                 rng=np.random, E=None):
+    def __call__(self, conn, gain, bias, x, targets, rng=np.random, E=None):
         self.n_calls[self] += 1
         if E is None:
             return np.random.rand(x.shape[1], targets.shape[1]), {'info': 'v'}
@@ -36,9 +35,13 @@ def get_solver_test_args(**kwargs):
     M = 100
     N = 10
     D = 2
+    conn = nengo.Connection(
+        nengo.Ensemble(N, D, add_to_container=False),
+        nengo.Node(size_in=D, add_to_container=False),
+        add_to_container=False)
+    conn.solver = kwargs.pop('solver', nengo.solvers.LstsqL2nz())
     defaults = {
-        'solver': nengo.solvers.LstsqL2nz(),
-        'neuron_type': nengo.LIF(),
+        'conn': conn,
         'gain': np.ones(N),
         'bias': np.ones(N),
         'x': np.ones((M, D)),
@@ -54,9 +57,12 @@ def get_weight_solver_test_args():
     N = 10
     N2 = 5
     D = 2
+    conn = nengo.Connection(
+        nengo.Ensemble(N, D, add_to_container=False),
+        nengo.Node(size_in=D, add_to_container=False),
+        solver=nengo.solvers.LstsqL2nz(), add_to_container=False)
     return {
-        'solver': nengo.solvers.LstsqL2nz(),
-        'neuron_type': nengo.LIF(),
+        'conn': conn,
         'gain': np.ones(N),
         'bias': np.ones(N),
         'x': np.ones((M, D)),

@@ -7,7 +7,7 @@ import nengo
 import nengo.utils.numpy as npext
 from nengo.connection import ConnectionSolverParam
 from nengo.dists import UniformHypersphere
-from nengo.exceptions import ObsoleteError, ValidationError
+from nengo.exceptions import BuildError, ObsoleteError, ValidationError
 from nengo.solvers import LstsqL2
 from nengo.utils.functions import piecewise
 from nengo.utils.testing import allclose
@@ -941,3 +941,15 @@ def test_function_names():
         array_conn = nengo.Connection(a, b, eval_points=np.zeros((10, 1)),
                                       function=np.zeros((10, 1)))
         assert str(array_conn).endswith("computing 'ndarray'>")
+
+
+def test_zero_activities_error(Simulator):
+    with nengo.Network() as model:
+        a = nengo.Ensemble(10, 1)
+        a.gain = np.zeros(10)
+        a.bias = np.zeros(10)
+        nengo.Connection(a, nengo.Node(size_in=1))
+
+    with pytest.raises(BuildError):
+        with nengo.Simulator(model):
+            pass
