@@ -5,8 +5,8 @@ import numpy as np
 
 from nengo.exceptions import (
     ConfigError, ObsoleteError, ReadonlyError, ValidationError)
-from nengo.utils.compat import (int_types, is_array, is_integer, is_number,
-                                is_string, itervalues, string_types)
+from nengo.utils.compat import (int_types, is_array, is_array_like, is_integer,
+                                is_number, is_string, itervalues, string_types)
 from nengo.utils.numpy import array_hash, compare
 from nengo.utils.stdlib import WeakKeyIDDictionary, checked_call
 
@@ -160,8 +160,10 @@ class Parameter(object):
         a = self.__get__(instance_a, None)
         b = self.__get__(instance_b, None)
         if self.equatable:
-            # always use array_equal, in case one argument is an array
-            return np.array_equal(a, b)
+            if is_array_like(a) or is_array_like(b):
+                return np.array_equal(a, b)
+            else:
+                return a == b
         else:
             return a is b
 
