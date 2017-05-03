@@ -379,6 +379,43 @@ class ShapeParam(TupleParam):
                     attr=self.name, obj=instance)
 
 
+class FrozenMap(collections.Mapping):
+    def __init__(self, values=None):
+        if values is None:
+            values = {}
+        self._values = dict(values)
+
+    def __getitem__(self, key):
+        return self._values[key]
+
+    def __iter__(self):
+        return iter(self._values)
+
+    def __len__(self):
+        return len(self._values)
+
+    def __eq__(self, other):
+        return frozenset(self.keys()) == frozenset(other.keys()) and all(
+            self[k] == other[k] for k in self)
+
+    def __hash__(self):
+        return hash(frozenset(self.keys()))
+
+
+class FrozenMapParam(TypeCheckedParameter):
+    """A parameter where the value is a FrozenMap."""
+
+    equatable = True
+
+    def __init__(self, name, **kwargs):
+        super(FrozenMapParam, self).__init__(name, FrozenMap, **kwargs)
+
+    def validate(self, instance, value):
+        if value is not None and not isinstance(value, FrozenMap):
+            value = FrozenMap(value)
+        return super(FrozenMapParam, self).validate(instance, value)
+
+
 class DictParam(TypeCheckedParameter):
     """A parameter where the value is a dictionary."""
 
