@@ -52,7 +52,7 @@ class FunctionSpaceDistribution(nengo.dists.Distribution):
             data = self.data
         return np.dot(data, self.fs.basis)
 
-
+# NOTE: Keep this? Remove it?
 class Combined(nengo.dists.Distribution):
     """ A distribution that allows both FunctionSpaceDistributions
     to be used for some dimensions and regular Nengo distributions
@@ -120,7 +120,9 @@ class FunctionSpace(object):
 
         U, S, V = np.linalg.svd(data)
 
+        # get the weights expected from the expected distribution
         proj = np.dot(data, V[:self.n_basis].T)
+        # find the mean, to use for more efficient representation
         self._scale = np.mean(np.linalg.norm(proj, axis=1))**2
         # self._scale = (np.mean(S[:self.n_basis])) ** 2
         # self._scale = (S[0] / self.n_basis) ** 2
@@ -146,6 +148,9 @@ class FunctionSpace(object):
         """Generate a Node with a custom HTML GUI plot. The node takes in a set
         of weights and generates a line plot of the represented function through
         weighted summation of the basis functions"""
+
+        #TODO: min and max y are wonky, something goes wrong when they're not the same
+        # possibly plotting backwards
 
         if domain.squeeze().ndim != 1:
             raise Exception('Domain must be 1-dimensional')
