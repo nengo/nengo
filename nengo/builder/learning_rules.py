@@ -1,11 +1,11 @@
 import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
-from nengo.builder.operator import DotInc, ElementwiseInc, Reset
+from nengo.builder.operator import DotInc, ElementwiseInc, Reset, SimPyFunc
 from nengo.connection import LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
-from nengo.learning_rules import BCM, Oja, PES, Voja
+from nengo.learning_rules import BCM, DeltaRule, Oja, PES, Voja
 from nengo.node import Node
 from nengo.synapses import Lowpass
 
@@ -611,3 +611,53 @@ def build_pes(model, pes, rule):
     model.sig[rule]['error'] = error
     model.sig[rule]['correction'] = correction
     model.sig[rule]['activities'] = acts
+
+
+@Builder.register(DeltaRule)
+def build_delta_rule(model, delta_rule, rule):
+    conn = rule.connection
+
+    # Create input error signal
+    error = Signal(np.zeros(rule.size_in), name="DeltaRule:error")
+    model.add_op(Reset(error))
+    model.sig[rule]['in'] = error  # error connection will attach here
+
+    # Multiply by post_fn output if necessary
+    post_fn = delta_rule.post_fn.function
+    post_tau = delta_rule.post_tau
+    if post_fn is not None:
+        post_sig = model.sig[conn.post_obj]['in']
+        post_synapse = Lowpass(post_tau) if post_tau is not None else None
+        post_input = (post_sig if post_synapse is None else
+                      model.build(post_synapse, post_sig))
+
+        post = Signal(np.zeros(post_input.shape), name="DeltaRule:post")
+        model.add_op(SimPyFunc(post, post_fn, t=None, x=post_input,
+                               tag="DeltaRule:post_fn"))
+        model.sig[rule]['post'] = post
+
+        error0 = error
+        error = Signal(np.zeros(rule.size_in), name="DeltaRule:post_error")
+        model.add_op(Reset(error))
+        model.add_op(ElementwiseInc(error0, post, error))
+
+    # Compute: correction = -learning_rate * dt * error
+    correction = Signal(np.zeros(error.shape), name="DeltaRule:correction")
+    model.add_op(Reset(correction))
+    lr_sig = Signal(-delta_rule.learning_rate * model.dt,
+                    name="DeltaRule:learning_rate")
+    model.add_op(DotInc(lr_sig, error, correction, tag="DeltaRule:correct"))
+
+    # delta_ij = correction_i * pre_j
+    pre_synapse = Lowpass(delta_rule.pre_tau)
+    pre = model.build(pre_synapse, model.sig[conn.pre_obj]['out'])
+
+    model.add_op(Reset(model.sig[rule]['delta']))
+    model.add_op(ElementwiseInc(
+        correction.column(), pre.row(), model.sig[rule]['delta'],
+        tag="DeltaRule:Inc Delta"))
+
+    # expose these for probes
+    model.sig[rule]['error'] = error
+    model.sig[rule]['correction'] = correction
+    model.sig[rule]['pre'] = pre

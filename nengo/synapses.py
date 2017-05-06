@@ -188,6 +188,19 @@ class LinearFilter(Synapse):
         return "%s(%s, %s, analog=%r)" % (
             type(self).__name__, self.num, self.den, self.analog)
 
+    def combine(self, obj):
+        """Combine in series with another LinearFilter. """
+        if not isinstance(obj, LinearFilter):
+            raise ValueError("Can only combine with other LinearFilters")
+        if self.analog != obj.analog:
+            raise ValueError("Cannot combine analog and digital filters")
+        num = np.polymul(self.num, obj.num)
+        den = np.polymul(self.den, obj.den)
+        return LinearFilter(num, den, analog=self.analog,
+                            default_size_in=self.default_size_in,
+                            default_size_out=self.default_size_out,
+                            default_dt=self.default_dt, seed=self.seed)
+
     def evaluate(self, frequencies):
         """Evaluate the transfer function at the given frequencies.
 
@@ -331,6 +344,10 @@ class LinearFilter(Synapse):
 class Lowpass(LinearFilter):
     """Standard first-order lowpass filter synapse.
 
+    The impulse-response function is given by::
+
+        f(t) = (t / tau) * exp(-t / tau)
+
     Parameters
     ----------
     tau : float
@@ -366,7 +383,7 @@ class Alpha(LinearFilter):
 
     The impulse-response function is given by::
 
-        alpha(t) = (t / tau) * exp(-t / tau)
+        alpha(t) = (t / tau**2) * exp(-t / tau)
 
     and was found by [1]_ to be a good basic model for synapses.
 
