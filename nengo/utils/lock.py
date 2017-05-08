@@ -38,7 +38,7 @@ def _release_locks_handler(sig, frame):
 # signals will slightly differ depending on the platform (i.e. Windows does
 # not support some signals). We do not include SIGINT which is translated to
 # an exception by Python by default and SIGKILL for which no signal handler
-# can be registered. This also assumes that these signals are not “mis-used”
+# can be registered. This also assumes that these signals are not "mis-used"
 # for things that will not terminate the process (because in that case we
 # did not want to release the file locks). Because SIGUSR1 and SIGUSR2 are
 # commonly used as non-terminating signal, we only register the signal handler
