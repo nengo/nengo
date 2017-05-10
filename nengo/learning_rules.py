@@ -2,7 +2,22 @@ import warnings
 
 from nengo.exceptions import ValidationError
 from nengo.params import IntParam, FrozenObject, NumberParam, Parameter
-from nengo.utils.compat import is_iterable, itervalues
+from nengo.utils.compat import is_iterable, is_string, itervalues
+
+
+class LearningRuleTypeSizeInParam(IntParam):
+    valid_strings = ('pre', 'post', 'mid', 'pre_state', 'post_state')
+
+    def coerce(self, instance, size_in):
+        if is_string(size_in):
+            if size_in not in self.valid_strings:
+                raise ValidationError(
+                    "%r is not a valid string value (must be one of %s)"
+                    % (size_in, self.strings), attr=self.name, obj=instance)
+            return size_in
+        else:
+            return super(LearningRuleTypeSizeInParam, self).coerce(
+                instance, size_in)  # IntParam validation
 
 
 class LearningRuleType(FrozenObject):
@@ -14,9 +29,19 @@ class LearningRuleType(FrozenObject):
     Each learning rule exposes two important pieces of metadata that the
     builder uses to determine what information should be stored.
 
-    The ``size_in`` is the dimensionality of the incoming error signal. Setting
-    ``size_in`` to ``None`` will use the dimensionality of the post-synaptic
-    ensemble.
+    The ``size_in`` is the dimensionality of the incoming error signal. It
+    can either take an integer or one of the following string values:
+
+    * ``'pre'``: vector error signal in pre-object space
+    * ``'post'``: vector error signal in post-object space
+    * ``'mid'``: vector error signal in the ``conn.size_mid`` space
+    * ``'pre_state'``: vector error signal in pre-synaptic ensemble space
+    * ``'post_state'``: vector error signal in pre-synaptic ensemble space
+
+    The difference between ``'post_state'`` and ``'post'`` is that with the
+    former, if a ``Neurons`` object is passed, it will use the dimensionality
+    of the corresponding ``Ensemble``, whereas the latter simply uses the
+    ``post`` object ``size_in``. Similarly with ``'pre_state'`` and ``'pre'``.
 
     The ``modifies`` attribute denotes the signal targeted by the rule.
     Options are:
@@ -29,17 +54,15 @@ class LearningRuleType(FrozenObject):
     ----------
     learning_rate : float, optional (Default: 1e-6)
         A scalar indicating the rate at which ``modifies`` will be adjusted.
-    size_in : int, optional (Default: 0)
-        Dimensionality of the error signal (setting to ``None`` will use the
-        dimensionality of the post-synaptic ensemble).
+    size_in : int, str, optional (Default: 0)
+        Dimensionality of the error signal (see above).
 
     Attributes
     ----------
     learning_rate : float
         A scalar indicating the rate at which ``modifies`` will be adjusted.
-    size_in : int
-        Dimensionality of the error signal (setting to ``None`` will use the
-        dimensionality of the post-synaptic ensemble).
+    size_in : int, str
+        Dimensionality of the error signal.
     modifies : str
         The signal targeted by the learning rule.
     """
@@ -48,7 +71,7 @@ class LearningRuleType(FrozenObject):
     probeable = ()
 
     learning_rate = NumberParam('learning_rate', low=0, low_open=True)
-    size_in = IntParam('size_in', low=0, optional=True)
+    size_in = LearningRuleTypeSizeInParam('size_in', low=0)
 
     def __init__(self, learning_rate=1e-6, size_in=0):
         super(LearningRuleType, self).__init__()
@@ -95,7 +118,7 @@ class PES(LearningRuleType):
             warnings.warn("This learning rate is very high, and can result "
                           "in floating point errors from too much current.")
         self.pre_tau = pre_tau
-        super(PES, self).__init__(learning_rate, size_in=None)
+        super(PES, self).__init__(learning_rate, size_in='post_state')
 
     @property
     def _argreprs(self):

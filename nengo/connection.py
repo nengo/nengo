@@ -573,12 +573,22 @@ class LearningRule(object):
 
     @property
     def size_in(self):
-        if self.learning_rule_type.size_in is None:
-            return (self.connection.post_obj.ensemble.size_in
-                    if isinstance(self.connection.post_obj, Neurons)
-                    else self.connection.size_out)
+        conn = self.connection
+        size_in = self.learning_rule_type.size_in
+        if size_in == 'pre':
+            return conn.size_in
+        elif size_in == 'mid':
+            return conn.size_mid
+        elif size_in == 'post':
+            return conn.size_out
+        elif size_in == 'pre_state':
+            return (conn.pre_obj.ensemble.size_out
+                    if isinstance(conn.pre_obj, Neurons) else conn.size_in)
+        elif size_in == 'post_state':
+            return (conn.post_obj.ensemble.size_in
+                    if isinstance(conn.post_obj, Neurons) else conn.size_out)
         else:
-            return self.learning_rule_type.size_in
+            return size_in  # should be an integer
 
     @property
     def size_out(self):

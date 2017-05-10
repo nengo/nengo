@@ -41,6 +41,11 @@ Release History
 
 **Changed**
 
+- Learning rules now have a ``size_in`` parameter and attribute,
+  allowing both integers and strings to define the dimensionality
+  of the learning rule. This replaces the ``error_type`` attribute.
+  (`#1307 <https://github.com/nengo/nengo/issues/1307>`_,
+  `#1310 <https://github.com/nengo/nengo/pull/1310>`_)
 - ``EnsembleArray.n_neurons`` now gives the total number of neurons
   in all ensembles, including those in subnetworks.
   To get the number of neurons in each ensemble,
