@@ -10,23 +10,25 @@ from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.params import (Default, Unconfigurable, ObsoleteParam,
-                          BoolParam, FunctionInfo, FunctionParam)
+                          BoolParam, FunctionInfo, Parameter)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
-from nengo.utils.compat import is_array_like, is_iterable, iteritems
+from nengo.utils.compat import (
+    is_array_like, is_integer, is_iterable, iteritems)
 from nengo.utils.connection import function_name
+from nengo.utils.stdlib import checked_call
 
 logger = logging.getLogger(__name__)
 
 
 class PrePostParam(NengoObjectParam):
     def validate(self, conn, nengo_obj):
-        super(PrePostParam, self).validate(conn, nengo_obj)
         if isinstance(nengo_obj, Connection):
             raise ValidationError(
                 "Cannot connect to or from connections. "
                 "Did you mean to connect to the connection's learning rule?",
                 attr=self.name, obj=conn)
+        return super(PrePostParam, self).validate(conn, nengo_obj)
 
 
 class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
@@ -97,7 +99,10 @@ class ConnectionSolverParam(SolverParam):
     """Connection-specific validation for decoder solvers."""
 
     def validate(self, conn, solver):
-        super(ConnectionSolverParam, self).validate(conn, solver)
+        new_solver = super(ConnectionSolverParam, self).validate(conn, solver)
+        if new_solver is not None:
+            solver = new_solver
+
         if solver is not None:
             if solver.weights and not isinstance(conn.pre_obj, Ensemble):
                 raise ValidationError(
@@ -109,42 +114,30 @@ class ConnectionSolverParam(SolverParam):
                     "weight solvers only work for connections to ensembles "
                     "(got %r)" % type(conn.post_obj).__name__,
                     attr=self.name, obj=conn)
+        return solver
 
 
 class EvalPointsParam(DistOrArrayParam):
     def validate(self, conn, distorarray):
         """Eval points are only valid when pre is an ensemble."""
-        if not isinstance(conn.pre, Ensemble):
+        if distorarray is not None and not isinstance(conn.pre, Ensemble):
             msg = ("eval_points are only valid on connections from ensembles "
                    "(got type '%s')" % type(conn.pre).__name__)
             raise ValidationError(msg, attr=self.name, obj=conn)
         return super(EvalPointsParam, self).validate(conn, distorarray)
 
 
-class ConnectionFunctionParam(FunctionParam):
+class ConnectionFunctionParam(Parameter):
     """Connection-specific validation for functions."""
 
-    def __set__(self, conn, function):
-        if function is None:
-            function_info = FunctionInfo(function=None, size=None)
-        elif isinstance(function, FunctionInfo):
-            function_info = function
-        elif is_array_like(function):
-            array = np.array(function, copy=False, dtype=np.float64)
-            self.validate_array(conn, array)
-            function_info = FunctionInfo(function=array, size=array.shape[1])
-        elif callable(function):
-            function_info = FunctionInfo(
-                function=function, size=self.determine_size(conn, function))
-            self.validate_callable(conn, function_info)
-        else:
-            raise ValidationError("Invalid connection function type %r "
-                                  "(must be callable or array-like)"
-                                  % type(function).__name__,
-                                  attr=self.name, obj=conn)
-
-        self.validate(conn, function_info)
-        self.data[conn] = function_info
+    def determine_size(self, instance, function):
+        args = self.function_args(instance, function)
+        value, invoked = checked_call(function, *args)
+        if not invoked:
+            raise ValidationError("function '%s' must accept a single "
+                                  "np.array argument" % function,
+                                  attr=self.name, obj=instance)
+        return np.asarray(value).size
 
     def function_args(self, conn, function):
         x = (conn.eval_points[0] if is_iterable(conn.eval_points)
@@ -172,7 +165,7 @@ class ConnectionFunctionParam(FunctionParam):
     def validate_callable(self, conn, function_info):
         super(ConnectionFunctionParam, self).validate(conn, function_info)
 
-    def validate(self, conn, function_info):
+    def validate_function_can_be_applied(self, conn, function_info):
         function, size = function_info
         type_pre = type(conn.pre_obj).__name__
 
@@ -204,6 +197,32 @@ class ConnectionFunctionParam(FunctionParam):
                     "%s output size (%d) not equal to transform input size "
                     "(%d)" % (type_pre, size_mid, transform.shape[1]),
                     attr=self.name, obj=conn)
+
+    def validate(self, conn, function):
+        function = super(ConnectionFunctionParam, self).validate(
+            conn, function)
+
+        if function is None:
+            function_info = FunctionInfo(function=None, size=None)
+        elif isinstance(function, FunctionInfo):
+            function_info = function
+        elif is_array_like(function):
+            array = np.array(function, copy=False, dtype=np.float64)
+            self.validate_array(conn, array)
+            function_info = FunctionInfo(function=array, size=array.shape[1])
+        elif callable(function):
+            function_info = FunctionInfo(
+                function=function, size=self.determine_size(conn, function))
+            self.validate_callable(conn, function_info)
+        else:
+            raise ValidationError("Invalid connection function type %r "
+                                  "(must be callable or array-like)"
+                                  % type(function).__name__,
+                                  attr=self.name, obj=conn)
+
+        self.validate_function_can_be_applied(conn, function_info)
+
+        return function_info
 
 
 class TransformParam(DistOrArrayParam):
@@ -570,25 +589,77 @@ class LearningRule(object):
         return self.learning_rule_type.probeable
 
     @property
+    def error_signals(self):
+        return [getattr(self, name)
+                for name in self.learning_rule_type.error_signals]
+
+    def __getattr__(self, key):
+        if key not in self.learning_rule_type.error_signals:
+            raise AttributeError(key)
+        size_in = self.learning_rule_type.error_signals[key]
+        if size_in == 'decoded':
+            size_in = (
+                self.connection.post_obj.ensemble.size_in
+                if isinstance(self.connection.post_obj, Neurons) else
+                self.connection.size_out)
+        elif size_in == 'neuron':
+            raise NotImplementedError()
+        elif not is_integer(size_in):
+            raise ValidationError(
+                "Invalid size_in for error signal '%s'." % key,
+                attr='error_signals', obj=self)
+        return ErrorSignal(self, key, size_in)
+
+    @property
+    def default_error_signal(self):
+        if len(self.learning_rule_type.error_signals) != 1:
+            raise ValueError(
+                "Directly connecting to the learning rule is only allowed if"
+                "it uses exactly one error signal.")
+        return next(iter(self.learning_rule_type.error_signals))
+
+    @property
     def size_in(self):
         """(int) Dimensionality of the signal expected by the learning rule."""
-        if self.error_type == 'none':
-            return 0
-        elif self.error_type == 'scalar':
-            return 1
-        elif self.error_type == 'decoded':
-            return (self.connection.post_obj.ensemble.size_in
-                    if isinstance(self.connection.post_obj, Neurons) else
-                    self.connection.size_out)
-        elif self.error_type == 'neuron':
-            raise NotImplementedError()
-        else:
-            raise ValidationError(
-                "Unrecognized error type %r" % self.error_type,
-                attr='error_type', obj=self)
+        return getattr(self, self.default_error_signal).size_in
 
     @property
     def size_out(self):
         """(int) Cannot connect from learning rules, so always 0."""
         return 0  # since a learning rule can't connect to anything
         # TODO: allow probing individual learning rules
+
+
+class ErrorSignal(object):
+    """An interface for making connections to error signals of a learning rule.
+
+    Error signal objects should only ever be accessed through corresponding
+    attribute of the ``learning_rule`` attribute of a connection.
+    """
+
+    def __init__(self, learning_rule, name, size_in):
+        self._learning_rule = learning_rule
+        self.name = name
+        self.size_in = size_in
+
+    def __repr__(self):
+        return "<Error signal %s of %r>" % (self.name, self.learning_rule)
+
+    def __eq__(self, other):
+        return (
+            self._learning_rule == other._learning_rule and
+            self.name == other.name)
+
+    def __hash__(self):
+        return hash(self._learning_rule) + hash(self.name)
+
+    @property
+    def learning_rule(self):
+        """(LearningRule) The learning rule using the error signal."""
+        return self._learning_rule
+
+    @property
+    def size_out(self):
+        """(int) Cannot connect from error signals, so always 0."""
+        return 0
+        # TODO: allow probing individual error signals

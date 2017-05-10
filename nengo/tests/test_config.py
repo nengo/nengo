@@ -2,8 +2,9 @@ import pytest
 
 import nengo
 import nengo.synapses
-from nengo.exceptions import ConfigError, ReadonlyError
-from nengo.params import Parameter
+from nengo.config import Config, ConfigParam
+from nengo.exceptions import ConfigError, ReadonlyError, ValidationError
+from nengo.params import IntParam, Parameter
 from nengo.utils.testing import ThreadedAssertion
 
 
@@ -213,3 +214,25 @@ def test_contains():
     cfg = nengo.Config(A)
     with pytest.raises(TypeError):
         A in cfg
+
+
+def test_configparam():
+    class Configurable(object):
+        p = IntParam('p', default=0)
+
+    cfg = Config(Configurable)
+
+    class Test(object):
+        cp = ConfigParam('cp', default=cfg)
+
+    inst1 = Test()
+    assert inst1.cp[Configurable].p == 0
+    inst1.cp[Configurable].p = 2
+
+    # The default config is mutable -- other instances will get the same config
+    inst2 = Test()
+    assert inst2.cp[Configurable].p == 2
+
+    # Non-configs no good
+    with pytest.raises(ValidationError):
+        inst2.cp = {'p': 0}

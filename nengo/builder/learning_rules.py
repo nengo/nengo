@@ -365,6 +365,15 @@ def build_learning_rule(model, rule):
 
     conn = rule.connection
 
+    # --- Set up error signals
+    for err_sig in rule.error_signals:
+        error = Signal(
+            np.zeros(err_sig.size_in), name="learning_rule:" + err_sig.name)
+        model.add_op(Reset(error))
+        model.sig[err_sig]['in'] = error  # error connection will attach here
+    if len(rule.error_signals) == 1:
+        model.sig[rule]['in'] = model.sig[next(iter(rule.error_signals))]['in']
+
     # --- Set up delta signal
     if rule.modifies == 'encoders':
         if not conn.is_decoded:
@@ -385,7 +394,7 @@ def build_learning_rule(model, rule):
                 np.zeros((post.n_neurons, pre.n_neurons)), name='Delta')
         else:
             delta = Signal(
-                np.zeros((rule.size_in, pre.n_neurons)), name='Delta')
+                np.zeros((conn.post.size_in, pre.n_neurons)), name='Delta')
     else:
         raise BuildError("Unknown target %r" % rule.modifies)
 

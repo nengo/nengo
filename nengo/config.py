@@ -15,6 +15,7 @@ http://nbviewer.ipython.org/urls/gist.github.com/ChrisBeaumont/5758381/raw/descr
 import inspect
 import sys
 
+import nengo
 from nengo.exceptions import ConfigError, ValidationError
 from nengo.params import Default, is_param, iter_params
 from nengo.rc import rc
@@ -456,3 +457,15 @@ class SupportDefaultsMixin(object):
                 reraise(exc_info[0], exc_info[1], None)
         else:
             super(SupportDefaultsMixin, self).__setattr__(name, val)
+
+
+class ConfigParam(nengo.params.TypeCheckedParameter):
+    """A parameter that accepts a Config object."""
+
+    def __init__(self, name, **kwargs):
+        super(ConfigParam, self).__init__(name, Config, **kwargs)
+
+    def validate(self, instance, value):
+        if value is None:
+            value = Config()
+        return super(ConfigParam, self).validate(instance, value)

@@ -211,7 +211,8 @@ class NengoObjectParam(Parameter):
             NengoObject,
             ObjView,
             nengo.ensemble.Neurons,
-            nengo.connection.LearningRule
+            nengo.connection.LearningRule,
+            nengo.connection.ErrorSignal,
         )
         if not isinstance(nengo_obj, nengo_objects):
             raise ValidationError("'%s' is not a Nengo object" % nengo_obj,
