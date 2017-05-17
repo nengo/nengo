@@ -27,7 +27,8 @@ class LearningRuleType(FrozenObject):
     * ``'none'``: no error signal
     * ``'scalar'``: scalar error signal
     * ``'decoded'``: vector error signal in decoded space
-    * ``'neuron'``: vector error signal in neuron space
+    * ``'pre'``: vector error signal in pre-object space
+    * ``'post'``: vector error signal in post-object space
 
     The ``modifies`` attribute denotes the signal targeted by the rule.
     Options are:
@@ -308,7 +309,7 @@ class LearningRuleTypeParam(Parameter):
             raise ValidationError(
                 "'%s' must be a learning rule type or a dict or "
                 "list of such types." % rule, attr=self.name, obj=instance)
-        if rule.error_type not in ('none', 'scalar', 'decoded', 'neuron'):
+        if rule.error_type not in ('none', 'scalar', 'decoded', 'pre', 'post'):
             raise ValidationError(
                 "Unrecognized error type %r" % rule.error_type,
                 attr=self.name, obj=instance)
