@@ -1,5 +1,7 @@
 *.py[co]
 .DS_Store
+.project
+.pydevproject
 _build
 build
 dist
