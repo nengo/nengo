@@ -39,6 +39,9 @@ Release History
 
 **Fixed**
 
+- Fixed an issue in which the PES learning rule could not be used
+  on connections to an ``ObjView`` when using a weight solver.
+  (`#1317 <https://github.com/nengo/nengo/pull/1317>`_)
 - The progress bar that can appear when building a large model
   will now appear earlier in the build process.
   (`#1340 <https://github.com/nengo/nengo/pull/1340>`_)

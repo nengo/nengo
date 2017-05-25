@@ -578,7 +578,7 @@ def build_pes(model, pes, rule):
     if not conn.is_decoded:
         post = get_post_ens(conn)
         weights = model.sig[conn]['weights']
-        encoders = model.sig[post]['encoders']
+        encoders = model.sig[post]['encoders'][:, conn.post_slice]
 
         # encoded = dot(encoders, correction)
         encoded = Signal(np.zeros(weights.shape[0]), name="PES:encoded")

@@ -176,6 +176,32 @@ def test_pes_multidim_error(Simulator, rng):
         sim.run(0.01)
 
 
+@pytest.mark.parametrize("weights", [False, True])
+def test_pes_recurrent_slice(Simulator, seed, weights):
+    """Test that PES works on recurrent connections from N to 1 dims."""
+
+    with nengo.Network(seed=seed) as net:
+        err = nengo.Node(output=[-10])
+        stim = nengo.Node(output=[0, 0])
+        post = nengo.Ensemble(20, 2)
+        nengo.Connection(stim, post)
+
+        conn = nengo.Connection(post, post[1],
+                                function=lambda x: 0.0,
+                                solver=nengo.solvers.LstsqL2(weights=weights),
+                                learning_rule_type=nengo.PES())
+
+        nengo.Connection(err, conn.learning_rule)
+        p = nengo.Probe(post, synapse=0.025)
+
+    with Simulator(net) as sim:
+        sim.run(0.1)
+
+    # Learning rule should drive second dimension high, but not first
+    assert np.all(sim.data[p][-10:, 0] < 0.2)
+    assert np.all(sim.data[p][-10:, 1] > 0.8)
+
+
 @pytest.mark.parametrize('rule_type, solver', [
     (BCM(learning_rate=1e-8), False),
     (Oja(learning_rate=1e-5), False),
