@@ -34,9 +34,9 @@ def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
         probe2 = nengo.Probe(n2, synapse=0.03)
 
     with Simulator(model) as sim:
-        sim.run(0.5)
+        raise Exception
 
-    raise Exception
+        sim.run(0.5)
 
     plt.subplot(2, 1, 1)
     plt.plot(sim.trange(), sim.data[probe1])
