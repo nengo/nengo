@@ -36,6 +36,8 @@ def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
     with Simulator(model) as sim:
         sim.run(0.5)
 
+    raise Exception
+
     plt.subplot(2, 1, 1)
     plt.plot(sim.trange(), sim.data[probe1])
     plt.title('Square manually with target_function')
