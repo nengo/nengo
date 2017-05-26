@@ -34,7 +34,8 @@ def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
         probe2 = nengo.Probe(n2, synapse=0.03)
 
     import logging
-    logging.basicConfig(level=logging.DEBUG)
+    import sys
+    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 
     with Simulator(model) as sim:
         raise Exception
