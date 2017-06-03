@@ -97,6 +97,9 @@ class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
         if len(nengo.Network.context) > 0:
             warnings.warn(NotAddedToNetworkWarning(self))
 
+    def __iter__(self):
+        raise NotImplementedError("NengoObject is not iterable")
+
     def __setattr__(self, name, val):
         if hasattr(self, '_initialized') and not hasattr(self, name):
             warnings.warn(
@@ -174,6 +177,9 @@ class ObjView(object):
 
     def copy(self):
         return copy(self)
+
+    def __iter__(self):
+        raise TypeError("ObjView is not iterable")
 
     def __len__(self):
         return self.size_out
