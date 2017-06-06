@@ -43,6 +43,12 @@ class ReadonlyError(ValidationError):
 class BuildError(NengoException, ValueError):
     """A ValueError encountered during the build process."""
 
+    def __init__(self, msg, related_objects=None):
+        super(BuildError, self).__init__(msg)
+        if related_objects is None:
+            related_objects = []
+        self.related_objects = related_objects
+
 
 class ObsoleteError(NengoException):
     """A feature that has been removed in a backwards-incompatible way."""

@@ -589,7 +589,8 @@ def build_pes(model, pes, rule):
         local_error = correction
     else:
         raise BuildError("'pre' object '%s' not suitable for PES learning"
-                         % (conn.pre_obj))
+                         % (conn.pre_obj),
+                         [conn.pre_obj])
 
     # delta = local_error * activities
     model.add_op(Reset(model.sig[rule]['delta']))

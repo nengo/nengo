@@ -93,7 +93,8 @@ def build_linear_system(model, conn, rng):
         raise BuildError(
             "Building %s: 'activites' matrix is all zero for %s. "
             "This is because no evaluation points fall in the firing "
-            "ranges of any neurons." % (conn, conn.pre_obj))
+            "ranges of any neurons." % (conn, conn.pre_obj),
+            [conn, conn.pre_obj])
 
     targets = get_targets(conn, eval_points)
     return eval_points, activities, targets
@@ -130,7 +131,8 @@ def solve_for_decoders(conn, gain, bias, x, targets, rng, E=None):
         raise BuildError(
             "Building %s: 'activities' matrix is all zero for %s. "
             "This is because no evaluation points fall in the firing "
-            "ranges of any neurons." % (conn, conn.pre_obj))
+            "ranges of any neurons." % (conn, conn.pre_obj),
+            [conn, conn.pre_obj])
 
     decoders, solver_info = conn.solver(activities, targets, rng=rng, E=E)
     return decoders, solver_info
@@ -217,11 +219,13 @@ def build_connection(model, conn):
         if target not in model.sig:
             raise BuildError("Building %s: the %r object %s is not in the "
                              "model, or has a size of zero."
-                             % (conn, 'pre' if is_pre else 'post', target))
+                             % (conn, 'pre' if is_pre else 'post', target),
+                             [conn, target])
         if key not in model.sig[target]:
             raise BuildError(
                 "Building %s: the %r object %s has a %r size of zero."
-                % (conn, 'pre' if is_pre else 'post', target, key))
+                % (conn, 'pre' if is_pre else 'post', target, key),
+                [conn, target])
 
         return model.sig[target][key]
 
