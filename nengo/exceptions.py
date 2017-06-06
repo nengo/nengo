@@ -44,10 +44,41 @@ class BuildError(NengoException, ValueError):
     """A ValueError encountered during the build process."""
 
     def __init__(self, msg, related_objects=None):
-        super(BuildError, self).__init__(msg)
+        super(BuildError, self).__init__()
+        self.msg = msg
         if related_objects is None:
             related_objects = []
         self.related_objects = related_objects
+        self.containment = None
+
+    def store_containment_info(self, toplevel_net):
+        to_process = [(toplevel_net,)]
+        self.containment = {}
+        while len(to_process) > 0:
+            hierarchy = to_process.pop()
+            for obj in self.related_objects:
+                if (type(obj) in hierarchy[-1].objects and
+                        obj in hierarchy[-1].objects[type(obj)]):
+                    self.containment[obj] = list(hierarchy)
+            for net in hierarchy[-1].networks:
+                to_process.append(hierarchy + (net,))
+
+    def __str__(self):
+        if self.containment is None:
+            return self.msg
+        else:
+            msg = [self.msg, '\nRelated objects:\n']
+            for obj in self.related_objects:
+                msg.extend(('    ', str(obj)))
+                if obj in self.containment:
+                    msg.extend((
+                        '\n        in ',
+                        '\n        in '.join(
+                            str(x) for x in reversed(self.containment[obj]))))
+                else:
+                    msg.append('\n        (not in model)')
+                msg.append('\n')
+            return ''.join(msg)
 
 
 class ObsoleteError(NengoException):

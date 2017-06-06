@@ -11,7 +11,8 @@ from nengo.builder import Model
 from nengo.builder.optimizer import optimize as opmerge_optimize
 from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
-from nengo.exceptions import ReadonlyError, SimulatorClosed, ValidationError
+from nengo.exceptions import (
+    BuildError, ReadonlyError, SimulatorClosed, ValidationError)
 from nengo.utils.compat import range, ResourceWarning
 from nengo.utils.graphs import toposort
 from nengo.utils.progress import ProgressTracker
@@ -154,7 +155,11 @@ class Simulator(object):
 
         if network is not None:
             # Build the network into the model
-            self.model.build(network, progress_bar=self.progress_bar)
+            try:
+                self.model.build(network, progress_bar=self.progress_bar)
+            except BuildError as err:
+                err.store_containment_info(network)
+                raise err
 
         # Order the steps (they are made in `Simulator.reset`)
         self.dg = operator_dependency_graph(self.model.operators)
