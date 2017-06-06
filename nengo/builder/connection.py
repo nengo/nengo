@@ -76,7 +76,11 @@ def get_targets(conn, eval_points):
     else:
         targets = np.zeros((len(eval_points), conn.size_mid))
         for i, ep in enumerate(eval_points[:, conn.pre_slice]):
-            targets[i] = conn.function(ep)
+            out = conn.function(ep)
+            if out is None:
+                raise BuildError("Building %s: Connection function returned "
+                                 "None. Cannot solve for decoders." % (conn,))
+            targets[i] = out
 
     return targets
 

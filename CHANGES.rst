@@ -55,6 +55,9 @@ Release History
   <http://pythonhosted.org/nengo/frontend_api.html>`_
   now has summaries to help navigate the page.
   (`#1304 <https://github.com/nengo/nengo/pull/1304>`_)
+- The error raised when a ``Connection`` function returns ``None``
+  is now more clear.
+  (`#1319 <https://github.com/nengo/nengo/pull/1319>`_)
 
 2.4.0 (April 18, 2017)
 ======================
