@@ -102,7 +102,7 @@ def has_ipynb_widgets():
 
 
 def hide_input():
-    """Hide the input of the IPython notebook input block this is executed in.
+    """Hide the input of the Jupyter notebook input block this is executed in.
 
     Returns a link to toggle the visibility of the input block.
     """

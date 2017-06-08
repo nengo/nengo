@@ -108,7 +108,7 @@ and ``requirements-docs.txt``, and can be installed with ``pip``:
    pip install -r requirements-test.txt
    pip install -r requirements-docs.txt
 
-However, one additional requirement for building the IPython notebooks
+However, one additional requirement for building the Jupyter notebooks
 that we include in the documentation is Pandoc_.
 If you use a package manager (e.g., Homebrew, ``apt``)
 you should be able to install Pandoc_ through your package manager.

@@ -1,8 +1,8 @@
-"""IPython extension that activates special IPython notebook features of Nengo.
+"""IPython extension that activates special Jupyter notebook features of Nengo.
 
 At the moment this only activates the improved progress bar.
 
-Use ``%load_ext nengo.ipynb`` in an IPython notebook to load the extension.
+Use ``%load_ext nengo.ipynb`` in a Jupyter notebook to load the extension.
 
 Note
 ----
