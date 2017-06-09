@@ -59,6 +59,11 @@ Release History
   is now more clear.
   (`#1319 <https://github.com/nengo/nengo/pull/1319>`_)
 
+**Fixed**
+
+- Probe cache is now cleared on simulator reset.
+  (`#1324 <https://github.com/nengo/nengo/pull/1324>`_)
+
 2.4.0 (April 18, 2017)
 ======================
 

@@ -56,6 +56,9 @@ class ProbeDict(Mapping):
     def __str__(self):
         return str(self.raw)
 
+    def reset(self):
+        self._cache.clear()
+
 
 class Simulator(object):
     """Reference simulator for Nengo models.
@@ -262,6 +265,7 @@ class Simulator(object):
         # clear probe data
         for probe in self.model.probes:
             self._probe_outputs[probe] = []
+        self.data.reset()
 
         self._probe_step_time()
 

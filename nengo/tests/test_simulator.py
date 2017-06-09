@@ -258,3 +258,19 @@ def test_obsolete_params(RefSimulator):
         pass
     with pytest.raises(ObsoleteError):
         sim.data[c].decoders
+
+
+def test_probe_cache(Simulator):
+    with nengo.Network() as model:
+        u = nengo.Node(nengo.processes.WhiteNoise())
+        up = nengo.Probe(u)
+
+    with nengo.Simulator(model, seed=0) as sim:
+        sim.run_steps(10)
+        ua = np.array(sim.data[up])
+
+        sim.reset(seed=1)
+        sim.run_steps(10)
+        ub = np.array(sim.data[up])
+
+    assert not np.allclose(ua, ub, atol=1e-1)
