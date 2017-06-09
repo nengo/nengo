@@ -6,7 +6,7 @@ notifications:
 
 env:
   global:
-    - NUMPY="1.12"
+    - NUMPY="1.13"
     - SCIPY="false"
     - COVERAGE="false"
     - STATIC="false"
@@ -22,6 +22,7 @@ matrix:
     - env: PYTHON="2.7" NUMPY="1.9"
     - env: PYTHON="2.7" NUMPY="1.10"
     - env: PYTHON="2.7" NUMPY="1.11"
+    - env: PYTHON="2.7" NUMPY="1.12"
     - env: PYTHON="3.4" NUMPY="1.11"  # 1.12 not packaged for py34 in conda
     - env: PYTHON="3.5"
     - env: PYTHON="3.6" COVERAGE="true" SCIPY="true"

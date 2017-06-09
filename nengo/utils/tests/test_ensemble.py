@@ -50,8 +50,8 @@ def test_tuning_curves(Simulator, nl_nodirect, plt, seed, dimensions):
 
     assert np.all(activities >= 0)
 
-    d = np.sqrt(np.sum(np.asarray(eval_points) ** 2, axis=0))
-    assert np.all(activities[:, d <= radius] <= max_rate)
+    d = np.sqrt(np.sum(np.asarray(eval_points) ** 2, axis=-1))
+    assert np.all(activities[d <= radius] <= max_rate)
 
 
 @pytest.mark.parametrize('dimensions', [1, 2])
