@@ -223,7 +223,7 @@ class TransformParam(DistOrArrayParam):
             name, default, (), optional, readonly)
 
     def coerce(self, conn, transform):
-        if not isinstance(transform, Distribution):
+        if transform is not None and not isinstance(transform, Distribution):
             # if transform is an array, figure out what the correct shape
             # should be
             transform = np.asarray(transform, dtype=np.float64)

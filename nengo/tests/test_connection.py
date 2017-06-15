@@ -965,3 +965,11 @@ def test_function_returns_none_error(Simulator):
     with pytest.raises(BuildError):
         with nengo.Simulator(model):
             pass
+
+
+def test_connection_none_error():
+    with nengo.Network():
+        a = nengo.Node([0])
+        b = nengo.Node(size_in=1)
+        with pytest.raises(ValidationError):
+            nengo.Connection(a, b, transform=None)

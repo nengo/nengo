@@ -58,6 +58,8 @@ Release History
 - The error raised when a ``Connection`` function returns ``None``
   is now more clear.
   (`#1319 <https://github.com/nengo/nengo/pull/1319>`_)
+- We now raise an error when a ``Connection`` transform is set to ``None``.
+  (`#1326 <https://github.com/nengo/nengo/pull/1326>`_)
 
 **Fixed**
 
