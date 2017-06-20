@@ -60,6 +60,9 @@ def pytest_configure(config):
         ntypes = config.getoption('neurons')[0].split(',')
         TestConfig.neuron_types = [load_class(n) for n in ntypes]
 
+    if config.getoption('seed_offset'):
+        TestConfig.test_seed = config.getoption('seed-offset')[0]
+
     TestConfig.compare_requested = config.getvalue('compare') is not None
 
 

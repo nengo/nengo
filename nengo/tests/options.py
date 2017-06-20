@@ -22,3 +22,5 @@ def pytest_addoption(parser):
     parser.addoption(
         '--slow', action='store_true', default=False,
         help='Also run slow tests.')
+    parser.addoption('--seed-offset', nargs=1, type=int, default=0,
+                     help="Specify offset of the seed values used in tests.")
