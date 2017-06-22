@@ -252,10 +252,6 @@ def build_connection(model, conn):
         weights = transform
         in_signal = slice_signal(model, in_signal, conn.pre_slice)
 
-    if isinstance(conn.post_obj, Neurons):
-        weights = multiply(
-            model.params[conn.post_obj.ensemble].gain[post_slice], weights)
-
     # Add operator for applying weights
     model.sig[conn]['weights'] = Signal(
         weights, name="%s.weights" % conn, readonly=True)
@@ -274,10 +270,19 @@ def build_connection(model, conn):
     # Store the weighted-filtered output in case we want to probe it
     model.sig[conn]['weighted'] = signal
 
-    # Copy to the proper slice
-    model.add_op(Copy(
-        signal, model.sig[conn]['out'], dst_slice=post_slice,
-        inc=True, tag="%s" % conn))
+    if isinstance(conn.post_obj, Neurons):
+        # Apply neuron gains (we don't need to do this if we're connecting to
+        # an Ensemble, because the gains are rolled into the encoders)
+        gains = Signal(model.params[conn.post_obj.ensemble].gain[post_slice],
+                       name="%s.gains" % conn)
+        model.add_op(ElementwiseInc(
+            gains, signal, model.sig[conn]['out'][post_slice],
+            tag="%s.gains_elementwiseinc" % conn))
+    else:
+        # Copy to the proper slice
+        model.add_op(Copy(
+            signal, model.sig[conn]['out'], dst_slice=post_slice,
+            inc=True, tag="%s" % conn))
 
     # Build learning rules
     if conn.learning_rule is not None:

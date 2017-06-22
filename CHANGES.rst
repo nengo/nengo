@@ -68,6 +68,10 @@ Release History
 
 - Probe cache is now cleared on simulator reset.
   (`#1324 <https://github.com/nengo/nengo/pull/1324>`_)
+- Neural gains are now always applied after the synapse model.
+  Previously, this was the case for decoded connections
+  but not neuron-to-neuron connections.
+  (`#1330 <https://github.com/nengo/nengo/pull/1330>`_)
 
 2.4.0 (April 18, 2017)
 ======================

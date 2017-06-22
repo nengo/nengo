@@ -94,7 +94,7 @@ def test_pes_ens_slice(Simulator, plt, seed):
 
 def test_pes_neuron_neuron(Simulator, plt, seed, rng):
     n = 200
-    initial_weights = rng.uniform(high=2e-4, size=(n, n))
+    initial_weights = rng.uniform(high=4e-4, size=(n, n))
     _test_pes(Simulator, nengo.LIF, plt, seed,
               pre_neurons=True, post_neurons=True,
               n=n, transform=initial_weights)
