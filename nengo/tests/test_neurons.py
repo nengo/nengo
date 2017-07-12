@@ -436,3 +436,45 @@ def test_direct_mode_nonfinite_value(Simulator):
     with Simulator(model) as sim:
         with pytest.raises(SimulationError):
             sim.run(0.01)
+
+
+@pytest.mark.parametrize("generic", (True, False))
+def test_gain_bias(rng, nl_nodirect, generic):
+    if nl_nodirect == nengo.Sigmoid and generic:
+        # the generic method doesn't work with sigmoid neurons (because they're
+        # always positive). that's not a failure, because the sigmoid neurons
+        # never need to use the generic method normally, so we'll just skip
+        # it for this test.
+        return
+
+    n = 100
+    max_rates = rng.uniform(300, 400, size=n)
+    intercepts = rng.uniform(-0.5, 0.5, size=n)
+    nl = nl_nodirect()
+    tolerance = 0.1 if generic else 1e-8
+
+    if generic:
+        gain, bias = nengo.neurons.NeuronType.gain_bias(nl, max_rates,
+                                                        intercepts)
+    else:
+        gain, bias = nl.gain_bias(max_rates, intercepts)
+
+    assert np.allclose(nl.rates(np.ones(n), gain, bias), max_rates,
+                       atol=tolerance)
+
+    if nl_nodirect == nengo.Sigmoid:
+        threshold = 0.5 / nl.tau_ref
+    else:
+        threshold = 0
+
+    assert np.all(nl.rates(intercepts - tolerance, gain, bias) <= threshold)
+    assert np.all(nl.rates(intercepts + tolerance, gain, bias) > threshold)
+
+    if generic:
+        max_rates0, intercepts0 = (
+            nengo.neurons.NeuronType.max_rates_intercepts(nl, gain, bias))
+    else:
+        max_rates0, intercepts0 = nl.max_rates_intercepts(gain, bias)
+
+    assert np.allclose(max_rates, max_rates0, atol=tolerance)
+    assert np.allclose(intercepts, intercepts0, atol=tolerance)

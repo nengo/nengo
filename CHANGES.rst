@@ -41,6 +41,9 @@ Release History
 - Added ``LinearFilter.combine`` method to
   combine two ``LinearFilter`` instances.
   (`#1312 <https://github.com/nengo/nengo/pull/1312>`_)
+- Added a method to all neuron types to compute ensemble
+  ``max_rates`` and ``intercepts`` given ``gain`` and ``bias``.
+  (`#1334 <https://github.com/nengo/nengo/pull/1334>`_)
 
 **Changed**
 

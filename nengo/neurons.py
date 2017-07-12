@@ -1,6 +1,7 @@
 from __future__ import division
 
 import logging
+import warnings
 
 import numpy as np
 
@@ -88,7 +89,7 @@ class NeuronType(FrozenObject):
             J_max += 10
             J = np.linspace(-J_max, J_max, J_steps)
             rate = self.rates(J, gain, bias)
-        J_threshold = J[np.where(rate <= 1e-16)[0][-1]]
+        J_threshold = J[np.where(rate <= 0)[0][-1]]
 
         gain = np.zeros_like(max_rates)
         bias = np.zeros_like(max_rates)
@@ -108,6 +109,37 @@ class NeuronType(FrozenObject):
             bias[i] = J_top - gain[i]
 
         return gain, bias
+
+    def max_rates_intercepts(self, gain, bias):
+        """Compute the max_rates and intercepts given gain and bias.
+
+        Note that this default implementation is very slow! Whenever possible,
+        subclasses should override this with a neuron-specific implementation.
+
+        Parameters
+        ----------
+        gain : (n_neurons,) array_like
+            Gain associated with each neuron. Sometimes denoted alpha.
+        bias : (n_neurons,) array_like
+            Bias current associated with each neuron.
+
+        Returns
+        -------
+        max_rates : (n_neurons,) array_like
+            Maximum firing rates of neurons.
+        intercepts : (n_neurons,) array_like
+            X-intercepts of neurons.
+        """
+
+        max_rates = self.rates(np.ones_like(gain), gain, bias)
+
+        x_range = np.linspace(-1, 1, 101)
+        rates = np.asarray([self.rates(np.ones_like(gain) * x, gain, bias)
+                            for x in x_range])
+        last_zeros = np.maximum(np.argmax(rates > 0, axis=0) - 1, 0)
+        intercepts = x_range[last_zeros]
+
+        return max_rates, intercepts
 
     def rates(self, x, gain, bias):
         """Compute firing rates (in Hz) for given vector input, ``x``.
@@ -168,6 +200,10 @@ class Direct(NeuronType):
         """Always returns ``None, None``."""
         return None, None
 
+    def max_rates_intercepts(self, gain, bias):
+        """Always returns ``None, None``."""
+        return None, None
+
     def rates(self, x, gain, bias):
         """Always returns ``x``."""
         return np.array(x, dtype=float, copy=False, ndmin=1)
@@ -203,6 +239,12 @@ class RectifiedLinear(NeuronType):
         bias = -intercepts * gain
         return gain, bias
 
+    def max_rates_intercepts(self, gain, bias):
+        """Compute the inverse of gain_bias."""
+        intercepts = -bias / gain
+        max_rates = gain * (1 - intercepts)
+        return max_rates, intercepts
+
     def step_math(self, dt, J, output):
         """Implement the rectification nonlinearity."""
         output[...] = np.maximum(0., J)
@@ -237,6 +279,14 @@ class Sigmoid(NeuronType):
         gain = inverse / (1. - intercepts)
         bias = inverse - gain
         return gain, bias
+
+    def max_rates_intercepts(self, gain, bias):
+        """Compute the inverse of gain_bias."""
+        inverse = gain + bias
+        intercepts = 1 - inverse / gain
+        lim = 1. / self.tau_ref
+        max_rates = lim / (1 + np.exp(-inverse))
+        return max_rates, intercepts
 
     def step_math(self, dt, J, output):
         """Implement the sigmoid nonlinearity."""
@@ -291,6 +341,16 @@ class LIFRate(NeuronType):
         gain = (1 - x) / (intercepts - 1.0)
         bias = 1 - gain * intercepts
         return gain, bias
+
+    def max_rates_intercepts(self, gain, bias):
+        """Compute the inverse of gain_bias."""
+        intercepts = (1 - bias) / gain
+        max_rates = 1.0 / (self.tau_ref - self.tau_rc * np.log1p(
+            1.0 / (gain * (intercepts - 1) - 1)))
+        if not np.all(np.isfinite(max_rates)):
+            warnings.warn("Non-finite values detected in `max_rates`; this "
+                          "probably means that `gain` was too small.")
+        return max_rates, intercepts
 
     def rates(self, x, gain, bias):
         """Always use LIFRate to determine rates."""

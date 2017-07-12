@@ -86,7 +86,8 @@ def get_gain_bias(ens, rng=np.random):
     if ens.gain is not None and ens.bias is not None:
         gain = get_samples(ens.gain, ens.n_neurons, rng=rng)
         bias = get_samples(ens.bias, ens.n_neurons, rng=rng)
-        max_rates, intercepts = None, None  # TODO: determine from gain & bias
+        max_rates, intercepts = ens.neuron_type.max_rates_intercepts(
+            gain, bias)
     elif ens.gain is not None or ens.bias is not None:
         # TODO: handle this instead of error
         raise NotImplementedError("gain or bias set for %s, but not both. "
