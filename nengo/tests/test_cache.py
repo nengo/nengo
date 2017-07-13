@@ -648,3 +648,12 @@ def test_writeablecacheindex_warning(monkeypatch, tmpdir):
     with warns(CacheIOWarning):
         with WriteableCacheIndex(cache_dir=str(tmpdir)):
             pass
+
+
+def test_shrink_does_not_fail_if_lock_cannot_be_acquired(tmpdir):
+    cache = DecoderCache(cache_dir=str(tmpdir))
+    cache._index._lock.timeout = 1.
+    with cache:
+        cache.wrap_solver(SolverMock())(**get_solver_test_args())
+    with cache._index._lock:
+        cache.shrink(limit=0)

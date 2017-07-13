@@ -606,13 +606,16 @@ class DecoderCache(object):
         # Remove the least recently accessed first
         fileinfo.sort()
 
-        with self._index:
-            for _, size, path in fileinfo:
-                if excess <= 0:
-                    break
+        try:
+            with self._index:
+                for _, size, path in fileinfo:
+                    if excess <= 0:
+                        break
 
-                excess -= size
-                self.remove_file(path)
+                    excess -= size
+                    self.remove_file(path)
+        except TimeoutError:
+            logger.debug("Not shrinking cache. Lock could not be acquired.")
 
     def remove_file(self, path):
         """Removes the file at ``path`` from the cache."""

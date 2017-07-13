@@ -72,6 +72,9 @@ Release History
   Previously, this was the case for decoded connections
   but not neuron-to-neuron connections.
   (`#1330 <https://github.com/nengo/nengo/pull/1330>`_)
+- Fixed a crash when a lock cannot be acquired while shrinking the cache.
+  (`#1335 <https://github.com/nengo/nengo/issues/1335>`_,
+  `#1336 <https://github.com/nengo/nengo/pull/1336>`_)
 
 2.4.0 (April 18, 2017)
 ======================
