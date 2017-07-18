@@ -6,7 +6,6 @@ import nengo
 from nengo.exceptions import ValidationError
 from nengo.networks.product import Product
 from nengo.utils.compat import range
-from nengo.utils.magic import memoize
 
 
 def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
@@ -20,7 +19,6 @@ def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
     return np.fft.ifft(A * B, axis=axis).real
 
 
-@memoize
 def transform_in(dims, align, invert):
     """Create a transform to map the input into the Fourier domain.
 
@@ -83,7 +81,6 @@ def remove_imag_rows(tr):
         tr = tr[(i == 0) | (i > 3)]
 
 
-@memoize
 def dft_half(n):
     x = np.arange(n)
     w = np.arange(n // 2 + 1)

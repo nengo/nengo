@@ -1,6 +1,6 @@
 import inspect
 
-from nengo.utils.magic import decorator, memoize
+from nengo.utils.magic import decorator
 
 state = None  # Used to make sure decorators are running
 
@@ -204,62 +204,3 @@ def test_class():
                                     '        def __init__(self, a, b):\n'
                                     '            self.a = a\n'
                                     '            self.b = b\n')
-
-
-def test_memoize():  # noqa: C901
-    """Test that the memoize decorator works in several contexts."""
-
-    @memoize
-    def f():
-        return 'f'
-
-    @memoize
-    def f_args(a, b=5):
-        return a + b
-
-    class Test(object):
-        @memoize
-        def inst_f(self):
-            return 'inst_f'
-
-        @memoize
-        @classmethod
-        def cls_f(cls):
-            return 'cls_f'
-
-        @memoize
-        @staticmethod
-        def static_f():
-            return 'static_f'
-
-        @property
-        @memoize
-        def prop(self):
-            return 'prop'
-
-    def check_all(inst, hits, misses):
-        # Check return values
-        assert f() == f.__name__
-        assert inst.inst_f() == inst.inst_f.__name__
-        assert Test.cls_f() == Test.cls_f.__name__
-        assert Test.static_f() == Test.static_f.__name__
-        assert inst.prop == 'prop'
-        assert f_args(1) == 6
-        assert f_args(a=10) == 15
-        assert f_args(1, 2) == 3
-        assert f_args(1, b=100) == 101
-
-        # Check hits and misses
-        for func in f, inst.inst_f, Test.cls_f, Test.static_f, Test.prop.fget:
-            assert func.wrapper.hits == hits
-            assert func.wrapper.misses == misses
-        assert f_args.wrapper.hits == 4 * hits
-        assert f_args.wrapper.misses == 4 * misses
-
-    inst = Test()
-
-    # First run should be all misses
-    check_all(inst, 0, 1)
-
-    # Second run should be all hits
-    check_all(inst, 1, 1)

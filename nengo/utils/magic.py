@@ -263,41 +263,6 @@ def decorator(wrapper):
     return FunctionWrapper(wrapper, _wrapper)
 
 
-def callable_decorator(callable_wrapper):
-    """Decorates callable decorators.
-
-    Similar to @decorator, except applied to anything that returns a wrapper
-    function, such as a callable class. Every use of the decorator results
-    in a different callable. This is useful if your callable decorator needs to
-    maintain state pertaining to the wrapped function, such as a cache.
-
-    The wrapping callable can be accessed via func.wrapper, where func is the
-    wrapped function. See memoize for an example.
-    """
-    def wrapper(wrapped):
-        return decorator(callable_wrapper())(wrapped)
-    return wrapper
-
-
-@callable_decorator
-class memoize(object):
-    """Memoizes a function based on the given arguments."""
-
-    def __init__(self):
-        self._cache = {}
-        self.hits = 0
-        self.misses = 0
-
-    def __call__(self, wrapped, instance, args, kwargs):
-        key = (instance, tuple(args), tuple(sorted(iteritems(kwargs))))
-        if key not in self._cache:
-            self._cache[key] = wrapped(*args, **kwargs)
-            self.misses += 1
-        else:
-            self.hits += 1
-        return self._cache[key]
-
-
 class DocstringInheritor(type):
     '''Metaclass to inherit docstrings from parents.
 
