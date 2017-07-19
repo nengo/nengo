@@ -886,13 +886,13 @@ def test_function_points(Simulator, seed, rng, plt):
                     buf=0.01, delay=0.005, atol=5e-2, rtol=3e-2, plt=plt)
 
 
-def test_connectionfunctionparam_array(RefSimulator):
+def test_connectionfunctionparam_array(RefSimulator, seed):
     points_1d = np.zeros((100, 1))
     points_2d = np.zeros((100, 2))
     points_v = np.zeros((100,))
     points_50 = np.zeros((50, 1))
 
-    with nengo.Network() as model:
+    with nengo.Network(seed=seed) as model:
         a = nengo.Ensemble(10, 1)
         b = nengo.Ensemble(10, 1)
 
@@ -913,7 +913,9 @@ def test_connectionfunctionparam_array(RefSimulator):
             nengo.Connection(a, b, eval_points=points_1d, function=points_2d)
 
         nengo.Connection(a, b, eval_points=points_1d, function=points_1d)
-        nengo.Connection(a, b, eval_points=points_1d, function=points_2d,
+        nengo.Connection(a, b,
+                         eval_points=points_1d,
+                         function=points_2d,
                          transform=np.ones((1, 2)))
 
     with RefSimulator(model):
