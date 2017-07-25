@@ -8,9 +8,9 @@ import sys
 
 try:
     import nengo
-    import sphinx_rtd_theme
+    import guzzle_sphinx_theme
 except ImportError:
-    print("To build the documentation, nengo and sphinx_rtd_theme must be "
+    print("To build the documentation, nengo and guzzle_sphinx_theme must be "
           "installed in the current environment. Please install these and "
           "their requirements first. A virtualenv is recommended!")
     sys.exit(1)
@@ -18,10 +18,12 @@ except ImportError:
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx.ext.githubpages',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
+    'guzzle_sphinx_theme',
     'numpydoc',
     'nengo.utils.docutils',
 ]
@@ -62,15 +64,20 @@ pygments_style = 'default'
 
 # -- Options for HTML output --------------------------------------------------
 
-html_theme = 'sphinx_rtd_theme'
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-html_title = "Nengo {0} docs".format(release)
-html_static_path = ['_static']
-html_context = {
-    'css_files': [os.path.join('_static', 'custom.css')],
+pygments_style = "sphinx"
+templates_path = ["_templates"]
+html_static_path = ["_static"]
+
+html_theme_path = guzzle_sphinx_theme.html_theme_path()
+html_theme = "guzzle_sphinx_theme"
+
+html_theme_options = {
+    "project_nav_name": "Nengo core %s" % (version,),
+    "base_url": "http://www.nengo.ai/nengo",
 }
-html_use_smartypants = True
-htmlhelp_basename = 'Nengodoc'
+
+html_title = "Nengo core {0} docs".format(release)
+htmlhelp_basename = 'Nengo core'
 html_last_updated_fmt = ''  # Suppress 'Last updated on:' timestamp
 html_show_sphinx = False
 
