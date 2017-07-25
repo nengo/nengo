@@ -12,7 +12,7 @@ def Product(n_neurons, dimensions, input_magnitude=1., net=None, **kwargs):
     The network used to calculate the product is described in
     `Gosmann, 2015`_. A simpler version of this network can be found in the
     `Multiplication example
-    <http://pythonhosted.org/nengo/examples/multiplication.html>`_.
+    <https://www.nengo.ai/nengo/examples/multiplication.html>`_.
 
     Note that this network is optimized under the assumption that both input
     values (or both values for each input dimensions of the input vectors) are

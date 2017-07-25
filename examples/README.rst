@@ -3,7 +3,7 @@ Nengo examples
 **************
 
 For more information about these examples, see the
-`Nengo documentation <https://pythonhosted.org/nengo/examples.html>`_.
+`Nengo documentation <https://www.nengo.ai/nengo/examples.html>`_.
 
 ``basic``: Basic models
 =======================

@@ -5,7 +5,7 @@ Contributing to Nengo
 .. default-role:: obj
 
 Please read our
-`general contributing guide <https://nengo.github.io/contributing.html>`_
+`general contributing guide <https://www.nengo.ai/contributing.html>`_
 first.
 The instructions below specifically apply
 to the ``nengo`` project.

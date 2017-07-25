@@ -73,7 +73,7 @@ html_theme = "guzzle_sphinx_theme"
 
 html_theme_options = {
     "project_nav_name": "Nengo core %s" % (version,),
-    "base_url": "http://www.nengo.ai/nengo",
+    "base_url": "https://www.nengo.ai/nengo",
 }
 
 html_title = "Nengo core {0} docs".format(release)

@@ -63,7 +63,7 @@ Release History
   use ``EnsembleArray.n_neurons_per_ensemble``.
   (`#1186 <https://github.com/nengo/nengo/pull/1186>`_)
 - The `Nengo modelling API document
-  <http://pythonhosted.org/nengo/frontend_api.html>`_
+  <https://www.nengo.ai/nengo/frontend_api.html>`_
   now has summaries to help navigate the page.
   (`#1304 <https://github.com/nengo/nengo/pull/1304>`_)
 - The error raised when a ``Connection`` function returns ``None``
@@ -185,7 +185,7 @@ Release History
   (`#1176 <https://github.com/nengo/nengo/issues/1176>`_,
   `#1183 <https://github.com/nengo/nengo/pull/1183>`_)
 - Documentation that applies to all Nengo projects has been moved to
-  https://nengo.github.io/.
+  https://www.nengo.ai/.
   (`#1251 <https://github.com/nengo/nengo/pull/1251>`_)
 
 2.3.0 (November 30, 2016)
@@ -206,7 +206,7 @@ Release History
 - Added ``nengo.dists.get_samples`` function for convenience
   when working with distributions or samples.
   (`#1181 <https://github.com/nengo/nengo/pull/1181>`_,
-  `docs <http://pythonhosted.org/nengo/frontend_api.html#nengo.dists.get_samples>`_)
+  `docs <https://www.nengo.ai/nengo/frontend_api.html#nengo.dists.get_samples>`_)
 
 **Changed**
 
