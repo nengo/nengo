@@ -8,7 +8,7 @@ error checking on those parameters.
 
 A good writeup on descriptors (which has an example similar to Parameter)
 can be found at
-http://nbviewer.ipython.org/urls/gist.github.com/ChrisBeaumont/5758381/raw/descriptor_writeup.ipynb  # noqa
+https://nbviewer.ipython.org/urls/gist.github.com/ChrisBeaumont/5758381/raw/descriptor_writeup.ipynb  # noqa
 
 """
 

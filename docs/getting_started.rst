@@ -77,7 +77,7 @@ and you know your way around a terminal,
 installing NumPy from source
 is flexible and performant.
 See the detailed instructions
-`here <http://hunseblog.wordpress.com/2014/09/15/installing-numpy-and-openblas/>`_.
+`here <https://hunseblog.wordpress.com/2014/09/15/installing-numpy-and-openblas/>`_.
 
 Installing other packages
 -------------------------
@@ -96,7 +96,7 @@ Python's own package manager, ``pip``.
   listed in ``requirements-test.txt`` and ``requirements-docs.txt``.
 
 .. _Anaconda: https://store.continuum.io/cshop/anaconda/
-.. _Homebrew: http://brew.sh/
+.. _Homebrew: https://brew.sh/
 
 Usage
 =====

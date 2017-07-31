@@ -128,7 +128,7 @@ def toposort(edges):
 
     [1] Kahn, Arthur B. (1962), "Topological sorting of large networks",
     Communications of the ACM
-    [2] http://en.wikipedia.org/wiki/Toposort#Algorithms
+    [2] https://en.wikipedia.org/wiki/Toposort#Algorithms
     """
     incoming_edges = reverse_edges(edges)
     incoming_edges = {k: set(val) for k, val in iteritems(incoming_edges)}

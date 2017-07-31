@@ -26,8 +26,8 @@ Nengo imports several open source libraries.
   `modified PSF license <http://matplotlib.org/users/license.html>`__
 * `IPython <http://ipython.org/>`_ - Used under
   `BSD license <https://github.com/ipython/ipython/blob/master/COPYING.rst>`__
-* `pytest <http://pytest.org/latest/>`_ - Used under
-  `MIT license <http://docs.pytest.org/en/latest/license.html>`__
+* `pytest <https://docs.pytest.org/en/latest/>`_ - Used under
+  `MIT license <https://docs.pytest.org/en/latest/license.html>`__
 
 Nengo also includes code modified from other libraries.
 

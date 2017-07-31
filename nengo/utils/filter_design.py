@@ -433,7 +433,7 @@ def cont2discrete(sys, dt, method="zoh", alpha=None):  # noqa: C901
 
     References
     ----------
-    .. [1] http://en.wikipedia.org/wiki/
+    .. [1] https://en.wikipedia.org/wiki/
                Discretization#Discretization_of_linear_state_space_models
 
     .. [2] http://techteach.no/publications/

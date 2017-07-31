@@ -301,9 +301,9 @@ class memoize(object):
 class DocstringInheritor(type):
     '''Metaclass to inherit docstrings from parents.
 
-    Taken from http://stackoverflow.com/questions/8100166, which in turn was
+    Taken from https://stackoverflow.com/questions/8100166, which in turn was
     a variation on Paul McGuire's code at
-    http://groups.google.com/group/comp.lang.python/msg/26f7b4fcb4d66c95
+    https://groups.google.com/group/comp.lang.python/msg/26f7b4fcb4d66c95
     '''
     def __new__(meta, name, bases, clsdict):
         if not('__doc__' in clsdict and clsdict['__doc__']):

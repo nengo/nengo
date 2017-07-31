@@ -124,7 +124,7 @@ class HilbertCurve(object):
         Iterations.
     """
     # Implementation based on
-    # http://en.wikipedia.org/w/index.php?title=Hilbert_curve&oldid=633637210
+    # https://en.wikipedia.org/w/index.php?title=Hilbert_curve&oldid=633637210
 
     def __init__(self, n):
         self.n = n

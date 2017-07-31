@@ -26,7 +26,7 @@ def Product(n_neurons, dimensions, input_magnitude=1., net=None, **kwargs):
     ``1 / sqrt(2)``.
 
     .. _Gosmann, 2015:
-       http://nbviewer.jupyter.org/github/ctn-archive/technical-reports/blob/
+       https://nbviewer.jupyter.org/github/ctn-archive/technical-reports/blob/
        master/Precise-multiplications-with-the-NEF.ipynb#An-alternative-network
 
     Parameters

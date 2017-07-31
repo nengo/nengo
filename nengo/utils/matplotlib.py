@@ -44,7 +44,7 @@ def axis_size(ax=None):
     """Get axis width and height in pixels.
 
     Based on a StackOverflow response:
-    http://stackoverflow.com/questions/19306510/
+    https://stackoverflow.com/questions/19306510/
         determine-matplotlib-axis-size-in-pixels
 
     Parameters

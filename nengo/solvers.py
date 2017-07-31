@@ -386,7 +386,7 @@ class Nnls(Solver):
     def __init__(self, weights=False):
         """
         .. note:: Requires
-                  `SciPy <http://docs.scipy.org/doc/scipy/reference/>`_.
+                  `SciPy <https://docs.scipy.org/doc/scipy/reference/>`_.
 
         Parameters
         ----------
@@ -435,7 +435,7 @@ class NnlsL2(Nnls):
     def __init__(self, weights=False, reg=0.1):
         """
         .. note:: Requires
-                  `SciPy <http://docs.scipy.org/doc/scipy/reference/>`_.
+                  `SciPy <https://docs.scipy.org/doc/scipy/reference/>`_.
 
         Parameters
         ----------

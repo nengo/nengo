@@ -171,7 +171,7 @@ class LinearFilter(Synapse):
 
     References
     ----------
-    .. [1] http://en.wikipedia.org/wiki/Filter_%28signal_processing%29
+    .. [1] https://en.wikipedia.org/wiki/Filter_%28signal_processing%29
     """
 
     num = NdarrayParam('num', shape='*')
@@ -319,7 +319,7 @@ class LinearFilter(Synapse):
 
         References
         ----------
-        .. [1] http://en.wikipedia.org/wiki/Digital_filter#Difference_equation
+        .. [1] https://en.wikipedia.org/wiki/Digital_filter#Difference_equation
         """
         def __init__(self, num, den, output, y0=None):
             super(LinearFilter.General, self).__init__(num, den, output)
