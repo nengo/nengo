@@ -267,7 +267,8 @@ class AutoProgressBar(ProgressBar):
 
     def update(self, progress):
         min_delay = progress.start_time + 0.1
-        long_eta = progress.eta() > self.min_eta and min_delay < time.time()
+        long_eta = (progress.elapsed_seconds() + progress.eta() > self.min_eta
+                    and min_delay < time.time())
         if self._visible:
             self.delegate.update(progress)
         elif long_eta or progress.finished:

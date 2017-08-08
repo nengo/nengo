@@ -70,7 +70,7 @@ def build_network(model, network, progress_bar=False):
     else:
         progress_bar = False
 
-    max_steps = max(1, len(network.all_objects))
+    max_steps = len(network.all_objects) + 1  # +1 for top level network itself
     progress = ProgressTracker(max_steps, progress_bar, task="Building")
 
     # Set config
@@ -92,7 +92,10 @@ def build_network(model, network, progress_bar=False):
     context = (model.decoder_cache if model.toplevel is network
                else nullcontext())
     with context, progress:
-        model.build_callback = lambda obj: progress.step()
+        def build_callback(obj):
+            if isinstance(obj, tuple(network.objects)):
+                progress.step()
+        model.build_callback = build_callback
 
         logger.debug("Network step 1: Building ensembles and nodes")
         for obj in network.ensembles + network.nodes:
@@ -121,6 +124,7 @@ def build_network(model, network, progress_bar=False):
         if context is model.decoder_cache:
             model.decoder_cache.shrink()
 
+        progress.step()
         model.build_callback = None
 
     # Unset config

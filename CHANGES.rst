@@ -22,7 +22,11 @@ Release History
 2.5.1 (unreleased)
 ==================
 
+**Fixed**
 
+- The progress bar that can appear when building a large model
+  will now appear earlier in the build process.
+  (`#1340 <https://github.com/nengo/nengo/pull/1340>`_)
 
 2.5.0 (July 24, 2017)
 =====================

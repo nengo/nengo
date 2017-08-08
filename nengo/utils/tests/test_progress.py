@@ -63,6 +63,7 @@ class TestAutoProgressBar(object):
     class ProgressMock(object):
         def __init__(self, eta, start_time=1234.5):
             self.eta = lambda: eta
+            self.elapsed_seconds = lambda: 0
             self.start_time = start_time
             self.finished = False
 
