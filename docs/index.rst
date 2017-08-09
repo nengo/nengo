@@ -24,8 +24,8 @@ with sensible defaults in few lines of code::
         # View the decoded output of sin_squared
         squared_probe = nengo.Probe(sin_squared, synapse=0.01)
 
-    sim = nengo.Simulator(net)
-    sim.run(5.0)
+    with nengo.Simulator(net) as sim:
+        sim.run(5.0)
     plt.plot(sim.trange(), sim.data[squared_probe])
     plt.show()
 
