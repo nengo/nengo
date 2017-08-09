@@ -339,6 +339,8 @@ class ShapeParam(TupleParam):
                     "Element %d must be >= %d (got %d)" % (i, self.low, v),
                     attr=self.name, obj=instance)
 
+        return value
+
 
 class DictParam(Parameter):
     """A parameter where the value is a dictionary."""
