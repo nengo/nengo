@@ -219,8 +219,12 @@ def test_shapeparam():
         sp3 = params.ShapeParam('sp3', default=(0, 0, 0), length=3)
 
     inst = Test()
+    assert inst.sp2 == (0, 0)
+    assert inst.sp3 == (0, 0, 0)
     inst.sp2 = (-1, 2)
+    assert inst.sp2 == (-1, 2)
     inst.sp3 = (0, 2, 3)
+    assert inst.sp3 == (0, 2, 3)
     with pytest.raises(ValidationError):
         inst.sp2 = (1, 2, 3)
     with pytest.raises(ValidationError):
