@@ -285,9 +285,17 @@ class Connection(NengoObject):
     post : Ensemble or Neurons or Node or Probe
         The destination object for the connection.
 
-    synapse : Synapse, optional \
+    synapse : Synapse or None, optional \
               (Default: ``nengo.synapses.Lowpass(tau=0.005)``)
         Synapse model to use for filtering (see `~nengo.synapses.Synapse`).
+        If *None*, no synapse will be used and information will be transmitted
+        without any delay (if supported by the backend---some backends may
+        introduce a single time step delay).
+
+        Note that at least one connection must have a synapse that is not
+        *None* if components are connected in a cycle. Furthermore, a synaptic
+        filter with a zero time constant is different from a *None* synapse
+        as a synaptic filter will always add a delay of at least one time step.
     function : callable or (n_eval_points, size_mid) array_like, \
                optional (Default: None)
         Function to compute across the connection. Note that ``pre`` must be
