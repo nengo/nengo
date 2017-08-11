@@ -503,11 +503,25 @@ class CosineSimilarity(SubvectorLength):
 
     This is also equivalent to the distribution of a single coefficient from a
     unit vector (a single dimension of ``UniformHypersphere(surface=True)``).
+    Furthermore, ``CosineSimilarity(d+2)`` is equivalent to the distribution of
+    a single coordinate from points uniformly sampled from the d-dimensional
+    unit ball (a single dimension of
+    ``UniformHypersphere(surface=False).sample(n, d)``). These relationships
+    have been detailed in [Voelker2017]_.
 
     This can be used to calculate an intercept ``c = ppf(1 - p)`` such that
     ``dot(u, v) >= c`` with probability ``p``, for random unit vectors ``u``
     and ``v``. In other words, a neuron with intercept ``ppf(1 - p)`` will
     fire with probability ``p`` for a random unit length input.
+
+    .. [Voelker2017]
+       `Aaron R. Voelker, Jan Gosmann, and Terrence C. Stewart.
+       Efficiently sampling vectors and coordinates from the n-sphere and
+       n-ball. Technical Report, Centre for Theoretical Neuroscience,
+       Waterloo, ON, 2017
+       <http://compneuro.uwaterloo.ca/publications/voelker2017.html>`_,
+       `doi:10.13140/RG.2.2.15829.01767/1
+       <https://dx.doi.org/10.13140/RG.2.2.15829.01767/1>`_.
 
     Parameters
     ----------
