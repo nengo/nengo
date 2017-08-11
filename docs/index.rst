@@ -43,9 +43,4 @@ different neural simulator.
    user_guide
    dev_guide
 
-Indices and tables
-==================
-
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
