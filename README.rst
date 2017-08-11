@@ -72,6 +72,15 @@ Documentation
 Usage and API documentation can be found at
 `<https://www.nengo.ai/nengo/>`_.
 
+To build the documentation yourself, run the following command::
+
+    python setup.py build_sphinx
+
+This requires Pandoc to be installed,
+as well as the packages in ``requirements-test.txt`` and ``requirements-docs.txt``.
+For more details, `see the Developer Guide
+<https://www.nengo.ai/nengo/contributing.html#how-to-build-the-documentation>`_.
+
 Development
 ===========
 
