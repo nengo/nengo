@@ -17,13 +17,13 @@ of how ``nengo.spa`` works.
 
 .. toctree::
 
-   examples/convolution
-   examples/question
-   examples/question_control
-   examples/question_memory
-   examples/spa_sequence
-   examples/spa_sequence_routed
-   examples/spa_parser
+   examples/spa/convolution
+   examples/spa/question
+   examples/spa/question_control
+   examples/spa/question_memory
+   examples/spa/spa_sequence
+   examples/spa/spa_sequence_routed
+   examples/spa/spa_parser
 
 API reference
 =============

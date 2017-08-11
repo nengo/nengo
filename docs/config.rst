@@ -25,7 +25,7 @@ can be found below:
 
 .. toctree::
 
-   examples/config
+   examples/usage/config
 
 ``config`` system API
 ---------------------
@@ -49,4 +49,4 @@ Quirks
 
 .. toctree::
 
-   examples/config_quirks
+   examples/quirks/config

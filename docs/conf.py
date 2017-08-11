@@ -24,6 +24,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'guzzle_sphinx_theme',
+    'nbsphinx',
     'numpydoc',
     'nengo.utils.docutils',
 ]
@@ -46,10 +47,13 @@ todo_include_todos = True
 numpydoc_show_class_members = False
 
 # -- sphinx
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', '**/.ipynb_checkpoints']
 source_suffix = '.rst'
 source_encoding = 'utf-8'
 master_doc = 'index'
+
+# -- nbsphinx
+nbsphinx_timeout = 600
 
 # Need to include https Mathjax path for sphinx < v1.3
 mathjax_path = ("https://cdn.mathjax.org/mathjax/latest/MathJax.js"

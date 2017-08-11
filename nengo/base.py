@@ -230,7 +230,7 @@ class Process(FrozenObject):
     """A general system with input, output, and state.
 
     For more details on how to use processes and make
-    custom process subclasses, see :doc:`examples/processes`.
+    custom process subclasses, see :doc:`examples/advanced/processes`.
 
     Parameters
     ----------

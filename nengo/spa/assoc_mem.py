@@ -5,7 +5,8 @@ from nengo.spa.module import Module
 class AssociativeMemory(Module):
     """Associative memory module.
 
-    See :doc:`examples/associative_memory` for an introduction and examples.
+    See :doc:`examples/spa/associative_memory` for an introduction and
+    examples.
 
     Parameters
     ----------

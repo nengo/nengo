@@ -20,8 +20,8 @@ help you build your own reusable networks:
 
 .. toctree::
 
-   examples/network_design
-   examples/network_design_advanced
+   examples/usage/network_design
+   examples/usage/network_design_advanced
 
 You may also find the :doc:`config system documentation <config>` useful.
 

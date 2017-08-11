@@ -13,10 +13,9 @@ function usage {
 }
 
 if [[ "$COMMAND" == "install" ]]; then
-    conda install matplotlib scipy
-    pip install "ipython[all]==2.4.1" sphinx guzzle_sphinx_theme ghp-import
+    conda install jupyter matplotlib scipy
+    pip install "sphinx<1.7" nbsphinx numpydoc guzzle_sphinx_theme ghp-import
 elif [[ "$COMMAND" == "run" ]]; then
-    rm "$HOME/.ipython/profile_default/ipython_config.py"
     sphinx-build -vW docs docs/_build
 elif [[ "$COMMAND" == "upload" ]]; then
     DATE=$(date '+%Y-%m-%d %T')
