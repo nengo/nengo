@@ -129,13 +129,20 @@ def hide_input():
                 // no jQuery
                 var link_%(uuid)s = document.getElementById("%(uuid)s");
                 var cell = link_%(uuid)s;
-                while (cell.className.split(' ')[0] != "cell") {
+                while (cell.className.split(' ')[0] != "cell"
+                       && cell.className.split(' ')[0] != "nboutput") {
                     cell = cell.parentNode;
                 }
                 var input_%(uuid)s;
-                for (var i = 0; i < cell.children.length; i++) {
-                    if (cell.children[i].className.split(' ')[0] == "input")
-                        input_%(uuid)s = cell.children[i];
+                if (cell.className.split(' ')[0] == "cell") {
+                    for (var i = 0; i < cell.children.length; i++) {
+                        if (cell.children[i].className.split(' ')[0]
+                            == "input") {
+                            input_%(uuid)s = cell.children[i];
+                        }
+                    }
+                } else {
+                    input_%(uuid)s = cell.previousElementSibling;
                 }
                 input_%(uuid)s.style.display = "none"; // hide
 
@@ -153,7 +160,14 @@ def hide_input():
                 // jQuery
                 var link_%(uuid)s = $("a[id='%(uuid)s']");
                 var cell_%(uuid)s = link_%(uuid)s.parents("div.cell:first");
+                if (cell_%(uuid)s.length == 0) {
+                    cell_%(uuid)s = link_%(uuid)s.parents(
+                        "div.nboutput:first");
+                }
                 var input_%(uuid)s = cell_%(uuid)s.children("div.input");
+                if (input_%(uuid)s.length == 0) {
+                    input_%(uuid)s = cell_%(uuid)s.prev("div.nbinput");
+                }
                 input_%(uuid)s.hide();
 
                 toggle_input_%(uuid)s = function() {
