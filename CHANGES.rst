@@ -56,6 +56,12 @@ Release History
   ``post_synapse``, and ``theta_synapse`` respectively.
   (`#1095 <https://github.com/nengo/nengo/pull/1095>`__)
 
+**Removed**
+
+- Removed ``nengo.utils.docutils`` in favor of using
+  `nbsphinx <https://nbsphinx.readthedocs.io>`_.
+  (`#1349 <https://github.com/nengo/nengo/pull/1349>`_)
+
 2.7.0 (March 7, 2018)
 =====================
 
