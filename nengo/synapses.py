@@ -188,8 +188,49 @@ class LinearFilter(Synapse):
         return "%s(%s, %s, analog=%r)" % (
             type(self).__name__, self.num, self.den, self.analog)
 
+    def __add__(self, obj):
+        return self.add(obj)
+
+    def __sub__(self, obj):
+        print(self, obj)
+        return self.add(obj.scale(-1))
+
+    def __mul__(self, obj):
+        return self.combine(obj)
+
+    def linearfilter_like(self, num, den):
+        return LinearFilter(num, den,
+                            analog=self.analog,
+                            default_size_in=self.default_size_in,
+                            default_size_out=self.default_size_out,
+                            default_dt=self.default_dt,
+                            seed=self.seed)
+
+    def scale(self, scale):
+        num = scale * self.num
+        return self.linearfilter_like(num, self.den)
+
+    def add(self, obj):
+        """Combine in parallel (i.e. add) with another LinearFilter."""
+        if not isinstance(obj, LinearFilter):
+            raise ValidationError(
+                "Can only combine with other LinearFilters", attr='obj')
+        if self.analog != obj.analog:
+            raise ValidationError(
+                "Cannot combine analog and digital filters", attr='obj')
+
+        if np.array_equal(self.den, obj.den):
+            num = np.polyadd(self.num, obj.num)
+            den = self.den
+        else:
+            num = np.polyadd(np.polymul(self.num, obj.den),
+                             np.polymul(obj.num, self.den))
+            den = np.polymul(self.den, obj.den)
+
+        return self.linearfilter_like(num, den)
+
     def combine(self, obj):
-        """Combine in series with another LinearFilter."""
+        """Combine in series (i.e. multiply) with another LinearFilter."""
         if not isinstance(obj, LinearFilter):
             raise ValidationError(
                 "Can only combine with other LinearFilters", attr='obj')
@@ -198,12 +239,7 @@ class LinearFilter(Synapse):
                 "Cannot combine analog and digital filters", attr='obj')
         num = np.polymul(self.num, obj.num)
         den = np.polymul(self.den, obj.den)
-        return LinearFilter(num, den,
-                            analog=self.analog,
-                            default_size_in=self.default_size_in,
-                            default_size_out=self.default_size_out,
-                            default_dt=self.default_dt,
-                            seed=self.seed)
+        return self.linearfilter_like(num, den)
 
     def evaluate(self, frequencies):
         """Evaluate the transfer function at the given frequencies.
