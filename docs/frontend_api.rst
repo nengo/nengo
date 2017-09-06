@@ -204,6 +204,7 @@ Decoder and connection weight solvers
    nengo.solvers.Nnls
    nengo.solvers.NnlsL2
    nengo.solvers.NnlsL2nz
+   nengo.solvers.NoSolver
 
 .. autoclass:: nengo.solvers.Solver
    :special-members: __call__
@@ -227,3 +228,5 @@ Decoder and connection weight solvers
 .. autoclass:: nengo.solvers.NnlsL2
 
 .. autoclass:: nengo.solvers.NnlsL2nz
+
+.. autoclass:: nengo.solvers.NoSolver

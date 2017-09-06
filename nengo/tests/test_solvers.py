@@ -8,16 +8,18 @@ import pytest
 
 import nengo
 from nengo.dists import UniformHypersphere
+from nengo.exceptions import ValidationError
 from nengo.utils.compat import iteritems, range
 from nengo.utils.numpy import rms, norm
 from nengo.utils.stdlib import Timer
 from nengo.utils.testing import allclose
 from nengo.solvers import (
     lstsq, Lstsq, LstsqNoise, LstsqL2, LstsqL2nz,
-    LstsqL1, LstsqDrop, Nnls, NnlsL2, NnlsL2nz)
+    LstsqL1, LstsqDrop, Nnls, NnlsL2, NnlsL2nz, NoSolver)
 
 
 class Factory(object):
+
     def __init__(self, klass, *args, **kwargs):
         self.klass = klass
         self.args = args
@@ -497,3 +499,48 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
     plt.semilogx(eval_points, low, 'b-')
     plt.xlim([eval_points[0], eval_points[-1]])
     plt.xticks(eval_points, eval_points)
+
+
+@pytest.mark.parametrize('values, weights', [
+    (None, False), (None, True), ("ones", False), ("ones", True)])
+def test_nosolver(values, weights, seed, Simulator):
+    with nengo.Network(seed=seed) as net:
+        pre = nengo.Ensemble(10, 2)
+        post = nengo.Ensemble(20, 2)
+
+        if values is not None and weights:
+            values = np.ones((pre.n_neurons, post.n_neurons))
+        elif values is not None:
+            values = np.ones((pre.n_neurons, post.dimensions))
+
+        conn = nengo.Connection(
+            pre, post, solver=NoSolver(values=values, weights=weights))
+
+    with Simulator(net) as sim:
+        built_weights = sim.data[conn].weights
+
+    if values is None:
+        assert conn.solver.values is None
+        assert np.all(built_weights == 0)
+    else:
+        assert np.all(conn.solver.values == values)
+        assert np.all(built_weights == 1)
+
+    if weights:
+        assert built_weights.T.shape == (pre.n_neurons, post.n_neurons)
+    else:
+        assert built_weights.T.shape == (pre.n_neurons, post.dimensions)
+    assert sim.data[conn].eval_points is None
+
+
+def test_nosolver_validation():
+    # Must be a 2-dimensional array
+    with pytest.raises(ValidationError):
+        NoSolver(values=np.zeros(1))
+    with pytest.raises(ValidationError):
+        NoSolver(values=np.zeros((1, 1, 1)))
+    # Non-numbers are not okay
+    with pytest.raises(ValidationError):
+        NoSolver(values="test")
+    # array_likes are okay
+    NoSolver(values=[[1], [1]])

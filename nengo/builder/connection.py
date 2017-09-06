@@ -12,7 +12,7 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
 from nengo.node import Node
-from nengo.solvers import Solver
+from nengo.solvers import NoSolver, Solver
 from nengo.utils.compat import is_iterable, itervalues
 
 built_attrs = ['eval_points', 'solver_info', 'weights', 'transform']
@@ -162,6 +162,18 @@ def slice_signal(model, signal, sl):
 @Builder.register(Solver)
 def build_solver(model, solver, conn, rng, transform):
     return build_decoders(model, conn, rng, transform)
+
+
+@Builder.register(NoSolver)
+def build_no_solver(model, solver, conn, rng, transform):
+    activities = np.zeros((1, conn.pre_obj.n_neurons))
+    targets = np.zeros((1, conn.size_mid))
+    E = np.zeros((1, conn.post_obj.n_neurons)) if solver.weights else None
+    # No need to invoke the cache for NoSolver
+    decoders, solver_info = conn.solver(activities, targets, rng=rng, E=E)
+    weights = (decoders.T if conn.solver.weights else
+               multiply(transform, decoders.T))
+    return None, weights, solver_info
 
 
 @Builder.register(Connection)  # noqa: C901

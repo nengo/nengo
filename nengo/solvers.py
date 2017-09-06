@@ -13,7 +13,8 @@ import numpy as np
 
 import nengo.utils.least_squares_solvers as lstsq
 from nengo.exceptions import ValidationError
-from nengo.params import BoolParam, FrozenObject, NumberParam, Parameter
+from nengo.params import (
+    BoolParam, FrozenObject, NdarrayParam, NumberParam, Parameter)
 from nengo.utils.compat import range, with_metaclass
 from nengo.utils.least_squares_solvers import (
     format_system, rmses, LeastSquaresSolverParam)
@@ -50,7 +51,7 @@ class Solver(with_metaclass(DocstringInheritor, FrozenObject)):
 
         Returns
         -------
-        X :  (n_neurons, dimensions) or (n_neurons, post.n_neurons) ndarray
+        X : (n_neurons, dimensions) or (n_neurons, post.n_neurons) ndarray
             (n_neurons, dimensions) array of decoders (if ``solver.weights``
             is False) or (n_neurons, post.n_neurons) array of weights
             (if ``'solver.weights`` is True).
@@ -495,3 +496,50 @@ class NnlsL2nz(NnlsL2):
         sigma = (self.reg * A.max()) * np.sqrt((A > 0).mean(axis=0))
         sigma[sigma == 0] = 1
         return self._solve(A, Y, rng, E, sigma=sigma)
+
+
+class NoSolver(Solver):
+    """Manually pass in weights, bypassing the decoder solver.
+
+    Parameters
+    ----------
+    values : (n_neurons, n_weights) array_like, optional (Default: None)
+        The array of decoders or weights to use.
+        If ``weights`` is ``False``, ``n_weights`` is the expected
+        output dimensionality. If ``weights`` is ``True``,
+        ``n_weights`` is the number of neurons in the post ensemble.
+        If ``None``, which is the default, the solver will return an
+        appropriately sized array of zeros.
+    weights : bool, optional (Default: False)
+        If False, ``values`` is interpreted as decoders.
+        If True, ``values`` is interpreted as weights.
+
+    Attributes
+    ----------
+    values : (n_neurons, n_weights) array_like, optional (Default: None)
+        The array of decoders or weights to use.
+        If ``weights`` is ``False``, ``n_weights`` is the expected
+        output dimensionality. If ``weights`` is ``True``,
+        ``n_weights`` is the number of neurons in the post ensemble.
+        If ``None``, which is the default, the solver will return an
+        appropriately sized array of zeros.
+    weights : bool, optional (Default: False)
+        If False, ``values`` is interpreted as decoders.
+        If True, ``values`` is interpreted as weights.
+    """
+
+    values = NdarrayParam("values", optional=True, shape=("*", "*"))
+
+    def __init__(self, values=None, weights=False):
+        super(NoSolver, self).__init__(weights=weights)
+        self.values = values
+
+    def __call__(self, A, Y, rng=None, E=None):
+        if self.values is None:
+            n_neurons = np.asarray(A).shape[1]
+            if self.weights:
+                return np.zeros((n_neurons, np.asarray(E).shape[1])), {}
+            else:
+                return np.zeros((n_neurons, np.asarray(Y).shape[1])), {}
+
+        return self.values, {}

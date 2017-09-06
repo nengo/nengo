@@ -22,6 +22,12 @@ Release History
 2.5.1 (unreleased)
 ==================
 
+**Added**
+
+- Added a ``NoSolver`` solver that can be used to manually pass in
+  a predefined set of decoders or weights to a connection.
+  (`#1352 <https://github.com/nengo/nengo/pull/1352>`_)
+
 **Changed**
 
 - Learning rules can now have a learning rate of 0.
