@@ -495,3 +495,46 @@ class NnlsL2nz(NnlsL2):
         sigma = (self.reg * A.max()) * np.sqrt((A > 0).mean(axis=0))
         sigma[sigma == 0] = 1
         return self._solve(A, Y, rng, E, sigma=sigma)
+
+
+class PassThrough(Solver):
+    """No solver.
+
+    This will pass a user defined array of decoders or weights directly
+    to the connection.
+
+    Parameters
+    ----------
+    values : (n_neurons, dimensions) or (n_neurons, post_n_neurons) array_like\
+             ,optional (Default: None)
+        (n_neurons, dimensions) array of decoders (if ``solver.weights``
+        is False) or (n_neurons, post.n_neurons) array of weights
+        (if ``'solver.weights`` is True). The Default creates and
+        appropriately sized array of zeros.
+    weights : bool, optional (Default: False)
+        If False, pass through decoders. If True, pass through weights.
+
+    Attributes
+    ----------
+    values : (n_neurons, dimensions) or (n_neurons, post_n_neurons) array_like
+        (n_neurons, dimensions) array of decoders (if ``solver.weights``
+        is False) or (n_neurons, post.n_neurons) array of weights
+        (if ``'solver.weights`` is True). The Default creates and
+        appropriately sized array of zeros.
+    weights : bool
+        If False, pass through decoders. If True, pass through weights.
+    """
+
+    def __init__(self, values=None, weights=False):
+        super(PassThrough, self).__init__(weights=weights)
+        self.values = values
+
+    def __call__(self, A, Y, rng=None, E=None):
+        if self.values is None:
+            if self.weights is False:
+                self.values = np.zeros((np.asarray(A).shape[1],
+                                        np.asarray(Y).shape[1]))
+            else:
+                self.values = np.zeros((np.asarray(A).shape[1],
+                                        np.asarray(E).shape[1]))
+        return self.values, {}
