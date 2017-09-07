@@ -18,6 +18,7 @@ from nengo.solvers import (
 
 
 class Factory(object):
+
     def __init__(self, klass, *args, **kwargs):
         self.klass = klass
         self.args = args
@@ -515,7 +516,7 @@ def test_nosolver(values, weights, rng):
 
     A, Y = get_system(m=2000, n=n, d=d, rng=rng)
     x, _ = NoSolver(values=values, weights=weights)(A, Y,
-                                                       E=np.zeros((d, n_post)))
+                                                    E=np.zeros((d, n_post)))
     if values is None:
         assert np.all(x) == 0
     else:
