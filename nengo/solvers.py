@@ -497,7 +497,7 @@ class NnlsL2nz(NnlsL2):
         return self._solve(A, Y, rng, E, sigma=sigma)
 
 
-class PassThrough(Solver):
+class NoSolver(Solver):
     """No solver.
 
     This will pass a user defined array of decoders or weights directly
@@ -526,15 +526,17 @@ class PassThrough(Solver):
     """
 
     def __init__(self, values=None, weights=False):
-        super(PassThrough, self).__init__(weights=weights)
+        super(NoSolver, self).__init__(weights=weights)
         self.values = values
 
     def __call__(self, A, Y, rng=None, E=None):
         if self.values is None:
             if self.weights is False:
-                self.values = np.zeros((np.asarray(A).shape[1],
-                                        np.asarray(Y).shape[1]))
+                zeros = np.zeros((np.asarray(A).shape[1],
+                                  np.asarray(Y).shape[1]))
             else:
-                self.values = np.zeros((np.asarray(A).shape[1],
-                                        np.asarray(E).shape[1]))
+                zeros = np.zeros((np.asarray(A).shape[1],
+                                  np.asarray(E).shape[1]))
+            return zeros, {}
+
         return self.values, {}

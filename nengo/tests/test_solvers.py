@@ -14,7 +14,7 @@ from nengo.utils.stdlib import Timer
 from nengo.utils.testing import allclose
 from nengo.solvers import (
     lstsq, Lstsq, LstsqNoise, LstsqL2, LstsqL2nz,
-    LstsqL1, LstsqDrop, Nnls, NnlsL2, NnlsL2nz, PassThrough)
+    LstsqL1, LstsqDrop, Nnls, NnlsL2, NnlsL2nz, NoSolver)
 
 
 class Factory(object):
@@ -502,7 +502,7 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
 @pytest.mark.parametrize('values, weights', [
     (None, False), (None, True), (1, False), (1, True)
 ])
-def test_passthrough(values, weights, rng):
+def test_nosolver(values, weights, rng):
     n_post = 20
     n = 10
     d = 2
@@ -514,7 +514,7 @@ def test_passthrough(values, weights, rng):
             values = np.ones((n, n_post))
 
     A, Y = get_system(m=2000, n=n, d=d, rng=rng)
-    x, _ = PassThrough(values=values, weights=weights)(A, Y,
+    x, _ = NoSolver(values=values, weights=weights)(A, Y,
                                                        E=np.zeros((d, n_post)))
     if values is None:
         assert np.all(x) == 0
