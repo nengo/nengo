@@ -503,7 +503,7 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
 @pytest.mark.parametrize('values, weights', [
     (None, False), (None, True), (1, False), (1, True)
 ])
-def test_nosolver(values, weights, rng):
+def test_nosolver(values, weights, rng, seed, Simulator):
     n_post = 20
     n = 10
     d = 2
@@ -514,15 +514,22 @@ def test_nosolver(values, weights, rng):
         else:
             values = np.ones((n, n_post))
 
-    A, Y = get_system(m=2000, n=n, d=d, rng=rng)
-    x, _ = NoSolver(values=values, weights=weights)(A, Y,
-                                                    E=np.zeros((d, n_post)))
+    with nengo.Network(seed=seed) as net:
+        pre = nengo.Ensemble(n, d)
+        post = nengo.Ensemble(n_post, d)
+        conn = nengo.Connection(pre, post, solver=NoSolver(values=values,
+                                                           weights=weights))
+
+    sim = Simulator(net)
+    built_weights = sim.data[conn].weights
+    sim.close()
+
     if values is None:
-        assert np.all(x) == 0
+        assert np.all(built_weights) == 0
     else:
-        assert np.all(x) == 1
+        assert np.all(built_weights) == 1
 
     if weights is False:
-        assert x.shape == (n, d)
+        assert built_weights.T.shape == (n, d)
     else:
-        assert x.shape == (n, n_post)
+        assert built_weights.T.shape == (n, n_post)
