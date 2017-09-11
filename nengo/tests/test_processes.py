@@ -469,3 +469,60 @@ class TestPiecewise(object):
 
         assert np.array_equal(f(0), np.zeros(process.default_size_out))
         assert np.array_equal(f(2), np.ones(process.default_size_out))
+
+    def test_function(self, Simulator):
+        t, f = self.run_sim({0.05: np.sin, 0.1: np.cos}, 'zero', Simulator)
+        assert np.allclose(f[t == 0.001], [0.])
+        assert np.allclose(f[t == 0.049], [0.])
+        assert np.allclose(f[t == 0.05], [np.sin(0.05)])
+        assert np.allclose(f[t == 0.075], [np.sin(0.075)])
+        assert np.allclose(f[t == 0.1], [np.cos(0.1)])
+        assert np.allclose(f[t == 0.15], [np.cos(0.15)])
+
+    def test_function_list(self, Simulator):
+        def func1(t):
+            return t, t**2, t**3
+
+        def func2(t):
+            return t**4, t**5, t**6
+
+        t, f = self.run_sim({0.05: func1, 0.1: func2}, 'zero', Simulator)
+        assert np.allclose(f[t == 0.001], [0.])
+        assert np.allclose(f[t == 0.049], [0.])
+        assert np.allclose(f[t == 0.05], func1(0.05))
+        assert np.allclose(f[t == 0.075], func1(0.075))
+        assert np.allclose(f[t == 0.1], func2(0.1))
+        assert np.allclose(f[t == 0.15], func2(0.15))
+
+    def test_mixture(self, Simulator):
+        t, f = self.run_sim({0.05: 1, 0.1: np.cos}, 'zero', Simulator)
+        assert np.allclose(f[t == 0.001], [0.])
+        assert np.allclose(f[t == 0.049], [0.])
+        assert np.allclose(f[t == 0.05], [1.])
+        assert np.allclose(f[t == 0.075], [1.])
+        assert np.allclose(f[t == 0.1], [np.cos(0.1)])
+        assert np.allclose(f[t == 0.15], [np.cos(0.15)])
+
+    def test_mixture_3d(self, Simulator):
+        def func(t):
+            return t, t**2, t**3
+
+        t, f = self.run_sim({0.05: [1, 1, 1], 0.1: func}, 'zero', Simulator)
+        assert np.allclose(f[t == 0.001], [0., 0., 0.])
+        assert np.allclose(f[t == 0.049], [0., 0., 0.])
+        assert np.allclose(f[t == 0.05], [1., 1., 1.])
+        assert np.allclose(f[t == 0.075], [1., 1., 1.])
+        assert np.allclose(f[t == 0.1], func(0.1))
+        assert np.allclose(f[t == 0.15], func(0.15))
+
+    def test_invalid_function_length(self, Simulator):
+        with pytest.raises(ValidationError):
+            Piecewise({0.5: 0, 1.0: lambda t: [t, t ** 2]})
+
+    def test_invalid_interpolation_on_func(self):
+        def func(t):
+            return t
+
+        with warns(UserWarning):
+            process = Piecewise({0.05: 0, 0.1: func}, interpolation='linear')
+        assert process.interpolation == 'zero'

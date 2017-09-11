@@ -8,6 +8,7 @@ from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam, DictParam, EnumParam, NdarrayParam, NumberParam)
 from nengo.synapses import LinearFilter, Lowpass, SynapseParam
+from nengo.utils.compat import is_number, iteritems, itervalues
 
 
 class WhiteNoise(Process):
@@ -264,6 +265,46 @@ class PresentInput(Process):
         return step_presentinput
 
 
+class PiecewiseDataParam(DictParam):
+    """Piecewise-specific validation for the data dictionary.
+
+    In the `.Piecewise` data dict, the keys are points in time (float) and
+    values are numerical constants or callables of the same dimensionality.
+    """
+
+    def coerce(self, instance, data):
+        data = super(PiecewiseDataParam, self).coerce(instance, data)
+
+        size_out = None
+        for time, value in iteritems(data):
+            if not is_number(time):
+                raise ValidationError("Keys must be times (floats or ints), "
+                                      "not %r" % type(time).__name__,
+                                      attr='data', obj=instance)
+
+            # figure out the length of this item
+            if callable(value):
+                try:
+                    value = np.ravel(value(time))
+                except:
+                    raise ValidationError("callable object for time step %.3f "
+                                          "should return a numerical constant"
+                                          % time, attr='data', obj=instance)
+            else:
+                value = np.ravel(value)
+                data[time] = value
+            size = value.size
+
+            # make sure this is the same size as previous items
+            if size != size_out and size_out is not None:
+                raise ValidationError("time %g has size %d instead of %d" %
+                                      (time, size, size_out),
+                                      attr='data', obj=instance)
+            size_out = size
+
+        return data
+
+
 class Piecewise(Process):
     """A piecewise function with different options for interpolation.
 
@@ -303,7 +344,8 @@ class Piecewise(Process):
     data : dict
         A dictionary mapping times to the values that should be emitted
         at those times. Times must be numbers (ints or floats), while values
-        can be numbers, lists of numbers, or numpy arrays of numbers.
+        can be numbers, lists of numbers, numpy arrays of numbers,
+        or callables that return any of those options.
     interpolation : str, optional (Default: 'zero')
         One of 'linear', 'nearest', 'slinear', 'quadratic', 'cubic', or 'zero'.
         Specifies how to interpolate between times with specified value.
@@ -313,16 +355,17 @@ class Piecewise(Process):
 
     Attributes
     ----------
+    data : dict
+        A dictionary mapping times to the values that should be emitted
+        at those times. Times are numbers (ints or floats), while values
+        can be numbers, lists of numbers, numpy arrays of numbers,
+        or callables that return any of those options.
     interpolation : str
         One of 'linear', 'nearest', 'slinear', 'quadratic', 'cubic', or 'zero'.
         Specifies how to interpolate between times with specified value.
         'zero' creates a plain piecewise function whose values change at
         corresponding time points, while all other options interpolate
         as described in `scipy.interpolate`.
-    tp : ndarray
-        Specified time points.
-    yp : ndarray
-        Values corresponding to the time points, ``tp``.
 
     Examples
     --------
@@ -342,66 +385,70 @@ class Piecewise(Process):
     array([[ 1.]])
     """
 
-    tp = NdarrayParam('tp', shape=('*',), optional=False)
-    yp = NdarrayParam('yp', shape=('...',), optional=False)
+    data = PiecewiseDataParam('data', readonly=True)
     interpolation = EnumParam('interpolation', values=(
         'zero', 'linear', 'nearest', 'slinear', 'quadratic', 'cubic'))
 
     def __init__(self, data, interpolation='zero', **kwargs):
-        tp, yp = zip(*data.items())
-
-        self.tp = tp
-        self.yp = [np.ravel(p) for p in yp]
-
-        if any(y.size != self.yp[0].size for y in self.yp):
-            raise ValidationError("All values must have same size",
-                                  attr="yp", obj=self)
+        self.data = data
 
         needs_scipy = ('linear', 'nearest', 'slinear', 'quadratic', 'cubic')
         if interpolation in needs_scipy:
-            try:
-                import scipy.interpolate
-                self.sp_interpolate = scipy.interpolate
-            except ImportError:
+            self.sp_interpolate = None
+            if any(callable(val) for val in itervalues(self.data)):
                 warnings.warn("%r interpolation cannot be applied because "
-                              "scipy is not installed. Using 'zero' "
-                              "interpolation instead." % (interpolation,))
-                self.sp_interpolate = None
+                              "a callable was supplied for some piece of the "
+                              "function. Using 'zero' interpolation instead."
+                              % (interpolation,))
                 interpolation = 'zero'
+            else:
+                try:
+                    import scipy.interpolate
+                    self.sp_interpolate = scipy.interpolate
+                except ImportError:
+                    warnings.warn("%r interpolation cannot be applied because "
+                                  "scipy is not installed. Using 'zero' "
+                                  "interpolation instead." % (interpolation,))
+                    interpolation = 'zero'
         self.interpolation = interpolation
 
         super(Piecewise, self).__init__(
-            default_size_in=0, default_size_out=self.yp[0].size, **kwargs)
+            default_size_in=0, default_size_out=self.size_out, **kwargs)
+
+    @property
+    def size_out(self):
+        time, value = next(iteritems(self.data))
+        value = np.ravel(value(time)) if callable(value) else value
+        return value.size
 
     def make_step(self, shape_in, shape_out, dt, rng):
+        tp, yp = zip(*sorted(iteritems(self.data)))
         assert shape_in == (0,)
-        assert shape_out == self.yp[0].shape
+        assert shape_out == (self.size_out,)
 
         if self.interpolation == 'zero':
-            i = np.argsort(self.tp)
-            tp = self.tp[i]
-            yp = self.yp[i]
 
             def step_piecewise(t):
                 ti = (np.searchsorted(tp, t + 0.5*dt) - 1).clip(-1, len(yp)-1)
                 if ti == -1:
-                    return np.zeros_like(yp[0])
+                    return np.zeros(shape_out)
                 else:
-                    return yp[ti]
+                    return (np.ravel(yp[ti](t))
+                            if callable(yp[ti]) else yp[ti])
         else:
             assert self.sp_interpolate is not None
 
-            if self.interpolation == "cubic" and 0 not in self.tp:
+            if self.interpolation == "cubic" and 0 not in tp:
                 warnings.warn("'cubic' interpolation may fail if data not "
                               "specified for t=0.0")
 
-            f = self.sp_interpolate.interp1d(self.tp, self.yp,
+            f = self.sp_interpolate.interp1d(tp, yp,
                                              axis=0,
                                              kind=self.interpolation,
                                              bounds_error=False,
                                              fill_value=0.)
 
             def step_piecewise(t):
-                return f(t).ravel()
+                return np.ravel(f(t))
 
         return step_piecewise

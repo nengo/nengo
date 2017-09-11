@@ -31,6 +31,7 @@ Release History
   ``piecewise`` function.
   (`#1036 <https://github.com/nengo/nengo/issues/1036>`_,
   `#1100 <https://github.com/nengo/nengo/pull/1100>`_,
+  `#1355 <https://github.com/nengo/nengo/pull/1355/>`_,
   `#1362 <https://github.com/nengo/nengo/pull/1362>`_)
 
 **Changed**
