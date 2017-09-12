@@ -27,9 +27,10 @@ class SocketCheckAliveThread(threading.Thread):
 
 class UDPSocket(object):
     def __init__(self, send_dim=1, recv_dim=1, dt_remote=0,
-                 local_port=-1, dest_addr='127.0.0.1', dest_port=-1,
+                 local_addr='127.0.0.1', local_port=-1,
+                 dest_addr='127.0.0.1', dest_port=-1,
                  timeout=30, max_idle_time=1):
-        self.local_addr = '127.0.0.1'
+        self.local_addr = local_addr
         self.local_port = local_port
         self.dest_addr = (dest_addr if isinstance(dest_addr, list)
                           else [dest_addr])
@@ -84,7 +85,8 @@ class UDPSocket(object):
             try:
                 self.send_socket = socket.socket(socket.AF_INET,
                                                  socket.SOCK_DGRAM)
-                self.send_socket.bind((self.local_addr, 0))
+                if self.dest_addr == self.local_addr:
+                    self.send_socket.bind((self.local_addr, 0))
             except socket.error as error:
                 raise RuntimeError("UDPSocket: Error str: " + str(error))
 
@@ -222,8 +224,8 @@ class UDPSocket(object):
         return self.run(t, x)
 
     # TODO: name this something better
-    def _t_check(t_lim, t):
-        return (t_lim >= t and t_lim < t + self.dt) or self.ignore_timestamp:
+    def _t_check(self, t_lim, t):
+        return (t_lim >= t and t_lim < t + self.dt) or self.ignore_timestamp
 
     def run(self, t, x=None):  # noqa: C901
         # If t == 0, return array of zeros. Terminate any open sockets to
@@ -234,7 +236,7 @@ class UDPSocket(object):
             return self.value
         # Initialize socket if t > 0, and it has not been initialized
         if t > 0 and ((self.recv_socket is None and self.is_receiver) or
-           (self.send_socket is None and self.is_sender)):
+                      (self.send_socket is None and self.is_sender)):
             self._open_socket()
 
         # Calculate dt
@@ -261,7 +263,7 @@ class UDPSocket(object):
                 # buffer. Therefore, check the buffer for appropriate
                 # information
                 t_peek = self.buffer.queue[0][0]
-                if _t_check(t_peek, t):
+                if self._t_check(t_peek, t):
                     # Timestamp of first item in buffer is > t && < t+dt,
                     # meaning that this is the information for the current
                     # timestep, so it should be used.
@@ -278,7 +280,7 @@ class UDPSocket(object):
                 try:
                     packet, addr = self.recv_socket.recvfrom(self.max_recv_len)
                     t_data, value = self.unpack_packet(packet)
-                    if _t_check(t_data, t):
+                    if self._t_check(t_data, t):
                         self.value = value
                         found_item = True
                     elif (t_data >= t + self.dt):

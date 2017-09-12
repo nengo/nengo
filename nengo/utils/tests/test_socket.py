@@ -108,7 +108,7 @@ def test_time_sync(Simulator, plt, seed, rng):
                              send_dim=2, recv_dim=1, timeout=1)
     m2 = nengo.Network(label='Two', seed=seed)
     with m2:
-        input = nengo.Node(output=lambda t: [math.cos(10 * t), t])
+        input = nengo.Node(output=lambda t: [np.cos(10 * t), t])
         socket_node = nengo.Node(size_in=2, output=udp2.run)
 
         nengo.Connection(input, socket_node, synapse=None)
