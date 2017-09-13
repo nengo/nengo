@@ -39,16 +39,18 @@ class UDPSocket(object):
         self.timeout = timeout
         self.byte_order = '!'
 
-        self.last_t = 0.0
-        self.dt = 0.0                               # Local simulation dt
-        self.dt_remote = max(dt_remote, self.dt)    # dt btw each packet sent
-        self.last_packet_t = 0.0
+        self.last_t = 0.0  # local sim time last time run was called
+        self.last_packet_t = 0.0  # remote sim time from last packet received
+        self.dt = 0.0   # local simulation dt
+        self.dt_remote = max(dt_remote, self.dt)  # dt between each packet sent
 
         self.last_active = time.time()
         self.max_idle_time_initial = max_idle_time
         self.max_idle_time_timeout = max(max_idle_time, timeout + 1)
+        # threshold time for closing inactive socket thread
         self.max_idle_time_current = self.max_idle_time_timeout
         self.alive_check_thread = None
+        # how often to check the socket threads for inactivity
         self.alive_thread_sleep_time = max_idle_time / 2.0
         self.retry_backoff_time = 1
 
@@ -228,8 +230,8 @@ class UDPSocket(object):
         return (t_lim >= t and t_lim < t + self.dt) or self.ignore_timestamp
 
     def run(self, t, x=None):  # noqa: C901
-        # If t == 0, return array of zeros. Terminate any open sockets to
-        # reset system
+        # If t == 0, return array of zeros and terminate
+        # any open sockets to reset system
         if t == 0:
             self._initialize()
             self.close()
@@ -241,39 +243,41 @@ class UDPSocket(object):
 
         # Calculate dt
         self.dt = t - self.last_t
+        # most often that an update can be sent is every self.dt,
+        # so if remote dt is smaller just use self.dt for check
         self.dt_remote = max(self.dt_remote, self.dt)
         self.last_t = t * 1.0
         self.last_active = time.time()
 
         if self.is_sender:
             # Calculate if it is time to send the next packet.
-            # Time to send next packet if time between last packet and current
-            # t + half of dt is >= remote dt
-            if (t - self.last_packet_t + self.dt / 2.0 >= self.dt_remote):
+            # Ideal time to send is last_packet_t + dt_remote, and we
+            # want to find out if current or next local time step is closest.
+            if (t + self.dt / 2.0) >= (self.last_packet_t + self.dt_remote):
                 for addr in self.dest_addr:
                     for port in self.dest_port:
                         self.send_socket.sendto(self.pack_packet(t * 1.0, x),
                                                 (addr, port))
-                self.last_packet_t = t * 1.0   # Copy t (which is an np.scalar)
+                self.last_packet_t = t * 1.0  # Copy t (which is a scalar)
 
         if self.is_receiver:
             found_item = False
             if not self.buffer.empty():
                 # There are items (packets with future timestamps) in the
-                # buffer. Therefore, check the buffer for appropriate
-                # information
+                # buffer. Check the buffer for appropriate information
                 t_peek = self.buffer.queue[0][0]
                 if self._t_check(t_peek, t):
-                    # Timestamp of first item in buffer is > t && < t+dt,
+                    # Time stamp of first item in buffer is >= t and < t+dt,
                     # meaning that this is the information for the current
-                    # timestep, so it should be used.
+                    # time step, so it should be used.
                     data = self.buffer.get()
                     self.value = data[1]
                     found_item = True
                 elif (t_peek >= t + self.dt):
-                    # Timestamp of first item in buffer is > t+dt (i.e. all
+                    # Time stamp of first item in buffer is > t+dt (i.e. all
                     # items in the buffer are future packets). Assume packet
-                    # for current timestep has been lost.
+                    # for current time step has been lost, don't read the info,
+                    # and wait for local sim time to catch up.
                     found_item = True
 
             while not found_item:
@@ -299,21 +303,20 @@ class UDPSocket(object):
                 except (socket.error, AttributeError) as error:
                     found_item = False
 
-                    # Socket error has occured. Probably a timeout.
+                    # Socket error has occurred. Probably a timeout.
                     # Assume worst case, set max_idle_time_current to
                     # max_idle_time_timeout to wait for more timeouts to
                     # occur (this is so that the socket isn't constantly
                     # closed by the check_alive thread)
                     self.max_idle_time_current = self.max_idle_time_timeout
 
-                    # Timeout occured, assume packet lost.
+                    # Timeout occurred, assume packet lost.
                     if isinstance(error, socket.timeout):
                         found_item = True
 
                     # If connection was reset (somehow?), or closed by the
-                    # idle timer (prematurely).
-                    # In this case, retry the connection, and retry receiving
-                    # the packet again.
+                    # idle timer (prematurely), retry the connection, and
+                    # retry receiving the packet again.
                     if (hasattr(error, 'errno') and error.errno ==
                        errno.ECONNRESET) or self.recv_socket is None:
                         self._retry_connection()
