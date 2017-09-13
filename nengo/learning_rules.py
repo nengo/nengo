@@ -70,7 +70,7 @@ class LearningRuleType(FrozenObject):
     modifies = None
     probeable = ()
 
-    learning_rate = NumberParam('learning_rate', low=0, low_open=True)
+    learning_rate = NumberParam('learning_rate', low=0)
     size_in = LearningRuleTypeSizeInParam('size_in', low=0)
 
     def __init__(self, learning_rate=1e-6, size_in=0):

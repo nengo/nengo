@@ -22,6 +22,11 @@ Release History
 2.5.1 (unreleased)
 ==================
 
+**Changed**
+
+- Learning rules can now have a learning rate of 0.
+  (`#1356 <https://github.com/nengo/nengo/pull/1356>`_)
+
 **Fixed**
 
 - The progress bar that can appear when building a large model
