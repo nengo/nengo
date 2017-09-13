@@ -14,10 +14,11 @@ class SimThread(threading.Thread):
         self.wait = wait
 
     def run(self):
-        if self.lock is not None and self.wait:
-            self.lock.wait()
-        if self.lock is not None and not self.wait:
-            self.lock.set()
+        if self.lock is not None:
+            if self.wait:
+                self.lock.wait()
+            else:
+                self.lock.set()
         self.sim.run(self.sim_time)
 
 

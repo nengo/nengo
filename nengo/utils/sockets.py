@@ -154,50 +154,6 @@ class UDPSocket(object):
         self.close()
         self._initialize()
 
-    def config_send_only(self, dest_addr, dest_port):
-        self._config_wipe()
-        if dest_port > 0:
-            self.is_sender = True
-            self.dest_addr = dest_addr
-            self.dest_port = dest_port
-        else:
-            raise ValueError("UDPSocket: Invalid send only configuration."
-                             "Destination port should be > 0")
-
-    def config_recv_only(self, local_port, timeout=5, ignore_timestamp=False):
-        self._config_wipe()
-        if local_port > 0:
-            self.is_receiver = True
-            self.local_port = local_port
-            self.timeout = timeout
-            self.ignore_timestamp = ignore_timestamp
-        else:
-            raise ValueError("UDPSocket: Invalid recv only configuration."
-                             "Local port should be > 0")
-
-    def config_send_recv(self, local_port, dest_addr, dest_port, timeout=5,
-                         ignore_timestamp=False):
-        self._config_wipe()
-        if local_port > 0 and dest_port > 0:
-            self.is_sender = True
-            self.is_receiver = True
-            self.dest_addr = dest_addr
-            self.dest_port = dest_port
-            self.local_port = local_port
-            self.timeout = timeout
-            self.ignore_timestamp = ignore_timestamp
-        else:
-            raise ValueError("UDPSocket: Invalid send and recv configuration."
-                             "Both destination and local ports should be > 0")
-
-    def set_byte_order(self, byte_order):
-        if byte_order.lower() == "little":
-            self.byte_order = '<'
-        elif byte_order.lower() == "big":
-            self.byte_order = '>'
-        else:
-            self.byte_order = byte_order
-
     def pack_packet(self, t, x):
         """Takes a timestamp and data (x) and makes a socket packet
 
@@ -225,7 +181,6 @@ class UDPSocket(object):
     def __call__(self, t, x=None):
         return self.run(t, x)
 
-    # TODO: name this something better
     def _t_check(self, t_lim, t):
         return (t_lim >= t and t_lim < t + self.dt) or self.ignore_timestamp
 
