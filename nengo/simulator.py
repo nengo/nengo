@@ -11,7 +11,7 @@ from nengo.builder import Model
 from nengo.builder.optimizer import optimize as opmerge_optimize
 from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
-from nengo.exceptions import ReadonlyError, SimulatorClosed
+from nengo.exceptions import ReadonlyError, SimulatorClosed, ValidationError
 from nengo.utils.compat import range, ResourceWarning
 from nengo.utils.graphs import toposort
 from nengo.utils.progress import ProgressTracker
@@ -272,10 +272,19 @@ class Simulator(object):
     def run(self, time_in_seconds, progress_bar=None):
         """Simulate for the given length of time.
 
+        If the given length of time is not a multiple of ``dt``,
+        it will be rounded to the nearest ``dt``. For example, if ``dt``
+        is 0.001 and ``run`` is called with ``time_in_seconds=0.0006``,
+        the simulator will advance one timestep, resulting in the actual
+        simulator time being 0.001.
+
+        The given length of time must be positive. The simulator cannot
+        be run backwards.
+
         Parameters
         ----------
         time_in_seconds : float
-            Amount of time to run the simulation for.
+            Amount of time to run the simulation for. Must be positive.
         progress_bar : bool or `.ProgressBar` or `.ProgressUpdater`, optional \
                        (Default: True)
             Progress bar for displaying the progress of the simulation run.
@@ -285,10 +294,19 @@ class Simulator(object):
             For more control over the progress bar, pass in a `.ProgressBar`
             or `.ProgressUpdater` instance.
         """
+        if time_in_seconds < 0:
+            raise ValidationError("Must be positive (got %g)"
+                                  % (time_in_seconds,), attr="time_in_seconds")
+
         steps = int(np.round(float(time_in_seconds) / self.dt))
-        logger.info("Running %s for %f seconds, or %d steps",
-                    self.model.label, time_in_seconds, steps)
-        self.run_steps(steps, progress_bar=progress_bar)
+
+        if steps == 0:
+            warnings.warn("%g results in running for 0 timesteps. Simulator "
+                          "still at time %g." % (time_in_seconds, self.time))
+        else:
+            logger.info("Running %s for %f seconds, or %d steps",
+                        self.model.label, time_in_seconds, steps)
+            self.run_steps(steps, progress_bar=progress_bar)
 
     def run_steps(self, steps, progress_bar=None):
         """Simulate for the given number of ``dt`` steps.

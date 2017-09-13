@@ -40,6 +40,10 @@ Release History
   (`#947 <https://github.com/nengo/nengo/issues/947>`_)
 - Learning rules can now have a learning rate of 0.
   (`#1356 <https://github.com/nengo/nengo/pull/1356>`_)
+- Running the simulator for zero timesteps will now issue a warning,
+  and running for negative time will error.
+  (`#1354 <https://github.com/nengo/nengo/issues/1354>`_,
+  `#1357 <https://github.com/nengo/nengo/pull/1357>`_)
 
 **Fixed**
 

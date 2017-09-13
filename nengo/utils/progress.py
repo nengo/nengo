@@ -73,6 +73,10 @@ class Progress(object):
     """
 
     def __init__(self, max_steps):
+        if max_steps <= 0:
+            raise ValidationError("must be at least 1 (got %d)"
+                                  % (max_steps,), attr="max_steps")
+
         self.n_steps = 0
         self.max_steps = max_steps
         self.start_time = self.end_time = time.time()

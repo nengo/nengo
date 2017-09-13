@@ -8,7 +8,7 @@ from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc
 from nengo.builder.signal import Signal
-from nengo.exceptions import ObsoleteError, SimulatorClosed
+from nengo.exceptions import ObsoleteError, SimulatorClosed, ValidationError
 from nengo.utils.compat import ResourceWarning
 from nengo.utils.testing import warns
 
@@ -274,3 +274,14 @@ def test_probe_cache(Simulator):
         ub = np.array(sim.data[up])
 
     assert not np.allclose(ua, ub, atol=1e-1)
+
+
+def test_invalid_run_time(Simulator):
+    net = nengo.Network()
+    with Simulator(net) as sim:
+        with pytest.raises(ValidationError):
+            sim.run(-0.0001)
+        with warns(UserWarning):
+            sim.run(0)
+        sim.run(0.0006)  # Rounds up to 0.001
+        assert sim.n_steps == 1

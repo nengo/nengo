@@ -1,5 +1,8 @@
 import time
 
+import pytest
+
+from nengo.exceptions import ValidationError
 from nengo.utils.progress import (
     AutoProgressBar, UpdateEveryN, UpdateEveryT, UpdateN, Progress,
     ProgressBar, ProgressTracker)
@@ -57,6 +60,15 @@ class TestProgress(object):
             assert p.eta() == -1  # no estimate available yet
             p.step()
             assert p.eta() >= 0.
+
+    def test_max_steps(self):
+        with pytest.raises(ValidationError):
+            with Progress(0):
+                pass
+
+        with pytest.raises(ValidationError):
+            with Progress(-1):
+                pass
 
 
 class TestAutoProgressBar(object):
