@@ -111,19 +111,29 @@ class UDPSocket(object):
     thread_timeout : float, optional (Default: 1)
         The amount of inactive time allowed before closing a thread running
         a socket.
+    byte_order : str, optional (Default: '!')
+        Specify 'big' or 'little' endian data format.
+        '!' uses the system default.
     """
     def __init__(self, send_dim=1, recv_dim=1, dt_remote=0,
                  local_addr='127.0.0.1', local_port=-1,
                  dest_addr='127.0.0.1', dest_port=-1,
-                 socket_timeout=30, thread_timeout=1):
+                 socket_timeout=30, thread_timeout=1,
+                 byte_order='!'):
         self.local_addr = local_addr
         self.local_port = local_port
         self.dest_addr = (dest_addr if isinstance(dest_addr, list)
                           else [dest_addr])
         self.dest_port = (dest_port if isinstance(dest_port, list)
                           else [dest_port])
-        self.timeout = timeout
-        self.byte_order = '!'
+        self.socket_timeout = socket_timeout
+
+        if byte_order.lower() == "little":
+            self.byte_order = '<'
+        elif byte_order.lower() == "big":
+            self.byte_order = '>'
+        else:
+            self.byte_order = byte_order
 
         self.last_t = 0.0  # local sim time last time run was called
         self.last_packet_t = 0.0  # remote sim time from last packet received
@@ -192,7 +202,7 @@ class UDPSocket(object):
         try:
             self.recv_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.recv_socket.bind((self.local_addr, self.local_port))
-            self.recv_socket.settimeout(self.timeout)
+            self.recv_socket.settimeout(self.socket_timeout)
         except socket.error:
             raise RuntimeError("UDPSocket: Could not bind to socket. "
                                "Address: %s, Port: %s, is in use. If "
