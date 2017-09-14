@@ -60,9 +60,9 @@ class UDPSocket(object):
     For examples of the UDPSocket communicating between models all running
     on a local machine, please see the tests/test_socket.py file.
 
-    To communicate between two models over a network, one running on
-    machine A with IP address 10.10.21.1 and one running on machine B,
-    with IP address 10.10.21.25, we add the following socket to the
+    To communicate between two models in send and receive mode over a network,
+    one running on machine A with IP address 10.10.21.1 and one running on
+    machine B, with IP address 10.10.21.25, we add the following socket to the
     model on machine A::
 
         socket_send_recv_A = UDPSocket(
