@@ -166,16 +166,6 @@ class UDPSocket(object):
     def __del__(self):
         self.close()
 
-    def _initialize(self):
-        """Reset state of socket, empty queue of messages."""
-        self.value = [0.0] * self.recv_dim
-        self.last_t = 0.0
-        self.last_packet_t = 0.0
-
-        # Empty the buffer
-        while not self.buffer.empty():
-            self.buffer.get()
-
     def _open_socket(self):
         """Startup socket and thread for communication inactivity."""
         # Close socket, terminate alive check thread
@@ -246,7 +236,7 @@ class UDPSocket(object):
         self.recv_socket = None
 
     def pack_packet(self, t, x):
-        """Takes a time stamp and data (x) and makes a socket packet
+        """Takes a timestamp and data (x) and makes a socket packet
 
         Default packet data type: float
         Default packet structure: [t, x[0], x[1], x[2], ... , x[d]]"""
@@ -258,7 +248,7 @@ class UDPSocket(object):
         return packet
 
     def unpack_packet(self, packet):
-        """Takes a packet and extracts a time stamp and data (x)
+        """Takes a packet and extracts a timestamp and data (x)
 
         Default packet data type: float
         Default packet structure: [t, x[0], x[1], x[2], ... , x[d]]"""
@@ -283,10 +273,17 @@ class UDPSocket(object):
         time step is closer to the remote time step than the next local time
         step.
         """
-        # If t == 0, return array of zeros and terminate
-        # any open sockets to reset system
+        # If t == 0, return array of zeros and reset state of class,
+        # empty queue of messages, close any open sockets
         if t == 0:
-            self._initialize()
+            self.value = [0.0] * self.recv_dim
+            self.last_t = 0.0
+            self.last_packet_t = 0.0
+
+            # Empty the buffer
+            while not self.buffer.empty():
+                self.buffer.get()
+
             self.close()
             return self.value
         # Initialize socket if t > 0, and it has not been initialized
