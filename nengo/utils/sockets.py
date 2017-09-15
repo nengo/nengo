@@ -114,12 +114,17 @@ class UDPSocket(object):
     byte_order : str, optional (Default: '!')
         Specify 'big' or 'little' endian data format.
         '!' uses the system default.
+    ignore_timestamp : boolean, optional (Default: False)
+        Relevant to send and receive sockets. If True, does not try to
+        regulate how often packets are sent to remote system based by
+        comparing to remote simulation time step. Simply sends a packet
+        every time step.
     """
     def __init__(self, send_dim=1, recv_dim=1, dt_remote=0,
                  local_addr='127.0.0.1', local_port=-1,
                  dest_addr='127.0.0.1', dest_port=-1,
                  socket_timeout=30, thread_timeout=1,
-                 byte_order='!'):
+                 byte_order='!', ignore_timestamp=False):
         self.local_addr = local_addr
         self.local_port = local_port
         self.dest_addr = (dest_addr if isinstance(dest_addr, list)
@@ -154,7 +159,7 @@ class UDPSocket(object):
         self.recv_socket = None
         self.is_sender = dest_port != -1
         self.is_receiver = local_port != -1
-        self.ignore_timestamp = False
+        self.ignore_timestamp = ignore_timestamp
 
         self.send_dim = send_dim
         self.recv_dim = recv_dim
@@ -168,6 +173,7 @@ class UDPSocket(object):
 
     def _open_socket(self):
         """Startup socket and thread for communication inactivity."""
+
         # Close socket, terminate alive check thread
         self.close()
 
@@ -198,7 +204,7 @@ class UDPSocket(object):
                                "Address: %s, Port: %s, is in use. If "
                                "simulation has been run before, wait for "
                                "previous UDPSocket to release the port. "
-                               "(See 'max_idle_time' argument in class "
+                               "(See 'socket_timeout' argument in class "
                                "constructor, currently set to %f seconds)" %
                                (self.local_addr, self.local_port,
                                 self.idle_time_limit))
@@ -253,7 +259,7 @@ class UDPSocket(object):
         Default packet data type: float
         Default packet structure: [t, x[0], x[1], x[2], ... , x[d]]"""
 
-        data_len = len(packet) / 4
+        data_len = int(len(packet) / 4)
         data = list(struct.unpack(self.byte_order + 'f' * data_len, packet))
         t_data = data[0]
         value = data[1:]
