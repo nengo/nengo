@@ -32,6 +32,10 @@ Release History
 
 - Better error message for invalid return values in ``nengo.Node`` functions.
   (`#1317 <https://github.com/nengo/nengo/pull/1317>`_)
+- Fixed an issue in which accepting and passing ``(*args, **kwargs)``
+  could not be used in custom solvers.
+  (`#1358 <https://github.com/nengo/nengo/issues/1358>`_,
+  `#1359 <https://github.com/nengo/nengo/pull/1359>`_)
 
 2.6.0 (October 6, 2017)
 =======================

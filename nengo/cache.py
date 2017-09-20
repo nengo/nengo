@@ -2,7 +2,6 @@
 
 import errno
 import hashlib
-import inspect
 import logging
 import os
 import shutil
@@ -648,15 +647,8 @@ class DecoderCache(object):
                 return solver_fn(conn, gain, bias, x, targets,
                                  rng=rng, E=E, **uncached_kwargs)
 
-            try:
-                args, _, _, defaults = inspect.getargspec(conn.solver)
-            except TypeError:
-                args, _, _, defaults = inspect.getargspec(conn.solver.__call__)
-            args = args[-len(defaults):]
-            if rng is None and 'rng' in args:
-                rng = defaults[args.index('rng')]
-            if E is None and 'E' in args:
-                E = defaults[args.index('E')]
+            if rng is None:
+                rng = np.random
 
             try:
                 key = self._get_cache_key(conn.solver,
