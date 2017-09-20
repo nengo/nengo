@@ -5,8 +5,14 @@ enable = anomalous-backslash-in-string,
          bad-super-call,
          bare-except,
          dangerous-default-value,
+         line-too-long,
          super-init-not-called,
          unused-import,
+
+
+[FORMAT]
+
+max-line-length = 79
 
 
 [REPORTS]

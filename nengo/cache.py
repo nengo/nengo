@@ -715,7 +715,7 @@ class DecoderCache(object):
         h.update(np.ascontiguousarray(targets).data)
 
         # rng format doc:
-        # noqa <https://docs.scipy.org/doc/numpy/reference/generated/numpy.random.RandomState.get_state.html#numpy.random.RandomState.get_state>
+        # https://docs.scipy.org/doc/numpy/reference/generated/numpy.random.RandomState.get_state.html
         state = rng.get_state()
         h.update(state[0].encode())  # string 'MT19937'
         h.update(state[1].data)  # 1-D array of 624 unsigned integer keys
