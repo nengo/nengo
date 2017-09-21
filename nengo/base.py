@@ -152,7 +152,7 @@ class ObjView(object):
         # Node.size_in != size_out, so one of these can be invalid
         try:
             self.size_in = np.arange(self.obj.size_in)[key].size
-        except IndexError:
+        except (IndexError, ValueError):
             self.size_in = None
         try:
             self.size_out = np.arange(self.obj.size_out)[key].size

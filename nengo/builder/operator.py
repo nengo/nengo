@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 
 import nengo.utils.numpy as npext
+from nengo.utils.compat import is_array_like
 from nengo.utils.connection import function_name
 from nengo.exceptions import BuildError, SimulationError
 
@@ -386,9 +387,21 @@ class Copy(Operator):
         dst_slice = self.dst_slice if self.dst_slice is not None else Ellipsis
         inc = self.inc
 
-        if inc:
+        dst_slice = (np.asarray(dst_slice) if is_array_like(dst_slice) else
+                     dst_slice)
+        # There are repeated indices in dst_slice, special case
+        repeats = (is_array_like(dst_slice) and dst_slice.dtype != np.bool and
+                   len(np.unique(dst_slice)) < len(dst_slice))
+        if inc and repeats:
+            def step_copy():
+                np.add.at(dst, dst_slice, src[src_slice])
+        elif inc:
             def step_copy():
                 dst[dst_slice] += src[src_slice]
+        elif repeats:
+            raise BuildError("%s: Cannot have repeated indices in "
+                             "``dst_slice`` when copy is not an increment"
+                             % self)
         else:
             def step_copy():
                 dst[dst_slice] = src[src_slice]

@@ -47,6 +47,9 @@ Release History
   (`#1340 <https://github.com/nengo/nengo/pull/1340>`_)
 - Fixed an issue in which ``ShapeParam`` would always store ``None``.
   (`#1342 <https://github.com/nengo/nengo/pull/1342>`_)
+- Fixed an issue in which multiple identical indices in a slice were ignored.
+  (`#947 <https://github.com/nengo/nengo/issues/947>`_,
+  `#1361 <https://github.com/nengo/nengo/pull/1361>`_)
 
 **Deprecated**
 

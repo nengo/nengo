@@ -24,6 +24,9 @@ class Mock(object):
     def __call__(self, *args, **kwargs):
         return Mock()
 
+    def __getitem__(self, key):
+        return Mock()
+
     def __mul__(self, other):
         return 1.0
 

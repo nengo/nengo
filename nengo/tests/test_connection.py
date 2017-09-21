@@ -613,6 +613,68 @@ def test_slicing_function(Simulator, plt, seed):
     assert np.allclose(w, y, atol=0.1)
 
 
+def test_list_indexing(Simulator, plt, seed):
+
+    with nengo.Network(seed=seed) as model:
+        u = nengo.Node([-1, 1])
+        a = nengo.Ensemble(40, dimensions=1)
+        b = nengo.Ensemble(40, dimensions=1, radius=2.2)
+        c = nengo.Ensemble(80, dimensions=2, radius=1.3)
+        d = nengo.Ensemble(80, dimensions=2, radius=1.3)
+        nengo.Connection(u[[0, 1]], a[[0, 0]])
+        nengo.Connection(u[[1, 1]], b[[0, 0]])
+        nengo.Connection(u[[0, 1]], c[[0, 1]])
+        nengo.Connection(u[[1, 1]], d[[0, 1]])
+
+        a_probe = nengo.Probe(a, synapse=0.03)
+        b_probe = nengo.Probe(b, synapse=0.03)
+        c_probe = nengo.Probe(c, synapse=0.03)
+        d_probe = nengo.Probe(d, synapse=0.03)
+
+    with Simulator(model) as sim:
+        sim.run(0.2)
+
+    t = sim.trange()
+    a_data = sim.data[a_probe]
+    b_data = sim.data[b_probe]
+    c_data = sim.data[c_probe]
+    d_data = sim.data[d_probe]
+
+    line = plt.plot(t, a_data)
+    plt.axhline(0, color=line[0].get_color())
+    assert np.allclose(a_data[t > 0.15], [0], atol=0.1)
+    line = plt.plot(t, b_data)
+    plt.axhline(2, color=line[0].get_color())
+    assert np.allclose(b_data[t > 0.15], [2], atol=0.1)
+    line = plt.plot(t, c_data)
+    plt.axhline(-1, color=line[0].get_color())
+    assert np.allclose(c_data[t > 0.15], [-1, 1], atol=0.1)
+    line = plt.plot(t, d_data)
+    plt.axhline(1, color=line[1].get_color())
+    assert np.allclose(d_data[t > 0.15], [1, 1], atol=0.1)
+
+
+def test_boolean_indexing(Simulator, rng, plt):
+    D = 10
+    mu = np.arange(D) % 2 == 0
+    mv = np.arange(D) % 2 == 1
+    x = rng.uniform(-1, 1, size=D)
+    y = np.zeros(D)
+    y[mv] = x[mu]
+
+    with nengo.Network() as model:
+        u = nengo.Node(x)
+        v = nengo.Node(size_in=D)
+        nengo.Connection(u[mu], v[mv], synapse=None)
+        v_probe = nengo.Probe(v)
+
+    with Simulator(model) as sim:
+        sim.run(0.01)
+
+    plt.plot(sim.trange(), sim.data[v_probe])
+    assert np.allclose(sim.data[v_probe][1:], y, atol=1e-5, rtol=1e-3)
+
+
 def test_set_weight_solver():
     with nengo.Network():
         a = nengo.Ensemble(10, 2)
