@@ -392,9 +392,9 @@ class TestPiecewise(object):
         with pytest.raises(ValidationError):
             Piecewise(data)
 
-        data = {0.05: [1], 0.1: 0}
-        with pytest.raises(ValidationError):
-            Piecewise(data)
+        # check that scalars and length 1 arrays can be used interchangeably
+        # (no validation error)
+        Piecewise({0.05: [1], 0.1: 0})
 
     def test_invalid_interpolation_type(self):
         data = {0.05: 1, 0.1: 0}
@@ -458,3 +458,14 @@ class TestPiecewise(object):
         test_and_plot('quadratic')
         test_and_plot('cubic')
         plt.legend(loc="lower left")
+
+    @pytest.mark.parametrize("value", (1, [1, 1]))
+    def test_shape_out(self, value):
+        process = Piecewise({1: value})
+        f = process.make_step(shape_in=(process.default_size_in,),
+                              shape_out=(process.default_size_out,),
+                              dt=process.default_dt,
+                              rng=None)
+
+        assert np.array_equal(f(0), np.zeros(process.default_size_out))
+        assert np.array_equal(f(2), np.ones(process.default_size_out))

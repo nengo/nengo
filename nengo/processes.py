@@ -350,19 +350,12 @@ class Piecewise(Process):
     def __init__(self, data, interpolation='zero', **kwargs):
         tp, yp = zip(*data.items())
 
-        def scalar_len(x):
-            try:
-                return len(x)
-            except TypeError:
-                # treat objects without len (floats/ints) as length 0
-                return 0
-
-        if any(scalar_len(y) != scalar_len(yp[0]) for y in yp):
-            raise ValidationError("All values must have same length",
-                                  attr="yp", obj=self)
-
         self.tp = tp
-        self.yp = yp
+        self.yp = [np.ravel(p) for p in yp]
+
+        if any(y.size != self.yp[0].size for y in self.yp):
+            raise ValidationError("All values must have same size",
+                                  attr="yp", obj=self)
 
         needs_scipy = ('linear', 'nearest', 'slinear', 'quadratic', 'cubic')
         if interpolation in needs_scipy:
@@ -382,7 +375,7 @@ class Piecewise(Process):
 
     def make_step(self, shape_in, shape_out, dt, rng):
         assert shape_in == (0,)
-        assert shape_out == np.atleast_1d(self.yp[0]).shape
+        assert shape_out == self.yp[0].shape
 
         if self.interpolation == 'zero':
             i = np.argsort(self.tp)
@@ -392,9 +385,9 @@ class Piecewise(Process):
             def step_piecewise(t):
                 ti = (np.searchsorted(tp, t + 0.5*dt) - 1).clip(-1, len(yp)-1)
                 if ti == -1:
-                    return 0.0
+                    return np.zeros_like(yp[0])
                 else:
-                    return yp[ti].ravel()
+                    return yp[ti]
         else:
             assert self.sp_interpolate is not None
 
