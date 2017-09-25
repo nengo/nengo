@@ -45,7 +45,7 @@
 - [ ] I have updated the documentation accordingly.
 - [ ] I have included a changelog entry.
 - [ ] I have added tests to cover my changes.
-- [ ] All new and existing tests passed.
+- [ ] I have run the test suite locally and all tests passed.
 
 **Still to do:**
 <!--- If this is a work in progress, note below what you stil plan to do. -->
