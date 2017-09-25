@@ -34,6 +34,8 @@ Release History
 
 **Changed**
 
+- The minimum required version of NumPy has been raised to 1.8.
+  (`#947 <https://github.com/nengo/nengo/issues/947>`_)
 - Learning rules can now have a learning rate of 0.
   (`#1356 <https://github.com/nengo/nengo/pull/1356>`_)
 
