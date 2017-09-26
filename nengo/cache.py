@@ -640,15 +640,12 @@ class DecoderCache(object):
         """
 
         def cached_solver(conn, gain, bias, x, targets,
-                          rng=None, E=None, **uncached_kwargs):
+                          rng=np.random, E=None, **uncached_kwargs):
             if not self._in_context:
                 warnings.warn("Cannot use cached solver outside of "
                               "`with cache` block.")
                 return solver_fn(conn, gain, bias, x, targets,
                                  rng=rng, E=E, **uncached_kwargs)
-
-            if rng is None:
-                rng = np.random
 
             try:
                 key = self._get_cache_key(conn.solver,
