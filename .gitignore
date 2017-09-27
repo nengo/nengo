@@ -21,3 +21,4 @@ Vagrantfile
 *.eggs/
 .coverage
 htmlcov
+*.dist-info/
