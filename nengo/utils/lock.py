@@ -1,9 +1,5 @@
-import errno
-import os
-import os.path
-import time
-
 from nengo.exceptions import TimeoutError
+from nengo._vendor import portalocker
 
 
 class FileLock(object):
@@ -11,34 +7,27 @@ class FileLock(object):
         self.filename = filename
         self.timeout = timeout
         self.poll = poll
-        self._fd = None
+        self._lock = portalocker.Lock(
+            self.filename, timeout=timeout, check_interval=poll,
+            fail_when_locked=True)
+        self._acquired = False
 
     def acquire(self):
-        start = time.time()
-        while True:
-            try:
-                self._fd = os.open(
-                    self.filename, os.O_CREAT | os.O_RDWR | os.O_EXCL)
-                return
-            except OSError as err:
-                if err.errno not in (errno.EEXIST, errno.EACCES):
-                    raise
-                elif time.time() - start >= self.timeout:
-                    raise TimeoutError(
-                        "Could not acquire lock '{filename}'.".format(
-                            filename=self.filename))
-                else:
-                    time.sleep(self.poll)
+        try:
+            self._lock.acquire()
+            self._acquired = True
+        except (portalocker.AlreadyLocked, portalocker.LockException):
+            raise TimeoutError(
+                "Could not acquire lock '{filename}'.".format(
+                    filename=self.filename))
 
     def release(self):
-        if self._fd is not None:
-            os.close(self._fd)
-            os.remove(self.filename)
-            self._fd = None
+        self._lock.release()
+        self._acquired = False
 
     @property
     def acquired(self):
-        return self._fd is not None
+        return self._acquired
 
     def __enter__(self):
         self.acquire()

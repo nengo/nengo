@@ -1,19 +1,56 @@
 import os.path
+import multiprocessing
+import sys
+import time
 
 import pytest
 
 from nengo.utils.lock import FileLock, TimeoutError
 
 
+def acquire_lock(filename):
+    lock = FileLock(filename, timeout=0.01, poll=0.01)
+    try:
+        lock.acquire()
+    except TimeoutError:
+        sys.exit(0)
+    else:
+        sys.exit(1)
+
+
+def acquire_lock_and_idle(filename):
+    lock = FileLock(filename, timeout=0.01, poll=0.01)
+    lock.acquire()
+    while True:
+        time.sleep(1.)
+
+
 def test_can_acquire_filelock_at_most_once(tmpdir):
     filename = os.path.join(str(tmpdir), 'lock')
     lock = FileLock(filename, timeout=0.01, poll=0.01)
     lock.acquire()
+    p = multiprocessing.Process(target=acquire_lock, args=(filename,))
+    p.start()
+    p.join()
+    lock.release()
+    assert p.exitcode == 0
+
+
+def test_process_termination_releases_lock(tmpdir):
+    filename = os.path.join(str(tmpdir), 'lock')
+    p = multiprocessing.Process(target=acquire_lock_and_idle, args=(filename,))
+    p.start()
+    while p.is_alive() and not os.path.exists(filename):
+        time.sleep(0.2)
+    assert p.is_alive()
+
+    lock = FileLock(filename, timeout=0.01, poll=0.01)
     with pytest.raises(TimeoutError):
         lock.acquire()
-    lock2 = FileLock(filename, timeout=0.01, poll=0.01)
-    with pytest.raises(TimeoutError):
-        lock2.acquire()
+    p.terminate()
+    p.join()
+    lock = FileLock(filename, timeout=0.01, poll=0.01)
+    lock.acquire()
     lock.release()
 
 

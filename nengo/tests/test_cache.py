@@ -122,7 +122,7 @@ def test_corrupted_decoder_cache_index(tmpdir):
 
     with DecoderCache(cache_dir=cache_dir):
         pass  # Initialize cache with required files
-    assert len(os.listdir(cache_dir)) == 1  # index
+    assert len(os.listdir(cache_dir)) == 2  # index, index.lock
 
     # Write corrupted index
     with open(os.path.join(cache_dir, CacheIndex._INDEX), 'w') as f:
@@ -131,7 +131,7 @@ def test_corrupted_decoder_cache_index(tmpdir):
     # Try to load index
     with DecoderCache(cache_dir=cache_dir):
         pass
-    assert len(os.listdir(cache_dir)) == 1  # index
+    assert len(os.listdir(cache_dir)) == 2  # index, index.lock
 
 
 def test_decoder_cache_invalidation(tmpdir):
@@ -315,7 +315,7 @@ def test_cache_works(tmpdir, RefSimulator, seed):
     assert len(os.listdir(cache_dir)) == 0
     with RefSimulator(model, model=nengo.builder.Model(
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
-        assert len(os.listdir(cache_dir)) == 2  # index, and *.nco
+        assert len(os.listdir(cache_dir)) == 3  # index, index.lock, and *.nco
 
 
 def test_cache_not_used_without_seed(tmpdir, RefSimulator):
@@ -328,7 +328,7 @@ def test_cache_not_used_without_seed(tmpdir, RefSimulator):
     assert len(os.listdir(cache_dir)) == 0
     with RefSimulator(model, model=nengo.builder.Model(
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
-        assert len(os.listdir(cache_dir)) == 1  # index
+        assert len(os.listdir(cache_dir)) == 2  # index, index.lock
 
 
 def build_many_ensembles(cache_dir, RefSimulator):

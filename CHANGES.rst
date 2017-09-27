@@ -36,6 +36,9 @@ Release History
   could not be used in custom solvers.
   (`#1358 <https://github.com/nengo/nengo/issues/1358>`_,
   `#1359 <https://github.com/nengo/nengo/pull/1359>`_)
+- Fixed an issue in which the cache would not release its index lock
+  on abnormal termination of the Nengo process.
+  (`#1364 <https://github.com/nengo/nengo/pull/1364>`_)
 
 2.6.0 (October 6, 2017)
 =======================
