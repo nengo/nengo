@@ -26,7 +26,7 @@ SOFTWARE.
 Licensed code
 *************
 
-Nengo imports several open source libraries.
+Nengo imports or vendorizes several open source libraries.
 
 * `NumPy <http://www.numpy.org/>`_ - Used under
   `BSD license <http://www.numpy.org/license.html>`__
@@ -40,6 +40,8 @@ Nengo imports several open source libraries.
   `BSD license <https://github.com/ipython/ipython/blob/master/COPYING.rst>`__
 * `pytest <https://docs.pytest.org/en/latest/>`_ - Used under
   `MIT license <https://docs.pytest.org/en/latest/license.html>`__
+* `portalocker <http://portalocker.readthedocs.io/>`_ - Used under
+  `PSF license version 2 <https://github.com/WoLpH/portalocker/blob/develop/LICENSE>`__
 
 Nengo also includes code modified from other libraries.
 
