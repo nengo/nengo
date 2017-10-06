@@ -48,5 +48,5 @@
 - [ ] I have run the test suite locally and all tests passed.
 
 **Still to do:**
-<!--- If this is a work in progress, note below what you stil plan to do. -->
+<!--- If this is a work in progress, note below what you still plan to do. -->
 <!--- Use the task list syntax `- [ ]` so that progress can be tracked. -->
