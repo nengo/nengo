@@ -68,7 +68,8 @@ class Recorder(object):
 
     def get_filename(self, ext=''):
         modparts = self.module_name.split('.')[1:]
-        modparts.remove('tests')
+        if 'tests' in modparts:
+            modparts.remove('tests')
         return "%s.%s.%s" % ('.'.join(modparts), self.function_name, ext)
 
     def get_filepath(self, ext=''):
