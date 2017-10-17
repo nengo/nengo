@@ -22,8 +22,10 @@ Release History
 2.6.1 (unreleased)
 ==================
 
+**Fixed**
 
-
+- Better error message for invalid return values in ``nengo.Node`` functions.
+  (`#1317 <https://github.com/nengo/nengo/pull/1317>`_)
 
 2.6.0 (October 6, 2017)
 =======================

@@ -381,26 +381,14 @@ def test_node_with_unusual_strided_view(Simulator, seed):
         pass
 
 
-def test_non_finite_values(Simulator):
+@pytest.mark.parametrize("badval", [np.inf, np.nan, "string"])
+def test_invalid_values(Simulator, badval):
     with nengo.Network() as model:
         with pytest.raises(ValidationError):
-            node = nengo.Node(np.inf)
+            node = nengo.Node(badval)
 
     with nengo.Network() as model:
-        with pytest.raises(ValidationError):
-            node = nengo.Node(np.nan)
-
-    with nengo.Network() as model:
-        node = nengo.Node(lambda t: np.inf)
-        ens = nengo.Ensemble(10, 1)
-        nengo.Connection(node, ens)
-
-    with Simulator(model) as sim:
-        with pytest.raises(SimulationError):
-            sim.run(0.01)
-
-    with nengo.Network() as model:
-        node = nengo.Node(lambda t: np.nan)
+        node = nengo.Node(lambda t: badval)
         ens = nengo.Ensemble(10, 1)
         nengo.Connection(node, ens)
 

@@ -760,16 +760,20 @@ class SimPyFunc(Operator):
         def step_simpyfunc():
             args = (np.copy(x),) if x is not None else ()
             y = fn(t.item(), *args) if t is not None else fn(*args)
+
             if output is not None:
-                # required since Numpy turns None into NaN
-                if y is None or not np.all(np.isfinite(y)):
-                    raise SimulationError(
-                        "Function %r returned non-finite value" %
-                        function_name(self.fn))
                 try:
+                    # required since Numpy turns None into NaN
+                    if y is None or not np.all(np.isfinite(y)):
+                        raise SimulationError(
+                            "Function %r returned non-finite value" %
+                            function_name(self.fn))
+
                     output[...] = y
-                except ValueError:
-                    raise SimulationError("Function %r returned invalid value "
-                                          "%r" % (function_name(self.fn), y))
+
+                except (TypeError, ValueError):
+                    raise SimulationError("Function %r returned a value "
+                                          "%r of invalid type %r" %
+                                          (function_name(self.fn), y, type(y)))
 
         return step_simpyfunc
