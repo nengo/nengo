@@ -1,9 +1,10 @@
 import numpy as np
 import pytest
 
+import nengo
 from nengo import params
 from nengo.exceptions import ObsoleteError, ValidationError
-from nengo.utils.compat import PY2
+from nengo.utils.compat import iteritems, PY2
 
 
 def test_default():
@@ -322,3 +323,51 @@ def test_iter_params_does_not_list_obsolete_params():
         obsolete = params.ObsoleteParam('obsolete', 'not included in params')
 
     assert set(params.iter_params(Test())) == {'p1', 'p2'}
+
+
+def test_configure_all_nengo_parameters():
+
+    # make up a non-default value for the parameter
+    conv_func = {
+        params.BoolParam: lambda attr: not attr.default,
+        params.NumberParam: lambda attr: (
+            1 if attr.default is None else attr.default + 1),
+        params.StringParam: lambda attr: "abc",
+        params.NdarrayParam: lambda attr: np.zeros([1] * len(attr.shape)),
+        nengo.base.ProcessParam: lambda attr: nengo.processes.WhiteNoise(),
+        nengo.node.OutputParam: lambda attr: lambda x: x + 1,
+        nengo.synapses.SynapseParam: lambda attr: nengo.synapses.Alpha(0.1),
+        nengo.solvers.SolverParam: lambda attr: nengo.solvers.LstsqL2nz(
+            weights=isinstance(attr, nengo.connection.ConnectionSolverParam)),
+        nengo.connection.ConnectionFunctionParam: lambda attr: lambda x: x + 1,
+        nengo.learning_rules.LearningRuleTypeParam: (
+            lambda attr: nengo.learning_rules.PES()),
+        nengo.neurons.NeuronTypeParam: lambda attr: nengo.AdaptiveLIF(),
+    }
+
+    net = nengo.Network()
+
+    for obj in net.objects:
+        for name, attr in obj.__dict__.items():
+            if (not isinstance(attr, params.Parameter) or
+                    attr.default is params.Unconfigurable):
+                continue
+
+            for param, func in iteritems(conv_func):
+                if isinstance(attr, param):
+                    val = func(attr)
+                    break
+            else:
+                raise NotImplementedError
+
+            try:
+                # manually set the attribute to its default
+                setattr(net.config[obj], name, attr.default)
+
+                # set it to a non-default value
+                setattr(net.config[obj], name, val)
+                assert getattr(net.config[obj], name) == val
+
+            except Exception:
+                print("Error setting %s.%s" % (obj, name))
+                raise

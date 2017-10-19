@@ -25,6 +25,8 @@ class TargetParam(NengoObjectParam):
 
 
 class AttributeParam(StringParam):
+    coerce_defaults = False
+
     def coerce(self, probe, attr):
         value = super(AttributeParam, self).coerce(probe, attr)
         if attr in ('decoders', 'transform'):
@@ -109,10 +111,10 @@ class Probe(NengoObject):
     """
 
     target = TargetParam('target', nonzero_size_out=True)
-    attr = AttributeParam('attr', default=None)
+    attr = AttributeParam('attr', default=None, optional=True)
     sample_every = NumberParam(
         'sample_every', default=None, optional=True, low=1e-10)
-    synapse = SynapseParam('synapse', default=None)
+    synapse = SynapseParam('synapse', default=None, optional=True)
     solver = ProbeSolverParam('solver', default=ConnectionDefault)
 
     _param_init_order = ['target']

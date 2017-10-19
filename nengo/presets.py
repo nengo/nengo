@@ -17,7 +17,6 @@ def ThresholdingEnsembles(threshold, intercept_width=0.15, radius=1.):
       exponential distribution (shape parameter of ``intercept_width``).
       This clusters intercepts near the threshold for better approximation.
     - Sets encoders to 1.
-    - Sets dimensions to 1.
     - Sets evaluation points to be uniformly distributed between
       ``threshold`` and ``radius``.
     - Sets the radius.
@@ -39,7 +38,6 @@ def ThresholdingEnsembles(threshold, intercept_width=0.15, radius=1.):
         Configuration with presets.
     """
     config = nengo.Config(nengo.Ensemble)
-    config[nengo.Ensemble].dimensions = 1
     config[nengo.Ensemble].radius = radius
     config[nengo.Ensemble].intercepts = nengo.dists.Exponential(
         intercept_width, threshold, radius)

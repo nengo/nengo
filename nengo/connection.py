@@ -33,6 +33,8 @@ class PrePostParam(NengoObjectParam):
 class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
     """Connection-specific validation for learning rules."""
 
+    coerce_defaults = False
+
     def check_rule(self, conn, rule):
         super(ConnectionLearningRuleTypeParam, self).check_rule(conn, rule)
 
@@ -94,6 +96,8 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
 class ConnectionSolverParam(SolverParam):
     """Connection-specific validation for decoder solvers."""
 
+    coerce_defaults = False
+
     def coerce(self, conn, solver):
         solver = super(ConnectionSolverParam, self).coerce(conn, solver)
         if solver is not None:
@@ -111,6 +115,8 @@ class ConnectionSolverParam(SolverParam):
 
 
 class EvalPointsParam(DistOrArrayParam):
+    coerce_defaults = False
+
     def coerce(self, conn, distorarray):
         """Eval points are only valid when pre is an ensemble."""
         if distorarray is not None and not isinstance(conn.pre, Ensemble):
@@ -122,6 +128,8 @@ class EvalPointsParam(DistOrArrayParam):
 
 class ConnectionFunctionParam(Parameter):
     """Connection-specific validation for functions."""
+
+    coerce_defaults = False
 
     def check_array(self, conn, ndarray):
         if not isinstance(conn.eval_points, np.ndarray):
@@ -217,6 +225,8 @@ class ConnectionFunctionParam(Parameter):
 
 class TransformParam(DistOrArrayParam):
     """The transform additionally validates size_out."""
+
+    coerce_defaults = False
 
     def __init__(self, name, default, optional=False, readonly=False):
         super(TransformParam, self).__init__(

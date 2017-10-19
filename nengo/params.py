@@ -51,8 +51,20 @@ class Parameter(object):
     readonly : bool, optional
         If true, the parameter can only be set once.
         By default, parameters can be set multiple times.
+
+    Attributes
+    ----------
+    coerce_defaults : bool (Default: True)
+        If True, validate values for this parameter when they are set in a
+        `.Config` object. Setting a parameter directly on an object will
+        always be validated.
+    equatable : bool (Default: False)
+        If True, parameter values can be compared for equality
+        (``a==b``); otherwise equality checks will just compare object
+        identity (``a is b``).
     """
 
+    coerce_defaults = True
     equatable = False
 
     def __init__(self, name,
@@ -132,7 +144,8 @@ class Parameter(object):
     def set_default(self, obj, value):
         if not self.configurable:
             raise ConfigError("Parameter '%s' is not configurable" % self)
-        self._defaults[obj] = self.coerce(obj, value)
+        self._defaults[obj] = (self.coerce(obj, value) if self.coerce_defaults
+                               else value)
 
     def check_type(self, instance, value, type_):
         if value is not None and not isinstance(value, type_):
@@ -366,6 +379,11 @@ class NdarrayParam(Parameter):
         assert shape.count('...') <= 1, "Cannot have more than one ellipsis"
         self.shape = shape
         super(NdarrayParam, self).__init__(name, default, optional, readonly)
+
+    @property
+    def coerce_defaults(self):
+        return all(is_integer(dim) or dim in ('...', '*')
+                   for dim in self.shape)
 
     def hashvalue(self, instance):
         return array_hash(self.__get__(instance, None))

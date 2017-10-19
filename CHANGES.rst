@@ -28,6 +28,12 @@ Release History
   which scale the output amplitude.
   (`#1325 <https://github.com/nengo/nengo/pull/1325>`_)
 
+**Changed**
+
+- Default values can no longer be set for
+  ``Ensemble.n_neurons`` or ``Ensemble.dimensions``.
+  (`#1372 <https://github.com/nengo/nengo/pull/1372>`__)
+
 **Fixed**
 
 - Better error message for invalid return values in ``nengo.Node`` functions.
@@ -39,6 +45,9 @@ Release History
 - Fixed an issue in which the cache would not release its index lock
   on abnormal termination of the Nengo process.
   (`#1364 <https://github.com/nengo/nengo/pull/1364>`_)
+- Fixed validation checks that prevented the default
+  from being set on certain parameters.
+  (`#1372 <https://github.com/nengo/nengo/pull/1372>`__)
 
 2.6.0 (October 6, 2017)
 =======================
