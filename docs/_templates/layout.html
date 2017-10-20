@@ -2,7 +2,20 @@
 {% extends "!layout.html" %}
 
 {%- block extrahead %}
-<link rel="stylesheet" type="text/css" href="{{ pathto("_static/custom.css", 1) }}">
+<link rel="stylesheet" type="text/css" href="{{ pathto('_static/custom.css', 1) }}">
 {# Call the parent block #}
 {{ super() }}
 {%- endblock %}
+
+{% block breadcrumbs %}
+  <div class="header">
+    {{ super() }}
+    {% if page_source_suffix == '.ipynb' %}
+      <div style="float: right;">
+        <ol class="breadcrumb">
+          <li><a href="{{ pathto('_downloads/' + sourcename[:-4], 1) | e }}" download>Download example as Jupyter Notebook</a></li>
+        </ol>
+      </div>
+    {% endif %}
+  </div>
+{% endblock%}

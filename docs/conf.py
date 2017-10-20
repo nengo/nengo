@@ -4,6 +4,7 @@
 # to its containing dir.
 
 import os
+import shutil
 import sys
 
 try:
@@ -14,6 +15,22 @@ except ImportError:
           "installed in the current environment. Please install these and "
           "their requirements first. A virtualenv is recommended!")
     sys.exit(1)
+
+
+def copy_examples(app, exception):
+    if exception is None:
+        download_path = os.path.join(app.outdir, '_downloads')
+        dest_path = os.path.join(download_path, 'examples')
+        if not os.path.exists(download_path):
+            os.mkdir(download_path)
+        if os.path.exists(dest_path):
+            shutil.rmtree(dest_path)
+        shutil.copytree(os.path.join(app.srcdir, 'examples'), dest_path)
+
+
+def setup(app):
+    app.connect('build-finished', copy_examples)
+
 
 extensions = [
     'sphinx.ext.autodoc',
