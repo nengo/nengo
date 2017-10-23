@@ -21,7 +21,7 @@ class SemanticPointer(object):
         else:
             try:
                 len(data)
-            except:
+            except Exception:
                 raise ValidationError(
                     "Must specify either the data or the length for a "
                     "SemanticPointer.", attr='data', obj=self)

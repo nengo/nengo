@@ -286,7 +286,7 @@ class PiecewiseDataParam(DictParam):
             if callable(value):
                 try:
                     value = np.ravel(value(time))
-                except:
+                except Exception:
                     raise ValidationError("callable object for time step %.3f "
                                           "should return a numerical constant"
                                           % time, attr='data', obj=instance)
