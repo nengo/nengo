@@ -47,7 +47,7 @@ install:
       export CONDA_DEPS="";
       export PIP_DEPS="flake8 pylint";
     elif [[ "$DOCS" == "true" ]]; then
-      export CONDA_DEPS="matplotlib";
+      export CONDA_DEPS="matplotlib scipy";
       export PIP_DEPS="ipython[all]==2.4.1 sphinx ghp-import -e git+https://github.com/tbekolay/guzzle_sphinx_theme.git@use_smartypants#egg=guzzle_sphinx_theme";
     fi
   - if [[ -n "$NUMPY" && "$STATIC" == "false" ]]; then
