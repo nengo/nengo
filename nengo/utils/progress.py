@@ -7,14 +7,20 @@ import importlib
 import os
 import sys
 import time
+import uuid
 import warnings
 
 import numpy as np
 
-from .stdlib import get_terminal_size
-from .ipython import get_ipython
-from ..exceptions import ValidationError
-from ..rc import rc
+from nengo.utils.compat import escape
+from nengo.utils.stdlib import get_terminal_size
+from nengo.utils.ipython import check_ipy_version, get_ipython
+from nengo.exceptions import ValidationError
+from nengo.rc import rc
+
+
+if get_ipython() is not None:
+    from IPython.display import display
 
 
 class MemoryLeakWarning(UserWarning):
@@ -218,6 +224,79 @@ class TerminalProgressBar(ProgressBar):
             self.task,
             timestamp2timedelta(progress.elapsed_seconds())).ljust(width)
         return '\r' + line + os.linesep
+
+
+class IPython5ProgressBar(TerminalProgressBar):
+    supports_fast_ipynb_updates = True
+
+    def __init__(self, task):
+        super(IPython5ProgressBar, self).__init__(task)
+        self._escaped_task = escape(task)
+        self._handle = None
+        self._html_repr_requested = False
+        self._progress = None
+        self._prev_progress = .0
+
+    def update(self, progress):
+        self._html_repr_requested = False
+        self._progress = progress
+
+        # We try to use the IPython rich display system, but for text/plain
+        # it will always append a newline (which we do not want to be able
+        # to update the line). So we do not generate a text/plain
+        # representation and fall back to the update method of the
+        # TerminalProgressBar if no text/html format was created.
+        if self._handle is None:
+            self._handle = display(
+                self, display_id=str(uuid.uuid4()), exclude=['text/plain'])
+        else:
+            self._handle.update(self, exclude=['text/plain'])
+
+        if not self._html_repr_requested:
+            super(IPython5ProgressBar, self).update(progress)
+
+    def _repr_html_(self):
+        self._html_repr_requested = True
+
+        if self._progress is None:
+            text = self._escaped_task
+        elif self._progress.finished:
+            text = "{} finished in {}.".format(
+                self._escaped_task,
+                timestamp2timedelta(self._progress.elapsed_seconds()))
+        else:
+            text = (
+                "{task}&hellip; {progress:.0f}%, ETA: {eta}".format(
+                    task=self._escaped_task,
+                    progress=100. * self._progress.progress,
+                    eta=timestamp2timedelta(self._progress.eta())))
+        html = '''
+            <div style="
+                width: 100%;
+                border: 1px solid #cfcfcf;
+                border-radius: 4px;
+                text-align: center;
+                position: relative;">
+              <div class="pb-text" style="
+                  position: absolute;
+                  width: 100%;">
+                {text}
+              </div>
+              <div style="
+                  background-color: #bdd2e6;
+                  animation: progress 0.1s 1;">
+                <style type="text/css" scoped="scoped">
+                    @keyframes progress {{
+                        0% {{ width: {prev_progress}%; }}
+                        100% {{ width: {progress}%; }}
+                </style>
+                &nbsp;
+              </div>
+            </div>'''.format(
+                text=text, prev_progress=self._prev_progress * 100.,
+                progress=self._progress.progress * 100.)
+        self._prev_progress = self._progress.progress
+        return html
 
 
 class WriteProgressToFile(ProgressBar):
@@ -435,15 +514,17 @@ def get_default_progressbar(task):
     try:
         pbar = rc.getboolean('progress', 'progress_bar')
         if pbar:
-            return AutoProgressBar(TerminalProgressBar(task=task))
+            pbar = 'auto'
         else:
-            return NoProgressBar()
+            pbar = 'none'
     except ValueError:
-        pass
+        pbar = rc.get('progress', 'progress_bar')
 
-    pbar = rc.get('progress', 'progress_bar')
     if pbar.lower() == 'auto':
-        return AutoProgressBar(TerminalProgressBar(task=task))
+        if get_ipython() is not None and check_ipy_version((5, 0)):
+            return AutoProgressBar(IPython5ProgressBar(task=task))
+        else:
+            return AutoProgressBar(TerminalProgressBar(task=task))
     if pbar.lower() == 'none':
         return NoProgressBar()
 
