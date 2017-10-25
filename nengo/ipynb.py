@@ -44,7 +44,16 @@ else:
 
 
 def load_ipython_extension(ipython):
-    if has_ipynb_widgets() and rc.get('progress', 'progress_bar') == 'auto':
+    if IPython.version_info[0] >= 5:
+        warnings.warn(
+            "Loading the nengo.ipynb notebook extension is no longer "
+            "required. Progress bars are automatically activated for IPython "
+            "version 5 and later.")
+    elif has_ipynb_widgets() and rc.get('progress', 'progress_bar') == 'auto':
+        warnings.warn(
+            "The nengo.ipynb notebook extension is deprecated. Please upgrade "
+            "to IPython version 5 or later.")
+
         IPythonProgressWidget.load_frontend(ipython)
         rc.set('progress', 'progress_bar', '.'.join((
             __name__, IPython2ProgressBar.__name__)))
@@ -135,6 +144,9 @@ class IPythonProgressWidget(DOMWidget):
     @classmethod
     def load_frontend(cls, ipython):
         """Loads the JavaScript front-end code required by then widget."""
+        warnings.warn(
+            "IPythonProgressWidget is deprecated. Please upgrade to "
+            "IPython version 5 or later.", DeprecationWarning)
         if notebook_version[0] < 4:
             ipython.run_cell_magic('javascript', '', cls.LEGACY_FRONTEND)
         elif ipywidgets.version_info[0] < 5:
@@ -155,6 +167,9 @@ class IPython2ProgressBar(ProgressBar):
     supports_fast_ipynb_updates = True
 
     def __init__(self, task):
+        warnings.warn(
+            "IPython2ProgressBar is deprecated. Please upgrade to IPython "
+            "version 5 or later.", DeprecationWarning)
         super(IPython2ProgressBar, self).__init__(task)
         self._escaped_task = escape(task)
         self._widget = IPythonProgressWidget()

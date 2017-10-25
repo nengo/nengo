@@ -22,7 +22,14 @@ Release History
 2.7.1 (unreleased)
 ==================
 
+**Deprecated**
 
+- The ``nengo.ipynb`` IPython extension and the ``IPython2ProgressBar``
+  have been deprecated and replaced by the ``IPython5ProgressBar``.
+  This progress bar will be automatically activated in IPython and
+  Jupyter notebooks from IPython version 5.0 onwards.
+  (`#1087 <https://github.com/nengo/nengo/issues/1087>`_,
+  `#1375 <https://github.com/nengo/nengo/pull/1375>`_)
 
 2.7.0 (March 7, 2018)
 =====================
@@ -71,7 +78,6 @@ Release History
   (`#1406 <https://github.com/nengo/nengo/pull/1406>`_)
 - Fixed the ``--seed-offset`` option of the test suite.
   (`#1409 <https://github.com/nengo/nengo/pull/1409>`_)
-
 
 2.6.0 (October 6, 2017)
 =======================
@@ -401,7 +407,7 @@ Release History
   (`#982 <https://github.com/nengo/nengo/pull/982>`_)
 
 **Bug fixes**
-
+n
 - The DecoderCache is used as context manager instead of relying on the
   ``__del__`` method for cleanup. This should solve problems with the
   cache's file lock not being removed. It might be necessary to

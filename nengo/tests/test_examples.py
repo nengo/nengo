@@ -115,18 +115,3 @@ def test_no_outputs(nb_file):
 
     for cell in iter_cells(nb_file):
         assert cell.outputs == [], "Cell outputs not cleared"
-
-
-@pytest.mark.example
-@pytest.mark.parametrize('nb_file', all_examples)
-def test_loads_ipynb_ext(nb_file):
-    pytest.importorskip("IPython", minversion="1.0")
-
-    no_sim = True
-    for cell in iter_cells(nb_file):
-        if "%load_ext nengo.ipynb" in cell.source:
-            break
-        if "nengo.Simulator(" in cell.source:
-            no_sim = False
-    else:
-        assert no_sim, "nengo.ipynb extension not loaded"
