@@ -7,7 +7,6 @@ import importlib
 import os
 import sys
 import time
-import uuid
 import warnings
 
 import numpy as np
@@ -226,38 +225,31 @@ class TerminalProgressBar(ProgressBar):
         return '\r' + line + os.linesep
 
 
-class IPython5ProgressBar(TerminalProgressBar):
+class HtmlProgressBar(ProgressBar):
     supports_fast_ipynb_updates = True
 
     def __init__(self, task):
-        super(IPython5ProgressBar, self).__init__(task)
+        super(HtmlProgressBar, self).__init__(task)
         self._escaped_task = escape(task)
         self._handle = None
-        self._html_repr_requested = False
         self._progress = None
         self._prev_progress = .0
 
     def update(self, progress):
-        self._html_repr_requested = False
         self._progress = progress
-
-        # We try to use the IPython rich display system, but for text/plain
-        # it will always append a newline (which we do not want to be able
-        # to update the line). So we do not generate a text/plain
-        # representation and fall back to the update method of the
-        # TerminalProgressBar if no text/html format was created.
         if self._handle is None:
-            self._handle = display(
-                self, display_id=str(uuid.uuid4()), exclude=['text/plain'])
+            self._handle = display(self, display_id=True)
         else:
-            self._handle.update(self, exclude=['text/plain'])
+            self._handle.update(self)
 
-        if not self._html_repr_requested:
-            super(IPython5ProgressBar, self).update(progress)
+    def __repr__(self):
+        return (
+            "HtmlProgressBar cannot be displayed. Please use the "
+            "TerminalProgressBar. It can be enabled with "
+            "`nengo.rc.set('progress', 'progress_bar', "
+            "'nengo.utils.progress.TerminalProgressBar')`.")
 
     def _repr_html_(self):
-        self._html_repr_requested = True
-
         if self._progress is None:
             text = self._escaped_task
         elif self._progress.finished:
@@ -297,6 +289,30 @@ class IPython5ProgressBar(TerminalProgressBar):
                 progress=self._progress.progress * 100.)
         self._prev_progress = self._progress.progress
         return html
+
+
+class IPython5ProgressBar(ProgressBar):
+    supports_fast_ipynb_updates = True
+
+    def __init__(self, task):
+        super(IPython5ProgressBar, self).__init__(task)
+
+        class Displayable(object):
+            def __init__(self):
+                self.display_requested = False
+
+            def _ipython_display_(self):
+                self.display_requested = True
+        d = Displayable()
+        display(d, exclude=['text/plain'])
+
+        if d.display_requested:
+            self._progress_bar = HtmlProgressBar(task)
+        else:
+            self._progress_bar = TerminalProgressBar(task)
+
+    def update(self, progress):
+        self._progress_bar.update(progress)
 
 
 class WriteProgressToFile(ProgressBar):
