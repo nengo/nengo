@@ -80,6 +80,14 @@ except ImportError:
 assert get_ipython
 
 
+def check_ipy_version(min_version):
+    try:
+        import IPython
+        return IPython.version_info >= min_version
+    except ImportError:
+        return False
+
+
 def has_ipynb_widgets():
     """Determines whether IPython widgets are available.
 

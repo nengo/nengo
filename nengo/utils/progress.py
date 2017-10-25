@@ -8,13 +8,20 @@ import os
 import sys
 import threading
 import time
+import uuid
 import warnings
 
 import numpy as np
 
+from .compat import escape
 from .stdlib import get_terminal_size
+from .ipython import check_ipy_version, get_ipython
 from ..exceptions import ValidationError
 from ..rc import rc
+
+
+if get_ipython() is not None:
+    from IPython.display import display, Javascript
 
 
 class MemoryLeakWarning(UserWarning):
@@ -264,6 +271,168 @@ class TerminalProgressBar(ProgressBar):
         sys.stdout.flush()
 
 
+class HtmlProgressBar(ProgressBar):
+    """A progress bar using a HTML representation.
+
+    This HTML representation can be used in Jupyter notebook environments
+    and is provided by the *_repr_html_* method that will be automatically
+    used by IPython interpreters.
+
+    If the kernel frontend does not support HTML (e.g., in Jupyter qtconsole),
+    a warning message will be issued as the ASCII representation.
+    """
+    supports_fast_ipynb_updates = True
+
+    def __init__(self):
+        super(HtmlProgressBar, self).__init__()
+        self._uuid = uuid.uuid4()
+        self._handle = None
+
+    def update(self, progress):
+        if self._handle is None:
+            display(self._HtmlBase(self._uuid))
+            self._handle = display(self._js_update(progress), display_id=True)
+        else:
+            self._handle.update(self._js_update(progress))
+
+    class _HtmlBase(object):
+        def __init__(self, uuid):
+            self.uuid = uuid
+
+        def __repr__(self):
+            return (
+                "HtmlProgressBar cannot be displayed. Please use the "
+                "TerminalProgressBar. It can be enabled with "
+                "`nengo.rc.set('progress', 'progress_bar', "
+                "'nengo.utils.progress.TerminalProgressBar')`.")
+
+        def _repr_html_(self):
+            return '''
+                <div id="{uuid}" style="
+                    width: 100%;
+                    border: 1px solid #cfcfcf;
+                    border-radius: 4px;
+                    text-align: center;
+                    position: relative;">
+                  <div class="pb-text" style="
+                      position: absolute;
+                      width: 100%;">
+                    0%
+                  </div>
+                  <div class="pb-fill" style="
+                      background-color: #bdd2e6;
+                      width: 0%;">
+                    <style type="text/css" scoped="scoped">
+                        @keyframes pb-fill-anim {{
+                            0% {{ background-position: 0 0; }}
+                            100% {{ background-position: 100px 0; }}
+                        }}
+                    </style>
+                    &nbsp;
+                  </div>
+                </div>'''.format(uuid=self.uuid)
+
+    def _js_update(self, progress):
+        if progress is None:
+            text = ''
+        elif progress.finished:
+            text = "{} finished in {}.".format(
+                escape(progress.name_after),
+                timestamp2timedelta(progress.elapsed_seconds()))
+        elif progress.max_steps is None:
+            text = (
+                "{task}&hellip; duration: {duration}".format(
+                    task=escape(progress.name_during),
+                    duration=timestamp2timedelta(progress.elapsed_seconds())))
+        else:
+            text = (
+                "{task}&hellip; {progress:.0f}%, ETA: {eta}".format(
+                    task=escape(progress.name_during),
+                    progress=100. * progress.progress,
+                    eta=timestamp2timedelta(progress.eta())))
+
+        if progress.max_steps is None:
+            update = self._update_unknown_steps(progress)
+        else:
+            update = self._update_known_steps(progress)
+
+        if progress.finished:
+            finish = '''
+                fill.style.animation = 'none';
+                fill.style.backgroundImage = 'none';
+            '''
+        else:
+            finish = ''
+
+        return Javascript('''
+              (function () {{
+                  var root = document.getElementById('{uuid}');
+                  var text = root.getElementsByClassName('pb-text')[0];
+                  var fill = root.getElementsByClassName('pb-fill')[0];
+
+                  text.innerHTML = '{text}';
+                  {update}
+                  {finish}
+              }})();
+        '''.format(uuid=self._uuid, text=text, update=update, finish=finish))
+
+    def _update_known_steps(self, progress):
+        return '''
+            if ({progress} > 0.) {{
+                fill.style.transition = 'width 0.1s linear';
+            }} else {{
+                fill.style.transition = 'none';
+            }}
+
+            fill.style.width = '{progress}%';
+            fill.style.animation = 'none';
+            fill.style.backgroundImage = 'none'
+        '''.format(progress=100. * progress.progress)
+
+    def _update_unknown_steps(self, progress):
+        return '''
+            fill.style.width = '100%';
+            fill.style.animation = 'pb-fill-anim 2s linear infinite';
+            fill.style.backgroundSize = '100px 100%';
+            fill.style.backgroundImage = 'repeating-linear-gradient(' +
+                '90deg, #bdd2e6, #edf2f8 40%, #bdd2e6 80%, #bdd2e6)';
+        '''
+
+
+class IPython5ProgressBar(ProgressBar):
+    """ProgressBar for IPython>=5 environments.
+
+    Provides a HTML representation, except for in a pure terminal IPython
+    (i.e. not an IPython kernel that was connected to via ZMQ), where a
+    ASCII progress bar will be used.
+
+    Note that some Jupyter environments (like qtconsole) will try to use the
+    HTML version, but do not support HTML and will show a warning instead of
+    an actual progress bar.
+    """
+    supports_fast_ipynb_updates = True
+
+    def __init__(self):
+        super(IPython5ProgressBar, self).__init__()
+
+        class Displayable(object):
+            def __init__(self):
+                self.display_requested = False
+
+            def _ipython_display_(self):
+                self.display_requested = True
+        d = Displayable()
+        display(d, exclude=['text/plain'])
+
+        if d.display_requested:
+            self._progress_bar = HtmlProgressBar()
+        else:
+            self._progress_bar = TerminalProgressBar()
+
+    def update(self, progress):
+        self._progress_bar.update(progress)
+
+
 class WriteProgressToFile(ProgressBar):
     """Writes progress to a file.
 
@@ -324,12 +493,8 @@ class AutoProgressBar(ProgressBar):
             self.delegate.update(progress)
 
     @property
-    def task(self):
-        return self.delegate.task
-
-    @task.setter
-    def task(self, value):
-        self.delegate.task = value
+    def supports_fast_ipynb_updates(self):
+        return self.delegate.supports_fast_ipynb_updates
 
     def close(self):
         self.delegate.close()
@@ -412,16 +577,18 @@ def get_default_progressbar():
     try:
         pbar = rc.getboolean('progress', 'progress_bar')
         if pbar:
-            return AutoProgressBar(TerminalProgressBar())
+            pbar = 'auto'
         else:
-            return NoProgressBar()
+            pbar = 'none'
     except ValueError:
-        pass
+        pbar = rc.get('progress', 'progress_bar')
 
-    pbar = rc.get('progress', 'progress_bar')
     if pbar.lower() == 'auto':
-        return AutoProgressBar(TerminalProgressBar())
-    elif pbar.lower() == 'none':
+        if get_ipython() is not None and check_ipy_version((5, 0)):
+            return AutoProgressBar(IPython5ProgressBar())
+        else:
+            return AutoProgressBar(TerminalProgressBar())
+    if pbar.lower() == 'none':
         return NoProgressBar()
 
     try:

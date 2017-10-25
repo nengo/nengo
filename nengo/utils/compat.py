@@ -12,11 +12,13 @@ PY2 = sys.version_info[0] == 2
 
 # If something's changed from Python 2 to 3, we handle that here
 if PY2:
+    from cgi import escape as cgi_escape
     import cPickle as pickle
     import ConfigParser as configparser
     from inspect import getargspec as getfullargspec
     from itertools import izip_longest as zip_longest
     from StringIO import StringIO
+    escape = lambda s, quote=True: cgi_escape(s, quote=quote)
     string_types = (str, unicode)
     int_types = (int, long)
     range = xrange
@@ -78,6 +80,7 @@ if PY2:
 else:
     import pickle
     import configparser
+    from html import escape
     from inspect import getfullargspec
     from io import StringIO
     from itertools import zip_longest
