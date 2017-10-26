@@ -406,5 +406,5 @@ def test_raises_exception_for_invalid_intercepts(Simulator, intercept):
         nengo.Ensemble(1, 1, intercepts=[intercept])
 
     with pytest.raises(BuildError):
-        with nengo.Simulator(model):
+        with Simulator(model):
             pass

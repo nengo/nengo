@@ -63,7 +63,7 @@ def test_am_spa_keys_as_expressions(Simulator, plt, seed, rng):
         in_p = nengo.Probe(model.am.input)
         out_p = nengo.Probe(model.am.output, synapse=0.03)
 
-    with nengo.Simulator(model) as sim:
+    with Simulator(model) as sim:
         sim.run(0.2)
 
     # Specify t ranges

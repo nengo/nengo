@@ -265,7 +265,7 @@ def test_probe_cache(Simulator):
         u = nengo.Node(nengo.processes.WhiteNoise())
         up = nengo.Probe(u)
 
-    with nengo.Simulator(model, seed=0) as sim:
+    with Simulator(model, seed=0) as sim:
         sim.run_steps(10)
         ua = np.array(sim.data[up])
 

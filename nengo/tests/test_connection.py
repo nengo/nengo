@@ -1015,7 +1015,7 @@ def test_zero_activities_error(Simulator):
         nengo.Connection(a, nengo.Node(size_in=1))
 
     with pytest.raises(BuildError):
-        with nengo.Simulator(model):
+        with Simulator(model):
             pass
 
 
@@ -1027,7 +1027,7 @@ def test_function_returns_none_error(Simulator):
                          function=lambda x: x if x < 0.5 else None)
 
     with pytest.raises(BuildError):
-        with nengo.Simulator(model):
+        with Simulator(model):
             pass
 
 
