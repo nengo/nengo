@@ -45,6 +45,12 @@ except ImportError:
 
 
 def load_ipython_extension(ipython):
+    # Not a deprecation warning as this are hidden by default and we want to
+    # make sure the user sees this message.
+    warnings.warn(
+        "Loading the nengo.ipynb notebook extension will break with current "
+        "Jupyter notebook versions and is deprecated. All features provided "
+        "by the old extension are automatically activated for IPython>=5.")
     if has_ipynb_widgets() and rc.get('progress', 'progress_bar') == 'auto':
         IPythonProgressWidget.load_frontend(ipython)
         rc.set('progress', 'progress_bar', '.'.join((
@@ -136,6 +142,9 @@ class IPythonProgressWidget(DOMWidget):
     @classmethod
     def load_frontend(cls, ipython):
         """Loads the JavaScript front-end code required by then widget."""
+        warnings.warn(
+            "The IPythonProgressWidget is deprecated and will break current "
+            "Jupyter notebook versions.", DeprecationWarning)
         if notebook_version[0] < 4:
             ipython.run_cell_magic('javascript', '', cls.LEGACY_FRONTEND)
         elif ipywidgets.version_info[0] < 5:
@@ -156,6 +165,10 @@ class IPython2ProgressBar(ProgressBar):
     supports_fast_ipynb_updates = True
 
     def __init__(self, task):
+        warnings.warn(
+            "IPython2ProgressBar is deprecated and will be removed. "
+            "Use nengo.progress.IPython5ProgressBar for IPython>=5.",
+            DeprecationWarning)
         super(IPython2ProgressBar, self).__init__(task)
         self._escaped_task = escape(task)
         self._widget = IPythonProgressWidget()
