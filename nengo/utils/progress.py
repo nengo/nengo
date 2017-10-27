@@ -276,7 +276,8 @@ class HtmlProgressBar(ProgressBar):
               </div>
               <div style="
                   background-color: #bdd2e6;
-                  animation: progress 0.1s 1;">
+                  animation: progress 0.1s 1;
+                  width: {progress}%;">
                 <style type="text/css" scoped="scoped">
                     @keyframes progress {{
                         0% {{ width: {prev_progress}%; }}
