@@ -286,8 +286,8 @@ class HtmlProgressBar(ProgressBar):
                 &nbsp;
               </div>
             </div>'''.format(
-                text=text, prev_progress=self._prev_progress * 100.,
-                progress=self._progress.progress * 100.)
+            text=text, prev_progress=self._prev_progress * 100.,
+            progress=self._progress.progress * 100.)
         self._prev_progress = self._progress.progress
         return html
 
