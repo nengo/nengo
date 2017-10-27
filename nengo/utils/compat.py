@@ -104,6 +104,7 @@ else:
 
 assert pickle
 assert configparser
+assert escape
 assert replace
 assert zip_longest
 
