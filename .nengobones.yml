@@ -33,7 +33,7 @@ setup_py:
     - matplotlib>=1.4
     - nbsphinx
     - numpydoc>=0.6
-    - nengo_sphinx_theme>=0.8
+    - nengo_sphinx_theme>=0.12.0
   optional_req:
     - scipy>=0.13
     - scikit-learn
@@ -129,6 +129,8 @@ docs_conf_py:
     scipy: 'https://docs.scipy.org/doc/scipy/reference'
     sklearn: 'https://scikit-learn.org/dev'
   analytics_id: UA-41658423-2
+  extensions:
+    - nengo_sphinx_theme.ext.resolvedefaults
 
 travis_yml:
   python: 3.6

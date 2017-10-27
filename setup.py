@@ -39,7 +39,7 @@ docs_req = [
     "matplotlib>=1.4",
     "nbsphinx",
     "numpydoc>=0.6",
-    "nengo_sphinx_theme>=0.8",
+    "nengo_sphinx_theme>=0.12.0",
 ]
 optional_req = [
     "scipy>=0.13",
