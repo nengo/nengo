@@ -226,6 +226,15 @@ class TerminalProgressBar(ProgressBar):
 
 
 class HtmlProgressBar(ProgressBar):
+    """A progress bar using a HTML representation.
+
+    This HTML representation can be used in Jupyter notebook environments
+    and is provided by the *_repr_html_* method that will be automatically
+    used by IPython interpreters.
+
+    If the kernel frontend does not support HTML (e.g., in Jupyter qtconsole),
+    a warning message will be issued as the ASCII representation.
+    """
     supports_fast_ipynb_updates = True
 
     def __init__(self, task):
@@ -293,6 +302,16 @@ class HtmlProgressBar(ProgressBar):
 
 
 class IPython5ProgressBar(ProgressBar):
+    """ProgressBar for IPython>=5 environments.
+
+    Provides a HTML representation, except for in a pure terminal IPython
+    (i.e. not an IPython kernel that was connected to via ZMQ), where a
+    ASCII progress bar will be used.
+
+    Note that some Jupyter environments (like qtconsole) will try to use the
+    HTML version, but do not support HTML and will show a warning instead of
+    an actual progress bar.
+    """
     supports_fast_ipynb_updates = True
 
     def __init__(self, task):
