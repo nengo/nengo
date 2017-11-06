@@ -17,14 +17,14 @@ class WhiteNoise(Process):
 
     Parameters
     ----------
-    dist : Distribution, optional (Default: ``Gaussian(mean=0, std=1)``)
+    dist : Distribution, optional
         The distribution from which to draw samples.
-    scale : bool, optional (Default: True)
+    scale : bool, optional
         Whether to scale the white noise for integration. Integrating white
         noise requires using a time constant of ``sqrt(dt)`` instead of ``dt``
         on the noise term [1]_, to ensure the magnitude of the integrated
         noise does not change with ``dt``.
-    seed : int, optional (Default: None)
+    seed : int, optional
         Random number seed. Ensures noise will be the same each run.
 
     References
@@ -69,16 +69,16 @@ class FilteredNoise(Process):
 
     Parameters
     ----------
-    synapse : Synapse, optional (Default: ``Lowpass(tau=0.005)``)
+    synapse : Synapse, optional
         The synapse to use to filter the noise.
-    dist : Distribution, optional (Default: ``Gaussian(mean=0, std=1)``)
+    dist : Distribution, optional
         The distribution used to generate the white noise.
-    scale : bool, optional (Default: True)
+    scale : bool, optional
         Whether to scale the white noise for integration, making the output
         signal invariant to ``dt``.
-    synapse_kwargs : dict, optional (Default: None)
+    synapse_kwargs : dict, optional
         Arguments to pass to ``synapse.make_step``.
-    seed : int, optional (Default: None)
+    seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
 
@@ -126,9 +126,9 @@ class BrownNoise(FilteredNoise):
 
     Parameters
     ----------
-    dist : Distribution, optional (Default: ``Gaussian(mean=0, std=1)``)
+    dist : Distribution, optional
         The distribution used to generate the white noise.
-    seed : int, optional (Default: None)
+    seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
 
@@ -161,12 +161,12 @@ class WhiteSignal(Process):
         The cut-off frequency of the low-pass filter, in Hz.
         Must not exceed the Nyquist frequency for the simulation
         timestep, which is ``0.5 / dt``.
-    rms : float, optional (Default: 0.5)
+    rms : float, optional
         The root mean square power of the filtered signal
-    y0 : float, optional (Default: None)
+    y0 : float, optional
         Align the phase of each output dimension to begin at the value
         that is closest (in absolute value) to y0.
-    seed : int, optional (Default: None)
+    seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
 
@@ -347,7 +347,7 @@ class Piecewise(Process):
         at those times. Times must be numbers (ints or floats), while values
         can be numbers, lists of numbers, numpy arrays of numbers,
         or callables that return any of those options.
-    interpolation : str, optional (Default: 'zero')
+    interpolation : str, optional
         One of 'linear', 'nearest', 'slinear', 'quadratic', 'cubic', or 'zero'.
         Specifies how to interpolate between times with specified value.
         'zero' creates a plain piecewise function whose values begin at

@@ -62,7 +62,7 @@ class Dense(Transform):
     ----------
     shape : tuple of int
         The shape of the dense matrix: ``(size_out, size_in)``.
-    init : `.Distribution` or array_like, optional (Default: 1.0)
+    init : `.Distribution` or array_like, optional
         A Distribution used to initialize the transform matrix, or a concrete
         instantiation for the matrix. If the matrix is square we also allow a
         scalar (equivalent to ``np.eye(n) * init``) or a vector (equivalent to
@@ -136,25 +136,24 @@ class Convolution(Transform):
         Shape of the input signal to the convolution; e.g.,
         ``(height, width, channels)`` for a 2D convolution with
         ``channels_last=True``.
-    kernel_size : tuple of int, optional (Default: (3, 3))
+    kernel_size : tuple of int, optional
         Size of the convolutional kernels (1 element for a 1D convolution,
         2 for a 2D convolution, etc.).
-    strides : tuple of int, optional (Default: (1, 1))
+    strides : tuple of int, optional
         Stride of the convolution (1 element for a 1D convolution, 2 for
         a 2D convolution, etc.).
-    padding : ``"same"`` or ``"valid"``, optional (Default: "valid")
+    padding : ``"same"`` or ``"valid"``, optional
         Padding method for input signal. "Valid" means no padding, and
         convolution will only be applied to the fully-overlapping areas of the
         input signal (meaning the output will be smaller). "Same" means that
         the input signal is zero-padded so that the output is the same shape
         as the input.
-    channels_last : bool, optional (Default: True)
+    channels_last : bool, optional
         If ``True`` (default), the channels are the last dimension in the input
         signal (e.g., a 28x28 image with 3 channels would have shape
         ``(28, 28, 3)``).  ``False`` means that channels are the first
         dimension (e.g., ``(3, 28, 28)``).
-    init : `.Distribution` or `~numpy:numpy.ndarray`, optional \
-           (Default: Uniform(-1, 1))
+    init : `.Distribution` or `~numpy:numpy.ndarray`, optional
         A predefined kernel with shape
         ``kernel_size + (input_channels, n_filters)``, or a ``Distribution``
         that will be used to initialize the kernel.
@@ -271,7 +270,7 @@ class ChannelShape:
     ----------
     shape : tuple of int
         Signal shape
-    channels_last : bool, optional (Default: True)
+    channels_last : bool, optional
         If True (default), the last item in ``shape`` represents the channels,
         and the rest are spatial dimensions. Otherwise, the first item in
         ``shape`` is the channel dimension.

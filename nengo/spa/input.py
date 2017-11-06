@@ -37,11 +37,11 @@ class Input(Module):
 
     Parameters
     ----------
-    label : str, optional (Default: None)
+    label : str, optional
         A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
+    seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
+    add_to_container : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """

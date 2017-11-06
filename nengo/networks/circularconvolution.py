@@ -110,12 +110,12 @@ class CircularConvolution(nengo.Network):
     dimensions : int
         The number of dimensions of the input and output vectors.
 
-    invert_a, invert_b : bool, optional (Default: False, False)
+    invert_a, invert_b : bool, optional
         Whether to reverse the order of elements in either
         the first input (``invert_a``) or the second input (``invert_b``).
         Flipping the second input will make the network perform circular
         correlation instead of circular convolution.
-    input_magnitude : float, optional (Default: 1.0)
+    input_magnitude : float, optional
         The expected magnitude of the vectors to be convolved.
         This value is used to determine the radius of the ensembles
         computing the element-wise product.

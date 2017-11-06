@@ -44,7 +44,7 @@ class Solver(FrozenObject, metaclass=DocstringInheritor):
         Y : (n_eval_points, dimensions) array_like
             Matrix of the target decoded values for each of the D dimensions,
             at each of the evaluation points.
-        rng : `numpy.random.RandomState`, optional (Default: ``numpy.random``)
+        rng : `numpy.random.RandomState`, optional
             A random number generator to use as required.
 
         Returns
@@ -72,9 +72,9 @@ class Lstsq(Solver):
 
     Parameters
     ----------
-    weights : bool, optional (Default: False)
+    weights : bool, optional
         If False, solve for decoders. If True, solve for weights.
-    rcond : float, optional (Default: 0.01)
+    rcond : float, optional
         Cut-off ratio for small singular values (see `numpy.linalg.lstsq`).
 
     Attributes
@@ -112,11 +112,11 @@ class _LstsqNoiseSolver(Solver):
         """
         Parameters
         ----------
-        weights : bool, optional (Default: False)
+        weights : bool, optional
             If False, solve for decoders. If True, solve for weights.
-        noise : float, optional (Default: 0.1)
+        noise : float, optional
             Amount of noise, as a fraction of the neuron activity.
-        solver : `.LeastSquaresSolver`, optional (Default: ``Cholesky()``)
+        solver : `.LeastSquaresSolver`, optional
             Subsolver to use for solving the least squares problem.
 
         Attributes
@@ -166,11 +166,11 @@ class _LstsqL2Solver(Solver):
         """
         Parameters
         ----------
-        weights : bool, optional (Default: False)
+        weights : bool, optional
             If False, solve for decoders. If True, solve for weights.
-        reg : float, optional (Default: 0.1)
+        reg : float, optional
             Amount of regularization, as a fraction of the neuron activity.
-        solver : `.LeastSquaresSolver`, optional (Default: ``Cholesky()``)
+        solver : `.LeastSquaresSolver`, optional
             Subsolver to use for solving the least squares problem.
 
         Attributes
@@ -234,11 +234,11 @@ class LstsqL1(Solver):
 
         Parameters
         ----------
-        weights : bool, optional (Default: False)
+        weights : bool, optional
             If False, solve for decoders. If True, solve for weights.
-        l1 : float, optional (Default: 1e-4)
+        l1 : float, optional
             Amount of L1 regularization.
-        l2 : float, optional (Default: 1e-6)
+        l2 : float, optional
             Amount of L2 regularization.
         max_iter : int, optional
             Maximum number of iterations for the underlying elastic net.
@@ -306,13 +306,13 @@ class LstsqDrop(Solver):
         """
         Parameters
         ----------
-        weights : bool, optional (Default: False)
+        weights : bool, optional
             If False, solve for decoders. If True, solve for weights.
-        drop : float, optional (Default: 0.25)
+        drop : float, optional
             Fraction of decoders or weights to set to zero.
-        solver1 : Solver, optional (Default: ``LstsqL2(reg=0.001)``)
+        solver1 : Solver, optional
             Solver for finding the initial decoders.
-        solver2 : Solver, optional (Default: ``LstsqL2(reg=0.1)``)
+        solver2 : Solver, optional
             Used for re-solving for the decoders after dropout.
 
         Attributes
@@ -375,7 +375,7 @@ class Nnls(Solver):
 
         Parameters
         ----------
-        weights : bool, optional (Default: False)
+        weights : bool, optional
             If False, solve for decoders. If True, solve for weights.
 
         Attributes
@@ -423,9 +423,9 @@ class NnlsL2(Nnls):
 
         Parameters
         ----------
-        weights : bool, optional (Default: False)
+        weights : bool, optional
             If False, solve for decoders. If True, solve for weights.
-        reg : float, optional (Default: 0.1)
+        reg : float, optional
             Amount of regularization, as a fraction of the neuron activity.
 
         Attributes
@@ -485,13 +485,13 @@ class NoSolver(Solver):
 
     Parameters
     ----------
-    values : (n_neurons, size_out) array_like, optional (Default: None)
+    values : (n_neurons, size_out) array_like, optional
         The array of decoders to use.
         ``size_out`` is the dimensionality of the decoded signal (determined
         by the connection function).
         If ``None``, which is the default, the solver will return an
         appropriately sized array of zeros.
-    weights : bool, optional (Default: False)
+    weights : bool, optional
         If False, connection will use factored weights (decoders from this
         solver, transform, and encoders).
         If True, connection will use a full weight matrix (created by
@@ -499,13 +499,13 @@ class NoSolver(Solver):
 
     Attributes
     ----------
-    values : (n_neurons, size_out) array_like, optional (Default: None)
+    values : (n_neurons, size_out) array_like, optional
         The array of decoders to use.
         ``size_out`` is the dimensionality of the decoded signal (determined
         by the connection function).
         If ``None``, which is the default, the solver will return an
         appropriately sized array of zeros.
-    weights : bool, optional (Default: False)
+    weights : bool, optional
         If False, connection will use factored weights (decoders from this
         solver, transform, and encoders).
         If True, connection will use a full weight matrix (created by

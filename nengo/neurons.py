@@ -664,14 +664,14 @@ class Izhikevich(NeuronType):
 
     Parameters
     ----------
-    tau_recovery : float, optional (Default: 0.02)
+    tau_recovery : float, optional
         (Originally 'a') Time scale of the recovery variable.
-    coupling : float, optional (Default: 0.2)
+    coupling : float, optional
         (Originally 'b') How sensitive recovery is to subthreshold
         fluctuations of voltage.
-    reset_voltage : float, optional (Default: -65.)
+    reset_voltage : float, optional
         (Originally 'c') The voltage to reset to after a spike, in millivolts.
-    reset_recovery : float, optional (Default: 8.)
+    reset_recovery : float, optional
         (Originally 'd') The recovery value to reset to after a spike.
 
     References

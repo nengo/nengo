@@ -15,14 +15,14 @@ class InputGatedMemory(nengo.Network):
     dimensions : int
         Dimensionality of the vector.
 
-    feedback : float, optional (Default: 1.0)
+    feedback : float, optional
         Strength of the recurrent connection from the memory to itself.
-    difference_gain : float, optional (Default: 1.0)
+    difference_gain : float, optional
         Strength of the connection from the difference ensembles to the
         memory ensembles.
-    recurrent_synapse : float, optional (Default: 0.1)
+    recurrent_synapse : float, optional
 
-    difference_synapse : Synapse (Default: None)
+    difference_synapse : Synapse
         If None, ...
     **kwargs
         Keyword arguments passed through to ``nengo.Network``

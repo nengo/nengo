@@ -60,11 +60,11 @@ class Parameter:
 
     Attributes
     ----------
-    coerce_defaults : bool (Default: True)
+    coerce_defaults : bool
         If True, validate values for this parameter when they are set in a
         `.Config` object. Setting a parameter directly on an object will
         always be validated.
-    equatable : bool (Default: False)
+    equatable : bool
         If True, parameter values can be compared for equality
         (``a==b``); otherwise equality checks will just compare object
         identity (``a is b``).

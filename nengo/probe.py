@@ -76,21 +76,21 @@ class Probe(NengoObject):
     target : Ensemble, Neurons, Node, or Connection
         The object to probe.
 
-    attr : str, optional (Default: None)
+    attr : str, optional
         The signal to probe. Refer to the target's ``probeable`` list for
         details. If None, the first element in the ``probeable`` list
         will be used.
-    sample_every : float, optional (Default: None)
+    sample_every : float, optional
         Sampling period in seconds. If None, the ``dt`` of the simluation
         will be used.
-    synapse : Synapse, optional (Default: None)
+    synapse : Synapse, optional
         A synaptic model to filter the probed signal.
-    solver : Solver, optional (Default: ``ConnectionDefault``)
+    solver : Solver, optional
         `~nengo.solvers.Solver` to compute decoders
         for probes that require them.
-    label : str, optional (Default: None)
+    label : str, optional
         A name for the probe. Used for debugging and visualization.
-    seed : int, optional (Default: None)
+    seed : int, optional
         The seed used for random number generation.
 
     Attributes

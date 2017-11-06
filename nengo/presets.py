@@ -25,11 +25,11 @@ def ThresholdingEnsembles(threshold, intercept_width=0.15, radius=1.):
     ----------
     threshold : float
         Point at which ensembles should start firing.
-    intercept_width : float, optional (Default: 0.15)
+    intercept_width : float, optional
         Controls how widely distributed the intercepts are. Smaller values
         give more clustering at the threshold, larger values give a more
         uniform distribution.
-    radius : float, optional (Default: 1.)
+    radius : float, optional
         Ensemble radius.
 
     Returns

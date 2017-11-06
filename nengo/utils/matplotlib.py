@@ -104,9 +104,9 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
         Time data from the simulation
     spikes : array
         The spike data with columns for each neuron and 1s indicating spikes
-    ax : matplotlib.axes.Axes, optional (Default: None)
+    ax : matplotlib.axes.Axes, optional
         The figure axes to plot into. If None, we will use current axes.
-    use_eventplot : boolean, optional (Default: False)
+    use_eventplot : boolean, optional
         Whether to use the new Matplotlib `eventplot` routine. It is slower
         and makes larger image files, so we do not use it by default.
 

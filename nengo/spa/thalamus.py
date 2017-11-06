@@ -16,40 +16,40 @@ class Thalamus(nengo.networks.Thalamus, Module):
     ----------
     bg : spa.BasalGanglia
         The associated basal ganglia that defines the action to implement.
-    neurons_action : int, optional (Default: 50)
+    neurons_action : int, optional
         Number of neurons per action to represent the selection.
-    threshold_action : float, optional (Default: 0.2)
+    threshold_action : float, optional
         Minimum value for action representation.
-    mutual_inhibit : float, optional (Default: 1.0)
+    mutual_inhibit : float, optional
         Strength of inhibition between actions.
-    route_inhibit : float, optional (Default: 3.0)
+    route_inhibit : float, optional
         Strength of inhibition for unchosen actions.
-    synapse_inhibit : float, optional (Default: 0.008)
+    synapse_inhibit : float, optional
         Synaptic filter to apply for inhibition between actions.
-    synapse_bg : float, optional (Default: 0.008)
+    synapse_bg : float, optional
         Synaptic filter for connection between basal ganglia and thalamus.
-    synapse_direct : float, optional (Default: 0.01)
+    synapse_direct : float, optional
         Synaptic filter for direct outputs.
-    neurons_channel_dim : int, optional (Default: 50)
+    neurons_channel_dim : int, optional
         Number of neurons per routing channel dimension.
-    subdim_channel : int, optional (Default: 16)
+    subdim_channel : int, optional
         Number of subdimensions used in routing channel.
-    synapse_channel : float, optional (Default: 0.01)
+    synapse_channel : float, optional
         Synaptic filter for channel inputs and outputs.
-    neurons_cconv : int, optional (Default: 200)
+    neurons_cconv : int, optional
         Number of neurons per circular convolution dimension.
-    neurons_gate : int, optional (Default: 40)
+    neurons_gate : int, optional
         Number of neurons per gate.
-    threshold_gate : float, optional (Default: 0.3)
+    threshold_gate : float, optional
         Minimum value for gating neurons.
-    synapse_to-gate : float, optional (Default: 0.002)
+    synapse_to-gate : float, optional
         Synaptic filter for controlling a gate.
 
-    label : str, optional (Default: None)
+    label : str, optional
         A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
+    seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
+    add_to_container : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """

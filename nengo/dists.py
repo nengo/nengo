@@ -27,7 +27,7 @@ class Distribution(FrozenObject):
         ----------
         n : int
             Number samples to take.
-        d : int or None, optional (Default: None)
+        d : int or None, optional
             The number of dimensions to return. If this is an int, the return
             value will be of shape ``(n, d)``. If None, the return
             value will be of shape ``(n,)``.
@@ -97,7 +97,7 @@ class Uniform(Distribution):
         The closed lower bound of the uniform distribution; samples >= low
     high : Number
         The open upper bound of the uniform distribution; samples < high
-    integer : boolean, optional (Default: False)
+    integer : boolean, optional
         If true, sample from a uniform distribution of integers. In this case,
         low and high should be integers.
     """
@@ -176,10 +176,10 @@ class Exponential(Distribution):
     scale : float
         The scale parameter (inverse of the rate parameter lambda). Larger
         values make the distribution narrower (sharper peak).
-    shift : float, optional (Default: 0)
+    shift : float, optional
         Amount to shift the distribution by. There will be no values smaller
         than this shift when sampling from the distribution.
-    high : float, optional (Default: np.inf)
+    high : float, optional
         All values larger than or equal to this value will be clipped to
         slightly less than this value.
     """
@@ -209,11 +209,11 @@ class UniformHypersphere(Distribution):
 
     Parameters
     ----------
-    surface : bool, optional (Default: False)
+    surface : bool, optional
         Whether sample points should be distributed uniformly
         over the surface of the hyperphere (True),
         or within the hypersphere (False).
-    min_magnitude : Number, optional (Default: 0)
+    min_magnitude : Number, optional
         Lower bound on the returned vector magnitudes (such that they are in
         the range ``[min_magnitude, 1]``). Must be in the range [0, 1).
         Ignored if ``surface`` is ``True``.
@@ -260,7 +260,7 @@ class Choice(Distribution):
         The options (choices) to choose between. The choice is always done
         along the first axis, so if ``options`` is a matrix, the options are
         the rows of that matrix.
-    weights : (N,) array_like, optional (Default: None)
+    weights : (N,) array_like, optional
         Weights controlling the probability of selecting each option. Will
         automatically be normalized. If None, weights be uniformly distributed.
     """
@@ -359,7 +359,7 @@ class SqrtBeta(Distribution):
     ----------
     n: int
         Number of subvectors.
-    m: int, optional (Default: 1)
+    m: int, optional
         Length of each subvector.
 
     See also
@@ -446,7 +446,7 @@ class SubvectorLength(SqrtBeta):
     ----------
     dimensions : int
         Dimensionality of the complete unit vector.
-    subdimensions : int, optional (Default: 1)
+    subdimensions : int, optional
         Dimensionality of the subvector.
 
     See also
@@ -568,9 +568,9 @@ def get_samples(dist_or_samples, n, d=None, rng=np.random):
         Source of the samples to be returned.
     n : int
         Number samples to take.
-    d : int or None, optional (Default: None)
+    d : int or None, optional
         The number of dimensions to return.
-    rng : RandomState, optional (Default: np.random)
+    rng : RandomState, optional
         Random number generator.
 
     Returns

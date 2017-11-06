@@ -14,11 +14,11 @@ class Model:
 
     Parameters
     ----------
-    dt : float, optional (Default: 0.001)
+    dt : float, optional
         The length of a simulator timestep, in seconds.
-    label : str, optional (Default: None)
+    label : str, optional
         A name or description to differentiate models.
-    decoder_cache : DecoderCache, optional (Default: ``NoDecoderCache()``)
+    decoder_cache : DecoderCache, optional
         Interface to a cache for expensive parts of the build process.
 
     Attributes

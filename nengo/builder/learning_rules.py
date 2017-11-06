@@ -37,7 +37,7 @@ class SimPES(Operator):
         If not None, multiply the error signal by these post-synaptic
         encoders (in the case that we want to learn a neuron-to-neuron
         weight matrix instead of decoder weights).
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -54,7 +54,7 @@ class SimPES(Operator):
         If not None, multiply the error signal by these post-synaptic
         encoders (in the case that we want to learn a neuron-to-neuron
         weight matrix instead of decoder weights).
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Notes
@@ -143,7 +143,7 @@ class SimBCM(Operator):
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
         The scalar learning rate, :math:`\kappa`.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -241,7 +241,7 @@ class SimOja(Operator):
         The scalar learning rate, :math:`\kappa`.
     beta : float
         The scalar forgetting rate, :math:`\beta`.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -340,7 +340,7 @@ class SimVoja(Operator):
         either 0 or 1 to turn learning off or on, respectively.
     learning_rate : float
         The scalar learning rate.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes

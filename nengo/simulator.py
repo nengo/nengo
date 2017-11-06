@@ -84,26 +84,25 @@ class Simulator:
     network : Network or None
         A network object to be built and then simulated. If None,
         then a `.Model` with the build model must be provided instead.
-    dt : float, optional (Default: 0.001)
+    dt : float, optional
         The length of a simulator timestep, in seconds.
-    seed : int, optional (Default: None)
+    seed : int, optional
         A seed for all stochastic operators used in this simulator.
         Will be set to ``network.seed + 1`` if not given.
-    model : Model, optional (Default: None)
+    model : Model, optional
         A `.Model` that contains build artifacts to be simulated.
         Usually the simulator will build this model for you; however, if you
         want to build the network manually, or you want to inject build
         artifacts in the model before building the network, then you can
         pass in a `.Model` instance.
-    progress_bar : bool or ProgressBar, optional \
-                   (Default: True)
+    progress_bar : bool or ProgressBar, optional
         Progress bar for displaying build and simulation progress.
 
         If ``True``, the default progress bar will be used.
         If ``False``, the progress bar will be disabled.
         For more control over the progress bar, pass in a ``ProgressBar``
         instance.
-    optimize : bool, optional (Default: True)
+    optimize : bool, optional
         If ``True``, the builder will run an additional optimization step
         that can speed up simulations significantly at the cost of slower
         builds. If running models for very small amounts of time,
@@ -287,7 +286,7 @@ class Simulator:
         ----------
         time_in_seconds : float
             Amount of time to run the simulation for. Must be positive.
-        progress_bar : bool or ProgressBar, optional (Default: True)
+        progress_bar : bool or ProgressBar, optional
             Progress bar for displaying the progress of the simulation run.
 
             If True, the default progress bar will be used.
@@ -316,7 +315,7 @@ class Simulator:
         ----------
         steps : int
             Number of steps to run the simulation for.
-        progress_bar : bool or ProgressBar, optional (Default: True)
+        progress_bar : bool or ProgressBar, optional
             Progress bar for displaying the progress of the simulation run.
 
             If True, the default progress bar will be used.
@@ -355,7 +354,7 @@ class Simulator:
 
         Parameters
         ----------
-        sample_every : float, optional (Default: None)
+        sample_every : float, optional
             The sampling period of the probe to create a range for.
             If None, a time value for every ``dt`` will be produced.
         """

@@ -295,13 +295,13 @@ class RandomizedSVD(LeastSquaresSolver):
 
     Parameters
     ----------
-    n_components : int, optional (Default: 60)
+    n_components : int, optional
         The number of SVD components to compute. A small survey of activity
         matrices suggests that the first 60 components capture almost all
         the variance.
-    n_oversamples : int, optional (Default: 10)
+    n_oversamples : int, optional
         The number of additional samples on the range of A.
-    n_iter : int, optional (Default: 0)
+    n_iter : int, optional
         The number of power iterations to perform (can help with noisy data).
 
     See also

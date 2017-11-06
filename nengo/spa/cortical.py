@@ -13,16 +13,16 @@ class Cortical(Module):
     ----------
     actions : Actions
         The actions to implement.
-    synapse : float, optional (Default: 0.01)
+    synapse : float, optional
         The synaptic filter to use for the connections.
-    neurons_cconv : int, optional (Default: 200)
+    neurons_cconv : int, optional
         Number of neurons per circular convolution dimension.
 
-    label : str, optional (Default: None)
+    label : str, optional
         A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
+    seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
+    add_to_container : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """

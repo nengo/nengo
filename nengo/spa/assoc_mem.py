@@ -12,38 +12,38 @@ class AssociativeMemory(Module):
     ----------
     input_vocab: Vocabulary
         The vocabulary to match.
-    output_vocab: Vocabulary, optional (Default: None)
+    output_vocab: Vocabulary, optional
         The vocabulary to be produced for each match. If
         None, the associative memory will act like an autoassociative memory
         (cleanup memory).
-    input_keys : list, optional (Default: None)
+    input_keys : list, optional
         A list of strings that correspond to the input vectors.
-    output_keys : list, optional (Default: None)
+    output_keys : list, optional
         A list of strings that correspond to the output vectors.
-    default_output_key: str, optional (Default: None)
+    default_output_key: str, optional
         The semantic pointer string to be produced if the input value matches
         none of vectors in the input vector list.
-    threshold: float, optional (Default: 0.3)
+    threshold: float, optional
         The association activation threshold.
-    inhibitable: bool, optional (Default: False)
+    inhibitable: bool, optional
         Flag to indicate if the entire associative memory module is
         inhibitable (i.e., the entire module can be inhibited).
-    wta_output: bool, optional (Default: False)
+    wta_output: bool, optional
         Flag to indicate if output of the associative memory should contain
         more than one vector. If True, only one vector's output will be
         produced; i.e. produce a winner-take-all (WTA) output.
         If False, combinations of vectors will be produced.
-    wta_inhibit_scale: float, optional (Default: 3.0)
+    wta_inhibit_scale: float, optional
         Scaling factor on the winner-take-all (WTA) inhibitory connections.
-    wta_synapse: float, optional (Default: 0.005)
+    wta_synapse: float, optional
         Synapse to use for the winner-take-all (wta) inhibitory connections.
-    threshold_output: bool, optional (Default: False)
+    threshold_output: bool, optional
         Adds a threholded output if True.
-    label : str, optional (Default: None)
+    label : str, optional
         A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
+    seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
+    add_to_container : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """

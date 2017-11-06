@@ -19,17 +19,17 @@ class Signal:
     initial_value : array_like
         The initial value of the signal. Much of the metadata tracked by the
         Signal is based on this array as well (e.g., dtype).
-    name : str, optional (Default: None)
+    name : str, optional
         Name of the signal. Primarily used for debugging.
         If None, the memory location of the Signal will be used.
-    base : Signal, optional (Default: None)
+    base : Signal, optional
         The base signal, if this signal is a view on another signal.
         Linking the two signals with the ``base`` argument is necessary
         to ensure that their live data is also linked.
-    readonly : bool, optional (Default: False)
+    readonly : bool, optional
         Whether this signal and its related live data should be marked as
         readonly. Writing to these arrays will raise an exception.
-    offset : int, optional (Default: 0)
+    offset : int, optional
         For a signal view this gives the offset of the view from the base
         ``initial_value`` in bytes. This might differ from the offset
         of the NumPy array view provided as ``initial_value`` if the base

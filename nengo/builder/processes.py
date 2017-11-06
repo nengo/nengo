@@ -18,10 +18,10 @@ class SimProcess(Operator):
         Output from the process, or None if no output.
     t : Signal
         The signal associated with the time (a float, in seconds).
-    mode : str, optional (Default: ``'set'``)
+    mode : str, optional
         Denotes what type of update this operator performs.
         Must be one of ``'update'``, ``'inc'`` or ``'set'``.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -118,11 +118,11 @@ def build_process(model, process, sig_in=None, sig_out=None, inc=False):
         The model to build into.
     process : Process
         Process to build.
-    sig_in : Signal, optional (Default: None)
+    sig_in : Signal, optional
         The input signal, or None if no input signal.
-    sig_out : Signal, optional (Default: None)
+    sig_out : Signal, optional
         The output signal, or None if no output signal.
-    inc : bool, optional (Default: False)
+    inc : bool, optional
         Whether `.SimProcess` should be made with
         ``mode='inc'` (True) or ``mode='set'`` (False).
 
@@ -148,7 +148,7 @@ def build_synapse(model, synapse, sig_in, sig_out=None):
         Synapse to build.
     sig_in : Signal
         The input signal.
-    sig_out : Signal, optional (Default: None)
+    sig_out : Signal, optional
         The output signal. If None, a new output signal will be
         created and returned.
 

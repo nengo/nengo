@@ -14,26 +14,26 @@ class Bind(Module):
     ----------
     dimensions : int
         Number of dimensions for the two vectors to be compared.
-    vocab : Vocabulary, optional (Default: None)
+    vocab : Vocabulary, optional
         The vocabulary to use to interpret the vectors. If None,
         the default vocabulary for the given dimensionality is used.
-    n_neurons : int, optional (Default: 200)
+    n_neurons : int, optional
         Number of neurons to use in each product computation.
-    invert_a, invert_b : bool, optional (Default: False, False)
+    invert_a, invert_b : bool, optional
         Whether to reverse the order of elements in either
         the first input (``invert_a``) or the second input (``invert_b``).
         Flipping the second input will make the network perform circular
         correlation instead of circular convolution.
-    input_magnitude : float, optional (Default: 1.0)
+    input_magnitude : float, optional
         The expected magnitude of the vectors to be convolved.
         This value is used to determine the radius of the ensembles
         computing the element-wise product.
 
-    label : str, optional (Default: None)
+    label : str, optional
         A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
+    seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
+    add_to_container : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """

@@ -40,7 +40,7 @@ class Product(nengo.Network):
     dimensions : int
         Number of dimensions in each of the vectors to be multiplied.
 
-    input_magnitude : float, optional (Default: 1.)
+    input_magnitude : float, optional
         The expected magnitude of the vectors to be multiplied.
         This value is used to determine the radius of the ensembles
         computing the element-wise product.

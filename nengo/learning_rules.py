@@ -60,9 +60,9 @@ class LearningRuleType(FrozenObject, SupportDefaultsMixin):
 
     Parameters
     ----------
-    learning_rate : float, optional (Default: 1e-6)
+    learning_rate : float, optional
         A scalar indicating the rate at which ``modifies`` will be adjusted.
-    size_in : int, str, optional (Default: 0)
+    size_in : int, str, optional
         Dimensionality of the error signal (see above).
 
     Attributes
@@ -129,10 +129,9 @@ class PES(LearningRuleType):
 
     Parameters
     ----------
-    learning_rate : float, optional (Default: 1e-4)
+    learning_rate : float, optional
         A scalar indicating the rate at which weights will be adjusted.
-    pre_synapse : `.Synapse`, optional \
-                  (Default: ``nengo.synapses.Lowpass(tau=0.005)``)
+    pre_synapse : `.Synapse`, optional
         Synapse model used to filter the pre-synaptic activities.
 
     Attributes
@@ -190,16 +189,14 @@ class BCM(LearningRuleType):
 
     Parameters
     ----------
-    learning_rate : float, optional (Default: 1e-9)
+    learning_rate : float, optional
         A scalar indicating the rate at which weights will be adjusted.
-    pre_synapse : `.Synapse`, optional \
-                  (Default: ``nengo.synapses.Lowpass(tau=0.005)``)
+    pre_synapse : `.Synapse`, optional
         Synapse model used to filter the pre-synaptic activities.
-    post_synapse : `.Synapse`, optional (Default: ``None``)
+    post_synapse : `.Synapse`, optional
         Synapse model used to filter the post-synaptic activities.
         If None, ``post_synapse`` will be the same as ``pre_synapse``.
-    theta_synapse : `.Synapse`, optional \
-                    (Default: ``nengo.synapses.Lowpass(tau=1.0)``)
+    theta_synapse : `.Synapse`, optional
         Synapse model used to filter the theta signal.
 
     Attributes
@@ -280,15 +277,14 @@ class Oja(LearningRuleType):
 
     Parameters
     ----------
-    learning_rate : float, optional (Default: 1e-6)
+    learning_rate : float, optional
         A scalar indicating the rate at which weights will be adjusted.
-    pre_synapse : `.Synapse`, optional \
-                  (Default: ``nengo.synapses.Lowpass(tau=0.005)``)
+    pre_synapse : `.Synapse`, optional
         Synapse model used to filter the pre-synaptic activities.
-    post_synapse : `.Synapse`, optional (Default: ``None``)
+    post_synapse : `.Synapse`, optional
         Synapse model used to filter the post-synaptic activities.
         If None, ``post_synapse`` will be the same as ``pre_synapse``.
-    beta : float, optional (Default: 1.0)
+    beta : float, optional
         A scalar weight on the forgetting term.
 
     Attributes
@@ -354,10 +350,11 @@ class Voja(LearningRuleType):
 
     Parameters
     ----------
-    learning_rate : float, optional (Default: 1e-2)
+    post_tau : float, optional
+        Filter constant on activities of neurons in post population.
+    learning_rate : float, optional
         A scalar indicating the rate at which encoders will be adjusted.
-    post_synapse : `.Synapse`, optional \
-                   (Default: ``nengo.synapses.Lowpass(tau=0.005)``)
+    post_synapse : `.Synapse`, optional
         Synapse model used to filter the post-synaptic activities.
 
     Attributes

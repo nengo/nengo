@@ -21,26 +21,26 @@ class AssociativeMemory(nengo.Network):
     ----------
     input_vectors: array_like
         The list of vectors to be compared against.
-    output_vectors: array_like, optional (Default: None)
+    output_vectors: array_like, optional
         The list of vectors to be produced for each match. If None, the
         associative memory will be autoassociative (cleanup memory).
-    n_neurons: int, optional (Default: 50)
+    n_neurons: int, optional
         The number of neurons for each of the ensemble (where each ensemble
         represents each item in the input_vectors list).
-    threshold: float, optional (Default: 0.3)
+    threshold: float, optional
         The association activation threshold.
-    input_scales: float or array_like, optional (Default: 1.0)
+    input_scales: float or array_like, optional
         Scaling factor to apply on each of the input vectors. Note that it
         is possible to scale each vector independently.
-    inhibitable: bool, optional (Default: False)
+    inhibitable: bool, optional
         Flag to indicate if the entire associative memory module is
         inhibitable (entire thing can be shut off). The input gain into
         the inhibitory connection is 1.5.
-    label : str, optional (Default: None)
+    label : str, optional
         A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
+    seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
+    add_to_container : bool, optional
         Determines if the network will be added to the current container.
         If None, will be true if currently within a Network.
     """
@@ -199,7 +199,7 @@ class AssociativeMemory(nengo.Network):
             of the attribute for the associative memory network.
         input_vectors: array_like
             The list of vectors to be compared against.
-        input_scales: float or array_like, optional (Default: 1.0)
+        input_scales: float or array_like, optional
             Scaling factor to apply on each of the input vectors. Note that it
             is possible to scale each vector independently.
         """
@@ -279,12 +279,12 @@ class AssociativeMemory(nengo.Network):
         output_vector: array_like
             The vector to be produced if the input value matches none of
             the vectors in the input vector list.
-        output_name: str, optional (Default: 'output')
+        output_name: str, optional
             The name of the input to which the default output vector
             should be applied.
-        n_neurons: int, optional (Default: 50)
+        n_neurons: int, optional
             Number of neurons to use for the default output vector ensemble.
-        min_activation_value: float, optional (Default: 0.5)
+        min_activation_value: float, optional
             Minimum activation value (i.e. threshold) to use to disable
             the default output vector.
         """
@@ -320,9 +320,9 @@ class AssociativeMemory(nengo.Network):
 
         Parameters
         ----------
-        inhibit_scale: float, optional (Default: 1.5)
+        inhibit_scale: float, optional
             Mutual inhibition scaling factor.
-        inhibit_synapse: float, optional (Default: 0.005)
+        inhibit_synapse: float, optional
             Mutual inhibition synapse time constant.
         """
         if not self.is_wta:
@@ -342,9 +342,9 @@ class AssociativeMemory(nengo.Network):
 
         Parameters
         ----------
-        n_neurons: int, optional (Default: 50)
+        n_neurons: int, optional
             Number of neurons to use for the default output vector ensemble.
-        inhibit_scale: float, optional (Default: 10)
+        inhibit_scale: float, optional
             Mutual inhibition scaling factor.
         """
         if self.thresh_ens is not None:

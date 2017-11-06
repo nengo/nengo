@@ -292,8 +292,7 @@ class Connection(NengoObject):
     post : Ensemble or Neurons or Node or Probe
         The destination object for the connection.
 
-    synapse : Synapse or None, optional \
-              (Default: ``nengo.synapses.Lowpass(tau=0.005)``)
+    synapse : Synapse or None, optional
         Synapse model to use for filtering (see `~nengo.synapses.Synapse`).
         If *None*, no synapse will be used and information will be transmitted
         without any delay (if supported by the backend---some backends may
@@ -303,39 +302,36 @@ class Connection(NengoObject):
         *None* if components are connected in a cycle. Furthermore, a synaptic
         filter with a zero time constant is different from a *None* synapse
         as a synaptic filter will always add a delay of at least one time step.
-    function : callable or (n_eval_points, size_mid) array_like, \
-               optional (Default: None)
+    function : callable or (n_eval_points, size_mid) array_like, optional
         Function to compute across the connection. Note that ``pre`` must be
         an ensemble to apply a function across the connection.
         If an array is passed, the function is implicitly defined by the
         points in the array and the provided ``eval_points``, which have a
         one-to-one correspondence.
-    transform : (size_out, size_mid) array_like, optional \
-                (Default: ``np.array(1.0)``)
+    transform : (size_out, size_mid) array_like, optional
         Linear transform mapping the pre output to the post input.
         This transform is in terms of the sliced size; if either pre
         or post is a slice, the transform must be shaped according to
         the sliced dimensionality. Additionally, the function is applied
         before the transform, so if a function is computed across the
         connection, the transform must be of shape ``(size_out, size_mid)``.
-    solver : Solver, optional (Default: ``nengo.solvers.LstsqL2()``)
+    solver : Solver, optional
         Solver instance to compute decoders or weights
         (see `~nengo.solvers.Solver`). If ``solver.weights`` is True, a full
         connection weight matrix is computed instead of decoders.
     learning_rule_type : LearningRuleType or iterable of LearningRuleType, \
-                         optional (Default: None)
+                         optional
         Modifies the decoders or connection weights during simulation.
-    eval_points : (n_eval_points, size_in) array_like or int, optional \
-                  (Default: None)
+    eval_points : (n_eval_points, size_in) array_like or int, optional
         Points at which to evaluate ``function`` when computing decoders,
         spanning the interval (-pre.radius, pre.radius) in each dimension.
         If None, will use the eval_points associated with ``pre``.
-    scale_eval_points : bool, optional (Default: True)
+    scale_eval_points : bool, optional
         Indicates whether the evaluation points should be scaled
         by the radius of the pre Ensemble.
-    label : str, optional (Default: None)
+    label : str, optional
         A descriptive label for the connection.
-    seed : int, optional (Default: None)
+    seed : int, optional
         The seed used for random number generation.
 
     Attributes

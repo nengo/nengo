@@ -92,21 +92,21 @@ class BasalGanglia(nengo.Network):
     ----------
     dimensions : int
         Number of dimensions (i.e., actions).
-    n_neurons_per_ensemble : int, optional (Default: 100)
+    n_neurons_per_ensemble : int, optional
         Number of neurons in each ensemble in the network.
-    output_weight : float, optional (Default: -3.)
+    output_weight : float, optional
         A scaling factor on the output of the basal ganglia
         (specifically on the connection out of the GPi).
-    input_bias : float, optional (Default: 0.)
+    input_bias : float, optional
         An amount by which to bias all dimensions of the input node.
         Biasing the input node is important for ensuring that all input
         dimensions are positive and easily comparable.
-    ampa_config : config, optional (Default: None)
+    ampa_config : config, optional
         Configuration for connections corresponding to biological connections
         to AMPA receptors (i.e., connections from STN to to GPi and GPe).
         If None, a default configuration using a 2 ms lowpass synapse
         will be used.
-    gaba_config : config, optional (Default: None)
+    gaba_config : config, optional
         Configuration for connections corresponding to biological connections
         to GABA receptors (i.e., connections from StrD1 to GPi, StrD2 to GPe,
         and GPe to GPi and STN). If None, a default configuration using an
@@ -267,11 +267,11 @@ class Thalamus(nengo.Network):
     ----------
     dimensions : int
         Number of dimensions (i.e., actions).
-    n_neurons_per_ensemble : int, optional (Default: 50)
+    n_neurons_per_ensemble : int, optional
         Number of neurons in each ensemble in the network.
-    mutual_inhib : float, optional (Default: 1.)
+    mutual_inhib : float, optional
         Strength of the mutual inhibition between actions.
-    threshold : float, optional (Default: 0.)
+    threshold : float, optional
         The threshold below which values will not be represented.
     **kwargs
         Keyword arguments passed through to ``nengo.Network``

@@ -68,7 +68,7 @@ class Operator:
 
     Parameters
     ----------
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -200,7 +200,7 @@ class TimeUpdate(Operator):
         The signal associated with the integer step counter.
     time : Signal
         The signal associated with the time (a float, in seconds).
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -255,9 +255,9 @@ class Reset(Operator):
     ----------
     dst : Signal
         The Signal to reset.
-    value : float, optional (Default: 0)
+    value : float, optional
         The constant value to which ``dst`` is set.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -318,13 +318,13 @@ class Copy(Operator):
         The signal that will be assigned to (set).
     src : Signal
         The signal that will be copied (read).
-    dst_slice : slice or list, optional (Default: None)
+    dst_slice : slice or list, optional
         Slice or list of indices associated with ``dst``.
-    src_slice : slice or list, optional (Default: None)
+    src_slice : slice or list, optional
         Slice or list of indices associated with ``src``
-    inc : bool, optional (Default: False)
+    inc : bool, optional
         Whether this should be an increment rather than a copy.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -430,7 +430,7 @@ class ElementwiseInc(Operator):
         The second signal to be multiplied.
     Y : Signal
         The signal to be incremented.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -539,7 +539,7 @@ class DotInc(Operator):
         The second signal to be multiplied (a vector).
     Y : Signal
         The signal to be incremented.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -632,7 +632,7 @@ class BsrDotInc(DotInc):
         Column index pointers, see `scipy.sparse.bsr_matrix` for details.
     reshape : bool
         Whether to reshape the result.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -704,7 +704,7 @@ class SimPyFunc(Operator):
     x : Signal or None
         An input signal to pass to ``fn``.
         If None, an input signal will not be passed to ``fn``.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes

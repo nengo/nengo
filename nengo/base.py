@@ -234,16 +234,16 @@ class Process(FrozenObject):
 
     Parameters
     ----------
-    default_size_in : int (Default: 0)
+    default_size_in : int
         Sets the default size in for nodes using this process.
-    default_size_out : int (Default: 1)
+    default_size_out : int
         Sets the default size out for nodes running this process. Also,
         if ``d`` is not specified in `~.Process.run` or `~.Process.run_steps`,
         this will be used.
-    default_dt : float (Default: 0.001 (1 millisecond))
+    default_dt : float
         If ``dt`` is not specified in `~.Process.run`, `~.Process.run_steps`,
         `~.Process.ntrange`, or `~.Process.trange`, this will be used.
-    seed : int, optional (Default: None)
+    seed : int, optional
         Random number seed. Ensures random factors will be the same each run.
 
     Attributes
@@ -284,13 +284,13 @@ class Process(FrozenObject):
         ----------
         x : ndarray
             The input signal given to the process.
-        d : int, optional (Default: None)
+        d : int, optional
             Output dimensionality. If None, ``default_size_out`` will be used.
-        dt : float, optional (Default: None)
+        dt : float, optional
             Simulation timestep. If None, ``default_dt`` will be used.
-        rng : `numpy.random.RandomState` (Default: ``numpy.random``)
+        rng : `numpy.random.RandomState`
             Random number generator used for stochstic processes.
-        copy : bool, optional (Default: True)
+        copy : bool, optional
             If True, a new output array will be created for output.
             If False, the input signal ``x`` will be overwritten.
         """
@@ -343,11 +343,11 @@ class Process(FrozenObject):
         ----------
         t : float
             The length of time to run.
-        d : int, optional (Default: None)
+        d : int, optional
             Output dimensionality. If None, ``default_size_out`` will be used.
-        dt : float, optional (Default: None)
+        dt : float, optional
             Simulation timestep. If None, ``default_dt`` will be used.
-        rng : `numpy.random.RandomState` (Default: ``numpy.random``)
+        rng : `numpy.random.RandomState`
             Random number generator used for stochstic processes.
         """
         dt = self.default_dt if dt is None else dt
@@ -364,11 +364,11 @@ class Process(FrozenObject):
         ----------
         n_steps : int
             The number of steps to run.
-        d : int, optional (Default: None)
+        d : int, optional
             Output dimensionality. If None, ``default_size_out`` will be used.
-        dt : float, optional (Default: None)
+        dt : float, optional
             Simulation timestep. If None, ``default_dt`` will be used.
-        rng : `numpy.random.RandomState` (Default: ``numpy.random``)
+        rng : `numpy.random.RandomState`
             Random number generator used for stochstic processes.
         """
         shape_in = as_shape(0)
@@ -388,7 +388,7 @@ class Process(FrozenObject):
         ----------
         n_steps : int
             The given number of steps.
-        dt : float, optional (Default: None)
+        dt : float, optional
             Simulation timestep. If None, ``default_dt`` will be used.
         """
         dt = self.default_dt if dt is None else dt
@@ -401,7 +401,7 @@ class Process(FrozenObject):
         ----------
         t : float
             The given length of time.
-        dt : float, optional (Default: None)
+        dt : float, optional
             Simulation timestep. If None, ``default_dt`` will be used.
         """
         dt = self.default_dt if dt is None else dt

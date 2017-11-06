@@ -16,13 +16,13 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
     ----------
     actions : Actions
         The actions to choose between.
-    input_synapse : float, optional (Default: 0.002)
+    input_synapse : float, optional
         The synaptic filter on all input connections.
-    label : str, optional (Default: None)
+    label : str, optional
         A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
+    seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
+    add_to_container : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """

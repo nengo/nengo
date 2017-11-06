@@ -78,7 +78,7 @@ class ConvInc(Operator):
         Output signal to be incremented.
     conv : `~nengo.transforms.Convolution`
         The Convolution object being applied.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -91,7 +91,7 @@ class ConvInc(Operator):
         Output signal to be incremented.
     conv : `~nengo.transforms.Convolution`
         The Convolution object being applied.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Notes

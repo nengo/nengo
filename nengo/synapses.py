@@ -29,25 +29,25 @@ class Synapse(Process):
 
     Parameters
     ----------
-    default_size_in : int, optional (Default: 1)
+    default_size_in : int, optional
         The size_in used if not specified.
-    default_size_out : int (Default: None)
+    default_size_out : int
         The size_out used if not specified.
         If None, will be the same as default_size_in.
-    default_dt : float (Default: 0.001 (1 millisecond))
+    default_dt : float
         The simulation timestep used if not specified.
-    seed : int, optional (Default: None)
+    seed : int, optional
         Random number seed. Ensures random factors will be the same each run.
 
     Attributes
     ----------
-    default_dt : float (Default: 0.001 (1 millisecond))
+    default_dt : float
         The simulation timestep used if not specified.
-    default_size_in : int (Default: 0)
+    default_size_in : int
         The size_in used if not specified.
-    default_size_out : int (Default: 1)
+    default_size_out : int
         The size_out used if not specified.
-    seed : int, optional (Default: None)
+    seed : int, optional
         Random number seed. Ensures random factors will be the same each run.
     """
 
@@ -67,17 +67,17 @@ class Synapse(Process):
         ----------
         x : array_like
             The signal to filter.
-        dt : float, optional (Default: None)
+        dt : float, optional
             The timestep of the input signal.
             If None, ``default_dt`` will be used.
-        axis : int, optional (Default: 0)
+        axis : int, optional
             The axis along which to filter.
-        y0 : array_like, optional (Default: None)
+        y0 : array_like, optional
             The starting state of the filter output. If None, the initial
             value of the input signal along the axis filtered will be used.
-        copy : bool, optional (Default: True)
+        copy : bool, optional
             Whether to copy the input data, or simply work in-place.
-        filtfilt : bool, optional (Default: False)
+        filtfilt : bool, optional
             If True, runs the process forward then backward on the signal,
             for zero-phase filtering (like Matlab's ``filtfilt``).
         """
@@ -130,10 +130,10 @@ class Synapse(Process):
             The timestep of the simulation.
         rng : `numpy.random.RandomState`
             Random number generator.
-        y0 : array_like, optional (Default: None)
+        y0 : array_like, optional
             The starting state of the filter output. If None, each dimension
             of the state will start at zero.
-        dtype : `numpy.dtype` (Default: np.float64)
+        dtype : `numpy.dtype`
             Type of data used by the synapse model. This is important for
             ensuring that certain synapses avoid or force integer division.
         """
@@ -152,7 +152,7 @@ class LinearFilter(Synapse):
         Numerator coefficients of transfer function.
     den : array_like
         Denominator coefficients of transfer function.
-    analog : boolean, optional (Default: True)
+    analog : boolean, optional
         Whether the synapse coefficients are analog (i.e. continuous-time),
         or discrete. Analog coefficients will be converted to discrete for
         simulation using the simulator ``dt``.

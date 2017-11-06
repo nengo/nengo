@@ -20,25 +20,25 @@ class Vocabulary:
     -----------
     dimensions : int
         Number of dimensions for each semantic pointer.
-    randomize : bool, optional (Default: True)
+    randomize : bool, optional
         Whether to randomly generate pointers. If False, the semantic
         pointers will be ``[1, 0, 0, ...], [0, 1, 0, ...], [0, 0, 1, ...]``
         and so on.
-    unitary : bool or list, optional (Default: False)
+    unitary : bool or list, optional
         If True, all generated pointers will be unitary. If a list of
         strings, any pointer whose name is in the list will be forced to be
         unitary when created.
-    max_similarity : float, optional (Default: 0.1)
+    max_similarity : float, optional
         When randomly generating pointers, ensure that the cosine of the
         angle between the new pointer and all existing pointers is less
         than this amount. If the system is unable to find such a pointer
         after 100 tries, a warning message is printed.
-    include_pairs : bool, optional (Default: False)
+    include_pairs : bool, optional
         Whether to keep track of all pairs of pointers as well. This
         is helpful for determining if a vector is similar to ``A*B`` (in
         addition to being similar to ``A`` or ``B``), but exponentially
         increases the processing time.
-    rng : `numpy.random.RandomState`, optional (Default: None)
+    rng : `numpy.random.RandomState`, optional
         The random number generator to use to create new vectors.
 
     Attributes
@@ -259,18 +259,18 @@ class Vocabulary:
         ----------
         v : SemanticPointer or ndarray
             The vector to convert into text.
-        minimum_count : int, optional (Default: 1)
+        minimum_count : int, optional
             Always return at least this many terms in the text.
-        maximum_count : int, optional (Default: None)
+        maximum_count : int, optional
             Never return more than this many terms in the text.
             If None, all terms will be returned.
-        threshold : float, optional (Default: 0.1)
+        threshold : float, optional
             How small a similarity for a term to be ignored.
-        join : str, optional (Default: ';')
+        join : str, optional
             The text separator to use between terms.
-        terms : list, optional (Default: None)
+        terms : list, optional
             Only consider terms in this list of strings.
-        normalize : bool, optional (Default: False)
+        normalize : bool, optional
             Whether to normalize the vector before computing similarity.
         """
         if isinstance(v, pointer.SemanticPointer):
@@ -342,7 +342,7 @@ class Vocabulary:
         ----------
         other : Vocabulary
             The other vocabulary to translate into.
-        keys : list, optional (Default: None)
+        keys : list, optional
             If None, any term that exists in just one of the Vocabularies
             will be created in the other Vocabulary and included. Otherwise,
             the transformation will only consider terms in this list. Any
@@ -424,7 +424,7 @@ class Vocabulary:
         ----------
         keys : list
             List of semantic pointer names to be added to the vocabulary.
-        unitary : bool or list, optional (Default: False)
+        unitary : bool or list, optional
             If True, all generated pointers will be unitary. If a list of
             strings, any pointer whose name is on the list will be forced to
             be unitary when created.

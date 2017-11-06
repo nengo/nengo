@@ -48,12 +48,12 @@ class Network:
 
     Parameters
     ----------
-    label : str, optional (Default: None)
+    label : str, optional
         Name of the network.
-    seed : int, optional (Default: None)
+    seed : int, optional
         Random number seed that will be fed to the random number generator.
         Setting the seed makes the network's build process deterministic.
-    add_to_container : bool, optional (Default: None)
+    add_to_container : bool, optional
         Determines if this network will be added to the current container.
         If None, this network will be added to the network at the top of the
         ``Network.context`` stack unless the stack is empty.

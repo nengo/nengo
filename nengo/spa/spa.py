@@ -238,7 +238,7 @@ class SPA(nengo.Network):
             Collection of simulation data returned by sim.run() function call.
         probe: Probe
             Probe with desired data.
-        vocab : Vocabulary, optional (Default: None)
+        vocab : Vocabulary, optional
             The vocabulary to compare with. If None, uses the vocabulary
             associated with ``probe.target``.
         """

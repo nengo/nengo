@@ -18,9 +18,9 @@ class SimNeurons(Operator):
         The input current.
     output : Signal
         The neuron output signal that will be set.
-    states : list, optional (Default: None)
+    states : list, optional
         A list of additional neuron state signals set by ``step_math``.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes

@@ -36,7 +36,7 @@ def similarity(data, vocab, normalize=False):
     vocab: Vocabulary or array_like
         Vocabulary (or list of vectors) to use to calculate
         the similarity values.
-    normalize : bool, optional (Default: False)
+    normalize : bool, optional
         Whether to normalize all vectors, to compute the cosine similarity.
     """
     from nengo.spa.vocab import Vocabulary

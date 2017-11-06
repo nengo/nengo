@@ -139,14 +139,14 @@ class Node(NengoObject):
     output : callable, array_like, or None
         Function that transforms the Node inputs into outputs,
         a constant output value, or None to transmit signals unchanged.
-    size_in : int, optional (Default: 0)
+    size_in : int, optional
         The number of dimensions of the input data parameter.
-    size_out : int, optional (Default: None)
+    size_out : int, optional
         The size of the output signal. If None, it will be determined
         based on the values of ``output`` and ``size_in``.
-    label : str, optional (Default: None)
+    label : str, optional
         A name for the node. Used for debugging and visualization.
-    seed : int, optional (Default: None)
+    seed : int, optional
         The seed used for random number generation.
         Note: no aspects of the node are random, so currently setting
         this seed has no effect.

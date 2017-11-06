@@ -34,9 +34,9 @@ class EnsembleArray(nengo.Network):
     n_ensembles : int
         The number of sub-ensembles to create.
 
-    ens_dimensions : int, optional (Default: 1)
+    ens_dimensions : int, optional
         The dimensionality of each sub-ensemble.
-    neuron_nodes : bool, optional (Default: False)
+    neuron_nodes : bool, optional
         Whether to create a node that provides access to each individual
         neuron, typically for the purpose of inhibiting the entire
         EnsembleArray.
@@ -44,12 +44,12 @@ class EnsembleArray(nengo.Network):
         .. note:: Deprecated in Nengo 2.1.0.
                   Call `~.EnsembleArray.add_neuron_input` or
                   `~.EnsembleArray.add_neuron_output` instead.
-    label : str, optional (Default: None)
+    label : str, optional
         A name to assign this EnsembleArray.
         Used for visualization and debugging.
-    seed : int, optional (Default: None)
+    seed : int, optional
         Random number seed that will be used in the build step.
-    add_to_container : bool, optional (Default: None)
+    add_to_container : bool, optional
         Determines if this network will be added to the current container.
         If None, this network will be added to the network at the top of the
         ``Network.context`` stack unless the stack is empty.
@@ -222,7 +222,7 @@ class EnsembleArray(nengo.Network):
             The function to compute across the connection from sub-ensembles
             to the new output node. If function is an iterable, it must be
             an iterable consisting of one function for each sub-ensemble.
-        synapse : Synapse, optional (Default: None)
+        synapse : Synapse, optional
             The synapse model with which to filter the connections from
             sub-ensembles to the new output node. This is kept separate from
             the other ``conn_kwargs`` because this defaults to None rather
