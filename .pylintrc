@@ -30,3 +30,4 @@ max-line-length = 79
 [REPORTS]
 
 reports = no
+score = no
