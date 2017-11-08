@@ -22,3 +22,5 @@ Vagrantfile
 .coverage
 htmlcov
 *.dist-info/
+.vscode
+.idea
