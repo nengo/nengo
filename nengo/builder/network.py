@@ -67,11 +67,16 @@ def build_network(model, network, progress_bar=False):
         model.toplevel = network
         model.seeds[network] = get_seed(network, np.random)
         model.seeded[network] = getattr(network, 'seed', None) is not None
-    else:
-        progress_bar = False
+        max_steps = len(network.all_objects) + 1  # +1 for top level network
+        progress = ProgressTracker(max_steps, progress_bar, task="Building")
 
-    max_steps = len(network.all_objects) + 1  # +1 for top level network itself
-    progress = ProgressTracker(max_steps, progress_bar, task="Building")
+        def build_callback(obj):
+            if isinstance(obj, tuple(network.objects)):
+                progress.step()
+        model.build_callback = build_callback
+    else:
+        # create noop context manager
+        progress = contextlib.contextmanager(lambda: (yield))()
 
     # Set config
     old_config = model.config
@@ -92,11 +97,6 @@ def build_network(model, network, progress_bar=False):
     context = (model.decoder_cache if model.toplevel is network
                else nullcontext())
     with context, progress:
-        def build_callback(obj):
-            if isinstance(obj, tuple(network.objects)):
-                progress.step()
-        model.build_callback = build_callback
-
         logger.debug("Network step 1: Building ensembles and nodes")
         for obj in network.ensembles + network.nodes:
             model.build(obj)
@@ -124,8 +124,9 @@ def build_network(model, network, progress_bar=False):
         if context is model.decoder_cache:
             model.decoder_cache.shrink()
 
-        progress.step()
-        model.build_callback = None
+        if model.toplevel is network:
+            progress.step()
+            model.build_callback = None
 
     # Unset config
     model.config = old_config
