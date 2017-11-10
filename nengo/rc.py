@@ -76,7 +76,7 @@ RC_DEFAULTS = {
         'path': nengo.utils.paths.decoder_cache_dir,
     },
     'progress': {
-        'updater': 'auto',
+        'updater': 'auto',  # Deprecated
         'progress_bar': 'auto',
     },
     'exceptions': {

@@ -14,7 +14,7 @@ from nengo.cache import get_default_decoder_cache
 from nengo.exceptions import ReadonlyError, SimulatorClosed, ValidationError
 from nengo.utils.compat import range, ResourceWarning
 from nengo.utils.graphs import toposort
-from nengo.utils.progress import ProgressTracker
+from nengo.utils.progress import Progress, ProgressTracker
 from nengo.utils.simulator import operator_dependency_graph
 
 logger = logging.getLogger(__name__)
@@ -152,9 +152,12 @@ class Simulator(object):
         else:
             self.model = model
 
-        if network is not None:
-            # Build the network into the model
-            self.model.build(network, progress_bar=self.progress_bar)
+        pt = ProgressTracker(progress_bar, Progress("Building", "Build"))
+        with pt:
+            if network is not None:
+                # Build the network into the model
+                self.model.build(network,
+                                 progress=pt.next_stage("Building", "Build"))
 
         # Order the steps (they are made in `Simulator.reset`)
         self.dg = operator_dependency_graph(self.model.operators)
@@ -333,10 +336,12 @@ class Simulator(object):
         """
         if progress_bar is None:
             progress_bar = self.progress_bar
-        with ProgressTracker(steps, progress_bar, "Simulating") as progress:
+
+        with ProgressTracker(progress_bar, Progress(
+                "Simulating", "Simulation", steps)) as pt:
             for i in range(steps):
                 self.step()
-                progress.step()
+                pt.total_progress.step()
 
     def step(self):
         """Advance the simulator by 1 step (``dt`` seconds)."""

@@ -10,7 +10,8 @@ from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc
 from nengo.builder.signal import Signal
 from nengo.exceptions import ObsoleteError, SimulatorClosed, ValidationError
-from nengo.utils.compat import ResourceWarning
+from nengo.utils.compat import range, ResourceWarning
+from nengo.utils.progress import ProgressBar
 
 
 def test_steps(RefSimulator):
@@ -297,3 +298,39 @@ def test_sim_seed_set_by_network_seed(Simulator, seed):
         sim_seed = sim.seed
     with nengo.Simulator(model) as sim:
         assert sim.seed == sim_seed
+
+
+def test_simulator_progress_bars(RefSimulator):
+    class ProgressBarInvariants(ProgressBar):
+        def __init__(self):
+            super(ProgressBarInvariants, self).__init__()
+            self.progress = None
+            self.max_steps = None
+            self.n_steps = 0
+            self.closed = False
+
+        def update(self, progress):
+            assert not self.closed
+            if self.progress is not progress:
+                assert self.max_steps is None or self.n_steps <= self.max_steps
+                self.n_steps = progress.n_steps
+                self.max_steps = progress.max_steps
+                self.progress = progress
+            assert progress.max_steps == self.max_steps
+            assert self.max_steps is None or self.n_steps <= progress.n_steps
+            self.n_steps = progress.n_steps
+
+        def close(self):
+            self.closed = True
+
+    with nengo.Network() as model:
+        for _ in range(3):
+            [nengo.Ensemble(10, 1) for i in range(3)]
+            with nengo.Network():
+                [nengo.Ensemble(10, 1) for i in range(3)]
+
+    build_invariants = ProgressBarInvariants()
+    with RefSimulator(model, progress_bar=build_invariants) as sim:
+        run_invariants = ProgressBarInvariants()
+        sim.run(.01, progress_bar=run_invariants)
+        assert run_invariants.n_steps == run_invariants.max_steps

@@ -67,10 +67,3 @@
 # (e.g., 'nengo.utils.progress.ProgressBar'), which Nengo will attempt
 # to load. (str)
 #progress_bar = auto
-
-# Set the progress updating scheme. The default of 'auto' will use a
-# heuristic to select the appropriate updater.
-# Any other string will be interpreted as a module and class name
-# (e.g., 'nengo.utils.progress.UpdateEveryT'), which Nengo will attempt
-# to load. (str)
-#updater = auto
