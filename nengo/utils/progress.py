@@ -51,8 +51,8 @@ class Progress(object):
     ----------
     steps : int
         Number of completed steps.
-    max_steps : int
-        The total number of calculation steps of the process.
+    max_steps : int, optional
+        The total number of calculation steps of the process, if known.
     start_time : float
         Time stamp of the time the process was started.
     end_time : float
@@ -72,8 +72,8 @@ class Progress(object):
 
     """
 
-    def __init__(self, max_steps):
-        if max_steps <= 0:
+    def __init__(self, max_steps=None):
+        if max_steps is not None and max_steps <= 0:
             raise ValidationError("must be at least 1 (got %d)"
                                   % (max_steps,), attr="max_steps")
 
@@ -91,6 +91,8 @@ class Progress(object):
         -------
         float
         """
+        if self.max_steps is None:
+            return 0.
         return min(1.0, self.n_steps / self.max_steps)
 
     def elapsed_seconds(self):
@@ -130,7 +132,7 @@ class Progress(object):
 
     def __exit__(self, exc_type, dummy_exc_value, dummy_traceback):
         self.success = exc_type is None
-        if self.success:
+        if self.success and self.max_steps is not None:
             self.n_steps = self.max_steps
         self.end_time = time.time()
         self.finished = True
@@ -188,6 +190,8 @@ class TerminalProgressBar(ProgressBar):
     def update(self, progress):
         if progress.finished:
             line = self._get_finished_line(progress)
+        elif progress.max_steps is None:
+            line = self._get_unknown_progress_line(progress)
         else:
             line = self._get_in_progress_line(progress)
         sys.stdout.write(line)
@@ -210,6 +214,29 @@ class TerminalProgressBar(ProgressBar):
                 progress_str[:percent_pos] + percent_str +
                 progress_str[percent_pos + len(percent_str):])
 
+        return '\r' + line.format(progress_str)
+
+    def _get_unknown_progress_line(self, progress):
+        """Generates a progress line with continuously moving marker.
+
+        This is to indicate processing while not knowing how far along we
+        progressed with the processing.
+        """
+        duration = progress.elapsed_seconds()
+        line = "[{{}}] duration: {duration}".format(
+            duration=timestamp2timedelta(duration))
+        text = " {}... ".format(progress.task)
+        width, _ = get_terminal_size()
+        marker = '>>>>'
+        progress_width = max(0, width - len(line) + 2)
+        index_width = progress_width + len(marker)
+        i = int(4. * duration) % (index_width + 1)
+        progress_str = (' ' * i) + marker + (' ' * (progress_width - i))
+        progress_str = progress_str[len(marker):-len(marker)]
+        text_pos = (len(progress_str) - len(text)) // 2
+        progress_str = (
+            progress_str[:text_pos] + text +
+            progress_str[text_pos + len(text):])
         return '\r' + line.format(progress_str)
 
     def _get_finished_line(self, progress):
@@ -394,8 +421,8 @@ class ProgressTracker(object):
 
     Parameters
     ----------
-    max_steps : int
-        Maximum number of steps of the process.
+    max_steps : int, optional
+        Maximum number of steps of the process, if known.
     progress_bar : :class:`ProgressBar` or :class:`ProgressUpdater`
         The progress bar to display the progress.
     """

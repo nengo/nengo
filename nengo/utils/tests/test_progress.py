@@ -70,6 +70,19 @@ class TestProgress(object):
             with Progress(-1):
                 pass
 
+    def test_unknown_number_of_steps(self, monkeypatch):
+        t = 1.
+        monkeypatch.setattr(time, 'time', lambda: t)
+
+        with Progress(None) as p:
+            p.step()
+            t = 10.
+            assert p.progress == 0.
+            assert p.eta() == -1
+
+        assert p.n_steps == 1
+        assert p.elapsed_seconds() == 9.
+
 
 class TestAutoProgressBar(object):
     class ProgressMock(object):
