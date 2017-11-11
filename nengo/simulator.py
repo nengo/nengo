@@ -159,11 +159,13 @@ class Simulator(object):
                 self.model.build(network,
                                  progress=pt.next_stage("Building", "Build"))
 
-        # Order the steps (they are made in `Simulator.reset`)
-        self.dg = operator_dependency_graph(self.model.operators)
+            # Order the steps (they are made in `Simulator.reset`)
+            self.dg = operator_dependency_graph(self.model.operators)
 
-        if optimize:
-            opmerge_optimize(self.model, self.dg)
+            if optimize:
+                with pt.next_stage(
+                        'Building (running optimizer)', 'Optimization'):
+                    opmerge_optimize(self.model, self.dg)
 
         self._step_order = [op for op in toposort(self.dg)
                             if hasattr(op, 'make_step')]
