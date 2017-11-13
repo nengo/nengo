@@ -10,8 +10,7 @@ from nengo.utils.numpy import rmse, maxint
 def test_sine_waves(Simulator, plt, seed):
     radius = 2
     dim = 5
-    product = nengo.networks.Product(
-        200, dim, radius, net=nengo.Network(seed=seed))
+    product = nengo.networks.Product(200, dim, radius, seed=seed)
 
     func_a = lambda t: np.sqrt(radius)*np.sin(np.arange(1, dim+1)*2*np.pi*t)
     func_b = lambda t: np.sqrt(radius)*np.sin(np.arange(dim, 0, -1)*2*np.pi*t)
@@ -47,8 +46,7 @@ def test_direct_mode_with_single_neuron(Simulator, plt, seed):
     config = nengo.Config(nengo.Ensemble)
     config[nengo.Ensemble].neuron_type = nengo.Direct()
     with config:
-        product = nengo.networks.Product(
-            1, dim, radius, net=nengo.Network(seed=seed))
+        product = nengo.networks.Product(1, dim, radius, seed=seed)
 
     func_a = lambda t: np.sqrt(radius)*np.sin(np.arange(1, dim+1)*2*np.pi*t)
     func_b = lambda t: np.sqrt(radius)*np.sin(np.arange(dim, 0, -1)*2*np.pi*t)
@@ -132,7 +130,8 @@ def test_compare_product_benchmark(analytics_data, logger):
     stats = pytest.importorskip('scipy.stats')
     data1, data2 = (d['error'] for d in analytics_data)
     improvement = np.mean(data1) - np.mean(data2)
-    p = np.ceil(1000. * 2. * stats.mannwhitneyu(data1, data2)[1]) / 1000.
+    p = np.ceil(1000. * 2. * stats.mannwhitneyu(
+        data1, data2, alternative='two-sided')[1]) / 1000.
     logger.info("Multiplication improvement by %f (%.0f%%, p < %.3f)",
                 improvement, (1. - np.mean(data2) / np.mean(data1)) * 100., p)
     assert improvement >= 0. or p >= 0.05

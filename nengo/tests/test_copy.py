@@ -165,7 +165,8 @@ def test_copies_structure():
 
 
 def test_network_copy_builds(RefSimulator):
-    RefSimulator(make_network().copy())
+    with RefSimulator(make_network().copy()):
+        pass
 
 
 def test_copy_obj_view():

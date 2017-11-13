@@ -280,7 +280,8 @@ def test_dist_transform(Simulator, seed):
 
     assert isinstance(conn1.transform, nengo.dists.Gaussian)
 
-    sim = Simulator(net)
+    with Simulator(net) as sim:
+        pass
 
     w = sim.data[conn1].weights
     assert np.allclose(np.mean(w), 0.5, atol=0.01)
@@ -299,7 +300,8 @@ def test_dist_transform(Simulator, seed):
         b = nengo.Node(size_in=101)
         conn = nengo.Connection(a, b)
 
-    sim = Simulator(net)
+    with Simulator(net) as sim:
+        pass
     assert np.allclose(w, sim.data[conn].weights)
 
 
