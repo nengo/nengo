@@ -69,6 +69,7 @@ def assert_noexceptions(nb_file, tmpdir):
 
 @pytest.mark.example
 @pytest.mark.parametrize('nb_file', fast_examples)
+@pytest.mark.filterwarnings("ignore:Creating new attribute 'memory_location'")
 def test_fast_noexceptions(nb_file, tmpdir):
     """Ensure that no cells raise an exception."""
     assert_noexceptions(nb_file, tmpdir)

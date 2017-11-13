@@ -10,6 +10,7 @@ from nengo.utils.numpy import rms
 
 @pytest.mark.parametrize("dimensions", [1, 4])
 @pytest.mark.parametrize("radius", [1, 2.0])
+@pytest.mark.filterwarnings("ignore:'targets' can be passed directly")
 def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
                          seed, rng):
     eval_points = UniformHypersphere().sample(1000, dimensions, rng=rng)

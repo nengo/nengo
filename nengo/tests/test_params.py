@@ -325,6 +325,7 @@ def test_iter_params_does_not_list_obsolete_params():
     assert set(params.iter_params(Test())) == {'p1', 'p2'}
 
 
+@pytest.mark.filterwarnings("ignore:'Node.size_out' is being overwritten")
 def test_configure_all_nengo_parameters():
 
     # make up a non-default value for the parameter

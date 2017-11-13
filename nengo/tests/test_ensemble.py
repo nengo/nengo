@@ -401,6 +401,7 @@ def test_no_norm_encoders(Simulator):
 
 
 @pytest.mark.parametrize('intercept', [1.0, 1.1])
+@pytest.mark.filterwarnings('ignore:divide by zero')
 def test_raises_exception_for_invalid_intercepts(Simulator, intercept):
     with nengo.Network() as model:
         nengo.Ensemble(1, 1, intercepts=[intercept])

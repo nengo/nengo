@@ -54,7 +54,7 @@ setup(
         'all_solvers': ["scipy>=0.13", "scikit-learn"],
     },
     tests_require=[
-        'pytest>=2.3',
+        'pytest>=3.2',
     ],
     entry_points={
         'nengo.backends': [

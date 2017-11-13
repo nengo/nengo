@@ -104,6 +104,7 @@ def test_action():
                    'motor=A, motor2=B', name='test_action')
 
 
+@pytest.mark.filterwarnings('ignore:The actions currently being added')
 def test_actions():
     a = Actions(
         'dot(state, A) --> state=B',

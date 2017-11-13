@@ -308,6 +308,7 @@ def test_sigmoid_response_curves(Simulator, max_rate, intercept):
 
 @pytest.mark.parametrize("max_rate,intercept", [
     (300., 1.1), (300., 1.0), (100., 0.9), (100, 1.0)])
+@pytest.mark.filterwarnings('ignore:divide by zero')
 def test_sigmoid_invalid(Simulator, max_rate, intercept):
     """Check that invalid sigmoid ensembles raise an error."""
     with nengo.Network() as m:
@@ -473,6 +474,7 @@ def test_frozen():
         d.coupling = 8
 
 
+@pytest.mark.filterwarnings('ignore:divide by zero')
 def test_direct_mode_nonfinite_value(Simulator):
     with nengo.Network() as model:
         e1 = nengo.Ensemble(10, 1, neuron_type=Direct())

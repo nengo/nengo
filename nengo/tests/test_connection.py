@@ -654,6 +654,7 @@ def test_list_indexing(Simulator, plt, seed):
     assert np.allclose(d_data[t > 0.15], [1, 1], atol=0.1)
 
 
+@pytest.mark.filterwarnings('ignore:boolean index did not match')
 def test_boolean_indexing(Simulator, rng, plt):
     D = 10
     mu = np.arange(D) % 2 == 0
@@ -1007,6 +1008,9 @@ def test_function_names():
         assert str(array_conn).endswith("computing 'ndarray'>")
 
 
+@pytest.mark.filterwarnings('ignore:divide by zero')
+@pytest.mark.filterwarnings('ignore:invalid value')
+@pytest.mark.filterwarnings('ignore:Non-finite values detected')
 def test_zero_activities_error(Simulator):
     with nengo.Network() as model:
         a = nengo.Ensemble(10, 1)
