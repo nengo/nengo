@@ -10,7 +10,6 @@ from nengo.builder.operator import DotInc
 from nengo.builder.signal import Signal
 from nengo.exceptions import ObsoleteError, SimulatorClosed, ValidationError
 from nengo.utils.compat import ResourceWarning
-from nengo.utils.testing import warns
 
 
 def test_steps(RefSimulator):
@@ -126,7 +125,7 @@ def test_warn_on_opensim_del(Simulator):
         nengo.Ensemble(10, 1)
 
     sim = Simulator(net)
-    with warns(ResourceWarning):
+    with pytest.warns(ResourceWarning):
         sim.__del__()
     sim.close()
 
@@ -281,7 +280,7 @@ def test_invalid_run_time(Simulator):
     with Simulator(net) as sim:
         with pytest.raises(ValidationError):
             sim.run(-0.0001)
-        with warns(UserWarning):
+        with pytest.warns(UserWarning):
             sim.run(0)
         sim.run(0.0006)  # Rounds up to 0.001
         assert sim.n_steps == 1

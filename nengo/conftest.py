@@ -4,6 +4,7 @@ import importlib
 import os
 import re
 from fnmatch import fnmatch
+import warnings
 
 import matplotlib
 import numpy as np
@@ -49,6 +50,7 @@ class TestConfig(object):
 
 def pytest_configure(config):
     matplotlib.use('agg')
+    warnings.simplefilter('always')
 
     if config.getoption('simulator'):
         TestConfig.Simulator = load_class(config.getoption('simulator')[0])

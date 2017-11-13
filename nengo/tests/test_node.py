@@ -3,7 +3,6 @@ import pytest
 
 import nengo
 from nengo.exceptions import SimulationError, ValidationError
-from nengo.utils.testing import warns
 
 
 def test_time(Simulator):
@@ -257,7 +256,7 @@ def test_set_output(Simulator):
 
     with nengo.Network() as model:
         # if output is None, size_out == size_in
-        with warns(UserWarning):
+        with pytest.warns(UserWarning):
             # warns since size_in != size_out and output is None
             passthrough = nengo.Node(None, size_in=20, size_out=30)
         assert passthrough.output is None

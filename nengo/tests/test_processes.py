@@ -12,7 +12,6 @@ from nengo.exceptions import ValidationError
 from nengo.processes import (BrownNoise, FilteredNoise, Piecewise,
                              PresentInput, WhiteNoise, WhiteSignal)
 from nengo.synapses import Lowpass
-from nengo.utils.testing import warns
 
 
 class DistributionMock(Distribution):
@@ -405,7 +404,7 @@ class TestPiecewise(object):
         # Emulate not having scipy in case we have scipy
         monkeypatch.setitem(sys.modules, "scipy.interpolate", None)
 
-        with warns(UserWarning):
+        with pytest.warns(UserWarning):
             process = Piecewise({0.05: 1, 0.1: 0}, interpolation='linear')
         assert process.interpolation == 'zero'
 
@@ -523,6 +522,6 @@ class TestPiecewise(object):
         def func(t):
             return t
 
-        with warns(UserWarning):
+        with pytest.warns(UserWarning):
             process = Piecewise({0.05: 0, 0.1: func}, interpolation='linear')
         assert process.interpolation == 'zero'

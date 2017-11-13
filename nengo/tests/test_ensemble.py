@@ -6,14 +6,14 @@ import nengo.utils.numpy as npext
 from nengo.dists import Choice, Gaussian, UniformHypersphere
 from nengo.exceptions import BuildError
 from nengo.processes import WhiteNoise, FilteredNoise
-from nengo.utils.testing import warns, allclose
+from nengo.utils.testing import allclose
 
 
 def test_missing_attribute():
     with nengo.Network():
         a = nengo.Ensemble(10, 1)
 
-        with warns(SyntaxWarning):
+        with pytest.warns(SyntaxWarning):
             a.dne = 9
 
 
@@ -208,7 +208,7 @@ def test_eval_points_number_warning(Simulator, seed):
     with model:
         A = nengo.Ensemble(5, 1, n_eval_points=10, eval_points=[[0.1], [0.2]])
 
-    with warns(UserWarning):
+    with pytest.warns(UserWarning):
         # n_eval_points doesn't match actual passed eval_points, which warns
         with Simulator(model) as sim:
             pass

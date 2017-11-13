@@ -3,7 +3,6 @@ import pytest
 
 import nengo.dists as dists
 import nengo.utils.numpy as npext
-from nengo.utils.testing import warns
 from nengo.exceptions import ValidationError
 
 
@@ -97,7 +96,7 @@ def test_hypersphere_dimension_fail(rng):
 
 
 def test_hypersphere_warns(rng):
-    with warns(UserWarning):
+    with pytest.warns(UserWarning):
         dists.UniformHypersphere(surface=True, min_magnitude=0.1)
 
 

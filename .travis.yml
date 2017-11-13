@@ -12,7 +12,7 @@ env:
     - STATIC="false"
     - DOCS="false"
     - CONDA_DEPS="matplotlib jupyter"
-    - PIP_DEPS="pytest pytest-xdist"
+    - PIP_DEPS="pytest"
 
 matrix:
   include:
@@ -76,7 +76,7 @@ script:
           sphinx-build -W docs docs/_build;
         fi
       else
-        py.test nengo -n 2 -v --duration 20;
+        py.test nengo -v --duration 20;
       fi
     fi
 

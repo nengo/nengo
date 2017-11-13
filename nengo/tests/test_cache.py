@@ -14,7 +14,6 @@ from nengo.cache import (CacheIndex, DecoderCache, Fingerprint,
 from nengo.exceptions import CacheIOWarning, FingerprintError
 from nengo.solvers import LstsqL2
 from nengo.utils.compat import int_types
-from nengo.utils.testing import warns
 
 
 class SolverMock(object):
@@ -578,7 +577,7 @@ def test_warns_out_of_context(tmpdir):
 
     solver_mock = SolverMock()
     solver = cache.wrap_solver(solver_mock)
-    with warns(UserWarning):
+    with pytest.warns(UserWarning):
         solver(**get_solver_test_args())
     assert SolverMock.n_calls[solver_mock] == 1
 
@@ -645,7 +644,7 @@ def test_writeablecacheindex_warning(monkeypatch, tmpdir):
         raise CalledProcessError(-1, "move")
 
     monkeypatch.setattr(nengo.cache, "replace", raise_error)
-    with warns(CacheIOWarning):
+    with pytest.warns(CacheIOWarning):
         with WriteableCacheIndex(cache_dir=str(tmpdir)):
             pass
 

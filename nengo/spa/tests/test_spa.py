@@ -3,7 +3,6 @@ import pytest
 import nengo
 from nengo import spa
 from nengo.exceptions import SpaModuleError
-from nengo.utils.testing import warns
 
 
 def test_spa_verification(seed):
@@ -110,7 +109,7 @@ def test_spa_vocab():
     # warning on vocabs with duplicate dimensions
     vc = spa.Vocabulary(16)
     vc.parse("SOCKS")
-    with warns(UserWarning):
+    with pytest.warns(UserWarning):
         model = spa.SPA(vocabs=[va, vb, vc])
     assert model._default_vocabs[16].keys == ["SOCKS"]
     assert model._default_vocabs[32].keys == ["SHOES"]

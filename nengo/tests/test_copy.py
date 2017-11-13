@@ -8,7 +8,6 @@ from nengo import spa
 from nengo.exceptions import NetworkContextError, NotAddedToNetworkWarning
 from nengo.params import IntParam, iter_params
 from nengo.utils.compat import is_array_like, pickle
-from nengo.utils.testing import warns
 
 
 def assert_is_copy(cp, original):
@@ -271,7 +270,7 @@ class TestCopy(object):
         original = make_f()
         copy(original)  # Fine because not in a network
         with nengo.Network():
-            with warns(NotAddedToNetworkWarning):
+            with pytest.warns(NotAddedToNetworkWarning):
                 copy(original)
 
 
@@ -290,7 +289,7 @@ class TestPickle(object):
         original = make_f()
         pkl = pickle.dumps(original)
         with nengo.Network():
-            with warns(NotAddedToNetworkWarning):
+            with pytest.warns(NotAddedToNetworkWarning):
                 pickle.loads(pkl)
 
 

@@ -5,7 +5,6 @@ import pytest
 
 from nengo.exceptions import SpaParseError, ValidationError
 from nengo.spa import Vocabulary
-from nengo.utils.testing import warns
 
 
 def test_add(rng):
@@ -176,7 +175,7 @@ def test_create_pointer_warning(rng):
     v = Vocabulary(2, rng=rng)
 
     # five pointers shouldn't fit
-    with warns(UserWarning):
+    with pytest.warns(UserWarning):
         v.parse('A')
         v.parse('B')
         v.parse('C')
