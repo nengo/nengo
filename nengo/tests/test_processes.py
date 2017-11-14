@@ -440,15 +440,16 @@ class TestPiecewise(object):
             0.1: [-0.5, -0.25]
         }
 
+        ax1 = plt.subplot(2, 1, 1)
+        ax2 = plt.subplot(2, 1, 2)
+
         def test_and_plot(interp):
             t, f = self.run_sim(data, interp, Simulator)
             assert np.allclose(f[t == 0.05], [1., 0.5])
             assert np.allclose(f[t == 0.075], [-1., -0.5])
             assert np.allclose(f[t == 0.1], [-0.5, -0.25])
-            plt.subplot(2, 1, 1)
-            plt.plot(t, f.T[0], label=interp)
-            plt.subplot(2, 1, 2)
-            plt.plot(t, f.T[1], label=interp)
+            ax1.plot(t, f.T[0], label=interp)
+            ax2.plot(t, f.T[1], label=interp)
 
         test_and_plot('zero')
         test_and_plot('linear')

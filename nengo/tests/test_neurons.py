@@ -340,24 +340,22 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     out_data = []
     dts = (0.0001, 0.001)
     colors = ('b', 'g', 'r')
+    ax1 = plt.subplot(2, 1, 1)
+    ax2 = plt.subplot(2, 1, 2)
     for c, dt in zip(colors, dts):
         with Simulator(m, dt=dt, seed=seed+1) as sim:
             sim.run(0.1)
         t = sim.trange(dt=0.001)
         activity_data.append(sim.data[activity_p])
         out_data.append(sim.data[out_p])
-        plt.subplot(2, 1, 1)
-        plt.plot(t, sim.data[out_p], c=c)
-        plt.subplot(2, 1, 2)
+        ax1.plot(t, sim.data[out_p], c=c)
         # Just plot 5 neurons
-        plt.plot(t, sim.data[activity_p][..., :5], c=c)
+        ax2.plot(t, sim.data[activity_p][..., :5], c=c)
 
-    plt.subplot(2, 1, 1)
-    plt.xlim(right=t[-1])
-    plt.ylabel("Decoded output")
-    plt.subplot(2, 1, 2)
-    plt.xlim(right=t[-1])
-    plt.ylabel("Neural activity")
+    ax1.set_xlim(right=t[-1])
+    ax1.set_ylabel("Decoded output")
+    ax2.set_xlim(right=t[-1])
+    ax2.set_ylabel("Neural activity")
 
     assert rmse(activity_data[0], activity_data[1]) < ((1. / dt) * 0.01)
     assert np.allclose(out_data[0], out_data[1], atol=0.05)

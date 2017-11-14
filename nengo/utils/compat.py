@@ -14,6 +14,7 @@ PY2 = sys.version_info[0] == 2
 if PY2:
     import cPickle as pickle
     import ConfigParser as configparser
+    from inspect import getargspec as getfullargspec
     from itertools import izip_longest as zip_longest
     from StringIO import StringIO
     string_types = (str, unicode)
@@ -77,6 +78,7 @@ if PY2:
 else:
     import pickle
     import configparser
+    from inspect import getfullargspec
     from io import StringIO
     from itertools import zip_longest
     from os import replace
@@ -101,6 +103,7 @@ else:
 
 assert pickle
 assert configparser
+assert getfullargspec
 assert replace
 assert zip_longest
 

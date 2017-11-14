@@ -111,12 +111,12 @@ def recorder_dirname(request, name):
 
     simulator, nl = TestConfig.RefSimulator, None
     if 'Simulator' in request.funcargnames:
-        simulator = request.getfuncargvalue('Simulator')
+        simulator = request.getfixturevalue('Simulator')
     # 'nl' stands for the non-linearity used in the neuron equation
     if 'nl' in request.funcargnames:
-        nl = request.getfuncargvalue('nl')
+        nl = request.getfixturevalue('nl')
     elif 'nl_nodirect' in request.funcargnames:
-        nl = request.getfuncargvalue('nl_nodirect')
+        nl = request.getfixturevalue('nl_nodirect')
 
     dirname = "%s.%s" % (simulator.__module__, name)
     if nl is not None:
@@ -137,7 +137,7 @@ def parametrize_function_name(request, function_name):
         argnames = request.keywords['parametrize'].args[::2]
         argnames = [x.strip() for names in argnames for x in names.split(',')]
         for name in argnames:
-            value = request.getfuncargvalue(name)
+            value = request.getfixturevalue(name)
             if inspect.isclass(value):
                 value = value.__name__
             suffixes.append('{}={}'.format(name, value))

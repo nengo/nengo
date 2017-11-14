@@ -288,21 +288,19 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
     # differ due to lowered presynaptic firing rate
     dts = (0.0001, 0.001)
     colors = ('b', 'g', 'r')
+    ax1 = plt.subplot(2, 1, 1)
+    ax2 = plt.subplot(2, 1, 2)
     for c, dt in zip(colors, dts):
         with Simulator(m, dt=dt) as sim:
             sim.run(0.1)
         trans_data.append(sim.data[m.weights_p])
-        plt.subplot(2, 1, 1)
-        plt.plot(sim.trange(dt=0.01), sim.data[m.weights_p][..., 0], c=c)
-        plt.subplot(2, 1, 2)
-        plt.plot(sim.trange(), sim.data[m.activity_p], c=c)
+        ax1.plot(sim.trange(dt=0.01), sim.data[m.weights_p][..., 0], c=c)
+        ax2.plot(sim.trange(), sim.data[m.activity_p], c=c)
 
-    plt.subplot(2, 1, 1)
-    plt.xlim(right=sim.trange()[-1])
-    plt.ylabel("Connection weight")
-    plt.subplot(2, 1, 2)
-    plt.xlim(right=sim.trange()[-1])
-    plt.ylabel("Presynaptic activity")
+    ax1.set_xlim(right=sim.trange()[-1])
+    ax1.set_ylabel("Connection weight")
+    ax2.set_xlim(right=sim.trange()[-1])
+    ax2.set_ylabel("Presynaptic activity")
 
     assert np.allclose(trans_data[0], trans_data[1], atol=3e-3)
     assert not np.allclose(sim.data[m.weights_p][0], sim.data[m.weights_p][-1])
