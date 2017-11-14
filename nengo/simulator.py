@@ -142,7 +142,7 @@ class Simulator(object):
     def __init__(
             self, network,
             dt=0.001, seed=None, model=None, progress_bar=True, optimize=True):
-        self.closed = False
+        self.closed = True  # Start closed in case constructor raises exception
         self.progress_bar = progress_bar
 
         if model is None:
@@ -181,6 +181,8 @@ class Simulator(object):
                 seed = network.seed + 1
             else:
                 seed = np.random.randint(npext.maxint)
+
+        self.closed = False
         self.reset(seed=seed)
 
     def __del__(self):
