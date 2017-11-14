@@ -249,7 +249,7 @@ class LstsqL1(Solver):
     l1 = NumberParam('l1', low=0)
     l2 = NumberParam('l2', low=0)
 
-    def __init__(self, weights=False, l1=1e-4, l2=1e-6):
+    def __init__(self, weights=False, l1=1e-4, l2=1e-6, max_iter=1000):
         """
         .. note:: Requires `scikit-learn <http://scikit-learn.org/stable/>`_.
 
@@ -261,6 +261,8 @@ class LstsqL1(Solver):
             Amount of L1 regularization.
         l2 : float, optional (Default: 1e-6)
             Amount of L2 regularization.
+        max_iter : int, optional
+            Maximum number of iterations for the underlying elastic net.
 
         Attributes
         ----------
@@ -270,12 +272,15 @@ class LstsqL1(Solver):
             Amount of L2 regularization.
         weights : bool
             If False, solve for decoders. If True, solve for weights.
+        max_iter : int
+            Maximum number of iterations for the underlying elastic net.
         """
         import sklearn.linear_model  # noqa F401, import to check existence
         assert sklearn.linear_model
         super(LstsqL1, self).__init__(weights=weights)
         self.l1 = l1
         self.l2 = l2
+        self.max_iter = max_iter
 
     def __call__(self, A, Y, rng=np.random, E=None):
         import sklearn.linear_model
@@ -294,7 +299,8 @@ class LstsqL1(Solver):
 
         # --- solve least-squares A * X = Y
         model = sklearn.linear_model.ElasticNet(
-            alpha=alpha, l1_ratio=l1_ratio, fit_intercept=False, max_iter=1000)
+            alpha=alpha, l1_ratio=l1_ratio, fit_intercept=False,
+            max_iter=self.max_iter)
         model.fit(A, Y)
         X = model.coef_.T
         X.shape = (A.shape[1], Y.shape[1]) if Y.ndim > 1 else (A.shape[1],)

@@ -146,7 +146,7 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
 
 @pytest.mark.parametrize('Solver', [
     Factory(LstsqL2, solver=Factory(lstsq.RandomizedSVD)),
-    LstsqL1])
+    Factory(LstsqL1, max_iter=2000)])
 def test_decoder_solver_extra(Solver, plt, rng):
     pytest.importorskip('sklearn')
     test_decoder_solver(Solver, plt, rng)
@@ -250,6 +250,7 @@ def test_subsolvers_L2(rng, logger):
 
 
 @pytest.mark.noassertions
+@pytest.mark.filterwarnings('ignore:Objective did not converge.')
 def test_subsolvers_L1(rng, logger):
     pytest.importorskip('sklearn')
 
@@ -261,13 +262,15 @@ def test_subsolvers_L1(rng, logger):
     logger.info('duration: %0.3f', t.duration)
 
 
+@pytest.mark.slow
 def test_compare_solvers(Simulator, plt, seed):
     pytest.importorskip('sklearn')
 
     N = 70
     decoder_solvers = [
-        Lstsq(), LstsqNoise(), LstsqL2(), LstsqL2nz(), LstsqL1()]
-    weight_solvers = [LstsqL1(weights=True), LstsqDrop(weights=True)]
+        Lstsq(), LstsqNoise(), LstsqL2(), LstsqL2nz(), LstsqL1(max_iter=5000)]
+    weight_solvers = [
+        LstsqL1(weights=True, max_iter=5000), LstsqDrop(weights=True)]
 
     tfinal = 4
 
