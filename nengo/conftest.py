@@ -265,10 +265,22 @@ def seed(request):
 
 
 def pytest_generate_tests(metafunc):
+    marks = [
+        getattr(pytest.mark, m.name)(*m.args, **m.kwargs)
+        for m in getattr(metafunc.function, 'pytestmark', [])]
+
+    def mark_nl(nl):
+        if nl is Sigmoid:
+            nl = pytest.param(nl, marks=[pytest.mark.filterwarnings(
+                'ignore:overflow encountered in exp')] + marks)
+        return nl
+
     if "nl" in metafunc.funcargnames:
-        metafunc.parametrize("nl", TestConfig.neuron_types)
+        metafunc.parametrize(
+            "nl", [mark_nl(nl) for nl in TestConfig.neuron_types])
     if "nl_nodirect" in metafunc.funcargnames:
-        nodirect = [n for n in TestConfig.neuron_types if n is not Direct]
+        nodirect = [mark_nl(n) for n in TestConfig.neuron_types
+                    if n is not Direct]
         metafunc.parametrize("nl_nodirect", nodirect)
 
 
