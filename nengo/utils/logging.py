@@ -32,6 +32,11 @@ def log(level='warning', path=None):
     path : string (optional)
         Path of a file to append log messages to. If ``None`` (default),
         messages are logged to the console.
+
+    Returns
+    -------
+    logging handler
+        The logging handler setup by this function.
     """
     if level.upper() not in ('CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'):
         raise ValueError("Invalid logging level")
@@ -55,6 +60,7 @@ def log(level='warning', path=None):
         logging.root.addHandler(handler)
     handler.setLevel(level)
     logging.captureWarnings(True)
+    return handler
 
 
 class CaptureLogHandler(logging.StreamHandler):

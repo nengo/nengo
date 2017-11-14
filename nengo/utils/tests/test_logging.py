@@ -17,13 +17,16 @@ def test_log_to_console():
 
 def test_log_to_file(tmpdir):
     tmpfile = str(tmpdir.join("log.txt"))
-    nengo.log(path=tmpfile)
-    n_handlers = len(logging.root.handlers)
-    handler = logging.root.handlers[-1]
-    assert logging.root.getEffectiveLevel() == logging.WARNING
-    assert isinstance(handler, logging.FileHandler)
-    assert handler.baseFilename == tmpfile
-    nengo.log('debug', path=tmpfile)
-    assert logging.root.getEffectiveLevel() == logging.DEBUG
-    assert len(logging.root.handlers) == n_handlers
-    logging.root.handlers.remove(handler)
+    handler = nengo.log(path=tmpfile)
+    try:
+        n_handlers = len(logging.root.handlers)
+        handler = logging.root.handlers[-1]
+        assert logging.root.getEffectiveLevel() == logging.WARNING
+        assert isinstance(handler, logging.FileHandler)
+        assert handler.baseFilename == tmpfile
+        nengo.log('debug', path=tmpfile)
+        assert logging.root.getEffectiveLevel() == logging.DEBUG
+        assert len(logging.root.handlers) == n_handlers
+        logging.root.handlers.remove(handler)
+    finally:
+        handler.close()
