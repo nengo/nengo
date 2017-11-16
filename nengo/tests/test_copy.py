@@ -343,3 +343,38 @@ def test_copy_instance_params():
 
     cp = original.copy()
     assert cp.config[cp.ensembles[0]].test == 42
+
+
+def test_pickle_model(RefSimulator, seed):
+    trun = 0.5
+    simseed = seed + 1
+
+    with nengo.Network(seed=seed) as network:
+        u = nengo.Node(nengo.processes.WhiteSignal(trun, 5))
+        a = nengo.Ensemble(100, 1)
+        b = nengo.Ensemble(100, 1)
+        nengo.Connection(u, a, synapse=None)
+        nengo.Connection(a, b, function=np.square)
+        up = nengo.Probe(u, synapse=0.01)
+        ap = nengo.Probe(a, synapse=0.01)
+        bp = nengo.Probe(b, synapse=0.01)
+
+    with RefSimulator(network, seed=simseed) as sim:
+        sim.run(trun)
+        t0, u0, a0, b0 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
+        pkls = pickle.dumps(dict(model=sim.model, up=up, ap=ap, bp=bp))
+
+    # reload model
+    del network, sim, up, ap, bp
+    pkl = pickle.loads(pkls)
+    up, ap, bp = pkl['up'], pkl['ap'], pkl['bp']
+
+    with RefSimulator(None, model=pkl['model'], seed=simseed) as sim:
+        sim.run(trun)
+        t1, u1, a1, b1 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
+
+    tols = dict(atol=1e-5)
+    assert np.allclose(t1, t0, **tols)
+    assert np.allclose(u1, u0, **tols)
+    assert np.allclose(a1, a0, **tols)
+    assert np.allclose(b1, b0, **tols)
