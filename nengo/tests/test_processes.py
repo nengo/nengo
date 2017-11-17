@@ -25,7 +25,7 @@ class DistributionMock(Distribution):
 
 
 class TimeProcess(Process):
-    def make_step(self, shape_in, shape_out, dt, rng):
+    def make_step(self, shape_in, shape_out, dt, rng, state):
         size_in = np.prod(shape_in)
         size_out = np.prod(shape_out)
         if size_in == 0:
@@ -376,7 +376,8 @@ class TestPiecewise:
         f = process.make_step(shape_in=(process.default_size_in,),
                               shape_out=(process.default_size_out,),
                               dt=process.default_dt,
-                              rng=None)
+                              rng=None,
+                              state={})
         assert np.allclose(f(-10), [0.])
         assert np.allclose(f(0), [0.])
 
@@ -464,7 +465,8 @@ class TestPiecewise:
         f = process.make_step(shape_in=(process.default_size_in,),
                               shape_out=(process.default_size_out,),
                               dt=process.default_dt,
-                              rng=None)
+                              rng=None,
+                              state={})
 
         assert np.array_equal(f(0), np.zeros(process.default_size_out))
         assert np.array_equal(f(2), np.ones(process.default_size_out))

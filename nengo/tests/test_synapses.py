@@ -8,7 +8,7 @@ import nengo
 from nengo.exceptions import ValidationError
 from nengo.processes import WhiteSignal
 from nengo.synapses import (
-    Alpha, LinearFilter, Lowpass, SynapseParam, Triangle)
+    Alpha, LinearFilter, Lowpass, Synapse, SynapseParam, Triangle)
 from nengo.utils.filter_design import cont2discrete
 from nengo.utils.testing import allclose
 
@@ -19,10 +19,11 @@ butter_num = np.array([0.0004166, 0.0016664, 0.0024996, 0.0016664, 0.0004166])
 butter_den = np.array([1., -3.18063855, 3.86119435, -2.11215536, 0.43826514])
 
 
-def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=1., n_neurons=None):
+def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=0.2, high=100,
+                n_neurons=None):
     model = nengo.Network(seed=seed)
     with model:
-        u = nengo.Node(output=WhiteSignal(runtime, high=10))
+        u = nengo.Node(output=WhiteSignal(runtime, high=high))
 
         if n_neurons is not None:
             a = nengo.Ensemble(n_neurons, 1)
@@ -90,6 +91,9 @@ def test_triangle(Simulator, plt, seed):
     assert np.allclose(y, yfilt, rtol=0)
     assert allclose(t, y, ysim, delay=dt, rtol=0, plt=plt)
 
+    # test y0 != 0
+    assert np.allclose(Triangle(tau).filt(np.ones(100), dt=dt, y0=1), 1)
+
 
 def test_decoders(Simulator, plt, seed):
     dt = 1e-3
@@ -142,9 +146,9 @@ def test_linearfilter_extras():
     # Throw an error if non-float dtype
     shape = (1,)
     with pytest.raises(ValidationError, match="Only float data types"):
-        synapse.make_step(shape, shape, dt=0.001, rng=None, dtype=np.int32)
+        synapse.make_state(shape, shape, dt=0.001, dtype=np.int32)
     with pytest.raises(ValidationError, match="Only float data types"):
-        synapse.make_step(shape, shape, dt=0.001, rng=None, dtype=np.complex64)
+        synapse.make_state(shape, shape, dt=0.001, dtype=np.complex64)
 
 
 def test_step_errors():
@@ -327,3 +331,17 @@ def test_argreprs():
 
     check_init_args(Triangle, ['t'])
     check_repr(Triangle(0.3))
+
+
+def test_synapse_subclass(Simulator):
+    class MySynapse(Synapse):
+        pass
+
+    with nengo.Network() as net:
+        node_a = nengo.Node([0])
+        node_b = nengo.Node(size_in=1)
+        nengo.Connection(node_a, node_b, synapse=MySynapse())
+
+    with pytest.raises(NotImplementedError, match="must implement make_state"):
+        with Simulator(net):
+            pass

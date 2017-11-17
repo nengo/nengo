@@ -128,8 +128,6 @@ Build functions
 
 .. autofunction:: nengo.builder.processes.build_process
 
-.. autofunction:: nengo.builder.processes.build_synapse
-
 Decoder cache
 ^^^^^^^^^^^^^
 

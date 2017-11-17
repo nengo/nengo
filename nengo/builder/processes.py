@@ -1,6 +1,6 @@
 from nengo.builder import Builder, Operator, Signal
 from nengo.processes import Process
-from nengo.synapses import Synapse
+from nengo.rc import rc
 
 
 class SimProcess(Operator):
@@ -44,23 +44,29 @@ class SimProcess(Operator):
     3. reads ``[t, input] if input is not None else [t]``
     4. updates ``[output] if output is not None and mode=='update' else []``
     """
-    def __init__(self, process, input, output, t, mode='set', tag=None):
+    def __init__(self, process, input, output, t, mode="set", state=None,
+                 tag=None):
         super().__init__(tag=tag)
         self.process = process
         self.mode = mode
+
+        assert output is not None
 
         self.reads = [t, input] if input is not None else [t]
         self.sets = []
         self.incs = []
         self.updates = []
         if mode == 'update':
-            self.updates = [output] if output is not None else []
+            self.updates.extend([output])
         elif mode == 'inc':
-            self.incs = [output] if output is not None else []
+            self.incs.extend([output])
         elif mode == 'set':
-            self.sets = [output] if output is not None else []
+            self.sets.extend([output])
         else:
             raise ValueError("Unrecognized mode %r" % mode)
+
+        self.state = {} if state is None else state
+        self.updates.extend(self.state.values())
 
     @property
     def input(self):
@@ -87,27 +93,26 @@ class SimProcess(Operator):
     def make_step(self, signals, dt, rng):
         t = signals[self.t]
         input = signals[self.input] if self.input is not None else None
-        output = signals[self.output] if self.output is not None else None
+        output = signals[self.output]
         shape_in = input.shape if input is not None else (0,)
-        shape_out = output.shape if output is not None else (0,)
+        shape_out = output.shape
         rng = self.process.get_rng(rng)
-        step_f = self.process.make_step(shape_in, shape_out, dt, rng)
-        inc = self.mode == 'inc'
+        state = {name: signals[sig] for name, sig in self.state.items()}
+        step_f = self.process.make_step(shape_in, shape_out, dt, rng, state)
+        args = (t,) if input is None else (t, input)
 
-        def step_simprocess():
-            result = (step_f(t.item(), input) if input is not None else
-                      step_f(t.item()))
-            if output is not None:
-                if inc:
-                    output[...] += result
-                else:
-                    output[...] = result
+        if self.mode == "inc":
+            def step_simprocess():
+                output[...] += step_f(args[0].item(), *args[1:])
+        else:
+            def step_simprocess():
+                output[...] = step_f(args[0].item(), *args[1:])
 
         return step_simprocess
 
 
 @Builder.register(Process)
-def build_process(model, process, sig_in=None, sig_out=None, inc=False):
+def build_process(model, process, sig_in=None, sig_out=None, mode="set"):
     """Builds a `.Process` object into a model.
 
     Parameters
@@ -120,45 +125,30 @@ def build_process(model, process, sig_in=None, sig_out=None, inc=False):
         The input signal, or None if no input signal.
     sig_out : Signal, optional
         The output signal, or None if no output signal.
-    inc : bool, optional
-        Whether `.SimProcess` should be made with
-        ``mode='inc'` (True) or ``mode='set'`` (False).
+    mode : "set" or "inc" or "update", optional
+        The ``mode`` of the built `.SimProcess`.
 
     Notes
     -----
     Does not modify ``model.params[]`` and can therefore be called
     more than once with the same `.Process` instance.
     """
-
-    model.add_op(SimProcess(
-        process, sig_in, sig_out, model.time, mode='inc' if inc else 'set'))
-
-
-@Builder.register(Synapse)
-def build_synapse(model, synapse, sig_in, sig_out=None):
-    """Builds a `.Synapse` object into a model.
-
-    Parameters
-    ----------
-    model : Model
-        The model to build into.
-    synapse : Synapse
-        Synapse to build.
-    sig_in : Signal
-        The input signal.
-    sig_out : Signal, optional
-        The output signal. If None, a new output signal will be
-        created and returned.
-
-    Notes
-    -----
-    Does not modify ``model.params[]`` and can therefore be called
-    more than once with the same `.Synapse` instance.
-    """
     if sig_out is None:
         sig_out = Signal(
-            shape=sig_in.shape, name="%s.%s" % (sig_in.name, synapse))
+            shape=sig_in.shape, name="%s.%s" % (sig_in.name, process))
+
+    shape_in = sig_in.shape if sig_in is not None else (0,)
+    shape_out = sig_out.shape if sig_out is not None else (0,)
+    dtype = (sig_out.dtype if sig_out is not None
+             else sig_in.dtype if sig_in is not None
+             else rc.float_dtype)
+    state_init = process.make_state(shape_in, shape_out, model.dt, dtype=dtype)
+    state = {}
+    for name, value in state_init.items():
+        state[name] = Signal(value)
+        model.sig[process]["_state_" + name] = state[name]
 
     model.add_op(SimProcess(
-        synapse, sig_in, sig_out, model.time, mode='update'))
+        process, sig_in, sig_out, model.time, mode=mode, state=state))
+
     return sig_out

@@ -43,7 +43,8 @@ def signal_probe(model, key, probe):
         model.sig[probe]['in'] = sig
     else:
         model.sig[probe]['in'] = Signal(shape=sig.shape, name=str(probe))
-        model.sig[probe]['filtered'] = model.build(probe.synapse, sig)
+        model.sig[probe]['filtered'] = model.build(probe.synapse, sig,
+                                                   mode="update")
         model.add_op(Copy(model.sig[probe]['filtered'],
                           model.sig[probe]['in']))
 

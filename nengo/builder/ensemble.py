@@ -214,7 +214,8 @@ def build_ensemble(model, ens):
 
     # Inject noise if specified
     if ens.noise is not None:
-        model.build(ens.noise, sig_out=model.sig[ens.neurons]['in'], inc=True)
+        model.build(ens.noise, sig_out=model.sig[ens.neurons]['in'],
+                    mode="inc")
 
     # Create output signal, using built Neurons
     model.add_op(DotInc(

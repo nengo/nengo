@@ -1,4 +1,3 @@
-import collections
 import warnings
 
 import numpy as np
@@ -61,6 +60,9 @@ class Synapse(Process):
                          default_dt=default_dt,
                          seed=seed)
 
+    def make_state(self, shape_in, shape_out, dt, dtype=None, y0=None):
+        raise NotImplementedError("Synapse must implement make_state")
+
     def filt(self, x, dt=None, axis=0, y0=0, copy=True, filtfilt=False):
         """Filter ``x`` with this synapse model.
 
@@ -89,8 +91,9 @@ class Synapse(Process):
         filt_view = np.rollaxis(filtered, axis=axis)  # rolled view on filtered
 
         shape_in = shape_out = as_shape(filt_view[0].shape, min_dim=1)
-        step = self.make_step(
-            shape_in, shape_out, dt, None, y0=y0, dtype=filtered.dtype)
+        state = self.make_state(
+            shape_in, shape_out, dt, dtype=filtered.dtype, y0=y0)
+        step = self.make_step(shape_in, shape_out, dt, rng=None, state=state)
 
         for i, signal_in in enumerate(filt_view):
             filt_view[i] = step(i * dt, signal_in)
@@ -109,34 +112,6 @@ class Synapse(Process):
         Equivalent to `filt(x, filtfilt=True, **kwargs) <.Synapse.filt>`.
         """
         return self.filt(x, filtfilt=True, **kwargs)
-
-    def make_step(self, shape_in, shape_out, dt, rng, y0=0, dtype=None):
-        """Create function that advances the synapse forward one time step.
-
-        At a minimum, Synapse subclasses must implement this method.
-        That implementation should return a callable that will perform
-        the synaptic filtering operation.
-
-        Parameters
-        ----------
-        shape_in : tuple
-            Shape of the input signal to be filtered.
-        shape_out : tuple
-            Shape of the output filtered signal.
-        dt : float
-            The timestep of the simulation.
-        rng : `numpy.random.RandomState`
-            Random number generator.
-        y0 : array_like, optional
-            The starting state of the filter output. If zero, each dimension
-            of the state will start at zero.
-        dtype : `numpy.dtype`, optional
-            Type of data used by the synapse model. This is important for
-            ensuring that certain synapses avoid or force integer division.
-            Defaults to a float with the globally specified bit precision
-            (see `nengo.rc`).
-        """
-        raise NotImplementedError("Synapses should implement make_step.")
 
 
 class LinearFilter(Synapse):
@@ -235,8 +210,7 @@ class LinearFilter(Synapse):
 
         return A, B, C, D
 
-    def make_step(self, shape_in, shape_out, dt, rng, y0=0, dtype=None):
-        """Returns a `.Step` instance that implements the linear filter."""
+    def make_state(self, shape_in, shape_out, dt, dtype=None, y0=0):
         assert shape_in == shape_out
 
         dtype = rc.float_dtype if dtype is None else np.dtype(dtype)
@@ -276,6 +250,16 @@ class LinearFilter(Synapse):
                                       "zero. Please set `y0=0`.",
                                       'y0', obj=self)
 
+        return {"X": X}
+
+    def make_step(self, shape_in, shape_out, dt, rng, state):
+        """Returns a `.Step` instance that implements the linear filter."""
+        assert shape_in == shape_out
+        assert state is not None
+
+        A, B, C, D = self._get_ss(dt)
+        X = state['X']
+
         if LinearFilter.NoX.check(A, B, C, D, X):
             return LinearFilter.NoX(A, B, C, D, X)
         elif LinearFilter.OneX.check(A, B, C, D, X):
@@ -300,7 +284,7 @@ class LinearFilter(Synapse):
             self.X = X
 
         def __call__(self, t, signal):
-            raise NotImplementedError("Step functions must implement __call__")
+            raise NotImplementedError("Step object must implement __call__")
 
         @classmethod
         def check(cls, A, B, C, D, X):
@@ -462,9 +446,7 @@ class Triangle(Synapse):
         super().__init__(**kwargs)
         self.t = t
 
-    def make_step(self, shape_in, shape_out, dt, rng, y0=0, dtype=None):
-        """Returns a custom step function."""
-        assert shape_in == shape_out
+    def _get_coefficients(self, dt, dtype=None):
         dtype = rc.float_dtype if dtype is None else np.dtype(dtype)
 
         n_taps = int(np.round(self.t / float(dt))) + 1
@@ -473,19 +455,40 @@ class Triangle(Synapse):
 
         # Minimal multiply implementation finds the difference between
         # coefficients and subtracts a scaled signal at each time step.
-        n0, ndiff = num[0].astype(dtype), num[-1].astype(dtype)
-        x = collections.deque(maxlen=n_taps)
+        n0, ndiff = num[0], num[-1]
 
-        output = np.zeros(shape_out, dtype=dtype)
-        if y0 != 0:
-            output[:] = y0
+        return n_taps, n0, ndiff
+
+    def make_state(self, shape_in, shape_out, dt, dtype=None, y0=0):
+        assert shape_in == shape_out
+        dtype = rc.float_dtype if dtype is None else np.dtype(dtype)
+
+        n_taps, _, ndiff = self._get_coefficients(dt, dtype=dtype)
+        Y = np.zeros(shape_out, dtype=dtype)
+        X = np.zeros((n_taps,) + shape_out, dtype=dtype)
+        Xi = np.zeros(1, dtype=dtype)  # counter for X position
+
+        if y0 != 0 and len(X) > 0:
+            y0 = np.array(y0, copy=False, ndmin=1)
+            X[:] = ndiff * y0[None, ...]
+            Y[:] = y0
+
+        return {"Y": Y, "X": X, "Xi": Xi}
+
+    def make_step(self, shape_in, shape_out, dt, rng, state):
+        assert shape_in == shape_out
+        assert state is not None
+
+        Y, X, Xi = state['Y'], state['X'], state['Xi']
+        n_taps, n0, ndiff = self._get_coefficients(dt, dtype=Y.dtype)
+        assert len(X) == n_taps
 
         def step_triangle(t, signal):
-            output[...] += n0 * signal
-            for xk in x:
-                output[...] -= xk
-            x.appendleft(ndiff * signal)
-            return output
+            Y[...] += n0 * signal
+            Y[...] -= X.sum(axis=0)
+            Xi[:] = (Xi + 1) % len(X)
+            X[int(Xi.item())] = ndiff * signal
+            return Y
 
         return step_triangle
 

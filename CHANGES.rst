@@ -130,6 +130,9 @@ Release History
   (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
 - The ``synapse_kwargs`` argument to ``FilteredNoise`` has been removed.
   (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
+- Processes with internal state now declare that state by defining a
+  ``make_state`` method and accepting a ``state`` parameter in ``make_step``.
+  (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
 
 **Deprecated**
 

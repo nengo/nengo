@@ -292,7 +292,7 @@ def build_connection(model, conn):
 
     # Build synapse
     if conn.synapse is not None:
-        weighted = model.build(conn.synapse, weighted)
+        weighted = model.build(conn.synapse, weighted, mode="update")
 
     # Store the weighted-filtered output in case we want to probe it
     model.sig[conn]['weighted'] = weighted
