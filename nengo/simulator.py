@@ -143,6 +143,7 @@ class Simulator(object):
             dt=0.001, seed=None, model=None, progress_bar=True, optimize=True):
         self.closed = False
         self.progress_bar = progress_bar
+        self.optimize = optimize
 
         if model is None:
             self.model = Model(dt=float(dt),
@@ -192,6 +193,24 @@ class Simulator(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
+    def __getstate__(self):
+        signals = {k: v for k, v in self.signals.items() if not k.readonly}
+        probe_outputs = {probe: self._probe_outputs[probe]
+                         for probe in self.model.probes}
+        return dict(model=self.model, signals=signals,
+                    probe_outputs=probe_outputs, dt=self.dt, seed=self.seed,
+                    progress_bar=self.progress_bar, optimize=self.optimize)
+
+    def __setstate__(self, state):
+        self.__init__(network=None, model=state['model'],
+                      dt=state['dt'], seed=state['seed'],
+                      progress_bar=state['progress_bar'],
+                      optimize=state['optimize'])
+        for key, value in state['signals'].items():
+            self.signals[key] = value
+        for key, value in state['probe_outputs'].items():
+            self._probe_outputs[key].extend(value)
+
     @property
     def dt(self):
         """(float) The time step of the simulator."""
@@ -210,6 +229,11 @@ class Simulator(object):
     def time(self):
         """(float) The current time of the simulator."""
         return self._time
+
+    def clear_probes(self):
+        for probe in self.model.probes:
+            self._probe_outputs[probe] = []
+        self.data.reset()  # clear probe cache
 
     def close(self):
         """Closes the simulator.
@@ -262,11 +286,7 @@ class Simulator(object):
         self._steps = [op.make_step(self.signals, self.dt, self.rng)
                        for op in self._step_order]
 
-        # clear probe data
-        for probe in self.model.probes:
-            self._probe_outputs[probe] = []
-        self.data.reset()
-
+        self.clear_probes()
         self._probe_step_time()
 
     def run(self, time_in_seconds, progress_bar=None):
