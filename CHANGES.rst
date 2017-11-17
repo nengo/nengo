@@ -47,6 +47,9 @@ Release History
 - Added a bit precision setting to change the number of bits allocated
   to each value tracked by Nengo.
   (`#640 <https://github.com/nengo/nengo/pull/640>`__)
+- Added a ``Simulator.clear_probes`` method to clear probe data.
+  This method can be used before pickling to reduce the pickle file size.
+  (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
 
 **Changed**
 
@@ -132,6 +135,8 @@ Release History
   (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
 - Processes with internal state now declare that state by defining a
   ``make_state`` method and accepting a ``state`` parameter in ``make_step``.
+  (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
+- ``Simulator`` is now pickleable, allowing its state to be saved and loaded.
   (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
 
 **Deprecated**

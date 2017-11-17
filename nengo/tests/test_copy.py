@@ -9,6 +9,7 @@ from nengo import spa
 from nengo.exceptions import NetworkContextError, NotAddedToNetworkWarning
 from nengo.params import IntParam, iter_params
 from nengo.utils.numpy import is_array_like
+from nengo.utils.progress import TerminalProgressBar
 
 
 def assert_is_copy(cp, original):
@@ -358,7 +359,7 @@ def test_pickle_model(RefSimulator, seed):
         nengo.Connection(a, b, function=np.square)
         up = nengo.Probe(u, synapse=0.01)
         ap = nengo.Probe(a, synapse=0.01)
-        bp = nengo.Probe(b, synapse=0.01)
+        bp = nengo.Probe(b, synapse=nengo.Alpha(0.01))
 
     with RefSimulator(network, seed=simseed) as sim:
         sim.run(t_run)
@@ -388,3 +389,59 @@ def test_copy_convolution():
     assert x.n_filters == y.n_filters
     assert x.input_shape == y.input_shape
     assert x.channels_last == y.channels_last
+
+
+@pytest.mark.parametrize("optimize, dt, progress_bar", [
+    (True, 0.001, False),
+    (False, 0.002, True),
+])
+def test_pickle_sim(RefSimulator, seed, optimize, dt, progress_bar):
+    trun0 = 0.5
+    trun1 = 0.5
+    simseed = seed + 1
+    progress = TerminalProgressBar() if progress_bar else progress_bar
+
+    with nengo.Network(seed=seed) as network:
+        u = nengo.Node(nengo.processes.WhiteSignal(trun0 + trun1, high=5))
+        a = nengo.Ensemble(100, 1)
+        b = nengo.Ensemble(100, 1)
+        nengo.Connection(u, a, synapse=None)
+        nengo.Connection(a, b, function=np.square)
+        up = nengo.Probe(u, synapse=0.01)
+        ap = nengo.Probe(a, synapse=0.01)
+        bp = nengo.Probe(b, synapse=nengo.Alpha(0.01))
+
+    with RefSimulator(network, seed=simseed, dt=dt, optimize=optimize,
+                      progress_bar=progress) as sim:
+        sim.run(trun0)
+        pkls = pickle.dumps(dict(sim=sim, up=up, ap=ap, bp=bp))
+
+        sim.run(trun1)
+        t0, u0, a0, b0 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
+
+    # reload model
+    del network, sim, up, ap, bp
+    pkl = pickle.loads(pkls)
+    up, ap, bp = pkl['up'], pkl['ap'], pkl['bp']
+
+    with pkl['sim'] as sim:
+        assert sim.seed == simseed
+        assert sim.dt == dt
+        assert sim.optimize == optimize
+        if progress_bar:
+            assert isinstance(sim.progress_bar, TerminalProgressBar)
+        else:
+            assert sim.progress_bar is progress_bar
+
+        sim.run(trun1)
+        t1, u1, a1, b1 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
+
+    tols = dict(atol=1e-5)
+    assert np.allclose(t1, t0, **tols)
+    assert np.allclose(u1, u0, **tols)
+    assert np.allclose(a1, a0, **tols)
+    assert np.allclose(b1, b0, **tols)
+
+    # check that closed status is preserved
+    pkl = pickle.loads(pickle.dumps(dict(sim=sim)))
+    assert pkl["sim"].closed
