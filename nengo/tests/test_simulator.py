@@ -285,3 +285,12 @@ def test_invalid_run_time(Simulator):
             sim.run(0)
         sim.run(0.0006)  # Rounds up to 0.001
         assert sim.n_steps == 1
+
+
+def test_sim_seed_set_by_network_seed(Simulator, seed):
+    with nengo.Network(seed=seed) as model:
+        pass
+    with nengo.Simulator(model) as sim:
+        sim_seed = sim.seed
+    with nengo.Simulator(model) as sim:
+        assert sim.seed == sim_seed

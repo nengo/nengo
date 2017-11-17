@@ -33,6 +33,10 @@ Release History
 - Default values can no longer be set for
   ``Ensemble.n_neurons`` or ``Ensemble.dimensions``.
   (`#1372 <https://github.com/nengo/nengo/pull/1372>`__)
+- If the simulator seed is not specified, it will now be set
+  from the network seed if a network seed is specified.
+  (`#980 <https://github.com/nengo/nengo/issues/980>`__,
+  `#1386 <https://github.com/nengo/nengo/pull/1386>`__)
 
 **Fixed**
 

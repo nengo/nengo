@@ -89,6 +89,7 @@ class Simulator(object):
         The length of a simulator timestep, in seconds.
     seed : int, optional (Default: None)
         A seed for all stochastic operators used in this simulator.
+        Will be set to ``network.seed + 1`` if not given.
     model : Model, optional (Default: None)
         A `.Model` that contains build artifacts to be simulated.
         Usually the simulator will build this model for you; however, if you
@@ -175,7 +176,11 @@ class Simulator(object):
         # Provide a nicer interface to probe outputs
         self.data = ProbeDict(self._probe_outputs)
 
-        seed = np.random.randint(npext.maxint) if seed is None else seed
+        if seed is None:
+            if network is not None and network.seed is not None:
+                seed = network.seed + 1
+            else:
+                seed = np.random.randint(npext.maxint)
         self.reset(seed=seed)
 
     def __del__(self):
