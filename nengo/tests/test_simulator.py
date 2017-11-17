@@ -49,7 +49,7 @@ def test_trange_with_probes(Simulator):
     with Simulator(m, dt=dt) as sim:
         sim.run(0.333)
     for i, p in enumerate(periods):
-        assert len(sim.trange(p)) == len(sim.data[probes[i]])
+        assert len(sim.trange(sample_every=p)) == len(sim.data[probes[i]])
 
 
 def test_probedict():
@@ -334,3 +334,21 @@ def test_simulator_progress_bars(RefSimulator):
         run_invariants = ProgressBarInvariants()
         sim.run(.01, progress_bar=run_invariants)
         assert run_invariants.n_steps == run_invariants.max_steps
+
+
+@pytest.mark.parametrize('sample_every', (0.001, 0.0005, 0.002, 0.0015))
+def test_sample_every_trange(Simulator, sample_every):
+    with nengo.Network() as model:
+        t = nengo.Node(lambda t: t)
+        p = nengo.Probe(t, sample_every=sample_every)
+
+    with Simulator(model) as sim:
+        sim.run(0.01)
+
+    with pytest.raises(ValidationError):
+        sim.trange(dt=sample_every, sample_every=sample_every)
+    with pytest.warns(UserWarning):
+        assert np.allclose(
+            sim.trange(dt=sample_every), np.squeeze(sim.data[p]))
+    assert np.allclose(
+        sim.trange(sample_every=sample_every), np.squeeze(sim.data[p]))

@@ -344,7 +344,7 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     for c, dt in zip(colors, dts):
         with Simulator(m, dt=dt, seed=seed+1) as sim:
             sim.run(0.1)
-        t = sim.trange(dt=0.001)
+        t = sim.trange(sample_every=0.001)
         activity_data.append(sim.data[activity_p])
         out_data.append(sim.data[out_p])
         ax1.plot(t, sim.data[out_p], c=c)

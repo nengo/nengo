@@ -178,7 +178,7 @@ def test_product(Simulator, nl, plt, seed):
 
     with Simulator(m) as sim:
         sim.run(1)
-    t = sim.trange(dt=dt2)
+    t = sim.trange(sample_every=dt2)
 
     plt.subplot(211)
     plt.plot(t, sim.data[factors_p])

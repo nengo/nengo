@@ -272,7 +272,7 @@ def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt):
     plt.legend(loc="best", fontsize="x-small")
     plt.subplot(2, 1, 2)
     best_ix = best_weights(sim.data[weights_p])
-    plt.plot(sim.trange(dt=0.01), sim.data[weights_p][..., best_ix])
+    plt.plot(sim.trange(sample_every=0.01), sim.data[weights_p][..., best_ix])
     plt.xlabel("Time (s)")
     plt.ylabel("Weights")
 
@@ -323,7 +323,9 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
             sim.run(0.1)
         trans_data.append(sim.data[m.weights_p])
         best_ix = best_weights(sim.data[m.weights_p])
-        ax1.plot(sim.trange(dt=0.01), sim.data[m.weights_p][..., best_ix], c=c)
+        ax1.plot(sim.trange(sample_every=0.01),
+                 sim.data[m.weights_p][..., best_ix],
+                 c=c)
         ax2.plot(sim.trange(), sim.data[m.activity_p], c=c)
 
     ax1.set_xlim(right=sim.trange()[-1])
@@ -345,7 +347,7 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
         sim.run(0.2)
 
         first_t = sim.trange()
-        first_t_trans = sim.trange(dt=0.01)
+        first_t_trans = sim.trange(sample_every=0.01)
         first_activity_p = np.array(sim.data[m.activity_p], copy=True)
         first_weights_p = np.array(sim.data[m.weights_p], copy=True)
 
@@ -360,10 +362,12 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
     plt.ylabel("Connection weight")
     best_ix = best_weights(first_weights_p)
     plt.plot(first_t_trans, first_weights_p[..., best_ix], c='b')
-    plt.plot(sim.trange(dt=0.01), sim.data[m.weights_p][..., best_ix], c='g')
+    plt.plot(sim.trange(sample_every=0.01),
+             sim.data[m.weights_p][..., best_ix],
+             c='g')
 
     assert np.allclose(sim.trange(), first_t)
-    assert np.allclose(sim.trange(dt=0.01), first_t_trans)
+    assert np.allclose(sim.trange(sample_every=0.01), first_t_trans)
     assert np.allclose(sim.data[m.activity_p], first_activity_p)
     assert np.allclose(sim.data[m.weights_p], first_weights_p)
 

@@ -26,7 +26,7 @@ def test_oscillator(Simulator, plt, seed):
     with Simulator(model) as sim:
         sim.run(3.0)
 
-    t = sim.trange(dt=0.01)
+    t = sim.trange(sample_every=0.01)
     plt.plot(t, sim.data[A_probe], label='Manual')
     plt.plot(t, sim.data[T_probe], label='Template')
     plt.plot(t, sim.data[in_probe], 'k', label='Input')

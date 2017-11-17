@@ -22,7 +22,13 @@ Release History
 2.8.1 (unreleased)
 ==================
 
+**Changed**
 
+- Replaced the ``dt`` argument to ``Simulator.trange`` with ``sample_every``
+  because ``dt`` would return values that the simulator had not simulated.
+  ``dt`` is now an alias for ``sample_every`` and will be removed in the future.
+  (`#1368 <https://github.com/nengo/nengo/issues/1368>`_,
+  `#1384 <https://github.com/nengo/nengo/pull/1384>`_)
 
 2.8.0 (June 9, 2018)
 ====================

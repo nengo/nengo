@@ -44,7 +44,7 @@ def test_dts(Simulator, seed, rng):
 
         with Simulator(model, dt=dt) as sim:
             sim.run(tend)
-        t = sim.trange(dt2)
+        t = sim.trange(sample_every=dt2)
         x = sim.data[ap]
 
         assert len(t) == len(x), "dt=%f, dt2=%f, tend=%f, nt=%d, nx=%d" % (
