@@ -388,3 +388,41 @@ def test_copy_convolution():
     assert x.n_filters == y.n_filters
     assert x.input_shape == y.input_shape
     assert x.channels_last == y.channels_last
+
+
+def test_pickle_sim(RefSimulator, seed):
+    trun0 = 0.5
+    trun1 = 0.5
+    simseed = seed + 1
+
+    with nengo.Network(seed=seed) as network:
+        u = nengo.Node(nengo.processes.WhiteSignal(trun0 + trun1, high=5))
+        a = nengo.Ensemble(100, 1)
+        b = nengo.Ensemble(100, 1)
+        nengo.Connection(u, a, synapse=None)
+        nengo.Connection(a, b, function=np.square)
+        up = nengo.Probe(u, synapse=0.01)
+        ap = nengo.Probe(a, synapse=0.01)
+        bp = nengo.Probe(b, synapse=0.01)
+
+    with RefSimulator(network, seed=simseed) as sim:
+        sim.run(trun0)
+        pkls = pickle.dumps(dict(sim=sim, up=up, ap=ap, bp=bp))
+
+        sim.run(trun1)
+        t0, u0, a0, b0 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
+
+    # reload model
+    del network, sim, up, ap, bp
+    pkl = pickle.loads(pkls)
+    up, ap, bp = pkl['up'], pkl['ap'], pkl['bp']
+
+    with pkl['sim'] as sim:
+        sim.run(trun1)
+        t1, u1, a1, b1 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
+
+    tols = dict(atol=1e-5)
+    assert np.allclose(t1, t0, **tols)
+    assert np.allclose(u1, u0, **tols)
+    assert np.allclose(a1, a0, **tols)
+    assert np.allclose(b1, b0, **tols)

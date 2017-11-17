@@ -35,6 +35,10 @@ Release History
 - Added version tracking to documentation, so that documentation from old
   versions remains available.
   (`#1488 <https://github.com/nengo/nengo/pull/1488>`__)
+- The ``Simulator`` is now pickleable, allowing its state to be easily stored.
+  Also added the ``clear_probes`` function to clear ``Simulator`` probes
+  (can be used before pickling to reduce the pickle file size).
+  (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
 
 **Changed**
 
