@@ -597,3 +597,29 @@ def test_tau_deprecation(LearningRule):
         if hasattr(LearningRule, p0):
             assert getattr(l_rule, p0) == i
             assert getattr(l_rule, p1) == Lowpass(i)
+
+
+def test_slicing(Simulator, seed):
+    with nengo.Network(seed=seed) as model:
+        a = nengo.Ensemble(30, 1)
+        b = nengo.Ensemble(30, 2)
+        conn = nengo.Connection(
+            a, b, learning_rule_type=PES(), function=lambda x: (0, 0))
+        nengo.Connection(nengo.Node(1.), a)
+
+        err1 = nengo.Node(lambda t, x: x - 0.75, size_in=1)
+        nengo.Connection(b[0], err1)
+        nengo.Connection(err1, conn.learning_rule[0])
+
+        err2 = nengo.Node(lambda t, x: x + 0.5, size_in=1)
+        nengo.Connection(b[1], err2)
+        nengo.Connection(err2, conn.learning_rule[1])
+
+        p = nengo.Probe(b, synapse=0.03)
+
+    with nengo.Simulator(model) as sim:
+        sim.run(1.)
+
+    t = sim.trange() > 0.8
+    assert np.allclose(sim.data[p][t, 0], 0.75, atol=0.15)
+    assert np.allclose(sim.data[p][t, 1], -0.5, atol=0.15)

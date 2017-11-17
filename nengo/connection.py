@@ -574,6 +574,9 @@ class LearningRule(object):
         # +1 to avoid collision with ensemble
         return hash(self._connection) + hash(self.learning_rule_type) + 1
 
+    def __getitem__(self, key):
+        return ObjView(self, key)
+
     @property
     def connection(self):
         """(Connection) The connection modified by the learning rule."""

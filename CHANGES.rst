@@ -24,6 +24,9 @@ Release History
 
 **Changed**
 
+- Learning rules can now be sliced when providing error input.
+  (`#1365 <https://github.com/nengo/nengo/issues/1365>`_,
+  `#1385 <https://github.com/nengo/nengo/pull/1385>`_)
 - The order of parameters in learning rules has changed such that
   ``learning_rate`` always comes first.
   (`#1095 <https://github.com/nengo/nengo/pull/1095>`__)
