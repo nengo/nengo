@@ -274,6 +274,32 @@ class Process(FrozenObject):
         self.default_dt = default_dt
         self.seed = seed
 
+    def allocate(self, shape_in, shape_out, dt, dtype=None):
+        """Get a dictionary of signals to represent the state of this process.
+
+        The builder uses this to allocate memory for the process state, so
+        that the state can be represented as part of the whole simulator state.
+
+        Parameters
+        ----------
+        shape_in : tuple
+            The shape of the input signal.
+        shape_out : tuple
+            The shape of the output signal.
+        dt : float
+            The simulation timestep.
+        dtype : `numpy.dtype`
+            The data type requested by the builder. If `None`, then this
+            function is free to choose the best type for the signals involved.
+
+        Returns
+        -------
+        initial_state : {string: `.builder.Signal`}
+            A dictionary mapping keys to signals. The keys will be used to
+            identify the signals in `.Process.make_step`.
+        """
+        return {}  # Implement if the process has a state
+
     def apply(self, x, d=None, dt=None, rng=np.random, copy=True, **kwargs):
         """Run process on a given input.
 
@@ -298,7 +324,9 @@ class Process(FrozenObject):
         shape_out = as_shape(self.default_size_out if d is None else d)
         dt = self.default_dt if dt is None else dt
         rng = self.get_rng(rng)
-        step = self.make_step(shape_in, shape_out, dt, rng, **kwargs)
+        state = self.allocate(shape_in, shape_out, dt)
+        step = self.make_step(shape_in, shape_out, dt, rng, state=state,
+                              **kwargs)
         output = np.zeros((len(x),) + shape_out) if copy else x
         for i, xi in enumerate(x):
             output[i] = step((i+1) * dt, xi)
@@ -315,10 +343,11 @@ class Process(FrozenObject):
         seed = rng.randint(maxint) if self.seed is None else self.seed
         return np.random.RandomState(seed)
 
-    def make_step(self, shape_in, shape_out, dt, rng):
+    def make_step(self, shape_in, shape_out, dt, rng, state=None):
         """Create function that advances the process forward one time step.
 
-        This must be implemented by all custom processes.
+        This must be implemented by all custom processes. The parameters below
+        indicate what information is provided by the builder.
 
         Parameters
         ----------
@@ -330,6 +359,10 @@ class Process(FrozenObject):
             The simulation timestep.
         rng : `numpy.random.RandomState`
             A random number generator.
+        state : {string: `numpy.ndarray`}
+            A dictionary mapping keys to signals, where the signals fully
+            represent the state of the process. The signals are initialized
+            by `.Process.allocate`.
         """
         raise NotImplementedError("Process must implement `make_step` method.")
 
@@ -375,7 +408,9 @@ class Process(FrozenObject):
         shape_out = as_shape(self.default_size_out if d is None else d)
         dt = self.default_dt if dt is None else dt
         rng = self.get_rng(rng)
-        step = self.make_step(shape_in, shape_out, dt, rng, **kwargs)
+        state = self.allocate(shape_in, shape_out, dt)
+        step = self.make_step(shape_in, shape_out, dt, rng, state=state,
+                              **kwargs)
         output = np.zeros((n_steps,) + shape_out)
         for i in range(n_steps):
             output[i] = step((i+1) * dt)

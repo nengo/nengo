@@ -45,7 +45,7 @@ class WhiteNoise(Process):
         return "%s(%r, scale=%r)" % (
             type(self).__name__, self.dist, self.scale)
 
-    def make_step(self, shape_in, shape_out, dt, rng):
+    def make_step(self, shape_in, shape_out, dt, rng, state=None):
         assert shape_in == (0,)
         assert len(shape_out) == 1
 
@@ -100,15 +100,20 @@ class FilteredNoise(Process):
         return "%s(synapse=%r, dist=%r, scale=%r)" % (
             type(self).__name__, self.synapse, self.dist, self.scale)
 
-    def make_step(self, shape_in, shape_out, dt, rng):
+    def allocate(self, shape_in, shape_out, dt, dtype=None):
+        return self.synapse.allocate(shape_out, shape_out, dt, dtype=dtype)
+
+    def make_step(self, shape_in, shape_out, dt, rng, state=None):
         assert shape_in == (0,)
         assert len(shape_out) == 1
 
         dist = self.dist
         scale = self.scale
         alpha = 1. / np.sqrt(dt)
+
         filter_step = self.synapse.make_step(
-            shape_out, shape_out, dt, None, **self.synapse_kwargs)
+            shape_out, shape_out, dt, rng=None, state=state,
+            **self.synapse_kwargs)
 
         def step_filterednoise(t):
             x = dist.sample(n=1, d=shape_out[0], rng=rng)[0]
@@ -191,7 +196,7 @@ class WhiteSignal(Process):
         return "%s(period=%r, high=%r, rms=%r)" % (
             type(self).__name__, self.period, self.high, self.rms)
 
-    def make_step(self, shape_in, shape_out, dt, rng):
+    def make_step(self, shape_in, shape_out, dt, rng, state=None):
         assert shape_in == (0,)
 
         nyquist_cutoff = 0.5 / dt
@@ -251,7 +256,7 @@ class PresentInput(Process):
         super().__init__(
             default_size_in=0, default_size_out=self.inputs[0].size, **kwargs)
 
-    def make_step(self, shape_in, shape_out, dt, rng):
+    def make_step(self, shape_in, shape_out, dt, rng, state=None):
         assert shape_in == (0,)
         assert shape_out == (self.inputs[0].size,)
 
@@ -422,7 +427,7 @@ class Piecewise(Process):
         value = np.ravel(value(time)) if callable(value) else value
         return value.size
 
-    def make_step(self, shape_in, shape_out, dt, rng):
+    def make_step(self, shape_in, shape_out, dt, rng, state=None):
         tp, yp = zip(*sorted(self.data.items()))
         assert shape_in == (0,)
         assert shape_out == (self.size_out,)

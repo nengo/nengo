@@ -25,7 +25,7 @@ class DistributionMock(Distribution):
 
 
 class TimeProcess(Process):
-    def make_step(self, shape_in, shape_out, dt, rng):
+    def make_step(self, shape_in, shape_out, dt, rng, state=None):
         size_in = np.prod(shape_in)
         size_out = np.prod(shape_out)
         if size_in == 0:

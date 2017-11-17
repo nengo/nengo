@@ -12,10 +12,11 @@ from nengo.synapses import (
 from nengo.utils.testing import allclose
 
 
-def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=1., n_neurons=None):
+def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=0.2, high=100,
+                n_neurons=None):
     model = nengo.Network(seed=seed)
     with model:
-        u = nengo.Node(output=WhiteSignal(runtime, high=10))
+        u = nengo.Node(output=WhiteSignal(runtime, high=high))
 
         if n_neurons is not None:
             a = nengo.Ensemble(n_neurons, 1)

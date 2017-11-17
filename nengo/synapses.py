@@ -1,4 +1,3 @@
-import collections
 import warnings
 
 import numpy as np
@@ -60,6 +59,9 @@ class Synapse(Process):
                          default_dt=default_dt,
                          seed=seed)
 
+    def allocate(self, shape_in, shape_out, dt, dtype=None, y0=None):
+        return {}  # pragma: no cover  Implement if the synapse has a state
+
     def filt(self, x, dt=None, axis=0, y0=None, copy=True, filtfilt=False):
         """Filter ``x`` with this synapse model.
 
@@ -91,8 +93,9 @@ class Synapse(Process):
             y0 = filt_view[0]
 
         shape_in = shape_out = as_shape(filt_view[0].shape, min_dim=1)
-        step = self.make_step(
-            shape_in, shape_out, dt, None, y0=y0, dtype=filtered.dtype)
+        state = self.allocate(shape_in, shape_out, dt, dtype=filtered.dtype,
+                              y0=y0)
+        step = self.make_step(shape_in, shape_out, dt, rng=None, state=state)
 
         for i, signal_in in enumerate(filt_view):
             filt_view[i] = step(i * dt, signal_in)
@@ -111,33 +114,6 @@ class Synapse(Process):
         Equivalent to `filt(x, filtfilt=True, **kwargs) <.Synapse.filt>`.
         """
         return self.filt(x, filtfilt=True, **kwargs)
-
-    def make_step(self, shape_in, shape_out, dt, rng,
-                  y0=None, dtype=np.float64):
-        """Create function that advances the synapse forward one time step.
-
-        At a minimum, Synapse subclasses must implement this method.
-        That implementation should return a callable that will perform
-        the synaptic filtering operation.
-
-        Parameters
-        ----------
-        shape_in : tuple
-            Shape of the input signal to be filtered.
-        shape_out : tuple
-            Shape of the output filtered signal.
-        dt : float
-            The timestep of the simulation.
-        rng : `numpy.random.RandomState`
-            Random number generator.
-        y0 : array_like, optional (Default: None)
-            The starting state of the filter output. If None, each dimension
-            of the state will start at zero.
-        dtype : `numpy.dtype` (Default: np.float64)
-            Type of data used by the synapse model. This is important for
-            ensuring that certain synapses avoid or force integer division.
-        """
-        raise NotImplementedError("Synapses should implement make_step.")
 
 
 class LinearFilter(Synapse):
@@ -230,9 +206,8 @@ class LinearFilter(Synapse):
 
         return A, B, C, D
 
-    def make_step(self, shape_in, shape_out, dt, rng,
-                  y0=None, dtype=np.float64, method='zoh'):
-        """Returns a `.Step` instance that implements the linear filter."""
+    def allocate(self, shape_in, shape_out, dt,
+                 y0=None, dtype=np.float64, method='zoh'):
         assert shape_in == shape_out
 
         A, B, C, D = self._get_ss(dt, method=method)
@@ -255,6 +230,17 @@ class LinearFilter(Synapse):
             assert Q.size == 1
             u0 = y0 / Q.item()
             X[:] = IAB.dot(u0)
+
+        return dict(X=X)
+
+    def make_step(self, shape_in, shape_out, dt, rng, state=None,
+                  method='zoh'):
+        """Returns a `.Step` instance that implements the linear filter."""
+        assert shape_in == shape_out
+        assert state is not None
+
+        A, B, C, D = self._get_ss(dt, method=method)
+        X = state['X']
 
         if LinearFilter.NoX.check(A, B, C, D, X):
             return LinearFilter.NoX(A, B, C, D, X)
@@ -280,7 +266,7 @@ class LinearFilter(Synapse):
             self.X = X
 
         def __call__(self, t, signal):
-            raise NotImplementedError("Step functions must implement __call__")
+            raise NotImplementedError("Step object must implement __call__")
 
         @classmethod
         def check(cls, A, B, C, D, X):
@@ -424,30 +410,48 @@ class Triangle(Synapse):
         super().__init__(**kwargs)
         self.t = t
 
-    def make_step(self, shape_in, shape_out, dt, rng, y0=None,
-                  dtype=np.float64):
-        """Returns a custom step function."""
-        assert shape_in == shape_out
-
+    def _get_n(self, dt):
         n_taps = int(np.round(self.t / float(dt))) + 1
-        num = np.arange(n_taps, 0, -1, dtype=np.float64)
-        num /= num.sum()
+        num = np.arange(n_taps, 0, -1)
+        num = num / num.sum()
 
         # Minimal multiply implementation finds the difference between
         # coefficients and subtracts a scaled signal at each time step.
-        n0, ndiff = num[0].astype(dtype), num[-1].astype(dtype)
-        x = collections.deque(maxlen=n_taps)
+        n0, ndiff = num[0], num[-1]
 
-        output = np.zeros(shape_out, dtype=dtype)
-        if y0 is not None:
-            output[:] = y0
+        return n_taps, n0, ndiff
+
+    def allocate(self, shape_in, shape_out, dt, y0=None, dtype=np.float64):
+        assert shape_in == shape_out
+
+        n_taps, _, ndiff = self._get_n(dt)
+        Y = np.zeros(shape_out, dtype=dtype)
+        X = np.zeros((n_taps,) + shape_out, dtype=dtype)
+        Xi = np.zeros(1, dtype=dtype)  # counter for X position
+
+        if y0 is not None and len(X) > 0:
+            y0 = np.array(y0, copy=False, ndmin=1)
+            X[:] = ndiff * y0[None, ...]
+            Y[:] = y0
+
+        return dict(Y=Y, X=X, Xi=Xi)
+
+    def make_step(self, shape_in, shape_out, dt, rng, state=None):
+        assert shape_in == shape_out
+        assert state is not None
+
+        Y, X, Xi = state['Y'], state['X'], state['Xi']
+        n_taps, n0, ndiff = self._get_n(dt)
+        n0 = n0.astype(Y.dtype)
+        ndiff = ndiff.astype(X.dtype)
+        assert len(X) == n_taps
 
         def step_triangle(t, signal):
-            output[...] += n0 * signal
-            for xk in x:
-                output[...] -= xk
-            x.appendleft(ndiff * signal)
-            return output
+            Y[...] += n0 * signal
+            Y[...] -= X.sum(axis=0)
+            Xi[:] = (Xi + 1) % len(X)
+            X[int(Xi.item())] = ndiff * signal
+            return Y
 
         return step_triangle
 
