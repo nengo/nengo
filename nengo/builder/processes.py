@@ -5,6 +5,13 @@ from nengo.processes import Process
 from nengo.synapses import Synapse
 
 
+state_prefix = '_state_'
+
+def trim_state_prefix(s):
+    assert s.startswith(state_prefix)
+    return s[len(state_prefix):]
+
+
 class SimProcess(Operator):
     """Simulate a process.
 
@@ -46,23 +53,26 @@ class SimProcess(Operator):
     3. reads ``[t, input] if input is not None else [t]``
     4. updates ``[output] if output is not None and mode=='update' else []``
     """
-    def __init__(self, process, input, output, t, mode='set', tag=None):
+    def __init__(self, process, input, output, state, t, mode='set', tag=None):
         super(SimProcess, self).__init__(tag=tag)
         self.process = process
         self.mode = mode
 
         self.reads = [t, input] if input is not None else [t]
-        self.sets = []
-        self.incs = []
-        self.updates = []
         if mode == 'update':
-            self.updates = [output] if output is not None else []
+            self.updates.extend([output] if output is not None else [])
         elif mode == 'inc':
-            self.incs = [output] if output is not None else []
+            self.incs.extend([output] if output is not None else [])
         elif mode == 'set':
-            self.sets = [output] if output is not None else []
+            self.sets.extend([output] if output is not None else [])
         else:
             raise ValueError("Unrecognized mode %r" % mode)
+
+        # state_names, state_sigs = list(zip(*state.items()))
+        # self.state_names = state_names
+        # self.updates.extend(state_sigs)
+        self.state = state
+        self.updates.extend(state.values())
 
     @property
     def input(self):
@@ -93,7 +103,9 @@ class SimProcess(Operator):
         shape_in = input.shape if input is not None else (0,)
         shape_out = output.shape if output is not None else (0,)
         rng = self.process.get_rng(rng)
-        step_f = self.process.make_step(shape_in, shape_out, dt, rng)
+        state = {name: signals[sig] for name, sig in self.state.items()}
+        step_f = self.process.make_step(
+            shape_in, shape_out, dt, rng, state=state)
         inc = self.mode == 'inc'
 
         def step_simprocess():
@@ -131,9 +143,17 @@ def build_process(model, process, sig_in=None, sig_out=None, inc=False):
     Does not modify ``model.params[]`` and can therefore be called
     more than once with the same `.Process` instance.
     """
+    shape_in = sig_in.shape if sig_in is not None else (0,)
+    shape_out = sig_out.shape if sig_out is not None else (0,)
+    state_init = process.allocate(shape_in, shape_out, model.dt)
+    state = {}
+    for name, value in state_init.items():
+        state[name] = Signal(value)
+        model.sig[process][state_prefix + name] = state[name]
 
     model.add_op(SimProcess(
-        process, sig_in, sig_out, model.time, mode='inc' if inc else 'set'))
+        process, sig_in, sig_out, state, model.time,
+        mode='inc' if inc else 'set'))
 
 
 @Builder.register(Synapse)
@@ -161,6 +181,14 @@ def build_synapse(model, synapse, sig_in, sig_out=None):
         sig_out = Signal(
             np.zeros(sig_in.shape), name="%s.%s" % (sig_in.name, synapse))
 
+    shape_in = sig_in.shape if sig_in is not None else (0,)
+    shape_out = sig_out.shape if sig_out is not None else (0,)
+    state_init = synapse.allocate(shape_in, shape_out, model.dt)
+    state = {}
+    for name, value in state_init.items():
+        state[name] = Signal(value)
+        model.sig[synapse][state_prefix + name] = state[name]
+
     model.add_op(SimProcess(
-        synapse, sig_in, sig_out, model.time, mode='update'))
+        synapse, sig_in, sig_out, state, model.time, mode='update'))
     return sig_out

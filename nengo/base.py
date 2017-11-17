@@ -273,6 +273,11 @@ class Process(FrozenObject):
         self.default_dt = default_dt
         self.seed = seed
 
+    def allocate(self, shape_in, shape_out, dt):
+        """Returns a dictionary of (name, signal) pairs to allocate.
+        """
+        return {}  # Implement if the process has a state
+
     def apply(self, x, d=None, dt=None, rng=np.random, copy=True, **kwargs):
         """Run process on a given input.
 
@@ -314,7 +319,7 @@ class Process(FrozenObject):
         seed = rng.randint(maxint) if self.seed is None else self.seed
         return np.random.RandomState(seed)
 
-    def make_step(self, shape_in, shape_out, dt, rng):
+    def make_step(self, shape_in, shape_out, dt, rng, state={}):
         """Create function that advances the process forward one time step.
 
         This must be implemented by all custom processes.
