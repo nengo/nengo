@@ -226,28 +226,38 @@ class LinearFilter(Synapse):
         y = np.polyval(self.num, w) / np.polyval(self.den, w)
         return y
 
+    def _get_ss(self, dt, method='zoh'):
+        A, B, C, D = tf2ss(self.num, self.den)
+        D = D[None, :] if D.ndim == 1 else D
+        if A.size == 0:
+            return A, B, C, D  # only D is non-empty
+
+        if self.analog:
+            A, B, C, D, _ = cont2discrete((A, B, C, D), dt, method=method)
+
+        # Normalize so output is unscaled sum of states
+        assert C.shape[0] == 1
+        q = np.array(C[0])
+        q[np.abs(q) < 1e-8] = 1
+        A = q[:, None] * A * (1./q)[None, :]
+        B = q[:, None] * B
+        C = C * (1./q)[None, :]
+
+        return A, B, C, D
+
     def allocate(self, shape_in, shape_out, dt, dtype=np.float64, y0=None):
         assert shape_in == shape_out
 
-        A, B, C, D = tf2ss(self.num, self.den)
-        if self.analog:
-            A, B, C, D, _ = cont2discrete((A, B, C, D), dt, method='zoh')
-
-        X = np.zeros((len(self.den) - 1,) + shape_out, dtype=dtype)
+        A, B, C, D = self._get_ss(dt)
+        X = np.zeros((len(A),) + shape_out, dtype=dtype)
 
         if y0 is not None and len(X) > 0:
             y0 = np.asarray(y0)
             if y0.ndim == 0:
                 y0 = y0.reshape((1,))
             y0 = y0[None, ...]
-            # y0 = y0.reshape((1,) + y0.shape)
             X[:] = np.linalg.solve(np.eye(A.shape[0]) - A, np.dot(B, y0))
 
-        # if y0 is not None:
-        #     output[:] = y0
-        #
-        #     X[:] = y0
-        # return dict(output=output, X=X)
         return dict(X=X)
 
     def make_step(self, shape_in, shape_out, dt, rng, state=None,
@@ -255,21 +265,23 @@ class LinearFilter(Synapse):
         """Returns a `.Step` instance that implements the linear filter."""
         assert shape_in == shape_out
 
-        A, B, C, D = tf2ss(self.num, self.den)
-        if self.analog:
-            A, B, C, D, _ = cont2discrete((A, B, C, D), dt, method=method)
-
-        # TODO: if dim is 1, scale X so C == 1
+        A, B, C, D = self._get_ss(dt, method=method)
 
         if state is None:
             state = self.allocate(shape_in, shape_out, dt, dtype=dtype, y0=y0)
-            # X = np.zeros((A.shape[0],) + shape_out, dtype=dtype)
-            # if y0 is not None and len(X) > 0:
-            #     X[:] = y0
-        # else:
-        #     X = state['X']
+
         X = state['X']
-        return LinearFilter.Step(A, B, C, D, X)
+        if LinearFilter.NoA.check(A, B, C, D, X):
+            return LinearFilter.NoA(A, B, C, D, X)
+        elif LinearFilter.OneA.check(A, B, C, D, X):
+            return LinearFilter.OneA(A, B, C, D, X)
+        elif LinearFilter.OneC.check(A, B, C, D, X):
+            return LinearFilter.OneC(A, B, C, D, X)
+        elif LinearFilter.General.check(A, B, C, D, X):
+            return LinearFilter.General(A, B, C, D, X)
+        else:
+            raise ValidationError("No suitable step function found",
+                                  attr='make_step', obj=self)
 
     @staticmethod
     def _make_zero_step(shape_in, shape_out, dt, rng, y0=None,
@@ -278,97 +290,92 @@ class LinearFilter(Synapse):
         if y0 is not None:
             output[:] = y0
 
-        return LinearFilter.NoDen(np.array([1.]), np.array([]), output)
+        return LinearFilter.NoA(np.array([1.]), np.array([]), output)
 
     class Step(object):
         """Abstract base class for LTI filtering step functions."""
         def __init__(self, A, B, C, D, X):
-            assert B.shape[1] == 1
+            assert self.check(A, B, C, D, X)
             self.A = A
             self.B = B
             self.C = C
             self.D = D
+            self.noD = (D == 0).all()
             self.X = X
 
         def __call__(self, t, signal):
-            signal = signal[None, ...]
-            self.X[...] = np.dot(self.A, self.X) + np.dot(self.B, signal)
-            return np.dot(self.C, self.X) + np.dot(self.D, signal)
+            raise NotImplementedError("Step object must implement __call__")
 
-    class NoDen(Step):
+        @classmethod
+        def check(cls, A, B, C, D, X):
+            return B.size == 0 or B.shape[1] == 1
+
+    class NoA(Step):
         """An LTI step function for transfer functions with no denominator.
 
         This step function should be much faster than the equivalent general
         step function.
         """
-        def __init__(self, num, den, output):
-            if len(den) > 0:
-                raise ValidationError("'den' must be empty (got length %d)"
-                                      % len(den), attr='den', obj=self)
-            super(LinearFilter.NoDen, self).__init__(num, den, output)
-            self.b = num[0]
+        def __init__(self, A, B, C, D, X):
+            super(LinearFilter.NoA, self).__init__(A, B, C, D, X)
+            self.d = D.item()
 
         def __call__(self, t, signal):
-            self.output[...] = self.b * signal
-            return self.output
+            return self.d * signal
 
-    class Simple(Step):
+        @classmethod
+        def check(cls, A, B, C, D, X):
+            return super(LinearFilter.NoA, cls).check(A, B, C, D, X) and (
+                A.size == 0 and B.size == 0 and C.size == 0 and D.size == 1)
+
+    class OneA(Step):
         """An LTI step function for transfer functions with one num and den.
 
         This step function should be much faster than the equivalent general
         step function.
         """
-        def __init__(self, num, den, output, y0=None):
-            if len(num) != 1:
-                raise ValidationError("'num' must be length 1 (got %d)"
-                                      % len(num), attr='num', obj=self)
-            if len(den) != 1:
-                raise ValidationError("'den' must be length 1 (got %d)"
-                                      % len(den), attr='den', obj=self)
-
-            super(LinearFilter.Simple, self).__init__(num, den, output)
-            self.b = num[0]
-            self.a = den[0]
-            if y0 is not None:
-                self.output[...] = y0
+        def __init__(self, A, B, C, D, X):
+            super(LinearFilter.OneA, self).__init__(A, B, C, D, X)
+            self.a = A[0, 0]
+            self.b = B[0, 0]
+            self.c = C[0, 0]
+            self.d = D[0, 0]
 
         def __call__(self, t, signal):
-            self.output *= -self.a
-            self.output += self.b * signal
-            return self.output
+            self.X[...] *= self.a
+            self.X[...] += self.b * signal
+            Y = self.X if self.c == 1 else self.c*self.X
+            return Y if self.noD else (Y + self.d*signal)
+
+        @classmethod
+        def check(cls, A, B, C, D, X):
+            return super(LinearFilter.OneA, cls).check(A, B, C, D, X) and (
+                A.size == 1 and B.size == 1 and C.size == 1 and D.size == 1)
+
+    class OneC(Step):
+        """An LTI step function for any given system."""
+        def __init__(self, A, B, C, D, X):
+            super(LinearFilter.OneC, self).__init__(A, B, C, D, X)
+            self.Ci = C[0].nonzero()[0][0]
+
+        def __call__(self, t, signal):
+            signal = signal[None, ...]
+            self.X[...] = np.dot(self.A, self.X) + np.dot(self.B, signal)
+            Y = self.X[self.Ci]
+            return Y if self.noD else (Y + np.dot(self.D, signal))
+
+        @classmethod
+        def check(cls, A, B, C, D, X):
+            return super(LinearFilter.OneC, cls).check(A, B, C, D, X) and (
+                C.shape[0] == 1 and len(C[0].nonzero()[0]) == 1)
 
     class General(Step):
-        """An LTI step function for any given transfer function.
-
-        Implements a discrete-time LTI system using the difference equation
-        [1]_ for the given transfer function (num, den).
-
-        References
-        ----------
-        .. [1] https://en.wikipedia.org/wiki/Digital_filter#Difference_equation
-        """
-        def __init__(self, num, den, output, y0=None):
-            super(LinearFilter.General, self).__init__(num, den, output)
-            self.x = collections.deque(maxlen=len(num))
-            self.y = collections.deque(maxlen=len(den))
-            if y0 is not None:
-                self.output[...] = y0
-                for _ in num:
-                    self.x.appendleft(np.array(self.output))
-                for _ in den:
-                    self.y.appendleft(np.array(self.output))
-
+        """An LTI step function for any given system."""
         def __call__(self, t, signal):
-            self.output[...] = 0
-
-            self.x.appendleft(np.array(signal))
-            for k, xk in enumerate(self.x):
-                self.output += self.num[k] * xk
-            for k, yk in enumerate(self.y):
-                self.output -= self.den[k] * yk
-            self.y.appendleft(np.array(self.output))
-
-            return self.output
+            signal = signal[None, ...]
+            self.X[...] = np.dot(self.A, self.X) + np.dot(self.B, signal)
+            Y = np.dot(self.C, self.X)
+            return Y if self.noD else (Y + np.dot(self.D, signal))
 
 
 class Lowpass(LinearFilter):
