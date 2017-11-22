@@ -2,14 +2,7 @@ import pytest
 
 import numpy as np
 
-from nengo.utils.filter_design import expm, cont2discrete
-
-
-def test_expm(rng):
-    pytest.importorskip('scipy')
-    import scipy.linalg as linalg
-    for a in [np.eye(3), rng.randn(10, 10)]:
-        assert np.allclose(linalg.expm(a), expm(a))
+from nengo.utils.filter_design import cont2discrete
 
 
 @pytest.mark.parametrize('dt', [1e-3, 1e-2, 1e-1])
