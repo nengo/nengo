@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from nengo.utils.numpy import array_hash, meshgrid_nd
+from nengo._vendor.scipy import expm
 
 
 def test_meshgrid_nd():
@@ -72,3 +73,9 @@ def test_array_hash_sparse(nnz, rng):
         hashes = [array_hash(matrix) for matrix in kind]
         assert len(np.unique(hashes)) == len(kind), (
             "Different matrices should have different hashes: %s" % hashes)
+
+
+def test_expm(rng):
+    scipy_linalg = pytest.importorskip('scipy.linalg')
+    for a in [np.eye(3), rng.randn(10, 10), -10 + rng.randn(10, 10)]:
+        assert np.allclose(scipy_linalg.expm(a), expm(a))
