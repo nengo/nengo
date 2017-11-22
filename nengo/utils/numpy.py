@@ -5,6 +5,12 @@ import collections
 import numpy as np
 
 from ..exceptions import ValidationError
+try:
+    from scipy.linalg import expm  # noqa: F401 pylint: disable=unused-import
+except ImportError:
+    # noqa: F401 pylint: disable=unused-import
+    from nengo._vendor.scipy import expm
+
 
 maxint = np.iinfo(np.int32).max
 
@@ -116,40 +122,6 @@ def array_offset(x):
     base_start = x.base.__array_interface__['data'][0]
     start = x.__array_interface__['data'][0]
     return start - base_start
-
-
-def expm(A, n_factors=None, normalize=False):
-    """Simple matrix exponential to replace Scipy's matrix exponential
-
-    This just uses a recursive (factored) version of the Taylor series,
-    and is not as good as Scipy (which uses Pade approximants). The hard
-    part with this implementation is choosing the length of the Taylor
-    series. A longer series is generally needed for a matrix with a larger
-    eigenvalues, but I'm not exactly sure how these relate. I'm using
-    a heuristic based on the matrix norm, since this is kind-of related
-    to the size of eigenvalues, though for larger norms the function
-    becomes inaccurate no matter the length of the series.
-
-    This function is mostly intended for use in `filter_design`, where
-    the matrices should be small, both in dimensions and norm.
-    """
-    if A.ndim != 2 or A.shape[0] != A.shape[1]:
-        raise ValidationError("'A' must be a square matrix", attr='A')
-
-    a = np.linalg.norm(A)
-    if normalize:
-        a = int(a)
-        A = A / float(a)
-
-    if n_factors is None:
-        n_factors = 20 if normalize else min(max(int(a), 20), 1000)
-
-    Y = np.zeros_like(A)
-    for i in range(n_factors, 0, -1):
-        Y = np.dot(A / float(i), Y)
-        np.fill_diagonal(Y, Y.diagonal() + 1)  # add identity matrix
-
-    return np.linalg.matrix_power(Y, a) if normalize else Y
 
 
 def norm(x, axis=None, keepdims=False):
