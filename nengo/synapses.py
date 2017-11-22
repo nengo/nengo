@@ -243,6 +243,13 @@ class LinearFilter(Synapse):
         B = q[:, None] * B
         C = C * (1./q)[None, :]
 
+        # Remove state if A is small
+        if (np.abs(A) < 1e-16).all():
+            D = D + np.dot(C, B)
+            A = np.array([], float)
+            B = np.array([], float)
+            C = np.array([], float)
+
         return A, B, C, D
 
     def allocate(self, shape_in, shape_out, dt,
@@ -282,13 +289,6 @@ class LinearFilter(Synapse):
         else:
             raise ValidationError("No suitable step function found",
                                   attr='make_step', obj=self)
-
-    @staticmethod
-    def _make_zero_step(shape_in, shape_out, dt, rng, y0=None,
-                        dtype=np.float64):
-        A, B, C, X = np.array([]), np.array([]), np.array([]), np.array([])
-        D = np.array([[1.]], dtype=dtype)
-        return LinearFilter.NoA(A, B, C, D, X)
 
     class Step(object):
         """Abstract base class for LTI filtering step functions."""
@@ -405,16 +405,6 @@ class Lowpass(LinearFilter):
     def __repr__(self):
         return "%s(%r)" % (type(self).__name__, self.tau)
 
-    # def make_step(self, shape_in, shape_out, dt, rng, state=None,
-    #               y0=None, dtype=np.float64, **kwargs):
-    #     """Returns an optimized `.LinearFilter.Step` subclass."""
-    #     # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
-    #     if self.tau <= .03 * dt:
-    #         return self._make_zero_step(
-    #             shape_in, shape_out, dt, rng, y0=y0, dtype=dtype)
-    #     return super(Lowpass, self).make_step(
-    #         shape_in, shape_out, dt, rng, y0=y0, dtype=dtype, **kwargs)
-
 
 class Alpha(LinearFilter):
     """Alpha-function filter synapse.
@@ -449,16 +439,6 @@ class Alpha(LinearFilter):
 
     def __repr__(self):
         return "%s(%r)" % (type(self).__name__, self.tau)
-
-    # def make_step(self, shape_in, shape_out, dt, rng, state=None,
-    #               y0=None, dtype=np.float64, **kwargs):
-    #     """Returns an optimized `.LinearFilter.Step` subclass."""
-    #     # if tau < 0.03 * dt, exp(-dt / tau) < 1e-14, so just make it zero
-    #     if self.tau <= .03 * dt:
-    #         return self._make_zero_step(
-    #             shape_in, shape_out, dt, rng, y0=y0, dtype=dtype)
-    #     return super(Alpha, self).make_step(
-    #         shape_in, shape_out, dt, rng, y0=y0, dtype=dtype, **kwargs)
 
 
 class Triangle(Synapse):
