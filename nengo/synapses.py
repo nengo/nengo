@@ -245,10 +245,11 @@ class LinearFilter(Synapse):
 
         return A, B, C, D
 
-    def allocate(self, shape_in, shape_out, dt, dtype=np.float64, y0=None):
+    def allocate(self, shape_in, shape_out, dt,
+                 y0=None, dtype=np.float64, method='zoh'):
         assert shape_in == shape_out
 
-        A, B, C, D = self._get_ss(dt)
+        A, B, C, D = self._get_ss(dt, method=method)
         X = np.zeros((len(A),) + shape_out, dtype=dtype)
 
         if y0 is not None and len(X) > 0:
@@ -264,12 +265,11 @@ class LinearFilter(Synapse):
                   y0=None, dtype=np.float64, method='zoh'):
         """Returns a `.Step` instance that implements the linear filter."""
         assert shape_in == shape_out
+        if state is None:
+            state = self.allocate(
+                shape_in, shape_out, dt, dtype=dtype, y0=y0, method=method)
 
         A, B, C, D = self._get_ss(dt, method=method)
-
-        if state is None:
-            state = self.allocate(shape_in, shape_out, dt, dtype=dtype, y0=y0)
-
         X = state['X']
         if LinearFilter.NoA.check(A, B, C, D, X):
             return LinearFilter.NoA(A, B, C, D, X)
@@ -286,16 +286,17 @@ class LinearFilter(Synapse):
     @staticmethod
     def _make_zero_step(shape_in, shape_out, dt, rng, y0=None,
                         dtype=np.float64):
-        output = np.zeros(shape_out, dtype=dtype)
-        if y0 is not None:
-            output[:] = y0
-
-        return LinearFilter.NoA(np.array([1.]), np.array([]), output)
+        A, B, C, X = np.array([]), np.array([]), np.array([]), np.array([])
+        D = np.array([[1.]], dtype=dtype)
+        return LinearFilter.NoA(A, B, C, D, X)
 
     class Step(object):
         """Abstract base class for LTI filtering step functions."""
         def __init__(self, A, B, C, D, X):
-            assert self.check(A, B, C, D, X)
+            if not self.check(A, B, C, D, X):
+                raise ValidationError(
+                    "Matrices do not meet the requirements for this Step",
+                    attr='matrices', obj=self)
             self.A = A
             self.B = B
             self.C = C
