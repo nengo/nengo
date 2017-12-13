@@ -360,7 +360,12 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     assert np.allclose(out_data[0], out_data[1], atol=0.05)
 
 
-@pytest.mark.parametrize('Neuron', [nengo.LIF, nengo.LIFRate])
+@pytest.mark.parametrize('Neuron', [
+    nengo.LIF,
+    nengo.LIFRate,
+    nengo.RectifiedLinear,
+    nengo.SpikingRectifiedLinear,
+])
 def test_amplitude(Simulator, seed, rng, plt, Neuron):
     amp = 0.1
     neuron0 = Neuron()

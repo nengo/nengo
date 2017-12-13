@@ -19,8 +19,9 @@ from .config import Config
 from .connection import Connection
 from .ensemble import Ensemble
 from .node import Node
-from .neurons import (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich, LIF,
-                      LIFRate, RectifiedLinear, Sigmoid)
+from .neurons import (
+    AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich, LIF, LIFRate,
+    RectifiedLinear, Sigmoid, SpikingRectifiedLinear)
 from .network import Network
 from .learning_rules import PES, BCM, Oja, Voja
 from .params import Default

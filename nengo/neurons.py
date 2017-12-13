@@ -265,6 +265,40 @@ class RectifiedLinear(NeuronType):
         output[...] = self.amplitude * np.maximum(0., J)
 
 
+class SpikingRectifiedLinear(RectifiedLinear):
+    """A rectified integrate and fire neuron model.
+
+    Each neuron is modeled as a rectified line. That is, the neuron's activity
+    scales linearly with current, unless the current is less than zero, at
+    which point the neural activity will stay at zero. This is a spiking
+    version of the RectifiedLinear neuron model.
+
+    Parameters
+    ----------
+    amplitude : float
+        Scaling factor on the neuron output. Corresponds to the relative
+        amplitude of the output spikes of the neuron.
+    """
+
+    probeable = ('spikes', 'voltage')
+
+    def rates(self, x, gain, bias):
+        """Use RectifiedLinear to determine rates."""
+
+        J = self.current(x, gain, bias)
+        out = np.zeros_like(J)
+        RectifiedLinear.step_math(self, dt=1., J=J, output=out)
+        return out
+
+    def step_math(self, dt, J, spiked, voltage):
+        """Implement the integrate and fire nonlinearity."""
+
+        voltage += np.maximum(J, 0) * dt
+        n_spikes = np.floor(voltage)
+        spiked[:] = self.amplitude * n_spikes / dt
+        voltage -= n_spikes
+
+
 class Sigmoid(NeuronType):
     """A neuron model whose response curve is a sigmoid.
 

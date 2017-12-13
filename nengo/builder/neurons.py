@@ -1,8 +1,8 @@
 import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
-from nengo.neurons import (
-    AdaptiveLIF, AdaptiveLIFRate, Izhikevich, LIF, NeuronType)
+from nengo.neurons import (AdaptiveLIF, AdaptiveLIFRate, Izhikevich, LIF,
+                           NeuronType, SpikingRectifiedLinear)
 
 
 class SimNeurons(Operator):
@@ -105,6 +105,37 @@ def build_neurons(model, neurontype, neurons):
     model.add_op(SimNeurons(neurons=neurontype,
                             J=model.sig[neurons]['in'],
                             output=model.sig[neurons]['out']))
+
+
+@Builder.register(SpikingRectifiedLinear)
+def build_spikingrectifiedlinear(model, spikingrectifiedlinear, neurons):
+    """Builds a `.SpikingRectifiedLinear` object into a model.
+
+    In addition to adding a `.SimNeurons` operator, this build function sets up
+    signals to track the voltage for each neuron.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    spikingrectifiedlinear: SpikingRectifiedLinear
+        Neuron type to build.
+    neuron : Neurons
+        The neuron population object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.SpikingRectifiedLinear` instance.
+    """
+
+    model.sig[neurons]['voltage'] = Signal(
+        np.zeros(neurons.size_in), name="%s.voltage" % neurons)
+    model.add_op(SimNeurons(
+        neurons=spikingrectifiedlinear,
+        J=model.sig[neurons]['in'],
+        output=model.sig[neurons]['out'],
+        states=[model.sig[neurons]['voltage']]))
 
 
 @Builder.register(LIF)

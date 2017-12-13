@@ -28,6 +28,8 @@ Release History
   and ``RectifiedLinear``  which scale the output amplitude.
   (`#1325 <https://github.com/nengo/nengo/pull/1325>`_,
   `#1391 <https://github.com/nengo/nengo/pull/1391>`__)
+- Added the ``SpikingRectifiedLinear`` neuron model.
+  (`#1391 <https://github.com/nengo/nengo/pull/1391>`__)
 
 **Changed**
 
