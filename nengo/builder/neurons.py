@@ -2,7 +2,8 @@ import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
 from nengo.neurons import (
-    AdaptiveLIF, AdaptiveLIFRate, Izhikevich, LIF, NeuronType)
+    AdaptiveLIF, AdaptiveLIFRate, IntegrateAndFire, Izhikevich, LIF,
+    NeuronType)
 
 
 class SimNeurons(Operator):
@@ -105,6 +106,37 @@ def build_neurons(model, neurontype, neurons):
     model.add_op(SimNeurons(neurons=neurontype,
                             J=model.sig[neurons]['in'],
                             output=model.sig[neurons]['out']))
+
+
+@Builder.register(IntegrateAndFire)
+def build_integrateandfire(model, integrateandfire, neurons):
+    """Builds a `.IntegrateAndFire` object into a model.
+
+    In addition to adding a `.SimNeurons` operator, this build function sets up
+    signals to track the voltage for each neuron.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    integrateandfire: IntegrateAndFire
+        Neuron type to build.
+    neuron : Neurons
+        The neuron population object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.IntegrateAndFire` instance.
+    """
+
+    model.sig[neurons]['voltage'] = Signal(
+        np.zeros(neurons.size_in), name="%s.voltage" % neurons)
+    model.add_op(SimNeurons(
+        neurons=integrateandfire,
+        J=model.sig[neurons]['in'],
+        output=model.sig[neurons]['out'],
+        states=[model.sig[neurons]['voltage']]))
 
 
 @Builder.register(LIF)

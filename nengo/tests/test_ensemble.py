@@ -313,12 +313,11 @@ def test_gain_bias(Simulator):
 def test_noise_gen(Simulator, nl_nodirect, seed, plt):
     """Ensure that setting Ensemble.noise generates noise."""
     with nengo.Network(seed=seed) as model:
-        gain, bias = 1, 2
+        intercepts = -0.5
         neg_noise, pos_noise = -4, 5
         model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         model.config[nengo.Ensemble].encoders = Choice([[1]])
-        model.config[nengo.Ensemble].gain = Choice([gain])
-        model.config[nengo.Ensemble].bias = Choice([bias])
+        model.config[nengo.Ensemble].intercepts = Choice([intercepts])
         pos = nengo.Ensemble(
             1, 1, noise=WhiteNoise(Gaussian(pos_noise, 0.01)))
         normal = nengo.Ensemble(1, 1)
@@ -331,7 +330,7 @@ def test_noise_gen(Simulator, nl_nodirect, seed, plt):
         sim.run(0.06)
 
     t = sim.trange()
-    plt.title("bias=%d, gain=%d" % (bias, gain))
+    plt.title("intercepts=%d" % intercepts)
     plt.plot(t, sim.data[pos_p], c='b', label="noise=%d" % pos_noise)
     plt.plot(t, sim.data[normal_p], c='k', label="no noise")
     plt.plot(t, sim.data[neg_p], c='r', label="noise=%d" % neg_noise)
