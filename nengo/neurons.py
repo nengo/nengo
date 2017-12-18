@@ -12,7 +12,7 @@ from nengo.utils.neurons import settled_firingrate
 
 logger = logging.getLogger(__name__)
 
-
+#adding a comment to test PR stuff
 class NeuronType(FrozenObject):
     """Base class for Nengo neuron models.
 
