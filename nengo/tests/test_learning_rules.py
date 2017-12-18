@@ -14,7 +14,8 @@ from nengo.processes import WhiteSignal
 def _test_pes(Simulator, nl, plt, seed,
               pre_neurons=False, post_neurons=False, weight_solver=False,
               vin=np.array([0.5, -0.5]), vout=None, n=200,
-              function=None, transform=np.array(1.), rate=1e-3):
+              function=None, transform=np.array(1.), rate=1e-3,
+              pre_tau=0.005):
 
     vout = np.array(vin) if vout is None else vout
 
@@ -36,7 +37,7 @@ def _test_pes(Simulator, nl, plt, seed,
 
         conn = nengo.Connection(pre, post,
                                 function=function, transform=transform,
-                                learning_rule_type=PES(rate))
+                                learning_rule_type=PES(rate, pre_tau=pre_tau))
         if weight_solver:
             conn.solver = nengo.solvers.LstsqL2(weights=True)
 
@@ -73,9 +74,11 @@ def _test_pes(Simulator, nl, plt, seed,
     assert not np.allclose(weights[0], weights[-1], atol=1e-5)
 
 
-def test_pes_ens_ens(Simulator, nl_nodirect, plt, seed):
+@pytest.mark.parametrize("pre_tau", (0.005, 0, None))
+def test_pes_ens_ens(Simulator, pre_tau, nl_nodirect, plt, seed):
     function = lambda x: [x[1], x[0]]
-    _test_pes(Simulator, nl_nodirect, plt, seed, function=function)
+    _test_pes(Simulator, nl_nodirect, plt, seed, function=function,
+              pre_tau=pre_tau)
 
 
 def test_pes_weight_solver(Simulator, plt, seed):

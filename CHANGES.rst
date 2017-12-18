@@ -33,6 +33,7 @@ Release History
 - Default values can no longer be set for
   ``Ensemble.n_neurons`` or ``Ensemble.dimensions``.
   (`#1372 <https://github.com/nengo/nengo/pull/1372>`__)
+- ``PES.pre_tau`` can now be >= 0 or None. (`TODO <pr link>`_)
 
 **Fixed**
 
