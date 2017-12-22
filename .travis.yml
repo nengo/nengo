@@ -56,7 +56,7 @@ install:
   - if [[ "$SCIPY" == "true" ]]; then
       export CONDA_DEPS="$CONDA_DEPS scipy";
     fi
-  - if [[ -n "$CONDA_DEPS" ]]; then eval conda install "$CONDA_DEPS"; fi
+  - if [[ -n "$CONDA_DEPS" ]]; then eval conda install --quiet "$CONDA_DEPS"; fi
   - if [[ -n "$PIP_DEPS" ]]; then eval pip install "$PIP_DEPS"; fi
 
 # Run the tests
