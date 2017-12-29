@@ -240,8 +240,8 @@ class Simulator(object):
                 self._probe_outputs[probe].append(tmp)
 
     def _probe_step_time(self):
-        self._n_steps = self.signals[self.model.step].copy()
-        self._time = self.signals[self.model.time].copy()
+        self._n_steps = self.signals[self.model.step][0]
+        self._time = self.signals[self.model.time][0]
 
     def reset(self, seed=None):
         """Reset the simulator state.
