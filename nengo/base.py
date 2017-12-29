@@ -150,13 +150,14 @@ class ObjView(object):
         self.obj = obj
 
         # Node.size_in != size_out, so one of these can be invalid
+        # NumPy <= 1.8 rises a ValueError instead of an IndexError.
         try:
             self.size_in = np.arange(self.obj.size_in)[key].size
         except (IndexError, ValueError):
             self.size_in = None
         try:
             self.size_out = np.arange(self.obj.size_out)[key].size
-        except IndexError:
+        except (IndexError, ValueError):
             self.size_out = None
         if self.size_in is None and self.size_out is None:
             raise IndexError("Invalid slice '%s' of %s" % (key, self.obj))
