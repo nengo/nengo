@@ -599,10 +599,12 @@ def build_pes(model, pes, rule):
                          % (conn.pre_obj))
 
     # delta = local_error * activities
-    model.add_op(Reset(model.sig[rule]['delta']))
+    update = Signal(np.zeros(model.sig[rule]['delta'].shape))
+    model.add_op(Reset(update))
     model.add_op(ElementwiseInc(
-        local_error.column(), acts.row(), model.sig[rule]['delta'],
+        local_error.column(), acts.row(), update,
         tag="PES:Inc Delta"))
+    update = model.build(Lowpass(0), update, model.sig[rule]['delta'])
 
     # expose these for probes
     model.sig[rule]['error'] = error
