@@ -55,6 +55,9 @@ Release History
 - Fixed validation checks that prevented the default
   from being set on certain parameters.
   (`#1372 <https://github.com/nengo/nengo/pull/1372>`__)
+- Fixed an issue with repeated elements in slices in which
+  a positive and negative index referred to the same dimension.
+  (`#1395 <https://github.com/nengo/nengo/pull/1395>`_)
 - The ``Simulator.n_steps`` and ``Simulator.time`` properties
   now return scalars, as was stated in the documentation.
   (`#1406 <https://github.com/nengo/nengo/pull/1406>`_)

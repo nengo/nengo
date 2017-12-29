@@ -150,7 +150,7 @@ class ObjView(object):
         self.obj = obj
 
         # Node.size_in != size_out, so one of these can be invalid
-        # NumPy <= 1.8 rises a ValueError instead of an IndexError.
+        # NumPy <= 1.8 raises a ValueError instead of an IndexError.
         try:
             self.size_in = np.arange(self.obj.size_in)[key].size
         except (IndexError, ValueError):

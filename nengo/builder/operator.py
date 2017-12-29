@@ -387,11 +387,15 @@ class Copy(Operator):
         dst_slice = self.dst_slice if self.dst_slice is not None else Ellipsis
         inc = self.inc
 
-        dst_slice = (np.asarray(dst_slice) if is_array_like(dst_slice) else
-                     dst_slice)
-        # There are repeated indices in dst_slice, special case
-        repeats = (is_array_like(dst_slice) and dst_slice.dtype != np.bool and
-                   len(np.unique(dst_slice)) < len(dst_slice))
+        # If there are repeated indices in dst_slice, special handling needed.
+        repeats = False
+        if is_array_like(dst_slice):
+            dst_slice = np.array(dst_slice)  # copy because we might modify it
+            if dst_slice.dtype.kind != "b":
+                # get canonical, positive indices first
+                dst_slice[dst_slice < 0] += len(dst)
+                repeats = len(np.unique(dst_slice)) < len(dst_slice)
+
         if inc and repeats:
             def step_copy():
                 np.add.at(dst, dst_slice, src[src_slice])
