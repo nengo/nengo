@@ -3,7 +3,7 @@ import warnings
 from nengo.config import SupportDefaultsMixin
 from nengo.exceptions import ValidationError
 from nengo.params import (Default, IntParam, FrozenObject, NumberParam,
-                          ObsoleteParam, Parameter, Unconfigurable)
+                          Parameter, Unconfigurable)
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.compat import is_iterable, is_string, itervalues
 
@@ -21,6 +21,7 @@ class LearningRuleTypeSizeInParam(IntParam):
         else:
             return super(LearningRuleTypeSizeInParam, self).coerce(
                 instance, size_in)  # IntParam validation
+
 
 class LearningRuleType(FrozenObject, SupportDefaultsMixin):
     """Base class for all learning rule objects.
@@ -91,7 +92,28 @@ class LearningRuleType(FrozenObject, SupportDefaultsMixin):
 
     @property
     def _argreprs(self):
-        return (('learning_rate', LearningRuleType.learning_rate.default),)
+        return ('learning_rate', LearningRuleType.learning_rate.default),
+
+
+def _deprecated_tau(old_attr, new_attr):
+    def get_tau(self):
+        return (None if getattr(self, new_attr) is None else
+                getattr(self, new_attr).tau)
+
+    def set_tau(self, val):
+        if val is Unconfigurable:
+            return
+
+        since = "v2.6.1"
+        url = "https://github.com/nengo/nengo/pull/1095"
+        msg = "%s has been deprecated, use %s instead (since %s).\n" \
+              "For more information, please visit %s" % (
+                  old_attr, new_attr, since, url)
+        warnings.warn(msg, DeprecationWarning)
+
+        setattr(self, new_attr, None if val is None else Lowpass(val))
+
+    return property(get_tau, set_tau)
 
 
 class PES(LearningRuleType):
@@ -126,9 +148,7 @@ class PES(LearningRuleType):
     pre_synapse = SynapseParam(
         'pre_synapse', default=Lowpass(tau=0.005), readonly=True)
 
-    pre_tau = ObsoleteParam(
-        'pre_tau', "pre_tau replaced by pre_synapse.", since="v2.2.0",
-        url="https://github.com/nengo/nengo/pull/1095")
+    pre_tau = _deprecated_tau("pre_tau", "pre_synapse")
 
     def __init__(self, learning_rate=Default, pre_synapse=Default,
                  pre_tau=Unconfigurable):
@@ -136,9 +156,11 @@ class PES(LearningRuleType):
         if learning_rate is not Default and learning_rate >= 1.0:
             warnings.warn("This learning rate is very high, and can result "
                           "in floating point errors from too much current.")
-        self.pre_synapse = pre_synapse
 
-        self.pre_tau = pre_tau
+        if pre_tau is Unconfigurable:
+            self.pre_synapse = pre_synapse
+        else:
+            self.pre_tau = pre_tau
 
     @property
     def _argreprs(self):
@@ -207,29 +229,31 @@ class BCM(LearningRuleType):
     theta_synapse = SynapseParam(
         'theta_synapse', default=Lowpass(tau=1.0), readonly=True)
 
-    pre_tau = ObsoleteParam(
-        'pre_tau', "pre_tau replaced by pre_synapse.", since="v2.2.0",
-        url="https://github.com/nengo/nengo/pull/1095")
-    post_tau = ObsoleteParam(
-        'post_tau', "post_tau replaced by post_synapse.", since="v2.2.0",
-        url="https://github.com/nengo/nengo/pull/1095")
-    theta_tau = ObsoleteParam(
-        'theta_tau', "theta_tau replaced by theta_synapse.", since="v2.2.0",
-        url="https://github.com/nengo/nengo/pull/1095")
+    pre_tau = _deprecated_tau("pre_tau", "pre_synapse")
+    post_tau = _deprecated_tau("post_tau", "post_synapse")
+    theta_tau = _deprecated_tau("theta_tau", "theta_synapse")
 
     def __init__(self, learning_rate=Default, pre_synapse=Default,
                  post_synapse=Default, theta_synapse=Default,
                  pre_tau=Unconfigurable, post_tau=Unconfigurable,
                  theta_tau=Unconfigurable):
         super(BCM, self).__init__(learning_rate, size_in=0)
-        self.pre_synapse = pre_synapse
-        self.post_synapse = (self.pre_synapse if post_synapse is Default
-                             else post_synapse)
-        self.theta_synapse = theta_synapse
 
-        self.pre_tau = pre_tau
-        self.post_tau = post_tau
-        self.theta_tau = theta_tau
+        if pre_tau is Unconfigurable:
+            self.pre_synapse = pre_synapse
+        else:
+            self.pre_tau = pre_tau
+
+        if post_tau is Unconfigurable:
+            self.post_synapse = (self.pre_synapse if post_synapse is Default
+                                 else post_synapse)
+        else:
+            self.post_tau = post_tau
+
+        if theta_tau is Unconfigurable:
+            self.theta_synapse = theta_synapse
+        else:
+            self.theta_tau = theta_tau
 
     @property
     def _argreprs(self):
@@ -297,24 +321,26 @@ class Oja(LearningRuleType):
         'post_synapse', default=None, readonly=True)
     beta = NumberParam('beta', low=0, readonly=True, default=1.0)
 
-    pre_tau = ObsoleteParam(
-        'pre_tau', "pre_tau replaced by pre_synapse.", since="v2.2.0",
-        url="https://github.com/nengo/nengo/pull/1095")
-    post_tau = ObsoleteParam(
-        'post_tau', "post_tau replaced by post_synapse.", since="v2.2.0",
-        url="https://github.com/nengo/nengo/pull/1095")
+    pre_tau = _deprecated_tau("pre_tau", "pre_synapse")
+    post_tau = _deprecated_tau("post_tau", "post_synapse")
 
     def __init__(self, learning_rate=Default, pre_synapse=Default,
                  post_synapse=Default, beta=Default,
                  pre_tau=Unconfigurable, post_tau=Unconfigurable):
         super(Oja, self).__init__(learning_rate, size_in=0)
-        self.pre_synapse = pre_synapse
-        self.post_synapse = (self.pre_synapse if post_synapse is Default
-                             else post_synapse)
+
         self.beta = beta
 
-        self.pre_tau = pre_tau
-        self.post_tau = post_tau
+        if pre_tau is Unconfigurable:
+            self.pre_synapse = pre_synapse
+        else:
+            self.pre_tau = pre_tau
+
+        if post_tau is Unconfigurable:
+            self.post_synapse = (self.pre_synapse if post_synapse is Default
+                                 else post_synapse)
+        else:
+            self.post_tau = post_tau
 
     @property
     def _argreprs(self):
@@ -359,15 +385,16 @@ class Voja(LearningRuleType):
     post_synapse = SynapseParam(
         'post_synapse', default=Lowpass(tau=0.005), readonly=True)
 
-    post_tau = ObsoleteParam(
-        'post_tau', "post_tau replaced by post_synapse.", since="v2.2.0",
-        url="https://github.com/nengo/nengo/pull/1095")
+    post_tau = _deprecated_tau("post_tau", "post_synapse")
 
     def __init__(self, learning_rate=Default, post_synapse=Default,
                  post_tau=Unconfigurable):
         super(Voja, self).__init__(learning_rate, size_in=1)
-        self.post_synapse = post_synapse
-        self.post_tau = post_tau
+
+        if post_tau is Unconfigurable:
+            self.post_synapse = post_synapse
+        else:
+            self.post_tau = post_tau
 
     @property
     def _argreprs(self):
