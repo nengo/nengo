@@ -10,6 +10,114 @@ from nengo.node import Node
 from nengo.synapses import Lowpass
 
 
+class SimPES(Operator):
+    r"""Calculate connection weight change according to the PES rule.
+
+    Implements the PES learning rule of the form
+
+    .. math:: \Delta \omega_{ij} = \frac{\kappa}{n} e_j a_i
+
+    where
+
+    * :math:`\kappa` is a scalar learning rate,
+    * :math:`n` is the number of presynaptic neurons
+    * :math:`e_j` is the error for the jth output dimension, and
+    * :math:`a_i` is the activity of a presynaptic neuron.
+
+    Parameters
+    ----------
+    pre_filtered : Signal
+        The presynaptic activity, :math:`a_i`.
+    error : Signal
+        The error signal, :math:`e_j`.
+    delta : Signal
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    learning_rate : float
+        The scalar learning rate, :math:`\kappa`.
+    encoders : Signal, optional
+        If not None, multiply the error signal by these post-synaptic
+        encoders (in the case that we want to learn a neuron-to-neuron
+        weight matrix instead of decoder weights).
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    pre_filtered : Signal
+        The presynaptic activity, :math:`a_i`.
+    error : Signal
+        The error signal, :math:`e_j`.
+    delta : Signal
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
+    learning_rate : float
+        The scalar learning rate, :math:`\kappa`.
+    encoders : Signal, optional
+        If not None, multiply the error signal by these post-synaptic
+        encoders (in the case that we want to learn a neuron-to-neuron
+        weight matrix instead of decoder weights).
+    tag : str, optional (Default: None)
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[]``
+    3. reads ``[pre_filtered, error, encoders]``
+    4. updates ``[delta]``
+    """
+
+    def __init__(self, pre_filtered, error, delta, learning_rate,
+                 encoders=None, tag=None):
+        super(SimPES, self).__init__(tag=tag)
+
+        self.learning_rate = learning_rate
+
+        self.sets = []
+        self.incs = []
+        self.reads = [pre_filtered, error] + (
+            [] if encoders is None else [encoders])
+        self.updates = [delta]
+
+    @property
+    def pre_filtered(self):
+        return self.reads[0]
+
+    @property
+    def error(self):
+        return self.reads[1]
+
+    @property
+    def encoders(self):
+        return None if len(self.reads) < 3 else self.reads[2]
+
+    @property
+    def delta(self):
+        return self.updates[0]
+
+    def _descstr(self):
+        return 'pre=%s, error=%s -> %s' % (
+            self.pre_filtered, self.error, self.delta)
+
+    def make_step(self, signals, dt, rng):
+        pre_filtered = signals[self.pre_filtered]
+        error = signals[self.error]
+        delta = signals[self.delta]
+        n_neurons = pre_filtered.shape[0]
+        alpha = -self.learning_rate * dt / n_neurons
+
+        if self.encoders is None:
+            def step_simpes():
+                np.outer(alpha * error, pre_filtered, out=delta)
+        else:
+            encoders = signals[self.encoders]
+
+            def step_simpes():
+                np.outer(alpha * np.dot(encoders, error),
+                         pre_filtered, out=delta)
+
+        return step_simpes
+
+
 class SimBCM(Operator):
     r"""Calculate connection weight change according to the BCM rule.
 
@@ -318,6 +426,7 @@ class SimVoja(Operator):
             delta[...] = alpha * learning_signal * (
                 scale * np.outer(post_filtered, pre_decoded) -
                 post_filtered[:, np.newaxis] * scaled_encoders)
+
         return step_simvoja
 
 
@@ -564,40 +673,15 @@ def build_pes(model, pes, rule):
 
     acts = model.build(Lowpass(pes.pre_tau), model.sig[conn.pre_obj]['out'])
 
-    # Compute the correction, i.e. the scaled negative error
-    correction = Signal(np.zeros(error.shape), name="PES:correction")
-    model.add_op(Reset(correction))
-
-    # correction = -learning_rate * (dt / n_neurons) * error
-    n_neurons = (conn.pre_obj.n_neurons if isinstance(conn.pre_obj, Ensemble)
-                 else conn.pre_obj.size_in)
-    lr_sig = Signal(-pes.learning_rate * model.dt / n_neurons,
-                    name="PES:learning_rate")
-    model.add_op(ElementwiseInc(lr_sig, error, correction, tag="PES:correct"))
-
-    if not conn.is_decoded:
-        post = get_post_ens(conn)
-        weights = model.sig[conn]['weights']
-        encoders = model.sig[post]['encoders'][:, conn.post_slice]
-
-        # encoded = dot(encoders, correction)
-        encoded = Signal(np.zeros(weights.shape[0]), name="PES:encoded")
-        model.add_op(Reset(encoded))
-        model.add_op(DotInc(encoders, correction, encoded, tag="PES:encode"))
-        local_error = encoded
-    elif isinstance(conn.pre_obj, (Ensemble, Neurons)):
-        local_error = correction
+    if conn.is_decoded:
+        encoders = None
     else:
-        raise BuildError("'pre' object '%s' not suitable for PES learning"
-                         % (conn.pre_obj))
-
-    # delta = local_error * activities
-    model.add_op(Reset(model.sig[rule]['delta']))
-    model.add_op(ElementwiseInc(
-        local_error.column(), acts.row(), model.sig[rule]['delta'],
-        tag="PES:Inc Delta"))
+        post = get_post_ens(conn)
+        encoders = model.sig[post]['encoders'][:, conn.post_slice]
+    model.add_op(SimPES(
+        acts, error, model.sig[rule]['delta'], pes.learning_rate,
+        encoders=encoders))
 
     # expose these for probes
     model.sig[rule]['error'] = error
-    model.sig[rule]['correction'] = correction
     model.sig[rule]['activities'] = acts

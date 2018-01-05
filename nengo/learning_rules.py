@@ -109,7 +109,7 @@ class PES(LearningRuleType):
     """
 
     modifies = 'decoders'
-    probeable = ('error', 'correction', 'activities', 'delta')
+    probeable = ('error', 'activities', 'delta')
 
     pre_tau = NumberParam('pre_tau', low=0, low_open=True)
 
