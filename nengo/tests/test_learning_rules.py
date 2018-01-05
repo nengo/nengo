@@ -53,28 +53,23 @@ def _test_pes(Simulator, nl, plt, seed,
         e_p = nengo.Probe(e, synapse=0.03)
 
         weights_p = nengo.Probe(conn, 'weights', sample_every=0.01)
-        corr_p = nengo.Probe(conn.learning_rule, 'correction', synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.5)
     t = sim.trange()
     weights = sim.data[weights_p]
 
-    plt.subplot(311)
+    plt.subplot(211)
     plt.plot(t, sim.data[b_p])
     plt.ylabel("Post decoded value")
-    plt.subplot(312)
+    plt.subplot(212)
     plt.plot(t, sim.data[e_p])
     plt.ylabel("Error decoded value")
-    plt.subplot(313)
-    plt.plot(t, sim.data[corr_p] / rate)
-    plt.ylabel("PES correction")
     plt.xlabel("Time (s)")
 
     tend = t > 0.4
     assert np.allclose(sim.data[b_p][tend], vout, atol=0.05)
     assert np.allclose(sim.data[e_p][tend], 0, atol=0.05)
-    assert np.allclose(sim.data[corr_p][tend] / rate, 0, atol=0.05)
     assert not np.allclose(weights[0], weights[-1], atol=1e-5)
 
 
@@ -227,6 +222,21 @@ def test_pes_recurrent_slice(Simulator, seed, weights):
     # Learning rule should drive second dimension high, but not first
     assert np.all(sim.data[p][-10:, 0] < 0.2)
     assert np.all(sim.data[p][-10:, 1] > 0.8)
+
+
+def test_pes_cycle(Simulator):
+    """Test that PES works when connection output feeds back into error."""
+
+    with nengo.Network() as net:
+        a = nengo.Ensemble(10, 1)
+        b = nengo.Node(size_in=1)
+        c = nengo.Connection(a, b, synapse=None,
+                             learning_rule_type=nengo.PES())
+        nengo.Connection(b, c.learning_rule, synapse=None)
+
+    with Simulator(net):
+        # just checking that this builds without error
+        pass
 
 
 @pytest.mark.parametrize('rule_type, solver', [
@@ -621,7 +631,7 @@ def test_slicing(Simulator, seed):
 
         p = nengo.Probe(b, synapse=0.03)
 
-    with nengo.Simulator(model) as sim:
+    with Simulator(model) as sim:
         sim.run(1.)
 
     t = sim.trange() > 0.8

@@ -71,6 +71,8 @@ Operators
 
 .. autoclass:: nengo.builder.neurons.SimNeurons
 
+.. autoclass:: nengo.builder.learning_rules.SimPES
+
 .. autoclass:: nengo.builder.learning_rules.SimBCM
 
 .. autoclass:: nengo.builder.learning_rules.SimOja

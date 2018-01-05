@@ -95,6 +95,9 @@ Release History
 - The ``NeuronType.current`` and ``NeuronType.rates`` methods now document
   the supported shapes of parameters and return values.
   (`#1437 <https://github.com/nengo/nengo/pull/1437>`__)
+- PES learning updates are now applied on the next timestep rather than
+  the current one.
+  (`#1398 <https://github.com/nengo/nengo/pull/1398>`_)
 
 **Deprecated**
 
@@ -123,6 +126,8 @@ Release History
 - Removed the ``probe_all`` function. It can now be found in
   `nengo_extras <https://github.com/nengo/nengo_extras/>`__.
   (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
+- ``PES.correction`` is no longer probeable.
+  (`#1398 <https://github.com/nengo/nengo/pull/1398>`_)
 
 **Fixed**
 

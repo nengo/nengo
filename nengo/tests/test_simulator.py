@@ -293,9 +293,9 @@ def test_invalid_run_time(Simulator):
 def test_sim_seed_set_by_network_seed(Simulator, seed):
     with nengo.Network(seed=seed) as model:
         pass
-    with nengo.Simulator(model) as sim:
+    with Simulator(model) as sim:
         sim_seed = sim.seed
-    with nengo.Simulator(model) as sim:
+    with Simulator(model) as sim:
         assert sim.seed == sim_seed
 
 

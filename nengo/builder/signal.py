@@ -212,10 +212,6 @@ class Signal:
         """(tuple) Strides of data in bytes."""
         return self.initial_value.strides
 
-    def column(self):
-        """Return a view on this signal with column vector shape."""
-        return self.reshape((self.size, 1))
-
     def may_share_memory(self, other):
         """Determine if two signals might overlap in memory.
 
@@ -253,10 +249,6 @@ class Signal:
                       name="%s.reshape(%s)" % (self.name, shape),
                       base=self.base,
                       offset=self.offset)
-
-    def row(self):
-        """Return a view on this signal with row vector shape."""
-        return self.reshape((1, self.size))
 
 
 class SignalDict(dict):

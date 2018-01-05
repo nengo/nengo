@@ -144,7 +144,7 @@ class PES(LearningRuleType):
     """
 
     modifies = 'decoders'
-    probeable = ('error', 'correction', 'activities', 'delta')
+    probeable = ('error', 'activities', 'delta')
 
     learning_rate = NumberParam(
         'learning_rate', low=0, readonly=True, default=1e-4)
