@@ -105,7 +105,7 @@ class SimPES(Operator):
         n_neurons = pre_filtered.shape[0]
         alpha = -self.learning_rate * dt / n_neurons
 
-        if np.version.version < "1.9":
+        if np.__version__ < "1.9":
             def outer(x, y, out):
                 out[...] = np.outer(x, y)
         else:
