@@ -1,9 +1,9 @@
 import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
-from nengo.builder.operator import DotInc, ElementwiseInc, Copy, Reset
+from nengo.builder.operator import Copy, Reset
 from nengo.connection import LearningRule
-from nengo.ensemble import Ensemble, Neurons
+from nengo.ensemble import Ensemble
 from nengo.exceptions import BuildError
 from nengo.learning_rules import BCM, Oja, PES, Voja
 from nengo.node import Node
@@ -105,15 +105,20 @@ class SimPES(Operator):
         n_neurons = pre_filtered.shape[0]
         alpha = -self.learning_rate * dt / n_neurons
 
+        if np.version.version < "1.9":
+            def outer(x, y, out):
+                out[...] = np.outer(x, y)
+        else:
+            outer = np.outer
+
         if self.encoders is None:
             def step_simpes():
-                np.outer(alpha * error, pre_filtered, out=delta)
+                outer(alpha * error, pre_filtered, out=delta)
         else:
             encoders = signals[self.encoders]
 
             def step_simpes():
-                np.outer(alpha * np.dot(encoders, error),
-                         pre_filtered, out=delta)
+                outer(alpha * np.dot(encoders, error), pre_filtered, out=delta)
 
         return step_simpes
 
