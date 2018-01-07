@@ -8,7 +8,8 @@ from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc
 from nengo.builder.signal import Signal
-from nengo.exceptions import ObsoleteError, SimulatorClosed, ValidationError
+from nengo.exceptions import (
+    BuildError, ObsoleteError, SimulatorClosed, ValidationError)
 from nengo.utils.compat import ResourceWarning
 
 
@@ -293,3 +294,20 @@ def test_sim_seed_set_by_network_seed(Simulator, seed):
         sim_seed = sim.seed
     with nengo.Simulator(model) as sim:
         assert sim.seed == sim_seed
+
+
+def test_build_error_has_info_about_related_objects(RefSimulator):
+    with nengo.Network(label='m1') as m1:
+        n = nengo.Node(lambda t: t)
+
+    with nengo.Network(label='m2') as m2:
+        e = nengo.Ensemble(10, 1)
+        c = nengo.Connection(n, e)
+
+    with pytest.raises(BuildError) as excinfo:
+        with nengo.Simulator(m2) as sim:
+            pass
+
+    assert set(excinfo.value.related_objects) == {c, n}
+    assert excinfo.value.containment[c] == [m2]
+    assert n not in excinfo.value.containment
