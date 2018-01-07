@@ -27,6 +27,9 @@ Release History
 - Added ``amplitude`` parameter to ``LIF`` and ``LIFRate``,
   which scale the output amplitude.
   (`#1325 <https://github.com/nengo/nengo/pull/1325>`_)
+- A ``BuildError`` caused by the reference ``Simulator`` will print more
+  information about the object involved to aid identifying the root cause.
+  (`#1320 <https://github.com/nengo/nengo/pull/1320>`_)
 
 **Changed**
 
