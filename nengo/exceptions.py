@@ -41,7 +41,18 @@ class ReadonlyError(ValidationError):
 
 
 class BuildError(NengoException, ValueError):
-    """A ValueError encountered during the build process."""
+    """A ValueError encountered during the build process.
+
+    Parameters
+    ----------
+    msg : str
+        Error message.
+    related_objects : sequence, optional
+        Nengo objects related to the error. These objects and their location in
+        the network hierarchy will be appended when the *BuildError* is
+        converted to a string and `store_containment_info` has been called
+        before.
+    """
 
     def __init__(self, msg, related_objects=None):
         super(BuildError, self).__init__()
@@ -52,6 +63,17 @@ class BuildError(NengoException, ValueError):
         self.containment = None
 
     def store_containment_info(self, toplevel_net):
+        """Gathers information about the hierarchy of related Nengo objects.
+
+        Once this information has been gathered, it will be appended when the
+        *BuildError* is converted to a string.
+
+        Parameters
+        ----------
+        toplevel_net : Network
+            The toplevel network containing the Nengo objects related to this
+            error.
+        """
         to_process = [(toplevel_net,)]
         self.containment = {}
         while len(to_process) > 0:
