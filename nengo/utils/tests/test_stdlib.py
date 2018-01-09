@@ -245,7 +245,7 @@ def test_weakkeydict_frees_values():
     assert sys.getrefcount(weak_v()) > 1  # function argument might make it > 1
     del k
     v = weak_v()
-    assert v is None,  "Value in WeakKeyIDDictionary not garbage collected."
+    assert v is None, "Value in WeakKeyIDDictionary not garbage collected."
 
 
 def test_weakset():

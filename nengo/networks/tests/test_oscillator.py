@@ -11,7 +11,7 @@ def test_oscillator(Simulator, plt, seed):
 
         tau = 0.1
         freq = 5
-        T = nengo.networks.Oscillator(tau, freq,  n_neurons=100)
+        T = nengo.networks.Oscillator(tau, freq, n_neurons=100)
         nengo.Connection(input, T.input)
 
         A = nengo.Ensemble(100, dimensions=2)

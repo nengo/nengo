@@ -513,4 +513,4 @@ def wrap_with_progressupdater(task, progress_bar=True):
     else:
         raise ValidationError(
             "must be a boolean or instance of ProgressBar or ProgressUpdater "
-            "(got %r)" % type(progress_bar).__name__,  attr='progress_bar')
+            "(got %r)" % type(progress_bar).__name__, attr='progress_bar')
