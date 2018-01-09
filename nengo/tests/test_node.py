@@ -21,7 +21,7 @@ def test_time(Simulator):
 def test_simple(Simulator, plt, seed):
     m = nengo.Network(seed=seed)
     with m:
-        input = nengo.Node(output=lambda t: np.sin(t))
+        input = nengo.Node(output=np.sin)
         p = nengo.Probe(input, 'output')
 
     with Simulator(m) as sim:
@@ -38,7 +38,7 @@ def test_simple(Simulator, plt, seed):
 def test_connected(Simulator, plt, seed):
     m = nengo.Network(seed=seed)
     with m:
-        input = nengo.Node(output=lambda t: np.sin(t), label='input')
+        input = nengo.Node(output=np.sin, label='input')
         output = nengo.Node(output=lambda t, x: np.square(x),
                             size_in=1,
                             label='output')
@@ -66,7 +66,7 @@ def test_connected(Simulator, plt, seed):
 def test_passthrough(Simulator, plt, seed):
     m = nengo.Network(seed=seed)
     with m:
-        in1 = nengo.Node(output=lambda t: np.sin(t))
+        in1 = nengo.Node(output=np.sin)
         in2 = nengo.Node(output=lambda t: t)
         passthrough = nengo.Node(size_in=1)
         out = nengo.Node(output=lambda t, x: x, size_in=1)
