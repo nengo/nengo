@@ -10,6 +10,7 @@ disable = all,
           import-error,
           reimported,
 enable = anomalous-backslash-in-string,
+         bad-mcs-classmethod-argument,
          bad-super-call,
          bad-whitespace,
          bare-except,
@@ -27,6 +28,11 @@ enable = anomalous-backslash-in-string,
 [FORMAT]
 
 max-line-length = 79
+
+
+[CLASSES]
+
+valid-metaclass-classmethod-first-arg = metacls
 
 
 [REPORTS]
