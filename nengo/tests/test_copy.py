@@ -270,6 +270,7 @@ class TestCopy(object):
     def test_python_copy_warns_abt_adding_to_network(self, make_f, assert_f):
         original = make_f()
         copy(original)  # Fine because not in a network
+        print('---')
         with nengo.Network():
             with pytest.warns(NotAddedToNetworkWarning):
                 copy(original)
