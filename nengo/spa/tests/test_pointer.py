@@ -49,7 +49,7 @@ def test_normalize():
 
 def test_str():
     a = SemanticPointer([1, 1])
-    assert str(a) == '[ 1.  1.]'
+    assert str(a) == '[ 1.  1.]' or str(a) == '[1. 1.]'
 
 
 def test_randomize(rng):
