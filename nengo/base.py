@@ -95,7 +95,6 @@ class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
 
         self._initialized = True
         if len(nengo.Network.context) > 0:
-            print('warning', len(nengo.Network.context))
             warnings.warn(NotAddedToNetworkWarning(self))
 
     def __setattr__(self, name, val):
