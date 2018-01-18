@@ -1,4 +1,5 @@
 from copy import copy
+import warnings
 
 import numpy as np
 import pytest
