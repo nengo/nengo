@@ -254,7 +254,7 @@ class RectifiedLinear(NeuronType):
         output[...] = np.maximum(0., J)
 
 
-class IntegrateAndFire(RectifiedLinear):
+class SpikingRectifiedLinear(RectifiedLinear):
     """A rectified integrate and fire neuron model.
 
     Each neuron is modeled as a rectified line. That is, the neuron's activity

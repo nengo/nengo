@@ -2,7 +2,7 @@ import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
 from nengo.neurons import (
-    AdaptiveLIF, AdaptiveLIFRate, IntegrateAndFire, Izhikevich, LIF,
+    AdaptiveLIF, AdaptiveLIFRate, SpikingRectifiedLinear, Izhikevich, LIF,
     NeuronType)
 
 
@@ -108,7 +108,7 @@ def build_neurons(model, neurontype, neurons):
                             output=model.sig[neurons]['out']))
 
 
-@Builder.register(IntegrateAndFire)
+@Builder.register(SpikingRectifiedLinear)
 def build_integrateandfire(model, integrateandfire, neurons):
     """Builds a `.IntegrateAndFire` object into a model.
 
