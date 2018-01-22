@@ -55,6 +55,10 @@ Release History
 - Fixed validation checks that prevented the default
   from being set on certain parameters.
   (`#1372 <https://github.com/nengo/nengo/pull/1372>`__)
+- Return scalars as documented for the ``n_steps`` and ``time`` properties of
+  the ``Simulator`` object.
+  (`#1406 <https://github.com/nengo/nengo/pull/1406>`_)
+
 
 2.6.0 (October 6, 2017)
 =======================
