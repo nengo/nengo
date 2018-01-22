@@ -25,8 +25,8 @@ def test_steps(RefSimulator):
         assert sim.n_steps == 2
         assert np.allclose(sim.time, 2 * dt)
 
-        assert np.isscalar(sim.n_steps.shape)
-        assert np.isscalar(sim.time.shape)
+        assert np.isscalar(sim.n_steps)
+        assert np.isscalar(sim.time)
 
 
 def test_time_absolute(Simulator):
