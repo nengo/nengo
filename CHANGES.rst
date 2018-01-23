@@ -58,6 +58,8 @@ Release History
 - The ``Simulator.n_steps`` and ``Simulator.time`` properties
   now return scalars, as was stated in the documentation.
   (`#1406 <https://github.com/nengo/nengo/pull/1406>`_)
+- Fixed the ``--seed-offset`` option of the test suite.
+  (`#1409 <https://github.com/nengo/nengo/pull/1409>`_)
 
 
 2.6.0 (October 6, 2017)
