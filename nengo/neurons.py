@@ -231,9 +231,20 @@ class RectifiedLinear(NeuronType):
     Each neuron is modeled as a rectified line. That is, the neuron's activity
     scales linearly with current, unless it passes below zero, at which point
     the neural activity will stay at zero.
+
+    Parameters
+    ----------
+    amplitude : float
+        Scaling factor on the neuron output. Corresponds to the relative
+        amplitude of the output of the neuron.
     """
 
     probeable = ('rates',)
+
+    def __init__(self, amplitude=1):
+        super(RectifiedLinear, self).__init__()
+
+        self.amplitude = amplitude
 
     def gain_bias(self, max_rates, intercepts):
         """Determine gain and bias by shifting and scaling the lines."""
@@ -251,7 +262,7 @@ class RectifiedLinear(NeuronType):
 
     def step_math(self, dt, J, output):
         """Implement the rectification nonlinearity."""
-        output[...] = np.maximum(0., J)
+        output[...] = self.amplitude * np.maximum(0., J)
 
 
 class Sigmoid(NeuronType):

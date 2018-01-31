@@ -24,9 +24,10 @@ Release History
 
 **Added**
 
-- Added ``amplitude`` parameter to ``LIF`` and ``LIFRate``,
-  which scale the output amplitude.
-  (`#1325 <https://github.com/nengo/nengo/pull/1325>`_)
+- Added ``amplitude`` parameter to ``LIF``, ``LIFRate``,
+  and ``RectifiedLinear``  which scale the output amplitude.
+  (`#1325 <https://github.com/nengo/nengo/pull/1325>`_,
+  `#1391 <https://github.com/nengo/nengo/pull/1391>`__)
 
 **Changed**
 
