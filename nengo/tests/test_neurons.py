@@ -526,3 +526,22 @@ def test_gain_bias(rng, nl_nodirect, generic):
 
     assert np.allclose(max_rates, max_rates0, atol=tolerance)
     assert np.allclose(intercepts, intercepts0, atol=tolerance)
+
+
+@pytest.mark.parametrize("neuron_type", (nengo.LIFRate, nengo.LIF))
+def test_lif_relu_fallback(Simulator, neuron_type):
+    with nengo.Network() as net:
+        a = nengo.Ensemble(
+            100, 1, neuron_type=neuron_type(tau_rc=1e20, tau_ref=0), seed=0)
+
+        fallback = (nengo.RectifiedLinear() if neuron_type == nengo.LIFRate
+                    else nengo.SpikingRectifiedLinear())
+        b = nengo.Ensemble(100, 1, neuron_type=fallback, seed=0)
+
+        p_a = nengo.Probe(a.neurons)
+        p_b = nengo.Probe(b.neurons)
+
+    with Simulator(net) as sim:
+        sim.run(1.0)
+
+        assert np.allclose(sim.data[p_a], sim.data[p_b])

@@ -1,6 +1,7 @@
 from __future__ import division
 
 import logging
+import types
 import warnings
 
 import numpy as np
@@ -370,6 +371,13 @@ class LIFRate(NeuronType):
         self.tau_ref = tau_ref
         self.amplitude = amplitude
 
+        if tau_rc > 1e13 and tau_ref == 0:
+            self.gain_bias = types.MethodType(RectifiedLinear.gain_bias, self)
+            self.max_rates_intercepts = types.MethodType(
+                RectifiedLinear.max_rates_intercepts, self)
+            self.rates = types.MethodType(RectifiedLinear.rates, self)
+            self.step_math = types.MethodType(RectifiedLinear.step_math, self)
+
     @property
     def _argreprs(self):
         args = []
@@ -451,6 +459,12 @@ class LIF(LIFRate):
         super(LIF, self).__init__(
             tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
         self.min_voltage = min_voltage
+
+        if tau_rc > 1e13 and tau_ref == 0 and min_voltage == 0:
+            self.step_math = types.MethodType(
+                lambda self, dt, J, spiked, voltage, _:
+                SpikingRectifiedLinear.step_math(self, dt, J, spiked, voltage),
+                self)
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
         # reduce all refractory times by dt
