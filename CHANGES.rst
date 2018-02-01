@@ -40,6 +40,7 @@ Release History
 - PES learning updates are now applied on the next timestep rather than
   the current one.  ``PES.correction`` is no longer probeable.
   (`TODO: PR link`_)
+- ``PES.pre_tau`` can now be >= 0 or None. (`TODO <pr link>`_)
 
 **Fixed**
 

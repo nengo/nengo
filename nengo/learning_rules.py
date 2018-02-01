@@ -111,7 +111,7 @@ class PES(LearningRuleType):
     modifies = 'decoders'
     probeable = ('error', 'activities', 'delta')
 
-    pre_tau = NumberParam('pre_tau', low=0, low_open=True)
+    pre_tau = NumberParam('pre_tau', low=0, optional=True)
 
     def __init__(self, learning_rate=1e-4, pre_tau=0.005):
         if learning_rate >= 1.0:
@@ -126,7 +126,7 @@ class PES(LearningRuleType):
         if self.learning_rate != 1e-4:
             args.append("learning_rate=%g" % self.learning_rate)
         if self.pre_tau != 0.005:
-            args.append("pre_tau=%g" % self.pre_tau)
+            args.append("pre_tau=%s" % self.pre_tau)
         return args
 
 
