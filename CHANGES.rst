@@ -40,6 +40,11 @@ Release History
 - PES learning updates are now applied on the next timestep rather than
   the current one.  ``PES.correction`` is no longer probeable.
   (`TODO: PR link`_)
+- Learning rules take ``pre_synapse``, ``post_synapse``, and ``theta_synapse``
+  instead of ``pre_tau``, ``post_tau``, and ``theta_tau`` respectively.
+  This allows arbitrary ``Synapse`` objects to be used as filters on the
+  learning signals. The ``learning_rate`` parameter also always comes first.
+  (`#1095 <https://github.com/nengo/nengo/pull/1095>`_)
 
 **Fixed**
 
