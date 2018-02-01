@@ -37,6 +37,9 @@ Release History
   from the network seed if a network seed is specified.
   (`#980 <https://github.com/nengo/nengo/issues/980>`__,
   `#1386 <https://github.com/nengo/nengo/pull/1386>`__)
+- PES learning updates are now applied on the next timestep rather than
+  the current one.  ``PES.correction`` is no longer probeable.
+  (`TODO: PR link`_)
 
 **Fixed**
 
