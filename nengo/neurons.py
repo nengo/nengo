@@ -288,7 +288,7 @@ class SpikingRectifiedLinear(RectifiedLinear):
         J = self.current(x, gain, bias)
         out = np.zeros_like(J)
         RectifiedLinear.step_math(self, dt=1., J=J, output=out)
-        return out * self.amplitude
+        return out
 
     def step_math(self, dt, J, spiked, voltage):
         """Implement the integrate and fire nonlinearity."""
