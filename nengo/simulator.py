@@ -106,7 +106,7 @@ class Simulator(object):
         or `.ProgressUpdater` instance.
     optimize : bool, optional (Default: True)
         If ``True``, the builder will run an additional optimization step
-        that can speed up simulations signficantly at the cost of slower
+        that can speed up simulations significantly at the cost of slower
         builds. If running models for very small amounts of time,
         pass ``False`` to disable the optimizer.
 
