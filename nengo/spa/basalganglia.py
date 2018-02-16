@@ -159,7 +159,7 @@ class BasalGanglia(Module):
     def add_scalar_input(self, index, source):
         """Add a scalar input that will vary over time.
 
-        This is used for the ouput of the `.Compare` module.
+        This is used for the output of the `.Compare` module.
 
         Parameters
         ----------

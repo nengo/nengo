@@ -1,7 +1,7 @@
 ### NENGORC FORMAT
 
 # Nengo RC settings will be read from the following files.
-# Files listed first have higher precendence.
+# Files listed first have higher precedence.
 #
 # 1. nengorc in the current directory.
 #    This is useful for settings specific to a single project.

@@ -32,7 +32,7 @@ def activate_direct_mode(network):
     """Activates direct mode for a network.
 
     This sets the neuron type of all ensembles to a `nengo.Direct`
-    isntance unless:
+    instance unless:
 
     - there is a connection to or from the ensemble's neurons
     - there is a probe on an ensemble's neurons

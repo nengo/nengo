@@ -203,7 +203,7 @@ class Oja(LearningRuleType):
     """Oja learning rule.
 
     Modifies connection weights according to the Hebbian Oja rule, which
-    augments typicaly Hebbian coactivity with a "forgetting" term that is
+    augments typically Hebbian coactivity with a "forgetting" term that is
     proportional to the weight of the connection and the square of the
     postsynaptic activity.
 

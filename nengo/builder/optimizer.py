@@ -173,7 +173,7 @@ class OpMergePass(object):
 
         # Note that we will stop once we merge any operator, so merges are
         # performed on at most one type of operator per pass.
-        # The depedency graph and other information will be updated
+        # The dependency graph and other information will be updated
         # before merging other operator types.
 
         # We go through ops in a heuristic order to reduce runtime

@@ -216,7 +216,7 @@ class Exponential(Distribution):
 class UniformHypersphere(Distribution):
     """Uniform distribution on or in an n-dimensional unit hypersphere.
 
-    Sample points are uniformly distibuted across the volume (default) or
+    Sample points are uniformly distributed across the volume (default) or
     surface of an n-dimensional unit hypersphere.
 
     Parameters
