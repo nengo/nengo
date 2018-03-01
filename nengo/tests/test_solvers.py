@@ -77,7 +77,7 @@ def test_cholesky(rng):
     A = rng.normal(size=(m, n))
     b = rng.normal(size=(m, ))
 
-    x0, _, _, _ = np.linalg.lstsq(A, b)
+    x0, _, _, _ = np.linalg.lstsq(A, b, rcond=-1)
     x1, _ = lstsq.Cholesky(transpose=False)(A, b, 0)
     x2, _ = lstsq.Cholesky(transpose=True)(A, b, 0)
     assert np.allclose(x0, x1)
