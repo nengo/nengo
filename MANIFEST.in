@@ -3,6 +3,8 @@ include *.rst
 include *.sh
 include *.txt
 include *.yml
+recursive-include nengo *.rst
+recursive-include nengo *.txt
 
 # Include this file, to ensure we can recreate source distributions
 include MANIFEST.in
