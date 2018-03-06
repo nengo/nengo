@@ -201,7 +201,7 @@ def test_whitesignal_high_dt(Simulator, high, dt, seed, plt):
     plt.subplot(2, 1, 2)
     plt.title("Power spectrum")
     plt.plot(freq, val_psd, drawstyle='steps')
-    plt.xlim(right=high * 2.0)
+    plt.xlim(0, high * 2.0)
 
     assert np.allclose(np.std(values, axis=1), rms, rtol=0.15)
     assert np.all(val_psd[npext.rfftfreq(len(trange), dt) > high] < rms * 0.5)

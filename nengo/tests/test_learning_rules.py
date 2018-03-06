@@ -11,6 +11,10 @@ from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja, Voja
 from nengo.processes import WhiteSignal
 
 
+def best_weights(weight_data):
+    return np.argmax(np.sum(np.var(weight_data, axis=0), axis=0))
+
+
 def _test_pes(Simulator, nl, plt, seed,
               pre_neurons=False, post_neurons=False, weight_solver=False,
               vin=np.array([0.5, -0.5]), vout=None, n=200,
@@ -244,7 +248,8 @@ def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt):
     plt.plot(t, sim.data[up], label="Post")
     plt.legend(loc="best", fontsize="x-small")
     plt.subplot(2, 1, 2)
-    plt.plot(sim.trange(dt=0.01), sim.data[weights_p][..., 4])
+    best_ix = best_weights(sim.data[weights_p])
+    plt.plot(sim.trange(dt=0.01), sim.data[weights_p][..., best_ix])
     plt.xlabel("Time (s)")
     plt.ylabel("Weights")
 
@@ -294,7 +299,8 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
         with Simulator(m, dt=dt) as sim:
             sim.run(0.1)
         trans_data.append(sim.data[m.weights_p])
-        ax1.plot(sim.trange(dt=0.01), sim.data[m.weights_p][..., 0], c=c)
+        best_ix = best_weights(sim.data[m.weights_p])
+        ax1.plot(sim.trange(dt=0.01), sim.data[m.weights_p][..., best_ix], c=c)
         ax2.plot(sim.trange(), sim.data[m.activity_p], c=c)
 
     ax1.set_xlim(right=sim.trange()[-1])
@@ -329,8 +335,9 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
     plt.plot(sim.trange(), sim.data[m.activity_p], c='g')
     plt.subplot(2, 1, 2)
     plt.ylabel("Connection weight")
-    plt.plot(first_t_trans, first_weights_p[..., 0], c='b')
-    plt.plot(sim.trange(dt=0.01), sim.data[m.weights_p][..., 0], c='g')
+    best_ix = best_weights(first_weights_p)
+    plt.plot(first_t_trans, first_weights_p[..., best_ix], c='b')
+    plt.plot(sim.trange(dt=0.01), sim.data[m.weights_p][..., best_ix], c='g')
 
     assert np.allclose(sim.trange(), first_t)
     assert np.allclose(sim.trange(dt=0.01), first_t_trans)
