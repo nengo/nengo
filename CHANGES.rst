@@ -19,6 +19,11 @@ Release History
    - Removed
    - Fixed
 
+2.7.1 (unreleased)
+==================
+
+
+
 2.7.0 (March 7, 2018)
 =====================
 
