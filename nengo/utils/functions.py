@@ -12,7 +12,7 @@ from nengo.utils.compat import is_number, iteritems
 def function_name(func):
     """Returns the name of a function.
 
-    Unlike accesing ``func.__name__``, this function is robust to the
+    Unlike accessing ``func.__name__``, this function is robust to the
     different types of objects that can be considered a function in Nengo.
 
     Parameters

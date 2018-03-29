@@ -289,7 +289,7 @@ class Config(object):
             'location', nengo.params.Parameter('location'))
         net.config[ens].location = 'cortex'
 
-    To group together a set of prameters::
+    To group together a set of parameters::
 
         gaba = nengo.Config(nengo.Connection)
         gaba[nengo.Connection].synapse = nengo.Lowpass(0.008)
