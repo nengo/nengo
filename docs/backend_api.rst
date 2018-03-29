@@ -8,7 +8,7 @@ Nengo is designed so that models created with the
 :doc:`Nengo modeling API <frontend_api>`
 work on a variety of different simulators.
 For example, simulators have been created to take advantage of
-`GPUs <https://github.com/nengo/nengo_ocl/>`_ and
+`GPUs <https://github.com/nengo/nengo-ocl/>`_ and
 `neuromorphic hardware <https://github.com/project-rig/nengo_spinnaker>`_.
 
 Nengo comes with a simulator that is relatively fast,

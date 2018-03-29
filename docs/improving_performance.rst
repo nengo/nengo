@@ -35,7 +35,7 @@ To improve run time
     with nengo.Simulator(model, optimize=True) as sim:
         sim.run(...)
 
-2. Consider switching to the `nengo_ocl <https://github.com/nengo/nengo_ocl>`_
+2. Consider switching to the `nengo_ocl <https://github.com/nengo/nengo-ocl>`_
    backend if you have a powerful GPU.
 
 To lower peak memory consumption
@@ -130,7 +130,7 @@ nengo_ocl
 *Improves run time.*
 
 If you have a powerful GPU, you have the option to switch to the `nengo_ocl
-<https://github.com/nengo/nengo_ocl>`_ backend. It will utilize your GPU,
+<https://github.com/nengo/nengo-ocl>`_ backend. It will utilize your GPU,
 which is optimized for the sorts of calculations done by Nengo.
 Build times with ``nengo_ocl`` are usually comparable to Nengo,
 but run times can be significantly faster.

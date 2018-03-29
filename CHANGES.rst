@@ -396,7 +396,7 @@ Release History
 
 - Improved the default ``LIF`` neuron model to spike at the same rate as the
   ``LIFRate`` neuron model for constant inputs. The older model has been
-  moved to `nengo_extras <https://github.com/nengo/nengo_extras>`_
+  moved to `nengo_extras <https://github.com/nengo/nengo-extras>`_
   under the name ``FastLIF``.
   (`#975 <https://github.com/nengo/nengo/pull/975>`_)
 - Added ``y0`` attribute to ``WhiteSignal``, which adjusts the phase of each
