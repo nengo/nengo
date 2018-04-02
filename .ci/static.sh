@@ -12,9 +12,9 @@ function usage {
 }
 
 if [[ "$COMMAND" == "install" ]]; then
-    pip install flake8 pylint
+    pip install codespell flake8 pylint
 elif [[ "$COMMAND" == "run" ]]; then
-    flake8 -v nengo && pylint nengo
+    flake8 -v nengo && codespell -q 3 && pylint nengo
 else
     if [[ -z "$COMMAND" ]]; then
         echo "Command required"

@@ -265,14 +265,14 @@ def abcd_normalize(A=None, B=None, C=None, D=None):
     """
     A, B, C, D = map(_atleast_2d_or_none, (A, B, C, D))
 
-    MA, NA = _shape_or_none(A)
-    MB, NB = _shape_or_none(B)
-    MC, NC = _shape_or_none(C)
-    MD, ND = _shape_or_none(D)
+    Am, _ = _shape_or_none(A)
+    Bm, Bn = _shape_or_none(B)
+    Cm, Cn = _shape_or_none(C)
+    Dm, Dn = _shape_or_none(D)
 
-    p = _choice_not_none(MA, MB, NC)
-    q = _choice_not_none(NB, ND)
-    r = _choice_not_none(MC, MD)
+    p = _choice_not_none(Am, Bm, Cn)
+    q = _choice_not_none(Bn, Dn)
+    r = _choice_not_none(Cm, Dm)
     if p is None or q is None or r is None:
         raise ValueError("Not enough information on the system.")
 

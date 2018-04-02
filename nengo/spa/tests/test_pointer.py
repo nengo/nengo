@@ -101,11 +101,11 @@ def test_convolution(rng):
     c = a.copy()
     c *= b
 
-    ans = np.fft.ifft(np.fft.fft(a.v) * np.fft.fft(b.v)).real
+    answer = np.fft.ifft(np.fft.fft(a.v) * np.fft.fft(b.v)).real
 
-    assert np.allclose((a * b).v, ans)
-    assert np.allclose(a.convolve(b).v, ans)
-    assert np.allclose(c.v, ans)
+    assert np.allclose((a * b).v, answer)
+    assert np.allclose(a.convolve(b).v, answer)
+    assert np.allclose(c.v, answer)
     assert np.allclose((a * identity).v, a.v)
     assert (a * b * ~b).compare(a) > 0.65
 

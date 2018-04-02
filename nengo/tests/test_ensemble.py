@@ -14,7 +14,7 @@ def test_missing_attribute():
         a = nengo.Ensemble(10, 1)
 
         with pytest.warns(SyntaxWarning):
-            a.dne = 9
+            a.new_attribute = 9
 
 
 @pytest.mark.parametrize("dimensions", [1, 200])

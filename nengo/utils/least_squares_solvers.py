@@ -293,7 +293,7 @@ class RandomizedSVD(LeastSquaresSolver):
     n_iter = IntParam('n_iter', low=0)
 
     def __init__(self, n_components=60, n_oversamples=10, n_iter=0):
-        from sklearn.utils.extmath import randomized_svd  # error early if DNE
+        from sklearn.utils.extmath import randomized_svd
         assert randomized_svd
         super(RandomizedSVD, self).__init__()
         self.n_components = n_components
