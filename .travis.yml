@@ -6,13 +6,11 @@ notifications:
 
 env:
   global:
-    - NUMPY="1.13"
+    - NUMPY="1.14"
     - SCIPY="false"
     - COVERAGE="false"
     - STATIC="false"
     - DOCS="false"
-    - CONDA_DEPS="matplotlib jupyter"
-    - PIP_DEPS="pytest"
 
 matrix:
   include:
@@ -23,71 +21,42 @@ matrix:
     - env: PYTHON="2.7" NUMPY="1.10"
     - env: PYTHON="2.7" NUMPY="1.11"
     - env: PYTHON="2.7" NUMPY="1.12"
-    - env: PYTHON="3.4" NUMPY="1.11"  # 1.12 not packaged for py34 in conda
+    - env: PYTHON="2.7" NUMPY="1.13"
+    - env: PYTHON="3.4" NUMPY="1.11"  # <=1.12 not packaged for py34 in conda
     - env: PYTHON="3.5"
     - env: PYTHON="3.6" COVERAGE="true" SCIPY="true"
     - env: PYTHON="3.6" DOCS="true"
 
-# Setup Miniconda
 before_install:
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -b -p "$HOME/miniconda"
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - conda info -a
-  - conda create -q -n test python="$PYTHON" pip
-  - source activate test
+  - source .ci/conda.sh install
 
-# Install packages with conda, then pip
 install:
   - if [[ "$COVERAGE" == "true" ]]; then
-      export PIP_DEPS="pytest coverage";
-    elif [[ "$STATIC" == "true" ]]; then
-      export CONDA_DEPS="";
-      export PIP_DEPS="flake8 pylint";
-    elif [[ "$DOCS" == "true" ]]; then
-      export CONDA_DEPS="matplotlib scipy";
-      export PIP_DEPS="ipython[all]==2.4.1 sphinx ghp-import -e git+https://github.com/tbekolay/guzzle_sphinx_theme.git@use_smartypants#egg=guzzle_sphinx_theme";
+      .ci/coverage.sh install;
     fi
-  - if [[ -n "$NUMPY" && "$STATIC" == "false" ]]; then
-      export CONDA_DEPS="$CONDA_DEPS numpy=$NUMPY";
+  - if [[ "$DOCS" == "true" ]]; then
+      .ci/docs.sh install;
     fi
-  - if [[ "$SCIPY" == "true" ]]; then
-      export CONDA_DEPS="$CONDA_DEPS scipy";
-    fi
-  - if [[ -n "$CONDA_DEPS" ]]; then eval conda install --quiet "$CONDA_DEPS"; fi
-  - if [[ -n "$PIP_DEPS" ]]; then eval pip install "$PIP_DEPS"; fi
-
-# Run the tests
-script:
-  - mkdir -p "$HOME/.ipython/profile_default"
-  - "echo 'c.HistoryAccessor.enabled = False\n' > $HOME/.ipython/profile_default/ipython_config.py"
   - if [[ "$STATIC" == "true" ]]; then
-      flake8 -v nengo && pylint nengo;
+      .ci/static.sh install;
     else
-      python -c "import numpy; numpy.show_config()";
-      python setup.py -q develop;
-      if [[ "$COVERAGE" == "true" ]]; then
-        coverage run --rcfile .coveragerc --source nengo -m py.test nengo -v --duration 20 && coverage report;
-      elif [[ "$DOCS" == "true" ]]; then
-        if [[ -n "$TRAVIS_TAG" ]]; then
-          rm "$HOME/.ipython/profile_default/ipython_config.py";
-          sphinx-build -W docs docs/_build;
-        fi
-      else
-        py.test nengo -v --duration 20;
-      fi
+      .ci/test.sh install;
+    fi
+
+script:
+  - if [[ "$STATIC" == "true" ]]; then
+      .ci/static.sh run;
+    elif [[ "$COVERAGE" == "true" ]]; then
+      .ci/coverage.sh run;
+    elif [[ "$DOCS" == "true" && -n "$TRAVIS_TAG" ]]; then
+      .ci/docs.sh run;
+    else
+      .ci/test.sh run;
     fi
 
 after_success:
   - if [[ "$COVERAGE" == "true" ]]; then
-      eval "bash <(curl -s https://codecov.io/bash)";
-    fi
-  - if [[ -n "$TRAVIS_TAG" && "$DOCS" == "true" ]]; then
-      export DATE=$(date '+%Y-%m-%d %T');
-      git config --global user.email "travis@travis-ci.org";
-      git config --global user.name "TravisCI";
-      ghp-import -m "Last update at $DATE" -b gh-pages docs/_build;
-      git push -fq "https://$GH_TOKEN@github.com/nengo/nengo.git" gh-pages;
+      .ci/coverage.sh upload;
+    elif [[ -n "$TRAVIS_TAG" && "$DOCS" == "true" ]]; then
+      .ci/docs.sh upload;
     fi

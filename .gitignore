@@ -24,3 +24,4 @@ htmlcov
 *.dist-info/
 .vscode
 .idea
+.pytest_cache/

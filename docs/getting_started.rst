@@ -89,11 +89,21 @@ Anaconda, a package manager, or through
 Python's own package manager, ``pip``.
 
 - Additional decoder solvers and other speedups
-  are tracked in ``requirements-optional.txt``.
-- Running the test suite requires the packages
-  listed in ``requirements-test.txt``.
-- Building the documentation requires the packages
-  listed in ``requirements-test.txt`` and ``requirements-docs.txt``.
+  require SciPy and scikit-learn.
+- Running the test suite requires
+  pytest, Matplotlib, and Jupyter.
+- Building the documentation requires
+  Sphinx, NumPyDoc and guzzle_sphinx_theme.
+
+These additional dependencies can be installed
+through ``pip`` when installing Nengo.
+
+.. code-block:: bash
+
+   pip install nengo[optional]  # Additional solvers and speedups
+   pip install nengo[docs]  # For building docs
+   pip install nengo[tests]  # For running the test suite
+   pip install nengo[all]  # All of the above
 
 .. _Anaconda: https://store.continuum.io/cshop/anaconda/
 .. _Homebrew: https://brew.sh/
