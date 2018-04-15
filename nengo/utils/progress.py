@@ -269,6 +269,127 @@ class TerminalProgressBar(ProgressBar):
         sys.stdout.flush()
 
 
+class VdomProgressBar(ProgressBar):
+    """A progress bar using a virtual DOM representation.
+
+    This HTML representation can be used in Jupyter lab (>=0.32) environments.
+    """
+
+    def __init__(self):
+        super(VdomProgressBar, self).__init__()
+        self._uuid = uuid.uuid4()
+        self._handle = None
+        self.progress = None
+
+    def update(self, progress):
+        self.progress = progress
+        if self._handle is None:
+            self._handle = display(self, display_id=True)
+        else:
+            self._handle.update(self)
+
+    def _repr_mimebundle_(self, include, exclude, **kwargs):
+        return {
+            'application/vdom.v1+json': self._get_vdom(self.progress)
+        }
+
+    def _get_vdom(self, progress):
+        return {
+            'tagName': 'div',
+            'attributes': {
+                'id': str(self._uuid),
+                'style': {
+                    'width': '100%',
+                    'boxSizing': 'border-box',
+                    'border': '1px solid #cfcfcf',
+                    'borderRadius': '4px',
+                    'textAlign': 'center',
+                    'position': 'relative',
+                },
+            },
+            'children': [{
+                'tagName': 'div',
+                'attributes': {
+                    'class': 'pb-text',
+                    'style': {'position': 'absolute', 'width': '100%'},
+                },
+                'children': [self._get_text(self.progress)],
+            }, {
+                'tagName': 'div',
+                'attributes': {
+                    'class': 'pb-fill',
+                    'style': self._get_fill_style(self.progress),
+                },
+                'children': [{
+                    'tagName': 'style',
+                    'attributes': {
+                        'type': 'text/css',
+                        'scoped': 'scoped',
+                    },
+                    'children': ['''
+                        @keyframes pb-fill-anim {
+                            0% { background-position: 0 0; }
+                            100% { background-position: 100px 0; }
+                        }}'''],
+                    }, "\u00A0"  # non-breaking space
+                ],
+            }],
+        }
+
+    def _get_text(self, progress):
+        if progress is None:
+            text = ''
+        elif progress.finished:
+            text = "{} finished in {}.".format(
+                escape(progress.name_after),
+                timestamp2timedelta(progress.elapsed_seconds()))
+        elif progress.max_steps is None:
+            text = (
+                "{task}\u2026 duration: {duration}".format(
+                    task=escape(progress.name_during),
+                    duration=timestamp2timedelta(progress.elapsed_seconds())))
+        else:
+            text = (
+                "{task}\u2026 {progress:.0f}%, ETA: {eta}".format(
+                    task=escape(progress.name_during),
+                    progress=100. * progress.progress,
+                    eta=timestamp2timedelta(progress.eta())))
+        return text
+
+    def _get_fill_style(self, progress):
+        if progress.max_steps is None:
+            style = self._get_unknown_steps_fill_style(progress)
+        else:
+            style = self._get_known_steps_fill_style(progress)
+
+        if progress.finished:
+            style['animation'] = 'none'
+            style['backgroundImage'] = 'none'
+
+        return style
+
+    def _get_known_steps_fill_style(self, progress):
+        return {
+            'width': '{:.0f}%'.format(100. * progress.progress),
+            'animation': 'none',
+            'backgroundColor': '#bdd2e6',
+            'backgroundImage': 'none',
+            'transition':
+                'width 0.1s linear' if progress.progress > 0. else 'none',
+        }
+
+    def _get_unknown_steps_fill_style(self, progress):
+        return {
+            'width': '100%',
+            'animation': 'pb-fill-anim 2s linear infinite',
+            'backgroundColor': '#bdd2e6',
+            'backgroundSize': '100px 100%',
+            'backgroundImage': (
+                'repeating-linear-gradient('
+                '90deg, #bdd2e6, #edf2f8 40%, #bdd2e6 80%, #bdd2e6)'),
+        }
+
+
 class HtmlProgressBar(ProgressBar):
     """A progress bar using a HTML representation.
 
