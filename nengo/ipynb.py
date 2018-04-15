@@ -160,8 +160,6 @@ class IPythonProgressWidget(DOMWidget):
 class IPython2ProgressBar(ProgressBar):
     """IPython progress bar based on widgets."""
 
-    supports_fast_ipynb_updates = True
-
     def __init__(self, task):
         warnings.warn(
             "IPython2ProgressBar is deprecated. Please upgrade to IPython "

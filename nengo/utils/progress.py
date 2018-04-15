@@ -174,8 +174,6 @@ class ProgressBar(object):
     Progress bars should visually displaying the progress in some way.
     """
 
-    supports_fast_ipynb_updates = False
-
     def update(self, progress):
         """Updates the displayed progress.
 
@@ -281,7 +279,6 @@ class HtmlProgressBar(ProgressBar):
     If the kernel frontend does not support HTML (e.g., in Jupyter qtconsole),
     a warning message will be issued as the ASCII representation.
     """
-    supports_fast_ipynb_updates = True
 
     def __init__(self):
         super(HtmlProgressBar, self).__init__()
@@ -410,7 +407,6 @@ class IPython5ProgressBar(ProgressBar):
     HTML version, but do not support HTML and will show a warning instead of
     an actual progress bar.
     """
-    supports_fast_ipynb_updates = True
 
     def __init__(self):
         super(IPython5ProgressBar, self).__init__()
@@ -491,10 +487,6 @@ class AutoProgressBar(ProgressBar):
         elif long_eta or progress.finished:
             self._visible = True
             self.delegate.update(progress)
-
-    @property
-    def supports_fast_ipynb_updates(self):
-        return self.delegate.supports_fast_ipynb_updates
 
     def close(self):
         self.delegate.close()
