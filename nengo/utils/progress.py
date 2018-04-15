@@ -517,16 +517,55 @@ class HtmlProgressBar(ProgressBar):
         '''
 
 
+class VdomOrHtmlProgressBar(ProgressBar):
+    """Progress bar using the VDOM or HTML progress bar.
+
+    This progress bar will transmit both representations as part of a MIME
+    bundle and it is up to the Jupyter client to pick the preferred version.
+    Usually this will be the VDOM if supported, and the HMTL version where VDOM
+    is not supported.
+    """
+
+    def __init__(self):
+        super(VdomOrHtmlProgressBar, self).__init__()
+        self._handle = None
+        self._vdom = VdomProgressBar()
+        self._html = HtmlProgressBar()
+
+    def update(self, progress):
+        self._vdom.progress = progress
+        if self._handle is None:
+            display(self._get_initial_bundle(progress), raw=True)
+            self._handle = display(
+                self._get_update_bundle(progress), raw=True, display_id=True)
+        self._handle.update(self._get_update_bundle(progress), raw=True)
+
+    def _get_initial_bundle(self, progress):
+        return {
+            'application/vdom.v1+json': {
+                'tagName': 'div', 'attributes': {}
+            },
+            'text/html': self._html._HtmlBase(self._html._uuid)._repr_html_(),
+            'text/plain': repr(self._html._HtmlBase(self._html._uuid)),
+        }
+
+    def _get_update_bundle(self, progress):
+        bundle = self._vdom._repr_mimebundle_([], [])
+        bundle['application/javascript'] = self._html._js_update(
+            progress)._repr_javascript_()
+        return bundle
+
+
 class IPython5ProgressBar(ProgressBar):
     """ProgressBar for IPython>=5 environments.
 
-    Provides a HTML representation, except for in a pure terminal IPython
+    Provides a VDOM/HTML representation, except for in a pure terminal IPython
     (i.e. not an IPython kernel that was connected to via ZMQ), where a
     ASCII progress bar will be used.
 
     Note that some Jupyter environments (like qtconsole) will try to use the
-    HTML version, but do not support HTML and will show a warning instead of
-    an actual progress bar.
+    VDOM/HTML version, but do not support HTML and will show a warning instead
+    of an actual progress bar.
     """
 
     def __init__(self):
@@ -542,7 +581,7 @@ class IPython5ProgressBar(ProgressBar):
         display(d, exclude=['text/plain'])
 
         if d.display_requested:
-            self._progress_bar = HtmlProgressBar()
+            self._progress_bar = VdomOrHtmlProgressBar()
         else:
             self._progress_bar = TerminalProgressBar()
 
