@@ -27,6 +27,9 @@ Release History
 - Added progress bar support for Jupyter Lab >=0.32.
   (`#1428 <https://github.com/nengo/nengo/pull/1428>`__,
   `#1087 <https://github.com/nengo/nengo/issues/1087>`__)
+- We now warn that the progress bar is not supported in Jupyter Notebook <5.
+  (`#1428 <https://github.com/nengo/nengo/pull/1428>`__,
+  `#1426 <https://github.com/nengo/nengo/issues/1426>`__)
 
 **Changed**
 

@@ -426,6 +426,16 @@ class HtmlProgressBar(ProgressBar):
 
         def _repr_html_(self):
             return '''
+                <script>
+                    if (Jupyter.version.split(".")[0] < 5) {{
+                        var pb = document.getElementById("{uuid}");
+                        var text = document.createTextNode(
+                            "HMTL progress bar requires Jupyter Notebook >= " +
+                            "5.0 or Jupyter Lab. Alternatively, you can use " +
+                            "TerminalProgressBar().");
+                        pb.parentNode.insertBefore(text, pb);
+                    }}
+                </script>
                 <div id="{uuid}" style="
                     width: 100%;
                     border: 1px solid #cfcfcf;
