@@ -87,6 +87,7 @@ Neuron types
    nengo.neurons.NeuronType
    nengo.Direct
    nengo.RectifiedLinear
+   nengo.SpikingRectifiedLinear
    nengo.Sigmoid
    nengo.LIF
    nengo.LIFRate
@@ -99,6 +100,8 @@ Neuron types
 .. autoclass:: nengo.Direct
 
 .. autoclass:: nengo.RectifiedLinear
+
+.. autoclass:: nengo.SpikingRectifiedLinear
 
 .. autoclass:: nengo.Sigmoid
 
