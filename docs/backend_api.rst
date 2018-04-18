@@ -1,32 +1,35 @@
-*******************
-Reference simulator
-*******************
+*****************
+Nengo backend API
+*****************
 
 .. default-role:: obj
 
 Nengo is designed so that models created with the
-:doc:`Nengo modeling API <frontend_api>`
-work on a variety of different simulators.
-For example, simulators have been created to take advantage of
+:doc:`Nengo frontend API <frontend_api>`
+work on a variety of different simulators, or "backends."
+For example, backends have been created to take advantage of
 `GPUs <https://github.com/nengo/nengo-ocl/>`_ and
 `neuromorphic hardware <https://github.com/project-rig/nengo_spinnaker>`_.
 
-Nengo comes with a simulator that is relatively fast,
+Reference backend
+=================
+
+Nengo comes with a backend that is relatively fast,
 and works on general purpose computers.
 For most users, the only thing that you need to know
-about the reference simulator is how to
+about this "reference" backend is how to
 create and close a `nengo.Simulator` instance.
 
 .. autoclass:: nengo.Simulator
 
 The build process
-=================
+-----------------
 
 The build process translates a Nengo model
 to a set of data buffers (`.Signal` instances)
 and computational operations (`.Operator` instances)
 which implement the Nengo model
-defined with the :doc:`modeling API <frontend_api>`.
+defined with the :doc:`frontend API <frontend_api>`.
 The build process is central to
 how the reference simulator works,
 and details how Nengo can be extended to include
@@ -44,7 +47,7 @@ and reference documentation, read on.
 .. autoclass:: nengo.builder.Operator
 
 Operators
----------
+^^^^^^^^^
 
 .. autoclass:: nengo.builder.operator.Reset
 
@@ -71,7 +74,7 @@ Operators
 .. autoclass:: nengo.builder.processes.SimProcess
 
 Build functions
----------------
+^^^^^^^^^^^^^^^
 
 .. autoclass:: nengo.builder.Builder
 
@@ -116,7 +119,7 @@ Build functions
 .. autofunction:: nengo.builder.processes.build_synapse
 
 Decoder cache
--------------
+^^^^^^^^^^^^^
 
 .. autoclass:: nengo.cache.NoDecoderCache
 
@@ -129,6 +132,6 @@ Decoder cache
 .. autoclass:: nengo.cache.WriteableCacheIndex
 
 Optimizer
----------
+^^^^^^^^^
 
 .. autofunction:: nengo.builder.optimizer.optimize

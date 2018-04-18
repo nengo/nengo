@@ -1,10 +1,10 @@
 *****************
-The NEF Algorithm
+The NEF algorithm
 *****************
 
 While Nengo provides a flexible, general-purpose approach to neural modelling,
-it is sometimes useful to get a complete look at exactly what is going on
-"under the hood".  The theory behind the Neural Engineering Framework is
+some aspects rely on the Neural Engineering Framework (NEF) to help specify
+network behavior.  The theory behind the Neural Engineering Framework is
 developed at length in `Eliasmith & Anderson, 2003: "Neural Engineering"
 <https://www.amazon.com/Neural-Engineering-Representation-Neurobiological-Computational/dp/0262550601>`_,
 and a short summary is available in `Stewart, 2012: "A Technical Overview of the

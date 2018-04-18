@@ -5,7 +5,7 @@ Contributing to Nengo
 .. default-role:: obj
 
 Please read our
-`general contributing guide <https://www.nengo.ai/contributing.html>`_
+`general contributor guide <https://www.nengo.ai/developers.html>`_
 first.
 The instructions below specifically apply
 to the ``nengo`` project.
@@ -31,7 +31,7 @@ How to run unit tests
 =====================
 
 Nengo contains a large test suite, which we run with pytest_.
-To run these tests do::
+To run these tests do
 
 .. code-block:: bash
 
@@ -134,6 +134,14 @@ as part of the documentation building process.
    python setup.py build_sphinx
 
 .. _Pandoc: https://pandoc.org/
+
+Learning more
+=============
+
+.. toctree::
+   :maxdepth: 2
+
+   nef_minimal
 
 Getting help
 ============

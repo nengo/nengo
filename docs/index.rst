@@ -3,11 +3,10 @@ Nengo
 *****
 
 Nengo is a Python library for building and simulating
-large-scale brain models using the methods of the
-`Neural Engineering Framework
-<http://compneuro.uwaterloo.ca/research/nef.html>`_.
-Nengo can create sophisticated neural simulations
-with sensible defaults in few lines of code::
+large-scale neural models.
+Nengo can create sophisticated
+spiking and non-spiking neural simulations
+with sensible defaults in a few lines of code::
 
     import nengo
     import numpy as np
@@ -31,16 +30,20 @@ with sensible defaults in few lines of code::
 
 Yet, Nengo is highly extensible and flexible.
 You can define your own neuron types and learning rules,
-get input directly from hardware, drive robots,
-and even simulate your model on a completely
-different neural simulator.
+get input directly from hardware,
+build and run deep neural networks,
+drive robots, and even simulate your model
+on a completely different neural simulator
+or neuromorphic hardware.
 
 .. toctree::
    :maxdepth: 2
 
    getting_started
-   examples
    user_guide
-   dev_guide
+   examples
+   contributing
+   Nengo ecosystem <https://nengo.ai/projects.html>
+   license
 
 * :ref:`genindex`

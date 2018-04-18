@@ -425,7 +425,7 @@ Release History
   (`#982 <https://github.com/nengo/nengo/pull/982>`_)
 
 **Bug fixes**
-n
+
 - The DecoderCache is used as context manager instead of relying on the
   ``__del__`` method for cleanup. This should solve problems with the
   cache's file lock not being removed. It might be necessary to

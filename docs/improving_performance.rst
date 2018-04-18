@@ -88,7 +88,7 @@ To enable the decoder caching, set a seed on the network like so::
 
     with nengo.Networks(seed=1) as model:
 
-There are :ref:`a few configuration options <nengorc>` for more
+There are :doc:`a few configuration options <nengorc>` for more
 advanced control of the cache. The most important might be the possibility to
 control the path where the cache files are stored. On high performance
 clusters, certain file systems might provide better performance.

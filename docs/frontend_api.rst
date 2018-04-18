@@ -1,6 +1,6 @@
-*******************
-Nengo Modelling API
-*******************
+******************
+Nengo frontend API
+******************
 
 .. default-role:: obj
 

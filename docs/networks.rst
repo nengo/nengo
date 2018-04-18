@@ -1,6 +1,6 @@
-********
-Networks
-********
+*****************
+Reusable networks
+*****************
 
 .. default-role:: obj
 
@@ -8,12 +8,15 @@ Networks are an abstraction of a grouping of Nengo objects
 (i.e., `.Node`, `.Ensemble`, `.Connection`, and `.Network` instances,
 though usually not `.Probe` instances.)
 Like most abstractions, this helps with code-reuse and maintainability.
-You'll find the documentation for the various pre-built networks below.
+You'll find the documentation
+for the reusable networks included with Nengo below.
 
-Building your own network can be a great way to encapsulate
-parts of your model, making your code easier to understand,
+You may also want to build your own reusable networks.
+Doing so can help encapsulate parts of your model,
+making your code easier to understand,
 easier to re-use, and easier to share.
-The following examples will help you to build your own networks:
+The following examples will
+help you build your own reusable networks:
 
 .. toctree::
 
