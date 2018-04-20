@@ -135,14 +135,6 @@ as part of the documentation building process.
 
 .. _Pandoc: https://pandoc.org/
 
-Learning more
-=============
-
-.. toctree::
-   :maxdepth: 2
-
-   nef_minimal
-
 Getting help
 ============
 

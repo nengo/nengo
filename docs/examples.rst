@@ -119,9 +119,10 @@ Semantic Pointer Architecture
    examples/spa_sequence
    examples/spa_sequence_routed
 
-Extending Nengo
-===============
+Under the hood
+==============
 
 .. toctree::
 
    examples/rectified_linear
+   examples/nef_algorithm
