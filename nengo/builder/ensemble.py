@@ -8,7 +8,7 @@ from nengo.builder import Builder, Signal
 from nengo.builder.operator import Copy, DotInc, Reset
 from nengo.dists import Distribution, get_samples
 from nengo.ensemble import Ensemble
-from nengo.exceptions import BuildError
+from nengo.exceptions import BuildError, NengoWarning
 from nengo.neurons import Direct
 from nengo.utils.builder import default_n_eval_points
 
@@ -88,6 +88,14 @@ def get_gain_bias(ens, rng=np.random):
         bias = get_samples(ens.bias, ens.n_neurons, rng=rng)
         max_rates, intercepts = ens.neuron_type.max_rates_intercepts(
             gain, bias)
+
+        if (ens.max_rates is not Ensemble.max_rates.default or
+                ens.intercepts is not Ensemble.intercepts.default):
+            warnings.warn(NengoWarning(
+                "Specifying the gains and biases for %s imposes a set of "
+                "maximum firing rates and intercepts. Further specifying "
+                "either max_rates or intercepts has no effect." % ens))
+
     elif ens.gain is not None or ens.bias is not None:
         # TODO: handle this instead of error
         raise NotImplementedError("gain or bias set for %s, but not both. "

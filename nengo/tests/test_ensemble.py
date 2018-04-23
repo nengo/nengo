@@ -4,7 +4,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.dists import Choice, Gaussian, UniformHypersphere
-from nengo.exceptions import BuildError
+from nengo.exceptions import BuildError, NengoWarning
 from nengo.processes import WhiteNoise, FilteredNoise
 from nengo.utils.testing import allclose
 
@@ -214,6 +214,18 @@ def test_eval_points_number_warning(Simulator, seed):
             pass
 
     assert np.allclose(sim.data[A].eval_points, [[0.1], [0.2]])
+
+
+def test_gain_bias_warning(Simulator, seed):
+    model = nengo.Network(seed=seed)
+    with model:
+        nengo.Ensemble(1, 1, gain=[1], bias=[1], intercepts=[0.5])
+        nengo.Ensemble(1, 1, gain=[1], bias=[1], max_rates=[200])
+
+    with pytest.warns(NengoWarning):
+        # gain, bias override specified intercepts and max_rates, which warns
+        with Simulator(model):
+            pass
 
 
 @pytest.mark.parametrize('neurons, dims', [

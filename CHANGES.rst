@@ -22,6 +22,13 @@ Release History
 2.7.1 (unreleased)
 ==================
 
+**Added**
+
+- Added a warning when setting ``gain`` and ``bias`` along with either of
+  ``max_rates`` or ``intercepts``, as the latter two parameters are ignored.
+  (`#1431 <https://github.com/nengo/nengo/issues/1431>`_,
+  `#1433 <https://github.com/nengo/nengo/pull/1433>`_)
+
 **Changed**
 
 - Learning rules can now be sliced when providing error input.
