@@ -48,7 +48,7 @@ script:
       .ci/static.sh run;
     elif [[ "$COVERAGE" == "true" ]]; then
       .ci/coverage.sh run;
-    elif [[ "$DOCS" == "true" && -n "$TRAVIS_TAG" ]]; then
+    elif [[ -n "$TRAVIS_TAG" && "$DOCS" == "true" ]]; then
       .ci/docs.sh run;
     else
       .ci/test.sh run;
