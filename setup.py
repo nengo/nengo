@@ -55,8 +55,7 @@ setup(
     data_files=[("nengo", ["nengo-data/nengorc"])],
     url="https://github.com/nengo/nengo",
     license="Free for non-commercial use",
-    description="Tools for making neural simulations using the "
-                "Neural Engineering Framework",
+    description="Tools for building and simulating large-scale neural models",
     long_description=read("README.rst", "CHANGES.rst"),
     zip_safe=False,
     # Without this, `setup.py install` fails to install NumPy.
