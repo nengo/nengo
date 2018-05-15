@@ -12,7 +12,7 @@ else:
 decoder_cache_dir = os.path.join(cache_dir, "decoders")
 install_dir = os.path.abspath(
     os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-examples_dir = os.path.join(install_dir, "examples")
+examples_dir = os.path.join(install_dir, "docs", "examples")
 
 nengorc = {'system': os.path.join(install_dir, 'nengo-data', 'nengorc'),
            'user': os.path.join(config_dir, "nengorc"),
