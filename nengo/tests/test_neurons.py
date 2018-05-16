@@ -152,7 +152,6 @@ def test_lif_zero_tau_ref(Simulator):
 def test_alif_rate(Simulator, plt):
     n = 100
     max_rates = 50 * np.ones(n)
-    # max_rates = 200 * np.ones(n)
     intercepts = np.linspace(-0.99, 0.99, n)
     encoders = np.ones((n, 1))
 
@@ -167,13 +166,12 @@ def test_alif_rate(Simulator, plt):
         nengo.Connection(u, a, synapse=None)
         ap = nengo.Probe(a.neurons)
 
-    dt = 1e-3
-    with Simulator(model, dt=dt) as sim:
+    with Simulator(model) as sim:
         sim.run(2.)
 
     t = sim.trange()
     rates = sim.data[ap]
-    _, ref = tuning_curves(a, sim, inputs=np.array([0.5]))
+    _, ref = tuning_curves(a, sim, inputs=0.5)
 
     ax = plt.subplot(211)
     implot(plt, t, intercepts[::-1], rates.T, ax=ax)
@@ -217,8 +215,7 @@ def test_alif(Simulator, plt):
         ap = nengo.Probe(a.neurons)
         bp = nengo.Probe(b.neurons)
 
-    dt = 1e-3
-    with Simulator(model, dt=dt) as sim:
+    with Simulator(model) as sim:
         sim.run(2.)
 
     t = sim.trange()
