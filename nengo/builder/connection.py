@@ -126,6 +126,9 @@ def build_decoders(model, conn, rng, transform):
 
 def solve_for_decoders(conn, gain, bias, x, targets, rng, E=None):
     activities = conn.pre_obj.neuron_type.rates(x, gain, bias)
+    if activities.ndim == 1:
+        activities = activities.reshape((-1, 1))
+
     if np.count_nonzero(activities) == 0:
         raise BuildError(
             "Building %s: 'activities' matrix is all zero for %s. "

@@ -22,8 +22,8 @@ def test_lif_builtin(rng):
     gain, bias = lif.gain_bias(
         rng.uniform(80, 100, size=N), rng.uniform(-1, 1, size=N))
 
-    x = np.arange(-2, 2, .1).reshape(-1, 1)
-    J = gain * x + bias
+    x = np.arange(-2, 2, .1)
+    J = np.squeeze(gain * x.reshape(-1, 1) + bias)
 
     voltage = np.zeros_like(J)
     reftime = np.zeros_like(J)
@@ -139,7 +139,6 @@ def test_lif_zero_tau_ref(Simulator):
 def test_alif_rate(Simulator, plt):
     n = 100
     max_rates = 50 * np.ones(n)
-    # max_rates = 200 * np.ones(n)
     intercepts = np.linspace(-0.99, 0.99, n)
     encoders = np.ones((n, 1))
 
@@ -154,13 +153,12 @@ def test_alif_rate(Simulator, plt):
         nengo.Connection(u, a, synapse=None)
         ap = nengo.Probe(a.neurons)
 
-    dt = 1e-3
-    with Simulator(model, dt=dt) as sim:
+    with Simulator(model) as sim:
         sim.run(2.)
 
     t = sim.trange()
     rates = sim.data[ap]
-    _, ref = tuning_curves(a, sim, inputs=np.array([0.5]))
+    _, ref = tuning_curves(a, sim, inputs=0.5)
 
     ax = plt.subplot(211)
     implot(plt, t, intercepts[::-1], rates.T, ax=ax)
@@ -204,8 +202,7 @@ def test_alif(Simulator, plt):
         ap = nengo.Probe(a.neurons)
         bp = nengo.Probe(b.neurons)
 
-    dt = 1e-3
-    with Simulator(model, dt=dt) as sim:
+    with Simulator(model) as sim:
         sim.run(2.)
 
     t = sim.trange()
@@ -372,7 +369,7 @@ def test_amplitude(Simulator, seed, rng, plt, Neuron):
     neuron = Neuron(amplitude=amp)
 
     # check static
-    x = np.linspace(-5, 30).reshape(-1, 1)
+    x = np.linspace(-5, 30)
     y = amp * neuron0.rates(x, 1., 0.)
     y2 = neuron.rates(x, 1., 0.)
     assert np.allclose(y, y2, atol=1e-5)
@@ -404,8 +401,8 @@ def test_amplitude(Simulator, seed, rng, plt, Neuron):
     r0 = amp * neuron0.rates(x, gain, bias)
 
     i = np.argsort(r0)
-    plt.plot(r0[0, i][0])
-    plt.plot(r[i][0])
+    plt.plot(r0[i])
+    plt.plot(r[i])
 
     error = rms(r - r0) / rms(r0)
     assert (error < 0.02).all()
@@ -504,8 +501,8 @@ def test_gain_bias(rng, nl_nodirect, generic):
     tolerance = 0.1 if generic else 1e-8
 
     if generic:
-        gain, bias = nengo.neurons.NeuronType.gain_bias(nl, max_rates,
-                                                        intercepts)
+        gain, bias = nengo.neurons.NeuronType.gain_bias(
+            nl, max_rates, intercepts)
     else:
         gain, bias = nl.gain_bias(max_rates, intercepts)
 
@@ -516,8 +513,10 @@ def test_gain_bias(rng, nl_nodirect, generic):
     else:
         threshold = 0
 
-    assert np.all(nl.rates(intercepts - tolerance, gain, bias) <= threshold)
-    assert np.all(nl.rates(intercepts + tolerance, gain, bias) > threshold)
+    x = (intercepts - tolerance)[np.newaxis, :]
+    assert np.all(nl.rates(x, gain, bias) <= threshold)
+    x = (intercepts + tolerance)[np.newaxis, :]
+    assert np.all(nl.rates(x, gain, bias) > threshold)
 
     if generic:
         max_rates0, intercepts0 = (
@@ -528,23 +527,24 @@ def test_gain_bias(rng, nl_nodirect, generic):
     assert np.allclose(max_rates, max_rates0, atol=tolerance)
     assert np.allclose(intercepts, intercepts0, atol=tolerance)
 
-
-@pytest.mark.parametrize("n_samples", [1, 3, 10])
-def test_current(n_samples, rng):
+def test_current(rng):
     n_neurons = 20
     gain = rng.rand(n_neurons)
     bias = rng.rand(n_neurons)
 
-    x = rng.rand(n_samples, 1)
+    # 3 samples
+    x = rng.rand(3)
     current = nengo.LIF().current(x, gain, bias)
-    assert np.allclose(current, gain * x + bias)
-    assert current.shape == (n_samples, n_neurons)
+    assert np.allclose(current, gain * x.reshape(-1, 1) + bias)
+    assert current.shape == (3, n_neurons)
 
-    x = rng.rand(n_samples, n_neurons)
+    # 10 samples, different values for each neuron
+    x = rng.rand(10, n_neurons)
     current = nengo.LIF().current(x, gain, bias)
     assert np.allclose(current, gain * x + bias)
-    assert current.shape == (n_samples, n_neurons)
+    assert current.shape == (10, n_neurons)
 
     with pytest.raises(ValidationError):
-        x = rng.rand(n_samples, 2)
+        # Incorrect second dimension
+        x = rng.rand(10, 2)
         current = nengo.LIF().current(x, gain, bias)

@@ -40,7 +40,7 @@ class NeuronType(FrozenObject):
 
         Parameters
         ----------
-        x : (n_samples, 1), (n_samples, n_neurons) array_like
+        x : (n_samples,) or (n_samples, n_neurons) array_like
             Scalar inputs for which to calculate current.
         gain : (n_neurons,) array_like
             Gains associated with each neuron.
@@ -51,15 +51,20 @@ class NeuronType(FrozenObject):
         -------
         current : (n_samples, n_neurons)
             Current to be injected in each neuron.
+            If ``n_samples`` is 1, the extra dimension will be removed.
         """
-        x = np.array(x, dtype=float, copy=False, ndmin=2)
+        x = np.array(x, dtype=float, copy=False, ndmin=1)
         gain = np.array(gain, dtype=float, copy=False, ndmin=1)
         bias = np.array(bias, dtype=float, copy=False, ndmin=1)
-        if x.shape[1] != 1 and x.shape[1] != gain.shape[0]:
-            raise ValidationError(
-                "The second dimension of `x` must have length %d or 1."
-                % gain.shape[0], attr="x", obj=self)
-        return gain * x + bias
+
+        if x.ndim == 1:
+            x = x[:, np.newaxis]
+        elif x.ndim > 1 and x.shape[1] != gain.shape[0]:
+            raise ValidationError("Expected shape (%d, %d); got (%d, %d)."
+                                  % ((x.shape[0], gain.shape[0]) + x.shape),
+                                  attr="x", obj=self)
+
+        return np.squeeze(gain * x + bias)
 
     def gain_bias(self, max_rates, intercepts):
         """Compute the gain and bias needed to satisfy max_rates, intercepts.
@@ -92,16 +97,15 @@ class NeuronType(FrozenObject):
         max_rate = max_rates.max()
 
         # Start with dummy gain and bias so x == J in rate calculation
-        gain = np.ones(J_steps)
-        bias = np.zeros(J_steps)
-        rate = np.zeros(J_steps)
+        gain = np.ones(1)
+        bias = np.zeros(1)
 
         # Find range of J that will achieve max rates (assume monotonic)
         J_threshold = None
         J_max = None
         Jr = 10
         for _ in range(10):
-            J = np.linspace(-Jr, Jr, J_steps).reshape(-1, 1)
+            J = np.linspace(-Jr, Jr, J_steps)
             rate = self.rates(J, gain, bias)
             if J_threshold is None and (rate <= 0).any():
                 J_threshold = J[np.where(rate <= 0)[0][-1]]
@@ -117,12 +121,12 @@ class NeuronType(FrozenObject):
             if J_max is None:
                 raise RuntimeError("Could not find max current")
 
-        J = np.linspace(J_threshold, J_max, J_steps).reshape(-1, 1)
+        J = np.linspace(J_threshold, J_max, J_steps)
         rate = self.rates(J, gain, bias)
 
         gain = np.zeros_like(max_rates)
         bias = np.zeros_like(max_rates)
-        J_tops = np.interp(max_rates, rate.T[0], J.T[0])
+        J_tops = np.interp(max_rates, rate, J)
         gain[:] = (J_threshold - J_tops) / (intercepts - 1)
         bias[:] = J_tops - gain
         return gain, bias
@@ -171,8 +175,8 @@ class NeuronType(FrozenObject):
 
         Parameters
         ----------
-        x : (n_samples, 1), (n_samples, n_neurons) array_like
-            Scalar inputs for which to calculate current.
+        x : (n_samples,) array_like
+            Scalar inputs for which to calculate rates.
         gain : (n_neurons,) array_like
             Gains associated with each neuron.
         bias : (n_neurons,) array_like
@@ -182,6 +186,7 @@ class NeuronType(FrozenObject):
         -------
         rates : (n_samples, n_neurons) ndarray
             The firing rates at each given value of `x`.
+            If ``n_samples`` is 1, the extra dimension will be removed.
         """
         J = self.current(x, gain, bias)
         out = np.zeros_like(J)

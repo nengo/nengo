@@ -791,8 +791,8 @@ def test_eval_points_scaling(Simulator, sample, radius, seed, rng, scale):
     with model:
         a = nengo.Ensemble(1, 3, radius=radius)
         b = nengo.Ensemble(1, 3)
-        con = nengo.Connection(a, b, eval_points=eval_points,
-                               scale_eval_points=scale)
+        con = nengo.Connection(
+            a, b, eval_points=eval_points, scale_eval_points=scale)
 
     with Simulator(model) as sim:
         dists = npext.norm(sim.data[con].eval_points, axis=1)
