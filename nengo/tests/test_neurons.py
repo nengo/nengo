@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.exceptions import BuildError, SimulationError
+from nengo.exceptions import BuildError, SimulationError, ValidationError
 from nengo.neurons import Direct, NeuronTypeParam
 from nengo.processes import WhiteSignal
 from nengo.solvers import LstsqL2nz
@@ -372,7 +372,7 @@ def test_amplitude(Simulator, seed, rng, plt, Neuron):
     neuron = Neuron(amplitude=amp)
 
     # check static
-    x = np.linspace(-5, 30)
+    x = np.linspace(-5, 30).reshape(-1, 1)
     y = amp * neuron0.rates(x, 1., 0.)
     y2 = neuron.rates(x, 1., 0.)
     assert np.allclose(y, y2, atol=1e-5)
@@ -404,8 +404,8 @@ def test_amplitude(Simulator, seed, rng, plt, Neuron):
     r0 = amp * neuron0.rates(x, gain, bias)
 
     i = np.argsort(r0)
-    plt.plot(r0[i])
-    plt.plot(r[i])
+    plt.plot(r0[0, i][0])
+    plt.plot(r[i][0])
 
     error = rms(r - r0) / rms(r0)
     assert (error < 0.02).all()
@@ -509,8 +509,7 @@ def test_gain_bias(rng, nl_nodirect, generic):
     else:
         gain, bias = nl.gain_bias(max_rates, intercepts)
 
-    assert np.allclose(nl.rates(np.ones(n), gain, bias), max_rates,
-                       atol=tolerance)
+    assert np.allclose(nl.rates(1, gain, bias), max_rates, atol=tolerance)
 
     if nl_nodirect == nengo.Sigmoid:
         threshold = 0.5 / nl.tau_ref
@@ -528,3 +527,24 @@ def test_gain_bias(rng, nl_nodirect, generic):
 
     assert np.allclose(max_rates, max_rates0, atol=tolerance)
     assert np.allclose(intercepts, intercepts0, atol=tolerance)
+
+
+@pytest.mark.parametrize("n_samples", [1, 3, 10])
+def test_current(n_samples, rng):
+    n_neurons = 20
+    gain = rng.rand(n_neurons)
+    bias = rng.rand(n_neurons)
+
+    x = rng.rand(n_samples, 1)
+    current = nengo.LIF().current(x, gain, bias)
+    assert np.allclose(current, gain * x + bias)
+    assert current.shape == (n_samples, n_neurons)
+
+    x = rng.rand(n_samples, n_neurons)
+    current = nengo.LIF().current(x, gain, bias)
+    assert np.allclose(current, gain * x + bias)
+    assert current.shape == (n_samples, n_neurons)
+
+    with pytest.raises(ValidationError):
+        x = rng.rand(n_samples, 2)
+        current = nengo.LIF().current(x, gain, bias)

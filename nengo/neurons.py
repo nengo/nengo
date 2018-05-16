@@ -34,18 +34,31 @@ class NeuronType(FrozenObject):
     def current(self, x, gain, bias):
         """Compute current injected in each neuron given input, gain and bias.
 
+        Note that ``x`` is assumed to be already projected onto the encoders
+        associated with the neurons and normalized to radius 1, so the maximum
+        expected current for a neuron occurs when input for that neuron is 1.
+
         Parameters
         ----------
-        x : (n_neurons,) array_like
-            Vector-space input.
+        x : (n_samples, 1), (n_samples, n_neurons) array_like
+            Scalar inputs for which to calculate current.
         gain : (n_neurons,) array_like
             Gains associated with each neuron.
         bias : (n_neurons,) array_like
             Bias current associated with each neuron.
+
+        Returns
+        -------
+        current : (n_samples, n_neurons)
+            Current to be injected in each neuron.
         """
-        x = np.array(x, dtype=float, copy=False, ndmin=1)
+        x = np.array(x, dtype=float, copy=False, ndmin=2)
         gain = np.array(gain, dtype=float, copy=False, ndmin=1)
         bias = np.array(bias, dtype=float, copy=False, ndmin=1)
+        if x.shape[1] != 1 and x.shape[1] != gain.shape[0]:
+            raise ValidationError(
+                "The second dimension of `x` must have length %d or 1."
+                % gain.shape[0], attr="x", obj=self)
         return gain * x + bias
 
     def gain_bias(self, max_rates, intercepts):
@@ -88,7 +101,7 @@ class NeuronType(FrozenObject):
         J_max = None
         Jr = 10
         for _ in range(10):
-            J = np.linspace(-Jr, Jr, J_steps)
+            J = np.linspace(-Jr, Jr, J_steps).reshape(-1, 1)
             rate = self.rates(J, gain, bias)
             if J_threshold is None and (rate <= 0).any():
                 J_threshold = J[np.where(rate <= 0)[0][-1]]
@@ -104,12 +117,12 @@ class NeuronType(FrozenObject):
             if J_max is None:
                 raise RuntimeError("Could not find max current")
 
-        J = np.linspace(J_threshold, J_max, J_steps)
+        J = np.linspace(J_threshold, J_max, J_steps).reshape(-1, 1)
         rate = self.rates(J, gain, bias)
 
         gain = np.zeros_like(max_rates)
         bias = np.zeros_like(max_rates)
-        J_tops = np.interp(max_rates, rate, J)
+        J_tops = np.interp(max_rates, rate.T[0], J.T[0])
         gain[:] = (J_threshold - J_tops) / (intercepts - 1)
         bias[:] = J_tops - gain
         return gain, bias
@@ -135,28 +148,31 @@ class NeuronType(FrozenObject):
             X-intercepts of neurons.
         """
 
-        max_rates = self.rates(np.ones_like(gain), gain, bias)
+        max_rates = self.rates(1, gain, bias)
 
         x_range = np.linspace(-1, 1, 101)
-        rates = np.asarray([self.rates(np.ones_like(gain) * x, gain, bias)
-                            for x in x_range])
+        rates = np.asarray([self.rates(x, gain, bias) for x in x_range])
         last_zeros = np.maximum(np.argmax(rates > 0, axis=0) - 1, 0)
         intercepts = x_range[last_zeros]
 
         return max_rates, intercepts
 
     def rates(self, x, gain, bias):
-        """Compute firing rates (in Hz) for given vector input, ``x``.
+        """Compute firing rates (in Hz) for given input ``x``.
 
         This default implementation takes the naive approach of running the
         step function for a second. This should suffice for most rate-based
         neuron types; for spiking neurons it will likely fail (those models
         should override this function).
 
+        Note that ``x`` is assumed to be already projected onto the encoders
+        associated with the neurons and normalized to radius 1, so the maximum
+        expected rate for a neuron occurs when input for that neuron is 1.
+
         Parameters
         ----------
-        x : (n_neurons,) array_like
-            Vector-space input.
+        x : (n_samples, 1), (n_samples, n_neurons) array_like
+            Scalar inputs for which to calculate current.
         gain : (n_neurons,) array_like
             Gains associated with each neuron.
         bias : (n_neurons,) array_like
@@ -164,7 +180,7 @@ class NeuronType(FrozenObject):
 
         Returns
         -------
-        rates : (n_neurons,) ndarray
+        rates : (n_samples, n_neurons) ndarray
             The firing rates at each given value of `x`.
         """
         J = self.current(x, gain, bias)
@@ -417,7 +433,7 @@ class LIFRate(NeuronType):
     def step_math(self, dt, J, output):
         """Implement the LIFRate nonlinearity."""
         j = J - 1
-        output[:] = 0  # faster than output[j <= 0] = 0
+        output[...] = 0  # faster than output[j <= 0] = 0
         output[j > 0] = self.amplitude / (
             self.tau_ref + self.tau_rc * np.log1p(1. / j[j > 0]))
         # the above line is designed to throw an error if any j is nan
@@ -469,7 +485,7 @@ class LIF(LIFRate):
 
         # determine which neurons spiked (set them to 1/dt, else 0)
         spiked_mask = voltage > 1
-        spiked[:] = spiked_mask * (self.amplitude / dt)
+        spiked[...] = spiked_mask * (self.amplitude / dt)
 
         # set v(0) = 1 and solve for t to compute the spike time
         t_spike = dt + self.tau_rc * np.log1p(
