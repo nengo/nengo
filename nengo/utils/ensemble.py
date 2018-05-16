@@ -89,13 +89,8 @@ def response_curves(ens, sim, inputs=None):
 
     if inputs is None:
         inputs = np.linspace(-1.0, 1.0)
-
-    x = np.atleast_2d(inputs).T
-    activities = ens.neuron_type.rates(
-        x, sim.data[ens].gain, sim.data[ens].bias)
-    activities = np.squeeze(activities)
-
-    return inputs, activities
+    return inputs, ens.neuron_type.rates(
+        inputs, sim.data[ens].gain, sim.data[ens].bias)
 
 
 def _similarity(encoders, index, rows, cols=1):
