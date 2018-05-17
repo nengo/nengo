@@ -6,7 +6,7 @@ On this page, we'll go over the changes between Nengo 1.4 and 2.0.
 They will first be reviewed heuristically in the section Big Changes, before
 being broken down practically in Changes to Common Functions
 
-Big Changes
+Big changes
 ===========
 
 Objects instead of strings
@@ -87,7 +87,7 @@ meaning that you can run the same model
 with different timesteps to see if
 there is a marked functional difference.
 
-Changes to Common Functions
+Changes to common functions
 ---------------------------
 
 Many commonly used functions have been
@@ -112,8 +112,8 @@ A simple example::
 
   A = nengo.Ensemble(40, 1, neuron_type=nengo.LIF(), label='A')
 
-See `Ensemble documentation <user_api.html#ensemble>`_
-for a list of properties that can be manipulated.
+See :class:`nengo.Ensemble` for
+a list of properties that can be manipulated.
 
 Making ensemble arrays (i.e., network arrays)
 ---------------------------------------------
@@ -133,12 +133,10 @@ New API::
 
   nengo.networks.EnsembleArray(name, neurons, n_ensembles, dimensions_per_ensemble, **ens_args)
 
-See `EnsembleArray documentation <networks.html#ensemblearray>`_
-for more information.
+See :class:`nengo.networks.EnsembleArray` for more information.
 
-Changes to Common Functions
+Changes to common functions
 ===========================
-
 
 Making nodes
 ------------
@@ -162,8 +160,7 @@ where ``output`` is either a constant value
 (float, list, NumPy array), a function, or
 ``None`` when passing through values unchanged.
 
-See `Node documentation <user_api.html#node>`_
-for more information.
+See :class:`nengo.Node` for more information.
 
 Making inputs
 -------------
@@ -246,10 +243,3 @@ to route dimensions easily::
   nengo.Connection(pre_1d, post_2d[0])
 
 The keyword argument ``pstc`` has been renamed to ``synapse``.
-
-Under the hood changes
-======================
-
-Under the hood, Nengo has been completely rewritten.
-If you want to know the underlying structure of
-Nengo 2.0, see the `developer documentation <dev_guide.html>`_.

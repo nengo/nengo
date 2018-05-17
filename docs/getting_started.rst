@@ -268,7 +268,7 @@ for analysis or visualization.
   print(sim.data[product_probe][-10:])
 
 For more details on these objects,
-see `the API documentation <user_api.html>`_.
+see :doc:`the API documentation <frontend_api>`.
 
 Next steps
 ==========
