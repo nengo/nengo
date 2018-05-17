@@ -527,6 +527,7 @@ def test_gain_bias(rng, nl_nodirect, generic):
     assert np.allclose(max_rates, max_rates0, atol=tolerance)
     assert np.allclose(intercepts, intercepts0, atol=tolerance)
 
+
 def test_current(rng):
     n_neurons = 20
     gain = rng.rand(n_neurons)
