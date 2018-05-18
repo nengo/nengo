@@ -33,8 +33,8 @@ Nengo imports or vendorizes several open source libraries.
   `BSD license <https://bitbucket.org/birkenfeld/sphinx/src/be5bd373a1a47fb68d70523b6e980e654e070e9f/LICENSE?at=default>`__
 * `numpydoc <https://github.com/numpy/numpydoc>`_ - Used under
   `BSD license <https://github.com/numpy/numpydoc/blob/master/LICENSE.txt>`__
-* `matplotlib <http://matplotlib.org/>`_ - Used under
-  `modified PSF license <http://matplotlib.org/users/license.html>`__
+* `matplotlib <https://matplotlib.org/>`_ - Used under
+  `modified PSF license <https://matplotlib.org/users/license.html>`__
 * `IPython <http://ipython.org/>`_ - Used under
   `BSD license <https://github.com/ipython/ipython/blob/master/COPYING.rst>`__
 * `pytest <https://docs.pytest.org/en/latest/>`_ - Used under

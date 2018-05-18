@@ -50,6 +50,8 @@ script:
       .ci/coverage.sh run;
     elif [[ -n "$TRAVIS_TAG" && "$DOCS" == "true" ]]; then
       .ci/docs.sh run;
+    elif [[ "$DOCS" == "true" ]]; then
+      .ci/docs.sh check;
     else
       .ci/test.sh run;
     fi

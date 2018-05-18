@@ -91,8 +91,8 @@ Writing your own tests
 ----------------------
 
 When writing your own tests, please make use of
-custom Nengo `fixtures <http://pytest.org/latest/fixture.html>`_
-and `markers <http://pytest.org/latest/example/markers.html>`_
+custom Nengo `fixtures <https://docs.pytest.org/en/latest/fixture.html>`_
+and `markers <https://docs.pytest.org/en/latest/example/markers.html>`_
 to integrate well with existing tests.
 See existing tests for examples, or consult
 
@@ -106,7 +106,7 @@ and
 
    pytest --pyargs nengo --markers
 
-.. _pytest: http://pytest.org/latest/
+.. _pytest: https://docs.pytest.org/en/latest/
 
 How to build the documentation
 ==============================

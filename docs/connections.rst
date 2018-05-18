@@ -328,12 +328,12 @@ and loading it up in the future.
 
 .. [1] Gosmann, Jan. Precise multiplications with the NEF.
        Waterloo, Ontario, Canada: University of Waterloo; 2015.
-       Available from: http://dx.doi.org/10.5281/zenodo.35680
+       Available from: https://zenodo.org/record/35680
 .. [2] Gosmann, Jan, and Chris Eliasmith. “Optimizing Semantic Pointer
        Representations for Symbol-Like Processing in Spiking Neural Networks.”
        PLoS ONE 11, no. 2 (February 22, 2016): e0149928.
        `doi:10.1371/journal.pone.0149928
-       <http://dx.doi.org/10.1371%2Fjournal.pone.0149928>`_.
+       <http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0149928>`_.
 .. [3] Note that decoded connections
        also accept the ``transform`` argument.
        In the case of decoded connections,

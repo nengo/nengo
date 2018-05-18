@@ -29,12 +29,12 @@ on each operating system is:
 
 - Windows: Use Anaconda_ or
   the `official installer <https://www.python.org/downloads/>`_ and
-  `unofficial binaries <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_
+  unofficial binaries (www.lfd.uci.edu/~gohlke/pythonlibs/)
 - Mac OS X: Use Anaconda_ or Homebrew_
 - Linux: Use a package manager or install from source
 
 For more options, see
-`SciPy.org's installation page <http://www.scipy.org/install.html>`_.
+`SciPy.org's installation page <https://www.scipy.org/install.html>`_.
 For our recommended options, read on.
 
 Anaconda
@@ -105,7 +105,7 @@ through ``pip`` when installing Nengo.
    pip install nengo[tests]  # For running the test suite
    pip install nengo[all]  # All of the above
 
-.. _Anaconda: https://store.continuum.io/cshop/anaconda/
+.. _Anaconda: https://www.anaconda.com/download/
 .. _Homebrew: https://brew.sh/
 
 Usage
@@ -279,6 +279,6 @@ Next steps
   `this technical overview <http://compneuro.uwaterloo.ca/files/publications/stewart.2012d.pdf>`_.
 * If you have some understanding of the NEF already,
   or just want to dive in headfirst,
-  check out `our extensive set of examples <examples.html>`_.
+  check out :doc:`our extensive set of examples <examples>`.
 * If you want to see the real capabilities of Nengo, see our
   `publications created with the NEF and Nengo <http://compneuro.uwaterloo.ca/publications.html>`_.

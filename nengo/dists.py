@@ -519,9 +519,7 @@ class CosineSimilarity(SubvectorLength):
        Efficiently sampling vectors and coordinates from the n-sphere and
        n-ball. Technical Report, Centre for Theoretical Neuroscience,
        Waterloo, ON, 2017
-       <http://compneuro.uwaterloo.ca/publications/voelker2017.html>`_,
-       `doi:10.13140/RG.2.2.15829.01767/1
-       <https://dx.doi.org/10.13140/RG.2.2.15829.01767/1>`_.
+       <http://compneuro.uwaterloo.ca/publications/voelker2017.html>`_
 
     Parameters
     ----------

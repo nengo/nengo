@@ -15,6 +15,8 @@ function usage {
 if [[ "$COMMAND" == "install" ]]; then
     conda install jupyter matplotlib scipy
     pip install "sphinx<1.7" nbsphinx numpydoc guzzle_sphinx_theme ghp-import
+elif [[ "$COMMAND" == "check" ]]; then
+    sphinx-build -b linkcheck -vW -D nbsphinx_execute=never docs docs/_build
 elif [[ "$COMMAND" == "run" ]]; then
     sphinx-build -vW docs docs/_build
 elif [[ "$COMMAND" == "upload" ]]; then

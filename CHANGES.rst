@@ -187,7 +187,7 @@ Release History
 - Learning rules now have a ``size_in`` parameter and attribute,
   allowing both integers and strings to define the dimensionality
   of the learning rule. This replaces the ``error_type`` attribute.
-  (`#1307 <https://github.com/nengo/nengo/issues/1307>`_,
+  (`#1307 <https://github.com/nengo/nengo/pull/1307>`_,
   `#1310 <https://github.com/nengo/nengo/pull/1310>`_)
 - ``EnsembleArray.n_neurons`` now gives the total number of neurons
   in all ensembles, including those in subnetworks.
@@ -603,8 +603,8 @@ Release History
   injected random signals and noise are identical between runs,
   unless the seed is changed (which can be done through
   ``Simulator.reset``).
-  (`#582 <https://github.com/nengo/nengo/pull/582>`_,
-  `#616 <https://github.com/nengo/nengo/pull/616>`_,
+  (`#582 <https://github.com/nengo/nengo/issues/582>`_,
+  `#616 <https://github.com/nengo/nengo/issues/616>`_,
   `#652 <https://github.com/nengo/nengo/pull/652>`_)
 - An exception is raised if SPA modules are not properly assigned to an SPA
   attribute.
@@ -625,7 +625,7 @@ Release History
 - Added the ``Voja`` (Vector Oja) learning rule type, which updates an
   ensemble's encoders to fire selectively for its inputs. (see
   ``examples/learning/learn_associations.ipynb``).
-  (`#727 <https://github.com/nengo/nengo/issues/727>`_)
+  (`#727 <https://github.com/nengo/nengo/pull/727>`_)
 - Added a clipped exponential distribution useful for thresholding, in
   particular in the AssociativeMemory.
   (`#779 <https://github.com/nengo/nengo/pull/779>`_)

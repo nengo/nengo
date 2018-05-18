@@ -43,7 +43,7 @@ or neuromorphic hardware.
    user_guide
    examples
    contributing
-   Nengo ecosystem <https://nengo.ai/projects.html>
+   Nengo ecosystem <https://www.nengo.ai/projects.html>
    license
 
 * :ref:`genindex`

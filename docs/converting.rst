@@ -174,8 +174,7 @@ In the old API, inputs were defined as::
 
 Inputs are just nodes whose sole function are to output a function.
 
-See the first example `Node documentation <user_api.html#node>`_
-for an example of this.
+Many of the :doc:`examples` use function output nodes.
 
 Terminations and Origins
 ------------------------
