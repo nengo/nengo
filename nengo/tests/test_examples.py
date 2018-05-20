@@ -6,6 +6,17 @@ import _pytest.capture
 from nengo.utils.paths import examples_dir
 from nengo.utils.stdlib import execfile
 
+try:
+    from nengo.utils.ipython import export_py, iter_cells, load_notebook
+except ImportError as err:
+
+    def export_py(err=err, *args, **kwargs):
+        raise err
+
+    def load_notebook(err=err, *args, **kwargs):
+        raise err
+
+
 # Monkeypatch _pytest.capture.DontReadFromInput
 #  If we don't do this, importing IPython will choke as it reads the current
 #  sys.stdin to figure out the encoding it will use; pytest installs
@@ -56,9 +67,6 @@ fast_examples.sort()
 
 def assert_noexceptions(nb_file, tmpdir):
     plt = pytest.importorskip('matplotlib.pyplot')
-    pytest.importorskip("IPython", minversion="1.0")
-    pytest.importorskip("jinja2")
-    from nengo.utils.ipython import export_py, load_notebook
     nb_path = os.path.join(examples_dir, "%s.ipynb" % nb_file)
     nb = load_notebook(nb_path)
     pyfile = "%s.py" % (
@@ -73,6 +81,8 @@ def assert_noexceptions(nb_file, tmpdir):
 @pytest.mark.filterwarnings("ignore:Creating new attribute 'memory_location'")
 def test_fast_noexceptions(nb_file, tmpdir):
     """Ensure that no cells raise an exception."""
+    pytest.importorskip("IPython", minversion="3.0")
+    pytest.importorskip("jinja2")
     assert_noexceptions(nb_file, tmpdir)
 
 
@@ -81,38 +91,45 @@ def test_fast_noexceptions(nb_file, tmpdir):
 @pytest.mark.parametrize('nb_file', slow_examples)
 def test_slow_noexceptions(nb_file, tmpdir):
     """Ensure that no cells raise an exception."""
+    pytest.importorskip("IPython", minversion="3.0")
+    pytest.importorskip("jinja2")
     assert_noexceptions(nb_file, tmpdir)
-
-
-def iter_cells(nb_file, cell_type="code"):
-    from nengo.utils.ipython import load_notebook
-    nb = load_notebook(os.path.join(examples_dir, "%s.ipynb" % nb_file))
-
-    if nb.nbformat <= 3:
-        cells = []
-        for ws in nb.worksheets:
-            cells.extend(ws.cells)
-    else:
-        cells = nb.cells
-
-    for cell in cells:
-        if cell.cell_type == cell_type:
-            yield cell
-
-
-@pytest.mark.example
-@pytest.mark.parametrize('nb_file', all_examples)
-def test_no_signature(nb_file):
-    from nengo.utils.ipython import load_notebook
-    nb = load_notebook(os.path.join(examples_dir, "%s.ipynb" % nb_file))
-    assert 'signature' not in nb.metadata, "Notebook has signature"
 
 
 @pytest.mark.example
 @pytest.mark.parametrize('nb_file', all_examples)
 def test_no_outputs(nb_file):
     """Ensure that no cells have output."""
-    pytest.importorskip("IPython", minversion="1.0")
-
-    for cell in iter_cells(nb_file):
+    pytest.importorskip("IPython", minversion="3.0")
+    nb = load_notebook(os.path.join(examples_dir, "%s.ipynb" % nb_file))
+    for cell in iter_cells(nb):
         assert cell.outputs == [], "Cell outputs not cleared"
+        assert cell.execution_count is None, "Execution count not cleared"
+
+
+@pytest.mark.example
+@pytest.mark.parametrize('nb_file', all_examples)
+def test_version_4(nb_file):
+    pytest.importorskip("IPython", minversion="3.0")
+    nb = load_notebook(os.path.join(examples_dir, "%s.ipynb" % nb_file))
+    assert nb.nbformat == 4
+
+
+@pytest.mark.example
+@pytest.mark.parametrize('nb_file', all_examples)
+def test_minimal_metadata(nb_file):
+    pytest.importorskip("IPython", minversion="3.0")
+    nb = load_notebook(os.path.join(examples_dir, "%s.ipynb" % nb_file))
+
+    assert "kernelspec" not in nb.metadata
+    assert "signature" not in nb.metadata
+
+    badinfo = (
+        "codemirror_mode",
+        "file_extension",
+        "mimetype",
+        "nbconvert_exporter",
+        "version",
+    )
+    for info in badinfo:
+        assert info not in nb.metadata.language_info
