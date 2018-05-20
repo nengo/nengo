@@ -69,6 +69,8 @@ Release History
   be applied to the targets before the solve function for compositional solvers
   and applied by the Transform builder for non-compositional solvers.
   (`#1507 <https://github.com/nengo/nengo/pull/1507>`__)
+- Example Jupyter notebooks have been upgraded to notebook format 4.
+  (`#1440 <https://github.com/nengo/nengo/pull/1440>`_)
 
 **Fixed**
 
