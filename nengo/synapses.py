@@ -350,7 +350,7 @@ class Lowpass(LinearFilter):
 
     The impulse-response function is given by::
 
-        f(t) = (t / tau) * exp(-t / tau)
+        f(t) = (1 / tau) * exp(-t / tau)
 
     Parameters
     ----------
