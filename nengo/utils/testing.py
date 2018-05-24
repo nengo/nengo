@@ -91,20 +91,18 @@ class Plotter(Recorder):
             self.plt = plt
         else:
             self.plt = Mock()
+        self.plt.saveas = self.get_filename(ext='pdf')
         return self.plt
 
     def __exit__(self, type, value, traceback):
         if self.record:
-            if hasattr(self.plt, 'saveas') and self.plt.saveas is None:
+            if self.plt.saveas is None:
                 del self.plt.saveas
                 self.plt.close('all')
                 return
-
-            if hasattr(self.plt, 'saveas'):
-                self.filename = self.plt.saveas
-                del self.plt.saveas
-            else:
-                self.filename = self.get_filename(ext='pdf')
+            # Save it again in case the user changed it
+            self.filename = self.plt.saveas
+            del self.plt.saveas
 
             if len(self.plt.gcf().get_axes()) > 0:
                 # tight_layout errors if no axes are present
