@@ -11,7 +11,8 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda install numpy matplotlib jupyter pytest
+  - conda install numpy matplotlib jupyter
+  - pip install pytest>=3.6
 
 build: false  # Not a C# project
 
