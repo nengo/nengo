@@ -72,3 +72,10 @@ def test_logger_norecord():
         logger.info("Testing that logger doesn't record")
     with pytest.raises(ValueError):
         logger_obj.get_filepath(ext='txt')
+
+
+def test_mock_iter(plt):
+    fig = plt.figure()
+    for i, ax in enumerate(fig.axes):
+        assert False, "Mock object iterating forever"
+    plt.saveas = None

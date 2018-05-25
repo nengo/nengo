@@ -25,6 +25,9 @@ class Mock(object):
     def __getitem__(self, key):
         return Mock()
 
+    def __iter__(self):
+        return iter([])
+
     def __mul__(self, other):
         return 1.0
 
