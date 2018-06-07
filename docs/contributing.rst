@@ -131,7 +131,16 @@ as part of the documentation building process.
 
 .. code-block:: bash
 
-   python setup.py build_sphinx
+   sphinx-build -vW docs docs/_build
+
+Depending on your environment,
+you might have to set the Jupyter kernel
+used to build the examples.
+To set the kernel, use this command.
+
+.. code-block:: bash
+
+   sphinx-build -vW docs docs/_build -D nbsphinx_kernel_name=<kernelname>
 
 .. _Pandoc: https://pandoc.org/
 
