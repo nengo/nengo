@@ -12,13 +12,13 @@ function usage {
 }
 
 if [[ "$COMMAND" == "install" ]]; then
-    wget "$MINICONDA" -O miniconda.sh
+    wget "$MINICONDA" --quiet -O miniconda.sh
     bash miniconda.sh -b -p "$HOME/miniconda"
     export PATH="$HOME/miniconda/bin:$PATH"
     conda config --set always_yes yes --set changeps1 no
-    conda update -q conda
+    conda update --quiet conda
     conda info -a
-    conda create -q -n test python="$PYTHON" pip
+    conda create --quiet -n test python="$PYTHON" pip
     source activate test
 else
     if [[ -z "$COMMAND" ]]; then

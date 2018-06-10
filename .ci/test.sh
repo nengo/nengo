@@ -12,9 +12,9 @@ function usage {
 }
 
 if [[ "$COMMAND" == "install" ]]; then
-    conda install jupyter matplotlib numpy="$NUMPY"
+    conda install --quiet jupyter matplotlib numpy="$NUMPY"
     if [[ "$SCIPY" == "true" ]]; then
-        conda install scipy
+        conda install --quiet scipy
     fi
     pip install pytest
     pip install -e .
