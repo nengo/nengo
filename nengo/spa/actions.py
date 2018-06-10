@@ -89,7 +89,7 @@ class Effect(object):
         The names of valid places to send information (SPA module inputs).
     effect: str
         The action to implement. This is a set of assignment statements
-        which can be parsed into a `.VectorList`.
+        where the right hand side can be parsed with the `.Expression` class.
     """
 
     def __init__(self, sources, sinks, effect):

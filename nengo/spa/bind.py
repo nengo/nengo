@@ -7,7 +7,7 @@ class Bind(Module):
     """A module for binding together two inputs.
 
     Binding is done with circular convolution. For more details on how
-    this is computed, see the underlying `~.network.CircularConvolution`
+    this is computed, see the underlying `~.networks.CircularConvolution`
     network.
 
     Parameters

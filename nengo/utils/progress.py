@@ -181,7 +181,7 @@ class ProgressBar(object):
 
         Parameters
         ----------
-        progress : :class:`Progress`
+        progress : Progress
             The progress information to display.
         """
         raise NotImplementedError()
@@ -468,7 +468,7 @@ class AutoProgressBar(ProgressBar):
 
     Parameters
     ----------
-    delegate : :class:`ProgressBar`
+    delegate : ProgressBar
         The actual progress bar to display, if ETA is high enough.
     min_eta : float, optional
         The minimum ETA threshold for displaying the progress bar.
@@ -505,7 +505,7 @@ class ProgressTracker(object):
 
     Parameters
     ----------
-    progress_bar : :class:`ProgressBar` or bool or None
+    progress_bar : ProgressBar or bool or None
         The progress bar to display the progress (or True to use the default
         progress bar, False/None to disable progress bar).
     total_progress : int
@@ -572,7 +572,7 @@ def get_default_progressbar():
 
     Returns
     -------
-    :class:`ProgressBar`
+    ``ProgressBar``
     """
     try:
         pbar = rc.getboolean('progress', 'progress_bar')
@@ -599,19 +599,19 @@ def get_default_progressbar():
 
 
 def to_progressbar(progress_bar):
-    """Converts to a `.ProgressBar` instance.
+    """Converts to a ``ProgressBar`` instance.
 
     Parameters
     ----------
-    progress_bar : None, bool, or `.ProgressBar`
-        Object to be converted to a `.ProgressBar`.
+    progress_bar : None, bool, or ProgressBar
+        Object to be converted to a ``ProgressBar``.
 
     Returns
     -------
     ProgressBar
-        Return *progress_bar* if it is already a progress bar, the default
-        progress bar if *progress_bar* is *True*, and `NoProgressBar` if it is
-        *None* or *False*.
+        Return ``progress_bar`` if it is already a progress bar, the default
+        progress bar if ``progress_bar`` is ``True``, and ``NoProgressBar`` if
+        it is ``None`` or ``False``.
     """
     if progress_bar is False or progress_bar is None:
         progress_bar = NoProgressBar()

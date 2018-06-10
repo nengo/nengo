@@ -53,7 +53,7 @@ class PDF(Distribution):
     x : vector_like (n,)
         Values of the points to sample from (interpolated).
     p : vector_like (n,)
-        Probabilities of the `x` points.
+        Probabilities of the ``x`` points.
     """
 
     x = NdarrayParam('x', shape='*')
@@ -179,9 +179,9 @@ class Exponential(Distribution):
                |  n                                 if x == high - eps
                |  0                                 if x >= high
 
-    where `n` is such that the PDF integrates to one, and `eps` is an
-    infintesimally small number such that samples of `x` are strictly less than
-    `high` (in practice, `eps` depends on the floating point precision).
+    where ``n`` is such that the PDF integrates to one, and ``eps`` is an
+    infintesimally small number such that samples of ``x`` are strictly less
+    than ``high`` (in practice, ``eps`` depends on floating point precision).
 
     Parameters
     ----------
@@ -278,7 +278,7 @@ class Choice(Distribution):
     ----------
     options : (N, ...) array_like
         The options (choices) to choose between. The choice is always done
-        along the first axis, so if `options` is a matrix, the options are
+        along the first axis, so if ``options`` is a matrix, the options are
         the rows of that matrix.
     weights : (N,) array_like, optional (Default: None)
         Weights controlling the probability of selecting each option. Will
@@ -422,7 +422,7 @@ class SqrtBeta(Distribution):
         Returns
         -------
         cdf : array_like
-            Probability that `X <= x`.
+            Probability that ``X <= x``.
         """
         from scipy.special import betainc
         sq_x = x * x

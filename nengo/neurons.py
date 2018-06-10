@@ -165,7 +165,7 @@ class NeuronType(FrozenObject):
         Returns
         -------
         rates : (n_neurons,) ndarray
-            The firing rates at each given value of `x`.
+            The firing rates at each given value of ``x``.
         """
         J = self.current(x, gain, bias)
         out = np.zeros_like(J)
@@ -648,10 +648,7 @@ class Izhikevich(NeuronType):
         return args
 
     def rates(self, x, gain, bias):
-        """Estimates steady-state firing rate given gain and bias.
-
-        Uses the `.settled_firingrate` helper function.
-        """
+        """Estimates steady-state firing rate given gain and bias."""
         J = self.current(x, gain, bias)
         voltage = np.zeros_like(J)
         recovery = np.zeros_like(J)

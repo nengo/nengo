@@ -40,7 +40,7 @@ def build_network(model, network, progress=None):
         The model to build into.
     network : Network
         The network to build.
-    progress : `nengo.utils.progress.Progress`, optional
+    progress : Progress, optional
         Object used to track the build progress.
 
         Note that this will only affect top-level networks.

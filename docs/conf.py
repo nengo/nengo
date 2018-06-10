@@ -53,8 +53,9 @@ autodoc_member_order = 'bysource'  # default is alphabetical
 # -- sphinx.ext.intersphinx
 intersphinx_mapping = {
     'numpy': ('https://docs.scipy.org/doc/numpy', None),
-    'python': ('https://docs.python.org/3/', None),
+    'python': ('https://docs.python.org/3', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+    'sklearn': ('http://scikit-learn.org/dev', None),
 }
 
 # -- sphinx.ext.todo
@@ -64,6 +65,7 @@ numpydoc_show_class_members = False
 
 # -- sphinx
 needs_sphinx = '1.3'
+nitpicky = True
 exclude_patterns = ['_build', '**/.ipynb_checkpoints']
 source_suffix = '.rst'
 source_encoding = 'utf-8'

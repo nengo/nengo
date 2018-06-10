@@ -135,9 +135,7 @@ class DotProduct(object):
     so that the 0.5 in ``"0.5*DotProduct(Source('vision'), Symbol('DOG'))"``
     can be correctly tracked.
 
-    This class is meant to be used with an eval-based parsing system in the
-    `.Condition` class, so that the above ``DotProduct`` can also be created
-    with ``"0.5*dot(vision, 'DOG')"``.
+    This is used by the `.spa.Actions` parsing system.
     """
 
     def __init__(self, item1, item2, scale=1.0):

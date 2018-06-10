@@ -205,7 +205,7 @@ For example, the `.EnsembleArray` network
 is often used to represent a high-dimensional vector
 with many lower-dimensional ensemble.
 The high-dimensional vector is still available
-as `.EnsembleArray.output` through the use
+as ``EnsembleArray.output`` through the use
 of a passthrough node that collects the output
 of all the lower-dimensional ensembles.
 

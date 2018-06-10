@@ -50,3 +50,38 @@ Quirks
 .. toctree::
 
    examples/quirks/config
+
+Parameters
+==========
+
+Under the hood, Nengo objects store information
+using `.Parameter` instances,
+which are also used by the config system.
+Most users will not need to know about
+`.Parameter` objects.
+
+.. autoclass:: nengo.params.Parameter
+
+.. autoclass:: nengo.params.ObsoleteParam
+
+.. autoclass:: nengo.params.BoolParam
+
+.. autoclass:: nengo.params.NumberParam
+
+.. autoclass:: nengo.params.IntParam
+
+.. autoclass:: nengo.params.StringParam
+
+.. autoclass:: nengo.params.EnumParam
+
+.. autoclass:: nengo.params.TupleParam
+
+.. autoclass:: nengo.params.ShapeParam
+
+.. autoclass:: nengo.params.DictParam
+
+.. autoclass:: nengo.params.NdarrayParam
+
+.. autoclass:: nengo.params.FunctionParam
+
+.. autoclass:: nengo.exceptions.ValidationError

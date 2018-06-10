@@ -22,6 +22,12 @@ create and close a `nengo.Simulator` instance.
 
 .. autoclass:: nengo.Simulator
 
+.. autoclass:: nengo.simulator.ProbeDict
+
+.. autoclass:: nengo.simulator.SignalDict
+
+.. autoclass:: nengo.exceptions.SimulatorClosed
+
 The build process
 -----------------
 

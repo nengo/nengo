@@ -211,6 +211,15 @@ Decoder and connection weight solvers
    nengo.solvers.NnlsL2
    nengo.solvers.NnlsL2nz
    nengo.solvers.NoSolver
+   nengo.utils.least_squares_solvers.LeastSquaresSolver
+   nengo.utils.least_squares_solvers.Cholesky
+   nengo.utils.least_squares_solvers.ConjgradScipy
+   nengo.utils.least_squares_solvers.LSMRScipy
+   nengo.utils.least_squares_solvers.Conjgrad
+   nengo.utils.least_squares_solvers.BlockConjgrad
+   nengo.utils.least_squares_solvers.SVD
+   nengo.utils.least_squares_solvers.RandomizedSVD
+
 
 .. autoclass:: nengo.solvers.Solver
    :special-members: __call__
@@ -236,3 +245,19 @@ Decoder and connection weight solvers
 .. autoclass:: nengo.solvers.NnlsL2nz
 
 .. autoclass:: nengo.solvers.NoSolver
+
+.. autoclass:: nengo.utils.least_squares_solvers.LeastSquaresSolver
+
+.. autoclass:: nengo.utils.least_squares_solvers.Cholesky
+
+.. autoclass:: nengo.utils.least_squares_solvers.ConjgradScipy
+
+.. autoclass:: nengo.utils.least_squares_solvers.LSMRScipy
+
+.. autoclass:: nengo.utils.least_squares_solvers.Conjgrad
+
+.. autoclass:: nengo.utils.least_squares_solvers.BlockConjgrad
+
+.. autoclass:: nengo.utils.least_squares_solvers.SVD
+
+.. autoclass:: nengo.utils.least_squares_solvers.RandomizedSVD

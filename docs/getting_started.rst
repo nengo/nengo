@@ -141,7 +141,7 @@ In other words, this ensemble represents a single number.
 
 In order to provide input to this ensemble
 (to emulate some signal that exists in nature, for example)
-we create a :class:`Node`.
+we create a :class:`nengo.Node`.
 
 ::
 

@@ -11,8 +11,7 @@ def Product(n_neurons, dimensions, input_magnitude=1., net=None, **kwargs):
 
     The network used to calculate the product is described in
     `Gosmann, 2015`_. A simpler version of this network can be found in the
-    `Multiplication example
-    <https://www.nengo.ai/nengo/examples/multiplication.html>`_.
+    :doc:`Multiplication example <examples/basic/multiplication>`.
 
     Note that this network is optimized under the assumption that both input
     values (or both values for each input dimensions of the input vectors) are
@@ -27,7 +26,7 @@ def Product(n_neurons, dimensions, input_magnitude=1., net=None, **kwargs):
 
     .. _Gosmann, 2015:
        https://nbviewer.jupyter.org/github/ctn-archive/technical-reports/blob/
-       master/Precise-multiplications-with-the-NEF.ipynb#An-alternative-network
+       master/Precise-multiplications-with-the-NEF.ipynb
 
     Parameters
     ----------

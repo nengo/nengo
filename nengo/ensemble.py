@@ -38,7 +38,7 @@ class Ensemble(NengoObject):
         (-radius, radius) in each dimension, or a distribution from which
         to choose evaluation points.
     n_eval_points : int, optional (Default: None)
-        The number of evaluation points to be drawn from the `eval_points`
+        The number of evaluation points to be drawn from the ``eval_points``
         distribution. If None, then a heuristic is used to determine
         the number of evaluation points.
     neuron_type : `~nengo.neurons.NeuronType`, optional \
@@ -88,7 +88,7 @@ class Ensemble(NengoObject):
         The activity of each neuron when ``dot(x, e) = 1``,
         where ``e`` is the neuron's encoder.
     n_eval_points : int or None
-        The number of evaluation points to be drawn from the `eval_points`
+        The number of evaluation points to be drawn from the ``eval_points``
         distribution. If None, then a heuristic is used to determine
         the number of evaluation points.
     n_neurons : int or None

@@ -96,14 +96,14 @@ class Simulator(object):
         want to build the network manually, or you want to inject build
         artifacts in the model before building the network, then you can
         pass in a `.Model` instance.
-    progress_bar : bool or `.ProgressBar` or `.ProgressUpdater`, optional \
+    progress_bar : bool or ProgressBar, optional \
                    (Default: True)
         Progress bar for displaying build and simulation progress.
 
         If ``True``, the default progress bar will be used.
         If ``False``, the progress bar will be disabled.
-        For more control over the progress bar, pass in a `.ProgressBar`
-        or `.ProgressUpdater` instance.
+        For more control over the progress bar, pass in a ``ProgressBar``
+        instance.
     optimize : bool, optional (Default: True)
         If ``True``, the builder will run an additional optimization step
         that can speed up simulations significantly at the cost of slower
@@ -297,14 +297,13 @@ class Simulator(object):
         ----------
         time_in_seconds : float
             Amount of time to run the simulation for. Must be positive.
-        progress_bar : bool or `.ProgressBar` or `.ProgressUpdater`, optional \
-                       (Default: True)
+        progress_bar : bool or ProgressBar, optional (Default: True)
             Progress bar for displaying the progress of the simulation run.
 
             If True, the default progress bar will be used.
             If False, the progress bar will be disabled.
-            For more control over the progress bar, pass in a `.ProgressBar`
-            or `.ProgressUpdater` instance.
+            For more control over the progress bar, pass in a ``ProgressBar``
+            instance.
         """
         if time_in_seconds < 0:
             raise ValidationError("Must be positive (got %g)"
@@ -327,14 +326,13 @@ class Simulator(object):
         ----------
         steps : int
             Number of steps to run the simulation for.
-        progress_bar : bool or `.ProgressBar` or `.ProgressUpdater`, optional \
-                       (Default: True)
+        progress_bar : bool or ProgressBar, optional (Default: True)
             Progress bar for displaying the progress of the simulation run.
 
             If True, the default progress bar will be used.
             If False, the progress bar will be disabled.
-            For more control over the progress bar, pass in a `.ProgressBar`
-            or `.ProgressUpdater` instance.
+            For more control over the progress bar, pass in a ``ProgressBar``
+            instance.
         """
         if progress_bar is None:
             progress_bar = self.progress_bar

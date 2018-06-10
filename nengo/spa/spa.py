@@ -62,7 +62,7 @@ class SPA(nengo.Network):
 
     For complex cognitive control, the key modules are the `.spa.BasalGanglia`
     and the `.spa.Thalamus`. Together, these allow us to define complex actions
-    using the `.spa.Action` syntax::
+    using the `.spa.Actions` syntax::
 
         class SequenceExample(spa.SPA):
             def __init__(self):

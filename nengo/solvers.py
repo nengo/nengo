@@ -1,5 +1,4 @@
-"""
-Functions concerned with solving for decoders or full weight matrices.
+"""Functions concerned with solving for decoders or full weight matrices.
 
 Many of the solvers in this file can solve for decoders or weight matrices,
 depending on whether the post-population encoders `E` are provided (see below).
@@ -42,7 +41,7 @@ class Solver(with_metaclass(DocstringInheritor, FrozenObject)):
         Y : (n_eval_points, dimensions) array_like
             Matrix of the target decoded values for each of the D dimensions,
             at each of the evaluation points.
-        rng : `numpy.random.RandomState`, optional (Default: `np.random`)
+        rng : `numpy.random.RandomState`, optional (Default: ``numpy.random``)
             A random number generator to use as required.
         E : (dimensions, post.n_neurons) array_like, optional (Default: None)
             Array of post-population encoders. Providing this tells the solver
