@@ -382,7 +382,10 @@ with model:
     '''
 
     without_cache = {
-        'rc': 'rc.set("decoder_cache", "enabled", "False")',
+        'rc': '''
+rc.set("progress", "progress_bar", "none")
+rc.set("decoder_cache", "enabled", "False")
+''',
         'stmt': '''
 with nengo.Simulator(model):
     pass
@@ -391,6 +394,7 @@ with nengo.Simulator(model):
 
     with_cache_miss_ro = {
         'rc': '''
+rc.set("progress", "progress_bar", "none")
 with nengo.cache.DecoderCache() as cache:
     cache.invalidate()
 rc.set("decoder_cache", "enabled", "True")
@@ -404,6 +408,7 @@ with nengo.Simulator(model):
 
     with_cache_miss = {
         'rc': '''
+rc.set("progress", "progress_bar", "none")
 with nengo.cache.DecoderCache() as cache:
     cache.invalidate()
 rc.set("decoder_cache", "enabled", "True")
@@ -417,6 +422,7 @@ with nengo.Simulator(model):
 
     with_cache_hit = {
         'rc': '''
+rc.set("progress", "progress_bar", "none")
 rc.set("decoder_cache", "enabled", "True")
 rc.set("decoder_cache", "readonly", "False")
 with nengo.Simulator(model):
@@ -523,6 +529,7 @@ import nengo
 import nengo.cache
 from nengo.rc import rc
 
+rc.set("progress", "progress_bar", "none")
 rc.set("decoder_cache", "path", {tmpdir!r})
 
 for i in range(10):
