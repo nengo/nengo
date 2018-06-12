@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from matplotlib.mlab import griddata
+import matplotlib.tri as tri
 
 import nengo
 from nengo.dists import UniformHypersphere
@@ -58,9 +58,10 @@ def test_eval_point_decoding(Simulator, nl_nodirect, plt, seed):
         eval_points, targets, decoded = eval_point_decoding(c, sim)
 
     def contour(xy, z):
-        xi = np.linspace(-1, 1, 101)
-        yi = np.linspace(-1, 1, 101)
-        zi = griddata(xy[:, 0], xy[:, 1], z.ravel(), xi, yi, interp='linear')
+        xi, yi = np.meshgrid(np.linspace(-1, 1, 101), np.linspace(-1, 1, 101))
+        triang = tri.Triangulation(xy[:, 0], xy[:, 1])
+        interp_lin = tri.LinearTriInterpolator(triang, z.ravel())
+        zi = interp_lin(xi, yi)
         plt.contourf(xi, yi, zi, cmap=plt.cm.seismic)
         plt.colorbar()
 
