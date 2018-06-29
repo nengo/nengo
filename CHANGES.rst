@@ -93,6 +93,10 @@ Release History
 - Fixed an issue in which reshaped signals were not having their offset
   values preserved, causing issues with some node functions.
   (`#1474 <https://github.com/nengo/nengo/pull/1474>`__)
+- Better error message when Node output function does not match the
+  given ``size_in``/``size_out``.
+  (`#1452 <https://github.com/nengo/nengo/issues/1452>`_,
+  `#1434 <https://github.com/nengo/nengo/pull/1434>`_)
 
 2.8.0 (June 9, 2018)
 ====================

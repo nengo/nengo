@@ -244,16 +244,7 @@ def test_len():
     assert len(n4[1:3]) == 2
 
 
-def test_set_output(Simulator):
-    counter = []
-
-    def accumulate(t):
-        counter.append(t)
-        return t
-
-    def noreturn(t):
-        pass
-
+def test_set_arraylike_output(Simulator):
     with nengo.Network() as model:
         # if output is None, size_out == size_in
         with pytest.warns(UserWarning):
@@ -281,24 +272,64 @@ def test_set_output(Simulator):
         assert vector.output.shape == (3,)
         assert str(vector.output.dtype) == 'float64'
 
-        # if output is callable...
+    with Simulator(model):  # Ensure it all builds
+        pass
+
+
+def test_set_callable_output(Simulator):
+    model = nengo.Network()
+
+    counter = []
+
+    def accumulate(t):
+        counter.append(t)
+        return t
+
+    with model:
+        # if we pass size_out, function should not be called
+        assert len(counter) == 0
+        accum_func = nengo.Node(accumulate, size_out=1)
+        assert len(counter) == 0
+        assert accum_func.size_out == 1
+
+    def noreturn(t):
+        pass
+
+    with model:
+        # if the function returns None, size_out == 0
+        noreturn_func = nengo.Node(noreturn)
+        assert noreturn_func.size_out == 0
+
+    class TestObject(object):
+
+        def __init__(self):
+            self.val = 0
+
+        def step(self, t):
+            return self.val
+
+    with model:
+        # passing methods into nodes shouldn't cause validation errors
+        test_obj = TestObject()
+        nengo.Node(test_obj.step, size_out=1)
+
+    with model:
+        with pytest.raises(ValidationError):
+            nengo.Node(lambda: 2.0, size_out=1)
         # if size_in is 0, should only take in t
         with pytest.raises(ValidationError):
             nengo.Node(lambda t, x: 2.0, size_in=0)
+        with pytest.raises(ValidationError):
+            nengo.Node(lambda t, x: 2.0, size_in=0, size_out=0)
         # if size_in > 0, should take both t and x
         with pytest.raises(ValidationError):
             nengo.Node(lambda t: t ** 2, size_in=1)
         # function must return a scalar or vector, not matrix
         with pytest.raises(ValidationError):
             nengo.Node(lambda t: np.ones((2, 2)))
-        # if we pass size_out, function should not be called
-        assert len(counter) == 0
-        accum_func = nengo.Node(accumulate, size_out=1)
-        assert len(counter) == 0
-        assert accum_func.size_out == 1
-        # if the function returns None, size_out == 0
-        noreturn_func = nengo.Node(noreturn)
-        assert noreturn_func.size_out == 0
+        # variable length argument lists should be allowed (used in Nengo SPA)
+        nengo.Node(lambda *args: [2.0], size_in=0, size_out=1)
+        nengo.Node(lambda *args: [2.0], size_in=1, size_out=1)
 
     with Simulator(model):  # Ensure it all builds
         pass

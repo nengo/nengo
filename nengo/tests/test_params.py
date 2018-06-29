@@ -336,7 +336,7 @@ def test_configure_all_nengo_parameters():
         params.StringParam: lambda attr: "abc",
         params.NdarrayParam: lambda attr: np.zeros([1] * len(attr.shape)),
         nengo.base.ProcessParam: lambda attr: nengo.processes.WhiteNoise(),
-        nengo.node.OutputParam: lambda attr: lambda x: x + 1,
+        nengo.node.OutputParam: lambda attr: lambda t, x=0: x + 1,
         nengo.synapses.SynapseParam: lambda attr: nengo.synapses.Alpha(0.1),
         nengo.solvers.SolverParam: lambda attr: nengo.solvers.LstsqL2nz(
             weights=isinstance(attr, nengo.connection.ConnectionSolverParam)),

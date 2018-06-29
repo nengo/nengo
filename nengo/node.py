@@ -1,3 +1,4 @@
+import inspect
 import warnings
 
 import numpy as np
@@ -7,7 +8,7 @@ from nengo.base import NengoObject, ObjView
 from nengo.exceptions import ValidationError
 from nengo.params import Default, IntParam, Parameter
 from nengo.processes import Process
-from nengo.utils.compat import is_array_like
+from nengo.utils.compat import getfullargspec, is_array_like
 from nengo.utils.stdlib import checked_call
 
 
@@ -15,6 +16,14 @@ class OutputParam(Parameter):
     def __init__(self, name, default, optional=True, readonly=False):
         assert optional  # None has meaning (passthrough node)
         super(OutputParam, self).__init__(name, default, optional, readonly)
+
+    def _fn_args_validation_error(self, output, attr, node):
+        n_args = 2 if node.size_in > 0 else 1
+        msg = ("output function '%s' is expected to accept exactly "
+               "%d argument" % (output, n_args))
+        msg += (' (time, as a float)' if n_args == 1 else
+                's (time, as a float and data, as a NumPy array)')
+        return ValidationError(msg, attr=attr, obj=node)
 
     def check_ndarray(self, node, output):
         if len(output.shape) > 1:
@@ -48,11 +57,11 @@ class OutputParam(Parameter):
             if node.size_out is None:
                 node.size_out = output.default_size_out
         elif callable(output):
+            self.check_callable_args_list(node, output)
             # We trust user's size_out if set, because calling output
             # may have unintended consequences (e.g., network communication)
             if node.size_out is None:
-                result = self.coerce_callable(node, output)
-                node.size_out = 0 if result is None else result.size
+                node.size_out = self.check_callable_output(node, output)
         elif is_array_like(output):
             # Make into correctly shaped numpy array before validation
             output = npext.array(
@@ -69,24 +78,45 @@ class OutputParam(Parameter):
 
         return output
 
-    def coerce_callable(self, node, output):
+    def check_callable_output(self, node, output):
         t, x = 0.0, np.zeros(node.size_in)
         args = (t, x) if node.size_in > 0 else (t,)
         result, invoked = checked_call(output, *args)
         if not invoked:
-            msg = ("output function '%s' is expected to accept exactly "
-                   "%d argument" % (output, len(args)))
-            msg += (' (time, as a float)' if len(args) == 1 else
-                    's (time, as a float and data, as a NumPy array)')
-            raise ValidationError(msg, attr=self.name, obj=node)
-
+            raise self._fn_args_validation_error(output, self.name, node)
         if result is not None:
             result = np.asarray(result)
             if len(result.shape) > 1:
-                raise ValidationError("Node output must be a vector (got shape"
-                                      " %s)" % (result.shape,),
+                raise ValidationError("Node output must be a vector "
+                                      "(got shape %s)" % (result.shape,),
                                       attr=self.name, obj=node)
-        return result
+        # return callable output size
+        return 0 if result is None else result.size
+
+    def check_callable_args_list(self, node, output):
+        # not all callables provide an argspec, such as numpy
+        try:
+            func_argspec = getfullargspec(output)
+        except (TypeError, ValueError):
+            pass
+        else:
+            args_len = len(func_argspec.args)
+            if inspect.ismethod(output) or not inspect.isroutine(output):
+                # don't count self as an argument
+                args_len -= 1
+
+            defaults_len = 0
+            if func_argspec.defaults is not None:
+                defaults_len = len(func_argspec.defaults)
+
+            required_len = args_len - defaults_len
+            expected_len = 2 if node.size_in > 0 else 1
+
+            if func_argspec.varargs:
+                args_len = max(expected_len, args_len)
+
+            if not required_len <= expected_len <= args_len:
+                raise self._fn_args_validation_error(output, self.name, node)
 
 
 class Node(NengoObject):
