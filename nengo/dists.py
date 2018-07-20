@@ -249,7 +249,7 @@ class UniformHypersphere(Distribution):
             args.append("min_magnitude=%r" % self.min_magnitude)
         return "%s(%s)" % (type(self).__name__, ', '.join(args))
 
-    def sample(self, n, d, rng=np.random):
+    def sample(self, n, d=None, rng=np.random):
         if d is None or d < 1:  # check this, since other dists allow d = None
             raise ValidationError("Dimensions must be a positive integer", 'd')
 

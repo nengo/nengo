@@ -21,7 +21,7 @@ class DistributionMock(Distribution):
         self.retval = retval
         self.sample_calls = []
 
-    def sample(self, n, d, rng=np.random):
+    def sample(self, n, d=None, rng=np.random):
         self.sample_calls.append((n, d, rng))
         return np.ones((n, d)) * self.retval
 
