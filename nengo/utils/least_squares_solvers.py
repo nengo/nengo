@@ -103,7 +103,7 @@ class ConjgradScipy(LeastSquaresSolver):
         itns = np.zeros(d, dtype='int')
         for i in range(d):
             # use the callback to count the number of iterations
-            def callback(x):
+            def callback(x, i=i):
                 itns[i] += 1
 
             X[:, i], infos[i] = scipy.sparse.linalg.cg(
