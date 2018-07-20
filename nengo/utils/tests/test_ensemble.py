@@ -83,7 +83,7 @@ def test_response_curves(Simulator, nl_nodirect, plt, seed):
     plot_tuning_curves(plt, eval_points, activities)
 
     assert eval_points.ndim == 1 and eval_points.size > 0
-    assert np.all(-1.0 <= eval_points) and np.all(eval_points <= 1.0)
+    assert np.all(eval_points >= -1.0) and np.all(eval_points <= 1.0)
 
     assert np.all(activities >= 0.0)
     assert np.all(activities <= max_rate)
@@ -104,6 +104,6 @@ def test_response_curves_direct_mode(Simulator, plt, seed, dimensions):
     plot_tuning_curves(plt, eval_points, activities)
 
     assert eval_points.ndim == 1 and eval_points.size > 0
-    assert np.all(-1.0 <= eval_points) and np.all(eval_points <= 1.0)
+    assert np.all(eval_points >= -1.0) and np.all(eval_points <= 1.0)
     # eval_points is passed through in direct mode neurons
     assert np.allclose(eval_points, activities)
