@@ -16,12 +16,11 @@ matrix:
   include:
     - env: PYTHON="2.7" STATIC="true"
     - env: PYTHON="2.7" COVERAGE="true"
-    - env: PYTHON="2.7" NUMPY="1.8"
-    - env: PYTHON="2.7" NUMPY="1.9"
     - env: PYTHON="2.7" NUMPY="1.10"
     - env: PYTHON="2.7" NUMPY="1.11"
     - env: PYTHON="2.7" NUMPY="1.12"
     - env: PYTHON="2.7" NUMPY="1.13"
+    - env: PYTHON="2.7" NUMPY="1.14"
     - env: PYTHON="3.4" NUMPY="1.11"  # <=1.12 not packaged for py34 in conda
     - env: PYTHON="3.5"
     - env: PYTHON="3.6" COVERAGE="true" SCIPY="true"
