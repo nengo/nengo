@@ -337,7 +337,48 @@ def pytest_runtest_setup(item):  # noqa: C901
                 pytest.xfail(reason)
 
 
+def determine_run_stats(terminalreporter):
+    non_runnables = {
+        "compare tests not requested",
+        "frontend tests not run for alternate backends",
+        "RefSimulator not overridden",
+        "Simulator not overridden"
+    }
+    n_ran = 0
+    n_runnables = 0
+    for key in terminalreporter.stats:
+        if key != '':
+            if key == 'skipped':
+                for report in terminalreporter.stats[key]:
+                    reason = report.longrepr[-1]
+                    if reason.startswith('Skipped: '):
+                        reason = reason[9:]
+                    if reason not in non_runnables:
+                        n_runnables += 1
+            else:
+                n = len(terminalreporter.stats[key])
+                n_ran += n
+                n_runnables += n
+    return n_ran, n_runnables
+
+
 def pytest_terminal_summary(terminalreporter):
+    n_ran, n_runnables = determine_run_stats(terminalreporter)
+    if n_ran == n_runnables:
+        line = "Ran all {} runnable tests.".format(n_ran)
+    else:
+        line = "Ran {} of {} runnable tests.".format(n_ran, n_runnables)
+    terminalreporter.write_sep("=", line, bold=True)
+    if TestConfig.compare_requested:
+        terminalreporter.writer.line(
+            "Non-compare tests run only without --compare option.")
+    else:
+        terminalreporter.writer.line(
+            "Compare tests require --compare option.")
+    if TestConfig.is_skipping_frontend_tests():
+        terminalreporter.writer.line(
+            "Front-end tests only runnable for reference backend.")
+
     reports = terminalreporter.getreports('passed')
     if not reports or terminalreporter.config.getvalue('compare') is None:
         return

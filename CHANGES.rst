@@ -30,6 +30,9 @@ Release History
 - We now warn that the progress bar is not supported in Jupyter Notebook <5.
   (`#1428 <https://github.com/nengo/nengo/pull/1428>`__,
   `#1426 <https://github.com/nengo/nengo/issues/1426>`__)
+- Added information about number of runnable tests to pytest summary
+  (`#1082 <https://github.com/nengo/nengo/issues/1082>`_,
+  `#1350 <https://github.com/nengo/nengo/pull/1350>`_)
 
 **Changed**
 
