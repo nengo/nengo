@@ -301,6 +301,9 @@ def pytest_collection_modifyitems(session, config, items):
     if not TestConfig.compare_requested:
         deselect_by_condition(
             lambda item: item.get_closest_marker("compare"), items, config)
+    if not config.getvalue("spa"):
+        deselect_by_condition(
+            lambda item: "nengo/spa/" in get_item_name(item), items, config)
 
     uses_sim = lambda item: 'Simulator' in item.fixturenames
     uses_refsim = lambda item: 'RefSimulator' in item.fixturenames
@@ -355,6 +358,9 @@ def pytest_report_collectionfinish(config, startdir, items):
     if not TestConfig.compare_requested:
         deselect_reasons.append(
             " compare tests deselected (pass --compare to run them).")
+    if not config.getvalue('spa'):
+        deselect_reasons.append(
+            " spa tests deselected (pass --spa to run them)")
 
     if TestConfig.is_skipping_frontend_tests():
         deselect_reasons.append(

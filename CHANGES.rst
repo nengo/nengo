@@ -75,6 +75,13 @@ Release History
 - Example Jupyter notebooks have been upgraded to notebook format 4.
   (`#1440 <https://github.com/nengo/nengo/pull/1440>`_)
 
+**Deprecated**
+
+- Deprecated the ``nengo.spa`` module. Use the
+  `Nengo SPA <https://www.nengo.ai/nengo-spa/index.html>`
+  project instead.
+  (`#1465 <https://github.com/nengo/nengo/pull/1465>`_)
+
 **Fixed**
 
 - ``FrozenObjects`` can control parameter initialization order when copying,

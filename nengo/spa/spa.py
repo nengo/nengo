@@ -81,6 +81,11 @@ class SPA(nengo.Network):
     def __init__(self, label=None, seed=None, add_to_container=None,
                  vocabs=None):
         super(SPA, self).__init__(label, seed, add_to_container)
+
+        warnings.warn(DeprecationWarning(
+            "The nengo.spa module is deprecated. Please switch to using the "
+            "Nengo SPA project <https://www.nengo.ai/nengo-spa/>."))
+
         vocabs = [] if vocabs is None else vocabs
         enable_spa_params(self)
         self._modules = {}

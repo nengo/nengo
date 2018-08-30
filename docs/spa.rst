@@ -4,6 +4,9 @@ Semantic Pointer Architecture
 
 .. default-role:: obj
 
+.. deprecated:: 3.0
+   Use the `Nengo SPA <https://www.nengo.ai/nengo-spa/>`_ project instead.
+
 The `Semantic Pointer Architecture
 <http://compneuro.uwaterloo.ca/research/spa/semantic-pointer-architecture.html>`_
 provides an approach to building cognitive models
