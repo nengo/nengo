@@ -289,6 +289,95 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("nl_nodirect", nodirect)
 
 
+def pytest_collection_modifyitems(session, config, items):
+    if not config.getvalue('noexamples'):
+        deselect_by_condition(
+            lambda item: getattr(item.obj, 'example', None), items, config)
+    if not config.getvalue('slow'):
+        skip_slow = pytest.mark.skip("slow tests not requested")
+        for item in items:
+            if getattr(item.obj, 'slow', None):
+                item.add_marker(skip_slow)
+    if not TestConfig.compare_requested:
+        deselect_by_condition(
+            lambda item: getattr(item.obj, 'compare', None), items, config)
+
+    uses_sim = lambda item: 'Simulator' in item.fixturenames
+    uses_refsim = lambda item: 'RefSimulator' in item.fixturenames
+    if TestConfig.is_skipping_frontend_tests():
+        deselect_by_condition(
+            lambda item: not (uses_sim(item) or uses_refsim(item)),
+            items, config)
+        deselect_by_condition(
+            lambda item: uses_refsim(item) and
+            not TestConfig.is_refsim_overridden(),
+            items, config)
+        deselect_by_condition(
+            lambda item: uses_sim(item) and
+            not TestConfig.is_sim_overridden(),
+            items, config)
+
+    deselect_by_condition(
+        lambda item: getattr(item.obj, 'noassertions', None) and
+        not any(
+            fixture in item.fixturenames and config.getvalue(option)
+            for fixture, option in [
+                ('analytics', 'analytics'),
+                ('plt', 'plots'),
+                ('logger', 'logs'),
+            ]),
+        items, config)
+
+
+def deselect_by_condition(condition, items, config):
+    remaining = []
+    deselected = []
+    for item in items:
+        if condition(item):
+            deselected.append(item)
+        else:
+            remaining.append(item)
+
+    if deselected:
+        config.hook.pytest_deselected(items=deselected)
+        items[:] = remaining
+
+
+def pytest_report_collectionfinish(config, startdir, items):
+    deselect_reasons = ["Nengo core tests collected"]
+
+    if not config.getvalue('noexamples'):
+        deselect_reasons.append(
+            " example tests deselected (--noexamples passed)")
+    if not config.getvalue('slow'):
+        deselect_reasons.append(
+            " slow tests skipped (pass --slow to run them)")
+    if not TestConfig.compare_requested:
+        deselect_reasons.append(
+            " compare tests deselected (pass --compare to run them).")
+
+    if TestConfig.is_skipping_frontend_tests():
+        deselect_reasons.append(
+            " frontend tests deselected because --simulator or "
+            "--ref-simulator was passed")
+        if not TestConfig.is_refsim_overridden():
+            deselect_reasons.append(
+                " backend tests for non-reference simulator deselected "
+                "because only --ref-simulator was passed")
+        if not TestConfig.is_sim_overridden():
+            deselect_reasons.append(
+                " backend tests for reference simulator deselected "
+                "because only --simulator was passed")
+
+    for option in ('analytics', 'plots', 'logs'):
+        if not config.getvalue(option):
+            deselect_reasons.append(
+                " {option} not requested (pass --{option} to generate)".format(
+                    option=option))
+
+    return deselect_reasons
+
+
 def pytest_runtest_setup(item):  # noqa: C901
     rc.reload_rc([])
     rc.set('decoder_cache', 'enabled', 'False')
@@ -297,37 +386,9 @@ def pytest_runtest_setup(item):  # noqa: C901
     if not hasattr(item, 'obj'):
         return  # Occurs for doctests, possibly other weird tests
 
-    conf = item.config
-    test_uses_compare = getattr(item.obj, 'compare', None) is not None
     test_uses_sim = 'Simulator' in item.fixturenames
     test_uses_refsim = 'RefSimulator' in item.fixturenames
     tests_frontend = not (test_uses_sim or test_uses_refsim)
-
-    if getattr(item.obj, 'example', None) and not conf.getvalue('noexamples'):
-        pytest.skip("examples not requested")
-    elif getattr(item.obj, 'slow', None) and not conf.getvalue('slow'):
-        pytest.skip("slow tests not requested")
-    elif not TestConfig.compare_requested and test_uses_compare:
-        pytest.skip("compare tests not requested")
-    elif TestConfig.is_skipping_frontend_tests() and tests_frontend:
-        pytest.skip("frontend tests not run for alternate backends")
-    elif (TestConfig.is_skipping_frontend_tests()
-          and test_uses_refsim
-          and not TestConfig.is_refsim_overridden()):
-        pytest.skip("RefSimulator not overridden")
-    elif (TestConfig.is_skipping_frontend_tests()
-          and test_uses_sim
-          and not TestConfig.is_sim_overridden()):
-        pytest.skip("Simulator not overridden")
-    elif getattr(item.obj, 'noassertions', None):
-        options = []
-        for fixture, option in [('analytics', 'analytics'),
-                                ('plt', 'plots'),
-                                ('logger', 'logs')]:
-            if fixture in item.fixturenames and not conf.getvalue(option):
-                options.append(option)
-        if len(options) > 0:
-            pytest.skip("%s not requested" % " and ".join(options))
 
     if not tests_frontend:
         item_name = get_item_name(item)
