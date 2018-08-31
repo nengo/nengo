@@ -17,7 +17,7 @@ def pytest_addoption(parser):
     parser.addoption(
         '--logs', nargs='?', default=False, const=True,
         help='Save logs (can optionally specify a directory for logs).')
-    parser.addoption('--noexamples', action='store_false', default=True,
+    parser.addoption('--noexamples', action='store_true', default=False,
                      help='Do not run examples')
     parser.addoption(
         '--slow', action='store_true', default=False,

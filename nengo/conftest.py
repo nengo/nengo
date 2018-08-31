@@ -290,7 +290,7 @@ def pytest_generate_tests(metafunc):
 
 
 def pytest_collection_modifyitems(session, config, items):
-    if not config.getvalue('noexamples'):
+    if config.getvalue('noexamples'):
         deselect_by_condition(
             lambda item: getattr(item.obj, 'example', None), items, config)
     if not config.getvalue('slow'):
@@ -346,7 +346,7 @@ def deselect_by_condition(condition, items, config):
 def pytest_report_collectionfinish(config, startdir, items):
     deselect_reasons = ["Nengo core tests collected"]
 
-    if not config.getvalue('noexamples'):
+    if config.getvalue('noexamples'):
         deselect_reasons.append(
             " example tests deselected (--noexamples passed)")
     if not config.getvalue('slow'):
