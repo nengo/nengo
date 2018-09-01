@@ -20,6 +20,7 @@ enable = anomalous-backslash-in-string,
          dangerous-default-value,
          deprecated-method,
          function-redefined,
+         invalid-name,
          line-too-long,
          signature-differs,
          super-init-not-called,
@@ -27,6 +28,17 @@ enable = anomalous-backslash-in-string,
          unnecessary-lambda,
          unused-import,
          wrong-import-order,
+
+
+[BASIC]
+
+argument-rgx = [A-Z]|([a-z_][a-z0-9_]{0,30})|((Ref)?Simulator)
+attr-rgx = ([A-Z]{1,2})|([a-z_][a-z0-9_]{0,30})
+class-rgx = [A-Z_][a-zA-Z0-9_]{0,30}|terminal_size
+const-rgx = ([a-zA-Z_][a-zA-Z0-9_]{0,30})
+function-rgx = ([a-zA-Z_][a-zA-Z0-9_]{0,30})|(test_[a-z0-9_]{1,69})
+method-rgx = ([a-zA-Z_][a-zA-Z0-9_]{0,30})|(test_[a-z0-9_]{1,69})
+variable-rgx = ([A-Z]{1,2})|([a-z_][a-z0-9_]{0,30})
 
 
 [FORMAT]
