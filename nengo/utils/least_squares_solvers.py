@@ -107,7 +107,7 @@ class ConjgradScipy(LeastSquaresSolver):
                 itns[i] += 1
 
             X[:, i], infos[i] = scipy.sparse.linalg.cg(
-                G, B[:, i], tol=self.tol, callback=callback)
+                G, B[:, i], tol=self.tol, callback=callback, atol=0)
 
         info = {'rmses': rmses(A, X, Y), 'iterations': itns, 'info': infos}
         return X if matrix_in else X.ravel(), info
