@@ -186,15 +186,21 @@ def test_weight_solver(Solver, rng):
     assert np.allclose(W1, W2)
 
 
-def test_scipy_solvers(rng):
+def test_scipy_solvers(rng, logger):
     pytest.importorskip('scipy', minversion='0.11')  # version for lsmr
 
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
-    x0, _ = lstsq.Cholesky()(A, b, sigma)
-    x1, _ = lstsq.ConjgradScipy()(A, b, sigma)
-    x2, _ = lstsq.LSMRScipy()(A, b, sigma)
+    x0, i0 = lstsq.Cholesky()(A, b, sigma)
+    logger.info("Cholesky rmse=%0.3f" % (i0['rmses'].mean(),))
+    x1, i1 = lstsq.ConjgradScipy()(A, b, sigma)
+    logger.info("ConjgradScipy rmse=%0.3f, itns=%0.1f (%0.1f)" % (
+        i1['rmses'].mean(), i1['iterations'].mean(), i1['iterations'].std()))
+    x2, i2 = lstsq.LSMRScipy()(A, b, sigma)
+    logger.info("LSMRScipy rmse=%0.3f, itns=%0.1f (%0.1f)" % (
+        i2['rmses'].mean(), i2['iterations'].mean(), i2['iterations'].std()))
+
     assert np.allclose(x0, x1, atol=2e-5, rtol=1e-3)
     assert np.allclose(x0, x2, atol=2e-5, rtol=1e-3)
 

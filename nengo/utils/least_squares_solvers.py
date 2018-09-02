@@ -80,13 +80,28 @@ class Cholesky(LeastSquaresSolver):
 
 
 class ConjgradScipy(LeastSquaresSolver):
-    """Solve a least-squares system using Scipy's conjugate gradient."""
+    """Solve a least-squares system using Scipy's conjugate gradient.
+
+    Parameters
+    ----------
+    tol : float
+        Relative tolerance of the CG solver (see [1]_ for details).
+    atol : float
+        Absolute tolerance of the CG solver (see [1]_ for details).
+
+    References
+    ----------
+    .. [1] scipy.sparse.linalg.cg documentation, https://docs.scipy.org/
+        doc/scipy/reference/generated/scipy.sparse.linalg.cg.html
+    """
 
     tol = NumberParam('tol', low=0)
+    atol = NumberParam('atol', low=0)
 
-    def __init__(self, tol=1e-4):
+    def __init__(self, tol=1e-4, atol=1e-8):
         super(ConjgradScipy, self).__init__()
         self.tol = tol
+        self.atol = atol
 
     def __call__(self, A, Y, sigma, rng=None):
         import scipy.sparse.linalg
@@ -106,8 +121,16 @@ class ConjgradScipy(LeastSquaresSolver):
             def callback(x, i=i):
                 itns[i] += 1
 
-            X[:, i], infos[i] = scipy.sparse.linalg.cg(
-                G, B[:, i], tol=self.tol, callback=callback, atol=0)
+            try:
+                X[:, i], infos[i] = scipy.sparse.linalg.cg(
+                    G, B[:, i], tol=self.tol, callback=callback,
+                    atol=self.atol)
+            except TypeError as e:  # pragma: no cover
+                # no atol parameter in Scipy < 1.1.0
+                if 'atol' not in str(e):
+                    raise e
+                X[:, i], infos[i] = scipy.sparse.linalg.cg(
+                    G, B[:, i], tol=self.tol, callback=callback)
 
         info = {'rmses': rmses(A, X, Y), 'iterations': itns, 'info': infos}
         return X if matrix_in else X.ravel(), info
