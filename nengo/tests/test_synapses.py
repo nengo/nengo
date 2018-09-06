@@ -23,7 +23,7 @@ def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=1., n_neurons=None):
         ref = nengo.Probe(target)
         filtered = nengo.Probe(target, synapse=synapse)
 
-    with Simulator(model, dt=dt, seed=seed+1) as sim:
+    with Simulator(model, dt=dt, seed=seed + 1) as sim:
         sim.run(runtime)
 
     return sim.trange(), sim.data[ref], sim.data[filtered]
@@ -42,7 +42,7 @@ def test_lowpass(Simulator, plt, seed):
 def test_alpha(Simulator, plt, seed):
     dt = 1e-3
     tau = 0.03
-    num, den = [1], [tau**2, 2*tau, 1]
+    num, den = [1], [tau ** 2, 2 * tau, 1]
 
     t, x, yhat = run_synapse(Simulator, seed, Alpha(tau), dt=dt)
     y = LinearFilter(num, den).filt(x, dt=dt, y0=0)
@@ -50,7 +50,7 @@ def test_alpha(Simulator, plt, seed):
     assert allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt)
 
 
-def test_triangle(Simulator, plt, seed):
+def test_triangle(Simulator, plt, seed, allclose):
     dt = 1e-3
     tau = 0.03
 
@@ -64,7 +64,7 @@ def test_triangle(Simulator, plt, seed):
     y = np.convolve(x.ravel(), num)[:len(t)]
     y.shape = (-1, 1)
 
-    assert np.allclose(y, yfilt, rtol=0)
+    assert allclose(y, yfilt, rtol=0)
     assert allclose(t, y, ysim, delay=dt, rtol=0, plt=plt)
 
 
@@ -105,7 +105,7 @@ def test_step_errors():
         LinearFilter.Simple([1], [1, 2], output)
 
 
-def test_filt(plt, rng):
+def test_filt(plt, rng, allclose):
     dt = 1e-3
     tend = 3.
     t = dt * np.arange(tend / dt)
@@ -125,10 +125,10 @@ def test_filt(plt, rng):
     plt.plot(t, x)
     plt.plot(t, y, '--')
 
-    assert np.allclose(x, y, atol=1e-3, rtol=1e-2)
+    assert allclose(x, y, atol=1e-3, rtol=1e-2)
 
 
-def test_filtfilt(plt, rng):
+def test_filtfilt(plt, rng, allclose):
     dt = 1e-3
     tend = 3.
     t = dt * np.arange(tend / dt)
@@ -144,10 +144,10 @@ def test_filtfilt(plt, rng):
     plt.plot(t, x)
     plt.plot(t, y, '--')
 
-    assert np.allclose(x, y)
+    assert allclose(x, y)
 
 
-def test_lti_lowpass(rng, plt):
+def test_lti_lowpass(rng, plt, allclose):
     dt = 1e-3
     tend = 3.
     t = dt * np.arange(tend / dt)
@@ -164,20 +164,21 @@ def test_lti_lowpass(rng, plt):
     plt.plot(t, y[:, 0], label="LTI")
     plt.legend(loc="best")
 
-    assert np.allclose(x, y)
+    assert allclose(x, y)
 
 
-def test_linearfilter_combine(rng):
+def test_linearfilter_combine(rng, allclose):
     nt = 3000
     tau0, tau1 = 0.01, 0.02
     u = rng.normal(size=(nt, 10))
-    x = LinearFilter([1], [tau0*tau1, tau0+tau1, 1]).filt(u, y0=0)
+    x = LinearFilter([1], [tau0 * tau1, tau0 + tau1, 1]).filt(u, y0=0)
     y = Lowpass(tau0).combine(Lowpass(tau1)).filt(u, y0=0)
-    assert np.allclose(x, y)
+    assert allclose(x, y)
 
 
 def test_synapseparam():
     """SynapseParam must be a Synapse, and converts numbers to LowPass."""
+
     class Test(object):
         sp = SynapseParam('sp', default=Lowpass(0.1))
 

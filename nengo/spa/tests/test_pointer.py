@@ -5,7 +5,7 @@ from nengo.spa.pointer import SemanticPointer
 from nengo.utils.compat import range
 
 
-def test_init():
+def test_init(allclose):
     a = SemanticPointer([1, 2, 3, 4])
     assert len(a) == 4
 
@@ -17,7 +17,7 @@ def test_init():
 
     a = SemanticPointer(27)
     assert len(a) == 27
-    assert np.allclose(a.length(), 1)
+    assert allclose(a.length(), 1)
 
     with pytest.raises(Exception):
         a = SemanticPointer(np.zeros(2, 2))
@@ -34,17 +34,17 @@ def test_init():
         a = SemanticPointer(int)
 
 
-def test_length():
+def test_length(allclose):
     a = SemanticPointer([1, 1])
-    assert np.allclose(a.length(), np.sqrt(2))
-    a = SemanticPointer(10)*1.2
-    assert np.allclose(a.length(), 1.2)
+    assert allclose(a.length(), np.sqrt(2))
+    a = SemanticPointer(10) * 1.2
+    assert allclose(a.length(), 1.2)
 
 
-def test_normalize():
+def test_normalize(allclose):
     a = SemanticPointer([1, 1])
     a.normalize()
-    assert np.allclose(a.length(), 1)
+    assert allclose(a.length(), 1)
 
 
 def test_str():
@@ -52,33 +52,33 @@ def test_str():
     assert str(a) == str(np.array([1., 1.]))
 
 
-def test_randomize(rng):
+def test_randomize(rng, allclose):
     a = SemanticPointer(100, rng=rng)
     std = np.std(a.v)
-    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
+    assert allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
 
     a = SemanticPointer(100)
     a.randomize(rng=rng)
     assert len(a) == 100
     std = np.std(a.v)
-    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
+    assert allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
 
     a = SemanticPointer(5)
     a.randomize(N=100, rng=rng)
     assert len(a) == 100
     std = np.std(a.v)
-    assert np.allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
+    assert allclose(std, 1.0 / np.sqrt(len(a)), rtol=0.02)
 
 
-def test_make_unitary(rng):
+def test_make_unitary(rng, allclose):
     a = SemanticPointer(100, rng=rng)
     a.make_unitary()
-    assert np.allclose(1, a.length())
-    assert np.allclose(1, (a * a).length())
-    assert np.allclose(1, (a * a * a).length())
+    assert allclose(1, a.length())
+    assert allclose(1, (a * a).length())
+    assert allclose(1, (a * a * a).length())
 
 
-def test_add_sub():
+def test_add_sub(allclose):
     a = SemanticPointer(10)
     b = SemanticPointer(10)
     c = a.copy()
@@ -87,13 +87,13 @@ def test_add_sub():
     c += b
     d -= -a
 
-    assert np.allclose((a + b).v, a.v + b.v)
-    assert np.allclose((a + b).v, c.v)
-    assert np.allclose((a + b).v, d.v)
-    assert np.allclose((a + b).v, (a - (-b)).v)
+    assert allclose((a + b).v, a.v + b.v)
+    assert allclose((a + b).v, c.v)
+    assert allclose((a + b).v, d.v)
+    assert allclose((a + b).v, (a - (-b)).v)
 
 
-def test_convolution(rng):
+def test_convolution(rng, allclose):
     a = SemanticPointer(64, rng=rng)
     b = SemanticPointer(64, rng=rng)
     identity = SemanticPointer(np.eye(64)[0])
@@ -103,22 +103,22 @@ def test_convolution(rng):
 
     answer = np.fft.ifft(np.fft.fft(a.v) * np.fft.fft(b.v)).real
 
-    assert np.allclose((a * b).v, answer)
-    assert np.allclose(a.convolve(b).v, answer)
-    assert np.allclose(c.v, answer)
-    assert np.allclose((a * identity).v, a.v)
+    assert allclose((a * b).v, answer)
+    assert allclose(a.convolve(b).v, answer)
+    assert allclose(c.v, answer)
+    assert allclose((a * identity).v, a.v)
     assert (a * b * ~b).compare(a) > 0.65
 
 
-def test_multiply():
+def test_multiply(allclose):
     a = SemanticPointer(50)
 
-    assert np.allclose((a * 5).v, a.v * 5)
-    assert np.allclose((5 * a).v, a.v * 5)
-    assert np.allclose((a * 5.7).v, a.v * 5.7)
-    assert np.allclose((5.7 * a).v, a.v * 5.7)
-    assert np.allclose((0 * a).v, np.zeros(50))
-    assert np.allclose((1 * a).v, a.v)
+    assert allclose((a * 5).v, a.v * 5)
+    assert allclose((5 * a).v, a.v * 5)
+    assert allclose((a * 5.7).v, a.v * 5.7)
+    assert allclose((5.7 * a).v, a.v * 5.7)
+    assert allclose((0 * a).v, np.zeros(50))
+    assert allclose((1 * a).v, a.v)
 
     with pytest.raises(Exception):
         a * None
@@ -126,19 +126,19 @@ def test_multiply():
         a * 'string'
 
 
-def test_compare(rng):
+def test_compare(rng, allclose):
     a = SemanticPointer(50, rng=rng) * 10
     b = SemanticPointer(50, rng=rng) * 0.1
 
     assert a.compare(a) > 0.99
     assert a.compare(b) < 0.2
-    assert np.allclose(a.compare(b), a.dot(b) / (a.length() * b.length()))
+    assert allclose(a.compare(b), a.dot(b) / (a.length() * b.length()))
 
 
-def test_dot(rng):
+def test_dot(rng, allclose):
     a = SemanticPointer(50, rng=rng) * 1.1
     b = SemanticPointer(50, rng=rng) * (-1.5)
-    assert np.allclose(a.dot(b), np.dot(a.v, b.v))
+    assert allclose(a.dot(b), np.dot(a.v, b.v))
 
 
 def test_distance(rng):
@@ -148,11 +148,11 @@ def test_distance(rng):
     assert a.distance(b) > 0.9
 
 
-def test_invert():
+def test_invert(allclose):
     a = SemanticPointer(50)
     assert a.v[0] == (~a).v[0]
     assert a.v[49] == (~a).v[1]
-    assert np.allclose(a.v[1:], (~a).v[:0:-1])
+    assert allclose(a.v[1:], (~a).v[:0:-1])
 
 
 def test_len():
@@ -163,25 +163,25 @@ def test_len():
     assert len(a) == 10
 
 
-def test_copy():
+def test_copy(allclose):
     a = SemanticPointer(5)
     b = a.copy()
     assert a is not b
     assert a.v is not b.v
-    assert np.allclose(a.v, b.v)
+    assert allclose(a.v, b.v)
 
 
-def test_mse():
+def test_mse(allclose):
     a = SemanticPointer(50)
     b = SemanticPointer(50)
 
-    assert np.allclose(((a - b).length() ** 2) / 50, a.mse(b))
+    assert allclose(((a - b).length() ** 2) / 50, a.mse(b))
 
 
-def test_conv_matrix():
+def test_conv_matrix(allclose):
     a = SemanticPointer(50)
     b = SemanticPointer(50)
 
     m = b.get_convolution_matrix()
 
-    assert np.allclose((a*b).v, np.dot(m, a.v))
+    assert allclose((a * b).v, np.dot(m, a.v))

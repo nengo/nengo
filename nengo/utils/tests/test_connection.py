@@ -12,7 +12,7 @@ from nengo.utils.numpy import rms
 @pytest.mark.parametrize("radius", [1, 2.0])
 @pytest.mark.filterwarnings("ignore:'targets' can be passed directly")
 def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
-                         seed, rng):
+                         seed, rng, allclose):
     eval_points = UniformHypersphere().sample(1000, dimensions, rng=rng)
     eval_points *= radius
     f = lambda x: x ** 2
@@ -44,7 +44,7 @@ def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
     plt.plot(sim.trange(), sim.data[probe2])
     plt.title('Square by passing in function to connection')
 
-    assert np.allclose(sim.data[probe1], sim.data[probe2], atol=0.2 * radius)
+    assert allclose(sim.data[probe1], sim.data[probe2], atol=0.2 * radius)
 
 
 def test_eval_point_decoding(Simulator, nl_nodirect, plt, seed):

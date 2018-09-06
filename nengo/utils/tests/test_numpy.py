@@ -5,7 +5,7 @@ import numpy as np
 from nengo.utils.numpy import meshgrid_nd
 
 
-def test_meshgrid_nd():
+def test_meshgrid_nd(allclose):
     a = [0, 0, 1]
     b = [1, 2, 3]
     c = [23, 42]
@@ -20,4 +20,4 @@ def test_meshgrid_nd():
                   [[23, 42], [23, 42], [23, 42]],
                   [[23, 42], [23, 42], [23, 42]]])]
     actual = meshgrid_nd(a, b, c)
-    assert np.allclose(expected, actual)
+    assert allclose(expected, actual)

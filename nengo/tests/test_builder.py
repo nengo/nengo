@@ -9,7 +9,7 @@ from nengo.exceptions import ObsoleteError, SignalError
 from nengo.utils.compat import itervalues, range
 
 
-def test_seeding(RefSimulator, logger):
+def test_seeding(RefSimulator, logger, allclose):
     """Test that setting the model seed fixes everything"""
 
     #  TODO: this really just checks random parameters in ensembles.
@@ -35,7 +35,7 @@ def test_seeding(RefSimulator, logger):
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
-            check = (np.allclose(getattr(obj1, attr), getattr(obj2, attr)) ==
+            check = (allclose(getattr(obj1, attr), getattr(obj2, attr)) ==
                      equal)
             if not check:
                 logger.info("%s: %s", attr, getattr(obj1, attr))
@@ -110,12 +110,12 @@ def test_signal():
     Signal.assert_named_signals = False
 
 
-def test_signal_values():
+def test_signal_values(allclose):
     """Make sure Signal.initial_value works."""
     two_d = Signal([[1.], [1.]])
-    assert np.allclose(two_d.initial_value, np.array([[1], [1]]))
+    assert allclose(two_d.initial_value, np.array([[1], [1]]))
     two_d_view = two_d[0, :]
-    assert np.allclose(two_d_view.initial_value, np.array([1]))
+    assert allclose(two_d_view.initial_value, np.array([1]))
 
     # cannot change signal value after creation
     with pytest.raises(SignalError):
@@ -124,7 +124,7 @@ def test_signal_values():
         two_d.initial_value[...] = np.array([[0.5], [-0.5]])
 
 
-def test_signaldict():
+def test_signaldict(allclose):
     """Tests SignalDict's dict overrides."""
     signaldict = SignalDict()
 
@@ -137,39 +137,39 @@ def test_signaldict():
         signaldict[scalar] = np.array(1.)
 
     signaldict.init(scalar)
-    assert np.allclose(signaldict[scalar], np.array(1.))
+    assert allclose(signaldict[scalar], np.array(1.))
     # __getitem__ handles scalars
     assert signaldict[scalar].shape == ()
 
     one_d = Signal([1.])
     signaldict.init(one_d)
-    assert np.allclose(signaldict[one_d], np.array([1.]))
+    assert allclose(signaldict[one_d], np.array([1.]))
     assert signaldict[one_d].shape == (1,)
 
     two_d = Signal([[1.], [1.]])
     signaldict.init(two_d)
-    assert np.allclose(signaldict[two_d], np.array([[1.], [1.]]))
+    assert allclose(signaldict[two_d], np.array([[1.], [1.]]))
     assert signaldict[two_d].shape == (2, 1)
 
     # __getitem__ handles views implicitly (note no .init)
     two_d_view = two_d[0, :]
-    assert np.allclose(signaldict[two_d_view], np.array([1.]))
+    assert allclose(signaldict[two_d_view], np.array([1.]))
     assert signaldict[two_d_view].shape == (1,)
 
     # __setitem__ ensures memory location stays the same
     memloc = signaldict[scalar].__array_interface__['data'][0]
     signaldict[scalar] = np.array(0.)
-    assert np.allclose(signaldict[scalar], np.array(0.))
+    assert allclose(signaldict[scalar], np.array(0.))
     assert signaldict[scalar].__array_interface__['data'][0] == memloc
 
     memloc = signaldict[one_d].__array_interface__['data'][0]
     signaldict[one_d] = np.array([0.])
-    assert np.allclose(signaldict[one_d], np.array([0.]))
+    assert allclose(signaldict[one_d], np.array([0.]))
     assert signaldict[one_d].__array_interface__['data'][0] == memloc
 
     memloc = signaldict[two_d].__array_interface__['data'][0]
     signaldict[two_d] = np.array([[0.], [0.]])
-    assert np.allclose(signaldict[two_d], np.array([[0.], [0.]]))
+    assert allclose(signaldict[two_d], np.array([[0.], [0.]]))
     assert signaldict[two_d].__array_interface__['data'][0] == memloc
 
     # __str__ pretty-prints signals and current values
@@ -178,7 +178,7 @@ def test_signaldict():
         assert "%s %s" % (repr(k), repr(signaldict[k])) in str(signaldict)
 
 
-def test_signaldict_reset():
+def test_signaldict_reset(allclose):
     """Tests SignalDict's reset function."""
     signaldict = SignalDict()
     two_d = Signal([[1.], [1.]])
@@ -188,18 +188,18 @@ def test_signaldict_reset():
     signaldict.init(two_d_view)
 
     signaldict[two_d_view] = -0.5
-    assert np.allclose(signaldict[two_d], np.array([[-0.5], [1]]))
+    assert allclose(signaldict[two_d], np.array([[-0.5], [1]]))
 
     signaldict[two_d] = np.array([[-1], [-1]])
-    assert np.allclose(signaldict[two_d], np.array([[-1], [-1]]))
-    assert np.allclose(signaldict[two_d_view], np.array([-1]))
+    assert allclose(signaldict[two_d], np.array([[-1], [-1]]))
+    assert allclose(signaldict[two_d_view], np.array([-1]))
 
     signaldict.reset(two_d_view)
-    assert np.allclose(signaldict[two_d_view], np.array([1]))
-    assert np.allclose(signaldict[two_d], np.array([[1], [-1]]))
+    assert allclose(signaldict[two_d_view], np.array([1]))
+    assert allclose(signaldict[two_d], np.array([[1], [-1]]))
 
     signaldict.reset(two_d)
-    assert np.allclose(signaldict[two_d], np.array([[1], [1]]))
+    assert allclose(signaldict[two_d], np.array([[1], [1]]))
 
 
 def test_signal_reshape():

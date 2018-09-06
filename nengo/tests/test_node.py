@@ -5,7 +5,7 @@ import nengo
 from nengo.exceptions import SimulationError, ValidationError
 
 
-def test_time(Simulator):
+def test_time(Simulator, allclose):
     with nengo.Network() as model:
         u = nengo.Node(output=lambda t: t)
         up = nengo.Probe(u)
@@ -15,10 +15,10 @@ def test_time(Simulator):
 
     t = sim.trange()
     x = sim.data[up].flatten()
-    assert np.allclose(t, x, atol=1e-7, rtol=1e-4)
+    assert allclose(t, x, atol=1e-7, rtol=1e-4)
 
 
-def test_simple(Simulator, plt, seed):
+def test_simple(Simulator, plt, seed, allclose):
     m = nengo.Network(seed=seed)
     with m:
         input = nengo.Node(output=np.sin)
@@ -32,10 +32,10 @@ def test_simple(Simulator, plt, seed):
 
     sim_t = sim.trange()
     sim_in = sim.data[p].ravel()
-    assert np.allclose(sim_in, np.sin(sim_t))
+    assert allclose(sim_in, np.sin(sim_t))
 
 
-def test_connected(Simulator, plt, seed):
+def test_connected(Simulator, plt, seed, allclose):
     m = nengo.Network(seed=seed)
     with m:
         input = nengo.Node(output=np.sin, label='input')
@@ -59,11 +59,11 @@ def test_connected(Simulator, plt, seed):
     sim_t = sim.trange()
     sim_sin = sim.data[p_in].ravel()
     sim_sq = sim.data[p_out].ravel()
-    assert np.allclose(sim_sin, np.sin(sim_t))
-    assert np.allclose(sim_sq, sim_sin**2)
+    assert allclose(sim_sin, np.sin(sim_t))
+    assert allclose(sim_sq, sim_sin ** 2)
 
 
-def test_passthrough(Simulator, plt, seed):
+def test_passthrough(Simulator, plt, seed, allclose):
     m = nengo.Network(seed=seed)
     with m:
         in1 = nengo.Node(output=np.sin)
@@ -82,16 +82,16 @@ def test_passthrough(Simulator, plt, seed):
     with Simulator(m) as sim:
         sim.run(0.5)
 
-    plt.plot(sim.trange(), sim.data[in1_p]+sim.data[in2_p], label='in+in2')
+    plt.plot(sim.trange(), sim.data[in1_p] + sim.data[in2_p], label='in+in2')
     plt.plot(sim.trange()[:-2], sim.data[out_p][2:], label='out')
     plt.legend(loc='best')
 
     sim_in = sim.data[in1_p] + sim.data[in2_p]
     sim_out = sim.data[out_p]
-    assert np.allclose(sim_in, sim_out)
+    assert allclose(sim_in, sim_out)
 
 
-def test_passthrough_filter(Simulator, plt, seed):
+def test_passthrough_filter(Simulator, plt, seed, allclose):
     m = nengo.Network(seed=seed)
     with m:
         omega = 2 * np.pi * 5
@@ -118,14 +118,14 @@ def test_passthrough_filter(Simulator, plt, seed):
     plt.plot(t, y)
     plt.plot(t, z)
 
-    assert np.allclose(y[:-1], z[1:], atol=1e-7, rtol=1e-4)
+    assert allclose(y[:-1], z[1:], atol=1e-7, rtol=1e-4)
 
 
-def test_circular(Simulator, seed):
+def test_circular(Simulator, seed, allclose):
     m = nengo.Network(seed=seed)
     with m:
-        a = nengo.Node(output=lambda t, x: x+1, size_in=1)
-        b = nengo.Node(output=lambda t, x: x+1, size_in=1)
+        a = nengo.Node(output=lambda t, x: x + 1, size_in=1)
+        b = nengo.Node(output=lambda t, x: x + 1, size_in=1)
         nengo.Connection(a, b, synapse=0)
         nengo.Connection(b, a, synapse=0)
 
@@ -135,13 +135,13 @@ def test_circular(Simulator, seed):
     with Simulator(m) as sim:
         sim.run(0.5)
 
-    assert np.allclose(sim.data[a_p], sim.data[b_p])
+    assert allclose(sim.data[a_p], sim.data[b_p])
 
 
 def test_outputparam_errors(Simulator):
     with nengo.Network() as model:
         # valid values
-        nengo.Node(output=lambda t: t+1)
+        nengo.Node(output=lambda t: t + 1)
         nengo.Node(output=0)
         nengo.Node(output=[0, 1])
         nengo.Node(output=nengo.processes.WhiteNoise())
@@ -152,13 +152,13 @@ def test_outputparam_errors(Simulator):
             nengo.Node(output=object())
 
         # function errors
-        nengo.Node(output=lambda t, x=[0]: t+1, size_in=1)
+        nengo.Node(output=lambda t, x=[0]: t + 1, size_in=1)
         with pytest.raises(ValidationError):
-            nengo.Node(output=lambda t, x: x+1)
+            nengo.Node(output=lambda t, x: x + 1)
         with pytest.raises(ValidationError):
-            nengo.Node(output=lambda t: t+1, size_in=1)
+            nengo.Node(output=lambda t: t + 1, size_in=1)
         with pytest.raises(ValidationError):
-            nengo.Node(output=lambda t, x, y: t+1, size_in=2)
+            nengo.Node(output=lambda t, x, y: t + 1, size_in=2)
         with pytest.raises(ValidationError):
             nengo.Node(output=[0], size_in=1)
         with pytest.raises(ValidationError):
@@ -168,7 +168,7 @@ def test_outputparam_errors(Simulator):
         with pytest.raises(ValidationError):
             nengo.Node(output=[[1, 2], [3, 4]])
         with pytest.raises(ValidationError):
-            nengo.Node(output=lambda t: [[t, t+1]])
+            nengo.Node(output=lambda t: [[t, t + 1]])
         with pytest.raises(ValidationError):
             nengo.Node(output=[[3, 1], [2, 9]], size_out=4)
         with pytest.raises(ValidationError):
@@ -220,6 +220,7 @@ def test_unconnected_node(Simulator):
 
     def f(t):
         hits[...] += 1
+
     model = nengo.Network()
     with model:
         nengo.Node(f, size_in=0, size_out=0)

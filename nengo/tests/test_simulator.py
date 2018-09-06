@@ -14,28 +14,28 @@ from nengo.utils.compat import range, ResourceWarning
 from nengo.utils.progress import ProgressBar
 
 
-def test_steps(RefSimulator):
+def test_steps(RefSimulator, allclose):
     dt = 0.001
     m = nengo.Network(label="test_steps")
     with RefSimulator(m, dt=dt) as sim:
         assert sim.n_steps == 0
-        assert np.allclose(sim.time, 0 * dt)
+        assert allclose(sim.time, 0 * dt)
         sim.step()
         assert sim.n_steps == 1
-        assert np.allclose(sim.time, 1 * dt)
+        assert allclose(sim.time, 1 * dt)
         sim.step()
         assert sim.n_steps == 2
-        assert np.allclose(sim.time, 2 * dt)
+        assert allclose(sim.time, 2 * dt)
 
         assert np.isscalar(sim.n_steps)
         assert np.isscalar(sim.time)
 
 
-def test_time_absolute(Simulator):
+def test_time_absolute(Simulator, allclose):
     m = nengo.Network()
     with Simulator(m) as sim:
         sim.run(0.003)
-    assert np.allclose(sim.trange(), [0.001, 0.002, 0.003])
+    assert allclose(sim.trange(), [0.001, 0.002, 0.003])
 
 
 def test_trange_with_probes(Simulator):
@@ -164,7 +164,7 @@ def test_signal_init_values(RefSimulator):
         assert np.all(np.array([1, 2, 3]) == sim.signals[array])
 
 
-def test_seeding(RefSimulator, logger):
+def test_seeding(RefSimulator, logger, allclose):
     """Test that setting the model seed fixes everything"""
 
     #  TODO: this really just checks random parameters in ensembles.
@@ -190,7 +190,7 @@ def test_seeding(RefSimulator, logger):
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
-            check = (np.allclose(getattr(obj1, attr), getattr(obj2, attr)) ==
+            check = (allclose(getattr(obj1, attr), getattr(obj2, attr)) ==
                      equal)
             if not check:
                 logger.info("%s: %s", attr, getattr(obj1, attr))
@@ -264,7 +264,7 @@ def test_obsolete_params(RefSimulator):
         sim.data[c].decoders
 
 
-def test_probe_cache(Simulator):
+def test_probe_cache(Simulator, allclose):
     with nengo.Network() as model:
         u = nengo.Node(nengo.processes.WhiteNoise())
         up = nengo.Probe(u)
@@ -277,7 +277,7 @@ def test_probe_cache(Simulator):
         sim.run_steps(10)
         ub = np.array(sim.data[up])
 
-    assert not np.allclose(ua, ub, atol=1e-1)
+    assert not allclose(ua, ub, atol=1e-1)
 
 
 def test_invalid_run_time(Simulator):
@@ -337,7 +337,7 @@ def test_simulator_progress_bars(RefSimulator):
 
 
 @pytest.mark.parametrize('sample_every', (0.001, 0.0005, 0.002, 0.0015))
-def test_sample_every_trange(Simulator, sample_every):
+def test_sample_every_trange(Simulator, sample_every, allclose):
     with nengo.Network() as model:
         t = nengo.Node(lambda t: t)
         p = nengo.Probe(t, sample_every=sample_every)
@@ -348,7 +348,7 @@ def test_sample_every_trange(Simulator, sample_every):
     with pytest.raises(ValidationError):
         sim.trange(dt=sample_every, sample_every=sample_every)
     with pytest.warns(UserWarning):
-        assert np.allclose(
+        assert allclose(
             sim.trange(dt=sample_every), np.squeeze(sim.data[p]))
-    assert np.allclose(
+    assert allclose(
         sim.trange(sample_every=sample_every), np.squeeze(sim.data[p]))

@@ -72,32 +72,32 @@ def get_system(m, n, d, rng=None, sort=False):
     return rates(np.dot(eval_points, encoders)), eval_points
 
 
-def test_cholesky(rng):
+def test_cholesky(rng, allclose):
     m, n = 100, 100
     A = rng.normal(size=(m, n))
-    b = rng.normal(size=(m, ))
+    b = rng.normal(size=(m,))
 
     x0, _, _, _ = np.linalg.lstsq(A, b, rcond=-1)
     x1, _ = lstsq.Cholesky(transpose=False)(A, b, 0)
     x2, _ = lstsq.Cholesky(transpose=True)(A, b, 0)
-    assert np.allclose(x0, x1)
-    assert np.allclose(x0, x2)
+    assert allclose(x0, x1)
+    assert allclose(x0, x2)
 
 
-def test_conjgrad(rng):
+def test_conjgrad(rng, allclose):
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
     x0, _ = lstsq.Cholesky()(A, b, sigma)
     x1, _ = lstsq.Conjgrad(tol=1e-3)(A, b, sigma)
     x2, _ = lstsq.BlockConjgrad(tol=1e-3)(A, b, sigma)
-    assert np.allclose(x0, x1, atol=1e-6, rtol=1e-3)
-    assert np.allclose(x0, x2, atol=1e-6, rtol=1e-3)
+    assert allclose(x0, x1, atol=1e-6, rtol=1e-3)
+    assert allclose(x0, x2, atol=1e-6, rtol=1e-3)
 
 
 @pytest.mark.parametrize('Solver', [
     Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqDrop])
-def test_decoder_solver(Solver, plt, rng):
+def test_decoder_solver(Solver, plt, rng, allclose):
     solver = Solver()
 
     dims = 1
@@ -122,7 +122,7 @@ def test_decoder_solver(Solver, plt, rng):
     plt.title("relative RMSE: %0.2e" % rel_rmse)
 
     atol = 3.5e-2 if isinstance(solver, (LstsqNoise, LstsqDrop)) else 1.5e-2
-    assert np.allclose(test, est, atol=atol, rtol=1e-3)
+    assert allclose(test, est, atol=atol, rtol=1e-3)
     assert rel_rmse < 0.02
 
 
@@ -147,13 +147,13 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
 @pytest.mark.parametrize('Solver', [
     Factory(LstsqL2, solver=Factory(lstsq.RandomizedSVD)),
     Factory(LstsqL1, max_iter=2000)])
-def test_decoder_solver_extra(Solver, plt, rng):
+def test_decoder_solver_extra(Solver, plt, rng, allclose):
     pytest.importorskip('sklearn')
-    test_decoder_solver(Solver, plt, rng)
+    test_decoder_solver(Solver, plt, rng, allclose)
 
 
 @pytest.mark.parametrize('Solver', [Lstsq, LstsqL2, LstsqL2nz])
-def test_weight_solver(Solver, rng):
+def test_weight_solver(Solver, rng, allclose):
     dims = 2
     a_neurons, b_neurons = 100, 101
     n_points = 1000
@@ -163,8 +163,8 @@ def test_weight_solver(Solver, rng):
     Eb = get_encoders(b_neurons, dims, rng=rng)  # post encoders
 
     train = get_eval_points(n_points, dims, rng=rng)  # training eval points
-    Atrain = rates(np.dot(train, Ea))                 # training activations
-    Xtrain = train                                    # training targets
+    Atrain = rates(np.dot(train, Ea))  # training activations
+    Xtrain = train  # training targets
 
     # find decoders and multiply by encoders to get weights
     D, _ = Solver()(Atrain, Xtrain, rng=rng)
@@ -176,15 +176,15 @@ def test_weight_solver(Solver, rng):
     # assert that post inputs are close on test points
     test = get_eval_points(n_points, dims, rng=rng)  # testing eval points
     Atest = rates(np.dot(test, Ea))
-    Y1 = np.dot(Atest, W1)                         # post inputs from decoders
-    Y2 = np.dot(Atest, W2)                         # post inputs from weights
-    assert np.allclose(Y1, Y2)
+    Y1 = np.dot(Atest, W1)  # post inputs from decoders
+    Y2 = np.dot(Atest, W2)  # post inputs from weights
+    assert allclose(Y1, Y2)
 
     # assert that weights themselves are close (this is true for L2 weights)
-    assert np.allclose(W1, W2)
+    assert allclose(W1, W2)
 
 
-def test_scipy_solvers(rng):
+def test_scipy_solvers(rng, allclose):
     pytest.importorskip('scipy', minversion='0.11')  # version for lsmr
 
     A, b = get_system(1000, 100, 2, rng=rng)
@@ -193,16 +193,16 @@ def test_scipy_solvers(rng):
     x0, _ = lstsq.Cholesky()(A, b, sigma)
     x1, _ = lstsq.ConjgradScipy()(A, b, sigma)
     x2, _ = lstsq.LSMRScipy()(A, b, sigma)
-    assert np.allclose(x0, x1, atol=2e-5, rtol=1e-3)
-    assert np.allclose(x0, x2, atol=2e-5, rtol=1e-3)
+    assert allclose(x0, x1, atol=2e-5, rtol=1e-3)
+    assert allclose(x0, x2, atol=2e-5, rtol=1e-3)
 
 
 @pytest.mark.parametrize('Solver', [Nnls, NnlsL2, NnlsL2nz])
-def test_nnls(Solver, plt, rng):
+def test_nnls(Solver, plt, rng, allclose):
     pytest.importorskip('scipy')
 
     A, x = get_system(500, 100, 1, rng=rng, sort=True)
-    y = x**2
+    y = x ** 2
 
     d, _ = Solver()(A, y, rng)
     yest = np.dot(A, d)
@@ -216,12 +216,12 @@ def test_nnls(Solver, plt, rng):
     plt.plot(x, np.zeros_like(x), 'k--')
     plt.plot(x, yest - y)
 
-    assert np.allclose(yest, y, atol=3e-2, rtol=1e-3)
+    assert allclose(yest, y, atol=3e-2, rtol=1e-3)
     assert rel_rmse < 0.02
 
 
 @pytest.mark.slow
-def test_subsolvers_L2(rng, logger):
+def test_subsolvers_L2(rng, logger, allclose):
     pytest.importorskip('scipy', minversion='0.11')  # version for lsmr
 
     ref_solver = lstsq.Cholesky()
@@ -245,7 +245,7 @@ def test_subsolvers_L2(rng, logger):
         logger.info('info: %s', info)
 
     for solver, x in zip(solvers, xs):
-        assert np.allclose(x0, x, atol=1e-5, rtol=1e-3), (
+        assert allclose(x0, x, atol=1e-5, rtol=1e-3), (
             "Solver %s" % solver.__name__)
 
 
@@ -263,7 +263,7 @@ def test_subsolvers_L1(rng, logger):
 
 
 @pytest.mark.slow
-def test_compare_solvers(Simulator, plt, seed):
+def test_compare_solvers(Simulator, plt, seed, allclose):
     pytest.importorskip('sklearn')
 
     N = 70
@@ -313,7 +313,6 @@ def test_compare_solvers(Simulator, plt, seed):
 @pytest.mark.slow
 @pytest.mark.noassertions
 def test_regularization(Simulator, nl_nodirect, plt):
-
     # TODO: multiple trials per parameter set, with different seeds
 
     Solvers = [LstsqL2, LstsqL2nz]
@@ -363,7 +362,7 @@ def test_regularization(Simulator, nl_nodirect, plt):
 
     for i, Solver in enumerate(Solvers):
         for j, n_neurons in enumerate(neurons):
-            plt.subplot(len(neurons), len(Solvers), len(Solvers)*j + i + 1)
+            plt.subplot(len(neurons), len(Solvers), len(Solvers) * j + i + 1)
             Z = rmses[i, j, :, :]
             plt.contourf(X, Y, Z, levels=np.linspace(Z.min(), Z.max(), 21))
             plt.xlabel('filter')

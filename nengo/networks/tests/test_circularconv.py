@@ -9,7 +9,7 @@ from nengo.utils.numpy import rmse
 
 @pytest.mark.parametrize('invert_a', [True, False])
 @pytest.mark.parametrize('invert_b', [True, False])
-def test_circularconv_transforms(invert_a, invert_b, rng):
+def test_circularconv_transforms(invert_a, invert_b, rng, allclose):
     """Test the circular convolution transforms"""
     dims = 100
     x = rng.randn(dims)
@@ -22,7 +22,7 @@ def test_circularconv_transforms(invert_a, invert_b, rng):
     XY = np.dot(tr_a, x) * np.dot(tr_b, y)
     z1 = np.dot(tr_out, XY)
 
-    assert np.allclose(z0, z1)
+    assert allclose(z0, z1)
 
 
 def test_input_magnitude(Simulator, seed, rng, dims=16, magnitude=10):
@@ -33,8 +33,8 @@ def test_input_magnitude(Simulator, seed, rng, dims=16, magnitude=10):
     """
     neurons_per_product = 128
 
-    a = rng.normal(scale=np.sqrt(1./dims), size=dims) * magnitude
-    b = rng.normal(scale=np.sqrt(1./dims), size=dims) * magnitude
+    a = rng.normal(scale=np.sqrt(1. / dims), size=dims) * magnitude
+    b = rng.normal(scale=np.sqrt(1. / dims), size=dims) * magnitude
     result = circconv(a, b)
 
     model = nengo.Network(label="circular conv", seed=seed)
@@ -66,8 +66,8 @@ def test_input_magnitude(Simulator, seed, rng, dims=16, magnitude=10):
 
 @pytest.mark.parametrize('dims', [4, 32])
 def test_neural_accuracy(Simulator, seed, rng, dims, neurons_per_product=128):
-    a = rng.normal(scale=np.sqrt(1./dims), size=dims)
-    b = rng.normal(scale=np.sqrt(1./dims), size=dims)
+    a = rng.normal(scale=np.sqrt(1. / dims), size=dims)
+    b = rng.normal(scale=np.sqrt(1. / dims), size=dims)
     result = circconv(a, b)
 
     model = nengo.Network(label="circular conv", seed=seed)

@@ -12,7 +12,7 @@ from nengo.utils.neurons import rates_kernel
 from nengo.utils.numpy import rms, rmse
 
 
-def test_lif_builtin(rng):
+def test_lif_builtin(rng, allclose):
     """Test that the dynamic model approximately matches the rates."""
     dt = 1e-3
     t_final = 1.0
@@ -34,11 +34,11 @@ def test_lif_builtin(rng):
 
     math_rates = lif.rates(x, gain, bias)
     sim_rates = spikes.mean(0)
-    assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
+    assert allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 
 
 @pytest.mark.parametrize('dt', (0.001, 0.002))
-def test_lif(Simulator, plt, rng, logger, dt):
+def test_lif(Simulator, plt, rng, logger, dt, allclose):
     """Test that the dynamic model approximately matches the rates."""
     n = 5000
     x = 0.5
@@ -81,7 +81,7 @@ def test_lif(Simulator, plt, rng, logger, dt):
                 rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
     assert np.sum(math_rates > 0) > 0.5 * n, (
         "At least 50% of neurons must fire")
-    assert np.allclose(sim_rates, math_rates, atol=1, rtol=0.02)
+    assert allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 
     # if voltage and ref time are non-constant, the probe is doing something
     assert np.abs(np.diff(sim.data[voltage_probe])).sum() > 1
@@ -94,7 +94,7 @@ def test_lif(Simulator, plt, rng, logger, dt):
 
 
 @pytest.mark.parametrize('min_voltage', [-np.inf, -1, 0])
-def test_lif_min_voltage(Simulator, plt, min_voltage, seed):
+def test_lif_min_voltage(Simulator, plt, min_voltage, seed, allclose):
     model = nengo.Network(seed=seed)
     with model:
         stim = nengo.Node(lambda t: np.sin(t * 4 * np.pi))
@@ -120,7 +120,7 @@ def test_lif_min_voltage(Simulator, plt, min_voltage, seed):
         assert np.min(sim.data[p_voltage]) == min_voltage
 
 
-def test_lif_zero_tau_ref(Simulator):
+def test_lif_zero_tau_ref(Simulator, allclose):
     """If we set tau_ref=0, we should be able to reach firing rate 1/dt."""
     dt = 1e-3
     max_rate = 1. / dt
@@ -133,10 +133,10 @@ def test_lif_zero_tau_ref(Simulator):
         p = nengo.Probe(ens.neurons)
     with Simulator(m) as sim:
         sim.run(0.02)
-    assert np.allclose(sim.data[p][1:], max_rate)
+    assert allclose(sim.data[p][1:], max_rate)
 
 
-def test_alif_rate(Simulator, plt):
+def test_alif_rate(Simulator, plt, allclose):
     n = 100
     max_rates = 50 * np.ones(n)
     # max_rates = 200 * np.ones(n)
@@ -173,7 +173,7 @@ def test_alif_rate(Simulator, plt):
     ax.set_xlabel('rate')
 
     # check that initial tuning curve is the same as LIF rates
-    assert np.allclose(rates[1], ref, atol=0.1, rtol=1e-3)
+    assert allclose(rates[1], ref, atol=0.1, rtol=1e-3)
 
     # check that curves in firing region are monotonically decreasing
     assert np.all(np.diff(rates[1:, intercepts < 0.4], axis=0) < 0)
@@ -262,7 +262,7 @@ def test_izhikevich(Simulator, plt, seed, rng):
             spikes[ens] = nengo.Probe(ens.neurons)
         up = nengo.Probe(u)
 
-    with Simulator(m, seed=seed+1) as sim:
+    with Simulator(m, seed=seed + 1) as sim:
         sim.run(0.6)
     t = sim.trange()
 
@@ -285,7 +285,7 @@ def test_izhikevich(Simulator, plt, seed, rng):
 
 
 @pytest.mark.parametrize("max_rate,intercept", [(300., 0.0), (100., 1.1)])
-def test_sigmoid_response_curves(Simulator, max_rate, intercept):
+def test_sigmoid_response_curves(Simulator, max_rate, intercept, allclose):
     """Check the sigmoid response curve monotonically increases.
 
     The sigmoid response curve should work fine:
@@ -300,7 +300,7 @@ def test_sigmoid_response_curves(Simulator, max_rate, intercept):
     with Simulator(m) as sim:
         pass
     x, y = nengo.utils.ensemble.response_curves(e, sim)
-    assert np.allclose(np.max(y), max_rate)
+    assert allclose(np.max(y), max_rate)
     assert np.all(y > 0.)
     assert np.all(np.diff(y) > 0.)  # monotonically increasing
 
@@ -318,10 +318,10 @@ def test_sigmoid_invalid(Simulator, max_rate, intercept):
             pass
 
 
-def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
+def test_dt_dependence(Simulator, nl_nodirect, plt, seed, allclose):
     """Neurons should not wildly change with different dt."""
     freq = 10 * (2 * np.pi)
-    input_signal = lambda t: [np.sin(freq*t), np.cos(freq*t)]
+    input_signal = lambda t: [np.sin(freq * t), np.cos(freq * t)]
 
     with nengo.Network(seed=seed) as m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
@@ -342,7 +342,7 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     ax1 = plt.subplot(2, 1, 1)
     ax2 = plt.subplot(2, 1, 2)
     for c, dt in zip(colors, dts):
-        with Simulator(m, dt=dt, seed=seed+1) as sim:
+        with Simulator(m, dt=dt, seed=seed + 1) as sim:
             sim.run(0.1)
         t = sim.trange(sample_every=0.001)
         activity_data.append(sim.data[activity_p])
@@ -357,7 +357,7 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     ax2.set_ylabel("Neural activity")
 
     assert rmse(activity_data[0], activity_data[1]) < ((1. / dt) * 0.01)
-    assert np.allclose(out_data[0], out_data[1], atol=0.05)
+    assert allclose(out_data[0], out_data[1], atol=0.05)
 
 
 @pytest.mark.parametrize('Neuron', [
@@ -366,7 +366,7 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     nengo.RectifiedLinear,
     nengo.SpikingRectifiedLinear,
 ])
-def test_amplitude(Simulator, seed, rng, plt, Neuron):
+def test_amplitude(Simulator, seed, rng, plt, allclose, Neuron):
     amp = 0.1
     neuron0 = Neuron()
     neuron = Neuron(amplitude=amp)
@@ -375,7 +375,7 @@ def test_amplitude(Simulator, seed, rng, plt, Neuron):
     x = np.linspace(-5, 30)
     y = amp * neuron0.rates(x, 1., 0.)
     y2 = neuron.rates(x, 1., 0.)
-    assert np.allclose(y, y2, atol=1e-5)
+    assert allclose(y, y2, atol=1e-5)
 
     # check dynamic
     n = 100
@@ -411,7 +411,7 @@ def test_amplitude(Simulator, seed, rng, plt, Neuron):
     assert (error < 0.02).all()
 
 
-def test_reset(Simulator, nl_nodirect, seed, rng):
+def test_reset(Simulator, nl_nodirect, seed, allclose):
     """Make sure resetting actually resets."""
     m = nengo.Network(seed=seed)
     with m:
@@ -420,11 +420,11 @@ def test_reset(Simulator, nl_nodirect, seed, rng):
         ens = nengo.Ensemble(60, dimensions=2)
         square = nengo.Ensemble(60, dimensions=2)
         nengo.Connection(u, ens)
-        nengo.Connection(ens, square, function=lambda x: x**2,
+        nengo.Connection(ens, square, function=lambda x: x ** 2,
                          solver=LstsqL2nz(weights=True))
         square_p = nengo.Probe(square, synapse=0.01)
 
-    with Simulator(m, seed=seed+1) as sim:
+    with Simulator(m, seed=seed + 1) as sim:
         sim.run(0.1)
         sim.run(0.2)
         t1 = sim.trange()
@@ -433,12 +433,13 @@ def test_reset(Simulator, nl_nodirect, seed, rng):
         sim.reset()
         sim.run(0.3)
 
-    assert np.allclose(sim.trange(), t1)
-    assert np.allclose(sim.data[square_p], square1)
+    assert allclose(sim.trange(), t1)
+    assert allclose(sim.data[square_p], square1)
 
 
 def test_neurontypeparam():
     """NeuronTypeParam must be a neuron type."""
+
     class Test(object):
         ntp = NeuronTypeParam('ntp', default=None)
 
@@ -489,7 +490,7 @@ def test_direct_mode_nonfinite_value(Simulator):
 
 
 @pytest.mark.parametrize("generic", (True, False))
-def test_gain_bias(rng, nl_nodirect, generic):
+def test_gain_bias(rng, nl_nodirect, generic, allclose):
     if nl_nodirect == nengo.Sigmoid and generic:
         # the generic method doesn't work with sigmoid neurons (because they're
         # always positive). that's not a failure, because the sigmoid neurons
@@ -509,8 +510,8 @@ def test_gain_bias(rng, nl_nodirect, generic):
     else:
         gain, bias = nl.gain_bias(max_rates, intercepts)
 
-    assert np.allclose(nl.rates(np.ones(n), gain, bias), max_rates,
-                       atol=tolerance)
+    assert allclose(nl.rates(np.ones(n), gain, bias), max_rates,
+                    atol=tolerance)
 
     if nl_nodirect == nengo.Sigmoid:
         threshold = 0.5 / nl.tau_ref
@@ -526,5 +527,5 @@ def test_gain_bias(rng, nl_nodirect, generic):
     else:
         max_rates0, intercepts0 = nl.max_rates_intercepts(gain, bias)
 
-    assert np.allclose(max_rates, max_rates0, atol=tolerance)
-    assert np.allclose(intercepts, intercepts0, atol=tolerance)
+    assert allclose(max_rates, max_rates0, atol=tolerance)
+    assert allclose(intercepts, intercepts0, atol=tolerance)
