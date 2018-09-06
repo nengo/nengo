@@ -82,7 +82,7 @@ def get_system(m, n, d, rng=None, sort=False):
     return rates(np.dot(eval_points, encoders)), eval_points
 
 
-def test_cholesky(rng):
+def test_cholesky(rng, allclose):
     m, n = 100, 100
     A = rng.normal(size=(m, n))
     b = rng.normal(size=(m,))
@@ -90,25 +90,25 @@ def test_cholesky(rng):
     x0, _, _, _ = np.linalg.lstsq(A, b, rcond=-1)
     x1, _ = lstsq.Cholesky(transpose=False)(A, b, 0)
     x2, _ = lstsq.Cholesky(transpose=True)(A, b, 0)
-    assert np.allclose(x0, x1)
-    assert np.allclose(x0, x2)
+    assert allclose(x0, x1)
+    assert allclose(x0, x2)
 
 
-def test_conjgrad(rng):
+def test_conjgrad(rng, allclose):
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
     x0, _ = lstsq.Cholesky()(A, b, sigma)
     x1, _ = lstsq.Conjgrad(tol=1e-3)(A, b, sigma)
     x2, _ = lstsq.BlockConjgrad(tol=1e-3)(A, b, sigma)
-    assert np.allclose(x0, x1, atol=1e-6, rtol=1e-3)
-    assert np.allclose(x0, x2, atol=1e-6, rtol=1e-3)
+    assert allclose(x0, x1, atol=1e-6, rtol=1e-3)
+    assert allclose(x0, x2, atol=1e-6, rtol=1e-3)
 
 
 @pytest.mark.parametrize(
     "Solver", [Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqDrop, LstsqMultNoise]
 )
-def test_decoder_solver(Solver, plt, rng):
+def test_decoder_solver(Solver, plt, rng, allclose):
     solver = Solver()
 
     dims = 1
@@ -135,7 +135,7 @@ def test_decoder_solver(Solver, plt, rng):
     atol = (
         4e-2 if isinstance(solver, (LstsqNoise, LstsqDrop, LstsqMultNoise)) else 1.5e-2
     )
-    assert np.allclose(test, est, atol=atol, rtol=1e-3)
+    assert allclose(test, est, atol=atol, rtol=1e-3)
     assert rel_rmse < 0.02
 
 
@@ -163,13 +163,13 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
         Factory(LstsqL1, max_iter=2000),
     ],
 )
-def test_decoder_solver_extra(Solver, plt, rng):
+def test_decoder_solver_extra(Solver, plt, rng, allclose):
     pytest.importorskip("sklearn")
-    test_decoder_solver(Solver, plt, rng)
+    test_decoder_solver(Solver, plt, rng, allclose)
 
 
 @pytest.mark.parametrize("Solver", [Lstsq, LstsqL2, LstsqL2nz])
-def test_weight_solver(Solver, rng):
+def test_weight_solver(Solver, rng, allclose):
     dims = 2
     a_neurons, b_neurons = 100, 101
     n_points = 1000
@@ -194,13 +194,13 @@ def test_weight_solver(Solver, rng):
     Atest = rates(np.dot(test, Ea))
     Y1 = np.dot(Atest, W1)  # post inputs from decoders
     Y2 = np.dot(Atest, W2)  # post inputs from weights
-    assert np.allclose(Y1, Y2)
+    assert allclose(Y1, Y2)
 
     # assert that weights themselves are close (this is true for L2 weights)
-    assert np.allclose(W1, W2)
+    assert allclose(W1, W2)
 
 
-def test_scipy_solvers(rng, logger):
+def test_scipy_solvers(rng, logger, allclose):
     pytest.importorskip("scipy", minversion="0.11")  # version for lsmr
 
     A, b = get_system(1000, 100, 2, rng=rng)
@@ -219,12 +219,12 @@ def test_scipy_solvers(rng, logger):
         % (i2["rmses"].mean(), i2["iterations"].mean(), i2["iterations"].std())
     )
 
-    assert np.allclose(x0, x1, atol=2e-5, rtol=1e-3)
-    assert np.allclose(x0, x2, atol=2e-5, rtol=1e-3)
+    assert allclose(x0, x1, atol=2e-5, rtol=1e-3)
+    assert allclose(x0, x2, atol=2e-5, rtol=1e-3)
 
 
 @pytest.mark.parametrize("Solver", [Nnls, NnlsL2, NnlsL2nz])
-def test_nnls(Solver, plt, rng):
+def test_nnls(Solver, plt, rng, allclose):
     pytest.importorskip("scipy")
 
     A, x = get_system(500, 100, 1, rng=rng, sort=True)
@@ -242,7 +242,7 @@ def test_nnls(Solver, plt, rng):
     plt.plot(x, np.zeros_like(x), "k--")
     plt.plot(x, yest - y)
 
-    assert np.allclose(yest, y, atol=3e-2, rtol=1e-3)
+    assert allclose(yest, y, atol=3e-2, rtol=1e-3)
     assert rel_rmse < 0.02
     assert np.all(d >= 0)
 
@@ -271,7 +271,7 @@ def test_nnls_weights(Simulator, Solver, seed):
 
 
 @pytest.mark.slow
-def test_subsolvers_L2(rng, logger):
+def test_subsolvers_L2(rng, logger, allclose):
     pytest.importorskip("scipy", minversion="0.11")  # version for lsmr
 
     ref_solver = lstsq.Cholesky()
@@ -300,7 +300,7 @@ def test_subsolvers_L2(rng, logger):
         logger.info("info: %s", info)
 
     for solver, x in zip(solvers, xs):
-        assert np.allclose(x0, x, atol=1e-5, rtol=1e-3), "Solver %s" % solver.__name__
+        assert allclose(x0, x, atol=1e-5, rtol=1e-3), "Solver %s" % solver.__name__
 
 
 @pytest.mark.noassertions
@@ -317,7 +317,7 @@ def test_subsolvers_L1(rng, logger):
 
 
 @pytest.mark.slow
-def test_compare_solvers(Simulator, plt, seed):
+def test_compare_solvers(Simulator, plt, seed, allclose):
     pytest.importorskip("sklearn")
 
     N = 70
@@ -381,7 +381,6 @@ def test_compare_solvers(Simulator, plt, seed):
 @pytest.mark.slow
 @pytest.mark.noassertions
 def test_regularization(Simulator, nl_nodirect, plt):
-
     # TODO: multiple trials per parameter set, with different seeds
 
     Solvers = [LstsqL2, LstsqL2nz]
@@ -575,7 +574,7 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
 @pytest.mark.parametrize(
     "values, weights", [(None, False), (None, True), ("ones", False), ("ones", True)]
 )
-def test_nosolver(values, weights, seed, Simulator):
+def test_nosolver(values, weights, seed, Simulator, allclose):
     with nengo.Network(seed=seed) as net:
         pre = nengo.Ensemble(10, 2)
         post = nengo.Ensemble(20, 2)
@@ -596,7 +595,7 @@ def test_nosolver(values, weights, seed, Simulator):
     else:
         assert np.all(conn.solver.values == values)
         if weights:
-            assert np.allclose(
+            assert allclose(
                 built_weights, np.dot(values, sim.data[post].scaled_encoders.T).T
             )
         else:
@@ -623,7 +622,7 @@ def test_nosolver_validation():
 
 
 @pytest.mark.parametrize("solver", [LstsqDrop(weights=True)])
-def test_non_compositional_solver(Simulator, solver, rng, seed, plt):
+def test_non_compositional_solver(Simulator, solver, rng, seed, plt, allclose):
     if isinstance(solver, LstsqL1):
         pytest.importorskip("sklearn")
     if isinstance(solver, Nnls):
@@ -649,7 +648,7 @@ def test_non_compositional_solver(Simulator, solver, rng, seed, plt):
     plt.plot(sim.trange(), -x)
     plt.plot(sim.trange(), y)
 
-    assert np.allclose(y, -x, atol=0.1)
+    assert allclose(y, -x, atol=0.1)
 
 
 def test_non_compositional_solver_transform_error(Simulator):

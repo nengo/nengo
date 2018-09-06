@@ -354,7 +354,7 @@ def test_copy_instance_params():
     assert cp.config[cp.ensembles[0]].test == 42
 
 
-def test_pickle_model(RefSimulator, seed):
+def test_pickle_model(RefSimulator, seed, allclose):
     t_run = 0.5
     simseed = seed + 1
 
@@ -383,10 +383,10 @@ def test_pickle_model(RefSimulator, seed):
         t1, u1, a1, b1 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
 
     tols = dict(atol=1e-5)
-    assert np.allclose(t1, t0, **tols)
-    assert np.allclose(u1, u0, **tols)
-    assert np.allclose(a1, a0, **tols)
-    assert np.allclose(b1, b0, **tols)
+    assert allclose(t1, t0, **tols)
+    assert allclose(u1, u0, **tols)
+    assert allclose(a1, a0, **tols)
+    assert allclose(b1, b0, **tols)
 
 
 def test_copy_convolution():
@@ -401,7 +401,7 @@ def test_copy_convolution():
 @pytest.mark.parametrize(
     "optimize, dt, progress_bar", [(True, 0.001, False), (False, 0.002, True)]
 )
-def test_pickle_sim(RefSimulator, seed, optimize, dt, progress_bar):
+def test_pickle_sim(RefSimulator, seed, allclose, optimize, dt, progress_bar):
     trun0 = 0.5
     trun1 = 0.5
     simseed = seed + 1
@@ -444,10 +444,10 @@ def test_pickle_sim(RefSimulator, seed, optimize, dt, progress_bar):
         t1, u1, a1, b1 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
 
     tols = dict(atol=1e-5)
-    assert np.allclose(t1, t0, **tols)
-    assert np.allclose(u1, u0, **tols)
-    assert np.allclose(a1, a0, **tols)
-    assert np.allclose(b1, b0, **tols)
+    assert allclose(t1, t0, **tols)
+    assert allclose(u1, u0, **tols)
+    assert allclose(a1, a0, **tols)
+    assert allclose(b1, b0, **tols)
 
     # check that closed status is preserved
     pkl = pickle.loads(pickle.dumps(dict(sim=sim)))

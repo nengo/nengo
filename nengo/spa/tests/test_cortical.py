@@ -118,7 +118,7 @@ def test_direct(Simulator, seed):
     assert match2[199] > 0.75
 
 
-def test_convolution(Simulator, plt, seed):
+def test_convolution(Simulator, plt, seed, allclose):
     D = 5
     with spa.SPA(seed=seed) as model:
         model.inA = spa.Buffer(dimensions=D)
@@ -176,21 +176,21 @@ def test_convolution(Simulator, plt, seed):
     #  is X rotated to the right once)
 
     # Ideal answer: A*B = [0,0,0,1,0]
-    assert np.allclose(
+    assert allclose(
         np.mean(sim.data[pAB][-10:], axis=0), np.array([0, 0, 0, 1, 0]), atol=0.15
     )
 
     # Ideal answer: A*~B = [0,0,0,0,1]
-    assert np.allclose(
+    assert allclose(
         np.mean(sim.data[pABinv][-10:], axis=0), np.array([0, 0, 0, 0, 1]), atol=0.15
     )
 
     # Ideal answer: ~A*B = [0,1,0,0,0]
-    assert np.allclose(
+    assert allclose(
         np.mean(sim.data[pAinvB][-10:], axis=0), np.array([0, 1, 0, 0, 0]), atol=0.15
     )
 
     # Ideal answer: ~A*~B = [0,0,1,0,0]
-    assert np.allclose(
+    assert allclose(
         np.mean(sim.data[pAinvBinv][-10:], axis=0), np.array([0, 0, 1, 0, 0]), atol=0.15
     )

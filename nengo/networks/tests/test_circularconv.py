@@ -8,7 +8,7 @@ from nengo.utils.numpy import rms
 
 @pytest.mark.parametrize("invert_a", [True, False])
 @pytest.mark.parametrize("invert_b", [True, False])
-def test_circularconv_transforms(invert_a, invert_b, rng):
+def test_circularconv_transforms(invert_a, invert_b, rng, allclose):
     """Test the circular convolution transforms"""
     dims = 100
     x = rng.randn(dims)
@@ -21,7 +21,7 @@ def test_circularconv_transforms(invert_a, invert_b, rng):
     XY = np.dot(tr_a, x) * np.dot(tr_b, y)
     z1 = np.dot(tr_out, XY)
 
-    assert np.allclose(z0, z1)
+    assert allclose(z0, z1)
 
 
 def test_input_magnitude(Simulator, seed, rng, dims=16, magnitude=10):

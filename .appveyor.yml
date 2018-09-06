@@ -11,10 +11,9 @@ install:
   - conda update -q conda
   - conda info -a
   - conda install numpy matplotlib jupyter
-  - pip install pytest>=3.6
+  - pip install -e .[tests]
 
 build: false  # Not a C# project
 
 test_script:
-  - pip install -e .
   - pytest nengo -v --durations=20

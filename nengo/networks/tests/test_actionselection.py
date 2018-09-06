@@ -47,7 +47,7 @@ def test_thalamus(Simulator, plt, seed):
     assert np.all(output[1:] < 0.01)
 
 
-def test_bias_input(Simulator, plt, seed):
+def test_bias_input(Simulator, plt, seed, allclose):
     with nengo.Network(seed=seed) as net:
         bg = nengo.networks.BasalGanglia(dimensions=3, input_bias=-0.5)
         input = nengo.Node([0.8, 0.5, 0.2], label="input")
@@ -61,7 +61,7 @@ def test_bias_input(Simulator, plt, seed):
     plt.plot(t, sim.data[p_in])
     plt.ylabel("Input")
 
-    assert np.allclose(sim.data[p_in][t > 0.08], [0.3, 0, -0.3], atol=0.005)
+    assert allclose(sim.data[p_in][t > 0.08], [0.3, 0, -0.3], atol=0.005)
 
 
 def test_overridden_configs():

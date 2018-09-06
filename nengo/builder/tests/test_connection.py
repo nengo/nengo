@@ -5,7 +5,7 @@ from nengo.builder import Model
 from nengo.builder.connection import build_linear_system
 
 
-def test_build_linear_system(seed, rng, plt):
+def test_build_linear_system(seed, rng, plt, allclose):
     func = lambda x: x ** 2
 
     with nengo.Network(seed=seed) as net:
@@ -35,5 +35,5 @@ def test_build_linear_system(seed, rng, plt):
     plt.plot(X[i], Xhat[i])
     plt.plot(X[i], Yhat[i])
 
-    assert np.allclose(Xhat, X, atol=1e-1)
-    assert np.allclose(Yhat, func(X), atol=1e-1)
+    assert allclose(Xhat, X, atol=1e-1)
+    assert allclose(Yhat, func(X), atol=1e-1)

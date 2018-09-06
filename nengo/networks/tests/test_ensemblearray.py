@@ -6,7 +6,7 @@ from nengo.dists import Choice, UniformHypersphere
 from nengo.exceptions import ValidationError
 
 
-def test_multidim(Simulator, plt, seed, rng):
+def test_multidim(Simulator, plt, seed, rng, allclose):
     """Tests with multiple dimensions per ensemble"""
     dims = 3
     n_neurons = 60
@@ -64,9 +64,9 @@ def test_multidim(Simulator, plt, seed, rng):
     c_sim = sim.data[C_p][t > 0.2].mean(axis=0)
 
     rtol, atol = 0.1, 0.05
-    assert np.allclose(a, a_sim, atol=atol, rtol=rtol)
-    assert np.allclose(b, b_sim, atol=atol, rtol=rtol)
-    assert np.allclose(c, c_sim, atol=atol, rtol=rtol)
+    assert allclose(a, a_sim, atol=atol, rtol=rtol)
+    assert allclose(b, b_sim, atol=atol, rtol=rtol)
+    assert allclose(c, c_sim, atol=atol, rtol=rtol)
 
 
 def _mmul_transforms(A_shape, B_shape, C_dim):
@@ -126,7 +126,7 @@ def test_multifunc(Simulator, plt, seed, rng):
     plot(sim, output, ea_funcs_p, title="B")
 
 
-def test_matrix_mul(Simulator, plt, seed):
+def test_matrix_mul(Simulator, plt, seed, allclose):
     N = 100
 
     Amat = np.asarray([[0.5, -0.5]])
@@ -184,15 +184,15 @@ def test_matrix_mul(Simulator, plt, seed):
 
     tols = dict(atol=0.1, rtol=0.01)
     for i in range(Amat.size):
-        assert np.allclose(sim.data[A_p][tmask, i], Amat.flat[i], **tols)
+        assert allclose(sim.data[A_p][tmask, i], Amat.flat[i], **tols)
     for i in range(Bmat.size):
-        assert np.allclose(sim.data[B_p][tmask, i], Bmat.flat[i], **tols)
+        assert allclose(sim.data[B_p][tmask, i], Bmat.flat[i], **tols)
 
     Dmat = np.dot(Amat, Bmat)
     for i in range(Amat.shape[0]):
         for k in range(Bmat.shape[1]):
             data_ik = sim.data[D_p][tmask, i * Bmat.shape[1] + k]
-            assert np.allclose(data_ik, Dmat[i, k], **tols)
+            assert allclose(data_ik, Dmat[i, k], **tols)
 
 
 def test_arguments():
@@ -238,7 +238,7 @@ def test_neuronoutput(Simulator, seed):
     assert np.all(sim.data[p] < 1e-2)
 
 
-def test_ndarrays(Simulator, rng):
+def test_ndarrays(Simulator, rng, allclose):
     encoders = UniformHypersphere(surface=True).sample(10, 1, rng=rng)
     max_rates = rng.uniform(200, 400, size=10)
     intercepts = rng.uniform(-1, 1, size=10)
@@ -257,10 +257,10 @@ def test_ndarrays(Simulator, rng):
     with Simulator(net) as sim:
         pass
     built = sim.data[ea.ea_ensembles[0]]
-    assert np.allclose(built.encoders, encoders)
-    assert np.allclose(built.max_rates, max_rates)
-    assert np.allclose(built.intercepts, intercepts)
-    assert np.allclose(built.eval_points, eval_points)
+    assert allclose(built.encoders, encoders)
+    assert allclose(built.max_rates, max_rates)
+    assert allclose(built.intercepts, intercepts)
+    assert allclose(built.eval_points, eval_points)
     assert built.eval_points.shape == eval_points.shape
 
     with nengo.Network() as net:

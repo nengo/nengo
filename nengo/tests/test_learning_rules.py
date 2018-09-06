@@ -21,6 +21,7 @@ def _test_pes(
     nl,
     plt,
     seed,
+    allclose,
     pre_neurons=False,
     post_neurons=False,
     weight_solver=False,
@@ -31,7 +32,6 @@ def _test_pes(
     transform=np.array(1.0),
     rate=1e-3,
 ):
-
     vout = np.array(vin) if vout is None else vout
 
     model = nengo.Network(seed=seed)
@@ -83,29 +83,33 @@ def _test_pes(
     plt.xlabel("Time (s)")
 
     tend = t > 0.4
-    assert np.allclose(sim.data[b_p][tend], vout, atol=0.05)
-    assert np.allclose(sim.data[e_p][tend], 0, atol=0.05)
-    assert not np.allclose(weights[0], weights[-1], atol=1e-5)
+    assert allclose(sim.data[b_p][tend], vout, atol=0.05)
+    assert allclose(sim.data[e_p][tend], 0, atol=0.05)
+    assert not allclose(weights[0], weights[-1], atol=1e-5, record_rmse=False)
 
 
-def test_pes_ens_ens(Simulator, nl_nodirect, plt, seed):
+def test_pes_ens_ens(Simulator, nl_nodirect, plt, seed, allclose):
     function = lambda x: [x[1], x[0]]
-    _test_pes(Simulator, nl_nodirect, plt, seed, function=function)
+    _test_pes(Simulator, nl_nodirect, plt, seed, allclose, function=function)
 
 
-def test_pes_weight_solver(Simulator, plt, seed):
+def test_pes_weight_solver(Simulator, plt, seed, allclose):
     function = lambda x: [x[1], x[0]]
-    _test_pes(Simulator, nengo.LIF, plt, seed, function=function, weight_solver=True)
+    _test_pes(
+        Simulator, nengo.LIF, plt, seed, allclose, function=function, weight_solver=True
+    )
 
 
-def test_pes_ens_slice(Simulator, plt, seed):
+def test_pes_ens_slice(Simulator, plt, seed, allclose):
     vin = [0.5, -0.5]
     vout = [vin[0] ** 2 + vin[1] ** 2]
     function = lambda x: [x[0] - x[1]]
-    _test_pes(Simulator, nengo.LIF, plt, seed, vin=vin, vout=vout, function=function)
+    _test_pes(
+        Simulator, nengo.LIF, plt, seed, allclose, vin=vin, vout=vout, function=function
+    )
 
 
-def test_pes_neuron_neuron(Simulator, plt, seed, rng):
+def test_pes_neuron_neuron(Simulator, plt, seed, rng, allclose):
     n = 200
     initial_weights = rng.uniform(high=4e-4, size=(n, n))
     _test_pes(
@@ -113,6 +117,7 @@ def test_pes_neuron_neuron(Simulator, plt, seed, rng):
         nengo.LIF,
         plt,
         seed,
+        allclose,
         pre_neurons=True,
         post_neurons=True,
         n=n,
@@ -120,7 +125,7 @@ def test_pes_neuron_neuron(Simulator, plt, seed, rng):
     )
 
 
-def test_pes_neuron_ens(Simulator, plt, seed, rng):
+def test_pes_neuron_ens(Simulator, plt, seed, rng, allclose):
     n = 200
     initial_weights = rng.uniform(high=1e-4, size=(2, n))
     _test_pes(
@@ -128,6 +133,7 @@ def test_pes_neuron_ens(Simulator, plt, seed, rng):
         nengo.LIF,
         plt,
         seed,
+        allclose,
         pre_neurons=True,
         post_neurons=False,
         n=n,
@@ -135,7 +141,7 @@ def test_pes_neuron_ens(Simulator, plt, seed, rng):
     )
 
 
-def test_pes_transform(Simulator, seed):
+def test_pes_transform(Simulator, seed, allclose):
     """Test behaviour of PES when function and transform both defined."""
     n = 200
     # error must be with respect to transformed vector (conn.size_out)
@@ -169,7 +175,7 @@ def test_pes_transform(Simulator, seed):
         sim.run(1.0)
     tend = sim.trange() > 0.7
 
-    assert np.allclose(sim.data[p_b][tend], [1, -1], atol=1e-2)
+    assert allclose(sim.data[p_b][tend], [1, -1], atol=1e-2)
 
 
 def test_pes_multidim_error(Simulator, seed):
@@ -216,7 +222,7 @@ def test_pes_multidim_error(Simulator, seed):
 
 
 @pytest.mark.parametrize("pre_synapse", [0, Lowpass(tau=0.05), Alpha(tau=0.005)])
-def test_pes_synapse(Simulator, seed, pre_synapse):
+def test_pes_synapse(Simulator, seed, pre_synapse, allclose):
     rule = PES(pre_synapse=pre_synapse)
 
     with nengo.Network(seed=seed) as model:
@@ -232,7 +238,7 @@ def test_pes_synapse(Simulator, seed, pre_synapse):
     with Simulator(model) as sim:
         sim.run(0.5)
 
-    assert np.allclose(sim.data[p_neurons][1:, :], sim.data[p_pes][:-1, :])
+    assert allclose(sim.data[p_neurons][1:, :], sim.data[p_pes][:-1, :])
 
 
 @pytest.mark.parametrize("weights", [False, True])
@@ -287,7 +293,7 @@ def test_pes_cycle(Simulator):
         ([Oja(learning_rate=1e-5), BCM(learning_rate=1e-8)], True),
     ],
 )
-def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt):
+def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt, allclose):
     n = 200
 
     m = nengo.Network(seed=seed)
@@ -325,7 +331,9 @@ def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt):
     plt.xlabel("Time (s)")
     plt.ylabel("Weights")
 
-    assert not np.allclose(sim.data[weights_p][0], sim.data[weights_p][-1])
+    assert not allclose(
+        sim.data[weights_p][0], sim.data[weights_p][-1], record_rmse=False
+    )
 
 
 def learning_net(learning_rule=nengo.PES, net=None, rng=np.random):
@@ -357,7 +365,7 @@ def learning_net(learning_rule=nengo.PES, net=None, rng=np.random):
 
 
 @pytest.mark.parametrize("learning_rule", [nengo.PES, nengo.BCM, nengo.Oja])
-def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
+def test_dt_dependence(Simulator, plt, learning_rule, seed, rng, allclose):
     """Learning rules should work the same regardless of dt."""
     m = learning_net(learning_rule, nengo.Network(seed=seed), rng)
 
@@ -383,12 +391,14 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng):
     ax2.set_xlim(right=sim.trange()[-1])
     ax2.set_ylabel("Presynaptic activity")
 
-    assert np.allclose(trans_data[0], trans_data[1], atol=3e-3)
-    assert not np.allclose(sim.data[m.weights_p][0], sim.data[m.weights_p][-1])
+    assert allclose(trans_data[0], trans_data[1], atol=3e-3)
+    assert not allclose(
+        sim.data[m.weights_p][0], sim.data[m.weights_p][-1], record_rmse=False
+    )
 
 
 @pytest.mark.parametrize("learning_rule", [nengo.PES, nengo.BCM, nengo.Oja])
-def test_reset(Simulator, learning_rule, plt, seed, rng):
+def test_reset(Simulator, learning_rule, plt, seed, rng, allclose):
     """Make sure resetting learning rules resets all state."""
     m = learning_net(learning_rule, nengo.Network(seed=seed), rng)
 
@@ -414,10 +424,10 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
     plt.plot(first_t_trans, first_weights_p[..., best_ix], c="b")
     plt.plot(sim.trange(sample_every=0.01), sim.data[m.weights_p][..., best_ix], c="g")
 
-    assert np.allclose(sim.trange(), first_t)
-    assert np.allclose(sim.trange(sample_every=0.01), first_t_trans)
-    assert np.allclose(sim.data[m.activity_p], first_activity_p)
-    assert np.allclose(sim.data[m.weights_p], first_weights_p)
+    assert allclose(sim.trange(), first_t)
+    assert allclose(sim.trange(sample_every=0.01), first_t_trans)
+    assert allclose(sim.data[m.activity_p], first_activity_p)
+    assert allclose(sim.data[m.weights_p], first_weights_p)
 
 
 def test_learningruletypeparam():
@@ -469,7 +479,7 @@ def test_learningrule_attr(seed):
             check_rule(c3.learning_rule[key], c3, r3[key])
 
 
-def test_voja_encoders(Simulator, nl_nodirect, rng, seed):
+def test_voja_encoders(Simulator, nl_nodirect, rng, seed, allclose):
     """Tests that voja changes active encoders to the input."""
     n = 200
     learned_vector = np.asarray([0.3, -0.4, 0.6])
@@ -513,28 +523,26 @@ def test_voja_encoders(Simulator, nl_nodirect, rng, seed):
     # proportional to this factor. Therefore, we should check that its
     # assumption actually holds.
     encoder_scale = (sim.data[x].gain / x.radius)[:, np.newaxis]
-    assert np.allclose(
-        sim.data[x].encoders, sim.data[x].scaled_encoders / encoder_scale
-    )
+    assert allclose(sim.data[x].encoders, sim.data[x].scaled_encoders / encoder_scale)
 
     # Check that the last half kept the same encoders throughout the simulation
-    assert np.allclose(sim.data[p_enc][0, n_change:], sim.data[p_enc][:, n_change:])
+    assert allclose(sim.data[p_enc][0, n_change:], sim.data[p_enc][:, n_change:])
     # and that they are also equal to their originally assigned value
-    assert np.allclose(
+    assert allclose(
         sim.data[p_enc][0, n_change:] / encoder_scale[n_change:], -learned_vector
     )
 
     # Check that the first half converged to the input
-    assert np.allclose(
+    assert allclose(
         sim.data[p_enc][tend, :n_change] / encoder_scale[:n_change],
         learned_vector,
         atol=0.01,
     )
     # Check that encoders probed from ensemble equal encoders probed from Voja
-    assert np.allclose(sim.data[p_enc], sim.data[p_enc_ens])
+    assert allclose(sim.data[p_enc], sim.data[p_enc_ens])
 
 
-def test_voja_modulate(Simulator, nl_nodirect, seed):
+def test_voja_modulate(Simulator, nl_nodirect, seed, allclose):
     """Tests that voja's rule can be modulated on/off."""
     n = 200
     learned_vector = np.asarray([0.5])
@@ -562,11 +570,11 @@ def test_voja_modulate(Simulator, nl_nodirect, seed):
     tend = sim.trange() > 0.5
 
     # Check that encoders stop changing after 0.5s
-    assert np.allclose(sim.data[p_enc][tend], sim.data[p_enc][-1])
+    assert allclose(sim.data[p_enc][tend], sim.data[p_enc][-1])
 
     # Check that encoders changed during first 0.5s
     i = np.where(tend)[0][0]  # first time point after changeover
-    assert not np.allclose(sim.data[p_enc][0], sim.data[p_enc][i])
+    assert not allclose(sim.data[p_enc][0], sim.data[p_enc][i], record_rmse=False)
 
 
 def test_frozen():
@@ -600,7 +608,7 @@ def test_pes_direct_errors():
             conn.learning_rule_type = nengo.PES()
 
 
-def test_custom_type(Simulator):
+def test_custom_type(Simulator, allclose):
     """Test with custom learning rule type.
 
     A custom learning type may have ``size_in`` not equal to 0, 1, or None.
@@ -635,10 +643,8 @@ def test_custom_type(Simulator):
     with Simulator(net) as sim:
         sim.run(sim.dt * 5)
 
-    assert np.allclose(
-        sim.data[p][:, 0, :3], np.outer(np.arange(1, 6), np.arange(1, 4))
-    )
-    assert np.allclose(sim.data[p][:, :, 3:], 0)
+    assert allclose(sim.data[p][:, 0, :3], np.outer(np.arange(1, 6), np.arange(1, 4)))
+    assert allclose(sim.data[p][:, :, 3:], 0)
 
 
 @pytest.mark.parametrize("LearningRule", (nengo.PES, nengo.BCM, nengo.Voja, nengo.Oja))
@@ -662,7 +668,7 @@ def test_tau_deprecation(LearningRule):
             assert getattr(l_rule, p1) == Lowpass(i)
 
 
-def test_slicing(Simulator, seed):
+def test_slicing(Simulator, seed, allclose):
     with nengo.Network(seed=seed) as model:
         a = nengo.Ensemble(30, 1)
         b = nengo.Ensemble(30, 2)
@@ -685,5 +691,5 @@ def test_slicing(Simulator, seed):
         sim.run(1.0)
 
     t = sim.trange() > 0.8
-    assert np.allclose(sim.data[p][t, 0], 0.75, atol=0.15)
-    assert np.allclose(sim.data[p][t, 1], -0.5, atol=0.15)
+    assert allclose(sim.data[p][t, 0], 0.75, atol=0.15)
+    assert allclose(sim.data[p][t, 1], -0.5, atol=0.15)

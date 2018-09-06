@@ -7,7 +7,7 @@ from nengo.utils.numpy import array_hash, meshgrid_nd
 from nengo._vendor.scipy import expm
 
 
-def test_meshgrid_nd():
+def test_meshgrid_nd(allclose):
     a = [0, 0, 1]
     b = [1, 2, 3]
     c = [23, 42]
@@ -35,7 +35,7 @@ def test_meshgrid_nd():
         ),
     ]
     actual = meshgrid_nd(a, b, c)
-    assert np.allclose(expected, actual)
+    assert allclose(expected, actual)
 
 
 @pytest.mark.parametrize("nnz", [7, 300])
@@ -90,7 +90,7 @@ def test_array_hash_sparse(nnz, rng):
         )
 
 
-def test_expm(rng):
+def test_expm(rng, allclose):
     scipy_linalg = pytest.importorskip("scipy.linalg")
     for a in [np.eye(3), rng.randn(10, 10), -10 + rng.randn(10, 10)]:
-        assert np.allclose(scipy_linalg.expm(a), expm(a))
+        assert allclose(scipy_linalg.expm(a), expm(a))

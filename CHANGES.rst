@@ -50,6 +50,9 @@ Release History
 - Added a ``Simulator.clear_probes`` method to clear probe data.
   This method can be used before pickling to reduce the pickle file size.
   (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
+- Nengo tests now use the ``allclose`` fixture from ``pytest-allclose``,
+  which makes it possible for backends to change test tolerances.
+  (`#1563 <https://github.com/nengo/nengo/pull/1563>`__)
 
 **Changed**
 

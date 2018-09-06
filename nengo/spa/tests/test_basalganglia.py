@@ -1,11 +1,10 @@
-import numpy as np
 import pytest
 
 import nengo
 from nengo import spa
 
 
-def test_basal_ganglia(Simulator, seed, plt):
+def test_basal_ganglia(Simulator, seed, plt, allclose):
     model = spa.SPA(seed=seed)
 
     with model:
@@ -64,9 +63,9 @@ def test_basal_ganglia(Simulator, seed, plt):
     assert sim.data[p][t == 0.3, 2] > 0.6
 
     # Motor B should be the same as Motor D
-    assert np.allclose(sim.data[p][:, 1], sim.data[p][:, 3])
+    assert allclose(sim.data[p][:, 1], sim.data[p][:, 3])
     # Motor A should be the same as Motor E
-    assert np.allclose(sim.data[p][:, 0], sim.data[p][:, 4])
+    assert allclose(sim.data[p][:, 0], sim.data[p][:, 4])
 
 
 def test_errors():

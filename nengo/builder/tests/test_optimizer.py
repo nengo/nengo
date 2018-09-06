@@ -108,22 +108,22 @@ def test_sigmerger_check_views():
         SigMerger.check_views([s1[:2], s2[2:]])
 
 
-def test_sigmerger_merge():
+def test_sigmerger_merge(allclose):
     s1 = Signal(np.array([[0, 1], [2, 3]]))
     s2 = Signal(np.array([[4, 5]]))
 
     sig, replacements = SigMerger.merge([s1, s2])
-    assert np.allclose(sig.initial_value, np.array([[0, 1], [2, 3], [4, 5]]))
-    assert np.allclose(replacements[s1].initial_value, s1.initial_value)
-    assert np.allclose(replacements[s2].initial_value, s2.initial_value)
+    assert allclose(sig.initial_value, np.array([[0, 1], [2, 3], [4, 5]]))
+    assert allclose(replacements[s1].initial_value, s1.initial_value)
+    assert allclose(replacements[s2].initial_value, s2.initial_value)
 
 
-def test_sigmerger_merge_views():
+def test_sigmerger_merge_views(allclose):
     s = Signal(np.array([[0, 1], [2, 3], [4, 5]]))
     v1, v2 = s[:2], s[2:]
     merged, _ = SigMerger.merge_views([v1, v2])
 
-    assert np.allclose(merged.initial_value, s.initial_value)
+    assert allclose(merged.initial_value, s.initial_value)
     assert v1.base is s
     assert v2.base is s
 

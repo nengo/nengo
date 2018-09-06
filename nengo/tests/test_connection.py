@@ -31,7 +31,7 @@ def test_args(nl, seed, rng):
         )
 
 
-def test_node_to_neurons(Simulator, nl_nodirect, plt, seed):
+def test_node_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
     N = 30
 
     m = nengo.Network(seed=seed)
@@ -59,10 +59,10 @@ def test_node_to_neurons(Simulator, nl_nodirect, plt, seed):
     plt.plot(t, ideal, label="Ideal output")
     plt.legend(loc="best", fontsize="small")
 
-    assert np.allclose(sim.data[a_p][-10:], 0, atol=0.1, rtol=0.01)
+    assert allclose(sim.data[a_p][-10:], 0, atol=0.1, rtol=0.01)
 
 
-def test_ensemble_to_neurons(Simulator, nl_nodirect, plt, seed):
+def test_ensemble_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
     N = 30
 
     m = nengo.Network(seed=seed)
@@ -94,11 +94,11 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect, plt, seed):
     plt.plot(t, ideal, label="Ideal output")
     plt.legend(loc=0, prop={"size": 10})
 
-    assert np.allclose(sim.data[a_p][-10:], 0, atol=0.1, rtol=0.01)
-    assert np.allclose(sim.data[b_p][-10:], 1, atol=0.1, rtol=0.01)
+    assert allclose(sim.data[a_p][-10:], 0, atol=0.1, rtol=0.01)
+    assert allclose(sim.data[b_p][-10:], 1, atol=0.1, rtol=0.01)
 
 
-def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed):
+def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed, allclose):
     N = 50
 
     m = nengo.Network(seed=seed)
@@ -144,13 +144,9 @@ def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed):
         fontsize="small",
     )
 
-    assert np.allclose(
-        sim.data[a_p][-10:], sim.data[d_p][-10:][:, 0], atol=0.1, rtol=0.01
-    )
-    assert np.allclose(
-        sim.data[b_p][-10:], sim.data[d_p][-10:][:, 0], atol=0.1, rtol=0.01
-    )
-    assert np.allclose(
+    assert allclose(sim.data[a_p][-10:], sim.data[d_p][-10:][:, 0], atol=0.1, rtol=0.01)
+    assert allclose(sim.data[b_p][-10:], sim.data[d_p][-10:][:, 0], atol=0.1, rtol=0.01)
+    assert allclose(
         sim.data[c_p][-10:], sim.data[d_p][-10:][:, 1:3], atol=0.1, rtol=0.01
     )
 
@@ -186,7 +182,7 @@ def test_neurons_to_ensemble(Simulator, nl_nodirect, plt, seed):
     assert np.all(sim.data[b_p][-10:] < 0)
 
 
-def test_neurons_to_node(Simulator, nl_nodirect, plt, seed):
+def test_neurons_to_node(Simulator, nl_nodirect, plt, seed, allclose):
     N = 5
 
     m = nengo.Network(seed=seed)
@@ -214,10 +210,10 @@ def test_neurons_to_node(Simulator, nl_nodirect, plt, seed):
     plt.plot(t, sim.data[out_p])
     plt.xlim(right=t[-1])
 
-    assert np.allclose(sim.data[a_spikes], sim.data[out_p])
+    assert allclose(sim.data[a_spikes], sim.data[out_p])
 
 
-def test_neurons_to_neurons(Simulator, nl_nodirect, plt, seed):
+def test_neurons_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
     N1, N2 = 30, 50
 
     m = nengo.Network(seed=seed)
@@ -244,11 +240,11 @@ def test_neurons_to_neurons(Simulator, nl_nodirect, plt, seed):
     plt.xlim(right=t[-1])
     plt.legend(loc="best")
 
-    assert np.allclose(sim.data[a_p][-10:], 1, atol=0.1, rtol=0.01)
-    assert np.allclose(sim.data[b_p][-10:], 0, atol=0.1, rtol=0.01)
+    assert allclose(sim.data[a_p][-10:], 1, atol=0.1, rtol=0.01)
+    assert allclose(sim.data[b_p][-10:], 0, atol=0.1, rtol=0.01)
 
 
-def test_function_and_transform(Simulator, plt, seed):
+def test_function_and_transform(Simulator, plt, seed, allclose):
     """Test using both a function and a transform"""
 
     model = nengo.Network(seed=seed)
@@ -274,11 +270,11 @@ def test_function_and_transform(Simulator, plt, seed):
     plt.legend(loc=0, prop={"size": 10})
     plt.xlim(right=t[-1])
 
-    assert np.allclose(x0, y0, atol=0.1, rtol=0.01)
-    assert np.allclose(x1, y1, atol=0.1, rtol=0.01)
+    assert allclose(x0, y0, atol=0.1, rtol=0.01)
+    assert allclose(x1, y1, atol=0.1, rtol=0.01)
 
 
-def test_dist_transform(Simulator, seed):
+def test_dist_transform(Simulator, seed, allclose):
     """Using a distribution to initialize transform."""
 
     with nengo.Network(seed=seed) as net:
@@ -302,8 +298,8 @@ def test_dist_transform(Simulator, seed):
         pass
 
     w = sim.data[conn1].weights
-    assert np.allclose(np.mean(w), 0.5, atol=0.01)
-    assert np.allclose(np.std(w), 1, atol=0.01)
+    assert allclose(np.mean(w), 0.5, atol=0.01)
+    assert allclose(np.std(w), 1, atol=0.01)
     assert w.shape == (101, 100)
 
     assert sim.data[conn2].weights.shape == (10, 101)
@@ -320,7 +316,7 @@ def test_dist_transform(Simulator, seed):
 
     with Simulator(net) as sim:
         pass
-    assert np.allclose(w, sim.data[conn].weights)
+    assert allclose(w, sim.data[conn].weights)
 
 
 def test_weights(Simulator, nl, plt, seed):
@@ -352,7 +348,7 @@ def test_weights(Simulator, nl, plt, seed):
     assert signals_allclose(t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt)
 
 
-def test_vector(Simulator, nl, plt, seed):
+def test_vector(Simulator, nl, plt, seed, allclose):
     N1, N2 = 50, 50
     transform = [-1, 0.5]
 
@@ -378,7 +374,7 @@ def test_vector(Simulator, nl, plt, seed):
     plt.plot(t, y, "--")
     plt.plot(t, yhat)
 
-    assert np.allclose(y[-10:], yhat[-10:], atol=0.1, rtol=0.01)
+    assert allclose(y[-10:], yhat[-10:], atol=0.1, rtol=0.01)
 
 
 def test_dimensionality_errors(nl_nodirect, seed, rng):
@@ -433,7 +429,7 @@ def test_dimensionality_errors(nl_nodirect, seed, rng):
             nengo.Connection(e2[0], e2, transform=[[1, 2]])
 
 
-def test_slicing(Simulator, nl, plt, seed):
+def test_slicing(Simulator, nl, plt, seed, allclose):
     N = 300
 
     x = np.array([-1, -0.25, 1])
@@ -493,11 +489,11 @@ def test_slicing(Simulator, nl, plt, seed):
 
     atol = 0.01 if nl is nengo.Direct else 0.1
     for i, [y, p, wp] in enumerate(zip(ys, probes, weight_probes)):
-        assert np.allclose(y, sim.data[p][-20:], atol=atol), "Failed %d" % i
-        assert np.allclose(y, sim.data[wp][-20:], atol=atol), "Weights %d" % i
+        assert allclose(y, sim.data[p][-20:], atol=atol), "Failed %d" % i
+        assert allclose(y, sim.data[wp][-20:], atol=atol), "Weights %d" % i
 
 
-def test_neuron_slicing(Simulator, plt, seed, rng):
+def test_neuron_slicing(Simulator, plt, seed, rng, allclose):
     N = 6
     sa = slice(None, None, 2)
     sb = slice(None, None, -2)
@@ -528,7 +524,7 @@ def test_neuron_slicing(Simulator, plt, seed, rng):
 
     plt.plot(t, y, "k--")
     plt.plot(t, sim.data[bp])
-    assert np.allclose(y[-10:], sim.data[bp][-10:], atol=3.0, rtol=0.0)
+    assert allclose(y[-10:], sim.data[bp][-10:], atol=3.0, rtol=0.0)
 
 
 def test_shortfilter(Simulator, nl):
@@ -576,7 +572,7 @@ def test_zerofilter(Simulator, seed):
     assert np.unique(sim.data[bp]).size == 2
 
 
-def test_function_output_size(Simulator, plt, seed):
+def test_function_output_size(Simulator, plt, seed, allclose):
     """Try a function that outputs both 0-d and 1-d arrays"""
 
     def bad_function(x):
@@ -601,10 +597,10 @@ def test_function_output_size(Simulator, plt, seed):
     plt.plot(t, x, "k")
     plt.plot(t, y)
 
-    assert np.allclose(x, y, atol=0.1)
+    assert allclose(x, y, atol=0.1)
 
 
-def test_slicing_function(Simulator, plt, seed):
+def test_slicing_function(Simulator, plt, seed, allclose):
     """Test using a pre-slice and a function"""
     N = 300
     f_in = lambda t: [np.cos(3 * t), np.sin(3 * t)]
@@ -631,12 +627,11 @@ def test_slicing_function(Simulator, plt, seed):
     plt.plot(t, y)
     plt.plot(t, w, ":")
 
-    assert np.allclose(w, y, atol=0.1)
+    assert allclose(w, y, atol=0.1)
 
 
 @pytest.mark.parametrize("negative_indices", (True, False))
-def test_list_indexing(Simulator, plt, seed, negative_indices):
-
+def test_list_indexing(Simulator, plt, seed, negative_indices, allclose):
     with nengo.Network(seed=seed) as model:
         u = nengo.Node([-1, 1])
         a = nengo.Ensemble(40, dimensions=1)
@@ -677,14 +672,14 @@ def test_list_indexing(Simulator, plt, seed, negative_indices):
     line = plt.plot(t, d_data)
     plt.axhline(1, color=line[1].get_color())
 
-    assert np.allclose(a_data[t > 0.15], [0], atol=0.15)
-    assert np.allclose(b_data[t > 0.15], [2], atol=0.15)
-    assert np.allclose(c_data[t > 0.15], [-1, 1], atol=0.15)
-    assert np.allclose(d_data[t > 0.15], [1, 1], atol=0.15)
+    assert allclose(a_data[t > 0.15], [0], atol=0.15)
+    assert allclose(b_data[t > 0.15], [2], atol=0.15)
+    assert allclose(c_data[t > 0.15], [-1, 1], atol=0.15)
+    assert allclose(d_data[t > 0.15], [1, 1], atol=0.15)
 
 
 @pytest.mark.filterwarnings("ignore:boolean index did not match")
-def test_boolean_indexing(Simulator, rng, plt):
+def test_boolean_indexing(Simulator, rng, plt, allclose):
     D = 10
     mu = np.arange(D) % 2 == 0
     mv = np.arange(D) % 2 == 1
@@ -702,7 +697,7 @@ def test_boolean_indexing(Simulator, rng, plt):
         sim.run(0.01)
 
     plt.plot(sim.trange(), sim.data[v_probe])
-    assert np.allclose(sim.data[v_probe][1:], y, atol=1e-5, rtol=1e-3)
+    assert allclose(sim.data[v_probe][1:], y, atol=1e-5, rtol=1e-3)
 
 
 def test_set_weight_solver():

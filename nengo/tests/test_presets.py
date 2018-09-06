@@ -3,7 +3,7 @@ import numpy as np
 import nengo
 
 
-def test_thresholding_preset(Simulator, seed, plt):
+def test_thresholding_preset(Simulator, seed, plt, allclose):
     threshold = 0.3
     with nengo.Network(seed=seed) as model:
         with nengo.presets.ThresholdingEnsembles(threshold):
@@ -24,7 +24,7 @@ def test_thresholding_preset(Simulator, seed, plt):
 
     se = np.square(np.squeeze(sim.data[p]) - sim.trange())
 
-    assert np.allclose(sim.data[p][sim.trange() < threshold], 0.0)
+    assert allclose(sim.data[p][sim.trange() < threshold], 0.0)
     assert np.sqrt(np.mean(se[sim.trange() > 0.5])) < 0.05
 
 
