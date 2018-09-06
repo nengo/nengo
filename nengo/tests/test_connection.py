@@ -319,7 +319,7 @@ def test_dist_transform(Simulator, seed, allclose):
     assert allclose(w, sim.data[conn].weights)
 
 
-def test_weights(Simulator, nl, plt, seed):
+def test_weights(Simulator, nl, plt, seed, allclose):
     n1, n2 = 100, 50
 
     def func(t):
@@ -345,7 +345,9 @@ def test_weights(Simulator, nl, plt, seed):
     x = np.array(func(t)).T
     y = np.dot(x, transform.T)
     z = nengo.Lowpass(0.005).filtfilt(sim.data[bp], dt=sim.dt)
-    assert signals_allclose(t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt)
+    assert signals_allclose(
+        t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt, allclose=allclose
+    )
 
 
 def test_vector(Simulator, nl, plt, seed, allclose):
@@ -947,7 +949,7 @@ def test_function_with_no_name(Simulator):
         assert sim
 
 
-def test_function_points(Simulator, seed, rng, plt):
+def test_function_points(Simulator, seed, rng, plt, allclose):
     x = rng.uniform(-1, 1, size=(1000, 1))
     y = -x
 
@@ -973,6 +975,7 @@ def test_function_points(Simulator, seed, rng, plt):
         atol=5e-2,
         rtol=3e-2,
         plt=plt,
+        allclose=allclose,
     )
 
 

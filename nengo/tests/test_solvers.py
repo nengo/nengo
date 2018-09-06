@@ -372,6 +372,7 @@ def test_compare_solvers(Simulator, plt, seed, allclose):
         plt=plt,
         labels=names,
         individual_results=True,
+        allclose=allclose,
     )
 
     for name, c in zip(names, close):

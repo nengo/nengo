@@ -199,6 +199,7 @@ def signals_allclose(  # noqa: C901
     show=False,
     labels=None,
     individual_results=False,
+    allclose=np.allclose,
 ):
     """Ensure all signal elements are within tolerances.
 
@@ -226,11 +227,13 @@ def signals_allclose(  # noqa: C901
         Labels of each signal to use when plotting.
     individual_results : bool
         If True, returns a separate `allclose` result for each signal.
+    allclose : callable
+        Function to compare two arrays for similarity.
     """
     t = np.asarray(t)
     dt = t[1] - t[0]
     assert t.ndim == 1
-    assert np.allclose(np.diff(t), dt)
+    assert np.allclose(np.diff(t), dt)  # always use default allclose here
 
     targets = np.asarray(targets)
     signals = np.asarray(signals)
@@ -302,16 +305,16 @@ def signals_allclose(  # noqa: C901
     if individual_results:
         if targets.shape[1] == 1:
             return [
-                np.allclose(y[slice2], targets[slice1, 0], atol=atol, rtol=rtol)
+                allclose(y[slice2], targets[slice1, 0], atol=atol, rtol=rtol)
                 for y in signals.T
             ]
         else:
             return [
-                np.allclose(y[slice2], x[slice1], atol=atol, rtol=rtol)
+                allclose(y[slice2], x[slice1], atol=atol, rtol=rtol)
                 for x, y in zip(targets.T, signals.T)
             ]
     else:
-        return np.allclose(signals[slice2, :], targets[slice1, :], atol=atol, rtol=rtol)
+        return allclose(signals[slice2, :], targets[slice1, :], atol=atol, rtol=rtol)
 
 
 def find_modules(root_path, prefix=None, pattern="^test_.*\\.py$"):
