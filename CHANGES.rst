@@ -50,6 +50,9 @@ Release History
 - Added a ``Simulator.clear_probes`` method to clear probe data.
   This method can be used before pickling to reduce the pickle file size.
   (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
+- Added new pytest config option, ``nengo_test_tolerances``, which can be used
+  to adjust unit test tolerances on a test-by-test basis (useful for other
+  backends using Nengo's unit tests).
 
 **Changed**
 

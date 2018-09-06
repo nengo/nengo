@@ -80,3 +80,10 @@ def pytest_addoption(parser):
         '--memory', action='store_true', default=False,
         help='Show memory consumed by Python after all tests are run '
         '(not available on Windows)')
+
+    parser.addini("nengo_test_tolerances", type="linelist",
+                  help="List of 'testname atol=x rtol=y' to override "
+                       "tolerances on a test-by-test basis; if there are"
+                       "multiple calls to 'allclose' within a single test,"
+                       "repeated items with the same testname will be applied"
+                       "in sequence")
