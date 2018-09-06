@@ -30,6 +30,9 @@ Release History
 - We now warn that the progress bar is not supported in Jupyter Notebook <5.
   (`#1428 <https://github.com/nengo/nengo/pull/1428>`__,
   `#1426 <https://github.com/nengo/nengo/issues/1426>`__)
+- Added new pytest config option, ``nengo_test_tolerances``, which can be used
+  to adjust unit test tolerances on a test-by-test basis (useful for other
+  backends using Nengo's unit tests).
 
 **Changed**
 

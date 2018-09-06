@@ -24,3 +24,10 @@ def pytest_addoption(parser):
         help='Also run slow tests.')
     parser.addoption('--seed-offset', nargs=1, type=int, default=0,
                      help="Specify offset of the seed values used in tests.")
+
+    parser.addini("nengo_test_tolerances", type="linelist",
+                  help="List of 'testname atol=x rtol=y' to override "
+                       "tolerances on a test-by-test basis; if there are"
+                       "multiple calls to 'allclose' within a single test,"
+                       "repeated items with the same testname will be applied"
+                       "in sequence")
