@@ -9,7 +9,7 @@ from nengo.exceptions import ValidationError
 from nengo.processes import WhiteSignal
 from nengo.synapses import Alpha, LinearFilter, Lowpass, Synapse, SynapseParam, Triangle
 from nengo.utils.filter_design import cont2discrete
-from nengo.utils.testing import allclose
+from nengo.utils.testing import signals_allclose
 
 
 # The following num, den are for a 4th order analog Butterworth filter,
@@ -49,8 +49,8 @@ def test_direct(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
     y = synapse.filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt)
-    assert allclose(t, a * x, y, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt)
+    assert signals_allclose(t, a * x, y, plt=plt)
 
 
 def test_lowpass(Simulator, plt, seed):
@@ -60,7 +60,7 @@ def test_lowpass(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, Lowpass(tau), dt=dt)
     y = Lowpass(tau).filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, plt=plt)
 
 
 def test_alpha(Simulator, plt, seed):
@@ -71,7 +71,7 @@ def test_alpha(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, Alpha(tau), dt=dt)
     y = LinearFilter(num, den).filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt)
 
 
 def test_triangle(Simulator, plt, seed):
@@ -89,7 +89,7 @@ def test_triangle(Simulator, plt, seed):
     y.shape = (-1, 1)
 
     assert np.allclose(y, yfilt, rtol=0)
-    assert allclose(t, y, ysim, delay=dt, rtol=0, plt=plt)
+    assert signals_allclose(t, y, ysim, delay=dt, rtol=0, plt=plt)
 
     # test y0 != 0
     assert np.allclose(Triangle(tau).filt(np.ones(100), dt=dt, y0=1), 1)
@@ -102,7 +102,7 @@ def test_decoders(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, Lowpass(tau), dt=dt, n_neurons=100)
 
     y = Lowpass(tau).filt(x, dt=dt, y0=0)
-    assert allclose(t, y, yhat, delay=dt, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, plt=plt)
 
 
 def test_linearfilter(Simulator, plt, seed):
@@ -111,7 +111,7 @@ def test_linearfilter(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
     y = synapse.filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, plt=plt)
 
 
 def test_linearfilter_y0():
@@ -269,7 +269,7 @@ def test_combined_delay(Simulator):
 
 
 def test_synapseparam():
-    """SynapseParam must be a Synapse, and converts numbers to LowPass."""
+    """SynapseParam must be a Synapse, and converts numbers to Lowpass."""
 
     class Test:
         sp = SynapseParam("sp", default=Lowpass(0.1))
@@ -277,7 +277,7 @@ def test_synapseparam():
     inst = Test()
     assert isinstance(inst.sp, Lowpass)
     assert inst.sp.tau == 0.1
-    # Number are converted to LowPass
+    # Numbers are converted to Lowpass
     inst.sp = 0.05
     assert isinstance(inst.sp, Lowpass)
     assert inst.sp.tau == 0.05

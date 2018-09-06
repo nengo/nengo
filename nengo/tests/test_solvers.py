@@ -11,7 +11,7 @@ from nengo.dists import UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
 from nengo.utils.numpy import rms, norm
 from nengo.utils.stdlib import Timer
-from nengo.utils.testing import allclose
+from nengo.utils.testing import signals_allclose
 from nengo.solvers import (
     lstsq,
     Lstsq,
@@ -361,7 +361,7 @@ def test_compare_solvers(Simulator, plt, seed):
     outputs = np.array([sim.data[probe][:, 0] for probe in probes]).T
     outputs_f = nengo.Lowpass(0.02).filtfilt(outputs, dt=sim.dt)
 
-    close = allclose(
+    close = signals_allclose(
         t,
         ref,
         outputs_f,

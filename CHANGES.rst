@@ -138,6 +138,9 @@ Release History
   (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
 - ``Simulator`` is now pickleable, allowing its state to be saved and loaded.
   (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
+- Renamed ``utils.testing.allclose`` to ``utils.testing.signals_allclose``,
+  to differentiate it from the ``allclose`` fixture.
+  (`#1563 <https://github.com/nengo/nengo/pull/1563>`__)
 
 **Deprecated**
 

@@ -10,7 +10,7 @@ from nengo.dists import UniformHypersphere
 from nengo.exceptions import BuildError, ObsoleteError, ValidationError
 from nengo.solvers import LstsqL2
 from nengo.processes import Piecewise
-from nengo.utils.testing import allclose
+from nengo.utils.testing import signals_allclose
 
 
 def test_args(nl, seed, rng):
@@ -349,7 +349,7 @@ def test_weights(Simulator, nl, plt, seed):
     x = np.array(func(t)).T
     y = np.dot(x, transform.T)
     z = nengo.Lowpass(0.005).filtfilt(sim.data[bp], dt=sim.dt)
-    assert allclose(t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt)
+    assert signals_allclose(t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt)
 
 
 def test_vector(Simulator, nl, plt, seed):
@@ -969,7 +969,7 @@ def test_function_points(Simulator, seed, rng, plt):
     with Simulator(model, seed=seed) as sim:
         sim.run(1.0)
 
-    assert allclose(
+    assert signals_allclose(
         sim.trange(),
         -sim.data[up],
         sim.data[vp],

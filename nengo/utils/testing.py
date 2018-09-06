@@ -187,7 +187,7 @@ class Logger(Recorder):
             del self.handler
 
 
-def allclose(  # noqa: C901
+def signals_allclose(  # noqa: C901
     t,
     targets,
     signals,
