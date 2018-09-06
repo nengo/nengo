@@ -110,7 +110,7 @@ def test_constant_vector(Simulator, nl, plt, seed, allclose):
     assert allclose(sim.data[A_p][-10:], vals, atol=.1, rtol=.01)
 
 
-def test_scalar(Simulator, nl, plt, seed):
+def test_scalar(Simulator, nl, plt, seed, allclose):
     """A network that represents sin(t)."""
     N = 40
     f = lambda t: np.sin(2 * np.pi * t)
@@ -129,12 +129,13 @@ def test_scalar(Simulator, nl, plt, seed):
     t = sim.trange()
     target = f(t)
 
-    assert signals_allclose(t, target, sim.data[in_p], rtol=1e-3, atol=1e-5)
+    assert signals_allclose(t, target, sim.data[in_p], rtol=1e-3, atol=1e-5,
+                            allclose=allclose)
     assert signals_allclose(t, target, sim.data[A_p], atol=0.1, delay=0.03,
-                            plt=plt)
+                            plt=plt, allclose=allclose)
 
 
-def test_vector(Simulator, nl, plt, seed):
+def test_vector(Simulator, nl, plt, seed, allclose):
     """A network that represents sin(t), cos(t), cos(t)**2."""
     N = 100
     f = lambda t: [np.sin(6.3 * t), np.cos(6.3 * t), np.cos(6.3 * t) ** 2]
@@ -153,9 +154,11 @@ def test_vector(Simulator, nl, plt, seed):
     t = sim.trange()
     target = np.vstack(f(t)).T
 
-    assert signals_allclose(t, target, sim.data[in_p], rtol=1e-3, atol=1e-5)
+    assert signals_allclose(t, target, sim.data[in_p], rtol=1e-3, atol=1e-5,
+                            allclose=allclose)
     assert signals_allclose(t, target, sim.data[A_p],
-                            plt=plt, atol=0.1, delay=0.03, buf=0.1)
+                            plt=plt, atol=0.1, delay=0.03, buf=0.1,
+                            allclose=allclose)
 
 
 def test_product(Simulator, nl, plt, seed):

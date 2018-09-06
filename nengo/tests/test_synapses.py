@@ -29,17 +29,17 @@ def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=1., n_neurons=None):
     return sim.trange(), sim.data[ref], sim.data[filtered]
 
 
-def test_lowpass(Simulator, plt, seed):
+def test_lowpass(Simulator, plt, seed, allclose):
     dt = 1e-3
     tau = 0.03
 
     t, x, yhat = run_synapse(Simulator, seed, Lowpass(tau), dt=dt)
     y = Lowpass(tau).filt(x, dt=dt, y0=0)
 
-    assert signals_allclose(t, y, yhat, delay=dt, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, plt=plt, allclose=allclose)
 
 
-def test_alpha(Simulator, plt, seed):
+def test_alpha(Simulator, plt, seed, allclose):
     dt = 1e-3
     tau = 0.03
     num, den = [1], [tau ** 2, 2 * tau, 1]
@@ -47,7 +47,8 @@ def test_alpha(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, Alpha(tau), dt=dt)
     y = LinearFilter(num, den).filt(x, dt=dt, y0=0)
 
-    assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt,
+                            allclose=allclose)
 
 
 def test_triangle(Simulator, plt, seed, allclose):
@@ -65,10 +66,11 @@ def test_triangle(Simulator, plt, seed, allclose):
     y.shape = (-1, 1)
 
     assert allclose(y, yfilt, rtol=0)
-    assert signals_allclose(t, y, ysim, delay=dt, rtol=0, plt=plt)
+    assert signals_allclose(t, y, ysim, delay=dt, rtol=0, plt=plt,
+                            allclose=allclose)
 
 
-def test_decoders(Simulator, plt, seed):
+def test_decoders(Simulator, plt, seed, allclose):
     dt = 1e-3
     tau = 0.01
 
@@ -76,10 +78,11 @@ def test_decoders(Simulator, plt, seed):
         Simulator, seed, Lowpass(tau), dt=dt, n_neurons=100)
 
     y = Lowpass(tau).filt(x, dt=dt, y0=0)
-    assert signals_allclose(t, y, yhat, delay=dt, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, plt=plt,
+                            allclose=allclose)
 
 
-def test_linearfilter(Simulator, plt, seed):
+def test_linearfilter(Simulator, plt, seed, allclose):
     dt = 1e-3
 
     # The following num, den are for a 4th order analog Butterworth filter,
@@ -92,7 +95,7 @@ def test_linearfilter(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
     y = synapse.filt(x, dt=dt, y0=0)
 
-    assert signals_allclose(t, y, yhat, delay=dt, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, plt=plt, allclose=allclose)
 
 
 def test_step_errors():

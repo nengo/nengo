@@ -263,7 +263,7 @@ def test_subsolvers_L1(rng, logger):
 
 
 @pytest.mark.slow
-def test_compare_solvers(Simulator, plt, seed):
+def test_compare_solvers(Simulator, plt, seed, allclose):
     pytest.importorskip('sklearn')
 
     N = 70
@@ -305,7 +305,7 @@ def test_compare_solvers(Simulator, plt, seed):
     close = signals_allclose(
         t, ref, outputs_f,
         atol=0.07, rtol=0, buf=0.1, delay=0.007,
-        plt=plt, labels=names, individual_results=True)
+        plt=plt, labels=names, individual_results=True, allclose=allclose)
 
     for name, c in zip(names, close):
         assert c, "Solver '%s' does not meet tolerances" % name
