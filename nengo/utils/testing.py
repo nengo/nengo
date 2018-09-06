@@ -187,9 +187,10 @@ class Logger(Recorder):
             del self.handler
 
 
-def allclose(t, targets, signals,  # noqa: C901
-             atol=1e-8, rtol=1e-5, buf=0, delay=0,
-             plt=None, show=False, labels=None, individual_results=False):
+def signals_allclose(  # noqa: C901
+        t, targets, signals,
+        atol=1e-8, rtol=1e-5, buf=0, delay=0,
+        plt=None, show=False, labels=None, individual_results=False):
     """Ensure all signal elements are within tolerances.
 
     Allows for delay, removing the beginning of the signal, and plotting.

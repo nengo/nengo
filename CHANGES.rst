@@ -41,6 +41,7 @@ Release History
   ``dt`` is now an alias for ``sample_every`` and will be removed in the future.
   (`#1368 <https://github.com/nengo/nengo/issues/1368>`_,
   `#1384 <https://github.com/nengo/nengo/pull/1384>`_)
+- Renamed ``utils/testing.py:allclose`` to ``utils/test.py:signal_allclose``.
 
 2.8.0 (June 9, 2018)
 ====================
