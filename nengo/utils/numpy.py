@@ -181,6 +181,7 @@ def norm(x, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
+    x = np.asarray(x)
     return np.sqrt(np.sum(x ** 2, axis=axis, keepdims=keepdims))
 
 
@@ -205,6 +206,7 @@ def rms(x, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
+    x = np.asarray(x)
     return np.sqrt(np.mean(x ** 2, axis=axis, keepdims=keepdims))
 
 
@@ -223,6 +225,7 @@ def rmse(x, y, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
+    x, y = np.asarray(x), np.asarray(y)
     return rms(x - y, axis=axis, keepdims=keepdims)
 
 
