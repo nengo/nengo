@@ -10,7 +10,7 @@ from nengo.dists import UniformHypersphere
 from nengo.exceptions import BuildError, ObsoleteError, ValidationError
 from nengo.solvers import LstsqL2
 from nengo.processes import Piecewise
-from nengo.utils.testing import allclose
+from nengo.utils.testing import signals_allclose
 
 
 def test_args(nl, seed, rng):
@@ -102,7 +102,8 @@ def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed, allclose):
     m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
-        input_node = nengo.Node(output=lambda t: [np.sin(t*3), np.cos(t*3)])
+        input_node = nengo.Node(
+            output=lambda t: [np.sin(t * 3), np.cos(t * 3)])
         a = nengo.Ensemble(N * 1, dimensions=1)
         b = nengo.Ensemble(N * 1, dimensions=1)
         c = nengo.Ensemble(N * 2, dimensions=2)
@@ -110,9 +111,10 @@ def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed, allclose):
 
         nengo.Connection(input_node, a, function=lambda x: -x[0])
         nengo.Connection(input_node[:1], b, function=lambda x: -x)
-        nengo.Connection(input_node, c, function=lambda x: -(x**2))
+        nengo.Connection(input_node, c, function=lambda x: -(x ** 2))
         nengo.Connection(input_node, d,
-                         function=lambda x: [-x[0], -(x[0]**2), -(x[1]**2)])
+                         function=lambda x: [-x[0], -(x[0] ** 2),
+                                             -(x[1] ** 2)])
 
         a_p = nengo.Probe(a, 'decoded_output', synapse=0.01)
         b_p = nengo.Probe(b, 'decoded_output', synapse=0.01)
@@ -332,7 +334,7 @@ def test_weights(Simulator, nl, plt, seed):
     x = np.array(func(t)).T
     y = np.dot(x, transform.T)
     z = nengo.Lowpass(0.005).filtfilt(sim.data[bp], dt=sim.dt)
-    assert allclose(t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt)
+    assert signals_allclose(t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt)
 
 
 def test_vector(Simulator, nl, plt, seed, allclose):
@@ -943,8 +945,9 @@ def test_function_points(Simulator, seed, rng, plt):
     with Simulator(model, seed=seed) as sim:
         sim.run(1.0)
 
-    assert allclose(sim.trange(), -sim.data[up], sim.data[vp],
-                    buf=0.01, delay=0.005, atol=5e-2, rtol=3e-2, plt=plt)
+    assert signals_allclose(
+        sim.trange(), -sim.data[up], sim.data[vp], buf=0.01, delay=0.005,
+        atol=5e-2, rtol=3e-2, plt=plt)
 
 
 def test_connectionfunctionparam_array(RefSimulator, seed):

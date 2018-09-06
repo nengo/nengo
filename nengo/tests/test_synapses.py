@@ -10,7 +10,7 @@ from nengo.processes import WhiteSignal
 from nengo.synapses import (
     Alpha, LinearFilter, Lowpass, Synapse, SynapseParam, Triangle)
 from nengo.utils.filter_design import cont2discrete
-from nengo.utils.testing import allclose as signals_allclose
+from nengo.utils.testing import signals_allclose
 
 
 # The following num, den are for a 4th order analog Butterworth filter,

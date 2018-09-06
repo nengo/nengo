@@ -11,7 +11,7 @@ from nengo.dists import UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
 from nengo.utils.numpy import rms, norm
 from nengo.utils.stdlib import Timer
-from nengo.utils.testing import allclose
+from nengo.utils.testing import signals_allclose
 from nengo.solvers import (
     lstsq,
     Lstsq,
@@ -305,7 +305,7 @@ def test_subsolvers_L1(rng, logger):
 
 
 @pytest.mark.slow
-def test_compare_solvers(Simulator, plt, seed, allclose):
+def test_compare_solvers(Simulator, plt, seed):
     pytest.importorskip('sklearn')
 
     N = 70
@@ -344,9 +344,10 @@ def test_compare_solvers(Simulator, plt, seed, allclose):
     outputs = np.array([sim.data[probe][:, 0] for probe in probes]).T
     outputs_f = nengo.Lowpass(0.02).filtfilt(outputs, dt=sim.dt)
 
-    close = allclose(t, ref, outputs_f,
-                     atol=0.07, rtol=0, buf=0.1, delay=0.007,
-                     plt=plt, labels=names, individual_results=True)
+    close = signals_allclose(
+        t, ref, outputs_f,
+        atol=0.07, rtol=0, buf=0.1, delay=0.007,
+        plt=plt, labels=names, individual_results=True)
 
     for name, c in zip(names, close):
         assert c, "Solver '%s' does not meet tolerances" % name

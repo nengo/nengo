@@ -143,6 +143,7 @@ Release History
   (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
 - Deprecated ``utils/numpy.py:rmse``, since this can easily be done by calling
   ``rms`` on the difference between two arrays.
+- Renamed ``utils/testing.py:allclose`` to ``utils/test.py:signal_allclose``.
 
 **Deprecated**
 

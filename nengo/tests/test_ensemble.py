@@ -6,7 +6,7 @@ import nengo.utils.numpy as npext
 from nengo.dists import Choice, Gaussian, UniformHypersphere
 from nengo.exceptions import BuildError, NengoWarning
 from nengo.processes import WhiteNoise, FilteredNoise
-from nengo.utils.testing import allclose
+from nengo.utils.testing import signals_allclose
 
 
 def test_missing_attribute():
@@ -130,8 +130,9 @@ def test_scalar(Simulator, nl, plt, seed):
     t = sim.trange()
     target = f(t)
 
-    assert allclose(t, target, sim.data[in_p], rtol=1e-3, atol=1e-5)
-    assert allclose(t, target, sim.data[A_p], atol=0.1, delay=0.03, plt=plt)
+    assert signals_allclose(t, target, sim.data[in_p], rtol=1e-3, atol=1e-5)
+    assert signals_allclose(t, target, sim.data[A_p], atol=0.1, delay=0.03,
+                            plt=plt)
 
 
 def test_vector(Simulator, nl, plt, seed):
@@ -153,9 +154,9 @@ def test_vector(Simulator, nl, plt, seed):
     t = sim.trange()
     target = np.vstack(f(t)).T
 
-    assert allclose(t, target, sim.data[in_p], rtol=1e-3, atol=1e-5)
-    assert allclose(t, target, sim.data[A_p],
-                    plt=plt, atol=0.1, delay=0.03, buf=0.1)
+    assert signals_allclose(t, target, sim.data[in_p], rtol=1e-3, atol=1e-5)
+    assert signals_allclose(t, target, sim.data[A_p],
+                            plt=plt, atol=0.1, delay=0.03, buf=0.1)
 
 
 def test_product(Simulator, nl, plt, seed):
