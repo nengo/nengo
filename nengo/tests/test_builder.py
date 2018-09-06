@@ -7,7 +7,7 @@ from nengo.builder.ensemble import BuiltEnsemble
 from nengo.exceptions import ObsoleteError
 
 
-def test_seeding(RefSimulator, logger):
+def test_seeding(RefSimulator, logger, allclose):
     """Test that setting the model seed fixes everything"""
 
     #  TODO: this really just checks random parameters in ensembles.
@@ -33,7 +33,7 @@ def test_seeding(RefSimulator, logger):
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
-            check = (np.allclose(getattr(obj1, attr), getattr(obj2, attr))
+            check = (allclose(getattr(obj1, attr), getattr(obj2, attr))
                      == equal)
             if not check:
                 logger.info("%s: %s", attr, getattr(obj1, attr))
@@ -97,7 +97,7 @@ def test_hierarchical_seeding():
         assert same1seeds[same1obj] == same2seeds[same2obj]
 
 
-def test_seed_override(seed):
+def test_seed_override(seed, allclose):
     """Test that seeds are not overwritten by the seeding function"""
     with nengo.Network(seed=seed - 1) as net:
         a = nengo.Ensemble(10, 1, seed=seed - 2)
@@ -118,7 +118,7 @@ def test_seed_override(seed):
     assert model.seeds[a] == seed + 2
     assert not model.seeded[net]
     assert not model.seeded[a]
-    assert np.allclose(model.params[a].gain, model.params[b].gain)
+    assert allclose(model.params[a].gain, model.params[b].gain)
 
 
 def test_obsolete_params(RefSimulator):

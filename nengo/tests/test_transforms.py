@@ -17,6 +17,7 @@ def test_convolution(
         channels_last,
         fixed_kernel,
         Simulator,
+        allclose,
         rng,
         seed):
     input_d = 4
@@ -83,7 +84,7 @@ def test_convolution(
     if not channels_last:
         truth = np.moveaxis(truth, -1, 0)
 
-    assert np.allclose(sim.data[p][0], np.ravel(truth))
+    assert allclose(sim.data[p][0], np.ravel(truth))
 
 
 @pytest.mark.parametrize("encoders", (True, False))
@@ -119,6 +120,7 @@ def test_sparse(
     seed,
     plt,
     monkeypatch,
+    allclose,
 ):
     if use_scipy:
         scipy_sparse = pytest.importorskip("scipy.sparse")
@@ -187,7 +189,7 @@ def test_sparse(
     plt.plot(ref_sim.trange(), ref_sim.data[ap], ':')
     plt.plot(sim.trange(), sim.data[ap])
 
-    assert np.allclose(sim.data[ap], ref_sim.data[ap])
+    assert allclose(sim.data[ap], ref_sim.data[ap])
 
 
 @pytest.mark.parametrize("encoders", (True, False))

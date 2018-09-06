@@ -6,7 +6,7 @@ from nengo.exceptions import ObsoleteError
 from nengo.utils.stdlib import Timer
 
 
-def test_multirun(Simulator, rng):
+def test_multirun(Simulator, rng, allclose):
     """Test probing the time on multiple runs"""
 
     # set rtol a bit higher, since OCL model.t accumulates error over time
@@ -23,10 +23,10 @@ def test_multirun(Simulator, rng):
             sim.run(ti)
             sim_t = sim.trange()
             t = sim.dt * np.arange(1, len(sim_t) + 1)
-            assert np.allclose(sim_t, t, rtol=rtol)
+            assert allclose(sim_t, t, rtol=rtol)
 
             t_sum += ti
-            assert np.allclose(sim_t[-1], t_sum, rtol=rtol)
+            assert allclose(sim_t[-1], t_sum, rtol=rtol)
 
 
 def test_dts(Simulator, seed, rng):
@@ -34,7 +34,7 @@ def test_dts(Simulator, seed, rng):
 
     for i in range(100):
         dt = rng.uniform(0.001, 0.1)  # simulator dt
-        dt2 = rng.uniform(dt, 0.15)   # probe dt
+        dt2 = rng.uniform(dt, 0.15)  # probe dt
         tend = rng.uniform(0.2, 0.3)  # simulator runtime
 
         with nengo.Network(seed=seed) as model:
@@ -50,7 +50,7 @@ def test_dts(Simulator, seed, rng):
             dt, dt2, tend, len(t), len(x))
 
 
-def test_large(Simulator, seed, logger):
+def test_large(Simulator, seed, logger, allclose):
     """Test with a lot of big probes. Can also be used for speed."""
 
     n = 10
@@ -77,7 +77,7 @@ def test_large(Simulator, seed, logger):
     x = np.asarray([input_fn(ti) for ti in t])
     for p in probes:
         y = sim.data[p]
-        assert np.allclose(y[1:], x[:-1])  # 1-step delay
+        assert allclose(y[1:], x[:-1])  # 1-step delay
 
 
 def test_defaults(Simulator):
@@ -111,7 +111,7 @@ def test_simulator_dt(Simulator):
     assert sim.data[bp].shape == (100, 1)
 
 
-def test_multiple_probes(Simulator):
+def test_multiple_probes(Simulator, allclose):
     """Make sure we can probe the same object multiple times."""
     dt = 1e-3
     f = 10
@@ -119,15 +119,15 @@ def test_multiple_probes(Simulator):
         ens = nengo.Ensemble(10, 1)
         p_001 = nengo.Probe(ens, sample_every=dt)
         p_01 = nengo.Probe(ens, sample_every=f * dt)
-        p_1 = nengo.Probe(ens, sample_every=f**2 * dt)
+        p_1 = nengo.Probe(ens, sample_every=f ** 2 * dt)
 
     with Simulator(model, dt=dt) as sim:
         sim.run(1.)
-    assert np.allclose(sim.data[p_001][f - 1::f], sim.data[p_01])
-    assert np.allclose(sim.data[p_01][f - 1::f], sim.data[p_1])
+    assert allclose(sim.data[p_001][f - 1::f], sim.data[p_01])
+    assert allclose(sim.data[p_01][f - 1::f], sim.data[p_1])
 
 
-def test_input_probe(Simulator):
+def test_input_probe(Simulator, allclose):
     """Make sure we can probe the input to an ensemble."""
     with nengo.Network() as model:
         ens = nengo.Ensemble(100, 1)
@@ -140,10 +140,10 @@ def test_input_probe(Simulator):
     with Simulator(model) as sim:
         sim.run(1.)
     t = sim.trange()
-    assert np.allclose(sim.data[input_probe][:, 0], np.sin(t) + 0.5)
+    assert allclose(sim.data[input_probe][:, 0], np.sin(t) + 0.5)
 
 
-def test_conn_output(Simulator):
+def test_conn_output(Simulator, allclose):
     """Make sure we can get individual connection outputs."""
     model = nengo.Network()
     with model:
@@ -158,11 +158,11 @@ def test_conn_output(Simulator):
     with Simulator(model) as sim:
         sim.run(0.2)
     t = sim.trange()
-    assert np.allclose(sim.data[p1][:, 0], -1. * np.sin(t))
-    assert np.allclose(sim.data[p2][:, 0], 0.5 ** 2)
+    assert allclose(sim.data[p1][:, 0], -1. * np.sin(t))
+    assert allclose(sim.data[p2][:, 0], 0.5 ** 2)
 
 
-def test_slice(Simulator):
+def test_slice(Simulator, allclose):
     with nengo.Network() as model:
         a = nengo.Node(output=lambda t: [np.cos(t), np.sin(t)])
         b = nengo.Ensemble(100, 2)
@@ -176,10 +176,10 @@ def test_slice(Simulator):
 
     with Simulator(model) as sim:
         sim.run(0.5)
-    assert np.allclose(sim.data[bp][:, 0], sim.data[bp0a][:, 0])
-    assert np.allclose(sim.data[bp][:, 0], sim.data[bp0b][:, 0])
-    assert np.allclose(sim.data[bp][:, 1], sim.data[bp1a][:, 0])
-    assert np.allclose(sim.data[bp][:, 1], sim.data[bp1b][:, 0])
+    assert allclose(sim.data[bp][:, 0], sim.data[bp0a][:, 0])
+    assert allclose(sim.data[bp][:, 0], sim.data[bp0b][:, 0])
+    assert allclose(sim.data[bp][:, 1], sim.data[bp1a][:, 0])
+    assert allclose(sim.data[bp][:, 1], sim.data[bp1b][:, 0])
 
 
 def test_solver_defaults():
@@ -215,7 +215,7 @@ def test_solver_defaults():
     assert f.solver is solver3
 
 
-def test_ensemble_encoders(Simulator):
+def test_ensemble_encoders(Simulator, allclose):
     """Check that encoders probed from ensemble are correct."""
     with nengo.Network() as model:
         ens = nengo.Ensemble(n_neurons=10, dimensions=2, radius=1.5)
@@ -227,8 +227,8 @@ def test_ensemble_encoders(Simulator):
     ens_data = sim.data[ens]
     from_probe = sim.data[p_enc] / (ens_data.gain / ens.radius)[:, np.newaxis]
     from_data = ens_data.encoders
-    assert np.allclose(from_probe, from_data)
-    assert np.allclose(sim.data[p_enc], ens_data.scaled_encoders)
+    assert allclose(from_probe, from_data)
+    assert allclose(sim.data[p_enc], ens_data.scaled_encoders)
 
 
 def test_obsolete_probes():
@@ -242,7 +242,7 @@ def test_obsolete_probes():
             nengo.Probe(conn, "transform")
 
 
-def test_update_timing(Simulator):
+def test_update_timing(Simulator, allclose):
     with nengo.Network() as net:
         inp = nengo.Node([1])
         ens = nengo.Ensemble(10, 1, encoders=np.ones((10, 1)),
@@ -254,5 +254,5 @@ def test_update_timing(Simulator):
     with Simulator(net) as sim:
         sim.run(0.003)
 
-    assert np.allclose(sim.data[sig_p][0], 0)
-    assert np.allclose(sim.data[sig_p][1:], 2)
+    assert allclose(sim.data[sig_p][0], 0)
+    assert allclose(sim.data[sig_p][1:], 2)

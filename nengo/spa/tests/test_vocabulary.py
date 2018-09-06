@@ -7,12 +7,12 @@ from nengo.exceptions import SpaParseError, ValidationError
 from nengo.spa import Vocabulary
 
 
-def test_add(rng):
+def test_add(rng, allclose):
     v = Vocabulary(3, rng=rng)
     v.add('A', [1, 2, 3])
     v.add('B', [4, 5, 6])
     v.add('C', [7, 8, 9])
-    assert np.allclose(v.vectors, [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    assert allclose(v.vectors, [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
 
 def test_include_pairs(rng):
@@ -36,19 +36,19 @@ def test_include_pairs(rng):
     assert v.key_pairs == ['A*B', 'A*C', 'B*C']
 
 
-def test_parse(rng):
+def test_parse(rng, allclose):
     v = Vocabulary(64, rng=rng)
     A = v.parse('A')
     B = v.parse('B')
     C = v.parse('C')
-    assert np.allclose((A * B).v, v.parse('A * B').v)
-    assert np.allclose((A * ~B).v, v.parse('A * ~B').v)
-    assert np.allclose((A + B).v, v.parse('A + B').v)
-    assert np.allclose((A - (B*C)*3 + ~C).v, v.parse('A-(B*C)*3+~C').v)
+    assert allclose((A * B).v, v.parse('A * B').v)
+    assert allclose((A * ~B).v, v.parse('A * ~B').v)
+    assert allclose((A + B).v, v.parse('A + B').v)
+    assert allclose((A - (B * C) * 3 + ~C).v, v.parse('A-(B*C)*3+~C').v)
 
-    assert np.allclose(v.parse('0').v, np.zeros(64))
-    assert np.allclose(v.parse('1').v, np.eye(64)[0])
-    assert np.allclose(v.parse('1.7').v, np.eye(64)[0] * 1.7)
+    assert allclose(v.parse('0').v, np.zeros(64))
+    assert allclose(v.parse('1').v, np.eye(64)[0])
+    assert allclose(v.parse('1.7').v, np.eye(64)[0] * 1.7)
 
     with pytest.raises(SyntaxError):
         v.parse('A((')
@@ -65,9 +65,9 @@ def test_invalid_dimensions():
         Vocabulary(-1)
 
 
-def test_identity(rng):
+def test_identity(rng, allclose):
     v = Vocabulary(64, rng=rng)
-    assert np.allclose(v.identity.v, np.eye(64)[0])
+    assert allclose(v.identity.v, np.eye(64)[0])
 
 
 def test_text(rng):
@@ -89,7 +89,7 @@ def test_text(rng):
     assert v.text(x, join=',') == v.text(x).replace(';', ',')
     assert re.match(';'.join([ptr] * 2), v.text(x, normalize=True))
 
-    assert v.text([0]*64) == '0.00F'
+    assert v.text([0] * 64) == '0.00F'
     assert v.text(v['D'].v) == '1.00D'
 
 
@@ -220,7 +220,7 @@ def test_subset(rng):
     assert v2.parse('A').compare(np.dot(t, v1.parse('A').v)) >= 0.99999999
 
 
-def test_extend(rng):
+def test_extend(rng, allclose):
     v = Vocabulary(16, rng=rng)
     v.parse('A+B')
     assert v.keys == ['A', 'B']
@@ -240,7 +240,7 @@ def test_extend(rng):
     fft_imag = fft_val.imag
     fft_real = fft_val.real
     fft_norms = np.sqrt(fft_imag ** 2 + fft_real ** 2)
-    assert np.allclose(fft_norms, np.ones(16))
+    assert allclose(fft_norms, np.ones(16))
 
     v.extend(['G', 'H'], unitary=True)
     assert v.keys == ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']

@@ -10,7 +10,7 @@ from nengo.processes import WhiteSignal
 from nengo.synapses import (
     Alpha, LinearFilter, Lowpass, Synapse, SynapseParam, Triangle)
 from nengo.utils.filter_design import cont2discrete
-from nengo.utils.testing import allclose
+from nengo.utils.testing import allclose as signals_allclose
 
 
 # The following num, den are for a 4th order analog Butterworth filter,
@@ -35,7 +35,7 @@ def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=0.2, high=100,
         ref = nengo.Probe(target)
         filtered = nengo.Probe(target, synapse=synapse)
 
-    with Simulator(model, dt=dt, seed=seed+1) as sim:
+    with Simulator(model, dt=dt, seed=seed + 1) as sim:
         sim.run(runtime)
 
     return sim.trange(), sim.data[ref], sim.data[filtered]
@@ -49,8 +49,8 @@ def test_direct(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
     y = synapse.filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt)
-    assert allclose(t, a * x, y, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt)
+    assert signals_allclose(t, a * x, y, plt=plt)
 
 
 def test_lowpass(Simulator, plt, seed):
@@ -60,21 +60,21 @@ def test_lowpass(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, Lowpass(tau), dt=dt)
     y = Lowpass(tau).filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, plt=plt)
 
 
 def test_alpha(Simulator, plt, seed):
     dt = 1e-3
     tau = 0.03
-    num, den = [1], [tau**2, 2*tau, 1]
+    num, den = [1], [tau ** 2, 2 * tau, 1]
 
     t, x, yhat = run_synapse(Simulator, seed, Alpha(tau), dt=dt)
     y = LinearFilter(num, den).filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt)
 
 
-def test_triangle(Simulator, plt, seed):
+def test_triangle(Simulator, plt, seed, allclose):
     dt = 1e-3
     tau = 0.03
 
@@ -88,11 +88,11 @@ def test_triangle(Simulator, plt, seed):
     y = np.convolve(x.ravel(), num)[:len(t)]
     y.shape = (-1, 1)
 
-    assert np.allclose(y, yfilt, rtol=0)
-    assert allclose(t, y, ysim, delay=dt, rtol=0, plt=plt)
+    assert allclose(y, yfilt, rtol=0)
+    assert signals_allclose(t, y, ysim, delay=dt, rtol=0, plt=plt)
 
     # test y0 != 0
-    assert np.allclose(Triangle(tau).filt(np.ones(100), dt=dt, y0=1), 1)
+    assert allclose(Triangle(tau).filt(np.ones(100), dt=dt, y0=1), 1)
 
 
 def test_decoders(Simulator, plt, seed):
@@ -103,7 +103,7 @@ def test_decoders(Simulator, plt, seed):
         Simulator, seed, Lowpass(tau), dt=dt, n_neurons=100)
 
     y = Lowpass(tau).filt(x, dt=dt, y0=0)
-    assert allclose(t, y, yhat, delay=dt, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, plt=plt)
 
 
 def test_linearfilter(Simulator, plt, seed):
@@ -112,16 +112,16 @@ def test_linearfilter(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
     y = synapse.filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt, plt=plt)
+    assert signals_allclose(t, y, yhat, delay=dt, plt=plt)
 
 
-def test_linearfilter_y0():
+def test_linearfilter_y0(allclose):
     # --- y0 sets initial state correctly for high-order filter
     synapse = LinearFilter(butter_num, butter_den, analog=False)
     v = 9.81
     x = v * np.ones(10)
-    assert np.allclose(synapse.filt(x, y0=v), v)
-    assert not np.allclose(synapse.filt(x, y0=0), v)
+    assert allclose(synapse.filt(x, y0=v), v)
+    assert not allclose(synapse.filt(x, y0=0), v)
 
     # --- y0 does not work for high-order synapse when DC gain is zero
     synapse = LinearFilter([1, 0], [1, 1])
@@ -129,14 +129,14 @@ def test_linearfilter_y0():
         synapse.filt(np.ones(10), y0=1)
 
 
-def test_linearfilter_extras():
+def test_linearfilter_extras(allclose):
     # This filter is just a gain, but caused index errors previously
     synapse = nengo.LinearFilter([3], [2])
-    assert np.allclose(synapse.filt([2.]), 3)
+    assert allclose(synapse.filt([2.]), 3)
 
     # differentiator should work properly
     diff = nengo.LinearFilter([1, -1], [1, 0], analog=False)
-    assert np.allclose(diff.filt([1., -1., 2.], y0=0), [1., -2., 3.])
+    assert allclose(diff.filt([1., -1., 2.], y0=0), [1., -2., 3.])
 
     # Filtering an integer array should cast to a float
     x = np.arange(10, dtype=nengo.rc.int_dtype)
@@ -162,7 +162,7 @@ def test_step_errors():
         LinearFilter.General(A, B, C, D, X)
 
 
-def test_filt(plt, rng):
+def test_filt(plt, rng, allclose):
     dt = 1e-3
     tend = 0.5
     t = dt * np.arange(tend / dt)
@@ -183,10 +183,10 @@ def test_filt(plt, rng):
     plt.plot(t, x)
     plt.plot(t, y)
 
-    assert np.allclose(x, y, atol=1e-3, rtol=1e-2)
+    assert allclose(x, y, atol=1e-3, rtol=1e-2)
 
 
-def test_filtfilt(plt, rng):
+def test_filtfilt(plt, rng, allclose):
     dt = 1e-3
     tend = 3.
     t = dt * np.arange(tend / dt)
@@ -201,10 +201,10 @@ def test_filtfilt(plt, rng):
     plt.plot(t, x)
     plt.plot(t, y, '--')
 
-    assert np.allclose(x, y)
+    assert allclose(x, y)
 
 
-def test_lti_lowpass(rng, plt):
+def test_lti_lowpass(rng, plt, allclose):
     dt = 1e-3
     tend = 3.
     t = dt * np.arange(tend / dt)
@@ -221,16 +221,16 @@ def test_lti_lowpass(rng, plt):
     plt.plot(t, y[:, 0], label="LTI")
     plt.legend(loc="best")
 
-    assert np.allclose(x, y)
+    assert allclose(x, y)
 
 
-def test_linearfilter_combine(rng):
+def test_linearfilter_combine(rng, allclose):
     nt = 3000
     tau0, tau1 = 0.01, 0.02
     u = rng.normal(size=(nt, 10))
-    x = LinearFilter([1], [tau0*tau1, tau0+tau1, 1]).filt(u, y0=0)
+    x = LinearFilter([1], [tau0 * tau1, tau0 + tau1, 1]).filt(u, y0=0)
     y = Lowpass(tau0).combine(Lowpass(tau1)).filt(u, y0=0)
-    assert np.allclose(x, y)
+    assert allclose(x, y)
 
     with pytest.raises(ValidationError, match="other LinearFilters"):
         Lowpass(0.1).combine(Triangle(0.01))
@@ -239,7 +239,7 @@ def test_linearfilter_combine(rng):
         Lowpass(0.1).combine(LinearFilter([1], [1], analog=False))
 
 
-def test_combined_delay(Simulator):
+def test_combined_delay(Simulator, allclose):
     # ensure that two sequential filters has the same output
     # as combining their individual discrete transfer functions
     nt = 50
@@ -261,13 +261,13 @@ def test_combined_delay(Simulator):
     with Simulator(model, dt=dt) as sim:
         sim.run_steps(nt)
 
-    assert np.allclose(sim.data[p1], sim.data[p2])
+    assert allclose(sim.data[p1], sim.data[p2])
 
     # Both have two time-step delays:
     # for sys1, this comes from two levels of filtering
     # for sys2, this comes from one level of filtering + delay in sys2
-    assert np.allclose(sim.data[p1][:2], 0)
-    assert not np.allclose(sim.data[p1][2], 0)
+    assert allclose(sim.data[p1][:2], 0)
+    assert not allclose(sim.data[p1][2], 0)
 
 
 def test_synapseparam():

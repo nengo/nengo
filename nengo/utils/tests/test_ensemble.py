@@ -53,7 +53,7 @@ def test_tuning_curves(Simulator, nl_nodirect, plt, seed, dimensions):
 
 
 @pytest.mark.parametrize('dimensions', [1, 2])
-def test_tuning_curves_direct_mode(Simulator, plt, seed, dimensions):
+def test_tuning_curves_direct_mode(Simulator, plt, seed, dimensions, allclose):
     model = nengo.Network(seed=seed)
     with model:
         ens = nengo.Ensemble(10, dimensions, neuron_type=nengo.Direct())
@@ -64,7 +64,7 @@ def test_tuning_curves_direct_mode(Simulator, plt, seed, dimensions):
     plot_tuning_curves(plt, eval_points, activities)
 
     # eval_points is passed through in direct mode neurons
-    assert np.allclose(eval_points, activities)
+    assert allclose(eval_points, activities)
 
 
 def test_response_curves(Simulator, nl_nodirect, plt, seed):
@@ -90,7 +90,8 @@ def test_response_curves(Simulator, nl_nodirect, plt, seed):
 
 
 @pytest.mark.parametrize('dimensions', [1, 2])
-def test_response_curves_direct_mode(Simulator, plt, seed, dimensions):
+def test_response_curves_direct_mode(Simulator, plt, seed, dimensions,
+                                     allclose):
     model = nengo.Network(seed=seed)
     with model:
         ens = nengo.Ensemble(
@@ -104,4 +105,4 @@ def test_response_curves_direct_mode(Simulator, plt, seed, dimensions):
     assert eval_points.ndim == 1 and eval_points.size > 0
     assert np.all(eval_points >= -1.0) and np.all(eval_points <= 1.0)
     # eval_points is passed through in direct mode neurons
-    assert np.allclose(eval_points, activities)
+    assert allclose(eval_points, activities)

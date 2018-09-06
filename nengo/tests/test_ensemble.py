@@ -18,7 +18,8 @@ def test_missing_attribute():
 
 
 @pytest.mark.parametrize("dimensions", [1, 200])
-def test_encoders(RefSimulator, dimensions, seed, n_neurons=10, encoders=None):
+def test_encoders(RefSimulator, dimensions, seed, allclose, n_neurons=10,
+                  encoders=None):
     dtype = nengo.rc.float_dtype
     if encoders is None:
         encoders = np.random.normal(size=(n_neurons, dimensions))
@@ -33,27 +34,29 @@ def test_encoders(RefSimulator, dimensions, seed, n_neurons=10, encoders=None):
                              label="A")
 
     with RefSimulator(model) as sim:
-        assert np.allclose(encoders, sim.data[ens].encoders)
+        assert allclose(encoders, sim.data[ens].encoders)
 
 
-def test_encoders_wrong_shape(RefSimulator, seed):
+def test_encoders_wrong_shape(RefSimulator, seed, allclose):
     dimensions = 3
     encoders = np.random.normal(size=dimensions)
     with pytest.raises(ValueError):
-        test_encoders(RefSimulator, dimensions, seed=seed, encoders=encoders)
+        test_encoders(RefSimulator, dimensions, seed=seed, encoders=encoders,
+                      allclose=allclose)
 
 
-def test_encoders_negative_neurons(RefSimulator, seed):
+def test_encoders_negative_neurons(RefSimulator, seed, allclose):
     with pytest.raises(ValueError):
-        test_encoders(RefSimulator, 1, seed=seed, n_neurons=-1)
+        test_encoders(RefSimulator, 1, seed=seed, n_neurons=-1,
+                      allclose=allclose)
 
 
-def test_encoders_no_dimensions(RefSimulator, seed):
+def test_encoders_no_dimensions(RefSimulator, seed, allclose):
     with pytest.raises(ValueError):
-        test_encoders(RefSimulator, 0, seed=seed)
+        test_encoders(RefSimulator, 0, seed=seed, allclose=allclose)
 
 
-def test_constant_scalar(Simulator, nl, plt, seed):
+def test_constant_scalar(Simulator, nl, plt, seed, allclose):
     """A Network that represents a constant value."""
     N = 30
     val = 0.5
@@ -77,11 +80,11 @@ def test_constant_scalar(Simulator, nl, plt, seed):
     plt.xlim(right=t[-1])
     plt.legend(loc=0)
 
-    assert np.allclose(sim.data[in_p], val, atol=.1, rtol=.01)
-    assert np.allclose(sim.data[A_p][-10:], val, atol=.1, rtol=.01)
+    assert allclose(sim.data[in_p], val, atol=.1, rtol=.01)
+    assert allclose(sim.data[A_p][-10:], val, atol=.1, rtol=.01)
 
 
-def test_constant_vector(Simulator, nl, plt, seed):
+def test_constant_vector(Simulator, nl, plt, seed, allclose):
     """A network that represents a constant 3D vector."""
     N = 30
     vals = [0.6, 0.1, -0.5]
@@ -104,8 +107,8 @@ def test_constant_vector(Simulator, nl, plt, seed):
     plt.legend(loc='best', fontsize='small')
     plt.xlim(right=t[-1])
 
-    assert np.allclose(sim.data[in_p][-10:], vals, atol=.1, rtol=.01)
-    assert np.allclose(sim.data[A_p][-10:], vals, atol=.1, rtol=.01)
+    assert allclose(sim.data[in_p][-10:], vals, atol=.1, rtol=.01)
+    assert allclose(sim.data[A_p][-10:], vals, atol=.1, rtol=.01)
 
 
 def test_scalar(Simulator, nl, plt, seed):
@@ -134,7 +137,7 @@ def test_scalar(Simulator, nl, plt, seed):
 def test_vector(Simulator, nl, plt, seed):
     """A network that represents sin(t), cos(t), cos(t)**2."""
     N = 100
-    f = lambda t: [np.sin(6.3*t), np.cos(6.3*t), np.cos(6.3*t)**2]
+    f = lambda t: [np.sin(6.3 * t), np.cos(6.3 * t), np.cos(6.3 * t) ** 2]
 
     m = nengo.Network(label='test_vector', seed=seed)
     with m:
@@ -205,7 +208,7 @@ def test_eval_points_number(Simulator, dims, points, seed):
         assert sim.data[A].eval_points.shape == (points, dims)
 
 
-def test_eval_points_number_warning(Simulator, seed):
+def test_eval_points_number_warning(Simulator, seed, allclose):
     model = nengo.Network(seed=seed)
     with model:
         A = nengo.Ensemble(5, 1, n_eval_points=10, eval_points=[[0.1], [0.2]])
@@ -215,7 +218,7 @@ def test_eval_points_number_warning(Simulator, seed):
         with Simulator(model) as sim:
             pass
 
-    assert np.allclose(sim.data[A].eval_points, [[0.1], [0.2]])
+    assert allclose(sim.data[A].eval_points, [[0.1], [0.2]])
 
 
 def test_gain_bias_warning(Simulator, seed):
@@ -306,7 +309,6 @@ def test_invalid_rates(Simulator):
 
 
 def test_gain_bias(Simulator):
-
     N = 17
     D = 2
 
@@ -324,7 +326,7 @@ def test_gain_bias(Simulator):
         assert np.array_equal(bias, sim.data[a].bias)
 
 
-def test_noise_gen(Simulator, nl_nodirect, seed, plt):
+def test_noise_gen(Simulator, nl_nodirect, seed, plt, allclose):
     """Ensure that setting Ensemble.noise generates noise."""
     with nengo.Network(seed=seed) as model:
         intercepts = -0.5
@@ -352,11 +354,11 @@ def test_noise_gen(Simulator, nl_nodirect, seed, plt):
 
     assert np.all(sim.data[pos_p] >= sim.data[normal_p])
     assert np.all(sim.data[normal_p] >= sim.data[neg_p])
-    assert not np.allclose(sim.data[normal_p], sim.data[pos_p])
-    assert not np.allclose(sim.data[normal_p], sim.data[neg_p])
+    assert not allclose(sim.data[normal_p], sim.data[pos_p])
+    assert not allclose(sim.data[normal_p], sim.data[neg_p])
 
 
-def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt):
+def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt, allclose):
     """Make sure the same noise process works in multiple ensembles.
 
     We test this both with the default system and without.
@@ -393,11 +395,11 @@ def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt):
     plt.plot(*nengo.utils.ensemble.tuning_curves(b, sim), lw=2)
     plt.plot(*nengo.utils.ensemble.tuning_curves(c, sim))
 
-    assert np.allclose(sim.data[ap], sim.data[bp])
-    assert np.allclose(sim.data[bp], sim.data[cp])
+    assert allclose(sim.data[ap], sim.data[bp])
+    assert allclose(sim.data[bp], sim.data[cp])
 
 
-def test_no_norm_encoders(Simulator):
+def test_no_norm_encoders(Simulator, allclose):
     """Confirm encoders are not normalized"""
 
     enc_weight = 5
@@ -410,8 +412,8 @@ def test_no_norm_encoders(Simulator):
     with Simulator(model) as sim:
         pass
 
-    assert np.allclose(sim.data[norm].encoders, 1)
-    assert np.allclose(sim.data[no_norm].encoders, enc_weight)
+    assert allclose(sim.data[norm].encoders, 1)
+    assert allclose(sim.data[no_norm].encoders, enc_weight)
 
 
 @pytest.mark.parametrize('intercept', [1.0, 1.1])

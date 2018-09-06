@@ -34,8 +34,8 @@ def test_multiply():
 @pytest.mark.parametrize("kernel0", (4, 5))
 @pytest.mark.parametrize("kernel1", (4, 5))
 @pytest.mark.parametrize("padding", ("same", "valid"))
-def test_convinc_2d(
-        channels_last, stride0, stride1, kernel0, kernel1, padding, rng):
+def test_convinc_2d(channels_last, stride0, stride1, kernel0, kernel1, padding,
+                    rng, allclose):
     correlate2d = pytest.importorskip("scipy.signal").correlate2d
 
     shape0 = 16
@@ -88,4 +88,4 @@ def test_convinc_2d(
     if not channels_last:
         y0 = np.moveaxis(y0, -1, 0)
 
-    assert np.allclose(signals[y], y0)
+    assert allclose(signals[y], y0)
