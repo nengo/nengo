@@ -241,10 +241,19 @@ class RectifiedLinear(NeuronType):
 
     probeable = ('rates',)
 
+    amplitude = NumberParam('amplitude', low=0, low_open=True)
+
     def __init__(self, amplitude=1):
         super(RectifiedLinear, self).__init__()
 
         self.amplitude = amplitude
+
+    @property
+    def _argreprs(self):
+        args = []
+        if self.amplitude != 1:
+            args.append("amplitude=%s" % self.amplitude)
+        return args
 
     def gain_bias(self, max_rates, intercepts):
         """Determine gain and bias by shifting and scaling the lines."""
