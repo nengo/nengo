@@ -130,15 +130,6 @@ class Simulator(object):
 
     """
 
-    # 'unsupported' defines features unsupported by a simulator.
-    # The format is a list of tuples of the form `(test, reason)` with `test`
-    # being a string with wildcards (*, ?, [abc], [!abc]) matched against Nengo
-    # test paths and names, and `reason` is a string describing why the feature
-    # is not supported by the backend. For example:
-    #     unsupported = [('test_pes*', 'PES rule not implemented')]
-    # would skip all test whose names start with 'test_pes'.
-    unsupported = []
-
     def __init__(
             self, network,
             dt=0.001, seed=None, model=None, progress_bar=True, optimize=True):

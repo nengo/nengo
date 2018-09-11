@@ -1,3 +1,5 @@
+import pytest
+
 import nengo.conftest
 import nengo.utils.numpy as npext
 
@@ -10,31 +12,70 @@ def test_seed_fixture(seed):
     assert i == 1832276344
 
 
-def test_unsupported(testdir):
-    testdir.makeconftest(
-        """
-        import nengo.conftest
+@pytest.mark.parametrize("xfail", (True, False))
+def test_unsupported(xfail, testdir):
+    """Test `nengo_test_unsupported` config option and `--unsupported` arg"""
+    # Create a test file with some dummy tests
+    testdir.makefile(".py", test_file="""
+        import pytest
 
-        class MockSimulator(object):
-            unsupported = [('*', 'mock simulator')]
+        @pytest.mark.parametrize("param", (True, False))
+        def test_unsupported(param):
+            print("test_unsupported param=%s ran" % param)
+            assert param
 
-        nengo.conftest.TestConfig.Simulator = MockSimulator
+        @pytest.mark.parametrize("param", (True, False))
+        def test_unsupported_all(param):
+            print("test_unsupported_all param=%s ran" % param)
+            assert False
+
+        def test_supported():
+            print("test_supported ran")
+            assert True
         """)
-    outcomes = testdir.runpytest(
-        "-p", "nengo.tests.options", "--pyargs", "nengo",
-    ).parseoutcomes()
-    assert outcomes["skipped"] > 350
-    assert outcomes["deselected"] > 700
-    assert "passed" not in outcomes
-    assert "failed" not in outcomes
 
-    outcomes = testdir.runpytest(
-        "-p", "nengo.tests.options", "--pyargs", "nengo", "--unsupported",
-    ).parseoutcomes()
-    assert outcomes["xfailed"] > 350
-    assert outcomes["deselected"] > 700
-    assert "passed" not in outcomes
-    assert "failed" not in outcomes
+    # Create the .ini file to skip/xfail the failing tests. This will
+    # make sure square brackets for parameters just skip that parametrization.
+    # We also make sure that both single-line and multiline comments work.
+    testdir.makefile(".ini", pytest="""
+        [pytest]
+        nengo_test_unsupported =
+            test_file.py:test_unsupported[False]
+                "One unsupported param
+                with multiline comment"
+            test_file.py:test_unsupported_all*
+                "Two unsupported params with single-line comment"
+        """)
 
-    # runpytest runs in-process, so we have to undo changes to TestConfig
-    nengo.conftest.TestConfig.Simulator = nengo.Simulator
+    testdir.makefile(".py", conftest="""
+        from nengo.conftest import pytest_runtest_setup, pytest_configure
+        """)
+
+    args = "-p nengo.tests.options -rsx -sv".split()
+    if xfail:
+        args.append("--unsupported")
+    output = testdir.runpytest(*args)
+
+    # ensure that these lines appear somewhere in the output
+    output.stdout.fnmatch_lines_random([
+        "*One unsupported param with multiline comment",
+        "*Two unsupported params with single-line comment",
+        "*test_supported ran",
+        "*test_unsupported param=True ran",
+    ])
+
+    # if `--unsupported`, unsupported tests run and xfail, otherwise they skip
+    outcomes = output.parseoutcomes()
+    if xfail:
+        output.stdout.fnmatch_lines_random([
+            "*test_unsupported param=False ran",
+            "*test_unsupported_all param=True ran",
+            "*test_unsupported_all param=False ran",
+        ])
+        assert outcomes["xfailed"] == 3
+        assert "skipped" not in outcomes
+    else:
+        assert outcomes["skipped"] == 3
+        assert "xfailed" not in outcomes
+    assert "failed" not in outcomes
+    assert outcomes["passed"] == 2
