@@ -509,8 +509,9 @@ class AdaptiveLIFRate(LIFRate):
 
     References
     ----------
-    .. [1] Koch, Christof. Biophysics of Computation: Information Processing
-       in Single Neurons. Oxford University Press, 1999. p. 339
+    .. [1] Camera, Giancarlo La, et al. "Minimal models of adapted neuronal
+       response to in Vivo-Like input currents." Neural computation
+       16.10 (2004): 2101-2124.
     """
 
     probeable = ('rates', 'adaptation')
@@ -566,8 +567,9 @@ class AdaptiveLIF(AdaptiveLIFRate, LIF):
 
     References
     ----------
-    .. [1] Koch, Christof. Biophysics of Computation: Information Processing
-       in Single Neurons. Oxford University Press, 1999. p. 339
+    .. [1] Camera, Giancarlo La, et al. "Minimal models of adapted neuronal
+       response to in Vivo-Like input currents." Neural computation
+       16.10 (2004): 2101-2124.
     """
 
     probeable = ('spikes', 'adaptation', 'voltage', 'refractory_time')
