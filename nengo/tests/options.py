@@ -31,3 +31,6 @@ def pytest_addoption(parser):
                        "multiple calls to 'allclose' within a single test,"
                        "repeated items with the same testname will be applied"
                        "in sequence")
+    parser.addini("nengo_test_unsupported", type="linelist",
+                  help="List of unsupported unit tests with reason for "
+                       "exclusion")

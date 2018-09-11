@@ -13,3 +13,9 @@ def test_allclose(allclose):
     assert allclose(0, 0.9, atol=0)
     assert allclose(0, 0.9, atol=0)
     assert not allclose(0, 1.9)
+
+
+def test_unsupported():
+    # if the nengo_test_unsupported config is working properly then this
+    # test will be marked as xfail
+    assert False

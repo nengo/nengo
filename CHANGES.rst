@@ -42,6 +42,8 @@ Release History
   (`#1368 <https://github.com/nengo/nengo/issues/1368>`_,
   `#1384 <https://github.com/nengo/nengo/pull/1384>`_)
 - Renamed ``utils/testing.py:allclose`` to ``utils/test.py:signal_allclose``.
+- Added new pytest config option, ``nengo_test_unsupported`` (replacing the
+  previous ``Simulator.unsupported`` functionality).
 
 2.8.0 (June 9, 2018)
 ====================

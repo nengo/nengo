@@ -1,9 +1,10 @@
+from fnmatch import fnmatch
 import hashlib
 import inspect
 import importlib
 import os
 import re
-from fnmatch import fnmatch
+import shlex
 import warnings
 
 import matplotlib
@@ -437,18 +438,19 @@ def pytest_runtest_setup(item):  # noqa: C901
     if not hasattr(item, 'obj'):
         return  # Occurs for doctests, possibly other weird tests
 
-    test_uses_sim = 'Simulator' in item.fixturenames
-    test_uses_refsim = 'RefSimulator' in item.fixturenames
-    tests_frontend = not (test_uses_sim or test_uses_refsim)
+    item_name = get_item_name(item)
 
-    if not tests_frontend:
-        item_name = get_item_name(item)
+    # join all the lines and then split (preserving quoted strings)
+    unsupported = shlex.split(
+        " ".join(item.config.getini("nengo_test_unsupported")))
+    # group pairs (representing test name/reason)
+    unsupported = [unsupported[i:i + 2] for i in range(0, len(unsupported), 2)]
 
-        for test, reason in TestConfig.Simulator.unsupported:
-            # We add a '*' before test to eliminate the surprise of needing
-            # a '*' before the name of a test function.
-            if fnmatch(item_name, '*' + test):
-                pytest.xfail(reason)
+    for test, reason in unsupported:
+        # We add a '*' before test to eliminate the surprise of needing
+        # a '*' before the name of a test function.
+        if fnmatch(item_name, "*" + test):
+            pytest.xfail(reason)
 
 
 def pytest_terminal_summary(terminalreporter):
