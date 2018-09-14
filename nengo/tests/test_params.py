@@ -390,3 +390,16 @@ def test_frozenobject_reprs():
     assert repr(TestFO(3)) == "TestFO()"
     assert repr(TestFO(2)) == "TestFO(a=2)"
     assert repr(TestFO(2, b=3)) == "TestFO(a=2, b=3)"
+
+
+def test_frozenobject_missing_arg_repr():
+    class TestFO(params.FrozenObject):
+        a = params.NumberParam('a', default=3, readonly=True)
+
+        def __init__(self, a, b=4):
+            super(TestFO, self).__init__()
+            self.a = a
+
+    fo = TestFO(3)
+    assert repr(fo).startswith("<TestFO at")
+    assert fo._argreprs == "Cannot find 'b'"

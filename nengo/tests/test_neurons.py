@@ -3,9 +3,22 @@ import pytest
 
 import nengo
 from nengo.exceptions import BuildError, SimulationError
-from nengo.neurons import Direct, NeuronTypeParam
+from nengo.neurons import (
+    AdaptiveLIF,
+    AdaptiveLIFRate,
+    Direct,
+    Izhikevich,
+    LIF,
+    LIFRate,
+    NeuronType,
+    NeuronTypeParam,
+    RectifiedLinear,
+    Sigmoid,
+    SpikingRectifiedLinear,
+)
 from nengo.processes import WhiteSignal
 from nengo.solvers import LstsqL2nz
+from nengo.utils.compat import getfullargspec
 from nengo.utils.ensemble import tuning_curves
 from nengo.utils.matplotlib import implot, rasterplot
 from nengo.utils.numpy import rms, rmse
@@ -17,7 +30,7 @@ def test_lif_builtin(rng):
     t_final = 1.0
 
     N = 10
-    lif = nengo.LIF()
+    lif = LIF()
     gain, bias = lif.gain_bias(
         rng.uniform(80, 100, size=N), rng.uniform(-1, 1, size=N))
 
@@ -49,7 +62,7 @@ def test_lif(Simulator, plt, rng, logger, dt):
     with m:
         ins = nengo.Node(x)
         ens = nengo.Ensemble(
-            n, dimensions=1, neuron_type=nengo.LIF(),
+            n, dimensions=1, neuron_type=LIF(),
             encoders=encoders, max_rates=max_rates, intercepts=intercepts)
         nengo.Connection(
             ins, ens.neurons, transform=np.ones((n, 1)), synapse=None)
@@ -98,7 +111,7 @@ def test_lif_min_voltage(Simulator, plt, min_voltage, seed):
     with model:
         stim = nengo.Node(lambda t: np.sin(t * 4 * np.pi))
         ens = nengo.Ensemble(n_neurons=10, dimensions=1,
-                             neuron_type=nengo.LIF(min_voltage=min_voltage))
+                             neuron_type=LIF(min_voltage=min_voltage))
         nengo.Connection(stim, ens, synapse=None)
         p_val = nengo.Probe(ens, synapse=0.01)
         p_voltage = nengo.Probe(ens.neurons, 'voltage')
@@ -127,7 +140,7 @@ def test_lif_zero_tau_ref(Simulator):
         ens = nengo.Ensemble(1, 1,
                              encoders=[[1]],
                              max_rates=[max_rate],
-                             neuron_type=nengo.LIF(tau_ref=0))
+                             neuron_type=LIF(tau_ref=0))
         nengo.Connection(nengo.Node(output=10), ens)
         p = nengo.Probe(ens.neurons)
     with Simulator(m) as sim:
@@ -149,7 +162,7 @@ def test_alif_rate(Simulator, plt):
                            max_rates=max_rates,
                            intercepts=intercepts,
                            encoders=encoders,
-                           neuron_type=nengo.AdaptiveLIFRate())
+                           neuron_type=AdaptiveLIFRate())
         nengo.Connection(u, a, synapse=None)
         ap = nengo.Probe(a.neurons)
 
@@ -192,10 +205,10 @@ def test_alif(Simulator, plt):
     model = nengo.Network()
     with model:
         u = nengo.Node(output=0.5)
-        a = nengo.Ensemble(neuron_type=nengo.AdaptiveLIFRate(**nparams),
+        a = nengo.Ensemble(neuron_type=AdaptiveLIFRate(**nparams),
                            dimensions=1,
                            **eparams)
-        b = nengo.Ensemble(neuron_type=nengo.AdaptiveLIF(**nparams),
+        b = nengo.Ensemble(neuron_type=AdaptiveLIF(**nparams),
                            dimensions=1,
                            **eparams)
         nengo.Connection(u, a, synapse=0)
@@ -240,16 +253,16 @@ def test_izhikevich(Simulator, plt, seed, rng):
 
         # Seed the ensembles (not network) so we get the same sort of neurons
         ens_args = {'n_neurons': 4, 'dimensions': 1, 'seed': seed}
-        rs = nengo.Ensemble(neuron_type=nengo.Izhikevich(), **ens_args)
-        ib = nengo.Ensemble(neuron_type=nengo.Izhikevich(
+        rs = nengo.Ensemble(neuron_type=Izhikevich(), **ens_args)
+        ib = nengo.Ensemble(neuron_type=Izhikevich(
             reset_voltage=-55, reset_recovery=4), **ens_args)
-        ch = nengo.Ensemble(neuron_type=nengo.Izhikevich(
+        ch = nengo.Ensemble(neuron_type=Izhikevich(
             reset_voltage=-50, reset_recovery=2), **ens_args)
-        fs = nengo.Ensemble(neuron_type=nengo.Izhikevich(tau_recovery=0.1),
+        fs = nengo.Ensemble(neuron_type=Izhikevich(tau_recovery=0.1),
                             **ens_args)
-        lts = nengo.Ensemble(neuron_type=nengo.Izhikevich(coupling=0.25),
+        lts = nengo.Ensemble(neuron_type=Izhikevich(coupling=0.25),
                              **ens_args)
-        rz = nengo.Ensemble(neuron_type=nengo.Izhikevich(
+        rz = nengo.Ensemble(neuron_type=Izhikevich(
             tau_recovery=0.1, coupling=0.26), **ens_args)
 
         ensembles = (rs, ib, ch, fs, lts, rz)
@@ -293,7 +306,7 @@ def test_sigmoid_response_curves(Simulator, max_rate, intercept):
     - if max rate < rate at inflection point and intercept > 1
     """
     with nengo.Network() as m:
-        e = nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(),
+        e = nengo.Ensemble(1, 1, neuron_type=Sigmoid(),
                            max_rates=[max_rate], intercepts=[intercept])
 
     with Simulator(m) as sim:
@@ -310,7 +323,7 @@ def test_sigmoid_response_curves(Simulator, max_rate, intercept):
 def test_sigmoid_invalid(Simulator, max_rate, intercept):
     """Check that invalid sigmoid ensembles raise an error."""
     with nengo.Network() as m:
-        nengo.Ensemble(1, 1, neuron_type=nengo.Sigmoid(),
+        nengo.Ensemble(1, 1, neuron_type=Sigmoid(),
                        max_rates=[max_rate], intercepts=[intercept])
     with pytest.raises(BuildError):
         with Simulator(m):
@@ -360,10 +373,7 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
 
 
 @pytest.mark.parametrize('Neuron', [
-    nengo.LIF,
-    nengo.LIFRate,
-    nengo.RectifiedLinear,
-    nengo.SpikingRectifiedLinear,
+    LIF, LIFRate, RectifiedLinear, SpikingRectifiedLinear,
 ])
 def test_amplitude(Simulator, seed, rng, plt, Neuron):
     amp = 0.1
@@ -442,18 +452,18 @@ def test_neurontypeparam():
         ntp = NeuronTypeParam('ntp', default=None)
 
     inst = Test()
-    inst.ntp = nengo.LIF()
-    assert isinstance(inst.ntp, nengo.LIF)
+    inst.ntp = LIF()
+    assert isinstance(inst.ntp, LIF)
     with pytest.raises(ValueError):
         inst.ntp = 'a'
 
 
 def test_frozen():
     """Test attributes inherited from FrozenObject"""
-    a = nengo.LIF()
-    b = nengo.LIF()
-    c = nengo.LIF(tau_rc=0.3)
-    d = nengo.neurons.Izhikevich()
+    a = LIF()
+    b = LIF()
+    c = LIF(tau_rc=0.3)
+    d = Izhikevich()
 
     assert hash(a) == hash(a)
     assert hash(b) == hash(b)
@@ -475,95 +485,6 @@ def test_frozen():
         d.coupling = 8
 
 
-def test_argreprs():
-    """Test repr() for each neuron type."""
-    assert repr(nengo.Direct()) == "Direct()"
-
-    assert repr(nengo.RectifiedLinear()) == "RectifiedLinear()"
-    assert (repr(nengo.RectifiedLinear(amplitude=2))
-            == "RectifiedLinear(amplitude=2)")
-
-    assert repr(nengo.SpikingRectifiedLinear()) == "SpikingRectifiedLinear()"
-    assert (repr(nengo.SpikingRectifiedLinear(amplitude=2))
-            == "SpikingRectifiedLinear(amplitude=2)")
-
-    assert repr(nengo.Sigmoid()) == "Sigmoid()"
-    assert repr(nengo.Sigmoid(tau_ref=0.1)) == "Sigmoid(tau_ref=0.1)"
-
-    assert repr(nengo.LIFRate()) == "LIFRate()"
-    assert repr(nengo.LIFRate(tau_rc=0.1)) == "LIFRate(tau_rc=0.1)"
-    assert repr(nengo.LIFRate(tau_ref=0.1)) == "LIFRate(tau_ref=0.1)"
-    assert repr(nengo.LIFRate(amplitude=2)) == "LIFRate(amplitude=2)"
-    assert (repr(nengo.LIFRate(tau_rc=0.05, tau_ref=0.02))
-            == "LIFRate(tau_rc=0.05, tau_ref=0.02)")
-    assert (repr(nengo.LIFRate(tau_rc=0.05, amplitude=2))
-            == "LIFRate(tau_rc=0.05, amplitude=2)")
-    assert (repr(nengo.LIFRate(tau_ref=0.02, amplitude=2))
-            == "LIFRate(tau_ref=0.02, amplitude=2)")
-    assert (repr(nengo.LIFRate(tau_rc=0.05, tau_ref=0.02, amplitude=2))
-            == "LIFRate(tau_rc=0.05, tau_ref=0.02, amplitude=2)")
-
-    assert repr(nengo.LIF()) == "LIF()"
-    assert repr(nengo.LIF(tau_rc=0.1)) == "LIF(tau_rc=0.1)"
-    assert repr(nengo.LIF(tau_ref=0.1)) == "LIF(tau_ref=0.1)"
-    assert repr(nengo.LIF(amplitude=2)) == "LIF(amplitude=2)"
-    assert repr(nengo.LIF(min_voltage=-0.5)) == "LIF(min_voltage=-0.5)"
-    assert (repr(nengo.LIF(tau_rc=0.05, tau_ref=0.02))
-            == "LIF(tau_rc=0.05, tau_ref=0.02)")
-    assert (repr(nengo.LIF(tau_rc=0.05, amplitude=2))
-            == "LIF(tau_rc=0.05, amplitude=2)")
-    assert (repr(nengo.LIF(tau_ref=0.02, amplitude=2))
-            == "LIF(tau_ref=0.02, amplitude=2)")
-    assert (repr(nengo.LIF(tau_rc=0.05, tau_ref=0.02, amplitude=2))
-            == "LIF(tau_rc=0.05, tau_ref=0.02, amplitude=2)")
-    assert (repr(nengo.LIF(tau_rc=0.05, tau_ref=0.02,
-                           min_voltage=-0.5, amplitude=2))
-            == "LIF(tau_rc=0.05, tau_ref=0.02, min_voltage=-0.5, amplitude=2)")
-
-    assert repr(nengo.AdaptiveLIFRate()) == "AdaptiveLIFRate()"
-    assert (repr(nengo.AdaptiveLIFRate(tau_n=0.1))
-            == "AdaptiveLIFRate(tau_n=0.1)")
-    assert (repr(nengo.AdaptiveLIFRate(inc_n=0.5))
-            == "AdaptiveLIFRate(inc_n=0.5)")
-    assert (repr(nengo.AdaptiveLIFRate(tau_rc=0.1))
-            == "AdaptiveLIFRate(tau_rc=0.1)")
-    assert (repr(nengo.AdaptiveLIFRate(tau_ref=0.1))
-            == "AdaptiveLIFRate(tau_ref=0.1)")
-    assert (repr(nengo.AdaptiveLIFRate(amplitude=2))
-            == "AdaptiveLIFRate(amplitude=2)")
-    assert (repr(nengo.AdaptiveLIFRate(tau_n=0.1, inc_n=0.5, tau_rc=0.05,
-                                       tau_ref=0.02, amplitude=2))
-            == "AdaptiveLIFRate(tau_n=0.1, inc_n=0.5, tau_rc=0.05, "
-               "tau_ref=0.02, amplitude=2)")
-
-    assert repr(nengo.AdaptiveLIF()) == "AdaptiveLIF()"
-    assert repr(nengo.AdaptiveLIF(tau_n=0.1)) == "AdaptiveLIF(tau_n=0.1)"
-    assert repr(nengo.AdaptiveLIF(inc_n=0.5)) == "AdaptiveLIF(inc_n=0.5)"
-    assert repr(nengo.AdaptiveLIF(tau_rc=0.1)) == "AdaptiveLIF(tau_rc=0.1)"
-    assert repr(nengo.AdaptiveLIF(tau_ref=0.1)) == "AdaptiveLIF(tau_ref=0.1)"
-    assert (repr(nengo.AdaptiveLIF(min_voltage=-0.5))
-            == "AdaptiveLIF(min_voltage=-0.5)")
-    assert (repr(nengo.AdaptiveLIF(tau_n=0.1, inc_n=0.5, tau_rc=0.05,
-                                   tau_ref=0.02, min_voltage=-0.5,
-                                   amplitude=2))
-            == "AdaptiveLIF(tau_n=0.1, inc_n=0.5, tau_rc=0.05, tau_ref=0.02, "
-               "min_voltage=-0.5, amplitude=2)")
-
-    assert repr(nengo.Izhikevich()) == "Izhikevich()"
-    assert (repr(nengo.Izhikevich(tau_recovery=0.1))
-            == "Izhikevich(tau_recovery=0.1)")
-    assert (repr(nengo.Izhikevich(coupling=0.3))
-            == "Izhikevich(coupling=0.3)")
-    assert (repr(nengo.Izhikevich(reset_voltage=-1))
-            == "Izhikevich(reset_voltage=-1)")
-    assert (repr(nengo.Izhikevich(reset_recovery=5))
-            == "Izhikevich(reset_recovery=5)")
-    assert (repr(nengo.Izhikevich(tau_recovery=0.1, coupling=0.3,
-                                  reset_voltage=-1, reset_recovery=5))
-            == "Izhikevich(tau_recovery=0.1, coupling=0.3, "
-               "reset_voltage=-1, reset_recovery=5)")
-
-
 @pytest.mark.filterwarnings('ignore:divide by zero')
 def test_direct_mode_nonfinite_value(Simulator):
     with nengo.Network() as model:
@@ -578,7 +499,7 @@ def test_direct_mode_nonfinite_value(Simulator):
 
 @pytest.mark.parametrize("generic", (True, False))
 def test_gain_bias(rng, nl_nodirect, generic):
-    if nl_nodirect == nengo.Sigmoid and generic:
+    if nl_nodirect == Sigmoid and generic:
         # the generic method doesn't work with sigmoid neurons (because they're
         # always positive). that's not a failure, because the sigmoid neurons
         # never need to use the generic method normally, so we'll just skip
@@ -592,15 +513,14 @@ def test_gain_bias(rng, nl_nodirect, generic):
     tolerance = 0.1 if generic else 1e-8
 
     if generic:
-        gain, bias = nengo.neurons.NeuronType.gain_bias(nl, max_rates,
-                                                        intercepts)
+        gain, bias = NeuronType.gain_bias(nl, max_rates, intercepts)
     else:
         gain, bias = nl.gain_bias(max_rates, intercepts)
 
     assert np.allclose(nl.rates(np.ones(n), gain, bias), max_rates,
                        atol=tolerance)
 
-    if nl_nodirect == nengo.Sigmoid:
+    if nl_nodirect == Sigmoid:
         threshold = 0.5 / nl.tau_ref
     else:
         threshold = 0
@@ -610,9 +530,94 @@ def test_gain_bias(rng, nl_nodirect, generic):
 
     if generic:
         max_rates0, intercepts0 = (
-            nengo.neurons.NeuronType.max_rates_intercepts(nl, gain, bias))
+            NeuronType.max_rates_intercepts(nl, gain, bias))
     else:
         max_rates0, intercepts0 = nl.max_rates_intercepts(gain, bias)
 
     assert np.allclose(max_rates, max_rates0, atol=tolerance)
     assert np.allclose(intercepts, intercepts0, atol=tolerance)
+
+
+def test_argreprs():
+    """Test repr() for each neuron type."""
+
+    def check_init_args(cls, args):
+        assert getfullargspec(cls.__init__).args[1:] == args
+
+    def check_repr(obj):
+        assert eval(repr(obj)) == obj
+
+    check_init_args(Direct, [])
+    check_repr(Direct())
+
+    check_init_args(RectifiedLinear, ['amplitude'])
+    check_repr(RectifiedLinear())
+    check_repr(RectifiedLinear(amplitude=2))
+
+    check_init_args(SpikingRectifiedLinear, ['amplitude'])
+    check_repr(SpikingRectifiedLinear())
+    check_repr(SpikingRectifiedLinear(amplitude=2))
+
+    check_init_args(Sigmoid, ['tau_ref'])
+    check_repr(Sigmoid())
+    check_repr(Sigmoid(tau_ref=0.1))
+
+    check_init_args(LIFRate, ['tau_rc', 'tau_ref', 'amplitude'])
+    check_repr(LIFRate())
+    check_repr(LIFRate(tau_rc=0.1))
+    check_repr(LIFRate(tau_ref=0.1))
+    check_repr(LIFRate(amplitude=2))
+    check_repr(LIFRate(tau_rc=0.05, tau_ref=0.02))
+    check_repr(LIFRate(tau_rc=0.05, amplitude=2))
+    check_repr(LIFRate(tau_ref=0.02, amplitude=2))
+    check_repr(LIFRate(tau_rc=0.05, tau_ref=0.02, amplitude=2))
+
+    check_init_args(LIF, ['tau_rc', 'tau_ref', 'min_voltage', 'amplitude'])
+    check_repr(LIF())
+    check_repr(LIF(tau_rc=0.1))
+    check_repr(LIF(tau_ref=0.1))
+    check_repr(LIF(amplitude=2))
+    check_repr(LIF(min_voltage=-0.5))
+    check_repr(LIF(tau_rc=0.05, tau_ref=0.02))
+    check_repr(LIF(tau_rc=0.05, amplitude=2))
+    check_repr(LIF(tau_ref=0.02, amplitude=2))
+    check_repr(LIF(tau_rc=0.05, tau_ref=0.02, amplitude=2))
+    check_repr(LIF(tau_rc=0.05, tau_ref=0.02, min_voltage=-0.5, amplitude=2))
+
+    check_init_args(AdaptiveLIFRate, [
+        'tau_n', 'inc_n', 'tau_rc', 'tau_ref', 'amplitude'])
+    check_repr(AdaptiveLIFRate())
+    check_repr(AdaptiveLIFRate(tau_n=0.1))
+    check_repr(AdaptiveLIFRate(inc_n=0.5))
+    check_repr(AdaptiveLIFRate(tau_rc=0.1))
+    check_repr(AdaptiveLIFRate(tau_ref=0.1))
+    check_repr(AdaptiveLIFRate(amplitude=2))
+    check_repr(AdaptiveLIFRate(
+        tau_n=0.1, inc_n=0.5, tau_rc=0.05, tau_ref=0.02, amplitude=2))
+
+    check_init_args(AdaptiveLIF, [
+        'tau_n', 'inc_n', 'tau_rc', 'tau_ref', 'min_voltage', 'amplitude'])
+    check_repr(AdaptiveLIF())
+    check_repr(AdaptiveLIF(tau_n=0.1))
+    check_repr(AdaptiveLIF(inc_n=0.5))
+    check_repr(AdaptiveLIF(tau_rc=0.1))
+    check_repr(AdaptiveLIF(tau_ref=0.1))
+    check_repr(AdaptiveLIF(min_voltage=-0.5))
+    check_repr(AdaptiveLIF(
+        tau_n=0.1,
+        inc_n=0.5,
+        tau_rc=0.05,
+        tau_ref=0.02,
+        min_voltage=-0.5,
+        amplitude=2,
+    ))
+
+    check_init_args(Izhikevich, [
+        'tau_recovery', 'coupling', 'reset_voltage', 'reset_recovery'])
+    check_repr(Izhikevich())
+    check_repr(Izhikevich(tau_recovery=0.1))
+    check_repr(Izhikevich(coupling=0.3))
+    check_repr(Izhikevich(reset_voltage=-1))
+    check_repr(Izhikevich(reset_recovery=5))
+    check_repr(Izhikevich(
+        tau_recovery=0.1, coupling=0.3, reset_voltage=-1, reset_recovery=5))

@@ -119,6 +119,9 @@ Release History
   given ``size_in``/``size_out``.
   (`#1452 <https://github.com/nengo/nengo/issues/1452>`_,
   `#1434 <https://github.com/nengo/nengo/pull/1434>`_)
+- Several objects had elements missing from their string representations.
+  These strings are now automatically generated and tested to be complete.
+  (`#1472 <https://github.com/nengo/nengo/pull/1472>`__)
 
 2.8.0 (June 9, 2018)
 ====================

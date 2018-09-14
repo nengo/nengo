@@ -79,9 +79,6 @@ class PDF(Distribution):
         cumsum[1:] = cumsum[:-1] + cumsum[1:]
         self.cdf = cumsum
 
-    def __repr__(self):
-        return "PDF(x=%r, p=%r)" % (self.x, self.p)
-
     def sample(self, n, d=None, rng=np.random):
         shape = self._sample_shape(n, d)
         return np.interp(rng.uniform(size=shape), self.cdf, self.x)
@@ -117,10 +114,6 @@ class Uniform(Distribution):
         self.high = high
         self.integer = integer
 
-    def __repr__(self):
-        return "Uniform(low=%r, high=%r%s)" % (
-            self.low, self.high, ", integer=True" if self.integer else "")
-
     def sample(self, n, d=None, rng=np.random):
         shape = self._sample_shape(n, d)
         if self.integer:
@@ -154,9 +147,6 @@ class Gaussian(Distribution):
         super(Gaussian, self).__init__()
         self.mean = mean
         self.std = std
-
-    def __repr__(self):
-        return "Gaussian(mean=%r, std=%r)" % (self.mean, self.std)
 
     def sample(self, n, d=None, rng=np.random):
         shape = self._sample_shape(n, d)
@@ -241,14 +231,6 @@ class UniformHypersphere(Distribution):
         self.surface = surface
         self.min_magnitude = min_magnitude
 
-    def __repr__(self):
-        args = []
-        if self.surface:
-            args.append("surface=%s" % self.surface)
-        if self.min_magnitude > 0:
-            args.append("min_magnitude=%r" % self.min_magnitude)
-        return "%s(%s)" % (type(self).__name__, ', '.join(args))
-
     def sample(self, n, d=None, rng=np.random):
         if d is None or d < 1:  # check this, since other dists allow d = None
             raise ValidationError("Dimensions must be a positive integer", 'd')
@@ -308,11 +290,6 @@ class Choice(Distribution):
                                   % total, attr='weights', obj=self)
         self.p = weights / total
 
-    def __repr__(self):
-        return "Choice(options=%r%s)" % (
-            self.options,
-            "" if self.weights is None else ", weights=%r" % self.weights)
-
     @property
     def dimensions(self):
         return np.prod(self.options.shape[1:])
@@ -347,9 +324,6 @@ class Samples(Distribution):
     def __init__(self, samples):
         super(Samples, self).__init__()
         self.samples = samples
-
-    def __repr__(self):
-        return "Samples(samples=%r)" % (self.samples,)
 
     def sample(self, n, d=None, rng=np.random):
         samples = np.array(self.samples)
@@ -402,9 +376,6 @@ class SqrtBeta(Distribution):
         super(SqrtBeta, self).__init__()
         self.n = n
         self.m = m
-
-    def __repr__(self):
-        return "%s(n=%r, m=%r)" % (type(self).__name__, self.n, self.m)
 
     def sample(self, num, d=None, rng=np.random):
         shape = self._sample_shape(num, d)
@@ -489,9 +460,13 @@ class SubvectorLength(SqrtBeta):
         super(SubvectorLength, self).__init__(
             dimensions - subdimensions, subdimensions)
 
-    def __repr__(self):
-        return "%s(%r, subdimensions=%r)" % (
-            type(self).__name__, self.n + self.m, self.m)
+    @property
+    def dimensions(self):
+        return self.n + self.m
+
+    @property
+    def subdimensions(self):
+        return self.m
 
 
 class CosineSimilarity(SubvectorLength):

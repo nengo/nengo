@@ -1,9 +1,23 @@
 import numpy as np
+from numpy import array  # pylint: disable=unused-import
 import pytest
 
-import nengo.dists as dists
+from nengo.dists import (
+    Choice,
+    CosineSimilarity,
+    DistOrArrayParam,
+    Exponential,
+    Gaussian,
+    PDF,
+    Samples,
+    SqrtBeta,
+    SubvectorLength,
+    Uniform,
+    UniformHypersphere,
+)
 import nengo.utils.numpy as npext
 from nengo.exceptions import ValidationError
+from nengo.utils.compat import getfullargspec
 
 
 def test_pdf(rng):
@@ -14,7 +28,7 @@ def test_pdf(rng):
     xref = np.linspace(-2, 2, 101)
     pref = f(xref)
     pref /= pref.sum()
-    dist = dists.PDF(xref, pref)
+    dist = PDF(xref, pref)
 
     n = 100000
     samples = dist.sample(n, rng=rng)
@@ -30,7 +44,7 @@ def test_pdf(rng):
 @pytest.mark.parametrize("low,high", [(-2, -1), (-1, 1), (1, 2), (1, -1)])
 def test_uniform(low, high, rng):
     n = 100
-    dist = dists.Uniform(low, high)
+    dist = Uniform(low, high)
     samples = dist.sample(n, rng=rng)
     if low < high:
         assert np.all(samples >= low)
@@ -47,9 +61,9 @@ def test_gaussian(mean, std, rng):
     n = 100
     if std <= 0:
         with pytest.raises(ValueError):
-            dist = dists.Gaussian(mean, std)
+            dist = Gaussian(mean, std)
     else:
-        dist = dists.Gaussian(mean, std)
+        dist = Gaussian(mean, std)
         samples = dist.sample(n, rng=rng)
         assert abs(np.mean(samples) - mean) < 2 * std / np.sqrt(n)
         assert abs(np.std(samples) - std) < 0.25  # using chi2 for n=100
@@ -59,7 +73,7 @@ def test_gaussian(mean, std, rng):
     (1., 0., np.inf), (10., 0., 1.), (0.1, 0.3, 1.0)])
 def test_exponential(scale, shift, high, rng):
     n = 100
-    dist = dists.Exponential(scale, shift=shift, high=high)
+    dist = Exponential(scale, shift=shift, high=high)
     samples = dist.sample(n, rng=rng)
     assert np.all(samples >= shift)
     assert np.all(samples <= high)
@@ -73,7 +87,7 @@ def test_exponential(scale, shift, high, rng):
     "min_magnitude,d", [(0, 1), (0, 2), (0, 5), (0.6, 1), (0.3, 2), (0.4, 5)])
 def test_hypersphere_volume(min_magnitude, d, rng):
     n = 150 * d
-    dist = dists.UniformHypersphere(min_magnitude=min_magnitude)
+    dist = UniformHypersphere(min_magnitude=min_magnitude)
     samples = dist.sample(n, d, rng=rng)
     assert samples.shape == (n, d)
     assert np.allclose(np.mean(samples, axis=0), 0, atol=0.1)
@@ -83,7 +97,7 @@ def test_hypersphere_volume(min_magnitude, d, rng):
 @pytest.mark.parametrize("dimensions", [1, 2, 5])
 def test_hypersphere_surface(dimensions, rng):
     n = 150 * dimensions
-    dist = dists.UniformHypersphere(surface=True)
+    dist = UniformHypersphere(surface=True)
     samples = dist.sample(n, dimensions, rng=rng)
     assert samples.shape == (n, dimensions)
     assert np.allclose(npext.norm(samples, axis=1), 1)
@@ -92,12 +106,12 @@ def test_hypersphere_surface(dimensions, rng):
 
 def test_hypersphere_dimension_fail(rng):
     with pytest.raises(ValueError):
-        dists.UniformHypersphere(0).sample(1, 0)
+        UniformHypersphere(0).sample(1, 0)
 
 
 def test_hypersphere_warns(rng):
     with pytest.warns(UserWarning):
-        dists.UniformHypersphere(surface=True, min_magnitude=0.1)
+        UniformHypersphere(surface=True, min_magnitude=0.1)
 
 
 @pytest.mark.parametrize("weights", [None, [5, 1, 2, 9], [3, 2, 1, 0]])
@@ -106,7 +120,7 @@ def test_choice(weights, rng):
     choices = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
     N = len(choices)
 
-    dist = dists.Choice(choices, weights=weights)
+    dist = Choice(choices, weights=weights)
     # If d is passed, it has to match
     with pytest.raises(ValueError):
         dist.sample(n, d=4, rng=rng)
@@ -125,14 +139,14 @@ def test_choice(weights, rng):
 @pytest.mark.parametrize("shape", [(12, 2), (7, 1), (7,), (1, 1)])
 def test_samples(shape, rng):
     samples = rng.random_sample(size=shape)
-    d = dists.Samples(samples)
+    d = Samples(samples)
     dims = None if len(shape) == 1 else shape[1]
     assert np.allclose(d.sample(shape[0], dims), samples)
 
 
 @pytest.mark.parametrize("samples", [[1., 2., 3.], [[1, 2], [3, 4]]])
 def test_samples_list(samples):
-    d = dists.Samples(samples)
+    d = Samples(samples)
     shape = np.array(samples).shape
     dims = None if len(shape) == 1 else shape[1]
     assert np.allclose(d.sample(shape[0], dims), samples)
@@ -141,15 +155,15 @@ def test_samples_list(samples):
 def test_samples_errors(rng):
     samples = rng.random_sample(size=(12, 2))
     with pytest.raises(ValidationError):
-        dists.Samples(samples).sample(11, 2)
+        Samples(samples).sample(11, 2)
     with pytest.raises(ValidationError):
-        dists.Samples(samples).sample(12, 1)
+        Samples(samples).sample(12, 1)
     with pytest.raises(ValidationError):
-        dists.Samples(samples).sample(12)
+        Samples(samples).sample(12)
 
     samples = rng.random_sample(size=12)
     with pytest.raises(ValidationError):
-        dists.Samples(samples).sample(12, 2)
+        Samples(samples).sample(12, 2)
 
 
 @pytest.mark.parametrize("n,m", [(99, 1), (50, 50)])
@@ -162,7 +176,7 @@ def test_sqrt_beta(n, m, rng):
     expectation, _ = np.histogram(
         npext.norm(vectors[:, :m], axis=1), bins=num_bins)
 
-    dist = dists.SqrtBeta(n, m)
+    dist = SqrtBeta(n, m)
     samples = dist.sample(num_samples, 1, rng=rng)
     hist, _ = np.histogram(samples, bins=num_bins)
 
@@ -177,7 +191,7 @@ def test_sqrt_beta_analytical(n, m, rng):
     dt = 0.001
     x = np.arange(dt, 1+dt, dt)
 
-    dist = dists.SqrtBeta(n, m)
+    dist = SqrtBeta(n, m)
 
     pdf = dist.pdf(x)
     cdf = dist.cdf(x)
@@ -208,8 +222,8 @@ def test_cosine_similarity(d, rng):
     num_bins = 5
 
     # Check that it gives a single dimension from UniformHypersphere
-    exp_dist = dists.UniformHypersphere(surface=True)
-    act_dist = dists.CosineSimilarity(d)
+    exp_dist = UniformHypersphere(surface=True)
+    act_dist = CosineSimilarity(d)
 
     exp = exp_dist.sample(num_samples, d, rng=rng)[:, 0]
     act = act_dist.sample(num_samples, rng=rng)
@@ -231,7 +245,7 @@ def test_cosine_analytical(d):
         # unnormalized CosineSimilarity distribution, derived by Eric H.
         return (1 - x*x)**((d - 3) / 2.0)
 
-    dist = dists.CosineSimilarity(d)
+    dist = CosineSimilarity(d)
 
     pdf_exp = dist.pdf(x)
     pdf_act = p(x, d)
@@ -255,7 +269,7 @@ def test_cosine_sample_shape(seed):
     # sampling (n, d) should be the exact same as sampling (n*d,)
     n = 3
     d = 4
-    dist = dists.CosineSimilarity(2)
+    dist = CosineSimilarity(2)
     a = dist.sample(n, d, rng=np.random.RandomState(seed))
     b = dist.sample(n*d, rng=np.random.RandomState(seed))
     assert np.allclose(a.flatten(), b)
@@ -268,8 +282,8 @@ def test_cosine_intercept(d, p, rng):
 
     num_samples = 250
 
-    exp_dist = dists.UniformHypersphere(surface=True)
-    act_dist = dists.CosineSimilarity(d)
+    exp_dist = UniformHypersphere(surface=True)
+    act_dist = CosineSimilarity(d)
 
     dots = exp_dist.sample(num_samples, d, rng=rng)[:, 0]
 
@@ -281,12 +295,11 @@ def test_cosine_intercept(d, p, rng):
 def test_distorarrayparam():
     """DistOrArrayParams can be distributions or samples."""
     class Test(object):
-        dp = dists.DistOrArrayParam('dp',
-                                    default=None, sample_shape=['*', '*'])
+        dp = DistOrArrayParam('dp', default=None, sample_shape=['*', '*'])
 
     inst = Test()
-    inst.dp = dists.UniformHypersphere()
-    assert isinstance(inst.dp, dists.UniformHypersphere)
+    inst.dp = UniformHypersphere()
+    assert isinstance(inst.dp, UniformHypersphere)
     inst.dp = np.array([[1], [2], [3]])
     assert np.all(inst.dp == np.array([[1], [2], [3]]))
     with pytest.raises(ValueError):
@@ -299,14 +312,13 @@ def test_distorarrayparam():
 def test_distorarrayparam_sample_shape():
     """sample_shape dictates the shape of the sample that can be set."""
     class Test(object):
-        dp = dists.DistOrArrayParam(
-            'dp', default=None, sample_shape=['d1', 10])
+        dp = DistOrArrayParam('dp', default=None, sample_shape=['d1', 10])
         d1 = 4
 
     inst = Test()
     # Distributions are still cool
-    inst.dp = dists.UniformHypersphere()
-    assert isinstance(inst.dp, dists.UniformHypersphere)
+    inst.dp = UniformHypersphere()
+    assert isinstance(inst.dp, UniformHypersphere)
     # Must be shape (4, 10)
     inst.dp = np.ones((4, 10))
     assert np.all(inst.dp == np.ones((4, 10)))
@@ -317,9 +329,9 @@ def test_distorarrayparam_sample_shape():
 
 def test_frozen():
     """Test attributes inherited from FrozenObject"""
-    a = dists.Uniform(-0.3, 0.6)
-    b = dists.Uniform(-0.3, 0.6)
-    c = dists.Uniform(-0.2, 0.6)
+    a = Uniform(-0.3, 0.6)
+    b = Uniform(-0.3, 0.6)
+    c = Uniform(-0.2, 0.6)
 
     assert hash(a) == hash(a)
     assert hash(b) == hash(b)
@@ -331,3 +343,50 @@ def test_frozen():
     assert hash(a) != hash(c)  # not guaranteed, but highly likely
     assert b != c
     assert hash(b) != hash(c)  # not guaranteed, but highly likely
+
+
+def test_argreprs():
+
+    def check_init_args(cls, args):
+        assert getfullargspec(cls.__init__).args[1:] == args
+
+    def check_repr(obj):
+        assert eval(repr(obj)) == obj
+
+    check_init_args(PDF, ['x', 'p'])
+    check_repr(PDF([1, 2, 3], [0.1, 0.8, 0.1]))
+
+    check_init_args(Uniform, ['low', 'high', 'integer'])
+    check_repr(Uniform(1, 3))
+    check_repr(Uniform(1, 4, integer=True))
+
+    check_init_args(Gaussian, ['mean', 'std'])
+    check_repr(Gaussian(0, 2))
+
+    check_init_args(Exponential, ['scale', 'shift', 'high'])
+    check_repr(Exponential(2.))
+    check_repr(Exponential(2., shift=0.1))
+    check_repr(Exponential(2., shift=0.1, high=10.))
+
+    check_init_args(UniformHypersphere, ['surface', 'min_magnitude'])
+    check_repr(UniformHypersphere())
+    check_repr(UniformHypersphere(surface=True))
+    check_repr(UniformHypersphere(min_magnitude=0.3))
+
+    check_init_args(Choice, ['options', 'weights'])
+    check_repr(Choice([3, 2, 1]))
+    check_repr(Choice([3, 2, 1], weights=[0.1, 0.2, 0.7]))
+
+    check_init_args(Samples, ['samples'])
+    check_repr(Samples([3, 2, 1]))
+
+    check_init_args(SqrtBeta, ['n', 'm'])
+    check_repr(SqrtBeta(3))
+    check_repr(SqrtBeta(3, m=2))
+
+    check_init_args(SubvectorLength, ['dimensions', 'subdimensions'])
+    check_repr(SubvectorLength(6))
+    check_repr(SubvectorLength(6, 2))
+
+    check_init_args(CosineSimilarity, ['dimensions'])
+    check_repr(CosineSimilarity(6))

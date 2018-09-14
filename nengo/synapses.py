@@ -184,10 +184,6 @@ class LinearFilter(Synapse):
         self.den = den
         self.analog = analog
 
-    def __repr__(self):
-        return "%s(%s, %s, analog=%r)" % (
-            type(self).__name__, self.num, self.den, self.analog)
-
     def combine(self, obj):
         """Combine in series with another LinearFilter."""
         if not isinstance(obj, LinearFilter):
@@ -368,9 +364,6 @@ class Lowpass(LinearFilter):
         super(Lowpass, self).__init__([1], [tau, 1], **kwargs)
         self.tau = tau
 
-    def __repr__(self):
-        return "%s(%r)" % (type(self).__name__, self.tau)
-
     def make_step(self, shape_in, shape_out, dt, rng, y0=None,
                   dtype=np.float64, **kwargs):
         """Returns an optimized `.LinearFilter.Step` subclass."""
@@ -413,9 +406,6 @@ class Alpha(LinearFilter):
         super(Alpha, self).__init__([1], [tau**2, 2*tau, 1], **kwargs)
         self.tau = tau
 
-    def __repr__(self):
-        return "%s(%r)" % (type(self).__name__, self.tau)
-
     def make_step(self, shape_in, shape_out, dt, rng, y0=None,
                   dtype=np.float64, **kwargs):
         """Returns an optimized `.LinearFilter.Step` subclass."""
@@ -450,9 +440,6 @@ class Triangle(Synapse):
     def __init__(self, t, **kwargs):
         super(Triangle, self).__init__(**kwargs)
         self.t = t
-
-    def __repr__(self):
-        return "%s(%r)" % (type(self).__name__, self.t)
 
     def make_step(self, shape_in, shape_out, dt, rng, y0=None,
                   dtype=np.float64):

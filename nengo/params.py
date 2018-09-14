@@ -45,6 +45,13 @@ def iter_params(obj):
             isinstance(getattr(obj, name), ObsoleteParam))
 
 
+def equal(a, b):
+    if is_array_like(a) or is_array_like(b):
+        return np.array_equal(a, b)
+    else:
+        return a == b
+
+
 class Parameter(object):
     """Simple descriptor for storing configuration parameters.
 
@@ -182,10 +189,7 @@ class Parameter(object):
         a = self.__get__(instance_a, None)
         b = self.__get__(instance_b, None)
         if self.equatable:
-            if is_array_like(a) or is_array_like(b):
-                return np.array_equal(a, b)
-            else:
-                return a == b
+            return equal(a, b)
         else:
             return a is b
 
@@ -520,8 +524,7 @@ class FrozenObject(object):
             if not p.readonly:
                 msg = "All parameters of a FrozenObject must be readonly"
                 raise ReadonlyError(attr=p, obj=self, msg=msg)
-
-        self._argrepr_params_defaults = None
+        self.__argreprs = None
 
     @property
     def _params(self):
@@ -556,43 +559,41 @@ class FrozenObject(object):
         self.__dict__.update(state)
 
     def __repr__(self):
+        if is_string(self._argreprs):
+            return "<%s at 0x%x>" % (type(self).__name__, id(self))
         return "%s(%s)" % (type(self).__name__, ", ".join(self._argreprs))
 
     @property
     def _argreprs(self):
-        if self._argrepr_params_defaults is None:
-            self._argrepr_params_defaults = self._argrepr_params()
+        if self.__argreprs is not None:
+            return self.__argreprs
 
-        return [
-            "%s=%s" % (k, getattr(self, k))
-            for k, default in self._argrepr_params_defaults
-            if getattr(self, k) != default
-        ]
+        # get arguments to display from __init__ functions
+        spec = getfullargspec(type(self).__init__)
+        defaults = {}
+        if spec.defaults is not None:
+            defaults.update(
+                zip(spec.args[-len(spec.defaults):], spec.defaults)
+            )
 
-    def _argrepr_params(self):
-        """Params and defaults to be listed in this object's ``repr``."""
+        self.__argreprs = []
+        for arg in spec.args[1:]:  # start at 1 to drop `self`
+            if not hasattr(self, arg):
+                # We rely on storing the initial arguments. If we don't have
+                # them, we don't auto-generate a repr.
+                self.__argreprs = "Cannot find %r" % arg
+                break
+            value = getattr(self, arg)
 
-        # get default values from __init__'s
-        arg_order = []
-        arg_defaults = []
-        for t in type(self).__mro__[:-1]:
-            spec = getfullargspec(t.__init__)
-            arg_order.extend(spec.args)
-            if spec.defaults is not None:
-                arg_defaults.extend(zip(spec.args[-len(spec.defaults):],
-                                        spec.defaults))
+            param = self._paramdict.get(arg, None)
+            if arg in defaults:
+                not_default = not equal(value, defaults[arg])
+            elif param is not None and param.default is not Unconfigurable:
+                not_default = not equal(value, param.default)
+            else:
+                not_default = True
 
-        # note: added in reverse order so that if there were duplicates
-        # the superclass defaults get overridden
-        arg_defaults = dict(arg_defaults[::-1])
+            if not_default:
+                self.__argreprs.append("%s=%r" % (arg, value))
 
-        # sort parameter attributes by their order in constructor
-        members = sorted(inspect.getmembers(type(self)), key=lambda x: (
-            arg_order.index(x[0]) if x[0] in arg_order
-            else np.iinfo(np.int32).max, x[0]))
-
-        return [
-            (k, arg_defaults[v.name] if v.default is Unconfigurable
-             else v.default)
-            for k, v in members if isinstance(v, Parameter)
-        ]
+        return self.__argreprs
