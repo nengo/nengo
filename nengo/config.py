@@ -417,10 +417,10 @@ class Config:
                               "keyword with an unconfigurable parameter.")
 
         for config in reversed(Config.context):
-
-            # If a default has been set for this config, return it
-            if nengo_cls in config.params and config[nengo_cls] in desc:
-                return getattr(config[nengo_cls], param)
+            for cls in nengo_cls.__mro__:
+                # If a default has been set for this config, return it
+                if cls in config.params and config[cls] in desc:
+                    return getattr(config[cls], param)
 
         # Otherwise, return the param default
         return desc.default

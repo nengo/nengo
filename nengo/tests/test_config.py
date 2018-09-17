@@ -2,8 +2,9 @@ import pytest
 
 import nengo
 import nengo.synapses
+from nengo.config import SupportDefaultsMixin
 from nengo.exceptions import ConfigError, ReadonlyError
-from nengo.params import Parameter
+from nengo.params import Default, Parameter
 from nengo.utils.testing import ThreadedAssertion
 
 
@@ -213,3 +214,35 @@ def test_contains():
     cfg = nengo.Config(A)
     with pytest.raises(TypeError):
         A in cfg
+
+
+def test_subclass_config():
+    class MyParent(SupportDefaultsMixin):
+        p = Parameter('p', default='baba')
+
+        def __init__(self, p=Default):
+            self.p = p
+
+    class MyChild(MyParent):
+        pass
+
+    with nengo.Config(MyParent) as cfg:
+        cfg[MyParent].p = "value1"
+        a = MyChild()
+        assert a.p == "value1"
+
+    with nengo.Config(MyParent) as cfg:
+        cfg[MyChild].p = "value2"
+        a = MyChild()
+        assert a.p == "value2"
+
+    # If any config entry in the current context fits with the object being
+    # instantiated, we use that entry, even if there's an entry that's a
+    # "better" fit (i.e. same class) in a higher context.
+    with nengo.Config(MyParent) as cfg1:
+        cfg1[MyChild].p = "value1"
+
+        with nengo.Config(MyParent) as cfg2:
+            cfg2[MyParent].p = "value2"
+            a = MyChild()
+            assert a.p == "value2"
