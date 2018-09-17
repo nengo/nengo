@@ -38,7 +38,7 @@ def build_dense(model, transform, sig_in,
 
     op = ElementwiseInc if weights.ndim < 2 else DotInc
     model.add_op(op(weight_sig, sig_in, weighted,
-                    tag="%s.weights_elementwiseinc" % transform))
+                    tag="%s.apply_weights" % transform))
 
     return weighted, weight_sig
 
@@ -60,7 +60,7 @@ def build_convolution(model, transform, sig_in,
     model.add_op(Reset(weighted))
 
     model.add_op(ConvInc(weight_sig, sig_in, weighted, transform,
-                         tag="%s.weights_convinc" % transform))
+                         tag="%s.apply_weights" % transform))
 
     return weighted, weight_sig
 

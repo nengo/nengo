@@ -113,6 +113,7 @@ def test_signal_values():
 
 def test_signal_reshape():
     """Tests Signal.reshape"""
+    # check proper shape after reshape
     three_d = Signal(np.ones((2, 2, 2)))
     assert three_d.reshape((8,)).shape == (8,)
     assert three_d.reshape((4, 2)).shape == (4, 2)
@@ -122,6 +123,39 @@ def test_signal_reshape():
     assert three_d.reshape((-1, 4)).shape == (2, 4)
     assert three_d.reshape((2, -1, 2)).shape == (2, 2, 2)
     assert three_d.reshape((1, 2, 1, 2, 2, 1)).shape == (1, 2, 1, 2, 2, 1)
+
+    # check with non-contiguous arrays (and with offset)
+    value = np.arange(20).reshape(5, 4)
+    s = Signal(np.array(value), name='s')
+
+    s0slice = slice(0, 3), slice(None, None, 2)
+    s0shape = 2, 3
+    s0 = s[s0slice].reshape(*s0shape)
+    assert s.offset == 0
+    assert np.array_equal(s0.initial_value, value[s0slice].reshape(*s0shape))
+
+    s1slice = slice(1, None), slice(None, None, 2)
+    s1shape = 2, 4
+    s1 = s[s1slice].reshape(s1shape)
+    assert s1.offset == 4 * s1.dtype.itemsize
+    assert np.array_equal(s1.initial_value, value[s1slice].reshape(s1shape))
+
+    # check error if non-contiguous array cannot be reshaped without copy
+    s2slice = slice(None, None, 2), slice(None, None, 2)
+    s2shape = 2, 3
+    s2 = s[s2slice]
+    with pytest.raises(SignalError):
+        s2.reshape(s2shape)
+
+    # check that views are working properly (incrementing `s` effects views)
+    values = SignalDict()
+    values.init(s)
+    values.init(s0)
+    values.init(s1)
+
+    values[s] += 1
+    assert np.array_equal(values[s0], value[s0slice].reshape(s0shape) + 1)
+    assert np.array_equal(values[s1], value[s1slice].reshape(s1shape) + 1)
 
 
 def test_signal_slicing(rng):

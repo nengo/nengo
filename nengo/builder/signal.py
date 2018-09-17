@@ -239,9 +239,21 @@ class Signal(object):
         Any number of integers can be passed to this method,
         describing the desired shape of the returned signal.
         """
-        return Signal(self._initial_value.reshape(*shape),
+        if len(shape) == 1:
+            shape = shape[0]  # in case a tuple is passed in
+        initial_value = self.initial_value.view()
+        try:
+            # this raises AttributeError if cannot reshape without copying
+            initial_value.shape = shape
+        except AttributeError:
+            raise SignalError(
+                "Reshaping %s to %s would require the array to be copied "
+                "(because it is not contiguous), which is not supported" % (
+                    self, shape))
+        return Signal(initial_value,
                       name="%s.reshape(%s)" % (self.name, shape),
-                      base=self.base)
+                      base=self.base,
+                      offset=self.offset)
 
     def row(self):
         """Return a view on this signal with row vector shape."""

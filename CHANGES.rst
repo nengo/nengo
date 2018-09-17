@@ -80,6 +80,9 @@ Release History
 - ``FrozenObjects`` can control parameter initialization order when copying,
   which fixed a bug encountered when copying convolutional connections.
   (`#1493 <https://github.com/nengo/nengo/pull/1493>`__)
+- Fixed an issue in which reshaped signals were not having their offset
+  values preserved, causing issues with some node functions.
+  (`#1474 <https://github.com/nengo/nengo/pull/1474>`__)
 
 2.8.0 (June 9, 2018)
 ====================
