@@ -99,6 +99,30 @@ def test_hierarchical_seeding():
         assert same1seeds[same1obj] == same2seeds[same2obj]
 
 
+def test_seed_override(seed):
+    """Test that seeds are not overwritten by the seeding function"""
+    with nengo.Network(seed=seed - 1) as net:
+        a = nengo.Ensemble(10, 1, seed=seed - 2)
+        b = nengo.Ensemble(10, 1, seed=seed + 2)
+
+    model = nengo.builder.Model()
+    model.seeds[net] = seed + 1
+    model.seeds[a] = seed + 2
+
+    # note: intentionally setting this to the 'wrong' value, to check that
+    # it isn't being overridden (things with seeds set should have seeded=True)
+    model.seeded[net] = False
+    model.seeded[a] = False
+
+    model.build(net)
+
+    assert model.seeds[net] == seed + 1
+    assert model.seeds[a] == seed + 2
+    assert not model.seeded[net]
+    assert not model.seeded[a]
+    assert np.allclose(model.params[a].gain, model.params[b].gain)
+
+
 def test_signal():
     """Make sure assert_named_signals works."""
     Signal(np.array(0.))

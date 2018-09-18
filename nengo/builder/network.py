@@ -49,21 +49,13 @@ def build_network(model, network, progress=None):
     -----
     Sets ``model.params[network]`` to ``None``.
     """
-    def get_seed(obj, rng):
-        # Generate a seed no matter what, so that setting a seed or not on
-        # one object doesn't affect the seeds of other objects.
-        seed = rng.randint(npext.maxint)
-        return (seed if not hasattr(obj, 'seed') or obj.seed is None
-                else obj.seed)
-
     if model.toplevel is None:
         model.toplevel = network
-        model.seeds[network] = get_seed(network, np.random)
-        model.seeded[network] = getattr(network, 'seed', None) is not None
-        max_steps = len(network.all_objects) + 1  # +1 for top level network
+        seed_network(network, seeds=model.seeds, seeded=model.seeded)
 
         if progress is not None:
-            progress.max_steps = max_steps
+            # number of sub-objects, plus 1 to accont for this network
+            progress.max_steps = len(network.all_objects) + 1
 
             def build_callback(obj):
                 if isinstance(obj, tuple(network.objects)):
@@ -76,17 +68,6 @@ def build_network(model, network, progress=None):
     # Set config
     old_config = model.config
     model.config = network.config
-
-    # assign seeds to children
-    rng = np.random.RandomState(model.seeds[network])
-    # Put probes last so that they don't influence other seeds
-    sorted_types = (Connection, Ensemble, Network, Node, Probe)
-    assert all(tp in sorted_types for tp in network.objects)
-    for obj_type in sorted_types:
-        for obj in network.objects[obj_type]:
-            model.seeded[obj] = (model.seeded[network]
-                                 or getattr(obj, 'seed', None) is not None)
-            model.seeds[obj] = get_seed(obj, rng)
 
     # If this is the toplevel network, enter the decoder cache
     context = (model.decoder_cache if model.toplevel is network
@@ -126,3 +107,75 @@ def build_network(model, network, progress=None):
     # Unset config
     model.config = old_config
     model.params[network] = None
+
+
+def seed_network(network, seeds, seeded, base_rng=np.random):
+    """Populate seeding dictionaries for all objects in a network.
+
+    This includes all subnetworks.
+
+    Parameters
+    ----------
+    network : Network
+        The network containing all objects to set seeds for.
+    seeds : {object: int}
+        Pre-existing map from objects to seeds for those objects.
+        Will be modified in-place, but entries will not be
+        overwritten if already set.
+    seeded : {object: bool}
+        Pre-existing map from objects to a boolean indicating whether they
+        have a fixed seed either themselves or from a parent network (True),
+        or whether the seed is randomly generated (False).
+        Will be modified in-place, but entries will not be
+        overwritten if already set.
+    base_rng : np.random.RandomState
+        Random number generator to use to set the seeds.
+    """
+
+    # seed this base network
+    _set_seed(seeds, network, base_rng)
+    _set_seeded(seeded, network)
+
+    # seed all sub-objects
+    _seed_network(network, seeds, seeded)
+
+
+def _seed_network(network, seeds, seeded):
+    """Recursive helper to set seeds for all child objects and subnetworks"""
+    rng = np.random.RandomState(seeds[network])
+
+    # Put probes last so that they don't influence other seeds
+    sorted_types = (Connection, Ensemble, Network, Node, Probe)
+    assert all(tp in sorted_types for tp in network.objects)
+
+    # assign seeds to all child objects
+    for obj_type in sorted_types:
+        for obj in network.objects[obj_type]:
+            _set_seed(seeds, obj, rng)
+            _set_seeded(seeded, obj, parent=network)
+
+    # assign seeds to subnetwork objects
+    for subnetwork in network.networks:
+        _seed_network(subnetwork, seeds, seeded)
+
+
+def _set_seed(seeds, obj, rng):
+    # Generate a seed no matter what, so that setting a seed or not on
+    # one object doesn't affect the seeds of other objects.
+    seed = rng.randint(npext.maxint)
+
+    if obj in seeds:
+        return  # do not overwrite an existing seed
+    elif getattr(obj, "seed", None) is not None:
+        seeds[obj] = obj.seed
+    else:
+        seeds[obj] = seed
+
+
+def _set_seeded(seeded, obj, parent=None):
+    # do not overwrite an existing value, since this value says how the
+    # original seed was assigned (deterministically or randomly), and if we
+    # re-determine this, we might be wrong (e.g. if obj.seed has changed)
+    if obj not in seeded:
+        seeded[obj] = (getattr(obj, 'seed', None) is not None
+                       or parent is not None and seeded[parent])
