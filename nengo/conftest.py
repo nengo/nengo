@@ -287,7 +287,8 @@ def allclose(request):
 
     If a test contains multiple ``allclose`` checks then multiple entries
     with the same testname can be added to the config, and will be applied
-    in the given order.
+    in the given order. If there are fewer config entries than tests, the
+    last entry will be applied to remaining tests with the same testname.
     """
 
     call_count = [0]  # need to access the closure this way for 2.7 compat
