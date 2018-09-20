@@ -44,6 +44,8 @@ Release History
 - Renamed ``utils/testing.py:allclose`` to ``utils/test.py:signal_allclose``.
 - Added new pytest config option, ``nengo_test_unsupported`` (replacing the
   previous ``Simulator.unsupported`` functionality).
+- Deprecated ``utils/numpy.py:rmse``, since this can easily be done by calling
+  ``rms`` on the difference between two arrays.
 
 2.8.0 (June 9, 2018)
 ====================
