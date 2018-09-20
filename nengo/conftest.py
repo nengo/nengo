@@ -311,11 +311,6 @@ def allclose(request):
             kwargs.update(override[min(call_count[0], len(override) - 1)])
             call_count[0] += 1
 
-        # record rmse
-        rmse = npext.rmse(a, b)
-        if not np.any(np.isnan(rmse)):
-            request.node.user_properties.append(("rmse", rmse))
-
         return np.allclose(a, b, **kwargs)
 
     return _allclose
