@@ -4,6 +4,8 @@ Extra functions to extend the capabilities of Numpy.
 import collections
 import logging
 
+import warnings
+
 import numpy as np
 
 from ..exceptions import ValidationError
@@ -217,6 +219,9 @@ def rmse(x, y, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
+    warnings.warn(
+        "The 'rmse' function is deprecated and will be removed in a future "
+        "version. Please use `rms(x - y)` instead.", DeprecationWarning)
 
     x = np.asarray(x)
     y = np.asarray(y)

@@ -3,7 +3,7 @@ import pytest
 
 import nengo
 from nengo.utils.functions import HilbertCurve
-from nengo.utils.numpy import rmse, maxint
+from nengo.utils.numpy import rms, maxint
 
 
 def test_sine_waves(Simulator, plt, seed):
@@ -36,7 +36,7 @@ def test_sine_waves(Simulator, plt, seed):
         plt.xlim(right=t[-1])
         plt.yticks((-2, 0, 2))
 
-    assert rmse(ideal[:len(offset), :], sim.data[p][offset, :]) < 0.2
+    assert rms(ideal[:len(offset), :] - sim.data[p][offset, :]) < 0.2
 
 
 def test_direct_mode_with_single_neuron(Simulator, plt, seed):
@@ -73,7 +73,7 @@ def test_direct_mode_with_single_neuron(Simulator, plt, seed):
         plt.xlim(right=t[-1])
         plt.yticks((-2, 0, 2))
 
-    assert rmse(ideal[:len(offset), :], sim.data[p][offset, :]) < 0.2
+    assert rms(ideal[:len(offset), :] - sim.data[p][offset, :]) < 0.2
 
 
 @pytest.mark.benchmark
@@ -119,7 +119,7 @@ def test_product_benchmark(Simulator, analytics, rng):
         selection = sim.trange() > wait_duration
         test = sim.data[probe_test][selection]
         direct = sim.data[probe_direct][selection]
-        return rmse(test, direct)
+        return rms(test - direct)
 
     error_data = [run_trial() for i in range(n_trials)]
     analytics.add_data(

@@ -1,6 +1,6 @@
 import nengo
 from nengo.processes import Piecewise
-from nengo.utils.numpy import rmse
+from nengo.utils.numpy import rms
 
 
 def test_oscillator(Simulator, plt, seed):
@@ -32,4 +32,4 @@ def test_oscillator(Simulator, plt, seed):
     plt.plot(t, sim.data[in_probe], 'k', label='Input')
     plt.legend(loc='best')
 
-    assert rmse(sim.data[A_probe], sim.data[T_probe]) < 0.2
+    assert rms(sim.data[A_probe] - sim.data[T_probe]) < 0.2

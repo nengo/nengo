@@ -138,6 +138,8 @@ Release History
   (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
 - ``Simulator`` is now pickleable, allowing its state to be saved and loaded.
   (`#1387 <https://github.com/nengo/nengo/pull/1387>`__)
+- Deprecated ``utils/numpy.py:rmse``, since this can easily be done by calling
+  ``rms`` on the difference between two arrays.
 
 **Deprecated**
 
