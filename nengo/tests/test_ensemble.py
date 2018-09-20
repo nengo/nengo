@@ -156,13 +156,14 @@ def test_vector(Simulator, nl, plt, seed):
 def test_product(Simulator, nl, plt, seed):
     N = 80
     dt2 = 0.002
+    scaling = -0.5
     f = lambda t: np.sin(2 * np.pi * t)
 
     m = nengo.Network(seed=seed)
     with m:
         m.config[nengo.Ensemble].neuron_type = nl()
         sin = nengo.Node(output=f)
-        cons = nengo.Node(output=-0.5)
+        cons = nengo.Node(output=scaling)
         factors = nengo.Ensemble(
             2 * N,
             dimensions=2,
@@ -189,9 +190,9 @@ def test_product(Simulator, nl, plt, seed):
     plt.plot(t, sim.data[product_p])
     plt.legend(["exact product", "neural product"], loc="best")
 
-    assert npext.rmse(sim.data[factors_p][:, 0], f(t)) < 0.1
-    assert npext.rmse(sim.data[factors_p][20:, 1], -0.5) < 0.1
-    assert npext.rmse(sim.data[product_p][:, 0], -0.5 * f(t)) < 0.1
+    assert npext.rms(sim.data[factors_p][:, 0] - f(t)) < 0.1
+    assert npext.rms(sim.data[factors_p][20:, 1] - scaling) < 0.1
+    assert npext.rms(sim.data[product_p][:, 0] - scaling * f(t)) < 0.1
 
 
 @pytest.mark.parametrize("dims, points", [(1, 528), (2, 823), (3, 937)])

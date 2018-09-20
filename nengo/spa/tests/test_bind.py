@@ -2,7 +2,7 @@ import numpy as np
 
 import nengo
 from nengo import spa
-from nengo.utils.numpy import rmse
+from nengo.utils.numpy import rms
 
 
 def test_basic():
@@ -45,8 +45,8 @@ def test_run(Simulator, seed):
     with Simulator(model) as sim:
         sim.run(0.2)
 
-    error = rmse(vocab.parse("B*A").v, sim.data[p][-1])
+    error = rms(vocab.parse("B*A").v - sim.data[p][-1])
     assert error < 0.1
 
-    error = rmse(vocab.parse("A*A").v, sim.data[p][100])
+    error = rms(vocab.parse("A*A").v - sim.data[p][100])
     assert error < 0.1

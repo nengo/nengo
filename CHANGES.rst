@@ -151,6 +151,9 @@ Release History
   `#1179 <https://github.com/nengo/nengo/pull/1179>`__)
 - ``nengo.utils.compat`` will be removed in the next minor release.
   (`#1520 <https://github.com/nengo/nengo/pull/1520>`_)
+- Deprecated ``utils.numpy.rmse``. Call ``utils.numpy.rms`` on
+  the difference between two arrays instead.
+  (`#1563 <https://github.com/nengo/nengo/pull/1563>`__)
 
 **Removed**
 

@@ -22,7 +22,7 @@ from nengo.processes import WhiteSignal
 from nengo.solvers import LstsqL2nz
 from nengo.utils.ensemble import tuning_curves
 from nengo.utils.matplotlib import implot, rasterplot
-from nengo.utils.numpy import rms, rmse
+from nengo.utils.numpy import rms
 
 
 def test_lif_builtin(rng):
@@ -373,7 +373,7 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, rng):
     ax2.set_xlim(right=t[-1])
     ax2.set_ylabel("Neural activity")
 
-    assert rmse(activity_data[0], activity_data[1]) < ((1.0 / dt) * 0.01)
+    assert rms(activity_data[0] - activity_data[1]) < ((1.0 / dt) * 0.01)
     assert np.allclose(out_data[0], out_data[1], atol=0.05)
 
 

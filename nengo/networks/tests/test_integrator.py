@@ -1,6 +1,6 @@
 import nengo
 from nengo.processes import Piecewise
-from nengo.utils.numpy import rmse
+from nengo.utils.numpy import rms
 
 
 def test_integrator(Simulator, plt, seed):
@@ -30,4 +30,4 @@ def test_integrator(Simulator, plt, seed):
     plt.plot(t, sim.data[input_p], "k", label="Input")
     plt.legend(loc="best")
 
-    assert rmse(sim.data[A_p], sim.data[T_p]) < 0.1
+    assert rms(sim.data[A_p] - sim.data[T_p]) < 0.1

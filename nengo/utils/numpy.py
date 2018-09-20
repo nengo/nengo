@@ -4,6 +4,8 @@ Extra functions to extend the capabilities of Numpy.
 import collections
 import logging
 
+import warnings
+
 import numpy as np
 
 from ..exceptions import ValidationError
@@ -210,7 +212,7 @@ def rms(x, axis=None, keepdims=False):
     return np.sqrt(np.mean(x ** 2, axis=axis, keepdims=keepdims))
 
 
-def rmse(x, y, axis=None, keepdims=False):
+def rmse(x, y, axis=None, keepdims=False):  # pragma: no cover
     """Compute the root-mean-square error.
 
     Equivalent to rms(x - y, axis=axis, keepdims=keepdims).
@@ -225,6 +227,11 @@ def rmse(x, y, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
+    warnings.warn(
+        "The 'rmse' function is deprecated and will be removed in a future "
+        "version. Please use `rms(x - y)` instead.",
+        DeprecationWarning,
+    )
     x, y = np.asarray(x), np.asarray(y)
     return rms(x - y, axis=axis, keepdims=keepdims)
 
