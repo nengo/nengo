@@ -138,6 +138,7 @@ def norm(x, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
+    x = np.array(x)
     return np.sqrt(np.sum(x ** 2, axis=axis, keepdims=keepdims))
 
 
