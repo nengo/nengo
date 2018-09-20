@@ -285,6 +285,10 @@ def allclose(request):
 
     to their pytest config file.
 
+    If the test is parametrized then ``testname[param0-param1]`` will match
+    specific parameter settings, and ``testname*`` will match all parameter
+    settings.
+
     If a test contains multiple ``allclose`` checks then multiple entries
     with the same testname can be added to the config, and will be applied
     in the given order. If there are fewer config entries than tests, the
@@ -297,6 +301,15 @@ def allclose(request):
         split_line = line.split()
         testname = "*" + split_line[0]
         nodename = get_item_name(request.node)
+
+        # escape special characters
+        escaped = "[]?"
+        testname = list(testname)
+        for i, c in enumerate(testname):
+            if c in escaped:
+                testname[i] = "[%s]" % c
+        testname = "".join(testname)
+
         if fnmatch(nodename, testname):
             kwargs = {}
             for entry in split_line[1:]:
