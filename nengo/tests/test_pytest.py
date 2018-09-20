@@ -9,6 +9,8 @@ def test_seed_fixture(seed):
 
 
 def test_allclose(allclose):
+    # if the nengo_test_tolerances in setup.cfg are working properly, then
+    # atol will be set such that all these assertions pass
     assert allclose(0, 1.9, atol=0)
     assert allclose(0, 0.9, atol=0)
     assert allclose(0, 0.9, atol=0)
