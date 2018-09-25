@@ -53,13 +53,15 @@ def build_network(model, network, progress=None):
         # Generate a seed no matter what, so that setting a seed or not on
         # one object doesn't affect the seeds of other objects.
         seed = rng.randint(npext.maxint)
-        return (seed if not hasattr(obj, 'seed') or obj.seed is None
-                else obj.seed)
+        if obj in model.seeds:
+            return model.seeds[obj]
+        if hasattr(obj, "seed") and obj.seed is not None:
+            return obj.seed
+        return seed
 
     if model.toplevel is None:
         model.toplevel = network
-        if network not in model.seeds:
-            model.seeds[network] = get_seed(network, np.random)
+        model.seeds[network] = get_seed(network, np.random)
         if network not in model.seeded:
             model.seeded[network] = getattr(network, 'seed', None) is not None
         max_steps = len(network.all_objects) + 1  # +1 for top level network
@@ -89,8 +91,7 @@ def build_network(model, network, progress=None):
             if obj not in model.seeded:
                 model.seeded[obj] = (model.seeded[network]
                                      or getattr(obj, 'seed', None) is not None)
-            if obj not in model.seeds:
-                model.seeds[obj] = get_seed(obj, rng)
+            model.seeds[obj] = get_seed(obj, rng)
 
     # If this is the toplevel network, enter the decoder cache
     context = (model.decoder_cache if model.toplevel is network
