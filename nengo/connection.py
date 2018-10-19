@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from nengo.base import NengoObject, NengoObjectParam, ObjView
-from nengo.dists import Distribution, DistOrArrayParam
+from nengo.dists import DistOrArrayParam
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
@@ -13,6 +13,7 @@ from nengo.params import (Default, Unconfigurable, ObsoleteParam,
                           BoolParam, FunctionInfo, Parameter)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
+from nengo.transforms import Transform
 from nengo.utils.compat import is_array_like, is_iterable, iteritems
 from nengo.utils.functions import function_name
 from nengo.utils.stdlib import checked_call
@@ -168,18 +169,27 @@ class ConnectionFunctionParam(Parameter):
         size_mid = conn.size_in if size is None else size
         transform = conn.transform
 
-        if isinstance(transform, np.ndarray):
-            if transform.ndim < 2 and size_mid != conn.size_out:
-                raise ValidationError(
-                    "function output size is incorrect; should return a "
-                    "vector of size %d" % conn.size_out, attr=self.name,
-                    obj=conn)
+        if isinstance(transform, (np.ndarray, Transform)):
+            if isinstance(transform, np.ndarray):
+                transform_size = (transform.shape[1] if transform.ndim == 2
+                                  else conn.size_out)
+            else:
+                transform_size = transform.size_in
 
-            if transform.ndim == 2 and size_mid != transform.shape[1]:
-                # check input dimensionality matches transform
+            # check input dimensionality matches transform
+            if size_mid != transform_size:
+                if isinstance(transform, np.ndarray) and transform.ndim < 2:
+                    # we provide a different error message in this case;
+                    # the transform is not changing the dimensionality of the
+                    # signal, so the blame most likely lies with the function
+                    raise ValidationError(
+                        "function output size is incorrect; should return a "
+                        "vector of size %d" % conn.size_out,
+                        attr=self.name, obj=conn)
+
                 raise ValidationError(
                     "%s output size (%d) not equal to transform input size "
-                    "(%d)" % (type_pre, size_mid, transform.shape[1]),
+                    "(%d)" % (type_pre, size_mid, transform_size),
                     attr=self.name, obj=conn)
 
     def coerce(self, conn, function):
@@ -233,11 +243,21 @@ class TransformParam(DistOrArrayParam):
             name, default, (), optional, readonly)
 
     def coerce(self, conn, transform):
-        if transform is not None and not isinstance(transform, Distribution):
+        if isinstance(transform, Transform):
+            # note: input_size checked in function param
+            if transform.size_out != conn.size_out:
+                raise ValidationError(
+                    "Transform output size (%d) does not match connection "
+                    "output size (%d)" % (transform.size_out, conn.size_out),
+                    attr="transform", obj=conn)
+
+            # bypass `DistOrArray` checks
+            return Parameter.coerce(self, conn, transform)
+        elif is_array_like(transform):
             # if transform is an array, figure out what the correct shape
             # should be
-            transform = np.asarray(transform, dtype=np.float64)
 
+            transform = np.asarray(transform, dtype=np.float64)
             if transform.ndim == 0:
                 self.shape = ()
             elif transform.ndim == 1:
@@ -251,6 +271,7 @@ class TransformParam(DistOrArrayParam):
                 def repeated_inds(x):
                     return (not isinstance(x, slice)
                             and np.unique(x).size != len(x))
+
                 if repeated_inds(conn.pre_slice):
                     raise ValidationError(
                         "Input object selection has repeated indices",

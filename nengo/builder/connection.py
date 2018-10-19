@@ -6,8 +6,9 @@ from nengo.builder import Builder, Signal
 from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import Copy, DotInc, ElementwiseInc, Reset
+from nengo.builder.transforms import ConvInc
 from nengo.connection import Connection
-from nengo.dists import get_samples
+from nengo.transforms import Convolution, get_transform
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
@@ -235,8 +236,8 @@ def build_connection(model, conn):
     post_slice = conn.post_slice
 
     # Sample transform if given a distribution
-    transform = get_samples(
-        conn.transform, conn.size_out, d=conn.size_mid, rng=rng)
+    transform = get_transform(
+        conn.transform, (conn.size_out, conn.size_mid), rng=rng)
 
     # Figure out the signal going across this connection
     in_signal = model.sig[conn]['in']
@@ -254,6 +255,11 @@ def build_connection(model, conn):
             in_signal = Signal(np.zeros(conn.size_mid), name='%s.func' % conn)
             model.add_op(SimPyFunc(in_signal, conn.function, None, sliced_in))
     elif isinstance(conn.pre_obj, Ensemble):  # Normal decoded connection
+        if isinstance(conn.transform, Convolution):
+            raise NotImplementedError(
+                "Convolutional transforms on decoded connections are "
+                "not supported")
+
         eval_points, weights, solver_info = model.build(
             conn.solver, conn, rng, transform)
         if conn.solver.weights:
@@ -269,11 +275,19 @@ def build_connection(model, conn):
         weights, name="%s.weights" % conn, readonly=True)
     signal = Signal(np.zeros(signal_size), name="%s.weighted" % conn)
     model.add_op(Reset(signal))
-    op = ElementwiseInc if weights.ndim < 2 else DotInc
-    model.add_op(op(model.sig[conn]['weights'],
-                    in_signal,
-                    signal,
-                    tag="%s.weights_elementwiseinc" % conn))
+
+    if isinstance(conn.transform, Convolution):
+        model.add_op(ConvInc(model.sig[conn]["weights"],
+                             in_signal,
+                             signal,
+                             conn.transform,
+                             tag="%s.weights_convinc" % conn))
+    else:
+        op = ElementwiseInc if weights.ndim < 2 else DotInc
+        model.add_op(op(model.sig[conn]['weights'],
+                        in_signal,
+                        signal,
+                        tag="%s.weights_elementwiseinc" % conn))
 
     # Add operator for filtering
     if conn.synapse is not None:
@@ -298,6 +312,10 @@ def build_connection(model, conn):
 
     # Build learning rules
     if conn.learning_rule is not None:
+        if isinstance(conn.transform, Convolution):
+            raise NotImplementedError(
+                "Learning on convolutional connections is not supported")
+
         rule = conn.learning_rule
         rule = [rule] if not is_iterable(rule) else rule
         targets = []

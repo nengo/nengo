@@ -78,6 +78,28 @@ Distributions
 
 .. autoclass:: nengo.dists.CosineSimilarity
 
+Transforms
+==========
+
+.. autosummary::
+   :nosignatures:
+
+   nengo.transforms.Transform
+   nengo.transforms.get_transform
+   nengo.transforms.Convolution
+   nengo.transforms.ConvShape
+
+.. autoclass:: nengo.transforms.Transform
+   :exclude-members: sample
+
+   .. automethod:: nengo.transforms.Transform.sample(rng=np.random)
+
+.. autofunction:: nengo.transforms.get_transform(transform, shape, rng=np.random)
+
+.. autoclass:: nengo.transforms.Convolution
+
+.. autoclass:: nengo.transforms.ConvShape
+
 Neuron types
 ============
 

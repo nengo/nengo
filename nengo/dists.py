@@ -14,8 +14,8 @@ class Distribution(FrozenObject):
     """A base class for probability distributions.
 
     The only thing that a probabilities distribution need to define is a
-    `.sample` method. This base class ensures that all distributions
-    accept the same arguments for the sample function.
+    `.Distribution.sample` method. This base class ensures that all
+    distributions accept the same arguments for the sample function.
     """
 
     def _sample_shape(self, n, d=None):
@@ -331,14 +331,15 @@ class Samples(Distribution):
     """A set of samples.
 
     This class is a subclass of `.Distribution` so that it can be used in any
-    situation that calls for a  `.Distribution`. However, the call to `.sample`
-    must match the dimensions of the samples or a `.ValidationError`
-    will be raised.
+    situation that calls for a  `.Distribution`. However, the call to
+    `.Distribution.sample` must match the dimensions of the samples or
+    a `.ValidationError` will be raised.
 
     Parameters
     ----------
     samples : (n, d) array_like
-        ``n`` and ``d`` must match what is eventually passed to `.sample`.
+        ``n`` and ``d`` must match what is eventually passed to
+         `.Distribution.sample`.
     """
 
     samples = NdarrayParam('samples', shape=('...',))
