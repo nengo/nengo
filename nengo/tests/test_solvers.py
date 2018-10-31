@@ -511,9 +511,7 @@ def test_nosolver(values, weights, seed, Simulator):
         pre = nengo.Ensemble(10, 2)
         post = nengo.Ensemble(20, 2)
 
-        if values is not None and weights:
-            values = np.ones((pre.n_neurons, post.n_neurons))
-        elif values is not None:
+        if values is not None:
             values = np.ones((pre.n_neurons, post.dimensions))
 
         conn = nengo.Connection(
@@ -527,7 +525,12 @@ def test_nosolver(values, weights, seed, Simulator):
         assert np.all(built_weights == 0)
     else:
         assert np.all(conn.solver.values == values)
-        assert np.all(built_weights == 1)
+        if weights:
+            assert np.allclose(
+                built_weights,
+                np.dot(values, sim.data[post].scaled_encoders.T).T)
+        else:
+            assert np.all(built_weights == 1)
 
     if weights:
         assert built_weights.T.shape == (pre.n_neurons, post.n_neurons)

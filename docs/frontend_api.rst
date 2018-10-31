@@ -85,20 +85,20 @@ Transforms
    :nosignatures:
 
    nengo.transforms.Transform
-   nengo.transforms.get_transform
+   nengo.transforms.Dense
    nengo.transforms.Convolution
-   nengo.transforms.ConvShape
+   nengo.transforms.ChannelShape
 
 .. autoclass:: nengo.transforms.Transform
    :exclude-members: sample
 
    .. automethod:: nengo.transforms.Transform.sample(rng=np.random)
 
-.. autofunction:: nengo.transforms.get_transform(transform, shape, rng=np.random)
+.. autoclass:: nengo.transforms.Dense
 
 .. autoclass:: nengo.transforms.Convolution
 
-.. autoclass:: nengo.transforms.ConvShape
+.. autoclass:: nengo.transforms.ChannelShape
 
 Neuron types
 ============

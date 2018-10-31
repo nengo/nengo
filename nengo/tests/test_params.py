@@ -341,6 +341,7 @@ def test_configure_all_nengo_parameters():
         nengo.solvers.SolverParam: lambda attr: nengo.solvers.LstsqL2nz(
             weights=isinstance(attr, nengo.connection.ConnectionSolverParam)),
         nengo.connection.ConnectionFunctionParam: lambda attr: lambda x: x + 1,
+        nengo.connection.ConnectionTransformParam: lambda attr: 2.0,
         nengo.learning_rules.LearningRuleTypeParam: (
             lambda attr: nengo.learning_rules.PES()),
         nengo.neurons.NeuronTypeParam: lambda attr: nengo.AdaptiveLIF(),

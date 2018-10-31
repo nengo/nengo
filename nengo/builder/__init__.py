@@ -12,5 +12,6 @@ from . import (
     neurons,
     node,
     probe,
-    processes
+    processes,
+    transforms
 )

@@ -278,7 +278,7 @@ def test_dist_transform(Simulator, seed):
         conn5 = nengo.Connection(
             c, d, solver=nengo.solvers.LstsqL2(weights=True))
 
-    assert isinstance(conn1.transform, nengo.dists.Gaussian)
+    assert isinstance(conn1.transform.init, nengo.dists.Gaussian)
 
     with Simulator(net) as sim:
         pass
@@ -506,7 +506,7 @@ def test_neuron_slicing(Simulator, plt, seed, rng):
 
     x = sim.data[ap]
     y = np.zeros((len(t), b.n_neurons))
-    y[:, sb] = np.dot(x[:, sa], c.transform.T)
+    y[:, sb] = np.dot(x[:, sa], c.transform.init.T)
     y = b.neuron_type.rates(y, sim.data[b].gain, sim.data[b].bias)
 
     plt.plot(t, y, 'k--')
@@ -747,17 +747,6 @@ def test_set_function(Simulator):
         # Can change to another function with correct dimensionality
         conn_2d.function = lambda x: x ** 2
         conn_1d.function = lambda x: x[0] + x[1]
-
-    with Simulator(model):
-        pass  # Builds fine
-
-    with model:
-        # Cannot change to a function with different dimensionality
-        # because that would require a change in transform
-        with pytest.raises(ValidationError):
-            conn_2d.function = lambda x: x[0] * x[1]
-        with pytest.raises(ValidationError):
-            conn_1d.function = None
 
     with Simulator(model):
         pass  # Builds fine

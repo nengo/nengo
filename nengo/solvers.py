@@ -72,9 +72,6 @@ class Solver(with_metaclass(DocstringInheritor, FrozenObject)):
         copy : bool, optional (Default: False)
             Whether a copy of ``Y`` should be returned if ``E`` is None.
         """
-        if self.weights and E is None:
-            raise ValidationError(
-                "Encoders must be provided for weight solver", attr='E')
         if not self.weights and E is not None:
             raise ValidationError(
                 "Encoders must be 'None' for decoder solver", attr='E')
@@ -539,7 +536,7 @@ class NoSolver(Solver):
     def __call__(self, A, Y, rng=None, E=None):
         if self.values is None:
             n_neurons = np.asarray(A).shape[1]
-            if self.weights:
+            if E is not None:
                 return np.zeros((n_neurons, np.asarray(E).shape[1])), {}
             else:
                 return np.zeros((n_neurons, np.asarray(Y).shape[1])), {}

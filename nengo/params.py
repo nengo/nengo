@@ -375,13 +375,16 @@ class NdarrayParam(Parameter):
 
     def __init__(self, name, default=Unconfigurable, shape=None,
                  optional=False, readonly=None):
-        assert shape is not None
-        assert shape.count('...') <= 1, "Cannot have more than one ellipsis"
+        if shape is not None:
+            assert shape.count('...') <= 1, (
+                "Cannot have more than one ellipsis")
         self.shape = shape
         super(NdarrayParam, self).__init__(name, default, optional, readonly)
 
     @property
     def coerce_defaults(self):
+        if self.shape is None:
+            return True
         return all(is_integer(dim) or dim in ('...', '*')
                    for dim in self.shape)
 
@@ -406,6 +409,9 @@ class NdarrayParam(Parameter):
 
         if self.readonly:
             ndarray.setflags(write=False)
+
+        if self.shape is None:
+            return ndarray
 
         if '...' in self.shape:
             # Convert '...' to the appropriate number of '*'s

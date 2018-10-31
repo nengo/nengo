@@ -45,7 +45,7 @@ def test_convolution(
             transform=nengo.Convolution(
                 output_channels,
                 input_shape,
-                kernel=w,
+                init=w,
                 padding=padding,
                 kernel_size=kernel_size,
                 strides=(1,) if dimensions == 1 else (1, 1),
