@@ -1,9 +1,12 @@
+import timeit
+from collections import defaultdict
+
 import numpy as np
 import pytest
 
 import nengo
 from nengo.exceptions import BuildError, SimulationError
-from nengo.neurons import Direct, NeuronTypeParam
+from nengo.neurons import Direct, NeuronTypeParam, NumbaLIF
 from nengo.processes import WhiteSignal
 from nengo.solvers import LstsqL2nz
 from nengo.utils.ensemble import tuning_curves
@@ -528,3 +531,37 @@ def test_gain_bias(rng, nl_nodirect, generic):
 
     assert np.allclose(max_rates, max_rates0, atol=tolerance)
     assert np.allclose(intercepts, intercepts0, atol=tolerance)
+
+
+def _benchmark(neuron_type, n, d=1, sim_time=0.5, n_trials=10):
+    """Estimates number of milliseconds per simulation time-step."""
+
+    with nengo.Network() as model:
+        nengo.Ensemble(n_neurons=n, dimensions=d, neuron_type=neuron_type)
+
+    with nengo.Simulator(model, progress_bar=False) as sim:
+        sim.step()  # invokes the JIT compilation (cached from here on)
+
+        def to_time():  # timed portion of code
+            sim.run(sim_time, progress_bar=False)
+
+        n_steps = float(sim_time) / sim.dt
+        return 1e3 * timeit.timeit(to_time, number=n_trials) / float(n_trials) / n_steps
+
+
+@pytest.mark.slow
+@pytest.mark.noassertions
+def test_numbalif_benchmark(plt):
+    import seaborn as sns
+    from pandas import DataFrame
+
+    data = defaultdict(list)
+    for neuron_type in (NumbaLIF(), nengo.LIF()):
+        for n in np.linspace(1, 10000, 11, dtype=int):
+            data['Neuron Type'].append(type(neuron_type).__name__)
+            data['# Neurons'].append(n)
+            data['Time (ms)'].append(_benchmark(neuron_type, n))
+
+    plt.figure()
+    sns.lineplot(data=DataFrame(data),
+                 x="# Neurons", y="Time (ms)", hue="Neuron Type")
