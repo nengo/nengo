@@ -309,17 +309,17 @@ def pytest_collection_modifyitems(session, config, items):
             lambda item: not (uses_sim(item) or uses_refsim(item)),
             items, config)
         deselect_by_condition(
-            lambda item: uses_refsim(item) and
-            not TestConfig.is_refsim_overridden(),
+            lambda item: uses_refsim(item)
+            and not TestConfig.is_refsim_overridden(),
             items, config)
         deselect_by_condition(
-            lambda item: uses_sim(item) and
-            not TestConfig.is_sim_overridden(),
+            lambda item: uses_sim(item)
+            and not TestConfig.is_sim_overridden(),
             items, config)
 
     deselect_by_condition(
-        lambda item: getattr(item.obj, 'noassertions', None) and
-        not any(
+        lambda item: getattr(item.obj, 'noassertions', None)
+        and not any(
             fixture in item.fixturenames and config.getvalue(option)
             for fixture, option in [
                 ('analytics', 'analytics'),

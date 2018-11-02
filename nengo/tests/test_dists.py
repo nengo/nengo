@@ -8,8 +8,8 @@ from nengo.exceptions import ValidationError
 
 def test_pdf(rng):
     s = 0.25
-    f = lambda x: (np.exp(-0.5 * (x + 0.5)**2 / s**2) +
-                   np.exp(-0.5 * (x - 0.5)**2 / s**2))
+    f = lambda x: (np.exp(-0.5 * (x + 0.5)**2 / s**2)
+                   + np.exp(-0.5 * (x - 0.5)**2 / s**2))
 
     xref = np.linspace(-2, 2, 101)
     pref = f(xref)

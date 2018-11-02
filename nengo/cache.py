@@ -144,9 +144,9 @@ class Fingerprint(object):
     )
 
     WHITELIST = set(
-        (bool, float, complex, bytes, list, tuple, np.ndarray) +
-        int_types + string_types +
-        SOLVERS + LSTSQ_METHODS + NEURON_TYPES
+        (bool, float, complex, bytes, list, tuple, np.ndarray)
+        + int_types + string_types
+        + SOLVERS + LSTSQ_METHODS + NEURON_TYPES
     )
     CHECKS = dict([
         (np.ndarray, check_dtype),
@@ -283,8 +283,8 @@ class CacheIndex(object):
         with open(self.index_path, 'rb') as f:
             self.version = pickle.load(f)
             if isinstance(self.version, tuple):
-                if (self.version[0] > self.VERSION or
-                        self.version[1] > pickle.HIGHEST_PROTOCOL):
+                if (self.version[0] > self.VERSION
+                        or self.version[1] > pickle.HIGHEST_PROTOCOL):
                     raise CacheIOError(
                         "Unsupported cache index file format.")
                 self._index = pickle.load(f)

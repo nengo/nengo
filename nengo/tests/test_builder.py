@@ -35,8 +35,8 @@ def test_seeding(RefSimulator, logger):
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
-            check = (np.allclose(getattr(obj1, attr), getattr(obj2, attr)) ==
-                     equal)
+            check = (np.allclose(getattr(obj1, attr), getattr(obj2, attr))
+                     == equal)
             if not check:
                 logger.info("%s: %s", attr, getattr(obj1, attr))
                 logger.info("%s: %s", attr, getattr(obj2, attr))

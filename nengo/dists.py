@@ -446,8 +446,8 @@ class SqrtBeta(Distribution):
             Probability density at ``x``.
         """
         from scipy.special import beta
-        return (2 / beta(self.m / 2.0, self.n / 2.0) * x ** (self.m - 1) *
-                (1 - x * x) ** (self.n / 2.0 - 1))
+        return (2 / beta(0.5 * self.m, 0.5 * self.n) * x ** (self.m - 1)
+                * (1 - x * x) ** (0.5 * self.n - 1))
 
     def ppf(self, y):
         """Percent point function (inverse cumulative distribution).

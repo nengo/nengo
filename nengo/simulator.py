@@ -35,8 +35,8 @@ class ProbeDict(Mapping):
         self._cache = {}
 
     def __getitem__(self, key):
-        if (key not in self._cache or
-                len(self._cache[key]) != len(self.raw[key])):
+        if (key not in self._cache
+                or len(self._cache[key]) != len(self.raw[key])):
             rval = self.raw[key]
             if isinstance(rval, list):
                 rval = np.asarray(rval)

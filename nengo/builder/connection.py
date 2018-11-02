@@ -240,9 +240,9 @@ def build_connection(model, conn):
 
     # Figure out the signal going across this connection
     in_signal = model.sig[conn]['in']
-    if (isinstance(conn.pre_obj, Node) or
-            (isinstance(conn.pre_obj, Ensemble) and
-             isinstance(conn.pre_obj.neuron_type, Direct))):
+    if (isinstance(conn.pre_obj, Node)
+            or (isinstance(conn.pre_obj, Ensemble)
+                and isinstance(conn.pre_obj.neuron_type, Direct))):
         # Node or Decoded connection in directmode
         weights = transform
         sliced_in = slice_signal(model, in_signal, conn.pre_slice)

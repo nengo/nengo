@@ -230,8 +230,8 @@ class Thalamus(Module):
 
         with self.spa:
             # inhibit the channel when the action is not chosen
-            inhibit = ([[-self.route_inhibit]] *
-                       (self.neurons_channel_dim * subdim))
+            inhibit = ([[-self.route_inhibit]]
+                       * (self.neurons_channel_dim * subdim))
             for e in channel.ensembles:
                 nengo.Connection(gate, e.neurons, transform=inhibit,
                                  synapse=self.synapse_inhibit)

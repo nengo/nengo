@@ -229,8 +229,8 @@ class TerminalProgressBar(ProgressBar):
         percent_pos = (len(progress_str) - len(percent_str)) // 2
         if percent_pos > 0:
             progress_str = (
-                progress_str[:percent_pos] + percent_str +
-                progress_str[percent_pos + len(percent_str):])
+                progress_str[:percent_pos] + percent_str
+                + progress_str[percent_pos + len(percent_str):])
 
         return '\r' + line.format(progress_str)
 
@@ -253,8 +253,8 @@ class TerminalProgressBar(ProgressBar):
         progress_str = progress_str[len(marker):-len(marker)]
         text_pos = (len(progress_str) - len(text)) // 2
         progress_str = (
-            progress_str[:text_pos] + text +
-            progress_str[text_pos + len(text):])
+            progress_str[:text_pos] + text
+            + progress_str[text_pos + len(text):])
         return '\r' + line.format(progress_str)
 
     def _get_finished_line(self, progress):
@@ -721,8 +721,8 @@ class ProgressTracker(object):
         """Update the progress bar display (will run in a separate thread)."""
 
         while not self._closing:
-            if (self.sub_progress is not None and
-                    not self.sub_progress.finished):
+            if (self.sub_progress is not None
+                    and not self.sub_progress.finished):
                 self.progress_bar.update(self.sub_progress)
             else:
                 self.progress_bar.update(self.total_progress)

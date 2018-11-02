@@ -350,8 +350,8 @@ def test_configure_all_nengo_parameters():
 
     for obj in net.objects:
         for name, attr in obj.__dict__.items():
-            if (not isinstance(attr, params.Parameter) or
-                    attr.default is params.Unconfigurable):
+            if (not isinstance(attr, params.Parameter)
+                    or attr.default is params.Unconfigurable):
                 continue
 
             for param, func in iteritems(conv_func):

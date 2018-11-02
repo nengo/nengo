@@ -84,8 +84,8 @@ def build_network(model, network, progress=None):
     assert all(tp in sorted_types for tp in network.objects)
     for obj_type in sorted_types:
         for obj in network.objects[obj_type]:
-            model.seeded[obj] = (model.seeded[network] or
-                                 getattr(obj, 'seed', None) is not None)
+            model.seeded[obj] = (model.seeded[network]
+                                 or getattr(obj, 'seed', None) is not None)
             model.seeds[obj] = get_seed(obj, rng)
 
     # If this is the toplevel network, enter the decoder cache

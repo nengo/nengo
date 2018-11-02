@@ -315,8 +315,8 @@ class SimVoja(Operator):
 
         def step_simvoja():
             delta[...] = alpha * learning_signal * (
-                scale * np.outer(post_filtered, pre_decoded) -
-                post_filtered[:, np.newaxis] * scaled_encoders)
+                scale * np.outer(post_filtered, pre_decoded)
+                - post_filtered[:, np.newaxis] * scaled_encoders)
         return step_simvoja
 
 

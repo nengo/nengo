@@ -448,20 +448,20 @@ class OpMerger(object):
         merger = cls.mergers[tomerge.optype]
 
         independent_of_ops_tomerge = (
-            op not in tomerge.all_dependents and
-            len(tomerge.dependents[op].intersection(tomerge.ops)) == 0)
+            op not in tomerge.all_dependents
+            and len(tomerge.dependents[op].intersection(tomerge.ops)) == 0)
         independent_of_prior_merges = (
-            op not in tomerge.merged and
-            op not in tomerge.merged_dependents and
-            all(o not in tomerge.merged for o in tomerge.dependents[op]))
+            op not in tomerge.merged
+            and op not in tomerge.merged_dependents
+            and all(o not in tomerge.merged for o in tomerge.dependents[op]))
         return (
-            type(op) is tomerge.optype and
-            independent_of_ops_tomerge and
-            independent_of_prior_merges and
-            cls.is_type_mergeable(tomerge.optype) and
-            tomerge.check_signals(tomerge.ops[-1], op) and
-            merger.check_signals(op, tomerge) and
-            merger.is_mergeable(tomerge.last_op, op))
+            type(op) is tomerge.optype
+            and independent_of_ops_tomerge
+            and independent_of_prior_merges
+            and cls.is_type_mergeable(tomerge.optype)
+            and tomerge.check_signals(tomerge.ops[-1], op)
+            and merger.check_signals(op, tomerge)
+            and merger.is_mergeable(tomerge.last_op, op))
 
     @classmethod
     def is_type_mergeable(cls, optype):
@@ -541,11 +541,11 @@ class CopyMerger(Merger):
 
     @staticmethod
     def is_mergeable(op1, op2):
-        return (SigMerger.check([op1.src, op2.src]) and
-                SigMerger.check([op1.dst, op2.dst]) and
-                op1.src_slice is None and op1.dst_slice is None and
-                op2.src_slice is None and op2.dst_slice is None and
-                op1.inc == op2.inc)
+        return (SigMerger.check([op1.src, op2.src])
+                and SigMerger.check([op1.dst, op2.dst])
+                and op1.src_slice is None and op1.dst_slice is None
+                and op2.src_slice is None and op2.dst_slice is None
+                and op1.inc == op2.inc)
 
     @staticmethod
     def merge_slice(signals, slices):
@@ -585,11 +585,11 @@ class ElementwiseIncMerger(Merger):
         scalar_mult = (op1.A.shape == (1,) and op2.A.shape == (1,))
         non_scalar_mult = (op1.A.shape != (1,) and op2.A.shape != (1,))
         return (
-            SigMerger.check([op1.X, op2.X], axis=op1.X.ndim - 1) and
-            SigMerger.check([op1.Y, op2.Y], axis=op1.Y.ndim - 1) and
-            ((scalar_mult and op1.A.initial_value == op2.A.initial_value) or
-             (non_scalar_mult and
-                 SigMerger.check([op1.A, op2.A], axis=op1.A.ndim - 1))))
+            SigMerger.check([op1.X, op2.X], axis=op1.X.ndim - 1)
+            and SigMerger.check([op1.Y, op2.Y], axis=op1.Y.ndim - 1)
+            and ((scalar_mult and op1.A.initial_value == op2.A.initial_value)
+                 or (non_scalar_mult and SigMerger.check(
+                     [op1.A, op2.A], axis=op1.A.ndim - 1))))
 
     @staticmethod
     def merge(ops):
@@ -614,9 +614,10 @@ class DotIncMerger(Merger):
         none_shared = Merger.check_signals(op, tomerge) and (
             len(tomerge.ops) < 2 or tomerge.ops[0].X is not tomerge.ops[1].X)
         all_x_shared = (
-            op.A not in tomerge.all_signals and
-            op.Y not in tomerge.all_signals and
-            all(op.X not in [o.A, o.Y] and op.X is o.X for o in tomerge.ops))
+            op.A not in tomerge.all_signals
+            and op.Y not in tomerge.all_signals
+            and all(op.X not in [o.A, o.Y] and op.X is o.X
+                    for o in tomerge.ops))
         return none_shared or all_x_shared
 
     @staticmethod
@@ -639,9 +640,9 @@ class DotIncMerger(Merger):
             return False
         except ValueError:
             return False
-        return (SigMerger.check([op1.X, op2.X]) and
-                SigMerger.check([op1.Y, op2.Y]) and
-                op1.A.shape == op2.A.shape)
+        return (SigMerger.check([op1.X, op2.X])
+                and SigMerger.check([op1.Y, op2.Y])
+                and op1.A.shape == op2.A.shape)
 
     @staticmethod
     def merge(ops):
@@ -693,9 +694,9 @@ class SimNeuronsMerger(Merger):
 
     @staticmethod
     def is_mergeable(op1, op2):
-        return (op1.neurons == op2.neurons and
-                all(SigMerger.check(s) for s in
-                    zip(op1.all_signals, op2.all_signals)))
+        return (op1.neurons == op2.neurons
+                and all(SigMerger.check(s) for s in
+                        zip(op1.all_signals, op2.all_signals)))
 
     @staticmethod
     def merge(ops):
@@ -764,8 +765,8 @@ class SigMerger(object):
             if s.ndim <= 0 and s.initial_value != signals[0].initial_value:
                 raise ValueError(
                     "0-d signals must have the same initial value.")
-            if (s.shape[:axis] != signals[0].shape[:axis] or
-                    s.shape[axis+1:] != signals[0].shape[axis+1:]):
+            if (s.shape[:axis] != signals[0].shape[:axis]
+                    or s.shape[axis+1:] != signals[0].shape[axis+1:]):
                 raise ValueError(
                     "Signals must have same shape except on concatenation "
                     "axis.")
@@ -796,8 +797,8 @@ class SigMerger(object):
                     "Signals must have the same number of dimensions.")
             if s.strides != signals[0].strides:
                 raise ValueError("Signals must have equal strides.")
-            if (s.shape[:axis] != signals[0].shape[:axis] or
-                    s.shape[axis+1:] != signals[0].shape[axis+1:]):
+            if (s.shape[:axis] != signals[0].shape[:axis]
+                    or s.shape[axis+1:] != signals[0].shape[axis+1:]):
                 raise ValueError(
                     "Signals must have same shape except on concatenation "
                     "axis.")
@@ -908,8 +909,8 @@ class SigMerger(object):
         # abs_offset = min(s.abs_offset for s in signals)
         offset = min(s.offset for s in signals)
         shape = (
-            signals[0].shape[:axis] + (sum(s.shape[axis] for s in signals),) +
-            signals[0].shape[axis+1:])
+            signals[0].shape[:axis] + (sum(s.shape[axis] for s in signals),)
+            + signals[0].shape[axis+1:])
         initial_value = np.ndarray(
             buffer=signals[0].base.initial_value, dtype=signals[0].dtype,
             shape=shape, offset=offset,

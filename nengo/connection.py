@@ -85,8 +85,8 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
                 pre.n_neurons if isinstance(pre, Ensemble)
                 else conn.pre.size_out)
             post_size = conn.post.size_in
-            if (not conn.solver.weights and
-                    conn.transform.shape != (post_size, pre_size)):
+            if (not conn.solver.weights
+                    and conn.transform.shape != (post_size, pre_size)):
                 raise ValidationError(
                     "Transform must be 2D array with shape post_neurons x "
                     "pre_neurons (%d, %d)" % (pre_size, post_size),
@@ -249,8 +249,8 @@ class TransformParam(DistOrArrayParam):
                 # check for repeated dimensions in lists, as these don't work
                 # for two-dimensional transforms
                 def repeated_inds(x):
-                    return (not isinstance(x, slice) and
-                            np.unique(x).size != len(x))
+                    return (not isinstance(x, slice)
+                            and np.unique(x).size != len(x))
                 if repeated_inds(conn.pre_slice):
                     raise ValidationError(
                         "Input object selection has repeated indices",
@@ -464,8 +464,8 @@ class Connection(NengoObject):
     @property
     def is_decoded(self):
         return not (self.solver.weights or (
-            isinstance(self.pre_obj, Neurons) and
-            isinstance(self.post_obj, Neurons)))
+            isinstance(self.pre_obj, Neurons)
+            and isinstance(self.post_obj, Neurons)))
 
     @property
     def _label(self):
@@ -567,8 +567,8 @@ class LearningRule(object):
 
     def __eq__(self, other):
         return (
-            self._connection is other._connection and
-            self.learning_rule_type == other.learning_rule_type)
+            self._connection is other._connection
+            and self.learning_rule_type == other.learning_rule_type)
 
     def __hash__(self):
         # +1 to avoid collision with ensemble

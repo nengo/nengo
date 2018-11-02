@@ -114,8 +114,8 @@ class SemanticPointer(object):
         If mutliplied by a scaler, we do normal multiplication.
         """
         if isinstance(other, SemanticPointer):
-            self.v = np.fft.ifft(np.fft.fft(self.v) *
-                                 np.fft.fft(other.v)).real
+            self.v = np.fft.ifft(np.fft.fft(self.v)
+                                 * np.fft.fft(other.v)).real
         elif is_number(other):
             self.v *= other
         else:

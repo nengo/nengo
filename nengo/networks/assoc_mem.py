@@ -328,8 +328,8 @@ class AssociativeMemory(nengo.Network):
         if not self.is_wta:
             nengo.Connection(self.elem_output, self.elem_input,
                              synapse=inhibit_synapse,
-                             transform=((np.eye(self.n_items) - 1) *
-                                        inhibit_scale))
+                             transform=((np.eye(self.n_items) - 1)
+                                        * inhibit_scale))
             self.is_wta = True
         else:
             warnings.warn("AssociativeMemory network is already configured "
