@@ -28,7 +28,7 @@ version_module = imp.load_source(
     "version", os.path.join(root, "nengo", "version.py"))
 testing = "test" in sys.argv or "pytest" in sys.argv
 
-install_requires = ["numpy>=1.8"]
+install_requires = ["numpy>=1.11"]
 docs_require = [
     "sphinx<1.7",
     "jupyter",

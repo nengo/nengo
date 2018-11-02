@@ -56,6 +56,11 @@ Release History
   all other solvers). Note that this does not affect
   ``NoSolver(..., weights=False)`` (the default).
   (`#1481 <https://github.com/nengo/nengo/pull/1481>`__)
+- Increased minimum NumPy version to 1.11.0. See our
+  `instructions for installing NumPy
+  <https://www.nengo.ai/nengo/getting_started.html#installing-numpy>`__
+  if you need to upgrade.
+  (`#1481 <https://github.com/nengo/nengo/pull/1481>`__)
 
 2.8.0 (June 9, 2018)
 ====================

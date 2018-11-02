@@ -16,7 +16,6 @@ matrix:
   include:
     - env: PYTHON="2.7" STATIC="true"
     - env: PYTHON="2.7" COVERAGE="true"
-    - env: PYTHON="2.7" NUMPY="1.10"
     - env: PYTHON="2.7" NUMPY="1.11"
     - env: PYTHON="2.7" NUMPY="1.12"
     - env: PYTHON="2.7" NUMPY="1.13"
