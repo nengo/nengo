@@ -15,9 +15,10 @@ env:
     - STATIC="false"
     - DOCS="false"
 
-matrix:
+jobs:
   include:
-    - env: PYTHON="2.7" STATIC="true"
+    - stage: test
+      env: PYTHON="2.7" STATIC="true"
     - env: PYTHON="2.7" COVERAGE="true"
     - env: PYTHON="2.7" NUMPY="1.11"
       cache: false  # disable the cache for one build to make sure that works
@@ -28,8 +29,29 @@ matrix:
     - env: PYTHON="3.5"
     - env: PYTHON="3.6" COVERAGE="true" SCIPY="true"
     - env: PYTHON="3.6" DOCS="true"
+    - stage: deploy
+      if: branch =~ ^release-candidate-* OR tag =~ ^v[0-9]*
+      env: PYTHON="3.6" DEPLOY="true"
+      deploy:
+        - provider: pypi
+          server: https://test.pypi.org/legacy/
+          user: tbekolay
+          password: $PYPI_TOKEN
+          distributions: "sdist bdist_wheel"
+          on:
+            all_branches: true
+            condition: $TRAVIS_BRANCH =~ ^release-candidate-*
+            condition: $TRAVIS_TAG = ""
+        - provider: pypi
+          user: tbekolay
+          password: $PYPI_TOKEN
+          distributions: "sdist bdist_wheel"
+          on:
+            all_branches: true
+            condition: $TRAVIS_TAG =~ ^v[0-9]*
 
 before_install:
+  - chmod +x .ci/*.sh
   - source .ci/conda.sh install
 
 install:
@@ -38,6 +60,9 @@ install:
     fi
   - if [[ "$DOCS" == "true" ]]; then
       .ci/docs.sh install;
+    fi
+  - if [[ "$DEPLOY" == "true" ]]; then
+      .ci/deploy.sh install;
     fi
   - if [[ "$STATIC" == "true" ]]; then
       .ci/static.sh install;
@@ -54,6 +79,8 @@ script:
       .ci/docs.sh run;
     elif [[ "$DOCS" == "true" ]]; then
       .ci/docs.sh check;
+    elif [[ "$DEPLOY" == "true" ]]; then
+      .ci/deploy.sh run;
     else
       .ci/test.sh run;
     fi
