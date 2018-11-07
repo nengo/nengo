@@ -12,14 +12,19 @@ function usage {
 }
 
 if [[ "$COMMAND" == "install" ]]; then
-    wget "$MINICONDA" --quiet -O miniconda.sh
-    bash miniconda.sh -b -p "$HOME/miniconda"
     export PATH="$HOME/miniconda/bin:$PATH"
+    if ! [[ -d $HOME/miniconda/envs/test ]]; then
+      rm -rf $HOME/miniconda
+      wget "$MINICONDA" --quiet -O miniconda.sh
+      bash miniconda.sh -b -p "$HOME/miniconda"
+      conda create --quiet -y -n test python="$PYTHON" pip
+    fi
     conda config --set always_yes yes --set changeps1 no
     conda update --quiet conda
     conda info -a
-    conda create --quiet -n test python="$PYTHON" pip
     source activate test
+    export PIP_UPGRADE=true  # always upgrade packages to latest version
+    pip install pip
 else
     if [[ -z "$COMMAND" ]]; then
         echo "Command required"
