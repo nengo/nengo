@@ -259,3 +259,26 @@ def test_obsolete_params(RefSimulator):
         pass
     with pytest.raises(ObsoleteError):
         sim.data[c].decoders
+
+
+def test_seed_override(seed):
+    with nengo.Network(seed=seed - 1) as net:
+        a = nengo.Ensemble(10, 1, seed=seed - 2)
+        b = nengo.Ensemble(10, 1, seed=seed + 2)
+
+    model = nengo.builder.Model()
+    model.seeds[net] = seed + 1
+    model.seeds[a] = seed + 2
+
+    # note: intentionally setting this to the 'wrong' value, to check that
+    # it isn't being overridden (things with seeds set should have seeded=True)
+    model.seeded[net] = False
+    model.seeded[a] = False
+
+    model.build(net)
+
+    assert model.seeds[net] == seed + 1
+    assert model.seeds[a] == seed + 2
+    assert not model.seeded[net]
+    assert not model.seeded[a]
+    assert np.allclose(model.params[a].gain, model.params[b].gain)
