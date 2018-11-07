@@ -1,5 +1,4 @@
-language: c
-sudo: false
+language: minimal
 notifications:
   email:
     - tbekolay@gmail.com
