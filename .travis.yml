@@ -3,6 +3,9 @@ sudo: false
 notifications:
   email:
     - tbekolay@gmail.com
+cache:
+  directories:
+  - $HOME/miniconda
 
 env:
   global:
@@ -17,6 +20,7 @@ matrix:
     - env: PYTHON="2.7" STATIC="true"
     - env: PYTHON="2.7" COVERAGE="true"
     - env: PYTHON="2.7" NUMPY="1.11"
+      cache: false  # disable the cache for one build to make sure that works
     - env: PYTHON="2.7" NUMPY="1.12"
     - env: PYTHON="2.7" NUMPY="1.13"
     - env: PYTHON="2.7" NUMPY="1.14"
@@ -53,6 +57,9 @@ script:
     else
       .ci/test.sh run;
     fi
+
+before_cache:
+  - conda clean --all
 
 after_success:
   - if [[ "$COVERAGE" == "true" ]]; then
