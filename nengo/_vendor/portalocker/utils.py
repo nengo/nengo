@@ -69,7 +69,7 @@ class Lock(object):
             self, filename, mode='a', timeout=DEFAULT_TIMEOUT,
             check_interval=DEFAULT_CHECK_INTERVAL, fail_when_locked=False,
             flags=LOCK_METHOD):
-        '''Lock manager with build-in timeout
+        '''Lock manager with built-in timeout
 
         filename -- filename
         mode -- the open mode, 'a' or 'ab' should be used for writing

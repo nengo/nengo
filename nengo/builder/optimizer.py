@@ -887,7 +887,7 @@ class SigMerger(object):
 
     @staticmethod
     def merge_views(signals, axis=0):
-        """Merges multiple signal views into one continguous signal view.
+        """Merges multiple signal views into one contiguous signal view.
 
         Parameters
         ----------

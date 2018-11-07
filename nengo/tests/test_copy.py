@@ -346,11 +346,11 @@ def test_copy_instance_params():
 
 
 def test_pickle_model(RefSimulator, seed):
-    trun = 0.5
+    t_run = 0.5
     simseed = seed + 1
 
     with nengo.Network(seed=seed) as network:
-        u = nengo.Node(nengo.processes.WhiteSignal(trun, 5))
+        u = nengo.Node(nengo.processes.WhiteSignal(t_run, 5))
         a = nengo.Ensemble(100, 1)
         b = nengo.Ensemble(100, 1)
         nengo.Connection(u, a, synapse=None)
@@ -360,7 +360,7 @@ def test_pickle_model(RefSimulator, seed):
         bp = nengo.Probe(b, synapse=0.01)
 
     with RefSimulator(network, seed=simseed) as sim:
-        sim.run(trun)
+        sim.run(t_run)
         t0, u0, a0, b0 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
         pkls = pickle.dumps(dict(model=sim.model, up=up, ap=ap, bp=bp))
 
@@ -370,7 +370,7 @@ def test_pickle_model(RefSimulator, seed):
     up, ap, bp = pkl['up'], pkl['ap'], pkl['bp']
 
     with RefSimulator(None, model=pkl['model'], seed=simseed) as sim:
-        sim.run(trun)
+        sim.run(t_run)
         t1, u1, a1, b1 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
 
     tols = dict(atol=1e-5)

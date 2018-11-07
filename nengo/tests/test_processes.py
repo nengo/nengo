@@ -37,7 +37,7 @@ class TimeProcess(Process):
 
 
 def test_time(RefSimulator):
-    trun = 1.
+    t_run = 1.
     c = 2.
     process = TimeProcess()
 
@@ -51,13 +51,13 @@ def test_time(RefSimulator):
         vp = nengo.Probe(v)
 
     with RefSimulator(model) as sim:
-        sim.run(trun)
+        sim.run(t_run)
 
     nt = len(sim.trange())
-    assert process.trange(trun).shape == sim.trange().shape
-    assert np.allclose(process.trange(trun), sim.trange())
+    assert process.trange(t_run).shape == sim.trange().shape
+    assert np.allclose(process.trange(t_run), sim.trange())
     assert np.allclose(process.ntrange(nt), sim.trange())
-    assert np.allclose(process.run(trun), sim.data[up])
+    assert np.allclose(process.run(t_run), sim.data[up])
     assert np.allclose(process.apply([c] * nt), sim.data[vp])
 
 
@@ -250,17 +250,17 @@ def test_sampling_shape():
 
 
 def test_reset(Simulator, seed):
-    trun = 0.1
+    t_run = 0.1
 
     with nengo.Network() as model:
         u = nengo.Node(WhiteNoise(Gaussian(0, 1), scale=False))
         up = nengo.Probe(u)
 
     with Simulator(model, seed=seed) as sim:
-        sim.run(trun)
+        sim.run(t_run)
         x = np.array(sim.data[up])
         sim.reset()
-        sim.run(trun)
+        sim.run(t_run)
         y = np.array(sim.data[up])
 
     assert x.shape == y.shape
